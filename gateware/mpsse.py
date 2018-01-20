@@ -60,7 +60,7 @@ class MPSSE(Module):
 
         # Execution state
 
-        self.pend_cmd = Signal(8)
+        self.divisor  = Signal(16)
 
         self.position = Record([
             ("bit",     3),
@@ -68,8 +68,23 @@ class MPSSE(Module):
             ("hibyte",  8),
         ])
 
+        # Clock generator
+
+        clken = Signal()
+        ctr   = Signal.like(self.divisor)
+        self.sync += \
+            If(clken,
+                If(ctr == 0,
+                    ctr.eq(self.divisor),
+                    self.bus.tck.eq(~self.bus.tck)
+                ).Else(
+                    ctr.eq(self.divisor - 1)
+                )
+            )
+
         # Command decoder
 
+        pend_cmd   = Signal(8)
         curr_cmd   = Signal(8)
 
         is_shift   = Signal()
@@ -103,7 +118,7 @@ class MPSSE(Module):
         self.fsm.act("IDLE",
             If(self.rx_rdy,
                 self.rx_ack.eq(1),
-                NextValue(self.pend_cmd, self.rx_data),
+                NextValue(pend_cmd, self.rx_data),
 
                 If(is_shift,
                     NextValue(self.position.raw_bits(), 0),
@@ -128,6 +143,8 @@ class MPSSE(Module):
                     ).Else(
                         NextState("GPIO-WRITE-O")
                     )
+                ).Elif(curr_cmd == 0x86,
+                    NextState("DIVISOR-LOBYTE")
                 ).Else(
                     NextState("ERROR")
                 )
@@ -137,7 +154,7 @@ class MPSSE(Module):
             If(self.fsm.ongoing("IDLE"),
                 curr_cmd.eq(self.rx_data),
             ).Else(
-                curr_cmd.eq(self.pend_cmd)
+                curr_cmd.eq(pend_cmd)
             )
 
         # Shift subcommand
@@ -186,6 +203,23 @@ class MPSSE(Module):
             )
         )
 
+        # Divisor subcommand
+
+        self.fsm.act("DIVISOR-LOBYTE",
+            If(self.rx_rdy,
+                self.rx_ack.eq(1),
+                NextValue(self.divisor[0:8], self.rx_data),
+                NextState("DIVISOR-HIBYTE")
+            )
+        )
+        self.fsm.act("DIVISOR-HIBYTE",
+            If(self.rx_rdy,
+                self.rx_ack.eq(1),
+                NextValue(self.divisor[8:16], self.rx_data),
+                NextState("IDLE")
+            )
+        )
+
         # Error "subcommand"
 
         self.fsm.act("ERROR",
@@ -197,7 +231,7 @@ class MPSSE(Module):
         )
         self.fsm.act("ERROR-DESC",
             self.tx_rdy.eq(1),
-            self.tx_data.eq(self.pend_cmd),
+            self.tx_data.eq(pend_cmd),
             If(self.tx_ack,
                 NextState("IDLE")
             )
@@ -312,3 +346,11 @@ class MPSSETestCase(unittest.TestCase):
         self.assertEqual((yield tb.dut.position.lobyte), 0x05)
         yield from tb.write(0x11)
         self.assertEqual((yield tb.dut.position.hibyte), 0x11)
+
+    @simulation_test
+    def test_divisor_write(self, tb):
+        yield from tb.write(0x86)
+        yield from tb.write(0x34)
+        yield from tb.write(0x12)
+        self.assertEqual((yield tb.dut.divisor), 0x1234)
+        self.assertEqual((yield from tb.dut_state()), "IDLE")
