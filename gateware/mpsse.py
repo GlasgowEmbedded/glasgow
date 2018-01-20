@@ -58,18 +58,25 @@ class MPSSE(Module):
 
         ###
 
+        # Execution state
+
         pend_cmd   = Signal(8)
+
+        # Command decoder
+
         curr_cmd   = Signal(8)
 
         is_gpio    = Signal()
         gpio_cmd   = Record([
-            ("rd",   1),
-            ("adr",  1),
+            ("rd",      1),
+            ("adr",     1),
         ])
         self.comb += [
             is_gpio.eq(curr_cmd[2:] == 0b100000),
             gpio_cmd.raw_bits().eq(curr_cmd[:2])
         ]
+
+        # Command processor
 
         self.submodules.fsm = FSM(reset_state="IDLE")
         self.fsm.act("IDLE",
@@ -83,9 +90,20 @@ class MPSSE(Module):
                     ).Else(
                         NextState("GPIO-WRITE-O")
                     )
+                ).Else(
+                    NextState("ERROR")
                 )
             )
         )
+        self.comb += \
+            If(self.fsm.ongoing("IDLE"),
+                curr_cmd.eq(self.rx_data),
+            ).Else(
+                curr_cmd.eq(pend_cmd)
+            )
+
+        # GPIO read/write subcommand
+
         self.fsm.act("GPIO-READ-I",
             self.tx_rdy.eq(1),
             self.tx_data.eq(self.bus.xi[gpio_cmd.adr]),
@@ -108,12 +126,22 @@ class MPSSE(Module):
             )
         )
 
-        self.comb += \
-            If(self.fsm.ongoing("IDLE"),
-                curr_cmd.eq(self.rx_data),
-            ).Else(
-                curr_cmd.eq(pend_cmd)
+        # Error "subcommand"
+
+        self.fsm.act("ERROR",
+            self.tx_rdy.eq(1),
+            self.tx_data.eq(0xFA),
+            If(self.tx_ack,
+                NextState("ERROR-DESC")
             )
+        )
+        self.fsm.act("ERROR-DESC",
+            self.tx_rdy.eq(1),
+            self.tx_data.eq(pend_cmd),
+            If(self.tx_ack,
+                NextState("IDLE")
+            )
+        )
 
     def do_finalize(self):
         print(self.fsm.encoding)
@@ -127,8 +155,7 @@ import unittest
 def simulation_test(case):
     @functools.wraps(case)
     def wrapper(self):
-        tb = self.testbench_cls()
-        run_simulation(tb, case(self, tb), vcd_name="test.vcd")
+        run_simulation(self.tb, case(self, self.tb), vcd_name="test.vcd")
     return wrapper
 
 
@@ -149,6 +176,12 @@ class MPSSETestbench(Module):
 
         self.submodules.dut = MPSSE(self.pads)
 
+    def do_finalize(self):
+        self.states = {v: k for k, v in self.dut.fsm.encoding.items()}
+
+    def dut_state(self):
+        return self.states[(yield self.dut.fsm.state)]
+
     def write(self, byte):
         yield self.dut.rx_data.eq(byte)
         yield self.dut.rx_rdy.eq(1)
@@ -162,19 +195,27 @@ class MPSSETestbench(Module):
         raise Exception("DUT stuck while writing")
 
     def read(self):
+        yield self.dut.tx_ack.eq(1)
         for _ in range(10):
+            yield
             if (yield self.dut.tx_rdy) == 1:
                 byte = (yield self.dut.tx_data)
-                yield self.dut.tx_ack.eq(1)
-                yield
                 yield self.dut.tx_ack.eq(0)
+                yield
                 return byte
-            yield
         raise Exception("DUT stuck while reading")
 
 
 class MPSSETestCase(unittest.TestCase):
-    testbench_cls = MPSSETestbench
+    def setUp(self):
+        self.tb = MPSSETestbench()
+
+    @simulation_test
+    def test_error(self, tb):
+        yield from tb.write(0xFF)
+        self.assertEqual((yield from tb.read()), 0xFA)
+        self.assertEqual((yield from tb.read()), 0xFF)
+        self.assertEqual((yield from tb.dut_state()), "IDLE")
 
     @simulation_test
     def test_gpio_read(self, tb):
@@ -184,6 +225,7 @@ class MPSSETestCase(unittest.TestCase):
         self.assertEqual((yield from tb.read()), 0x55)
         yield from tb.write(0x83)
         self.assertEqual((yield from tb.read()), 0xAA)
+        self.assertEqual((yield from tb.dut_state()), "IDLE")
 
     @simulation_test
     def test_gpio_write(self, tb):
@@ -197,3 +239,4 @@ class MPSSETestCase(unittest.TestCase):
         yield from tb.write(0x81)
         self.assertEqual((yield tb.o),  0x7EA1)
         self.assertEqual((yield tb.oe), 0x8152)
+        self.assertEqual((yield from tb.dut_state()), "IDLE")
