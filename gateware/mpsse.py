@@ -60,11 +60,32 @@ class MPSSE(Module):
 
         # Execution state
 
-        pend_cmd   = Signal(8)
+        self.pend_cmd = Signal(8)
+
+        self.position = Record([
+            ("bit",     3),
+            ("lobyte",  8),
+            ("hibyte",  8),
+        ])
 
         # Command decoder
 
         curr_cmd   = Signal(8)
+
+        is_shift   = Signal()
+        shift_cmd  = Record([
+            ("wpol",    1),
+            ("bits",    1),
+            ("rpol",    1),
+            ("le",      1),
+            ("tdi",     1),
+            ("tdo",     1),
+            ("tms",     1),
+        ])
+        self.comb += [
+            is_shift.eq(curr_cmd[7:] == 0b0),
+            shift_cmd.raw_bits().eq(curr_cmd[:6])
+        ]
 
         is_gpio    = Signal()
         gpio_cmd   = Record([
@@ -82,9 +103,26 @@ class MPSSE(Module):
         self.fsm.act("IDLE",
             If(self.rx_rdy,
                 self.rx_ack.eq(1),
-                NextValue(pend_cmd, self.rx_data),
+                NextValue(self.pend_cmd, self.rx_data),
 
-                If(is_gpio,
+                If(is_shift,
+                    NextValue(self.position.raw_bits(), 0),
+                    If(shift_cmd.tdi | shift_cmd.tdo,
+                        If(shift_cmd.bits,
+                            NextState("SHIFT-LENGTH-BITS")
+                        ).Else(
+                            NextState("SHIFT-LENGTH-LOBYTE")
+                        )
+                    ).Elif(shift_cmd.tms,
+                        If(shift_cmd.bits,
+                            NextState("SHIFT-LENGTH-BITS")
+                        ).Else(
+                            NextState("ERROR")
+                        )
+                    ).Else(
+                        NextState("ERROR")
+                    )
+                ).Elif(is_gpio,
                     If(gpio_cmd.rd,
                         NextState("GPIO-READ-I")
                     ).Else(
@@ -99,8 +137,30 @@ class MPSSE(Module):
             If(self.fsm.ongoing("IDLE"),
                 curr_cmd.eq(self.rx_data),
             ).Else(
-                curr_cmd.eq(pend_cmd)
+                curr_cmd.eq(self.pend_cmd)
             )
+
+        # Shift subcommand
+
+        self.fsm.act("SHIFT-LENGTH-BITS",
+            If(self.rx_rdy,
+                self.rx_ack.eq(1),
+                NextValue(self.position.bit, 5)
+            )
+        )
+        self.fsm.act("SHIFT-LENGTH-LOBYTE",
+            If(self.rx_rdy,
+                self.rx_ack.eq(1),
+                NextValue(self.position.lobyte, self.rx_data),
+                NextState("SHIFT-LENGTH-HIBYTE")
+            )
+        )
+        self.fsm.act("SHIFT-LENGTH-HIBYTE",
+            If(self.rx_rdy,
+                self.rx_ack.eq(1),
+                NextValue(self.position.hibyte, self.rx_data)
+            )
+        )
 
         # GPIO read/write subcommand
 
@@ -137,19 +197,17 @@ class MPSSE(Module):
         )
         self.fsm.act("ERROR-DESC",
             self.tx_rdy.eq(1),
-            self.tx_data.eq(pend_cmd),
+            self.tx_data.eq(self.pend_cmd),
             If(self.tx_ack,
                 NextState("IDLE")
             )
         )
 
-    def do_finalize(self):
-        print(self.fsm.encoding)
-
 # -------------------------------------------------------------------------------------------------
 
 import functools
 import unittest
+import pprint
 
 
 def simulation_test(case):
@@ -240,3 +298,17 @@ class MPSSETestCase(unittest.TestCase):
         self.assertEqual((yield tb.o),  0x7EA1)
         self.assertEqual((yield tb.oe), 0x8152)
         self.assertEqual((yield from tb.dut_state()), "IDLE")
+
+    @simulation_test
+    def test_bits_write(self, tb):
+        yield from tb.write(0x12)
+        yield from tb.write(5)
+        self.assertEqual((yield tb.dut.position.bit), 5)
+
+    @simulation_test
+    def test_hibyte_lobyte_write(self, tb):
+        yield from tb.write(0x10)
+        yield from tb.write(0x05)
+        self.assertEqual((yield tb.dut.position.lobyte), 0x05)
+        yield from tb.write(0x11)
+        self.assertEqual((yield tb.dut.position.hibyte), 0x11)
