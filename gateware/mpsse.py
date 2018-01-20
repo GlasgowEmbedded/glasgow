@@ -44,6 +44,54 @@ class MPSSEBus(Module):
         ]
 
 
+class MPSSEClockGen(Module):
+    def __init__(self, divisor, tck):
+        self.clken  = Signal()
+        self.clkpos = Signal()
+        self.clkneg = Signal()
+
+        self.tcken  = Signal()
+        self.tckpos = Signal()
+        self.tckneg = Signal()
+
+        ###
+
+        clk2x   = Signal(reset=1)
+        counter = Signal.like(divisor)
+        self.sync += \
+            If(self.clken,
+                If(counter == 0,
+                    counter.eq(divisor),
+                    clk2x.eq(~clk2x),
+                ).Else(
+                    counter.eq(counter - 1)
+                )
+            ).Else(
+                counter.eq(divisor),
+                clk2x.eq(clk2x.reset)
+            )
+
+        clkreg = Signal()
+        self.sync += \
+            clkreg.eq(self.clken & clk2x)
+        self.comb += [
+            self.clkpos.eq(self.clken &  (~clkreg &  clk2x)),
+            self.clkneg.eq(self.clken &  ( clkreg & ~clk2x))
+        ]
+
+        self.sync += \
+            If((self.clkpos | self.clkneg) & self.tcken,
+                tck.eq(~tck))
+
+        tckreg = Signal()
+        self.sync += \
+            tckreg.eq(tck)
+        self.comb += [
+            self.tckpos.eq(~tckreg &  tck),
+            self.tckneg.eq( tckreg & ~tck)
+        ]
+
+
 class MPSSE(Module):
     def __init__(self, pads):
         self.rx_data = Signal(8)
@@ -54,33 +102,29 @@ class MPSSE(Module):
         self.tx_rdy  = Signal()
         self.tx_ack  = Signal()
 
-        self.submodules.bus = bus = MPSSEBus(pads)
+        self.submodules.bus = MPSSEBus(pads)
 
         ###
 
         # Execution state
 
-        self.divisor  = Signal(16)
+        self.rdivisor  = Record([
+            ("lobyte",  8),
+            ("hibyte",  8),
+        ])
+        self.divisor   = self.rdivisor.raw_bits()
 
-        self.position = Record([
+        self.rposition = Record([
             ("bit",     3),
             ("lobyte",  8),
             ("hibyte",  8),
         ])
+        self.position  = self.rposition.raw_bits()
 
         # Clock generator
 
-        clken = Signal()
-        ctr   = Signal.like(self.divisor)
-        self.sync += \
-            If(clken,
-                If(ctr == 0,
-                    ctr.eq(self.divisor),
-                    self.bus.tck.eq(~self.bus.tck)
-                ).Else(
-                    ctr.eq(self.divisor - 1)
-                )
-            )
+        clkgen = MPSSEClockGen(self.divisor, self.bus.tck)
+        self.submodules += clkgen
 
         # Command decoder
 
@@ -89,9 +133,9 @@ class MPSSE(Module):
 
         is_shift   = Signal()
         shift_cmd  = Record([
-            ("wpol",    1),
+            ("wneg",    1),
             ("bits",    1),
-            ("rpol",    1),
+            ("rneg",    1),
             ("le",      1),
             ("tdi",     1),
             ("tdo",     1),
@@ -121,7 +165,7 @@ class MPSSE(Module):
                 NextValue(pend_cmd, self.rx_data),
 
                 If(is_shift,
-                    NextValue(self.position.raw_bits(), 0),
+                    NextValue(self.position, 0),
                     If(shift_cmd.tdi | shift_cmd.tdo,
                         If(shift_cmd.bits,
                             NextState("SHIFT-LENGTH-BITS")
@@ -148,6 +192,8 @@ class MPSSE(Module):
                 ).Else(
                     NextState("ERROR")
                 )
+            ).Else(
+                NextValue(pend_cmd, 0)
             )
         )
         self.comb += \
@@ -157,25 +203,75 @@ class MPSSE(Module):
                 curr_cmd.eq(pend_cmd)
             )
 
-        # Shift subcommand
+        # Shift subcommand, length handling
 
-        self.fsm.act("SHIFT-LENGTH-BITS",
-            If(self.rx_rdy,
-                self.rx_ack.eq(1),
-                NextValue(self.position.bit, 5)
+        begin_shifting = \
+            If(shift_cmd.tdi,
+                NextState("SHIFT-LOAD")
+            ).Else(
+                NextState("ERROR")
             )
-        )
         self.fsm.act("SHIFT-LENGTH-LOBYTE",
             If(self.rx_rdy,
                 self.rx_ack.eq(1),
-                NextValue(self.position.lobyte, self.rx_data),
+                NextValue(self.rposition.bit, 7),
+                NextValue(self.rposition.lobyte, self.rx_data),
                 NextState("SHIFT-LENGTH-HIBYTE")
             )
         )
         self.fsm.act("SHIFT-LENGTH-HIBYTE",
             If(self.rx_rdy,
                 self.rx_ack.eq(1),
-                NextValue(self.position.hibyte, self.rx_data)
+                NextValue(self.rposition.hibyte, self.rx_data),
+                begin_shifting
+            )
+        )
+        self.fsm.act("SHIFT-LENGTH-BITS",
+            If(self.rx_rdy,
+                self.rx_ack.eq(1),
+                NextValue(self.rposition.bit, self.rx_data),
+                begin_shifting
+            )
+        )
+
+        # Shift subcommand, actual shifting
+
+        rx_data_be = Signal(8)
+        self.comb += \
+            If(~shift_cmd.le,
+                rx_data_be.eq(self.rx_data)
+            ).Else(
+                rx_data_be.eq(Cat([self.rx_data[7 - i] for i in range(8)]))
+            )
+
+        bits_in = Signal(8)
+
+        self.fsm.act("SHIFT-LOAD",
+            If(self.rx_rdy,
+                self.rx_ack.eq(1),
+                NextValue(bits_in, rx_data_be << 1),
+                NextValue(self.bus.tdi, rx_data_be[7]),
+                NextState("SHIFT-SETUP"),
+            )
+        )
+        self.fsm.act("SHIFT-SETUP",
+            clkgen.clken.eq(1),
+            clkgen.tcken.eq(clkgen.clkneg),
+            If(clkgen.clkneg,
+                NextState("SHIFT-CLOCK")
+            )
+        )
+        self.fsm.act("SHIFT-CLOCK",
+            clkgen.clken.eq(1),
+            clkgen.tcken.eq(1),
+            If(clkgen.clkpos,
+                If(self.position == 0,
+                    NextState("IDLE")
+                ).Else(
+                    NextValue(bits_in, bits_in << 1),
+                    NextValue(self.bus.tdi, bits_in[7]),
+                    NextValue(self.position, self.position - 1)
+                )
             )
         )
 
@@ -208,14 +304,14 @@ class MPSSE(Module):
         self.fsm.act("DIVISOR-LOBYTE",
             If(self.rx_rdy,
                 self.rx_ack.eq(1),
-                NextValue(self.divisor[0:8], self.rx_data),
+                NextValue(self.rdivisor.lobyte, self.rx_data),
                 NextState("DIVISOR-HIBYTE")
             )
         )
         self.fsm.act("DIVISOR-HIBYTE",
             If(self.rx_rdy,
                 self.rx_ack.eq(1),
-                NextValue(self.divisor[8:16], self.rx_data),
+                NextValue(self.rdivisor.hibyte, self.rx_data),
                 NextState("IDLE")
             )
         )
@@ -277,7 +373,7 @@ class MPSSETestbench(Module):
     def write(self, byte):
         yield self.dut.rx_data.eq(byte)
         yield self.dut.rx_rdy.eq(1)
-        for _ in range(10):
+        for _ in range(32):
             yield
             if (yield self.dut.rx_ack) == 1:
                 yield self.dut.rx_data.eq(0)
@@ -288,7 +384,7 @@ class MPSSETestbench(Module):
 
     def read(self):
         yield self.dut.tx_ack.eq(1)
-        for _ in range(10):
+        for _ in range(32):
             yield
             if (yield self.dut.tx_rdy) == 1:
                 byte = (yield self.dut.tx_data)
@@ -296,6 +392,47 @@ class MPSSETestbench(Module):
                 yield
                 return byte
         raise Exception("DUT stuck while reading")
+
+    def xfer(self, nbits, out_bits, in_bits, out_pos, in_pos):
+        for n in range(nbits * 2):
+            for _ in range(64):
+                tdiold = (yield self.tdi.o)
+                tckold = (yield self.tck.o)
+                yield
+                tcknew = (yield self.tck.o)
+                if tckold != tcknew:
+                    break
+            if tckold == tcknew:
+                raise Exception("DUT ceased driving TCK")
+
+            if in_pos == tcknew:
+                if (yield self.tdi.o) != tdiold:
+                    yield; yield; yield; yield
+                    raise Exception("DUT violated setup/hold timings")
+
+                in_bit  = in_bits  & (1 << (nbits - n // 2) - 1)
+                # print(f"{in_bits:0{nbits}b} {in_bit:0{nbits}b} ")
+                if (yield self.tdi.o) != (in_bit != 0):
+                    raise Exception("DUT clocked out bit {} as {} (expected {})"
+                                    .format(n // 2, (yield self.tdi.o), 1 if in_bit else 0))
+            if out_pos == tcknew:
+                out_bit = out_bits & (1 << (nbits - n // 2) - 1)
+                yield self.tdo.i.eq(out_bit)
+
+        for _ in range(32):
+            tckold = (yield self.tck.o)
+            yield
+            tcknew = (yield self.tck.o)
+            if tckold != tcknew and in_pos == tcknew:
+                raise Exception("DUT spuriously drives TCK")
+
+        return True
+
+    def out_xfer(self, nbits, bits, pos):
+        return self.xfer(nbits, bits, 0, pos, False)
+
+    def in_xfer(self, nbits, bits, pos):
+        return self.xfer(nbits, 0, bits, False, pos)
 
 
 class MPSSETestCase(unittest.TestCase):
@@ -337,15 +474,15 @@ class MPSSETestCase(unittest.TestCase):
     def test_bits_write(self, tb):
         yield from tb.write(0x12)
         yield from tb.write(5)
-        self.assertEqual((yield tb.dut.position.bit), 5)
+        self.assertEqual((yield tb.dut.rposition.bit), 5)
 
     @simulation_test
     def test_hibyte_lobyte_write(self, tb):
         yield from tb.write(0x10)
         yield from tb.write(0x05)
-        self.assertEqual((yield tb.dut.position.lobyte), 0x05)
+        self.assertEqual((yield tb.dut.rposition.lobyte), 0x05)
         yield from tb.write(0x11)
-        self.assertEqual((yield tb.dut.position.hibyte), 0x11)
+        self.assertEqual((yield tb.dut.rposition.hibyte), 0x11)
 
     @simulation_test
     def test_divisor_write(self, tb):
@@ -354,3 +491,28 @@ class MPSSETestCase(unittest.TestCase):
         yield from tb.write(0x12)
         self.assertEqual((yield tb.dut.divisor), 0x1234)
         self.assertEqual((yield from tb.dut_state()), "IDLE")
+
+    def write_single_byte(self, tb, pos):
+        yield from tb.write(0x80)
+        if pos:
+            yield from tb.write(0b0000)
+        else:
+            yield from tb.write(0b0001)
+        yield from tb.write(0b1101)
+
+        if pos:
+            yield from tb.write(0x10)
+        else:
+            yield from tb.write(0x11)
+        yield from tb.write(0x00)
+        yield from tb.write(0x00)
+        yield from tb.write(0xA5)
+        self.assertTrue((yield from tb.in_xfer(8, 0b10100101, pos)))
+
+    @simulation_test
+    def test_write_single_byte_clkpos(self, tb):
+        yield from self.write_single_byte(tb, pos=True)
+
+    @simulation_test
+    def test_write_single_byte_clkneg(self, tb):
+        yield from self.write_single_byte(tb, pos=False)
