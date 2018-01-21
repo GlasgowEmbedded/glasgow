@@ -75,20 +75,17 @@ class MPSSEClockGen(Module):
         self.sync += \
             clkreg.eq(self.clken & clk2x)
         self.comb += [
-            self.clkpos.eq(self.clken &  (~clkreg &  clk2x)),
-            self.clkneg.eq(self.clken &  ( clkreg & ~clk2x))
+            self.clkpos.eq(self.clken & (~clkreg &  clk2x)),
+            self.clkneg.eq(self.clken & ( clkreg & ~clk2x))
         ]
 
+        tckstb = Signal()
         self.sync += \
-            If((self.clkpos | self.clkneg) & self.tcken,
-                tck.eq(~tck))
-
-        tckreg = Signal()
-        self.sync += \
-            tckreg.eq(tck)
+            tck.eq(tck ^ tckstb)
         self.comb += [
-            self.tckpos.eq(~tckreg &  tck),
-            self.tckneg.eq( tckreg & ~tck)
+            tckstb.eq((self.clkpos | self.clkneg) & self.tcken),
+            self.tckpos.eq(tckstb & ~tck),
+            self.tckneg.eq(tckstb &  tck)
         ]
 
 
@@ -246,6 +243,15 @@ class MPSSE(Module):
 
         bits_in = Signal(8)
 
+        tdi_setup = Signal()
+        tdi_hold  = Signal()
+        self.comb += [
+            tdi_setup.eq(clkgen.tckpos & ~shift_cmd.wneg |
+                         clkgen.tckneg &  shift_cmd.wneg),
+            tdi_hold .eq(clkgen.tckpos &  shift_cmd.wneg |
+                         clkgen.tckneg & ~shift_cmd.wneg),
+        ]
+
         self.fsm.act("SHIFT-LOAD",
             If(self.rx_rdy,
                 self.rx_ack.eq(1),
@@ -264,14 +270,23 @@ class MPSSE(Module):
         self.fsm.act("SHIFT-CLOCK",
             clkgen.clken.eq(1),
             clkgen.tcken.eq(1),
+            If(tdi_setup,
+                NextValue(bits_in, bits_in << 1),
+                NextValue(self.bus.tdi, bits_in[7])
+            ),
             If(clkgen.clkpos,
                 If(self.position == 0,
                     NextState("IDLE")
                 ).Else(
-                    NextValue(bits_in, bits_in << 1),
-                    NextValue(self.bus.tdi, bits_in[7]),
                     NextValue(self.position, self.position - 1)
                 )
+            )
+        )
+        self.fsm.act("SHIFT-LAST",
+            clkgen.clken.eq(1),
+            If(clkgen.clkneg,
+                NextValue(self.bus.tdi, shift_cmd.wneg),
+                NextState("IDLE")
             )
         )
 
@@ -393,17 +408,33 @@ class MPSSETestbench(Module):
                 return byte
         raise Exception("DUT stuck while reading")
 
+    def _wait_for_tck(self, at_setup=None):
+        setup = None
+        for _ in range(64):
+            if at_setup:
+                setup = (yield from at_setup())
+            tckold = (yield self.tck.o)
+            yield
+            tcknew = (yield self.tck.o)
+            if tckold != tcknew:
+                break
+        if tckold == tcknew:
+            raise Exception("DUT ceased driving TCK")
+        return setup
+
+    def recv_tdi(self, nbits, pos):
+        bits = 0
+        for n in range(nbits * 2):
+            yield from self._wait_for_tck()
+            if (yield self.tck.o) == pos:
+                bits = (bits << 1) | (yield self.tdi.o)
+        return bits
+
     def xfer(self, nbits, out_bits, in_bits, out_pos, in_pos):
         for n in range(nbits * 2):
-            for _ in range(64):
-                tdiold = (yield self.tdi.o)
-                tckold = (yield self.tck.o)
-                yield
-                tcknew = (yield self.tck.o)
-                if tckold != tcknew:
-                    break
-            if tckold == tcknew:
-                raise Exception("DUT ceased driving TCK")
+            tdiold = (yield from self._wait_for_tck(
+                at_setup=lambda: (yield self.tdi.o)))
+            tcknew = (yield self.tck.o)
 
             if in_pos == tcknew:
                 if (yield self.tdi.o) != tdiold:
@@ -413,13 +444,14 @@ class MPSSETestbench(Module):
                 in_bit  = in_bits  & (1 << (nbits - n // 2) - 1)
                 # print(f"{in_bits:0{nbits}b} {in_bit:0{nbits}b} ")
                 if (yield self.tdi.o) != (in_bit != 0):
+                    yield; yield; yield; yield
                     raise Exception("DUT clocked out bit {} as {} (expected {})"
                                     .format(n // 2, (yield self.tdi.o), 1 if in_bit else 0))
             if out_pos == tcknew:
                 out_bit = out_bits & (1 << (nbits - n // 2) - 1)
                 yield self.tdo.i.eq(out_bit)
 
-        for _ in range(32):
+        for _ in range(16):
             tckold = (yield self.tck.o)
             yield
             tcknew = (yield self.tck.o)
@@ -495,9 +527,9 @@ class MPSSETestCase(unittest.TestCase):
     def write_single_byte(self, tb, pos):
         yield from tb.write(0x80)
         if pos:
-            yield from tb.write(0b0000)
-        else:
             yield from tb.write(0b0001)
+        else:
+            yield from tb.write(0b0000)
         yield from tb.write(0b1101)
 
         if pos:
@@ -507,12 +539,28 @@ class MPSSETestCase(unittest.TestCase):
         yield from tb.write(0x00)
         yield from tb.write(0x00)
         yield from tb.write(0xA5)
-        self.assertTrue((yield from tb.in_xfer(8, 0b10100101, pos)))
+        self.assertTrue((yield from tb.in_xfer(8, 0b10100101, not pos)))
 
     @simulation_test
     def test_write_single_byte_clkpos(self, tb):
+        yield tb.dut.divisor.eq(1)
         yield from self.write_single_byte(tb, pos=True)
 
     @simulation_test
     def test_write_single_byte_clkneg(self, tb):
+        yield tb.dut.divisor.eq(1)
         yield from self.write_single_byte(tb, pos=False)
+
+    @simulation_test
+    def test_write_single_byte_clkneg_fast(self, tb):
+        yield from self.write_single_byte(tb, pos=False)
+
+    @simulation_test
+    def test_write_single_byte_clkwrong(self, tb):
+        yield from tb.write(0x10) # +ve, but we start from tck=0
+        yield from tb.write(0x00)
+        yield from tb.write(0x00)
+        yield from tb.write(0xA5)
+        self.assertEqual((yield from tb.recv_tdi(8, pos=False)), 0xA5)
+        yield
+        self.assertEqual((yield tb.tck.o), 0)
