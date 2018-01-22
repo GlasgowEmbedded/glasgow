@@ -1,0 +1,842 @@
+#Special Function Registers (SFRs)
+80
+ 1
+ IOA[15]
+ Port A
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ xxxxxxxx
+ RW
+81
+ 1
+ SP
+ Stack Pointer
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ 00000111
+ RW
+82
+ 1
+ DPL0
+ Data Pointer 0 L
+ A7
+ A6
+ A5
+ A4
+ A3
+ A2
+ A1
+ A0
+ 00000000
+ RW
+83
+ 1
+ DPH0
+ Data Pointer 0 H
+ A15
+ A14
+ A13
+ A12
+ A11
+ A10
+ A9
+ A8
+ 00000000
+ RW
+84
+ 1
+ DPL1[15]
+ Data Pointer 1 L
+ A7
+ A6
+ A5
+ A4
+ A3
+ A2
+ A1
+ A0
+ 00000000
+ RW
+85
+ 1
+ DPH1 [15]
+ Data Pointer 1 H
+ A15
+ A14
+ A13
+ A12
+ A11
+ A10
+ A9
+ A8
+ 00000000
+ RW
+86
+ 1
+ DPS[15]
+ Data Pointer 0/1 select
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ SEL
+ 00000000
+ RW
+87
+ 1
+ PCON
+ Power Control
+ SMOD0
+ x
+ 1
+ 1
+ x
+ x
+ x
+ IDLE
+ 00110000
+ RW
+88
+ 1
+ TCON
+ Timer/Counter Control
+ TF1
+ TR1
+ TF0
+ TR0
+ IE1
+ IT1
+ IE0
+ IT0
+ 00000000
+ RW
+89
+ 1
+ TMOD
+ Timer/Counter Mode Control
+ GATE_1
+ CT_1
+ M1_1
+ M0_1
+ GATE_0
+ CT_0
+ M1_0
+ M0_0
+ 00000000 RW
+8A
+ 1
+ TL0
+ Timer 0 reload L
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ 00000000
+ RW
+8B
+ 1
+ TL1
+ Timer 1 reload L
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ 00000000
+ RW
+8C
+ 1
+ TH0
+ Timer 0 reload H
+ D15
+ D14
+ D13
+ D12
+ D11
+ D10
+ D9
+ D8
+ 00000000
+ RW
+8D
+ 1
+ TH1
+ Timer 1 reload H
+ D15
+ D14
+ D13
+ D12
+ D11
+ D10
+ D9
+ D8
+ 00000000
+ RW
+8E
+ 1
+ CKCON[15]
+ Clock Control
+ x
+ x
+ T2M
+ T1M
+ T0M
+ MD2
+ MD1
+ MD0
+ 00000001
+ RW
+8F
+ 1
+ reserved
+90
+ 1
+ IOB[15]
+ Port B
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ xxxxxxxx RW
+91
+ 1
+ EXIF[15]
+ External Interrupt Flag(s)
+ IE5
+ IE4
+ I2CINT
+ USBNT
+ 1
+ 0
+ 0
+ 0
+ 00001000 RW
+92
+ 1
+ MPAGE[15]
+ Upper Addr Byte of MOVX using @R0 / @R1
+ A15
+ A14
+ A13
+ A12
+ A11
+ A10
+ A9
+ A8
+ 00000000 RW
+93
+ 5
+ reserved
+98
+ 1
+ SCON0
+ Serial Port 0 Control
+ SM0_0
+ SM1_0
+ SM2_0
+ REN_0
+ TB8_0
+ RB8_0
+ TI_0
+ RI_0
+ 00000000 RW
+99
+ 1
+ SBUF0
+ Serial Port 0 Data Buffer
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ 00000000 RW
+9A
+ 1
+ AUTOPTRH1[15]
+ Autopointer 1 Address H
+ A15
+ A14
+ A13
+ A12
+ A11
+ A10
+ A9
+ A8
+ 00000000 RW
+9B
+ 1
+ AUTOPTRL1[15]
+ Autopointer 1 Address L
+ A7
+ A6
+ A5
+ A4
+ A3
+ A2
+ A1
+ A0
+ 00000000 RW
+9C
+ 1
+ reserved
+9D
+ 1
+ AUTOPTRH2[15]
+ Autopointer 2 Address H
+ A15
+ A14
+ A13
+ A12
+ A11
+ A10
+ A9
+ A8
+ 00000000 RW
+9E
+ 1
+ AUTOPTRL2[15]
+ Autopointer 2 Address L
+ A7
+ A6
+ A5
+ A4
+ A3
+ A2
+ A1
+ A0
+ 00000000 RW
+9F
+ 1
+ reserved
+A0
+ 1
+ IOC[15]
+ Port C
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ xxxxxxxx RW
+A1
+ 1
+ INT2CLR[15]
+ Interrupt 2 clear
+ x
+ x
+ x
+ x
+ x
+ x
+ x
+ x
+ xxxxxxxx W
+A2
+ 1
+ INT4CLR[15]
+ Interrupt 4 clear
+ x
+ x
+ x
+ x
+ x
+ x
+ x
+ x
+ xxxxxxxx W
+A3
+ 5
+ reserved
+A8
+ 1
+ IE
+ Interrupt Enable
+ EA
+ ES1
+ ET2
+ ES0
+ ET1
+ EX1
+ ET0
+ EX0
+ 00000000 RW
+A9
+ 1
+ reserved
+AA
+ 1
+ EP2468STAT[15]
+ Endpoint 2,4,6,8 status flags
+ EP8F
+ EP8E
+ EP6F
+ EP6E
+ EP4F
+ EP4E
+ EP2F
+ EP2E
+ 01011010 R
+AB
+ 1
+ EP24FIFOFLGS
+ Endpoint 2,4 slave FIFO status flags
+ 0
+ EP4PF
+ EP4EF
+ EP4FF
+ 0
+ EP2PF
+ EP2EF
+ EP2FF
+ 00100010 R
+[15]
+AC
+ 1
+ EP68FIFOFLGS
+ Endpoint 6,8 slave FIFO status flags
+ 0
+ EP8PF
+ EP8EF
+ EP8FF
+ 0
+ EP6PF
+ EP6EF
+ EP6FF
+ 01100110 R
+[15]
+AD
+ 2
+ reserved
+AF
+ 1
+ AUTOPTRSETUP[15] Autopointer 1&2 setup
+ 0
+ 0
+ 0
+ 0
+ 0
+ APTR2INC
+ APTR1INC
+ APTREN
+ 00000110 RW
+B0
+ 1
+ IOD[15]
+ Port D
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ xxxxxxxx RW
+B1
+ 1
+ IOE[15]
+ Port E
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ xxxxxxxx RW
+(NOT bit addressable)
+B2
+ 1
+ OEA[15]
+ Port A Output Enable
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ 00000000
+ RW
+B3
+ 1
+ OEB[15]
+ Port B Output Enable
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ 00000000
+ RW
+B4
+ 1
+ OEC[15]
+ Port C Output Enable
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ 00000000
+ RW
+B5
+ 1
+ OED[15]
+ Port D Output Enable
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ 00000000
+ RW
+B6
+ 1
+ OEE[15]
+ Port E Output Enable
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ 00000000
+ RW
+B7
+ 1
+ reserved
+B8
+ 1
+ IP
+ Interrupt Priority
+ 1
+ PS1
+ PT2
+ PS0
+ PT1
+ PX1
+ PT0
+ PX0
+ 10000000 RW
+B9
+ 1
+ reserved
+BA
+ 1
+ EP01STAT[15]
+ Endpoint 0&1 Status
+ 0
+ 0
+ 0
+ 0
+ 0
+ EP1INBSY
+ EP1OUTBSY EP0BSY
+ 00000000 R
+BB
+ 1
+ GPIFTRIG[15, 13]
+ Endpoint 2,4,6,8 GPIF slave FIFO Trigger
+ DONE
+ 0
+ 0
+ 0
+ 0
+ RW
+ EP1
+ EP0
+ 10000xxx brrrrbbb
+BC
+ 1
+ reserved
+BD
+ 1
+ GPIFSGLDATH[15]
+ GPIF Data H (16-bit mode only)
+ D15
+ D14
+ D13
+ D12
+ D11
+ D10
+ D9
+ D8
+ xxxxxxxx RW
+Hex Size
+ Name
+ Description
+ b7
+ b6
+ b5
+ b4
+ b3
+ b2
+ b1
+ b0
+ Default Access
+BE
+ 1
+ GPIFSGLDATLX[15]
+ GPIF Data L w/ Trigger
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ xxxxxxxx RW
+BF
+ 1
+ GPIFSGLDATL-
+ GPIF Data L w/ No Trigger D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ xxxxxxxx R
+NOX[15]
+C0
+ 1
+ SCON1[15]
+ Serial Port 1 Control
+ SM0_1
+ SM1_1
+ SM2_1
+ REN_1
+ TB8_1
+ RB8_1
+ TI_1
+ RI_1
+ 00000000 RW
+C1
+ 1
+ SBUF1[15]
+ Serial Port 1 Data Buffer
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ 00000000 RW
+C2
+ 6
+ reserved
+C8
+ 1
+ T2CON
+ Timer/Counter 2 Control
+ TF2
+ EXF2
+ RCLK
+ TCLK
+ EXEN2
+ TR2
+ CT2
+ CPRL2
+ 00000000 RW
+C9
+ 1
+ reserved
+CA
+ 1
+ RCAP2L
+ Capture for Timer 2, auto-reload, up-counter
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ 00000000 RW
+CB
+ 1
+ RCAP2H
+ Capture for Timer 2, auto-reload, up-counter
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ 00000000 RW
+CC
+ 1
+ TL2
+ Timer 2 reload L
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ 00000000 RW
+CD
+ 1
+ TH2
+ Timer 2 reload H
+ D15
+ D14
+ D13
+ D12
+ D11
+ D10
+ D9
+ D8
+ 00000000 RW
+CE
+ 2
+ reserved
+D0
+ 1
+ PSW
+ Program Status Word
+ CY
+ AC
+ F0
+ RS1
+ RS0
+ OV
+ F1
+ P
+ 00000000 RW
+D1
+ 7
+ reserved
+D8
+ 1
+ EICON[15]
+ External Interrupt Control SMOD1
+ 1
+ ERESI
+ RESI
+ INT6
+ 0
+ 0
+ 0
+ 01000000 RW
+D9
+ 7
+ reserved
+E0
+ 1
+ ACC
+ Accumulator
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ 00000000 RW
+E1
+ 7
+ reserved
+E8
+ 1
+ EIE [15]
+ External Interrupt Enable(s)
+ 1
+ 1
+ 1
+ EX6
+ EX5
+ EX4
+ EI2C
+ EUSB
+ 11100000 RW
+E9
+ 7
+ reserved
+F0
+ 1
+ B
+ B
+ D7
+ D6
+ D5
+ D4
+ D3
+ D2
+ D1
+ D0
+ 00000000 RW
+F1
+ 7
+ reserved
+F8
+ 1
+ EIP [15]
+ External Interrupt Priority 1 Control
+ 1
+ 1
+ PX6
+ PX5
+ PX4
+ PI2C
+ PUSB
+ 11100000 RW
+F9
+ 7
+ reserved
