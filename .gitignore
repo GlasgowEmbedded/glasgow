@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 *.vcd
 *.gtkw
+*.hex
+*.ihex
+*.ihx
+*.bin
