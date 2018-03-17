@@ -144,7 +144,7 @@ class MPSSE(Module):
         ])
         self.comb += [
             is_shift.eq(curr_cmd[7:] == 0b0),
-            shift_cmd.raw_bits().eq(curr_cmd[:6])
+            shift_cmd.raw_bits().eq(curr_cmd[:7])
         ]
 
         is_gpio    = Signal()
@@ -167,17 +167,17 @@ class MPSSE(Module):
 
                 If(is_shift,
                     NextValue(self.position, 0),
-                    If(shift_cmd.tdi | shift_cmd.tdo,
+                    If(shift_cmd.tms,
+                        If(shift_cmd.bits & shift_cmd.le & ~shift_cmd.tdi,
+                            NextState("SHIFT-LENGTH-BITS")
+                        ).Else(
+                            NextState("ERROR")
+                        )
+                    ).Elif(shift_cmd.tdi | shift_cmd.tdo,
                         If(shift_cmd.bits,
                             NextState("SHIFT-LENGTH-BITS")
                         ).Else(
                             NextState("SHIFT-LENGTH-LOBYTE")
-                        )
-                    ).Elif(shift_cmd.tms,
-                        If(shift_cmd.bits,
-                            NextState("SHIFT-LENGTH-BITS")
-                        ).Else(
-                            NextState("ERROR")
                         )
                     ).Else(
                         NextState("ERROR")
@@ -207,7 +207,7 @@ class MPSSE(Module):
         # Shift subcommand, length handling
 
         begin_shifting = \
-            If(shift_cmd.tdi,
+            If(shift_cmd.tdi ^ shift_cmd.tms,
                 NextState("SHIFT-LOAD")
             ).Else(
                 NextState("ERROR")
@@ -247,12 +247,12 @@ class MPSSE(Module):
 
         bits_in = Signal(8)
 
-        tdi_setup = Signal()
-        tdi_hold  = Signal()
+        output_setup = Signal()
+        output_hold  = Signal()
         self.comb += [
-            tdi_setup.eq(clkgen.tckpos & ~shift_cmd.wneg |
+            output_setup.eq(clkgen.tckpos & ~shift_cmd.wneg |
                          clkgen.tckneg &  shift_cmd.wneg),
-            tdi_hold .eq(clkgen.tckpos &  shift_cmd.wneg |
+            output_hold .eq(clkgen.tckpos &  shift_cmd.wneg |
                          clkgen.tckneg & ~shift_cmd.wneg),
         ]
 
@@ -260,7 +260,11 @@ class MPSSE(Module):
             If(self.rx_rdy,
                 self.rx_ack.eq(1),
                 NextValue(bits_in, rx_data_be << 1),
-                NextValue(self.bus.tdi, rx_data_be[7]),
+                If(shift_cmd.tdi,
+                    NextValue(self.bus.tdi, rx_data_be[7])
+                ).Else(
+                    NextValue(self.bus.tms, rx_data_be[7])
+                ),
                 NextState("SHIFT-SETUP"),
             )
         )
@@ -274,9 +278,13 @@ class MPSSE(Module):
         self.fsm.act("SHIFT-CLOCK",
             clkgen.clken.eq(1),
             clkgen.tcken.eq(1),
-            If(tdi_setup,
+            If(output_setup,
                 NextValue(bits_in, bits_in << 1),
-                NextValue(self.bus.tdi, bits_in[7])
+                If(shift_cmd.tdi,
+                    NextValue(self.bus.tdi, bits_in[7])
+                ).Else(
+                    NextValue(self.bus.tms, bits_in[7])
+                )
             ),
             If(clkgen.clkpos,
                 If(self.position == 0,
@@ -434,6 +442,14 @@ class MPSSETestbench(Module):
                 bits = (bits << 1) | (yield self.tdi.o)
         return bits
 
+    def recv_tms(self, nbits, pos):
+        bits = 0
+        for n in range(nbits * 2):
+            yield from self._wait_for_tck()
+            if (yield self.tck.o) == pos:
+                bits = (bits << 1) | (yield self.tms.o)
+        return bits
+
     def xfer(self, nbits, out_bits, in_bits, out_pos, in_pos):
         for n in range(nbits * 2):
             tdiold = (yield from self._wait_for_tck(
@@ -511,6 +527,32 @@ class MPSSETestCase(unittest.TestCase):
         yield from tb.write(0x12)
         yield from tb.write(5)
         self.assertEqual((yield tb.dut.rposition.bit), 5)
+        yield from tb.write(0x55)
+        self.assertEqual((yield from tb.recv_tdi(5, pos=True)), 0x0A)
+
+    @simulation_test
+    def test_tms_write(self, tb):
+        yield from tb.write(0x4A)
+        yield from tb.write(5)
+        self.assertEqual((yield tb.dut.rposition.bit), 5)
+        yield from tb.write(0x55)
+        self.assertEqual((yield from tb.recv_tms(5, pos=True)), 0x15)
+
+    @simulation_test
+    def test_invalid_tms_commands(self, tb):
+        yield from tb.write(0x5A)
+        self.assertEqual((yield from tb.dut_state()), "ERROR")
+        yield from tb.read()
+        yield from tb.read()
+        self.assertEqual((yield from tb.dut_state()), "IDLE")
+        yield from tb.write(0x42)
+        self.assertEqual((yield from tb.dut_state()), "ERROR")
+        yield from tb.read()
+        yield from tb.read()
+        yield from tb.write(0x68)
+        self.assertEqual((yield from tb.dut_state()), "ERROR")
+        yield from tb.read()
+        yield from tb.read()
 
     @simulation_test
     def test_hibyte_lobyte_write(self, tb):
@@ -568,3 +610,8 @@ class MPSSETestCase(unittest.TestCase):
         self.assertEqual((yield from tb.recv_tdi(8, pos=False)), 0xA5)
         yield
         self.assertEqual((yield tb.tck.o), 0)
+
+
+if __name__ == "__main__":
+        from migen.fhdl.verilog import convert
+        convert(MPSSEBus()).write("my_design.v") 
