@@ -174,7 +174,10 @@ class MPSSE(Module):
                             NextState("ERROR")
                         )
                     ).Elif(shift_cmd.tdi | shift_cmd.tdo,
-                        If(shift_cmd.bits,
+                        If((shift_cmd.wneg & ~shift_cmd.tdi) |
+                                (shift_cmd.rneg & ~shift_cmd.tdo),
+                            NextState("ERROR")
+                        ).Elif(shift_cmd.bits,
                             NextState("SHIFT-LENGTH-BITS")
                         ).Else(
                             NextState("SHIFT-LENGTH-LOBYTE")
@@ -210,8 +213,9 @@ class MPSSE(Module):
             If(shift_cmd.tdi ^ shift_cmd.tms,
                 NextState("SHIFT-LOAD")
             ).Else(
-                NextState("ERROR")
+                NextState("SHIFT-SETUP")
             )
+
         self.fsm.act("SHIFT-LENGTH-LOBYTE",
             If(self.rx_rdy,
                 self.rx_ack.eq(1),
@@ -249,11 +253,17 @@ class MPSSE(Module):
 
         output_setup = Signal()
         output_hold  = Signal()
+        input_setup = Signal()
+        input_hold  = Signal()
         self.comb += [
             output_setup.eq(clkgen.tckpos & ~shift_cmd.wneg |
                          clkgen.tckneg &  shift_cmd.wneg),
             output_hold .eq(clkgen.tckpos &  shift_cmd.wneg |
                          clkgen.tckneg & ~shift_cmd.wneg),
+            input_setup.eq(clkgen.tckpos & ~shift_cmd.rneg |
+                         clkgen.tckneg &  shift_cmd.rneg),
+            input_hold .eq(clkgen.tckpos &  shift_cmd.rneg |
+                         clkgen.tckneg & ~shift_cmd.rneg),
         ]
 
         self.fsm.act("SHIFT-LOAD",
@@ -282,17 +292,30 @@ class MPSSE(Module):
                 NextValue(bits_in, bits_in << 1),
                 If(shift_cmd.tdi,
                     NextValue(self.bus.tdi, bits_in[7])
-                ).Else(
+                ).Elif(shift_cmd.tms,
                     NextValue(self.bus.tms, bits_in[7])
+                )
+            ),
+            If(input_setup,
+                NextValue(self.tx_data, self.tx_data << 1),
+                If(shift_cmd.tdo,
+                    NextValue(self.tx_data[7], self.bus.tdo)
                 )
             ),
             If(clkgen.clkpos,
                 If(self.position == 0,
-                    NextState("IDLE")
+                    If(shift_cmd.tdo,
+                        NextState("SHIFT-REPORT")
+                    ).Else(
+                        NextState("IDLE")
+                    )
                 ).Else(
                     NextValue(self.position, self.position - 1)
                 )
             )
+        )
+        self.fsm.act("SHIFT-REPORT",
+            self.tx_rdy.eq(1)
         )
         self.fsm.act("SHIFT-LAST",
             clkgen.clken.eq(1),
@@ -529,6 +552,13 @@ class MPSSETestCase(unittest.TestCase):
         self.assertEqual((yield tb.dut.rposition.bit), 5)
         yield from tb.write(0x55)
         self.assertEqual((yield from tb.recv_tdi(5, pos=True)), 0x0A)
+
+    @simulation_test
+    def test_bits_read(self, tb):
+        yield from tb.write(0x22)
+        yield from tb.write(5)
+        self.assertEqual((yield tb.dut.rposition.bit), 5)
+        self.assertEqual((yield from tb.read()), 0x00)
 
     @simulation_test
     def test_tms_write(self, tb):
