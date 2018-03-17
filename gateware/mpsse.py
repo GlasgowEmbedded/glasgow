@@ -613,5 +613,13 @@ class MPSSETestCase(unittest.TestCase):
 
 
 if __name__ == "__main__":
-        from migen.fhdl.verilog import convert
-        convert(MPSSEBus()).write("my_design.v") 
+    from migen.fhdl import verilog
+
+
+    tck = TSTriple()
+    tdi = TSTriple()
+    tdo = TSTriple()
+    tms = TSTriple()
+    engine = MPSSE([tck, tdi, tdo, tms])
+
+    verilog.convert(engine).write("mpsse.v")
