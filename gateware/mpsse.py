@@ -34,14 +34,21 @@ class MPSSEBus(Module):
 
         self.tck = self.ro.tck
         self.tdi = self.ro.tdi
-        self.tdo = self.ri.tdo
+        self.tdo = Signal()
         self.tms = self.ro.tms
+
+        self.loopback = Signal()
 
         ###
 
         self.comb += [
             Cat([pad.o  for pad in pads]).eq(self.o),
             Cat([pad.oe for pad in pads]).eq(self.oe),
+            If(self.loopback,
+                self.tdo.eq(self.ro.tdi)
+            ).Else(
+                self.tdo.eq(self.ri.tdo)
+            )
         ]
         self.specials += [
             MultiReg(Cat([pad.i for pad in pads]), self.i)
@@ -193,6 +200,10 @@ class MPSSE(Module):
                     )
                 ).Elif(curr_cmd == 0x86,
                     NextState("DIVISOR-LOBYTE")
+                ).Elif(curr_cmd == 0x84,
+                    NextValue(self.bus.loopback, 1)
+                ).Elif(curr_cmd == 0x85,
+                    NextValue(self.bus.loopback, 0)
                 ).Else(
                     NextState("ERROR")
                 )
@@ -250,6 +261,7 @@ class MPSSE(Module):
             )
 
         bits_in = Signal(8)
+        bits_out = Signal(8)
 
         output_setup = Signal()
         output_hold  = Signal()
@@ -297,9 +309,9 @@ class MPSSE(Module):
                 )
             ),
             If(input_setup,
-                NextValue(self.tx_data, self.tx_data << 1),
+                NextValue(bits_out, bits_out << 1),
                 If(shift_cmd.tdo,
-                    NextValue(self.tx_data[7], self.bus.tdo)
+                    NextValue(bits_out[0], self.bus.tdo)
                 )
             ),
             If(clkgen.clkpos,
@@ -315,12 +327,15 @@ class MPSSE(Module):
             )
         )
         self.fsm.act("SHIFT-REPORT",
-            self.tx_rdy.eq(1)
+            self.tx_rdy.eq(1),
+            self.tx_data.eq(bits_out),
+            If(self.tx_ack,
+                NextState("SHIFT-LAST")
+            )
         )
         self.fsm.act("SHIFT-LAST",
-            clkgen.clken.eq(1),
-            If(clkgen.clkneg,
-                NextValue(self.bus.tdi, shift_cmd.wneg),
+            If(~self.tx_ack,
+                self.tx_rdy.eq(0),
                 NextState("IDLE")
             )
         )
@@ -559,6 +574,16 @@ class MPSSETestCase(unittest.TestCase):
         yield from tb.write(5)
         self.assertEqual((yield tb.dut.rposition.bit), 5)
         self.assertEqual((yield from tb.read()), 0x00)
+
+    @simulation_test
+    def test_bits_read_write(self, tb):
+        yield from tb.write(0x84)
+        yield from tb.write(0x33)
+        yield from tb.write(5)
+        self.assertEqual((yield tb.dut.rposition.bit), 5)
+        yield from tb.write(0x55)
+        self.assertEqual((yield from tb.recv_tdi(5, pos=True)), 0x0A)
+        self.assertEqual((yield from tb.read()), 0x15) # non-negative read clock
 
     @simulation_test
     def test_tms_write(self, tb):
