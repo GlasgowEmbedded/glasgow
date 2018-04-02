@@ -56,7 +56,7 @@ class MPSSEBus(Module):
 
 
 class MPSSEClockGen(Module):
-    def __init__(self, divisor, tck):
+    def __init__(self, divisor, tck, legacy_divisor_en):
         self.clken  = Signal()
         self.clkpos = Signal()
         self.clkneg = Signal()
@@ -72,13 +72,21 @@ class MPSSEClockGen(Module):
         self.sync += \
             If(self.clken,
                 If(counter == 0,
-                    counter.eq(divisor),
+                    If(legacy_divisor_en,
+                        counter.eq(divisor+5)
+                    ).Else(
+                        counter.eq(divisor)
+                    ),
                     clk2x.eq(~clk2x),
                 ).Else(
                     counter.eq(counter - 1)
                 )
             ).Else(
-                counter.eq(divisor),
+                If(legacy_divisor_en,
+                    counter.eq(divisor+5)
+                ).Else(
+                    counter.eq(divisor)
+                ),
                 clk2x.eq(clk2x.reset)
             )
 
@@ -122,6 +130,8 @@ class MPSSE(Module):
         ])
         self.divisor   = self.rdivisor.raw_bits()
 
+        self.legacy_divisor_en = Signal(reset=1)
+
         self.rposition = Record([
             ("bit",     3),
             ("lobyte",  8),
@@ -131,7 +141,7 @@ class MPSSE(Module):
 
         # Clock generator
 
-        clkgen = MPSSEClockGen(self.divisor, self.bus.tck)
+        clkgen = MPSSEClockGen(self.divisor, self.bus.tck, self.legacy_divisor_en)
         self.submodules += clkgen
 
         # Command decoder
@@ -204,6 +214,10 @@ class MPSSE(Module):
                     NextValue(self.bus.loopback, 1)
                 ).Elif(curr_cmd == 0x85,
                     NextValue(self.bus.loopback, 0)
+                ).Elif(curr_cmd == 0x8A,
+                    NextValue(self.legacy_divisor_en, 0)
+                ).Elif(curr_cmd == 0x8B,
+                    NextValue(self.legacy_divisor_en, 1)
                 ).Else(
                     NextState("ERROR")
                 )
@@ -429,6 +443,8 @@ class MPSSETestbench(Module):
 
         self.submodules.dut = MPSSE(self.pads)
 
+        self.clkdiv = 5
+
     def do_finalize(self):
         self.states = {v: k for k, v in self.dut.fsm.encoding.items()}
 
@@ -438,7 +454,7 @@ class MPSSETestbench(Module):
     def write(self, byte):
         yield self.dut.rx_data.eq(byte)
         yield self.dut.rx_rdy.eq(1)
-        for _ in range(32):
+        for _ in range(32 * self.clkdiv):
             yield
             if (yield self.dut.rx_ack) == 1:
                 yield self.dut.rx_data.eq(0)
@@ -449,7 +465,7 @@ class MPSSETestbench(Module):
 
     def read(self):
         yield self.dut.tx_ack.eq(1)
-        for _ in range(32):
+        for _ in range(32 * self.clkdiv):
             yield
             if (yield self.dut.tx_rdy) == 1:
                 byte = (yield self.dut.tx_data)
@@ -460,7 +476,7 @@ class MPSSETestbench(Module):
 
     def _wait_for_tck(self, at_setup=None):
         setup = None
-        for _ in range(64):
+        for _ in range(64 * self.clkdiv):
             if at_setup:
                 setup = (yield from at_setup())
             tckold = (yield self.tck.o)
@@ -509,7 +525,7 @@ class MPSSETestbench(Module):
                 out_bit = out_bits & (1 << (nbits - n // 2) - 1)
                 yield self.tdo.i.eq(out_bit)
 
-        for _ in range(16):
+        for _ in range(16 * self.clkdiv):
             tckold = (yield self.tck.o)
             yield
             tcknew = (yield self.tck.o)
@@ -574,6 +590,31 @@ class MPSSETestCase(unittest.TestCase):
         yield from tb.write(5)
         self.assertEqual((yield tb.dut.rposition.bit), 5)
         self.assertEqual((yield from tb.read()), 0x00)
+
+    @simulation_test
+    def test_legacy_dividor(self, tb):
+        # works
+        yield from tb.write(0x22)
+        yield from tb.write(5)
+        self.assertEqual((yield tb.dut.rposition.bit), 5)
+        self.assertEqual((yield from tb.read()), 0x00)
+
+        # works
+        self.tb.clkdiv = 1
+        yield from tb.write(0x8A)
+        yield from tb.write(0x22)
+        yield from tb.write(5)
+        self.assertEqual((yield tb.dut.rposition.bit), 5)
+        self.assertEqual((yield from tb.read()), 0x00)
+
+        # fails - timeout
+        self.tb.clkdiv = 1
+        yield from tb.write(0x8B)
+        yield from tb.write(0x22)
+        yield from tb.write(5)
+        self.assertEqual((yield tb.dut.rposition.bit), 5)
+        with self.assertRaises(Exception):
+            yield from tb.read()
 
     @simulation_test
     def test_bits_read_write(self, tb):
