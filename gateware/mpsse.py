@@ -160,8 +160,14 @@ class MPSSE(Module):
             ("tms",     1),
         ])
         self.comb += [
-            is_shift.eq(curr_cmd[7:] == 0b0),
-            shift_cmd.raw_bits().eq(curr_cmd[:7])
+            If(curr_cmd[7:] == 0b0,
+                is_shift.eq(1),
+                shift_cmd.raw_bits().eq(curr_cmd[:7])
+            ).Elif(curr_cmd == 0x8E,
+                shift_cmd.raw_bits().eq(0x02)
+            ).Elif(curr_cmd == 0x8F,
+                shift_cmd.raw_bits().eq(0x00)
+            )
         ]
 
         is_gpio    = Signal()
@@ -208,6 +214,10 @@ class MPSSE(Module):
                     ).Else(
                         NextState("GPIO-WRITE-O")
                     )
+                ).Elif(curr_cmd == 0x8E,
+                    NextState("SHIFT-LENGTH-BITS")
+                ).Elif(curr_cmd == 0x8F,
+                    NextState("SHIFT-LENGTH-LOBYTE")
                 ).Elif(curr_cmd == 0x86,
                     NextState("DIVISOR-LOBYTE")
                 ).Elif(curr_cmd == 0x84,
@@ -590,6 +600,26 @@ class MPSSETestCase(unittest.TestCase):
         self.assertEqual((yield tb.dut.rposition.bit), 5)
         yield from tb.write(0x55)
         self.assertEqual((yield from tb.recv_tdi(5, pos=True)), 0x0A)
+
+    @simulation_test
+    def test_clk_bits(self, tb):
+        yield from tb.write(0x8E)
+        yield from tb.write(5)
+        self.assertEqual((yield tb.dut.rposition.bit), 5)
+        self.assertEqual((yield from tb.recv_tdi(6, pos=True)), 0x00)
+        self.assertEqual((yield tb.dut.bus.tck), 0)
+        self.assertEqual((yield from tb.dut_state()), "IDLE")
+
+    @simulation_test
+    def test_clk_bytes(self, tb):
+        yield from tb.write(0x8F)
+        yield from tb.write(5)
+        yield from tb.write(0)
+        self.assertEqual((yield tb.dut.rposition.lobyte), 5)
+        self.assertEqual((yield tb.dut.rposition.hibyte), 0)
+        self.assertEqual((yield from tb.recv_tdi(48, pos=True)), 0x00)
+        self.assertEqual((yield tb.dut.bus.tck), 0)
+        self.assertEqual((yield from tb.dut_state()), "IDLE")
 
     @simulation_test
     def test_bits_read(self, tb):
