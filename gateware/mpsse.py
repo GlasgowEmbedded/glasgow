@@ -422,7 +422,10 @@ import pprint
 def simulation_test(case):
     @functools.wraps(case)
     def wrapper(self):
-        run_simulation(self.tb, case(self, self.tb), vcd_name="test.vcd")
+        def setup_wrapper():
+            yield from self.simulationSetUp(self.tb)
+            yield from case(self, self.tb)
+        run_simulation(self.tb, setup_wrapper(), vcd_name="test.vcd")
     return wrapper
 
 
@@ -545,6 +548,10 @@ class MPSSETestCase(unittest.TestCase):
     def setUp(self):
         self.tb = MPSSETestbench()
 
+    def simulationSetUp(self, tb):
+        # speed up tests
+        yield tb.dut.legacy_divisor_en.eq(0)
+
     @simulation_test
     def test_error(self, tb):
         yield from tb.write(0xFF)
@@ -593,6 +600,10 @@ class MPSSETestCase(unittest.TestCase):
 
     @simulation_test
     def test_legacy_dividor(self, tb):
+        # restore pristine MPSSE state
+        yield tb.dut.legacy_divisor_en.eq(0)
+        self.tb.clkdiv = 5
+
         # works
         yield from tb.write(0x22)
         yield from tb.write(5)
@@ -600,16 +611,16 @@ class MPSSETestCase(unittest.TestCase):
         self.assertEqual((yield from tb.read()), 0x00)
 
         # works
-        self.tb.clkdiv = 1
         yield from tb.write(0x8A)
+        self.tb.clkdiv = 1
         yield from tb.write(0x22)
         yield from tb.write(5)
         self.assertEqual((yield tb.dut.rposition.bit), 5)
         self.assertEqual((yield from tb.read()), 0x00)
 
         # fails - timeout
-        self.tb.clkdiv = 1
         yield from tb.write(0x8B)
+        self.tb.clkdiv = 1
         yield from tb.write(0x22)
         yield from tb.write(5)
         self.assertEqual((yield tb.dut.rposition.bit), 5)
