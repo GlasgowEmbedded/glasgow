@@ -12,9 +12,9 @@ usb_device = {
   .bDeviceSubClass      = 255,
   .bDeviceProtocol      = 255,
   .bMaxPacketSize0      = 64,
-  .idVendor             = 0x04b4,
-  .idProduct            = 0x8613,
-  .bcdDevice            = 0x0000,
+  .idVendor             = 0x1d50,
+  .idProduct            = 0x7777,
+  .bcdDevice            = 0x0001,
   .iManufacturer        = 1,
   .iProduct             = 2,
   .iSerialNumber        = 0,
@@ -69,14 +69,14 @@ usb_descriptor_set = {
 };
 
 enum {
-  USB_REQ_CYPRESS_RW_EEPROM_SB = 0xA2,
-  USB_REQ_CYPRESS_RENUMERATE   = 0xA8,
+  // Glasgow requests
+  USB_REQ_RW_EEPROM = 0x10,
+  // Cypress requests
   USB_REQ_CYPRESS_RW_EEPROM_DB = 0xA9,
 };
 
 volatile enum {
   REQ_NONE = 0,
-  REQ_RENUMERATE,
   REQ_EEPROM,
 } request;
 
@@ -84,62 +84,51 @@ uint8_t  arg_eeprom_chip;
 bool     arg_eeprom_read;
 uint16_t arg_eeprom_addr;
 uint16_t arg_eeprom_len;
-bool     arg_eeprom_dbyte;
 
 bool handle_usb_request(__xdata struct usb_req_setup *req) {
-  // START of Cypress standard requests
-  if(req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT &&
-     req->bRequest == USB_REQ_CYPRESS_RENUMERATE) {
-    request = REQ_RENUMERATE;
-    return true;
-  }
-
   if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN ||
       req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
-     (req->bRequest == USB_REQ_CYPRESS_RW_EEPROM_SB ||
+     (req->bRequest == USB_REQ_RW_EEPROM ||
       req->bRequest == USB_REQ_CYPRESS_RW_EEPROM_DB)) {
-    arg_eeprom_read  = (req->bmRequestType & USB_DIR_IN);
-    arg_eeprom_dbyte = (req->bRequest == USB_REQ_CYPRESS_RW_EEPROM_DB);
-    arg_eeprom_addr  = req->wValue;
-    arg_eeprom_len   = req->wLength;
-    arg_eeprom_chip  = arg_eeprom_dbyte ? 0x51 : 0x50;
+    if(req->bRequest == USB_REQ_CYPRESS_RW_EEPROM_DB) {
+      arg_eeprom_chip = 0b1010001;
+    } else /* req->bRequest == USB_REQ_RW_EEPROM */ {
+      switch(req->wIndex) {
+        case 0: arg_eeprom_chip = 0b1010001;
+        case 1: arg_eeprom_chip = 0b1010010;
+        case 2: arg_eeprom_chip = 0b1010011;
+        default: return false;
+      }
+    }
+    arg_eeprom_read = (req->bmRequestType & USB_DIR_IN);
+    arg_eeprom_addr = req->wValue;
+    arg_eeprom_len  = req->wLength;
     request = REQ_EEPROM;
     return true;
   }
-  // END of Cypress standard requests
 
   return false;
 }
 
 int main() {
   CPUCS = _CLKOE|_CLKSPD1; // Run at 48 MHz, drive CLKOUT
-  usb_init(/*reconnect=*/false);
+  usb_init(/*reconnect=*/true);
 
   while(1) {
     switch(request) {
-      case REQ_RENUMERATE:
-        USBCS |= _DISCON;
-        delay_ms(10);
-        USBCS &= ~_DISCON;
-
-        request = REQ_NONE;
-        break;
-
       case REQ_EEPROM:
         while(arg_eeprom_len > 0) {
           uint8_t len = arg_eeprom_len < 64 ? arg_eeprom_len : 64;
 
           if(arg_eeprom_read) {
             while(EP0CS & _BUSY);
-            if(!eeprom_read(arg_eeprom_chip, arg_eeprom_addr, EP0BUF, len,
-                            arg_eeprom_dbyte))
+            if(!eeprom_read(arg_eeprom_chip, arg_eeprom_addr, EP0BUF, len, /*dbyte=*/true))
               STALL_EP0();
             SETUP_EP0_BUF(len);
           } else {
             SETUP_EP0_BUF(0);
             while(EP0CS & _BUSY);
-            if(!eeprom_write(arg_eeprom_chip, arg_eeprom_addr, EP0BUF, len,
-                             arg_eeprom_dbyte))
+            if(!eeprom_write(arg_eeprom_chip, arg_eeprom_addr, EP0BUF, len, /*dbyte=*/true))
               STALL_EP0();
           }
 

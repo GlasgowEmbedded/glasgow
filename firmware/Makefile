@@ -1,3 +1,6 @@
+VID      ?= 1d50
+PID      ?= 7777
+
 TARGET    = glasgow
 LIBRARIES = fx2 fx2usb fx2isrs
 

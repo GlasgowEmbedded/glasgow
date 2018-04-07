@@ -1,0 +1,2 @@
+SUBSYSTEM=="usb", ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="7777", \
+  MODE="0660", GROUP="plugdev", TAG+="uaccess"
