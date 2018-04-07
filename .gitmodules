@@ -1,0 +1,3 @@
+[submodule "libfx2"]
+	path = vendor/libfx2
+	url = https://github.com/whitequark/libfx2
