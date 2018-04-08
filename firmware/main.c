@@ -2,6 +2,7 @@
 #include <fx2usb.h>
 #include <fx2delay.h>
 #include <fx2eeprom.h>
+#include "glasgow.h"
 
 const struct usb_desc_device
 usb_device = {
@@ -12,8 +13,8 @@ usb_device = {
   .bDeviceSubClass      = 255,
   .bDeviceProtocol      = 255,
   .bMaxPacketSize0      = 64,
-  .idVendor             = 0x1d50,
-  .idProduct            = 0x7777,
+  .idVendor             = VID_OPENMOKO,
+  .idProduct            = PID_GLASGOW,
   .bcdDevice            = 0x0001,
   .iManufacturer        = 1,
   .iProduct             = 2,
@@ -70,44 +71,115 @@ usb_descriptor_set = {
 
 enum {
   // Glasgow requests
-  USB_REQ_RW_EEPROM = 0x10,
+  USB_REQ_EEPROM = 0x10,
+  USB_REQ_FPGA   = 0x11,
   // Cypress requests
-  USB_REQ_CYPRESS_RW_EEPROM_DB = 0xA9,
+  USB_REQ_CYPRESS_EEPROM_DB = 0xA9,
 };
 
-volatile enum {
-  REQ_NONE = 0,
-  REQ_EEPROM,
-} request;
+// We perform lengthy operations in the main loop to avoid hogging the interrupt.
+// This flag is used for synchronization between the main loop and the ISR;
+// to allow new SETUP requests to arrive while the previous one is still being
+// handled (with all data received), the flag should be reset as soon as
+// the entire SETUP request is parsed.
+volatile bool pending_setup;
 
-uint8_t  arg_eeprom_chip;
-bool     arg_eeprom_read;
-uint16_t arg_eeprom_addr;
-uint16_t arg_eeprom_len;
+void handle_usb_setup(__xdata struct usb_req_setup *req) {
+  req;
+  if(pending_setup) {
+    STALL_EP0();
+  } else {
+    pending_setup = true;
+  }
+}
 
-bool handle_usb_request(__xdata struct usb_req_setup *req) {
+// This monotonically increasing number ensures that we upload bitstream chunks
+// strictly in order.
+uint16_t bitstream_idx;
+
+void handle_pending_usb_setup() {
+  __xdata struct usb_req_setup *req = (__xdata struct usb_req_setup *)SETUPDAT;
+
+  // EEPROM read/write requests
   if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN ||
       req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
-     (req->bRequest == USB_REQ_RW_EEPROM ||
-      req->bRequest == USB_REQ_CYPRESS_RW_EEPROM_DB)) {
-    if(req->bRequest == USB_REQ_CYPRESS_RW_EEPROM_DB) {
-      arg_eeprom_chip = 0b1010001;
+     (req->bRequest == USB_REQ_EEPROM ||
+      req->bRequest == USB_REQ_CYPRESS_EEPROM_DB)) {
+    bool     arg_read = (req->bmRequestType & USB_DIR_IN);
+    uint8_t  arg_chip;
+    uint16_t arg_addr = req->wValue;
+    uint16_t arg_len  = req->wLength;
+    if(req->bRequest == USB_REQ_CYPRESS_EEPROM_DB) {
+      arg_chip = 0b1010001;
     } else /* req->bRequest == USB_REQ_RW_EEPROM */ {
       switch(req->wIndex) {
-        case 0: arg_eeprom_chip = 0b1010001;
-        case 1: arg_eeprom_chip = 0b1010010;
-        case 2: arg_eeprom_chip = 0b1010011;
-        default: return false;
+        case 0:  arg_chip = 0b1010001;
+        case 1:  arg_chip = 0b1010010;
+        case 2:  arg_chip = 0b1010011;
+        default: STALL_EP0(); return;
       }
     }
-    arg_eeprom_read = (req->bmRequestType & USB_DIR_IN);
-    arg_eeprom_addr = req->wValue;
-    arg_eeprom_len  = req->wLength;
-    request = REQ_EEPROM;
-    return true;
+    pending_setup = false;
+
+    while(arg_len > 0) {
+      uint8_t chunk_len = arg_len < 64 ? arg_len : 64;
+
+      if(arg_read) {
+        while(EP0CS & _BUSY);
+        if(!eeprom_read(arg_chip, arg_addr, EP0BUF, chunk_len, /*double_byte=*/2)) {
+          STALL_EP0();
+          break;
+        }
+        SETUP_EP0_BUF(chunk_len);
+      } else {
+        SETUP_EP0_BUF(0);
+        while(EP0CS & _BUSY);
+        if(!eeprom_write(arg_chip, arg_addr, EP0BUF, chunk_len, /*double_byte=*/2)) {
+          STALL_EP0();
+          break;
+        }
+      }
+
+      arg_len  -= chunk_len;
+      arg_addr += chunk_len;
+    }
+
+    return;
   }
 
-  return false;
+  // Bitstream download request
+  if(req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT &&
+     req->bRequest == USB_REQ_FPGA &&
+     (req->wIndex == 0 || req->wIndex == bitstream_idx + 1)) {
+    uint16_t arg_idx = req->wIndex;
+    uint16_t arg_len = req->wLength;
+    pending_setup = false;
+
+    if(arg_len > 0) {
+      if(arg_idx == 0)
+        fpga_reset();
+
+      while(arg_len > 0) {
+        uint8_t chunk_len = arg_len < 64 ? arg_len : 64;
+
+        SETUP_EP0_BUF(0);
+        while(EP0CS & _BUSY);
+        fpga_load(EP0BUF, chunk_len);
+
+        arg_len -= chunk_len;
+      }
+
+      bitstream_idx = arg_idx;
+    } else {
+      // TODO: check CDONE here
+      fpga_start();
+      ACK_EP0();
+    }
+
+    return;
+  }
+
+  STALL_EP0();
 }
 
 int main() {
@@ -115,29 +187,7 @@ int main() {
   usb_init(/*reconnect=*/true);
 
   while(1) {
-    switch(request) {
-      case REQ_EEPROM:
-        while(arg_eeprom_len > 0) {
-          uint8_t len = arg_eeprom_len < 64 ? arg_eeprom_len : 64;
-
-          if(arg_eeprom_read) {
-            while(EP0CS & _BUSY);
-            if(!eeprom_read(arg_eeprom_chip, arg_eeprom_addr, EP0BUF, len, /*dbyte=*/true))
-              STALL_EP0();
-            SETUP_EP0_BUF(len);
-          } else {
-            SETUP_EP0_BUF(0);
-            while(EP0CS & _BUSY);
-            if(!eeprom_write(arg_eeprom_chip, arg_eeprom_addr, EP0BUF, len, /*dbyte=*/true))
-              STALL_EP0();
-          }
-
-          arg_eeprom_len  -= len;
-          arg_eeprom_addr += len;
-        }
-
-        request = REQ_NONE;
-        break;
-    }
+    if(pending_setup)
+      handle_pending_usb_setup();
   }
 }

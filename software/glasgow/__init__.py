@@ -9,7 +9,8 @@ __all__ = ['GlasgowDevice', 'GlasgowDeviceError']
 VID_OPENMOKO = 0x1d50
 PID_GLASGOW  = 0x7777
 
-REQ_RW_EEPROM  = 0x10
+REQ_EEPROM   = 0x10
+REQ_FPGA     = 0x11
 
 
 class GlasgowDeviceError(FX2DeviceError):
@@ -29,3 +30,18 @@ class GlasgowDevice(FX2Device):
     def write_eeprom(self, idx, addr, data):
         """Write ``data`` to ``addr`` in EEPROM at index ``idx``."""
         self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_RW_EEPROM, addr, idx, data)
+
+    def download_bitstream(self, data):
+        """Download bitstream ``data`` to FPGA."""
+        # Send consecutive chunks of bitstream.
+        # Sending 0th chunk resets the FPGA.
+        index = 0
+        while index * 1024 < len(data):
+            self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_FPGA, 0, index,
+                               data[index * 1024:(index + 1)*1024])
+            index += 1
+        # Complete configuration by sending a request with no data.
+        try:
+            self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_FPGA, 0, index, [])
+        except usb1.USBErrorPipe:
+            raise GlasgowDeviceError("FPGA configuration failed")
