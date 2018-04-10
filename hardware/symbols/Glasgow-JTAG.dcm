@@ -1,0 +1,63 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP ADC081C021CIMM
+D I2C-Compatible, 8-Bit Analog-to-Digital Converter with Alert Function
+K ADC I2C 8-bit Alert
+F http://www.ti.com/lit/ds/symlink/adc081c021.pdf
+$ENDCMP
+#
+$CMP CAT24M01L
+D 1 Mb I2C CMOS Serial EEPROM, DIP-8/SOIC-8/SOIJ-8/TSSOP-8
+K EEPROM 1Mb I2C
+F https://www.onsemi.com/pub/Collateral/CAT24M01-D.PDF
+$ENDCMP
+#
+$CMP CAT24M01W
+D 1 Mb I2C CMOS Serial EEPROM, DIP-8/SOIC-8/SOIJ-8/TSSOP-8
+K EEPROM 1Mb I2C
+F https://www.onsemi.com/pub/Collateral/CAT24M01-D.PDF
+$ENDCMP
+#
+$CMP CAT24M01X
+D 1 Mb I2C CMOS Serial EEPROM, DIP-8/SOIC-8/SOIJ-8/TSSOP-8
+K EEPROM 1Mb I2C
+F https://www.onsemi.com/pub/Collateral/CAT24M01-D.PDF
+$ENDCMP
+#
+$CMP CAT24M01Y
+D 1 Mb I2C CMOS Serial EEPROM, DIP-8/SOIC-8/SOIJ-8/TSSOP-8
+K EEPROM 1Mb I2C
+F https://www.onsemi.com/pub/Collateral/CAT24M01-D.PDF
+$ENDCMP
+#
+$CMP DAC081C081CIMK
+D 8-bit Micropower DAC with I2C-Compatible Interface, SOT-23-6
+K I2C DAC 8-bit
+F http://www.ti.com/lit/ds/symlink/dac081c081.pdf
+$ENDCMP
+#
+$CMP FXMA108BQX
+D Dual-Supply, 8-Bit Signal Translator with Configurable Voltage Supplies and Signals Levels, 3-State Outputs and Auto Direction Sensing, WQFN-20
+K Level shifter translator bidirectional
+F http://www.onsemi.com/PowerSolutions/product.do?id=FXMA108
+$ENDCMP
+#
+$CMP ICE40UP5K-SG48ITR
+D iCE40 UltraPlus FPGA, 5280 LUTs, 1.2V, 48-pin QFN
+K FPGA programmable logic
+F http://www.latticesemi.com/Products/FPGAandCPLD/iCE40Ultra
+$ENDCMP
+#
+$CMP TPS73101DBV
+D Cap free NMOS 150mA Low Drop Adjustable Out Regulator, SOT-23-5
+K Cap free Adjustable LDO 150mA
+F http://www.ti.com/lit/ds/symlink/tps731.pdf
+$ENDCMP
+#
+$CMP TPS73601DBV
+D Cap free NMOS 400mA Low Drop Adjustable Out Regulator, SOT-23-5
+K Cap free Adjustable LDO 400mA
+F http://www.ti.com/lit/ds/symlink/tps736.pdf
+$ENDCMP
+#
+#End Doc Library
