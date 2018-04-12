@@ -1,35 +1,5 @@
 EESchema-DOCLIB  Version 2.0
 #
-$CMP ADC081C021CIMM
-D I2C-Compatible, 8-Bit Analog-to-Digital Converter with Alert Function
-K ADC I2C 8-bit Alert
-F http://www.ti.com/lit/ds/symlink/adc081c021.pdf
-$ENDCMP
-#
-$CMP CAT24M01L
-D 1 Mb I2C CMOS Serial EEPROM, DIP-8/SOIC-8/SOIJ-8/TSSOP-8
-K EEPROM 1Mb I2C
-F https://www.onsemi.com/pub/Collateral/CAT24M01-D.PDF
-$ENDCMP
-#
-$CMP CAT24M01W
-D 1 Mb I2C CMOS Serial EEPROM, DIP-8/SOIC-8/SOIJ-8/TSSOP-8
-K EEPROM 1Mb I2C
-F https://www.onsemi.com/pub/Collateral/CAT24M01-D.PDF
-$ENDCMP
-#
-$CMP CAT24M01X
-D 1 Mb I2C CMOS Serial EEPROM, DIP-8/SOIC-8/SOIJ-8/TSSOP-8
-K EEPROM 1Mb I2C
-F https://www.onsemi.com/pub/Collateral/CAT24M01-D.PDF
-$ENDCMP
-#
-$CMP CAT24M01Y
-D 1 Mb I2C CMOS Serial EEPROM, DIP-8/SOIC-8/SOIJ-8/TSSOP-8
-K EEPROM 1Mb I2C
-F https://www.onsemi.com/pub/Collateral/CAT24M01-D.PDF
-$ENDCMP
-#
 $CMP DAC081C081CIMK
 D 8-bit Micropower DAC with I2C-Compatible Interface, SOT-23-6
 K I2C DAC 8-bit
@@ -48,16 +18,88 @@ K FPGA programmable logic
 F http://www.latticesemi.com/Products/FPGAandCPLD/iCE40Ultra
 $ENDCMP
 #
-$CMP TPS73101DBV
-D Cap free NMOS 150mA Low Drop Adjustable Out Regulator, SOT-23-5
-K Cap free Adjustable LDO 150mA
-F http://www.ti.com/lit/ds/symlink/tps731.pdf
+$CMP LM3880
+D Simple Power Sequencer, SOT-23-6
+K Power Sequencer SOT-23-6
+F http://www.ti.com/lit/ds/symlink/lm3880.pdf
 $ENDCMP
 #
-$CMP TPS73601DBV
-D Cap free NMOS 400mA Low Drop Adjustable Out Regulator, SOT-23-5
-K Cap free Adjustable LDO 400mA
-F http://www.ti.com/lit/ds/symlink/tps736.pdf
+$CMP LM3880-Q1
+D Simple Power Sequencer, Automotive, SOT-23-6
+K Power Sequencer SOT-23-6 Automotive
+F http://www.ti.com/lit/ds/symlink/lm3880.pdf
+$ENDCMP
+#
+$CMP MIC5355-G4YMME
+D Dual 500mA μCap Low Dropout Micropower Linear Regulator, 1.8V/1.2V, MSOP-8
+K Dual LDO 500mA MSOP-8
+F http://ww1.microchip.com/downloads/en/DeviceDoc/mic5355_6.pdf
+$ENDCMP
+#
+$CMP MIC5355-JGYMME
+D Dual 500mA μCap Low Dropout Micropower Linear Regulator, 2.5V/1.8V, MSOP-8
+K Dual LDO 500mA MSOP-8
+F http://ww1.microchip.com/downloads/en/DeviceDoc/mic5355_6.pdf
+$ENDCMP
+#
+$CMP MIC5355-S4YMME
+D Dual 500mA μCap Low Dropout Micropower Linear Regulator, 3.3V/1.2V, MSOP-8
+K Dual LDO 500mA MSOP-8
+F http://ww1.microchip.com/downloads/en/DeviceDoc/mic5355_6.pdf
+$ENDCMP
+#
+$CMP MIC5355-SCYMME
+D Dual 500mA μCap Low Dropout Micropower Linear Regulator, 3.3V/1.0V, MSOP-8
+K Dual LDO 500mA MSOP-8
+F http://ww1.microchip.com/downloads/en/DeviceDoc/mic5355_6.pdf
+$ENDCMP
+#
+$CMP MIC5355-SGYMME
+D Dual 500mA μCap Low Dropout Micropower Linear Regulator, 3.3V/1.8V, MSOP-8
+K Dual LDO 500mA MSOP-8
+F http://ww1.microchip.com/downloads/en/DeviceDoc/mic5355_6.pdf
+$ENDCMP
+#
+$CMP MIC5356-G4YMME
+D Dual 500mA μCap Low Dropout Micropower Linear Regulator, 1.8V/1.2V, MSOP-8
+K Dual LDO 500mA MSOP-8
+F http://ww1.microchip.com/downloads/en/DeviceDoc/mic5355_6.pdf
+$ENDCMP
+#
+$CMP MIC5356-JGYMME
+D Dual 500mA μCap Low Dropout Micropower Linear Regulator, 2.5V/1.8V, MSOP-8
+K Dual LDO 500mA MSOP-8
+F http://ww1.microchip.com/downloads/en/DeviceDoc/mic5355_6.pdf
+$ENDCMP
+#
+$CMP MIC5356-MGYML
+D Dual 500mA μCap Low Dropout Micropower Linear Regulator, 2.8V/1.8V, DFN-8
+K Dual LDO 500mA DFN-8
+F http://ww1.microchip.com/downloads/en/DeviceDoc/mic5355_6.pdf
+$ENDCMP
+#
+$CMP MIC5356-MMYML
+D Dual 500mA μCap Low Dropout Micropower Linear Regulator, 2.8V/2.8V, DFN-8
+K Dual LDO 500mA DFN-8
+F http://ww1.microchip.com/downloads/en/DeviceDoc/mic5355_6.pdf
+$ENDCMP
+#
+$CMP MIC5356-S4YMME
+D Dual 500mA μCap Low Dropout Micropower Linear Regulator, 3.3V/1.2V, MSOP-8
+K Dual LDO 500mA MSOP-8
+F http://ww1.microchip.com/downloads/en/DeviceDoc/mic5355_6.pdf
+$ENDCMP
+#
+$CMP MIC5356-SCYMME
+D Dual 500mA μCap Low Dropout Micropower Linear Regulator, 3.3V/1.0V, MSOP-8
+K Dual LDO 500mA MSOP-8
+F http://ww1.microchip.com/downloads/en/DeviceDoc/mic5355_6.pdf
+$ENDCMP
+#
+$CMP MIC5356-SGYMME
+D Dual 500mA μCap Low Dropout Micropower Linear Regulator, 3.3V/1.8V, MSOP-8
+K Dual LDO 500mA MSOP-8
+F http://ww1.microchip.com/downloads/en/DeviceDoc/mic5355_6.pdf
 $ENDCMP
 #
 #End Doc Library
