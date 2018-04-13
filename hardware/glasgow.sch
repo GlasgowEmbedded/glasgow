@@ -1,4 +1,5 @@
 EESchema Schematic File Version 4
+LIBS:glasgow-cache
 EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
@@ -19,7 +20,7 @@ U 1 1 5ACA0321
 P 2750 4050
 F 0 "U1" H 2200 6000 50  0000 C CNN
 F 1 "CY7C68013A-56LTX" H 3250 6000 50  0000 C CNN
-F 2 "Package_DFN_QFN:QFN-56-1EP_8x8mm_P0.5mm_EP4.8x5.5mm" H 2700 4150 50  0001 C CNN
+F 2 "Package_DFN_QFN:QFN-56-1EP_8x8mm_P0.5mm_EP4.5x5.2mm" H 2700 4150 50  0001 C CNN
 F 3 "http://www.cypress.com/file/138911/download" H 2750 4250 50  0001 C CNN
 F 4 "727-CY7C68013A56LTXC" H 2750 4050 50  0001 C CNN "Mouser_PN"
 	1    2750 4050
@@ -42,7 +43,7 @@ L power:GND #PWR02
 U 1 1 5ACA09A2
 P 900 4550
 F 0 "#PWR02" H 900 4300 50  0001 C CNN
-F 1 "GND" H 905 4377 50  0000 C CNN
+F 1 "GND" H 1050 4500 50  0000 C CNN
 F 2 "" H 900 4550 50  0001 C CNN
 F 3 "" H 900 4550 50  0001 C CNN
 	1    900  4550
@@ -279,25 +280,18 @@ Wire Wire Line
 Wire Wire Line
 	650  5150 650  5200
 Wire Wire Line
-	650  5200 800  5200
-Wire Wire Line
 	950  5200 950  5150
 $Comp
 L power:GND #PWR01
 U 1 1 5ACD15FA
-P 800 5250
-F 0 "#PWR01" H 800 5000 50  0001 C CNN
-F 1 "GND" H 805 5077 50  0000 C CNN
-F 2 "" H 800 5250 50  0001 C CNN
-F 3 "" H 800 5250 50  0001 C CNN
-	1    800  5250
+P 650 5250
+F 0 "#PWR01" H 650 5000 50  0001 C CNN
+F 1 "GND" H 655 5077 50  0000 C CNN
+F 2 "" H 650 5250 50  0001 C CNN
+F 3 "" H 650 5250 50  0001 C CNN
+	1    650  5250
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	800  5200 800  5250
-Connection ~ 800  5200
-Wire Wire Line
-	800  5200 950  5200
 $Comp
 L power:+3.3V #PWR07
 U 1 1 5ACD5106
@@ -577,4 +571,363 @@ F 4 "603-RC0603FR-072K2L" H 1850 4900 50  0001 C CNN "Mouser_PN"
 	1    1850 4900
 	-1   0    0    1   
 $EndComp
+$Comp
+L Glasgow-JTAG:CAT24M01W U2
+U 1 1 5ACD2BB9
+P 2150 7000
+F 0 "U2" H 1900 7250 50  0000 C CNN
+F 1 "CAT24M01W" H 2400 7250 50  0000 C CNN
+F 2 "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" H 2150 7250 50  0001 C CNN
+F 3 "https://www.onsemi.com/pub/Collateral/CAT24M01-D.PDF" H 2150 7000 50  0001 C CNN
+F 4 "863-CAT24M01WI-GT3" H 2150 7000 50  0001 C CNN "Mouser_PN"
+	1    2150 7000
+	1    0    0    -1
+$EndComp
+$Comp
+L Memory_EEPROM:24LC256 U3
+U 1 1 5ACD332D
+P 4100 7000
+F 0 "U3" H 3850 7250 50  0000 C CNN
+F 1 "CAT24C256W" H 4350 7250 50  0000 C CNN
+F 2 "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" H 4100 7000 50  0001 C CNN
+F 3 "https://www.mouser.hk/datasheet/2/308/CAT24C256-D-769998.pdf" H 4100 7000 50  0001 C CNN
+F 4 "698-CAT24C256WI-GT3" H 4100 7000 50  0001 C CNN "Mouser_PN"
+	1    4100 7000
+	1    0    0    -1
+$EndComp
+$Comp
+L power:GND #PWR021
+U 1 1 5ACD3CCC
+P 4100 7350
+F 0 "#PWR021" H 4100 7100 50  0001 C CNN
+F 1 "GND" H 4105 7177 50  0000 C CNN
+F 2 "" H 4100 7350 50  0001 C CNN
+F 3 "" H 4100 7350 50  0001 C CNN
+	1    4100 7350
+	1    0    0    -1
+$EndComp
+$Comp
+L power:GND #PWR016
+U 1 1 5ACD3CFF
+P 2150 7350
+F 0 "#PWR016" H 2150 7100 50  0001 C CNN
+F 1 "GND" H 2155 7177 50  0000 C CNN
+F 2 "" H 2150 7350 50  0001 C CNN
+F 3 "" H 2150 7350 50  0001 C CNN
+	1    2150 7350
+	1    0    0    -1
+$EndComp
+Wire Wire Line
+	2150 7300 2150 7350
+Wire Wire Line
+	4100 7300 4100 7350
+$Comp
+L power:+3.3V #PWR015
+U 1 1 5ACD8ACD
+P 2150 6650
+F 0 "#PWR015" H 2150 6500 50  0001 C CNN
+F 1 "+3.3V" H 2165 6823 50  0000 C CNN
+F 2 "" H 2150 6650 50  0001 C CNN
+F 3 "" H 2150 6650 50  0001 C CNN
+	1    2150 6650
+	1    0    0    -1
+$EndComp
+$Comp
+L power:+3.3V #PWR020
+U 1 1 5ACD8B00
+P 4100 6650
+F 0 "#PWR020" H 4100 6500 50  0001 C CNN
+F 1 "+3.3V" H 4115 6823 50  0000 C CNN
+F 2 "" H 4100 6650 50  0001 C CNN
+F 3 "" H 4100 6650 50  0001 C CNN
+	1    4100 6650
+	1    0    0    -1
+$EndComp
+Wire Wire Line
+	2150 6650 2150 6700
+Wire Wire Line
+	4100 6650 4100 6700
+NoConn ~ 2550 7100
+NoConn ~ 1750 7100
+NoConn ~ 3700 7100
+NoConn ~ 3700 7000
+Wire Wire Line
+	1700 7000 1750 7000
+Wire Wire Line
+	2750 6900 2550 6900
+Wire Wire Line
+	2750 7000 2550 7000
+Text Label 2750 6900 2    50   ~ 0
+SDA
+Text Label 2750 7000 2    50   ~ 0
+SCL
+Wire Wire Line
+	4700 6900 4500 6900
+Wire Wire Line
+	4700 7000 4500 7000
+Text Label 4700 6900 2    50   ~ 0
+SDA
+Text Label 4700 7000 2    50   ~ 0
+SCL
+NoConn ~ 4500 7100
+$Comp
+L power:+3.3V #PWR019
+U 1 1 5ACFBC98
+P 3650 6850
+F 0 "#PWR019" H 3650 6700 50  0001 C CNN
+F 1 "+3.3V" H 3665 7023 50  0000 C CNN
+F 2 "" H 3650 6850 50  0001 C CNN
+F 3 "" H 3650 6850 50  0001 C CNN
+	1    3650 6850
+	1    0    0    -1
+$EndComp
+Wire Wire Line
+	3700 6900 3650 6900
+Wire Wire Line
+	3650 6900 3650 6850
+$Comp
+L power:+3.3V #PWR014
+U 1 1 5AD04B8D
+P 1700 6850
+F 0 "#PWR014" H 1700 6700 50  0001 C CNN
+F 1 "+3.3V" H 1715 7023 50  0000 C CNN
+F 2 "" H 1700 6850 50  0001 C CNN
+F 3 "" H 1700 6850 50  0001 C CNN
+	1    1700 6850
+	1    0    0    -1
+$EndComp
+Wire Wire Line
+	1700 6850 1700 7000
+$Comp
+L Device:C C14
+U 1 1 5AD0E0A2
+P 1450 7000
+F 0 "C14" H 1565 7046 50  0000 L CNN
+F 1 "u1" H 1565 6955 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.84x1.00mm_HandSolder" H 1488 6850 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/427/vjw1bcbascomseries-223529.pdf" H 1450 7000 50  0001 C CNN
+F 4 "77-VJ0603Y104JXQPBC" H 1450 7000 50  0001 C CNN "Mouser_PN"
+	1    1450 7000
+	1    0    0    -1
+$EndComp
+$Comp
+L Device:C C13
+U 1 1 5AD0E562
+P 1100 7000
+F 0 "C13" H 1215 7046 50  0000 L CNN
+F 1 "4u7" H 1215 6955 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.84x1.00mm_HandSolder" H 1138 6850 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 1100 7000 50  0001 C CNN
+F 4 "810-C1608X5R1C475KAC" H 1100 7000 50  0001 C CNN "Mouser_PN"
+	1    1100 7000
+	1    0    0    -1
+$EndComp
+Wire Wire Line
+	1100 6850 1100 6800
+Wire Wire Line
+	1100 6800 1450 6800
+Wire Wire Line
+	1450 6800 1450 6850
+Wire Wire Line
+	1100 7150 1100 7200
+Wire Wire Line
+	1100 7200 1450 7200
+Wire Wire Line
+	1450 7200 1450 7150
+$Comp
+L power:GND #PWR013
+U 1 1 5AD18F3D
+P 1100 7250
+F 0 "#PWR013" H 1100 7000 50  0001 C CNN
+F 1 "GND" H 1105 7077 50  0000 C CNN
+F 2 "" H 1100 7250 50  0001 C CNN
+F 3 "" H 1100 7250 50  0001 C CNN
+	1    1100 7250
+	1    0    0    -1
+$EndComp
+Wire Wire Line
+	1100 7200 1100 7250
+Connection ~ 1100 7200
+$Comp
+L power:+3.3V #PWR012
+U 1 1 5AD20203
+P 1100 6750
+F 0 "#PWR012" H 1100 6600 50  0001 C CNN
+F 1 "+3.3V" H 1115 6923 50  0000 C CNN
+F 2 "" H 1100 6750 50  0001 C CNN
+F 3 "" H 1100 6750 50  0001 C CNN
+	1    1100 6750
+	1    0    0    -1
+$EndComp
+Wire Wire Line
+	1100 6750 1100 6800
+Connection ~ 1100 6800
+$Comp
+L Device:C C16
+U 1 1 5AD48D38
+P 3400 7000
+F 0 "C16" H 3515 7046 50  0000 L CNN
+F 1 "u1" H 3515 6955 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.84x1.00mm_HandSolder" H 3438 6850 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/427/vjw1bcbascomseries-223529.pdf" H 3400 7000 50  0001 C CNN
+F 4 "77-VJ0603Y104JXQPBC" H 3400 7000 50  0001 C CNN "Mouser_PN"
+	1    3400 7000
+	1    0    0    -1
+$EndComp
+$Comp
+L Device:C C15
+U 1 1 5AD48D40
+P 3050 7000
+F 0 "C15" H 3165 7046 50  0000 L CNN
+F 1 "4u7" H 3165 6955 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.84x1.00mm_HandSolder" H 3088 6850 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 3050 7000 50  0001 C CNN
+F 4 "810-C1608X5R1C475KAC" H 3050 7000 50  0001 C CNN "Mouser_PN"
+	1    3050 7000
+	1    0    0    -1
+$EndComp
+Wire Wire Line
+	3050 6850 3050 6800
+Wire Wire Line
+	3050 6800 3400 6800
+Wire Wire Line
+	3400 6800 3400 6850
+Wire Wire Line
+	3050 7150 3050 7200
+Wire Wire Line
+	3050 7200 3400 7200
+Wire Wire Line
+	3400 7200 3400 7150
+$Comp
+L power:GND #PWR018
+U 1 1 5AD48D4D
+P 3050 7250
+F 0 "#PWR018" H 3050 7000 50  0001 C CNN
+F 1 "GND" H 3055 7077 50  0000 C CNN
+F 2 "" H 3050 7250 50  0001 C CNN
+F 3 "" H 3050 7250 50  0001 C CNN
+	1    3050 7250
+	1    0    0    -1
+$EndComp
+Wire Wire Line
+	3050 7200 3050 7250
+Connection ~ 3050 7200
+$Comp
+L power:+3.3V #PWR017
+U 1 1 5AD48D55
+P 3050 6750
+F 0 "#PWR017" H 3050 6600 50  0001 C CNN
+F 1 "+3.3V" H 3065 6923 50  0000 C CNN
+F 2 "" H 3050 6750 50  0001 C CNN
+F 3 "" H 3050 6750 50  0001 C CNN
+	1    3050 6750
+	1    0    0    -1
+$EndComp
+Wire Wire Line
+	3050 6750 3050 6800
+Connection ~ 3050 6800
+NoConn ~ 1200 4300
+$Comp
+L Mechanical:Mounting_Hole_PAD MK1
+U 1 1 5AD602A3
+P 850 5850
+F 0 "MK1" H 800 6050 50  0000 L CNN
+F 1 "Mounting_Hole_PAD" H 950 5810 50  0001 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_Pad" H 850 5850 50  0001 C CNN
+F 3 "" H 850 5850 50  0001 C CNN
+	1    850  5850
+	1    0    0    -1
+$EndComp
+$Comp
+L Mechanical:Mounting_Hole_PAD MK2
+U 1 1 5AD64D62
+P 1050 5850
+F 0 "MK2" H 1000 6050 50  0000 L CNN
+F 1 "Mounting_Hole_PAD" H 1150 5810 50  0001 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_Pad" H 1050 5850 50  0001 C CNN
+F 3 "" H 1050 5850 50  0001 C CNN
+	1    1050 5850
+	1    0    0    -1
+$EndComp
+$Comp
+L Mechanical:Mounting_Hole_PAD MK3
+U 1 1 5AD64DAE
+P 1250 5850
+F 0 "MK3" H 1200 6050 50  0000 L CNN
+F 1 "Mounting_Hole_PAD" H 1350 5810 50  0001 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_Pad" H 1250 5850 50  0001 C CNN
+F 3 "" H 1250 5850 50  0001 C CNN
+	1    1250 5850
+	1    0    0    -1
+$EndComp
+$Comp
+L Mechanical:Mounting_Hole_PAD MK4
+U 1 1 5AD64E04
+P 1450 5850
+F 0 "MK4" H 1400 6050 50  0000 L CNN
+F 1 "Mounting_Hole_PAD" H 1550 5810 50  0001 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_Pad" H 1450 5850 50  0001 C CNN
+F 3 "" H 1450 5850 50  0001 C CNN
+	1    1450 5850
+	1    0    0    -1
+$EndComp
+Wire Wire Line
+	850  5950 850  6000
+Wire Wire Line
+	850  6000 1050 6000
+Wire Wire Line
+	1050 6000 1050 5950
+Wire Wire Line
+	1050 6000 1250 6000
+Wire Wire Line
+	1250 6000 1250 5950
+Connection ~ 1050 6000
+Wire Wire Line
+	1250 6000 1450 6000
+Wire Wire Line
+	1450 6000 1450 5950
+Connection ~ 1250 6000
+$Comp
+L power:GND #PWR0101
+U 1 1 5AD7524E
+P 850 6050
+F 0 "#PWR0101" H 850 5800 50  0001 C CNN
+F 1 "GND" H 855 5877 50  0000 C CNN
+F 2 "" H 850 6050 50  0001 C CNN
+F 3 "" H 850 6050 50  0001 C CNN
+	1    850  6050
+	1    0    0    -1
+$EndComp
+Wire Wire Line
+	850  6000 850  6050
+Connection ~ 850  6000
+Wire Wire Line
+	650  5200 950  5200
+Wire Wire Line
+	650  5200 650  5250
+Connection ~ 650  5200
+$Comp
+L Device:C C17
+U 1 1 5AD97C38
+P 4400 1050
+F 0 "C17" H 4515 1096 50  0000 L CNN
+F 1 "u1" H 4515 1005 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.84x1.00mm_HandSolder" H 4438 900 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/427/vjw1bcbascomseries-223529.pdf" H 4400 1050 50  0001 C CNN
+F 4 "77-VJ0603Y104JXQPBC" H 4400 1050 50  0001 C CNN "Mouser_PN"
+	1    4400 1050
+	1    0    0    -1
+$EndComp
+Wire Wire Line
+	4400 900  4400 850
+Wire Wire Line
+	4400 850  4100 850
+Connection ~ 4100 850
+Wire Wire Line
+	4400 1200 4400 1250
+Wire Wire Line
+	4400 1250 4100 1250
+Connection ~ 4100 1250
+Text Label 850  4800 0    50   ~ 0
+SHLD
 $EndSCHEMATC

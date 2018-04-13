@@ -8,4 +8,4 @@ build/
 *.ihx
 *.bin
 *.lib
-*.bak
+*.*bak
