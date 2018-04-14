@@ -78,16 +78,14 @@ Wire Wire Line
 $Comp
 L power:+5V #PWR07
 U 1 1 5ACA0A58
-P 1400 3900
-F 0 "#PWR07" H 1400 3750 50  0001 C CNN
-F 1 "+5V" H 1415 4073 50  0000 C CNN
-F 2 "" H 1400 3900 50  0001 C CNN
-F 3 "" H 1400 3900 50  0001 C CNN
-	1    1400 3900
+P 800 3550
+F 0 "#PWR07" H 800 3400 50  0001 C CNN
+F 1 "+5V" H 650 3600 50  0000 C CNN
+F 2 "" H 800 3550 50  0001 C CNN
+F 3 "" H 800 3550 50  0001 C CNN
+	1    800  3550
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	1400 3900 1400 3950
 $Comp
 L power:+3.3V #PWR03
 U 1 1 5ACB436E
@@ -2231,6 +2229,28 @@ Text Label 8400 3600 0    50   ~ 0
 SDA
 Text Label 8400 3700 0    50   ~ 0
 SCL
+$Comp
+L Device:Fuse F1
+U 1 1 5AD2FAC6
+P 1050 3650
+F 0 "F1" V 853 3650 50  0000 C CNN
+F 1 "500m" V 944 3650 50  0000 C CNN
+F 2 "Fuse:Fuse_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 1050 3650 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/643/ds-CP-c2q-series-1313118.pdf" H 1050 3650 50  0001 C CNN
+F 4 "530-C2Q500" H 1050 3650 50  0001 C CNN "Mouser_PN"
+	1    1050 3650
+	0    1    1    0   
+$EndComp
+Text Label 1200 3650 0    50   ~ 0
+VUSB
+Wire Wire Line
+	1400 3650 1200 3650
+Wire Wire Line
+	1400 3650 1400 3950
+Wire Wire Line
+	900  3650 800  3650
+Wire Wire Line
+	800  3650 800  3550
 Wire Bus Line
 	4050 2400 4050 5850
 Wire Bus Line
