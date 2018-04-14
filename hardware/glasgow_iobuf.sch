@@ -176,7 +176,7 @@ Q6
 Text HLabel 4850 4050 0    50   Input ~ 0
 Q7
 Text HLabel 4850 3250 0    50   Input ~ 0
-OE
+~OE
 Wire Wire Line
 	5400 2950 5400 2900
 Wire Wire Line
