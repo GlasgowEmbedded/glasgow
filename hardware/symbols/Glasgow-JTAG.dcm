@@ -18,18 +18,6 @@ K FPGA programmable logic
 F http://www.latticesemi.com/Products/FPGAandCPLD/iCE40Ultra
 $ENDCMP
 #
-$CMP LM3880
-D Simple Power Sequencer, SOT-23-6
-K Power Sequencer SOT-23-6
-F http://www.ti.com/lit/ds/symlink/lm3880.pdf
-$ENDCMP
-#
-$CMP LM3880-Q1
-D Simple Power Sequencer, Automotive, SOT-23-6
-K Power Sequencer SOT-23-6 Automotive
-F http://www.ti.com/lit/ds/symlink/lm3880.pdf
-$ENDCMP
-#
 $CMP MIC5355-G4YMME
 D Dual 500mA μCap Low Dropout Micropower Linear Regulator, 1.8V/1.2V, MSOP-8
 K Dual LDO 500mA MSOP-8
