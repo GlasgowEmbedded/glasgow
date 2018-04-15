@@ -20,7 +20,7 @@ U 1 1 5AF87C59
 P 5300 3650
 AR Path="/5AF7D604/5AF87C59" Ref="U5"  Part="1" 
 AR Path="/5AFBDC9E/5AF87C59" Ref="U6"  Part="1" 
-F 0 "U5" H 5050 4300 50  0000 C CNN
+F 0 "U6" H 5050 4300 50  0000 C CNN
 F 1 "FXMA108BQX" H 5700 4300 50  0000 C CNN
 F 2 "Package_DFN_QFN:WQFN-20-1EP_2.5x4.5mm_P0.5mm_EP1x2.9mm" H 6900 4050 50  0001 C CNN
 F 3 "http://www.onsemi.com/PowerSolutions/product.do?id=FXMA108" H 5300 3700 50  0001 C CNN
@@ -192,7 +192,7 @@ U 1 1 5AFC7F21
 P 6600 3650
 AR Path="/5AF7D604/5AFC7F21" Ref="J2"  Part="1" 
 AR Path="/5AFBDC9E/5AFC7F21" Ref="J3"  Part="1" 
-F 0 "J2" H 6650 3050 50  0000 C CNN
+F 0 "J3" H 6650 3050 50  0000 C CNN
 F 1 "Conn_02x10_Odd_Even" H 6650 4176 50  0001 C CNN
 F 2 "Connector_PinHeader_2.54mm:PinHeader_2x10_P2.54mm_Vertical" H 6600 3650 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/276/0878342019_PCB_HEADERS-152849.pdf" H 6600 3650 50  0001 C CNN
@@ -225,29 +225,29 @@ $Comp
 L Device:C C30
 U 1 1 5AF3BE9B
 P 5500 5200
-AR Path="/5AF7D604/5AF3BE9B" Ref="C30"  Part="1"
-AR Path="/5AFBDC9E/5AF3BE9B" Ref="C32"  Part="1"
-F 0 "C30" H 5615 5246 50  0000 L CNN
+AR Path="/5AF7D604/5AF3BE9B" Ref="C30"  Part="1" 
+AR Path="/5AFBDC9E/5AF3BE9B" Ref="C32"  Part="1" 
+F 0 "C32" H 5615 5246 50  0000 L CNN
 F 1 "u1" H 5615 5155 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 5538 5050 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/427/vjw1bcbascomseries-223529.pdf" H 5500 5200 50  0001 C CNN
 F 4 "77-VJ0603Y104JXQPBC" H 5500 5200 50  0001 C CNN "Mouser_PN"
 	1    5500 5200
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C29
 U 1 1 5AF3BEA3
 P 5150 5200
-AR Path="/5AF7D604/5AF3BEA3" Ref="C29"  Part="1"
-AR Path="/5AFBDC9E/5AF3BEA3" Ref="C31"  Part="1"
-F 0 "C29" H 5265 5246 50  0000 L CNN
+AR Path="/5AF7D604/5AF3BEA3" Ref="C29"  Part="1" 
+AR Path="/5AFBDC9E/5AF3BEA3" Ref="C31"  Part="1" 
+F 0 "C31" H 5265 5246 50  0000 L CNN
 F 1 "4u7" H 5265 5155 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 5188 5050 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 5150 5200 50  0001 C CNN
 F 4 "810-C1608X5R1C475KAC" H 5150 5200 50  0001 C CNN "Mouser_PN"
 	1    5150 5200
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	5500 5000 5500 5050
@@ -259,14 +259,14 @@ $Comp
 L power:GND #PWR0115
 U 1 1 5AF3E452
 P 5300 5450
-AR Path="/5AF7D604/5AF3E452" Ref="#PWR0115"  Part="1"
-AR Path="/5AFBDC9E/5AF3E452" Ref="#PWR0117"  Part="1"
+AR Path="/5AF7D604/5AF3E452" Ref="#PWR0115"  Part="1" 
+AR Path="/5AFBDC9E/5AF3E452" Ref="#PWR0117"  Part="1" 
 F 0 "#PWR0117" H 5300 5200 50  0001 C CNN
 F 1 "GND" H 5305 5277 50  0000 C CNN
 F 2 "" H 5300 5450 50  0001 C CNN
 F 3 "" H 5300 5450 50  0001 C CNN
 	1    5300 5450
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	5150 5400 5300 5400
@@ -283,14 +283,14 @@ $Comp
 L power:+3.3V #PWR0116
 U 1 1 5AF40DD5
 P 5300 4950
-AR Path="/5AF7D604/5AF40DD5" Ref="#PWR0116"  Part="1"
-AR Path="/5AFBDC9E/5AF40DD5" Ref="#PWR0118"  Part="1"
+AR Path="/5AF7D604/5AF40DD5" Ref="#PWR0116"  Part="1" 
+AR Path="/5AFBDC9E/5AF40DD5" Ref="#PWR0118"  Part="1" 
 F 0 "#PWR0118" H 5300 4800 50  0001 C CNN
 F 1 "+3.3V" H 5315 5123 50  0000 C CNN
 F 2 "" H 5300 4950 50  0001 C CNN
 F 3 "" H 5300 4950 50  0001 C CNN
 	1    5300 4950
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	5300 4950 5300 5000
