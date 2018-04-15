@@ -1,5 +1,17 @@
 EESchema-DOCLIB  Version 2.0
 #
+$CMP CY7C68013A-56LTX
+D CYPRESS FX2LP USB Microcontroller, 48MHz 8051, 16KB RAM, USB 2.0, I2C, QFN-56
+K FX2LP 8-bit USB MCU
+F http://www.cypress.com/file/138911/download
+$ENDCMP
+#
+$CMP CY7C68014A-56LTX
+D CYPRESS FX2LP USB Microcontroller, 48MHz 8051, 16KB RAM, USB 2.0, I2C, QFN-56
+K FX2LP 8-bit USB MCU
+F http://www.cypress.com/file/138911/download
+$ENDCMP
+#
 $CMP DAC081C081CIMK
 D 8-bit Micropower DAC with I2C-Compatible Interface, SOT-23-6
 K I2C DAC 8-bit
