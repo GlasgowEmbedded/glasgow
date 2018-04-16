@@ -2710,7 +2710,7 @@ Addr: 101001X
 Text Notes 5600 7650 0    50   ~ 0
 Addr: 1010001
 Text Notes 10350 5400 0    50   ~ 0
-+1V2: 500 mA\n+3V3: 500 mA\nTotal: 500 mA
+500 mA @ 1V2\n500 mA @ 3V3
 Text Notes 8700 3350 0    50   ~ 0
 Addr DAC: 0011000\nAddr ADC: 1010100
 Wire Wire Line
@@ -2883,4 +2883,14 @@ Wire Bus Line
 Wire Bus Line
 	8000 2600 8000 4800
 Connection ~ 7600 1350
+Text Notes 4950 2100 0    50   ~ 0
+Imax @ 3V3 = 312 mA (all banks)
+Text Notes 3500 6400 0    50   ~ 0
+Imax @ 3V3 = 5 mA
+Text Notes 5550 6400 0    50   ~ 0
+Imax @ 3V3 = 3 mA
+Text Notes 3000 2100 0    50   ~ 0
+Imax(USB) @ 3V3 = 80 mA\nImax @ 3V3 = 209 mA
+Text Notes 8450 2100 0    50   ~ 0
+Imax @ 3V3 = 2.5 mA (A+B)\nImax @ 5V = 150 mA (A+B)
 $EndSCHEMATC
