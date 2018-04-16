@@ -1,5 +1,4 @@
 EESchema Schematic File Version 4
-LIBS:glasgow-cache
 EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
@@ -2682,6 +2681,28 @@ F 4 "77-VJ0603Y104JXQPBC" H 8000 1550 50  0001 C CNN "Mouser_PN"
 $EndComp
 Wire Wire Line
 	8000 1350 8350 1350
+$Comp
+L Mechanical:Mounting_Hole MK5
+U 1 1 5ADBCE07
+P 1750 7000
+F 0 "MK5" H 1700 7150 50  0000 L CNN
+F 1 "Mounting_Hole" H 1850 6955 50  0001 L CNN
+F 2 "MountingHole:MountingHole_2.5mm" H 1750 7000 50  0001 C CNN
+F 3 "" H 1750 7000 50  0001 C CNN
+	1    1750 7000
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:Mounting_Hole MK6
+U 1 1 5ADBD505
+P 1950 7000
+F 0 "MK6" H 1900 7150 50  0000 L CNN
+F 1 "Mounting_Hole" H 2050 6955 50  0001 L CNN
+F 2 "MountingHole:MountingHole_2.5mm" H 1950 7000 50  0001 C CNN
+F 3 "" H 1950 7000 50  0001 C CNN
+	1    1950 7000
+	1    0    0    -1  
+$EndComp
 Wire Bus Line
 	8000 2600 8000 4600
 Wire Bus Line
@@ -2690,4 +2711,6 @@ Wire Bus Line
 	6200 2900 6200 5850
 Wire Bus Line
 	4050 2400 4050 5850
+Text Notes 1650 7200 0    50   ~ 0
+Stencil alignment
 $EndSCHEMATC
