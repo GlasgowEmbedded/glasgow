@@ -2845,6 +2845,35 @@ Text Label 4700 3050 2    50   ~ 0
 ~ENVA
 Text Notes 4150 3750 0    50   ~ 0
 FPGA reset asserted\non tristate
+Text Label 7650 1350 0    50   ~ 0
+VCCPLL
+$Comp
+L power:+1V2 #PWR0153
+U 1 1 5B3B3735
+P 7600 950
+F 0 "#PWR0153" H 7600 800 50  0001 C CNN
+F 1 "+1V2" H 7615 1123 50  0000 C CNN
+F 2 "" H 7600 950 50  0001 C CNN
+F 3 "" H 7600 950 50  0001 C CNN
+	1    7600 950 
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R30
+U 1 1 5B3B386D
+P 7600 1150
+F 0 "R30" H 7530 1104 50  0000 R CNN
+F 1 "100" H 7530 1195 50  0000 R CNN
+F 2 "Resistor_SMD:R_0603_1608Metric_Pad0.99x1.00mm_HandSolder" V 7530 1150 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 7600 1150 50  0001 C CNN
+F 4 "603-RC0603FR-07100RL" H 7600 1150 50  0001 C CNN "Mouser_PN"
+	1    7600 1150
+	1    0    0    1   
+$EndComp
+Wire Wire Line
+	7600 950  7600 1000
+Wire Wire Line
+	7600 1300 7600 1350
 Wire Bus Line
 	4050 2400 4050 5850
 Wire Bus Line
@@ -2853,6 +2882,5 @@ Wire Bus Line
 	9650 2400 9650 4800
 Wire Bus Line
 	8000 2600 8000 4800
-Text Label 7600 1350 0    50   ~ 0
-VCCPLL
+Connection ~ 7600 1350
 $EndSCHEMATC
