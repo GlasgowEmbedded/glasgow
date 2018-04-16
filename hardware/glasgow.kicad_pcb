@@ -6,7 +6,7 @@
     (tracks 889)
     (zones 0)
     (modules 112)
-    (nets 108)
+    (nets 110)
   )
 
   (page A4)
@@ -195,6 +195,8 @@
   (net 105 "Net-(C37-Pad1)")
   (net 106 /~ENVA)
   (net 107 /IOBufferA/ADR)
+  (net 108 /IOBufferA/VSUP)
+  (net 109 /IOBufferB/VSUP)
 
   (net_class Default "This is the default net class."
     (clearance 0.15)
@@ -223,6 +225,7 @@
     (add_net /FLAGD)
     (add_net /FPGA_DONE)
     (add_net /IOBufferA/ADR)
+    (add_net /IOBufferA/VSUP)
     (add_net /IOBufferA/VTG)
     (add_net /IOBufferA/Y0)
     (add_net /IOBufferA/Y1)
@@ -232,6 +235,7 @@
     (add_net /IOBufferA/Y5)
     (add_net /IOBufferA/Y6)
     (add_net /IOBufferA/Y7)
+    (add_net /IOBufferB/VSUP)
     (add_net /IOBufferB/VTG)
     (add_net /IOBufferB/Y0)
     (add_net /IOBufferB/Y1)
@@ -517,7 +521,7 @@
     (pad 2 smd rect (at 0.8875 0) (size 0.995 1) (layers F.Cu F.Paste F.Mask)
       (net 3 GND))
     (pad 1 smd rect (at -0.8875 0) (size 0.995 1) (layers F.Cu F.Paste F.Mask)
-      (net 76 /IOBufferB/VTG))
+      (net 109 /IOBufferB/VSUP))
     (model ${KISYS3DMOD}/Capacitor_SMD.3dshapes/C_0603_1608Metric.wrl
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
@@ -549,7 +553,7 @@
       (effects (font (size 0.4 0.4) (thickness 0.06)))
     )
     (pad 1 smd rect (at -0.8875 0) (size 0.995 1) (layers F.Cu F.Paste F.Mask)
-      (net 76 /IOBufferB/VTG))
+      (net 109 /IOBufferB/VSUP))
     (pad 2 smd rect (at 0.8875 0) (size 0.995 1) (layers F.Cu F.Paste F.Mask)
       (net 3 GND))
     (model ${KISYS3DMOD}/Capacitor_SMD.3dshapes/C_0603_1608Metric.wrl
@@ -753,7 +757,7 @@
       (effects (font (size 0.4 0.4) (thickness 0.06)))
     )
     (pad 1 smd rect (at -0.8875 0) (size 0.995 1) (layers F.Cu F.Paste F.Mask)
-      (net 77 /IOBufferA/VTG))
+      (net 108 /IOBufferA/VSUP))
     (pad 2 smd rect (at 0.8875 0) (size 0.995 1) (layers F.Cu F.Paste F.Mask)
       (net 3 GND))
     (model ${KISYS3DMOD}/Capacitor_SMD.3dshapes/C_0603_1608Metric.wrl
@@ -821,7 +825,7 @@
       (effects (font (size 0.4 0.4) (thickness 0.06)))
     )
     (pad 1 smd rect (at -0.8875 0) (size 0.995 1) (layers F.Cu F.Paste F.Mask)
-      (net 77 /IOBufferA/VTG))
+      (net 108 /IOBufferA/VSUP))
     (pad 2 smd rect (at 0.8875 0) (size 0.995 1) (layers F.Cu F.Paste F.Mask)
       (net 3 GND))
     (model ${KISYS3DMOD}/Capacitor_SMD.3dshapes/C_0603_1608Metric.wrl
@@ -966,7 +970,7 @@
       (effects (font (size 0.5 0.5) (thickness 0.075)))
     )
     (pad 5 smd rect (at 1.1 -0.95) (size 1.06 0.65) (layers F.Cu F.Paste F.Mask)
-      (net 77 /IOBufferA/VTG))
+      (net 108 /IOBufferA/VSUP))
     (pad 4 smd rect (at 1.1 0.95) (size 1.06 0.65) (layers F.Cu F.Paste F.Mask)
       (net 102 "Net-(R22-Pad2)"))
     (pad 3 smd rect (at -1.1 0.95) (size 1.06 0.65) (layers F.Cu F.Paste F.Mask)
@@ -1017,7 +1021,7 @@
     (pad 4 smd rect (at 1.1 0.95) (size 1.06 0.65) (layers F.Cu F.Paste F.Mask)
       (net 99 "Net-(R27-Pad2)"))
     (pad 5 smd rect (at 1.1 -0.95) (size 1.06 0.65) (layers F.Cu F.Paste F.Mask)
-      (net 76 /IOBufferB/VTG))
+      (net 109 /IOBufferB/VSUP))
     (model ${KISYS3DMOD}/Package_TO_SOT_SMD.3dshapes/SOT-23-5.wrl
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
@@ -1343,7 +1347,7 @@
     (fp_line (start -0.8 -0.4) (end 0.8 -0.4) (layer F.Fab) (width 0.1))
     (fp_line (start -0.8 0.4) (end -0.8 -0.4) (layer F.Fab) (width 0.1))
     (pad 2 smd rect (at 0.8875 0) (size 0.995 1) (layers F.Cu F.Paste F.Mask)
-      (net 77 /IOBufferA/VTG))
+      (net 108 /IOBufferA/VSUP))
     (pad 1 smd rect (at -0.8875 0) (size 0.995 1) (layers F.Cu F.Paste F.Mask)
       (net 102 "Net-(R22-Pad2)"))
     (model ${KISYS3DMOD}/Resistor_SMD.3dshapes/R_0603_1608Metric.wrl
@@ -1479,7 +1483,7 @@
     (fp_line (start -0.8 -0.4) (end 0.8 -0.4) (layer F.Fab) (width 0.1))
     (fp_line (start -0.8 0.4) (end -0.8 -0.4) (layer F.Fab) (width 0.1))
     (pad 2 smd rect (at 0.8875 0) (size 0.995 1) (layers F.Cu F.Paste F.Mask)
-      (net 76 /IOBufferB/VTG))
+      (net 109 /IOBufferB/VSUP))
     (pad 1 smd rect (at -0.8875 0) (size 0.995 1) (layers F.Cu F.Paste F.Mask)
       (net 99 "Net-(R27-Pad2)"))
     (model ${KISYS3DMOD}/Resistor_SMD.3dshapes/R_0603_1608Metric.wrl
@@ -3341,7 +3345,7 @@
     (pad 3 thru_hole oval (at 0 2.54 90) (size 1.7 1.7) (drill 1) (layers *.Cu *.Mask)
       (net 74 /IOBufferA/Y0))
     (pad 2 thru_hole oval (at 2.54 0 90) (size 1.7 1.7) (drill 1) (layers *.Cu *.Mask)
-      (net 77 /IOBufferA/VTG))
+      (net 108 /IOBufferA/VSUP))
     (pad 1 thru_hole rect (at 0 0 90) (size 1.7 1.7) (drill 1) (layers *.Cu *.Mask)
       (net 77 /IOBufferA/VTG))
     (model ${KISYS3DMOD}/Connector_PinHeader_2.54mm.3dshapes/PinHeader_2x10_P2.54mm_Vertical.wrl
@@ -3385,7 +3389,7 @@
     (pad 1 thru_hole rect (at 0 0 270) (size 1.7 1.7) (drill 1) (layers *.Cu *.Mask)
       (net 76 /IOBufferB/VTG))
     (pad 2 thru_hole oval (at 2.54 0 270) (size 1.7 1.7) (drill 1) (layers *.Cu *.Mask)
-      (net 76 /IOBufferB/VTG))
+      (net 109 /IOBufferB/VSUP))
     (pad 3 thru_hole oval (at 0 2.54 270) (size 1.7 1.7) (drill 1) (layers *.Cu *.Mask)
       (net 59 /IOBufferB/Y0))
     (pad 4 thru_hole oval (at 2.54 2.54 270) (size 1.7 1.7) (drill 1) (layers *.Cu *.Mask)

@@ -150,8 +150,6 @@ Connection ~ 4050 3650
 Wire Wire Line
 	4050 3650 4050 3550
 Wire Wire Line
-	4000 2750 4050 2750
-Wire Wire Line
 	3450 2650 3450 2750
 Wire Wire Line
 	3450 2750 3500 2750
@@ -567,9 +565,6 @@ $EndComp
 Wire Wire Line
 	4700 3400 4700 3450
 Wire Wire Line
-	4050 2650 4050 2750
-Connection ~ 4050 2650
-Wire Wire Line
 	4350 2650 4350 2700
 Wire Wire Line
 	4350 3000 4350 3050
@@ -594,10 +589,6 @@ Connection ~ 4350 3050
 Wire Wire Line
 	4350 3050 4350 3100
 Wire Wire Line
-	4050 2650 4200 2650
-Wire Wire Line
-	3450 2650 4050 2650
-Wire Wire Line
 	4700 3050 5700 3050
 $Comp
 L Regulator_Linear:TPS73101DBV U11
@@ -614,14 +605,9 @@ F 4 "595-TPS73101DBVR" H 5500 4850 50  0001 C CNN "Mouser_PN"
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	4200 2650 4200 4400
-Wire Wire Line
 	4200 4400 5950 4400
 Wire Wire Line
 	5950 4750 5900 4750
-Connection ~ 4200 2650
-Wire Wire Line
-	4200 2650 4350 2650
 $Comp
 L power:GND #PWR0134
 U 1 1 5B051FBC
@@ -866,4 +852,12 @@ Imax @ 3V3 = 35 mA\nImax @ Vtg = 35 mA
 Wire Wire Line
 	6150 4750 6500 4750
 Connection ~ 6150 4750
+Wire Wire Line
+	3450 2650 4350 2650
+Wire Wire Line
+	4200 2750 4200 4400
+Wire Wire Line
+	4000 2750 4200 2750
+Text Label 4300 4400 0    50   ~ 0
+VSUP
 $EndSCHEMATC
