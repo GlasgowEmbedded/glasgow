@@ -312,22 +312,13 @@ Wire Wire Line
 Wire Wire Line
 	1850 1200 2150 1200
 Wire Wire Line
-	3950 1200 3950 1250
-Wire Wire Line
 	3650 1200 3650 1250
-Connection ~ 3650 1200
-Wire Wire Line
-	3650 1200 3950 1200
 Wire Wire Line
 	3350 1200 3350 1250
 Connection ~ 3350 1200
 Wire Wire Line
-	3350 1200 3650 1200
-Wire Wire Line
 	3050 1200 3050 1250
 Connection ~ 3050 1200
-Wire Wire Line
-	3050 1200 3350 1200
 Wire Wire Line
 	2750 1200 2750 1250
 Connection ~ 2750 1200
@@ -348,7 +339,7 @@ Wire Wire Line
 Wire Wire Line
 	1850 1600 2150 1600
 Wire Wire Line
-	3950 1600 3950 1550
+	3650 1600 3650 1550
 Wire Wire Line
 	2150 1550 2150 1600
 Connection ~ 2150 1600
@@ -368,17 +359,8 @@ Wire Wire Line
 	3050 1550 3050 1600
 Connection ~ 3050 1600
 Wire Wire Line
-	3050 1600 3350 1600
-Wire Wire Line
 	3350 1550 3350 1600
 Connection ~ 3350 1600
-Wire Wire Line
-	3350 1600 3650 1600
-Wire Wire Line
-	3650 1550 3650 1600
-Connection ~ 3650 1600
-Wire Wire Line
-	3650 1600 3950 1600
 $Comp
 L Device:C C1
 U 1 1 5ACF0AA9
@@ -462,27 +444,15 @@ F 4 "81-GRM033C81C104KE4E" H 3350 1400 50  0001 C CNN "Mouser_PN"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:C C8
-U 1 1 5ACF7243
+L Device:C C9
+U 1 1 5ACF72A1
 P 3650 1400
-F 0 "C8" H 3765 1446 50  0000 L CNN
+F 0 "C9" H 3765 1446 50  0000 L CNN
 F 1 "u1" H 3765 1355 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 3688 1250 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/281/murata_03052018_GRM_Series_1-1310166.pdf" H 3650 1400 50  0001 C CNN
 F 4 "81-GRM033C81C104KE4E" H 3650 1400 50  0001 C CNN "Mouser_PN"
 	1    3650 1400
-	1    0    0    -1  
-$EndComp
-$Comp
-L Device:C C9
-U 1 1 5ACF72A1
-P 3950 1400
-F 0 "C9" H 4065 1446 50  0000 L CNN
-F 1 "u1" H 4065 1355 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 3988 1250 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/281/murata_03052018_GRM_Series_1-1310166.pdf" H 3950 1400 50  0001 C CNN
-F 4 "81-GRM033C81C104KE4E" H 3950 1400 50  0001 C CNN "Mouser_PN"
-	1    3950 1400
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -899,25 +869,25 @@ Connection ~ 800  5250
 $Comp
 L Device:C C10
 U 1 1 5AD97C38
-P 4250 1400
-F 0 "C10" H 4365 1446 50  0000 L CNN
-F 1 "u1" H 4365 1355 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 4288 1250 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/281/murata_03052018_GRM_Series_1-1310166.pdf" H 4250 1400 50  0001 C CNN
-F 4 "81-GRM033C81C104KE4E" H 4250 1400 50  0001 C CNN "Mouser_PN"
-	1    4250 1400
+P 3950 1400
+F 0 "C10" H 4065 1446 50  0000 L CNN
+F 1 "u1" H 4065 1355 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 3988 1250 50  0001 C CNN
+F 3 "https://www.mouser.hk/datasheet/2/281/murata_03052018_GRM_Series_1-1310166.pdf" H 3950 1400 50  0001 C CNN
+F 4 "81-GRM033C81C104KE4E" H 3950 1400 50  0001 C CNN "Mouser_PN"
+	1    3950 1400
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	4250 1250 4250 1200
+	3950 1250 3950 1200
 Wire Wire Line
-	4250 1200 3950 1200
-Connection ~ 3950 1200
+	3950 1200 3650 1200
+Connection ~ 3650 1200
 Wire Wire Line
-	4250 1550 4250 1600
+	3950 1550 3950 1600
 Wire Wire Line
-	4250 1600 3950 1600
-Connection ~ 3950 1600
+	3950 1600 3650 1600
+Connection ~ 3650 1600
 Text Label 1000 4850 0    50   ~ 0
 SHLD
 Text Label 1450 4150 0    50   ~ 0
@@ -2942,6 +2912,14 @@ Wire Wire Line
 	3600 5000 3950 5000
 Wire Wire Line
 	3950 5000 4150 5200
+Wire Wire Line
+	3350 1200 3650 1200
+Wire Wire Line
+	3350 1600 3650 1600
+Wire Wire Line
+	3050 1200 3350 1200
+Wire Wire Line
+	3050 1600 3350 1600
 Wire Bus Line
 	4050 5850 6350 5850
 Wire Bus Line
