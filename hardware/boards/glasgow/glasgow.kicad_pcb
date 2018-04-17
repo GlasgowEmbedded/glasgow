@@ -2,7 +2,7 @@
 
   (general
     (thickness 1.6)
-    (drawings 102)
+    (drawings 103)
     (tracks 1314)
     (zones 0)
     (modules 114)
@@ -4713,7 +4713,7 @@
     (tags "SMD SMT crystal hand-soldering")
     (path /5ACC4BC0)
     (attr smd)
-    (fp_text reference Y1 (at 1.75 3.25 270) (layer F.SilkS)
+    (fp_text reference Y1 (at 2.25 3.25 270) (layer F.SilkS)
       (effects (font (size 1 1) (thickness 0.15)))
     )
     (fp_text value 24M (at 0 3.25 90) (layer F.Fab)
@@ -5095,6 +5095,7 @@
       (xy -2.549664 1.91989) (xy -2.469928 1.911165) (xy -2.400256 1.919918)) (layer F.SilkS) (width 0.01))
   )
 
+  (gr_circle (center 64 91.5) (end 64.25 91.5) (layer F.SilkS) (width 0.2))
   (gr_line (start 87.49 110.055) (end 120.51 110.055) (layer Dwgs.User) (width 0.2))
   (gr_line (start 120.51 110.055) (end 120.51 118.945) (layer Dwgs.User) (width 0.2))
   (gr_line (start 87.49 118.945) (end 120.51 118.945) (layer Dwgs.User) (width 0.2))
