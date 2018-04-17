@@ -3,9 +3,6 @@ build/
 *.pyc
 *.vcd
 *.gtkw
-*.hex
 *.ihex
-*.ihx
-*.bin
-*.lib
 *.*b[ac]k
+_autosave-*

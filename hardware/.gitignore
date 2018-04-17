@@ -1,2 +1,2 @@
-*.xml
-*_bom.txt
+projects/**/*.xml
+projects/**/*_bom.txt

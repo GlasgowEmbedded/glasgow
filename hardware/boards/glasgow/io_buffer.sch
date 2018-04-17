@@ -4,7 +4,7 @@ EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 3 3
+Sheet 2 3
 Title "I/O Buffer"
 Date ""
 Rev "A"
@@ -15,7 +15,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L Glasgow-JTAG:FXMA108BQX U5
+L Glasgow:FXMA108BQX U5
 U 1 1 5AF87C59
 P 2400 3150
 AR Path="/5AF7D604/5AF87C59" Ref="U5"  Part="1" 
@@ -292,7 +292,7 @@ Connection ~ 2300 1300
 Wire Wire Line
 	2300 1300 2500 1300
 $Comp
-L Glasgow-JTAG:DAC081C081CIMK U10
+L Glasgow:DAC081C081CIMK U10
 U 1 1 5AE8E38A
 P 3250 4850
 AR Path="/5AF7D604/5AE8E38A" Ref="U10"  Part="1" 

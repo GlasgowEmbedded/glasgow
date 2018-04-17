@@ -1,3 +1,0 @@
-(sym_lib_table
-  (lib (name Glasgow-JTAG)(type Legacy)(uri ${KIPRJMOD}/symbols/Glasgow-JTAG.lib)(options "")(descr ""))
-)

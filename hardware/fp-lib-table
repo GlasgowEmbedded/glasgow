@@ -1,3 +1,0 @@
-(fp_lib_table
-  (lib (name Glasgow_JTAG)(type KiCad)(uri "$(KIPRJMOD)/footprints/Glasgow_JTAG.pretty")(options "")(descr ""))
-)
