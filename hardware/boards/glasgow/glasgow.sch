@@ -2023,10 +2023,10 @@ L Device:R R5
 U 1 1 5B82CA9C
 P 7000 5550
 F 0 "R5" H 6930 5504 50  0000 R CNN
-F 1 "300k" H 6930 5595 50  0000 R CNN
+F 1 "220k" H 6930 5595 50  0000 R CNN
 F 2 "Resistor_SMD:R_0603_1608Metric_Pad0.99x1.00mm_HandSolder" V 6930 5550 50  0001 C CNN
-F 3 "" H 7000 5550 50  0001 C CNN
-F 4 "603-AC0603JR-07300KL" H 7000 5550 50  0001 C CNN "Mouser_PN"
+F 3 "https://www.mouser.hk/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 7000 5550 50  0001 C CNN
+F 4 "603-RC0603FR-10220KL" H 7000 5550 50  0001 C CNN "Mouser_PN"
 	1    7000 5550
 	1    0    0    1   
 $EndComp
@@ -2668,7 +2668,7 @@ FLAGD
 Text Notes 4100 5050 0    50   ~ 0
 Alternate use for\nFLAGD pin: INT1
 Text Notes 6600 6450 0    50   ~ 0
-Turn on at VBUS >4.8V
+Turn on at VBUS >4.5V
 Text Notes 3550 7650 0    50   ~ 0
 Addr: 101001X
 Text Notes 5600 7650 0    50   ~ 0
