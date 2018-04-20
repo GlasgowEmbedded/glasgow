@@ -27,7 +27,7 @@ F 4 "727-CY7C68013A56LTXC" H 2900 4100 50  0001 C CNN "Mouser_PN"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Connector_Specialized:USB_B_Micro J1
+L Connector:USB_B_Micro J1
 U 1 1 5ACA0820
 P 1050 4150
 F 0 "J1" H 1050 4500 50  0000 C CNN
@@ -2270,7 +2270,7 @@ $EndComp
 Wire Wire Line
 	4550 4400 4600 4400
 $Comp
-L Connector_Specialized:Test_Point TP1
+L Connector:Test_Point TP1
 U 1 1 5ADB3D1E
 P 900 3650
 F 0 "TP1" V 800 3700 50  0000 L CNN
@@ -2284,7 +2284,7 @@ Wire Wire Line
 	900  3650 950  3650
 Connection ~ 950  3650
 $Comp
-L Connector_Specialized:Test_Point TP2
+L Connector:Test_Point TP2
 U 1 1 5AE0012C
 P 10450 5700
 F 0 "TP2" V 10350 5850 50  0000 C CNN
@@ -2295,7 +2295,7 @@ F 3 "~" H 10650 5700 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L Connector_Specialized:Test_Point TP3
+L Connector:Test_Point TP3
 U 1 1 5AE0058E
 P 10850 5700
 F 0 "TP3" V 10750 5850 50  0000 C CNN
@@ -2866,7 +2866,7 @@ Wire Wire Line
 	8600 3050 8700 3050
 NoConn ~ 8600 3050
 $Comp
-L Connector_Specialized:Test_Point TP4
+L Connector:Test_Point TP4
 U 1 1 5AE223CE
 P 1900 5400
 F 0 "TP4" H 1850 5650 50  0000 L CNN
@@ -2877,7 +2877,7 @@ F 3 "~" H 2100 5400 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L Connector_Specialized:Test_Point TP5
+L Connector:Test_Point TP5
 U 1 1 5AE22A82
 P 2000 5400
 F 0 "TP5" H 1950 5650 50  0000 C CNN
@@ -2892,7 +2892,7 @@ Wire Wire Line
 Wire Wire Line
 	2000 5400 2000 5300
 $Comp
-L Connector_Specialized:Test_Point TP6
+L Connector:Test_Point TP6
 U 1 1 5AE93638
 P 4650 5950
 F 0 "TP6" V 4650 6137 50  0000 L CNN
