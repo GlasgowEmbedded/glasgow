@@ -87,7 +87,7 @@ class I2CSlave(Module):
         shreg_i = Signal(8)
 
         self.submodules.fsm = FSM(reset_state="IDLE")
-        self.comb += self.start.eq(self.fsm.after_entering("START"))
+        self.comb += self.stop.eq(self.fsm.after_entering("IDLE"))
         self.fsm.act("IDLE",
             If(bus.start,
                 NextState("START"),
@@ -142,7 +142,6 @@ class I2CSlave(Module):
         )
         self.fsm.act("WRITE-SHIFT",
             If(bus.stop,
-                self.stop.eq(1),
                 NextState("IDLE")
             ).Elif(bus.start,
                 NextValue(bitno, 0),
