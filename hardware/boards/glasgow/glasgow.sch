@@ -2183,7 +2183,8 @@ P 10600 2850
 F 0 "J4" H 10600 2650 50  0000 C CNN
 F 1 "Conn_01x02" H 10680 2751 50  0001 L CNN
 F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Horizontal" H 10600 2850 50  0001 C CNN
-F 3 "~" H 10600 2850 50  0001 C CNN
+F 3 "https://www.mouser.hk/datasheet/2/418/NG_CD_640455_Y3-1255934.pdf" H 10600 2850 50  0001 C CNN
+F 4 "571-6404552" H 10600 2850 50  0001 C CNN "Mouser_PN"
 	1    10600 2850
 	1    0    0    1   
 $EndComp
