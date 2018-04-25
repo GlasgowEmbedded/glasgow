@@ -221,8 +221,8 @@ AR Path="/5AFBDC9E/5AF3BE9B" Ref="C32"  Part="1"
 F 0 "C30" H 2615 1546 50  0000 L CNN
 F 1 "u1" H 2615 1455 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 2538 1350 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/281/murata_03052018_GRM_Series_1-1310166.pdf" H 2500 1500 50  0001 C CNN
-F 4 "81-GRM033C81C104KE4E" H 2500 1500 50  0001 C CNN "Mouser_PN"
+F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 2500 1500 50  0001 C CNN
+F 4 "963-TMK107BJ104KAHT" H 2500 1500 50  0001 C CNN "Mouser_PN"
 	1    2500 1500
 	1    0    0    -1  
 $EndComp
@@ -424,8 +424,8 @@ AR Path="/5AFBDC9E/5B00CF39" Ref="C42"  Part="1"
 F 0 "C35" H 4815 1546 50  0000 L CNN
 F 1 "u1" H 4815 1455 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 4738 1350 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/281/murata_03052018_GRM_Series_1-1310166.pdf" H 4700 1500 50  0001 C CNN
-F 4 "81-GRM033C81C104KE4E" H 4700 1500 50  0001 C CNN "Mouser_PN"
+F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 4700 1500 50  0001 C CNN
+F 4 "963-TMK107BJ104KAHT" H 4700 1500 50  0001 C CNN "Mouser_PN"
 	1    4700 1500
 	1    0    0    -1  
 $EndComp
@@ -500,8 +500,8 @@ AR Path="/5AFBDC9E/5B013969" Ref="C43"  Part="1"
 F 0 "C36" H 5165 1546 50  0000 L CNN
 F 1 "u1" H 5165 1455 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 5088 1350 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/281/murata_03052018_GRM_Series_1-1310166.pdf" H 5050 1500 50  0001 C CNN
-F 4 "81-GRM033C81C104KE4E" H 5050 1500 50  0001 C CNN "Mouser_PN"
+F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 5050 1500 50  0001 C CNN
+F 4 "963-TMK107BJ104KAHT" H 5050 1500 50  0001 C CNN "Mouser_PN"
 	1    5050 1500
 	1    0    0    -1  
 $EndComp
@@ -648,8 +648,8 @@ AR Path="/5AFBDC9E/5B058AAD" Ref="C47"  Part="1"
 F 0 "C40" H 3765 1546 50  0000 L CNN
 F 1 "u1" H 3765 1455 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 3688 1350 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/281/murata_03052018_GRM_Series_1-1310166.pdf" H 3650 1500 50  0001 C CNN
-F 4 "81-GRM033C81C104KE4E" H 3650 1500 50  0001 C CNN "Mouser_PN"
+F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 3650 1500 50  0001 C CNN
+F 4 "963-TMK107BJ104KAHT" H 3650 1500 50  0001 C CNN "Mouser_PN"
 	1    3650 1500
 	1    0    0    -1  
 $EndComp
@@ -830,8 +830,8 @@ AR Path="/5AFBDC9E/5AD9C9D7" Ref="C45"  Part="1"
 F 0 "C38" H 4765 4996 50  0000 L CNN
 F 1 "u1" H 4765 4905 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 4688 4800 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/281/murata_03052018_GRM_Series_1-1310166.pdf" H 4650 4950 50  0001 C CNN
-F 4 "81-GRM033C81C104KE4E" H 4650 4950 50  0001 C CNN "Mouser_PN"
+F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 4650 4950 50  0001 C CNN
+F 4 "963-TMK107BJ104KAHT" H 4650 4950 50  0001 C CNN "Mouser_PN"
 	1    4650 4950
 	1    0    0    -1  
 $EndComp
