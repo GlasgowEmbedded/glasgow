@@ -119,7 +119,7 @@ class I2CSlave(Module):
             ).Elif(bus.setup,
                 NextValue(bitno, bitno + 1),
                 If(bitno == 7,
-                    If(shreg_i[1:8] == self.address,
+                    If(shreg_i[1:] == self.address,
                         NextValue(bus.sda_o, 0),
                         NextState("ADDR-ACK")
                     ).Else(
@@ -153,12 +153,11 @@ class I2CSlave(Module):
             If(bus.stop,
                 NextState("IDLE")
             ).Elif(bus.start,
-                NextValue(bitno, 0),
                 NextState("START")
             ).Elif(bus.setup,
                 NextValue(bitno, bitno + 1),
                 NextValue(bus.sda_o, shreg_o[7]),
-                NextValue(shreg_o, shreg_o  << 1),
+                NextValue(shreg_o, shreg_o << 1),
             ).Elif(bus.sample,
                 If(bitno == 0,
                     NextValue(bus.sda_o, 1),
@@ -170,7 +169,6 @@ class I2CSlave(Module):
             If(bus.stop,
                 NextState("IDLE")
             ).Elif(bus.start,
-                NextValue(bitno, 0),
                 NextState("START")
             ).Elif(bus.sample,
                 If(~bus.sda_i,
@@ -184,7 +182,6 @@ class I2CSlave(Module):
             If(bus.stop,
                 NextState("IDLE")
             ).Elif(bus.start,
-                NextValue(bitno, 0),
                 NextState("START")
             ).Elif(bus.sample,
                 NextValue(shreg_i, (shreg_i << 1) | bus.sda_i),
@@ -201,7 +198,6 @@ class I2CSlave(Module):
             If(bus.stop,
                 NextState("IDLE")
             ).Elif(bus.start,
-                NextValue(bitno, 0),
                 NextState("START")
             ).Elif(~bus.scl_i & self.ack_o,
                 NextValue(bus.sda_o, 0)
