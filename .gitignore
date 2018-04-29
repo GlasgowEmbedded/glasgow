@@ -1,6 +1,7 @@
 __pycache__/
 build/
 *.pyc
+*.v
 *.vcd
 *.gtkw
 *.ihex
