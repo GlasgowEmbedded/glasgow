@@ -4,6 +4,8 @@ import argparse
 import tempfile
 import shutil
 
+from fx2 import FX2DeviceError
+
 from .device import *
 from .gateware.target import GlasgowTest
 
@@ -43,8 +45,9 @@ def main():
     args = get_argparser().parse_args()
 
     try:
-        device = GlasgowDevice()
-    except GlasgowDeviceError as e:
+        firmware_file = os.path.join(os.path.dirname(__file__), "glasgow.ihex")
+        device = GlasgowDevice(firmware_file)
+    except (FX2DeviceError, GlasgowDeviceError) as e:
         raise SystemExit(e)
 
     if args.action == "download":

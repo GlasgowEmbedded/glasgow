@@ -1,6 +1,8 @@
+import time
 import usb1
 
 from fx2 import *
+from fx2.format import input_data
 
 
 __all__ = ['GlasgowDevice', 'GlasgowDeviceError']
@@ -18,10 +20,23 @@ class GlasgowDeviceError(FX2DeviceError):
 
 
 class GlasgowDevice(FX2Device):
-    def __init__(self):
+    def __init__(self, firmware_file=None):
         super().__init__(VID_OPENMOKO, PID_GLASGOW)
         if self._device.getDevice().getbcdDevice() == 0:
-            raise GlasgowDeviceError("Device is missing firmware")
+            if firmware_file is None:
+                raise GlasgowDeviceError("Firmware is not uploaded")
+            else:
+                # TODO: log?
+                with open(firmware_file, "rb") as f:
+                    self.load_ram(input_data(f, fmt="ihex"))
+
+                # let the device re-enumerate and re-acquire it
+                time.sleep(1)
+                super().__init__(VID_OPENMOKO, PID_GLASGOW)
+
+                # still not the right firmware?
+                if self._device.getDevice().getbcdDevice() == 0:
+                    raise GlasgowDeviceError("Firmware upload failed")
 
     def read_eeprom(self, idx, addr, length):
         """Read ``length`` bytes at ``addr`` from EEPROM at index ``idx``."""
