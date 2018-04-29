@@ -40,8 +40,8 @@ class I2CBus(Module):
         ]
 
         self.specials += [
-            MultiReg(scl.i, self.scl_i),#, reset=1),
-            MultiReg(sda.i, self.sda_i),#, reset=1),
+            MultiReg(scl.i, self.scl_i, reset=1),
+            MultiReg(sda.i, self.sda_i, reset=1),
         ]
 
 
