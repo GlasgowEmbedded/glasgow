@@ -9,6 +9,7 @@ void fpga_reset() {
   delay_us(1);
 
   // configure config pins while FPGA is in reset
+  OEA &= ~(1<<PINA_CDONE);
   OEB |=  (1<<PINB_SCK)|(1<<PINB_SS_B)|(1<<PINB_SI);
   IOB |=  (1<<PINB_SCK);
   IOB &= ~(1<<PINB_SS_B);
@@ -51,7 +52,7 @@ __endasm;
 #undef  BIT
 }
 
-void fpga_start() {
+bool fpga_start() {
 __asm
   mov  a, #49
 
@@ -65,4 +66,6 @@ __endasm;
 
   // Tristate PORTB drivers as FPGA may drive them now
   OEB &= ~((1<<PINB_SCK)|(1<<PINB_SS_B)|(1<<PINB_SI));
+
+  return (IOA & (1 << PINA_CDONE));
 }

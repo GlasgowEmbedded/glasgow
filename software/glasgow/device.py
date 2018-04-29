@@ -58,5 +58,5 @@ class GlasgowDevice(FX2Device):
         # Complete configuration by sending a request with no data.
         try:
             self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_FPGA, 0, index, [])
-        except usb1.USBErrorPipe:
+        except usb1.USBErrorTimeout:
             raise GlasgowDeviceError("FPGA configuration failed")

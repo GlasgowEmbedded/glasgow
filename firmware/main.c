@@ -171,9 +171,10 @@ void handle_pending_usb_setup() {
 
       bitstream_idx = arg_idx;
     } else {
-      // TODO: check CDONE here
-      fpga_start();
-      ACK_EP0();
+      if(fpga_start())
+        ACK_EP0();
+      else
+        STALL_EP0();
     }
 
     return;
