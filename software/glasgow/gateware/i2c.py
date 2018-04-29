@@ -5,6 +5,9 @@ from migen.genlib.fsm import *
 from migen.genlib.cdc import MultiReg
 
 
+__all__ = ['I2CSlave']
+
+
 class I2CBus(Module):
     """
     I2C bus.

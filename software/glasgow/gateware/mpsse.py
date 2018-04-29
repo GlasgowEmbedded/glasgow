@@ -7,6 +7,9 @@ from migen.genlib.fsm import *
 from migen.genlib.cdc import MultiReg
 
 
+__all__ = ['MPSSE']
+
+
 class MPSSEBus(Module):
     layout = [
         ("tck",   1),

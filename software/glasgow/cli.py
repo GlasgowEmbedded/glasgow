@@ -1,6 +1,6 @@
 import argparse
 
-from . import *
+from .device import *
 
 
 def get_argparser():
