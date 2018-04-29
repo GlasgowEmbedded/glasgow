@@ -15,6 +15,9 @@ class I2CBus(Module):
     Decodes bus conditions (start, stop, sample and setup) and provides synchronization.
     """
     def __init__(self, pads):
+        self.scl_t = TSTriple()
+        self.sda_t = TSTriple()
+
         self.scl_i = Signal()
         self.scl_o = Signal(reset=1)
         self.sda_i = Signal()
@@ -31,10 +34,10 @@ class I2CBus(Module):
         sda_r = Signal(reset=1)
 
         self.comb += [
-            pads.scl.o.eq(0),
-            pads.scl.oe.eq(~self.scl_o),
-            pads.sda.o.eq(0),
-            pads.sda.oe.eq(~self.sda_o),
+            self.scl_t.o.eq(0),
+            self.scl_t.oe.eq(~self.scl_o),
+            self.sda_t.o.eq(0),
+            self.sda_t.oe.eq(~self.sda_o),
 
             self.sample.eq(~scl_r & self.scl_i),
             self.setup.eq(scl_r & ~self.scl_i),
@@ -46,9 +49,14 @@ class I2CBus(Module):
             sda_r.eq(self.sda_i),
         ]
         self.specials += [
-            MultiReg(pads.scl.i, self.scl_i, reset=1),
-            MultiReg(pads.sda.i, self.sda_i, reset=1),
+            MultiReg(self.scl_t.i, self.scl_i, reset=1),
+            MultiReg(self.sda_t.i, self.sda_i, reset=1),
         ]
+        if pads is not None:
+            self.specials += [
+                self.scl_t.get_tristate(pads.scl),
+                self.sda_t.get_tristate(pads.sda),
+            ]
 
 
 class I2CSlave(Module):
@@ -229,23 +237,17 @@ def simulation_test(case):
     return wrapper
 
 
-class I2CPads(Module):
-    def __init__(self, scl, sda):
-        self.scl = scl
-        self.sda = sda
-
-
 class I2CSlaveTestbench(Module):
     def __init__(self):
-        self.scl_t = TSTriple()
-        self.sda_t = TSTriple()
+        self.submodules.dut = I2CSlave(pads=None)
+
+        self.scl_t = self.dut.bus.scl_t
+        self.sda_t = self.dut.bus.sda_t
 
         self.scl_i = self.scl_t.i
         self.scl_o = Signal(reset=1)
         self.sda_i = self.sda_t.i
         self.sda_o = Signal(reset=1)
-
-        self.submodules.dut = I2CSlave(I2CPads(self.scl_t, self.sda_t))
 
         self.period = 16
 
@@ -501,8 +503,6 @@ if __name__ == "__main__":
     from migen.fhdl import verilog
 
 
-    scl = TSTriple()
-    sda = TSTriple()
-    engine = I2CSlave(scl, sda)
+    engine = I2CSlave(None)
 
     verilog.convert(engine).write("i2cslave.v")
