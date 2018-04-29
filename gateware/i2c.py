@@ -64,7 +64,7 @@ class I2CSlave(Module):
     :attr data_i:
         Data octet received from the master. Valid when ``write`` is high.
     :attr read:
-        Write strobe. Active for one cycle immediately after latching ``data_o``.
+        Read strobe. Active for one cycle immediately after latching ``data_o``.
     :attr data_o:
         Data octet sent to the master. Latched immedately after receiving a read command. Can be changed once ``read`` has gone high.
     :attr ack_o:
