@@ -2931,4 +2931,6 @@ Wire Bus Line
 	6350 2900 6350 5850
 Wire Bus Line
 	4050 2400 4050 5850
+Text Notes 6950 4550 0    50   ~ 0
+Addr: 0001000
 $EndSCHEMATC
