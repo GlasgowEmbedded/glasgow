@@ -4,18 +4,18 @@
 
 void fpga_reset() {
   // put FPGA in reset
-  OED |=  (1<<PIND_CRESET_B);
-  IOD &= ~(1<<PIND_CRESET_B);
+  OED |=  (1<<PIND_CRESET_N);
+  IOD &= ~(1<<PIND_CRESET_N);
   delay_us(1);
 
   // configure config pins while FPGA is in reset
-  OEA &= ~(1<<PINA_CDONE);
-  OEB |=  (1<<PINB_SCK)|(1<<PINB_SS_B)|(1<<PINB_SI);
   IOB |=  (1<<PINB_SCK);
-  IOB &= ~(1<<PINB_SS_B);
+  IOB &= ~(1<<PINB_SS_N);
+  OEA &= ~(1<<PINA_CDONE);
+  OEB |=  (1<<PINB_SCK)|(1<<PINB_SS_N)|(1<<PINB_SI);
 
   // release FPGA reset
-  IOD |=  (1<<PIND_CRESET_B);
+  IOD |=  (1<<PIND_CRESET_N);
   delay_us(1200); // 1200 us for HX8K, 800 us for others
 }
 
@@ -65,7 +65,7 @@ __asm
 __endasm;
 
   // Tristate PORTB drivers as FPGA may drive them now
-  OEB &= ~((1<<PINB_SCK)|(1<<PINB_SS_B)|(1<<PINB_SI));
+  OEB &= ~((1<<PINB_SCK)|(1<<PINB_SS_N)|(1<<PINB_SI));
 
   return (IOA & (1 << PINA_CDONE));
 }

@@ -156,8 +156,10 @@ void handle_pending_usb_setup() {
     pending_setup = false;
 
     if(arg_len > 0) {
-      if(arg_idx == 0)
+      if(arg_idx == 0) {
+        led_fpga_set(false);
         fpga_reset();
+      }
 
       while(arg_len > 0) {
         uint8_t chunk_len = arg_len < 64 ? arg_len : 64;
@@ -171,10 +173,12 @@ void handle_pending_usb_setup() {
 
       bitstream_idx = arg_idx;
     } else {
-      if(fpga_start())
+      if(fpga_start()) {
+        led_fpga_set(true);
         ACK_EP0();
-      else
+      } else {
         STALL_EP0();
+      }
     }
 
     return;
@@ -186,6 +190,7 @@ void handle_pending_usb_setup() {
 int main() {
   CPUCS = _CLKOE|_CLKSPD1; // Run at 48 MHz, drive CLKOUT
   usb_init(/*reconnect=*/true);
+  leds_init();
 
   while(1) {
     if(pending_setup)
