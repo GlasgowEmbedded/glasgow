@@ -29,3 +29,8 @@ class GlasgowBase(Module):
 
     def build(self, *args, **kwargs):
         self.platform.build(self, *args, **kwargs)
+
+
+class GlasgowTest(GlasgowBase):
+    def __init__(self):
+        super().__init__()
