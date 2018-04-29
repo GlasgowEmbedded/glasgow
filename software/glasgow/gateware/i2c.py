@@ -11,7 +11,7 @@ class I2CBus(Module):
 
     Decodes bus conditions (start, stop, sample and setup) and provides synchronization.
     """
-    def __init__(self, scl, sda):
+    def __init__(self, pads):
         self.scl_i = Signal()
         self.scl_o = Signal(reset=1)
         self.sda_i = Signal()
@@ -28,10 +28,10 @@ class I2CBus(Module):
         sda_r = Signal(reset=1)
 
         self.comb += [
-            scl.o.eq(0),
-            scl.oe.eq(~self.scl_o),
-            sda.o.eq(0),
-            sda.oe.eq(~self.sda_o),
+            pads.scl.o.eq(0),
+            pads.scl.oe.eq(~self.scl_o),
+            pads.sda.o.eq(0),
+            pads.sda.oe.eq(~self.sda_o),
 
             self.sample.eq(~scl_r & self.scl_i),
             self.setup.eq(scl_r & ~self.scl_i),
@@ -43,8 +43,8 @@ class I2CBus(Module):
             sda_r.eq(self.sda_i),
         ]
         self.specials += [
-            MultiReg(scl.i, self.scl_i, reset=1),
-            MultiReg(sda.i, self.sda_i, reset=1),
+            MultiReg(pads.scl.i, self.scl_i, reset=1),
+            MultiReg(pads.sda.i, self.sda_i, reset=1),
         ]
 
 
@@ -75,7 +75,7 @@ class I2CSlave(Module):
         setup period (one half-period after write strobe is asserted), acknowledge is asserted.
         Otherwise, no acknowledge is asserted. May use combinatorial feedback from ``write``.
     """
-    def __init__(self, scl, sda):
+    def __init__(self, pads):
         self.address = Signal(7)
         self.start   = Signal()
         self.stop    = Signal()
@@ -86,7 +86,7 @@ class I2CSlave(Module):
         self.data_o  = Signal(8)
         self.ack_i   = Signal()
 
-        self.submodules.bus = bus = I2CBus(scl, sda)
+        self.submodules.bus = bus = I2CBus(pads)
 
         ###
 
@@ -226,6 +226,12 @@ def simulation_test(case):
     return wrapper
 
 
+class I2CPads(Module):
+    def __init__(self, scl, sda):
+        self.scl = scl
+        self.sda = sda
+
+
 class I2CSlaveTestbench(Module):
     def __init__(self):
         self.scl_t = TSTriple()
@@ -236,7 +242,7 @@ class I2CSlaveTestbench(Module):
         self.sda_i = self.sda_t.i
         self.sda_o = Signal(reset=1)
 
-        self.submodules.dut = I2CSlave(self.scl_t, self.sda_t)
+        self.submodules.dut = I2CSlave(I2CPads(self.scl_t, self.sda_t))
 
         self.period = 16
 
