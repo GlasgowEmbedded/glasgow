@@ -134,7 +134,8 @@ void handle_pending_usb_setup() {
       } else {
         SETUP_EP0_BUF(0);
         while(EP0CS & _BUSY);
-        if(!eeprom_write(arg_chip, arg_addr, EP0BUF, chunk_len, /*double_byte=*/2)) {
+        if(!eeprom_write(arg_chip, arg_addr, EP0BUF, chunk_len, /*double_byte=*/2,
+                         /*timeout=*/166)) {
           STALL_EP0();
           break;
         }
