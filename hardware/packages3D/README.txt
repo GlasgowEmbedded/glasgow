@@ -2,7 +2,6 @@ Sources:
 
  * 87834-2019.stp: http://www.molex.com/molex/part/partModels.jsp?&prodLevel=part&series=&partNo=878342019&channel=Products
    (non-free)
- * LED_0603_1608Metric_Castellated.{step,wrl}: cadquery stock
  * QFN-56-1EP_8x8mm_Pitch0.5mm_EP5.2x4.5mm.{step,wrl}: cadquery custom
  * WQFN-20-1EP_4.5x2.5mm_Pitch0.5mm_EP2.9x1.0mm.{step,wrl}: cadquery custom
  * Crystal_SMD_5032_4Pads.wrl: https://github.com/KiCad/kicad-library/blob/f2230b8b1e47ccc9e7810d134fbeda73b29bfaf7/modules/packages3d/Crystals.3dshapes/Crystal_SMD_5032_4Pads.wrl
