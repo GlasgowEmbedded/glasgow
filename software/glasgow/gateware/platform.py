@@ -41,7 +41,7 @@ _connectors = [
 
 class Platform(LatticePlatform):
     default_clk_name = "clk_if"
-    default_clk_period = 1e9 / 48e6
+    default_clk_period = 1e9 / 30e6
 
     def __init__(self):
         LatticePlatform.__init__(self, "ice40-up5k-sg48", _io, _connectors,
