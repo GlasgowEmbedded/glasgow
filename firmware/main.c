@@ -235,7 +235,7 @@ register_fail:
 
 int main() {
   CPUCS = _CLKOE|_CLKSPD1; // Run at 48 MHz, drive CLKOUT
-  IFCONFIG = _IFCLKSRC|_IFCLKOE|_IFCFG1|_IFCFG0; // Drive 30 MHz IFCLK, external master
+  IFCONFIG = _IFCLKSRC|_IFCLKOE; // Drive 30 MHz IFCLK
   usb_init(/*reconnect=*/true);
   leds_init();
 

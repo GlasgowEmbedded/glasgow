@@ -3,6 +3,9 @@
 #include "glasgow.h"
 
 void fpga_reset() {
+  // disable FIFO bus
+  IFCONFIG &= ~(_IFCFG1|_IFCFG0);
+
   // put FPGA in reset
   OED |=  (1<<PIND_CRESET_N);
   IOD &= ~(1<<PIND_CRESET_N);
@@ -64,8 +67,11 @@ __asm
   djnz acc, 00001$     /*3c*/
 __endasm;
 
-  // Tristate PORTB drivers as FPGA may drive them now
+  // tristate PORTB drivers as FPGA may drive them now
   OEB &= ~((1<<PINB_SCK)|(1<<PINB_SS_N)|(1<<PINB_SI));
+
+  // enable FIFO bus with external master
+  IFCONFIG |= _IFCFG1|_IFCFG0;
 
   return (IOA & (1 << PINA_CDONE));
 }
