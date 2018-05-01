@@ -1,6 +1,7 @@
 #include <fx2lib.h>
 #include <fx2usb.h>
 #include <fx2delay.h>
+#include <fx2i2c.h>
 #include <fx2eeprom.h>
 #include "glasgow.h"
 
@@ -105,7 +106,6 @@ void handle_pending_usb_setup() {
   if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN ||
       req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
      (req->bRequest == USB_REQ_EEPROM ||
-      req->bRequest == USB_REQ_REGISTER ||
       req->bRequest == USB_REQ_CYPRESS_EEPROM_DB)) {
     bool     arg_read = (req->bmRequestType & USB_DIR_IN);
     uint8_t  arg_chip = 0;
@@ -116,12 +116,6 @@ void handle_pending_usb_setup() {
     if(req->bRequest == USB_REQ_CYPRESS_EEPROM_DB) {
       double_byte = true;
       arg_chip = 0b1010001;
-    } else if(req->bRequest == USB_REQ_REGISTER) {
-      // The FPGA registers have more or less the same interface as a 8-bit EEPROM.
-      // We're also reusing the code paths to make the firmware more compact.
-      double_byte = false;
-      timeout = 1;
-      arg_chip = 0b0001000;
     } else /* req->bRequest == USB_REQ_EEPROM */ {
       double_byte = true;
       switch(req->wIndex) {
@@ -160,6 +154,42 @@ void handle_pending_usb_setup() {
       arg_addr += chunk_len;
     }
 
+    return;
+  }
+
+  // FPGA register read/write requests
+  if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN ||
+      req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
+     req->bRequest == USB_REQ_REGISTER) {
+    bool     arg_read = (req->bmRequestType & USB_DIR_IN);
+    uint8_t  arg_addr = req->wValue;
+    uint16_t arg_len  = req->wLength;
+    pending_setup = false;
+
+    if(!i2c_start(0b00010000))
+      goto register_fail;
+    if(!i2c_write(&arg_addr, 1))
+      goto register_fail;
+
+    if(arg_read) {
+      while(EP0CS & _BUSY);
+      if(!i2c_start(0b00010001))
+        goto register_fail;
+      if(!i2c_read(EP0BUF, arg_len))
+        goto register_fail;
+      SETUP_EP0_BUF(arg_len);
+    } else {
+      SETUP_EP0_BUF(0);
+      while(EP0CS & _BUSY);
+      i2c_write(EP0BUF, arg_len);
+      i2c_stop();
+    }
+
+    return;
+
+register_fail:
+    i2c_stop();
+    STALL_EP0();
     return;
   }
 
