@@ -239,6 +239,15 @@ int main() {
   usb_init(/*reconnect=*/true);
   leds_init();
 
+  SYNCDELAY();
+  EP2FIFOCFG = _ZEROLENIN;
+  SYNCDELAY();
+  EP4FIFOCFG = _ZEROLENIN;
+  SYNCDELAY();
+  EP6FIFOCFG = _ZEROLENIN;
+  SYNCDELAY();
+  EP8FIFOCFG = _ZEROLENIN;
+
   while(1) {
     if(pending_setup)
       handle_pending_usb_setup();
