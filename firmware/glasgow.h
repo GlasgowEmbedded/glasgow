@@ -3,8 +3,8 @@
 
 #include <stdbool.h>
 
-#define VID_OPENMOKO 0x1d50
-#define PID_GLASGOW  0x7777
+#define VID_QIHW      0x20b7
+#define PID_GLASGOW   0x9db1
 
 // PORTA pins
 #define PINA_ALERT_N  0

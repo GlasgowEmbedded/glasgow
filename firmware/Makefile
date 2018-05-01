@@ -1,5 +1,5 @@
-VID      ?= 1d50
-PID      ?= 7777
+VID      ?= 20b7
+PID      ?= 9db1
 
 TARGET    = glasgow
 SOURCES   = main leds fpga

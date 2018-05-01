@@ -14,7 +14,7 @@ usb_device = {
   .bDeviceSubClass      = 255,
   .bDeviceProtocol      = 255,
   .bMaxPacketSize0      = 64,
-  .idVendor             = VID_OPENMOKO,
+  .idVendor             = VID_QIHW,
   .idProduct            = PID_GLASGOW,
   .bcdDevice            = 0x0001,
   .iManufacturer        = 1,
@@ -56,7 +56,7 @@ usb_interfaces[] = {
 const char *
 usb_strings[] = {
   "whitequark research",
-  "Glasgow Debug Peripheral",
+  "Glasgow Debug Tool",
 };
 
 const struct usb_descriptor_set

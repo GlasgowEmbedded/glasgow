@@ -8,8 +8,8 @@ from fx2.format import input_data
 __all__ = ['GlasgowDevice', 'GlasgowDeviceError']
 
 
-VID_OPENMOKO = 0x1d50
-PID_GLASGOW  = 0x7777
+VID_QIHW     = 0x20b7
+PID_GLASGOW  = 0x9db1
 
 REQ_EEPROM   = 0x10
 REQ_FPGA_CFG = 0x11
@@ -22,7 +22,7 @@ class GlasgowDeviceError(FX2DeviceError):
 
 class GlasgowDevice(FX2Device):
     def __init__(self, firmware_file=None):
-        super().__init__(VID_OPENMOKO, PID_GLASGOW)
+        super().__init__(VID_QIHW, PID_GLASGOW)
         if self._device.getDevice().getbcdDevice() == 0:
             if firmware_file is None:
                 raise GlasgowDeviceError("Firmware is not uploaded")
@@ -33,7 +33,7 @@ class GlasgowDevice(FX2Device):
 
                 # let the device re-enumerate and re-acquire it
                 time.sleep(1)
-                super().__init__(VID_OPENMOKO, PID_GLASGOW)
+                super().__init__(VID_QIHW, PID_GLASGOW)
 
                 # still not the right firmware?
                 if self._device.getDevice().getbcdDevice() == 0:
