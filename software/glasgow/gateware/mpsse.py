@@ -429,7 +429,8 @@ class MPSSE(Module):
 
 import functools
 import unittest
-import pprint
+
+from migen.fhdl import verilog
 
 
 def simulation_test(case):
@@ -753,9 +754,6 @@ class MPSSETestCase(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    from migen.fhdl import verilog
-
-
     tck = TSTriple()
     tdi = TSTriple()
     tdo = TSTriple()

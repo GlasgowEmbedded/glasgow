@@ -77,14 +77,14 @@ class I2CSlave(Module):
         Write strobe. Active for one cycle immediately after receiving a data octet.
     :attr data_i:
         Data octet received from the master. Valid when ``write`` is high.
-    :attr read:
-        Read strobe. Active for one cycle immediately before latching ``data_o``.
-    :attr data_o:
-        Data octet sent to the master. Latched immedately after receiving a read command. Can be changed once ``read`` has gone high.
     :attr ack_o:
         Acknowledge strobe. If active for at least one cycle during the acknowledge bit
         setup period (one half-period after write strobe is asserted), acknowledge is asserted.
         Otherwise, no acknowledge is asserted. May use combinatorial feedback from ``write``.
+    :attr read:
+        Read strobe. Active for one cycle immediately before latching ``data_o``.
+    :attr data_o:
+        Data octet sent to the master. Latched immedately after receiving a read command. Can be changed once ``read`` has gone high.
     """
     def __init__(self, pads):
         self.address = Signal(7)
@@ -112,7 +112,6 @@ class I2CSlave(Module):
                 NextState("START"),
             )
         )
-        self.comb += self.start.eq(self.fsm.after_entering("START"))
         self.fsm.act("START",
             If(bus.stop,
                 # According to the spec, technically illegal, "but many devices handle
@@ -224,7 +223,8 @@ class I2CSlave(Module):
 
 import functools
 import unittest
-import pprint
+
+from migen.fhdl import verilog
 
 
 def simulation_test(case):
@@ -281,8 +281,20 @@ class I2CSlaveTestbench(Module):
         yield self.sda_o.eq(0)
         yield from self.half_period()
 
+    def rep_start(self):
+        assert (yield self.scl_i) == 1
+        assert (yield self.sda_i) == 0
+        yield self.scl_o.eq(0)
+        yield # tHD;DAT
+        yield self.sda_o.eq(1)
+        yield from self.half_period()
+        yield self.scl_o.eq(1)
+        yield from self.half_period()
+        yield from self.start()
+
     def stop(self):
         yield self.scl_o.eq(0)
+        yield # tHD;DAT
         yield self.sda_o.eq(0)
         yield from self.half_period()
         yield self.scl_o.eq(1)
@@ -500,9 +512,4 @@ class I2CSlaveTestCase(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    from migen.fhdl import verilog
-
-
-    engine = I2CSlave(None)
-
-    verilog.convert(engine).write("i2cslave.v")
+    verilog.convert(I2CSlave(None)).write("i2cslave.v")

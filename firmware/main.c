@@ -71,8 +71,9 @@ usb_descriptor_set = {
 
 enum {
   // Glasgow requests
-  USB_REQ_EEPROM = 0x10,
-  USB_REQ_FPGA   = 0x11,
+  USB_REQ_EEPROM   = 0x10,
+  USB_REQ_FPGA_CFG = 0x11,
+  USB_REQ_REGISTER = 0x12,
   // Cypress requests
   USB_REQ_CYPRESS_EEPROM_DB = 0xA9,
 };
@@ -104,29 +105,44 @@ void handle_pending_usb_setup() {
   if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN ||
       req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
      (req->bRequest == USB_REQ_EEPROM ||
+      req->bRequest == USB_REQ_REGISTER ||
       req->bRequest == USB_REQ_CYPRESS_EEPROM_DB)) {
     bool     arg_read = (req->bmRequestType & USB_DIR_IN);
-    uint8_t  arg_chip;
+    uint8_t  arg_chip = 0;
     uint16_t arg_addr = req->wValue;
     uint16_t arg_len  = req->wLength;
+    bool     double_byte;
+    uint8_t  timeout  = 166;
     if(req->bRequest == USB_REQ_CYPRESS_EEPROM_DB) {
+      double_byte = true;
       arg_chip = 0b1010001;
-    } else /* req->bRequest == USB_REQ_RW_EEPROM */ {
+    } else if(req->bRequest == USB_REQ_REGISTER) {
+      // The FPGA registers have more or less the same interface as a 8-bit EEPROM.
+      // We're also reusing the code paths to make the firmware more compact.
+      double_byte = false;
+      timeout = 1;
+      arg_chip = 0b0001000;
+    } else /* req->bRequest == USB_REQ_EEPROM */ {
+      double_byte = true;
       switch(req->wIndex) {
-        case 0:  arg_chip = 0b1010001;
-        case 1:  arg_chip = 0b1010010;
-        case 2:  arg_chip = 0b1010011;
-        default: STALL_EP0(); return;
+        case 0: arg_chip = 0b1010001;
+        case 1: arg_chip = 0b1010010;
+        case 2: arg_chip = 0b1010011;
       }
     }
     pending_setup = false;
+
+    if(!arg_chip) {
+      STALL_EP0();
+      return;
+    }
 
     while(arg_len > 0) {
       uint8_t chunk_len = arg_len < 64 ? arg_len : 64;
 
       if(arg_read) {
         while(EP0CS & _BUSY);
-        if(!eeprom_read(arg_chip, arg_addr, EP0BUF, chunk_len, /*double_byte=*/2)) {
+        if(!eeprom_read(arg_chip, arg_addr, EP0BUF, chunk_len, double_byte)) {
           STALL_EP0();
           break;
         }
@@ -134,8 +150,7 @@ void handle_pending_usb_setup() {
       } else {
         SETUP_EP0_BUF(0);
         while(EP0CS & _BUSY);
-        if(!eeprom_write(arg_chip, arg_addr, EP0BUF, chunk_len, /*double_byte=*/2,
-                         /*timeout=*/166)) {
+        if(!eeprom_write(arg_chip, arg_addr, EP0BUF, chunk_len, double_byte, timeout)) {
           STALL_EP0();
           break;
         }
@@ -150,7 +165,7 @@ void handle_pending_usb_setup() {
 
   // Bitstream download request
   if(req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT &&
-     req->bRequest == USB_REQ_FPGA &&
+     req->bRequest == USB_REQ_FPGA_CFG &&
      (req->wIndex == 0 || req->wIndex == bitstream_idx + 1)) {
     uint16_t arg_idx = req->wIndex;
     uint16_t arg_len = req->wLength;
@@ -190,6 +205,7 @@ void handle_pending_usb_setup() {
 
 int main() {
   CPUCS = _CLKOE|_CLKSPD1; // Run at 48 MHz, drive CLKOUT
+  IFCONFIG = _IFCLKSRC|_IFCLKOE|_IFCFG1|_IFCFG0; // Drive 30 MHz IFCLK, external master
   usb_init(/*reconnect=*/true);
   leds_init();
 
