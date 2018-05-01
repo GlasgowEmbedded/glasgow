@@ -247,6 +247,7 @@ int main() {
   EP6FIFOCFG = _ZEROLENIN;
   SYNCDELAY();
   EP8FIFOCFG = _ZEROLENIN;
+  SYNCDELAY();
 
   while(1) {
     if(pending_setup)
