@@ -221,8 +221,10 @@ register_fail:
     } else {
       if(fpga_start()) {
         led_fpga_set(true);
+        led_err_set(false);
         ACK_EP0();
       } else {
+        led_err_set(true);
         STALL_EP0();
       }
     }
