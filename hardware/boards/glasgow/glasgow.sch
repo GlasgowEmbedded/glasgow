@@ -2514,10 +2514,10 @@ L Device:R R16
 U 1 1 5B4782C1
 P 9900 1700
 F 0 "R16" V 9800 1750 50  0000 C CNN
-F 1 "600" V 9900 1700 50  0000 C CNN
+F 1 "604" V 9900 1700 50  0000 C CNN
 F 2 "Resistor_SMD:R_0603_1608Metric_Pad0.99x1.00mm_HandSolder" V 9830 1700 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-AC_51_RoHS_L_6-1152827.pdf" H 9900 1700 50  0001 C CNN
-F 4 "603-AC0603FR-07560RL" H 9900 1700 50  0001 C CNN "Mouser_PN"
+F 3 "https://www.mouser.hk/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9900 1700 50  0001 C CNN
+F 4 "603-RC0603FR-07604RL" H 9900 1700 50  0001 C CNN "Mouser_PN"
 	1    9900 1700
 	0    -1   1    0   
 $EndComp
@@ -2921,6 +2921,8 @@ Wire Wire Line
 	3050 1200 3350 1200
 Wire Wire Line
 	3050 1600 3350 1600
+Text Notes 6950 4550 0    50   ~ 0
+Addr: 0001000
 Wire Bus Line
 	4050 5850 6350 5850
 Wire Bus Line
@@ -2931,6 +2933,4 @@ Wire Bus Line
 	6350 2900 6350 5850
 Wire Bus Line
 	4050 2400 4050 5850
-Text Notes 6950 4550 0    50   ~ 0
-Addr: 0001000
 $EndSCHEMATC
