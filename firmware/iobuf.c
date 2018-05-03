@@ -6,7 +6,7 @@ void iobuf_init() {
   // Configure I/O buffer pins as open-source/open-drain; they have 100k pulls
   IOD &= ~((1<<PIND_ENVA)|(1<<PIND_ENVB));
   IOD |=                                 (1<<PIND_OEQ_N);
-  OED |= ~((1<<PIND_ENVA)|(1<<PIND_ENVB)|(1<<PIND_OEQ_N));
+  OED |=  ((1<<PIND_ENVA)|(1<<PIND_ENVB)|(1<<PIND_OEQ_N));
 }
 
 static bool dac_start(uint8_t mask, bool read) {
