@@ -3,9 +3,10 @@
 #include "glasgow.h"
 
 void iobuf_init() {
-  // Configure I/O buffer pins as open-drain; they have 100k pullups
-  IOD &= ~((1<<PIND_ENVA_N)|(1<<PIND_ENVB_N)|(1<<PIND_OEQ_N));
-  OED &= ~((1<<PIND_ENVA_N)|(1<<PIND_ENVB_N)|(1<<PIND_OEQ_N));
+  // Configure I/O buffer pins as open-source/open-drain; they have 100k pulls
+  IOD &= ~((1<<PIND_ENVA)|(1<<PIND_ENVB));
+  IOD |=                                 (1<<PIND_OEQ_N);
+  OED |= ~((1<<PIND_ENVA)|(1<<PIND_ENVB)|(1<<PIND_OEQ_N));
 }
 
 static bool dac_start(uint8_t mask, bool read) {
@@ -33,8 +34,8 @@ bool iobuf_set_voltage(uint8_t mask, uint16_t *millivolts_ptr) {
   uint8_t code_bytes[2];
 
   // Which LDO enable pins do we touch?
-  if(mask & IO_BUF_A) pin_mask |= 1<<PIND_ENVA_N;
-  if(mask & IO_BUF_B) pin_mask |= 1<<PIND_ENVB_N;
+  if(mask & IO_BUF_A) pin_mask |= 1<<PIND_ENVA;
+  if(mask & IO_BUF_B) pin_mask |= 1<<PIND_ENVB;
 
   // Nothing to do? No problem.
   if(mask == 0)
@@ -42,7 +43,7 @@ bool iobuf_set_voltage(uint8_t mask, uint16_t *millivolts_ptr) {
 
   // Just disable the LDOs, DAC power is irrelevant
   if(millivolts == 0) {
-    OED &= ~pin_mask;
+    IOD &= ~pin_mask;
     return true;
   }
 
@@ -67,7 +68,7 @@ bool iobuf_set_voltage(uint8_t mask, uint16_t *millivolts_ptr) {
     return false;
 
   // Enable LDO(s)
-  OED |= pin_mask;
+  IOD |= pin_mask;
 
   return true;
 }
@@ -79,13 +80,13 @@ bool iobuf_get_voltage(uint8_t selector, uint16_t *millivolts_ptr) {
 
   // Which LDO enable pins do we look at?
   switch(selector) {
-    case IO_BUF_A: pin_mask = 1<<PIND_ENVA_N; break;
-    case IO_BUF_B: pin_mask = 1<<PIND_ENVB_N; break;
+    case IO_BUF_A: pin_mask = 1<<PIND_ENVA; break;
+    case IO_BUF_B: pin_mask = 1<<PIND_ENVB; break;
     default: return false;
   }
 
   // Check if LDO is disabled
-  if(!(OED & pin_mask)) {
+  if(!(IOD & pin_mask)) {
     *millivolts_ptr = 0;
     return true;
   }

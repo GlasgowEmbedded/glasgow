@@ -14,13 +14,13 @@
 #define PINB_SS_N     3
 #define PINB_SCK      4
 // PORTD pins
-#define PIND_ENVA_N   0
+#define PIND_ENVA     0
 #define PIND_CRESET_N 1
 #define PIND_LED_CY   2
 #define PIND_LED_FPGA 3
 #define PIND_LED_ACT  4
 #define PIND_LED_ERR  5
-#define PIND_ENVB_N   6
+#define PIND_ENVB     6
 #define PIND_OEQ_N    7
 
 enum {
