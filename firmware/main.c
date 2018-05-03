@@ -105,8 +105,8 @@ void handle_pending_usb_setup() {
   // EEPROM read/write requests
   if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN ||
       req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
-     (req->bRequest == USB_REQ_EEPROM ||
-      req->bRequest == USB_REQ_CYPRESS_EEPROM_DB)) {
+     (req->bRequest == USB_REQ_CYPRESS_EEPROM_DB ||
+      req->bRequest == USB_REQ_EEPROM)) {
     bool     arg_read = (req->bmRequestType & USB_DIR_IN);
     uint8_t  arg_chip = 0;
     uint16_t arg_addr = req->wValue;
@@ -115,13 +115,13 @@ void handle_pending_usb_setup() {
     uint8_t  timeout  = 166;
     if(req->bRequest == USB_REQ_CYPRESS_EEPROM_DB) {
       double_byte = true;
-      arg_chip = 0b1010001;
+      arg_chip = I2C_ADDR_CYP_MEM;
     } else /* req->bRequest == USB_REQ_EEPROM */ {
       double_byte = true;
       switch(req->wIndex) {
-        case 0: arg_chip = 0b1010001;
-        case 1: arg_chip = 0b1010010;
-        case 2: arg_chip = 0b1010011;
+        case 0: arg_chip = I2C_ADDR_CYP_MEM;    break;
+        case 1: arg_chip = I2C_ADDR_FPGA_MEM;   break;
+        case 2: arg_chip = I2C_ADDR_FPGA_MEM+1; break;
       }
     }
     pending_setup = false;
@@ -166,14 +166,14 @@ void handle_pending_usb_setup() {
     uint16_t arg_len  = req->wLength;
     pending_setup = false;
 
-    if(!i2c_start(0b00010000))
+    if(!i2c_start(I2C_ADDR_FPGA<<1))
       goto register_fail;
     if(!i2c_write(&arg_addr, 1))
       goto register_fail;
 
     if(arg_read) {
       while(EP0CS & _BUSY);
-      if(!i2c_start(0b00010001))
+      if(!i2c_start((I2C_ADDR_FPGA<<1)|1))
         goto register_fail;
       if(!i2c_read(EP0BUF, arg_len))
         goto register_fail;
