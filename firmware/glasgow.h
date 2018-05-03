@@ -23,14 +23,24 @@
 #define PIND_ENVB_N   6
 #define PIND_OEQ_N    7
 
-// I2C addresses (unshifted)
-#define I2C_ADDR_FPGA     0b0001000
-#define I2C_ADDR_CYP_MEM  0b1010001
-#define I2C_ADDR_FPGA_MEM 0b1010010
-#define I2C_ADDR_IOA_DAC  0b0011000
-#define I2C_ADDR_IOA_ADC  0b1010100
-#define I2C_ADDR_IOB_DAC  0b0011001
-#define I2C_ADDR_IOB_ADC  0b1010101
+enum {
+  // I2C addresses (unshifted)
+  I2C_ADDR_FPGA     = 0b0001000,
+  I2C_ADDR_CYP_MEM  = 0b1010001,
+  I2C_ADDR_FPGA_MEM = 0b1010010,
+  I2C_ADDR_IOA_DAC  = 0b0001100,
+  I2C_ADDR_IOB_DAC  = 0b0001101,
+  I2C_ADDR_ALL_DAC  = 0b1001000,
+  I2C_ADDR_IOA_ADC  = 0b1010100,
+  I2C_ADDR_IOB_ADC  = 0b1010101,
+};
+
+enum {
+  // I/O buffer selectors
+  IO_BUF_A      = (1<<0),
+  IO_BUF_B      = (1<<1),
+  IO_BUF_ALL    = IO_BUF_A|IO_BUF_B,
+};
 
 // LED API
 void leds_init();
@@ -46,5 +56,10 @@ bool fpga_is_ready();
 bool fpga_reg_select(uint8_t addr);
 bool fpga_reg_read(uint8_t *value, uint8_t length);
 bool fpga_reg_write(uint8_t *value, uint8_t length);
+
+// I/O buffer API
+void iobuf_init();
+bool iobuf_set_voltage(uint8_t mask, uint16_t *millivolts);
+bool iobuf_get_voltage(uint8_t selector, uint16_t *millivolts);
 
 #endif

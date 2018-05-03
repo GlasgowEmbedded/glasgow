@@ -6,7 +6,7 @@ from .i2c import I2CSlave
 from .registers import Registers
 
 
-__all__ = ['GlasgowBase', 'GlasgowTest']
+__all__ = ['GlasgowBase']
 
 
 class _CRG(Module):
@@ -35,11 +35,23 @@ class GlasgowBase(Module):
         self.platform.build(self, *args, **kwargs)
 
 
-class GlasgowTest(GlasgowBase):
+class TestToggleIO(GlasgowBase):
     def __init__(self):
         super().__init__(reg_count=1)
 
+        cnt = Signal(15)
+        out = Signal()
+        self.sync += [
+            cnt.eq(cnt + 1),
+            If(cnt == 0,
+                out.eq(~out))
+        ]
+
         sync = self.platform.request("sync")
+        ioa = self.platform.request("io")
+        iob = self.platform.request("io")
         self.comb += [
-            sync.eq(~self.registers[0][0])
+            sync.eq(out),
+            ioa.eq(Replicate(out, 8)),
+            iob.eq(Replicate(out, 8)),
         ]

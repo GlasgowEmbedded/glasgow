@@ -76,21 +76,46 @@ enum {
   USB_REQ_FPGA_CFG = 0x11,
   USB_REQ_STATUS   = 0x12,
   USB_REQ_REGISTER = 0x13,
+  USB_REQ_IO_VOLT  = 0x14,
   // Cypress requests
   USB_REQ_CYPRESS_EEPROM_DB = 0xA9,
 };
 
 enum {
   // Status bits
-  ST_FPGA_RDY = 1<<0,
+  ST_ERROR    = 1<<0,
+  ST_FPGA_RDY = 1<<1,
 };
+
+// We use a self-clearing error latch. That is, when an error condition occurs,
+// we light up the ERR LED, and set ST_ERROR bit in the status register.
+// When the status register is next read, the ST_ERROR bit is cleared and the LED
+// is turned off.
+//
+// The reason for this design is that stalling an OUT transfer results in
+// an USB timeout, and we want to indicate error conditions faster.
+static bool error;
+
+void latch_error() {
+  error = true;
+  led_err_set(true);
+}
+
+bool check_error() {
+  if(error) {
+    error = false;
+    led_err_set(false);
+    return true;
+  }
+  return false;
+}
 
 // We perform lengthy operations in the main loop to avoid hogging the interrupt.
 // This flag is used for synchronization between the main loop and the ISR;
 // to allow new SETUP requests to arrive while the previous one is still being
 // handled (with all data received), the flag should be reset as soon as
 // the entire SETUP request is parsed.
-volatile bool pending_setup;
+static volatile bool pending_setup;
 
 void handle_usb_setup(__xdata struct usb_req_setup *req) {
   req;
@@ -198,6 +223,8 @@ void handle_pending_usb_setup() {
     uint8_t status = 0;
     pending_setup = false;
 
+    if(check_error())
+      status |= ST_ERROR;
     if(fpga_is_ready())
       status |= ST_FPGA_RDY;
 
@@ -235,14 +262,38 @@ void handle_pending_usb_setup() {
       fpga_start();
       if(fpga_is_ready()) {
         led_fpga_set(true);
-        led_err_set(false);
       } else {
-        led_err_set(true);
+        latch_error();
       }
 
-      // We can't stall here (this would just result in a timeout),
-      // so the host will explicitly read device status.
       ACK_EP0();
+    }
+
+    return;
+  }
+
+  // I/O voltage get/set request
+  if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN ||
+      req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
+     req->bRequest == USB_REQ_IO_VOLT &&
+     req->wLength == 2) {
+    bool     arg_get = (req->bmRequestType & USB_DIR_IN);
+    uint8_t  arg_mask = req->wIndex;
+    pending_setup = false;
+
+    if(arg_get) {
+      while(EP0CS & _BUSY);
+      if(!iobuf_get_voltage(arg_mask, (uint16_t *)EP0BUF)) {
+        STALL_EP0();
+      } else {
+        SETUP_EP0_BUF(2);
+      }
+    } else {
+      SETUP_EP0_BUF(2);
+      while(EP0CS & _BUSY);
+      if(!iobuf_set_voltage(arg_mask, (uint16_t *)EP0BUF)) {
+        latch_error();
+      }
     }
 
     return;
@@ -282,6 +333,8 @@ int main() {
   // Initialize subsystems
   usb_init(/*reconnect=*/true);
   leds_init();
+  led_fpga_set(fpga_is_ready());
+  iobuf_init();
 
   // Use timer 2 in 16-bit timer mode for ACT LED
   T2CON = _CPRL2;

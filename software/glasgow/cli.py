@@ -7,7 +7,7 @@ import shutil
 from fx2 import FX2DeviceError
 
 from .device import *
-from .gateware.target import GlasgowTest
+from .gateware.target import TestToggleIO
 
 
 def get_argparser():
@@ -24,6 +24,12 @@ def get_argparser():
 
     p_test = subparsers.add_parser(
         "test", help="verify device functionality")
+
+    test_subparsers = p_test.add_subparsers(dest="mode", metavar="MODE")
+    test_subparsers.required = True
+
+    p_test_toggle_io = test_subparsers.add_parser(
+        "toggle-io", help="toggle all I/O pins")
 
     return parser
 
@@ -53,7 +59,8 @@ def main():
     if args.action == "download":
         device.download_bitstream(args.bitstream.read())
     if args.action == "test":
-        device.download_bitstream(get_bitstream(GlasgowTest()))
+        if args.mode == "toggle-io":
+            device.download_bitstream(get_bitstream(TestToggleIO()))
 
 
 if __name__ == "__main__":

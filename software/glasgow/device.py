@@ -1,4 +1,5 @@
 import time
+import struct
 import usb1
 
 from fx2 import *
@@ -15,8 +16,13 @@ REQ_EEPROM   = 0x10
 REQ_FPGA_CFG = 0x11
 REQ_STATUS   = 0x12
 REQ_REGISTER = 0x13
+REQ_IO_VOLT  = 0x14
 
-ST_FPGA_RDY  = 1<<0
+ST_ERROR     = 1<<0
+ST_FPGA_RDY  = 1<<1
+
+IO_BUF_A     = 1<<0
+IO_BUF_B     = 1<<1
 
 
 class GlasgowDeviceError(FX2DeviceError):
@@ -88,3 +94,34 @@ class GlasgowDevice(FX2Device):
         # Check if we've succeeded.
         if not (self._status() & ST_FPGA_RDY):
             raise GlasgowDeviceError("FPGA configuration failed")
+
+    def _iobuf_spec_to_mask(self, spec, multi):
+        if not multi and len(spec) > 1:
+            raise GlasgowDeviceError("Only one I/O port may be specified for this operation")
+
+        mask = 0
+        for port in str(spec):
+            if   port == "A":
+                mask |= IO_BUF_A
+            elif port == "B":
+                mask |= IO_BUF_B
+            else:
+                raise GlasgowDeviceError("Unknown I/O port {}".format(port))
+        return mask
+
+    def set_voltage(self, spec, volts):
+        self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_IO_VOLT,
+            0, self._iobuf_spec_to_mask(spec, multi=True), struct.pack("<H", round(volts * 1000)))
+        # Check if we've succeeded
+        if self._status() & ST_ERROR:
+            raise GlasgowDeviceError("Cannot set port(s) {} I/O voltage to {} V"
+                                     .format(spec or "(none)", volts))
+
+    def get_voltage(self, spec):
+        try:
+            return struct.unpack("<H",
+                self.control_read(usb1.REQUEST_TYPE_VENDOR, REQ_IO_VOLT,
+                    0, self._iobuf_spec_to_mask(spec, multi=False), 2))[0] / 1000
+        except usb1.USBErrorPipe:
+            raise GlasgowDeviceError("Cannot get port {} I/O voltage"
+                                     .format(spec or "(none)"))
