@@ -768,8 +768,8 @@ AR Path="/5AFBDC9E/5B083B9F" Ref="R27"  Part="1"
 F 0 "R22" V 4250 4750 50  0000 C CNN
 F 1 "49k9" V 4150 4750 50  0000 C CNN
 F 2 "Resistor_SMD:R_0603_1608Metric_Pad0.99x1.00mm_HandSolder" V 4080 4750 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 4150 4750 50  0001 C CNN
-F 4 "603-RC0603FR-0749R9L" H 4150 4750 50  0001 C CNN "Mouser_PN"
+F 3 "https://www.mouser.hk/datasheet/2/447/PYu-AC_51_RoHS_L_6-1152827.pdf" H 4150 4750 50  0001 C CNN
+F 4 "603-AC0201FR-0749K9L" H 4150 4750 50  0001 C CNN "Mouser_PN"
 	1    4150 4750
 	0    -1   -1   0   
 $EndComp
