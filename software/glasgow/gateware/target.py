@@ -1,4 +1,7 @@
-import argparse
+import os
+import sys
+import tempfile
+import shutil
 from migen import *
 
 from .platform import Platform
@@ -31,8 +34,29 @@ class GlasgowBase(Module):
 
             self.submodules.registers = Registers(self.i2c_slave, reg_count)
 
-    def build(self, *args, **kwargs):
-        self.platform.build(self, *args, **kwargs)
+    def build(self, **kwargs):
+        self.platform.build(self, **kwargs)
+
+    def get_verilog(self, **kwargs):
+        return self.platform.get_verilog(self)
+
+    def get_bitstream(self, build_dir=None, debug=False, **kwargs):
+        if build_dir is None:
+            build_dir = tempfile.mkdtemp(prefix="glasgow_")
+        try:
+            self.build(build_dir=build_dir)
+            with open(os.path.join(build_dir, "top.bin"), "rb") as f:
+                bitstream = f.read()
+            if debug:
+                shutil.rmtree(build_dir)
+        except:
+            if debug:
+                print("Keeping build tree as " + build_dir, file=sys.stderr)
+            raise
+        finally:
+            if not debug:
+                shutil.rmtree(build_dir)
+        return bitstream
 
 
 class TestToggleIO(GlasgowBase):

@@ -1,8 +1,5 @@
 import os
-import sys
 import argparse
-import tempfile
-import shutil
 
 from fx2 import FX2DeviceError
 
@@ -34,19 +31,6 @@ def get_argparser():
     return parser
 
 
-def get_bitstream(fragment):
-    try:
-        build_dir = tempfile.mkdtemp(prefix="glasgow_")
-        fragment.build(build_dir=build_dir)
-        with open(os.path.join(build_dir, "top.bin"), "rb") as f:
-            bitstream = f.read()
-        shutil.rmtree(build_dir)
-    except:
-        print("Keeping build tree as " + build_dir, file=sys.stderr)
-        raise
-    return bitstream
-
-
 def main():
     args = get_argparser().parse_args()
 
@@ -60,7 +44,7 @@ def main():
         device.download_bitstream(args.bitstream.read())
     if args.action == "test":
         if args.mode == "toggle-io":
-            device.download_bitstream(get_bitstream(TestToggleIO()))
+            device.download_bitstream(TestToggleIO().get_bitstream(debug=True))
 
 
 if __name__ == "__main__":
