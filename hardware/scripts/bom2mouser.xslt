@@ -23,20 +23,26 @@
   <xsl:template match="components">
     <xsl:for-each select="comp[count(. | key('mouserPartNumber', fields/field[@name='Mouser_PN'])[1]) = 1]">
 
-      <xsl:value-of select="fields/field[@name='Mouser_PN']"/>
-      <xsl:text>|</xsl:text>
+      <xsl:sort select="fields/field[@name='Mouser_PN']"/>
 
-      <xsl:value-of select="count(key('mouserPartNumber', fields/field[@name='Mouser_PN']))"/>
-      <xsl:text>|</xsl:text>
+      <xsl:if test="count(key('mouserPartNumber', fields/field[@name='Mouser_PN'])) > 0">
 
-      <xsl:for-each select="key('mouserPartNumber', fields/field[@name='Mouser_PN'])">
+        <xsl:value-of select="fields/field[@name='Mouser_PN']"/>
+        <xsl:text>|</xsl:text>
 
-        <xsl:sort select="@ref" />
-        <xsl:value-of select="@ref"/>
-        <xsl:text> </xsl:text>
+        <xsl:value-of select="count(key('mouserPartNumber', fields/field[@name='Mouser_PN']))"/>
+        <xsl:text>|</xsl:text>
 
-      </xsl:for-each>
-      <xsl:text>&#xa;</xsl:text>
+        <xsl:for-each select="key('mouserPartNumber', fields/field[@name='Mouser_PN'])">
+
+          <xsl:sort select="@ref" />
+          <xsl:value-of select="@ref"/>
+          <xsl:text> </xsl:text>
+
+        </xsl:for-each>
+        <xsl:text>&#xa;</xsl:text>
+
+      </xsl:if>
 
     </xsl:for-each>
   </xsl:template>
