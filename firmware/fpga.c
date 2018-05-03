@@ -1,5 +1,6 @@
 #include <fx2regs.h>
 #include <fx2delay.h>
+#include <fx2i2c.h>
 #include "glasgow.h"
 
 void fpga_reset() {
@@ -55,7 +56,7 @@ __endasm;
 #undef  BIT
 }
 
-bool fpga_start() {
+void fpga_start() {
 __asm
   mov  a, #49
 
@@ -72,6 +73,44 @@ __endasm;
 
   // enable FIFO bus with external master
   IFCONFIG |= _IFCFG1|_IFCFG0;
+}
 
+bool fpga_is_ready() {
   return (IOA & (1 << PINA_CDONE));
+}
+
+bool fpga_reg_select(uint8_t addr) {
+  if(!i2c_start(I2C_ADDR_FPGA<<1))
+    goto fail;
+  if(!i2c_write(&addr, 1))
+    goto fail;
+  return true;
+
+fail:
+  i2c_stop();
+  return false;
+}
+
+bool fpga_reg_read(uint8_t *value, uint8_t length) {
+  if(!i2c_start((I2C_ADDR_FPGA<<1)|1))
+    goto fail;
+  if(!i2c_read(value, length))
+    goto fail;
+  return true;
+
+fail:
+  i2c_stop();
+  return false;
+}
+
+bool fpga_reg_write(uint8_t *value, uint8_t length) {
+  if(!i2c_write(EP0BUF, length))
+    goto fail;
+  if(!i2c_stop())
+    return false;
+  return true;
+
+fail:
+  i2c_stop();
+  return false;
 }

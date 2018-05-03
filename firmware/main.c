@@ -74,9 +74,15 @@ enum {
   // Glasgow requests
   USB_REQ_EEPROM   = 0x10,
   USB_REQ_FPGA_CFG = 0x11,
-  USB_REQ_REGISTER = 0x12,
+  USB_REQ_STATUS   = 0x12,
+  USB_REQ_REGISTER = 0x13,
   // Cypress requests
   USB_REQ_CYPRESS_EEPROM_DB = 0xA9,
+};
+
+enum {
+  // Status bits
+  ST_FPGA_RDY = 1<<0,
 };
 
 // We perform lengthy operations in the main loop to avoid hogging the interrupt.
@@ -166,30 +172,37 @@ void handle_pending_usb_setup() {
     uint16_t arg_len  = req->wLength;
     pending_setup = false;
 
-    if(!i2c_start(I2C_ADDR_FPGA<<1))
-      goto register_fail;
-    if(!i2c_write(&arg_addr, 1))
-      goto register_fail;
-
-    if(arg_read) {
-      while(EP0CS & _BUSY);
-      if(!i2c_start((I2C_ADDR_FPGA<<1)|1))
-        goto register_fail;
-      if(!i2c_read(EP0BUF, arg_len))
-        goto register_fail;
-      SETUP_EP0_BUF(arg_len);
-    } else {
-      SETUP_EP0_BUF(0);
-      while(EP0CS & _BUSY);
-      i2c_write(EP0BUF, arg_len);
-      i2c_stop();
+    if(fpga_reg_select(arg_addr)) {
+      if(arg_read) {
+        while(EP0CS & _BUSY);
+        if(fpga_reg_read(EP0BUF, arg_len)) {
+          SETUP_EP0_BUF(arg_len);
+          return;
+        }
+      } else {
+        SETUP_EP0_BUF(0);
+        while(EP0CS & _BUSY);
+        fpga_reg_write(EP0BUF, arg_len);
+        return;
+      }
     }
 
-    return;
-
-register_fail:
-    i2c_stop();
     STALL_EP0();
+    return;
+  }
+
+  // Device status request
+  if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN) &&
+     req->bRequest == USB_REQ_STATUS &&
+     req->wLength == 1) {
+    uint8_t status = 0;
+    pending_setup = false;
+
+    if(fpga_is_ready())
+      status |= ST_FPGA_RDY;
+
+    EP0BUF[0] = status;
+    SETUP_EP0_BUF(1);
     return;
   }
 
@@ -219,14 +232,17 @@ register_fail:
 
       bitstream_idx = arg_idx;
     } else {
-      if(fpga_start()) {
+      fpga_start();
+      if(fpga_is_ready()) {
         led_fpga_set(true);
         led_err_set(false);
-        ACK_EP0();
       } else {
         led_err_set(true);
-        STALL_EP0();
       }
+
+      // We can't stall here (this would just result in a timeout),
+      // so the host will explicitly read device status.
+      ACK_EP0();
     }
 
     return;

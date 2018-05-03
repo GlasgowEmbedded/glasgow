@@ -41,6 +41,9 @@ void led_err_set(bool on);
 // FPGA API
 void fpga_reset();
 void fpga_load(__xdata uint8_t *data, uint8_t len);
-bool fpga_start();
+bool fpga_is_ready();
+bool fpga_reg_select(uint8_t addr);
+bool fpga_reg_read(uint8_t *value, uint8_t length);
+bool fpga_reg_write(uint8_t *value, uint8_t length);
 
 #endif
