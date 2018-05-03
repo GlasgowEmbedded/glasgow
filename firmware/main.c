@@ -251,13 +251,46 @@ void handle_pending_usb_setup() {
   STALL_EP0();
 }
 
+void isr_TF2() __interrupt(_INT_TF2) {
+  led_act_set(false);
+  TR2 = false;
+  TF2 = false;
+}
+
+static void pulse_led_act() {
+  led_act_set(true);
+  // Just let it run, at the maximum reload value we get a pulse width of around 16ms
+  TR2 = true;
+}
+
+void isr_EP0IN() __interrupt {
+  pulse_led_act();
+  CLEAR_USB_IRQ();
+  EPIRQ = _EP0IN;
+}
+
+void isr_EP0OUT() __interrupt {
+  pulse_led_act();
+  CLEAR_USB_IRQ();
+  EPIRQ = _EP0OUT;
+}
+
 int main() {
-  CPUCS = _CLKOE|_CLKSPD1; // Run at 48 MHz, drive CLKOUT
-  IFCONFIG = _IFCLKSRC|_IFCLKOE; // Drive 30 MHz IFCLK
+  // Run at 48 MHz, drive CLKOUT
+  CPUCS = _CLKOE|_CLKSPD1;
+
+  // Initialize subsystems
   usb_init(/*reconnect=*/true);
   leds_init();
 
-  SYNCDELAY();
+  // Use timer 2 in 16-bit timer mode for ACT LED
+  T2CON = _CPRL2;
+  ET2 = true;
+
+  // Set up endpoint interrupts for ACT LED
+  EPIE |= _EP0IN|_EP0OUT;
+
+  // Configure FIFOs
   EP2FIFOCFG = _ZEROLENIN;
   SYNCDELAY();
   EP4FIFOCFG = _ZEROLENIN;
@@ -266,6 +299,9 @@ int main() {
   SYNCDELAY();
   EP8FIFOCFG = _ZEROLENIN;
   SYNCDELAY();
+
+  // Drive 30 MHz IFCLK
+  IFCONFIG = _IFCLKSRC|_IFCLKOE;
 
   while(1) {
     if(pending_setup)

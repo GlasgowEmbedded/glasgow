@@ -28,9 +28,9 @@
 #define I2C_ADDR_CYP_MEM  0b1010001
 #define I2C_ADDR_FPGA_MEM 0b1010010
 #define I2C_ADDR_IOA_DAC  0b0011000
-#define I2c_ADDR_IOA_ADC  0b1010100
+#define I2C_ADDR_IOA_ADC  0b1010100
 #define I2C_ADDR_IOB_DAC  0b0011001
-#define I2c_ADDR_IOB_ADC  0b1010101
+#define I2C_ADDR_IOB_ADC  0b1010101
 
 // LED API
 void leds_init();
@@ -41,6 +41,7 @@ void led_err_set(bool on);
 // FPGA API
 void fpga_reset();
 void fpga_load(__xdata uint8_t *data, uint8_t len);
+void fpga_start();
 bool fpga_is_ready();
 bool fpga_reg_select(uint8_t addr);
 bool fpga_reg_read(uint8_t *value, uint8_t length);

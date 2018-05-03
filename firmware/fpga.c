@@ -4,21 +4,21 @@
 #include "glasgow.h"
 
 void fpga_reset() {
-  // disable FIFO bus
+  // Disable FIFO bus
   IFCONFIG &= ~(_IFCFG1|_IFCFG0);
 
-  // put FPGA in reset
+  // Put FPGA in reset
   OED |=  (1<<PIND_CRESET_N);
   IOD &= ~(1<<PIND_CRESET_N);
   delay_us(1);
 
-  // configure config pins while FPGA is in reset
+  // Configure config pins while FPGA is in reset
   IOB |=  (1<<PINB_SCK);
   IOB &= ~(1<<PINB_SS_N);
   OEA &= ~(1<<PINA_CDONE);
   OEB |=  (1<<PINB_SCK)|(1<<PINB_SS_N)|(1<<PINB_SI);
 
-  // release FPGA reset
+  // Release FPGA reset
   IOD |=  (1<<PIND_CRESET_N);
   delay_us(1200); // 1200 us for HX8K, 800 us for others
 }
@@ -68,10 +68,10 @@ __asm
   djnz acc, 00001$     /*3c*/
 __endasm;
 
-  // tristate PORTB drivers as FPGA may drive them now
+  // Tristate PORTB drivers as FPGA may drive them now
   OEB &= ~((1<<PINB_SCK)|(1<<PINB_SS_N)|(1<<PINB_SI));
 
-  // enable FIFO bus with external master
+  // Enable FIFO bus with external master
   IFCONFIG |= _IFCFG1|_IFCFG0;
 }
 
