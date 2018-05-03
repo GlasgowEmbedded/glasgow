@@ -393,7 +393,7 @@ ADRADC
 Wire Wire Line
 	5650 3150 5700 3150
 Text Notes 3350 5350 0    50   ~ 0
-Addr (ADR=X): 0011000\nAddr (ADR=L): 0011001\nAddr (ADR=H): 0011010
+Addr (ADR=X): 0001100\nAddr (ADR=L): 0001101\nAddr (ADR=H): 0001110
 Text Notes 6250 3650 0    50   ~ 0
 Addr (ADR=X): 1010100\nAddr (ADR=L): 1010101\nAddr (ADR=H): 1010110
 Text HLabel 6550 3250 2    50   Input ~ 0

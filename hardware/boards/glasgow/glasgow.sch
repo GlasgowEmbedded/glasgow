@@ -2677,7 +2677,7 @@ Addr: 1010001
 Text Notes 10350 5400 0    50   ~ 0
 500 mA @ 1V2\n500 mA @ 3V3
 Text Notes 8700 3400 0    50   ~ 0
-Addr DAC: 0011000\nAddr ADC: 1010100
+Addr DAC: 0001100\nAddr ADC: 1010100
 Wire Wire Line
 	8600 2950 8700 2950
 NoConn ~ 8600 2950
@@ -2695,7 +2695,7 @@ F 3 "" H 8600 4300 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 Text Notes 8700 4750 0    50   ~ 0
-Addr DAC: 0011001\nAddr ADC: 1010101
+Addr DAC: 0001101\nAddr ADC: 1010101
 Wire Wire Line
 	8400 2400 8700 2400
 Wire Wire Line
