@@ -7,6 +7,9 @@ void iobuf_init() {
   IOD &= ~((1<<PIND_ENVA)|(1<<PIND_ENVB));
   IOD |=                                 (1<<PIND_OEQ_N);
   OED |=  ((1<<PIND_ENVA)|(1<<PIND_ENVB)|(1<<PIND_OEQ_N));
+
+  // Enable I/O buffers
+  IOD &= ~ (1<<PIND_OEQ_N);
 }
 
 static bool dac_start(uint8_t mask, bool read) {
