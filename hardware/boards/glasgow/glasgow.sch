@@ -129,8 +129,6 @@ Wire Wire Line
 Wire Wire Line
 	1400 3200 1350 3200
 Connection ~ 1350 3200
-Wire Wire Line
-	1350 3200 1350 2950
 $Comp
 L Device:R R1
 U 1 1 5ACB7B47
@@ -204,21 +202,6 @@ Wire Wire Line
 	2500 6150 2700 6150
 Connection ~ 2700 6150
 $Comp
-L Device:Crystal_GND24 Y1
-U 1 1 5ACC4BC0
-P 1850 2950
-F 0 "Y1" H 1975 3150 50  0000 L CNN
-F 1 "24M" H 1975 3075 50  0000 L CNN
-F 2 "Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm_HandSoldering" H 1850 2950 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/741/LFXTAL058124Reel-940455.pdf" H 1850 2950 50  0001 C CNN
-F 4 "449-LFXTAL058124REEL" H 1850 2950 50  0001 C CNN "Mouser_PN"
-	1    1850 2950
-	1    0    0    -1  
-$EndComp
-Connection ~ 1350 2950
-Wire Wire Line
-	1350 2950 1350 2700
-$Comp
 L power:GND #PWR05
 U 1 1 5ACCB418
 P 2100 2950
@@ -229,24 +212,6 @@ F 3 "" H 2100 2950 50  0001 C CNN
 	1    2100 2950
 	0    -1   -1   0   
 $EndComp
-Wire Wire Line
-	1700 2700 1850 2700
-Wire Wire Line
-	1700 3200 1850 3200
-Wire Wire Line
-	1350 2950 1700 2950
-Wire Wire Line
-	2000 2950 2100 2950
-Wire Wire Line
-	1850 2750 1850 2700
-Connection ~ 1850 2700
-Wire Wire Line
-	1850 2700 2200 2700
-Wire Wire Line
-	1850 3150 1850 3200
-Connection ~ 1850 3200
-Wire Wire Line
-	1850 3200 2200 3200
 $Comp
 L Device:R R3
 U 1 1 5ACCF0F2
@@ -2923,6 +2888,41 @@ Wire Wire Line
 	3050 1600 3350 1600
 Text Notes 6950 4550 0    50   ~ 0
 Addr: 0001000
+$Comp
+L Device:Crystal_GND24 Y1
+U 1 1 5ACC4BC0
+P 1800 2950
+F 0 "Y1" V 1600 3000 50  0000 L CNN
+F 1 "24M" V 1650 3000 50  0000 L TNN
+F 2 "Crystals:Crystal_SMD_3225-4pin_3.2x2.5mm" H 1800 2950 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/741/LFXTAL058124Reel-940455.pdf" H 1800 2950 50  0001 C CNN
+F 4 "449-LFXTAL058124REEL" H 1800 2950 50  0001 C CNN "Mouser_PN"
+	1    1800 2950
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	1350 2700 1350 2950
+Wire Wire Line
+	1700 2700 1800 2700
+Wire Wire Line
+	1700 3200 1800 3200
+Wire Wire Line
+	1800 2800 1800 2700
+Connection ~ 1800 2700
+Wire Wire Line
+	1800 2700 2200 2700
+Wire Wire Line
+	1600 2950 1350 2950
+Connection ~ 1350 2950
+Wire Wire Line
+	1350 2950 1350 3200
+Wire Wire Line
+	1800 3100 1800 3200
+Connection ~ 1800 3200
+Wire Wire Line
+	1800 3200 2200 3200
+Wire Wire Line
+	2000 2950 2100 2950
 Wire Bus Line
 	4050 5850 6350 5850
 Wire Bus Line
