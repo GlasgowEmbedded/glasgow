@@ -79,3 +79,12 @@ class TestToggleIO(GlasgowBase):
             ioa.eq(Replicate(out, 8)),
             iob.eq(Replicate(out, 8)),
         ]
+
+
+class TestExposeI2C(GlasgowBase):
+    def __init__(self):
+        super().__init__()
+
+        i2c = self.platform.request("i2c")
+        ioa = self.platform.request("io")
+        self.comb += ioa[0:2].eq(Cat(i2c.scl, i2c.sda))

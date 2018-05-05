@@ -4,7 +4,7 @@ import argparse
 from fx2 import FX2DeviceError
 
 from .device import *
-from .gateware.target import TestToggleIO
+from .gateware.target import TestToggleIO, TestExposeI2C
 
 
 def get_argparser():
@@ -26,7 +26,10 @@ def get_argparser():
     test_subparsers.required = True
 
     p_test_toggle_io = test_subparsers.add_parser(
-        "toggle-io", help="toggle all I/O pins")
+        "toggle-io", help="toggle all I/O pins at 3.3 V")
+
+    p_test_expose_i2c = test_subparsers.add_parser(
+        "expose-i2c", help="mirror {SDA,SCL} on A[1:0] at 3.3 V")
 
     return parser
 
@@ -45,6 +48,10 @@ def main():
     if args.action == "test":
         if args.mode == "toggle-io":
             device.download_bitstream(TestToggleIO().get_bitstream(debug=True))
+            device.set_voltage("AB", 3.3)
+        if args.mode == "expose-i2c":
+            device.download_bitstream(TestExposeI2C().get_bitstream(debug=True))
+            device.set_voltage("A", 3.3)
 
 
 if __name__ == "__main__":
