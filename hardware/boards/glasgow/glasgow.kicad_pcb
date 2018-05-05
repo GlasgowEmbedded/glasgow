@@ -5353,7 +5353,7 @@
   (gr_text "by @whitequark and @awygle" (at 127 95.5 90) (layer F.SilkS)
     (effects (font (size 1.5 1.5) (thickness 0.15)))
   )
-  (gr_text "Glasgow revA" (at 124.75 95.5 90) (layer F.SilkS)
+  (gr_text "Glasgow revB" (at 124.75 95.5 90) (layer F.SilkS)
     (effects (font (size 1.5 1.5) (thickness 0.15)))
   )
   (gr_text B (at 123.25 110) (layer F.SilkS) (tstamp 5AFB0D69)
