@@ -2,7 +2,7 @@
 #include <fx2i2c.h>
 #include "glasgow.h"
 
-void iobuf_init() {
+void iobuf_init_dac_ldo() {
   // Configure I/O buffer pins as open-source/open-drain; they have 100k pulls
   IOD &= ~((1<<PIND_ENVA)|(1<<PIND_ENVB));
   IOD |=                                 (1<<PIND_OEQ_N);
@@ -30,19 +30,15 @@ static bool dac_start(uint8_t mask, bool read) {
   return true;
 }
 
-bool iobuf_set_voltage(uint8_t mask, uint16_t *millivolts_ptr) {
+bool iobuf_set_voltage(uint8_t mask, __xdata const uint16_t *millivolts_ptr) {
   uint8_t pin_mask = 0;
   uint16_t millivolts = *millivolts_ptr;
   uint16_t code_word;
-  uint8_t code_bytes[2];
+  __pdata uint8_t code_bytes[2];
 
   // Which LDO enable pins do we touch?
   if(mask & IO_BUF_A) pin_mask |= 1<<PIND_ENVA;
   if(mask & IO_BUF_B) pin_mask |= 1<<PIND_ENVB;
-
-  // Nothing to do? No problem.
-  if(mask == 0)
-    return true;
 
   // Just disable the LDOs, DAC power is irrelevant
   if(millivolts == 0) {
@@ -51,7 +47,7 @@ bool iobuf_set_voltage(uint8_t mask, uint16_t *millivolts_ptr) {
   }
 
   // Compute the DAC code word
-  if(millivolts < 1650 || millivolts > 5500)
+  if(millivolts < MIN_VOLTAGE || millivolts > MAX_VOLTAGE)
     return false;
 
   // Offset 1650, slope -15.2, 0x1000/15.2 = 269
@@ -76,10 +72,10 @@ bool iobuf_set_voltage(uint8_t mask, uint16_t *millivolts_ptr) {
   return true;
 }
 
-bool iobuf_get_voltage(uint8_t selector, uint16_t *millivolts_ptr) {
+bool iobuf_get_voltage(uint8_t selector, __xdata uint16_t *millivolts_ptr) {
   uint8_t pin_mask = 0;
   uint16_t code_word;
-  uint8_t code_bytes[2];
+  __pdata uint8_t code_bytes[2];
 
   // Which LDO enable pins do we look at?
   switch(selector) {

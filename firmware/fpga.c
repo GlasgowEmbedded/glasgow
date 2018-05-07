@@ -91,7 +91,7 @@ fail:
   return false;
 }
 
-bool fpga_reg_read(uint8_t *value, uint8_t length) {
+bool fpga_reg_read(__xdata uint8_t *value, uint8_t length) {
   if(!i2c_start((I2C_ADDR_FPGA<<1)|1))
     goto fail;
   if(!i2c_read(value, length))
@@ -103,8 +103,8 @@ fail:
   return false;
 }
 
-bool fpga_reg_write(uint8_t *value, uint8_t length) {
-  if(!i2c_write(EP0BUF, length))
+bool fpga_reg_write(__xdata const uint8_t *value, uint8_t length) {
+  if(!i2c_write(value, length))
     goto fail;
   if(!i2c_stop())
     return false;

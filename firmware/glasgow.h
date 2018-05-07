@@ -42,6 +42,10 @@ enum {
   IO_BUF_ALL    = IO_BUF_A|IO_BUF_B,
 };
 
+// I/O buffer parameters
+#define MIN_VOLTAGE 1650 // mV
+#define MAX_VOLTAGE 5500 // mV
+
 // LED API
 void leds_init();
 void led_fpga_set(bool on);
@@ -54,12 +58,24 @@ void fpga_load(__xdata uint8_t *data, uint8_t len);
 void fpga_start();
 bool fpga_is_ready();
 bool fpga_reg_select(uint8_t addr);
-bool fpga_reg_read(uint8_t *value, uint8_t length);
-bool fpga_reg_write(uint8_t *value, uint8_t length);
+bool fpga_reg_read(__xdata uint8_t *value, uint8_t length);
+bool fpga_reg_write(__xdata const uint8_t *value, uint8_t length);
 
-// I/O buffer API
-void iobuf_init();
-bool iobuf_set_voltage(uint8_t mask, uint16_t *millivolts);
-bool iobuf_get_voltage(uint8_t selector, uint16_t *millivolts);
+// DAC/LDO API
+void iobuf_init_dac_ldo();
+bool iobuf_set_voltage(uint8_t mask, __xdata const uint16_t *millivolts);
+bool iobuf_get_voltage(uint8_t selector, __xdata uint16_t *millivolts);
+
+// ADC API
+void iobuf_init_adc();
+bool iobuf_measure_voltage(uint8_t selector, __xdata uint16_t *millivolts);
+bool iobuf_set_alert(uint8_t mask,
+                     __xdata const uint16_t *low_millivolts,
+                     __xdata const uint16_t *high_millivolts);
+bool iobuf_get_alert(uint8_t selector,
+                     __xdata uint16_t *low_millivolts,
+                     __xdata uint16_t *high_millivolts);
+bool iobuf_is_alerted();
+bool iobuf_poll_alert(__xdata uint8_t *mask, bool clear);
 
 #endif

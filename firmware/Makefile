@@ -2,8 +2,8 @@ VID      ?= 20b7
 PID      ?= 9db1
 
 TARGET    = glasgow
-SOURCES   = main leds fpga iobuf
-LIBRARIES = fx2 fx2usb fx2isrs
+SOURCES   = main leds fpga dac_ldo adc
+LIBRARIES = fx2 fx2isrs fx2usb
 CFLAGS    = -DSYNCDELAYLEN=16
 
 LIBFX2    = ../vendor/libfx2/firmware/library

@@ -1,4 +1,6 @@
 #include <fx2lib.h>
+#include <fx2regs.h>
+#include <fx2ints.h>
 #include <fx2usb.h>
 #include <fx2delay.h>
 #include <fx2i2c.h>
@@ -67,11 +69,14 @@ usb_descriptor_set_c usb_descriptor_set = {
 
 enum {
   // Glasgow requests
-  USB_REQ_EEPROM   = 0x10,
-  USB_REQ_FPGA_CFG = 0x11,
-  USB_REQ_STATUS   = 0x12,
-  USB_REQ_REGISTER = 0x13,
-  USB_REQ_IO_VOLT  = 0x14,
+  USB_REQ_EEPROM     = 0x10,
+  USB_REQ_FPGA_CFG   = 0x11,
+  USB_REQ_STATUS     = 0x12,
+  USB_REQ_REGISTER   = 0x13,
+  USB_REQ_IO_VOLT    = 0x14,
+  USB_REQ_SENSE_VOLT = 0x15,
+  USB_REQ_ALERT_VOLT = 0x16,
+  USB_REQ_POLL_ALERT = 0x17,
   // Cypress requests
   USB_REQ_CYPRESS_EEPROM_DB = 0xA9,
 };
@@ -80,6 +85,7 @@ enum {
   // Status bits
   ST_ERROR    = 1<<0,
   ST_FPGA_RDY = 1<<1,
+  ST_ALERT    = 1<<2,
 };
 
 // We use a self-clearing error latch. That is, when an error condition occurs,
@@ -89,17 +95,26 @@ enum {
 //
 // The reason for this design is that stalling an OUT transfer results in
 // an USB timeout, and we want to indicate error conditions faster.
-static bool error;
+static uint8_t status;
 
-void latch_error() {
-  error = true;
-  led_err_set(true);
+static void update_leds() {
+  led_err_set(status & (ST_ERROR | ST_ALERT));
+  led_fpga_set(status & ST_FPGA_RDY);
 }
 
-bool check_error() {
-  if(error) {
-    error = false;
-    led_err_set(false);
+static void latch_status_bit(uint8_t bit) {
+  status |= bit;
+  update_leds();
+}
+
+static bool check_status_bit(uint8_t bit) {
+  return status & bit;
+}
+
+static bool reset_status_bit(uint8_t bit) {
+  if(status & bit) {
+    status &= ~bit;
+    update_leds();
     return true;
   }
   return false;
@@ -215,16 +230,14 @@ void handle_pending_usb_setup() {
   if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN) &&
      req->bRequest == USB_REQ_STATUS &&
      req->wLength == 1) {
-    uint8_t status = 0;
     pending_setup = false;
 
-    if(check_error())
-      status |= ST_ERROR;
-    if(fpga_is_ready())
-      status |= ST_FPGA_RDY;
-
+    while(EP0CS & _BUSY);
     EP0BUF[0] = status;
     SETUP_EP0_BUF(1);
+
+    reset_status_bit(ST_ERROR);
+
     return;
   }
 
@@ -238,7 +251,7 @@ void handle_pending_usb_setup() {
 
     if(arg_len > 0) {
       if(arg_idx == 0) {
-        led_fpga_set(false);
+        reset_status_bit(ST_FPGA_RDY);
         fpga_reset();
       }
 
@@ -256,9 +269,9 @@ void handle_pending_usb_setup() {
     } else {
       fpga_start();
       if(fpga_is_ready()) {
-        led_fpga_set(true);
+        latch_status_bit(ST_FPGA_RDY);
       } else {
-        latch_error();
+        latch_status_bit(ST_ERROR);
       }
 
       ACK_EP0();
@@ -287,14 +300,90 @@ void handle_pending_usb_setup() {
       SETUP_EP0_BUF(2);
       while(EP0CS & _BUSY);
       if(!iobuf_set_voltage(arg_mask, (uint16_t *)EP0BUF)) {
-        latch_error();
+        latch_status_bit(ST_ERROR);
       }
     }
 
     return;
   }
 
+  // Voltage sense request
+  if(req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN &&
+     req->bRequest == USB_REQ_SENSE_VOLT &&
+     req->wLength == 2) {
+    uint8_t  arg_mask = req->wIndex;
+    pending_setup = false;
+
+    while(EP0CS & _BUSY);
+    if(!iobuf_measure_voltage(arg_mask, (uint16_t *)EP0BUF)) {
+      STALL_EP0();
+    } else {
+      SETUP_EP0_BUF(2);
+    }
+
+    return;
+  }
+
+  // Voltage alert get/set request
+  if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN ||
+      req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
+     req->bRequest == USB_REQ_ALERT_VOLT &&
+     req->wLength == 4) {
+    bool     arg_get = (req->bmRequestType & USB_DIR_IN);
+    uint8_t  arg_mask = req->wIndex;
+    pending_setup = false;
+
+    if(arg_get) {
+      while(EP0CS & _BUSY);
+      if(!iobuf_get_alert(arg_mask, (uint16_t *)EP0BUF, (uint16_t *)EP0BUF + 1)) {
+        STALL_EP0();
+      } else {
+        SETUP_EP0_BUF(4);
+      }
+    } else {
+      SETUP_EP0_BUF(4);
+      while(EP0CS & _BUSY);
+      if(!iobuf_set_alert(arg_mask, (uint16_t *)EP0BUF, (uint16_t *)EP0BUF + 1)) {
+        latch_status_bit(ST_ERROR);
+      }
+    }
+
+    return;
+  }
+
+  // Alert poll request
+  if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN) &&
+     req->bRequest == USB_REQ_POLL_ALERT &&
+     req->wLength == 1) {
+    pending_setup = false;
+
+    while(EP0CS & _BUSY);
+    iobuf_poll_alert(EP0BUF, /*clear=*/true);
+    SETUP_EP0_BUF(1);
+
+    reset_status_bit(ST_ALERT);
+
+    return;
+  }
+
   STALL_EP0();
+}
+
+volatile bool pending_alert;
+
+void isr_IE0() __interrupt(_INT_IE0) {
+  pending_alert = true;
+}
+
+void handle_pending_alert() {
+  __xdata uint8_t mask;
+  __xdata uint16_t millivolts = 0;
+
+  pending_alert = false;
+
+  latch_status_bit(ST_ALERT);
+  iobuf_poll_alert(&mask, /*clear=*/false);
+  iobuf_set_voltage(mask, &millivolts);
 }
 
 void isr_TF2() __interrupt(_INT_TF2) {
@@ -322,23 +411,29 @@ void isr_EP0OUT() __interrupt {
 }
 
 int main() {
-  // Run at 48 MHz, drive CLKOUT
+  // Run at 48 MHz, drive CLKOUT.
   CPUCS = _CLKOE|_CLKSPD1;
 
-  // Initialize subsystems
-  usb_init(/*reconnect=*/true);
+  // Initialize subsystems.
   leds_init();
   led_fpga_set(fpga_is_ready());
-  iobuf_init();
+  iobuf_init_dac_ldo();
+  iobuf_init_adc();
 
-  // Use timer 2 in 16-bit timer mode for ACT LED
+  // Use timer 2 in 16-bit timer mode for ACT LED.
   T2CON = _CPRL2;
   ET2 = true;
 
-  // Set up endpoint interrupts for ACT LED
+  // Set up endpoint interrupts for ACT LED.
   EPIE |= _EP0IN|_EP0OUT;
 
+  // Set up interrupt for ADC ALERT.
+  EX0 = true;
+
   // Configure FIFOs
+  SYNCDELAY();
+  REVCTL = _ENH_PKT|_DYN_OUT;
+  SYNCDELAY();
   EP2FIFOCFG = _ZEROLENIN;
   SYNCDELAY();
   EP4FIFOCFG = _ZEROLENIN;
@@ -346,13 +441,18 @@ int main() {
   EP6FIFOCFG = _ZEROLENIN;
   SYNCDELAY();
   EP8FIFOCFG = _ZEROLENIN;
-  SYNCDELAY();
 
   // Drive 30 MHz IFCLK
+  SYNCDELAY();
   IFCONFIG = _IFCLKSRC|_IFCLKOE;
+
+  // Finally, enumerate.
+  usb_init(/*reconnect=*/true);
 
   while(1) {
     if(pending_setup)
       handle_pending_usb_setup();
+    if(pending_alert)
+      handle_pending_alert();
   }
 }
