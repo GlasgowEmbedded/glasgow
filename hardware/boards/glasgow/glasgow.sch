@@ -2413,7 +2413,7 @@ Wire Notes Line
 Wire Notes Line
 	10850 1350 10800 1350
 Text Notes 10900 1350 0    50   ~ 0
-1 mA
+0.3 mA
 $Comp
 L Device:R R12
 U 1 1 5B18B70C
