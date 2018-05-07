@@ -166,7 +166,7 @@ class GlasgowDevice(FX2Device):
         except usb1.USBErrorPipe:
             raise GlasgowDeviceError("Cannot measure port {} sense voltage".format(spec))
 
-    def set_alert(self, spec, low_volts=0.0, high_volts=5.5):
+    def set_alert(self, spec, low_volts, high_volts):
         low_millivolts  = round(low_volts * 1000)
         high_millivolts = round(high_volts * 1000)
         self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_ALERT_VOLT,
@@ -177,6 +177,9 @@ class GlasgowDevice(FX2Device):
             raise GlasgowDeviceError("Cannot set port(s) {} voltage alert to {:.2}-{:.2} V"
                                      .format(spec or "(none)",
                                              float(low_volts), float(high_volts)))
+
+    def reset_alert(self, spec):
+        self.set_alert(spec, 0.0, 5.5)
 
     def get_alert(self, spec):
         try:

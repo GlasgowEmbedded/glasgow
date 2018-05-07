@@ -140,12 +140,10 @@ bool iobuf_set_alert(uint8_t mask,
 
       if(!adc_reg_write(buffer->address, ADC081_REG_CONFIGURATION, &control_byte, 1))
         return false;
-
-      return true;
     }
   }
 
-  return false;
+  return true;
 }
 
 bool iobuf_get_alert(uint8_t selector,
@@ -160,7 +158,7 @@ bool iobuf_get_alert(uint8_t selector,
       if(!adc_reg_read(buffer->address, ADC081_REG_CONFIGURATION, &control_byte, 1))
         return false;
 
-      if(!(control_byte & ADC081_BIT_ALERT_PIN_EN)) {
+      if(control_byte == 0) {
         *low_millivolts = 0;
         *high_millivolts = MAX_VOLTAGE;
         return true;
@@ -193,22 +191,24 @@ bool iobuf_poll_alert(__xdata uint8_t *mask, bool clear) {
       return false;
 
     if(status_byte) {
+      __pdata uint8_t control_byte = 0;
       *mask |= buffer->selector;
 
+      if(!adc_reg_read(buffer->address, ADC081_REG_CONFIGURATION, &control_byte, 1))
+        return false;
+
       if(clear) {
-        // Actually clear alert
+        // Clear actual alert and re-arm the alert pin
         if(!adc_reg_write(buffer->address, ADC081_REG_ALERT_STATUS, &status_byte, 1))
           return false;
+        control_byte |=  ADC081_BIT_ALERT_PIN_EN;
       } else {
-        // Only clear alert pin status
-        __pdata uint8_t control_byte = 0;
-        if(!adc_reg_read(buffer->address, ADC081_REG_CONFIGURATION, &control_byte, 1))
-          return false;
-
+        // Only disarm the alert pin (so that alerts from other ADCs can be detected)
         control_byte &= ~ADC081_BIT_ALERT_PIN_EN;
-        if(!adc_reg_write(buffer->address, ADC081_REG_CONFIGURATION, &control_byte, 1))
-          return false;
       }
+
+      if(!adc_reg_write(buffer->address, ADC081_REG_CONFIGURATION, &control_byte, 1))
+        return false;
     }
   }
 
