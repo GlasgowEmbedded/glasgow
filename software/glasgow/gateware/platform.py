@@ -13,8 +13,8 @@ _io = [
 
     ("fx2", 0,
         Subsignal("sloe", Pins("6")),
-        Subsignal("slrd_n", Pins("47")),
-        Subsignal("slwr_n", Pins("46")),
+        Subsignal("slrd", Pins("47")),
+        Subsignal("slwr", Pins("46")),
         Subsignal("pktend", Pins("2")),
         Subsignal("fifoadr", Pins("4 3")),
         Subsignal("flag", Pins("11 10 9 48")),
