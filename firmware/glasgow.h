@@ -78,4 +78,8 @@ bool iobuf_get_alert(uint8_t selector,
 bool iobuf_is_alerted();
 bool iobuf_poll_alert(__xdata uint8_t *mask, bool clear);
 
+// FIFO API
+void fifo_init();
+void fifo_configure(bool two_ep);
+
 #endif

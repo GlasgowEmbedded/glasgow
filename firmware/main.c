@@ -21,7 +21,7 @@ usb_desc_device_c usb_device = {
   .iManufacturer        = 1,
   .iProduct             = 2,
   .iSerialNumber        = 0,
-  .bNumConfigurations   = 1,
+  .bNumConfigurations   = 2,
 };
 
 usb_desc_configuration_c usb_configs[] = {
@@ -29,32 +29,122 @@ usb_desc_configuration_c usb_configs[] = {
     .bLength              = sizeof(struct usb_desc_configuration),
     .bDescriptorType      = USB_DESC_CONFIGURATION,
     .wTotalLength         = sizeof(struct usb_desc_configuration) +
-                            sizeof(struct usb_desc_interface),
-    .bNumInterfaces       = 1,
-    .bConfigurationValue  = 0,
-    .iConfiguration       = 0,
+                            2 * sizeof(struct usb_desc_interface) +
+                            4 * sizeof(struct usb_desc_endpoint),
+    .bNumInterfaces       = 2,
+    .bConfigurationValue  = 1,
+    .iConfiguration       = 3,
     .bmAttributes         = USB_ATTR_RESERVED_1,
-    .bMaxPower            = 50,
-  }
+    .bMaxPower            = 250,
+  },
+  {
+    .bLength              = sizeof(struct usb_desc_configuration),
+    .bDescriptorType      = USB_DESC_CONFIGURATION,
+    .wTotalLength         = sizeof(struct usb_desc_configuration) +
+                            1 * sizeof(struct usb_desc_interface) +
+                            2 * sizeof(struct usb_desc_endpoint),
+    .bNumInterfaces       = 1,
+    .bConfigurationValue  = 2,
+    .iConfiguration       = 6,
+    .bmAttributes         = USB_ATTR_RESERVED_1,
+    .bMaxPower            = 250,
+  },
 };
 
 usb_desc_interface_c usb_interfaces[] = {
-  {
+  { // EP2OUT + EP6IN
     .bLength              = sizeof(struct usb_desc_interface),
     .bDescriptorType      = USB_DESC_INTERFACE,
     .bInterfaceNumber     = 0,
     .bAlternateSetting    = 0,
-    .bNumEndpoints        = 0,
+    .bNumEndpoints        = 2,
     .bInterfaceClass      = 255,
     .bInterfaceSubClass   = 255,
     .bInterfaceProtocol   = 255,
-    .iInterface           = 0,
+    .iInterface           = 4,
+  },
+  { // EP4OUT + EP8IN
+    .bLength              = sizeof(struct usb_desc_interface),
+    .bDescriptorType      = USB_DESC_INTERFACE,
+    .bInterfaceNumber     = 1,
+    .bAlternateSetting    = 0,
+    .bNumEndpoints        = 2,
+    .bInterfaceClass      = 255,
+    .bInterfaceSubClass   = 255,
+    .bInterfaceProtocol   = 255,
+    .iInterface           = 5,
+  },
+  { // EP2OUT + EP6IN
+    .bLength              = sizeof(struct usb_desc_interface),
+    .bDescriptorType      = USB_DESC_INTERFACE,
+    .bInterfaceNumber     = 0,
+    .bAlternateSetting    = 0,
+    .bNumEndpoints        = 2,
+    .bInterfaceClass      = 255,
+    .bInterfaceSubClass   = 255,
+    .bInterfaceProtocol   = 255,
+    .iInterface           = 6,
   }
 };
 
+usb_desc_endpoint_c usb_endpoints[] = {
+  { // EP2OUT
+    .bLength              = sizeof(struct usb_desc_endpoint),
+    .bDescriptorType      = USB_DESC_ENDPOINT,
+    .bEndpointAddress     = 2,
+    .bmAttributes         = USB_XFER_BULK,
+    .wMaxPacketSize       = 512,
+    .bInterval            = 0,
+  },
+  { // EP6IN
+    .bLength              = sizeof(struct usb_desc_endpoint),
+    .bDescriptorType      = USB_DESC_ENDPOINT,
+    .bEndpointAddress     = 6|USB_DIR_IN,
+    .bmAttributes         = USB_XFER_BULK,
+    .wMaxPacketSize       = 512,
+    .bInterval            = 0,
+  },
+  { // EP4OUT
+    .bLength              = sizeof(struct usb_desc_endpoint),
+    .bDescriptorType      = USB_DESC_ENDPOINT,
+    .bEndpointAddress     = 4,
+    .bmAttributes         = USB_XFER_BULK,
+    .wMaxPacketSize       = 512,
+    .bInterval            = 0,
+  },
+  { // EP8IN
+    .bLength              = sizeof(struct usb_desc_endpoint),
+    .bDescriptorType      = USB_DESC_ENDPOINT,
+    .bEndpointAddress     = 8|USB_DIR_IN,
+    .bmAttributes         = USB_XFER_BULK,
+    .wMaxPacketSize       = 512,
+    .bInterval            = 0,
+  },
+  { // EP2OUT
+    .bLength              = sizeof(struct usb_desc_endpoint),
+    .bDescriptorType      = USB_DESC_ENDPOINT,
+    .bEndpointAddress     = 2,
+    .bmAttributes         = USB_XFER_BULK,
+    .wMaxPacketSize       = 512,
+    .bInterval            = 0,
+  },
+  { // EP6IN
+    .bLength              = sizeof(struct usb_desc_endpoint),
+    .bDescriptorType      = USB_DESC_ENDPOINT,
+    .bEndpointAddress     = 6|USB_DIR_IN,
+    .bmAttributes         = USB_XFER_BULK,
+    .wMaxPacketSize       = 512,
+    .bInterval            = 0,
+  },
+};
+
 usb_ascii_string_c usb_strings[] = {
-  "whitequark research",
-  "Glasgow Debug Tool",
+  [0] = "whitequark research",
+  [1] = "Glasgow Debug Tool",
+  [2] = "Port A at {2x512B EP2OUT, 2x512B EP6IN}, B at {2x512B EP4OUT, 2x512B EP8IN}",
+  [3] = "Port A at {2x512B EP2OUT, 2x512B EP6IN}",
+  [4] = "Port B at {2x512B EP4OUT, 2x512B EP8IN}",
+  [5] = "Ports AB at {4x512B EP2OUT, 4x512B EP6IN}",
 };
 
 usb_descriptor_set_c usb_descriptor_set = {
@@ -63,6 +153,8 @@ usb_descriptor_set_c usb_descriptor_set = {
   .configs         = usb_configs,
   .interface_count = ARRAYSIZE(usb_interfaces),
   .interfaces      = usb_interfaces,
+  .endpoint_count  = ARRAYSIZE(usb_endpoints),
+  .endpoints       = usb_endpoints,
   .string_count    = ARRAYSIZE(usb_strings),
   .strings         = usb_strings,
 };
@@ -134,6 +226,20 @@ void handle_usb_setup(__xdata struct usb_req_setup *req) {
   } else {
     pending_setup = true;
   }
+}
+
+void handle_usb_set_configuration(uint8_t value) {
+  switch(value) {
+    case 0: break;
+    case 1: fifo_configure(/*two_ep=*/false); break;
+    case 2: fifo_configure(/*two_ep=*/true);  break;
+    default:
+      STALL_EP0();
+      return;
+  }
+
+  usb_configuration = value;
+  ACK_EP0();
 }
 
 // This monotonically increasing number ensures that we upload bitstream chunks
@@ -392,23 +498,21 @@ void isr_TF2() __interrupt(_INT_TF2) {
   TF2 = false;
 }
 
-static void pulse_led_act() {
+static void isr_EPn() {
   led_act_set(true);
-  // Just let it run, at the maximum reload value we get a pulse width of around 16ms
+  // Just let it run, at the maximum reload value we get a pulse width of around 16ms.
   TR2 = true;
+  // Clear all EPn IRQs, since we don't really need this IRQ to be fine-grained.
+  CLEAR_USB_IRQ();
+  EPIRQ = 0b11110011; //_EP0IN|_EP0OUT|_EP2|_EP4|_EP6|_EP8
 }
 
-void isr_EP0IN() __interrupt {
-  pulse_led_act();
-  CLEAR_USB_IRQ();
-  EPIRQ = _EP0IN;
-}
-
-void isr_EP0OUT() __interrupt {
-  pulse_led_act();
-  CLEAR_USB_IRQ();
-  EPIRQ = _EP0OUT;
-}
+void isr_EP0IN()  __interrupt { isr_EPn(); }
+void isr_EP0OUT() __interrupt { isr_EPn(); }
+void isr_EP2()    __interrupt { isr_EPn(); }
+void isr_EP4()    __interrupt { isr_EPn(); }
+void isr_EP6()    __interrupt { isr_EPn(); }
+void isr_EP8()    __interrupt { isr_EPn(); }
 
 int main() {
   // Run at 48 MHz, drive CLKOUT.
@@ -416,49 +520,29 @@ int main() {
 
   // Initialize subsystems.
   leds_init();
-  led_fpga_set(fpga_is_ready());
   iobuf_init_dac_ldo();
   iobuf_init_adc();
+  fifo_init();
+
+  // Latch initial status bits.
+  if(fpga_is_ready())
+    latch_status_bit(ST_FPGA_RDY);
+
+  // Disable EP1IN/OUT
+  SYNCDELAY;
+  EP1INCFG = 0;
+  SYNCDELAY;
+  EP1OUTCFG = 0;
 
   // Use timer 2 in 16-bit timer mode for ACT LED.
   T2CON = _CPRL2;
   ET2 = true;
 
   // Set up endpoint interrupts for ACT LED.
-  EPIE |= _EP0IN|_EP0OUT;
+  EPIE |= 0b11110011; //_EP0IN|_EP0OUT|_EP2|_EP4|_EP6|_EP8
 
   // Set up interrupt for ADC ALERT.
   EX0 = true;
-
-  // Configure FIFOs
-  SYNCDELAY();
-  REVCTL = _ENH_PKT|_DYN_OUT;
-  SYNCDELAY();
-  FIFOPINPOLAR = _PKTEND|_SLOE|_SLRD|_SLWR|_EF|_FF;
-  SYNCDELAY();
-  EP1INCFG = 0;
-  SYNCDELAY();
-  EP1OUTCFG = 0;
-  SYNCDELAY();
-  EP2CFG = _VALID|_DIR|_TYPE1|_BUF1; // EP2 IN BULK
-  SYNCDELAY();
-  EP2FIFOCFG = _INFM1|_OEP1|_AUTOOUT|_AUTOIN|_ZEROLENIN;
-  SYNCDELAY();
-  EP4CFG = _VALID|_TYPE1|_BUF1; // EP4 OUT BULK
-  SYNCDELAY();
-  EP4FIFOCFG = _INFM1|_OEP1|_AUTOOUT|_AUTOIN|_ZEROLENIN;
-  SYNCDELAY();
-  EP6CFG = _VALID|_DIR|_TYPE1|_BUF1; // EP6 IN BULK
-  SYNCDELAY();
-  EP6FIFOCFG = _INFM1|_OEP1|_AUTOOUT|_AUTOIN|_ZEROLENIN;
-  SYNCDELAY();
-  EP8CFG = _VALID|_TYPE1|_BUF1; // EP2 OUT BULK
-  SYNCDELAY();
-  EP8FIFOCFG = _INFM1|_OEP1|_AUTOOUT|_AUTOIN|_ZEROLENIN;
-
-  // Drive 30 MHz IFCLK
-  SYNCDELAY();
-  IFCONFIG = _IFCLKSRC|_IFCLKOE;
 
   // Finally, enumerate.
   usb_init(/*reconnect=*/true);
