@@ -81,7 +81,7 @@ class TestToggleIO(GlasgowBase):
         ]
 
 
-class TestExposeI2C(GlasgowBase):
+class TestMirrorI2C(GlasgowBase):
     def __init__(self):
         super().__init__()
 
