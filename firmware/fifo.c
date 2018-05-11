@@ -7,7 +7,10 @@ void fifo_init() {
   SYNCDELAY;
   REVCTL = _ENH_PKT|_DYN_OUT;
 
-  // Disable all FIFOs.
+  // Disable all FIFOs and bus.
+  // The FIFO clock must stay enabled for FIFO registers to work.
+  SYNCDELAY;
+  IFCONFIG = _IFCLKSRC;
   SYNCDELAY;
   FIFORESET = _NAKALL;
 
@@ -30,10 +33,6 @@ void fifo_init() {
   EP6FIFOCFG &= ~_WORDWIDE;
   SYNCDELAY;
   EP8FIFOCFG &= ~_WORDWIDE;
-
-  // Drive 30 MHz IFCLK, sample on negative edge, use FIFO with external master
-  SYNCDELAY;
-  IFCONFIG = _IFCLKSRC|_IFCLKOE|_IFCLKPOL|_IFCFG1|_IFCFG0;
 }
 
 void fifo_configure(bool two_ep) {

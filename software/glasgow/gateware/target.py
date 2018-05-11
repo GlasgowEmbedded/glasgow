@@ -14,12 +14,26 @@ __all__ = ['GlasgowBase']
 
 class _CRG(Module):
     def __init__(self, platform):
-        self.clock_domains.cd_sys = ClockDomain()
-
         clk_if = platform.request("clk_if")
-        self.specials += Instance("SB_GB_IO",
-            i_PACKAGE_PIN=clk_if,
-            o_GLOBAL_BUFFER_OUTPUT=self.cd_sys.clk)
+
+        self.clock_domains.cd_por = ClockDomain(reset_less=True)
+        self.clock_domains.cd_sys = ClockDomain()
+        self.specials += [
+            Instance("SB_GB_IO",
+                i_PACKAGE_PIN=clk_if,
+                o_GLOBAL_BUFFER_OUTPUT=self.cd_por.clk),
+        ]
+
+        reset_delay = Signal(max=2047, reset=2047)
+        self.comb += [
+            self.cd_sys.clk.eq(self.cd_por.clk),
+            self.cd_sys.rst.eq(reset_delay != 0)
+        ]
+        self.sync.por += [
+            If(reset_delay != 0,
+                reset_delay.eq(reset_delay - 1)
+            )
+        ]
 
 
 class GlasgowBase(Module):

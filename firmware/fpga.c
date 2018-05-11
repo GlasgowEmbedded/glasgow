@@ -4,21 +4,22 @@
 #include "glasgow.h"
 
 void fpga_reset() {
-  // Disable FIFO bus
+  // Disable FIFO bus.
+  SYNCDELAY;
   IFCONFIG &= ~(_IFCFG1|_IFCFG0);
 
-  // Put FPGA in reset
+  // Put FPGA in reset.
   OED |=  (1<<PIND_CRESET_N);
   IOD &= ~(1<<PIND_CRESET_N);
   delay_us(1);
 
-  // Configure config pins while FPGA is in reset
+  // Configure config pins while FPGA is in reset.
   IOB |=  (1<<PINB_SCK);
   IOB &= ~(1<<PINB_SS_N);
   OEA &= ~(1<<PINA_CDONE);
   OEB |=  (1<<PINB_SCK)|(1<<PINB_SS_N)|(1<<PINB_SI);
 
-  // Release FPGA reset
+  // Release FPGA reset.
   IOD |=  (1<<PIND_CRESET_N);
   delay_us(1200); // 1200 us for HX8K, 800 us for others
 }
@@ -35,7 +36,7 @@ void fpga_load(__xdata uint8_t *data, uint8_t len) {
   setb _IOB+PINB_SCK   /*2c*/
 
 __asm
-  // Use the 1st autopointer to automatically traverse the buffer
+  // Use the 1st autopointer to automatically traverse the buffer.
   mov  _AUTOPTRSETUP, #0b11 ; APTR1INC|APTREN
   mov  _AUTOPTRL1, _DPL0
   mov  _AUTOPTRH1, _DPH0
@@ -68,11 +69,11 @@ __asm
   djnz acc, 00001$     /*3c*/
 __endasm;
 
-  // Tristate PORTB drivers as FPGA may drive them now
+  // Tristate PORTB drivers as FPGA may drive them now.
   OEB &= ~((1<<PINB_SCK)|(1<<PINB_SS_N)|(1<<PINB_SI));
 
-  // Enable FIFO bus with external master
-  IFCONFIG |= _IFCFG1|_IFCFG0;
+  // Enable clock and FIFO bus.
+  IFCONFIG |= _IFCLKOE|_IFCFG0|_IFCFG1;
 }
 
 bool fpga_is_ready() {
