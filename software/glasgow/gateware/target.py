@@ -7,6 +7,7 @@ from migen import *
 from .platform import Platform
 from .i2c import I2CSlave
 from .registers import Registers
+from .fx2 import FX2Arbiter
 
 
 __all__ = ['GlasgowBase']
@@ -37,16 +38,21 @@ class _CRG(Module):
 
 
 class GlasgowBase(Module):
-    def __init__(self, reg_count=0):
+    def __init__(self, out_count=0, in_count=0, fifo_depth=511, reg_count=0):
         self.platform = Platform()
 
         self.submodules.crg = _CRG(self.platform)
 
-        if reg_count > 0:
-            self.submodules.i2c_slave = I2CSlave(self.platform.request("i2c"))
-            self.comb += self.i2c_slave.address.eq(0b0001000)
+        self.submodules.i2c_slave = I2CSlave(self.platform.request("i2c"))
+        self.comb += self.i2c_slave.address.eq(0b0001000)
 
+        if reg_count > 0:
             self.submodules.registers = Registers(self.i2c_slave, reg_count)
+
+        self.submodules.arbiter = FX2Arbiter(self.platform.request("fx2"),
+                                             out_count=out_count,
+                                             in_count=in_count,
+                                             depth=fifo_depth)
 
     def build(self, **kwargs):
         self.platform.build(self, **kwargs)
@@ -75,7 +81,7 @@ class GlasgowBase(Module):
 
 class TestToggleIO(GlasgowBase):
     def __init__(self):
-        super().__init__(reg_count=1)
+        super().__init__()
 
         cnt = Signal(15)
         out = Signal()
