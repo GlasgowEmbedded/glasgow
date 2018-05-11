@@ -15,12 +15,16 @@ void fifo_init() {
   FIFORESET = _NAKALL;
 
   // Configure strobes and flags.
+  // All flags are configured as RDY; this means ~EF for OUT endpoints
+  // and ~FF for for IN endpoints.
+  // SLRD and SLWR *must* be configured as active low; otherwise, glitches
+  // on these lines during reset cause spurious data in FIFOs.
   SYNCDELAY;
-  FIFOPINPOLAR = _PKTEND|_SLOE|_SLRD|_SLWR|_EF|_FF;
+  FIFOPINPOLAR = 0;
   SYNCDELAY;
   PINFLAGSAB = 0b10011000; // FLAGA = EP2 EF, FLAGB = EP4 EF
   SYNCDELAY;
-  PINFLAGSCD = 0b11111110; // FLAGC = EP6 FF, FLAGD = EP8 FF
+  PINFLAGSCD = 0b11111110; // FLAGC = EP6 ~FF, FLAGD = EP8 ~FF
   SYNCDELAY;
   PORTACFG |= _FLAGD; // PA7 is FLAGD
 
