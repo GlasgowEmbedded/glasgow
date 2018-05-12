@@ -36,7 +36,7 @@ class GlasgowDeviceError(FX2DeviceError):
 class GlasgowDevice(FX2Device):
     def __init__(self, firmware_file=None):
         super().__init__(VID_QIHW, PID_GLASGOW)
-        if self._device.getDevice().getbcdDevice() == 0:
+        if self.usb.getDevice().getbcdDevice() == 0:
             if firmware_file is None:
                 raise GlasgowDeviceError("Firmware is not uploaded")
             else:
@@ -49,7 +49,7 @@ class GlasgowDevice(FX2Device):
                 super().__init__(VID_QIHW, PID_GLASGOW)
 
                 # still not the right firmware?
-                if self._device.getDevice().getbcdDevice() == 0:
+                if self.usb.getDevice().getbcdDevice() == 0:
                     raise GlasgowDeviceError("Firmware upload failed")
 
     def read_eeprom(self, idx, addr, length):
