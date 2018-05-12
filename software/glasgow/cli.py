@@ -5,7 +5,7 @@ import time
 from fx2 import FX2DeviceError
 
 from .device import *
-from .gateware.target import TestToggleIO, TestMirrorI2C
+from .gateware.target import TestToggleIO, TestMirrorI2C, TestGenSeq
 
 
 def get_argparser():
@@ -45,6 +45,8 @@ def get_argparser():
         "toggle-io", help="toggle all I/O pins at 3.3 V")
     p_test_mirror_i2c = test_subparsers.add_parser(
         "mirror-i2c", help="mirror {SDA,SCL} on A[1:0] at 3.3 V")
+    p_test_gen_seq = test_subparsers.add_parser(
+        "gen-seq", help="read limit from EP2IN and generate sequence on {EP6OUT,EP8OUT}")
 
     return parser
 
@@ -91,6 +93,8 @@ def main():
             if args.mode == "mirror-i2c":
                 device.download_bitstream(TestMirrorI2C().get_bitstream(debug=True))
                 device.set_voltage("A", 3.3)
+            if args.mode == "gen-seq":
+                device.download_bitstream(TestGenSeq().get_bitstream(debug=True))
 
     except FX2DeviceError as e:
         raise SystemExit(e)
