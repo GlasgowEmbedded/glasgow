@@ -698,6 +698,11 @@
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
     )
+    (model ${KIPRJMOD}/../../packages3D/Crystal_SMD_5032_4Pads.wrl
+      (at (xyz 0 0 0))
+      (scale (xyz 0.5 1 1))
+      (rotate (xyz 0 0 90))
+    )
   )
 
   (module LED_SMD:LED_0603_1608Metric_Pad0.82x1.00mm_HandSolder (layer F.Cu) (tedit 5AC5DB75) (tstamp 5AE059E6)
