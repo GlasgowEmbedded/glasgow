@@ -5,7 +5,7 @@ import time
 from fx2 import FX2DeviceError
 
 from .device import *
-from .gateware.target import TestToggleIO, TestMirrorI2C, TestGenSeq
+from .gateware.test import *
 
 
 def get_argparser():
