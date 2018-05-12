@@ -1684,12 +1684,12 @@ F 3 "~" H 1200 6200 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Glasgow:MIC5355-S4YMME U8
+L Regulator_Linear:MIC5355-S4YMME U8
 U 1 1 5B225B4C
 P 9900 5750
 F 0 "U8" H 9650 6100 50  0000 C CNN
 F 1 "MIC5355-S4YMME" H 9950 6000 50  0000 C CNN
-F 2 "Glasgow:MSOP-8-1EP_3x3mm_P0.65mm_EP2.54x2.8mm_ThermalVias" H 11200 5500 50  0001 C CNN
+F 2 "Package_SO:MSOP-8-1EP_3x3mm_P0.65mm_EP2.54x2.8mm_ThermalVias" H 11200 5500 50  0001 C CNN
 F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/mic5355_6.pdf" H 9900 6100 50  0001 C CNN
 F 4 "998-MIC5355-S4YMME" H 9900 5750 50  0001 C CNN "Mouser_PN"
 	1    9900 5750
@@ -2870,13 +2870,13 @@ $Comp
 L Device:Crystal_GND24 Y1
 U 1 1 5ACC4BC0
 P 1800 2950
-F 0 "Y1" V 1600 3000 50  0000 L CNN
-F 1 "24M" V 1650 3000 50  0000 L TNN
+F 0 "Y1" V 1950 2800 50  0000 L CNN
+F 1 "24M" V 1700 2650 50  0000 L TNN
 F 2 "Crystals:Crystal_SMD_3225-4pin_3.2x2.5mm" H 1800 2950 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/741/LFXTAL058124Reel-940455.pdf" H 1800 2950 50  0001 C CNN
 F 4 "449-LFXTAL058124REEL" H 1800 2950 50  0001 C CNN "Mouser_PN"
 	1    1800 2950
-	0    1    1    0   
+	0    -1   -1   0
 $EndComp
 Wire Wire Line
 	1350 2700 1350 2950
@@ -2884,8 +2884,6 @@ Wire Wire Line
 	1700 2700 1800 2700
 Wire Wire Line
 	1700 3200 1800 3200
-Wire Wire Line
-	1800 2800 1800 2700
 Connection ~ 1800 2700
 Wire Wire Line
 	1800 2700 2200 2700
@@ -2894,8 +2892,6 @@ Wire Wire Line
 Connection ~ 1350 2950
 Wire Wire Line
 	1350 2950 1350 3200
-Wire Wire Line
-	1800 3100 1800 3200
 Connection ~ 1800 3200
 Wire Wire Line
 	1800 3200 2200 3200
@@ -2940,6 +2936,12 @@ Wire Wire Line
 	4250 5950 4350 6050
 Wire Wire Line
 	4350 6050 4650 6050
+Text Label 4400 6050 0    50   ~ 0
+CLKIF
+Wire Wire Line
+	1800 2700 1800 2800
+Wire Wire Line
+	1800 3100 1800 3200
 Wire Bus Line
 	4050 5850 6350 5850
 Wire Bus Line
@@ -2950,6 +2952,4 @@ Wire Bus Line
 	6350 2900 6350 5850
 Wire Bus Line
 	4050 2400 4050 5850
-Text Label 4400 6050 0    50   ~ 0
-CLKIF
 $EndSCHEMATC
