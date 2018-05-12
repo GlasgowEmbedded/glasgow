@@ -198,3 +198,82 @@ class GlasgowDevice(FX2Device):
             return self._mask_to_iobuf_spec(mask)
         except usb1.USBErrorPipe:
             raise GlasgowDeviceError("Cannot poll alert status")
+
+    def get_port(self, port):
+        if port == "A":
+            interface_num = 0
+        elif port == "B":
+            interface_num = 1
+        else:
+            raise GlasgowDeviceError("Unknown I/O port {}".format(port))
+
+        return GlasgowPort(self, interface_num)
+
+
+class GlasgowPort:
+    def __init__(self, device, interface_num):
+        self.device = device
+
+        config_num = device.usb.getConfiguration()
+        for config in device.usb.getDevice().iterConfigurations():
+            if config.getConfigurationValue() == config_num:
+                break
+
+        interfaces = list(config.iterInterfaces())
+        if interface_num > len(interfaces):
+            raise GlasgowDeviceError("Interface {} is not present in configuration {}"
+                                     .format(interface_num, config_num))
+        interface = interfaces[interface_num]
+
+        settings = list(interface.iterSettings())
+        setting = settings[0] # we use the same endpoints in all alternative settings
+        for endpoint in setting.iterEndpoints():
+            address = endpoint.getAddress()
+            packet_size = endpoint.getMaxPacketSize()
+            if address & usb1.ENDPOINT_DIR_MASK == usb1.ENDPOINT_IN:
+                self.endpoint_in = address
+                self.in_packet_size = packet_size
+            if address & usb1.ENDPOINT_DIR_MASK == usb1.ENDPOINT_OUT:
+                self.endpoint_out = address
+                self.out_packet_size = packet_size
+        assert self.endpoint_in != None and self.endpoint_out != None
+
+        try:
+            self.interface = device.usb.claimInterface(interface_num)
+        except usb1.USBErrorBusy:
+            raise GlasgowDeviceError("I/O port {} already claimed".format(port))
+
+        self.buffer_in  = bytearray()
+        self.buffer_out = bytearray()
+
+    def read(self, length):
+        self.flush()
+
+        while len(self.buffer_in) < length:
+            self.buffer_in += self.device.bulk_read(self.endpoint_in, self.in_packet_size)
+
+        result = self.buffer_in[:length]
+        self.buffer_in = self.buffer_in[length:]
+        return result
+
+    def read_str(self, length, encoding="utf-8"):
+        return self.read(length).decode(encoding)
+
+    def write(self, data):
+        self.buffer_out += bytearray(data)
+
+        # You can only write around 16 MB into an USB endpoint in one call,
+        # better just packetize it here.
+        while len(self.buffer_out) > self.out_packet_size:
+            print(self.buffer_out[:self.out_packet_size])
+            self.device.bulk_write(self.endpoint_out, self.buffer_out[:self.out_packet_size])
+            self.buffer_out = self.buffer_out[self.out_packet_size:]
+
+    def write_str(self, data, encoding="utf-8"):
+        return self.write(data.encode(encoding))
+
+    def flush(self):
+        while len(self.buffer_out) > 0:
+            print(self.buffer_out[:self.out_packet_size])
+            self.device.bulk_write(self.endpoint_out, self.buffer_out[:self.out_packet_size])
+            self.buffer_out = self.buffer_out[self.out_packet_size:]
