@@ -2923,6 +2923,17 @@ F 3 "" H 4600 4050 50  0001 C CNN
 	1    4600 4050
 	0    -1   -1   0   
 $EndComp
+$Comp
+L Connector:Test_Point TP7
+U 1 1 5B12B6CA
+P 3950 4300
+F 0 "TP7" H 3850 4450 50  0000 C CNN
+F 1 "3V3" V 4054 4374 50  0001 C CNN
+F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 4150 4300 50  0001 C CNN
+F 3 "~" H 4150 4300 50  0001 C CNN
+	1    3950 4300
+	1    0    0    -1  
+$EndComp
 Wire Bus Line
 	4050 5850 6350 5850
 Wire Bus Line
