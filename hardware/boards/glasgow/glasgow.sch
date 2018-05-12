@@ -2926,14 +2926,20 @@ $EndComp
 $Comp
 L Connector:Test_Point TP7
 U 1 1 5B12B6CA
-P 3950 4300
-F 0 "TP7" H 3850 4450 50  0000 C CNN
-F 1 "3V3" V 4054 4374 50  0001 C CNN
-F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 4150 4300 50  0001 C CNN
-F 3 "~" H 4150 4300 50  0001 C CNN
-	1    3950 4300
-	1    0    0    -1  
+P 4650 6050
+F 0 "TP7" V 4650 6237 50  0000 L CNN
+F 1 "3V3" V 4754 6124 50  0001 C CNN
+F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 4850 6050 50  0001 C CNN
+F 3 "~" H 4850 6050 50  0001 C CNN
+	1    4650 6050
+	0    1    1    0   
 $EndComp
+Entry Wire Line
+	4150 5850 4250 5950
+Wire Wire Line
+	4250 5950 4350 6050
+Wire Wire Line
+	4350 6050 4650 6050
 Wire Bus Line
 	4050 5850 6350 5850
 Wire Bus Line
@@ -2944,4 +2950,6 @@ Wire Bus Line
 	6350 2900 6350 5850
 Wire Bus Line
 	4050 2400 4050 5850
+Text Label 4400 6050 0    50   ~ 0
+CLKIF
 $EndSCHEMATC
