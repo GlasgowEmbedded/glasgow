@@ -37,6 +37,54 @@ class _CRG(Module):
         ]
 
 
+class _SyncPort(Module):
+    def __init__(self, inout):
+        self.oe = Signal()
+        self.i  = Signal()
+
+        self.specials += \
+            Instance("SB_IO",
+                p_PIN_TYPE=0b101001, # PIN_OUTPUT_TRISTATE|PIN_INPUT
+                io_PACKAGE_PIN=inout,
+                i_OUTPUT_ENABLE=self.oe,
+                i_D_OUT_0=0,
+                o_D_IN_0=self.i,
+            )
+
+
+class _IOTriple:
+    def __init__(self, bits):
+        self.o = Signal(bits)
+        self.oe = Signal(reset=reset_oe)
+        self.i = Signal(bits)
+
+
+class _IOPort(Module):
+    def __init__(self, inout, bits=8):
+        self.o  = Signal(bits)
+        self.oe = Signal(bits)
+        self.i  = Signal(bits)
+
+        for n in range(bits):
+            self.specials += \
+                Instance("SB_IO",
+                    p_PIN_TYPE=0b101001, # PIN_OUTPUT_TRISTATE|PIN_INPUT
+                    io_PACKAGE_PIN=inout[n],
+                    i_OUTPUT_ENABLE=self.oe[n],
+                    i_D_OUT_0=self.o[n],
+                    o_D_IN_0=self.i[n],
+                )
+
+    def __getitem__(self, index):
+        t = _IOTriple(self.o[index].nbits)
+        self.comb += [
+            self.o.eq(t.o[index]),
+            self.oe.eq(t.oe[index]),
+            t.i[index].eq(self.i)
+        ]
+        return t
+
+
 class GlasgowTarget(Module):
     def __init__(self, out_count=0, in_count=0, fifo_depth=511, reg_count=0):
         self.platform = Platform()
@@ -54,8 +102,9 @@ class GlasgowTarget(Module):
                                              in_count=in_count,
                                              depth=fifo_depth)
 
-        self.sync_port = self.platform.request("sync")
-        self.io_ports = [self.platform.request("io") for _ in range(2)]
+        self.submodules.sync_port = _SyncPort(self.platform.request("sync"))
+        self.io_ports = [_IOPort(self.platform.request("io")) for _ in range(2)]
+        self.submodules += self.io_ports
 
     def build(self, **kwargs):
         self.platform.build(self, **kwargs)

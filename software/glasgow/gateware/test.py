@@ -19,9 +19,11 @@ class TestToggleIO(GlasgowTarget):
         ]
 
         self.comb += [
-            self.sync_port.eq(out),
-            self.io_ports[0].eq(Replicate(out, 8)),
-            self.io_ports[1].eq(Replicate(out, 8)),
+            self.sync_port.oe.eq(out),
+            self.io_ports[0].oe.eq(0b11111111),
+            self.io_ports[1].oe.eq(0b11111111),
+            self.io_ports[0].o.eq(Replicate(out, 8)),
+            self.io_ports[1].o.eq(Replicate(out, 8)),
         ]
 
 
@@ -32,7 +34,8 @@ class TestMirrorI2C(GlasgowTarget):
         i2c = self.i2c_slave.bus
         io  = self.get_io_port("A")
         self.comb += [
-            io[0:2].eq(Cat(i2c.scl_i, i2c.sda_i))
+            io.oe[0:2].eq(0b11),
+            io.o[0:2].eq(Cat(i2c.scl_i, i2c.sda_i))
         ]
 
 
@@ -45,7 +48,8 @@ class TestShiftOut(GlasgowTarget):
         sck = Signal(reset=1)
         sdo = Signal()
         self.comb += [
-            self.io_ports[0].eq(Cat(sck, sdo))
+            self.io_ports[0].oe.eq(0b11),
+            self.io_ports[0].o.eq(Cat(sck, sdo))
         ]
 
         shreg = Signal(8)
