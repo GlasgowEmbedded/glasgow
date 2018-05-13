@@ -60,7 +60,7 @@ def get_argparser():
         "--no-build", dest="build_bitstream", default=True, action="store_false",
         help="do not rebuild bitstream")
     p_run.add_argument(
-        "--no-execute", dest="execute_applet", default=True, action="store_false",
+        "--no-execute", dest="run_applet", default=True, action="store_false",
         help="do not execute applet code")
 
     run_subparsers = p_run.add_subparsers(dest="applet", metavar="APPLET")
@@ -135,7 +135,8 @@ def main():
             applet.build(target)
             if args.build_bitstream:
                 device.download_bitstream(target.get_bitstream(debug=True))
-            applet.run(device, args)
+            if args.run_applet:
+                applet.run(device, args)
 
         if args.action == "test":
             if args.mode == "toggle-io":
