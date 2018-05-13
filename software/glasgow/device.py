@@ -181,6 +181,11 @@ class GlasgowDevice(FX2Device):
     def reset_alert(self, spec):
         self.set_alert(spec, 0.0, 5.5)
 
+    def set_alert_tolerance(self, spec, volts, tolerance):
+        low_volts  = volts * (1 - tolerance)
+        high_volts = volts * (1 + tolerance)
+        self.set_alert(spec, low_volts, high_volts)
+
     def get_alert(self, spec):
         try:
             low_millivolts, high_millivolts = struct.unpack("<HH",

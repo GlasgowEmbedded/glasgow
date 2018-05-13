@@ -112,10 +112,7 @@ def main():
                     raise
                 if args.set_alert and args.voltage != 0.0:
                     time.sleep(0.050) # let the output capacitor discharge a bit
-                    tolerance  = args.tolerance / 100
-                    low_volts  = args.voltage * (1 - tolerance)
-                    high_volts = args.voltage * (1 + tolerance)
-                    device.set_alert(args.ports, low_volts, high_volts)
+                    device.set_alert_tolerance(args.ports, args.voltage, args.tolerance / 100)
 
             print("Port\tVio\tVsense\tRange")
             alerts = device.poll_alert()
