@@ -62,7 +62,11 @@ def main():
             if args.voltage is not None:
                 device.reset_alert(args.ports)
                 device.poll_alert() # clear any remaining alerts
-                device.set_voltage(args.ports, args.voltage)
+                try:
+                    device.set_voltage(args.ports, args.voltage)
+                except:
+                    device.set_voltage(args.ports, 0.0)
+                    raise
                 if args.set_alert and args.voltage != 0.0:
                     time.sleep(0.050) # let the output capacitor discharge a bit
                     tolerance  = args.tolerance / 100
