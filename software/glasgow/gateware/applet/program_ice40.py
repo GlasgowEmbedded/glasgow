@@ -144,14 +144,9 @@ class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
         )
 
     def run(self, device, args):
-        voltage = device.measure_voltage(self.spec)
-        if voltage < 1.8 * 0.95:
-            raise Exception("Port {} voltage ({} V) too low"
-                            .format(self.spec, voltage))
-        device.set_voltage(self.spec, voltage)
-        device.set_alert_tolerance(self.spec, voltage, tolerance=0.05)
-
+        device.mirror_voltage(self.spec)
         port = device.get_port(self.spec)
+
         bitstream = args.bitstream.read()
         while len(bitstream) > 0:
             chunk = bitstream[:255]
@@ -162,6 +157,6 @@ class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
         port.flush()
 
         if self.spec in device.poll_alert():
-            raise Exception("Port {} voltage went out of specification during programming"
+            raise Exception("Port {} voltage went out of range during programming"
                             .format(self.spec))
         # TODO: check CDONE

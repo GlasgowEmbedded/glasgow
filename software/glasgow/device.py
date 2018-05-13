@@ -144,7 +144,7 @@ class GlasgowDevice(FX2Device):
             0, self._iobuf_spec_to_mask(spec, one=False), struct.pack("<H", millivolts))
         # Check if we've succeeded
         if self._status() & ST_ERROR:
-            raise GlasgowDeviceError("Cannot set port(s) {} I/O voltage to {:.2} V"
+            raise GlasgowDeviceError("Cannot set I/O port(s) {} voltage to {:.2} V"
                                      .format(spec or "(none)", float(volts)))
 
     def _read_voltage(self, req, spec):
@@ -158,13 +158,13 @@ class GlasgowDevice(FX2Device):
         try:
             return self._read_voltage(REQ_IO_VOLT, spec)
         except usb1.USBErrorPipe:
-            raise GlasgowDeviceError("Cannot get port {} I/O voltage".format(spec))
+            raise GlasgowDeviceError("Cannot get I/O port {} I/O voltage".format(spec))
 
     def measure_voltage(self, spec):
         try:
             return self._read_voltage(REQ_SENSE_VOLT, spec)
         except usb1.USBErrorPipe:
-            raise GlasgowDeviceError("Cannot measure port {} sense voltage".format(spec))
+            raise GlasgowDeviceError("Cannot measure I/O port {} sense voltage".format(spec))
 
     def set_alert(self, spec, low_volts, high_volts):
         low_millivolts  = round(low_volts * 1000)
@@ -174,7 +174,7 @@ class GlasgowDevice(FX2Device):
             struct.pack("<HH", low_millivolts, high_millivolts))
         # Check if we've succeeded
         if self._status() & ST_ERROR:
-            raise GlasgowDeviceError("Cannot set port(s) {} voltage alert to {:.2}-{:.2} V"
+            raise GlasgowDeviceError("Cannot set I/O port(s) {} voltage alert to {:.2}-{:.2} V"
                                      .format(spec or "(none)",
                                              float(low_volts), float(high_volts)))
 
@@ -186,6 +186,17 @@ class GlasgowDevice(FX2Device):
         high_volts = volts * (1 + tolerance)
         self.set_alert(spec, low_volts, high_volts)
 
+    def mirror_voltage(self, spec, tolerance=0.05):
+        voltage = self.measure_voltage(spec)
+        if voltage < 1.8 * (1 - tolerance):
+            raise GlasgowDeviceError("I/O port {} voltage ({} V) too low"
+                                     .format(spec, voltage))
+        if voltage > 5.0 * (1 + tolerance):
+            raise GlasgowDeviceError("I/O port {} voltage ({} V) too high"
+                                     .format(spec, voltage))
+        self.set_voltage(spec, voltage)
+        self.set_alert_tolerance(spec, voltage, tolerance=0.05)
+
     def get_alert(self, spec):
         try:
             low_millivolts, high_millivolts = struct.unpack("<HH",
@@ -195,7 +206,7 @@ class GlasgowDevice(FX2Device):
             high_volts = round(high_millivolts / 1000, 2)
             return low_volts, high_volts
         except usb1.USBErrorPipe:
-            raise GlasgowDeviceError("Cannot get port {} voltage alert".format(spec))
+            raise GlasgowDeviceError("Cannot get I/O port {} voltage alert".format(spec))
 
     def poll_alert(self):
         try:
