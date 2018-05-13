@@ -82,6 +82,8 @@ def get_argparser():
         "toggle-io", help="toggle all I/O pins at 3.3 V")
     p_test_mirror_i2c = test_subparsers.add_parser(
         "mirror-i2c", help="mirror {SDA,SCL} on A[0-1] at 3.3 V")
+    p_test_shift_out = test_subparsers.add_parser(
+        "shift-out", help="shift bytes from EP2OUT MSB first via {CLK,DO} on A[0-1] at 3.3 V")
     p_test_gen_seq = test_subparsers.add_parser(
         "gen-seq", help="read limit from EP4IN and generate sequence on {EP2OUT,EP6OUT}")
 
@@ -142,6 +144,10 @@ def main():
 
             if args.mode == "mirror-i2c":
                 device.download_bitstream(TestMirrorI2C().get_bitstream(debug=True))
+                device.set_voltage("A", 3.3)
+
+            if args.mode == "shift-out":
+                device.download_bitstream(TestShiftOut().get_bitstream(debug=True))
                 device.set_voltage("A", 3.3)
 
             if args.mode == "gen-seq":

@@ -3,7 +3,7 @@ from migen import *
 from .target import GlasgowTarget
 
 
-__all__ = ["TestToggleIO", "TestMirrorI2C", "TestGenSeq"]
+__all__ = ["TestToggleIO", "TestMirrorI2C", "TestShiftOut", "TestGenSeq"]
 
 
 class TestToggleIO(GlasgowTarget):
@@ -34,6 +34,46 @@ class TestMirrorI2C(GlasgowTarget):
         self.comb += [
             io[0:2].eq(Cat(i2c.scl_i, i2c.sda_i))
         ]
+
+
+class TestShiftOut(GlasgowTarget):
+    def __init__(self):
+        super().__init__(out_count=1)
+
+        out = self.arbiter.out_fifos[0]
+
+        sck = Signal(reset=1)
+        sdo = Signal()
+        self.comb += [
+            self.io_ports[0].eq(Cat(sck, sdo))
+        ]
+
+        shreg = Signal(8)
+        bitno = Signal(3)
+        self.submodules.fsm = FSM(reset_state="IDLE")
+        self.fsm.act("IDLE",
+            If(out.readable,
+                out.re.eq(1),
+                NextValue(bitno, 7),
+                NextValue(shreg, out.dout),
+                NextState("SETUP")
+            )
+        )
+        self.fsm.act("SETUP",
+            NextValue(sck, 0),
+            NextValue(sdo, shreg[7]),
+            NextState("HOLD")
+        )
+        self.fsm.act("HOLD",
+            NextValue(sck, 1),
+            NextValue(bitno, bitno - 1),
+            NextValue(shreg, shreg << 1),
+            If(bitno != 0,
+                NextState("SETUP")
+            ).Else(
+                NextState("IDLE")
+            )
+        )
 
 
 class TestGenSeq(GlasgowTarget):
