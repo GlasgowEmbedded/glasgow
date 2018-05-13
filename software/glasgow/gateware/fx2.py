@@ -25,7 +25,7 @@
 
 from migen import *
 from migen.genlib.fsm import *
-from migen.genlib.fifo import _FIFOInterface, AsyncFIFO, SyncFIFO
+from migen.genlib.fifo import _FIFOInterface, AsyncFIFO, SyncFIFOBuffered
 
 
 __all__ = ['FX2Arbiter']
@@ -58,8 +58,7 @@ class FX2Arbiter(Module):
             elif async:
                 return AsyncFIFO(8, depth)
             else:
-                # Do not use FWFT to improve timings.
-                return SyncFIFO(8, depth, fwft=False)
+                return SyncFIFOBuffered(8, depth)
 
         self.out_fifos = Array()
         self. in_fifos = Array()
@@ -110,7 +109,6 @@ class FX2Arbiter(Module):
                         break
                 else:
                     naddr_v = (addr_v + 1) % 2**addr.nbits
-
                 naddr_c[rdy_v|(addr_v<<rdy.nbits)] = naddr.eq(naddr_v)
         self.comb += Case(Cat(rdy, addr), naddr_c)
 
@@ -133,31 +131,27 @@ class FX2Arbiter(Module):
             )
         )
         self.fsm.act("SETUP-IN",
-            # 1-cycle latency between re and dout valid
-            self.in_fifos[addr[0]].re.eq(1),
-            NextValue(slwr, 1),
             NextValue(data.oe, 1),
             NextState("XFER-IN")
         )
         self.fsm.act("SETUP-OUT",
-            NextValue(slrd, 1),
             NextValue(sloe, 1),
             NextState("XFER-OUT")
         )
         self.fsm.act("XFER-IN",
             If(rdy & (1 << addr),
+                slwr.eq(1),
                 self.in_fifos[addr[0]].re.eq(1)
             ).Else(
                 pend.eq(1),
-                NextValue(slwr, 0),
                 NextState("NEXT")
             )
         )
         self.fsm.act("XFER-OUT",
             If(rdy & (1 << addr),
+                slrd.eq(1),
                 self.out_fifos[addr[0]].we.eq(1)
             ).Else(
-                NextValue(slrd, 0),
                 NextState("NEXT")
             )
         )
