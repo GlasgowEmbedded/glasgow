@@ -79,7 +79,7 @@ def get_argparser():
     test_subparsers.required = True
 
     p_test_toggle_io = test_subparsers.add_parser(
-        "toggle-io", help="toggle all I/O pins at 3.3 V")
+        "toggle-io", help="output 1 kHz square wave on all I/O pins at 3.3 V")
     p_test_mirror_i2c = test_subparsers.add_parser(
         "mirror-i2c", help="mirror {SDA,SCL} on A[0-1] at 3.3 V")
     p_test_shift_out = test_subparsers.add_parser(

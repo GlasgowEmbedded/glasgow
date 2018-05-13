@@ -10,12 +10,14 @@ class TestToggleIO(GlasgowTarget):
     def __init__(self):
         super().__init__()
 
-        cnt = Signal(15)
+        cnt = Signal(max=15000, reset=15000)
         out = Signal()
         self.sync += [
-            cnt.eq(cnt + 1),
+            cnt.eq(cnt - 1),
             If(cnt == 0,
-                out.eq(~out))
+                cnt.eq(cnt.reset),
+                out.eq(~out)
+            )
         ]
 
         self.comb += [
