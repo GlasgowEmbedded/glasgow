@@ -53,19 +53,20 @@ class _SyncPort(Module):
 
 
 class _IOTriple:
-    def __init__(self, bits):
-        self.o = Signal(bits)
-        self.oe = Signal(reset=reset_oe)
-        self.i = Signal(bits)
+    def __init__(self, nbits):
+        self.o = Signal(nbits)
+        self.oe = Signal()
+        self.i = Signal(nbits)
 
 
 class _IOPort(Module):
-    def __init__(self, inout, bits=8):
-        self.o  = Signal(bits)
-        self.oe = Signal(bits)
-        self.i  = Signal(bits)
+    def __init__(self, inout, nbits=8):
+        self.nbits = nbits
+        self.o  = Signal(nbits)
+        self.oe = Signal(nbits)
+        self.i  = Signal(nbits)
 
-        for n in range(bits):
+        for n in range(nbits):
             self.specials += \
                 Instance("SB_IO",
                     p_PIN_TYPE=0b101001, # PIN_OUTPUT_TRISTATE|PIN_INPUT
@@ -76,11 +77,19 @@ class _IOPort(Module):
                 )
 
     def __getitem__(self, index):
-        t = _IOTriple(self.o[index].nbits)
+        if isinstance(index, int):
+            nbits = 1
+        elif isinstance(index, slice):
+            nbits = len(range(index.start or 0, index.stop or nbits, index.step or 1))
+        else:
+            raise ValueError("I/O port indices must be integers or slices, not {}"
+                             .format(type(index).__name__))
+
+        t = _IOTriple(nbits)
         self.comb += [
-            self.o.eq(t.o[index]),
-            self.oe.eq(t.oe[index]),
-            t.i[index].eq(self.i)
+            self.o[index].eq(t.o),
+            self.oe[index].eq(Replicate(t.oe, nbits)),
+            t.i.eq(self.i[index])
         ]
         return t
 
