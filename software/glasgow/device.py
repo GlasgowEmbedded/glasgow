@@ -265,7 +265,6 @@ class GlasgowPort:
         # You can only write around 16 MB into an USB endpoint in one call,
         # better just packetize it here.
         while len(self.buffer_out) > self.out_packet_size:
-            print(self.buffer_out[:self.out_packet_size])
             self.device.bulk_write(self.endpoint_out, self.buffer_out[:self.out_packet_size])
             self.buffer_out = self.buffer_out[self.out_packet_size:]
 
@@ -274,6 +273,5 @@ class GlasgowPort:
 
     def flush(self):
         while len(self.buffer_out) > 0:
-            print(self.buffer_out[:self.out_packet_size])
             self.device.bulk_write(self.endpoint_out, self.buffer_out[:self.out_packet_size])
             self.buffer_out = self.buffer_out[self.out_packet_size:]

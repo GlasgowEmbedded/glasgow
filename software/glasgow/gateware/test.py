@@ -1,12 +1,12 @@
 from migen import *
 
-from .target import GlasgowBase
+from .target import GlasgowTarget
 
 
 __all__ = ["TestToggleIO", "TestMirrorI2C", "TestGenSeq"]
 
 
-class TestToggleIO(GlasgowBase):
+class TestToggleIO(GlasgowTarget):
     def __init__(self):
         super().__init__()
 
@@ -18,32 +18,31 @@ class TestToggleIO(GlasgowBase):
                 out.eq(~out))
         ]
 
-        sync = self.platform.request("sync")
-        ioa = self.platform.request("io")
-        iob = self.platform.request("io")
         self.comb += [
-            sync.eq(out),
-            ioa.eq(Replicate(out, 8)),
-            iob.eq(Replicate(out, 8)),
+            self.sync_port.eq(out),
+            self.io_ports[0].eq(Replicate(out, 8)),
+            self.io_ports[1].eq(Replicate(out, 8)),
         ]
 
 
-class TestMirrorI2C(GlasgowBase):
+class TestMirrorI2C(GlasgowTarget):
     def __init__(self):
         super().__init__()
 
-        i2c = self.platform.request("i2c")
-        ioa = self.platform.request("io")
-        self.comb += ioa[0:2].eq(Cat(i2c.scl, i2c.sda))
+        i2c = self.i2c_slave.bus
+        io  = self.get_io_port("A")
+        self.comb += [
+            io[0:2].eq(Cat(i2c.scl_i, i2c.sda_i))
+        ]
 
 
-class TestGenSeq(GlasgowBase):
+class TestGenSeq(GlasgowTarget):
     def __init__(self):
         super().__init__(out_count=1, in_count=2)
 
-        out0 = self.arbiter.get_out(0)
-        in0 = self.arbiter.get_in(0)
-        in1 = self.arbiter.get_in(1)
+        out0 = self.arbiter.out_fifos[0]
+        in0 = self.arbiter.in_fifos[0]
+        in1 = self.arbiter.in_fifos[1]
 
         stb = Signal()
         re  = Signal()

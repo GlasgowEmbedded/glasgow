@@ -1,11 +1,36 @@
 import os
 import argparse
+import textwrap
+import re
 import time
 
 from fx2 import FX2DeviceError
 
 from .device import *
+from .gateware.target import GlasgowTarget
+from .gateware.applet import GlasgowApplet
 from .gateware.test import *
+
+
+class TextHelpFormatter(argparse.HelpFormatter):
+    def _fill_text(self, text, width, indent):
+        def filler(match):
+            text = match[0]
+
+            list_match = re.match(r"(\s*)\*", text)
+            if list_match:
+                return text
+
+            text = textwrap.fill(text, width,
+                                 initial_indent=indent,
+                                 subsequent_indent=indent)
+
+            text = re.sub(r"(\w-) (\w)", r"\1\2", text)
+            text = text + (match[2] or "")
+            return text
+
+        text = textwrap.dedent(text).strip()
+        return re.sub(r"((?!\n\n)(?!\n\s+\*).)+(\n*)?", filler, text, flags=re.S)
 
 
 def get_argparser():
@@ -29,11 +54,23 @@ def get_argparser():
         "--no-alert", dest="set_alert", default=True, action="store_false",
         help="do not raise an alert if Vsense is out of range of Vio")
 
-    p_download = subparsers.add_parser(
-        "download", help="volatile download bitstream to FPGA")
-    p_download.add_argument(
-        "bitstream", metavar="BITSTREAM", type=argparse.FileType("rb"),
-        help="read bitstream from the specified file")
+    p_run = subparsers.add_parser(
+        "run", help="run an applet")
+    p_run.add_argument(
+        "--no-build", dest="build_bitstream", default=True, action="store_false",
+        help="do not rebuild bitstream")
+    p_run.add_argument(
+        "--no-execute", dest="execute_applet", default=True, action="store_false",
+        help="do not execute applet code")
+
+    run_subparsers = p_run.add_subparsers(dest="applet", metavar="APPLET")
+    run_subparsers.required = True
+
+    for applet_name, applet in GlasgowApplet.all_applets.items():
+        p_applet = run_subparsers.add_parser(
+            applet_name, help=applet.help, description=applet.description,
+            formatter_class=TextHelpFormatter)
+        applet.add_arguments(p_applet)
 
     p_test = subparsers.add_parser(
         "test", help="verify device functionality")
@@ -44,9 +81,15 @@ def get_argparser():
     p_test_toggle_io = test_subparsers.add_parser(
         "toggle-io", help="toggle all I/O pins at 3.3 V")
     p_test_mirror_i2c = test_subparsers.add_parser(
-        "mirror-i2c", help="mirror {SDA,SCL} on A[1:0] at 3.3 V")
+        "mirror-i2c", help="mirror {SDA,SCL} on A[0-1] at 3.3 V")
     p_test_gen_seq = test_subparsers.add_parser(
-        "gen-seq", help="read limit from EP2IN and generate sequence on {EP6OUT,EP8OUT}")
+        "gen-seq", help="read limit from EP4IN and generate sequence on {EP2OUT,EP6OUT}")
+
+    p_test_download = subparsers.add_parser(
+        "download", help="download arbitrary bitstream to FPGA")
+    p_test_download.add_argument(
+        "bitstream", metavar="BITSTREAM", type=argparse.FileType("rb"),
+        help="read bitstream from the specified file")
 
     return parser
 
@@ -87,18 +130,28 @@ def main():
                 print("{}\t{:.2}\t{:.3}\t{:.2}-{:.2}{}"
                       .format(port, vio, vsense, alert[0], alert[1], notice))
 
-        if args.action == "download":
-            device.download_bitstream(args.bitstream.read())
+        if args.action == "run":
+            applet = GlasgowApplet.all_applets[args.applet](spec="A")
+            target = GlasgowTarget(in_count=0, out_count=1)
+            applet.build(target)
+            if args.build_bitstream:
+                device.download_bitstream(target.get_bitstream(debug=True))
+            applet.run(device, args)
 
         if args.action == "test":
             if args.mode == "toggle-io":
                 device.download_bitstream(TestToggleIO().get_bitstream(debug=True))
                 device.set_voltage("AB", 3.3)
+
             if args.mode == "mirror-i2c":
                 device.download_bitstream(TestMirrorI2C().get_bitstream(debug=True))
                 device.set_voltage("A", 3.3)
+
             if args.mode == "gen-seq":
                 device.download_bitstream(TestGenSeq().get_bitstream(debug=True))
+
+            if args.mode == "download":
+                device.download_bitstream(args.bitstream.read())
 
     except FX2DeviceError as e:
         raise SystemExit(e)

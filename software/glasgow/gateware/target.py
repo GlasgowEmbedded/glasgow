@@ -10,7 +10,7 @@ from .registers import Registers
 from .fx2 import FX2Arbiter
 
 
-__all__ = ["GlasgowBase"]
+__all__ = ["GlasgowTarget"]
 
 
 class _CRG(Module):
@@ -37,7 +37,7 @@ class _CRG(Module):
         ]
 
 
-class GlasgowBase(Module):
+class GlasgowTarget(Module):
     def __init__(self, out_count=0, in_count=0, fifo_depth=511, reg_count=0):
         self.platform = Platform()
 
@@ -53,6 +53,9 @@ class GlasgowBase(Module):
                                              out_count=out_count,
                                              in_count=in_count,
                                              depth=fifo_depth)
+
+        self.sync_port = self.platform.request("sync")
+        self.io_ports = [self.platform.request("io") for _ in range(2)]
 
     def build(self, **kwargs):
         self.platform.build(self, **kwargs)
@@ -77,3 +80,31 @@ class GlasgowBase(Module):
             if not debug:
                 shutil.rmtree(build_dir)
         return bitstream
+
+    @staticmethod
+    def _port_spec_to_number(spec):
+        if spec == "A":
+            return 0
+        if spec == "B":
+            return 1
+        raise ValueError("Unknown I/O port {}".format(spec))
+
+    def get_io_port(self, spec):
+        """Return an I/O port ``spec``."""
+        num = self._port_spec_to_number(spec)
+        return self.io_ports[num]
+
+    def get_out_fifo(self, spec):
+        """Return an OUT FIFO for I/O port ``spec``."""
+        num = self._port_spec_to_number(spec)
+        return self.arbiter.out_fifos[num]
+
+    def get_in_fifo(self, spec):
+        """Return an IN FIFO for I/O port ``spec``."""
+        num = self._port_spec_to_number(spec)
+        return self.arbiter.in_fifos[num]
+
+    def get_inout_fifo(self, spec):
+        """Return an (IN, OUT) FIFO pair for I/O port ``spec``."""
+        num = self._port_spec_to_number(spec)
+        return (self.arbiter.in_fifos[num], self.arbiter.out_fifos[num])

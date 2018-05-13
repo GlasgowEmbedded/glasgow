@@ -161,12 +161,3 @@ class FX2Arbiter(Module):
                 NextState("NEXT")
             )
         )
-
-    def get_out(self, n):
-        return self.out_fifos[n]
-
-    def get_in(self, n):
-        return self.in_fifos[n]
-
-    def get_port(self, n):
-        return (self.in_fifos[n], self.out_fifos[n])
