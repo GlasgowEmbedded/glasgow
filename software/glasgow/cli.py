@@ -8,8 +8,8 @@ from fx2 import FX2DeviceError
 
 from .device import *
 from .gateware.target import GlasgowTarget
-from .gateware.applet import GlasgowApplet
 from .gateware.test import *
+from .applet import GlasgowApplet
 
 
 class TextHelpFormatter(argparse.HelpFormatter):
