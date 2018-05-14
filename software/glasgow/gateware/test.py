@@ -3,7 +3,7 @@ from migen import *
 from .target import GlasgowTarget
 
 
-__all__ = ["TestToggleIO", "TestMirrorI2C", "TestShiftOut", "TestGenSeq"]
+__all__ = ["TestToggleIO", "TestMirrorI2C", "TestShiftOut", "TestGenSeq", "TestPLL"]
 
 
 class TestToggleIO(GlasgowTarget):
@@ -129,3 +129,24 @@ class TestGenSeq(GlasgowTarget):
                 in1.we.eq(0),
             ),
         ]
+
+
+class TestPLL(GlasgowTarget):
+    def __init__(self):
+        super().__init__()
+
+        self.specials += \
+            Instance("SB_PLL40_CORE",
+                p_FEEDBACK_PATH="SIMPLE",
+                p_PLLOUT_SELECT="GENCLK",
+                p_DIVR=0,
+                p_DIVF=31,
+                p_DIVQ=6,
+                p_FILTER_RANGE=1,
+                i_REFERENCECLK=ClockSignal(),
+                o_PLLOUTCORE=self.sync_port.oe,
+                i_RESETB=1,
+                i_BYPASS=0,
+            )
+
+        cnt = Signal()

@@ -86,6 +86,8 @@ def get_argparser():
         "shift-out", help="shift bytes from EP2OUT MSB first via {CLK,DO} on A[0-1] at 3.3 V")
     p_test_gen_seq = test_subparsers.add_parser(
         "gen-seq", help="read limit from EP4IN and generate sequence on {EP2OUT,EP6OUT}")
+    p_test_pll = test_subparsers.add_parser(
+        "pll", help="use PLL to output 15 MHz on SYNC port")
 
     p_test_download = subparsers.add_parser(
         "download", help="download arbitrary bitstream to FPGA")
@@ -153,6 +155,9 @@ def main():
 
             if args.mode == "gen-seq":
                 device.download_bitstream(TestGenSeq().get_bitstream(debug=True))
+
+            if args.mode == "pll":
+                device.download_bitstream(TestPLL().get_bitstream(debug=True))
 
             if args.mode == "download":
                 device.download_bitstream(args.bitstream.read())
