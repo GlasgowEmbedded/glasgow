@@ -2876,7 +2876,7 @@ F 2 "Crystals:Crystal_SMD_3225-4pin_3.2x2.5mm" H 1800 2950 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/741/LFXTAL058124Reel-940455.pdf" H 1800 2950 50  0001 C CNN
 F 4 "449-LFXTAL058124REEL" H 1800 2950 50  0001 C CNN "Mouser_PN"
 	1    1800 2950
-	0    -1   -1   0
+	0    -1   -1   0   
 $EndComp
 Wire Wire Line
 	1350 2700 1350 2950
@@ -2952,4 +2952,8 @@ Wire Bus Line
 	6350 2900 6350 5850
 Wire Bus Line
 	4050 2400 4050 5850
+Text Notes 5950 6700 0    50   ~ 0
+FX2_MEM
+Text Notes 3900 6700 0    50   ~ 0
+ICE_MEM
 $EndSCHEMATC

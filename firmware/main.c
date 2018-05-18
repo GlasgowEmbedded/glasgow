@@ -166,7 +166,7 @@ static void descriptors_init() {
   __xdata struct usb_desc_device *desc_device = (__xdata struct usb_desc_device *)usb_device;
   __xdata char *desc_serial = (__xdata char *)usb_strings[usb_device.iSerialNumber - 1];
 
-  if(!eeprom_read(I2C_ADDR_CYP_MEM, 0, &load_cmd, sizeof(load_cmd), /*double_byte=*/true))
+  if(!eeprom_read(I2C_ADDR_FX2_MEM, 0, &load_cmd, sizeof(load_cmd), /*double_byte=*/true))
     return;
   if(load_cmd == 0xff)
     return;
@@ -174,7 +174,7 @@ static void descriptors_init() {
     // A C2 load, used on devices with firmware, automatically loads configuration.
     // A C0 load, used on factory-programmed devices without firmware, does not, so
     // load it explicitly.
-    if(!eeprom_read(I2C_ADDR_CYP_MEM, 8 + 4, (__xdata void *)&glasgow_config,
+    if(!eeprom_read(I2C_ADDR_FX2_MEM, 8 + 4, (__xdata void *)&glasgow_config,
                     sizeof(glasgow_config), /*double_byte=*/true))
       return;
   }
@@ -288,13 +288,13 @@ void handle_pending_usb_setup() {
     uint8_t  timeout  = 166;
     if(req->bRequest == USB_REQ_CYPRESS_EEPROM_DB) {
       double_byte = true;
-      arg_chip = I2C_ADDR_CYP_MEM;
+      arg_chip = I2C_ADDR_FX2_MEM;
     } else /* req->bRequest == USB_REQ_EEPROM */ {
       double_byte = true;
       switch(req->wIndex) {
-        case 0: arg_chip = I2C_ADDR_CYP_MEM;    break;
-        case 1: arg_chip = I2C_ADDR_FPGA_MEM;   break;
-        case 2: arg_chip = I2C_ADDR_FPGA_MEM+1; break;
+        case 0: arg_chip = I2C_ADDR_FX2_MEM;    break;
+        case 1: arg_chip = I2C_ADDR_ICE_MEM;   break;
+        case 2: arg_chip = I2C_ADDR_ICE_MEM+1; break;
       }
     }
     pending_setup = false;
