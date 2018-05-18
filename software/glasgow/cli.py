@@ -6,6 +6,7 @@ import time
 from datetime import datetime
 
 from fx2 import VID_CYPRESS, PID_FX2, FX2Config, FX2Device, FX2DeviceError
+from fx2.format import input_data, diff_data
 
 from .device import VID_QIHW, PID_GLASGOW, GlasgowConfig, GlasgowDevice
 from .gateware.target import GlasgowTarget
@@ -95,6 +96,16 @@ def get_argparser():
     p_test_download.add_argument(
         "bitstream", metavar="BITSTREAM", type=argparse.FileType("rb"),
         help="read bitstream from the specified file")
+
+    p_flash = subparsers.add_parser(
+        "flash", help="program FX2 firmware into EEPROM")
+    g_flash_firmware = p_flash.add_mutually_exclusive_group()
+    g_flash_firmware.add_argument(
+        "-f", "--firmware", metavar="FILENAME", type=argparse.FileType("rb"),
+        help="read firmware from the specified file")
+    g_flash_firmware.add_argument(
+        "-n", "--no-firmware", default=False, action="store_true",
+        help="remove any firmware present")
 
     def revision(arg):
         if re.match(r"^[A-Z]$", arg):
@@ -188,6 +199,30 @@ def main():
 
             if args.mode == "download":
                 device.download_bitstream(args.bitstream.read())
+
+        if args.action == "flash":
+            header = device.read_eeprom(0, 0, 8 + 4 + GlasgowConfig.size)
+            header[0] = 0xC2 # see below
+
+            fx2_config = FX2Config.decode(header, partial=True)
+            if (len(fx2_config.firmware) != 1 or
+                    len(fx2_config.firmware[0][1]) != GlasgowConfig.size):
+                raise SystemExit("Unrecognized or corrupted configuration block")
+
+            if args.no_firmware:
+                fx2_config.disconnect = False
+                new_image = fx2_config.encode()
+                new_image[0] = 0xC0 # see below
+            else:
+                with open(args.firmware or firmware_file, "rb") as f:
+                    for (addr, chunk) in input_data(f, fmt="ihex"):
+                        fx2_config.append(addr, chunk)
+                fx2_config.disconnect = True
+                new_image = fx2_config.encode()
+
+            old_image = device.read_eeprom(0, 0, len(new_image))
+            for (addr, chunk) in diff_data(old_image, new_image):
+                device.write_eeprom(0, addr, chunk)
 
         if args.action == "factory":
             header = device.read_eeprom(0, 0, 8 + 4 + GlasgowConfig.size)
