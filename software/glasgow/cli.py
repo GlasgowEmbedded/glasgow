@@ -3,10 +3,11 @@ import argparse
 import textwrap
 import re
 import time
+from datetime import datetime
 
-from fx2 import FX2DeviceError
+from fx2 import VID_CYPRESS, PID_FX2, FX2Config, FX2Device, FX2DeviceError
 
-from .device import *
+from .device import VID_QIHW, PID_GLASGOW, GlasgowConfig, GlasgowDevice
 from .gateware.target import GlasgowTarget
 from .gateware.test import *
 from .applet import GlasgowApplet
@@ -49,7 +50,7 @@ def get_argparser():
         help="I/O port voltage (range: 1.8-5.0)")
     p_voltage.add_argument(
         "--tolerance", metavar="PCT", type=float, default=10.0,
-        help="raise alert if measured voltage deviates by more than ±PCT%%")
+        help="raise alert if measured voltage deviates by more than ±PCT%% (default: %(default)s)")
     p_voltage.add_argument(
         "--no-alert", dest="set_alert", default=True, action="store_false",
         help="do not raise an alert if Vsense is out of range of Vio")
@@ -95,6 +96,29 @@ def get_argparser():
         "bitstream", metavar="BITSTREAM", type=argparse.FileType("rb"),
         help="read bitstream from the specified file")
 
+    def revision(arg):
+        if re.match(r"^[A-Z]$", arg):
+            return arg
+        else:
+            raise argparse.ArgumentTypeError("{} is not a valid revision letter".format(arg))
+
+    def serial(arg):
+        if re.match(r"^\d{8}T\d{6}Z$", arg):
+            return arg
+        else:
+            raise argparse.ArgumentTypeError("{} is not a valid serial number".format(arg))
+
+    p_factory = subparsers.add_parser(
+        "factory", help="initial device programming")
+    p_factory.add_argument(
+        "--revision", metavar="REVISION", type=str,
+        default="A",
+        help="revision letter (if not specified: %(default)s)")
+    p_factory.add_argument(
+        "--serial", metavar="SERIAL", type=str,
+        default=datetime.now().strftime("%Y%m%dT%H%M%SZ"),
+        help="serial number in ISO 8601 format (if not specified: %(default)s)")
+
     return parser
 
 
@@ -103,7 +127,10 @@ def main():
 
     try:
         firmware_file = os.path.join(os.path.dirname(__file__), "glasgow.ihex")
-        device = GlasgowDevice(firmware_file)
+        if args.action == "factory":
+            device = GlasgowDevice(firmware_file, VID_CYPRESS, PID_FX2)
+        else:
+            device = GlasgowDevice(firmware_file)
 
         if args.action == "voltage":
             if args.voltage is not None:
@@ -161,6 +188,24 @@ def main():
 
             if args.mode == "download":
                 device.download_bitstream(args.bitstream.read())
+
+        if args.action == "factory":
+            header = device.read_eeprom(0, 0, 8 + 4 + GlasgowConfig.size)
+            if not re.match(rb"^\xff+$", header):
+                raise SystemExit("Device already factory-programmed")
+
+            fx2_config = FX2Config(vendor_id=VID_QIHW, product_id=PID_GLASGOW,
+                                   device_id=1 + ord(args.revision) - ord('A'),
+                                   i2c_400khz=True)
+            glasgow_config = GlasgowConfig(args.revision, args.serial)
+            fx2_config.append(0x4000 - GlasgowConfig.size, glasgow_config.encode())
+
+            image = fx2_config.encode()
+            image[0] = 0xC0 # let FX2 hardware enumerate
+
+            device.write_eeprom(0, 0, image)
+            if device.read_eeprom(0, 0, len(image)) != image:
+                raise SystemExit("Factory programming failed")
 
     except FX2DeviceError as e:
         raise SystemExit(e)

@@ -17,10 +17,10 @@ usb_desc_device_c usb_device = {
   .bMaxPacketSize0      = 64,
   .idVendor             = VID_QIHW,
   .idProduct            = PID_GLASGOW,
-  .bcdDevice            = 0x0001,
+  .bcdDevice            = 0x0100,
   .iManufacturer        = 1,
   .iProduct             = 2,
-  .iSerialNumber        = 0,
+  .iSerialNumber        = 7,
   .bNumConfigurations   = 2,
 };
 
@@ -145,6 +145,7 @@ usb_ascii_string_c usb_strings[] = {
   [3] = "Port A at {2x512B EP2OUT, 2x512B EP6IN}",
   [4] = "Port B at {2x512B EP4OUT, 2x512B EP8IN}",
   [5] = "Ports AB at {4x512B EP2OUT, 4x512B EP6IN}",
+  [6] = "Z-9999999999999999",
 };
 
 usb_descriptor_set_c usb_descriptor_set = {
@@ -158,6 +159,31 @@ usb_descriptor_set_c usb_descriptor_set = {
   .string_count    = ARRAYSIZE(usb_strings),
   .strings         = usb_strings,
 };
+
+// Populate descriptors from device configuration, if any.
+static void descriptors_init() {
+  unsigned char load_cmd;
+  __xdata struct usb_desc_device *desc_device = (__xdata struct usb_desc_device *)usb_device;
+  __xdata char *desc_serial = (__xdata char *)usb_strings[usb_device.iSerialNumber - 1];
+
+  if(!eeprom_read(I2C_ADDR_CYP_MEM, 0, &load_cmd, sizeof(load_cmd), /*double_byte=*/true))
+    return;
+  if(load_cmd == 0xff)
+    return;
+  if(load_cmd == 0xc0) {
+    // A C2 load, used on devices with firmware, automatically loads configuration.
+    // A C0 load, used on factory-programmed devices without firmware, does not, so
+    // load it explicitly.
+    if(!eeprom_read(I2C_ADDR_CYP_MEM, 8 + 4, (__xdata void *)&glasgow_config,
+                    sizeof(glasgow_config), /*double_byte=*/true))
+      return;
+  }
+
+  desc_device->bcdDevice |= 1 + glasgow_config.revision - 'A';
+  desc_serial[0] = glasgow_config.revision;
+  xmemcpy(&desc_serial[2], (__xdata void *)glasgow_config.serial,
+          sizeof(glasgow_config.serial));
+}
 
 enum {
   // Glasgow requests
@@ -519,6 +545,7 @@ int main() {
   CPUCS = _CLKOE|_CLKSPD1;
 
   // Initialize subsystems.
+  descriptors_init();
   leds_init();
   iobuf_init_dac_ldo();
   iobuf_init_adc();

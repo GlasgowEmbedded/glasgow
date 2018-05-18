@@ -29,14 +29,55 @@ IO_BUF_A       = 1<<0
 IO_BUF_B       = 1<<1
 
 
+class GlasgowConfig:
+    """
+    Glasgow EEPROM configuration data.
+
+    size : int
+        Total size of configuration block (currently 64).
+    revision : str[1]
+        Revision letter, ``A``-``Z``.
+    serial : str[16]
+        Serial number, in ISO 8601 format.
+    """
+    size = 64
+
+    def __init__(self, revision, serial):
+        self.revision = revision
+        self.serial   = serial
+
+    def encode(self):
+        """
+        Convert configuration to a byte array that can be loaded into memory or EEPROM.
+        """
+        data = struct.pack("1s16s",
+                           self.revision.encode("utf-8"),
+                           self.serial.encode("utf-8"))
+        return data.ljust(self.size, b"\x00")
+
+    @classmethod
+    def decode(cls, data):
+        """
+        Parse configuration from a byte array loaded from memory or EEPROM.
+
+        Returns :class:`GlasgowConfiguration` or raises :class:`ValueError` if
+        the byte array does not contain a valid configuration.
+        """
+        if len(data) != self.size:
+            raise ValueError("Incorrect configuration length")
+
+        revision, serial = struct.unpack_from("1s16s", data, 0)
+        return GlasgowConfiguration(revision, serial)
+
+
 class GlasgowDeviceError(FX2DeviceError):
     """An exception raised on a communication error."""
 
 
 class GlasgowDevice(FX2Device):
-    def __init__(self, firmware_file=None):
-        super().__init__(VID_QIHW, PID_GLASGOW)
-        if self.usb.getDevice().getbcdDevice() == 0:
+    def __init__(self, firmware_file=None, vendor_id=VID_QIHW, product_id=PID_GLASGOW):
+        super().__init__(vendor_id, product_id)
+        if self.usb.getDevice().getbcdDevice() & 0xFF00 in (0x0000, 0xA000):
             if firmware_file is None:
                 raise GlasgowDeviceError("Firmware is not uploaded")
             else:
@@ -49,16 +90,34 @@ class GlasgowDevice(FX2Device):
                 super().__init__(VID_QIHW, PID_GLASGOW)
 
                 # still not the right firmware?
-                if self.usb.getDevice().getbcdDevice() == 0:
+                if self.usb.getDevice().getbcdDevice() & 0xFF00 in (0x0000, 0xA000):
                     raise GlasgowDeviceError("Firmware upload failed")
 
-    def read_eeprom(self, idx, addr, length):
-        """Read ``length`` bytes at ``addr`` from EEPROM at index ``idx``."""
-        return self.control_read(usb1.REQUEST_TYPE_VENDOR, REQ_EEPROM, addr, idx, length)
+    def read_eeprom(self, idx, addr, length, chunk_size=0x100):
+        """
+        Read ``length`` bytes at ``addr`` from EEPROM at index ``idx``
+        in ``chunk_size``d chunks.
+        """
+        data = bytearray()
+        while length > 0:
+            chunk_length = min(length, chunk_size)
+            data += self.control_read(usb1.REQUEST_TYPE_VENDOR, REQ_EEPROM,
+                                      addr, idx, chunk_length)
+            addr += chunk_length
+            length -= chunk_length
+        return data
 
-    def write_eeprom(self, idx, addr, data):
-        """Write ``data`` to ``addr`` in EEPROM at index ``idx``."""
-        self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_EEPROM, addr, idx, data)
+    def write_eeprom(self, idx, addr, data, chunk_size=0x10):
+        """
+        Write ``data`` to ``addr`` in EEPROM at index ``idx``
+        in ``chunk_size``d chunks.
+        """
+        while len(data) > 0:
+            chunk_length = min(len(data), chunk_size)
+            self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_EEPROM,
+                               addr, idx, data[:chunk_length])
+            addr += chunk_length
+            data = data[chunk_length:]
 
     def _status(self):
         return self.control_read(usb1.REQUEST_TYPE_VENDOR, REQ_STATUS, 0, 0, 1)[0]

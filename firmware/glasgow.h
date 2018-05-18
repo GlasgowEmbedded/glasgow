@@ -46,6 +46,12 @@ enum {
 #define MIN_VOLTAGE 1650 // mV
 #define MAX_VOLTAGE 5500 // mV
 
+// Config API
+const __at(0x4000 - CONF_SIZE) struct {
+  char revision;
+  char serial[16];
+} glasgow_config;
+
 // LED API
 void leds_init();
 void led_fpga_set(bool on);
