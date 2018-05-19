@@ -80,7 +80,7 @@ class _IOPort(Module):
         if isinstance(index, int):
             nbits = 1
         elif isinstance(index, slice):
-            nbits = len(range(index.start or 0, index.stop or nbits, index.step or 1))
+            nbits = len(range(index.start or 0, index.stop or self.nbits, index.step or 1))
         else:
             raise ValueError("I/O port indices must be integers or slices, not {}"
                              .format(type(index).__name__))
