@@ -126,7 +126,8 @@ class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
     description = """
     Program iCE40 FPGAs.
 
-    Port A pins are configured as: 0=RST_N, 1=SS_N, 2=SCK, 3=SI.
+    Port pins are configured as: 0=RST_N, 1=SS_N, 2=SCK, 3=SI.
+    Port voltage is sensed.
     """
 
     @staticmethod
