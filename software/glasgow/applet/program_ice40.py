@@ -128,9 +128,6 @@ class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
     Port A pins are configured as: 0=RST_N, 1=SS_N, 2=SCK, 3=SI.
     """
 
-    def __init__(self, spec):
-        self.spec = spec
-
     @staticmethod
     def add_arguments(parser):
         parser.add_argument(
@@ -145,8 +142,8 @@ class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
 
     def run(self, device, args):
         device.mirror_voltage(self.spec)
-        port = device.get_port(self.spec)
 
+        port = device.get_port(self.spec)
         bitstream = args.bitstream.read()
         while len(bitstream) > 0:
             chunk = bitstream[:255]
