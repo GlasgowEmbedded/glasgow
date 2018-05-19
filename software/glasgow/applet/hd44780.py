@@ -1,4 +1,5 @@
 # Reference: https://www.sparkfun.com/datasheets/LCD/HD44780.pdf
+# Reference: http://ecee.colorado.edu/~mcclurel/SED1278F_Technical_Manual.pdf
 # Reference: https://www.openhacks.com/uploadsproductos/eone-1602a1.pdf
 # Note: the timings here are *absurdly* conservative. The display I have
 # (which may or may not actually be the original HD44780) doesn't work
@@ -9,6 +10,7 @@ import math
 import argparse
 from migen import *
 from migen.genlib.fsm import *
+from migen.genlib.cdc import MultiReg
 
 from . import GlasgowApplet
 
@@ -60,11 +62,18 @@ class HD44780Subtarget(Module):
         rw = io_port[1]
         e  = io_port[2]
         d  = io_port[3:7]
+        di = Signal(4)
         self.comb += [
             rs.oe.eq(1),
             rw.oe.eq(1),
             e.oe.eq(1),
             d.oe.eq(~rw.o),
+        ]
+        self.specials += [
+            # The data bus is *asynchronous*. The D setup time *is* referenced
+            # to the E falling edge, but BF (D8) may go down at any time, and
+            # AC (D7:0) gets updated some microseconds after BF goes down. Sigh.
+            MultiReg(d.i, di)
         ]
 
         rx_setup_cyc = math.ceil(1e-6 * 30e6)
@@ -147,10 +156,10 @@ class HD44780Subtarget(Module):
                 NextValue(msb, ~msb),
                 NextValue(timer, e_wait_cyc),
                 If(msb,
-                    NextValue(data[4:], d.i),
+                    NextValue(data[4:], di),
                     NextState("READ-SETUP")
                 ).Else(
-                    NextValue(data[:4], d.i),
+                    NextValue(data[:4], di),
                     NextState("READ-HANDLE")
                 ),
             ).Else(
@@ -232,8 +241,15 @@ class HD44780Applet(GlasgowApplet, name="hd44780"):
         cmd(CMD_ENTRY_MODE|BIT_CURSOR_INC_POS)
         cmd(CMD_DISPLAY_ON_OFF|BIT_DISPLAY_ON|BIT_CURSOR_BLINK)
         cmd(CMD_CLEAR_DISPLAY)
-        data(b"Hello World")
-        cmd(CMD_DDRAM_ADDRESS|0x40)
-        data(b"Glasgow is cool")
-
+        data(b"Hello, world!")
         port.flush()
+
+        from datetime import datetime
+        while True:
+            time.sleep(1)
+            cmd(CMD_CLEAR_DISPLAY)
+            cmd(CMD_DDRAM_ADDRESS|0x04)
+            data(datetime.now().strftime("%H:%M:%S\x00").encode("ascii"))
+            cmd(CMD_DDRAM_ADDRESS|0x43)
+            data(datetime.now().strftime("%Y-%m-%d\x00").encode("ascii"))
+            port.flush()
