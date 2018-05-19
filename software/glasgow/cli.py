@@ -171,7 +171,7 @@ def main():
 
         if args.action == "run":
             applet = GlasgowApplet.all_applets[args.applet](spec="A")
-            target = GlasgowTarget(in_count=0, out_count=1)
+            target = GlasgowTarget(in_count=1, out_count=1)
             applet.build(target)
             if args.build_bitstream:
                 device.download_bitstream(target.get_bitstream(debug=True))

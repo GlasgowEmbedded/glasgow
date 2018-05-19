@@ -95,7 +95,7 @@ class _IOPort(Module):
 
 
 class GlasgowTarget(Module):
-    def __init__(self, out_count=0, in_count=0, fifo_depth=511, reg_count=0):
+    def __init__(self, out_count=0, in_count=0, fifo_depth=128, reg_count=0):
         self.platform = Platform()
 
         self.submodules.crg = _CRG(self.platform)
