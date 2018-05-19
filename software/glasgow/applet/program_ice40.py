@@ -1,3 +1,4 @@
+import math
 import argparse
 from migen import *
 from migen.genlib.fsm import *
@@ -19,8 +20,8 @@ class ProgramICE40Subtarget(Module):
             si.oe.eq(oe),
         ]
 
-        reset_cyc = int(1e-6 * 30e6)
-        start_cyc = int(1200e-6 * 30e6)
+        reset_cyc = math.ceil(1e-6 * 30e6)
+        start_cyc = math.ceil(1200e-6 * 30e6)
         done_cyc  = 49
         timer     = Signal(max=start_cyc)
 
