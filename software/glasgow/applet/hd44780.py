@@ -1,9 +1,9 @@
 # Reference: https://www.sparkfun.com/datasheets/LCD/HD44780.pdf
 # Reference: http://ecee.colorado.edu/~mcclurel/SED1278F_Technical_Manual.pdf
 # Reference: https://www.openhacks.com/uploadsproductos/eone-1602a1.pdf
-# Note: the timings here are *absurdly* conservative. The display I have
-# (which may or may not actually be the original HD44780) doesn't work
-# with anything smaller. This needs investigation.
+# Note: HD44780's bus is *asynchronous*. Setup/hold timings are referenced
+# to E falling edge, and BF/AC can and will change while E is high.
+# We make use of it by waiting on BF falling edge when polling the IC.
 
 import time
 import math
@@ -47,7 +47,7 @@ BIT_SHIFT_DISPLAY  = 0b00001000
 BIT_SHIFT_RIGHT    = 0b00000100
 
 CMD_FUNCTION_SET   = 0b00100000
-BIT_IFACE_HALF     =    0b10000
+BIT_IFACE_8BIT     =    0b10000
 BIT_DISPLAY_2_LINE =    0b01000
 BIT_FONT_5X10_DOTS =    0b00100
 
@@ -70,19 +70,16 @@ class HD44780Subtarget(Module):
             d.oe.eq(~rw.o),
         ]
         self.specials += [
-            # The data bus is *asynchronous*. The D setup time *is* referenced
-            # to the E falling edge, but BF (D8) may go down at any time, and
-            # AC (D7:0) gets updated some microseconds after BF goes down. Sigh.
             MultiReg(d.i, di)
         ]
 
-        rx_setup_cyc = math.ceil(1e-6 * 30e6)
-        e_pulse_cyc  = math.ceil(40e-6 * 30e6)
-        e_wait_cyc   = math.ceil(40e-6 * 30e6)
+        rx_setup_cyc = math.ceil(60e-9 * 30e6)
+        e_pulse_cyc  = math.ceil(500e-9 * 30e6)
+        e_wait_cyc   = math.ceil(700e-9 * 30e6)
         cmd_wait_cyc = math.ceil(1.52e-3 * 30e6)
-        timer        = Signal(max=cmd_wait_cyc)
+        timer        = Signal(max=max([rx_setup_cyc, e_pulse_cyc, e_wait_cyc, cmd_wait_cyc]))
 
-        cmd  = Signal(2)
+        cmd  = Signal(8)
         data = Signal(8)
         msb  = Signal()
 
@@ -96,21 +93,19 @@ class HD44780Subtarget(Module):
             )
         )
         self.fsm.act("COMMAND",
+            NextValue(msb,  (cmd & XFER_BIT_HALF) == 0),
+            NextValue(rs.o, (cmd & XFER_BIT_DATA) != 0),
+            NextValue(rw.o, (cmd & XFER_BIT_READ) != 0),
             If(cmd & XFER_BIT_WAIT,
                 NextValue(timer, cmd_wait_cyc),
                 NextState("WAIT")
-            ).Else(
-                NextValue(msb,  (cmd & XFER_BIT_HALF) == 0),
-                NextValue(rs.o, (cmd & XFER_BIT_DATA) != 0),
-                NextValue(rw.o, (cmd & XFER_BIT_READ) != 0),
+            ).Elif(cmd & XFER_BIT_READ,
                 NextValue(timer, rx_setup_cyc),
-                If(cmd & XFER_BIT_READ,
-                    NextState("READ-SETUP")
-                ).Elif(out_fifo.readable,
-                    out_fifo.re.eq(1),
-                    NextValue(data, out_fifo.dout),
-                    NextState("WRITE"),
-                )
+                NextState("READ-SETUP")
+            ).Elif(out_fifo.readable,
+                out_fifo.re.eq(1),
+                NextValue(data, out_fifo.dout),
+                NextState("WRITE"),
             )
         )
         self.fsm.act("WRITE",
@@ -152,31 +147,34 @@ class HD44780Subtarget(Module):
         )
         self.fsm.act("READ",
             If(timer == 0,
-                NextValue(e.o, 0),
-                NextValue(msb, ~msb),
-                NextValue(timer, e_wait_cyc),
-                If(msb,
-                    NextValue(data[4:], di),
-                    NextState("READ-SETUP")
+                If(~(cmd & XFER_BIT_DATA) & msb & di[3],
+                    # BF=1, wait until it goes low
                 ).Else(
-                    NextValue(data[:4], di),
-                    NextState("READ-HANDLE")
-                ),
+                    NextValue(e.o, 0),
+                    NextValue(msb, ~msb),
+                    NextValue(timer, e_wait_cyc),
+                    If(msb,
+                        NextValue(data[4:], di),
+                        NextState("READ-SETUP")
+                    ).Else(
+                        NextValue(data[:4], di),
+                        NextState("READ-PROCESS")
+                    )
+                )
             ).Else(
                 NextValue(timer, timer - 1)
             )
         )
-        self.fsm.act("READ-HANDLE",
-            If(rs.o,
-                in_fifo.din.eq(data),
-                in_fifo.we.eq(1),
-                NextState("WAIT")
-            ).Else(
-                If(data[7],
-                    NextState("READ-SETUP")
-                ).Else(
+        self.fsm.act("READ-PROCESS",
+            If(cmd & XFER_BIT_DATA,
+                If(in_fifo.writable,
+                    in_fifo.din.eq(data),
+                    in_fifo.we.eq(1),
                     NextState("WAIT")
                 )
+            ).Else(
+                # done reading status register, ignore it and continue
+                NextState("WAIT")
             )
         )
         self.fsm.act("WAIT",
@@ -191,11 +189,13 @@ class HD44780Subtarget(Module):
 class HD44780Applet(GlasgowApplet, name="hd44780"):
     help = "control HD44780-compatible displays"
     description = """
-    Control HD44780-compatible displays via a 4-bit bus.
+    Control HD44780/SED1278/ST7066/KS0066-compatible displays via a 4-bit bus.
 
-    Port pins are configured as: 0=RS(4), 1=R/W(5), 2=E(6), 3=D4(11),
-    4=D5(12), 5=D6(13), 6=D7(14).
-    Port voltage is set to 5.0 V.
+    Port pins are configured as: 0=RS(4), 1=R/W(5), 2=E(6), 3=D4(11), 4=D5(12),
+    5=D6(13), 6=D7(14). Port voltage is set to 5.0 V.
+
+    Note: the E line is *extremely* susceptible to noise. If the display shows
+    erratic behavior, try routing it away from possible aggressors (RS and R/W).
     """
 
     def __init__(self, spec):
@@ -218,12 +218,12 @@ class HD44780Applet(GlasgowApplet, name="hd44780"):
         if args.reset:
             device.set_voltage(self.spec, 0.0)
             time.sleep(0.3)
-        device.set_voltage(self.spec, 5.0)
+        device.set_voltage(self.spec, 5.5)
         time.sleep(0.040) # wait 40ms after reset
 
         port = device.get_port(self.spec)
 
-        def init(command, poll=False):
+        def init(command, poll):
             port.write([XFER_INIT, command, XFER_POLL if poll else XFER_WAIT])
 
         def cmd(command):
@@ -233,23 +233,30 @@ class HD44780Applet(GlasgowApplet, name="hd44780"):
             for byte in bytes:
                 port.write([XFER_WRITE, byte, XFER_POLL])
 
-        init(0x03)
-        init(0x03)
-        init(0x03)
-        init(0x02, poll=True)
+        # HD44780 may be in either 4-bit or 8-bit mode and we don't know which.
+        # The following sequence brings it to 4-bit mode regardless of which one it was in.
+        init(0x03, poll=False) # either CMD_FUNCTION_SET|BIT_IFACE_8BIT or CMD_CURSOR_HOME or
+                               # the second nibble of an unknown command/data
+        init(0x03, poll=False) # either CMD_FUNCTION_SET|BIT_IFACE_8BIT or CMD_CURSOR_HOME or
+                               # the second nibble of CMD_FUNCTION_SET (the set bits are ignored)
+        init(0x03, poll=False) # CMD_FUNCTION_SET|BIT_IFACE_8BIT
+        init(0x02, poll=True)  # CMD_FUNCTION_SET
+
         cmd(CMD_FUNCTION_SET|BIT_DISPLAY_2_LINE)
-        cmd(CMD_ENTRY_MODE|BIT_CURSOR_INC_POS)
         cmd(CMD_DISPLAY_ON_OFF|BIT_DISPLAY_ON|BIT_CURSOR_BLINK)
         cmd(CMD_CLEAR_DISPLAY)
-        data(b"Hello, world!")
+        cmd(CMD_ENTRY_MODE|BIT_CURSOR_INC_POS)
+        data(b"Hello")
+        cmd(CMD_DDRAM_ADDRESS|0x40)
+        data(b"  World")
         port.flush()
+        time.sleep(1)
 
         from datetime import datetime
         while True:
             time.sleep(1)
-            cmd(CMD_CLEAR_DISPLAY)
-            cmd(CMD_DDRAM_ADDRESS|0x04)
-            data(datetime.now().strftime("%H:%M:%S\x00").encode("ascii"))
-            cmd(CMD_DDRAM_ADDRESS|0x43)
-            data(datetime.now().strftime("%Y-%m-%d\x00").encode("ascii"))
+            cmd(CMD_DDRAM_ADDRESS|0x00)
+            data(datetime.now().strftime("%H:%M:%S").encode("ascii"))
+            cmd(CMD_DDRAM_ADDRESS|0x40)
+            data(datetime.now().strftime("%y-%m-%d").encode("ascii"))
             port.flush()
