@@ -350,3 +350,6 @@ class GlasgowPort:
         while len(self.buffer_out) > 0:
             self.device.bulk_write(self.endpoint_out, self.buffer_out[:self.out_packet_size])
             self.buffer_out = self.buffer_out[self.out_packet_size:]
+
+    def __del__(self):
+        self.flush()
