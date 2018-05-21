@@ -224,6 +224,9 @@ def main():
             for (addr, chunk) in diff_data(old_image, new_image):
                 device.write_eeprom(0, addr, chunk)
 
+            if device.read_eeprom(0, 0, len(new_image)) != new_image:
+                raise SystemExit("Firmware programming failed")
+
         if args.action == "factory":
             header = device.read_eeprom(0, 0, 8 + 4 + GlasgowConfig.size)
             if not re.match(rb"^\xff+$", header):

@@ -197,6 +197,8 @@ enum {
   USB_REQ_POLL_ALERT = 0x17,
   // Cypress requests
   USB_REQ_CYPRESS_EEPROM_DB = 0xA9,
+  // libfx2 requests
+  USB_REQ_LIBFX2_PAGE_SIZE  = 0xB0,
 };
 
 enum {
@@ -276,6 +278,15 @@ void handle_pending_usb_setup() {
   __xdata struct usb_req_setup *req = (__xdata struct usb_req_setup *)SETUPDAT;
 
   // EEPROM read/write requests
+  if(req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT &&
+     req->bRequest == USB_REQ_LIBFX2_PAGE_SIZE) {
+    pending_setup = false;
+
+    // We have built-in knowledge of correct page sizes, ignore any supplied value.
+    ACK_EP0();
+    return;
+  }
+
   if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN ||
       req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
      (req->bRequest == USB_REQ_CYPRESS_EEPROM_DB ||
@@ -284,17 +295,25 @@ void handle_pending_usb_setup() {
     uint8_t  arg_chip = 0;
     uint16_t arg_addr = req->wValue;
     uint16_t arg_len  = req->wLength;
-    bool     double_byte;
-    uint8_t  timeout  = 166;
+    uint8_t  page_size = 0;
+    uint8_t  timeout   = 255; // 5 ms
     if(req->bRequest == USB_REQ_CYPRESS_EEPROM_DB) {
-      double_byte = true;
       arg_chip = I2C_ADDR_FX2_MEM;
     } else /* req->bRequest == USB_REQ_EEPROM */ {
-      double_byte = true;
       switch(req->wIndex) {
-        case 0: arg_chip = I2C_ADDR_FX2_MEM;    break;
-        case 1: arg_chip = I2C_ADDR_ICE_MEM;   break;
-        case 2: arg_chip = I2C_ADDR_ICE_MEM+1; break;
+        case 0:
+          arg_chip  = I2C_ADDR_FX2_MEM;
+          page_size = 6; // 64 bytes
+          break;
+        case 1:
+          arg_chip  = I2C_ADDR_ICE_MEM;
+          page_size = 8; // 256 bytes
+          break;
+        case 2:
+          // Same chip, different I2C address for the top half.
+          arg_chip  = I2C_ADDR_ICE_MEM + 1;
+          page_size = 8;
+          break;
       }
     }
     pending_setup = false;
@@ -309,7 +328,7 @@ void handle_pending_usb_setup() {
 
       if(arg_read) {
         while(EP0CS & _BUSY);
-        if(!eeprom_read(arg_chip, arg_addr, EP0BUF, chunk_len, double_byte)) {
+        if(!eeprom_read(arg_chip, arg_addr, EP0BUF, chunk_len, /*double_byte=*/true)) {
           STALL_EP0();
           break;
         }
@@ -317,7 +336,8 @@ void handle_pending_usb_setup() {
       } else {
         SETUP_EP0_BUF(0);
         while(EP0CS & _BUSY);
-        if(!eeprom_write(arg_chip, arg_addr, EP0BUF, chunk_len, double_byte, timeout)) {
+        if(!eeprom_write(arg_chip, arg_addr, EP0BUF, chunk_len, /*double_byte=*/true,
+                         page_size, timeout)) {
           STALL_EP0();
           break;
         }
@@ -543,6 +563,9 @@ void isr_EP8()    __interrupt { isr_EPn(); }
 int main() {
   // Run at 48 MHz, drive CLKOUT.
   CPUCS = _CLKOE|_CLKSPD1;
+
+  // All of our I2C devices can run at 400 kHz.
+  I2CTL = _400KHZ;
 
   // Initialize subsystems.
   descriptors_init();

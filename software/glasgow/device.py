@@ -93,7 +93,7 @@ class GlasgowDevice(FX2Device):
                 if self.usb.getDevice().getbcdDevice() & 0xFF00 in (0x0000, 0xA000):
                     raise GlasgowDeviceError("Firmware upload failed")
 
-    def read_eeprom(self, idx, addr, length, chunk_size=0x100):
+    def read_eeprom(self, idx, addr, length, chunk_size=0x1000):
         """
         Read ``length`` bytes at ``addr`` from EEPROM at index ``idx``
         in ``chunk_size``d chunks.
@@ -107,7 +107,7 @@ class GlasgowDevice(FX2Device):
             length -= chunk_length
         return data
 
-    def write_eeprom(self, idx, addr, data, chunk_size=0x10):
+    def write_eeprom(self, idx, addr, data, chunk_size=0x1000):
         """
         Write ``data`` to ``addr`` in EEPROM at index ``idx``
         in ``chunk_size``d chunks.
