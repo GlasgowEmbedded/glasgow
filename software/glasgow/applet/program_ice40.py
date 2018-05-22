@@ -131,12 +131,12 @@ class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
     """
 
     @staticmethod
-    def add_arguments(parser):
+    def add_run_arguments(parser):
         parser.add_argument(
             "bitstream", metavar="BITSTREAM", type=argparse.FileType("rb"),
             help="bitstream file")
 
-    def build(self, target):
+    def build(self, target, args):
         target.submodules += ProgramICE40Subtarget(
             io_port=target.get_io_port(self.spec),
             out_fifo=target.get_out_fifo(self.spec),

@@ -9,7 +9,11 @@ class GlasgowApplet:
         self.spec = spec
 
     @staticmethod
-    def add_arguments(parser):
+    def add_build_arguments(parser):
+        pass
+
+    @staticmethod
+    def add_run_arguments(parser):
         pass
 
     def build(self, target):

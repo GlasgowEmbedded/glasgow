@@ -1,5 +1,6 @@
 import time
 import struct
+import logging
 import usb1
 
 from fx2 import *
@@ -7,6 +8,8 @@ from fx2.format import input_data
 
 
 __all__ = ['GlasgowDevice', 'GlasgowDeviceError']
+
+logger = logging.getLogger(__name__)
 
 
 VID_QIHW       = 0x20b7
@@ -39,20 +42,25 @@ class GlasgowConfig:
         Revision letter, ``A``-``Z``.
     serial : str[16]
         Serial number, in ISO 8601 format.
+    bitstream_size : int
+        Size of bitstream flashed to ICE_MEM, or 0 if there isn't one.
     """
     size = 64
+    _encoding = "<1s16sI"
 
-    def __init__(self, revision, serial):
+    def __init__(self, revision, serial, bitstream_size=0):
         self.revision = revision
         self.serial   = serial
+        self.bitstream_size = bitstream_size
 
     def encode(self):
         """
         Convert configuration to a byte array that can be loaded into memory or EEPROM.
         """
-        data = struct.pack("1s16s",
-                           self.revision.encode("utf-8"),
-                           self.serial.encode("utf-8"))
+        data = struct.pack(self._encoding,
+                           self.revision.encode("ascii"),
+                           self.serial.encode("ascii"),
+                           self.bitstream_size)
         return data.ljust(self.size, b"\x00")
 
     @classmethod
@@ -63,11 +71,14 @@ class GlasgowConfig:
         Returns :class:`GlasgowConfiguration` or raises :class:`ValueError` if
         the byte array does not contain a valid configuration.
         """
-        if len(data) != self.size:
+        if len(data) != cls.size:
             raise ValueError("Incorrect configuration length")
 
-        revision, serial = struct.unpack_from("1s16s", data, 0)
-        return GlasgowConfiguration(revision, serial)
+        revision, serial, bitstream_size = \
+            struct.unpack_from(cls._encoding, data, 0)
+        return GlasgowConfig(revision.decode("ascii"),
+                             serial.decode("ascii"),
+                             bitstream_size)
 
 
 class GlasgowDeviceError(FX2DeviceError):
@@ -77,11 +88,16 @@ class GlasgowDeviceError(FX2DeviceError):
 class GlasgowDevice(FX2Device):
     def __init__(self, firmware_file=None, vendor_id=VID_QIHW, product_id=PID_GLASGOW):
         super().__init__(vendor_id, product_id)
-        if self.usb.getDevice().getbcdDevice() & 0xFF00 in (0x0000, 0xA000):
+
+        device_id = self.usb.getDevice().getbcdDevice()
+        if device_id & 0xFF00 in (0x0000, 0xA000):
+            revision = chr(ord("A") + (device_id & 0xFF) - 1)
+            logger.debug("found rev%s device without firmware", revision)
+
             if firmware_file is None:
                 raise GlasgowDeviceError("Firmware is not uploaded")
             else:
-                # TODO: log?
+                logger.debug("loading firmware from %s", firmware_file)
                 with open(firmware_file, "rb") as f:
                     self.load_ram(input_data(f, fmt="ihex"))
 
@@ -93,31 +109,80 @@ class GlasgowDevice(FX2Device):
                 if self.usb.getDevice().getbcdDevice() & 0xFF00 in (0x0000, 0xA000):
                     raise GlasgowDeviceError("Firmware upload failed")
 
-    def read_eeprom(self, idx, addr, length, chunk_size=0x1000):
+        logger.debug("found device with serial %s",
+                     self.usb.getDevice().getSerialNumber())
+
+    def _read_eeprom_raw(self, idx, addr, length, chunk_size=0x1000):
         """
         Read ``length`` bytes at ``addr`` from EEPROM at index ``idx``
-        in ``chunk_size``d chunks.
+        in ``chunk_size`` byte chunks.
         """
         data = bytearray()
         while length > 0:
             chunk_length = min(length, chunk_size)
+            logger.debug("reading EEPROM chip %d range %04x-%04x",
+                         idx, addr, addr + chunk_length - 1)
             data += self.control_read(usb1.REQUEST_TYPE_VENDOR, REQ_EEPROM,
                                       addr, idx, chunk_length)
             addr += chunk_length
             length -= chunk_length
         return data
 
-    def write_eeprom(self, idx, addr, data, chunk_size=0x1000):
+    def _write_eeprom_raw(self, idx, addr, data, chunk_size=0x1000):
         """
         Write ``data`` to ``addr`` in EEPROM at index ``idx``
-        in ``chunk_size``d chunks.
+        in ``chunk_size`` byte chunks.
         """
         while len(data) > 0:
             chunk_length = min(len(data), chunk_size)
+            logger.debug("writing EEPROM chip %d range %04x-%04x",
+                         idx, addr, addr + chunk_length - 1)
             self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_EEPROM,
                                addr, idx, data[:chunk_length])
             addr += chunk_length
             data = data[chunk_length:]
+
+    @staticmethod
+    def _adjust_eeprom_addr_for_kind(kind, addr):
+        if kind == "fx2":
+            base_offset = 0
+        elif kind == "ice":
+            base_offset = 1
+        else:
+            raise ValueError("Unknown EEPROM kind {}".format(kind))
+        return 0x10000 * base_offset + addr
+
+    def read_eeprom(self, kind, addr, length):
+        """
+        Read ``length`` bytes at ``addr`` from EEPROM of kind ``kind``
+        in ``chunk_size`` byte chunks. Valid ``kind`` is ``"fx2"`` or ``"ice"``.
+        """
+        logger.debug("reading %s EEPROM range %04x-%04x",
+                     kind, addr, addr + length - 1)
+        addr = self._adjust_eeprom_addr_for_kind(kind, addr)
+        result = bytearray()
+        while length > 0:
+            chunk_addr   = addr & ((1 << 16) - 1)
+            chunk_length = min(chunk_addr + length, 1 << 16) - chunk_addr
+            result += self._read_eeprom_raw(addr >> 16, chunk_addr, chunk_length)
+            addr   += chunk_length
+            length -= chunk_length
+        return result
+
+    def write_eeprom(self, kind, addr, data):
+        """
+        Write ``data`` to ``addr`` in EEPROM of kind ``kind``
+        in ``chunk_size`` byte chunks. Valid ``kind`` is ``"fx2"`` or ``"ice"``.
+        """
+        logger.debug("writing %s EEPROM range %04x-%04x",
+                     kind, addr, addr + len(data) - 1)
+        addr = self._adjust_eeprom_addr_for_kind(kind, addr)
+        while len(data) > 0:
+            chunk_addr   = addr & ((1 << 16) - 1)
+            chunk_length = min(chunk_addr + len(data), 1 << 16) - chunk_addr
+            self._write_eeprom_raw(addr >> 16, chunk_addr, data[:chunk_length])
+            addr += chunk_length
+            data  = data[chunk_length:]
 
     def _status(self):
         return self.control_read(usb1.REQUEST_TYPE_VENDOR, REQ_STATUS, 0, 0, 1)[0]

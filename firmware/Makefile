@@ -4,6 +4,7 @@ PID      ?= 9db1
 CODE_SIZE = 0x3e00
 XRAM_SIZE = 0x01c0
 CONF_SIZE = 0x0040
+MODEL     = medium
 
 TARGET    = glasgow
 SOURCES   = main leds fpga dac_ldo adc fifo

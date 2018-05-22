@@ -1,4 +1,5 @@
 import os
+import logging
 import argparse
 import textwrap
 import re
@@ -12,6 +13,9 @@ from .device import VID_QIHW, PID_GLASGOW, GlasgowConfig, GlasgowDevice
 from .gateware.target import GlasgowTarget
 from .gateware.test import *
 from .applet import GlasgowApplet
+
+
+logger = logging.getLogger(__name__)
 
 
 class TextHelpFormatter(argparse.HelpFormatter):
@@ -36,7 +40,43 @@ class TextHelpFormatter(argparse.HelpFormatter):
 
 
 def get_argparser():
+    def add_subparsers(parser, **kwargs):
+        if isinstance(parser, argparse._MutuallyExclusiveGroup):
+            container = parser._container
+            if kwargs.get('prog') is None:
+                formatter = container._get_formatter()
+                formatter.add_usage(container.usage, [], [], '')
+                kwargs['prog'] = formatter.format_help().strip()
+
+            parsers_class = parser._pop_action_class(kwargs, 'parsers')
+            subparsers = argparse._SubParsersAction(option_strings=[],
+                                                    parser_class=type(container),
+                                                    **kwargs)
+            parser._add_action(subparsers)
+        else:
+            subparsers = parser.add_subparsers(dest="applet", metavar="APPLET")
+        return subparsers
+
+    def add_applet_arg(parser, add_run_args=False, required=False):
+        subparsers = add_subparsers(parser, dest="applet", metavar="APPLET")
+        subparsers.required = required
+
+        for applet_name, applet in GlasgowApplet.all_applets.items():
+            p_applet = subparsers.add_parser(
+                applet_name, help=applet.help, description=applet.description,
+                formatter_class=TextHelpFormatter)
+            applet.add_build_arguments(p_applet)
+            if add_run_args:
+                applet.add_run_arguments(p_applet)
+
     parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "-v", "--verbose", default=0, action="count",
+        help="increase logging verbosity")
+    parser.add_argument(
+        "-q", "--quiet", default=0, action="count",
+        help="decrease logging verbosity")
 
     subparsers = parser.add_subparsers(dest="action", metavar="COMMAND")
     subparsers.required = True
@@ -44,10 +84,10 @@ def get_argparser():
     p_voltage = subparsers.add_parser(
         "voltage", help="query or set I/O port voltage")
     p_voltage.add_argument(
-        "ports", metavar="PORTS", type=str, nargs='?', default="AB",
+        "ports", metavar="PORTS", type=str, nargs="?", default="AB",
         help="I/O port set (one or more of: A B, default: all)")
     p_voltage.add_argument(
-        "voltage", metavar="VOLTS", type=float, nargs='?', default=None,
+        "voltage", metavar="VOLTS", type=float, nargs="?", default=None,
         help="I/O port voltage (range: 1.8-5.0)")
     p_voltage.add_argument(
         "--tolerance", metavar="PCT", type=float, default=10.0,
@@ -57,7 +97,7 @@ def get_argparser():
         help="do not raise an alert if Vsense is out of range of Vio")
 
     p_run = subparsers.add_parser(
-        "run", help="run an applet")
+        "run", help="load an applet bitstream and run applet code")
     p_run.add_argument(
         "--no-build", dest="build_bitstream", default=True, action="store_false",
         help="do not rebuild bitstream")
@@ -65,14 +105,43 @@ def get_argparser():
         "--no-execute", dest="run_applet", default=True, action="store_false",
         help="do not execute applet code")
 
-    run_subparsers = p_run.add_subparsers(dest="applet", metavar="APPLET")
-    run_subparsers.required = True
+    g_run_bitstream = p_run.add_mutually_exclusive_group(required=True)
+    g_run_bitstream.add_argument(
+        "--bitstream", metavar="FILENAME", type=argparse.FileType("rb"),
+        help="read bitstream from the specified file")
+    add_applet_arg(g_run_bitstream, add_run_args=True)
 
-    for applet_name, applet in GlasgowApplet.all_applets.items():
-        p_applet = run_subparsers.add_parser(
-            applet_name, help=applet.help, description=applet.description,
-            formatter_class=TextHelpFormatter)
-        applet.add_arguments(p_applet)
+    p_flash = subparsers.add_parser(
+        "flash", help="program FX2 firmware or applet bitstream into EEPROM")
+
+    g_flash_firmware = p_flash.add_mutually_exclusive_group()
+    g_flash_firmware.add_argument(
+        "--firmware", metavar="FILENAME", type=argparse.FileType("rb"),
+        help="read firmware from the specified file")
+    g_flash_firmware.add_argument(
+        "--remove-firmware", default=False, action="store_true",
+        help="remove any firmware present")
+
+    g_flash_bitstream = p_flash.add_mutually_exclusive_group()
+    g_flash_bitstream.add_argument(
+        "--bitstream", metavar="FILENAME", type=argparse.FileType("rb"),
+        help="read bitstream from the specified file")
+    g_flash_bitstream.add_argument(
+        "--remove-bitstream", default=False, action="store_true",
+        help="remove any bitstream present")
+    add_applet_arg(g_flash_bitstream, required=False)
+
+    def revision(arg):
+        if re.match(r"^[A-Z]$", arg):
+            return arg
+        else:
+            raise argparse.ArgumentTypeError("{} is not a valid revision letter".format(arg))
+
+    def serial(arg):
+        if re.match(r"^\d{8}T\d{6}Z$", arg):
+            return arg
+        else:
+            raise argparse.ArgumentTypeError("{} is not a valid serial number".format(arg))
 
     p_test = subparsers.add_parser(
         "test", help="verify device functionality")
@@ -97,30 +166,8 @@ def get_argparser():
         "bitstream", metavar="BITSTREAM", type=argparse.FileType("rb"),
         help="read bitstream from the specified file")
 
-    p_flash = subparsers.add_parser(
-        "flash", help="program FX2 firmware into EEPROM")
-    g_flash_firmware = p_flash.add_mutually_exclusive_group()
-    g_flash_firmware.add_argument(
-        "-f", "--firmware", metavar="FILENAME", type=argparse.FileType("rb"),
-        help="read firmware from the specified file")
-    g_flash_firmware.add_argument(
-        "-n", "--no-firmware", default=False, action="store_true",
-        help="remove any firmware present")
-
-    def revision(arg):
-        if re.match(r"^[A-Z]$", arg):
-            return arg
-        else:
-            raise argparse.ArgumentTypeError("{} is not a valid revision letter".format(arg))
-
-    def serial(arg):
-        if re.match(r"^\d{8}T\d{6}Z$", arg):
-            return arg
-        else:
-            raise argparse.ArgumentTypeError("{} is not a valid serial number".format(arg))
-
     p_factory = subparsers.add_parser(
-        "factory", help="initial device programming")
+        "factory", help=argparse.SUPPRESS)
     p_factory.add_argument(
         "--revision", metavar="REVISION", type=str,
         default="A",
@@ -133,8 +180,21 @@ def get_argparser():
     return parser
 
 
+def build_applet(args):
+    applet = GlasgowApplet.all_applets[args.applet](spec="A")
+    target = GlasgowTarget(in_count=1, out_count=1)
+    applet.build(target, args)
+    return applet, target
+
+
 def main():
     args = get_argparser().parse_args()
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO + args.quiet * 10 - args.verbose * 10)
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("[%(levelname)5s] %(name)s: %(message)s"))
+    root_logger.addHandler(handler)
 
     try:
         firmware_file = os.path.join(os.path.dirname(__file__), "glasgow.ihex")
@@ -170,13 +230,97 @@ def main():
                       .format(port, vio, vsense, alert[0], alert[1], notice))
 
         if args.action == "run":
-            applet = GlasgowApplet.all_applets[args.applet](spec="A")
-            target = GlasgowTarget(in_count=1, out_count=1)
-            applet.build(target)
-            if args.build_bitstream:
-                device.download_bitstream(target.get_bitstream(debug=True))
-            if args.run_applet:
-                applet.run(device, args)
+            if args.applet:
+                applet, target = build_applet(args)
+                if args.build_bitstream:
+                    logger.info("building bitstream for applet %s", args.applet)
+                    device.download_bitstream(target.get_bitstream(debug=True))
+                if args.run_applet:
+                    logger.info("running handler for applet %s", args.applet)
+                    applet.run(device, args)
+            else:
+                with args.bitstream as f:
+                    logger.info("downloading bitstream from %s", f.name)
+                    device.download_bitstream(f.read())
+
+        if args.action == "flash":
+            logger.info("reading device configuration")
+            header = device.read_eeprom("fx2", 0, 8 + 4 + GlasgowConfig.size)
+            header[0] = 0xC2 # see below
+
+            fx2_config = FX2Config.decode(header, partial=True)
+            if (len(fx2_config.firmware) != 1 or
+                    fx2_config.firmware[0][0] != 0x4000 - GlasgowConfig.size or
+                    len(fx2_config.firmware[0][1]) != GlasgowConfig.size):
+                raise SystemExit("Unrecognized or corrupted configuration block")
+            glasgow_config = GlasgowConfig.decode(fx2_config.firmware[0][1])
+
+            logger.info("device has serial %s-%s",
+                        glasgow_config.revision, glasgow_config.serial)
+            if fx2_config.disconnect:
+                logger.info("device has flashed firmware")
+            else:
+                logger.info("device does not have flashed firmware")
+            if glasgow_config.bitstream_size:
+                logger.info("device has flashed bitstream")
+            else:
+                logger.info("device does not have flashed bitstream")
+
+            new_bitstream = b""
+            if args.remove_bitstream:
+                logger.info("removing bitstream")
+                glasgow_config.bitstream_size = 0
+            elif args.bitstream:
+                logger.info("using bitstream from %s", args.bitstream.name)
+                with args.bitstream as f:
+                    new_bitstream = f.read()
+                    glasgow_config.bitstream_size = len(new_bitstream)
+            elif args.applet:
+                logger.info("building bitstream for applet %s", args.applet)
+                applet, target = build_applet(args)
+                new_bitstream = target.get_bitstream()
+                glasgow_config.bitstream_size = len(new_bitstream)
+
+            fx2_config.firmware[0] = (0x4000 - GlasgowConfig.size, glasgow_config.encode())
+
+            if args.remove_firmware:
+                logger.info("removing firmware")
+                fx2_config.disconnect = False
+                new_image = fx2_config.encode()
+                new_image[0] = 0xC0 # see below
+            else:
+                logger.info("using firmware from %s",
+                            args.firmware.name if args.firmware else firmware_file)
+                with (args.firmware or open(firmware_file, "rb")) as f:
+                    for (addr, chunk) in input_data(f, fmt="ihex"):
+                        fx2_config.append(addr, chunk)
+                fx2_config.disconnect = True
+                new_image = fx2_config.encode()
+
+            if new_bitstream:
+                logger.info("programming bitstream")
+                old_bitstream = device.read_eeprom("ice", 0, len(new_bitstream))
+                if old_bitstream != new_bitstream:
+                    for (addr, chunk) in diff_data(old_bitstream, new_bitstream):
+                        device.write_eeprom("ice", addr, chunk)
+
+                    logger.info("verifying bitstream")
+                    if device.read_eeprom("ice", 0, len(new_bitstream)) != new_bitstream:
+                        raise SystemExit("Bitstream programming failed")
+                else:
+                    logger.info("bitstream identical")
+
+            logger.info("programming configuration and firmware")
+            old_image = device.read_eeprom("fx2", 0, len(new_image))
+            if old_image != new_image:
+                for (addr, chunk) in diff_data(old_image, new_image):
+                    device.write_eeprom("fx2", addr, chunk)
+
+                logger.info("verifying configuration and firmware")
+                if device.read_eeprom("fx2", 0, len(new_image)) != new_image:
+                    raise SystemExit("Configuration/firmware programming failed")
+            else:
+                logger.info("configuration and firmware identical")
 
         if args.action == "test":
             if args.mode == "toggle-io":
@@ -197,38 +341,9 @@ def main():
             if args.mode == "pll":
                 device.download_bitstream(TestPLL().get_bitstream(debug=True))
 
-            if args.mode == "download":
-                device.download_bitstream(args.bitstream.read())
-
-        if args.action == "flash":
-            header = device.read_eeprom(0, 0, 8 + 4 + GlasgowConfig.size)
-            header[0] = 0xC2 # see below
-
-            fx2_config = FX2Config.decode(header, partial=True)
-            if (len(fx2_config.firmware) != 1 or
-                    len(fx2_config.firmware[0][1]) != GlasgowConfig.size):
-                raise SystemExit("Unrecognized or corrupted configuration block")
-
-            if args.no_firmware:
-                fx2_config.disconnect = False
-                new_image = fx2_config.encode()
-                new_image[0] = 0xC0 # see below
-            else:
-                with open(args.firmware or firmware_file, "rb") as f:
-                    for (addr, chunk) in input_data(f, fmt="ihex"):
-                        fx2_config.append(addr, chunk)
-                fx2_config.disconnect = True
-                new_image = fx2_config.encode()
-
-            old_image = device.read_eeprom(0, 0, len(new_image))
-            for (addr, chunk) in diff_data(old_image, new_image):
-                device.write_eeprom(0, addr, chunk)
-
-            if device.read_eeprom(0, 0, len(new_image)) != new_image:
-                raise SystemExit("Firmware programming failed")
-
         if args.action == "factory":
-            header = device.read_eeprom(0, 0, 8 + 4 + GlasgowConfig.size)
+            logger.info("reading device configuration")
+            header = device.read_eeprom("fx2", 0, 8 + 4 + GlasgowConfig.size)
             if not re.match(rb"^\xff+$", header):
                 raise SystemExit("Device already factory-programmed")
 
@@ -239,10 +354,16 @@ def main():
             fx2_config.append(0x4000 - GlasgowConfig.size, glasgow_config.encode())
 
             image = fx2_config.encode()
-            image[0] = 0xC0 # let FX2 hardware enumerate
+            # Let FX2 hardware enumerate. This won't load the configuration block
+            # into memory automatically, but the firmware has code that does that
+            # if it detects a C0 load.
+            image[0] = 0xC0
 
-            device.write_eeprom(0, 0, image)
-            if device.read_eeprom(0, 0, len(image)) != image:
+            logger.info("programming device configuration")
+            device.write_eeprom("fx2", 0, image)
+
+            logger.info("verifying device configuration")
+            if device.read_eeprom("fx2", 0, len(image)) != image:
                 raise SystemExit("Factory programming failed")
 
     except FX2DeviceError as e:

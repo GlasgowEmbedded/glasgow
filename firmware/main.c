@@ -141,7 +141,7 @@ usb_desc_endpoint_c usb_endpoints[] = {
 usb_ascii_string_c usb_strings[] = {
   [0] = "whitequark research",
   [1] = "Glasgow Debug Tool",
-  [2] = "Z-9999999999999999",
+  [2] = "X-XXXXXXXXXXXXXXXX",
   // Configurations
   [3] = "Port A at {2x512B EP2OUT, 2x512B EP6IN}, B at {2x512B EP4OUT, 2x512B EP8IN}",
   [4] = "Ports AB at {4x512B EP2OUT, 4x512B EP6IN}",
@@ -163,24 +163,37 @@ usb_descriptor_set_c usb_descriptor_set = {
   .strings         = usb_strings,
 };
 
-// Populate descriptors from device configuration, if any.
-static void descriptors_init() {
+static void config_init() {
   unsigned char load_cmd;
-  __xdata struct usb_desc_device *desc_device = (__xdata struct usb_desc_device *)usb_device;
-  __xdata char *desc_serial = (__xdata char *)usb_strings[usb_device.iSerialNumber - 1];
-
   if(!eeprom_read(I2C_ADDR_FX2_MEM, 0, &load_cmd, sizeof(load_cmd), /*double_byte=*/true))
-    return;
-  if(load_cmd == 0xff)
-    return;
-  if(load_cmd == 0xc0) {
+    goto fail;
+  if(load_cmd == 0xff) {
+    goto fail;
+  } else if(load_cmd == 0xc2) {
     // A C2 load, used on devices with firmware, automatically loads configuration.
+    return;
+  } else if(load_cmd == 0xc0) {
     // A C0 load, used on factory-programmed devices without firmware, does not, so
     // load it explicitly.
     if(!eeprom_read(I2C_ADDR_FX2_MEM, 8 + 4, (__xdata void *)&glasgow_config,
                     sizeof(glasgow_config), /*double_byte=*/true))
-      return;
+      goto fail;
+    return;
   }
+
+fail:
+  // Configuration block is corrupted or missing, load default configuration so that
+  // we don't hang or present nonsensical descriptors.
+  glasgow_config.revision = 'Z';
+  xmemcpy((__xdata void *)glasgow_config.serial, (__xdata void *)"9999999999999999",
+          sizeof(glasgow_config.serial));
+  glasgow_config.bitstream_size = 0;
+}
+
+// Populate descriptors from device configuration, if any.
+static void descriptors_init() {
+  __xdata struct usb_desc_device *desc_device = (__xdata struct usb_desc_device *)usb_device;
+  __xdata char *desc_serial = (__xdata char *)usb_strings[usb_device.iSerialNumber - 1];
 
   desc_device->bcdDevice |= 1 + glasgow_config.revision - 'A';
   desc_serial[0] = glasgow_config.revision;
@@ -571,15 +584,12 @@ int main() {
   I2CTL = _400KHZ;
 
   // Initialize subsystems.
+  config_init();
   descriptors_init();
   leds_init();
   iobuf_init_dac_ldo();
   iobuf_init_adc();
   fifo_init();
-
-  // Latch initial status bits.
-  if(fpga_is_ready())
-    latch_status_bit(ST_FPGA_RDY);
 
   // Disable EP1IN/OUT
   SYNCDELAY;
@@ -596,6 +606,42 @@ int main() {
 
   // Set up interrupt for ADC ALERT.
   EX0 = true;
+
+  // If there's a bitstream flashed, load it.
+  if(glasgow_config.bitstream_size > 0) {
+    uint32_t length = glasgow_config.bitstream_size;
+    uint8_t  chip = I2C_ADDR_ICE_MEM;
+    uint16_t addr = 0;
+
+    // Loading the bitstream over I2C can take up to five seconds.
+    led_act_set(true);
+
+    fpga_reset();
+    while(length > 0) {
+      uint8_t chunk_len = 0x80;
+      if(length < chunk_len)
+        chunk_len = length;
+
+      if(!eeprom_read(chip, addr, (uint8_t *)&scratch, chunk_len, /*double_byte=*/true))
+        break;
+      fpga_load((uint8_t *)scratch, chunk_len);
+
+      length -= chunk_len;
+      addr   += chunk_len;
+      if(addr == 0)
+        chip += 1; // address wraparound
+    }
+    if(length == 0)
+      fpga_start();
+
+    led_act_set(false);
+  }
+
+  // Latch initial status bits.
+  // FPGA could be ready because we've loaded it above, or because the firmware was
+  // reloaded live.
+  if(fpga_is_ready())
+    latch_status_bit(ST_FPGA_RDY);
 
   // Finally, enumerate.
   usb_init(/*reconnect=*/true);

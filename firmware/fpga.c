@@ -42,6 +42,16 @@ __asm
   mov  _AUTOPTRH1, _DPH0
   mov  dptr, #_XAUTODAT1
 
+#if defined(__SDCC_MODEL_SMALL)
+  mov  r0, _fpga_load_PARM_2
+#elif defined(__SDCC_MODEL_MEDIUM)
+  mov  r0, #_fpga_load_PARM_2
+  movx a, @r0
+  mov  r0, a
+#else
+#error Unsupported memory model
+#endif
+
 00000$:
   movx a, @dptr
   BIT(7)
@@ -52,7 +62,7 @@ __asm
   BIT(2)
   BIT(1)
   BIT(0)
-  djnz _fpga_load_PARM_2, 00000$
+  djnz r0, 00000$
 __endasm;
 #undef  BIT
 }

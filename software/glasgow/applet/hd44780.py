@@ -202,12 +202,12 @@ class HD44780Applet(GlasgowApplet, name="hd44780"):
         self.spec = spec
 
     @staticmethod
-    def add_arguments(parser):
+    def add_run_arguments(parser):
         parser.add_argument(
             "--reset", default=False, action="store_true",
             help="power-cycle the port on startup")
 
-    def build(self, target):
+    def build(self, target, args):
         target.submodules += HD44780Subtarget(
             io_port=target.get_io_port(self.spec),
             out_fifo=target.get_out_fifo(self.spec),
