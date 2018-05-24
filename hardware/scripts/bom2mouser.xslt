@@ -14,26 +14,26 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
   <xsl:output method="text"/>
 
-  <xsl:key name="mouserPartNumber" match="comp" use="fields/field[@name='Mouser_PN']" />
+  <xsl:key name="mfgPartNumber" match="comp" use="fields/field[@name='MPN']" />
 
   <xsl:template match="/export">
     <xsl:apply-templates select="components"/>
   </xsl:template>
 
   <xsl:template match="components">
-    <xsl:for-each select="comp[count(. | key('mouserPartNumber', fields/field[@name='Mouser_PN'])[1]) = 1]">
+    <xsl:for-each select="comp[count(. | key('mfgPartNumber', fields/field[@name='MPN'])[1]) = 1]">
 
-      <xsl:sort select="fields/field[@name='Mouser_PN']"/>
+      <xsl:sort select="fields/field[@name='MPN']"/>
 
-      <xsl:if test="count(key('mouserPartNumber', fields/field[@name='Mouser_PN'])) > 0">
+      <xsl:if test="count(key('mfgPartNumber', fields/field[@name='MPN'])) > 0">
 
-        <xsl:value-of select="fields/field[@name='Mouser_PN']"/>
+        <xsl:value-of select="fields/field[@name='MPN']"/>
         <xsl:text>|</xsl:text>
 
-        <xsl:value-of select="count(key('mouserPartNumber', fields/field[@name='Mouser_PN']))"/>
+        <xsl:value-of select="count(key('mfgPartNumber', fields/field[@name='MPN']))"/>
         <xsl:text>|</xsl:text>
 
-        <xsl:for-each select="key('mouserPartNumber', fields/field[@name='Mouser_PN'])">
+        <xsl:for-each select="key('mfgPartNumber', fields/field[@name='MPN'])">
 
           <xsl:sort select="@ref" />
           <xsl:value-of select="@ref"/>

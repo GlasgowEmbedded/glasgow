@@ -24,7 +24,8 @@ F 0 "U5" H 2150 3700 50  0000 C CNN
 F 1 "FXMA108BQX" H 2800 3700 50  0000 C CNN
 F 2 "Package_DFN_QFN:WQFN-20-1EP_2.5x4.5mm_P0.5mm_EP1x2.9mm" H 4000 3550 50  0001 C CNN
 F 3 "http://www.onsemi.com/PowerSolutions/product.do?id=FXMA108" H 2400 3200 50  0001 C CNN
-F 4 "512-FXMA108BQX" H 2400 3150 50  0001 C CNN "Mouser_PN"
+F 4 "Fairchild" H 0   0   50  0001 C CNN "Mfg"
+F 5 "FXMA108BQX" H 0   0   50  0001 C CNN "MPN"
 	1    2400 3150
 	1    0    0    -1  
 $EndComp
@@ -187,7 +188,8 @@ F 0 "J2" H 3750 2550 50  0000 C CNN
 F 1 "Conn_02x10_Odd_Even" H 3750 3676 50  0001 C CNN
 F 2 "Connector_PinHeader_2.54mm:PinHeader_2x10_P2.54mm_Vertical" H 3700 3150 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/276/0878342019_PCB_HEADERS-152849.pdf" H 3700 3150 50  0001 C CNN
-F 4 "538-87834-2019" H 3700 3150 50  0001 C CNN "Mouser_PN"
+F 4 "Molex" H 0   0   50  0001 C CNN "Mfg"
+F 5 "87834-2019" H 0   0   50  0001 C CNN "MPN"
 	1    3700 3150
 	1    0    0    -1  
 $EndComp
@@ -222,7 +224,8 @@ F 0 "C30" H 2615 1546 50  0000 L CNN
 F 1 "u1" H 2615 1455 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 2538 1350 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 2500 1500 50  0001 C CNN
-F 4 "963-TMK107BJ104KAHT" H 2500 1500 50  0001 C CNN "Mouser_PN"
+F 4 "Taiyo Yuden" H 0   0   50  0001 C CNN "Mfg"
+F 5 "TMK107BJ104KAHT" H 0   0   50  0001 C CNN "MPN"
 	1    2500 1500
 	1    0    0    -1  
 $EndComp
@@ -236,7 +239,8 @@ F 0 "C29" H 2265 1546 50  0000 L CNN
 F 1 "4u7" H 2265 1455 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 2188 1350 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 2150 1500 50  0001 C CNN
-F 4 "810-C1608X5R1C475KAC" H 2150 1500 50  0001 C CNN "Mouser_PN"
+F 4 "TDK" H 0   0   50  0001 C CNN "Mfg"
+F 5 "C1608X5R1C475K080AC" H 0   0   50  0001 C CNN "MPN"
 	1    2150 1500
 	1    0    0    -1  
 $EndComp
@@ -298,7 +302,8 @@ F 0 "U10" H 2950 5100 50  0000 L CNN
 F 1 "DAC081C081CIMK" H 3350 5100 50  0000 L CNN
 F 2 "Package_TO_SOT_SMD:SOT-23-6" H 3900 4600 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/dac081c081.pdf" H 3250 4850 50  0001 C CNN
-F 4 "926-DA081C081CIMKNPB" H 3250 4850 50  0001 C CNN "Mouser_PN"
+F 4 "Texas Instruments" H 0   0   50  0001 C CNN "Mfg"
+F 5 "DAC081C081CIMK" H 0   0   50  0001 C CNN "MPN"
 	1    3250 4850
 	1    0    0    -1  
 $EndComp
@@ -312,7 +317,8 @@ F 0 "U9" H 5850 3400 50  0000 C CNN
 F 1 "ADC081C021CIMM" H 6500 3400 50  0000 C CNN
 F 2 "Package_SO:MSOP-8_3x3mm_P0.65mm" H 6900 2800 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/adc081c021.pdf" H 6100 3250 50  0001 C CNN
-F 4 "926-AD081C021CIMMNPB" H 6100 3150 50  0001 C CNN "Mouser_PN"
+F 4 "Texas Instruments" H 0   0   50  0001 C CNN "Mfg"
+F 5 "ADC081C021CIMM" H 0   0   50  0001 C CNN "MPN"
 	1    6100 3150
 	1    0    0    -1  
 $EndComp
@@ -425,7 +431,8 @@ F 0 "C35" H 4815 1546 50  0000 L CNN
 F 1 "u1" H 4815 1455 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 4738 1350 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 4700 1500 50  0001 C CNN
-F 4 "963-TMK107BJ104KAHT" H 4700 1500 50  0001 C CNN "Mouser_PN"
+F 4 "Taiyo Yuden" H 0   0   50  0001 C CNN "Mfg"
+F 5 "TMK107BJ104KAHT" H 0   0   50  0001 C CNN "MPN"
 	1    4700 1500
 	1    0    0    -1  
 $EndComp
@@ -439,7 +446,8 @@ F 0 "C34" H 4465 1546 50  0000 L CNN
 F 1 "4u7" H 4465 1455 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 4388 1350 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 4350 1500 50  0001 C CNN
-F 4 "810-C1608X5R1C475KAC" H 4350 1500 50  0001 C CNN "Mouser_PN"
+F 4 "TDK" H 0   0   50  0001 C CNN "Mfg"
+F 5 "C1608X5R1C475K080AC" H 0   0   50  0001 C CNN "MPN"
 	1    4350 1500
 	1    0    0    -1  
 $EndComp
@@ -501,7 +509,8 @@ F 0 "C36" H 5165 1546 50  0000 L CNN
 F 1 "u1" H 5165 1455 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 5088 1350 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 5050 1500 50  0001 C CNN
-F 4 "963-TMK107BJ104KAHT" H 5050 1500 50  0001 C CNN "Mouser_PN"
+F 4 "Taiyo Yuden" H 0   0   50  0001 C CNN "Mfg"
+F 5 "TMK107BJ104KAHT" H 0   0   50  0001 C CNN "MPN"
 	1    5050 1500
 	1    0    0    -1  
 $EndComp
@@ -525,7 +534,8 @@ F 0 "C37" H 4815 3296 50  0000 L CNN
 F 1 "12n" H 4815 3205 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 4738 3100 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/UPY-GPHC_X7R_6.3V-to-50V_18-1154002.pdf" H 4700 3250 50  0001 C CNN
-F 4 "603-CC603KRX7R8BB123" H 4700 3250 50  0001 C CNN "Mouser_PN"
+F 4 "Yageo" H 0   0   50  0001 C CNN "Mfg"
+F 5 "CC603KRX7R8BB123" H 0   0   50  0001 C CNN "MPN"
 	1    4700 3250
 	1    0    0    -1  
 $EndComp
@@ -539,7 +549,8 @@ F 0 "R20" H 4280 2804 50  0000 R CNN
 F 1 "10k" H 4280 2895 50  0000 R CNN
 F 2 "Resistor_SMD:R_0603_1608Metric_Pad0.99x1.00mm_HandSolder" V 4280 2850 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 4350 2850 50  0001 C CNN
-F 4 "603-RC0603FR-0710KL" H 4350 2850 50  0001 C CNN "Mouser_PN"
+F 4 "Yageo" H 0   0   50  0001 C CNN "Mfg"
+F 5 "RC0603FR-0710KL" H 0   0   50  0001 C CNN "MPN"
 	1    4350 2850
 	-1   0    0    1   
 $EndComp
@@ -597,7 +608,8 @@ F 0 "U11" H 5250 5100 50  0000 C CNN
 F 1 "TPS73101DBV" H 5600 5100 50  0000 C CNN
 F 2 "Package_TO_SOT_SMD:SOT-23-5" H 5500 5175 50  0001 C CIN
 F 3 "http://www.ti.com/lit/ds/symlink/tps731.pdf" H 5500 4800 50  0001 C CNN
-F 4 "595-TPS73101DBVR" H 5500 4850 50  0001 C CNN "Mouser_PN"
+F 4 "Texas Instruments" H 0   0   50  0001 C CNN "Mfg"
+F 5 "TPS73101DBVR" H 0   0   50  0001 C CNN "MPN"
 	1    5500 4850
 	1    0    0    -1  
 $EndComp
@@ -649,7 +661,8 @@ F 0 "C40" H 3765 1546 50  0000 L CNN
 F 1 "u1" H 3765 1455 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 3688 1350 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 3650 1500 50  0001 C CNN
-F 4 "963-TMK107BJ104KAHT" H 3650 1500 50  0001 C CNN "Mouser_PN"
+F 4 "Taiyo Yuden" H 0   0   50  0001 C CNN "Mfg"
+F 5 "TMK107BJ104KAHT" H 0   0   50  0001 C CNN "MPN"
 	1    3650 1500
 	1    0    0    -1  
 $EndComp
@@ -663,7 +676,8 @@ F 0 "C39" H 3415 1546 50  0000 L CNN
 F 1 "4u7" H 3415 1455 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 3338 1350 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 3300 1500 50  0001 C CNN
-F 4 "810-C1608X5R1C475KAC" H 3300 1500 50  0001 C CNN "Mouser_PN"
+F 4 "TDK" H 0   0   50  0001 C CNN "Mfg"
+F 5 "C1608X5R1C475K080AC" H 0   0   50  0001 C CNN "MPN"
 	1    3300 1500
 	1    0    0    -1  
 $EndComp
@@ -725,7 +739,8 @@ F 0 "R23" H 6080 4904 50  0000 R CNN
 F 1 "59k" H 6080 4995 50  0000 R CNN
 F 2 "Resistor_SMD:R_0603_1608Metric_Pad0.99x1.00mm_HandSolder" V 6080 4950 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-AC_51_RoHS_L_6-1152827.pdf" H 6150 4950 50  0001 C CNN
-F 4 "603-AC0603FR-0759KL" H 6150 4950 50  0001 C CNN "Mouser_PN"
+F 4 "Yageo" H 0   0   50  0001 C CNN "Mfg"
+F 5 "AC0603FR-0759KL" H 0   0   50  0001 C CNN "MPN"
 	1    6150 4950
 	-1   0    0    1   
 $EndComp
@@ -744,7 +759,8 @@ F 0 "R24" H 6080 5304 50  0000 R CNN
 F 1 "24k3" H 6080 5395 50  0000 R CNN
 F 2 "Resistor_SMD:R_0603_1608Metric_Pad0.99x1.00mm_HandSolder" V 6080 5350 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-AC_51_RoHS_L_6-1152827.pdf" H 6150 5350 50  0001 C CNN
-F 4 "603-AC0603FR-0724K3L" H 6150 5350 50  0001 C CNN "Mouser_PN"
+F 4 "Yageo" H 0   0   50  0001 C CNN "Mfg"
+F 5 "AC0603FR-0724K3L" H 0   0   50  0001 C CNN "MPN"
 	1    6150 5350
 	-1   0    0    1   
 $EndComp
@@ -769,7 +785,8 @@ F 0 "R22" V 4250 4850 50  0000 C CNN
 F 1 "49k9" V 4150 4850 50  0000 C CNN
 F 2 "Resistor_SMD:R_0603_1608Metric_Pad0.99x1.00mm_HandSolder" V 4080 4850 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/447/PYu-AC_51_RoHS_L_6-1152827.pdf" H 4150 4850 50  0001 C CNN
-F 4 "603-AC0603FR-0749K9L" H 4150 4850 50  0001 C CNN "Mouser_PN"
+F 4 "Yageo" H 0   0   50  0001 C CNN "Mfg"
+F 5 "AC0603FR-0749K9L" H 0   0   50  0001 C CNN "MPN"
 	1    4150 4850
 	0    -1   -1   0   
 $EndComp
@@ -803,7 +820,8 @@ F 0 "R21" H 4280 3204 50  0000 R CNN
 F 1 "10k" H 4280 3295 50  0000 R CNN
 F 2 "Resistor_SMD:R_0603_1608Metric_Pad0.99x1.00mm_HandSolder" V 4280 3250 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 4350 3250 50  0001 C CNN
-F 4 "603-RC0603FR-0710KL" H 4350 3250 50  0001 C CNN "Mouser_PN"
+F 4 "Yageo" H 0   0   50  0001 C CNN "Mfg"
+F 5 "RC0603FR-0710KL" H 0   0   50  0001 C CNN "MPN"
 	1    4350 3250
 	-1   0    0    1   
 $EndComp
@@ -827,7 +845,8 @@ F 0 "C38" H 4715 4996 50  0000 L CNN
 F 1 "u1" H 4715 4905 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 4638 4800 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 4600 4950 50  0001 C CNN
-F 4 "963-TMK107BJ104KAHT" H 4600 4950 50  0001 C CNN "Mouser_PN"
+F 4 "Taiyo Yuden" H 0   0   50  0001 C CNN "Mfg"
+F 5 "TMK107BJ104KAHT" H 0   0   50  0001 C CNN "MPN"
 	1    4600 4950
 	1    0    0    -1  
 $EndComp
@@ -878,6 +897,8 @@ F 0 "RN1" V 2625 3250 50  0000 C CNN
 F 1 "R_Pack08" V 2624 3250 50  0001 C CNN
 F 2 "Resistor_SMD:R_Array_Convex_8x0602" V 3625 3250 50  0001 C CNN
 F 3 "~" H 3150 3250 50  0001 C CNN
+F 4 "" H 0   0   50  0001 C CNN "Mfg"
+F 5 "TBD" H 0   0   50  0001 C CNN "MPN"
 	1    3150 3250
 	0    1    1    0   
 $EndComp
