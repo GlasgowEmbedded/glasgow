@@ -2942,6 +2942,10 @@ Wire Wire Line
 	1800 2700 1800 2800
 Wire Wire Line
 	1800 3100 1800 3200
+Text Notes 5950 6700 0    50   ~ 0
+FX2_MEM
+Text Notes 3900 6700 0    50   ~ 0
+ICE_MEM
 Wire Bus Line
 	4050 5850 6350 5850
 Wire Bus Line
@@ -2952,8 +2956,4 @@ Wire Bus Line
 	6350 2900 6350 5850
 Wire Bus Line
 	4050 2400 4050 5850
-Text Notes 5950 6700 0    50   ~ 0
-FX2_MEM
-Text Notes 3900 6700 0    50   ~ 0
-ICE_MEM
 $EndSCHEMATC
