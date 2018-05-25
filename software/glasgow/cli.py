@@ -143,8 +143,15 @@ def get_argparser():
         else:
             raise argparse.ArgumentTypeError("{} is not a valid serial number".format(arg))
 
+    p_build = subparsers.add_parser(
+        "build", help="(advanced) build applet bitstream and save it as a file")
+    p_build.add_argument(
+        "bitstream", metavar="FILENAME", type=argparse.FileType("wb"),
+        help="file to save bitstream to")
+    add_applet_arg(p_build, required=True)
+
     p_test = subparsers.add_parser(
-        "test", help="verify device functionality")
+        "test", help="(advanced) verify device functionality")
 
     test_subparsers = p_test.add_subparsers(dest="mode", metavar="MODE")
     test_subparsers.required = True
@@ -160,14 +167,8 @@ def get_argparser():
     p_test_pll = test_subparsers.add_parser(
         "pll", help="use PLL to output 15 MHz on SYNC port")
 
-    p_test_download = subparsers.add_parser(
-        "download", help="download arbitrary bitstream to FPGA")
-    p_test_download.add_argument(
-        "bitstream", metavar="BITSTREAM", type=argparse.FileType("rb"),
-        help="read bitstream from the specified file")
-
     p_factory = subparsers.add_parser(
-        "factory", help=argparse.SUPPRESS)
+        "factory", help="(advanced) initial device programming")
     p_factory.add_argument(
         "--revision", metavar="REVISION", type=str,
         default="A",
@@ -198,7 +199,9 @@ def main():
 
     try:
         firmware_file = os.path.join(os.path.dirname(__file__), "glasgow.ihex")
-        if args.action == "factory":
+        if args.action in ("build",):
+            pass
+        elif args.action == "factory":
             device = GlasgowDevice(firmware_file, VID_CYPRESS, PID_FX2)
         else:
             device = GlasgowDevice(firmware_file)
@@ -321,6 +324,12 @@ def main():
                     raise SystemExit("Configuration/firmware programming failed")
             else:
                 logger.info("configuration and firmware identical")
+
+        if args.action == "build":
+            applet, target = build_applet(args)
+            logger.info("building bitstream for applet %s", args.applet)
+            with args.bitstream as f:
+                f.write(target.get_bitstream(debug=True))
 
         if args.action == "test":
             if args.mode == "toggle-io":
