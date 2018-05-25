@@ -574,26 +574,39 @@ void handle_pending_alert() {
 }
 
 void isr_TF2() __interrupt(_INT_TF2) {
-  led_act_set(false);
+  // Inlined from led_act_set() for call-free interrupt code.
+  IOD &= ~(1<<PIND_LED_ACT);
   TR2 = false;
   TF2 = false;
 }
 
-static void isr_EPn() {
-  led_act_set(true);
+static void isr_EPn() __interrupt {
+  // The sdcc prologue/epilogue only save/restore DPH0/DPL0, but if DPS is 1, then we would
+  // in fact modify DPH1/DPL1 when loading dptr with mov dptr.
+__asm
+  push _DPS
+  mov  _DPS, #0
+__endasm;
+
+  // Inlined from led_act_set() for call-free interrupt code.
+  IOD |= (1<<PIND_LED_ACT);
   // Just let it run, at the maximum reload value we get a pulse width of around 16ms.
   TR2 = true;
   // Clear all EPn IRQs, since we don't really need this IRQ to be fine-grained.
   CLEAR_USB_IRQ();
   EPIRQ = 0b11110011; //_EP0IN|_EP0OUT|_EP2|_EP4|_EP6|_EP8
+
+__asm
+  pop  _DPS
+__endasm;
 }
 
-void isr_EP0IN()  __interrupt { isr_EPn(); }
-void isr_EP0OUT() __interrupt { isr_EPn(); }
-void isr_EP2()    __interrupt { isr_EPn(); }
-void isr_EP4()    __interrupt { isr_EPn(); }
-void isr_EP6()    __interrupt { isr_EPn(); }
-void isr_EP8()    __interrupt { isr_EPn(); }
+void isr_EP0IN()  __interrupt __naked { __asm ljmp _isr_EPn __endasm; }
+void isr_EP0OUT() __interrupt __naked { __asm ljmp _isr_EPn __endasm; }
+void isr_EP2()    __interrupt __naked { __asm ljmp _isr_EPn __endasm; }
+void isr_EP4()    __interrupt __naked { __asm ljmp _isr_EPn __endasm; }
+void isr_EP6()    __interrupt __naked { __asm ljmp _isr_EPn __endasm; }
+void isr_EP8()    __interrupt __naked { __asm ljmp _isr_EPn __endasm; }
 
 int main() {
   // Run at 48 MHz, drive CLKOUT.
