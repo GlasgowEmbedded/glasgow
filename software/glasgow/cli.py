@@ -98,13 +98,6 @@ def get_argparser():
 
     p_run = subparsers.add_parser(
         "run", help="load an applet bitstream and run applet code")
-    p_run.add_argument(
-        "--no-build", dest="build_bitstream", default=True, action="store_false",
-        help="do not rebuild bitstream")
-    p_run.add_argument(
-        "--no-execute", dest="run_applet", default=True, action="store_false",
-        help="do not execute applet code")
-
     g_run_bitstream = p_run.add_mutually_exclusive_group(required=True)
     g_run_bitstream.add_argument(
         "--bitstream", metavar="FILENAME", type=argparse.FileType("rb"),
@@ -235,12 +228,18 @@ def main():
         if args.action == "run":
             if args.applet:
                 applet, target = build_applet(args)
-                if args.build_bitstream:
-                    logger.info("building bitstream for applet %s", args.applet)
-                    device.download_bitstream(target.get_bitstream(debug=True))
-                if args.run_applet:
-                    logger.info("running handler for applet %s", args.applet)
-                    applet.run(device, args)
+
+                bitstream_id = target.get_bitstream_id()
+                if device.bitstream_id() == bitstream_id:
+                    logger.info("device already has bitstream ID %s", bitstream_id.hex())
+                else:
+                    logger.info("building bitstream ID %s for applet %s",
+                                bitstream_id.hex(), args.applet)
+                    device.download_bitstream(target.get_bitstream(debug=True), bitstream_id)
+
+                logger.info("running handler for applet %s", args.applet)
+                applet.run(device, args)
+
             else:
                 with args.bitstream as f:
                     logger.info("downloading bitstream from %s", f.name)
@@ -265,7 +264,8 @@ def main():
             else:
                 logger.info("device does not have flashed firmware")
             if glasgow_config.bitstream_size:
-                logger.info("device has flashed bitstream")
+                logger.info("device has flashed bitstream ID %s",
+                            glasgow_config.bitstream_id.hex())
             else:
                 logger.info("device does not have flashed bitstream")
 
@@ -273,16 +273,27 @@ def main():
             if args.remove_bitstream:
                 logger.info("removing bitstream")
                 glasgow_config.bitstream_size = 0
+                glasgow_config.bitstream_id   = b"\x00"*16
             elif args.bitstream:
                 logger.info("using bitstream from %s", args.bitstream.name)
                 with args.bitstream as f:
                     new_bitstream = f.read()
                     glasgow_config.bitstream_size = len(new_bitstream)
+                    glasgow_config.bitstream_id   = b"\xff"*16
             elif args.applet:
                 logger.info("building bitstream for applet %s", args.applet)
                 applet, target = build_applet(args)
+                new_bitstream_id = target.get_bitstream_id()
                 new_bitstream = target.get_bitstream()
+
+                # We always build and reflash the bitstream in case the one currently
+                # in EEPROM is corrupted. If we only compared the ID, there would be
+                # no easy way to recover from that case. There's also no point in
+                # storing the bitstream hash (as opposed to Verilog hash) in the ID,
+                # as building the bitstream takes much longer than flashing it.
+                logger.info("built bitstream ID %s", new_bitstream_id.hex())
                 glasgow_config.bitstream_size = len(new_bitstream)
+                glasgow_config.bitstream_id   = new_bitstream_id
 
             fx2_config.firmware[0] = (0x4000 - GlasgowConfig.size, glasgow_config.encode())
 

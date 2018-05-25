@@ -1,3 +1,4 @@
+import hashlib
 import os
 import sys
 import tempfile
@@ -115,11 +116,21 @@ class GlasgowTarget(Module):
         self.io_ports = [_IOPort(self.platform.request("io")) for _ in range(2)]
         self.submodules += self.io_ports
 
+    def get_fragment(self):
+        # TODO: shouldn't this be done in migen?
+        if self.get_fragment_called:
+            return self._fragment
+        return super().get_fragment()
+
     def build(self, **kwargs):
         self.platform.build(self, **kwargs)
 
     def get_verilog(self, **kwargs):
         return self.platform.get_verilog(self)
+
+    def get_bitstream_id(self, **kwargs):
+        verilog = str(self.get_verilog(**kwargs))
+        return hashlib.sha256(verilog.encode("utf-8")).digest()[:16]
 
     def get_bitstream(self, build_dir=None, debug=False, **kwargs):
         if build_dir is None:

@@ -1,3 +1,4 @@
+import re
 import time
 import struct
 import logging
@@ -15,14 +16,15 @@ logger = logging.getLogger(__name__)
 VID_QIHW       = 0x20b7
 PID_GLASGOW    = 0x9db1
 
-REQ_EEPROM     = 0x10
-REQ_FPGA_CFG   = 0x11
-REQ_STATUS     = 0x12
-REQ_REGISTER   = 0x13
-REQ_IO_VOLT    = 0x14
-REQ_SENSE_VOLT = 0x15
-REQ_ALERT_VOLT = 0x16
-REQ_POLL_ALERT = 0x17
+REQ_EEPROM       = 0x10
+REQ_FPGA_CFG     = 0x11
+REQ_STATUS       = 0x12
+REQ_REGISTER     = 0x13
+REQ_IO_VOLT      = 0x14
+REQ_SENSE_VOLT   = 0x15
+REQ_ALERT_VOLT   = 0x16
+REQ_POLL_ALERT   = 0x17
+REQ_BITSTREAM_ID = 0x18
 
 ST_ERROR       = 1<<0
 ST_FPGA_RDY    = 1<<1
@@ -44,14 +46,19 @@ class GlasgowConfig:
         Serial number, in ISO 8601 format.
     bitstream_size : int
         Size of bitstream flashed to ICE_MEM, or 0 if there isn't one.
+    bitstream_id : bytes[16]
+        Opaque string that uniquely identifies bitstream functionality,
+        but not necessarily any particular routing and placement.
+        Only meaningful if ``bitstream_size`` is set.
     """
     size = 64
-    _encoding = "<1s16sI"
+    _encoding = "<1s16sI16s"
 
-    def __init__(self, revision, serial, bitstream_size=0):
+    def __init__(self, revision, serial, bitstream_size=0, bitstream_id="\x00"*16):
         self.revision = revision
         self.serial   = serial
         self.bitstream_size = bitstream_size
+        self.bitstream_id   = bitstream_id
 
     def encode(self):
         """
@@ -60,7 +67,8 @@ class GlasgowConfig:
         data = struct.pack(self._encoding,
                            self.revision.encode("ascii"),
                            self.serial.encode("ascii"),
-                           self.bitstream_size)
+                           self.bitstream_size,
+                           self.bitstream_id)
         return data.ljust(self.size, b"\x00")
 
     @classmethod
@@ -74,11 +82,12 @@ class GlasgowConfig:
         if len(data) != cls.size:
             raise ValueError("Incorrect configuration length")
 
-        revision, serial, bitstream_size = \
+        revision, serial, bitstream_size, bitstream_id = \
             struct.unpack_from(cls._encoding, data, 0)
         return GlasgowConfig(revision.decode("ascii"),
                              serial.decode("ascii"),
-                             bitstream_size)
+                             bitstream_size,
+                             bitstream_id)
 
 
 class GlasgowDeviceError(FX2DeviceError):
@@ -223,19 +232,30 @@ class GlasgowDevice(FX2Device):
         except usb1.USBErrorPipe:
             self._register_error(addr)
 
-    def download_bitstream(self, data):
-        """Download bitstream ``data`` to FPGA."""
+    def bitstream_id(self):
+        """
+        Get bitstream ID for the bitstream currently running on the FPGA,
+        or ``None`` if the FPGA does not have a bitstream.
+        """
+        bitstream_id = self.control_read(usb1.REQUEST_TYPE_VENDOR, REQ_BITSTREAM_ID, 0, 0, 16)
+        if re.match(rb"^\x00+$", bitstream_id):
+            return None
+        return bytes(bitstream_id)
+
+    def download_bitstream(self, bitstream, bitstream_id=b"\xff" * 16):
+        """Download ``bitstream`` with ID ``bitstream_id`` to FPGA."""
         # Send consecutive chunks of bitstream.
         # Sending 0th chunk resets the FPGA.
         index = 0
-        while index * 1024 < len(data):
+        while index * 1024 < len(bitstream):
             self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_FPGA_CFG, 0, index,
-                               data[index * 1024:(index + 1)*1024])
+                               bitstream[index * 1024:(index + 1)*1024])
             index += 1
-        # Complete configuration by sending a request with no data.
-        self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_FPGA_CFG, 0, index, [])
-        # Check if we've succeeded.
-        if not (self._status() & ST_FPGA_RDY):
+        # Complete configuration by setting bitstream ID.
+        # This starts the FPGA.
+        try:
+            self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_BITSTREAM_ID, 0, 0, bitstream_id)
+        except usb1.USBErrorPipe:
             raise GlasgowDeviceError("FPGA configuration failed")
 
     @staticmethod

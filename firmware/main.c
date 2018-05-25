@@ -1,3 +1,4 @@
+#include <string.h>
 #include <fx2lib.h>
 #include <fx2regs.h>
 #include <fx2ints.h>
@@ -203,14 +204,15 @@ static void descriptors_init() {
 
 enum {
   // Glasgow requests
-  USB_REQ_EEPROM     = 0x10,
-  USB_REQ_FPGA_CFG   = 0x11,
-  USB_REQ_STATUS     = 0x12,
-  USB_REQ_REGISTER   = 0x13,
-  USB_REQ_IO_VOLT    = 0x14,
-  USB_REQ_SENSE_VOLT = 0x15,
-  USB_REQ_ALERT_VOLT = 0x16,
-  USB_REQ_POLL_ALERT = 0x17,
+  USB_REQ_EEPROM       = 0x10,
+  USB_REQ_FPGA_CFG     = 0x11,
+  USB_REQ_STATUS       = 0x12,
+  USB_REQ_REGISTER     = 0x13,
+  USB_REQ_IO_VOLT      = 0x14,
+  USB_REQ_SENSE_VOLT   = 0x15,
+  USB_REQ_ALERT_VOLT   = 0x16,
+  USB_REQ_POLL_ALERT   = 0x17,
+  USB_REQ_BITSTREAM_ID = 0x18,
   // Cypress requests
   USB_REQ_CYPRESS_EEPROM_DB = 0xA9,
   // libfx2 requests
@@ -417,32 +419,49 @@ void handle_pending_usb_setup() {
     uint16_t arg_len = req->wLength;
     pending_setup = false;
 
-    if(arg_len > 0) {
-      if(arg_idx == 0) {
-        reset_status_bit(ST_FPGA_RDY);
-        fpga_reset();
-      }
+    if(arg_idx == 0) {
+      reset_status_bit(ST_FPGA_RDY);
+      memset(glasgow_config.bitstream_id, 0, BITSTREAM_ID_SIZE);
+      fpga_reset();
+    }
 
-      while(arg_len > 0) {
-        uint8_t chunk_len = arg_len < 64 ? arg_len : 64;
+    while(arg_len > 0) {
+      uint8_t chunk_len = arg_len < 64 ? arg_len : 64;
 
-        SETUP_EP0_BUF(0);
-        while(EP0CS & _BUSY);
-        fpga_load(EP0BUF, chunk_len);
+      SETUP_EP0_BUF(0);
+      while(EP0CS & _BUSY);
+      fpga_load(EP0BUF, chunk_len);
 
-        arg_len -= chunk_len;
-      }
+      arg_len -= chunk_len;
+    }
 
-      bitstream_idx = arg_idx;
+    bitstream_idx = arg_idx;
+    return;
+  }
+
+  // Bitstream ID get/set request
+  if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN ||
+      req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
+     req->bRequest == USB_REQ_BITSTREAM_ID &&
+     req->wLength == BITSTREAM_ID_SIZE) {
+    bool arg_get = (req->bmRequestType & USB_DIR_IN);
+    pending_setup = false;
+
+    if(arg_get) {
+      while(EP0CS & _BUSY);
+      xmemcpy(EP0BUF, glasgow_config.bitstream_id, BITSTREAM_ID_SIZE);
+      SETUP_EP0_BUF(BITSTREAM_ID_SIZE);
     } else {
       fpga_start();
       if(fpga_is_ready()) {
         latch_status_bit(ST_FPGA_RDY);
-      } else {
-        latch_status_bit(ST_ERROR);
-      }
 
-      ACK_EP0();
+        SETUP_EP0_BUF(0);
+        while(EP0CS & _BUSY);
+        xmemcpy(glasgow_config.bitstream_id, EP0BUF, BITSTREAM_ID_SIZE);
+      } else {
+        STALL_EP0();
+      }
     }
 
     return;
@@ -602,7 +621,7 @@ int main() {
   ET2 = true;
 
   // Set up endpoint interrupts for ACT LED.
-  EPIE |= 0b11110011; //_EP0IN|_EP0OUT|_EP2|_EP4|_EP6|_EP8
+  // EPIE |= 0b11110011; //_EP0IN|_EP0OUT|_EP2|_EP4|_EP6|_EP8
 
   // Set up interrupt for ADC ALERT.
   EX0 = true;

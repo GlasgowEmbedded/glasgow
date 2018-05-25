@@ -47,10 +47,13 @@ enum {
 #define MAX_VOLTAGE 5500 // mV
 
 // Config API
+#define BITSTREAM_ID_SIZE 16
+
 __xdata __at(0x4000 - CONF_SIZE) struct {
   char      revision;
   char      serial[16];
   uint32_t  bitstream_size;
+  char      bitstream_id[BITSTREAM_ID_SIZE];
 } glasgow_config;
 
 // LED API
