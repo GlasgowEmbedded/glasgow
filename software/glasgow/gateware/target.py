@@ -77,22 +77,25 @@ class _IOPort(Module):
                     o_D_IN_0=self.i[n],
                 )
 
-    def __getitem__(self, index):
-        if isinstance(index, int):
-            nbits = 1
-        elif isinstance(index, slice):
-            nbits = len(range(index.start or 0, index.stop or self.nbits, index.step or 1))
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            indices = (key,)
+        elif isinstance(key, slice):
+            indices = range(key.start or 0, key.stop or self.nbits, key.step or 1)
+        elif isinstance(key, (tuple, list)):
+            indices = tuple(key)
         else:
-            raise ValueError("I/O port indices must be integers or slices, not {}"
-                             .format(type(index).__name__))
+            raise ValueError("I/O port indices must be integers, slices, tuples or lists, not {}"
+                             .format(type(key).__name__))
 
-        t = _IOTriple(nbits)
-        self.comb += [
-            self.o[index].eq(t.o),
-            self.oe[index].eq(Replicate(t.oe, nbits)),
-            t.i.eq(self.i[index])
-        ]
-        return t
+        res = _IOTriple(len(indices))
+        for res_idx, port_idx in enumerate(indices):
+            self.comb += [
+                self.o[port_idx].eq(res.o[res_idx]),
+                self.oe[port_idx].eq(res.oe),
+                res.i[res_idx].eq(self.i[port_idx])
+            ]
+        return res
 
 
 class GlasgowTarget(Module):

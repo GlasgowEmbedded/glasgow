@@ -7,12 +7,8 @@ from . import GlasgowApplet
 
 
 class ProgramICE40Subtarget(Module):
-    def __init__(self, io_port, out_fifo):
-        rst_n = io_port[0]
-        ss_n  = io_port[1]
-        sck   = io_port[2]
-        si    = io_port[3]
-        oe    = Signal()
+    def __init__(self, rst_n, ss_n, sck, si, out_fifo):
+        oe = Signal()
         self.comb += [
             rst_n.oe.eq(1),
             ss_n.oe.eq(oe),
@@ -126,21 +122,32 @@ class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
     description = """
     Program iCE40 FPGAs.
 
-    Port pins are configured as: 0=RST_N, 1=SS_N, 2=SCK, 3=SI.
-    Port voltage is sensed.
+    Port voltage is sensed and monitored.
     """
 
-    @staticmethod
-    def add_run_arguments(parser):
+    @classmethod
+    def add_build_arguments(cls, parser):
+        cls.add_port_argument(parser, default="A")
+        cls.add_pin_argument(parser, "rst_n", default=0)
+        cls.add_pin_argument(parser, "ss_n", default=1)
+        cls.add_pin_argument(parser, "sck", default=2)
+        cls.add_pin_argument(parser, "si", default=3)
+
+    def build(self, target, args):
+        io_port = target.get_io_port(args.port)
+        target.submodules += ProgramICE40Subtarget(
+            rst_n=io_port[args.pin_rst_n],
+            ss_n=io_port[args.pin_ss_n],
+            sck=io_port[args.pin_sck],
+            si=io_port[args.pin_si],
+            out_fifo=target.get_out_fifo(args.port),
+        )
+
+    @classmethod
+    def add_run_arguments(cls, parser):
         parser.add_argument(
             "bitstream", metavar="BITSTREAM", type=argparse.FileType("rb"),
             help="bitstream file")
-
-    def build(self, target, args):
-        target.submodules += ProgramICE40Subtarget(
-            io_port=target.get_io_port(self.spec),
-            out_fifo=target.get_out_fifo(self.spec),
-        )
 
     def run(self, device, args):
         device.mirror_voltage(self.spec)

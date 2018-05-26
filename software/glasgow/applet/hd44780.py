@@ -57,11 +57,7 @@ CMD_DDRAM_ADDRESS  = 0b10000000
 
 
 class HD44780Subtarget(Module):
-    def __init__(self, io_port, out_fifo, in_fifo):
-        rs = io_port[0]
-        rw = io_port[1]
-        e  = io_port[2]
-        d  = io_port[3:7]
+    def __init__(self, rs, rw, e, d, out_fifo, in_fifo):
         di = Signal(4)
         self.comb += [
             rs.oe.eq(1),
@@ -191,8 +187,8 @@ class HD44780Applet(GlasgowApplet, name="hd44780"):
     description = """
     Control HD44780/SED1278/ST7066/KS0066-compatible displays via a 4-bit bus.
 
-    Port pins are configured as: 0=RS(4), 1=R/W(5), 2=E(6), 3=D4(11), 4=D5(12),
-    5=D6(13), 6=D7(14). Port voltage is set to 5.0 V.
+    Port pins should be connected to display pins as follows: RS->4, RW->5, E->6,
+    D->11,12,13,14. Port voltage is set to 5.0 V.
 
     Note: the E line is *extremely* susceptible to noise. If the display shows
     erratic behavior, try routing it away from possible aggressors (RS and R/W).
@@ -201,18 +197,30 @@ class HD44780Applet(GlasgowApplet, name="hd44780"):
     def __init__(self, spec):
         self.spec = spec
 
-    @staticmethod
-    def add_run_arguments(parser):
+    @classmethod
+    def add_build_arguments(cls, parser):
+        cls.add_port_argument(parser, default="A")
+        cls.add_pin_argument(parser, "rs", default=0)
+        cls.add_pin_argument(parser, "rw", default=1)
+        cls.add_pin_argument(parser, "e", default=2)
+        cls.add_pins_argument(parser, "d", width=4, default="4:8")
+
+    def build(self, target, args):
+        io_port = target.get_io_port(args.port)
+        target.submodules += HD44780Subtarget(
+            rs=io_port[args.pin_rs],
+            rw=io_port[args.pin_rw],
+            e=io_port[args.pin_e],
+            d=io_port[args.pins_d],
+            out_fifo=target.get_out_fifo(args.port),
+            in_fifo=target.get_in_fifo(args.port),
+        )
+
+    @classmethod
+    def add_run_arguments(cls, parser):
         parser.add_argument(
             "--reset", default=False, action="store_true",
             help="power-cycle the port on startup")
-
-    def build(self, target, args):
-        target.submodules += HD44780Subtarget(
-            io_port=target.get_io_port(self.spec),
-            out_fifo=target.get_out_fifo(self.spec),
-            in_fifo=target.get_in_fifo(self.spec),
-        )
 
     def run(self, device, args):
         if args.reset:
