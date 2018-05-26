@@ -8,3 +8,5 @@ build/
 *.ihex
 *.*b[ac]k
 _autosave-*
+/*.v
+/*.bin

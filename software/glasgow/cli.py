@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 
 
 class TextHelpFormatter(argparse.HelpFormatter):
+    def __init__(self, prog):
+        super().__init__(prog, width=120)
+
     def _fill_text(self, text, width, indent):
         def filler(match):
             text = match[0]
@@ -69,7 +72,7 @@ def get_argparser():
             if add_run_args:
                 applet.add_run_arguments(p_applet)
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=TextHelpFormatter)
 
     parser.add_argument(
         "-v", "--verbose", default=0, action="count",
@@ -82,7 +85,8 @@ def get_argparser():
     subparsers.required = True
 
     p_voltage = subparsers.add_parser(
-        "voltage", help="query or set I/O port voltage")
+        "voltage", formatter_class=TextHelpFormatter,
+        help="query or set I/O port voltage")
     p_voltage.add_argument(
         "ports", metavar="PORTS", type=str, nargs="?", default="AB",
         help="I/O port set (one or more of: A B, default: all)")
@@ -97,7 +101,8 @@ def get_argparser():
         help="do not raise an alert if Vsense is out of range of Vio")
 
     p_run = subparsers.add_parser(
-        "run", help="load an applet bitstream and run applet code")
+        "run", formatter_class=TextHelpFormatter,
+        help="load an applet bitstream and run applet code")
     g_run_bitstream = p_run.add_mutually_exclusive_group(required=True)
     g_run_bitstream.add_argument(
         "--bitstream", metavar="FILENAME", type=argparse.FileType("rb"),
@@ -105,7 +110,8 @@ def get_argparser():
     add_applet_arg(g_run_bitstream, add_run_args=True)
 
     p_flash = subparsers.add_parser(
-        "flash", help="program FX2 firmware or applet bitstream into EEPROM")
+        "flash", formatter_class=TextHelpFormatter,
+        help="program FX2 firmware or applet bitstream into EEPROM")
 
     g_flash_firmware = p_flash.add_mutually_exclusive_group()
     g_flash_firmware.add_argument(
@@ -137,10 +143,15 @@ def get_argparser():
             raise argparse.ArgumentTypeError("{} is not a valid serial number".format(arg))
 
     p_build = subparsers.add_parser(
-        "build", help="(advanced) build applet bitstream and save it as a file")
+        "build", formatter_class=TextHelpFormatter,
+        help="(advanced) build applet logic and save it as a file")
     p_build.add_argument(
-        "bitstream", metavar="FILENAME", type=argparse.FileType("wb"),
-        help="file to save bitstream to")
+        "-t", "--type", metavar="TYPE", type=str,
+        choices=["v", "verilog", "bin", "bitstream"], default="bitstream",
+        help="artifact to build (one of: verilog bitstream, default: %(default)s)")
+    p_build.add_argument(
+        "-f", "--filename", metavar="FILENAME", type=str,
+        help="file to save artifact to (default: <applet-name>.{v,bin})")
     add_applet_arg(p_build, required=True)
 
     p_test = subparsers.add_parser(
@@ -161,7 +172,8 @@ def get_argparser():
         "pll", help="use PLL to output 15 MHz on SYNC port")
 
     p_factory = subparsers.add_parser(
-        "factory", help="(advanced) initial device programming")
+        "factory", formatter_class=TextHelpFormatter,
+        help="(advanced) initial device programming")
     p_factory.add_argument(
         "--revision", metavar="REVISION", type=str,
         default="A",
@@ -174,7 +186,8 @@ def get_argparser():
     return parser
 
 
-def build_applet(args):
+# The name of this function appears in Verilog output, so keep it tidy.
+def _applet(args):
     applet = GlasgowApplet.all_applets[args.applet](spec="A")
     target = GlasgowTarget(in_count=1, out_count=1)
     applet.build(target, args)
@@ -227,7 +240,7 @@ def main():
 
         if args.action == "run":
             if args.applet:
-                applet, target = build_applet(args)
+                applet, target = _applet(args)
 
                 bitstream_id = target.get_bitstream_id()
                 if device.bitstream_id() == bitstream_id:
@@ -282,7 +295,7 @@ def main():
                     glasgow_config.bitstream_id   = b"\xff"*16
             elif args.applet:
                 logger.info("building bitstream for applet %s", args.applet)
-                applet, target = build_applet(args)
+                applet, target = _applet(args)
                 new_bitstream_id = target.get_bitstream_id()
                 new_bitstream = target.get_bitstream()
 
@@ -337,10 +350,13 @@ def main():
                 logger.info("configuration and firmware identical")
 
         if args.action == "build":
-            applet, target = build_applet(args)
+            applet, target = _applet(args)
             logger.info("building bitstream for applet %s", args.applet)
-            with args.bitstream as f:
-                f.write(target.get_bitstream(debug=True))
+            if args.type in ("v", "verilog"):
+                target.get_verilog().write(args.filename or args.applet + ".v")
+            if args.type in ("bin", "bitstream"):
+                with open(args.filename or args.applet + ".bin", "wb") as f:
+                    f.write(target.get_bitstream(debug=True))
 
         if args.action == "test":
             if args.mode == "toggle-io":
