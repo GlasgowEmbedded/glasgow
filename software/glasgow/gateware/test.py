@@ -42,10 +42,25 @@ class TestMirrorI2C(GlasgowTarget):
 
 
 class TestShiftOut(GlasgowTarget):
-    def __init__(self):
-        super().__init__(out_count=1)
+    def __init__(self, async=False):
+        super().__init__()
 
-        out = self.arbiter.out_fifos[0]
+        if async:
+            div = Signal(3)
+            clk = Signal()
+            self.sync.sys += [
+                div.eq(div - 1),
+                If(div == 0, clk.eq(~clk))
+            ]
+
+            self.clock_domains.cd_shift = ClockDomain()
+            self.comb += self.cd_shift.clk.eq(clk)
+
+            domain = "shift"
+            out = self.arbiter.get_out_fifo(0, clock_domain=self.cd_shift)
+        else:
+            domain = "sys"
+            out = self.arbiter.get_out_fifo(0)
 
         sck = Signal(reset=1)
         sdo = Signal()
@@ -56,7 +71,7 @@ class TestShiftOut(GlasgowTarget):
 
         shreg = Signal(8)
         bitno = Signal(3)
-        self.submodules.fsm = FSM(reset_state="IDLE")
+        self.submodules.fsm = ClockDomainsRenamer(domain)(FSM(reset_state="IDLE"))
         self.fsm.act("IDLE",
             If(out.readable,
                 out.re.eq(1),
@@ -84,11 +99,11 @@ class TestShiftOut(GlasgowTarget):
 
 class TestGenSeq(GlasgowTarget):
     def __init__(self):
-        super().__init__(out_count=1, in_count=2)
+        super().__init__()
 
-        out0 = self.arbiter.out_fifos[0]
-        in0 = self.arbiter.in_fifos[0]
-        in1 = self.arbiter.in_fifos[1]
+        out0 = self.arbiter.get_out_fifo(0)
+        in0 = self.arbiter.get_in_fifo(0)
+        in1 = self.arbiter.get_in_fifo(1)
 
         stb = Signal()
         re  = Signal()

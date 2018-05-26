@@ -41,43 +41,18 @@ class FX2Arbiter(Module):
 
     Shuttles data between FX2 and FIFOs in bursts.
 
-    Parameters
-    ----------
-    out_count, in_count : int
-        Amount of implemented OUT and IN FIFOs respectively.
-        Unimplemented FIFOs are present but never readable or writable.
-    depth : int
-        FIFO depth. For highest efficiency, should be a multiple of 512.
+    The arbiter supports up to four FIFOs organized as ``OUT, OUT, IN, IN``.
+    FIFOs that are never requested are not implemented and behave as if they
+    are never readable or writable.
     """
-    def __init__(self, fx2, out_count=2, in_count=2, depth=512, async=False):
-        assert 0 <= out_count <= 2 and 0 <= in_count <= 2
+    def __init__(self, fx2):
+        self.fx2 = fx2
 
-        def make_fifo(is_dummy):
-            if is_dummy:
-                return _DummyFIFO(8, depth)
-            elif async:
-                return AsyncFIFO(8, depth)
-            else:
-                return SyncFIFOBuffered(8, depth)
+        self.out_fifos = Array([_DummyFIFO(width=8, depth=0) for _ in range(2)])
+        self. in_fifos = Array([_DummyFIFO(width=8, depth=0) for _ in range(2)])
 
-        self.out_fifos = Array()
-        self. in_fifos = Array()
-        fifo_rdys = Array()
-
-        for n in range(2):
-            fifo = make_fifo(is_dummy=n > out_count)
-            self.out_fifos.append(fifo)
-            self.submodules += fifo
-            fifo_rdys.append(fifo.writable)
-
-        for n in range(2):
-            fifo = make_fifo(is_dummy=n >  in_count)
-            self. in_fifos.append(fifo)
-            self.submodules += fifo
-            fifo_rdys.append(fifo.readable)
-
-        ###
-
+    def do_finalize(self):
+        fx2  = self.fx2
         addr = Signal(2)
         data = TSTriple(8)
         sloe = Signal()
@@ -87,7 +62,8 @@ class FX2Arbiter(Module):
         rdy  = Signal(4)
         self.comb += [
             fx2.fifoadr.eq(addr),
-            rdy.eq(fx2.flag & Cat(fifo_rdys)),
+            rdy.eq(fx2.flag & Cat([fifo.writable for fifo in self.out_fifos] +
+                                  [fifo.readable for fifo in self.in_fifos])),
             self.out_fifos[addr[0]].din.eq(data.i),
             data.o.eq(self.in_fifos[addr[0]].dout),
             fx2.sloe.eq(~sloe),
@@ -155,3 +131,41 @@ class FX2Arbiter(Module):
                 NextState("NEXT")
             )
         )
+
+    def _make_fifo(self, arbiter_side, logic_side, cd_logic, depth):
+        if cd_logic is None:
+            fifo = SyncFIFOBuffered(8, depth)
+        else:
+            assert isinstance(cd_logic, ClockDomain)
+
+            fifo = ClockDomainsRenamer({
+                arbiter_side: "sys",
+                logic_side:   "logic",
+            })(AsyncFIFO(8, depth))
+
+            fifo.clock_domains.cd_logic = ClockDomain()
+            self.comb += fifo.cd_logic.clk.eq(cd_logic.clk)
+            if cd_logic.rst is not None:
+                self.comb += fifo.cd_logic.rst.eq(cd_logic.rst)
+
+        self.submodules += fifo
+        return fifo
+
+    def get_out_fifo(self, n, depth=512, clock_domain=None):
+        assert 0 <= n < 2
+        assert isinstance(self.out_fifos[n], _DummyFIFO)
+
+        fifo = self._make_fifo(arbiter_side="write", logic_side="read",
+                               cd_logic=clock_domain, depth=depth)
+        self.out_fifos[n] = fifo
+        return fifo
+
+    def get_in_fifo(self, n, depth=512, clock_domain=None):
+        assert 0 <= n < 2
+        assert isinstance(self.in_fifos[n], _DummyFIFO)
+
+        fifo = self._make_fifo(arbiter_side="read", logic_side="write",
+                               cd_logic=clock_domain, depth=depth)
+        self.out_fifos[n] = fifo
+        self.in_fifos[n] = fifo
+        return fifo

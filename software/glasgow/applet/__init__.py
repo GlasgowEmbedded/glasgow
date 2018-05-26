@@ -9,13 +9,6 @@ class GlasgowApplet:
         super().__init_subclass__(**kwargs)
         cls.all_applets[name] = cls
 
-    def __init__(self, spec):
-        self.spec = spec
-
-    @staticmethod
-    def add_build_arguments(parser):
-        pass
-
     @staticmethod
     def add_port_argument(parser, default=None, help=None):
         def port_spec(arg):
@@ -69,6 +62,10 @@ class GlasgowApplet:
 
         opt_name = "--pins-" + name.lower().replace("_", "-")
         parser.add_argument(opt_name, metavar="SET", type=pin_set, default=default, help=help)
+
+    @staticmethod
+    def add_build_arguments(parser):
+        pass
 
     @staticmethod
     def add_run_arguments(parser):

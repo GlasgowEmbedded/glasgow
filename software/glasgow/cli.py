@@ -169,6 +169,9 @@ def get_argparser():
         "mirror-i2c", help="mirror {SDA,SCL} on A[0-1] at 3.3 V")
     p_test_shift_out = test_subparsers.add_parser(
         "shift-out", help="shift bytes from EP2OUT MSB first via {CLK,DO} on A[0-1] at 3.3 V")
+    p_test_shift_out.add_argument(
+        "--async", default=False, action="store_true",
+        help="use asynchronous FIFO")
     p_test_gen_seq = test_subparsers.add_parser(
         "gen-seq", help="read limit from EP4IN and generate sequence on {EP2OUT,EP6OUT}")
     p_test_pll = test_subparsers.add_parser(
@@ -191,8 +194,8 @@ def get_argparser():
 
 # The name of this function appears in Verilog output, so keep it tidy.
 def _applet(args):
-    applet = GlasgowApplet.all_applets[args.applet](spec="A")
-    target = GlasgowTarget(in_count=1, out_count=1)
+    target = GlasgowTarget()
+    applet = GlasgowApplet.all_applets[args.applet]()
     applet.build(target, args)
     return applet, target
 
@@ -371,7 +374,8 @@ def main():
                 device.set_voltage("A", 3.3)
 
             if args.mode == "shift-out":
-                device.download_bitstream(TestShiftOut().get_bitstream(debug=True))
+                device.download_bitstream(TestShiftOut(async=args.async)
+                                          .get_bitstream(debug=True))
                 device.set_voltage("A", 3.3)
 
             if args.mode == "gen-seq":

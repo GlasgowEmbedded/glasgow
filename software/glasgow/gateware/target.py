@@ -99,7 +99,7 @@ class _IOPort(Module):
 
 
 class GlasgowTarget(Module):
-    def __init__(self, out_count=0, in_count=0, fifo_depth=128, reg_count=0):
+    def __init__(self, reg_count=0):
         self.platform = Platform()
 
         self.submodules.crg = _CRG(self.platform)
@@ -110,10 +110,7 @@ class GlasgowTarget(Module):
         if reg_count > 0:
             self.submodules.registers = Registers(self.i2c_slave, reg_count)
 
-        self.submodules.arbiter = FX2Arbiter(self.platform.request("fx2"),
-                                             out_count=out_count,
-                                             in_count=in_count,
-                                             depth=fifo_depth)
+        self.submodules.arbiter = FX2Arbiter(self.platform.request("fx2"))
 
         self.submodules.sync_port = _SyncPort(self.platform.request("sync"))
         self.io_ports = [_IOPort(self.platform.request("io")) for _ in range(2)]
@@ -166,17 +163,18 @@ class GlasgowTarget(Module):
         num = self._port_spec_to_number(spec)
         return self.io_ports[num]
 
-    def get_out_fifo(self, spec):
+    def get_out_fifo(self, spec, **kwargs):
         """Return an OUT FIFO for I/O port ``spec``."""
         num = self._port_spec_to_number(spec)
-        return self.arbiter.out_fifos[num]
+        return self.arbiter.get_out_fifo(num, **kwargs)
 
-    def get_in_fifo(self, spec):
+    def get_in_fifo(self, spec, **kwargs):
         """Return an IN FIFO for I/O port ``spec``."""
         num = self._port_spec_to_number(spec)
-        return self.arbiter.in_fifos[num]
+        return self.arbiter.get_in_fifo(num, **kwargs)
 
-    def get_inout_fifo(self, spec):
+    def get_inout_fifo(self, spec, **kwargs):
         """Return an (IN, OUT) FIFO pair for I/O port ``spec``."""
         num = self._port_spec_to_number(spec)
-        return (self.arbiter.in_fifos[num], self.arbiter.out_fifos[num])
+        return (self.arbiter.get_in_fifo(num, **kwargs),
+                self.arbiter.get_out_fifo(num, **kwargs))

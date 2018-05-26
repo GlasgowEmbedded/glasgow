@@ -150,9 +150,9 @@ class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
             help="bitstream file")
 
     def run(self, device, args):
-        device.mirror_voltage(self.spec)
+        # device.mirror_voltage(args.port)
 
-        port = device.get_port(self.spec)
+        port = device.get_port(args.port)
         bitstream = args.bitstream.read()
         while len(bitstream) > 0:
             chunk = bitstream[:255]
@@ -162,7 +162,7 @@ class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
         port.write([0])
         port.flush()
 
-        if self.spec in device.poll_alert():
+        if args.port in device.poll_alert():
             raise Exception("Port {} voltage went out of range during programming"
-                            .format(self.spec))
+                            .format(args.port))
         # TODO: check CDONE
