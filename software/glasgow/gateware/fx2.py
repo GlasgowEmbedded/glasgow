@@ -50,7 +50,7 @@ class FX2Arbiter(Module):
 
         self.out_fifos = Array([_DummyFIFO(width=8, depth=0) for _ in range(2)])
         self. in_fifos = Array([_DummyFIFO(width=8, depth=0) for _ in range(2)])
-        self.early_in  = Array([True for _ in range(2)])
+        self.streaming = Array([False for _ in range(2)])
 
     def do_finalize(self):
         fx2  = self.fx2
@@ -125,7 +125,7 @@ class FX2Arbiter(Module):
                     NextState("XFER-IN-LAST")
                 )
             ).Else(
-                pend.eq(self.early_in[addr[0]]),
+                pend.eq(~self.streaming[addr[0]]),
                 NextState("NEXT")
             )
         )
@@ -133,17 +133,17 @@ class FX2Arbiter(Module):
             If(self.in_fifos[addr[0]].readable,
                 slwr.eq(1),
                 self.in_fifos[addr[0]].re.eq(1),
+                NextState("NEXT")
+            ).Elif(~self.streaming[addr[0]],
+                pend.eq(1),
+                NextState("NEXT")
             ).Else(
                 # We don't want to hold up the other FIFOs if the 512th byte doesn't arrive
-                # promptly, so we pulse PKTEND even if early_in is False. Since the purpose
-                # of early_in is not committing packets of exactly 512 bytes in size but
-                # more efficient USB bandwidth use in general, having a 511 byte packet
-                # every once in a while is 100% OK. (We can't do nothing here because INFM1
-                # is set for all IN endpoints and if we don't commit a packet here, we'll never
-                # enter SETUP-IN for this endpoint again.)
-                pend.eq(1)
-            ),
-            NextState("NEXT")
+                # promptly, but glitches on the FLAGn pins tend to be disastrous for streaming
+                # applications, and FXMA108 seems to cause them a lot, so instead, accept that
+                # a streaming pipe that suddenly stops at 511th byte will cause a lockup
+                # (at least until something is done about signal integrity).
+            )
         )
         self.fsm.act("SETUP-OUT",
             NextValue(sloe, 1),
@@ -186,12 +186,12 @@ class FX2Arbiter(Module):
         self.out_fifos[n] = fifo
         return fifo
 
-    def get_in_fifo(self, n, depth=512, early_in=True, clock_domain=None):
+    def get_in_fifo(self, n, depth=512, streaming=True, clock_domain=None):
         assert 0 <= n < 2
         assert isinstance(self.in_fifos[n], _DummyFIFO)
 
         fifo = self._make_fifo(arbiter_side="read", logic_side="write",
                                cd_logic=clock_domain, depth=depth)
         self.in_fifos[n] = fifo
-        self.early_in[n] = early_in
+        self.streaming[n] = streaming
         return fifo
