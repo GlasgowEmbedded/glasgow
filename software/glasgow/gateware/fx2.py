@@ -111,18 +111,43 @@ class FX2Arbiter(Module):
             NextValue(data.oe, 1),
             NextState("XFER-IN")
         )
-        self.fsm.act("SETUP-OUT",
-            NextValue(sloe, 1),
-            NextState("XFER-OUT")
-        )
         self.fsm.act("XFER-IN",
-            If(rdy & (1 << addr),
+            # This could have been written as
+            #   If(rdy & (1 << addr)), slwr.eq(1), ...)
+            # but on sluggish UP5K fabric having fx2.flag in fx2.slwr combinatorial path
+            # does not clear timing and results in corrupted data being sent when the flag
+            # goes down (i.e. at the very end of the packet that fills the last of
+            # the FX2's available buffers).
+            If(self.in_fifos[addr[0]].readable,
                 slwr.eq(1),
-                self.in_fifos[addr[0]].re.eq(1)
+                self.in_fifos[addr[0]].re.eq(1),
+                If(~(fx2.flag & (1 << addr)),
+                    NextState("XFER-IN-LAST")
+                )
             ).Else(
                 pend.eq(self.early_in[addr[0]]),
                 NextState("NEXT")
             )
+        )
+        self.fsm.act("XFER-IN-LAST",
+            If(self.in_fifos[addr[0]].readable,
+                slwr.eq(1),
+                self.in_fifos[addr[0]].re.eq(1),
+            ).Else(
+                # We don't want to hold up the other FIFOs if the 512th byte doesn't arrive
+                # promptly, so we pulse PKTEND even if early_in is False. Since the purpose
+                # of early_in is not committing packets of exactly 512 bytes in size but
+                # more efficient USB bandwidth use in general, having a 511 byte packet
+                # every once in a while is 100% OK. (We can't do nothing here because INFM1
+                # is set for all IN endpoints and if we don't commit a packet here, we'll never
+                # enter SETUP-IN for this endpoint again.)
+                pend.eq(1)
+            ),
+            NextState("NEXT")
+        )
+        self.fsm.act("SETUP-OUT",
+            NextValue(sloe, 1),
+            NextState("XFER-OUT")
         )
         self.fsm.act("XFER-OUT",
             If(rdy & (1 << addr),
