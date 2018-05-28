@@ -103,6 +103,9 @@ def get_argparser():
     p_run = subparsers.add_parser(
         "run", formatter_class=TextHelpFormatter,
         help="load an applet bitstream and run applet code")
+    p_run.add_argument(
+        "--force", default=False, action="store_true",
+        help="reload bitstream even if an identical one is loaded")
     g_run_bitstream = p_run.add_mutually_exclusive_group(required=True)
     g_run_bitstream.add_argument(
         "--bitstream", metavar="FILENAME", type=argparse.FileType("rb"),
@@ -243,7 +246,7 @@ def main():
                 applet, target = _applet(args)
 
                 bitstream_id = target.get_bitstream_id()
-                if device.bitstream_id() == bitstream_id:
+                if device.bitstream_id() == bitstream_id and not args.force:
                     logger.info("device already has bitstream ID %s", bitstream_id.hex())
                 else:
                     logger.info("building bitstream ID %s for applet %s",
