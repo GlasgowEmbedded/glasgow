@@ -50,6 +50,7 @@ class FX2Arbiter(Module):
 
         self.out_fifos = Array([_DummyFIFO(width=8, depth=0) for _ in range(2)])
         self. in_fifos = Array([_DummyFIFO(width=8, depth=0) for _ in range(2)])
+        self.early_in  = Array([True for _ in range(2)])
 
     def do_finalize(self):
         fx2  = self.fx2
@@ -119,7 +120,7 @@ class FX2Arbiter(Module):
                 slwr.eq(1),
                 self.in_fifos[addr[0]].re.eq(1)
             ).Else(
-                pend.eq(1),
+                pend.eq(self.early_in[addr[0]]),
                 NextState("NEXT")
             )
         )
@@ -160,12 +161,12 @@ class FX2Arbiter(Module):
         self.out_fifos[n] = fifo
         return fifo
 
-    def get_in_fifo(self, n, depth=512, clock_domain=None):
+    def get_in_fifo(self, n, depth=512, early_in=True, clock_domain=None):
         assert 0 <= n < 2
         assert isinstance(self.in_fifos[n], _DummyFIFO)
 
         fifo = self._make_fifo(arbiter_side="read", logic_side="write",
                                cd_logic=clock_domain, depth=depth)
-        self.out_fifos[n] = fifo
         self.in_fifos[n] = fifo
+        self.early_in[n] = early_in
         return fifo
