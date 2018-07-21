@@ -15,6 +15,10 @@ from .gateware.test import *
 from .applet import GlasgowApplet
 
 
+logging.addLevelName(5, 'TRACE')
+logging.Logger.trace = lambda self, msg, *args, **kwargs: self.log(5, msg, *args, **kwargs)
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -409,7 +413,7 @@ def main():
             if device.read_eeprom("fx2", 0, len(image)) != image:
                 raise SystemExit("Factory programming failed")
 
-    except FX2DeviceError as e:
+    except (ValueError, FX2DeviceError) as e:
         raise SystemExit(e)
 
 

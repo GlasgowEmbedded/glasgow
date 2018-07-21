@@ -367,12 +367,13 @@ class GlasgowDevice(FX2Device):
         else:
             raise GlasgowDeviceError("Unknown I/O port {}".format(port))
 
-        return GlasgowPort(self, interface_num)
+        return GlasgowPort(self, port, interface_num)
 
 
 class GlasgowPort:
-    def __init__(self, device, interface_num):
+    def __init__(self, device, port, interface_num):
         self.device = device
+        self.port   = port
 
         config_num = device.usb.getConfiguration()
         for config in device.usb.getDevice().iterConfigurations():
@@ -410,30 +411,39 @@ class GlasgowPort:
         self.flush()
 
         while len(self.buffer_in) < length:
-            self.buffer_in += self.device.bulk_read(self.endpoint_in, self.in_packet_size)
+            packet = self.device.bulk_read(self.endpoint_in, self.in_packet_size)
+            logger.trace("USB EP%x IN: %s", self.endpoint_in, packet.hex())
+            self.buffer_in += packet
 
         result = self.buffer_in[:length]
         self.buffer_in = self.buffer_in[length:]
+        logger.trace("port %s read: %s", self.port, result.hex())
         return result
 
     def read_str(self, length, encoding="utf-8"):
         return self.read(length).decode(encoding)
 
     def write(self, data):
+        logger.trace("port %s write: %s", self.port, data.hex())
         self.buffer_out += bytearray(data)
 
         # You can only write around 16 MB into an USB endpoint in one call,
         # better just packetize it here.
         while len(self.buffer_out) > self.out_packet_size:
-            self.device.bulk_write(self.endpoint_out, self.buffer_out[:self.out_packet_size])
+            packet = self.buffer_out[:self.out_packet_size]
+            logger.trace("USB EP%x OUT: %s", self.endpoint_out, packet.hex())
+            self.device.bulk_write(self.endpoint_out, packet)
             self.buffer_out = self.buffer_out[self.out_packet_size:]
 
     def write_str(self, data, encoding="utf-8"):
         return self.write(data.encode(encoding))
 
     def flush(self):
+        logger.trace("port %s flush", self.port)
         while len(self.buffer_out) > 0:
-            self.device.bulk_write(self.endpoint_out, self.buffer_out[:self.out_packet_size])
+            packet = self.buffer_out[:self.out_packet_size]
+            logger.trace("USB EP%x OUT: %s", self.endpoint_out, packet.hex())
+            self.device.bulk_write(self.endpoint_out, packet)
             self.buffer_out = self.buffer_out[self.out_packet_size:]
 
     def __del__(self):
