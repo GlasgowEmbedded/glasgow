@@ -184,6 +184,10 @@ class UARTApplet(GlasgowApplet, name="uart"):
             "-M", "--mirror-voltage", action="store_true", default=False,
             help="sense and mirror I/O port voltage")
 
+        parser.add_argument(
+            "-s", "--stream", action="store_true", default=False,
+            help="continue reading from I/O port even after an end-of-file condition on stdin")
+
     def run(self, device, args):
         import termios
         import atexit
@@ -194,19 +198,25 @@ class UARTApplet(GlasgowApplet, name="uart"):
 
         stdin_fl = fcntl.fcntl(sys.stdin, fcntl.F_GETFL)
         fcntl.fcntl(sys.stdin, fcntl.F_SETFL, stdin_fl | os.O_NONBLOCK)
-        device.get_poller().register(sys.stdin, select.POLLIN)
 
-        old_stdin_attrs = termios.tcgetattr(sys.stdin)
-        [iflag, oflag, cflag, lflag, ispeed, ospeed, cc] = old_stdin_attrs
-        lflag &= ~(termios.ECHO | termios.ICANON)
-        cc[termios.VMIN] = 0
-        cc[termios.VTIME] = 0
-        new_stdin_attrs = [iflag, oflag, cflag, lflag, ispeed, ospeed, cc]
-        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, new_stdin_attrs)
+        poller = device.get_poller()
+        poller.register(sys.stdin,  select.POLLERR | select.POLLHUP | select.POLLIN)
+        poller.register(sys.stdout, select.POLLERR | select.POLLHUP)
 
-        @atexit.register
-        def restore_stdin_attrs():
-            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_stdin_attrs)
+        if sys.stdin.isatty():
+            old_stdin_attrs = termios.tcgetattr(sys.stdin)
+            [iflag, oflag, cflag, lflag, ispeed, ospeed, cc] = old_stdin_attrs
+            lflag &= ~(termios.ECHO | termios.ICANON | termios.ISIG)
+            cc[termios.VMIN]  = 0
+            cc[termios.VTIME] = 0
+            new_stdin_attrs = [iflag, oflag, cflag, lflag, ispeed, ospeed, cc]
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, new_stdin_attrs)
+
+            @atexit.register
+            def restore_stdin_attrs():
+                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_stdin_attrs)
+
+            logger.info("running on a TTY; enter `Ctrl+\\ q` to quit")
 
         if args.mirror_voltage:
             device.mirror_voltage(args.port)
@@ -216,12 +226,40 @@ class UARTApplet(GlasgowApplet, name="uart"):
         device.timeout = None
         port = device.get_port(args.port, async=True)
 
-        while True:
-            try:
-                fds = device.poll()
-            except KeyboardInterrupt:
-                raise SystemExit("")
+        quit = 0
+        try:
+            stdin_err_hup = False
 
-            if (sys.stdin.fileno(), select.POLLIN) in fds:
-                port.write(os.read(sys.stdin.fileno(), 1024))
-            os.write(sys.stdout.fileno(), port.read())
+            while True:
+                fds = device.poll()
+                try:
+                    stdin_events = [ev[1] for ev in fds if ev[0] == sys.stdin.fileno()][0]
+                except IndexError:
+                    stdin_events = 0
+
+                if stdin_events & select.POLLIN:
+                    data = os.read(sys.stdin.fileno(), 1024)
+                    if os.isatty(sys.stdin.fileno()):
+                        if quit == 0 and data == b"\034":
+                            quit = 1
+                            continue
+                        elif quit == 1 and data == b"q":
+                            return
+                        else:
+                            quit = 0
+                    port.write(data)
+                    port.flush()
+
+                elif stdin_events & (select.POLLERR | select.POLLHUP):
+                    poller.unregister(sys.stdin)
+                    stdin_err_hup = True
+
+                data = port.read()
+                os.write(sys.stdout.fileno(), data)
+
+                if not stdin_events & select.POLLIN and stdin_err_hup and not args.stream:
+                    return
+
+        except KeyboardInterrupt:
+            # We can receive ^C if we're not reading from a TTY.
+            pass

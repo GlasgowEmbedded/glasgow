@@ -373,8 +373,11 @@ class GlasgowDevice(FX2Device):
         self.claimed_ports.append(port)
         return port
 
+    def has_buffered_data(self):
+        return any([port.has_buffered_data() for port in self.claimed_ports])
+
     def poll(self, timeout=None):
-        if any([len(port.buffer_in) for port in self.claimed_ports]):
+        if self.has_buffered_data():
             # If we have data in IN endpoint buffers, always return right away, but also
             # peek at what other fds might have become ready, for efficiency.
             return super().poll(0)
@@ -434,6 +437,14 @@ class GlasgowPort:
                 logger.trace("USB EP%x OUT (completed)", self.endpoint_out)
                 self._write_packet_async()
             self.out_transfer.setBulk(self.endpoint_out, 0, callback)
+
+    def has_buffered_data(self):
+        if len(self.buffer_in) > 0 or len(self.buffer_out) > 0:
+            return True
+        if self.async:
+            return not self.in_transfer.isSubmitted() or self.out_transfer.isSubmitted()
+        else:
+            return False
 
     def _append_in_packet(self, packet):
         logger.trace("USB EP%x IN: %s", self.endpoint_in & 0x7f, packet.hex())
