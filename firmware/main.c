@@ -634,7 +634,7 @@ int main() {
   ET2 = true;
 
   // Set up endpoint interrupts for ACT LED.
-  // EPIE |= 0b11110011; //_EP0IN|_EP0OUT|_EP2|_EP4|_EP6|_EP8
+  EPIE |= 0b11110011; //_EP0IN|_EP0OUT|_EP2|_EP4|_EP6|_EP8
 
   // Set up interrupt for ADC ALERT.
   EX0 = true;
