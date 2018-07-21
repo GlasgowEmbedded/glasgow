@@ -3,7 +3,8 @@ from migen import *
 from .target import GlasgowTarget
 
 
-__all__ = ["TestToggleIO", "TestMirrorI2C", "TestShiftOut", "TestGenSeq", "TestPLL"]
+__all__ = ["TestToggleIO", "TestMirrorI2C", "TestShiftOut", "TestGenSeq", "TestPLL",
+           "TestRegisters"]
 
 
 class TestToggleIO(GlasgowTarget):
@@ -165,3 +166,13 @@ class TestPLL(GlasgowTarget):
             )
 
         cnt = Signal()
+
+
+class TestRegisters(GlasgowTarget):
+    def __init__(self):
+        super().__init__()
+
+        reg_i, addr_i = self.registers.add_rw()
+        reg_o, addr_o = self.registers.add_ro()
+
+        self.comb += reg_o.eq(reg_i << 1)

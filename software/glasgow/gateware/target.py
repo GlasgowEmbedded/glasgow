@@ -99,16 +99,14 @@ class _IOPort(Module):
 
 
 class GlasgowTarget(Module):
-    def __init__(self, reg_count=0):
+    def __init__(self):
         self.platform = Platform()
 
         self.submodules.crg = _CRG(self.platform)
 
         self.submodules.i2c_slave = I2CSlave(self.platform.request("i2c"))
+        self.submodules.registers = Registers(self.i2c_slave)
         self.comb += self.i2c_slave.address.eq(0b0001000)
-
-        if reg_count > 0:
-            self.submodules.registers = Registers(self.i2c_slave, reg_count)
 
         self.submodules.arbiter = FX2Arbiter(self.platform.request("fx2"))
 

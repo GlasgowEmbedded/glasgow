@@ -12,44 +12,60 @@ class Registers(Module):
     :attr registers:
         :class:`Array` of 8-bit signals for registers.
     """
-    def __init__(self, i2c_slave, count):
+    def __init__(self, i2c_slave):
         self.i2c_slave = i2c_slave
 
-        self.address   = Signal(max=2 if count < 2 else count)
-        self.registers = Array(Signal(8) for _ in range(count))
+        self.reg_count = 0
+        self.regs_r = Array()
+        self.regs_w = Array()
 
-        ###
+        self.address = Signal(max=8)
 
+    def _add_reg(self):
+        reg  = Signal(8)
+        addr = self.reg_count
+        self.reg_count += 1
+        return reg, addr
+
+    def add_ro(self):
+        reg, addr = self._add_reg()
+        self.regs_r.append(reg)
+        self.regs_w.append(Signal(8))
+        return reg, addr
+
+    def add_rw(self):
+        reg, addr = self._add_reg()
+        self.regs_r.append(reg)
+        self.regs_w.append(reg)
+        return reg, addr
+
+    def do_finalize(self):
         latch_addr = Signal()
-
         self.comb += [
-            i2c_slave.data_o.eq(self.registers[self.address]),
-            If(i2c_slave.write,
-                If(latch_addr & (i2c_slave.data_i < count),
-                    i2c_slave.ack_o.eq(1)
+            self.i2c_slave.data_o.eq(self.regs_r[self.address]),
+            If(self.i2c_slave.write,
+                If(latch_addr & (self.i2c_slave.data_i < self.reg_count),
+                    self.i2c_slave.ack_o.eq(1)
                 ).Elif(~latch_addr,
-                    i2c_slave.ack_o.eq(1),
+                    self.i2c_slave.ack_o.eq(1),
                 )
             )
         ]
         self.sync += [
-            If(i2c_slave.start,
+            If(self.i2c_slave.start,
                 latch_addr.eq(1)
             ),
-            If(i2c_slave.write,
+            If(self.i2c_slave.write,
                 If(latch_addr,
-                    If(i2c_slave.data_i < count,
+                    If(self.i2c_slave.data_i < self.reg_count,
                         latch_addr.eq(0),
-                        self.address.eq(i2c_slave.data_i)
+                        self.address.eq(self.i2c_slave.data_i)
                     )
                 ).Else(
-                    self.registers[self.address].eq(i2c_slave.data_i)
+                    self.regs_w[self.address].eq(self.i2c_slave.data_i)
                 )
             )
         ]
-
-    def __getitem__(self, index):
-        return self.registers[index]
 
 # -------------------------------------------------------------------------------------------------
 
@@ -72,14 +88,17 @@ def simulation_test(case):
 
 
 class RegistersTestbench(Module):
-    def __init__(self, count):
+    def __init__(self):
         self.submodules.i2c = I2CSlaveTestbench()
-        self.submodules.dut = Registers(self.i2c.dut, count)
+        self.submodules.dut = Registers(self.i2c.dut)
+        dummy, _ = self.dut.add_rw()
+        reg_i, _ = self.dut.add_rw()
+        reg_o, _ = self.dut.add_ro()
 
 
 class RegistersTestCase(unittest.TestCase):
     def setUp(self):
-        self.tb = RegistersTestbench(3)
+        self.tb = RegistersTestbench()
 
     def simulationSetUp(self, tb):
         yield tb.i2c.dut.address.eq(0b0001000)
@@ -111,20 +130,20 @@ class RegistersTestCase(unittest.TestCase):
         self.assertEqual((yield from tb.i2c.read_bit()), 0)
         yield from tb.i2c.write_octet(0b10100101)
         self.assertEqual((yield from tb.i2c.read_bit()), 0)
-        self.assertEqual((yield tb.dut.registers[1]), 0b10100101)
+        self.assertEqual((yield tb.dut.regs_r[1]), 0b10100101)
         yield from tb.i2c.write_octet(0b01011010)
         self.assertEqual((yield from tb.i2c.read_bit()), 0)
-        self.assertEqual((yield tb.dut.registers[1]), 0b01011010)
-        self.assertEqual((yield tb.dut.registers[0]), 0b00000000)
+        self.assertEqual((yield tb.dut.regs_r[1]), 0b01011010)
+        self.assertEqual((yield tb.dut.regs_r[0]), 0b00000000)
         yield from tb.i2c.stop()
 
     @simulation_test
     def test_data_read(self, tb):
-        yield (tb.dut.registers[0].eq(0b10100101))
+        yield (tb.dut.regs_r[2].eq(0b10100101))
         yield from tb.i2c.start()
         yield from tb.i2c.write_octet(0b00010000)
         self.assertEqual((yield from tb.i2c.read_bit()), 0)
-        yield from tb.i2c.write_octet(0)
+        yield from tb.i2c.write_octet(2)
         self.assertEqual((yield from tb.i2c.read_bit()), 0)
         yield from tb.i2c.rep_start()
         yield from tb.i2c.write_octet(0b00010001)

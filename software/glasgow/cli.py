@@ -182,6 +182,8 @@ def get_argparser():
         "gen-seq", help="read limit from EP4IN and generate sequence on {EP2OUT,EP6OUT}")
     p_test_pll = test_subparsers.add_parser(
         "pll", help="use PLL to output 15 MHz on SYNC port")
+    p_test_registers = test_subparsers.add_parser(
+        "registers", help="add I2C RW register [0] and RO register [1] = [0] << 1")
 
     p_factory = subparsers.add_parser(
         "factory", formatter_class=TextHelpFormatter,
@@ -389,6 +391,9 @@ def main():
 
             if args.mode == "pll":
                 device.download_bitstream(TestPLL().get_bitstream(debug=True))
+
+            if args.mode == "registers":
+                device.download_bitstream(TestRegisters().get_bitstream(debug=True))
 
         if args.action == "factory":
             logger.info("reading device configuration")
