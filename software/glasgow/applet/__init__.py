@@ -80,3 +80,4 @@ class GlasgowApplet:
 
 from .program_ice40 import ProgramICE40Applet
 from .hd44780 import HD44780Applet
+from .uart import UARTApplet
