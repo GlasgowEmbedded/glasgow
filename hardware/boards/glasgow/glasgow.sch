@@ -7,7 +7,7 @@ encoding utf-8
 Sheet 1 3
 Title "Base Board"
 Date ""
-Rev "A"
+Rev "B"
 Comp "whitequark research"
 Comment1 "Glasgow Debug Tool"
 Comment2 ""
