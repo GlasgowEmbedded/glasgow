@@ -2153,7 +2153,7 @@ F 1 "390" H 10280 2595 50  0000 R CNN
 F 2 "Resistor_SMD:R_0603_1608Metric_Pad0.99x1.00mm_HandSolder" V 10280 2550 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 10350 2550 50  0001 C CNN
 F 4 "Yageo" H 0   0   50  0001 C CNN "Mfg"
-F 5 " RC0603FR-13390RL" H 0   0   50  0001 C CNN "MPN"
+F 5 "RC0603FR-13390RL" H 0   0   50  0001 C CNN "MPN"
 	1    10350 2550
 	1    0    0    1   
 $EndComp
@@ -2939,6 +2939,8 @@ F 0 "U15" H 1500 3967 50  0000 C CNN
 F 1 "TPD3S014" H 1500 3876 50  0000 C CNN
 F 2 "Package_TO_SOT_SMD:SOT-23-6" H 1500 3950 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/tpd3s014.pdf" H 1300 3850 50  0001 C CNN
+F 4 "TPD3S014DBVR" H 0   0   50  0001 C CNN "MPN"
+F 5 "Texas Instruments" H 0   0   50  0001 C CNN "Mfg"
 	1    1500 3600
 	1    0    0    -1  
 $EndComp
