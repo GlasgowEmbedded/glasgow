@@ -213,6 +213,7 @@ enum {
   USB_REQ_ALERT_VOLT   = 0x16,
   USB_REQ_POLL_ALERT   = 0x17,
   USB_REQ_BITSTREAM_ID = 0x18,
+  USB_REQ_IOBUF_ENABLE = 0x19,
   // Cypress requests
   USB_REQ_CYPRESS_EEPROM_DB = 0xA9,
   // libfx2 requests
@@ -549,6 +550,18 @@ void handle_pending_usb_setup() {
     SETUP_EP0_BUF(1);
 
     reset_status_bit(ST_ALERT);
+
+    return;
+  }
+
+  if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
+     req->bRequest == USB_REQ_IOBUF_ENABLE &&
+     req->wLength == 0) {
+    bool arg_enable = req->wValue;
+    pending_setup = false;
+
+    iobuf_enable(arg_enable);
+    ACK_EP0();
 
     return;
   }

@@ -25,6 +25,7 @@ REQ_SENSE_VOLT   = 0x15
 REQ_ALERT_VOLT   = 0x16
 REQ_POLL_ALERT   = 0x17
 REQ_BITSTREAM_ID = 0x18
+REQ_IOBUF_ENABLE = 0x19
 
 ST_ERROR       = 1<<0
 ST_FPGA_RDY    = 1<<1
@@ -259,6 +260,9 @@ class GlasgowDevice(FX2Device):
             self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_BITSTREAM_ID, 0, 0, bitstream_id)
         except usb1.USBErrorPipe:
             raise GlasgowDeviceError("FPGA configuration failed")
+
+    def _iobuf_enable(self, on):
+        self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_IOBUF_ENABLE, on, 0, [])
 
     @staticmethod
     def _iobuf_spec_to_mask(spec, one):

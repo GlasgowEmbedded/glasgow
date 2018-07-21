@@ -12,6 +12,11 @@ void iobuf_init_dac_ldo() {
   IOD &= ~ (1<<PIND_OEQ_N);
 }
 
+void iobuf_enable(bool on) {
+  if(on) IOD &= ~(1<<PIND_OEQ_N);
+  else   IOD |=  (1<<PIND_OEQ_N);
+}
+
 static bool dac_start(uint8_t mask, bool read) {
   uint8_t addr = 0;
   switch(mask) {

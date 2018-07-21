@@ -73,6 +73,7 @@ bool fpga_reg_write(__xdata const uint8_t *value, uint8_t length);
 
 // DAC/LDO API
 void iobuf_init_dac_ldo();
+void iobuf_enable(bool on);
 bool iobuf_set_voltage(uint8_t mask, __xdata const uint16_t *millivolts);
 bool iobuf_get_voltage(uint8_t selector, __xdata uint16_t *millivolts);
 
