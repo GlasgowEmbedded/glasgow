@@ -6,6 +6,7 @@ import shutil
 from migen import *
 
 from .platform import Platform
+from ..gateware.pads import Pads
 from ..gateware.i2c import I2CSlave
 from ..gateware.i2c_regs import I2CRegisters
 from ..gateware.fx2 import FX2Arbiter
@@ -53,13 +54,6 @@ class _SyncPort(Module):
             )
 
 
-class _IOTriple:
-    def __init__(self, nbits):
-        self.o = Signal(nbits)
-        self.oe = Signal()
-        self.i = Signal(nbits)
-
-
 class _IOPort(Module):
     def __init__(self, inout, nbits=8):
         self.nbits = nbits
@@ -88,7 +82,7 @@ class _IOPort(Module):
             raise ValueError("I/O port indices must be integers, slices, tuples or lists, not {}"
                              .format(type(key).__name__))
 
-        res = _IOTriple(len(indices))
+        res = TSTriple(len(indices))
         for res_idx, port_idx in enumerate(indices):
             self.comb += [
                 self.o[port_idx].eq(res.o[res_idx]),
@@ -104,7 +98,7 @@ class GlasgowTarget(Module):
 
         self.submodules.crg = _CRG(self.platform)
 
-        self.submodules.i2c_slave = I2CSlave(self.platform.request("i2c"))
+        self.submodules.i2c_slave = I2CSlave(Pads(self.platform.request("i2c")))
         self.submodules.registers = I2CRegisters(self.i2c_slave)
         self.comb += self.i2c_slave.address.eq(0b0001000)
 

@@ -15,8 +15,8 @@ class I2CBus(Module):
     Decodes bus conditions (start, stop, sample and setup) and provides synchronization.
     """
     def __init__(self, pads):
-        self.scl_t = TSTriple()
-        self.sda_t = TSTriple()
+        self.scl_t = pads.scl_t
+        self.sda_t = pads.sda_t
 
         self.scl_i = Signal()
         self.scl_o = Signal(reset=1)
@@ -52,11 +52,6 @@ class I2CBus(Module):
             MultiReg(self.scl_t.i, self.scl_i, reset=1),
             MultiReg(self.sda_t.i, self.sda_i, reset=1),
         ]
-        if pads is not None:
-            self.specials += [
-                self.scl_t.get_tristate(pads.scl),
-                self.sda_t.get_tristate(pads.sda),
-            ]
 
 
 class I2CSlave(Module):
@@ -239,10 +234,10 @@ def simulation_test(case):
 
 class I2CSlaveTestbench(Module):
     def __init__(self):
-        self.submodules.dut = I2CSlave(pads=None)
+        self.scl_t = TSTriple()
+        self.sda_t = TSTriple()
 
-        self.scl_t = self.dut.bus.scl_t
-        self.sda_t = self.dut.bus.sda_t
+        self.submodules.dut = I2CSlave(pads=self)
 
         self.scl_i = self.scl_t.i
         self.scl_o = Signal(reset=1)
