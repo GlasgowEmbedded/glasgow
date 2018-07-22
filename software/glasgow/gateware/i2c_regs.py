@@ -2,10 +2,10 @@ from migen import *
 from migen.genlib.fsm import *
 
 
-__all__ = ['Registers']
+__all__ = ['I2CRegisters']
 
 
-class Registers(Module):
+class I2CRegisters(Module):
     """
     A set of 8-bit registers accessible over I2C.
 
@@ -40,6 +40,9 @@ class Registers(Module):
         return reg, addr
 
     def do_finalize(self):
+        if len(self.regs_r) == 0:
+            return
+
         latch_addr = Signal()
         self.comb += [
             self.i2c_slave.data_o.eq(self.regs_r[self.address]),
@@ -87,7 +90,7 @@ def simulation_test(case):
     return wrapper
 
 
-class RegistersTestbench(Module):
+class I2CRegistersTestbench(Module):
     def __init__(self):
         self.submodules.i2c = I2CSlaveTestbench()
         self.submodules.dut = Registers(self.i2c.dut)
@@ -96,9 +99,9 @@ class RegistersTestbench(Module):
         reg_o, _ = self.dut.add_ro()
 
 
-class RegistersTestCase(unittest.TestCase):
+class I2CRegistersTestCase(unittest.TestCase):
     def setUp(self):
-        self.tb = RegistersTestbench()
+        self.tb = I2CRegistersTestbench()
 
     def simulationSetUp(self, tb):
         yield tb.i2c.dut.address.eq(0b0001000)

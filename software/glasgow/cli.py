@@ -10,8 +10,8 @@ from fx2 import VID_CYPRESS, PID_FX2, FX2Config, FX2Device, FX2DeviceError
 from fx2.format import input_data, diff_data
 
 from .device import VID_QIHW, PID_GLASGOW, GlasgowConfig, GlasgowDevice
-from .gateware.target import GlasgowTarget
-from .gateware.test import *
+from .target import GlasgowTarget
+from .target.test import *
 from .applet import GlasgowApplet
 
 
