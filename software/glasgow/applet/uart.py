@@ -90,8 +90,8 @@ class UARTApplet(GlasgowApplet, name="uart"):
         import sys
         import os
 
-        stdin_fl = fcntl.fcntl(sys.stdin, fcntl.F_GETFL)
-        fcntl.fcntl(sys.stdin, fcntl.F_SETFL, stdin_fl | os.O_NONBLOCK)
+        old_stdin_fl = fcntl.fcntl(sys.stdin, fcntl.F_GETFL)
+        fcntl.fcntl(sys.stdin, fcntl.F_SETFL, old_stdin_fl | os.O_NONBLOCK)
 
         poller = device.get_poller()
         poller.register(sys.stdin,  select.POLLERR | select.POLLHUP | select.POLLIN)
@@ -108,6 +108,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
 
             @atexit.register
             def restore_stdin_attrs():
+                fcntl.fcntl(sys.stdin, fcntl.F_SETFL, old_stdin_fl)
                 termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_stdin_attrs)
 
             logger.info("running on a TTY; enter `Ctrl+\\ q` to quit")
