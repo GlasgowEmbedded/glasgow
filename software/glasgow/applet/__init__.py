@@ -67,12 +67,29 @@ class GlasgowApplet:
     def add_build_arguments(parser):
         pass
 
+    def add_voltage_arguments(parser, default=None):
+        g_voltage = parser.add_mutually_exclusive_group(required=True)
+        g_voltage.add_argument(
+            "-V", "--voltage", metavar="VOLTS", type=float, nargs="?", default=default,
+            help="set I/O port voltage explicitly")
+        g_voltage.add_argument(
+            "-M", "--mirror-voltage", action="store_true", default=False,
+            help="sense and mirror I/O port voltage")
+
     @staticmethod
     def add_run_arguments(parser):
         pass
 
     def build(self, target):
         raise NotImplemented
+
+    def set_voltage_from_arguments(self, device, args, logger=None):
+        if args.mirror_voltage:
+            device.mirror_voltage(args.port)
+        else:
+            device.set_voltage(args.port, args.voltage)
+        if logger is not None:
+            logger.info("port voltage set to %.1f V", device.get_voltage(args.port))
 
     def run(self, device, args):
         raise NotImplemented

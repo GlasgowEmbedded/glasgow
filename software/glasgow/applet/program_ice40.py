@@ -1,9 +1,13 @@
 import math
 import argparse
+import logging
 from migen import *
 from migen.genlib.fsm import *
 
 from . import GlasgowApplet
+
+
+logger = logging.getLogger(__name__)
 
 
 class ProgramICE40Subtarget(Module):
@@ -145,12 +149,14 @@ class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
 
     @classmethod
     def add_run_arguments(cls, parser):
+        cls.add_voltage_arguments(parser)
+
         parser.add_argument(
             "bitstream", metavar="BITSTREAM", type=argparse.FileType("rb"),
             help="bitstream file")
 
     def run(self, device, args):
-        # device.mirror_voltage(args.port)
+        self.set_voltage_from_arguments(device, args, logger)
 
         port = device.get_port(args.port)
         bitstream = args.bitstream.read()

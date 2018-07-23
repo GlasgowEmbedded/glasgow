@@ -45,6 +45,10 @@ class UARTApplet(GlasgowApplet, name="uart"):
 
     @classmethod
     def add_build_arguments(cls, parser):
+        cls.add_port_argument(parser, default="A")
+        cls.add_pin_argument(parser, "rx", default=0)
+        cls.add_pin_argument(parser, "tx", default=1)
+
         parser.add_argument(
             "-b", "--baud-rate", metavar="BPS", type=int, default=115200,
             help="set UART baud rate to BPS bits per second (default: %(default)s)")
@@ -52,10 +56,6 @@ class UARTApplet(GlasgowApplet, name="uart"):
             "--max-deviation", metavar="PPM", type=int, default=50000,
             help="verify that actual baud rate is within PPM parts per million of specified"
                  " (default: %(default)s)")
-
-        cls.add_port_argument(parser, default="A")
-        cls.add_pin_argument(parser, "rx", default=0)
-        cls.add_pin_argument(parser, "tx", default=1)
 
     def build(self, target, args):
         io_port = target.get_io_port(args.port)
@@ -70,13 +70,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
 
     @classmethod
     def add_run_arguments(cls, parser):
-        g_voltage = parser.add_mutually_exclusive_group(required=True)
-        g_voltage.add_argument(
-            "-V", "--voltage", metavar="VOLTS", type=float, nargs="?", default=None,
-            help="set I/O port voltage explicitly")
-        g_voltage.add_argument(
-            "-M", "--mirror-voltage", action="store_true", default=False,
-            help="sense and mirror I/O port voltage")
+        cls.add_voltage_arguments(parser)
 
         parser.add_argument(
             "-s", "--stream", action="store_true", default=False,
@@ -113,11 +107,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
 
             logger.info("running on a TTY; enter `Ctrl+\\ q` to quit")
 
-        if args.mirror_voltage:
-            device.mirror_voltage(args.port)
-        else:
-            device.set_voltage(args.port, args.voltage)
-        logger.info("port voltage set to %.1f V", device.get_voltage(args.port))
+        self.set_voltage_from_arguments(device, args, logger)
 
         device.timeout = None
         port = device.get_port(args.port, async=True)
