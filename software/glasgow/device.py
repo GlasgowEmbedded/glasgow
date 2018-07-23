@@ -537,6 +537,8 @@ class GlasgowPort:
         self.device.bulk_write(self.endpoint_out, packet)
 
     def write(self, data, async=False):
+        data = bytes(data)
+
         logger.trace("port %s write: %s", self.port, data.hex())
         self.buffer_out += bytearray(data)
 
