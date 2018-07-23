@@ -117,6 +117,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
             device.mirror_voltage(args.port)
         else:
             device.set_voltage(args.port, args.voltage)
+        logger.info("port voltage set to %.1f V", device.get_voltage(args.port))
 
         device.timeout = None
         port = device.get_port(args.port, async=True)
