@@ -277,6 +277,10 @@ def main():
                 logger.info("running handler for applet %r", args.applet)
                 applet.run(device, args)
 
+                # Work around bugs in python-libusb1 that cause segfaults on interpreter shutdown.
+                for iface in device.demultiplexer._interfaces:
+                    iface.flush()
+
             else:
                 with args.bitstream as f:
                     logger.info("downloading bitstream from %r", f.name)

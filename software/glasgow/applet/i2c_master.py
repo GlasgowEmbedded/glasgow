@@ -160,6 +160,32 @@ class I2CMasterSubtarget(Module):
         )
 
 
+class I2CMasterInterface:
+    def __init__(self, interface):
+        self.lower = interface
+
+    def reset(self):
+        self.lower.write([CMD_RESET])
+
+    def stop(self):
+        self.lower.write([CMD_STOP])
+
+    def write(self, addr, data, stop=False):
+        self.lower.write([CMD_START, CMD_WRITE, 1 + len(data), (addr << 1) | 0, *data])
+        if stop: self.lower.write([CMD_STOP])
+        assert self.lower.read(1) == b"\x00"
+
+    def read(self, addr, size, stop=False):
+        self.lower.write([CMD_START, CMD_WRITE, 1, (addr << 1) | 1, CMD_READ, size])
+        if stop: self.lower.write([CMD_STOP])
+        assert self.lower.read(1) == b"\x00"
+        return self.lower.read(size)
+
+    def poll(self, addr):
+        self.lower.write([CMD_START, CMD_WRITE, 1, (addr << 1) | 0, CMD_STOP])
+        return self.lower.read(1) == b"\x00"
+
+
 class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
     logger = logger
     help = "initiate transactions on I2C"
@@ -167,8 +193,6 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
     Initiate transactions on the I2C bus.
 
     Maximum transaction length is 256 bytes.
-
-    Port voltage is sensed and monitored.
     """
     pins = ("scl_i", "scl_o", "scl_oe", "scl_io", "sda_i", "sda_o", "sda_oe", "sda_io")
 
@@ -205,49 +229,9 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
     def add_run_arguments(cls, parser, access):
         access.add_run_arguments(parser)
 
-    def run(self, device, args):
-        iface = device.demultiplexer.claim_interface(self, args)
-
-        def i2c_reset():
-            iface.write([CMD_RESET])
-
-        def i2c_stop():
-            iface.write([CMD_STOP])
-
-        def i2c_write(addr, data, stop=False):
-            iface.write([CMD_START, CMD_WRITE, 1 + len(data), (addr << 1) | 0, *data])
-            if stop: iface.write([CMD_STOP])
-            assert iface.read(1) == b"\x00"
-
-        def i2c_read(addr, size, stop=False):
-            iface.write([CMD_START, CMD_WRITE, 1, (addr << 1) | 1, CMD_READ, size])
-            if stop: iface.write([CMD_STOP])
-            assert iface.read(1) == b"\x00"
-            return iface.read(size)
-
-        def i2c_poll(addr):
-            iface.write([CMD_START, CMD_WRITE, 1, (addr << 1) | 0, CMD_STOP])
-            return iface.read(1) == b"\x00"
-
-        def eeprom_write(i2c_addr, addr, data, page_size=8):
-            while len(data) > 0:
-                chunk = data[:page_size]
-                data  = data[page_size:]
-                i2c_write(i2c_addr, [addr, *chunk], stop=True)
-                while not i2c_poll(i2c_addr): pass
-                addr += len(chunk)
-
-        def eeprom_read(i2c_addr, addr, size, chunk_size=32):
-            data = b""
-            while size > 0:
-                i2c_write(i2c_addr, [addr])
-                chunk = i2c_read(i2c_addr, min(size, chunk_size))
-                data += chunk
-                addr += len(chunk)
-                size -= len(chunk)
-            i2c_stop()
-            return data
-
-        i2c_reset()
-        print(eeprom_read(0b1010000, 0x00, 0x100).hex())
-        iface.flush()
+    def run(self, device, args, interactive=True):
+        interface = I2CMasterInterface(device.demultiplexer.claim_interface(self, args))
+        if interactive:
+            pass # TODO: implement
+        else:
+            return interface
