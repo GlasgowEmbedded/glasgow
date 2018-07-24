@@ -7,6 +7,8 @@ class GlasgowApplet:
 
     def __init_subclass__(cls, name, **kwargs):
         super().__init_subclass__(**kwargs)
+        if name in cls.all_applets:
+            raise ValueError("Applet {!r} already exists".format(name))
         cls.all_applets[name] = cls
 
     @staticmethod
