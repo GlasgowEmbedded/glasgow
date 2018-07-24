@@ -98,7 +98,8 @@ class GlasgowTarget(Module):
 
         self.submodules.crg = _CRG(self.platform)
 
-        self.submodules.i2c_slave = I2CSlave(Pads(self.platform.request("i2c")))
+        self.submodules.i2c_pads  = Pads(self.platform.request("i2c"))
+        self.submodules.i2c_slave = I2CSlave(self.i2c_pads)
         self.submodules.registers = I2CRegisters(self.i2c_slave)
         self.comb += self.i2c_slave.address.eq(0b0001000)
 
