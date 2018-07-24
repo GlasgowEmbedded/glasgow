@@ -8,11 +8,15 @@
 import time
 import math
 import argparse
+import logging
 from migen import *
 from migen.genlib.fsm import *
 from migen.genlib.cdc import MultiReg
 
-from . import GlasgowApplet
+from . import *
+
+
+logger = logging.getLogger(__name__)
 
 
 # FPGA commands
@@ -57,16 +61,16 @@ CMD_DDRAM_ADDRESS  = 0b10000000
 
 
 class HD44780Subtarget(Module):
-    def __init__(self, rs, rw, e, d, out_fifo, in_fifo):
+    def __init__(self, pads, out_fifo, in_fifo):
         di = Signal(4)
         self.comb += [
-            rs.oe.eq(1),
-            rw.oe.eq(1),
-            e.oe.eq(1),
-            d.oe.eq(~rw.o),
+            pads.rs_t.oe.eq(1),
+            pads.rw_t.oe.eq(1),
+            pads.e_t.oe.eq(1),
+            pads.d_t.oe.eq(~pads.rw_t.o),
         ]
         self.specials += [
-            MultiReg(d.i, di)
+            MultiReg(pads.d_t.i, di)
         ]
 
         rx_setup_cyc = math.ceil(60e-9 * 30e6)
@@ -81,7 +85,7 @@ class HD44780Subtarget(Module):
 
         self.submodules.fsm = FSM(reset_state="IDLE")
         self.fsm.act("IDLE",
-            NextValue(e.o, 0),
+            NextValue(pads.e_t.o, 0),
             If(out_fifo.readable,
                 out_fifo.re.eq(1),
                 NextValue(cmd, out_fifo.dout),
@@ -89,9 +93,9 @@ class HD44780Subtarget(Module):
             )
         )
         self.fsm.act("COMMAND",
-            NextValue(msb,  (cmd & XFER_BIT_HALF) == 0),
-            NextValue(rs.o, (cmd & XFER_BIT_DATA) != 0),
-            NextValue(rw.o, (cmd & XFER_BIT_READ) != 0),
+            NextValue(msb, (cmd & XFER_BIT_HALF) == 0),
+            NextValue(pads.rs_t.o, (cmd & XFER_BIT_DATA) != 0),
+            NextValue(pads.rw_t.o, (cmd & XFER_BIT_READ) != 0),
             If(cmd & XFER_BIT_WAIT,
                 NextValue(timer, cmd_wait_cyc),
                 NextState("WAIT")
@@ -106,11 +110,11 @@ class HD44780Subtarget(Module):
         )
         self.fsm.act("WRITE",
             If(timer == 0,
-                NextValue(e.o, 1),
+                NextValue(pads.e_t.o, 1),
                 If(msb,
-                    NextValue(d.o, data[4:])
+                    NextValue(pads.d_t.o, data[4:])
                 ).Else(
-                    NextValue(d.o, data[:4])
+                    NextValue(pads.d_t.o, data[:4])
                 ),
                 NextValue(timer, e_pulse_cyc),
                 NextState("WRITE-HOLD")
@@ -120,7 +124,7 @@ class HD44780Subtarget(Module):
         )
         self.fsm.act("WRITE-HOLD",
             If(timer == 0,
-                NextValue(e.o, 0),
+                NextValue(pads.e_t.o, 0),
                 NextValue(msb, ~msb),
                 NextValue(timer, e_wait_cyc),
                 If(msb,
@@ -134,7 +138,7 @@ class HD44780Subtarget(Module):
         )
         self.fsm.act("READ-SETUP",
             If(timer == 0,
-                NextValue(e.o, 1),
+                NextValue(pads.e_t.o, 1),
                 NextValue(timer, e_pulse_cyc),
                 NextState("READ")
             ).Else(
@@ -146,7 +150,7 @@ class HD44780Subtarget(Module):
                 If(~(cmd & XFER_BIT_DATA) & msb & di[3],
                     # BF=1, wait until it goes low
                 ).Else(
-                    NextValue(e.o, 0),
+                    NextValue(pads.e_t.o, 0),
                     NextValue(msb, ~msb),
                     NextValue(timer, e_wait_cyc),
                     If(msb,
@@ -183,6 +187,7 @@ class HD44780Subtarget(Module):
 
 
 class HD44780Applet(GlasgowApplet, name="hd44780"):
+    logger = logger
     help = "control HD44780-compatible displays"
     description = """
     Control HD44780/SED1278/ST7066/KS0066-compatible displays via a 4-bit bus.
@@ -194,52 +199,46 @@ class HD44780Applet(GlasgowApplet, name="hd44780"):
     erratic behavior, try routing it away from possible aggressors (RS and R/W).
     """
 
-    def __init__(self, spec):
-        self.spec = spec
-
     @classmethod
-    def add_build_arguments(cls, parser):
-        cls.add_port_argument(parser, default="A")
-        cls.add_pin_argument(parser, "rs", default=0)
-        cls.add_pin_argument(parser, "rw", default=1)
-        cls.add_pin_argument(parser, "e", default=2)
-        cls.add_pins_argument(parser, "d", width=4, default="4:8")
+    def add_build_arguments(cls, parser, access):
+        access.add_build_arguments(parser)
+        access.add_pin_argument(parser, "rs", default=True)
+        access.add_pin_argument(parser, "rw", default=True)
+        access.add_pin_argument(parser, "e", default=True)
+        access.add_pin_set_argument(parser, "d", width=4, default=True)
 
     def build(self, target, args):
-        io_port = target.get_io_port(args.port)
+        iface = target.multiplexer.claim_interface(self, args)
         return HD44780Subtarget(
-            rs=io_port[args.pin_rs],
-            rw=io_port[args.pin_rw],
-            e=io_port[args.pin_e],
-            d=io_port[args.pins_d],
-            out_fifo=target.get_out_fifo(args.port),
-            in_fifo=target.get_in_fifo(args.port),
+            pads=iface.get_pads(args, pins=("rs", "rw", "e"), pin_sets=("d",)),
+            out_fifo=iface.get_out_fifo(),
+            in_fifo=iface.get_in_fifo(),
         )
 
     @classmethod
-    def add_run_arguments(cls, parser):
+    def add_run_arguments(cls, parser, access):
         parser.add_argument(
             "--reset", default=False, action="store_true",
             help="power-cycle the port on startup")
 
     def run(self, device, args):
+        iface = device.demultiplexer.claim_raw_interface(self, timeout=1)
+
         if args.reset:
-            device.set_voltage(self.spec, 0.0)
+            device.set_voltage(args.port_spec, 0.0)
             time.sleep(0.3)
-        device.set_voltage(self.spec, 5.5)
+        device.set_voltage(args.port_spec, 5.0)
         time.sleep(0.040) # wait 40ms after reset
 
-        port = device.get_port(self.spec)
-
         def init(command, poll):
-            port.write([XFER_INIT, command, XFER_POLL if poll else XFER_WAIT])
+            iface.write([XFER_INIT, command, XFER_POLL if poll else XFER_WAIT])
 
         def cmd(command):
-            port.write([XFER_COMMAND, command, XFER_POLL])
+            iface.write([XFER_COMMAND, command, XFER_POLL])
 
         def data(bytes):
             for byte in bytes:
-                port.write([XFER_WRITE, byte, XFER_POLL])
+                iface.write([XFER_WRITE, byte, XFER_POLL])
 
         # HD44780 may be in either 4-bit or 8-bit mode and we don't know which.
         # The following sequence brings it to 4-bit mode regardless of which one it was in.
@@ -257,7 +256,7 @@ class HD44780Applet(GlasgowApplet, name="hd44780"):
         data(b"Hello")
         cmd(CMD_DDRAM_ADDRESS|0x40)
         data(b"  World")
-        port.flush()
+        iface.flush()
         time.sleep(1)
 
         from datetime import datetime
@@ -267,4 +266,4 @@ class HD44780Applet(GlasgowApplet, name="hd44780"):
             data(datetime.now().strftime("%H:%M:%S").encode("ascii"))
             cmd(CMD_DDRAM_ADDRESS|0x40)
             data(datetime.now().strftime("%y-%m-%d").encode("ascii"))
-            port.flush()
+            iface.flush()

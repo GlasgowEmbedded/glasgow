@@ -59,14 +59,14 @@ def uart_bit_cyc(clk_freq, baud_rate, max_deviation=50000):
 
     bit_cyc = round(clk_freq // baud_rate)
     if bit_cyc <= 0:
-        raise ValueError("UART output frequency ({}) is too high"
-                         .format(baud_rate))
+        raise ValueError("baud rate {} is too high for input clock frequency {}"
+                         .format(baud_rate, clk_freq))
 
-    actual_baud_rate = clk_freq // bit_cyc
-    deviation = 1000000 * (actual_baud_rate - baud_rate) / baud_rate
+    actual_baud_rate = round(clk_freq // bit_cyc)
+    deviation = round(1000000 * (actual_baud_rate - baud_rate) // baud_rate)
     if deviation > max_deviation:
-        raise ValueError("UART output frequency deviation ({} ppm) is too high"
-                         .format(deviation))
+        raise ValueError("baud rate {} deviation from {} ({} ppm) is higher than {} ppm"
+                         .format(actual_baud_rate, baud_rate, deviation, max_deviation))
 
     return bit_cyc + 1, actual_baud_rate
 

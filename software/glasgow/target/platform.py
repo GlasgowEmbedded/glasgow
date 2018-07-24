@@ -39,7 +39,7 @@ _connectors = [
 ]
 
 
-class Platform(LatticePlatform):
+class GlasgowPlatform(LatticePlatform):
     default_clk_name = "clk_if"
     default_clk_period = 1e9 / 30e6
 

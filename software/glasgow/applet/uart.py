@@ -3,7 +3,7 @@ import logging
 from migen import *
 from migen.genlib.fsm import *
 
-from . import GlasgowApplet
+from . import *
 from ..gateware.pads import *
 from ..gateware.uart import *
 
@@ -12,10 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class UARTSubtarget(Module):
-    def __init__(self, pads, out_fifo, in_fifo, baud_rate, max_deviation):
-        bit_cyc, actual_baud_rate = uart_bit_cyc(30e6, baud_rate, max_deviation)
-        logger.debug("requested baud rate %d, actual %d", baud_rate, actual_baud_rate)
-
+    def __init__(self, pads, out_fifo, in_fifo, bit_cyc):
         self.submodules.uart = UART(pads, bit_cyc)
 
         ###
@@ -34,43 +31,48 @@ class UARTSubtarget(Module):
 
 
 class UARTApplet(GlasgowApplet, name="uart"):
+    logger = logger
     help = "communicate via UART"
     description = """
     Transmit and receive data via UART.
 
     Any baud rate is supported. Only 8n1 mode is supported.
-
-    Port voltage is sensed and monitored.
     """
+    pins = ("rx", "tx")
 
     @classmethod
-    def add_build_arguments(cls, parser):
-        cls.add_port_argument(parser, default="A")
-        cls.add_pin_argument(parser, "rx", default=0)
-        cls.add_pin_argument(parser, "tx", default=1)
+    def add_build_arguments(cls, parser, access):
+        access.add_build_arguments(parser)
+        for pin in cls.pins:
+            access.add_pin_argument(parser, pin, default=True)
 
         parser.add_argument(
-            "-b", "--baud-rate", metavar="RATE", type=int, default=115200,
-            help="set UART baud rate to RATE bits per second (default: %(default)s)")
+            "-b", "--baud", metavar="RATE", type=int, default=115200,
+            help="set baud rate to RATE bits per second (default: %(default)s)")
         parser.add_argument(
-            "--max-deviation", metavar="DEV", type=int, default=50000,
-            help="verify that actual baud rate is within DEV parts per million of specified"
+            "--tolerance", metavar="PPM", type=int, default=50000,
+            help="verify that actual baud rate is within PPM parts per million of specified"
                  " (default: %(default)s)")
 
     def build(self, target, args):
-        io_port = target.get_io_port(args.port)
-        return UARTSubtarget(
-            pads=Pads(rx=io_port[args.pin_rx],
-                      tx=io_port[args.pin_tx]),
-            out_fifo=target.get_out_fifo(args.port),
-            in_fifo=target.get_in_fifo(args.port, streaming=False),
-            baud_rate=args.baud_rate,
-            max_deviation=args.max_deviation,
+        try:
+            bit_cyc, actual_baud = uart_bit_cyc(target.sys_clk_freq, args.baud, args.tolerance)
+            logger.debug("requested baud rate %d, actual %d",
+                         args.baud, actual_baud)
+        except ValueError as e:
+            raise GlasgowAppletError(e)
+
+        iface = target.multiplexer.claim_interface(self, args)
+        target.submodules += UARTSubtarget(
+            pads=iface.get_pads(args, pins=self.pins),
+            out_fifo=iface.get_out_fifo(),
+            in_fifo=iface.get_in_fifo(streaming=False),
+            bit_cyc=bit_cyc,
         )
 
     @classmethod
-    def add_run_arguments(cls, parser):
-        cls.add_voltage_arguments(parser)
+    def add_run_arguments(cls, parser, access):
+        access.add_run_arguments(parser)
 
         parser.add_argument(
             "-s", "--stream", action="store_true", default=False,
@@ -107,17 +109,13 @@ class UARTApplet(GlasgowApplet, name="uart"):
 
             logger.info("running on a TTY; enter `Ctrl+\\ q` to quit")
 
-        self.set_voltage_from_arguments(device, args, logger)
-
-        device.timeout = None
-        port = device.get_port(args.port, async=True)
-
+        iface = device.demultiplexer.claim_interface(self, args, async=True)
         quit = 0
         try:
             stdin_err_hup = False
 
             while True:
-                fds = device.poll()
+                fds = iface.poll()
                 try:
                     stdin_events = [ev[1] for ev in fds if ev[0] == sys.stdin.fileno()][0]
                 except IndexError:
@@ -133,14 +131,14 @@ class UARTApplet(GlasgowApplet, name="uart"):
                             return
                         else:
                             quit = 0
-                    port.write(data)
-                    port.flush()
+                    iface.write(data)
+                    iface.flush()
 
                 elif stdin_events & (select.POLLERR | select.POLLHUP):
                     poller.unregister(sys.stdin)
                     stdin_err_hup = True
 
-                data = port.read()
+                data = iface.read()
                 os.write(sys.stdout.fileno(), data)
 
                 if not stdin_events & select.POLLIN and stdin_err_hup and not args.stream:

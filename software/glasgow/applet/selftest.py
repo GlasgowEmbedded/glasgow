@@ -10,25 +10,30 @@ logger = logging.getLogger(__name__)
 
 
 class SelfTestSubtarget(Module):
-    def __init__(self, applet, registers, io_A, io_B):
-        super().__init__()
+    def __init__(self, applet, target):
+        t_a  = [TSTriple() for _ in range(8)]
+        io_a = target.platform.request("io")
+        self.specials += [t.get_tristate(io_a[i]) for i, t in enumerate(t_a)]
+        t_b  = [TSTriple() for _ in range(8)]
+        io_b = target.platform.request("io")
+        self.specials += [t.get_tristate(io_b[i]) for i, t in enumerate(t_b)]
 
-        reg_oe_A, applet.addr_oe_A = registers.add_rw()
-        reg_o_A,  applet.addr_o_A  = registers.add_rw()
-        reg_i_A,  applet.addr_i_A  = registers.add_ro()
+        reg_oe_a, applet.addr_oe_a = target.registers.add_rw()
+        reg_o_a,  applet.addr_o_a  = target.registers.add_rw()
+        reg_i_a,  applet.addr_i_a  = target.registers.add_ro()
         self.comb += [
-            io_A.oe.eq(reg_oe_A),
-            io_A.o.eq(reg_o_A),
-            reg_i_A.eq(io_A.i)
+            Cat(t.oe for t in t_a).eq(reg_oe_a),
+            Cat(t.o for t in t_a).eq(reg_o_a),
+            reg_i_a.eq(Cat(t.i for t in t_a))
         ]
 
-        reg_oe_B, applet.addr_oe_B = registers.add_rw()
-        reg_o_B,  applet.addr_o_B  = registers.add_rw()
-        reg_i_B,  applet.addr_i_B  = registers.add_ro()
+        reg_oe_b, applet.addr_oe_b = target.registers.add_rw()
+        reg_o_b,  applet.addr_o_b  = target.registers.add_rw()
+        reg_i_b,  applet.addr_i_b  = target.registers.add_ro()
         self.comb += [
-            io_B.oe.eq(reg_oe_B),
-            io_B.o.eq(reg_o_B),
-            reg_i_B.eq(io_B.i)
+            Cat(t.oe for t in t_b).eq(reg_oe_b),
+            Cat(t.o for t in t_b).eq(reg_o_b),
+            reg_i_b.eq(Cat(t.i for t in t_b))
         ]
 
 
@@ -53,31 +58,26 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
     default_mode = "pins-int"
 
     def build(self, target, args):
-        return SelfTestSubtarget(
-            applet=self,
-            registers=target.registers,
-            io_A=target.get_io_port("A"),
-            io_B=target.get_io_port("B"),
-        )
+        target.submodules += SelfTestSubtarget(applet=self, target=target)
 
     @classmethod
-    def add_run_arguments(cls, parser):
+    def add_run_arguments(cls, parser, access_args):
         parser.add_argument(
             dest="modes", metavar="MODE", type=str, nargs="*", choices=[[]] + cls.all_modes,
             help="run self-test mode MODE (default: {})".format(cls.default_mode))
 
     def run(self, device, args):
         def set_oe(bits):
-            device.write_register(self.addr_oe_A, (bits >> 0) & 0xff)
-            device.write_register(self.addr_oe_B, (bits >> 8) & 0xff)
+            device.write_register(self.addr_oe_a, (bits >> 0) & 0xff)
+            device.write_register(self.addr_oe_b, (bits >> 8) & 0xff)
 
         def set_o(bits):
-            device.write_register(self.addr_o_A,  (bits >> 0) & 0xff)
-            device.write_register(self.addr_o_B,  (bits >> 8) & 0xff)
+            device.write_register(self.addr_o_a,  (bits >> 0) & 0xff)
+            device.write_register(self.addr_o_b,  (bits >> 8) & 0xff)
 
         def get_i():
-            return ((device.read_register(self.addr_i_A) << 0) |
-                    (device.read_register(self.addr_i_B) << 8))
+            return ((device.read_register(self.addr_i_a) << 0) |
+                    (device.read_register(self.addr_i_b) << 8))
 
         def reset_pins(level=0):
             set_o(0xffff if level else 0x0000)

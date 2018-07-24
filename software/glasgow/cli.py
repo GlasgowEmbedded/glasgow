@@ -9,10 +9,12 @@ from datetime import datetime
 from fx2 import VID_CYPRESS, PID_FX2, FX2Config, FX2Device, FX2DeviceError
 from fx2.format import input_data, diff_data
 
-from .device import VID_QIHW, PID_GLASGOW, GlasgowConfig, GlasgowDevice
 from .target import GlasgowTarget
+from .target.config import GlasgowConfig
+from .target.device import VID_QIHW, PID_GLASGOW, GlasgowDevice
+from .target.direct import *
 from .target.test import *
-from .applet import GlasgowApplet
+from .applet import *
 
 
 logger = logging.getLogger(__name__)
@@ -68,9 +70,17 @@ def get_argparser():
             p_applet = subparsers.add_parser(
                 applet_name, help=applet.help, description=applet.description,
                 formatter_class=TextHelpFormatter)
-            applet.add_build_arguments(p_applet)
+            access_args = DirectArguments(applet_name=applet_name,
+                                          default_port="A",
+                                          pin_count=8)
+
             if add_run_args:
-                applet.add_run_arguments(p_applet)
+                g_applet_build = p_applet.add_argument_group("build arguments")
+                applet.add_build_arguments(g_applet_build, access_args)
+                g_applet_run = p_applet.add_argument_group("run arguments")
+                applet.add_run_arguments(g_applet_run, access_args)
+            else:
+                applet.add_build_arguments(p_applet, access_args)
 
     parser = argparse.ArgumentParser(formatter_class=TextHelpFormatter)
 
@@ -196,10 +206,15 @@ def get_argparser():
 
 # The name of this function appears in Verilog output, so keep it tidy.
 def _applet(args):
-    target = GlasgowTarget()
+    target = GlasgowTarget(multiplexer_cls=DirectMultiplexer)
     applet = GlasgowApplet.all_applets[args.applet]()
-    applet.build(target, args)
-    return applet, target
+    try:
+        applet.build(target, args)
+    except GlasgowAppletError as e:
+        applet.logger.error(str(e))
+        logger.error("failed to build subtarget for applet %r", args.applet)
+        raise SystemExit()
+    return target, applet
 
 
 def main():
@@ -248,22 +263,23 @@ def main():
 
         if args.action == "run":
             if args.applet:
-                applet, target = _applet(args)
+                target, applet = _applet(args)
+                device.demultiplexer = DirectDemultiplexer(device, interface_count=2)
 
                 bitstream_id = target.get_bitstream_id()
                 if device.bitstream_id() == bitstream_id and not args.force:
                     logger.info("device already has bitstream ID %s", bitstream_id.hex())
                 else:
-                    logger.info("building bitstream ID %s for applet %s",
+                    logger.info("building bitstream ID %s for applet %r",
                                 bitstream_id.hex(), args.applet)
                     device.download_bitstream(target.get_bitstream(debug=True), bitstream_id)
 
-                logger.info("running handler for applet %s", args.applet)
+                logger.info("running handler for applet %r", args.applet)
                 applet.run(device, args)
 
             else:
                 with args.bitstream as f:
-                    logger.info("downloading bitstream from %s", f.name)
+                    logger.info("downloading bitstream from %r", f.name)
                     device.download_bitstream(f.read())
 
         if args.action == "flash":
@@ -303,7 +319,7 @@ def main():
                     glasgow_config.bitstream_id   = b"\xff"*16
             elif args.applet:
                 logger.info("building bitstream for applet %s", args.applet)
-                applet, target = _applet(args)
+                target, applet = _applet(args)
                 new_bitstream_id = target.get_bitstream_id()
                 new_bitstream = target.get_bitstream()
 
@@ -324,7 +340,7 @@ def main():
                 new_image = fx2_config.encode()
                 new_image[0] = 0xC0 # see below
             else:
-                logger.info("using firmware from %s",
+                logger.info("using firmware from %r",
                             args.firmware.name if args.firmware else firmware_file)
                 with (args.firmware or open(firmware_file, "rb")) as f:
                     for (addr, chunk) in input_data(f, fmt="ihex"):
@@ -358,8 +374,8 @@ def main():
                 logger.info("configuration and firmware identical")
 
         if args.action == "build":
-            applet, target = _applet(args)
-            logger.info("building bitstream for applet %s", args.applet)
+            target, applet = _applet(args)
+            logger.info("building bitstream for applet %r", args.applet)
             if args.type in ("v", "verilog"):
                 target.get_verilog().write(args.filename or args.applet + ".v")
             if args.type in ("bin", "bitstream"):
@@ -414,7 +430,7 @@ def main():
             if device.read_eeprom("fx2", 0, len(image)) != image:
                 raise SystemExit("Factory programming failed")
 
-    except (ValueError, FX2DeviceError) as e:
+    except FX2DeviceError as e:
         raise SystemExit(e)
 
 

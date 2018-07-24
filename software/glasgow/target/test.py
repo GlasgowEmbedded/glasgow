@@ -22,11 +22,9 @@ class TestToggleIO(GlasgowTarget):
         ]
 
         self.comb += [
-            self.sync_port.t.oe.eq(out),
-            self.io_ports[0].oe.eq(0b11111111),
-            self.io_ports[1].oe.eq(0b11111111),
-            self.io_ports[0].o.eq(Replicate(out, 8)),
-            self.io_ports[1].o.eq(Replicate(out, 8)),
+            self.platform.request("sync").eq(out),
+            self.platform.request("io").eq(Replicate(out, 8)),
+            self.platform.request("io").eq(Replicate(out, 8)),
         ]
 
 
@@ -35,10 +33,8 @@ class TestMirrorI2C(GlasgowTarget):
         super().__init__()
 
         i2c = self.i2c_slave.bus
-        io  = self.get_io_port("A")
         self.comb += [
-            io.oe[0:2].eq(0b11),
-            io.o[0:2].eq(Cat(i2c.scl_i, i2c.sda_i))
+            self.platform.request("io").eq(Cat(i2c.scl_i, i2c.sda_i))
         ]
 
 
@@ -58,16 +54,15 @@ class TestShiftOut(GlasgowTarget):
             self.comb += self.cd_shift.clk.eq(clk)
 
             domain = "shift"
-            out = self.arbiter.get_out_fifo(0, clock_domain=self.cd_shift)
+            out = self.fx2_arbiter.get_out_fifo(0, clock_domain=self.cd_shift)
         else:
             domain = "sys"
-            out = self.arbiter.get_out_fifo(0)
+            out = self.fx2_arbiter.get_out_fifo(0)
 
         sck = Signal(reset=1)
         sdo = Signal()
         self.comb += [
-            self.io_ports[0].oe.eq(0b11),
-            self.io_ports[0].o.eq(Cat(sck, sdo))
+            self.platform.request("io").eq(Cat(sck, sdo))
         ]
 
         shreg = Signal(8)
@@ -102,9 +97,9 @@ class TestGenSeq(GlasgowTarget):
     def __init__(self):
         super().__init__()
 
-        out0 = self.arbiter.get_out_fifo(0)
-        in0 = self.arbiter.get_in_fifo(0)
-        in1 = self.arbiter.get_in_fifo(1)
+        out0 = self.fx2_arbiter.get_out_fifo(0)
+        in0 = self.fx2_arbiter.get_in_fifo(0)
+        in1 = self.fx2_arbiter.get_in_fifo(1)
 
         stb = Signal()
         re  = Signal()
@@ -160,7 +155,7 @@ class TestPLL(GlasgowTarget):
                 p_DIVQ=6,
                 p_FILTER_RANGE=1,
                 i_REFERENCECLK=ClockSignal(),
-                o_PLLOUTCORE=self.sync_port.oe,
+                o_PLLOUTCORE=self.platform.request("sync"),
                 i_RESETB=1,
                 i_BYPASS=0,
             )

@@ -40,7 +40,7 @@ class I2CRegisters(Module):
         return reg, addr
 
     def do_finalize(self):
-        if len(self.regs_r) == 0:
+        if self.reg_count == 0:
             return
 
         latch_addr = Signal()
@@ -93,7 +93,7 @@ def simulation_test(case):
 class I2CRegistersTestbench(Module):
     def __init__(self):
         self.submodules.i2c = I2CSlaveTestbench()
-        self.submodules.dut = Registers(self.i2c.dut)
+        self.submodules.dut = I2CRegisters(self.i2c.dut)
         dummy, _ = self.dut.add_rw()
         reg_i, _ = self.dut.add_rw()
         reg_o, _ = self.dut.add_ro()

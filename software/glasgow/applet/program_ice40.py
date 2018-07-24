@@ -4,20 +4,20 @@ import logging
 from migen import *
 from migen.genlib.fsm import *
 
-from . import GlasgowApplet
+from . import *
 
 
 logger = logging.getLogger(__name__)
 
 
 class ProgramICE40Subtarget(Module):
-    def __init__(self, rst_n, ss_n, sck, si, out_fifo):
+    def __init__(self, pads, out_fifo):
         oe = Signal()
         self.comb += [
-            rst_n.oe.eq(1),
-            ss_n.oe.eq(oe),
-            sck.oe.eq(oe),
-            si.oe.eq(oe),
+            pads.rst_n_t.oe.eq(1),
+            pads.ss_n_t.oe.eq(oe),
+            pads.sck_t.oe.eq(oe),
+            pads.si_t.oe.eq(oe),
         ]
 
         reset_cyc = math.ceil(1e-6 * 30e6)
@@ -35,18 +35,18 @@ class ProgramICE40Subtarget(Module):
         self.fsm.act("IDLE",
             If(out_fifo.readable,
                 NextValue(oe, 1),
-                NextValue(rst_n.o, 0),
-                NextValue(sck.o, 1),
+                NextValue(pads.rst_n_t.o, 0),
+                NextValue(pads.sck_t.o, 1),
                 NextValue(timer, reset_cyc),
                 NextState("RESET")
             ).Else(
                 NextValue(oe, 0),
-                NextValue(rst_n.o, 1),
+                NextValue(pads.rst_n_t.o, 1),
             )
         )
         self.fsm.act("RESET",
             If(timer == 0,
-                NextValue(rst_n.o, 1),
+                NextValue(pads.rst_n_t.o, 1),
                 NextValue(timer, start_cyc),
                 NextState("START")
             ).Else(
@@ -83,8 +83,8 @@ class ProgramICE40Subtarget(Module):
             )
         )
         self.fsm.act("SETUP",
-            NextValue(sck.o, 0),
-            NextValue(si.o, shreg[7]),
+            NextValue(pads.sck_t.o, 0),
+            NextValue(pads.si_t.o, shreg[7]),
             If(divisor == 0,
                 NextValue(divisor, divisor.reset),
                 NextState("HOLD")
@@ -93,7 +93,7 @@ class ProgramICE40Subtarget(Module):
             )
         )
         self.fsm.act("HOLD",
-            NextValue(sck.o, 1),
+            NextValue(pads.sck_t.o, 1),
             If(divisor == 0,
                 NextValue(divisor, divisor.reset),
                 If((bitno == 0) & (byteno == 0),
@@ -110,8 +110,8 @@ class ProgramICE40Subtarget(Module):
             )
         )
         self.fsm.act("DONE",
-            NextValue(sck.o, ~sck.o),
-            If(sck.o,
+            NextValue(pads.sck_t.o, ~pads.sck_t.o),
+            If(pads.sck_t.o,
                 If(timer == 0,
                     NextState("IDLE")
                 ).Else(
@@ -122,53 +122,48 @@ class ProgramICE40Subtarget(Module):
 
 
 class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
+    logger = logger
     help = "program iCE40 FPGAs"
     description = """
     Program iCE40 FPGAs.
-
-    Port voltage is sensed and monitored.
     """
+    pins = ("rst_n", "ss_n", "sck", "si")
 
     @classmethod
-    def add_build_arguments(cls, parser):
-        cls.add_port_argument(parser, default="A")
-        cls.add_pin_argument(parser, "rst_n", default=0)
-        cls.add_pin_argument(parser, "ss_n", default=1)
-        cls.add_pin_argument(parser, "sck", default=2)
-        cls.add_pin_argument(parser, "si", default=3)
+    def add_build_arguments(cls, parser, access):
+        access.add_build_arguments(parser)
+        for pin in cls.pins:
+            access.add_pin_argument(parser, pin, default=True)
 
     def build(self, target, args):
-        io_port = target.get_io_port(args.port)
-        return ProgramICE40Subtarget(
-            rst_n=io_port[args.pin_rst_n],
-            ss_n=io_port[args.pin_ss_n],
-            sck=io_port[args.pin_sck],
-            si=io_port[args.pin_si],
-            out_fifo=target.get_out_fifo(args.port),
+        iface = target.multiplexer.claim_interface(self, args)
+        target.submodules += ProgramICE40Subtarget(
+            pads=iface.get_pads(args, pins=self.pins),
+            out_fifo=iface.get_out_fifo(),
         )
 
     @classmethod
-    def add_run_arguments(cls, parser):
-        cls.add_voltage_arguments(parser)
+    def add_run_arguments(cls, parser, access):
+        access.add_run_arguments(parser)
 
         parser.add_argument(
             "bitstream", metavar="BITSTREAM", type=argparse.FileType("rb"),
             help="bitstream file")
 
     def run(self, device, args):
-        self.set_voltage_from_arguments(device, args, logger)
+        iface = device.demultiplexer.claim_interface(self, args)
 
-        port = device.get_port(args.port)
         bitstream = args.bitstream.read()
         while len(bitstream) > 0:
             chunk = bitstream[:255]
             bitstream = bitstream[255:]
-            port.write([len(chunk)])
-            port.write(chunk)
-        port.write([0])
-        port.flush()
+            iface.write([len(chunk)])
+            iface.write(chunk)
+        iface.write([0])
+        iface.flush()
 
-        if args.port in device.poll_alert():
-            raise Exception("Port {} voltage went out of range during programming"
-                            .format(args.port))
+        # TODO: do this nicely
+        # if args.port in device.poll_alert():
+        #     raise Exception("Port {} voltage went out of range during programming"
+        #                     .format(args.port))
         # TODO: check CDONE
