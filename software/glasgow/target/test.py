@@ -22,7 +22,7 @@ class TestToggleIO(GlasgowTarget):
         ]
 
         self.comb += [
-            self.sync_port.oe.eq(out),
+            self.sync_port.t.oe.eq(out),
             self.io_ports[0].oe.eq(0b11111111),
             self.io_ports[1].oe.eq(0b11111111),
             self.io_ports[0].o.eq(Replicate(out, 8)),

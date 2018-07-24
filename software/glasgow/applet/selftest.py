@@ -53,7 +53,7 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
     default_mode = "pins-int"
 
     def build(self, target, args):
-        target.submodules += SelfTestSubtarget(
+        return SelfTestSubtarget(
             applet=self,
             registers=target.registers,
             io_A=target.get_io_port("A"),

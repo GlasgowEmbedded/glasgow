@@ -59,7 +59,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
 
     def build(self, target, args):
         io_port = target.get_io_port(args.port)
-        target.submodules += UARTSubtarget(
+        return UARTSubtarget(
             pads=Pads(rx=io_port[args.pin_rx],
                       tx=io_port[args.pin_tx]),
             out_fifo=target.get_out_fifo(args.port),

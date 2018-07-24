@@ -207,7 +207,7 @@ class HD44780Applet(GlasgowApplet, name="hd44780"):
 
     def build(self, target, args):
         io_port = target.get_io_port(args.port)
-        target.submodules += HD44780Subtarget(
+        return HD44780Subtarget(
             rs=io_port[args.pin_rs],
             rw=io_port[args.pin_rw],
             e=io_port[args.pin_e],

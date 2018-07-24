@@ -139,7 +139,7 @@ class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
 
     def build(self, target, args):
         io_port = target.get_io_port(args.port)
-        target.submodules += ProgramICE40Subtarget(
+        return ProgramICE40Subtarget(
             rst_n=io_port[args.pin_rst_n],
             ss_n=io_port[args.pin_ss_n],
             sck=io_port[args.pin_sck],

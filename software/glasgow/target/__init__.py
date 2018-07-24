@@ -41,16 +41,14 @@ class _CRG(Module):
 
 class _SyncPort(Module):
     def __init__(self, inout):
-        self.oe = Signal()
-        self.i  = Signal()
-
+        self.t = TSTriple()
         self.specials += \
             Instance("SB_IO",
                 p_PIN_TYPE=0b101001, # PIN_OUTPUT_TRISTATE|PIN_INPUT
                 io_PACKAGE_PIN=inout,
-                i_OUTPUT_ENABLE=self.oe,
-                i_D_OUT_0=0,
-                o_D_IN_0=self.i,
+                i_OUTPUT_ENABLE=self.t.oe,
+                i_D_OUT_0=self.t.o,
+                o_D_IN_0=self.t.i,
             )
 
 
