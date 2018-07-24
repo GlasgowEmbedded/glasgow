@@ -50,11 +50,11 @@ class UARTApplet(GlasgowApplet, name="uart"):
         cls.add_pin_argument(parser, "tx", default=1)
 
         parser.add_argument(
-            "-b", "--baud-rate", metavar="BPS", type=int, default=115200,
-            help="set UART baud rate to BPS bits per second (default: %(default)s)")
+            "-b", "--baud-rate", metavar="RATE", type=int, default=115200,
+            help="set UART baud rate to RATE bits per second (default: %(default)s)")
         parser.add_argument(
-            "--max-deviation", metavar="PPM", type=int, default=50000,
-            help="verify that actual baud rate is within PPM parts per million of specified"
+            "--max-deviation", metavar="DEV", type=int, default=50000,
+            help="verify that actual baud rate is within DEV parts per million of specified"
                  " (default: %(default)s)")
 
     def build(self, target, args):

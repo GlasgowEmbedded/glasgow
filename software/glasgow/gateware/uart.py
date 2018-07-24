@@ -82,6 +82,7 @@ class UART(Module):
     :param bit_cyc:
         Bit time expressed as a multiple of system clock periods. Use :func:`uart_bit_cyc`
         to calculate bit time from system clock frequency and baud rate.
+    :type bit_cyc: int
 
     :attr rx_data:
         Received data. Valid when ``rx_rdy`` is active.
@@ -124,6 +125,8 @@ class UART(Module):
 
         ###
 
+        bit_cyc = int(bit_cyc)
+
         if bus.has_rx:
             rx_timer = Signal(max=bit_cyc)
             rx_stb   = Signal()
@@ -137,9 +140,7 @@ class UART(Module):
                     rx_timer.eq(rx_timer - 1)
                 )
             ]
-            self.comb += [
-                rx_stb.eq(rx_timer == 0)
-            ]
+            self.comb += rx_stb.eq(rx_timer == 0)
 
             self.submodules.rx_fsm = FSM(reset_state="IDLE")
             self.rx_fsm.act("IDLE",
@@ -199,9 +200,7 @@ class UART(Module):
                     tx_timer.eq(tx_timer - 1)
                 )
             ]
-            self.comb += [
-                tx_stb.eq(tx_timer == 0)
-            ]
+            self.comb += tx_stb.eq(tx_timer == 0)
 
             self.submodules.tx_fsm = FSM(reset_state="IDLE")
             self.tx_fsm.act("IDLE",
