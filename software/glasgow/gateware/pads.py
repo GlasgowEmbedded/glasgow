@@ -14,7 +14,8 @@ class Pads(Module):
     Construct a pad adapter providing signals, records, or tristate triples; name may
     be specified explicitly with keyword arguments. For each signal, record field, or
     triple with name ``n``, the pad adapter will have an attribute ``n_t`` containing
-    a tristate triple.
+    a tristate triple. ``None`` may also be provided, and is ignored; no attribute
+    is added to the adapter.
 
     For example, if a Migen platform file contains the definitions ::
 
@@ -47,7 +48,9 @@ class Pads(Module):
             self._add_elem(elem, name)
 
     def _add_elem(self, elem, name=None, index=None):
-        if isinstance(elem, Record):
+        if elem is None:
+            return
+        elif isinstance(elem, Record):
             for field in elem.layout:
                 if name is None:
                     field_name = field[0]
@@ -91,6 +94,11 @@ class PadsTestCase(unittest.TestCase):
             if isinstance(special, Tristate) and special.target == sig:
                 return
         self.fail("No tristate for {!r} in {!r}".format(sig, frag))
+
+    def test_none(self):
+        pads = Pads(x=None)
+
+        self.assertFalse(hasattr(pads, "x_t"))
 
     def test_signal(self):
         sig  = Signal()

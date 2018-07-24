@@ -72,7 +72,9 @@ class _IOPort(Module):
                 )
 
     def __getitem__(self, key):
-        if isinstance(key, int):
+        if key is None:
+            return None
+        elif isinstance(key, int):
             indices = (key,)
         elif isinstance(key, slice):
             indices = range(key.start or 0, key.stop or self.nbits, key.step or 1)
