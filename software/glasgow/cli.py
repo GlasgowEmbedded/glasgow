@@ -275,7 +275,10 @@ def main():
                     device.download_bitstream(target.get_bitstream(debug=True), bitstream_id)
 
                 logger.info("running handler for applet %r", args.applet)
-                applet.run(device, args)
+                try:
+                    applet.run(device, args)
+                except GlasgowAppletError as e:
+                    applet.logger.error(str(e))
 
                 # Work around bugs in python-libusb1 that cause segfaults on interpreter shutdown.
                 for iface in device.demultiplexer._interfaces:

@@ -161,29 +161,66 @@ class I2CMasterSubtarget(Module):
 
 
 class I2CMasterInterface:
-    def __init__(self, interface):
-        self.lower = interface
+    def __init__(self, interface, logger):
+        self.lower   = interface
+        self._logger = logger
+        self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
     def reset(self):
+        self._logger.debug("I2C: reset")
         self.lower.write([CMD_RESET])
 
-    def stop(self):
-        self.lower.write([CMD_STOP])
-
     def write(self, addr, data, stop=False):
+        data = bytes(data)
+
+        if stop:
+            self._logger.log(self._level, "I2C: start addr=%s write=<%s> stop",
+                             bin(addr), data.hex())
+        else:
+            self._logger.log(self._level, "I2C: start addr=%s write=<%s>",
+                             bin(addr), data.hex())
+
         self.lower.write([CMD_START, CMD_WRITE, 1 + len(data), (addr << 1) | 0, *data])
         if stop: self.lower.write([CMD_STOP])
-        assert self.lower.read(1) == b"\x00"
+
+        unacked, = self.lower.read(1)
+        acked = len(data) - unacked
+        if unacked == 0:
+            self._logger.log(self._level, "I2C: acked")
+        else:
+            self._logger.log(self._level, "I2C: unacked=%d", unacked)
+
+        return unacked == 0
 
     def read(self, addr, size, stop=False):
+        if stop:
+            self._logger.log(self._level, "I2C: start addr=%s read=%d stop",
+                             bin(addr), size)
+        else:
+            self._logger.log(self._level, "I2C: start addr=%s read=%d",
+                             bin(addr), size)
+
         self.lower.write([CMD_START, CMD_WRITE, 1, (addr << 1) | 1, CMD_READ, size])
         if stop: self.lower.write([CMD_STOP])
-        assert self.lower.read(1) == b"\x00"
-        return self.lower.read(size)
+
+        unacked, = self.lower.read(1)
+        data = self.lower.read(size)
+        if unacked == 0:
+            self._logger.log(self._level, "I2C: acked data=<%s>", data.hex())
+            return data
+        else:
+            self._logger.log(self._level, "I2C: unacked")
+            return None
 
     def poll(self, addr):
+        self._logger.trace("I2C: poll addr=%s", bin(addr))
         self.lower.write([CMD_START, CMD_WRITE, 1, (addr << 1) | 0, CMD_STOP])
-        return self.lower.read(1) == b"\x00"
+
+        unacked, = self.lower.read(1)
+        if unacked == 0:
+            self._logger.log(self._level, "I2C: poll addr=%s acked", bin(addr))
+
+        return unacked == 0
 
 
 class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
@@ -230,8 +267,9 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
         access.add_run_arguments(parser)
 
     def run(self, device, args, interactive=True):
-        interface = I2CMasterInterface(device.demultiplexer.claim_interface(self, args))
+        iface = device.demultiplexer.claim_interface(self, args)
+        i2c = I2CMasterInterface(iface, self.logger)
         if interactive:
             pass # TODO: implement
         else:
-            return interface
+            return i2c

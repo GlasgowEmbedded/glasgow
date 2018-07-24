@@ -39,10 +39,11 @@ class I2CEEPROMApplet(I2CMasterApplet, name="i2c-eeprom"):
     """
 
     def run(self, device, args, interactive=True):
-        interface = I2CEEPROMInterface(super().run(device, args, interactive=False))
+        i2c_iface = super().run(device, args, interactive=False)
+        eeprom_iface = I2CEEPROMInterface(i2c_iface)
         if interactive:
             # TODO: implement
-            print(interface.read(0b1010000, 0x00, 0x100).hex())
+            print(eeprom_iface.read(0b1010000, 0x00, 0x100).hex())
         else:
-            return interface
+            return eeprom_iface
 

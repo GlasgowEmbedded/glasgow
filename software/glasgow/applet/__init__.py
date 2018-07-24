@@ -38,6 +38,7 @@ class GlasgowApplet:
 
 from .hd44780 import HD44780Applet
 from .i2c_master import I2CMasterApplet
+from .i2c.bmp280 import I2CBMP280Applet
 from .i2c.eeprom import I2CEEPROMApplet
 from .program_ice40 import ProgramICE40Applet
 from .selftest import SelfTestApplet

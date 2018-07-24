@@ -77,14 +77,14 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         if self._async:
             self._in_transfer = self._usb.getTransfer()
             def callback(transfer):
-                self._logger.trace("USB EP%x IN (completed)", self._endpoint_in & 0x7f)
+                self._logger.trace("USB: EP%x IN (completed)", self._endpoint_in & 0x7f)
             self._in_transfer.setBulk(self._endpoint_in, self._in_packet_size, callback)
             self._in_transfer.submit()
-            self._logger.trace("USB EP%x IN (submit)", self._endpoint_in & 0x7f)
+            self._logger.trace("USB: EP%x IN (submit)", self._endpoint_in & 0x7f)
 
             self._out_transfer = self._usb.getTransfer()
             def callback(transfer):
-                self._logger.trace("USB EP%x OUT (completed)", self._endpoint_out)
+                self._logger.trace("USB: EP%x OUT (completed)", self._endpoint_out)
                 self._write_packet_async()
             self._out_transfer.setBulk(self._endpoint_out, 0, callback)
 
@@ -97,7 +97,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
             return False
 
     def _append_in_packet(self, packet):
-        self._logger.trace("USB EP%x IN: %s", self._endpoint_in & 0x7f, packet.hex())
+        self._logger.trace("USB: EP%x IN: %s", self._endpoint_in & 0x7f, packet.hex())
         self._buffer_in += packet
 
     def _read_packet_async(self):
@@ -108,7 +108,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         else:
             packet = self._in_transfer.getBuffer()[:self._in_transfer.getActualLength()]
             self._append_in_packet(packet)
-            self._logger.trace("USB EP%x IN (submit)", self._endpoint_in & 0x7f)
+            self._logger.trace("USB: EP%x IN (submit)", self._endpoint_in & 0x7f)
             self._in_transfer.submit()
             return True
 
@@ -151,13 +151,13 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
 
         result = self._buffer_in[:length]
         self._buffer_in = self._buffer_in[length:]
-        self._logger.trace("FIFO read: <%s>", result.hex())
+        self._logger.trace("FIFO: read <%s>", result.hex())
         return result
 
     def _slice_out_packet(self):
         packet = self._buffer_out[:self._out_packet_size]
         self._buffer_out = self._buffer_out[self._out_packet_size:]
-        self._logger.trace("USB EP%x OUT: <%s>", self._endpoint_out, packet.hex())
+        self._logger.trace("USB: EP%x OUT: <%s>", self._endpoint_out, packet.hex())
         return packet
 
     def _write_packet_async(self):
@@ -168,7 +168,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         elif len(self._buffer_out) > 0:
             packet = self._slice_out_packet()
             self._out_transfer.setBuffer(packet)
-            self._logger.trace("USB EP%x OUT (submit)", self._endpoint_out)
+            self._logger.trace("USB: EP%x OUT (submit)", self._endpoint_out)
             self._out_transfer.submit()
 
     def _write_packet_sync(self):
@@ -178,7 +178,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
     def write(self, data, async=False):
         data = bytearray(data)
 
-        self._logger.trace("FIFO write: <%s>", data.hex())
+        self._logger.trace("FIFO: write <%s>", data.hex())
         self._buffer_out += data
 
         if self._async:
@@ -189,7 +189,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
                 self._write_packet_sync()
 
     def flush(self):
-        self._logger.trace("FIFO flush")
+        self._logger.trace("FIFO: flush")
         if self._async:
             self._write_packet_async()
         else:
