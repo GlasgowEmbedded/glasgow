@@ -49,11 +49,12 @@ enum {
 // Config API
 #define BITSTREAM_ID_SIZE 16
 
-__xdata __at(0x4000 - CONF_SIZE) struct {
+__xdata __at(0x4000 - CONF_SIZE) struct glasgow_config {
   char      revision;
   char      serial[16];
   uint32_t  bitstream_size;
   char      bitstream_id[BITSTREAM_ID_SIZE];
+  uint16_t  voltage_limit[2];
 } glasgow_config;
 
 // LED API
@@ -76,6 +77,8 @@ void iobuf_init_dac_ldo();
 void iobuf_enable(bool on);
 bool iobuf_set_voltage(uint8_t mask, __xdata const uint16_t *millivolts);
 bool iobuf_get_voltage(uint8_t selector, __xdata uint16_t *millivolts);
+bool iobuf_set_voltage_limit(uint8_t mask, __xdata const uint16_t *millivolts);
+bool iobuf_get_voltage_limit(uint8_t selector, __xdata uint16_t *millivolts);
 
 // ADC API
 void iobuf_init_adc();

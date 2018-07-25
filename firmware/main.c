@@ -214,6 +214,7 @@ enum {
   USB_REQ_POLL_ALERT   = 0x17,
   USB_REQ_BITSTREAM_ID = 0x18,
   USB_REQ_IOBUF_ENABLE = 0x19,
+  USB_REQ_LIMIT_VOLT    = 0x20,
   // Cypress requests
   USB_REQ_CYPRESS_EEPROM_DB = 0xA9,
   // libfx2 requests
@@ -554,6 +555,7 @@ void handle_pending_usb_setup() {
     return;
   }
 
+  // I/O buffer enable request
   if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
      req->bRequest == USB_REQ_IOBUF_ENABLE &&
      req->wLength == 0) {
@@ -562,6 +564,41 @@ void handle_pending_usb_setup() {
 
     iobuf_enable(arg_enable);
     ACK_EP0();
+
+    return;
+  }
+
+  // I/O voltage limit get/set request
+  if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN ||
+      req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
+     req->bRequest == USB_REQ_LIMIT_VOLT &&
+     req->wLength == 2) {
+    bool     arg_get = (req->bmRequestType & USB_DIR_IN);
+    uint8_t  arg_mask = req->wIndex;
+    pending_setup = false;
+
+    if(arg_get) {
+      while(EP0CS & _BUSY);
+      if(!iobuf_get_voltage_limit(arg_mask, (uint16_t *)EP0BUF)) {
+        STALL_EP0();
+      } else {
+        if(!eeprom_write(I2C_ADDR_FX2_MEM,
+                         8 + 4 + __builtin_offsetof(struct glasgow_config, voltage_limit),
+                         (__xdata void *)&glasgow_config.voltage_limit,
+                         sizeof(glasgow_config.voltage_limit),
+                         /*double_byte=*/true, /*page_size=*/8, /*timeout=*/255)) {
+          STALL_EP0();
+        } else {
+          SETUP_EP0_BUF(2);
+        }
+      }
+    } else {
+      SETUP_EP0_BUF(2);
+      while(EP0CS & _BUSY);
+      if(!iobuf_set_voltage_limit(arg_mask, (uint16_t *)EP0BUF)) {
+        latch_status_bit(ST_ERROR);
+      }
+    }
 
     return;
   }

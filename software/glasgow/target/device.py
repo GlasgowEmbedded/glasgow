@@ -25,6 +25,7 @@ REQ_ALERT_VOLT   = 0x16
 REQ_POLL_ALERT   = 0x17
 REQ_BITSTREAM_ID = 0x18
 REQ_IOBUF_ENABLE = 0x19
+REQ_LIMIT_VOLT   = 0x20
 
 ST_ERROR       = 1<<0
 ST_FPGA_RDY    = 1<<1
@@ -232,13 +233,23 @@ class GlasgowDevice(FX2Device):
             spec += "B"
         return spec
 
-    def set_voltage(self, spec, volts):
+    def _write_voltage(self, req, spec, volts):
         millivolts = round(volts * 1000)
-        self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_IO_VOLT,
+        self.control_write(usb1.REQUEST_TYPE_VENDOR, req,
             0, self._iobuf_spec_to_mask(spec, one=False), struct.pack("<H", millivolts))
+
+    def set_voltage(self, spec, volts):
+        self._write_voltage(REQ_IO_VOLT, spec, volts)
         # Check if we've succeeded
         if self._status() & ST_ERROR:
             raise GlasgowDeviceError("Cannot set I/O port(s) {} voltage to {:.2} V"
+                                     .format(spec or "(none)", float(volts)))
+
+    def set_voltage_limit(self, spec, volts):
+        self._write_voltage(REQ_LIMIT_VOLT, spec, volts)
+        # Check if we've succeeded
+        if self._status() & ST_ERROR:
+            raise GlasgowDeviceError("Cannot set I/O port(s) {} voltage limit to {:.2} V"
                                      .format(spec or "(none)", float(volts)))
 
     def _read_voltage(self, req, spec):
@@ -253,6 +264,12 @@ class GlasgowDevice(FX2Device):
             return self._read_voltage(REQ_IO_VOLT, spec)
         except usb1.USBErrorPipe:
             raise GlasgowDeviceError("Cannot get I/O port {} I/O voltage".format(spec))
+
+    def get_voltage_limit(self, spec):
+        try:
+            return self._read_voltage(REQ_LIMIT_VOLT, spec)
+        except usb1.USBErrorPipe:
+            raise GlasgowDeviceError("Cannot get I/O port {} I/O voltage limit".format(spec))
 
     def measure_voltage(self, spec):
         try:

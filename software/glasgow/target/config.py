@@ -26,15 +26,21 @@ class GlasgowConfig:
         Opaque string that uniquely identifies bitstream functionality,
         but not necessarily any particular routing and placement.
         Only meaningful if ``bitstream_size`` is set.
+
+    :type voltage_limit: int[2]
+    :attr voltage_limit:
+        Maximum allowed I/O port voltage, in millivolts.
     """
     size = 64
-    _encoding = "<1s16sI16s"
+    _encoding = "<1s16sI16s2h"
 
-    def __init__(self, revision, serial, bitstream_size=0, bitstream_id="\x00"*16):
+    def __init__(self, revision, serial, bitstream_size=0, bitstream_id="\x00"*16,
+                 voltage_limit=None):
         self.revision = revision
         self.serial   = serial
         self.bitstream_size = bitstream_size
         self.bitstream_id   = bitstream_id
+        self.voltage_limit  = [5500, 5500] if voltage_limit is None else voltage_limit
 
     def encode(self):
         """
@@ -44,7 +50,9 @@ class GlasgowConfig:
                            self.revision.encode("ascii"),
                            self.serial.encode("ascii"),
                            self.bitstream_size,
-                           self.bitstream_id)
+                           self.bitstream_id,
+                           self.voltage_limit[0],
+                           self.voltage_limit[1])
         return data.ljust(self.size, b"\x00")
 
     @classmethod
@@ -58,9 +66,12 @@ class GlasgowConfig:
         if len(data) != cls.size:
             raise ValueError("Incorrect configuration length")
 
-        revision, serial, bitstream_size, bitstream_id = \
+        voltage_limit = [0, 0]
+        revision, serial, bitstream_size, bitstream_id, \
+            voltage_limit[0], voltage_limit[1] = \
             struct.unpack_from(cls._encoding, data, 0)
         return cls(revision.decode("ascii"),
                    serial.decode("ascii"),
                    bitstream_size,
-                   bitstream_id)
+                   bitstream_id,
+                   voltage_limit)

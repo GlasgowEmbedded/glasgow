@@ -94,21 +94,35 @@ def get_argparser():
     subparsers = parser.add_subparsers(dest="action", metavar="COMMAND")
     subparsers.required = True
 
+    def add_ports_arg(parser):
+        parser.add_argument(
+            "ports", metavar="PORTS", type=str, nargs="?", default="AB",
+            help="I/O port set (one or more of: A B, default: all)")
+
+    def add_voltage_arg(parser, help):
+        parser.add_argument(
+            "voltage", metavar="VOLTS", type=float, nargs="?", default=None,
+            help="%s (range: 1.8-5.0)".format(help))
+
     p_voltage = subparsers.add_parser(
         "voltage", formatter_class=TextHelpFormatter,
         help="query or set I/O port voltage")
-    p_voltage.add_argument(
-        "ports", metavar="PORTS", type=str, nargs="?", default="AB",
-        help="I/O port set (one or more of: A B, default: all)")
-    p_voltage.add_argument(
-        "voltage", metavar="VOLTS", type=float, nargs="?", default=None,
-        help="I/O port voltage (range: 1.8-5.0)")
+    add_ports_arg(p_voltage)
+    add_voltage_arg(p_voltage,
+        help="I/O port voltage")
     p_voltage.add_argument(
         "--tolerance", metavar="PCT", type=float, default=10.0,
         help="raise alert if measured voltage deviates by more than ±PCT%% (default: %(default)s)")
     p_voltage.add_argument(
         "--no-alert", dest="set_alert", default=True, action="store_false",
         help="do not raise an alert if Vsense is out of range of Vio")
+
+    p_voltage_limit = subparsers.add_parser(
+        "voltage-limit", formatter_class=TextHelpFormatter,
+        help="limit I/O port voltage as a safety precaution")
+    add_ports_arg(p_voltage_limit)
+    add_voltage_arg(p_voltage_limit,
+        help="maximum allowed I/O port voltage")
 
     p_run = subparsers.add_parser(
         "run", formatter_class=TextHelpFormatter,
@@ -248,18 +262,29 @@ def main():
                     time.sleep(0.050) # let the output capacitor discharge a bit
                     device.set_alert_tolerance(args.ports, args.voltage, args.tolerance / 100)
 
-            print("Port\tVio\tVsense\tRange")
+            print("Port\tVio\tVlimit\tVsense\tMonitor")
             alerts = device.poll_alert()
             for port in args.ports:
                 vio = device.get_voltage(port)
+                vlimit = device.get_voltage_limit(port)
                 vsense = device.measure_voltage(port)
                 alert = device.get_alert(port)
+                notice = ""
                 if port in alerts:
-                    notice = " (ALERT)"
-                else:
-                    notice = ""
-                print("{}\t{:.2}\t{:.3}\t{:.2}-{:.2}{}"
-                      .format(port, vio, vsense, alert[0], alert[1], notice))
+                    notice += " (ALERT)"
+                print("{}\t{:.2}\t{:.2}\t{:.3}\t{:.2}-{:.2}\t{}"
+                      .format(port, vio, vlimit, vsense, alert[0], alert[1], notice))
+
+        if args.action == "voltage-limit":
+            if args.voltage is not None:
+                device.set_voltage_limit(args.ports, args.voltage)
+
+            print("Port\tVio\tVlimit")
+            for port in args.ports:
+                vio = device.get_voltage(port)
+                vlimit = device.get_voltage_limit(port)
+                print("{}\t{:.2}\t{:.2}"
+                      .format(port, vio, vlimit))
 
         if args.action == "run":
             if args.applet:
