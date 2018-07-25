@@ -19,22 +19,22 @@ class I2CRegisters(Module):
         self.regs_r = Array()
         self.regs_w = Array()
 
-        self.address = Signal(max=8)
+        self.address = Signal(8)
 
-    def _add_reg(self):
-        reg  = Signal(8)
+    def _add_reg(self, *args, **kwargs):
+        reg  = Signal(*args, **kwargs)
         addr = self.reg_count
         self.reg_count += 1
         return reg, addr
 
-    def add_ro(self):
-        reg, addr = self._add_reg()
+    def add_ro(self, *args, **kwargs):
+        reg, addr = self._add_reg(*args, **kwargs)
         self.regs_r.append(reg)
-        self.regs_w.append(Signal(8))
+        self.regs_w.append(Signal(name="ro_reg_dummy"))
         return reg, addr
 
-    def add_rw(self):
-        reg, addr = self._add_reg()
+    def add_rw(self, *args, **kwargs):
+        reg, addr = self._add_reg(*args, **kwargs)
         self.regs_r.append(reg)
         self.regs_w.append(reg)
         return reg, addr
