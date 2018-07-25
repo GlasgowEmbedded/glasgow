@@ -104,20 +104,20 @@ class BMP280:
 
     def _read_reg8(self, reg):
         byte, = self._iface.read(reg, 1)
-        self._logger.log(self._level, "BMP280: reg=%#02x read=%#02x",
+        self._logger.log(self._level, "BMP280: reg=%#04x read=%#04x",
                          reg, byte)
         return byte
 
     def _write_reg8(self, reg, byte):
         self._iface.write(reg, [byte])
-        self._logger.log(self._level, "BMP280: reg=%#02x write=%#02x",
+        self._logger.log(self._level, "BMP280: reg=%#04x write=%#04x",
                          reg, byte)
 
     def _read_reg16u(self, reg):
         lsb, msb = self._iface.read(reg, 2)
         raw = (msb << 8) | lsb
         value = raw
-        self._logger.log(self._level, "BMP280: reg=%#02x raw=%#04x read=%d", reg, raw, value)
+        self._logger.log(self._level, "BMP280: reg=%#04x raw=%#06x read=%d", reg, raw, value)
         return value
 
     def _read_reg16s(self, reg):
@@ -127,20 +127,20 @@ class BMP280:
             value = -((1 << 16) - raw)
         else:
             value = raw
-        self._logger.log(self._level, "BMP280: reg=%#02x raw=%#04x read=%+d", reg, raw, value)
+        self._logger.log(self._level, "BMP280: reg=%#04x raw=%#06x read=%+d", reg, raw, value)
         return value
 
     def _read_reg24(self, reg):
         msb, lsb, xlsb = self._iface.read(reg, 3)
         raw = ((msb << 16) | (lsb << 8) | xlsb)
         value = raw >> 4
-        self._logger.log(self._level, "BMP280: reg=%#02x raw=%#06x read=%d", reg, raw, value)
+        self._logger.log(self._level, "BMP280: reg=%#04x raw=%#06x read=%d", reg, raw, value)
         return value
 
     def identify(self):
         id = self._read_reg8(REG_ID)
         if id != BIT_ID:
-            raise GlasgowAppletError("BMP280: wrong ID=%#02x", id)
+            raise GlasgowAppletError("BMP280: wrong ID=%#04x", id)
 
     def _read_cal(self):
         if self._has_cal: return

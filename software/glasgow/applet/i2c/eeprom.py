@@ -21,7 +21,7 @@ class I2CEEPROMInterface:
     def read(self, addr, size, chunk_size=128):
         data = b""
         while size > 0:
-            self._log("addr=%#02x", addr)
+            self._log("addr=%#04x", addr)
 
             result = self.lower.write(self._i2c_addr, [addr])
             if result is None:
@@ -51,7 +51,7 @@ class I2CEEPROMInterface:
         while len(data) > 0:
             chunk = data[:page_size]
             data  = data[page_size:]
-            self._log("addr=%#02x write=<%s>", addr, chunk.hex())
+            self._log("addr=%#04x write=<%s>", addr, chunk.hex())
             result = self.lower.write(i2c_addr, [addr, *chunk], stop=True)
             if result is None:
                 self._log("unacked")
