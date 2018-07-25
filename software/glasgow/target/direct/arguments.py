@@ -17,7 +17,7 @@ class DirectArguments(AccessArguments):
             self._arg_error("{} is not a valid port specification", arg)
         return arg
 
-    def _add_port_argument(self, parser, default=None):
+    def _add_port_argument(self, parser, default):
         help = "bind the applet to port SPEC"
         if default is not None:
             help += " (default: %(default)s)"
@@ -26,7 +26,7 @@ class DirectArguments(AccessArguments):
             "--port", dest="port_spec", metavar="SPEC", type=self._port_spec,
             default=default, help=help)
 
-    def _add_port_voltage_arguments(self, parser, default=None):
+    def _add_port_voltage_arguments(self, parser, default):
         g_voltage = parser.add_mutually_exclusive_group(required=True)
         g_voltage.add_argument(
             "-V", "--voltage", metavar="VOLTS", type=float, nargs="?", default=default,
@@ -43,15 +43,15 @@ class DirectArguments(AccessArguments):
             self._arg_error("{} is not a valid pin number", arg)
         return int(arg)
 
-    def _add_pin_argument(self, parser, name, default=None):
+    def _add_pin_argument(self, parser, name, default, required):
         help = "bind the applet I/O line {!r} to pin NUM".format(name)
         if default is not None:
             help += " (default: %(default)s)"
 
         opt_name = "--pin-" + name.lower().replace("_", "-")
         parser.add_argument(
-            opt_name, metavar="NUM", type=self._pin_number,
-            default=default, help=help)
+            opt_name, metavar="NUM", type=self._pin_number, default=default, required=required,
+            help=help)
 
     def _pin_set(self, width, arg):
         if re.match(r"^[0-9]+:[0-9]+$", arg):
@@ -66,7 +66,7 @@ class DirectArguments(AccessArguments):
                             arg, len(numbers), width)
         return numbers
 
-    def _add_pin_set_argument(self, parser, name, width, default=None):
+    def _add_pin_set_argument(self, parser, name, width, default, required):
         help = "bind the applet I/O lines {!r} to pins SET".format(self._applet_name, name)
         if default is not None:
             help += " (default: %(default)s)"
@@ -74,7 +74,8 @@ class DirectArguments(AccessArguments):
         opt_name = "--pins-" + name.lower().replace("_", "-")
         parser.add_argument(
             opt_name, dest="pin_set_{}".format(name), metavar="SET",
-            type=functools.partial(self._pin_set, width), default=default, help=help)
+            type=functools.partial(self._pin_set, width), default=default, required=required,
+            help=help)
 
     # Second, define a stateful interface that has features like automatically assigning
     # default pin numbers.
@@ -94,15 +95,15 @@ class DirectArguments(AccessArguments):
     def add_build_arguments(self, parser):
         self._add_port_argument(parser, self._default_port)
 
-    def add_pin_argument(self, parser, name, default=None):
+    def add_pin_argument(self, parser, name, default=None, required=False):
         if default is True:
             default = self._get_free(self._free_pins)
-        self._add_pin_argument(parser, name, default)
+        self._add_pin_argument(parser, name, default, required)
 
-    def add_pin_set_argument(self, parser, name, width, default=None):
+    def add_pin_set_argument(self, parser, name, width, default=None, required=False):
         if default is True and len(self._free_pins) >= width:
             default = ",".join([str(self._get_free(self._free_pins)) for _ in range(width)])
-        self._add_pin_set_argument(parser, name, width, default)
+        self._add_pin_set_argument(parser, name, width, default, required)
 
     def add_run_arguments(self, parser):
-        self._add_port_voltage_arguments(parser)
+        self._add_port_voltage_arguments(parser, default=None)

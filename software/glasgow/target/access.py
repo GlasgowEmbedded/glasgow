@@ -17,11 +17,11 @@ class AccessArguments(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def add_pin_argument(self, parser, name, default=None):
+    def add_pin_argument(self, parser, name, default=None, required=False):
         pass
 
     @abstractmethod
-    def add_pin_set_argument(self, parser, name, width, default=None):
+    def add_pin_set_argument(self, parser, name, width, default=None, required=False):
         pass
 
 
