@@ -136,7 +136,7 @@ class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
             access.add_pin_argument(parser, pin, default=True)
 
     def build(self, target, args):
-        iface = target.multiplexer.claim_interface(self, args)
+        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         target.submodules += ProgramICE40Subtarget(
             pads=iface.get_pads(args, pins=self.pins),
             out_fifo=iface.get_out_fifo(),

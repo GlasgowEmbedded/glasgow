@@ -12,7 +12,6 @@ from ..gateware.i2c import I2CMaster
 logger = logging.getLogger(__name__)
 
 
-CMD_RESET = 0x00
 CMD_START = 0x01
 CMD_STOP  = 0x02
 CMD_WRITE = 0x03
@@ -55,7 +54,7 @@ class I2CMasterSubtarget(Module):
         period_cyc = round(30e6 // bit_rate)
 
         self.submodules.pads = I2CPadsWrapper(pads)
-        self.submodules.i2c_master = ResetInserter()(I2CMaster(self.pads, period_cyc))
+        self.submodules.i2c_master = I2CMaster(self.pads, period_cyc)
 
         ###
 
@@ -64,18 +63,11 @@ class I2CMasterSubtarget(Module):
 
         self.submodules.fsm = FSM(reset_state="IDLE")
         self.fsm.act("IDLE",
-            If(out_fifo.readable & (out_fifo.dout == CMD_RESET),
-                out_fifo.re.eq(1),
-                self.i2c_master.reset.eq(1),
-                NextState("RESET")
-            ).Elif(~self.i2c_master.busy & out_fifo.readable,
+            If(~self.i2c_master.busy & out_fifo.readable,
                 out_fifo.re.eq(1),
                 NextValue(cmd, out_fifo.dout),
                 NextState("COMMAND")
             )
-        )
-        self.fsm.act("RESET",
-            NextState("IDLE")
         )
         self.fsm.act("COMMAND",
             If(cmd == CMD_START,
@@ -161,14 +153,16 @@ class I2CMasterSubtarget(Module):
 
 
 class I2CMasterInterface:
-    def __init__(self, interface, logger):
+    def __init__(self, interface, logger, addr_reset):
         self.lower   = interface
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+        self._addr_reset = addr_reset
 
     def reset(self):
         self._logger.debug("I2C: reset")
-        self.lower.write([CMD_RESET])
+        self.lower._device.write_register(self._addr_reset, 1)
+        self.lower._device.write_register(self._addr_reset, 0)
 
     def write(self, addr, data, stop=False):
         data = bytes(data)
@@ -254,13 +248,17 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
                  (args.pin_sda_o is not None or args.pin_sda_oe is not None))):
             raise GlasgowAppletError("At least one SDA input and output pin must be specified.")
 
-        iface = target.multiplexer.claim_interface(self, args)
-        target.submodules += I2CMasterSubtarget(
+        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
+        subtarget = ResetInserter()(I2CMasterSubtarget(
             pads=iface.get_pads(args, pins=self.pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(streaming=False),
             bit_rate=args.bit_rate * 1000,
-        )
+        ))
+        target.submodules += subtarget
+
+        reset, self.__addr_reset = target.registers.add_rw(1)
+        target.comb += subtarget.reset.eq(reset)
 
     @classmethod
     def add_run_arguments(cls, parser, access):
@@ -268,7 +266,7 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
 
     def run(self, device, args, interactive=True):
         iface = device.demultiplexer.claim_interface(self, args)
-        i2c = I2CMasterInterface(iface, self.logger)
+        i2c = I2CMasterInterface(iface, self.logger, self.__addr_reset)
         if interactive:
             pass # TODO: implement
         else:

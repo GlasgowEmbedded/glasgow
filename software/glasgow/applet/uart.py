@@ -62,7 +62,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
         except ValueError as e:
             raise GlasgowAppletError(e)
 
-        iface = target.multiplexer.claim_interface(self, args)
+        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         target.submodules += UARTSubtarget(
             pads=iface.get_pads(args, pins=self.pins),
             out_fifo=iface.get_out_fifo(),

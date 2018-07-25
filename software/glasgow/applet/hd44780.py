@@ -208,7 +208,7 @@ class HD44780Applet(GlasgowApplet, name="hd44780"):
         access.add_pin_set_argument(parser, "d", width=4, default=True)
 
     def build(self, target, args):
-        iface = target.multiplexer.claim_interface(self, args)
+        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         return HD44780Subtarget(
             pads=iface.get_pads(args, pins=("rs", "rw", "e"), pin_sets=("d",)),
             out_fifo=iface.get_out_fifo(),
