@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 import argparse
 import textwrap
@@ -231,13 +232,31 @@ def _applet(args):
     return target, applet
 
 
+LOG_COLORS = {
+    'DEBUG'   : "\033[37m",
+    'INFO'    : "\033[1;37m",
+    'WARNING' : "\033[1;33m",
+    'ERROR'   : "\033[1;31m",
+    'CRITICAL': "\033[1;41m",
+}
+
+class ANSIColorFormatter(logging.Formatter):
+    def format(self, record):
+        color = LOG_COLORS.get(record.levelname, "")
+        return "{}{}\033[0m".format(color, super().format(record))
+
+
 def main():
     args = get_argparser().parse_args()
 
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO + args.quiet * 10 - args.verbose * 10)
     handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter("[{levelname:>5s}] {name:s}: {message:s}", style="{"))
+    formatter_args = {"fmt": "[{levelname:>8s}] {name:s}: {message:s}", "style": "{"}
+    if sys.stderr.isatty():
+        handler.setFormatter(ANSIColorFormatter(**formatter_args))
+    else:
+        handler.setFormatter(logging.Formatter(**formatter_args))
     root_logger.addHandler(handler)
 
     try:
