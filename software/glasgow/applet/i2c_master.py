@@ -261,6 +261,17 @@ class I2CMasterInterface:
 
         return unacked == 0
 
+    def device_id(self, addr):
+        if self.write(0b1111_100, [addr]) is False:
+            return None
+        device_id = self.read(0b1111_100, 3)
+        if device_id is None:
+            return None
+        manufacturer = (device_id[0] << 8) | (device_id[1] >> 4)
+        part_ident   = ((device_id[1] & 0xf) << 5) | (device_id[2] >> 3)
+        revision     = device_id[2] & 0x7
+        return (manufacturer, part_ident, revision)
+
 
 class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
     logger = logger
@@ -309,10 +320,43 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
     def add_run_arguments(cls, parser, access):
         access.add_run_arguments(parser)
 
+        parser.add_argument(
+            "--scan-device-id", action="store_true", default=False,
+            help="read device ID from devices responding to scan")
+
+        g_operation = parser.add_mutually_exclusive_group(required=True)
+        g_operation.add_argument(
+            "--scan-read", action="store_true", default=False,
+            help="scan all possible I2C read addresses")
+        g_operation.add_argument(
+            "--scan-write", action="store_true", default=False,
+            help="scan all possible I2C write addresses")
+
+
     def run(self, device, args, interactive=True):
         iface = device.demultiplexer.claim_interface(self, args)
-        i2c = I2CMasterInterface(iface, self.logger, self.__addr_reset)
-        if interactive:
-            pass # TODO: implement
-        else:
-            return i2c
+        i2c_iface = I2CMasterInterface(iface, self.logger, self.__addr_reset)
+        if not interactive:
+            return i2c_iface
+
+        if args.scan_read or args.scan_write:
+            # Don't scan reserved I2C addresses.
+            for addr in range(0b0001_000, 0b1110_000):
+                responded = False
+                if args.scan_read:
+                    if i2c_iface.read(addr, 0, stop=True) is not None:
+                        self.logger.info("scan found read address %s", bin(addr))
+                        responded = True
+                if args.scan_write:
+                    if i2c_iface.write(addr, []) is True:
+                        self.logger.info("scan found write address %s", bin(addr))
+                        responded = True
+
+                if responded and args.scan_device_id:
+                    device_id = i2c_iface.device_id(addr)
+                    if device_id is None:
+                        self.logger.warning("device %s did not acknowledge Device ID", bin(addr))
+                    else:
+                        manufacturer, part_ident, revision = device_id
+                        self.logger.info("device %s ID: manufacturer %s, part %s, revision %s",
+                            bin(addr), bin(manufacturer), bin(part_ident), bin(revision))

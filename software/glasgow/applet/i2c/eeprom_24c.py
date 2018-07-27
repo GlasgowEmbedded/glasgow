@@ -78,7 +78,7 @@ class I2CEEPROM24CApplet(I2CMasterApplet, name="i2c-eeprom-24c"):
 
     @classmethod
     def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
+        access.add_run_arguments(parser)
 
         parser.add_argument(
             "-A", "--i2c-address", type=int, metavar="I2C-ADDR", default=0b1010000,

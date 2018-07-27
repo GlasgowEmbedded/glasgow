@@ -239,7 +239,7 @@ class I2CBMP280Applet(I2CMasterApplet, name="i2c-bmp280"):
 
     @classmethod
     def add_run_arguments(self, parser, access):
-        super().add_run_arguments(parser, access)
+        access.add_run_arguments(parser)
 
         def i2c_address(arg):
             return int(arg, 0)
