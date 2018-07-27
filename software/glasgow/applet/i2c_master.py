@@ -14,8 +14,9 @@ logger = logging.getLogger(__name__)
 
 CMD_START = 0x01
 CMD_STOP  = 0x02
-CMD_WRITE = 0x03
-CMD_READ  = 0x04
+CMD_COUNT = 0x03
+CMD_WRITE = 0x04
+CMD_READ  = 0x05
 
 
 class I2CPadsWrapper(Module):
@@ -59,7 +60,7 @@ class I2CMasterSubtarget(Module):
         ###
 
         cmd   = Signal(8)
-        count = Signal(8)
+        count = Signal(16)
 
         self.submodules.fsm = FSM(reset_state="IDLE")
         self.fsm.act("IDLE",
@@ -76,27 +77,35 @@ class I2CMasterSubtarget(Module):
             ).Elif(cmd == CMD_STOP,
                 self.i2c_master.stop.eq(1),
                 NextState("IDLE")
+            ).Elif(cmd == CMD_COUNT,
+                NextState("COUNT-MSB")
             ).Elif(cmd == CMD_WRITE,
-                If(out_fifo.readable,
-                    out_fifo.re.eq(1),
-                    NextValue(count, out_fifo.dout),
-                    If(out_fifo.dout == 0,
-                        NextState("IDLE")
-                    ).Else(
-                        NextState("WRITE-FIRST")
-                    )
+                If(count == 0,
+                    NextState("IDLE")
+                ).Else(
+                    NextState("WRITE-FIRST")
                 )
             ).Elif(cmd == CMD_READ,
-                If(out_fifo.readable,
-                    out_fifo.re.eq(1),
-                    NextValue(count, out_fifo.dout),
-                    If(out_fifo.dout == 0,
-                        NextState("IDLE")
-                    ).Else(
-                        NextState("READ-FIRST")
-                    )
+                If(count == 0,
+                    NextState("IDLE")
+                ).Else(
+                    NextState("READ-FIRST")
                 )
             ).Else(
+                NextState("IDLE")
+            )
+        )
+        self.fsm.act("COUNT-MSB",
+            If(out_fifo.readable,
+                out_fifo.re.eq(1),
+                NextValue(count, out_fifo.dout << 8),
+                NextState("COUNT-LSB")
+            )
+        )
+        self.fsm.act("COUNT-LSB",
+            If(out_fifo.readable,
+                out_fifo.re.eq(1),
+                NextValue(count, count | out_fifo.dout),
                 NextState("IDLE")
             )
         )
@@ -164,6 +173,29 @@ class I2CMasterInterface:
         self.lower._device.write_register(self._addr_reset, 1)
         self.lower._device.write_register(self._addr_reset, 0)
 
+    def _cmd_start(self):
+        self.lower.write([CMD_START])
+
+    def _cmd_stop(self):
+        self.lower.write([CMD_STOP])
+
+    def _cmd_count(self, count):
+        msb = (count >> 8) & 0xff
+        lsb = (count >> 0) & 0xff
+        self.lower.write([CMD_COUNT, msb, lsb])
+
+    def _cmd_write(self):
+        self.lower.write([CMD_WRITE])
+
+    def _data_write(self, data):
+        self.lower.write(data)
+
+    def _cmd_read(self):
+        self.lower.write([CMD_READ])
+
+    def _data_read(self, size):
+        return self.lower.read(size)
+
     def write(self, addr, data, stop=False):
         data = bytes(data)
 
@@ -174,10 +206,14 @@ class I2CMasterInterface:
             self._logger.log(self._level, "I2C: start addr=%s write=<%s>",
                              bin(addr), data.hex())
 
-        self.lower.write([CMD_START, CMD_WRITE, 1 + len(data), (addr << 1) | 0, *data])
-        if stop: self.lower.write([CMD_STOP])
+        self._cmd_start()
+        self._cmd_count(1 + len(data))
+        self._cmd_write()
+        self._data_write([(addr << 1) | 0])
+        self._data_write(data)
+        if stop: self._cmd_stop()
 
-        unacked, = self.lower.read(1)
+        unacked, = self._data_read(1)
         acked = len(data) - unacked
         if unacked == 0:
             self._logger.log(self._level, "I2C: acked")
@@ -194,11 +230,16 @@ class I2CMasterInterface:
             self._logger.log(self._level, "I2C: start addr=%s read=%d",
                              bin(addr), size)
 
-        self.lower.write([CMD_START, CMD_WRITE, 1, (addr << 1) | 1, CMD_READ, size])
-        if stop: self.lower.write([CMD_STOP])
+        self._cmd_start()
+        self._cmd_count(1)
+        self._cmd_write()
+        self._data_write([(addr << 1) | 1])
+        self._cmd_count(size)
+        self._cmd_read()
+        if stop: self._cmd_stop()
 
-        unacked, = self.lower.read(1)
-        data = self.lower.read(size)
+        unacked, = self._data_read(1)
+        data = self._data_read(size)
         if unacked == 0:
             self._logger.log(self._level, "I2C: acked data=<%s>", data.hex())
             return data
@@ -208,9 +249,13 @@ class I2CMasterInterface:
 
     def poll(self, addr):
         self._logger.trace("I2C: poll addr=%s", bin(addr))
-        self.lower.write([CMD_START, CMD_WRITE, 1, (addr << 1) | 0, CMD_STOP])
+        self._cmd_start()
+        self._cmd_count(1)
+        self._cmd_write()
+        self._data_write([(addr << 1) | 0])
+        self._cmd_stop()
 
-        unacked, = self.lower.read(1)
+        unacked, = self._data_read(1)
         if unacked == 0:
             self._logger.log(self._level, "I2C: poll addr=%s acked", bin(addr))
 
@@ -223,7 +268,7 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
     description = """
     Initiate transactions on the I2C bus.
 
-    Maximum transaction length is 256 bytes.
+    Maximum transaction length is 65535 bytes.
     """
     pins = ("scl_i", "scl_o", "scl_oe", "scl_io", "sda_i", "sda_o", "sda_oe", "sda_io")
 
