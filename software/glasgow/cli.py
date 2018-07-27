@@ -237,7 +237,7 @@ def main():
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO + args.quiet * 10 - args.verbose * 10)
     handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter("[%(levelname)5s] %(name)s: %(message)s"))
+    handler.setFormatter(logging.Formatter("[{levelname:>5s}] {name:s}: {message:s}", style="{"))
     root_logger.addHandler(handler)
 
     try:
