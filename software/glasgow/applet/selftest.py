@@ -18,18 +18,18 @@ class SelfTestSubtarget(Module):
         io_b = target.platform.request("io")
         self.specials += [t.get_tristate(io_b[i]) for i, t in enumerate(t_b)]
 
-        reg_oe_a, applet.addr_oe_a = target.registers.add_rw()
-        reg_o_a,  applet.addr_o_a  = target.registers.add_rw()
-        reg_i_a,  applet.addr_i_a  = target.registers.add_ro()
+        reg_oe_a, applet.addr_oe_a = target.registers.add_rw(8)
+        reg_o_a,  applet.addr_o_a  = target.registers.add_rw(8)
+        reg_i_a,  applet.addr_i_a  = target.registers.add_ro(8)
         self.comb += [
             Cat(t.oe for t in t_a).eq(reg_oe_a),
             Cat(t.o for t in t_a).eq(reg_o_a),
             reg_i_a.eq(Cat(t.i for t in t_a))
         ]
 
-        reg_oe_b, applet.addr_oe_b = target.registers.add_rw()
-        reg_o_b,  applet.addr_o_b  = target.registers.add_rw()
-        reg_i_b,  applet.addr_i_b  = target.registers.add_ro()
+        reg_oe_b, applet.addr_oe_b = target.registers.add_rw(8)
+        reg_o_b,  applet.addr_o_b  = target.registers.add_rw(8)
+        reg_i_b,  applet.addr_i_b  = target.registers.add_ro(8)
         self.comb += [
             Cat(t.oe for t in t_b).eq(reg_oe_b),
             Cat(t.o for t in t_b).eq(reg_o_b),
