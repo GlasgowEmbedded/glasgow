@@ -184,26 +184,26 @@ def get_argparser():
         help="file to save artifact to (default: <applet-name>.{v,bin})")
     add_applet_arg(p_build, required=True)
 
-    p_test = subparsers.add_parser(
-        "test", help="(advanced) verify device functionality")
+    p_internal_test = subparsers.add_parser(
+        "internal-test", help="(advanced) verify device functionality")
 
-    test_subparsers = p_test.add_subparsers(dest="mode", metavar="MODE")
-    test_subparsers.required = True
+    internal_test_subparsers = p_internal_test.add_subparsers(dest="mode", metavar="MODE")
+    internal_test_subparsers.required = True
 
-    p_test_toggle_io = test_subparsers.add_parser(
+    p_internal_test_toggle_io = internal_test_subparsers.add_parser(
         "toggle-io", help="output 1 kHz square wave on all I/O pins at 3.3 V")
-    p_test_mirror_i2c = test_subparsers.add_parser(
+    p_internal_test_mirror_i2c = internal_test_subparsers.add_parser(
         "mirror-i2c", help="mirror {SDA,SCL} on A[0-1] at 3.3 V")
-    p_test_shift_out = test_subparsers.add_parser(
+    p_internal_test_shift_out = internal_test_subparsers.add_parser(
         "shift-out", help="shift bytes from EP2OUT MSB first via {CLK,DO} on A[0-1] at 3.3 V")
-    p_test_shift_out.add_argument(
+    p_internal_test_shift_out.add_argument(
         "--async", default=False, action="store_true",
         help="use asynchronous FIFO")
-    p_test_gen_seq = test_subparsers.add_parser(
+    p_internal_test_gen_seq = internal_test_subparsers.add_parser(
         "gen-seq", help="read limit from EP4IN and generate sequence on {EP2OUT,EP6OUT}")
-    p_test_pll = test_subparsers.add_parser(
+    p_internal_test_pll = internal_test_subparsers.add_parser(
         "pll", help="use PLL to output 15 MHz on SYNC port")
-    p_test_registers = test_subparsers.add_parser(
+    p_internal_test_registers = internal_test_subparsers.add_parser(
         "registers", help="add I2C RW register [0] and RO register [1] = [0] << 1")
 
     p_factory = subparsers.add_parser(
@@ -436,7 +436,7 @@ def main():
                 with open(args.filename or args.applet + ".bin", "wb") as f:
                     f.write(target.get_bitstream(debug=True))
 
-        if args.action == "test":
+        if args.action == "internal-test":
             if args.mode == "toggle-io":
                 device.download_bitstream(TestToggleIO().get_bitstream(debug=True))
                 device.set_voltage("AB", 3.3)
