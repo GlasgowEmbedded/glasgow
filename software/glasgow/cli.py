@@ -15,7 +15,7 @@ from .target import GlasgowTarget
 from .target.config import GlasgowConfig
 from .target.device import VID_QIHW, PID_GLASGOW, GlasgowDevice
 from .target.direct import *
-from .target.test import *
+from .target.internal_test import *
 from .applet import *
 
 
