@@ -9,6 +9,7 @@ before_install:
   - sudo apt install sdcc
 install:
   - "(cd vendor/libfx2/software && SDAR='sdcclib r' python setup.py install)"
+  - "(cd vendor && git clone git://github.com/m-labs/migen.git && cd migen && python setup.py install)"
 script:
   - "(cd software && python setup.py install)"
   - "(cd software && python setup.py test)"
