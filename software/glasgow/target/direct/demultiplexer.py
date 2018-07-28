@@ -10,7 +10,7 @@ class DirectDemultiplexer(AccessDemultiplexer):
         self._iface_count    = interface_count
         self._interfaces     = []
 
-    def claim_raw_interface(self, applet, timeout=0, async=False):
+    def claim_raw_interface(self, applet, timeout=None, async=False):
         if self._claimed_ifaces == self._iface_count:
             applet.logger.fatal("cannot claim USB interface: out of interfaces")
             return None
@@ -24,7 +24,7 @@ class DirectDemultiplexer(AccessDemultiplexer):
         self._interfaces.append(iface)
         return iface
 
-    def claim_interface(self, applet, args, timeout=0, async=False):
+    def claim_interface(self, applet, args, timeout=None, async=False):
         iface = self.claim_raw_interface(applet, timeout, async)
 
         if args.mirror_voltage:
@@ -48,7 +48,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         self._usb     = device.usb
         self._applet  = applet
         self._logger  = applet.logger
-        self._timeout = round(timeout * 1000)
+        self._timeout = None if timeout is None else round(timeout * 1000)
         self._async   = async
 
         config_num = self._usb.getConfiguration()
