@@ -7,9 +7,6 @@ from .. import *
 from ..i2c_master import I2CMasterApplet
 
 
-logger = logging.getLogger(__name__)
-
-
 REG_CAL_T1      = 0x88 # 16-bit unsigned
 REG_CAL_T2      = 0x8A # 16-bit signed
 REG_CAL_T3      = 0x8C # 16-bit signed
@@ -231,15 +228,15 @@ class BMP280I2CInterface:
 
 
 class I2CBMP280Applet(I2CMasterApplet, name="i2c-bmp280"):
-    logger = logger
+    logger = logging.getLogger(__name__)
     help = "measure temperature and pressure with BMP280"
     description = """
     Measure temperature and pressure using Bosch BMP280 sensor.
     """
 
     @classmethod
-    def add_run_arguments(self, parser, access):
-        access.add_run_arguments(parser)
+    def add_run_arguments(cls, parser, access):
+        super().add_run_arguments(parser, access)
 
         def i2c_address(arg):
             return int(arg, 0)
@@ -247,6 +244,13 @@ class I2CBMP280Applet(I2CMasterApplet, name="i2c-bmp280"):
             "--i2c-address", type=i2c_address, metavar="ADDR", choices=[0x76, 0x77], default=0x76,
             help="I2C address of the sensor (one of: 0x76 0x77, default: %(default)#02x)")
 
+    def run(self, device, args):
+        i2c_iface = super().run(device, args)
+        bmp280_iface = BMP280I2CInterface(i2c_iface, self.logger, args.i2c_address)
+        return BMP280(bmp280_iface, self.logger)
+
+    @classmethod
+    def add_interact_arguments(cls, parser):
         parser.add_argument(
             "-T", "--oversample-temperature", type=int, metavar="FACTOR",
             choices=bit_osrs_temp.keys(), default=2,
@@ -269,11 +273,7 @@ class I2CBMP280Applet(I2CMasterApplet, name="i2c-bmp280"):
             "-c", "--continuous", action="store_true",
             help="measure and output pressure and temperature continuously")
 
-    def run(self, device, args):
-        i2c_iface = super().run(device, args, interactive=False)
-        bmp280_iface = BMP280I2CInterface(i2c_iface, self.logger, args.i2c_address)
-        bmp280 = BMP280(bmp280_iface, self.logger)
-
+    def interact(self, device, args, bmp280):
         bmp280.identify()
 
         bmp280.set_iir_coefficient(args.iir_filter)
@@ -288,6 +288,6 @@ class I2CBMP280Applet(I2CMasterApplet, name="i2c-bmp280"):
                               bmp280.get_altitude(p0=args.sea_level_pressure)))
                 time.sleep(1)
         else:
-            logger.info("T=%.2f °C", bmp280.get_temperature())
-            logger.info("p=%.1f Pa", bmp280.get_pressure())
-            logger.info("h=%f m",    bmp280.get_altitude(p0=args.sea_level_pressure))
+            self.logger.info("T=%.2f °C", bmp280.get_temperature())
+            self.logger.info("p=%.1f Pa", bmp280.get_pressure())
+            self.logger.info("h=%f m",    bmp280.get_altitude(p0=args.sea_level_pressure))

@@ -9,9 +9,6 @@ from ..gateware.pads import *
 from ..gateware.i2c import I2CMaster
 
 
-logger = logging.getLogger(__name__)
-
-
 CMD_START = 0x01
 CMD_STOP  = 0x02
 CMD_COUNT = 0x03
@@ -274,19 +271,21 @@ class I2CMasterInterface:
 
 
 class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
-    logger = logger
+    logger = logging.getLogger(__name__)
     help = "initiate transactions on I2C"
     description = """
     Initiate transactions on the I2C bus.
 
     Maximum transaction length is 65535 bytes.
     """
-    pins = ("scl_i", "scl_o", "scl_oe", "scl_io", "sda_i", "sda_o", "sda_oe", "sda_io")
+
+    __pins = ("scl_i", "scl_o", "scl_oe", "scl_io", "sda_i", "sda_o", "sda_oe", "sda_io")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_build_arguments(parser)
-        for pin in cls.pins:
+        super().add_build_arguments(parser, access)
+
+        for pin in cls.__pins:
             access.add_pin_argument(parser, pin)
 
         parser.add_argument(
@@ -306,7 +305,7 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = ResetInserter()(I2CMasterSubtarget(
-            pads=iface.get_pads(args, pins=self.pins),
+            pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(streaming=False),
             bit_rate=args.bit_rate * 1000,
@@ -316,10 +315,14 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
         reset, self.__addr_reset = target.registers.add_rw(1)
         target.comb += subtarget.reset.eq(reset)
 
-    @classmethod
-    def add_run_arguments(cls, parser, access):
-        access.add_run_arguments(parser)
+    def run(self, device, args):
+        iface = device.demultiplexer.claim_interface(self, args)
+        i2c_iface = I2CMasterInterface(iface, self.logger, self.__addr_reset)
+        i2c_iface.reset()
+        return i2c_iface
 
+    @classmethod
+    def add_interact_arguments(cls, parser):
         parser.add_argument(
             "--scan-device-id", action="store_true", default=False,
             help="read device ID from devices responding to scan")
@@ -332,13 +335,7 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
             "--scan-write", action="store_true", default=False,
             help="scan all possible I2C write addresses")
 
-
-    def run(self, device, args, interactive=True):
-        iface = device.demultiplexer.claim_interface(self, args)
-        i2c_iface = I2CMasterInterface(iface, self.logger, self.__addr_reset)
-        if not interactive:
-            return i2c_iface
-
+    def interact(self, device, args, i2c_iface):
         if args.scan_read or args.scan_write:
             # Don't scan reserved I2C addresses.
             for addr in range(0b0001_000, 0b1111_000):
@@ -350,7 +347,7 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
                         self.logger.info("scan found read address %s", bin(addr))
                         responded = True
                 if args.scan_write:
-                    if i2c_iface.write(addr, []) is True:
+                    if i2c_iface.write(addr, [], stop=True) is True:
                         self.logger.info("scan found write address %s", bin(addr))
                         responded = True
 

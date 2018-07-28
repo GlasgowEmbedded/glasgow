@@ -16,9 +16,6 @@ from migen.genlib.cdc import MultiReg
 from . import *
 
 
-logger = logging.getLogger(__name__)
-
-
 # FPGA commands
 XFER_BIT_DATA = 0b0001
 XFER_BIT_READ = 0b0010
@@ -187,7 +184,7 @@ class HD44780Subtarget(Module):
 
 
 class HD44780Applet(GlasgowApplet, name="hd44780"):
-    logger = logger
+    logger = logging.getLogger(__name__)
     help = "control HD44780-compatible displays"
     description = """
     Control HD44780/SED1278/ST7066/KS0066-compatible displays via a 4-bit bus.
@@ -209,7 +206,7 @@ class HD44780Applet(GlasgowApplet, name="hd44780"):
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        return HD44780Subtarget(
+        target.submodules += HD44780Subtarget(
             pads=iface.get_pads(args, pins=("rs", "rw", "e"), pin_sets=("d",)),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),

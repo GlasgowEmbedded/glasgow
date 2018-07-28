@@ -80,6 +80,8 @@ def get_argparser():
                 applet.add_build_arguments(g_applet_build, access_args)
                 g_applet_run = p_applet.add_argument_group("run arguments")
                 applet.add_run_arguments(g_applet_run, access_args)
+                g_applet_interact = p_applet.add_argument_group("interact arguments")
+                applet.add_interact_arguments(g_applet_interact)
             else:
                 applet.add_build_arguments(p_applet, access_args)
 
@@ -320,7 +322,8 @@ def main():
 
                 logger.info("running handler for applet %r", args.applet)
                 try:
-                    applet.run(device, args)
+                    iface = applet.run(device, args)
+                    applet.interact(device, args, iface)
                 except GlasgowAppletError as e:
                     applet.logger.error(str(e))
 

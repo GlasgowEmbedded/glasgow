@@ -21,19 +21,26 @@ class GlasgowApplet:
         cls.all_applets[name] = cls
         cls.name = name
 
-    @staticmethod
-    def add_build_arguments(parser, access):
+    @classmethod
+    def add_build_arguments(cls, parser, access):
         access.add_build_arguments(parser)
 
     def build(self, target):
         raise NotImplemented
 
-    @staticmethod
-    def add_run_arguments(parser, access):
-        access.add_build_arguments(parser)
+    @classmethod
+    def add_run_arguments(cls, parser, access):
+        access.add_run_arguments(parser)
 
     def run(self, device, args):
         raise NotImplemented
+
+    @classmethod
+    def add_interact_arguments(cls, parser):
+        pass
+
+    def interact(self, device, args, interface):
+        pass
 
 
 from .hd44780 import HD44780Applet

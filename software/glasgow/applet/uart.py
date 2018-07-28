@@ -38,12 +38,14 @@ class UARTApplet(GlasgowApplet, name="uart"):
 
     Any baud rate is supported. Only 8n1 mode is supported.
     """
-    pins = ("rx", "tx")
+
+    __pins = ("rx", "tx")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_build_arguments(parser)
-        for pin in cls.pins:
+        super().add_build_arguments(parser, access)
+
+        for pin in cls.__pins:
             access.add_pin_argument(parser, pin, default=True)
 
         parser.add_argument(
@@ -64,21 +66,22 @@ class UARTApplet(GlasgowApplet, name="uart"):
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         target.submodules += UARTSubtarget(
-            pads=iface.get_pads(args, pins=self.pins),
+            pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(streaming=False),
             bit_cyc=bit_cyc,
         )
 
-    @classmethod
-    def add_run_arguments(cls, parser, access):
-        access.add_run_arguments(parser)
+    def run(self, device, args, async=True):
+        return device.demultiplexer.claim_interface(self, args, async=async)
 
+    @classmethod
+    def add_interact_arguments(cls, parser):
         parser.add_argument(
             "-s", "--stream", action="store_true", default=False,
             help="continue reading from I/O port even after an end-of-file condition on stdin")
 
-    def run(self, device, args):
+    def interact(self, device, args, uart):
         import termios
         import atexit
         import select
@@ -109,13 +112,12 @@ class UARTApplet(GlasgowApplet, name="uart"):
 
             logger.info("running on a TTY; enter `Ctrl+\\ q` to quit")
 
-        iface = device.demultiplexer.claim_interface(self, args, async=True)
         quit = 0
         try:
             stdin_err_hup = False
 
             while True:
-                fds = iface.poll()
+                fds = uart.poll()
                 try:
                     stdin_events = [ev[1] for ev in fds if ev[0] == sys.stdin.fileno()][0]
                 except IndexError:
@@ -131,14 +133,14 @@ class UARTApplet(GlasgowApplet, name="uart"):
                             return
                         else:
                             quit = 0
-                    iface.write(data)
-                    iface.flush()
+                    uart.write(data)
+                    uart.flush()
 
                 elif stdin_events & (select.POLLERR | select.POLLHUP):
                     poller.unregister(sys.stdin)
                     stdin_err_hup = True
 
-                data = iface.read()
+                data = uart.read()
                 os.write(sys.stdout.fileno(), data)
 
                 if not stdin_events & select.POLLIN and stdin_err_hup and not args.stream:

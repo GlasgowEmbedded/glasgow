@@ -17,6 +17,9 @@ class DirectDemultiplexer(AccessDemultiplexer):
         iface_num = self._claimed_ifaces
         self._claimed_ifaces += 1
 
+        if async:
+            self._device.get_poller()
+
         iface = DirectDemultiplexerInterface(self._device, iface_num, applet, timeout, async)
         self._interfaces.append(iface)
         return iface

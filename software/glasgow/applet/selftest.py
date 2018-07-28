@@ -6,9 +6,6 @@ from migen import *
 from . import GlasgowApplet
 
 
-logger = logging.getLogger(__name__)
-
-
 class SelfTestSubtarget(Module):
     def __init__(self, applet, target):
         t_a  = [TSTriple() for _ in range(8)]
@@ -38,6 +35,7 @@ class SelfTestSubtarget(Module):
 
 
 class SelfTestApplet(GlasgowApplet, name="selftest"):
+    logger = logging.getLogger(__name__)
     help = "diagnose hardware faults"
     description = """
     Diagnose hardware faults.
@@ -54,8 +52,9 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
         * voltage: detect ADC, DAC or LDO faults
           (on all ports, Vsense and Vio pins must be connected)
     """
-    all_modes = ["pins-int", "pins-ext", "pins-loop", "voltage"]
-    default_mode = "pins-int"
+
+    __all_modes = ["pins-int", "pins-ext", "pins-loop", "voltage"]
+    __default_mode = "pins-int"
 
     def build(self, target, args):
         target.submodules += SelfTestSubtarget(applet=self, target=target)
@@ -63,8 +62,8 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
     @classmethod
     def add_run_arguments(cls, parser, access_args):
         parser.add_argument(
-            dest="modes", metavar="MODE", type=str, nargs="*", choices=[[]] + cls.all_modes,
-            help="run self-test mode MODE (default: {})".format(cls.default_mode))
+            dest="modes", metavar="MODE", type=str, nargs="*", choices=[[]] + cls.__all_modes,
+            help="run self-test mode MODE (default: {})".format(cls.__default_mode))
 
     def run(self, device, args):
         def set_oe(bits):
@@ -101,8 +100,8 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
 
         passed = True
         report = []
-        for mode in args.modes or [self.default_mode]:
-            logger.info("running self-test mode %s", mode)
+        for mode in args.modes or [self.__default_mode]:
+            self.logger.info("running self-test mode %s", mode)
 
             if mode in ("pins-int", "pins-ext"):
                 if mode == "pins-int":
@@ -121,7 +120,7 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                 for bit in range(0, 16):
                     reset_pins()
                     i, desc = check_pins(1 << bit, 1 << bit)
-                    logger.debug("%s: %s", mode, desc)
+                    self.logger.debug("%s: %s", mode, desc)
 
                     if i != 1 << bit:
                         pins = decode_pins(i) - stuck_high
@@ -147,7 +146,7 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                     for o in (1 << bit, 1 << (15 - bit)):
                         reset_pins()
                         i, desc = check_pins(o, o)
-                        logger.debug("%s: %s", mode, desc)
+                        self.logger.debug("%s: %s", mode, desc)
 
                         e = (1 << bit) | (1 << (15 - bit))
                         if i != e:
@@ -166,7 +165,7 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                         device.set_voltage(port, vout)
                         time.sleep(0.1)
                         vin = device.measure_voltage(port)
-                        logger.debug("port {}: Vio={:.1f} Vsense={:.2f}"
+                        self.logger.debug("port {}: Vio={:.1f} Vsense={:.2f}"
                                      .format(port, vout, vin))
 
                         if abs(vout - vin) / vout > 0.05:
@@ -176,8 +175,8 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                                                  .format(port, vout, vin)))
 
         if passed:
-            logger.info("self-test: PASS")
+            self.logger.info("self-test: PASS")
         else:
-            logger.error("self-test: FAIL")
+            self.logger.error("self-test: FAIL")
             for (mode, message) in report:
-                logger.error("%s: %s", mode, message)
+                self.logger.error("%s: %s", mode, message)

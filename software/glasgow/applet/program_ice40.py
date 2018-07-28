@@ -7,9 +7,6 @@ from migen.genlib.fsm import *
 from . import *
 
 
-logger = logging.getLogger(__name__)
-
-
 class ProgramICE40Subtarget(Module):
     def __init__(self, pads, out_fifo):
         oe = Signal()
@@ -122,7 +119,7 @@ class ProgramICE40Subtarget(Module):
 
 
 class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
-    logger = logger
+    logger = logging.getLogger(__name__)
     help = "program iCE40 FPGAs"
     description = """
     Program iCE40 FPGAs.

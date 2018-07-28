@@ -4,9 +4,6 @@ from .. import *
 from ..i2c_master import I2CMasterApplet
 
 
-logger = logging.getLogger(__name__)
-
-
 class I2CEEPROM24CInterface:
     def __init__(self, interface, logger, i2c_address, address_width, page_size):
         self.lower       = interface
@@ -66,7 +63,7 @@ class I2CEEPROM24CInterface:
 
 
 class I2CEEPROM24CApplet(I2CMasterApplet, name="i2c-eeprom-24c"):
-    logger = logger
+    logger = logging.getLogger(__name__)
     help = "read and write 24C-compatible EEPROMs"
     description = """
     Read and write arbitrary areas of a 24Cxx-compatible EEPROM.
@@ -78,7 +75,7 @@ class I2CEEPROM24CApplet(I2CMasterApplet, name="i2c-eeprom-24c"):
 
     @classmethod
     def add_run_arguments(cls, parser, access):
-        access.add_run_arguments(parser)
+        super().add_run_arguments(parser, access)
 
         parser.add_argument(
             "-A", "--i2c-address", type=int, metavar="I2C-ADDR", default=0b1010000,
@@ -91,6 +88,13 @@ class I2CEEPROM24CApplet(I2CMasterApplet, name="i2c-eeprom-24c"):
             "-P", "--page-size", type=int, metavar="PAGE-SIZE", default=8,
             help="page buffer size; writes will be split into PAGE-SIZE byte chunks")
 
+    def run(self, device, args):
+        i2c_iface = super().run(device, args)
+        return I2CEEPROM24CInterface(
+            i2c_iface, self.logger, args.i2c_address, args.address_width, args.page_size)
+
+    @classmethod
+    def add_interact_arguments(cls, parser):
         parser.add_argument(
             "-a", "--address", type=int, metavar="ADDR", default=0,
             help="first memory address of the read or write operation")
@@ -103,13 +107,7 @@ class I2CEEPROM24CApplet(I2CMasterApplet, name="i2c-eeprom-24c"):
             "-w", "--write", type=hex, metavar="DATA",
             help="write hex bytes DATA starting at ADDR")
 
-    def run(self, device, args, interactive=True):
-        i2c_iface = super().run(device, args, interactive=False)
-        eeprom_iface = I2CEEPROM24CInterface(
-            i2c_iface, self.logger, args.i2c_address, args.address_width, args.page_size)
-        if not interactive:
-            return eeprom_iface
-
+    def interact(self, device, args, eeprom_iface):
         if args.read is not None:
             result = eeprom_iface.read(args.address, args.read)
             if result is not None:
