@@ -341,7 +341,7 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
 
         if args.scan_read or args.scan_write:
             # Don't scan reserved I2C addresses.
-            for addr in range(0b0001_000, 0b1110_000):
+            for addr in range(0b0001_000, 0b1111_000):
                 responded = False
                 if args.scan_read:
                     # We need to read at least one byte in order to transmit a NAK bit
