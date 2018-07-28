@@ -97,7 +97,7 @@ class DirectArguments(AccessArguments):
 
     def add_pin_argument(self, parser, name, default=None, required=False):
         if default is True:
-            default = self._get_free(self._free_pins)
+            default = str(self._get_free(self._free_pins))
         self._add_pin_argument(parser, name, default, required)
 
     def add_pin_set_argument(self, parser, name, width, default=None, required=False):
