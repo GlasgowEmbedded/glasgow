@@ -83,9 +83,9 @@ class I2CRegistersTestbench(Module):
     def __init__(self):
         self.submodules.i2c = I2CSlaveTestbench()
         self.submodules.dut = I2CRegisters(self.i2c.dut)
-        dummy, _ = self.dut.add_rw()
-        reg_i, _ = self.dut.add_rw()
-        reg_o, _ = self.dut.add_ro()
+        dummy, _ = self.dut.add_rw(8)
+        reg_i, _ = self.dut.add_rw(8)
+        reg_o, _ = self.dut.add_ro(8)
 
 
 class I2CRegistersTestCase(unittest.TestCase):
