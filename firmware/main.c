@@ -480,7 +480,7 @@ void handle_pending_usb_setup() {
 
     if(arg_get) {
       while(EP0CS & _BUSY);
-      if(!iobuf_get_voltage(arg_mask, (uint16_t *)EP0BUF)) {
+      if(!iobuf_get_voltage(arg_mask, (__xdata uint16_t *)EP0BUF)) {
         STALL_EP0();
       } else {
         SETUP_EP0_BUF(2);
@@ -488,7 +488,7 @@ void handle_pending_usb_setup() {
     } else {
       SETUP_EP0_BUF(2);
       while(EP0CS & _BUSY);
-      if(!iobuf_set_voltage(arg_mask, (uint16_t *)EP0BUF)) {
+      if(!iobuf_set_voltage(arg_mask, (__xdata uint16_t *)EP0BUF)) {
         latch_status_bit(ST_ERROR);
       }
     }
@@ -504,7 +504,7 @@ void handle_pending_usb_setup() {
     pending_setup = false;
 
     while(EP0CS & _BUSY);
-    if(!iobuf_measure_voltage(arg_mask, (uint16_t *)EP0BUF)) {
+    if(!iobuf_measure_voltage(arg_mask, (__xdata uint16_t *)EP0BUF)) {
       STALL_EP0();
     } else {
       SETUP_EP0_BUF(2);
@@ -524,7 +524,7 @@ void handle_pending_usb_setup() {
 
     if(arg_get) {
       while(EP0CS & _BUSY);
-      if(!iobuf_get_alert(arg_mask, (uint16_t *)EP0BUF, (uint16_t *)EP0BUF + 1)) {
+      if(!iobuf_get_alert(arg_mask, (__xdata uint16_t *)EP0BUF, (__xdata uint16_t *)EP0BUF + 1)) {
         STALL_EP0();
       } else {
         SETUP_EP0_BUF(4);
@@ -532,7 +532,7 @@ void handle_pending_usb_setup() {
     } else {
       SETUP_EP0_BUF(4);
       while(EP0CS & _BUSY);
-      if(!iobuf_set_alert(arg_mask, (uint16_t *)EP0BUF, (uint16_t *)EP0BUF + 1)) {
+      if(!iobuf_set_alert(arg_mask, (__xdata uint16_t *)EP0BUF, (__xdata uint16_t *)EP0BUF + 1)) {
         latch_status_bit(ST_ERROR);
       }
     }
@@ -579,7 +579,7 @@ void handle_pending_usb_setup() {
 
     if(arg_get) {
       while(EP0CS & _BUSY);
-      if(!iobuf_get_voltage_limit(arg_mask, (uint16_t *)EP0BUF)) {
+      if(!iobuf_get_voltage_limit(arg_mask, (__xdata uint16_t *)EP0BUF)) {
         STALL_EP0();
       } else {
         if(!eeprom_write(I2C_ADDR_FX2_MEM,
@@ -595,7 +595,7 @@ void handle_pending_usb_setup() {
     } else {
       SETUP_EP0_BUF(2);
       while(EP0CS & _BUSY);
-      if(!iobuf_set_voltage_limit(arg_mask, (uint16_t *)EP0BUF)) {
+      if(!iobuf_set_voltage_limit(arg_mask, (__xdata uint16_t *)EP0BUF)) {
         latch_status_bit(ST_ERROR);
       }
     }
@@ -706,7 +706,7 @@ int main() {
 
       if(!eeprom_read(chip, addr, (uint8_t *)&scratch, chunk_len, /*double_byte=*/true))
         break;
-      fpga_load((uint8_t *)scratch, chunk_len);
+      fpga_load((__xdata uint8_t *)scratch, chunk_len);
 
       length -= chunk_len;
       addr   += chunk_len;
