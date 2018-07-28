@@ -56,8 +56,8 @@ class GlasgowTarget(Module):
 
         if multiplexer_cls:
             self.submodules.multiplexer = multiplexer_cls(ports={
-                "A": lambda: self.platform.request("io"),
-                "B": lambda: self.platform.request("io"),
+                "A": lambda: self.platform.request("io", 0),
+                "B": lambda: self.platform.request("io", 1),
                 "S": lambda: self.platform.request("sync")
             }, fifo_count=2, fx2_arbiter=self.fx2_arbiter)
 
