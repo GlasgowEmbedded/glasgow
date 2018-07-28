@@ -17,6 +17,5 @@ notifications:
   irc:
     channels:
       - "chat.freenode.net##openfpga"
-    nick: openfpga-travis
     use_notice: true
     skip_join: true
