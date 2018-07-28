@@ -32,7 +32,7 @@ setup(
     #description="TODO",
     #long_description="""TODO""",
     license="0-clause BSD License",
-    install_requires=["fx2"],
+    install_requires=["migen", "fx2"],
     packages=find_packages(),
     package_data={"": ["*.ihex"]},
     entry_points={
