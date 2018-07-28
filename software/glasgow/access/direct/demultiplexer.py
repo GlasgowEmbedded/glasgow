@@ -1,6 +1,6 @@
 import usb1
 
-from ..access import AccessDemultiplexer, AccessDemultiplexerInterface
+from .. import AccessDemultiplexer, AccessDemultiplexerInterface
 
 
 class DirectDemultiplexer(AccessDemultiplexer):

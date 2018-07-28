@@ -14,8 +14,8 @@ from fx2.format import input_data, diff_data
 from .target import GlasgowTarget
 from .target.config import GlasgowConfig
 from .target.device import VID_QIHW, PID_GLASGOW, GlasgowDevice
-from .target.direct import *
 from .target.internal_test import *
+from .access.direct import *
 from .applet import *
 
 

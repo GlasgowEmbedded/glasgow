@@ -2,7 +2,7 @@ import functools
 import argparse
 import re
 
-from ..access import AccessArguments
+from .. import AccessArguments
 
 
 class DirectArguments(AccessArguments):

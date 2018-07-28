@@ -1,7 +1,7 @@
 import logging
 from migen import *
 
-from ..access import AccessMultiplexer, AccessMultiplexerInterface
+from .. import AccessMultiplexer, AccessMultiplexerInterface
 
 
 class DirectMultiplexer(AccessMultiplexer):
