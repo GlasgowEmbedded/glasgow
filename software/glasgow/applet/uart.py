@@ -72,8 +72,9 @@ class UARTApplet(GlasgowApplet, name="uart"):
             bit_cyc=bit_cyc,
         )
 
-    def run(self, device, args, async=True):
-        return device.demultiplexer.claim_interface(self, args, async=async)
+    async def run(self, device, args):
+        kwargs = {"async": True}
+        return device.demultiplexer.claim_interface(self, args, **kwargs)
 
     @classmethod
     def add_interact_arguments(cls, parser):
@@ -81,7 +82,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
             "-s", "--stream", action="store_true", default=False,
             help="continue reading from I/O port even after an end-of-file condition on stdin")
 
-    def interact(self, device, args, uart):
+    async def interact(self, device, args, uart):
         import termios
         import atexit
         import select

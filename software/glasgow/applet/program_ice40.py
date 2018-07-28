@@ -147,7 +147,7 @@ class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
             "bitstream", metavar="BITSTREAM", type=argparse.FileType("rb"),
             help="bitstream file")
 
-    def run(self, device, args):
+    async def run(self, device, args):
         iface = device.demultiplexer.claim_interface(self, args)
 
         bitstream = args.bitstream.read()

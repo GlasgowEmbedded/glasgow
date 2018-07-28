@@ -315,7 +315,7 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
         reset, self.__addr_reset = target.registers.add_rw(1)
         target.comb += subtarget.reset.eq(reset)
 
-    def run(self, device, args):
+    async def run(self, device, args):
         iface = device.demultiplexer.claim_interface(self, args)
         i2c_iface = I2CMasterInterface(iface, self.logger, self.__addr_reset)
         i2c_iface.reset()
@@ -335,7 +335,7 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
             "--scan-write", action="store_true", default=False,
             help="scan all possible I2C write addresses")
 
-    def interact(self, device, args, i2c_iface):
+    async def interact(self, device, args, i2c_iface):
         if args.scan_read or args.scan_write:
             # Don't scan reserved I2C addresses.
             for addr in range(0b0001_000, 0b1111_000):

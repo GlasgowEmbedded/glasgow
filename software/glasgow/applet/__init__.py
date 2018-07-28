@@ -32,14 +32,14 @@ class GlasgowApplet:
     def add_run_arguments(cls, parser, access):
         access.add_run_arguments(parser)
 
-    def run(self, device, args):
+    async def run(self, device, args):
         raise NotImplemented
 
     @classmethod
     def add_interact_arguments(cls, parser):
         pass
 
-    def interact(self, device, args, interface):
+    async def interact(self, device, args, interface):
         pass
 
 

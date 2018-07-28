@@ -218,7 +218,7 @@ class HD44780Applet(GlasgowApplet, name="hd44780"):
             "--reset", default=False, action="store_true",
             help="power-cycle the port on startup")
 
-    def run(self, device, args):
+    async def run(self, device, args):
         iface = device.demultiplexer.claim_raw_interface(self, timeout=1)
 
         if args.reset:

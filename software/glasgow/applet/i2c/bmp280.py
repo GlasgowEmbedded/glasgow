@@ -244,7 +244,7 @@ class I2CBMP280Applet(I2CMasterApplet, name="i2c-bmp280"):
             "--i2c-address", type=i2c_address, metavar="ADDR", choices=[0x76, 0x77], default=0x76,
             help="I2C address of the sensor (one of: 0x76 0x77, default: %(default)#02x)")
 
-    def run(self, device, args):
+    async def run(self, device, args):
         i2c_iface = super().run(device, args)
         bmp280_iface = BMP280I2CInterface(i2c_iface, self.logger, args.i2c_address)
         return BMP280(bmp280_iface, self.logger)
@@ -273,7 +273,7 @@ class I2CBMP280Applet(I2CMasterApplet, name="i2c-bmp280"):
             "-c", "--continuous", action="store_true",
             help="measure and output pressure and temperature continuously")
 
-    def interact(self, device, args, bmp280):
+    async def interact(self, device, args, bmp280):
         bmp280.identify()
 
         bmp280.set_iir_coefficient(args.iir_filter)

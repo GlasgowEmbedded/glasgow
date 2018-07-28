@@ -5,6 +5,7 @@ import argparse
 import textwrap
 import re
 import time
+import asyncio
 from datetime import datetime
 
 from fx2 import VID_CYPRESS, PID_FX2, FX2Config, FX2Device, FX2DeviceError
@@ -321,9 +322,10 @@ def main():
                     device.download_bitstream(target.get_bitstream(debug=True), bitstream_id)
 
                 logger.info("running handler for applet %r", args.applet)
+                loop = asyncio.get_event_loop()
                 try:
-                    iface = applet.run(device, args)
-                    applet.interact(device, args, iface)
+                    iface = loop.run_until_complete(applet.run(device, args))
+                    loop.run_until_complete(applet.interact(device, args, iface))
                 except GlasgowAppletError as e:
                     applet.logger.error(str(e))
 

@@ -88,7 +88,7 @@ class I2CEEPROM24CApplet(I2CMasterApplet, name="i2c-eeprom-24c"):
             "-P", "--page-size", type=int, metavar="PAGE-SIZE", default=8,
             help="page buffer size; writes will be split into PAGE-SIZE byte chunks")
 
-    def run(self, device, args):
+    async def run(self, device, args):
         i2c_iface = super().run(device, args)
         return I2CEEPROM24CInterface(
             i2c_iface, self.logger, args.i2c_address, args.address_width, args.page_size)
@@ -107,7 +107,7 @@ class I2CEEPROM24CApplet(I2CMasterApplet, name="i2c-eeprom-24c"):
             "-w", "--write", type=hex, metavar="DATA",
             help="write hex bytes DATA starting at ADDR")
 
-    def interact(self, device, args, eeprom_iface):
+    async def interact(self, device, args, eeprom_iface):
         if args.read is not None:
             result = eeprom_iface.read(args.address, args.read)
             if result is not None:

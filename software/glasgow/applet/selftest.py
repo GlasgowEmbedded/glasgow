@@ -65,7 +65,7 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
             dest="modes", metavar="MODE", type=str, nargs="*", choices=[[]] + cls.__all_modes,
             help="run self-test mode MODE (default: {})".format(cls.__default_mode))
 
-    def run(self, device, args):
+    async def run(self, device, args):
         def set_oe(bits):
             device.write_register(self.addr_oe_a, (bits >> 0) & 0xff)
             device.write_register(self.addr_oe_b, (bits >> 8) & 0xff)
