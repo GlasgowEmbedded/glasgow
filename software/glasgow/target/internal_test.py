@@ -1,13 +1,13 @@
 from migen import *
 
-from . import GlasgowTarget
+from . import GlasgowHardwareTarget
 
 
 __all__ = ["TestToggleIO", "TestMirrorI2C", "TestShiftOut", "TestGenSeq", "TestPLL",
            "TestRegisters"]
 
 
-class TestToggleIO(GlasgowTarget):
+class TestToggleIO(GlasgowHardwareTarget):
     def __init__(self):
         super().__init__()
 
@@ -28,7 +28,7 @@ class TestToggleIO(GlasgowTarget):
         ]
 
 
-class TestMirrorI2C(GlasgowTarget):
+class TestMirrorI2C(GlasgowHardwareTarget):
     def __init__(self):
         super().__init__()
 
@@ -38,7 +38,7 @@ class TestMirrorI2C(GlasgowTarget):
         ]
 
 
-class TestShiftOut(GlasgowTarget):
+class TestShiftOut(GlasgowHardwareTarget):
     def __init__(self, async=False):
         super().__init__()
 
@@ -93,7 +93,7 @@ class TestShiftOut(GlasgowTarget):
         )
 
 
-class TestGenSeq(GlasgowTarget):
+class TestGenSeq(GlasgowHardwareTarget):
     def __init__(self):
         super().__init__()
 
@@ -142,7 +142,7 @@ class TestGenSeq(GlasgowTarget):
         ]
 
 
-class TestPLL(GlasgowTarget):
+class TestPLL(GlasgowHardwareTarget):
     def __init__(self):
         super().__init__()
 
@@ -163,7 +163,7 @@ class TestPLL(GlasgowTarget):
         cnt = Signal()
 
 
-class TestRegisters(GlasgowTarget):
+class TestRegisters(GlasgowHardwareTarget):
     def __init__(self):
         super().__init__()
 

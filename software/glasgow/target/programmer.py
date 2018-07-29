@@ -1,5 +1,5 @@
 from migen.build.generic_programmer import GenericProgrammer
-from .device import GlasgowDevice
+from .device import GlasgowHardwareDevice
 
 
 __all__ = ['GlasgowProgrammer']
@@ -11,4 +11,4 @@ class GlasgowProgrammer(GenericProgrammer):
 
     def load_bitstream(self, bitstream_file):
         with open(bitstream_file, "rb") as f:
-            GlasgowDevice().download_bitstream(f.read())
+            GlasgowHardwareDevice().download_bitstream(f.read())

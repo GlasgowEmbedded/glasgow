@@ -4,50 +4,40 @@ from .. import AccessDemultiplexer, AccessDemultiplexerInterface
 
 
 class DirectDemultiplexer(AccessDemultiplexer):
-    def __init__(self, device, interface_count):
-        self._device         = device
-        self._claimed_ifaces = 0
-        self._iface_count    = interface_count
-        self._interfaces     = []
+    def __init__(self, device):
+        super().__init__(device)
+        self._claimed    = set()
+        self._interfaces = []
 
-    def claim_raw_interface(self, applet, timeout=None, async=False):
-        if self._claimed_ifaces == self._iface_count:
-            applet.logger.fatal("cannot claim USB interface: out of interfaces")
-            return None
-        iface_num = self._claimed_ifaces
-        self._claimed_ifaces += 1
+    def claim_interface(self, applet, mux_interface, args, timeout=None, async=False):
+        assert mux_interface._fifo_num not in self._claimed
+        self._claimed.add(mux_interface._fifo_num)
 
         if async:
-            self._device.get_poller()
+            self.device.get_poller()
 
-        iface = DirectDemultiplexerInterface(self._device, iface_num, applet, timeout, async)
+        iface = DirectDemultiplexerInterface(self.device, applet, mux_interface, timeout, async)
         self._interfaces.append(iface)
-        return iface
 
-    def claim_interface(self, applet, args, timeout=None, async=False):
-        iface = self.claim_raw_interface(applet, timeout, async)
-
-        if args.mirror_voltage:
+        if hasattr(args, "mirror_voltage") and args.mirror_voltage:
             for port in args.port_spec:
-                self._device.mirror_voltage(port)
+                self.device.mirror_voltage(port)
                 applet.logger.info("port %s voltage set to %.1f V",
-                                   port, self._device.get_voltage(port))
-        elif args.voltage is not None:
-            self._device.set_voltage(args.port_spec, args.voltage)
+                                   port, self.device.get_voltage(port))
+        elif hasattr(args, "voltage") and args.voltage is not None:
+            self.device.set_voltage(args.port_spec, args.voltage)
             applet.logger.info("port(s) %s voltage set to %.1f V",
                                ", ".join(sorted(args.port_spec)), args.voltage)
-        elif args.keep_voltage:
+        elif hasattr(args, "keep_voltage") and args.keep_voltage:
             applet.logger.info("port voltage unchanged")
 
         return iface
 
 
 class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
-    def __init__(self, device, interface_num, applet, timeout, async):
-        self._device  = device
+    def __init__(self, device, applet, mux_interface, timeout, async):
+        super().__init__(device, applet)
         self._usb     = device.usb
-        self._applet  = applet
-        self._logger  = applet.logger
         self._timeout = None if timeout is None else round(timeout * 1000)
         self._async   = async
 
@@ -57,8 +47,8 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
                 break
 
         interfaces = list(config.iterInterfaces())
-        assert interface_num <= len(interfaces)
-        interface = interfaces[interface_num]
+        assert mux_interface._fifo_num <= len(interfaces)
+        interface = interfaces[mux_interface._fifo_num]
 
         settings = list(interface.iterSettings())
         setting = settings[0] # we use the same endpoints in all alternative settings
@@ -73,21 +63,21 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
                 self._out_packet_size = packet_size
         assert self._endpoint_in != None and self._endpoint_out != None
 
-        self._interface  = self._usb.claimInterface(interface_num)
+        self._interface  = self._usb.claimInterface(mux_interface._fifo_num)
         self._buffer_in  = bytearray()
         self._buffer_out = bytearray()
 
         if self._async:
             self._in_transfer = self._usb.getTransfer()
             def callback(transfer):
-                self._logger.trace("USB: EP%x IN (completed)", self._endpoint_in & 0x7f)
+                self.logger.trace("USB: EP%x IN (completed)", self._endpoint_in & 0x7f)
             self._in_transfer.setBulk(self._endpoint_in, self._in_packet_size, callback)
             self._in_transfer.submit()
-            self._logger.trace("USB: EP%x IN (submit)", self._endpoint_in & 0x7f)
+            self.logger.trace("USB: EP%x IN (submit)", self._endpoint_in & 0x7f)
 
             self._out_transfer = self._usb.getTransfer()
             def callback(transfer):
-                self._logger.trace("USB: EP%x OUT (completed)", self._endpoint_out)
+                self.logger.trace("USB: EP%x OUT (completed)", self._endpoint_out)
                 self._write_packet_async()
             self._out_transfer.setBulk(self._endpoint_out, 0, callback)
 
@@ -100,7 +90,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
             return False
 
     def _append_in_packet(self, packet):
-        self._logger.trace("USB: EP%x IN: %s", self._endpoint_in & 0x7f, packet.hex())
+        self.logger.trace("USB: EP%x IN: %s", self._endpoint_in & 0x7f, packet.hex())
         self._buffer_in += packet
 
     def _read_packet_async(self):
@@ -111,7 +101,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         else:
             packet = self._in_transfer.getBuffer()[:self._in_transfer.getActualLength()]
             self._append_in_packet(packet)
-            self._logger.trace("USB: EP%x IN (submit)", self._endpoint_in & 0x7f)
+            self.logger.trace("USB: EP%x IN (submit)", self._endpoint_in & 0x7f)
             self._in_transfer.submit()
             return True
 
@@ -154,13 +144,13 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
 
         result = self._buffer_in[:length]
         self._buffer_in = self._buffer_in[length:]
-        self._logger.trace("FIFO: read <%s>", result.hex())
+        self.logger.trace("FIFO: read <%s>", result.hex())
         return result
 
     def _slice_out_packet(self):
         packet = self._buffer_out[:self._out_packet_size]
         self._buffer_out = self._buffer_out[self._out_packet_size:]
-        self._logger.trace("USB: EP%x OUT: <%s>", self._endpoint_out, packet.hex())
+        self.logger.trace("USB: EP%x OUT: <%s>", self._endpoint_out, packet.hex())
         return packet
 
     def _write_packet_async(self):
@@ -171,7 +161,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         elif len(self._buffer_out) > 0:
             packet = self._slice_out_packet()
             self._out_transfer.setBuffer(packet)
-            self._logger.trace("USB: EP%x OUT (submit)", self._endpoint_out)
+            self.logger.trace("USB: EP%x OUT (submit)", self._endpoint_out)
             self._out_transfer.submit()
 
     def _write_packet_sync(self):
@@ -181,7 +171,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
     def write(self, data, async=False):
         data = bytearray(data)
 
-        self._logger.trace("FIFO: write <%s>", data.hex())
+        self.logger.trace("FIFO: write <%s>", data.hex())
         self._buffer_out += data
 
         if self._async:
@@ -192,7 +182,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
                 self._write_packet_sync()
 
     def flush(self):
-        self._logger.trace("FIFO: flush")
+        self.logger.trace("FIFO: flush")
         if self._async:
             self._write_packet_async()
         else:
@@ -203,7 +193,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         if self.has_buffered_data():
             # If we have data in IN endpoint buffers, always return right away, but also
             # peek at what other fds might have become ready, for efficiency.
-            return self._device.poll(0)
+            return self.device.poll(0)
         else:
             # Otherwise, just wait on USB transfers and any other registered fds.
-            return self._device.poll(self._timeout)
+            return self.device.poll(self._timeout)

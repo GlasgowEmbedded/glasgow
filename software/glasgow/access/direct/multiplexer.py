@@ -65,11 +65,11 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
                 o_D_IN_0=i,
             )
 
-    def get_out_fifo(self, **kwargs):
-        return self._fx2_arbiter.get_out_fifo(self._fifo_num, **kwargs)
-
     def get_in_fifo(self, **kwargs):
         return self._fx2_arbiter.get_in_fifo(self._fifo_num, **kwargs)
+
+    def get_out_fifo(self, **kwargs):
+        return self._fx2_arbiter.get_out_fifo(self._fifo_num, **kwargs)
 
     def get_inout_fifo(self, **kwargs):
         return (self._fx2_arbiter.get_in_fifo(self._fifo_num, **kwargs),

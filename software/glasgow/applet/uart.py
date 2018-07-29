@@ -74,7 +74,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
 
     async def run(self, device, args):
         kwargs = {"async": True}
-        return device.demultiplexer.claim_interface(self, args, **kwargs)
+        return device.demultiplexer.claim_interface(self, self.mux_interface, args, **kwargs)
 
     @classmethod
     def add_interact_arguments(cls, parser):
@@ -150,3 +150,21 @@ class UARTApplet(GlasgowApplet, name="uart"):
         except KeyboardInterrupt:
             # We can receive ^C if we're not reading from a TTY.
             pass
+
+# -------------------------------------------------------------------------------------------------
+
+class UARTAppletTestCase(GlasgowAppletTestCase, applet=UARTApplet):
+    @synthesis_test
+    def test_build(self):
+        self.assertBuilds()
+
+    def setup_loopback(self):
+        self.build_applet_on_mock_target()
+        mux_iface = self.applet.mux_interface
+        mux_iface.comb += mux_iface.pads.rx_t.i.eq(mux_iface.pads.tx_t.o)
+
+    @applet_run_test("setup_loopback", ["--baud", "5000000"])
+    async def test_loopback(self):
+        uart_iface = await self.run_applet_on_mock_device()
+        await uart_iface.write(bytes([0xAA, 0x55]))
+        self.assertEqual(await uart_iface.read(2), bytes([0xAA, 0x55]))

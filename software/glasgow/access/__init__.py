@@ -97,16 +97,20 @@ class AccessMultiplexerInterface(Module, metaclass=ABCMeta):
 
 
 class AccessDemultiplexer(metaclass=ABCMeta):
-    @abstractmethod
-    def claim_raw_interface(self, applet, timeout=None, async=False):
-        pass
+    def __init__(self, device):
+        self.device = device
 
     @abstractmethod
-    def claim_interface(self, applet, args, timeout=None, async=False):
+    def claim_interface(self, applet, mux_interface, args, timeout=None, async=False):
         pass
 
 
 class AccessDemultiplexerInterface(metaclass=ABCMeta):
+    def __init__(self, device, applet):
+        self.device = device
+        self.applet = applet
+        self.logger = applet.logger
+
     @abstractmethod
     def has_buffered_data(self):
         pass

@@ -7,7 +7,7 @@ from fx2 import *
 from fx2.format import input_data
 
 
-__all__ = ['GlasgowDevice', 'GlasgowDeviceError']
+__all__ = ["GlasgowDeviceError", "GlasgowHardwareDevice", "GlasgowMockDevice"]
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class GlasgowDeviceError(FX2DeviceError):
     """An exception raised on a communication error."""
 
 
-class GlasgowDevice(FX2Device):
+class GlasgowHardwareDevice(FX2Device):
     def __init__(self, firmware_file=None, vendor_id=VID_QIHW, product_id=PID_GLASGOW):
         super().__init__(vendor_id, product_id)
 
@@ -325,3 +325,7 @@ class GlasgowDevice(FX2Device):
             return self._mask_to_iobuf_spec(mask)
         except usb1.USBErrorPipe:
             raise GlasgowDeviceError("Cannot poll alert status")
+
+
+class GlasgowMockDevice:
+    pass

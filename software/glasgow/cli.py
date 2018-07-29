@@ -6,14 +6,15 @@ import textwrap
 import re
 import time
 import asyncio
+import unittest
 from datetime import datetime
 
 from fx2 import VID_CYPRESS, PID_FX2, FX2Config, FX2Device, FX2DeviceError
 from fx2.format import input_data, diff_data
 
-from .target import GlasgowTarget
+from .target import GlasgowHardwareTarget
 from .target.config import GlasgowConfig
-from .target.device import VID_QIHW, PID_GLASGOW, GlasgowDevice
+from .target.device import VID_QIHW, PID_GLASGOW, GlasgowHardwareDevice
 from .target.internal_test import *
 from .access.direct import *
 from .applet import *
@@ -64,19 +65,27 @@ def get_argparser():
             subparsers = parser.add_subparsers(dest="applet", metavar="APPLET")
         return subparsers
 
-    def add_applet_arg(parser, add_run_args=False, required=False):
+    def add_applet_arg(parser, mode, required=False):
         subparsers = add_subparsers(parser, dest="applet", metavar="APPLET")
         subparsers.required = required
 
         for applet_name, applet in GlasgowApplet.all_applets.items():
+            if mode == "test" and not hasattr(applet, "test_cls"):
+                continue
+
             p_applet = subparsers.add_parser(
                 applet_name, help=applet.help, description=applet.description,
                 formatter_class=TextHelpFormatter)
+            if mode == "test":
+                p_applet.add_argument(
+                    "tests", metavar="TEST", nargs="*",
+                    help="test cases to run")
+                continue
+
             access_args = DirectArguments(applet_name=applet_name,
                                           default_port="A",
                                           pin_count=8)
-
-            if add_run_args:
+            if mode == "run":
                 g_applet_build = p_applet.add_argument_group("build arguments")
                 applet.add_build_arguments(g_applet_build, access_args)
                 g_applet_run = p_applet.add_argument_group("run arguments")
@@ -138,7 +147,7 @@ def get_argparser():
     g_run_bitstream.add_argument(
         "--bitstream", metavar="FILENAME", type=argparse.FileType("rb"),
         help="read bitstream from the specified file")
-    add_applet_arg(g_run_bitstream, add_run_args=True)
+    add_applet_arg(g_run_bitstream, mode="run")
 
     p_flash = subparsers.add_parser(
         "flash", formatter_class=TextHelpFormatter,
@@ -159,7 +168,7 @@ def get_argparser():
     g_flash_bitstream.add_argument(
         "--remove-bitstream", default=False, action="store_true",
         help="remove any bitstream present")
-    add_applet_arg(g_flash_bitstream, required=False)
+    add_applet_arg(g_flash_bitstream, mode="build")
 
     def revision(arg):
         if re.match(r"^[A-Z]$", arg):
@@ -183,7 +192,12 @@ def get_argparser():
     p_build.add_argument(
         "-f", "--filename", metavar="FILENAME", type=str,
         help="file to save artifact to (default: <applet-name>.{v,bin})")
-    add_applet_arg(p_build, required=True)
+    add_applet_arg(p_build, mode="build", required=True)
+
+    p_test = subparsers.add_parser(
+        "test", formatter_class=TextHelpFormatter,
+        help="(advanced) test applet logic without target hardware")
+    add_applet_arg(p_test, mode="test", required=True)
 
     p_internal_test = subparsers.add_parser(
         "internal-test", help="(advanced) verify device functionality")
@@ -224,7 +238,7 @@ def get_argparser():
 
 # The name of this function appears in Verilog output, so keep it tidy.
 def _applet(args):
-    target = GlasgowTarget(multiplexer_cls=DirectMultiplexer)
+    target = GlasgowHardwareTarget(multiplexer_cls=DirectMultiplexer)
     applet = GlasgowApplet.all_applets[args.applet]()
     try:
         applet.build(target, args)
@@ -236,11 +250,12 @@ def _applet(args):
 
 
 LOG_COLORS = {
-    'DEBUG'   : "\033[37m",
-    'INFO'    : "\033[1;37m",
-    'WARNING' : "\033[1;33m",
-    'ERROR'   : "\033[1;31m",
-    'CRITICAL': "\033[1;41m",
+    "TRACE"   : "\033[37m",
+    "DEBUG"   : "\033[36m",
+    "INFO"    : "\033[1;37m",
+    "WARNING" : "\033[1;33m",
+    "ERROR"   : "\033[1;31m",
+    "CRITICAL": "\033[1;41m",
 }
 
 class ANSIColorFormatter(logging.Formatter):
@@ -264,12 +279,12 @@ def main():
 
     try:
         firmware_file = os.path.join(os.path.dirname(__file__), "glasgow.ihex")
-        if args.action in ("build",):
+        if args.action in ("build", "test"):
             pass
         elif args.action == "factory":
-            device = GlasgowDevice(firmware_file, VID_CYPRESS, PID_FX2)
+            device = GlasgowHardwareDevice(firmware_file, VID_CYPRESS, PID_FX2)
         else:
-            device = GlasgowDevice(firmware_file)
+            device = GlasgowHardwareDevice(firmware_file)
 
         if args.action == "voltage":
             if args.voltage is not None:
@@ -311,7 +326,7 @@ def main():
         if args.action == "run":
             if args.applet:
                 target, applet = _applet(args)
-                device.demultiplexer = DirectDemultiplexer(device, interface_count=2)
+                device.demultiplexer = DirectDemultiplexer(device)
 
                 bitstream_id = target.get_bitstream_id()
                 if device.bitstream_id() == bitstream_id and not args.force:
@@ -437,6 +452,28 @@ def main():
             if args.type in ("bin", "bitstream"):
                 with open(args.filename or args.applet + ".bin", "wb") as f:
                     f.write(target.get_bitstream(debug=True))
+
+        if args.action == "test":
+            logger.info("testing applet %r", args.applet)
+            applet = GlasgowApplet.all_applets[args.applet]()
+            loader = unittest.TestLoader()
+            stream = unittest.runner._WritelnDecorator(sys.stderr)
+            result = unittest.TextTestResult(stream=stream, descriptions=True, verbosity=2)
+            result.failfast = True
+            def startTest(test):
+                unittest.TextTestResult.startTest(result, test)
+                result.stream.write("\n")
+            result.startTest = startTest
+            if args.tests == []:
+                suite = loader.loadTestsFromTestCase(applet.test_cls)
+                suite.run(result)
+            else:
+                for test in args.tests:
+                    suite = loader.loadTestsFromName(test, module=applet.test_cls)
+                    suite.run(result)
+            if not result.wasSuccessful():
+                for _, traceback in result.errors + result.failures:
+                    print(traceback, end="", file=sys.stderr)
 
         if args.action == "internal-test":
             if args.mode == "toggle-io":

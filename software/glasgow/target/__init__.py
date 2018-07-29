@@ -12,7 +12,7 @@ from ..gateware.i2c_regs import I2CRegisters
 from ..gateware.fx2 import FX2Arbiter
 
 
-__all__ = ["GlasgowTarget"]
+__all__ = ["GlasgowHardwareTarget", "GlasgowMockTarget"]
 
 
 class _CRG(Module):
@@ -39,7 +39,7 @@ class _CRG(Module):
         ]
 
 
-class GlasgowTarget(Module):
+class GlasgowHardwareTarget(Module):
     sys_clk_freq = 30e6
 
     def __init__(self, multiplexer_cls=None):
@@ -94,3 +94,10 @@ class GlasgowTarget(Module):
             if not debug:
                 shutil.rmtree(build_dir)
         return bitstream
+
+
+class GlasgowMockTarget(Module):
+    sys_clk_freq = 30e6
+
+    def __init__(self):
+        pass
