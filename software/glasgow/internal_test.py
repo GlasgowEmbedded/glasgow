@@ -1,6 +1,6 @@
 from migen import *
 
-from . import GlasgowHardwareTarget
+from .target.hardware import GlasgowHardwareTarget
 
 
 __all__ = ["TestToggleIO", "TestMirrorI2C", "TestShiftOut", "TestGenSeq", "TestPLL",

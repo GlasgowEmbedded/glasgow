@@ -6,7 +6,7 @@ import re
 from .. import AccessArguments
 
 
-class MockArguments(AccessArguments):
+class SimulationArguments(AccessArguments):
     # First, define some state-less methods that just add arguments to an argparse instance.
 
     def _pin_number(self, arg):

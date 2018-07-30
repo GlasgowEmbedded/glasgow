@@ -1,6 +1,9 @@
 import struct
 
 
+__all__ = ["GlasgowConfig"]
+
+
 class GlasgowConfig:
     """
     Glasgow EEPROM configuration data.

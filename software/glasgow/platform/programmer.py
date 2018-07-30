@@ -1,5 +1,5 @@
 from migen.build.generic_programmer import GenericProgrammer
-from .device import GlasgowHardwareDevice
+from ..device.hardware import GlasgowHardwareDevice
 
 
 __all__ = ['GlasgowProgrammer']

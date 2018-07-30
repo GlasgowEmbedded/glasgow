@@ -12,10 +12,11 @@ from datetime import datetime
 from fx2 import VID_CYPRESS, PID_FX2, FX2Config, FX2Device, FX2DeviceError
 from fx2.format import input_data, diff_data
 
-from .target import GlasgowHardwareTarget
-from .target.config import GlasgowConfig
-from .target.device import VID_QIHW, PID_GLASGOW, GlasgowHardwareDevice
-from .target.internal_test import *
+from .device import GlasgowDeviceError
+from .device.config import GlasgowConfig
+from .target.hardware import GlasgowHardwareTarget
+from .device.hardware import VID_QIHW, PID_GLASGOW, GlasgowHardwareDevice
+from .internal_test import *
 from .access.direct import *
 from .applet import *
 
@@ -523,7 +524,7 @@ def main():
             if device.read_eeprom("fx2", 0, len(image)) != image:
                 raise SystemExit("Factory programming failed")
 
-    except FX2DeviceError as e:
+    except (FX2DeviceError, GlasgowDeviceError) as e:
         raise SystemExit(e)
 
 

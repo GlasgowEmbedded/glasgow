@@ -4,14 +4,14 @@ from migen.genlib.fifo import _FIFOInterface, AsyncFIFO, SyncFIFOBuffered
 from .. import AccessMultiplexer, AccessMultiplexerInterface
 
 
-class MockMultiplexer(AccessMultiplexer):
+class SimulationMultiplexer(AccessMultiplexer):
     def claim_interface(self, applet, args):
-        iface = MockMultiplexerInterface(applet)
+        iface = SimulationMultiplexerInterface(applet)
         self.submodules += iface
         return iface
 
 
-class MockMultiplexerInterface(AccessMultiplexerInterface):
+class SimulationMultiplexerInterface(AccessMultiplexerInterface):
     def __init__(self, applet):
         super().__init__(applet)
 

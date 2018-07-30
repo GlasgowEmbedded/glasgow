@@ -3,7 +3,7 @@ import argparse
 
 
 __all__ = ["GlasgowAppletError", "GlasgowApplet", "GlasgowAppletTestCase",
-           "synthesis_test", "applet_run_test"]
+           "synthesis_test", "applet_simulation_test"]
 
 
 class GlasgowAppletError(Exception):
@@ -52,9 +52,10 @@ import functools
 from migen.sim import *
 
 from ..access.direct import *
-from ..access.mock import *
-from ..target import *
-from ..target.device import *
+from ..access.simulation import *
+from ..target.hardware import *
+from ..target.simulation import *
+from ..device.simulation import *
 
 
 class GlasgowAppletTestCase(unittest.TestCase):
@@ -83,14 +84,14 @@ class GlasgowAppletTestCase(unittest.TestCase):
 
         target.get_bitstream(debug=True)
 
-    def _prepare_mock_target(self, args):
-        self.target = GlasgowMockTarget()
-        self.target.submodules.multiplexer = MockMultiplexer()
+    def _prepare_simulation_target(self, args):
+        self.target = GlasgowSimulationTarget()
+        self.target.submodules.multiplexer = SimulationMultiplexer()
 
-        self.device = GlasgowMockDevice()
-        self.device.demultiplexer = MockDemultiplexer(self.device)
+        self.device = GlasgowSimulationDevice()
+        self.device.demultiplexer = SimulationDemultiplexer(self.device)
 
-        access_args = MockArguments(applet_name=self.applet.name)
+        access_args = SimulationArguments(applet_name=self.applet.name)
 
         parser = argparse.ArgumentParser()
         self.applet.add_build_arguments(parser, access_args)
@@ -98,10 +99,10 @@ class GlasgowAppletTestCase(unittest.TestCase):
 
         self._parsed_args = parser.parse_args(args)
 
-    def build_applet_on_mock_target(self):
+    def build_simulated_applet(self):
         self.applet.build(self.target, self._parsed_args)
 
-    async def run_applet_on_mock_device(self):
+    async def run_simulated_applet(self):
         return await self.applet.run(self.device, self._parsed_args)
 
 
@@ -112,11 +113,11 @@ def synthesis_test(case):
     return unittest.skipUnless(synthesis_available, "synthesis not available")(case)
 
 
-def applet_run_test(setup, args=[]):
+def applet_simulation_test(setup, args=[]):
     def decorator(case):
         @functools.wraps(case)
         def wrapper(self):
-            self._prepare_mock_target(args)
+            self._prepare_simulation_target(args)
             getattr(self, setup)()
             vcd_name = "{}.vcd".format(case.__name__)
             run_simulation(self.target, case(self), vcd_name=vcd_name)

@@ -159,12 +159,12 @@ class UARTAppletTestCase(GlasgowAppletTestCase, applet=UARTApplet):
         self.assertBuilds()
 
     def setup_loopback(self):
-        self.build_applet_on_mock_target()
+        self.build_simulated_applet()
         mux_iface = self.applet.mux_interface
         mux_iface.comb += mux_iface.pads.rx_t.i.eq(mux_iface.pads.tx_t.o)
 
-    @applet_run_test("setup_loopback", ["--baud", "5000000"])
+    @applet_simulation_test("setup_loopback", ["--baud", "5000000"])
     async def test_loopback(self):
-        uart_iface = await self.run_applet_on_mock_device()
+        uart_iface = await self.run_simulated_applet()
         await uart_iface.write(bytes([0xAA, 0x55]))
         self.assertEqual(await uart_iface.read(2), bytes([0xAA, 0x55]))

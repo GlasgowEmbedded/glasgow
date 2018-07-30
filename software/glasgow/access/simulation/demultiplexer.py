@@ -4,12 +4,12 @@ from migen import *
 from .. import AccessDemultiplexer, AccessDemultiplexerInterface
 
 
-class MockDemultiplexer(AccessDemultiplexer):
+class SimulationDemultiplexer(AccessDemultiplexer):
     def claim_interface(self, applet, mux_interface, args, timeout=None, async=False):
-        return MockDemultiplexerInterface(self.device, applet, mux_interface, timeout, async)
+        return SimulationDemultiplexerInterface(self.device, applet, mux_interface, timeout, async)
 
 
-class MockDemultiplexerInterface(AccessDemultiplexerInterface):
+class SimulationDemultiplexerInterface(AccessDemultiplexerInterface):
     def __init__(self, device, applet, mux_interface, timeout, async):
         super().__init__(device, applet)
 
