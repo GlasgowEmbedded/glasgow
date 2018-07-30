@@ -2,24 +2,20 @@ from migen import *
 from migen.genlib.fsm import *
 
 
-__all__ = ['I2CRegisters']
+__all__ = ["Registers", "I2CRegisters"]
 
 
-class I2CRegisters(Module):
+class Registers(Module):
     """
-    A set of 8-bit registers accessible over I2C.
+    A set of 8-bit registers.
 
-    :attr registers:
-        :class:`Array` of 8-bit signals for registers.
+    :attr reg_count:
+        Register count.
     """
-    def __init__(self, i2c_slave):
-        self.i2c_slave = i2c_slave
-
+    def __init__(self):
         self.reg_count = 0
         self.regs_r = Array()
         self.regs_w = Array()
-
-        self.address = Signal(8)
 
     def _add_reg(self, *args, **kwargs):
         reg  = Signal(*args, **kwargs)
@@ -38,6 +34,16 @@ class I2CRegisters(Module):
         self.regs_r.append(reg)
         self.regs_w.append(reg)
         return reg, addr
+
+
+class I2CRegisters(Registers):
+    """
+    A set of 8-bit registers, accessible over I2C.
+    """
+    def __init__(self, i2c_slave):
+        super().__init__()
+        self.i2c_slave = i2c_slave
+        self.address   = Signal(8)
 
     def do_finalize(self):
         if self.reg_count == 0:

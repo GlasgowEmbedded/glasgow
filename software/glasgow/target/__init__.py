@@ -8,7 +8,7 @@ from migen import *
 from .platform import GlasgowPlatform
 from ..gateware.pads import Pads
 from ..gateware.i2c import I2CSlave
-from ..gateware.i2c_regs import I2CRegisters
+from ..gateware.registers import I2CRegisters
 from ..gateware.fx2 import FX2Arbiter
 
 
