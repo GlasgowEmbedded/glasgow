@@ -219,48 +219,49 @@ class HD44780Applet(GlasgowApplet, name="hd44780"):
             help="power-cycle the port on startup")
 
     async def run(self, device, args):
-        iface = device.demultiplexer.claim_raw_interface(self, timeout=1)
+        iface = await device.demultiplexer.claim_raw_interface(self, self.mux_interface, timeout=1)
 
         if args.reset:
-            device.set_voltage(args.port_spec, 0.0)
-            time.sleep(0.3)
-        device.set_voltage(args.port_spec, 5.0)
-        time.sleep(0.040) # wait 40ms after reset
+            await device.set_voltage(args.port_spec, 0.0)
+            await asyncio.sleep(0.3)
+        await device.set_voltage(args.port_spec, 5.0)
+        await asyncio.sleep(0.040) # wait 40ms after reset
 
-        def init(command, poll):
-            iface.write([XFER_INIT, command, XFER_POLL if poll else XFER_WAIT])
+        async def init(command, poll):
+            await iface.write([XFER_INIT, command, XFER_POLL if poll else XFER_WAIT])
 
-        def cmd(command):
-            iface.write([XFER_COMMAND, command, XFER_POLL])
+        async def cmd(command):
+            await iface.write([XFER_COMMAND, command, XFER_POLL])
 
-        def data(bytes):
+        async def data(bytes):
             for byte in bytes:
-                iface.write([XFER_WRITE, byte, XFER_POLL])
+                await iface.write([XFER_WRITE, byte, XFER_POLL])
 
         # HD44780 may be in either 4-bit or 8-bit mode and we don't know which.
         # The following sequence brings it to 4-bit mode regardless of which one it was in.
-        init(0x03, poll=False) # either CMD_FUNCTION_SET|BIT_IFACE_8BIT or CMD_CURSOR_HOME or
-                               # the second nibble of an unknown command/data
-        init(0x03, poll=False) # either CMD_FUNCTION_SET|BIT_IFACE_8BIT or CMD_CURSOR_HOME or
-                               # the second nibble of CMD_FUNCTION_SET (the set bits are ignored)
-        init(0x03, poll=False) # CMD_FUNCTION_SET|BIT_IFACE_8BIT
-        init(0x02, poll=True)  # CMD_FUNCTION_SET
+        await init(0x03, poll=False) # either CMD_FUNCTION_SET|BIT_IFACE_8BIT or CMD_CURSOR_HOME
+                                     # or the second nibble of an unknown command/data
+        await init(0x03, poll=False) # either CMD_FUNCTION_SET|BIT_IFACE_8BIT or CMD_CURSOR_HOME
+                                     # or the second nibble of CMD_FUNCTION_SET (the set bits
+                                     # are ignored)
+        await init(0x03, poll=False) # CMD_FUNCTION_SET|BIT_IFACE_8BIT
+        await init(0x02, poll=True)  # CMD_FUNCTION_SET
 
-        cmd(CMD_FUNCTION_SET|BIT_DISPLAY_2_LINE)
-        cmd(CMD_DISPLAY_ON_OFF|BIT_DISPLAY_ON|BIT_CURSOR_BLINK)
-        cmd(CMD_CLEAR_DISPLAY)
-        cmd(CMD_ENTRY_MODE|BIT_CURSOR_INC_POS)
-        data(b"Hello")
-        cmd(CMD_DDRAM_ADDRESS|0x40)
-        data(b"  World")
-        iface.flush()
-        time.sleep(1)
+        await cmd(CMD_FUNCTION_SET|BIT_DISPLAY_2_LINE)
+        await cmd(CMD_DISPLAY_ON_OFF|BIT_DISPLAY_ON|BIT_CURSOR_BLINK)
+        await cmd(CMD_CLEAR_DISPLAY)
+        await cmd(CMD_ENTRY_MODE|BIT_CURSOR_INC_POS)
+        await data(b"Hello")
+        await cmd(CMD_DDRAM_ADDRESS|0x40)
+        await data(b"  World")
+        await iface.flush()
+        await asyncio.sleep(1)
 
         from datetime import datetime
         while True:
-            time.sleep(1)
-            cmd(CMD_DDRAM_ADDRESS|0x00)
-            data(datetime.now().strftime("%H:%M:%S").encode("ascii"))
-            cmd(CMD_DDRAM_ADDRESS|0x40)
-            data(datetime.now().strftime("%y-%m-%d").encode("ascii"))
-            iface.flush()
+            await asyncio.sleep(1)
+            await cmd(CMD_DDRAM_ADDRESS|0x00)
+            await data(datetime.now().strftime("%H:%M:%S").encode("ascii"))
+            await cmd(CMD_DDRAM_ADDRESS|0x40)
+            await data(datetime.now().strftime("%y-%m-%d").encode("ascii"))
+            await iface.flush()

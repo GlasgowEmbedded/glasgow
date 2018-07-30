@@ -4,12 +4,11 @@ import logging
 import argparse
 import textwrap
 import re
-import time
 import asyncio
 import unittest
 from datetime import datetime
 
-from fx2 import VID_CYPRESS, PID_FX2, FX2Config, FX2Device, FX2DeviceError
+from fx2 import VID_CYPRESS, PID_FX2, FX2Config
 from fx2.format import input_data, diff_data
 
 from .device import GlasgowDeviceError
@@ -213,7 +212,7 @@ def get_argparser():
     p_internal_test_shift_out = internal_test_subparsers.add_parser(
         "shift-out", help="shift bytes from EP2OUT MSB first via {CLK,DO} on A[0-1] at 3.3 V")
     p_internal_test_shift_out.add_argument(
-        "--async", default=False, action="store_true",
+        "--async", dest="is_async", default=False, action="store_true",
         help="use asynchronous FIFO")
     p_internal_test_gen_seq = internal_test_subparsers.add_parser(
         "gen-seq", help="read limit from EP4IN and generate sequence on {EP2OUT,EP6OUT}")
@@ -244,28 +243,28 @@ def _applet(args):
     try:
         applet.build(target, args)
     except GlasgowAppletError as e:
-        applet.logger.error(str(e))
+        applet.logger.error(e)
         logger.error("failed to build subtarget for applet %r", args.applet)
         raise SystemExit()
     return target, applet
 
 
-LOG_COLORS = {
-    "TRACE"   : "\033[37m",
-    "DEBUG"   : "\033[36m",
-    "INFO"    : "\033[1;37m",
-    "WARNING" : "\033[1;33m",
-    "ERROR"   : "\033[1;31m",
-    "CRITICAL": "\033[1;41m",
-}
-
 class ANSIColorFormatter(logging.Formatter):
+    LOG_COLORS = {
+        "TRACE"   : "\033[37m",
+        "DEBUG"   : "\033[36m",
+        "INFO"    : "\033[1;37m",
+        "WARNING" : "\033[1;33m",
+        "ERROR"   : "\033[1;31m",
+        "CRITICAL": "\033[1;41m",
+    }
+
     def format(self, record):
-        color = LOG_COLORS.get(record.levelname, "")
+        color = self.LOG_COLORS.get(record.levelname, "")
         return "{}{}\033[0m".format(color, super().format(record))
 
 
-def main():
+async def _main():
     args = get_argparser().parse_args()
 
     root_logger = logging.getLogger()
@@ -289,24 +288,25 @@ def main():
 
         if args.action == "voltage":
             if args.voltage is not None:
-                device.reset_alert(args.ports)
-                device.poll_alert() # clear any remaining alerts
+                await device.reset_alert(args.ports)
+                await device.poll_alert() # clear any remaining alerts
                 try:
-                    device.set_voltage(args.ports, args.voltage)
+                    await device.set_voltage(args.ports, args.voltage)
                 except:
-                    device.set_voltage(args.ports, 0.0)
+                    await device.set_voltage(args.ports, 0.0)
                     raise
                 if args.set_alert and args.voltage != 0.0:
-                    time.sleep(0.050) # let the output capacitor discharge a bit
-                    device.set_alert_tolerance(args.ports, args.voltage, args.tolerance / 100)
+                    await asyncio.sleep(0.050) # let the output capacitor discharge a bit
+                    await device.set_alert_tolerance(args.ports, args.voltage,
+                                                     args.tolerance / 100)
 
             print("Port\tVio\tVlimit\tVsense\tMonitor")
-            alerts = device.poll_alert()
+            alerts = await device.poll_alert()
             for port in args.ports:
-                vio = device.get_voltage(port)
-                vlimit = device.get_voltage_limit(port)
-                vsense = device.measure_voltage(port)
-                alert = device.get_alert(port)
+                vio    = await device.get_voltage(port)
+                vlimit = await device.get_voltage_limit(port)
+                vsense = await device.measure_voltage(port)
+                alert  = await device.get_alert(port)
                 notice = ""
                 if port in alerts:
                     notice += " (ALERT)"
@@ -315,12 +315,12 @@ def main():
 
         if args.action == "voltage-limit":
             if args.voltage is not None:
-                device.set_voltage_limit(args.ports, args.voltage)
+                await device.set_voltage_limit(args.ports, args.voltage)
 
             print("Port\tVio\tVlimit")
             for port in args.ports:
-                vio = device.get_voltage(port)
-                vlimit = device.get_voltage_limit(port)
+                vio    = await device.get_voltage(port)
+                vlimit = await device.get_voltage_limit(port)
                 print("{}\t{:.2}\t{:.2}"
                       .format(port, vio, vlimit))
 
@@ -330,33 +330,31 @@ def main():
                 device.demultiplexer = DirectDemultiplexer(device)
 
                 bitstream_id = target.get_bitstream_id()
-                if device.bitstream_id() == bitstream_id and not args.force:
+                if await device.bitstream_id() == bitstream_id and not args.force:
                     logger.info("device already has bitstream ID %s", bitstream_id.hex())
                 else:
                     logger.info("building bitstream ID %s for applet %r",
                                 bitstream_id.hex(), args.applet)
-                    device.download_bitstream(target.get_bitstream(debug=True), bitstream_id)
+                    await device.download_bitstream(target.get_bitstream(debug=True), bitstream_id)
 
                 logger.info("running handler for applet %r", args.applet)
-                loop = asyncio.get_event_loop()
                 try:
-                    iface = loop.run_until_complete(applet.run(device, args))
-                    loop.run_until_complete(applet.interact(device, args, iface))
+                    iface = await applet.run(device, args)
+                    await applet.interact(device, args, iface)
                 except GlasgowAppletError as e:
                     applet.logger.error(str(e))
 
                 # Work around bugs in python-libusb1 that cause segfaults on interpreter shutdown.
-                for iface in device.demultiplexer._interfaces:
-                    iface.flush()
+                await device.demultiplexer.flush()
 
             else:
                 with args.bitstream as f:
                     logger.info("downloading bitstream from %r", f.name)
-                    device.download_bitstream(f.read())
+                    await device.download_bitstream(f.read())
 
         if args.action == "flash":
             logger.info("reading device configuration")
-            header = device.read_eeprom("fx2", 0, 8 + 4 + GlasgowConfig.size)
+            header = await device.read_eeprom("fx2", 0, 8 + 4 + GlasgowConfig.size)
             header[0] = 0xC2 # see below
 
             fx2_config = FX2Config.decode(header, partial=True)
@@ -393,7 +391,7 @@ def main():
                 logger.info("building bitstream for applet %s", args.applet)
                 target, applet = _applet(args)
                 new_bitstream_id = target.get_bitstream_id()
-                new_bitstream = target.get_bitstream()
+                new_bitstream = target.get_bitstream(debug=True)
 
                 # We always build and reflash the bitstream in case the one currently
                 # in EEPROM is corrupted. If we only compared the ID, there would be
@@ -422,26 +420,28 @@ def main():
 
             if new_bitstream:
                 logger.info("programming bitstream")
-                old_bitstream = device.read_eeprom("ice", 0, len(new_bitstream))
+                old_bitstream = await device.read_eeprom("ice", 0, len(new_bitstream))
                 if old_bitstream != new_bitstream:
                     for (addr, chunk) in diff_data(old_bitstream, new_bitstream):
-                        device.write_eeprom("ice", addr, chunk)
+                        await device.write_eeprom("ice", addr, chunk)
 
                     logger.info("verifying bitstream")
-                    if device.read_eeprom("ice", 0, len(new_bitstream)) != new_bitstream:
-                        raise SystemExit("Bitstream programming failed")
+                    if await device.read_eeprom("ice", 0, len(new_bitstream)) != new_bitstream:
+                        logger.critical("bitstream programming failed")
+                        return 1
                 else:
                     logger.info("bitstream identical")
 
             logger.info("programming configuration and firmware")
-            old_image = device.read_eeprom("fx2", 0, len(new_image))
+            old_image = await device.read_eeprom("fx2", 0, len(new_image))
             if old_image != new_image:
                 for (addr, chunk) in diff_data(old_image, new_image):
-                    device.write_eeprom("fx2", addr, chunk)
+                    await device.write_eeprom("fx2", addr, chunk)
 
                 logger.info("verifying configuration and firmware")
-                if device.read_eeprom("fx2", 0, len(new_image)) != new_image:
-                    raise SystemExit("Configuration/firmware programming failed")
+                if await device.read_eeprom("fx2", 0, len(new_image)) != new_image:
+                    logger.critical("configuration/firmware programming failed")
+                    return 1
             else:
                 logger.info("configuration and firmware identical")
 
@@ -475,35 +475,37 @@ def main():
             if not result.wasSuccessful():
                 for _, traceback in result.errors + result.failures:
                     print(traceback, end="", file=sys.stderr)
+                return 1
 
         if args.action == "internal-test":
             if args.mode == "toggle-io":
-                device.download_bitstream(TestToggleIO().get_bitstream(debug=True))
-                device.set_voltage("AB", 3.3)
+                await device.download_bitstream(TestToggleIO().get_bitstream(debug=True))
+                await device.set_voltage("AB", 3.3)
 
             if args.mode == "mirror-i2c":
-                device.download_bitstream(TestMirrorI2C().get_bitstream(debug=True))
-                device.set_voltage("A", 3.3)
+                await device.download_bitstream(TestMirrorI2C().get_bitstream(debug=True))
+                await device.set_voltage("A", 3.3)
 
             if args.mode == "shift-out":
-                device.download_bitstream(TestShiftOut(async=args.async)
-                                          .get_bitstream(debug=True))
-                device.set_voltage("A", 3.3)
+                await device.download_bitstream(TestShiftOut(is_async=args.is_async)
+                                                .get_bitstream(debug=True))
+                await device.set_voltage("A", 3.3)
 
             if args.mode == "gen-seq":
-                device.download_bitstream(TestGenSeq().get_bitstream(debug=True))
+                await device.download_bitstream(TestGenSeq().get_bitstream(debug=True))
 
             if args.mode == "pll":
-                device.download_bitstream(TestPLL().get_bitstream(debug=True))
+                await device.download_bitstream(TestPLL().get_bitstream(debug=True))
 
             if args.mode == "registers":
-                device.download_bitstream(TestRegisters().get_bitstream(debug=True))
+                await device.download_bitstream(TestRegisters().get_bitstream(debug=True))
 
         if args.action == "factory":
             logger.info("reading device configuration")
-            header = device.read_eeprom("fx2", 0, 8 + 4 + GlasgowConfig.size)
+            header = await device.read_eeprom("fx2", 0, 8 + 4 + GlasgowConfig.size)
             if not re.match(rb"^\xff+$", header):
-                raise SystemExit("Device already factory-programmed")
+                logger.error("device already factory-programmed")
+                return 1
 
             fx2_config = FX2Config(vendor_id=VID_QIHW, product_id=PID_GLASGOW,
                                    device_id=1 + ord(args.revision) - ord('A'),
@@ -518,14 +520,23 @@ def main():
             image[0] = 0xC0
 
             logger.info("programming device configuration")
-            device.write_eeprom("fx2", 0, image)
+            await device.write_eeprom("fx2", 0, image)
 
             logger.info("verifying device configuration")
-            if device.read_eeprom("fx2", 0, len(image)) != image:
-                raise SystemExit("Factory programming failed")
+            if await device.read_eeprom("fx2", 0, len(image)) != image:
+                logger.critical("factory programming failed")
+                return 1
 
-    except (FX2DeviceError, GlasgowDeviceError) as e:
-        raise SystemExit(e)
+    except GlasgowDeviceError as e:
+        logger.error(e)
+        return 1
+
+    return 0
+
+
+def main():
+    loop = asyncio.get_event_loop()
+    exit(loop.run_until_complete(_main()))
 
 
 if __name__ == "__main__":

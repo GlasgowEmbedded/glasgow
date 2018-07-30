@@ -1,7 +1,7 @@
 # BMP280 reference: https://ae-bst.resource.bosch.com/media/_tech/media/datasheets/BST-BMP280-DS001-19.pdf
 
 import logging
-import time
+import asyncio
 
 from .. import *
 from ..i2c_master import I2CMasterApplet
@@ -99,26 +99,26 @@ class BMP280:
         self._level   = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
         self._has_cal = False
 
-    def _read_reg8(self, reg):
-        byte, = self._iface.read(reg, 1)
+    async def _read_reg8(self, reg):
+        byte, = await self._iface.read(reg, 1)
         self._logger.log(self._level, "BMP280: reg=%#04x read=%#04x",
                          reg, byte)
         return byte
 
-    def _write_reg8(self, reg, byte):
-        self._iface.write(reg, [byte])
+    async def _write_reg8(self, reg, byte):
+        await self._iface.write(reg, [byte])
         self._logger.log(self._level, "BMP280: reg=%#04x write=%#04x",
                          reg, byte)
 
-    def _read_reg16u(self, reg):
-        lsb, msb = self._iface.read(reg, 2)
+    async def _read_reg16u(self, reg):
+        lsb, msb = await self._iface.read(reg, 2)
         raw = (msb << 8) | lsb
         value = raw
         self._logger.log(self._level, "BMP280: reg=%#04x raw=%#06x read=%d", reg, raw, value)
         return value
 
-    def _read_reg16s(self, reg):
-        lsb, msb = self._iface.read(reg, 2)
+    async def _read_reg16s(self, reg):
+        lsb, msb = await self._iface.read(reg, 2)
         raw = (msb << 8) | lsb
         if raw & (1 << 15):
             value = -((1 << 16) - raw)
@@ -127,67 +127,67 @@ class BMP280:
         self._logger.log(self._level, "BMP280: reg=%#04x raw=%#06x read=%+d", reg, raw, value)
         return value
 
-    def _read_reg24(self, reg):
-        msb, lsb, xlsb = self._iface.read(reg, 3)
+    async def _read_reg24(self, reg):
+        msb, lsb, xlsb = await self._iface.read(reg, 3)
         raw = ((msb << 16) | (lsb << 8) | xlsb)
         value = raw >> 4
         self._logger.log(self._level, "BMP280: reg=%#04x raw=%#06x read=%d", reg, raw, value)
         return value
 
-    def identify(self):
-        id = self._read_reg8(REG_ID)
+    async def identify(self):
+        id = await self._read_reg8(REG_ID)
         if id != BIT_ID:
-            raise GlasgowAppletError("BMP280: wrong ID=%#04x", id)
+            raise GlasgowAppletError("BMP280: wrong ID=%#04x" % id)
 
-    def _read_cal(self):
+    async def _read_cal(self):
         if self._has_cal: return
-        self._t1 = self._read_reg16u(REG_CAL_T1)
-        self._t2 = self._read_reg16s(REG_CAL_T2)
-        self._t3 = self._read_reg16s(REG_CAL_T3)
-        self._p1 = self._read_reg16u(REG_CAL_P1)
-        self._p2 = self._read_reg16s(REG_CAL_P2)
-        self._p3 = self._read_reg16s(REG_CAL_P3)
-        self._p4 = self._read_reg16s(REG_CAL_P4)
-        self._p5 = self._read_reg16s(REG_CAL_P5)
-        self._p6 = self._read_reg16s(REG_CAL_P6)
-        self._p7 = self._read_reg16s(REG_CAL_P7)
-        self._p8 = self._read_reg16s(REG_CAL_P8)
-        self._p9 = self._read_reg16s(REG_CAL_P9)
+        self._t1 = await self._read_reg16u(REG_CAL_T1)
+        self._t2 = await self._read_reg16s(REG_CAL_T2)
+        self._t3 = await self._read_reg16s(REG_CAL_T3)
+        self._p1 = await self._read_reg16u(REG_CAL_P1)
+        self._p2 = await self._read_reg16s(REG_CAL_P2)
+        self._p3 = await self._read_reg16s(REG_CAL_P3)
+        self._p4 = await self._read_reg16s(REG_CAL_P4)
+        self._p5 = await self._read_reg16s(REG_CAL_P5)
+        self._p6 = await self._read_reg16s(REG_CAL_P6)
+        self._p7 = await self._read_reg16s(REG_CAL_P7)
+        self._p8 = await self._read_reg16s(REG_CAL_P8)
+        self._p9 = await self._read_reg16s(REG_CAL_P9)
         self._has_cal = True
 
-    def set_iir_coefficient(self, coeff):
-        config = self._read_reg8(REG_CONFIG)
+    async def set_iir_coefficient(self, coeff):
+        config = await self._read_reg8(REG_CONFIG)
         config = (config & ~BIT_IIR) | bit_iir[coeff]
-        self._write_reg8(REG_CONFIG, config)
+        await self._write_reg8(REG_CONFIG, config)
 
-    def measure(self, ovs_t=2, ovs_p=16, one_shot=True):
+    async def measure(self, ovs_t=2, ovs_p=16, one_shot=True):
         if one_shot:
             mode = BIT_MODE_FORCE
         else:
             mode = BIT_MODE_NORMAL
-        self._write_reg8(REG_CTRL_MEAS,
+        await self._write_reg8(REG_CTRL_MEAS,
             bit_osrs_temp[ovs_t] |
             bit_osrs_press[ovs_p]   |
             mode)
-        time.sleep(0.050) # worst case
+        await asyncio.sleep(0.050) # worst case
 
-    def _get_temp_fine(self):
-        self._read_cal()
-        ut = self._read_reg24(REG_TEMP)
+    async def _get_temp_fine(self):
+        await self._read_cal()
+        ut = await self._read_reg24(REG_TEMP)
         x1 = (ut / 16384.0  - self._t1 / 1024.0) * self._t2
         x2 = (ut / 131072.0 - self._t1 / 8192.0) ** 2 * self._t3
         tf = x1 + x2
         return tf
 
-    def get_temperature(self):
-        tf = self._get_temp_fine()
+    async def get_temperature(self):
+        tf = await self._get_temp_fine()
         t  = tf / 5120.0
         return t # in °C
 
-    def get_pressure(self):
-        self._read_cal()
-        tf = self._get_temp_fine()
-        up = self._read_reg24(REG_PRESS)
+    async def get_pressure(self):
+        await self._read_cal()
+        tf = await self._get_temp_fine()
+        up = await self._read_reg24(REG_PRESS)
         x1 = tf / 2.0 - 64000.0
         x2 = x1 * x1 * self._p6 / 32768.0
         x2 = x2 + x1 * self._p5 * 2
@@ -201,8 +201,8 @@ class BMP280:
         p  = p + (x1 + x2 + self._p7) / 16.0
         return p # in Pa
 
-    def get_altitude(self, p0=101325):
-        p  = self.get_pressure()
+    async def get_altitude(self, p0=101325):
+        p  = await self.get_pressure()
         h  = 44330 * (1 - (p / p0) ** (1 / 5.255))
         return h # in m
 
@@ -212,16 +212,16 @@ class BMP280I2CInterface:
         self.lower     = interface
         self._i2c_addr = i2c_address
 
-    def read(self, addr, size):
-        self.lower.write(self._i2c_addr, [addr])
-        result = self.lower.read(self._i2c_addr, size)
+    async def read(self, addr, size):
+        await self.lower.write(self._i2c_addr, [addr])
+        result = await self.lower.read(self._i2c_addr, size)
         if result is None:
             raise GlasgowAppletError("BMP280 did not acknowledge I2C read at address {:#07b}"
                                      .format(self._i2c_addr))
         return list(result)
 
-    def write(self, addr, data):
-        result = self.lower.write(self._i2c_addr, [addr, *data])
+    async def write(self, addr, data):
+        result = await self.lower.write(self._i2c_addr, [addr, *data])
         if not result:
             raise GlasgowAppletError("BMP280 did not acknowledge I2C write at address {:#07b}"
                                      .format(self._i2c_addr))
@@ -245,7 +245,7 @@ class I2CBMP280Applet(I2CMasterApplet, name="i2c-bmp280"):
             help="I2C address of the sensor (one of: 0x76 0x77, default: %(default)#02x)")
 
     async def run(self, device, args):
-        i2c_iface = super().run(device, args)
+        i2c_iface = await super().run(device, args)
         bmp280_iface = BMP280I2CInterface(i2c_iface, self.logger, args.i2c_address)
         return BMP280(bmp280_iface, self.logger)
 
@@ -274,20 +274,21 @@ class I2CBMP280Applet(I2CMasterApplet, name="i2c-bmp280"):
             help="measure and output pressure and temperature continuously")
 
     async def interact(self, device, args, bmp280):
-        bmp280.identify()
+        await bmp280.identify()
 
-        bmp280.set_iir_coefficient(args.iir_filter)
-        bmp280.measure(ovs_p=args.oversample_pressure,
-                       ovs_t=args.oversample_temperature,
-                       one_shot=not args.continuous)
+        await bmp280.set_iir_coefficient(args.iir_filter)
+        await bmp280.measure(ovs_p=args.oversample_pressure,
+                             ovs_t=args.oversample_temperature,
+                             one_shot=not args.continuous)
 
         if args.continuous:
             while True:
                 print("T={:.2f} °C p={:.1f} Pa h={:f} m"
-                      .format(bmp280.get_temperature(), bmp280.get_pressure(),
-                              bmp280.get_altitude(p0=args.sea_level_pressure)))
-                time.sleep(1)
+                      .format(await bmp280.get_temperature(),
+                              await bmp280.get_pressure(),
+                              await bmp280.get_altitude(p0=args.sea_level_pressure)))
+                await asyncio.sleep(1)
         else:
-            self.logger.info("T=%.2f °C", bmp280.get_temperature())
-            self.logger.info("p=%.1f Pa", bmp280.get_pressure())
-            self.logger.info("h=%f m",    bmp280.get_altitude(p0=args.sea_level_pressure))
+            self.logger.info("T=%.2f °C", await bmp280.get_temperature())
+            self.logger.info("p=%.1f Pa", await bmp280.get_pressure())
+            self.logger.info("h=%f m",    await bmp280.get_altitude(p0=args.sea_level_pressure))

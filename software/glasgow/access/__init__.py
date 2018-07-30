@@ -99,10 +99,15 @@ class AccessMultiplexerInterface(Module, metaclass=ABCMeta):
 class AccessDemultiplexer(metaclass=ABCMeta):
     def __init__(self, device):
         self.device = device
+        self._interfaces = []
 
     @abstractmethod
-    def claim_interface(self, applet, mux_interface, args, timeout=None, async=False):
+    async def claim_interface(self, applet, mux_interface, args, timeout=None):
         pass
+
+    async def flush(self):
+        for iface in self._interfaces:
+            await iface.flush()
 
 
 class AccessDemultiplexerInterface(metaclass=ABCMeta):
@@ -112,30 +117,23 @@ class AccessDemultiplexerInterface(metaclass=ABCMeta):
         self.logger = applet.logger
 
     @abstractmethod
-    def has_buffered_data(self):
+    async def read(self, length=None):
         pass
 
-    @abstractmethod
-    def read(self, length=None):
-        pass
-
-    def read_str(self, *args, encoding="utf-8", **kwargs):
-        result = self.read(*args, **kwargs)
+    async def read_str(self, *args, encoding="utf-8", **kwargs):
+        result = await self.read(*args, **kwargs)
         if result is None:
             return None
         else:
             return result.decode(encoding)
 
     @abstractmethod
-    def write(self, data):
+    async def write(self, data):
         pass
 
-    def write_str(self, data, *args, encoding="utf-8", **kwargs):
-        return self.write(data.encode(encoding), *args, **kwargs)
+    async def write_str(self, data, *args, encoding="utf-8", **kwargs):
+        await self.write(data.encode(encoding), *args, **kwargs)
 
     @abstractmethod
-    def flush(self):
+    async def flush(self):
         pass
-
-    def __del__(self):
-        self.flush()

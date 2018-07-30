@@ -25,21 +25,24 @@ class I2CEEPROM24CInterface:
             i2c_addr = self._i2c_addr | (addr >> 8)
             return (i2c_addr, [addr & 0xff])
 
-    def read(self, addr, size):
+    async def read(self, addr, size):
         i2c_addr, addr_bytes = self._carry_addr(addr)
 
         self._log("i2c-addr=%#04x addr=%#06x", i2c_addr, addr)
-        result = self.lower.write(i2c_addr, addr_bytes)
-        if result is None:
+        result = await self.lower.write(i2c_addr, addr_bytes)
+        if result is False:
             self._log("unacked")
             return None
 
         self._log("read=%d", size)
-        data = self.lower.read(i2c_addr, size, stop=True)
-        self._log("data=<%s>", data.hex())
+        data = await self.lower.read(i2c_addr, size, stop=True)
+        if data is None:
+            self._log("unacked")
+        else:
+            self._log("data=<%s>", data.hex())
         return data
 
-    def write(self, addr, data):
+    async def write(self, addr, data):
         while len(data) > 0:
             i2c_addr, addr_bytes = self._carry_addr(addr)
 
@@ -51,12 +54,12 @@ class I2CEEPROM24CInterface:
             chunk = data[:chunk_size]
             data  = data[chunk_size:]
             self._log("i2c-addr=%#04x addr=%#06x write=<%s>", i2c_addr, addr, chunk.hex())
-            result = self.lower.write(i2c_addr, [*addr_bytes, *chunk], stop=True)
-            if result is None:
+            result = await self.lower.write(i2c_addr, [*addr_bytes, *chunk], stop=True)
+            if result is False:
                 self._log("unacked")
                 return False
 
-            while not self.lower.poll(i2c_addr): pass
+            while not await self.lower.poll(i2c_addr): pass
             addr += len(chunk)
 
         return True
@@ -89,7 +92,7 @@ class I2CEEPROM24CApplet(I2CMasterApplet, name="i2c-eeprom-24c"):
             help="page buffer size; writes will be split into PAGE-SIZE byte chunks")
 
     async def run(self, device, args):
-        i2c_iface = super().run(device, args)
+        i2c_iface = await super().run(device, args)
         return I2CEEPROM24CInterface(
             i2c_iface, self.logger, args.i2c_address, args.address_width, args.page_size)
 
@@ -109,9 +112,9 @@ class I2CEEPROM24CApplet(I2CMasterApplet, name="i2c-eeprom-24c"):
 
     async def interact(self, device, args, eeprom_iface):
         if args.read is not None:
-            result = eeprom_iface.read(args.address, args.read)
+            result = await eeprom_iface.read(args.address, args.read)
             if result is not None:
                 print(result.hex())
 
         elif args.write is not None:
-            eeprom_iface.write(args.address, args.write)
+            await eeprom_iface.write(args.address, args.write)

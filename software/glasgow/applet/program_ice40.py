@@ -148,16 +148,16 @@ class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
             help="bitstream file")
 
     async def run(self, device, args):
-        iface = device.demultiplexer.claim_interface(self, args)
+        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
 
         bitstream = args.bitstream.read()
         while len(bitstream) > 0:
             chunk = bitstream[:255]
             bitstream = bitstream[255:]
-            iface.write([len(chunk)])
-            iface.write(chunk)
-        iface.write([0])
-        iface.flush()
+            await iface.write([len(chunk)])
+            await iface.write(chunk)
+        await iface.write([0])
+        await iface.flush()
 
         # TODO: do this nicely
         # if args.port in device.poll_alert():

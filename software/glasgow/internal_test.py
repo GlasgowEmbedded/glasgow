@@ -39,10 +39,10 @@ class TestMirrorI2C(GlasgowHardwareTarget):
 
 
 class TestShiftOut(GlasgowHardwareTarget):
-    def __init__(self, async=False):
+    def __init__(self, is_async=False):
         super().__init__()
 
-        if async:
+        if is_async:
             div = Signal(3)
             clk = Signal()
             self.sync.sys += [

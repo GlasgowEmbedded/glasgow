@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 __all__ = ["GlasgowDeviceError", "GlasgowDevice"]
 
 
-class GlasgowDeviceError:
+class GlasgowDeviceError(Exception):
     """An exception raised on a communication error."""
 
 

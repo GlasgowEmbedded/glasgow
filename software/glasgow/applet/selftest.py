@@ -1,6 +1,5 @@
-import argparse
 import logging
-import time
+import asyncio
 from migen import *
 
 from . import GlasgowApplet
@@ -66,27 +65,27 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
             help="run self-test mode MODE (default: {})".format(cls.__default_mode))
 
     async def run(self, device, args):
-        def set_oe(bits):
-            device.write_register(self.addr_oe_a, (bits >> 0) & 0xff)
-            device.write_register(self.addr_oe_b, (bits >> 8) & 0xff)
+        async def set_oe(bits):
+            await device.write_register(self.addr_oe_a, (bits >> 0) & 0xff)
+            await device.write_register(self.addr_oe_b, (bits >> 8) & 0xff)
 
-        def set_o(bits):
-            device.write_register(self.addr_o_a,  (bits >> 0) & 0xff)
-            device.write_register(self.addr_o_b,  (bits >> 8) & 0xff)
+        async def set_o(bits):
+            await device.write_register(self.addr_o_a,  (bits >> 0) & 0xff)
+            await device.write_register(self.addr_o_b,  (bits >> 8) & 0xff)
 
-        def get_i():
-            return ((device.read_register(self.addr_i_a) << 0) |
-                    (device.read_register(self.addr_i_b) << 8))
+        async def get_i():
+            return ((await device.read_register(self.addr_i_a) << 0) |
+                    (await device.read_register(self.addr_i_b) << 8))
 
-        def reset_pins(level=0):
-            set_o(0xffff if level else 0x0000)
-            set_oe(0xffff)
-            set_oe(0x0000)
+        async def reset_pins(level=0):
+            await set_o(0xffff if level else 0x0000)
+            await set_oe(0xffff)
+            await set_oe(0x0000)
 
-        def check_pins(oe, o):
-            set_o(o)
-            set_oe(oe)
-            i = get_i()
+        async def check_pins(oe, o):
+            await set_o(o)
+            await set_oe(oe)
+            i = await get_i()
             desc = "oe={:016b} o={:016b} i={:016b}".format(oe, o, i)
             return i, desc
 
@@ -105,21 +104,21 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
 
             if mode in ("pins-int", "pins-ext"):
                 if mode == "pins-int":
-                    device.set_voltage("AB", 0)
-                    device._iobuf_enable(False)
+                    await device.set_voltage("AB", 0)
+                    await device._iobuf_enable(False)
                 elif mode == "pins-ext":
-                    device.set_voltage("AB", 3.3)
-                    device._iobuf_enable(True)
+                    await device.set_voltage("AB", 3.3)
+                    await device._iobuf_enable(True)
 
-                reset_pins(0)
-                stuck_high = decode_pins(get_i())
-                reset_pins(1)
-                stuck_low  = decode_pins(~get_i())
+                await reset_pins(0)
+                stuck_high = decode_pins(await get_i())
+                await reset_pins(1)
+                stuck_low  = decode_pins(~await get_i())
 
                 shorted = []
                 for bit in range(0, 16):
-                    reset_pins()
-                    i, desc = check_pins(1 << bit, 1 << bit)
+                    await reset_pins()
+                    i, desc = await check_pins(1 << bit, 1 << bit)
                     self.logger.debug("%s: %s", mode, desc)
 
                     if i != 1 << bit:
@@ -135,17 +134,17 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                 for pins in shorted:
                     report.append((mode, "short: {}".format(" ".join(pins))))
 
-                device.set_voltage("AB", 0)
-                device._iobuf_enable(True)
+                await device.set_voltage("AB", 0)
+                await device._iobuf_enable(True)
 
             if mode == "pins-loop":
-                device.set_voltage("AB", 3.3)
+                await device.set_voltage("AB", 3.3)
 
                 broken = []
                 for bit in range(0, 8):
                     for o in (1 << bit, 1 << (15 - bit)):
-                        reset_pins()
-                        i, desc = check_pins(o, o)
+                        await reset_pins()
+                        i, desc = await check_pins(o, o)
                         self.logger.debug("%s: %s", mode, desc)
 
                         e = (1 << bit) | (1 << (15 - bit))
@@ -155,18 +154,18 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                             report.append((mode, "fault: {}".format(" ".join(pins))))
                             break
 
-                device.set_voltage("AB", 0)
+                await device.set_voltage("AB", 0)
 
             if mode == "voltage":
-                device.set_voltage("AB", 0)
+                await device.set_voltage("AB", 0)
 
                 for port in ("A", "B"):
                     for vout in (1.8, 2.7, 3.3, 5.0):
-                        device.set_voltage(port, vout)
-                        time.sleep(0.1)
-                        vin = device.measure_voltage(port)
+                        await device.set_voltage(port, vout)
+                        await asyncio.sleep(0.1)
+                        vin = await device.measure_voltage(port)
                         self.logger.debug("port {}: Vio={:.1f} Vsense={:.2f}"
-                                     .format(port, vout, vin))
+                                          .format(port, vout, vin))
 
                         if abs(vout - vin) / vout > 0.05:
                             passed = False

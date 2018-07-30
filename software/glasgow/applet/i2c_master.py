@@ -1,6 +1,5 @@
 import argparse
 import logging
-import time
 from migen import *
 from migen.genlib.fsm import *
 
@@ -165,35 +164,35 @@ class I2CMasterInterface:
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
         self._addr_reset = addr_reset
 
-    def reset(self):
+    async def reset(self):
         self._logger.debug("I2C: reset")
-        self.lower._device.write_register(self._addr_reset, 1)
-        self.lower._device.write_register(self._addr_reset, 0)
+        await self.lower.device.write_register(self._addr_reset, 1)
+        await self.lower.device.write_register(self._addr_reset, 0)
 
-    def _cmd_start(self):
-        self.lower.write([CMD_START])
+    async def _cmd_start(self):
+        await self.lower.write([CMD_START])
 
-    def _cmd_stop(self):
-        self.lower.write([CMD_STOP])
+    async def _cmd_stop(self):
+        await self.lower.write([CMD_STOP])
 
-    def _cmd_count(self, count):
+    async def _cmd_count(self, count):
         msb = (count >> 8) & 0xff
         lsb = (count >> 0) & 0xff
-        self.lower.write([CMD_COUNT, msb, lsb])
+        await self.lower.write([CMD_COUNT, msb, lsb])
 
-    def _cmd_write(self):
-        self.lower.write([CMD_WRITE])
+    async def _cmd_write(self):
+        await self.lower.write([CMD_WRITE])
 
-    def _data_write(self, data):
-        self.lower.write(data)
+    async def _data_write(self, data):
+        await self.lower.write(data)
 
-    def _cmd_read(self):
-        self.lower.write([CMD_READ])
+    async def _cmd_read(self):
+        await self.lower.write([CMD_READ])
 
-    def _data_read(self, size):
-        return self.lower.read(size)
+    async def _data_read(self, size):
+        return await self.lower.read(size)
 
-    def write(self, addr, data, stop=False):
+    async def write(self, addr, data, stop=False):
         data = bytes(data)
 
         if stop:
@@ -203,14 +202,14 @@ class I2CMasterInterface:
             self._logger.log(self._level, "I2C: start addr=%s write=<%s>",
                              bin(addr), data.hex())
 
-        self._cmd_start()
-        self._cmd_count(1 + len(data))
-        self._cmd_write()
-        self._data_write([(addr << 1) | 0])
-        self._data_write(data)
-        if stop: self._cmd_stop()
+        await self._cmd_start()
+        await self._cmd_count(1 + len(data))
+        await self._cmd_write()
+        await self._data_write([(addr << 1) | 0])
+        await self._data_write(data)
+        if stop: await self._cmd_stop()
 
-        unacked, = self._data_read(1)
+        unacked, = await self._data_read(1)
         acked = len(data) - unacked
         if unacked == 0:
             self._logger.log(self._level, "I2C: acked")
@@ -219,7 +218,7 @@ class I2CMasterInterface:
 
         return unacked == 0
 
-    def read(self, addr, size, stop=False):
+    async def read(self, addr, size, stop=False):
         if stop:
             self._logger.log(self._level, "I2C: start addr=%s read=%d stop",
                              bin(addr), size)
@@ -227,16 +226,16 @@ class I2CMasterInterface:
             self._logger.log(self._level, "I2C: start addr=%s read=%d",
                              bin(addr), size)
 
-        self._cmd_start()
-        self._cmd_count(1)
-        self._cmd_write()
-        self._data_write([(addr << 1) | 1])
-        self._cmd_count(size)
-        self._cmd_read()
-        if stop: self._cmd_stop()
+        await self._cmd_start()
+        await self._cmd_count(1)
+        await self._cmd_write()
+        await self._data_write([(addr << 1) | 1])
+        await self._cmd_count(size)
+        await self._cmd_read()
+        if stop: await self._cmd_stop()
 
-        unacked, = self._data_read(1)
-        data = self._data_read(size)
+        unacked, = await self._data_read(1)
+        data = await self._data_read(size)
         if unacked == 0:
             self._logger.log(self._level, "I2C: acked data=<%s>", data.hex())
             return data
@@ -244,24 +243,24 @@ class I2CMasterInterface:
             self._logger.log(self._level, "I2C: unacked")
             return None
 
-    def poll(self, addr):
+    async def poll(self, addr):
         self._logger.trace("I2C: poll addr=%s", bin(addr))
-        self._cmd_start()
-        self._cmd_count(1)
-        self._cmd_write()
-        self._data_write([(addr << 1) | 0])
-        self._cmd_stop()
+        await self._cmd_start()
+        await self._cmd_count(1)
+        await self._cmd_write()
+        await self._data_write([(addr << 1) | 0])
+        await self._cmd_stop()
 
-        unacked, = self._data_read(1)
+        unacked, = await self._data_read(1)
         if unacked == 0:
             self._logger.log(self._level, "I2C: poll addr=%s acked", bin(addr))
 
         return unacked == 0
 
-    def device_id(self, addr):
-        if self.write(0b1111_100, [addr]) is False:
+    async def device_id(self, addr):
+        if await self.write(0b1111_100, [addr]) is False:
             return None
-        device_id = self.read(0b1111_100, 3)
+        device_id = await self.read(0b1111_100, 3)
         if device_id is None:
             return None
         manufacturer = (device_id[0] << 8) | (device_id[1] >> 4)
@@ -316,9 +315,9 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
         target.comb += subtarget.reset.eq(reset)
 
     async def run(self, device, args):
-        iface = device.demultiplexer.claim_interface(self, args)
+        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
         i2c_iface = I2CMasterInterface(iface, self.logger, self.__addr_reset)
-        i2c_iface.reset()
+        await i2c_iface.reset()
         return i2c_iface
 
     @classmethod
@@ -343,16 +342,16 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
                 if args.scan_read:
                     # We need to read at least one byte in order to transmit a NAK bit
                     # so that the addressed device releases SDA.
-                    if i2c_iface.read(addr, 1, stop=True) is not None:
+                    if await i2c_iface.read(addr, 1, stop=True) is not None:
                         self.logger.info("scan found read address %s", bin(addr))
                         responded = True
                 if args.scan_write:
-                    if i2c_iface.write(addr, [], stop=True) is True:
+                    if await i2c_iface.write(addr, [], stop=True) is True:
                         self.logger.info("scan found write address %s", bin(addr))
                         responded = True
 
                 if responded and args.scan_device_id:
-                    device_id = i2c_iface.device_id(addr)
+                    device_id = await i2c_iface.device_id(addr)
                     if device_id is None:
                         self.logger.warning("device %s did not acknowledge Device ID", bin(addr))
                     else:
