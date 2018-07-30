@@ -167,7 +167,7 @@ class TestRegisters(GlasgowHardwareTarget):
     def __init__(self):
         super().__init__()
 
-        reg_i, addr_i = self.registers.add_rw()
-        reg_o, addr_o = self.registers.add_ro()
+        reg_i, addr_i = self.registers.add_rw(8)
+        reg_o, addr_o = self.registers.add_ro(8)
 
         self.comb += reg_o.eq(reg_i << 1)
