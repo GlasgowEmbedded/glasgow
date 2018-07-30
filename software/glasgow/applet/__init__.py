@@ -81,7 +81,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
         parsed_args = parser.parse_args(args)
         self.applet.build(target, parsed_args)
 
-        target.get_bitstream()
+        target.get_bitstream(debug=True)
 
     def _prepare_mock_target(self, args):
         self.target = GlasgowMockTarget()
