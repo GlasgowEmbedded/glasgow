@@ -17,14 +17,21 @@ __all__ = ["GlasgowHardwareTarget", "GlasgowMockTarget"]
 
 class _CRG(Module):
     def __init__(self, platform):
-        clk_if = platform.request("clk_if")
-
         self.clock_domains.cd_por = ClockDomain(reset_less=True)
         self.clock_domains.cd_sys = ClockDomain()
+
+        clk_if  = platform.request("clk_if")
+        clk_buf = Signal()
         self.specials += [
-            Instance("SB_GB_IO",
-                i_PACKAGE_PIN=clk_if,
-                o_GLOBAL_BUFFER_OUTPUT=self.cd_por.clk),
+            Instance("SB_IO",
+                p_PIN_TYPE=C(0b000001, 6),
+                io_PACKAGE_PIN=clk_if,
+                o_D_IN_0=clk_buf,
+            ),
+            Instance("SB_GB",
+                i_USER_SIGNAL_TO_GLOBAL_BUFFER=clk_buf,
+                o_GLOBAL_BUFFER_OUTPUT=self.cd_por.clk,
+            ),
         ]
 
         reset_delay = Signal(max=2047, reset=2047)
