@@ -214,7 +214,7 @@ enum {
   USB_REQ_POLL_ALERT   = 0x17,
   USB_REQ_BITSTREAM_ID = 0x18,
   USB_REQ_IOBUF_ENABLE = 0x19,
-  USB_REQ_LIMIT_VOLT    = 0x20,
+  USB_REQ_LIMIT_VOLT   = 0x1A,
   // Cypress requests
   USB_REQ_CYPRESS_EEPROM_DB = 0xA9,
   // libfx2 requests
