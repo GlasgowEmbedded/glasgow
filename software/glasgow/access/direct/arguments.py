@@ -67,7 +67,7 @@ class DirectArguments(AccessArguments):
         return numbers
 
     def _add_pin_set_argument(self, parser, name, width, default, required):
-        help = "bind the applet I/O lines {!r} to pins SET".format(self._applet_name, name)
+        help = "bind the applet I/O lines {!r} to pins SET".format(name)
         if default is not None:
             help += " (default: %(default)s)"
 
