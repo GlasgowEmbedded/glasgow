@@ -1,7 +1,5 @@
 import os
 import sys
-import atexit
-import termios
 import logging
 import asyncio
 from migen import *
@@ -84,6 +82,8 @@ class UARTApplet(GlasgowApplet, name="uart"):
 
     async def interact(self, device, args, uart):
         if sys.stdin.isatty():
+            import atexit, termios
+
             old_stdin_attrs = termios.tcgetattr(sys.stdin)
             [iflag, oflag, cflag, lflag, ispeed, ospeed, cc] = old_stdin_attrs
             lflag &= ~(termios.ECHO | termios.ICANON | termios.ISIG)
@@ -95,7 +95,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
             def restore_stdin_attrs():
                 termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_stdin_attrs)
 
-        self.logger.info("running on a TTY; enter `Ctrl+\\ q` to quit")
+            self.logger.info("running on a TTY; enter `Ctrl+\\ q` to quit")
 
         quit = 0
         stdin_fut = None

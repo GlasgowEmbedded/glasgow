@@ -60,7 +60,11 @@ class GlasgowHardwareDevice:
         if self.usb is None:
             raise GlasgowDeviceError("device {:04x}:{:04x} not found"
                                      .format(vendor_id, product_id))
-        self.usb.setAutoDetachKernelDriver(True)
+
+        try:
+            self.usb.setAutoDetachKernelDriver(True)
+        except usb1.USBErrorNotSupported:
+            pass
 
     def _write_ram(self, addr, data):
         self.usb.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, addr, 0, data)
@@ -101,8 +105,11 @@ class GlasgowHardwareDevice:
                 if self.usb.getDevice().getbcdDevice() & 0xFF00 in (0x0000, 0xA000):
                     raise GlasgowDeviceError("firmware upload failed")
 
-        logger.debug("found device with serial %s",
-                     self.usb.getDevice().getSerialNumber())
+        # https://github.com/vpelletier/python-libusb1/issues/39
+        # serial = self.usb.getDevice().getSerialNumber()
+        serial = self.usb.getASCIIStringDescriptor(
+            self.usb.getDevice().device_descriptor.iSerialNumber)
+        logger.debug("found device with serial %s", serial)
 
     async def _do_transfer(self, is_read, setup):
         transfer = self.usb.getTransfer()

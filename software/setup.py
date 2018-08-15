@@ -1,20 +1,29 @@
+import os
 from os import path
 
 from setuptools import setup, find_packages
 from setuptools.command.build_ext import build_ext
 from setuptools.command.bdist_egg import bdist_egg
 
+from distutils import log
 from distutils.spawn import spawn
 from distutils.dir_util import mkpath
+from distutils.errors import DistutilsExecError
 
 
 class GlasgowBuildExt(build_ext):
     def run(self):
-        firmware_dir = path.join("..", "firmware")
-        spawn(["make", "-C", path.join(firmware_dir)], dry_run=self.dry_run)
+        try:
+            firmware_dir = path.join("..", "firmware")
+            spawn(["make", "-C", path.join(firmware_dir)], dry_run=self.dry_run)
 
-        bootloader_ihex = path.join(firmware_dir, "glasgow.ihex")
-        self.copy_file(bootloader_ihex, "glasgow")
+            glasgow_ihex = path.join(firmware_dir, "glasgow.ihex")
+            self.copy_file(glasgow_ihex, "glasgow")
+        except DistutilsExecError as e:
+            if os.access(path.join("glasgow", "glasgow.ihex"), os.R_OK):
+                log.info("using prebuilt firmware")
+            else:
+                raise
 
 
 class GlasgowBdistEgg(bdist_egg):
@@ -32,7 +41,10 @@ setup(
     #description="TODO",
     #long_description="""TODO""",
     license="0-clause BSD License",
-    install_requires=["migen", "fx2"],
+    install_requires=["migen", "fx2>=0.6"],
+    depndency_links=[
+        "git+https://github.com/m-labs/migen.git#egg=migen",
+    ],
     packages=find_packages(),
     package_data={"": ["*.ihex"]},
     entry_points={
