@@ -35,9 +35,9 @@ class GlasgowConfig:
         Maximum allowed I/O port voltage, in millivolts.
     """
     size = 64
-    _encoding = "<1s16sI16s2h"
+    _encoding = "<1s16sI16s2H"
 
-    def __init__(self, revision, serial, bitstream_size=0, bitstream_id="\x00"*16,
+    def __init__(self, revision, serial, bitstream_size=0, bitstream_id=b"\x00"*16,
                  voltage_limit=None):
         self.revision = revision
         self.serial   = serial

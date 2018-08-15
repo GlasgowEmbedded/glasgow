@@ -95,7 +95,7 @@ class GlasgowHardwareDevice:
 
                 # let the device re-enumerate and re-acquire it
                 time.sleep(1)
-                self._open_device(vendor_id, product_id)
+                self._open_device(VID_QIHW, PID_GLASGOW)
 
                 # still not the right firmware?
                 if self.usb.getDevice().getbcdDevice() & 0xFF00 in (0x0000, 0xA000):
