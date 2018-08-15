@@ -6,6 +6,7 @@
 #include <fx2delay.h>
 #include <fx2i2c.h>
 #include <fx2eeprom.h>
+#include <usbms.h>
 #include "glasgow.h"
 
 usb_desc_device_c usb_device = {
@@ -164,6 +165,37 @@ usb_descriptor_set_c usb_descriptor_set = {
   .strings         = usb_strings,
 };
 
+usb_desc_microsoft_v10_c usb_microsoft = {
+  .bLength          = sizeof(struct usb_desc_microsoft_v10),
+  .bDescriptorType  = USB_DESC_STRING,
+  .qwSignature      = USB_DESC_MICROSOFT_V10_SIGNATURE,
+  .bMS_VendorCode   = 0xC0,
+};
+
+usb_desc_ms_ext_compat_id_c usb_ms_ext_compat_id = {
+  .dwLength         = sizeof(struct usb_desc_ms_ext_compat_id) +
+                      sizeof(struct usb_desc_ms_compat_function),
+  .bcdVersion       = 0x0100,
+  .wIndex           = USB_DESC_MS_EXTENDED_COMPAT_ID,
+  .bCount           = 1,
+  .functions        = {
+    {
+      .bFirstInterfaceNumber  = 0,
+      .bReserved1             = 1,
+      .compatibleID           = "WINUSB",
+    },
+  }
+};
+
+void handle_usb_get_descriptor(enum usb_descriptor type, uint8_t index) {
+  if(type == USB_DESC_STRING && index == 0xEE) {
+    xmemcpy(scratch, (__xdata void *)&usb_microsoft, usb_microsoft.bLength);
+    SETUP_EP0_IN_DESC(scratch);
+  } else {
+    usb_serve_descriptor(&usb_descriptor_set, type, index);
+  }
+}
+
 static void config_init() {
   unsigned char load_cmd;
   if(!eeprom_read(I2C_ADDR_FX2_MEM, 0, &load_cmd, sizeof(load_cmd), /*double_byte=*/true))
@@ -219,6 +251,8 @@ enum {
   USB_REQ_CYPRESS_EEPROM_DB = 0xA9,
   // libfx2 requests
   USB_REQ_LIBFX2_PAGE_SIZE  = 0xB0,
+  // Microsoft requests
+  USB_REQ_GET_MS_DESCRIPTOR = 0xC0,
 };
 
 enum {
@@ -600,6 +634,23 @@ void handle_pending_usb_setup() {
       }
     }
 
+    return;
+  }
+
+  // Microsoft descriptor requests
+  if(req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN &&
+     req->bRequest == USB_REQ_GET_MS_DESCRIPTOR) {
+    enum usb_descriptor_microsoft arg_desc = req->wIndex;
+    pending_setup = false;
+
+    switch(arg_desc) {
+      case USB_DESC_MS_EXTENDED_COMPAT_ID:
+        xmemcpy(scratch, (__xdata void *)&usb_ms_ext_compat_id, usb_ms_ext_compat_id.dwLength);
+        SETUP_EP0_IN_DESC(scratch);
+        return;
+    }
+
+    STALL_EP0();
     return;
   }
 
