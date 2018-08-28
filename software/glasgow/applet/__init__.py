@@ -88,7 +88,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
         self.target = GlasgowSimulationTarget()
         self.target.submodules.multiplexer = SimulationMultiplexer()
 
-        self.device = GlasgowSimulationDevice()
+        self.device = GlasgowSimulationDevice(self.target)
         self.device.demultiplexer = SimulationDemultiplexer(self.device)
 
         access_args = SimulationArguments(applet_name=self.applet.name)
@@ -136,4 +136,5 @@ from .i2c.bmp280 import I2CBMP280Applet
 from .i2c.eeprom_24c import I2CEEPROM24CApplet
 from .program_ice40 import ProgramICE40Applet
 from .selftest import SelfTestApplet
+from .spi_master import SPIMasterApplet
 from .uart import UARTApplet

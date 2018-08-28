@@ -271,7 +271,7 @@ class I2CMasterInterface:
 
 class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
     logger = logging.getLogger(__name__)
-    help = "initiate transactions on I2C"
+    help = "initiate I2C transactions"
     description = """
     Initiate transactions on the I2C bus.
 
