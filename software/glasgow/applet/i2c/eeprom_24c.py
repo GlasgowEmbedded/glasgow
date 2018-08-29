@@ -25,7 +25,7 @@ class I2CEEPROM24CInterface:
             i2c_addr = self._i2c_addr | (addr >> 8)
             return (i2c_addr, [addr & 0xff])
 
-    async def read(self, addr, size):
+    async def read(self, addr, length):
         i2c_addr, addr_bytes = self._carry_addr(addr)
 
         self._log("i2c-addr=%#04x addr=%#06x", i2c_addr, addr)
@@ -34,8 +34,8 @@ class I2CEEPROM24CInterface:
             self._log("unacked")
             return None
 
-        self._log("read=%d", size)
-        data = await self.lower.read(i2c_addr, size, stop=True)
+        self._log("read=%d", length)
+        data = await self.lower.read(i2c_addr, length, stop=True)
         if data is None:
             self._log("unacked")
         else:
@@ -67,7 +67,7 @@ class I2CEEPROM24CInterface:
 
 class I2CEEPROM24CApplet(I2CMasterApplet, name="i2c-eeprom-24c"):
     logger = logging.getLogger(__name__)
-    help = "read and write 24C-compatible EEPROMs"
+    help = "read and write 24C-compatible EEPROM memories"
     description = """
     Read and write arbitrary areas of a 24Cxx-compatible EEPROM.
 

@@ -90,8 +90,10 @@ def get_argparser():
                 applet.add_build_arguments(g_applet_build, access_args)
                 g_applet_run = p_applet.add_argument_group("run arguments")
                 applet.add_run_arguments(g_applet_run, access_args)
-                g_applet_interact = p_applet.add_argument_group("interact arguments")
-                applet.add_interact_arguments(g_applet_interact)
+                # FIXME: this makes it impossiblt to add subparsers in applets
+                # g_applet_interact = p_applet.add_argument_group("interact arguments")
+                # applet.add_interact_arguments(g_applet_interact)
+                applet.add_interact_arguments(p_applet)
             else:
                 applet.add_build_arguments(p_applet, access_args)
 

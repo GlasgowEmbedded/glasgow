@@ -150,8 +150,11 @@ class SPIMasterInterface:
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
         self._addr_reset = addr_reset
 
+    def _log(self, message, *args):
+        self._logger.log(self._level, "SPI: " + message, *args)
+
     async def reset(self):
-        self._logger.debug("SPI: reset")
+        self._log("reset")
         await self.lower.device.write_register(self._addr_reset, 1)
         await self.lower.device.write_register(self._addr_reset, 0)
 
@@ -159,15 +162,13 @@ class SPIMasterInterface:
         assert len(data) <= 0xffff
         data = bytes(data)
 
-        self._logger.log(self._level, "SPI: out=<%s>",
-                         data.hex())
+        self._log("out=<%s>", data.hex())
 
         await self.lower.write(struct.pack(">H", len(data)))
         await self.lower.write(data)
         data = await self.lower.read(len(data))
 
-        self._logger.log(self._level, "SPI: in=<%s>",
-                         data.hex())
+        self._log("in=<%s>", data.hex())
 
         return data
 

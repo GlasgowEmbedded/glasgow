@@ -137,4 +137,5 @@ from .i2c.eeprom_24c import I2CEEPROM24CApplet
 from .program_ice40 import ProgramICE40Applet
 from .selftest import SelfTestApplet
 from .spi_master import SPIMasterApplet
+from .spi.flash_25c import SPIFlash25CApplet
 from .uart import UARTApplet
