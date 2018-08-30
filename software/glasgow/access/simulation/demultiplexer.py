@@ -24,6 +24,7 @@ class SimulationDemultiplexerInterface(AccessDemultiplexerInterface):
                 data.append((yield from self._in_fifo.read()))
         else:
             while len(data) < length:
+                self.logger.trace("FIFO: need %d bytes", length - len(self._buffer_in))
                 while not (yield self._in_fifo.readable):
                     yield
                 data.append((yield from self._in_fifo.read()))

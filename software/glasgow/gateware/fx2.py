@@ -25,14 +25,83 @@
 
 from migen import *
 from migen.genlib.fsm import *
-from migen.genlib.fifo import _FIFOInterface, AsyncFIFO, SyncFIFOBuffered
+from migen.genlib.fifo import _FIFOInterface, AsyncFIFO, SyncFIFO, SyncFIFOBuffered
 
 
-__all__ = ['FX2Arbiter']
+__all__ = ["FX2Arbiter"]
 
 
 class _DummyFIFO(Module, _FIFOInterface):
-    pass
+    def __init__(self, width):
+        super().__init__(width, 0)
+
+        self.submodules.fifo = _FIFOInterface(width, 0)
+
+
+class _FIFOWithOverflow(Module, _FIFOInterface):
+    def __init__(self, fifo, overflow_depth=2):
+        _FIFOInterface.__init__(self, fifo.width, fifo.depth)
+
+        self.submodules.fifo     = fifo
+        self.submodules.overflow = overflow = SyncFIFO(fifo.width, overflow_depth)
+
+        self.dout     = fifo.dout
+        self.re       = fifo.re
+        self.readable = fifo.readable
+
+        ###
+
+        self.comb += [
+            If(overflow.readable,
+                fifo.din.eq(overflow.dout),
+                fifo.we.eq(1),
+                overflow.re.eq(fifo.writable)
+            ),
+            If(fifo.writable & ~overflow.readable,
+                fifo.din.eq(self.din),
+                fifo.we.eq(self.we),
+                self.writable.eq(fifo.writable)
+            ).Else(
+                overflow.din.eq(self.din),
+                overflow.we.eq(self.we),
+                self.writable.eq(overflow.writable)
+            )
+        ]
+
+
+class _RegisteredTristate(Module):
+    def __init__(self, io):
+
+        self.oe = Signal()
+        self.o  = Signal.like(io)
+        self.i  = Signal.like(io)
+
+        def get_bit(signal, bit):
+            return signal[bit] if signal.nbits > 0 else signal
+
+        for bit in range(io.nbits):
+            self.specials += \
+                Instance("SB_IO",
+                    # PIN_INPUT_REGISTERED|PIN_OUTPUT_REGISTERED_ENABLE_REGISTERED
+                    p_PIN_TYPE=C(0b110100, 6),
+                    io_PACKAGE_PIN=get_bit(io, bit),
+                    i_OUTPUT_ENABLE=self.oe,
+                    i_INPUT_CLK=ClockSignal(),
+                    i_OUTPUT_CLK=ClockSignal(),
+                    i_D_OUT_0=get_bit(self.o, bit),
+                    o_D_IN_0=get_bit(self.i, bit),
+                )
+
+
+class _FX2Bus(Module):
+    def __init__(self, pads):
+        self.submodules.fifoadr_t = _RegisteredTristate(pads.fifoadr)
+        self.submodules.flag_t    = _RegisteredTristate(pads.flag)
+        self.submodules.fd_t      = _RegisteredTristate(pads.fd)
+        self.submodules.sloe_t    = _RegisteredTristate(pads.sloe)
+        self.submodules.slrd_t    = _RegisteredTristate(pads.slrd)
+        self.submodules.slwr_t    = _RegisteredTristate(pads.slwr)
+        self.submodules.pktend_t  = _RegisteredTristate(pads.pktend)
 
 
 class FX2Arbiter(Module):
@@ -45,35 +114,45 @@ class FX2Arbiter(Module):
     FIFOs that are never requested are not implemented and behave as if they
     are never readable or writable.
     """
-    def __init__(self, fx2):
-        self.fx2 = fx2
+    def __init__(self, pads):
+        self.submodules.bus = _FX2Bus(pads)
 
-        self.out_fifos = Array([_DummyFIFO(width=8, depth=0) for _ in range(2)])
-        self. in_fifos = Array([_DummyFIFO(width=8, depth=0) for _ in range(2)])
+        self.out_fifos = Array([_FIFOWithOverflow(_DummyFIFO(width=8))
+                                for _ in range(2)])
+        self. in_fifos = Array([_DummyFIFO(width=8)
+                                for _ in range(2)])
         self.streaming = Array([False for _ in range(2)])
 
     def do_finalize(self):
-        fx2  = self.fx2
+        bus  = self.bus
+        flag = Signal(4)
         addr = Signal(2)
         data = TSTriple(8)
+        fdoe = Signal()
         sloe = Signal()
         slrd = Signal()
         slwr = Signal()
         pend = Signal()
         rdy  = Signal(4)
         self.comb += [
-            fx2.fifoadr.eq(addr),
-            rdy.eq(fx2.flag & Cat([fifo.writable for fifo in self.out_fifos] +
-                                  [fifo.readable for fifo in self.in_fifos])),
-            self.out_fifos[addr[0]].din.eq(data.i),
-            data.o.eq(self.in_fifos[addr[0]].dout),
-            fx2.sloe.eq(~sloe),
-            fx2.slrd.eq(~slrd),
-            fx2.slwr.eq(~slwr),
-            fx2.pktend.eq(~pend),
+            bus.fifoadr_t.oe.eq(1),
+            bus.fifoadr_t.o.eq(addr),
+            flag.eq(bus.flag_t.i),
+            rdy.eq(Cat([fifo.fifo.writable for fifo in self.out_fifos] +
+                       [fifo.readable for fifo in self.in_fifos]) &
+                   flag),
+            self.out_fifos[addr[0]].din.eq(bus.fd_t.i),
+            bus.fd_t.o.eq(self.in_fifos[addr[0]].dout),
+            bus.fd_t.oe.eq(fdoe),
+            bus.sloe_t.oe.eq(1),
+            bus.sloe_t.o.eq(~sloe),
+            bus.slrd_t.oe.eq(1),
+            bus.slrd_t.o.eq(~slrd),
+            bus.slwr_t.oe.eq(1),
+            bus.slwr_t.o.eq(~slwr),
+            bus.pktend_t.oe.eq(1),
+            bus.pktend_t.o.eq(~pend),
         ]
-        self.specials += \
-            data.get_tristate(fx2.fd)
 
         # Calculate the address of the next ready FIFO in a round robin process.
         naddr = Signal(2)
@@ -93,72 +172,75 @@ class FX2Arbiter(Module):
         # SLOE to FIFODATA setup: 1 cycle
         # FIFOADR to FIFODATA setup: 2 cycles
         self.fsm.act("NEXT",
+            NextValue(sloe, 0),
+            NextValue(fdoe, 0),
             NextValue(addr, naddr),
             If(rdy,
-                NextState("SETUP")
+                NextState("DRIVE")
             )
+        )
+        self.fsm.act("DRIVE",
+             If(addr[1],
+                 NextValue(fdoe, 1),
+             ).Else(
+                 NextValue(sloe, 1),
+             ),
+             NextState("SETUP")
         )
         self.fsm.act("SETUP",
             If(addr[1],
-                NextValue(sloe, 0),
                 NextState("SETUP-IN")
             ).Else(
-                NextValue(data.oe, 0),
                 NextState("SETUP-OUT")
             )
         )
         self.fsm.act("SETUP-IN",
-            NextValue(data.oe, 1),
             NextState("XFER-IN")
         )
         self.fsm.act("XFER-IN",
-            # This could have been written as
-            #   If(rdy & (1 << addr)), slwr.eq(1), ...)
-            # but on sluggish UP5K fabric having fx2.flag in fx2.slwr combinatorial path
-            # does not clear timing and results in corrupted data being sent when the flag
-            # goes down (i.e. at the very end of the packet that fills the last of
-            # the FX2's available buffers).
-            If(self.in_fifos[addr[0]].readable,
+            If(rdy & (1 << addr),
                 slwr.eq(1),
                 self.in_fifos[addr[0]].re.eq(1),
-                If(~(fx2.flag & (1 << addr)),
-                    NextState("XFER-IN-LAST")
-                )
-            ).Else(
-                pend.eq(~self.streaming[addr[0]]),
+            ).Elif(((flag & (1 << addr)) == 0) &
+                   ~self.in_fifos[addr[0]].readable &
+                   self.streaming[addr[0]],
+                # The ~FULL flag went down, and it goes down one sample earlier than the actual
+                # FULL condition. So we have one more byte free. However, the FPGA-side streaming
+                # FIFO became empty simultaneously.
+                #
+                # If we schedule the next FIFO right now, the ~FULL flag will never come back down,
+                # so disregard the fact that the FIFO is streaming just for this corner case,
+                # and commit a packet one byte shorter than the complete FIFO.
+                #
+                # This shouldn't cause any problems.
+                pend.eq(1),
                 NextState("NEXT")
-            )
-        )
-        self.fsm.act("XFER-IN-LAST",
-            If(self.in_fifos[addr[0]].readable,
-                slwr.eq(1),
-                self.in_fifos[addr[0]].re.eq(1),
-                NextState("NEXT")
-            ).Elif(~self.streaming[addr[0]],
+            ).Elif(((flag & (1 << addr)) != 0) &
+                   ~self.streaming[addr[0]],
+                # The FPGA-side non-streaming FIFO is empty, but the FX2-side FIFO is not full yet.
+                # Commit the short packet.
                 pend.eq(1),
                 NextState("NEXT")
             ).Else(
-                # We don't want to hold up the other FIFOs if the 512th byte doesn't arrive
-                # promptly, but glitches on the FLAGn pins tend to be disastrous for streaming
-                # applications, and FXMA108 seems to cause them a lot, so instead, accept that
-                # a streaming pipe that suddenly stops at 511th byte will cause a lockup
-                # (at least until something is done about signal integrity).
+                # Either the FPGA-side streaming FIFO is empty, or the FX2-side FIFO is full.
+                # FX2 automatically commits a full FIFO, so we don't need to do anything here.
+                NextState("NEXT")
             )
         )
         self.fsm.act("SETUP-OUT",
-            NextValue(sloe, 1),
+            slrd.eq(1),
             NextState("XFER-OUT")
         )
         self.fsm.act("XFER-OUT",
+            self.out_fifos[addr[0]].we.eq((flag & (1 << addr)) != 0),
             If(rdy & (1 << addr),
-                slrd.eq(1),
-                self.out_fifos[addr[0]].we.eq(1)
+                slrd.eq(self.out_fifos[addr[0]].fifo.writable)
             ).Else(
                 NextState("NEXT")
             )
         )
 
-    def _make_fifo(self, arbiter_side, logic_side, cd_logic, depth):
+    def _make_fifo(self, arbiter_side, logic_side, cd_logic, depth, wrapper=lambda x: x):
         if cd_logic is None:
             fifo = SyncFIFOBuffered(8, depth)
         else:
@@ -174,15 +256,17 @@ class FX2Arbiter(Module):
             if cd_logic.rst is not None:
                 self.comb += fifo.cd_logic.rst.eq(cd_logic.rst)
 
+        fifo = wrapper(fifo)
         self.submodules += fifo
         return fifo
 
     def get_out_fifo(self, n, depth=512, clock_domain=None):
         assert 0 <= n < 2
-        assert isinstance(self.out_fifos[n], _DummyFIFO)
+        assert isinstance(self.out_fifos[n].fifo, _DummyFIFO)
 
         fifo = self._make_fifo(arbiter_side="write", logic_side="read",
-                               cd_logic=clock_domain, depth=depth)
+                               cd_logic=clock_domain, depth=depth,
+                               wrapper=lambda x: _FIFOWithOverflow(x))
         self.out_fifos[n] = fifo
         return fifo
 

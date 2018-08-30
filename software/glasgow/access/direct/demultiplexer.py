@@ -79,6 +79,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         else:
             # Return exactly the requested length.
             while len(self._buffer_in) < length:
+                self.logger.trace("FIFO: need %d bytes", length - len(self._buffer_in))
                 await self._read_packet()
 
         result = self._buffer_in[:length]

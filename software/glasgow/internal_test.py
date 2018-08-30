@@ -59,6 +59,9 @@ class TestShiftOut(GlasgowHardwareTarget):
             domain = "sys"
             out = self.fx2_arbiter.get_out_fifo(0)
 
+        bit_cyc = 20
+        timer   = Signal(max=bit_cyc, reset=bit_cyc - 1)
+
         sck = Signal(reset=1)
         sdo = Signal()
         self.comb += [
@@ -77,18 +80,28 @@ class TestShiftOut(GlasgowHardwareTarget):
             )
         )
         self.fsm.act("SETUP",
-            NextValue(sck, 0),
-            NextValue(sdo, shreg[7]),
-            NextState("HOLD")
+            If(timer == 0,
+                NextValue(timer, bit_cyc - 1),
+                NextValue(sck, 0),
+                NextValue(sdo, shreg[7]),
+                NextState("HOLD")
+            ).Else(
+                NextValue(timer, timer - 1)
+            )
         )
         self.fsm.act("HOLD",
-            NextValue(sck, 1),
-            NextValue(bitno, bitno - 1),
-            NextValue(shreg, shreg << 1),
-            If(bitno != 0,
-                NextState("SETUP")
+            If(timer == 0,
+                NextValue(timer, bit_cyc - 1),
+                NextValue(sck, 1),
+                NextValue(bitno, bitno - 1),
+                NextValue(shreg, shreg << 1),
+                If(bitno != 0,
+                    NextState("SETUP")
+                ).Else(
+                    NextState("IDLE")
+                )
             ).Else(
-                NextState("IDLE")
+                NextValue(timer, timer - 1)
             )
         )
 
