@@ -131,11 +131,11 @@ def applet_simulation_test(setup, args=[]):
 
 from .rgb_grabber import RGBGrabberApplet
 from .hd44780 import HD44780Applet
-from .i2c_master import I2CMasterApplet
+from .i2c.master import I2CMasterApplet
 from .i2c.bmp280 import I2CBMP280Applet
 from .i2c.eeprom_24c import I2CEEPROM24CApplet
 from .program_ice40 import ProgramICE40Applet
 from .selftest import SelfTestApplet
-from .spi_master import SPIMasterApplet
+from .spi.master import SPIMasterApplet
 from .spi.flash_25c import SPIFlash25CApplet
 from .uart import UARTApplet

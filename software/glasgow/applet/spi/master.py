@@ -5,8 +5,8 @@ from migen import *
 from migen.genlib.fsm import *
 from migen.genlib.cdc import *
 
-from . import *
-from ..gateware.pads import *
+from .. import *
+from ...gateware.pads import *
 
 
 class SPIBus(Module):

@@ -2,7 +2,7 @@ import logging
 import argparse
 
 from .. import *
-from ..spi_master import SPIMasterApplet
+from .master import SPIMasterApplet
 
 
 class SPIFlash25CInterface:

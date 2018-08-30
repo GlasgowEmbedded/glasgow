@@ -1,7 +1,7 @@
 import logging
 
 from .. import *
-from ..i2c_master import I2CMasterApplet
+from .master import I2CMasterApplet
 
 
 class I2CEEPROM24CInterface:

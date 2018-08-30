@@ -3,9 +3,9 @@ import logging
 from migen import *
 from migen.genlib.fsm import *
 
-from . import *
-from ..gateware.pads import *
-from ..gateware.i2c import I2CMaster
+from .. import *
+from ...gateware.pads import *
+from ...gateware.i2c import I2CMaster
 
 
 CMD_START = 0x01
