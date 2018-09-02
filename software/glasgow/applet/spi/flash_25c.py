@@ -1,3 +1,4 @@
+import struct
 import logging
 import argparse
 
@@ -40,8 +41,14 @@ class SPIFlash25CInterface:
         return (device_id,)
 
     async def read_manufacturer_device_id(self):
-        self._log("read manufacturer/device ID")
+        self._log("read manufacturer/8-bit device ID")
         manufacturer_id, device_id = await self._command(0x90, dummy=3, ret=2)
+        return (manufacturer_id, device_id)
+
+    async def read_manufacturer_long_device_id(self):
+        self._log("read manufacturer/16-bit device ID")
+        manufacturer_id, device_id = struct.unpack(">BH",
+            await self._command(0x9F, ret=3))
         return (manufacturer_id, device_id)
 
     def _format_addr(self, addr):
@@ -112,9 +119,16 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
         await flash_iface.wakeup()
 
         if args.operation == "identify":
-            manufacturer_id, device_id = await flash_iface.read_manufacturer_device_id()
-            self.logger.info("JEDEC manufacturer ID: %#04x, device ID: %#04x",
-                             manufacturer_id, device_id)
+            manufacturer_id, device_id = \
+                await flash_iface.read_manufacturer_device_id()
+            long_manufacturer_id, long_device_id = \
+                await flash_iface.read_manufacturer_long_device_id()
+            if long_manufacturer_id == manufacturer_id:
+                self.logger.info("JEDEC manufacturer ID: %#04x, device ID: %#06x",
+                                 long_manufacturer_id, long_device_id)
+            else:
+                self.logger.info("JEDEC manufacturer ID: %#04x, device ID: %#04x",
+                                 manufacturer_id, device_id)
 
         if args.operation in ("read", "fast-read"):
             if args.operation == "read":
