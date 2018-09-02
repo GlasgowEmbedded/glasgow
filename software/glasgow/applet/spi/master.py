@@ -246,8 +246,8 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
 
 class SPIMasterAppletTestCase(GlasgowAppletTestCase, applet=SPIMasterApplet):
     def test_build(self):
-        self.assertBuilds(args=["--pin-sck",  "0", "--pin-ss", "1",
-                                "--pin-mosi", "2", "--pin-miso",   "3"])
+        self.assertBuilds(args=["--pin-sck",  "0", "--pin-ss",   "1",
+                                "--pin-mosi", "2", "--pin-miso", "3"])
 
     def setup_loopback(self):
         self.build_simulated_applet()
