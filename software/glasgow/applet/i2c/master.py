@@ -1,5 +1,6 @@
 import argparse
 import logging
+import code
 from migen import *
 from migen.genlib.fsm import *
 
@@ -333,6 +334,9 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
         g_operation.add_argument(
             "--scan-write", action="store_true", default=False,
             help="scan all possible I2C write addresses")
+        g_operation.add_argument(
+            "--repl", action="store_true", default=False,
+            help="drop into Python shell; use `i2c_iface` to communicate")
 
     async def interact(self, device, args, i2c_iface):
         if args.scan_read or args.scan_write:
@@ -358,3 +362,6 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
                         manufacturer, part_ident, revision = device_id
                         self.logger.info("device %s ID: manufacturer %s, part %s, revision %s",
                             bin(addr), bin(manufacturer), bin(part_ident), bin(revision))
+
+        if args.repl:
+            code.interact(local={"i2c_iface":i2c_iface})
