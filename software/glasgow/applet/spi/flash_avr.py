@@ -22,6 +22,18 @@ devices = [
               calibration_size=2, fuses_size=2,
               program_size=1024, program_page=32,
               eeprom_size=64, eeprom_page=4),
+    AVRDevice("attiny25", signature=[0x1e, 0x91, 0x08],
+              calibration_size=2, fuses_size=3,
+              program_size=1024, program_page=32,
+              eeprom_size=128, eeprom_page=4),
+    AVRDevice("attiny45", signature=[0x1e, 0x92, 0x06],
+              calibration_size=2, fuses_size=3,
+              program_size=2048, program_page=64,
+              eeprom_size=256, eeprom_page=4),
+    AVRDevice("attiny85", signature=[0x1e, 0x93, 0x0B],
+              calibration_size=2, fuses_size=3,
+              program_size=4096, program_page=64,
+              eeprom_size=512, eeprom_page=4),
 ]
 
 
@@ -78,9 +90,14 @@ class SPIFlashAVRInterface:
 
     async def read_fuse(self, address):
         self._log("read fuse address %#04x", address)
+        a1, a0 = {
+            0: (0b0000, 0b0000),
+            1: (0b1000, 0b1000),
+            2: (0b0000, 0b1000),
+        }[address]
         _, _, _, data = await self._command(
-            0b0101_0000 | (address & 1) << 3,
-            0b0000_0000 | (address & 1) << 3,
+            0b0101_0000 | a0,
+            0b0000_0000 | a1,
             0,  0)
         return data
 
@@ -89,9 +106,14 @@ class SPIFlashAVRInterface:
 
     async def write_fuse(self, address, data):
         self._log("write fuse address %d data %02x", address, data)
+        a = {
+            0: 0b0000,
+            1: 0b1000,
+            2: 0b0100,
+        }[address]
         await self._command(
             0b1010_1100,
-            0b1010_0000 | (address & 1) << 3,
+            0b1010_0000 | a,
             0,
             data)
         while await self.is_busy(): pass
@@ -303,6 +325,9 @@ class SPIFlashAVRApplet(GlasgowApplet, name="spi-flash-avr"):
         p_write_fuses.add_argument(
             "-H", "--high", metavar="BITS", type=bits,
             help="set high fuse to binary BITS")
+        p_write_fuses.add_argument(
+            "-E", "--extra", metavar="BITS", type=bits,
+            help="set extra fuse to binary BITS")
 
         p_write_lock = p_operation.add_parser(
             "write-lock", help="write and verify device lock bits")
@@ -333,12 +358,11 @@ class SPIFlashAVRApplet(GlasgowApplet, name="spi-flash-avr"):
         await avr_iface.programming_enable()
 
         signature = await avr_iface.read_signature()
-
-        device = None
         for device in devices:
             if device.signature == signature:
                 break
-
+        else:
+            device = None
         self.logger.info("device signature: %s (%s)",
             "{:02x} {:02x} {:02x}".format(*signature),
             "unknown" if device is None else device.name)
@@ -349,7 +373,12 @@ class SPIFlashAVRApplet(GlasgowApplet, name="spi-flash-avr"):
         if args.operation == "read":
             if args.fuses:
                 fuses = await avr_iface.read_fuse_range(range(device.fuses_size))
-                if device.fuses_size > 1:
+                if device.fuses_size > 2:
+                    self.logger.info("fuses: low %s high %s extra %s",
+                                     "{:08b}".format(fuses[0]),
+                                     "{:08b}".format(fuses[1]),
+                                     "{:08b}".format(fuses[2]))
+                elif device.fuses_size > 1:
                     self.logger.info("fuses: low %s high %s",
                                      "{:08b}".format(fuses[0]),
                                      "{:08b}".format(fuses[1]))
