@@ -1,12 +1,12 @@
 import argparse
 import logging
-import code
 from migen import *
 from migen.genlib.fsm import *
 
 from .. import *
 from ...gateware.pads import *
 from ...gateware.i2c import I2CMaster
+from ...pyrepl import *
 
 
 CMD_START = 0x01
@@ -364,4 +364,4 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
                             bin(addr), bin(manufacturer), bin(part_ident), bin(revision))
 
         if args.repl:
-            code.interact(local={"i2c_iface":i2c_iface})
+            await AsyncInteractiveConsole(locals={"i2c_iface":i2c_iface}).interact()

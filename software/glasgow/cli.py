@@ -18,6 +18,7 @@ from .device.hardware import VID_QIHW, PID_GLASGOW, GlasgowHardwareDevice
 from .internal_test import *
 from .access.direct import *
 from .applet import *
+from .pyrepl import *
 
 
 logger = logging.getLogger(__name__)
