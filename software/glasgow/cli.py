@@ -44,7 +44,7 @@ class TextHelpFormatter(argparse.HelpFormatter):
             return text
 
         text = textwrap.dedent(text).strip()
-        return re.sub(r"((?!\n\n)(?!\n\s+\*).)+(\n*)?", filler, text, flags=re.S)
+        return re.sub(r"((?!\n\n)(?!\n\s+(?:\*|\d+\.)).)+(\n*)?", filler, text, flags=re.S)
 
 
 def get_argparser():

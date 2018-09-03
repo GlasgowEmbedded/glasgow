@@ -6,28 +6,29 @@ from migen.genlib.fsm import *
 from migen.genlib.cdc import *
 
 from .. import *
-from ...gateware.pads import *
 
 
 class SPIBus(Module):
     def __init__(self, pads, sck_idle, sck_edge, ss_active):
+        self.oe   = Signal(reset=1)
+
         self.sck  = Signal(reset=sck_idle)
         self.ss   = Signal(reset=not ss_active)
         self.mosi = Signal()
         self.miso = Signal()
 
         self.comb += [
-            pads.sck_t.oe.eq(1),
+            pads.sck_t.oe.eq(self.oe),
             pads.sck_t.o.eq(self.sck),
         ]
         if hasattr(pads, "ss_t"):
             self.comb += [
-                pads.ss_t.oe.eq(1),
+                pads.ss_t.oe.eq(self.oe),
                 pads.ss_t.o.eq(self.ss),
             ]
         if hasattr(pads, "mosi_t"):
             self.comb += [
-                pads.mosi_t.oe.eq(1),
+                pads.mosi_t.oe.eq(self.oe),
                 pads.mosi_t.o.eq(self.mosi)
             ]
         if hasattr(pads, "miso_t"):
@@ -231,8 +232,7 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
 
     @classmethod
     def add_interact_arguments(cls, parser):
-        def hex(arg):
-            return bytes.fromhex(arg)
+        def hex(arg): return bytes.fromhex(arg)
 
         parser.add_argument(
             "data", metavar="DATA", type=hex,

@@ -138,4 +138,5 @@ from .program_ice40 import ProgramICE40Applet
 from .selftest import SelfTestApplet
 from .spi.master import SPIMasterApplet
 from .spi.flash_25c import SPIFlash25CApplet
+from .spi.flash_avr import SPIFlashAVRApplet
 from .uart import UARTApplet
