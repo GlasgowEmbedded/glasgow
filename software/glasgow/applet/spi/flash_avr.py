@@ -245,7 +245,7 @@ class SPIFlashAVRApplet(GlasgowApplet, name="spi-flash-avr"):
     While programming is disabled, the SPI bus is tristated, so the applet can be used for
     in-circuit programming.
 
-    Supported devices: %s
+    Supported devices: {}
     """.format(", ".join(map(lambda d: d.name, devices)))
 
     __pins = ("reset", "sck", "miso", "mosi")
