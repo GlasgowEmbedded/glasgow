@@ -435,6 +435,8 @@ class SPIFlashAVRApplet(GlasgowApplet, name="spi-flash-avr"):
                     raise GlasgowAppletError("verification failed at address %#06x: %s != %s" %
                                              (address, written.hex(), chunk.hex()))
 
+        await avr_iface.programming_disable()
+
 # -------------------------------------------------------------------------------------------------
 
 class SPIFlashAVRAppleTestCase(GlasgowAppletTestCase, applet=SPIFlashAVRApplet):
