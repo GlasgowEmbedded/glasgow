@@ -173,7 +173,7 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
                 "-d", "--data", metavar="DATA", type=hex_bytes,
                 help="program memory with DATA as hex bytes")
             g_data.add_argument(
-                "-f", "--file", metavar="FILENAME", type=argparse.FileType("wb"),
+                "-f", "--file", metavar="FILENAME", type=argparse.FileType("rb"),
                 help="program memory with contents of FILENAME")
 
         p_program_page = p_operation.add_parser(
@@ -230,9 +230,9 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
 
             if args.operation == "program-page":
                 await flash_iface.write_enable()
-                await flash_iface.page_program(args.address, args.data)
+                await flash_iface.page_program(args.address, data)
             if args.operation == "program":
-                await flash_iface.program(args.address, args.data, args.page_size)
+                await flash_iface.program(args.address, data, args.page_size)
 
         if args.operation == "erase-sector":
             await flash_iface.write_enable()
