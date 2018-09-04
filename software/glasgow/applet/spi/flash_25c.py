@@ -102,6 +102,16 @@ class SPIFlash25CInterface:
         await self._command(0x20, arg=self._format_addr(address))
         while await self.write_in_progress(): pass
 
+    async def block_erase(self, address):
+        self._log("block erase addr=%#08x", address)
+        await self._command(0x52, arg=self._format_addr(address))
+        while await self.write_in_progress(): pass
+
+    async def chip_erase(self):
+        self._log("chip erase")
+        await self._command(0x60)
+        while await self.write_in_progress(): pass
+
     async def page_program(self, address, data):
         data = bytes(data)
         self._log("page program addr=%#08x data=<%s>", address, data.hex())
@@ -189,12 +199,19 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
 
         def add_erase_arguments(parser, kind):
             parser.add_argument(
-                "address", metavar="ADDRESS", type=address, default=0,
-                help="erase %s starting at address ADDRESS" % kind)
+                "addresses", metavar="ADDRESS", type=address, nargs="+",
+                help="erase %s(s) starting at address ADDRESS" % kind)
 
         p_erase_sector = p_operation.add_parser(
             "erase-sector", help="erase memory using SECTOR ERASE command")
         add_erase_arguments(p_erase_sector, "sector")
+
+        p_erase_block = p_operation.add_parser(
+            "erase-block", help="erase memory using BLOCK ERASE command")
+        add_erase_arguments(p_erase_block, "block")
+
+        p_erase_chip = p_operation.add_parser(
+            "erase-chip", help="erase memory using CHIP ERASE command")
 
     async def interact(self, device, args, flash_iface):
         await flash_iface.wakeup()
@@ -234,9 +251,17 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
             if args.operation == "program":
                 await flash_iface.program(args.address, data, args.page_size)
 
-        if args.operation == "erase-sector":
+        if args.operation in ("erase-sector", "erase-block"):
+            for address in args.addresses:
+                await flash_iface.write_enable()
+                if args.operation == "erase-sector":
+                    await flash_iface.sector_erase(address)
+                if args.operation == "erase-block":
+                    await flash_iface.block_erase(address)
+
+        if args.operation == "erase-chip":
             await flash_iface.write_enable()
-            await flash_iface.sector_erase(args.address)
+            await flash_iface.chip_erase()
 
 # -------------------------------------------------------------------------------------------------
 
