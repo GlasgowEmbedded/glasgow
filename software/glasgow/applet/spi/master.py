@@ -224,6 +224,8 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
         reset, self.__addr_reset = target.registers.add_rw(1)
         target.comb += subtarget.reset.eq(reset)
 
+        return subtarget
+
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
         spi_iface = SPIMasterInterface(iface, self.logger, self.__addr_reset)

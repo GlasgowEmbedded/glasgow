@@ -125,6 +125,10 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
     Identify and read arbitrary areas of a 25Cxx-compatible Flash memory.
     """
 
+    def build(self, target, args):
+        subtarget = super().build(target, args)
+        subtarget.comb += subtarget.bus.oe.eq(subtarget.bus.ss == args.ss_active)
+
     async def run(self, device, args):
         spi_iface = await super().run(device, args)
         return SPIFlash25CInterface(spi_iface, self.logger)
