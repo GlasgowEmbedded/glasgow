@@ -147,6 +147,8 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
     def add_interact_arguments(cls, parser):
         def address(arg):
             return int(arg, 0)
+        def length(arg):
+            return int(arg, 0)
         def hex_bytes(arg):
             return bytes.fromhex(arg)
 
@@ -160,7 +162,7 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
                 "address", metavar="ADDRESS", type=address, default=0,
                 help="read memory starting at address ADDRESS, with wraparound")
             parser.add_argument(
-                "length", metavar="LENGTH", type=int, default=0,
+                "length", metavar="LENGTH", type=length, default=0,
                 help="read LENGTH bytes from memory")
             parser.add_argument(
                 "-f", "--file", metavar="FILENAME", type=argparse.FileType("wb"),
