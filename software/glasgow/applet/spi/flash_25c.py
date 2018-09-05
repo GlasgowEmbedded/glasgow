@@ -122,11 +122,27 @@ class SPIFlash25CInterface:
         data = bytes(data)
         while len(data) > 0:
             chunk    = data[:page_size - address % page_size]
+            data     = data[len(chunk):]
+
             await self.write_enable()
             await self.page_program(address, chunk)
-            data     = data[len(chunk):]
+
             address += len(chunk)
 
+    async def erase_program(self, address, data, sector_size, page_size):
+        data = bytes(data)
+        while len(data) > 0:
+            chunk    = data[:sector_size - address % sector_size]
+            data     = data[len(chunk):]
+
+            sector_start = address & ~(sector_size - 1)
+            sector_data  = await self.read(sector_start, sector_size)
+            await self.write_enable()
+            await self.sector_erase(sector_start)
+            sector_data[address % sector_size:(address % sector_size) + len(chunk)] = chunk
+            await self.program(sector_start, sector_data, page_size)
+
+            address += len(chunk)
 
 class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
     logger = logging.getLogger(__name__)
@@ -192,11 +208,14 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
             "program-page", help="program memory page using PAGE PROGRAM command")
         add_program_arguments(p_program_page)
 
+        def add_page_argument(parser):
+            parser.add_argument(
+                "-P", "--page-size", metavar="SIZE", type=length, required=True,
+                help="program memory region using SIZE byte pages")
+
         p_program = p_operation.add_parser(
-            "program", help="program memory region using PAGE PROGRAM command")
-        p_program.add_argument(
-            "-P", "--page-size", metavar="SIZE", type=int, required=True,
-            help="program memory region using SIZE byte pages")
+            "program", help="program a memory region using PAGE PROGRAM command")
+        add_page_argument(p_program)
         add_program_arguments(p_program)
 
         def add_erase_arguments(parser, kind):
@@ -214,6 +233,15 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
 
         p_erase_chip = p_operation.add_parser(
             "erase-chip", help="erase memory using CHIP ERASE command")
+
+        p_erase_program = p_operation.add_parser(
+            "erase-program", help="modify a memory region using SECTOR ERASE and "
+                                  "PAGE PROGRAM commands")
+        p_erase_program.add_argument(
+            "-S", "--sector-size", metavar="SIZE", type=length, required=True,
+            help="erase memory in SIZE byte sectors")
+        add_page_argument(p_erase_program)
+        add_program_arguments(p_erase_program)
 
     async def interact(self, device, args, flash_iface):
         await flash_iface.wakeup()
@@ -241,7 +269,7 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
             else:
                 print(data.hex())
 
-        if args.operation in ("program-page", "program"):
+        if args.operation in ("program-page", "program", "erase-program"):
             if args.data is not None:
                 data = args.data
             if args.file is not None:
@@ -252,6 +280,8 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
                 await flash_iface.page_program(args.address, data)
             if args.operation == "program":
                 await flash_iface.program(args.address, data, args.page_size)
+            if args.operation == "erase-program":
+                await flash_iface.erase_program(args.address, data, args.sector_size, args.page_size)
 
         if args.operation in ("erase-sector", "erase-block"):
             for address in args.addresses:
