@@ -183,6 +183,12 @@ class SWDSubtarget(Module):
                     self.bus.cnt.eq(50),
                     self.bus.ack.eq(1),
                     NextState("QUEUE-RESET")
+                ).Elif(cmd == 0xfe,
+                    self.bus.w.eq(1),
+                    self.bus.di.eq(0xff),
+                    self.bus.cnt.eq(8),
+                    self.bus.ack.eq(1),
+                    NextState("SEND-ALERT-1")
                 ).Elif(cmd & 0x80,
                     self.bus.w.eq(1),
                     self.bus.di.eq(Cat(
@@ -204,6 +210,30 @@ class SWDSubtarget(Module):
             If(in_fifo.writable,
                 in_fifo.we.eq(1),
                 in_fifo.din.eq(0xff),
+                NextState("IDLE")
+            )
+        )
+        for (state, cnt, di, next_state) in (
+             ("SEND-ALERT-1", 32, 0b0110_0010_0000_1001_1111_0011_1001_0010, "SEND-ALERT-2"),
+             ("SEND-ALERT-2", 32, 0b1000_0110_1000_0101_0010_1101_1001_0101, "SEND-ALERT-3"),
+             ("SEND-ALERT-3", 32, 0b1110_0011_1101_1101_1010_1111_1110_1001, "SEND-ALERT-4"),
+             ("SEND-ALERT-4", 32, 0b0001_1001_1011_1100_0000_1110_1010_0010, "SEND-ALERT-5"),
+             ("SEND-ALERT-5",  4, 0b0000,      "SEND-ALERT-6"),
+             ("SEND-ALERT-6",  8, 0b0001_1010, "QUEUE-ALERT"),
+        ):
+            self.fsm.act(state,
+                If(self.bus.rdy,
+                    self.bus.w.eq(1),
+                    self.bus.di.eq(di),
+                    self.bus.cnt.eq(cnt),
+                    self.bus.ack.eq(1),
+                    NextState(next_state)
+                )
+            )
+        self.fsm.act("QUEUE-ALERT",
+            If(in_fifo.writable,
+                in_fifo.we.eq(1),
+                in_fifo.din.eq(0xfe),
                 NextState("IDLE")
             )
         )
@@ -295,6 +325,18 @@ class SWDInterface:
             return True
         else:
             self._log("nak")
+            return False
+
+    async def dormant_to_swd(self):
+        self._log("dormant to swd")
+        await self.lower.write([0xfe])
+        ack, = await self.lower.read(1)
+        if ack == 0xfe:
+            self._log("ack")
+            return True
+        else:
+            self._log("nak")
+            return False
 
     async def _read(self, ap, address):
         self._log("read %s[%d]", "AP" if ap else "DP", address)
@@ -341,7 +383,7 @@ class SWDApplet(GlasgowApplet, name="swd"):
     Debug ARM Cortex microcontrollers via SWD.
     """
 
-    __pins = ("clk", "io")
+    __pins = ("clk", "io", "i", "o")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
@@ -351,8 +393,9 @@ class SWDApplet(GlasgowApplet, name="swd"):
         # for pin in cls.__pins:
         #     access.add_pin_argument(parser, pin, default=True)
         access.add_pin_argument(parser, "clk", default=True)
-        access.add_pin_argument(parser, "o", default=True)
-        access.add_pin_argument(parser, "i", default=True)
+        access.add_pin_argument(parser, "io")
+        access.add_pin_argument(parser, "o")
+        access.add_pin_argument(parser, "i")
 
         parser.add_argument(
             "-b", "--bit-rate", metavar="FREQ", type=int, default=100,
@@ -361,7 +404,7 @@ class SWDApplet(GlasgowApplet, name="swd"):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = ResetInserter()(SWDSubtarget(
-            pads=iface.get_pads(args, pins=("clk", "o", "i")),
+            pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(streaming=False),
             bit_rate=args.bit_rate * 1000,
