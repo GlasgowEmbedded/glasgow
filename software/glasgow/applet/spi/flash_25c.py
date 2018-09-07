@@ -1,3 +1,4 @@
+import sys
 import struct
 import logging
 import argparse
@@ -118,31 +119,48 @@ class SPIFlash25CInterface:
         await self._command(0x02, arg=self._format_addr(address) + data)
         while await self.write_in_progress(): pass
 
-    async def program(self, address, data, page_size):
+    async def program(self, address, data, page_size,
+                      callback=lambda done, total, status: None):
         data = bytes(data)
+        done, total = 0, len(data)
         while len(data) > 0:
             chunk    = data[:page_size - address % page_size]
             data     = data[len(chunk):]
 
+            callback(done, total, "programming page {:#08x}".format(address))
             await self.write_enable()
             await self.page_program(address, chunk)
 
             address += len(chunk)
+            done    += len(chunk)
 
-    async def erase_program(self, address, data, sector_size, page_size):
+        callback(done, total, None)
+
+    async def erase_program(self, address, data, sector_size, page_size,
+                            callback=lambda done, total, status: None):
         data = bytes(data)
+        done, total = 0, len(data)
         while len(data) > 0:
             chunk    = data[:sector_size - address % sector_size]
             data     = data[len(chunk):]
 
             sector_start = address & ~(sector_size - 1)
-            sector_data  = await self.read(sector_start, sector_size)
+            if address % sector_size == 0 and len(chunk) == sector_size:
+                sector_data = chunk
+            else:
+                sector_data = await self.read(sector_start, sector_size)
+                sector_data[address % sector_size:(address % sector_size) + len(chunk)] = chunk
+
+            callback(done, total, "erasing sector {:#08x}".format(sector_start))
             await self.write_enable()
             await self.sector_erase(sector_start)
-            sector_data[address % sector_size:(address % sector_size) + len(chunk)] = chunk
-            await self.program(sector_start, sector_data, page_size)
+
+            await self.program(sector_start, sector_data, page_size,
+                callback=lambda page_done, page_total, status:
+                            callback(done + page_done, total, status))
 
             address += len(chunk)
+            done    += len(chunk)
 
 class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
     logger = logging.getLogger(__name__)
@@ -243,6 +261,17 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
         add_page_argument(p_erase_program)
         add_program_arguments(p_erase_program)
 
+    @staticmethod
+    def _show_progress(done, total, status):
+        if sys.stdout.isatty():
+            if done >= total:
+                sys.stdout.write("\r")
+            else:
+                sys.stdout.write("\r{}/{} bytes done".format(done, total))
+                if status:
+                    sys.stdout.write("; {}".format(status))
+            sys.stdout.flush()
+
     async def interact(self, device, args, flash_iface):
         await flash_iface.wakeup()
 
@@ -279,9 +308,11 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
                 await flash_iface.write_enable()
                 await flash_iface.page_program(args.address, data)
             if args.operation == "program":
-                await flash_iface.program(args.address, data, args.page_size)
+                await flash_iface.program(args.address, data, args.page_size,
+                                          callback=self._show_progress)
             if args.operation == "erase-program":
-                await flash_iface.erase_program(args.address, data, args.sector_size, args.page_size)
+                await flash_iface.erase_program(args.address, data, args.sector_size,
+                                                args.page_size, callback=self._show_progress)
 
         if args.operation in ("erase-sector", "erase-block"):
             for address in args.addresses:
