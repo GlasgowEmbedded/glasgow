@@ -1,3 +1,4 @@
+import re
 import sys
 import struct
 import logging
@@ -155,12 +156,15 @@ class SPIFlash25CInterface:
             await self.write_enable()
             await self.sector_erase(sector_start)
 
-            await self.program(sector_start, sector_data, page_size,
-                callback=lambda page_done, page_total, status:
-                            callback(done + page_done, total, status))
+            if not re.match(rb"^\xff*$", sector_data):
+                await self.program(sector_start, sector_data, page_size,
+                    callback=lambda page_done, page_total, status:
+                                callback(done + page_done, total, status))
 
             address += len(chunk)
             done    += len(chunk)
+
+        callback(done, total, None)
 
 class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
     logger = logging.getLogger(__name__)
@@ -264,10 +268,9 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
     @staticmethod
     def _show_progress(done, total, status):
         if sys.stdout.isatty():
-            if done >= total:
-                sys.stdout.write("\r")
-            else:
-                sys.stdout.write("\r{}/{} bytes done".format(done, total))
+            sys.stdout.write("\r\033[0K")
+            if done < total:
+                sys.stdout.write("{}/{} bytes done".format(done, total))
                 if status:
                     sys.stdout.write("; {}".format(status))
             sys.stdout.flush()
