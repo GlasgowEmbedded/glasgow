@@ -11,8 +11,8 @@ from ..gateware.uart import *
 
 
 class UARTSubtarget(Module):
-    def __init__(self, pads, out_fifo, in_fifo, bit_cyc):
-        self.submodules.uart = UART(pads, bit_cyc)
+    def __init__(self, pads, out_fifo, in_fifo, bit_cyc, parity):
+        self.submodules.uart = UART(pads, bit_cyc=bit_cyc, parity=parity)
 
         ###
 
@@ -51,6 +51,9 @@ class UARTApplet(GlasgowApplet, name="uart"):
             "-b", "--baud", metavar="RATE", type=int, default=115200,
             help="set baud rate to RATE bits per second (default: %(default)s)")
         parser.add_argument(
+            "--parity", metavar="PARITY", choices=("none", "zero", "one", "odd", "even"),
+            help="send and receive parity bit as PARITY (default: %(default)s)")
+        parser.add_argument(
             "--tolerance", metavar="PPM", type=int, default=50000,
             help="verify that actual baud rate is within PPM parts per million of specified"
                  " (default: %(default)s)")
@@ -69,6 +72,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(streaming=False),
             bit_cyc=bit_cyc,
+            parity=args.parity,
         )
 
     async def run(self, device, args):

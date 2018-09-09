@@ -73,16 +73,20 @@ def uart_bit_cyc(clk_freq, baud_rate, max_deviation=50000):
 
 class UART(Module):
     """
-    Simple asynchronous serial receiver-transmitter.
+    Asynchronous serial receiver-transmitter.
 
-    Any number of data bits, no parity bit, and 1 stop bit are supported.
-
-    The only detected frame error is a missing stop bit.
+    Any number of data bits, any parity, and 1 stop bit are supported.
 
     :param bit_cyc:
         Bit time expressed as a multiple of system clock periods. Use :func:`uart_bit_cyc`
         to calculate bit time from system clock frequency and baud rate.
     :type bit_cyc: int
+    :param data_bits:
+        Data bit count.
+    :type data_bits: int
+    :param parity:
+        Parity, one of ``"none"`` (default), ``"zero"``, ``"one"``, ``"even"``, ``"odd"``.
+    :type parity: str
 
     :attr rx_data:
         Received data. Valid when ``rx_rdy`` is active.
@@ -109,12 +113,13 @@ class UART(Module):
         Transmit acknowledgement. If active when ``tx_rdy`` is active, ``tx_rdy`` is reset,
         ``tx_data`` is sampled, and the transmit state machine starts transmitting a frame.
     """
-    def __init__(self, pads, bit_cyc, data_bits=8):
+    def __init__(self, pads, bit_cyc, data_bits=8, parity="none"):
         self.rx_data = Signal(data_bits)
         self.rx_rdy  = Signal()
         self.rx_ack  = Signal()
         self.rx_ferr = Signal()
         self.rx_ovf  = Signal()
+        self.rx_perr = Signal()
         self.rx_err  = Signal()
 
         self.tx_data = Signal(data_bits)
@@ -127,11 +132,28 @@ class UART(Module):
 
         bit_cyc = int(bit_cyc)
 
+        def calc_parity(sig, kind):
+            if kind == "zero":
+                return C(0, 1)
+            elif kind == "one":
+                return C(1, 1)
+            else:
+                bits, _ = value_bits_sign(sig)
+                even_parity = sum([sig[b] for b in range(bits)]) & 1
+                if kind == "odd":
+                    return ~even_parity
+                elif kind == "even":
+                    return even_parity
+                else:
+                    assert False
+
         if bus.has_rx:
             rx_timer = Signal(max=bit_cyc)
             rx_stb   = Signal()
             rx_shreg = Signal(data_bits)
             rx_bitno = Signal(max=rx_shreg.nbits)
+
+            self.comb += self.rx_err.eq(self.rx_ferr | self.rx_ovf | self.rx_perr)
 
             self.sync += [
                 If(rx_timer == 0,
@@ -160,7 +182,21 @@ class UART(Module):
                     NextValue(rx_shreg, Cat(rx_shreg[1:8], bus.rx_i)),
                     NextValue(rx_bitno, rx_bitno + 1),
                     If(rx_bitno == rx_shreg.nbits - 1,
+                        If(parity == "none",
+                            NextState("STOP")
+                        ).Else(
+                            NextState("PARITY")
+                        )
+                    )
+                )
+            )
+            self.rx_fsm.act("PARITY",
+                If(rx_stb,
+                    If(bus.rx_i == calc_parity(rx_shreg, parity),
                         NextState("STOP")
+                    ).Else(
+                        self.rx_perr.eq(1),
+                        NextState("IDLE")
                     )
                 )
             )
@@ -192,6 +228,7 @@ class UART(Module):
             tx_stb    = Signal()
             tx_shreg  = Signal(data_bits)
             tx_bitno  = Signal(max=tx_shreg.nbits)
+            tx_parity = Signal()
 
             self.sync += [
                 If(tx_timer == 0,
@@ -207,6 +244,9 @@ class UART(Module):
                 self.tx_rdy.eq(1),
                 If(self.tx_ack,
                     NextValue(tx_shreg, self.tx_data),
+                    If(parity != "none",
+                        NextValue(tx_parity, calc_parity(self.tx_data, parity))
+                    ),
                     NextValue(tx_timer, bit_cyc - 1),
                     NextValue(bus.tx_o, 0),
                     NextState("START")
@@ -228,9 +268,20 @@ class UART(Module):
                         NextValue(bus.tx_o, tx_shreg[0]),
                         NextValue(tx_shreg, Cat(tx_shreg[1:8], 0)),
                     ).Else(
-                        NextValue(bus.tx_o, 1),
-                        NextState("STOP")
+                        If(parity == "none",
+                            NextValue(bus.tx_o, 1),
+                            NextState("STOP")
+                        ).Else(
+                            NextValue(bus.tx_o, tx_parity),
+                            NextState("PARITY")
+                        )
                     )
+                )
+            )
+            self.tx_fsm.act("PARITY",
+                If(tx_stb,
+                    NextValue(bus.tx_o, 1),
+                    NextState("STOP")
                 )
             )
             self.tx_fsm.act("STOP",
