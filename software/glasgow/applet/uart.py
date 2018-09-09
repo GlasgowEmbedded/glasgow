@@ -76,47 +76,37 @@ class UARTApplet(GlasgowApplet, name="uart"):
 
     @classmethod
     def add_interact_arguments(cls, parser):
-        parser.add_argument(
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+
+        p_tty = p_operation.add_parser(
+            "tty", help="connect UART to stdin/stdout")
+        p_tty.add_argument(
             "-s", "--stream", action="store_true", default=False,
             help="continue reading from I/O port even after an end-of-file condition on stdin")
 
-    async def interact(self, device, args, uart):
-        if sys.stdin.isatty():
-            import atexit, termios
+        p_pty = p_operation.add_parser(
+            "pty", help="connect UART to a pseudo-terminal device file")
 
-            old_stdin_attrs = termios.tcgetattr(sys.stdin)
-            [iflag, oflag, cflag, lflag, ispeed, ospeed, cc] = old_stdin_attrs
-            lflag &= ~(termios.ECHO | termios.ICANON | termios.ISIG)
-            cc[termios.VMIN] = 1
-            new_stdin_attrs = [iflag, oflag, cflag, lflag, ispeed, ospeed, cc]
-            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, new_stdin_attrs)
-
-            @atexit.register
-            def restore_stdin_attrs():
-                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_stdin_attrs)
-
-            self.logger.info("running on a TTY; enter `Ctrl+\\ q` to quit")
-
+    async def _forward(self, in_fileno, out_fileno, uart, quit_sequence=False, stream=False):
         quit = 0
-        stdin_fut = None
-        uart_fut  = None
+        dev_fut = uart_fut = None
         while True:
-            if stdin_fut is None:
-                stdin_fut = asyncio.get_event_loop().run_in_executor(None,
-                    lambda: os.read(sys.stdin.fileno(), 1024))
+            if dev_fut is None:
+                dev_fut = asyncio.get_event_loop().run_in_executor(None,
+                    lambda: os.read(in_fileno, 1024))
             if uart_fut is None:
-                uart_fut  = asyncio.ensure_future(uart.read())
+                uart_fut = asyncio.ensure_future(uart.read())
 
-            await asyncio.wait([uart_fut, stdin_fut], return_when=asyncio.FIRST_COMPLETED)
+            await asyncio.wait([uart_fut, dev_fut], return_when=asyncio.FIRST_COMPLETED)
 
-            if stdin_fut.done():
-                data = await stdin_fut
-                stdin_fut = None
+            if dev_fut.done():
+                data = await dev_fut
+                dev_fut = None
 
-                if not data:
+                if not data and not stream:
                     break
 
-                if sys.stdin.isatty():
+                if os.isatty(in_fileno):
                     if quit == 0 and data == b"\034":
                         quit = 1
                         continue
@@ -125,6 +115,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
                     else:
                         quit = 0
 
+                self.logger.trace("in->UART: <%s>", data.hex())
                 await uart.write(data)
                 await uart.flush()
 
@@ -132,11 +123,49 @@ class UARTApplet(GlasgowApplet, name="uart"):
                 data = await uart_fut
                 uart_fut = None
 
-                os.write(sys.stdout.fileno(), data)
+                self.logger.trace("UART->out: <%s>", data.hex())
+                os.write(out_fileno, data)
 
-        for fut in [uart_fut, stdin_fut]:
+        for fut in [uart_fut, dev_fut]:
             if fut is not None and not fut.done():
                 fut.cancel()
+
+    async def _interact_tty(self, uart, stream):
+        in_fileno  = sys.stdin.fileno()
+        out_fileno = sys.stdout.fileno()
+
+        if os.isatty(in_fileno):
+            import atexit, termios
+
+            old_stdin_attrs = termios.tcgetattr(sys.stdin)
+            [iflag, oflag, cflag, lflag, ispeed, ospeed, cc] = old_stdin_attrs
+            lflag &= ~(termios.ECHO | termios.ICANON | termios.ISIG)
+            cc[termios.VMIN] = 1
+            new_stdin_attrs = [iflag, oflag, cflag, lflag, ispeed, ospeed, cc]
+            termios.tcsetattr(in_fileno, termios.TCSADRAIN, new_stdin_attrs)
+
+            @atexit.register
+            def restore_stdin_attrs():
+                termios.tcsetattr(in_fileno, termios.TCSADRAIN, old_stdin_attrs)
+
+            self.logger.info("running on a TTY; enter `Ctrl+\\ q` to quit")
+
+        await self._forward(in_fileno, out_fileno, uart,
+                            quit_sequence=True, stream=stream)
+
+    async def _interact_pty(self, uart):
+        import pty
+
+        master, slave = pty.openpty()
+        print(os.ttyname(slave))
+
+        await self._forward(master, master, uart)
+
+    async def interact(self, device, args, uart):
+        if args.operation == "tty":
+            await self._interact_tty(uart, args.stream)
+        if args.operation == "pty":
+            await self._interact_pty(uart)
 
 # -------------------------------------------------------------------------------------------------
 
