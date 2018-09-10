@@ -133,7 +133,7 @@ class UART(Module):
         bit_cyc = int(bit_cyc)
 
         def calc_parity(sig, kind):
-            if kind == "zero":
+            if kind in ("zero", "none"):
                 return C(0, 1)
             elif kind == "one":
                 return C(1, 1)
