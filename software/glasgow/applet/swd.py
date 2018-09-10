@@ -14,7 +14,7 @@ from ..pyrepl import *
 
 class SWDBus(Module):
     def __init__(self, pads, bit_rate):
-        self.di  = Signal(50)
+        self.di  = Signal(52)
         self.do  = Signal(33)
         self.w   = Signal()
         self.cnt = Signal(max=max(self.di.nbits, self.do.nbits) + 1)
@@ -25,26 +25,18 @@ class SWDBus(Module):
 
         clk = Signal(reset=1)
         oe  = Signal(reset=1)
-        o   = Signal(reset=1)
+        o   = Signal(reset=0)
         i   = Signal()
         self.comb += [
             pads.clk_t.oe.eq(1),
-            pads.clk_t.o.eq(clk)
-        ]
+            pads.clk_t.o.eq(clk),
+            pads.io_t.oe.eq(oe),
+            pads.io_t.o.eq(o),
+            i.eq(pads.io_t.i),
 
-        if hasattr(pads, "io_t"):
-            self.comb += [
-                pads.io_t.oe.eq(oe),
-                pads.io_t.o.eq(o),
-                i.eq(pads.io_t.i),
-            ]
-        else:
-            # FIXME: remove this branch post revC
-            self.comb += [
-                pads.o_t.oe.eq(1),
-                pads.o_t.o.eq(o),
-                i.eq(pads.i_t.i),
-            ]
+            pads.tmp_t.oe.eq(1),
+            pads.tmp_t.o.eq(oe),
+        ]
 
         half_cyc = round(30e6 // (bit_rate * 2))
         timer    = Signal(max=half_cyc)
@@ -76,8 +68,11 @@ class SWDBus(Module):
             self.rdy.eq(1),
             If(self.ack,
                 If(self.w & ~oe,
+                    NextValue(o, 0),
+                    NextValue(oe, 1),
                     NextState("TURN-WRITE")
                 ).Elif(~self.w & oe,
+                    NextValue(oe, 0),
                     NextState("TURN-READ")
                 ).Else(
                     NextState("FALLING")
@@ -91,7 +86,6 @@ class SWDBus(Module):
                 If(clk,
                     NextValue(clk, 0),
                 ).Else(
-                    NextValue(oe, 1),
                     NextValue(clk, 1),
                     NextState("FALLING")
                 )
@@ -100,7 +94,6 @@ class SWDBus(Module):
         self.fsm.act("TURN-READ",
             If(stb,
                 If(clk,
-                    NextValue(oe, 0),
                     NextValue(clk, 0),
                 ).Else(
                     NextValue(clk, 1),
@@ -143,52 +136,59 @@ class SWDBus(Module):
         )
 
 
+CMD_LINE_RESET  = 0xff
+CMD_JTAG_TO_SWD = 0xfe
+
+
 class SWDSubtarget(Module):
     def __init__(self, pads, out_fifo, in_fifo, bit_rate):
         self.submodules.bus = SWDBus(pads, bit_rate)
 
         ###
 
+        def reverse(sig, bits):
+            return Cat(sig[b - 1] for b in range(bits, 0, -1))
+
         def parity(sig):
             bits, _ = value_bits_sign(sig)
             return sum([sig[b] for b in range(bits)]) & 1
 
-        cmd = Signal(8)
+        cmd  = Signal(8)
+        data = Signal(32)
 
         self.submodules.fsm = FSM(reset_state="IDLE")
         self.fsm.act("CLOCK-IDLE",
             If(self.bus.rdy,
-                If(out_fifo.readable,
-                    NextState("IDLE")
-                ).Else(
+                If(~out_fifo.readable,
                     self.bus.w.eq(1),
-                    self.bus.di.eq(0b00000000),
+                    self.bus.di.eq(0),
                     self.bus.cnt.eq(8),
                     self.bus.ack.eq(1),
-                )
+                ),
+                NextState("IDLE")
             )
         )
         self.fsm.act("IDLE",
             If(out_fifo.readable,
                 out_fifo.re.eq(1),
                 NextValue(cmd, out_fifo.dout),
-                NextState("SEND-COMMAND")
+                NextState("SWD-WRITE-COMMAND")
             )
         )
-        self.fsm.act("SEND-COMMAND",
+        self.fsm.act("SWD-WRITE-COMMAND",
             If(self.bus.rdy,
-                If(cmd == 0xff,
+                If(cmd == CMD_LINE_RESET,
                     self.bus.w.eq(1),
                     self.bus.di.eq((1 << 50) - 1),
-                    self.bus.cnt.eq(50),
+                    self.bus.cnt.eq(52),
                     self.bus.ack.eq(1),
-                    NextState("QUEUE-RESET")
-                ).Elif(cmd == 0xfe,
+                    NextState("FIFO-WRITE-REPLY")
+                ).Elif(cmd == CMD_JTAG_TO_SWD,
                     self.bus.w.eq(1),
-                    self.bus.di.eq(0xff),
-                    self.bus.cnt.eq(8),
+                    self.bus.di.eq(0b1110_0111_1001_1110),
+                    self.bus.cnt.eq(16),
                     self.bus.ack.eq(1),
-                    NextState("SEND-ALERT-1")
+                    NextState("FIFO-WRITE-REPLY")
                 ).Elif(cmd & 0x80,
                     self.bus.w.eq(1),
                     self.bus.di.eq(Cat(
@@ -200,106 +200,86 @@ class SWDSubtarget(Module):
                     )),
                     self.bus.cnt.eq(8),
                     self.bus.ack.eq(1),
-                    NextState("RECV-ACK")
-                ).Else(
-                    NextState("IDLE")
-                )
-            )
-        )
-        self.fsm.act("QUEUE-RESET",
-            If(in_fifo.writable,
-                in_fifo.we.eq(1),
-                in_fifo.din.eq(0xff),
-                NextState("IDLE")
-            )
-        )
-        for (state, cnt, di, next_state) in (
-             ("SEND-ALERT-1", 32, 0b0110_0010_0000_1001_1111_0011_1001_0010, "SEND-ALERT-2"),
-             ("SEND-ALERT-2", 32, 0b1000_0110_1000_0101_0010_1101_1001_0101, "SEND-ALERT-3"),
-             ("SEND-ALERT-3", 32, 0b1110_0011_1101_1101_1010_1111_1110_1001, "SEND-ALERT-4"),
-             ("SEND-ALERT-4", 32, 0b0001_1001_1011_1100_0000_1110_1010_0010, "SEND-ALERT-5"),
-             ("SEND-ALERT-5",  4, 0b0000,      "SEND-ALERT-6"),
-             ("SEND-ALERT-6",  8, 0b0001_1010, "QUEUE-ALERT"),
-        ):
-            self.fsm.act(state,
-                If(self.bus.rdy,
-                    self.bus.w.eq(1),
-                    self.bus.di.eq(di),
-                    self.bus.cnt.eq(cnt),
-                    self.bus.ack.eq(1),
-                    NextState(next_state)
-                )
-            )
-        self.fsm.act("QUEUE-ALERT",
-            If(in_fifo.writable,
-                in_fifo.we.eq(1),
-                in_fifo.din.eq(0xfe),
-                NextState("IDLE")
-            )
-        )
-        self.fsm.act("RECV-ACK",
-            If(self.bus.rdy,
-                self.bus.w.eq(0),
-                self.bus.cnt.eq(3),
-                self.bus.ack.eq(1),
-                NextState("CHECK-ACK")
-            )
-        )
-        self.fsm.act("CHECK-ACK",
-            If(self.bus.rdy & in_fifo.writable,
-                in_fifo.we.eq(1),
-                in_fifo.din.eq(self.bus.do & 0b111),
-                If((self.bus.do & 0b111) == 0b100,
                     If(cmd & 0b10,
-                        self.bus.w.eq(0),
-                        self.bus.cnt.eq(33),
-                        self.bus.ack.eq(1),
-                        NextState("RECV-READ")
+                        NextState("SWD-READ-ACK")
                     ).Else(
-                        NextState("DEQUEUE-WRITE-1")
+                        NextState("FIFO-READ-DATA-1")
                     )
                 ).Else(
                     NextState("IDLE")
                 )
             )
         )
-        self.fsm.act("RECV-READ",
-            If(self.bus.rdy,
-                NextState("QUEUE-READ-1")
+        self.fsm.act("FIFO-WRITE-REPLY",
+            If(self.bus.rdy & in_fifo.writable,
+                in_fifo.we.eq(1),
+                in_fifo.din.eq(cmd),
+                NextState("CLOCK-IDLE")
             )
         )
         for (state, shift, next_state) in (
-            ("QUEUE-READ-1",  0, "QUEUE-READ-2"),
-            ("QUEUE-READ-2",  8, "QUEUE-READ-3"),
-            ("QUEUE-READ-3", 16, "QUEUE-READ-4"),
-            ("QUEUE-READ-4", 24, "CLOCK-IDLE"),
-        ):
-            self.fsm.act(state,
-                If(in_fifo.writable,
-                    in_fifo.we.eq(1),
-                    in_fifo.din.eq(self.bus.do[shift:shift + 8]),
-                    NextState(next_state)
-                )
-            )
-        for (state, shift, next_state) in (
-            ("DEQUEUE-WRITE-1",  0, "DEQUEUE-WRITE-2"),
-            ("DEQUEUE-WRITE-2",  8, "DEQUEUE-WRITE-3"),
-            ("DEQUEUE-WRITE-3", 16, "DEQUEUE-WRITE-4"),
-            ("DEQUEUE-WRITE-4", 24, "SEND-WRITE"),
+            ("FIFO-READ-DATA-1",  0, "FIFO-READ-DATA-2"),
+            ("FIFO-READ-DATA-2",  8, "FIFO-READ-DATA-3"),
+            ("FIFO-READ-DATA-3", 16, "FIFO-READ-DATA-4"),
+            ("FIFO-READ-DATA-4", 24, "SWD-READ-ACK"),
         ):
             self.fsm.act(state,
                 If(out_fifo.readable,
                     out_fifo.re.eq(1),
-                    self.bus.di[shift:shift + 8].eq(out_fifo.din),
+                    NextValue(data[shift:shift + 8], out_fifo.dout),
                     NextState(next_state)
                 )
             )
-        self.fsm.act("SEND-WRITE",
-            self.bus.w.eq(1),
-            self.bus.cnt.eq(33),
-            self.bus.ack.eq(1),
-            NextState("CLOCK-IDLE")
+        self.fsm.act("SWD-READ-ACK",
+            If(self.bus.rdy,
+                self.bus.w.eq(0),
+                self.bus.cnt.eq(3),
+                self.bus.ack.eq(1),
+                NextState("SWD-CHECK-ACK")
+            )
         )
+        self.fsm.act("SWD-CHECK-ACK",
+            If(self.bus.rdy & in_fifo.writable,
+                in_fifo.we.eq(1),
+                in_fifo.din.eq(reverse(self.bus.do, 3)),
+                If(reverse(self.bus.do, 3) == 0b001,
+                    If(cmd & 0b10,
+                        self.bus.w.eq(0),
+                        self.bus.cnt.eq(33),
+                        self.bus.ack.eq(1),
+                        NextState("SWD-READ-DATA")
+                    ).Else(
+                        self.bus.w.eq(1),
+                        self.bus.di.eq(Cat(data, parity(data))),
+                        self.bus.cnt.eq(33),
+                        self.bus.ack.eq(1),
+                        NextState("CLOCK-IDLE")
+                    )
+                ).Else(
+                    NextState("CLOCK-IDLE")
+                )
+            )
+        )
+        self.fsm.act("SWD-READ-DATA",
+            If(self.bus.rdy,
+                # TODO: check parity
+                NextValue(data, reverse(self.bus.do[1:], 32)),
+                NextState("FIFO-WRITE-DATA-1")
+            )
+        )
+        for (state, shift, next_state) in (
+            ("FIFO-WRITE-DATA-1",  0, "FIFO-WRITE-DATA-2"),
+            ("FIFO-WRITE-DATA-2",  8, "FIFO-WRITE-DATA-3"),
+            ("FIFO-WRITE-DATA-3", 16, "FIFO-WRITE-DATA-4"),
+            ("FIFO-WRITE-DATA-4", 24, "CLOCK-IDLE"),
+        ):
+            self.fsm.act(state,
+                If(in_fifo.writable,
+                    in_fifo.we.eq(1),
+                    in_fifo.din.eq(data[shift:shift + 8]),
+                    NextState(next_state)
+                )
+            )
 
 
 class SWDInterface:
@@ -312,37 +292,35 @@ class SWDInterface:
     def _log(self, message, *args):
         self._logger.log(self._level, "SWD: " + message, *args)
 
+    async def _init_command(self, command):
+        command = bytes(command)
+        await self.lower.write(command)
+        ack = await self.lower.read(len(command))
+        if ack == command:
+            self._log("ack")
+            return True
+        else:
+            self._log("nak")
+            return False
+
     async def reset(self):
         self._log("reset probe")
         await self.lower.device.write_register(self._addr_reset, 1)
         await self.lower.device.write_register(self._addr_reset, 0)
 
         self._log("reset interface")
-        await self.lower.write([0xff])
-        ack, = await self.lower.read(1)
-        if ack == 0xff:
-            self._log("ack")
-            return True
-        else:
-            self._log("nak")
-            return False
+        await self._init_command([CMD_LINE_RESET])
 
-    async def dormant_to_swd(self):
-        self._log("dormant to swd")
-        await self.lower.write([0xfe])
-        ack, = await self.lower.read(1)
-        if ack == 0xfe:
-            self._log("ack")
-            return True
-        else:
-            self._log("nak")
-            return False
+    async def jtag_to_swd(self):
+        self._log("JTAG to SWD")
+        await self._init_command([CMD_LINE_RESET, CMD_JTAG_TO_SWD, CMD_LINE_RESET])
 
     async def _read(self, ap, address):
         self._log("read %s[%d]", "AP" if ap else "DP", address)
         await self.lower.write([ap | (1 << 1) | ((address & 0x3) << 2) | 0x80])
         ack, = await self.lower.read(1)
-        if ack != 0b100:
+
+        if ack != 0b001:
             self._log("nak=%s", "{:03b}".format(ack))
             return None
         else:
@@ -351,16 +329,16 @@ class SWDInterface:
             return data
 
     async def _write(self, ap, address, data):
-        self._log("write %s[%d]", "AP" if ap else "DP", address)
+        self._log("write %s[%d] data=<%08x>", "AP" if ap else "DP", address, data)
         await self.lower.write([ap | ((address & 0x3) << 2) | 0x80])
+        await self.lower.write(struct.pack("<L", data))
+
         ack, = await self.lower.read(1)
-        if ack != 0b100:
+        if ack != 0b001:
             self._log("nak=%s", "{:03b}".format(ack))
             return False
         else:
-            await self.lower.write(struct.pack("<L", data))
-            await self.lower.flush()
-            self._log("ack data=%08x", data)
+            self._log("ack")
             return True
 
     async def read_ap(self, address):
@@ -383,19 +361,14 @@ class SWDApplet(GlasgowApplet, name="swd"):
     Debug ARM Cortex microcontrollers via SWD.
     """
 
-    __pins = ("clk", "io", "i", "o")
+    __pins = ("clk", "io", "tmp")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        # FIXME: uncomment this post revC
-        # for pin in cls.__pins:
-        #     access.add_pin_argument(parser, pin, default=True)
-        access.add_pin_argument(parser, "clk", default=True)
-        access.add_pin_argument(parser, "io")
-        access.add_pin_argument(parser, "o")
-        access.add_pin_argument(parser, "i")
+        for pin in cls.__pins:
+            access.add_pin_argument(parser, pin, default=True)
 
         parser.add_argument(
             "-b", "--bit-rate", metavar="FREQ", type=int, default=100,
