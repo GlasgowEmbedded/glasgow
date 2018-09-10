@@ -52,6 +52,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
             help="set baud rate to RATE bits per second (default: %(default)s)")
         parser.add_argument(
             "--parity", metavar="PARITY", choices=("none", "zero", "one", "odd", "even"),
+            default="none",
             help="send and receive parity bit as PARITY (default: %(default)s)")
         parser.add_argument(
             "--tolerance", metavar="PPM", type=int, default=50000,
