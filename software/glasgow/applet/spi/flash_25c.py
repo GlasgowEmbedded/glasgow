@@ -15,7 +15,7 @@ class SPIFlash25CInterface:
         self._level      = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
     def _log(self, message, *args):
-        self._logger.log(self._level, "SPI Flash: " + message, *args)
+        self._logger.log(self._level, "SPI Flash 25C: " + message, *args)
 
     async def _command(self, cmd, arg=[], dummy=0, ret=0):
         arg = bytes(arg)
@@ -166,11 +166,12 @@ class SPIFlash25CInterface:
 
         callback(done, total, None)
 
+
 class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
     logger = logging.getLogger(__name__)
     help = "read and write 25C-compatible Flash memories"
     description = """
-    Identify and read arbitrary areas of a 25Cxx-compatible Flash memory.
+    Identify, read, and write arbitrary areas of a 25Cxx-compatible Flash memory.
     """
 
     def build(self, target, args):
@@ -331,7 +332,7 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
 
 # -------------------------------------------------------------------------------------------------
 
-class SPIFlash25CAppleTestCase(GlasgowAppletTestCase, applet=SPIFlash25CApplet):
+class SPIFlash25CAppletTestCase(GlasgowAppletTestCase, applet=SPIFlash25CApplet):
     def test_build(self):
         self.assertBuilds(args=["--pin-sck",  "0", "--pin-ss",   "1",
                                 "--pin-mosi", "2", "--pin-miso", "3"])
