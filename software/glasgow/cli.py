@@ -84,8 +84,8 @@ def get_argparser():
                 continue
 
             access_args = DirectArguments(applet_name=applet_name,
-                                          default_port="A",
-                                          pin_count=8)
+                                          default_port="AB",
+                                          pin_count=16)
             if mode == "run":
                 g_applet_build = p_applet.add_argument_group("build arguments")
                 applet.add_build_arguments(g_applet_build, access_args)

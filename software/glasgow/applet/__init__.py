@@ -72,7 +72,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
         if access == "direct":
             target = GlasgowHardwareTarget(multiplexer_cls=DirectMultiplexer)
             access_args = DirectArguments(applet_name=self.applet.name,
-                                          default_port="A", pin_count=8)
+                                          default_port="AB", pin_count=16)
         else:
             raise NotImplementedError
 
