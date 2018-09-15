@@ -10,3 +10,4 @@ build/
 _autosave-*
 /*.v
 /*.bin
+/*.zip

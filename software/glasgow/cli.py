@@ -6,6 +6,7 @@ import textwrap
 import re
 import asyncio
 import unittest
+import shutil
 from datetime import datetime
 
 from fx2 import VID_CYPRESS, PID_FX2, FX2Config
@@ -190,8 +191,8 @@ def get_argparser():
         help="(advanced) build applet logic and save it as a file")
     p_build.add_argument(
         "-t", "--type", metavar="TYPE", type=str,
-        choices=["v", "verilog", "bin", "bitstream"], default="bitstream",
-        help="artifact to build (one of: verilog bitstream, default: %(default)s)")
+        choices=["zip", "archive", "v", "verilog", "bin", "bitstream"], default="bitstream",
+        help="artifact to build (one of: archive verilog bitstream, default: %(default)s)")
     p_build.add_argument(
         "-f", "--filename", metavar="FILENAME", type=str,
         help="file to save artifact to (default: <applet-name>.{v,bin})")
@@ -456,6 +457,13 @@ async def _main():
             if args.type in ("bin", "bitstream"):
                 with open(args.filename or args.applet + ".bin", "wb") as f:
                     f.write(target.get_bitstream(debug=True))
+            if args.type in ("zip", "archive"):
+                with target.get_build_tree() as tree:
+                    if args.filename:
+                        basename, = os.path.splitext(args.filename)
+                    else:
+                        basename = args.applet
+                    shutil.make_archive(basename, format="zip", root_dir=tree, logger=logger)
 
         if args.action == "test":
             logger.info("testing applet %r", args.applet)

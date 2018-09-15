@@ -101,3 +101,8 @@ class GlasgowHardwareTarget(Module):
             if not debug:
                 shutil.rmtree(build_dir)
         return bitstream
+
+    def get_build_tree(self, **kwargs):
+        build_dir = tempfile.TemporaryDirectory(prefix="glasgow_")
+        self.build(build_dir=build_dir.name, run=False)
+        return build_dir
