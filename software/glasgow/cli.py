@@ -230,7 +230,7 @@ def get_argparser():
         help="(advanced) initial device programming")
     p_factory.add_argument(
         "--revision", metavar="REVISION", type=str,
-        default="A",
+        default="B",
         help="revision letter (if not specified: %(default)s)")
     p_factory.add_argument(
         "--serial", metavar="SERIAL", type=str,
