@@ -75,8 +75,17 @@ def get_argparser():
             if mode == "test" and not hasattr(applet, "test_cls"):
                 continue
 
+            help        = applet.help
+            description = applet.description
+            if applet.preview:
+                help += " (PREVIEW QUALITY APPLET)"
+                description = """
+                This applet is PREVIEW QUALITY and may CORRUPT DATA or have missing features.
+                Use at your own risk.
+                """ + description
+
             p_applet = subparsers.add_parser(
-                applet_name, help=applet.help, description=applet.description,
+                applet_name, help=help, description=description,
                 formatter_class=TextHelpFormatter)
             if mode == "test":
                 p_applet.add_argument(
