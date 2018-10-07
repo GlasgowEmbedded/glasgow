@@ -133,6 +133,7 @@ def applet_simulation_test(setup, args=[]):
 
 # -------------------------------------------------------------------------------------------------
 
+from .benchmark import BenchmarkApplet
 from .rgb_grabber import RGBGrabberApplet
 from .hd44780 import HD44780Applet
 from .i2c.master import I2CMasterApplet

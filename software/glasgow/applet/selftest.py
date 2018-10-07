@@ -59,7 +59,7 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
         target.submodules += SelfTestSubtarget(applet=self, target=target)
 
     @classmethod
-    def add_run_arguments(cls, parser, access_args):
+    def add_run_arguments(cls, parser, access):
         parser.add_argument(
             dest="modes", metavar="MODE", type=str, nargs="*", choices=[[]] + cls.__all_modes,
             help="run self-test mode MODE (default: {})".format(cls.__default_mode))
