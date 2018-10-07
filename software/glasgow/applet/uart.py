@@ -71,7 +71,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
         target.submodules += UARTSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
-            in_fifo=iface.get_in_fifo(streaming=False),
+            in_fifo=iface.get_in_fifo(),
             bit_cyc=bit_cyc,
             parity=args.parity,
         )

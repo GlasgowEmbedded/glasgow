@@ -349,7 +349,7 @@ class NANDFlashApplet(GlasgowApplet, name="nand-flash"):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = ResetInserter()(ONFISubtarget(
             pads=iface.get_pads(args, pin_sets=self.pin_sets, pins=self.pins),
-            in_fifo=iface.get_in_fifo(streaming=False),
+            in_fifo=iface.get_in_fifo(),
             out_fifo=iface.get_out_fifo(),
         ))
         target.submodules += subtarget

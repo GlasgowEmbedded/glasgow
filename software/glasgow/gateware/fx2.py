@@ -270,7 +270,7 @@ class FX2Arbiter(Module):
         self.out_fifos[n] = fifo
         return fifo
 
-    def get_in_fifo(self, n, depth=512, streaming=True, clock_domain=None):
+    def get_in_fifo(self, n, depth=512, streaming=False, clock_domain=None):
         assert 0 <= n < 2
         assert isinstance(self.in_fifos[n], _DummyFIFO)
 

@@ -307,7 +307,7 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
         subtarget = ResetInserter()(I2CMasterSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
-            in_fifo=iface.get_in_fifo(streaming=False),
+            in_fifo=iface.get_in_fifo(),
             bit_rate=args.bit_rate * 1000,
         ))
         target.submodules += subtarget
