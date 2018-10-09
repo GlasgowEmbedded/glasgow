@@ -5,11 +5,12 @@ from .. import AccessMultiplexer, AccessMultiplexerInterface
 
 
 class DirectMultiplexer(AccessMultiplexer):
-    def __init__(self, ports, fifo_count, fx2_arbiter):
+    def __init__(self, ports, fifo_count, registers, fx2_arbiter):
         self._ports         = ports
         self._claimed_ports = set()
         self._fifo_count    = fifo_count
         self._claimed_fifos = 0
+        self._registers     = registers
         self._fx2_arbiter   = fx2_arbiter
 
     def claim_interface(self, applet, args):
@@ -39,18 +40,23 @@ class DirectMultiplexer(AccessMultiplexer):
         fifo_num = self._claimed_fifos
         self._claimed_fifos += 1
 
-        iface = DirectMultiplexerInterface(applet, self._fx2_arbiter, fifo_num, pins, pin_names)
+        iface = DirectMultiplexerInterface(applet, self._registers, self._fx2_arbiter,
+            fifo_num, pins, pin_names)
         self.submodules += iface
         return iface
 
 
 class DirectMultiplexerInterface(AccessMultiplexerInterface):
-    def __init__(self, applet, fx2_arbiter, fifo_num, pins, pin_names):
+    def __init__(self, applet, registers, fx2_arbiter, fifo_num, pins, pin_names):
         super().__init__(applet)
+        self._registers   = registers
         self._fx2_arbiter = fx2_arbiter
         self._fifo_num    = fifo_num
         self._pins        = pins
         self._pin_names   = pin_names
+
+        self.reset, self._addr_reset = self._registers.add_rw(1, reset=1)
+        self.logger.debug("adding reset register at address %#04x", self._addr_reset)
 
     def get_pin_name(self, pin):
         return self._pin_names[pin]
@@ -66,11 +72,17 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
             )
 
     def get_in_fifo(self, **kwargs):
-        return self._fx2_arbiter.get_in_fifo(self._fifo_num, **kwargs)
+        return self._fx2_arbiter.get_in_fifo(self._fifo_num, **kwargs, reset=self.reset)
 
     def get_out_fifo(self, **kwargs):
-        return self._fx2_arbiter.get_out_fifo(self._fifo_num, **kwargs)
+        return self._fx2_arbiter.get_out_fifo(self._fifo_num, **kwargs, reset=self.reset)
 
     def get_inout_fifo(self, **kwargs):
-        return (self._fx2_arbiter.get_in_fifo(self._fifo_num, **kwargs),
-                self._fx2_arbiter.get_out_fifo(self._fifo_num, **kwargs))
+        return (self._fx2_arbiter.get_in_fifo(self._fifo_num, **kwargs, reset=self.reset),
+                self._fx2_arbiter.get_out_fifo(self._fifo_num, **kwargs, reset=self.reset))
+
+    def add_subtarget(self, subtarget):
+        subtarget = ResetInserter()(subtarget)
+        self.submodules += subtarget
+        self.comb += subtarget.reset.eq(self.reset)
+        return subtarget

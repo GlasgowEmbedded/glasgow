@@ -58,3 +58,7 @@ class SimulationMultiplexerInterface(AccessMultiplexerInterface):
 
     def get_inout_fifo(self, **kwargs):
         return self.get_in_fifo(**kwargs), self.get_out_fifo(**kwargs)
+
+    def add_subtarget(self, subtarget):
+        self.submodules += subtarget
+        return subtarget

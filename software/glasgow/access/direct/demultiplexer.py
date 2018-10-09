@@ -27,6 +27,7 @@ class DirectDemultiplexer(AccessDemultiplexer):
         elif hasattr(args, "keep_voltage") and args.keep_voltage:
             applet.logger.info("port voltage unchanged")
 
+        await iface.reset()
         return iface
 
 
@@ -34,7 +35,8 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
     def __init__(self, device, applet, mux_interface):
         super().__init__(device, applet)
 
-        self._fifo_num = mux_interface._fifo_num
+        self._fifo_num   = mux_interface._fifo_num
+        self._addr_reset = mux_interface._addr_reset
 
         config_num = self.device.usb.getConfiguration()
         for config in self.device.usb.getDevice().iterConfigurations():
@@ -59,17 +61,16 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         assert self._endpoint_in != None and self._endpoint_out != None
 
         self._interface  = self.device.usb.claimInterface(self._fifo_num)
-
-        self.logger.trace("USB: initialize interface")
-        self.device.usb.setInterfaceAltSetting(self._fifo_num, 1)
-
         self._buffer_in  = bytearray()
         self._buffer_out = bytearray()
 
     async def reset(self):
-        self.logger.trace("USB: reset interface")
-        self.device.usb.setInterfaceAltSetting(self._fifo_num, 0)
+        self.logger.trace("asserting reset")
+        await self.device.write_register(self._addr_reset, 1)
+        self.logger.trace("synchronizing FIFO")
         self.device.usb.setInterfaceAltSetting(self._fifo_num, 1)
+        self.logger.trace("deasserting reset")
+        await self.device.write_register(self._addr_reset, 0)
 
     async def _read_packet(self):
         packet = await self.device.bulk_read(self._endpoint_in, self._in_packet_size)

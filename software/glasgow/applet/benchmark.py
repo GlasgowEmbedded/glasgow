@@ -91,19 +91,16 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
     __all_modes = ["source", "sink", "loopback"]
 
     def build(self, target, args):
-        reset, self.__addr_reset = target.registers.add_rw(1)
         mode,  self.__addr_mode  = target.registers.add_rw(2)
         error, self.__addr_error = target.registers.add_ro(1)
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        subtarget = ResetInserter()(BenchmarkSubtarget(
+        subtarget = iface.add_subtarget(BenchmarkSubtarget(
             mode=mode,
             error=error,
             in_fifo=iface.get_in_fifo(),
             out_fifo=iface.get_out_fifo(),
         ))
-        target.submodules += subtarget
-        target.comb += subtarget.reset.eq(reset)
 
         self.__sequence = list(subtarget.lfsr.generate())
 
@@ -126,9 +123,6 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
         for mode in args.modes or self.__all_modes:
             self.logger.info("running benchmark mode %s for %.3f MiB",
                              mode, len(golden) / (1 << 20))
-
-            await device.write_register(self.__addr_reset, 1)
-            await device.write_register(self.__addr_reset, 0)
 
             if mode == "source":
                 await device.write_register(self.__addr_mode, MODE_SOURCE)

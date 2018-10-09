@@ -265,7 +265,7 @@ class SPIFlashAVRApplet(GlasgowApplet, name="spi-flash-avr"):
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        subtarget = ResetInserter()(SPIMasterSubtarget(
+        subtarget = iface.add_subtarget(SPIMasterSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
@@ -274,10 +274,6 @@ class SPIFlashAVRApplet(GlasgowApplet, name="spi-flash-avr"):
             sck_edge="rising",
             ss_active=0,
         ))
-        target.submodules += subtarget
-
-        reset, self.__addr_reset = target.registers.add_rw(1)
-        target.comb += subtarget.reset.eq(reset)
 
         dut_reset, self.__addr_dut_reset = target.registers.add_rw(1)
         target.comb += [
@@ -288,8 +284,7 @@ class SPIFlashAVRApplet(GlasgowApplet, name="spi-flash-avr"):
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        spi_iface = SPIMasterInterface(iface, self.logger, self.__addr_reset)
-        await spi_iface.reset()
+        spi_iface = SPIMasterInterface(iface, self.logger)
         avr_iface = SPIFlashAVRInterface(spi_iface, self.logger, self.__addr_dut_reset)
         return avr_iface
 

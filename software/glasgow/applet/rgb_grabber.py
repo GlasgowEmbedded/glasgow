@@ -140,13 +140,13 @@ class RGBGrabberApplet(GlasgowApplet, name="rgb-grabber"):
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        target.submodules += RGBGrabberSubtarget(
+        iface.add_subtarget(RGBGrabberSubtarget(
             rows=args.rows,
             columns=args.columns,
             vblank=args.vblank,
             pads=iface.get_pads(args, pins=("dck",), pin_sets=("r", "g", "b")),
             in_fifo=iface.get_in_fifo(depth=512 * 30, streaming=True),
-        )
+        ))
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)

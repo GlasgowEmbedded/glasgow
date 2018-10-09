@@ -159,16 +159,14 @@ class I2CMasterSubtarget(Module):
 
 
 class I2CMasterInterface:
-    def __init__(self, interface, logger, addr_reset):
+    def __init__(self, interface, logger):
         self.lower   = interface
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
-        self._addr_reset = addr_reset
 
     async def reset(self):
         self._logger.debug("I2C: reset")
-        await self.lower.device.write_register(self._addr_reset, 1)
-        await self.lower.device.write_register(self._addr_reset, 0)
+        await self.lower.reset()
 
     async def _cmd_start(self):
         await self.lower.write([CMD_START])
@@ -304,21 +302,16 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
             raise GlasgowAppletError("At least one SDA input and output pin must be specified.")
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        subtarget = ResetInserter()(I2CMasterSubtarget(
+        iface.add_subtarget(I2CMasterSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             bit_rate=args.bit_rate * 1000,
         ))
-        target.submodules += subtarget
-
-        reset, self.__addr_reset = target.registers.add_rw(1)
-        target.comb += subtarget.reset.eq(reset)
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        i2c_iface = I2CMasterInterface(iface, self.logger, self.__addr_reset)
-        await i2c_iface.reset()
+        i2c_iface = I2CMasterInterface(iface, self.logger)
         return i2c_iface
 
     @classmethod

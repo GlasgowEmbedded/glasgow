@@ -145,19 +145,17 @@ class SPIMasterSubtarget(Module):
 
 
 class SPIMasterInterface:
-    def __init__(self, interface, logger, addr_reset):
+    def __init__(self, interface, logger):
         self.lower   = interface
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
-        self._addr_reset = addr_reset
 
     def _log(self, message, *args):
         self._logger.log(self._level, "SPI: " + message, *args)
 
     async def reset(self):
         self._log("reset")
-        await self.lower.device.write_register(self._addr_reset, 1)
-        await self.lower.device.write_register(self._addr_reset, 0)
+        await self.lower.reset()
 
     async def transfer(self, data):
         assert len(data) <= 0xffff
@@ -210,7 +208,7 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        subtarget = ResetInserter()(SPIMasterSubtarget(
+        iface.add_subtarget(SPIMasterSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
@@ -219,17 +217,10 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
             sck_edge=args.sck_edge,
             ss_active=args.ss_active,
         ))
-        target.submodules += subtarget
-
-        reset, self.__addr_reset = target.registers.add_rw(1)
-        target.comb += subtarget.reset.eq(reset)
-
-        return subtarget
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        spi_iface = SPIMasterInterface(iface, self.logger, self.__addr_reset)
-        await spi_iface.reset()
+        spi_iface = SPIMasterInterface(iface, self.logger)
         return spi_iface
 
     @classmethod

@@ -117,6 +117,10 @@ class AccessDemultiplexerInterface(metaclass=ABCMeta):
         self.logger = applet.logger
 
     @abstractmethod
+    async def reset(self):
+        pass
+
+    @abstractmethod
     async def read(self, length=None):
         pass
 

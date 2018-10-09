@@ -68,13 +68,13 @@ class UARTApplet(GlasgowApplet, name="uart"):
             raise GlasgowAppletError(e)
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        target.submodules += UARTSubtarget(
+        iface.add_subtarget(UARTSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             bit_cyc=bit_cyc,
             parity=args.parity,
-        )
+        ))
 
     async def run(self, device, args):
         return await device.demultiplexer.claim_interface(self, self.mux_interface, args)

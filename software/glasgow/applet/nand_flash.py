@@ -176,11 +176,10 @@ BIT_STATUS_WRITE_PROT  = 1 << 7
 
 
 class ONFIInterface:
-    def __init__(self, interface, logger, addr_reset):
-        self.lower       = interface
-        self._logger     = logger
-        self._level      = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
-        self._addr_reset = addr_reset
+    def __init__(self, interface, logger):
+        self.lower   = interface
+        self._logger = logger
+        self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
     def _log(self, message, *args):
         self._logger.log(self._level, "ONFI: " + message, *args)
@@ -229,8 +228,6 @@ class ONFIInterface:
 
     async def reset(self):
         self._log("reset")
-        await self.lower.device.write_register(self._addr_reset, 1)
-        await self.lower.device.write_register(self._addr_reset, 0)
         await self._do(command=0xff)
         await self.lower.flush()
         await asyncio.sleep(0.001) # tRST=1000us
@@ -347,23 +344,15 @@ class NANDFlashApplet(GlasgowApplet, name="nand-flash"):
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        subtarget = ResetInserter()(ONFISubtarget(
+        iface.add_subtarget(ONFISubtarget(
             pads=iface.get_pads(args, pin_sets=self.pin_sets, pins=self.pins),
             in_fifo=iface.get_in_fifo(),
             out_fifo=iface.get_out_fifo(),
         ))
-        target.submodules += subtarget
-
-        reset, self.__addr_reset = target.registers.add_rw(1)
-        target.comb += subtarget.reset.eq(reset)
-
-        return subtarget
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        nand_iface = ONFIInterface(iface, self.logger, self.__addr_reset)
-        await nand_iface.reset()
-        return nand_iface
+        return ONFIInterface(iface, self.logger)
 
     @classmethod
     def add_interact_arguments(cls, parser):

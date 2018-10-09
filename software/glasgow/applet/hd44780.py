@@ -206,11 +206,11 @@ class HD44780Applet(GlasgowApplet, name="hd44780"):
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        target.submodules += HD44780Subtarget(
+        iface.add_subtarget(HD44780Subtarget(
             pads=iface.get_pads(args, pins=("rs", "rw", "e"), pin_sets=("d",)),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
-        )
+        ))
 
     @classmethod
     def add_run_arguments(cls, parser, access):

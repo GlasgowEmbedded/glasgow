@@ -134,10 +134,10 @@ class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        target.submodules += ProgramICE40Subtarget(
+        iface.add_subtarget(ProgramICE40Subtarget(
             pads=iface.get_pads(args, pins=self.pins),
             out_fifo=iface.get_out_fifo(),
-        )
+        ))
 
     @classmethod
     def add_run_arguments(cls, parser, access):

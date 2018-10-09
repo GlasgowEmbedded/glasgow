@@ -240,42 +240,49 @@ class FX2Arbiter(Module):
             )
         )
 
-    def _make_fifo(self, arbiter_side, logic_side, cd_logic, depth, wrapper=lambda x: x):
+    def _make_fifo(self, arbiter_side, logic_side, cd_logic, reset, depth, wrapper=lambda x: x):
         if cd_logic is None:
-            fifo = SyncFIFOBuffered(8, depth)
+            fifo = wrapper(SyncFIFOBuffered(8, depth))
+
+            if reset is not None:
+                fifo = ResetInserter()(fifo)
+                fifo.comb += fifo.reset.eq(reset)
         else:
             assert isinstance(cd_logic, ClockDomain)
 
-            fifo = ClockDomainsRenamer({
+            fifo = wrapper(ClockDomainsRenamer({
                 arbiter_side: "sys",
                 logic_side:   "logic",
-            })(AsyncFIFO(8, depth))
+            })(AsyncFIFO(8, depth)))
+
+            if reset is not None:
+                raise NotImplementedError("reset not yet implemented for async FIFOs")
 
             fifo.clock_domains.cd_logic = ClockDomain()
             self.comb += fifo.cd_logic.clk.eq(cd_logic.clk)
             if cd_logic.rst is not None:
                 self.comb += fifo.cd_logic.rst.eq(cd_logic.rst)
 
-        fifo = wrapper(fifo)
         self.submodules += fifo
         return fifo
 
-    def get_out_fifo(self, n, depth=512, clock_domain=None):
+    def get_out_fifo(self, n, depth=512, clock_domain=None, reset=None):
         assert 0 <= n < 2
         assert isinstance(self.out_fifos[n].fifo, _DummyFIFO)
 
         fifo = self._make_fifo(arbiter_side="write", logic_side="read",
-                               cd_logic=clock_domain, depth=depth,
-                               wrapper=lambda x: _FIFOWithOverflow(x))
+                               cd_logic=clock_domain, reset=reset,
+                               depth=depth, wrapper=lambda x: _FIFOWithOverflow(x))
         self.out_fifos[n] = fifo
         return fifo
 
-    def get_in_fifo(self, n, depth=512, streaming=False, clock_domain=None):
+    def get_in_fifo(self, n, depth=512, streaming=False, clock_domain=None, reset=None):
         assert 0 <= n < 2
         assert isinstance(self.in_fifos[n], _DummyFIFO)
 
         fifo = self._make_fifo(arbiter_side="read", logic_side="write",
-                               cd_logic=clock_domain, depth=depth)
+                               cd_logic=clock_domain, reset=reset,
+                               depth=depth)
         self.in_fifos[n] = fifo
         self.streaming[n] = streaming
         return fifo

@@ -62,11 +62,13 @@ class GlasgowHardwareTarget(Module):
         self.submodules.fx2_arbiter = FX2Arbiter(self.platform.request("fx2"))
 
         if multiplexer_cls:
-            self.submodules.multiplexer = multiplexer_cls(ports={
+            ports = {
                 "A": lambda: self.platform.request("io", 0),
                 "B": lambda: self.platform.request("io", 1),
                 "S": lambda: self.platform.request("sync")
-            }, fifo_count=2, fx2_arbiter=self.fx2_arbiter)
+            }
+            self.submodules.multiplexer = multiplexer_cls(ports=ports, fifo_count=2,
+                registers=self.registers, fx2_arbiter=self.fx2_arbiter)
 
     def get_fragment(self):
         # TODO: shouldn't this be done in migen?

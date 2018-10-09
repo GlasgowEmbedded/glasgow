@@ -283,11 +283,10 @@ class SWDSubtarget(Module):
 
 
 class SWDInterface:
-    def __init__(self, interface, logger, addr_reset):
+    def __init__(self, interface, logger):
         self.lower   = interface
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
-        self._addr_reset = addr_reset
 
     def _log(self, message, *args):
         self._logger.log(self._level, "SWD: " + message, *args)
@@ -305,8 +304,7 @@ class SWDInterface:
 
     async def reset(self):
         self._log("reset probe")
-        await self.lower.device.write_register(self._addr_reset, 1)
-        await self.lower.device.write_register(self._addr_reset, 0)
+        await self.lower.reset()
 
         self._log("reset interface")
         await self._init_command([CMD_LINE_RESET])
@@ -376,20 +374,16 @@ class SWDApplet(GlasgowApplet, name="swd"):
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        subtarget = ResetInserter()(SWDSubtarget(
+        iface.add_subtarget(SWDSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             bit_rate=args.bit_rate * 1000,
         ))
-        target.submodules += subtarget
-
-        reset, self.__addr_reset = target.registers.add_rw(1)
-        target.comb += subtarget.reset.eq(reset)
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        return SWDInterface(iface, self.logger, self.__addr_reset)
+        return SWDInterface(iface, self.logger)
 
     async def interact(self, device, args, swd_iface):
         await AsyncInteractiveConsole(locals={"swd_iface": swd_iface}).interact()

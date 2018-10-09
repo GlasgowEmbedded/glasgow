@@ -17,6 +17,10 @@ class SimulationDemultiplexerInterface(AccessDemultiplexerInterface):
         self._out_fifo = mux_interface.out_fifo
 
     @asyncio.coroutine
+    def reset(self):
+        pass
+
+    @asyncio.coroutine
     def read(self, length=None):
         data = []
         if length is None:
