@@ -31,9 +31,9 @@ usb_desc_configuration_c usb_configs[] = {
     .bLength              = sizeof(struct usb_desc_configuration),
     .bDescriptorType      = USB_DESC_CONFIGURATION,
     .wTotalLength         = sizeof(struct usb_desc_configuration) +
-                            2 * sizeof(struct usb_desc_interface) +
+                            4 * sizeof(struct usb_desc_interface) +
                             4 * sizeof(struct usb_desc_endpoint),
-    .bNumInterfaces       = 2,
+    .bNumInterfaces       = 4,
     .bConfigurationValue  = 1,
     .iConfiguration       = 4,
     .bmAttributes         = USB_ATTR_RESERVED_1,
@@ -43,9 +43,9 @@ usb_desc_configuration_c usb_configs[] = {
     .bLength              = sizeof(struct usb_desc_configuration),
     .bDescriptorType      = USB_DESC_CONFIGURATION,
     .wTotalLength         = sizeof(struct usb_desc_configuration) +
-                            1 * sizeof(struct usb_desc_interface) +
+                            2 * sizeof(struct usb_desc_interface) +
                             2 * sizeof(struct usb_desc_endpoint),
-    .bNumInterfaces       = 1,
+    .bNumInterfaces       = 2,
     .bConfigurationValue  = 2,
     .iConfiguration       = 5,
     .bmAttributes         = USB_ATTR_RESERVED_1,
@@ -54,38 +54,71 @@ usb_desc_configuration_c usb_configs[] = {
 };
 
 usb_desc_interface_c usb_interfaces[] = {
-  { // EP2OUT BULK + EP6IN BULK
+  { // No endpoints
     .bLength              = sizeof(struct usb_desc_interface),
     .bDescriptorType      = USB_DESC_INTERFACE,
     .bInterfaceNumber     = 0,
     .bAlternateSetting    = 0,
-    .bNumEndpoints        = 2,
+    .bNumEndpoints        = 0,
     .bInterfaceClass      = 255,
     .bInterfaceSubClass   = 255,
     .bInterfaceProtocol   = 255,
     .iInterface           = 6,
   },
-  { // EP4OUT BULK + EP8IN BULK
+  { // EP2OUT BULK + EP6IN BULK
     .bLength              = sizeof(struct usb_desc_interface),
     .bDescriptorType      = USB_DESC_INTERFACE,
-    .bInterfaceNumber     = 1,
-    .bAlternateSetting    = 0,
+    .bInterfaceNumber     = 0,
+    .bAlternateSetting    = 1,
     .bNumEndpoints        = 2,
     .bInterfaceClass      = 255,
     .bInterfaceSubClass   = 255,
     .bInterfaceProtocol   = 255,
     .iInterface           = 7,
   },
-  { // EP2OUT BULK + EP6IN BULK
+  { // No endpoints
     .bLength              = sizeof(struct usb_desc_interface),
     .bDescriptorType      = USB_DESC_INTERFACE,
-    .bInterfaceNumber     = 0,
+    .bInterfaceNumber     = 1,
     .bAlternateSetting    = 0,
-    .bNumEndpoints        = 2,
+    .bNumEndpoints        = 0,
     .bInterfaceClass      = 255,
     .bInterfaceSubClass   = 255,
     .bInterfaceProtocol   = 255,
     .iInterface           = 8,
+  },
+  { // EP4OUT BULK + EP8IN BULK
+    .bLength              = sizeof(struct usb_desc_interface),
+    .bDescriptorType      = USB_DESC_INTERFACE,
+    .bInterfaceNumber     = 1,
+    .bAlternateSetting    = 1,
+    .bNumEndpoints        = 2,
+    .bInterfaceClass      = 255,
+    .bInterfaceSubClass   = 255,
+    .bInterfaceProtocol   = 255,
+    .iInterface           = 9,
+  },
+  { // No endpoints
+    .bLength              = sizeof(struct usb_desc_interface),
+    .bDescriptorType      = USB_DESC_INTERFACE,
+    .bInterfaceNumber     = 0,
+    .bAlternateSetting    = 0,
+    .bNumEndpoints        = 0,
+    .bInterfaceClass      = 255,
+    .bInterfaceSubClass   = 255,
+    .bInterfaceProtocol   = 255,
+    .iInterface           = 10,
+  },
+  { // EP2OUT BULK + EP6IN BULK
+    .bLength              = sizeof(struct usb_desc_interface),
+    .bDescriptorType      = USB_DESC_INTERFACE,
+    .bInterfaceNumber     = 0,
+    .bAlternateSetting    = 1,
+    .bNumEndpoints        = 2,
+    .bInterfaceClass      = 255,
+    .bInterfaceSubClass   = 255,
+    .bInterfaceProtocol   = 255,
+    .iInterface           = 11,
   }
 };
 
@@ -148,9 +181,12 @@ usb_ascii_string_c usb_strings[] = {
   [3] = "Port A at {2x512B EP2OUT, 2x512B EP6IN}, B at {2x512B EP4OUT, 2x512B EP8IN}",
   [4] = "Ports AB at {4x512B EP2OUT, 4x512B EP6IN}",
   // Interfaces
-  [5] = "Port A at {2x512B EP2OUT BULK, 2x512B EP6IN BULK}",
-  [6] = "Port B at {2x512B EP4OUT BULK, 2x512B EP8IN BULK}",
-  [7] = "Ports AB at {4x512B EP2OUT BULK, 4x512B EP6IN BULK}",
+  [5] = "Port A disabled",
+  [6] = "Port A at {2x512B EP2OUT BULK, 2x512B EP6IN BULK}",
+  [7] = "Port B disabled",
+  [8] = "Port B at {2x512B EP4OUT BULK, 2x512B EP8IN BULK}",
+  [9] = "Port AB disabled",
+  [10] = "Port AB at {4x512B EP2OUT BULK, 4x512B EP6IN BULK}",
 };
 
 usb_descriptor_set_c usb_descriptor_set = {
@@ -310,18 +346,47 @@ void handle_usb_setup(__xdata struct usb_req_setup *req) {
   }
 }
 
-void handle_usb_set_configuration(uint8_t value) {
-  switch(value) {
+uint8_t usb_alt_setting[2];
+
+bool handle_usb_set_configuration(uint8_t config_value) {
+  switch(config_value) {
     case 0: break;
     case 1: fifo_configure(/*two_ep=*/false); break;
     case 2: fifo_configure(/*two_ep=*/true);  break;
-    default:
-      STALL_EP0();
-      return;
+    default: return false;
   }
 
-  usb_configuration = value;
-  ACK_EP0();
+  usb_config_value = config_value;
+  usb_alt_setting[0] = 0;
+  usb_alt_setting[1] = 0;
+
+  usb_reset_data_toggles(&usb_descriptor_set, /*interface=*/0xff, /*alt_setting=*/0xff);
+  return true;
+}
+
+bool handle_usb_set_interface(uint8_t interface, uint8_t alt_setting) {
+  bool two_ep;
+
+  switch(usb_config_value) {
+    case 1: two_ep = false; break;
+    case 2: two_ep = true;  break;
+    default: return false;
+  }
+
+  if(alt_setting == 1) {
+    // The interface is being (re)activated, so reset the FIFOs.
+    fifo_reset(two_ep, (1 << interface));
+  }
+
+  usb_alt_setting[interface] = alt_setting;
+
+  usb_reset_data_toggles(&usb_descriptor_set, interface, alt_setting);
+  return true;
+}
+
+void handle_usb_get_interface(uint8_t interface) {
+  EP0BUF[0] = usb_alt_setting[interface];
+  SETUP_EP0_BUF(1);
 }
 
 // This monotonically increasing number ensures that we upload bitstream chunks

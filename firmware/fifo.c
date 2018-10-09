@@ -53,42 +53,13 @@ void fifo_configure(bool two_ep) {
   SYNCDELAY;
   FIFORESET = _NAKALL;
 
-  // For the following code, note that for FIFORESET and OUTPKTEND to do anything,
-  // the endpoints *must* be in manual mode (_AUTOIN/_AUTOOUT bits cleared).
-
   // Configure EP2.
   SYNCDELAY;
   EP2CFG = _VALID|_TYPE1|ep26buf; // OUT BULK 512B
-  SYNCDELAY;
-  EP2FIFOCFG = 0;
-  SYNCDELAY;
-  FIFORESET = _NAKALL|2;
-  SYNCDELAY;
-  OUTPKTEND = _SKIP|2;
-  SYNCDELAY;
-  OUTPKTEND = _SKIP|2;
-  if(two_ep) {
-    SYNCDELAY;
-    OUTPKTEND = _SKIP|2;
-    SYNCDELAY;
-    OUTPKTEND = _SKIP|2;
-  }
-  SYNCDELAY;
-  EP2FIFOCFG = _AUTOOUT;
 
   // Configure EP4.
   SYNCDELAY;
   EP4CFG = ep48valid|_TYPE1; // OUT BULK 512B
-  SYNCDELAY;
-  EP4FIFOCFG = 0;
-  SYNCDELAY;
-  FIFORESET = _NAKALL|4;
-  SYNCDELAY;
-  OUTPKTEND = _SKIP|4;
-  SYNCDELAY;
-  OUTPKTEND = _SKIP|4;
-  SYNCDELAY;
-  EP4FIFOCFG = _AUTOOUT;
 
   // Configure EP6.
   SYNCDELAY;
@@ -97,12 +68,6 @@ void fifo_configure(bool two_ep) {
   EP6AUTOINLENH = 512 >> 8;
   SYNCDELAY;
   EP6AUTOINLENL = 0;
-  SYNCDELAY;
-  EP6FIFOCFG = 0;
-  SYNCDELAY;
-  FIFORESET = _NAKALL|6;
-  SYNCDELAY;
-  EP6FIFOCFG = _AUTOIN|_ZEROLENIN|_INFM1;
 
   // Configure EP8.
   SYNCDELAY;
@@ -111,14 +76,66 @@ void fifo_configure(bool two_ep) {
   EP8AUTOINLENH = 512 >> 8;
   SYNCDELAY;
   EP8AUTOINLENL = 0;
-  SYNCDELAY;
-  EP8FIFOCFG = 0;
-  SYNCDELAY;
-  FIFORESET = _NAKALL|8;
-  SYNCDELAY;
-  EP8FIFOCFG = _AUTOIN|_ZEROLENIN|_INFM1;
+
+  // Reset and configure endpoints.
+  fifo_reset(two_ep, two_ep ? 0x1 : 0x3);
 
   // Enable FIFOs.
   SYNCDELAY;
   FIFORESET = 0;
+}
+
+void fifo_reset(bool two_ep, uint8_t interfaces) {
+  // For the following code, note that for FIFORESET and OUTPKTEND to do anything,
+  // the endpoints *must* be in manual mode (_AUTOIN/_AUTOOUT bits cleared).
+
+  if(interfaces & (1 << 0)) {
+    // Reset EP2OUT.
+    SYNCDELAY;
+    EP2FIFOCFG = 0;
+    SYNCDELAY;
+    FIFORESET |= 2;
+    SYNCDELAY;
+    OUTPKTEND = _SKIP|2;
+    SYNCDELAY;
+    OUTPKTEND = _SKIP|2;
+    if(two_ep) {
+      SYNCDELAY;
+      OUTPKTEND = _SKIP|2;
+      SYNCDELAY;
+      OUTPKTEND = _SKIP|2;
+    }
+    SYNCDELAY;
+    EP2FIFOCFG = _AUTOOUT;
+
+    // Reset EP6IN.
+    SYNCDELAY;
+    EP6FIFOCFG = 0;
+    SYNCDELAY;
+    FIFORESET |= 6;
+    SYNCDELAY;
+    EP6FIFOCFG = _AUTOIN|_ZEROLENIN|_INFM1;
+  }
+
+  if(interfaces & (1 << 1)) {
+    // Reset EP4OUT.
+    SYNCDELAY;
+    EP4FIFOCFG |= 0;
+    SYNCDELAY;
+    FIFORESET = 4;
+    SYNCDELAY;
+    OUTPKTEND = _SKIP|4;
+    SYNCDELAY;
+    OUTPKTEND = _SKIP|4;
+    SYNCDELAY;
+    EP4FIFOCFG = _AUTOOUT;
+
+    // Reset EP8IN.
+    SYNCDELAY;
+    EP8FIFOCFG = 0;
+    SYNCDELAY;
+    FIFORESET |= 8;
+    SYNCDELAY;
+    EP8FIFOCFG = _AUTOIN|_ZEROLENIN|_INFM1;
+  }
 }

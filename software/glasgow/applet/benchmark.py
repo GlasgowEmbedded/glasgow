@@ -132,6 +132,7 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
 
             if mode == "source":
                 await device.write_register(self.__addr_mode, MODE_SOURCE)
+                await iface.reset()
 
                 begin  = time.time()
                 actual = await iface.read(len(golden))
@@ -141,6 +142,7 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
 
             if mode == "sink":
                 await device.write_register(self.__addr_mode, MODE_SINK)
+                await iface.reset()
 
                 begin  = time.time()
                 await iface.write(golden)
@@ -151,6 +153,7 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
 
             if mode == "loopback":
                 await device.write_register(self.__addr_mode, MODE_LOOPBACK)
+                await iface.reset()
 
                 begin  = time.time()
                 write_fut = asyncio.ensure_future(iface.write(golden))

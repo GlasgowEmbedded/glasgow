@@ -95,5 +95,6 @@ bool iobuf_poll_alert(__xdata uint8_t *mask, bool clear);
 // FIFO API
 void fifo_init();
 void fifo_configure(bool two_ep);
+void fifo_reset(bool two_ep, uint8_t interfaces);
 
 #endif

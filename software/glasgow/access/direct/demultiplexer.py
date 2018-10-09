@@ -34,17 +34,19 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
     def __init__(self, device, applet, mux_interface):
         super().__init__(device, applet)
 
+        self._fifo_num = mux_interface._fifo_num
+
         config_num = self.device.usb.getConfiguration()
         for config in self.device.usb.getDevice().iterConfigurations():
             if config.getConfigurationValue() == config_num:
                 break
 
         interfaces = list(config.iterInterfaces())
-        assert mux_interface._fifo_num <= len(interfaces)
-        interface = interfaces[mux_interface._fifo_num]
+        assert self._fifo_num <= len(interfaces)
+        interface = interfaces[self._fifo_num]
 
         settings = list(interface.iterSettings())
-        setting = settings[0] # we use the same endpoints in all alternative settings
+        setting = settings[1] # alt-setting 1 has the actual endpoints
         for endpoint in setting.iterEndpoints():
             address = endpoint.getAddress()
             packet_size = endpoint.getMaxPacketSize()
@@ -56,9 +58,18 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
                 self._out_packet_size = packet_size
         assert self._endpoint_in != None and self._endpoint_out != None
 
-        self._interface  = self.device.usb.claimInterface(mux_interface._fifo_num)
+        self._interface  = self.device.usb.claimInterface(self._fifo_num)
+
+        self.logger.trace("USB: initialize interface")
+        self.device.usb.setInterfaceAltSetting(self._fifo_num, 1)
+
         self._buffer_in  = bytearray()
         self._buffer_out = bytearray()
+
+    async def reset(self):
+        self.logger.trace("USB: reset interface")
+        self.device.usb.setInterfaceAltSetting(self._fifo_num, 0)
+        self.device.usb.setInterfaceAltSetting(self._fifo_num, 1)
 
     async def _read_packet(self):
         packet = await self.device.bulk_read(self._endpoint_in, self._in_packet_size)
