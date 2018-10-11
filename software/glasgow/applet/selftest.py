@@ -50,19 +50,35 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
           (pins A0:A7 must be connected to B7:B0)
         * voltage: detect ADC, DAC or LDO faults
           (on all ports, Vsense and Vio pins must be connected)
+        * loopback: detect faults in USB FIFO traces
+          (no requirements)
     """
 
-    __all_modes = ["pins-int", "pins-ext", "pins-loop", "voltage"]
-    __default_mode = "pins-int"
+    __all_modes = ["pins-int", "pins-ext", "pins-loop", "voltage", "loopback"]
+    __default_modes = ["pins-int", "loopback"]
 
     def build(self, target, args):
         target.submodules += SelfTestSubtarget(applet=self, target=target)
+
+        self.mux_interface_1 = iface_1 = target.multiplexer.claim_interface(self, None)
+        self.mux_interface_2 = iface_2 = target.multiplexer.claim_interface(self, None)
+
+        in_fifo_1, out_fifo_1 = iface_1.get_inout_fifo()
+        in_fifo_2, out_fifo_2 = iface_2.get_inout_fifo()
+        target.comb += [
+            in_fifo_1.din.eq(out_fifo_1.dout),
+            in_fifo_1.we.eq(out_fifo_1.readable),
+            out_fifo_1.re.eq(in_fifo_1.writable),
+            in_fifo_2.din.eq(out_fifo_2.dout),
+            in_fifo_2.we.eq(out_fifo_2.readable),
+            out_fifo_2.re.eq(in_fifo_2.writable),
+        ]
 
     @classmethod
     def add_run_arguments(cls, parser, access):
         parser.add_argument(
             dest="modes", metavar="MODE", type=str, nargs="*", choices=[[]] + cls.__all_modes,
-            help="run self-test mode MODE (default: {})".format(cls.__default_mode))
+            help="run self-test mode MODE (default: {})".format(" ".join(cls.__default_modes)))
 
     async def run(self, device, args):
         async def set_oe(bits):
@@ -99,7 +115,7 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
 
         passed = True
         report = []
-        for mode in args.modes or [self.__default_mode]:
+        for mode in args.modes or self.__default_modes:
             self.logger.info("running self-test mode %s", mode)
 
             if mode in ("pins-int", "pins-ext"):
@@ -172,6 +188,39 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                             report.append((mode, "port {} out of ±5% tolerance: "
                                                  "Vio={:.2f} Vsense={:.2f}"
                                                  .format(port, vout, vin)))
+
+            if mode == "loopback":
+                iface_1 = await device.demultiplexer.claim_interface(
+                    self, self.mux_interface_1, None)
+                iface_2 = await device.demultiplexer.claim_interface(
+                    self, self.mux_interface_2, None)
+
+                data_1 = b"The quick brown fox jumps over the lazy dog.\x55\xaa"
+                data_2 = bytes(reversed(data_1))
+
+                for iface, data, ep_out, ep_in in (
+                    (iface_1, data_1, "EP2OUT", "EP6IN"),
+                    (iface_2, data_2, "EP4OUT", "EP8IN"),
+                ):
+                    try:
+                        await iface.write(data)
+                        await asyncio.wait_for(iface.flush(), timeout=0.1)
+                    except asyncio.TimeoutError:
+                        passed = False
+                        report.append((mode, "USB {} timeout".format(ep_out)))
+                        continue
+
+                    try:
+                        received = await asyncio.wait_for(iface.read(len(data)), timeout=0.1)
+                    except asyncio.TimeoutError:
+                        passed = False
+                        report.append((mode, "USB {} timeout".format(ep_in)))
+                        continue
+
+                    if received != data:
+                        passed = False
+                        report.append((mode, "USB {}->{} read-write mismatch"
+                                             .format(ep_out, ep_in)))
 
         if passed:
             self.logger.info("self-test: PASS")
