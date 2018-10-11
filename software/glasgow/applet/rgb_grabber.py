@@ -1,7 +1,7 @@
+import logging
 import math
 from migen import *
 from migen.genlib.fsm import *
-import logging
 from migen.genlib.cdc import *
 
 from . import GlasgowApplet

@@ -33,14 +33,19 @@ class AccessArguments(metaclass=ABCMeta):
 
 class AccessMultiplexer(Module, metaclass=ABCMeta):
     @abstractmethod
-    def claim_interface(self, applet, args):
+    def set_analyzer(self, analyzer):
+        pass
+
+    @abstractmethod
+    def claim_interface(self, applet, args, with_analyzer=True):
         pass
 
 
 class AccessMultiplexerInterface(Module, metaclass=ABCMeta):
-    def __init__(self, applet):
-        self.applet = applet
-        self.logger = applet.logger
+    def __init__(self, applet, analyzer):
+        self.applet   = applet
+        self.logger   = applet.logger
+        self.analyzer = analyzer
 
     @abstractmethod
     def get_out_fifo(self, **kwargs):
@@ -50,9 +55,8 @@ class AccessMultiplexerInterface(Module, metaclass=ABCMeta):
     def get_in_fifo(self, **kwargs):
         pass
 
-    @abstractmethod
     def get_inout_fifo(self, **kwargs):
-        pass
+        return (self.get_in_fifo(**kwargs), self.get_out_fifo(**kwargs))
 
     @abstractmethod
     def build_pin_tristate(self, pin, oe, o, i):
@@ -62,14 +66,20 @@ class AccessMultiplexerInterface(Module, metaclass=ABCMeta):
     def get_pin_name(self, pin):
         pass
 
-    def get_pins(self, pins):
+    def get_pins(self, pins, name=None):
         triple = TSTriple(len(pins))
         for n, pin in enumerate(pins):
             self.build_pin_tristate(pin, triple.oe, triple.o[n], triple.i[n])
+
+        if name is None:
+            name = "-".join([self.get_pin_name(pins) for pins in pins])
+        if self.analyzer:
+            self.analyzer.add_pin_event(self.applet, name, triple)
+
         return triple
 
-    def get_pin(self, pin):
-        return self.get_pins([pin])
+    def get_pin(self, pin, name=None):
+        return self.get_pins([pin], name)
 
     def get_pads(self, args, pins=[], pin_sets=[]):
         pad_args = {}
@@ -81,7 +91,7 @@ class AccessMultiplexerInterface(Module, metaclass=ABCMeta):
             else:
                 self.logger.debug("assigning pin %r to device pin %s",
                     pin, self.get_pin_name(pin_num))
-                pad_args[pin] = self.get_pin(pin_num)
+                pad_args[pin] = self.get_pin(pin_num, name=pin)
 
         for pin_set in pin_sets:
             pin_nums = getattr(args, "pin_set_{}".format(pin_set))
@@ -90,7 +100,7 @@ class AccessMultiplexerInterface(Module, metaclass=ABCMeta):
             else:
                 self.logger.debug("assigning pin set %r to device pins %s",
                     pin_set, ", ".join([self.get_pin_name(pin_num) for pin_num in pin_nums]))
-                pad_args[pin_set] = self.get_pins(pin_nums)
+                pad_args[pin_set] = self.get_pins(pin_nums, name=pin_set)
 
         self.submodules.pads = Pads(**pad_args)
         return self.pads

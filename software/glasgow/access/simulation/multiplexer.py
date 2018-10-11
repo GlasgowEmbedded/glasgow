@@ -5,7 +5,12 @@ from .. import AccessMultiplexer, AccessMultiplexerInterface
 
 
 class SimulationMultiplexer(AccessMultiplexer):
-    def claim_interface(self, applet, args):
+    def set_analyzer(self, analyzer):
+        assert False
+
+    def claim_interface(self, applet, args, with_analyzer=False):
+        assert not with_analyzer
+
         iface = SimulationMultiplexerInterface(applet)
         self.submodules += iface
         return iface
@@ -13,7 +18,7 @@ class SimulationMultiplexer(AccessMultiplexer):
 
 class SimulationMultiplexerInterface(AccessMultiplexerInterface):
     def __init__(self, applet):
-        super().__init__(applet)
+        super().__init__(applet, analyzer=None)
 
         self.in_fifo  = None
         self.out_fifo = None

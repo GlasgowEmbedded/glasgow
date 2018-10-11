@@ -5,11 +5,12 @@ import tempfile
 import shutil
 from migen import *
 
-from ..platform import GlasgowPlatform
 from ..gateware.pads import Pads
 from ..gateware.i2c import I2CSlave
 from ..gateware.registers import I2CRegisters
 from ..gateware.fx2 import FX2Arbiter
+from ..platform import GlasgowPlatform
+from .analyzer import GlasgowAnalyzer
 
 
 __all__ = ["GlasgowHardwareTarget"]
@@ -49,7 +50,7 @@ class _CRG(Module):
 class GlasgowHardwareTarget(Module):
     sys_clk_freq = 30e6
 
-    def __init__(self, multiplexer_cls=None):
+    def __init__(self, multiplexer_cls=None, with_analyzer=False):
         self.platform = GlasgowPlatform()
 
         self.submodules.crg = _CRG(self.platform)
@@ -69,6 +70,9 @@ class GlasgowHardwareTarget(Module):
             }
             self.submodules.multiplexer = multiplexer_cls(ports=ports, fifo_count=2,
                 registers=self.registers, fx2_arbiter=self.fx2_arbiter)
+
+        if with_analyzer:
+            self.submodules.analyzer = GlasgowAnalyzer(self.registers, self.multiplexer)
 
     def get_fragment(self):
         # TODO: shouldn't this be done in migen?

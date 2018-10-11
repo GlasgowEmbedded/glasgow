@@ -425,7 +425,7 @@ class GlasgowHardwareDevice:
 
     async def _register_error(self, addr):
         if await self._status() & ST_FPGA_RDY:
-            raise GlasgowDeviceError("register 0x{:02x} does not exit".format(addr))
+            raise GlasgowDeviceError("register 0x{:02x} does not exist".format(addr))
         else:
             raise GlasgowDeviceError("FPGA is not configured")
 

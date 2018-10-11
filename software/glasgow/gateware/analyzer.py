@@ -325,7 +325,7 @@ class TraceDecoder:
                     if self._event_src.fields:
                         offset = 0
                         for field_name, field_width in self._event_src.fields:
-                            self._pending["%s-%s" % (self._event_src.name, field_name)] = \
+                            self._pending["%s-%s" % (field_name, self._event_src.name)] = \
                                 (self._event_data >> offset) & ((1 << field_width) - 1)
                             offset += field_width
                     else:
@@ -545,8 +545,8 @@ class EventAnalyzerTestCase(unittest.TestCase):
             REPORT_DELAY|1,
             REPORT_EVENT|0, 0b110,
         ], [
-            (2, {"0-a": 0b1, "0-b": 0b10}),
-            (3, {"0-a": 0b0, "0-b": 0b11}),
+            (2, {"a-0": 0b1, "b-0": 0b10}),
+            (3, {"a-0": 0b0, "b-0": 0b11}),
         ])
 
     @simulation_test(sources=(8,))

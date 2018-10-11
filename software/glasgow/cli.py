@@ -15,6 +15,7 @@ from fx2.format import input_data, diff_data
 from .device import GlasgowDeviceError
 from .device.config import GlasgowConfig
 from .target.hardware import GlasgowHardwareTarget
+from .gateware.analyzer import TraceDecoder
 from .device.hardware import VID_QIHW, PID_GLASGOW, GlasgowHardwareDevice
 from .internal_test import *
 from .access.direct import *
@@ -156,6 +157,9 @@ def get_argparser():
     p_run.add_argument(
         "--force", default=False, action="store_true",
         help="reload bitstream even if an identical one is loaded")
+    p_run.add_argument(
+        "--trace", metavar="FILENAME", type=argparse.FileType("wt"), default=None,
+        help="trace applet I/O to FILENAME")
     g_run_bitstream = p_run.add_mutually_exclusive_group(required=True)
     g_run_bitstream.add_argument(
         "--bitstream", metavar="FILENAME", type=argparse.FileType("rb"),
@@ -198,6 +202,9 @@ def get_argparser():
     p_build = subparsers.add_parser(
         "build", formatter_class=TextHelpFormatter,
         help="(advanced) build applet logic and save it as a file")
+    p_build.add_argument(
+        "--trace", default=False, action="store_true",
+        help="include applet analyzer")
     p_build.add_argument(
         "-t", "--type", metavar="TYPE", type=str,
         choices=["zip", "archive", "v", "verilog", "bin", "bitstream"], default="bitstream",
@@ -251,7 +258,8 @@ def get_argparser():
 
 # The name of this function appears in Verilog output, so keep it tidy.
 def _applet(args):
-    target = GlasgowHardwareTarget(multiplexer_cls=DirectMultiplexer)
+    target = GlasgowHardwareTarget(multiplexer_cls=DirectMultiplexer,
+                                   with_analyzer=hasattr(args, "trace") and args.trace)
     applet = GlasgowApplet.all_applets[args.applet]()
     try:
         applet.build(target, args)
@@ -350,12 +358,40 @@ async def _main():
                                 bitstream_id.hex(), args.applet)
                     await device.download_bitstream(target.get_bitstream(debug=True), bitstream_id)
 
-                logger.info("running handler for applet %r", args.applet)
-                try:
-                    iface = await applet.run(device, args)
-                    await applet.interact(device, args, iface)
-                except GlasgowAppletError as e:
-                    applet.logger.error(str(e))
+                if args.trace:
+                    logger.info("starting applet analyzer")
+                    analyzer_iface = await device.demultiplexer.claim_interface(
+                        target.analyzer, target.analyzer.mux_interface, args=None)
+                    await device.write_register(target.analyzer.addr_done, 0)
+                    trace_decoder = TraceDecoder(target.analyzer.event_sources)
+
+                async def run_analyzer():
+                    if not args.trace:
+                        return
+
+                    while not trace_decoder.is_done():
+                        trace_decoder.process(await analyzer_iface.read())
+                        for cycle, events in trace_decoder.flush():
+                            event_repr = " ".join("{}={}".format(n, v)
+                                                  for n, v in events.items())
+                            target.analyzer.logger.trace("cycle %d: %s", cycle, event_repr)
+                            args.trace.write("{:012} {}\n".format(cycle, event_repr))
+
+                async def run_applet():
+                    logger.info("running handler for applet %r", args.applet)
+                    try:
+                        iface = await applet.run(device, args)
+                        await applet.interact(device, args, iface)
+                    except GlasgowAppletError as e:
+                        applet.logger.error(str(e))
+                    finally:
+                        if args.trace:
+                            await device.write_register(target.analyzer.addr_done, 1)
+
+                done, pending = await asyncio.wait([run_analyzer(), run_applet()],
+                                                   return_when=asyncio.FIRST_EXCEPTION)
+                for task in done:
+                    await task
 
                 # Work around bugs in python-libusb1 that cause segfaults on interpreter shutdown.
                 await device.demultiplexer.flush()
