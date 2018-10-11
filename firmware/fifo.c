@@ -120,9 +120,9 @@ void fifo_reset(bool two_ep, uint8_t interfaces) {
   if(interfaces & (1 << 1)) {
     // Reset EP4OUT.
     SYNCDELAY;
-    EP4FIFOCFG |= 0;
+    EP4FIFOCFG = 0;
     SYNCDELAY;
-    FIFORESET = 4;
+    FIFORESET |= 4;
     SYNCDELAY;
     OUTPKTEND = _SKIP|4;
     SYNCDELAY;
