@@ -180,12 +180,12 @@ class FX2Arbiter(Module):
             )
         )
         self.fsm.act("DRIVE",
-             If(addr[1],
-                 NextValue(fdoe, 1),
-             ).Else(
-                 NextValue(sloe, 1),
-             ),
-             NextState("SETUP")
+            If(addr[1],
+                NextValue(fdoe, 1),
+            ).Else(
+                NextValue(sloe, 1),
+            ),
+            NextState("SETUP")
         )
         self.fsm.act("SETUP",
             If(addr[1],
@@ -198,10 +198,10 @@ class FX2Arbiter(Module):
             NextState("XFER-IN")
         )
         self.fsm.act("XFER-IN",
-            If(rdy & (1 << addr),
-                slwr.eq(1),
+            If(rdy.part(addr, 1),
                 self.in_fifos[addr[0]].re.eq(1),
-            ).Elif(((flag & (1 << addr)) == 0) &
+                slwr.eq(1)
+            ).Elif(~flag.part(addr, 1) &
                    ~self.in_fifos[addr[0]].readable &
                    self.streaming[addr[0]],
                 # The ~FULL flag went down, and it goes down one sample earlier than the actual
@@ -215,7 +215,7 @@ class FX2Arbiter(Module):
                 # This shouldn't cause any problems.
                 pend.eq(1),
                 NextState("NEXT")
-            ).Elif(((flag & (1 << addr)) != 0) &
+            ).Elif(flag.part(addr, 1) &
                    ~self.streaming[addr[0]],
                 # The FPGA-side non-streaming FIFO is empty, but the FX2-side FIFO is not full yet.
                 # Commit the short packet.
@@ -232,9 +232,9 @@ class FX2Arbiter(Module):
             NextState("XFER-OUT")
         )
         self.fsm.act("XFER-OUT",
-            self.out_fifos[addr[0]].we.eq((flag & (1 << addr)) != 0),
-            If(rdy & (1 << addr),
-                slrd.eq(self.out_fifos[addr[0]].fifo.writable)
+            self.out_fifos[addr[0]].we.eq(flag.part(addr, 1)),
+            If(rdy.part(addr, 1),
+                slrd.eq(self.out_fifos[addr[0]].fifo.writable),
             ).Else(
                 NextState("NEXT")
             )

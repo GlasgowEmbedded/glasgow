@@ -178,7 +178,7 @@ class EventAnalyzer(Module):
             serializer.act("REPORT-DELAY-%d" % septet_no,
                 If(self.output_fifo.writable,
                     self.output_fifo.din.eq(
-                        REPORT_DELAY | delay_counter[(septet_no - 1) * 7:septet_no * 7]),
+                        REPORT_DELAY | delay_counter.part((septet_no - 1) * 7, 7)),
                     self.output_fifo.we.eq(1),
                     *next_state
                 )
@@ -225,7 +225,7 @@ class EventAnalyzer(Module):
                 ]
             serializer.act("REPORT-EVENT-DATA-%d" % octet_no,
                 If(self.output_fifo.writable,
-                    self.output_fifo.din.eq(event_data[(octet_no - 1) * 8:octet_no * 8]),
+                    self.output_fifo.din.eq(event_data.part((octet_no - 1) * 8, 8)),
                     self.output_fifo.we.eq(1),
                     *next_state
                 )
@@ -335,8 +335,8 @@ class TraceDecoder:
             elif self._state == "IDLE" and is_done:
                 self._state = "DONE"
             else:
-                raise TraceDecodingError("at byte offset %d: invalid report type %#04x" %
-                                         (self._byte_off, kind))
+                raise TraceDecodingError("at byte offset %d: invalid byte %#04x for state %s" %
+                                         (self._byte_off, octet, self._state))
 
             self._byte_off += 1
 
