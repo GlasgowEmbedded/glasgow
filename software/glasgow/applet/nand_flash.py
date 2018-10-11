@@ -103,6 +103,7 @@ class ONFISubtarget(Module):
             If(timer != 0,
                 NextValue(timer, timer - 1),
             ).Else(
+                NextValue(bus.doe, 0),
                 NextValue(timer, wait_cyc),
                 If(command == CMD_CONTROL,
                     NextValue(bus.ce, (control & BIT_CE) != 0),
@@ -142,7 +143,6 @@ class ONFISubtarget(Module):
             If(timer != 0,
                 NextValue(timer, timer - 1),
             ).Else(
-                NextValue(bus.doe, 0),
                 NextValue(bus.we, 0),
                 NextValue(timer, wait_cyc),
                 NextValue(length, length - 1),
