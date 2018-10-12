@@ -7,7 +7,7 @@ encoding utf-8
 Sheet 2 3
 Title "I/O Buffer"
 Date ""
-Rev "B"
+Rev "C0"
 Comp "whitequark research"
 Comment1 "Glasgow Debug Tool"
 Comment2 "Calculations by @awygle"
@@ -143,7 +143,7 @@ F 0 "#PWR0116" H 6200 650 50  0001 C CNN
 F 1 "+3.3V" H 6215 973 50  0000 C CNN
 F 2 "" H 6200 800 50  0001 C CNN
 F 3 "" H 6200 800 50  0001 C CNN
-	1    6200 800
+	1    6200 800 
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -306,7 +306,7 @@ F 5 "LMK107BJ475KAHT" H 3900 -450 50  0001 C CNN "MPN"
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	8600 850  8600 900
+	8600 850  8600 900 
 Wire Wire Line
 	8250 1200 8250 1250
 Wire Wire Line
@@ -332,9 +332,9 @@ Connection ~ 8400 1250
 Wire Wire Line
 	8400 1250 8600 1250
 Wire Wire Line
-	8250 900  8250 850
+	8250 900  8250 850 
 Wire Wire Line
-	8250 850  8400 850
+	8250 850  8400 850 
 $Comp
 L power:+3.3V #PWR0131
 U 1 1 5B00CF57
@@ -345,14 +345,14 @@ F 0 "#PWR0131" H 8400 650 50  0001 C CNN
 F 1 "+3.3V" H 8415 973 50  0000 C CNN
 F 2 "" H 8400 800 50  0001 C CNN
 F 3 "" H 8400 800 50  0001 C CNN
-	1    8400 800
+	1    8400 800 
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	8400 800  8400 850
-Connection ~ 8400 850
+	8400 800  8400 850 
+Connection ~ 8400 850 
 Wire Wire Line
-	8400 850  8600 850
+	8400 850  8600 850 
 $Comp
 L Device:C C36
 U 1 1 5B013969
@@ -369,10 +369,10 @@ F 5 "TMK107BJ154KA-T" H 3900 -450 50  0001 C CNN "MPN"
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	8600 850  8950 850
+	8600 850  8950 850 
 Wire Wire Line
-	8950 850  8950 900
-Connection ~ 8600 850
+	8950 850  8950 900 
+Connection ~ 8600 850 
 Wire Wire Line
 	8600 1250 8950 1250
 Wire Wire Line
@@ -691,7 +691,7 @@ Wire Wire Line
 Text Label 8200 3950 0    50   ~ 0
 VIO
 Wire Wire Line
-	7350 750  7000 750
+	7350 750  7000 750 
 Wire Wire Line
 	7000 750  7000 2050
 Connection ~ 7000 2050
@@ -728,14 +728,14 @@ $Comp
 L Logic_LevelTranslator:SN74LVC1T45DRL U5
 U 1 1 5B3D9A66
 P 2900 1450
-AR Path="/5AF7D604/5B3D9A66" Ref="U5"  Part="1"
-AR Path="/5AFBDC9E/5B3D9A66" Ref="U22"  Part="1"
+AR Path="/5AF7D604/5B3D9A66" Ref="U5"  Part="1" 
+AR Path="/5AFBDC9E/5B3D9A66" Ref="U22"  Part="1" 
 F 0 "U5" H 3050 1100 50  0000 L CNN
 F 1 "SN74LVC1T45DRL" H 3050 1000 50  0000 L CNN
 F 2 "Package_TO_SOT_SMD:SOT-563" H 2900 950 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 2000 800 50  0001 C CNN
 	1    2900 1450
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Text Label 6400 2050 0    50   ~ 0
 VEXT
@@ -743,8 +743,8 @@ $Comp
 L Device:C C30
 U 1 1 5B46CB87
 P 2400 1050
-AR Path="/5AF7D604/5B46CB87" Ref="C30"  Part="1"
-AR Path="/5AFBDC9E/5B46CB87" Ref="C60"  Part="1"
+AR Path="/5AF7D604/5B46CB87" Ref="C30"  Part="1" 
+AR Path="/5AFBDC9E/5B46CB87" Ref="C60"  Part="1" 
 F 0 "C30" H 2515 1096 50  0000 L CNN
 F 1 "u1" H 2515 1005 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 2438 900 50  0001 C CNN
@@ -752,48 +752,48 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 2400 1050 50 
 F 4 "Taiyo Yuden" H -100 -450 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -100 -450 50  0001 C CNN "MPN"
 	1    2400 1050
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	7350 1200 7350 1300
 Wire Wire Line
-	7350 750  7350 900
+	7350 750  7350 900 
 $Comp
 L power:GND #PWR051
 U 1 1 5B47D247
 P 2900 1850
-AR Path="/5AF7D604/5B47D247" Ref="#PWR051"  Part="1"
-AR Path="/5AFBDC9E/5B47D247" Ref="#PWR076"  Part="1"
+AR Path="/5AF7D604/5B47D247" Ref="#PWR051"  Part="1" 
+AR Path="/5AFBDC9E/5B47D247" Ref="#PWR076"  Part="1" 
 F 0 "#PWR051" H 2900 1600 50  0001 C CNN
 F 1 "GND" H 2905 1677 50  0000 C CNN
 F 2 "" H 2900 1850 50  0001 C CNN
 F 3 "" H 2900 1850 50  0001 C CNN
 	1    2900 1850
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR047
 U 1 1 5B47D28B
 P 2400 1200
-AR Path="/5AF7D604/5B47D28B" Ref="#PWR047"  Part="1"
-AR Path="/5AFBDC9E/5B47D28B" Ref="#PWR072"  Part="1"
+AR Path="/5AF7D604/5B47D28B" Ref="#PWR047"  Part="1" 
+AR Path="/5AFBDC9E/5B47D28B" Ref="#PWR072"  Part="1" 
 F 0 "#PWR047" H 2400 950 50  0001 C CNN
 F 1 "GND" H 2405 1027 50  0000 C CNN
 F 2 "" H 2400 1200 50  0001 C CNN
 F 3 "" H 2400 1200 50  0001 C CNN
 	1    2400 1200
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	2400 900  2800 900
+	2400 900  2800 900 
 Wire Wire Line
 	2800 900  2800 1050
 $Comp
 L Device:C C48
 U 1 1 5B489612
 P 3400 1050
-AR Path="/5AF7D604/5B489612" Ref="C48"  Part="1"
-AR Path="/5AFBDC9E/5B489612" Ref="C64"  Part="1"
+AR Path="/5AF7D604/5B489612" Ref="C48"  Part="1" 
+AR Path="/5AFBDC9E/5B489612" Ref="C64"  Part="1" 
 F 0 "C48" H 3515 1096 50  0000 L CNN
 F 1 "u1" H 3515 1005 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 3438 900 50  0001 C CNN
@@ -801,23 +801,23 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 3400 1050 50 
 F 4 "Taiyo Yuden" H 900 -450 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 900 -450 50  0001 C CNN "MPN"
 	1    3400 1050
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR055
 U 1 1 5B489619
 P 3400 1200
-AR Path="/5AF7D604/5B489619" Ref="#PWR055"  Part="1"
-AR Path="/5AFBDC9E/5B489619" Ref="#PWR080"  Part="1"
+AR Path="/5AF7D604/5B489619" Ref="#PWR055"  Part="1" 
+AR Path="/5AFBDC9E/5B489619" Ref="#PWR080"  Part="1" 
 F 0 "#PWR055" H 3400 950 50  0001 C CNN
 F 1 "GND" H 3405 1027 50  0000 C CNN
 F 2 "" H 3400 1200 50  0001 C CNN
 F 3 "" H 3400 1200 50  0001 C CNN
 	1    3400 1200
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	3000 900  3400 900
+	3000 900  3400 900 
 Wire Wire Line
 	3000 900  3000 1050
 Wire Wire Line
@@ -830,21 +830,21 @@ $Comp
 L Logic_LevelTranslator:SN74LVC1T45DRL U6
 U 1 1 5B4ABDD7
 P 2900 3050
-AR Path="/5AF7D604/5B4ABDD7" Ref="U6"  Part="1"
-AR Path="/5AFBDC9E/5B4ABDD7" Ref="U23"  Part="1"
+AR Path="/5AF7D604/5B4ABDD7" Ref="U6"  Part="1" 
+AR Path="/5AFBDC9E/5B4ABDD7" Ref="U23"  Part="1" 
 F 0 "U6" H 3050 2700 50  0000 L CNN
 F 1 "SN74LVC1T45DRL" H 3050 2600 50  0000 L CNN
 F 2 "Package_TO_SOT_SMD:SOT-563" H 2900 2550 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 2000 2400 50  0001 C CNN
 	1    2900 3050
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C32
 U 1 1 5B4ABDE0
 P 2400 2650
-AR Path="/5AF7D604/5B4ABDE0" Ref="C32"  Part="1"
-AR Path="/5AFBDC9E/5B4ABDE0" Ref="C61"  Part="1"
+AR Path="/5AF7D604/5B4ABDE0" Ref="C32"  Part="1" 
+AR Path="/5AFBDC9E/5B4ABDE0" Ref="C61"  Part="1" 
 F 0 "C32" H 2515 2696 50  0000 L CNN
 F 1 "u1" H 2515 2605 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 2438 2500 50  0001 C CNN
@@ -852,33 +852,33 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 2400 2650 50 
 F 4 "Taiyo Yuden" H -100 1150 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -100 1150 50  0001 C CNN "MPN"
 	1    2400 2650
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR052
 U 1 1 5B4ABDE7
 P 2900 3450
-AR Path="/5AF7D604/5B4ABDE7" Ref="#PWR052"  Part="1"
-AR Path="/5AFBDC9E/5B4ABDE7" Ref="#PWR077"  Part="1"
+AR Path="/5AF7D604/5B4ABDE7" Ref="#PWR052"  Part="1" 
+AR Path="/5AFBDC9E/5B4ABDE7" Ref="#PWR077"  Part="1" 
 F 0 "#PWR052" H 2900 3200 50  0001 C CNN
 F 1 "GND" H 2905 3277 50  0000 C CNN
 F 2 "" H 2900 3450 50  0001 C CNN
 F 3 "" H 2900 3450 50  0001 C CNN
 	1    2900 3450
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR048
 U 1 1 5B4ABDED
 P 2400 2800
-AR Path="/5AF7D604/5B4ABDED" Ref="#PWR048"  Part="1"
-AR Path="/5AFBDC9E/5B4ABDED" Ref="#PWR073"  Part="1"
+AR Path="/5AF7D604/5B4ABDED" Ref="#PWR048"  Part="1" 
+AR Path="/5AFBDC9E/5B4ABDED" Ref="#PWR073"  Part="1" 
 F 0 "#PWR048" H 2400 2550 50  0001 C CNN
 F 1 "GND" H 2405 2627 50  0000 C CNN
 F 2 "" H 2400 2800 50  0001 C CNN
 F 3 "" H 2400 2800 50  0001 C CNN
 	1    2400 2800
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	2400 2500 2800 2500
@@ -888,8 +888,8 @@ $Comp
 L Device:C C49
 U 1 1 5B4ABDF7
 P 3400 2650
-AR Path="/5AF7D604/5B4ABDF7" Ref="C49"  Part="1"
-AR Path="/5AFBDC9E/5B4ABDF7" Ref="C65"  Part="1"
+AR Path="/5AF7D604/5B4ABDF7" Ref="C49"  Part="1" 
+AR Path="/5AFBDC9E/5B4ABDF7" Ref="C65"  Part="1" 
 F 0 "C49" H 3515 2696 50  0000 L CNN
 F 1 "u1" H 3515 2605 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 3438 2500 50  0001 C CNN
@@ -897,20 +897,20 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 3400 2650 50 
 F 4 "Taiyo Yuden" H 900 1150 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 900 1150 50  0001 C CNN "MPN"
 	1    3400 2650
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR056
 U 1 1 5B4ABDFE
 P 3400 2800
-AR Path="/5AF7D604/5B4ABDFE" Ref="#PWR056"  Part="1"
-AR Path="/5AFBDC9E/5B4ABDFE" Ref="#PWR081"  Part="1"
+AR Path="/5AF7D604/5B4ABDFE" Ref="#PWR056"  Part="1" 
+AR Path="/5AFBDC9E/5B4ABDFE" Ref="#PWR081"  Part="1" 
 F 0 "#PWR056" H 3400 2550 50  0001 C CNN
 F 1 "GND" H 3405 2627 50  0000 C CNN
 F 2 "" H 3400 2800 50  0001 C CNN
 F 3 "" H 3400 2800 50  0001 C CNN
 	1    3400 2800
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	3000 2500 3400 2500
@@ -926,21 +926,21 @@ $Comp
 L Logic_LevelTranslator:SN74LVC1T45DRL U16
 U 1 1 5B4B0E48
 P 2900 4650
-AR Path="/5AF7D604/5B4B0E48" Ref="U16"  Part="1"
-AR Path="/5AFBDC9E/5B4B0E48" Ref="U24"  Part="1"
+AR Path="/5AF7D604/5B4B0E48" Ref="U16"  Part="1" 
+AR Path="/5AFBDC9E/5B4B0E48" Ref="U24"  Part="1" 
 F 0 "U16" H 3050 4300 50  0000 L CNN
 F 1 "SN74LVC1T45DRL" H 3050 4200 50  0000 L CNN
 F 2 "Package_TO_SOT_SMD:SOT-563" H 2900 4150 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 2000 4000 50  0001 C CNN
 	1    2900 4650
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C40
 U 1 1 5B4B0E51
 P 2400 4250
-AR Path="/5AF7D604/5B4B0E51" Ref="C40"  Part="1"
-AR Path="/5AFBDC9E/5B4B0E51" Ref="C62"  Part="1"
+AR Path="/5AF7D604/5B4B0E51" Ref="C40"  Part="1" 
+AR Path="/5AFBDC9E/5B4B0E51" Ref="C62"  Part="1" 
 F 0 "C40" H 2515 4296 50  0000 L CNN
 F 1 "u1" H 2515 4205 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 2438 4100 50  0001 C CNN
@@ -948,33 +948,33 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 2400 4250 50 
 F 4 "Taiyo Yuden" H -100 2750 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -100 2750 50  0001 C CNN "MPN"
 	1    2400 4250
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR053
 U 1 1 5B4B0E58
 P 2900 5050
-AR Path="/5AF7D604/5B4B0E58" Ref="#PWR053"  Part="1"
-AR Path="/5AFBDC9E/5B4B0E58" Ref="#PWR078"  Part="1"
+AR Path="/5AF7D604/5B4B0E58" Ref="#PWR053"  Part="1" 
+AR Path="/5AFBDC9E/5B4B0E58" Ref="#PWR078"  Part="1" 
 F 0 "#PWR053" H 2900 4800 50  0001 C CNN
 F 1 "GND" H 2905 4877 50  0000 C CNN
 F 2 "" H 2900 5050 50  0001 C CNN
 F 3 "" H 2900 5050 50  0001 C CNN
 	1    2900 5050
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR049
 U 1 1 5B4B0E5E
 P 2400 4400
-AR Path="/5AF7D604/5B4B0E5E" Ref="#PWR049"  Part="1"
-AR Path="/5AFBDC9E/5B4B0E5E" Ref="#PWR074"  Part="1"
+AR Path="/5AF7D604/5B4B0E5E" Ref="#PWR049"  Part="1" 
+AR Path="/5AFBDC9E/5B4B0E5E" Ref="#PWR074"  Part="1" 
 F 0 "#PWR049" H 2400 4150 50  0001 C CNN
 F 1 "GND" H 2405 4227 50  0000 C CNN
 F 2 "" H 2400 4400 50  0001 C CNN
 F 3 "" H 2400 4400 50  0001 C CNN
 	1    2400 4400
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	2400 4100 2800 4100
@@ -984,8 +984,8 @@ $Comp
 L Device:C C50
 U 1 1 5B4B0E68
 P 3400 4250
-AR Path="/5AF7D604/5B4B0E68" Ref="C50"  Part="1"
-AR Path="/5AFBDC9E/5B4B0E68" Ref="C66"  Part="1"
+AR Path="/5AF7D604/5B4B0E68" Ref="C50"  Part="1" 
+AR Path="/5AFBDC9E/5B4B0E68" Ref="C66"  Part="1" 
 F 0 "C50" H 3515 4296 50  0000 L CNN
 F 1 "u1" H 3515 4205 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 3438 4100 50  0001 C CNN
@@ -993,20 +993,20 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 3400 4250 50 
 F 4 "Taiyo Yuden" H 900 2750 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 900 2750 50  0001 C CNN "MPN"
 	1    3400 4250
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR057
 U 1 1 5B4B0E6F
 P 3400 4400
-AR Path="/5AF7D604/5B4B0E6F" Ref="#PWR057"  Part="1"
-AR Path="/5AFBDC9E/5B4B0E6F" Ref="#PWR082"  Part="1"
+AR Path="/5AF7D604/5B4B0E6F" Ref="#PWR057"  Part="1" 
+AR Path="/5AFBDC9E/5B4B0E6F" Ref="#PWR082"  Part="1" 
 F 0 "#PWR057" H 3400 4150 50  0001 C CNN
 F 1 "GND" H 3405 4227 50  0000 C CNN
 F 2 "" H 3400 4400 50  0001 C CNN
 F 3 "" H 3400 4400 50  0001 C CNN
 	1    3400 4400
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	3000 4100 3400 4100
@@ -1022,21 +1022,21 @@ $Comp
 L Logic_LevelTranslator:SN74LVC1T45DRL U17
 U 1 1 5B4B6B3E
 P 2900 6250
-AR Path="/5AF7D604/5B4B6B3E" Ref="U17"  Part="1"
-AR Path="/5AFBDC9E/5B4B6B3E" Ref="U25"  Part="1"
+AR Path="/5AF7D604/5B4B6B3E" Ref="U17"  Part="1" 
+AR Path="/5AFBDC9E/5B4B6B3E" Ref="U25"  Part="1" 
 F 0 "U17" H 3050 5900 50  0000 L CNN
 F 1 "SN74LVC1T45DRL" H 3050 5800 50  0000 L CNN
 F 2 "Package_TO_SOT_SMD:SOT-563" H 2900 5750 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 2000 5600 50  0001 C CNN
 	1    2900 6250
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C47
 U 1 1 5B4B6B47
 P 2400 5850
-AR Path="/5AF7D604/5B4B6B47" Ref="C47"  Part="1"
-AR Path="/5AFBDC9E/5B4B6B47" Ref="C63"  Part="1"
+AR Path="/5AF7D604/5B4B6B47" Ref="C47"  Part="1" 
+AR Path="/5AFBDC9E/5B4B6B47" Ref="C63"  Part="1" 
 F 0 "C47" H 2515 5896 50  0000 L CNN
 F 1 "u1" H 2515 5805 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 2438 5700 50  0001 C CNN
@@ -1044,33 +1044,33 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 2400 5850 50 
 F 4 "Taiyo Yuden" H -100 4350 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -100 4350 50  0001 C CNN "MPN"
 	1    2400 5850
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR054
 U 1 1 5B4B6B4E
 P 2900 6650
-AR Path="/5AF7D604/5B4B6B4E" Ref="#PWR054"  Part="1"
-AR Path="/5AFBDC9E/5B4B6B4E" Ref="#PWR079"  Part="1"
+AR Path="/5AF7D604/5B4B6B4E" Ref="#PWR054"  Part="1" 
+AR Path="/5AFBDC9E/5B4B6B4E" Ref="#PWR079"  Part="1" 
 F 0 "#PWR054" H 2900 6400 50  0001 C CNN
 F 1 "GND" H 2905 6477 50  0000 C CNN
 F 2 "" H 2900 6650 50  0001 C CNN
 F 3 "" H 2900 6650 50  0001 C CNN
 	1    2900 6650
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR050
 U 1 1 5B4B6B54
 P 2400 6000
-AR Path="/5AF7D604/5B4B6B54" Ref="#PWR050"  Part="1"
-AR Path="/5AFBDC9E/5B4B6B54" Ref="#PWR075"  Part="1"
+AR Path="/5AF7D604/5B4B6B54" Ref="#PWR050"  Part="1" 
+AR Path="/5AFBDC9E/5B4B6B54" Ref="#PWR075"  Part="1" 
 F 0 "#PWR050" H 2400 5750 50  0001 C CNN
 F 1 "GND" H 2405 5827 50  0000 C CNN
 F 2 "" H 2400 6000 50  0001 C CNN
 F 3 "" H 2400 6000 50  0001 C CNN
 	1    2400 6000
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	2400 5700 2800 5700
@@ -1080,8 +1080,8 @@ $Comp
 L Device:C C51
 U 1 1 5B4B6B5E
 P 3400 5850
-AR Path="/5AF7D604/5B4B6B5E" Ref="C51"  Part="1"
-AR Path="/5AFBDC9E/5B4B6B5E" Ref="C67"  Part="1"
+AR Path="/5AF7D604/5B4B6B5E" Ref="C51"  Part="1" 
+AR Path="/5AFBDC9E/5B4B6B5E" Ref="C67"  Part="1" 
 F 0 "C51" H 3515 5896 50  0000 L CNN
 F 1 "u1" H 3515 5805 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 3438 5700 50  0001 C CNN
@@ -1089,20 +1089,20 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 3400 5850 50 
 F 4 "Taiyo Yuden" H 900 4350 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 900 4350 50  0001 C CNN "MPN"
 	1    3400 5850
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR058
 U 1 1 5B4B6B65
 P 3400 6000
-AR Path="/5AF7D604/5B4B6B65" Ref="#PWR058"  Part="1"
-AR Path="/5AFBDC9E/5B4B6B65" Ref="#PWR083"  Part="1"
+AR Path="/5AF7D604/5B4B6B65" Ref="#PWR058"  Part="1" 
+AR Path="/5AFBDC9E/5B4B6B65" Ref="#PWR083"  Part="1" 
 F 0 "#PWR058" H 3400 5750 50  0001 C CNN
 F 1 "GND" H 3405 5827 50  0000 C CNN
 F 2 "" H 3400 6000 50  0001 C CNN
 F 3 "" H 3400 6000 50  0001 C CNN
 	1    3400 6000
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	3000 5700 3400 5700
@@ -1118,21 +1118,21 @@ $Comp
 L Logic_LevelTranslator:SN74LVC1T45DRL U18
 U 1 1 5B4E41CE
 P 4650 2250
-AR Path="/5AF7D604/5B4E41CE" Ref="U18"  Part="1"
-AR Path="/5AFBDC9E/5B4E41CE" Ref="U26"  Part="1"
+AR Path="/5AF7D604/5B4E41CE" Ref="U18"  Part="1" 
+AR Path="/5AFBDC9E/5B4E41CE" Ref="U26"  Part="1" 
 F 0 "U18" H 4800 1900 50  0000 L CNN
 F 1 "SN74LVC1T45DRL" H 4800 1800 50  0000 L CNN
 F 2 "Package_TO_SOT_SMD:SOT-563" H 4650 1750 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 3750 1600 50  0001 C CNN
 	1    4650 2250
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C52
 U 1 1 5B4E41D7
 P 4150 1850
-AR Path="/5AF7D604/5B4E41D7" Ref="C52"  Part="1"
-AR Path="/5AFBDC9E/5B4E41D7" Ref="C68"  Part="1"
+AR Path="/5AF7D604/5B4E41D7" Ref="C52"  Part="1" 
+AR Path="/5AFBDC9E/5B4E41D7" Ref="C68"  Part="1" 
 F 0 "C52" H 4265 1896 50  0000 L CNN
 F 1 "u1" H 4265 1805 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 4188 1700 50  0001 C CNN
@@ -1140,33 +1140,33 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 4150 1850 50 
 F 4 "Taiyo Yuden" H 1650 350 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 1650 350 50  0001 C CNN "MPN"
 	1    4150 1850
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR063
 U 1 1 5B4E41DE
 P 4650 2650
-AR Path="/5AF7D604/5B4E41DE" Ref="#PWR063"  Part="1"
-AR Path="/5AFBDC9E/5B4E41DE" Ref="#PWR088"  Part="1"
+AR Path="/5AF7D604/5B4E41DE" Ref="#PWR063"  Part="1" 
+AR Path="/5AFBDC9E/5B4E41DE" Ref="#PWR088"  Part="1" 
 F 0 "#PWR063" H 4650 2400 50  0001 C CNN
 F 1 "GND" H 4655 2477 50  0000 C CNN
 F 2 "" H 4650 2650 50  0001 C CNN
 F 3 "" H 4650 2650 50  0001 C CNN
 	1    4650 2650
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR059
 U 1 1 5B4E41E4
 P 4150 2000
-AR Path="/5AF7D604/5B4E41E4" Ref="#PWR059"  Part="1"
-AR Path="/5AFBDC9E/5B4E41E4" Ref="#PWR084"  Part="1"
+AR Path="/5AF7D604/5B4E41E4" Ref="#PWR059"  Part="1" 
+AR Path="/5AFBDC9E/5B4E41E4" Ref="#PWR084"  Part="1" 
 F 0 "#PWR059" H 4150 1750 50  0001 C CNN
 F 1 "GND" H 4155 1827 50  0000 C CNN
 F 2 "" H 4150 2000 50  0001 C CNN
 F 3 "" H 4150 2000 50  0001 C CNN
 	1    4150 2000
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	4150 1700 4550 1700
@@ -1176,8 +1176,8 @@ $Comp
 L Device:C C56
 U 1 1 5B4E41EE
 P 5150 1850
-AR Path="/5AF7D604/5B4E41EE" Ref="C56"  Part="1"
-AR Path="/5AFBDC9E/5B4E41EE" Ref="C72"  Part="1"
+AR Path="/5AF7D604/5B4E41EE" Ref="C56"  Part="1" 
+AR Path="/5AFBDC9E/5B4E41EE" Ref="C72"  Part="1" 
 F 0 "C56" H 5265 1896 50  0000 L CNN
 F 1 "u1" H 5265 1805 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 5188 1700 50  0001 C CNN
@@ -1185,20 +1185,20 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 5150 1850 50 
 F 4 "Taiyo Yuden" H 2650 350 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 2650 350 50  0001 C CNN "MPN"
 	1    5150 1850
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR067
 U 1 1 5B4E41F5
 P 5150 2000
-AR Path="/5AF7D604/5B4E41F5" Ref="#PWR067"  Part="1"
-AR Path="/5AFBDC9E/5B4E41F5" Ref="#PWR092"  Part="1"
+AR Path="/5AF7D604/5B4E41F5" Ref="#PWR067"  Part="1" 
+AR Path="/5AFBDC9E/5B4E41F5" Ref="#PWR092"  Part="1" 
 F 0 "#PWR067" H 5150 1750 50  0001 C CNN
 F 1 "GND" H 5155 1827 50  0000 C CNN
 F 2 "" H 5150 2000 50  0001 C CNN
 F 3 "" H 5150 2000 50  0001 C CNN
 	1    5150 2000
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	4750 1700 5150 1700
@@ -1214,21 +1214,21 @@ $Comp
 L Logic_LevelTranslator:SN74LVC1T45DRL U19
 U 1 1 5B4E4203
 P 4650 3850
-AR Path="/5AF7D604/5B4E4203" Ref="U19"  Part="1"
-AR Path="/5AFBDC9E/5B4E4203" Ref="U27"  Part="1"
+AR Path="/5AF7D604/5B4E4203" Ref="U19"  Part="1" 
+AR Path="/5AFBDC9E/5B4E4203" Ref="U27"  Part="1" 
 F 0 "U19" H 4800 3500 50  0000 L CNN
 F 1 "SN74LVC1T45DRL" H 4800 3400 50  0000 L CNN
 F 2 "Package_TO_SOT_SMD:SOT-563" H 4650 3350 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 3750 3200 50  0001 C CNN
 	1    4650 3850
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C53
 U 1 1 5B4E420C
 P 4150 3450
-AR Path="/5AF7D604/5B4E420C" Ref="C53"  Part="1"
-AR Path="/5AFBDC9E/5B4E420C" Ref="C69"  Part="1"
+AR Path="/5AF7D604/5B4E420C" Ref="C53"  Part="1" 
+AR Path="/5AFBDC9E/5B4E420C" Ref="C69"  Part="1" 
 F 0 "C53" H 4265 3496 50  0000 L CNN
 F 1 "u1" H 4265 3405 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 4188 3300 50  0001 C CNN
@@ -1236,33 +1236,33 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 4150 3450 50 
 F 4 "Taiyo Yuden" H 1650 1950 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 1650 1950 50  0001 C CNN "MPN"
 	1    4150 3450
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR064
 U 1 1 5B4E4213
 P 4650 4250
-AR Path="/5AF7D604/5B4E4213" Ref="#PWR064"  Part="1"
-AR Path="/5AFBDC9E/5B4E4213" Ref="#PWR089"  Part="1"
+AR Path="/5AF7D604/5B4E4213" Ref="#PWR064"  Part="1" 
+AR Path="/5AFBDC9E/5B4E4213" Ref="#PWR089"  Part="1" 
 F 0 "#PWR064" H 4650 4000 50  0001 C CNN
 F 1 "GND" H 4655 4077 50  0000 C CNN
 F 2 "" H 4650 4250 50  0001 C CNN
 F 3 "" H 4650 4250 50  0001 C CNN
 	1    4650 4250
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR060
 U 1 1 5B4E4219
 P 4150 3600
-AR Path="/5AF7D604/5B4E4219" Ref="#PWR060"  Part="1"
-AR Path="/5AFBDC9E/5B4E4219" Ref="#PWR085"  Part="1"
+AR Path="/5AF7D604/5B4E4219" Ref="#PWR060"  Part="1" 
+AR Path="/5AFBDC9E/5B4E4219" Ref="#PWR085"  Part="1" 
 F 0 "#PWR060" H 4150 3350 50  0001 C CNN
 F 1 "GND" H 4155 3427 50  0000 C CNN
 F 2 "" H 4150 3600 50  0001 C CNN
 F 3 "" H 4150 3600 50  0001 C CNN
 	1    4150 3600
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	4150 3300 4550 3300
@@ -1272,8 +1272,8 @@ $Comp
 L Device:C C57
 U 1 1 5B4E4223
 P 5150 3450
-AR Path="/5AF7D604/5B4E4223" Ref="C57"  Part="1"
-AR Path="/5AFBDC9E/5B4E4223" Ref="C73"  Part="1"
+AR Path="/5AF7D604/5B4E4223" Ref="C57"  Part="1" 
+AR Path="/5AFBDC9E/5B4E4223" Ref="C73"  Part="1" 
 F 0 "C57" H 5265 3496 50  0000 L CNN
 F 1 "u1" H 5265 3405 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 5188 3300 50  0001 C CNN
@@ -1281,20 +1281,20 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 5150 3450 50 
 F 4 "Taiyo Yuden" H 2650 1950 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 2650 1950 50  0001 C CNN "MPN"
 	1    5150 3450
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR068
 U 1 1 5B4E422A
 P 5150 3600
-AR Path="/5AF7D604/5B4E422A" Ref="#PWR068"  Part="1"
-AR Path="/5AFBDC9E/5B4E422A" Ref="#PWR093"  Part="1"
+AR Path="/5AF7D604/5B4E422A" Ref="#PWR068"  Part="1" 
+AR Path="/5AFBDC9E/5B4E422A" Ref="#PWR093"  Part="1" 
 F 0 "#PWR068" H 5150 3350 50  0001 C CNN
 F 1 "GND" H 5155 3427 50  0000 C CNN
 F 2 "" H 5150 3600 50  0001 C CNN
 F 3 "" H 5150 3600 50  0001 C CNN
 	1    5150 3600
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	4750 3300 5150 3300
@@ -1310,21 +1310,21 @@ $Comp
 L Logic_LevelTranslator:SN74LVC1T45DRL U20
 U 1 1 5B4E4238
 P 4650 5450
-AR Path="/5AF7D604/5B4E4238" Ref="U20"  Part="1"
-AR Path="/5AFBDC9E/5B4E4238" Ref="U28"  Part="1"
+AR Path="/5AF7D604/5B4E4238" Ref="U20"  Part="1" 
+AR Path="/5AFBDC9E/5B4E4238" Ref="U28"  Part="1" 
 F 0 "U20" H 4800 5100 50  0000 L CNN
 F 1 "SN74LVC1T45DRL" H 4800 5000 50  0000 L CNN
 F 2 "Package_TO_SOT_SMD:SOT-563" H 4650 4950 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 3750 4800 50  0001 C CNN
 	1    4650 5450
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C54
 U 1 1 5B4E4241
 P 4150 5050
-AR Path="/5AF7D604/5B4E4241" Ref="C54"  Part="1"
-AR Path="/5AFBDC9E/5B4E4241" Ref="C70"  Part="1"
+AR Path="/5AF7D604/5B4E4241" Ref="C54"  Part="1" 
+AR Path="/5AFBDC9E/5B4E4241" Ref="C70"  Part="1" 
 F 0 "C54" H 4265 5096 50  0000 L CNN
 F 1 "u1" H 4265 5005 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 4188 4900 50  0001 C CNN
@@ -1332,33 +1332,33 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 4150 5050 50 
 F 4 "Taiyo Yuden" H 1650 3550 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 1650 3550 50  0001 C CNN "MPN"
 	1    4150 5050
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR065
 U 1 1 5B4E4248
 P 4650 5850
-AR Path="/5AF7D604/5B4E4248" Ref="#PWR065"  Part="1"
-AR Path="/5AFBDC9E/5B4E4248" Ref="#PWR090"  Part="1"
+AR Path="/5AF7D604/5B4E4248" Ref="#PWR065"  Part="1" 
+AR Path="/5AFBDC9E/5B4E4248" Ref="#PWR090"  Part="1" 
 F 0 "#PWR065" H 4650 5600 50  0001 C CNN
 F 1 "GND" H 4655 5677 50  0000 C CNN
 F 2 "" H 4650 5850 50  0001 C CNN
 F 3 "" H 4650 5850 50  0001 C CNN
 	1    4650 5850
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR061
 U 1 1 5B4E424E
 P 4150 5200
-AR Path="/5AF7D604/5B4E424E" Ref="#PWR061"  Part="1"
-AR Path="/5AFBDC9E/5B4E424E" Ref="#PWR086"  Part="1"
+AR Path="/5AF7D604/5B4E424E" Ref="#PWR061"  Part="1" 
+AR Path="/5AFBDC9E/5B4E424E" Ref="#PWR086"  Part="1" 
 F 0 "#PWR061" H 4150 4950 50  0001 C CNN
 F 1 "GND" H 4155 5027 50  0000 C CNN
 F 2 "" H 4150 5200 50  0001 C CNN
 F 3 "" H 4150 5200 50  0001 C CNN
 	1    4150 5200
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	4150 4900 4550 4900
@@ -1368,8 +1368,8 @@ $Comp
 L Device:C C58
 U 1 1 5B4E4258
 P 5150 5050
-AR Path="/5AF7D604/5B4E4258" Ref="C58"  Part="1"
-AR Path="/5AFBDC9E/5B4E4258" Ref="C74"  Part="1"
+AR Path="/5AF7D604/5B4E4258" Ref="C58"  Part="1" 
+AR Path="/5AFBDC9E/5B4E4258" Ref="C74"  Part="1" 
 F 0 "C58" H 5265 5096 50  0000 L CNN
 F 1 "u1" H 5265 5005 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 5188 4900 50  0001 C CNN
@@ -1377,20 +1377,20 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 5150 5050 50 
 F 4 "Taiyo Yuden" H 2650 3550 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 2650 3550 50  0001 C CNN "MPN"
 	1    5150 5050
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR069
 U 1 1 5B4E425F
 P 5150 5200
-AR Path="/5AF7D604/5B4E425F" Ref="#PWR069"  Part="1"
-AR Path="/5AFBDC9E/5B4E425F" Ref="#PWR094"  Part="1"
+AR Path="/5AF7D604/5B4E425F" Ref="#PWR069"  Part="1" 
+AR Path="/5AFBDC9E/5B4E425F" Ref="#PWR094"  Part="1" 
 F 0 "#PWR069" H 5150 4950 50  0001 C CNN
 F 1 "GND" H 5155 5027 50  0000 C CNN
 F 2 "" H 5150 5200 50  0001 C CNN
 F 3 "" H 5150 5200 50  0001 C CNN
 	1    5150 5200
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	4750 4900 5150 4900
@@ -1406,21 +1406,21 @@ $Comp
 L Logic_LevelTranslator:SN74LVC1T45DRL U21
 U 1 1 5B4E426D
 P 4650 7050
-AR Path="/5AF7D604/5B4E426D" Ref="U21"  Part="1"
-AR Path="/5AFBDC9E/5B4E426D" Ref="U29"  Part="1"
+AR Path="/5AF7D604/5B4E426D" Ref="U21"  Part="1" 
+AR Path="/5AFBDC9E/5B4E426D" Ref="U29"  Part="1" 
 F 0 "U21" H 4800 6700 50  0000 L CNN
 F 1 "SN74LVC1T45DRL" H 4800 6600 50  0000 L CNN
 F 2 "Package_TO_SOT_SMD:SOT-563" H 4650 6550 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 3750 6400 50  0001 C CNN
 	1    4650 7050
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C55
 U 1 1 5B4E4276
 P 4150 6650
-AR Path="/5AF7D604/5B4E4276" Ref="C55"  Part="1"
-AR Path="/5AFBDC9E/5B4E4276" Ref="C71"  Part="1"
+AR Path="/5AF7D604/5B4E4276" Ref="C55"  Part="1" 
+AR Path="/5AFBDC9E/5B4E4276" Ref="C71"  Part="1" 
 F 0 "C55" H 4265 6696 50  0000 L CNN
 F 1 "u1" H 4265 6605 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 4188 6500 50  0001 C CNN
@@ -1428,33 +1428,33 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 4150 6650 50 
 F 4 "Taiyo Yuden" H 1650 5150 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 1650 5150 50  0001 C CNN "MPN"
 	1    4150 6650
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR066
 U 1 1 5B4E427D
 P 4650 7450
-AR Path="/5AF7D604/5B4E427D" Ref="#PWR066"  Part="1"
-AR Path="/5AFBDC9E/5B4E427D" Ref="#PWR091"  Part="1"
+AR Path="/5AF7D604/5B4E427D" Ref="#PWR066"  Part="1" 
+AR Path="/5AFBDC9E/5B4E427D" Ref="#PWR091"  Part="1" 
 F 0 "#PWR066" H 4650 7200 50  0001 C CNN
 F 1 "GND" H 4655 7277 50  0000 C CNN
 F 2 "" H 4650 7450 50  0001 C CNN
 F 3 "" H 4650 7450 50  0001 C CNN
 	1    4650 7450
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR062
 U 1 1 5B4E4283
 P 4150 6800
-AR Path="/5AF7D604/5B4E4283" Ref="#PWR062"  Part="1"
-AR Path="/5AFBDC9E/5B4E4283" Ref="#PWR087"  Part="1"
+AR Path="/5AF7D604/5B4E4283" Ref="#PWR062"  Part="1" 
+AR Path="/5AFBDC9E/5B4E4283" Ref="#PWR087"  Part="1" 
 F 0 "#PWR062" H 4150 6550 50  0001 C CNN
 F 1 "GND" H 4155 6627 50  0000 C CNN
 F 2 "" H 4150 6800 50  0001 C CNN
 F 3 "" H 4150 6800 50  0001 C CNN
 	1    4150 6800
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	4150 6500 4550 6500
@@ -1464,8 +1464,8 @@ $Comp
 L Device:C C59
 U 1 1 5B4E428D
 P 5150 6650
-AR Path="/5AF7D604/5B4E428D" Ref="C59"  Part="1"
-AR Path="/5AFBDC9E/5B4E428D" Ref="C75"  Part="1"
+AR Path="/5AF7D604/5B4E428D" Ref="C59"  Part="1" 
+AR Path="/5AFBDC9E/5B4E428D" Ref="C75"  Part="1" 
 F 0 "C59" H 5265 6696 50  0000 L CNN
 F 1 "u1" H 5265 6605 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric_Pad0.99x1.00mm_HandSolder" H 5188 6500 50  0001 C CNN
@@ -1473,20 +1473,20 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 5150 6650 50 
 F 4 "Taiyo Yuden" H 2650 5150 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 2650 5150 50  0001 C CNN "MPN"
 	1    5150 6650
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR070
 U 1 1 5B4E4294
 P 5150 6800
-AR Path="/5AF7D604/5B4E4294" Ref="#PWR070"  Part="1"
-AR Path="/5AFBDC9E/5B4E4294" Ref="#PWR095"  Part="1"
+AR Path="/5AF7D604/5B4E4294" Ref="#PWR070"  Part="1" 
+AR Path="/5AFBDC9E/5B4E4294" Ref="#PWR095"  Part="1" 
 F 0 "#PWR070" H 5150 6550 50  0001 C CNN
 F 1 "GND" H 5155 6627 50  0000 C CNN
 F 2 "" H 5150 6800 50  0001 C CNN
 F 3 "" H 5150 6800 50  0001 C CNN
 	1    5150 6800
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	4750 6500 5150 6500
@@ -1546,18 +1546,18 @@ $Comp
 L power:+3.3V #PWR046
 U 1 1 5B5402E4
 P 2400 900
-AR Path="/5AF7D604/5B5402E4" Ref="#PWR046"  Part="1"
-AR Path="/5AFBDC9E/5B5402E4" Ref="#PWR071"  Part="1"
+AR Path="/5AF7D604/5B5402E4" Ref="#PWR046"  Part="1" 
+AR Path="/5AFBDC9E/5B5402E4" Ref="#PWR071"  Part="1" 
 F 0 "#PWR046" H 2400 750 50  0001 C CNN
 F 1 "+3.3V" H 2415 1073 50  0000 C CNN
 F 2 "" H 2400 900 50  0001 C CNN
 F 3 "" H 2400 900 50  0001 C CNN
-	1    2400 900
-	1    0    0    -1
+	1    2400 900 
+	1    0    0    -1  
 $EndComp
-Connection ~ 2400 900
+Connection ~ 2400 900 
 Wire Wire Line
-	6200 800  6200 900
+	6200 800  6200 900 
 Wire Wire Line
 	6200 1200 6200 1300
 Text Notes 6300 1250 0    50   ~ 0
@@ -1566,8 +1566,8 @@ $Comp
 L Device:R_Pack08 RN2
 U 1 1 5B586EFA
 P 6750 2800
-AR Path="/5AF7D604/5B586EFA" Ref="RN2"  Part="1"
-AR Path="/5AFBDC9E/5B586EFA" Ref="RN4"  Part="1"
+AR Path="/5AF7D604/5B586EFA" Ref="RN2"  Part="1" 
+AR Path="/5AFBDC9E/5B586EFA" Ref="RN4"  Part="1" 
 F 0 "RN2" V 6225 2800 50  0000 C CNN
 F 1 "R_Pack08" V 6224 2800 50  0001 C CNN
 F 2 "Resistor_SMD:R_Array_Convex_8x0602" V 7225 2800 50  0001 C CNN
@@ -1630,8 +1630,8 @@ $Comp
 L Device:R_Pack08 RN1
 U 1 1 5B5A19A9
 P 1450 2800
-AR Path="/5AF7D604/5B5A19A9" Ref="RN1"  Part="1"
-AR Path="/5AFBDC9E/5B5A19A9" Ref="RN3"  Part="1"
+AR Path="/5AF7D604/5B5A19A9" Ref="RN1"  Part="1" 
+AR Path="/5AFBDC9E/5B5A19A9" Ref="RN3"  Part="1" 
 F 0 "RN1" V 925 2800 50  0000 C CNN
 F 1 "R_Pack08" V 924 2800 50  0001 C CNN
 F 2 "Resistor_SMD:R_Array_Convex_8x0602" V 1925 2800 50  0001 C CNN
