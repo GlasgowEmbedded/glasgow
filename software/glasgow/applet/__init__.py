@@ -140,6 +140,7 @@ from .i2c.master import I2CMasterApplet
 from .i2c.bmp280 import I2CBMP280Applet
 from .i2c.eeprom_24c import I2CEEPROM24CApplet
 from .i2c.tps6598x import I2CTPS6598xApplet
+from .jtag import JTAGApplet
 from .nand_flash import NANDFlashApplet
 from .program_ice40 import ProgramICE40Applet
 from .selftest import SelfTestApplet

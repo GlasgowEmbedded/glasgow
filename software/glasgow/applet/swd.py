@@ -353,6 +353,7 @@ class SWDInterface:
 
 
 class SWDApplet(GlasgowApplet, name="swd"):
+    preview = True
     logger = logging.getLogger(__name__)
     help = "debug microcontrollers via SWD"
     description = """
