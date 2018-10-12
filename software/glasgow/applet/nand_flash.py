@@ -3,7 +3,8 @@ import logging
 import asyncio
 import struct
 from migen import *
-from migen.genlib.fsm import *
+from migen.genlib.cdc import MultiReg
+from migen.genlib.fsm import FSM
 
 from . import *
 from ..database.jedec import *
@@ -36,7 +37,6 @@ class ONFIBus(Module):
         self.comb += [
             pads.io_t.oe.eq(self.doe),
             pads.io_t.o.eq(self.do),
-            self.di.eq(pads.io_t.i),
             pads.ce_t.oe.eq(1),
             pads.ce_t.o.eq(~self.ce),
             pads.cle_t.oe.eq(1),
@@ -47,7 +47,10 @@ class ONFIBus(Module):
             pads.re_t.o.eq(~self.re),
             pads.we_t.oe.eq(1),
             pads.we_t.o.eq(~self.we),
-            self.rdy.eq(pads.r_b_t.i),
+        ]
+        self.specials += [
+            MultiReg(pads.io_t.i, self.di),
+            MultiReg(pads.r_b_t.i, self.rdy),
         ]
 
 
