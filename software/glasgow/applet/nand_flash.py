@@ -66,6 +66,7 @@ class ONFISubtarget(Module):
 
         self.submodules.fsm = FSM(reset_state="RECV-COMMAND")
         self.fsm.act("RECV-COMMAND",
+            NextValue(bus.doe, 0),
             If(out_fifo.readable,
                 out_fifo.re.eq(1),
                 NextValue(command, out_fifo.dout),
@@ -103,7 +104,6 @@ class ONFISubtarget(Module):
             If(timer != 0,
                 NextValue(timer, timer - 1),
             ).Else(
-                NextValue(bus.doe, 0),
                 NextValue(timer, wait_cyc),
                 If(command == CMD_CONTROL,
                     NextValue(bus.ce, (control & BIT_CE) != 0),
@@ -134,12 +134,12 @@ class ONFISubtarget(Module):
             If(out_fifo.readable,
                 out_fifo.re.eq(1),
                 NextValue(bus.do, out_fifo.dout),
-                NextValue(bus.doe, 1),
                 NextValue(bus.we, 1),
                 NextState("ONFI-WRITE-HOLD")
             )
         )
         self.fsm.act("ONFI-WRITE-HOLD",
+            NextValue(bus.doe, 1),
             If(timer != 0,
                 NextValue(timer, timer - 1),
             ).Else(
@@ -150,11 +150,12 @@ class ONFISubtarget(Module):
             )
         )
         self.fsm.act("ONFI-READ-HOLD",
+            NextValue(bus.doe, 0),
             If(timer != 0,
                 NextValue(timer, timer - 1),
-                NextValue(in_fifo.din, bus.di),
             ).Else(
                 NextValue(bus.re, 0),
+                NextValue(in_fifo.din, bus.di),
                 NextValue(timer, wait_cyc),
                 NextState("SEND-DATA")
             )
@@ -303,7 +304,6 @@ class ONFIInterface:
 
 
 class NANDFlashApplet(GlasgowApplet, name="nand-flash"):
-    preview = True
     logger = logging.getLogger(__name__)
     help = "read and write ONFI-like NAND Flash memories"
     description = """
