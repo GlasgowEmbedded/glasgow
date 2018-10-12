@@ -22,11 +22,15 @@ SPECIAL_DETHROTTLE  =   0b000010
 
 
 class EventSource(Module):
-    def __init__(self, name, width, fields, depth):
+    def __init__(self, name, kind, width, fields, depth):
+        assert (width >  0 and kind in ("change", "strobe") or
+                width == 0 and kind == "strobe")
+
         self.name    = name
         self.width   = width
         self.fields  = fields
         self.depth   = depth
+        self.kind    = kind
 
         self.data    = Signal(max(1, width))
         self.trigger = Signal()
@@ -78,11 +82,11 @@ class EventAnalyzer(Module):
         self.done          = Signal()
         self.throttle      = Signal()
 
-    def add_event_source(self, name, width=0, fields=(), depth=None):
+    def add_event_source(self, name, kind, width, fields=(), depth=None):
         if depth is None:
             depth = self._depth_for_width(width)
 
-        event_source = EventSource(name, width, fields, depth)
+        event_source = EventSource(name, kind, width, fields, depth)
         self.event_sources.append(event_source)
         return event_source
 
@@ -336,14 +340,14 @@ class TraceDecoder:
         """
         Return names and widths for all events that may be emitted by this trace decoder.
         """
-        for event_source in self.event_sources:
-            if event_source.fields:
-                for field_name, field_width in event_source.fields:
-                    yield ("%s-%s" % (field_name, event_source.name), field_width)
-            else:
-                yield (event_source.name, event_source.width)
+        yield ("throttle", "throttle", 1)
 
-        yield ("throttle", 1)
+        for event_src in self.event_sources:
+            if event_src.fields:
+                for field_name, field_width in event_src.fields:
+                    yield ("%s-%s" % (field_name, event_src.name), event_src.kind, field_width)
+            else:
+                yield (event_src.name, event_src.kind, event_src.width)
 
     def _flush_timestamp(self):
         if self._delay == 0:
@@ -494,7 +498,7 @@ class EventAnalyzerTestCase(unittest.TestCase):
         for n, args in enumerate(sources):
             if not isinstance(args, tuple):
                 args = (args,)
-            tb.dut.add_event_source(str(n), *args)
+            tb.dut.add_event_source(str(n), "strobe", *args)
 
     def assertEmitted(self, tb, data, decoded, flush_pending=True):
         self.assertEqual((yield from tb.read(len(data))), data)

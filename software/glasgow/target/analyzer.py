@@ -33,7 +33,7 @@ class GlasgowAnalyzer(Module):
 
     def add_in_fifo_event(self, applet, fifo):
         event_source = self.event_analyzer.add_event_source(
-            name=self._name(applet, "fifo-in"), width=8)
+            name=self._name(applet, "fifo-in"), kind="strobe", width=8)
         event_source.sync += [
             event_source.trigger.eq(fifo.writable & fifo.we),
             event_source.data.eq(fifo.din)
@@ -41,7 +41,7 @@ class GlasgowAnalyzer(Module):
 
     def add_out_fifo_event(self, applet, fifo):
         event_source = self.event_analyzer.add_event_source(
-            name=self._name(applet, "fifo-out"), width=8)
+            name=self._name(applet, "fifo-out"), kind="strobe", width=8)
         event_source.comb += [
             event_source.trigger.eq(fifo.readable & fifo.re),
             event_source.data.eq(fifo.dout)
@@ -75,10 +75,10 @@ class GlasgowAnalyzer(Module):
         ]
 
         oe_event_source = self.event_analyzer.add_event_source(
-            name="oe", width=value_bits_sign(sig_oes)[0],
+            name="oe", kind="change", width=value_bits_sign(sig_oes)[0],
             fields=[(name, value_bits_sign(oe)[0]) for name, oe in pin_oes])
         io_event_source = self.event_analyzer.add_event_source(
-            name="io", width=value_bits_sign(sig_ios)[0],
+            name="io", kind="change", width=value_bits_sign(sig_ios)[0],
             fields=[(name, value_bits_sign(io)[0]) for name, io in pin_ios])
         self.comb += [
             oe_event_source.trigger.eq(reg_reset | (sig_oes != reg_oes)),
