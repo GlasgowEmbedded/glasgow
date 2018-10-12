@@ -182,7 +182,7 @@ class EventAnalyzer(Module):
                 event_fifo.re.eq(1),
                 NextValue(event_encoder.i, event_fifo.dout[1:]),
                 NextValue(rep_throttle_new, event_fifo.dout[0]),
-                If((event_fifo.dout != 0) | (rep_throttle_cur != rep_throttle_new),
+                If((event_fifo.dout != 0) | (rep_throttle_cur != event_fifo.dout[0]),
                     NextState("REPORT-DELAY")
                 )
             ).Elif(self.done,
