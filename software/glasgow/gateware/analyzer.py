@@ -17,8 +17,9 @@ REPORT_EVENT_MASK   = 0b11000000
 REPORT_SPECIAL      = 0b00000000
 REPORT_SPECIAL_MASK = 0b11000000
 SPECIAL_DONE        =   0b000000
-SPECIAL_THROTTLE    =   0b000011
-SPECIAL_DETHROTTLE  =   0b000010
+SPECIAL_OVERRUN     =   0b000001
+SPECIAL_THROTTLE    =   0b000010
+SPECIAL_DETHROTTLE  =   0b000011
 
 
 class EventSource(Module):
@@ -81,6 +82,7 @@ class EventAnalyzer(Module):
         self.event_sources = Array()
         self.done          = Signal()
         self.throttle      = Signal()
+        self.overrun      = Signal()
 
     def add_event_source(self, name, kind, width, fields=(), depth=None):
         if depth is None:
@@ -111,6 +113,14 @@ class EventAnalyzer(Module):
             )
         ]
 
+        overrun_trip   = Signal()
+        overrun_fifos  = []
+        self.sync += [
+            If(overrun_trip,
+                self.overrun.eq(1)
+            )
+        ]
+
         event_width = 1 + len(self.event_sources)
         if self.event_depth is None:
             event_depth = min(self._depth_for_width(event_width),
@@ -130,6 +140,8 @@ class EventAnalyzer(Module):
         self.submodules.delay_fifo = delay_fifo = \
             SyncFIFOBuffered(width=self.delay_width, depth=event_depth)
         delay_timer = self._delay_timer = Signal(self.delay_width)
+        delay_ovrun = ((1 << self.delay_width) - 1)
+        delay_max   = delay_ovrun - 1
         self.sync += [
             If(delay_fifo.we,
                 delay_timer.eq(0)
@@ -138,10 +150,9 @@ class EventAnalyzer(Module):
             )
         ]
         self.comb += [
-            delay_fifo.din.eq(delay_timer),
-            delay_fifo.we.eq(event_fifo.we |
-                             (delay_timer == ((1 << self.delay_width) - 1)) |
-                             self.done),
+            delay_fifo.din.eq(Mux(self.overrun, delay_ovrun, delay_timer)),
+            delay_fifo.we.eq(event_fifo.we | (delay_timer == delay_max) |
+                             self.done | self.overrun),
         ]
 
         for event_source in self.event_sources:
@@ -167,6 +178,13 @@ class EventAnalyzer(Module):
                  for f in throttle_fifos))),
         ]
 
+        # Detect imminent FIFO overrun and trip overrun indication.
+        self.comb += [
+            overrun_trip.eq(reduce(lambda a, b: a | b,
+                (f.fifo.level == f.depth - 2
+                 for f in throttle_fifos)))
+        ]
+
         # Dequeue events, and serialize events and event data.
         self.submodules.event_encoder = event_encoder = \
             PriorityEncoder(width=len(self.event_sources))
@@ -175,6 +193,7 @@ class EventAnalyzer(Module):
         self.comb += event_decoder.i.eq(event_encoder.o)
 
         self.submodules.serializer = serializer = FSM(reset_state="WAIT-EVENT")
+        rep_overrun      = Signal()
         rep_throttle_new = Signal()
         rep_throttle_cur = Signal()
         delay_septets = 5
@@ -183,6 +202,10 @@ class EventAnalyzer(Module):
             If(delay_fifo.readable,
                 delay_fifo.re.eq(1),
                 NextValue(delay_counter, delay_counter + delay_fifo.dout + 1),
+                If(delay_fifo.dout == delay_ovrun,
+                    NextValue(rep_overrun, 1),
+                    NextState("REPORT-DELAY")
+                )
             ),
             If(event_fifo.readable,
                 event_fifo.re.eq(1),
@@ -212,7 +235,9 @@ class EventAnalyzer(Module):
             if septet_no == 1:
                 next_state = [
                     NextValue(delay_counter, 0),
-                    If(rep_throttle_cur != rep_throttle_new,
+                    If(rep_overrun,
+                        NextState("REPORT-OVERRUN")
+                    ).Elif(rep_throttle_cur != rep_throttle_new,
                         NextState("REPORT-THROTTLE")
                     ).Elif(event_encoder.i,
                         NextState("REPORT-EVENT")
@@ -308,6 +333,16 @@ class EventAnalyzer(Module):
                 If(~self.done,
                     NextState("WAIT-EVENT")
                 )
+            )
+            serializer.act("REPORT-OVERRUN",
+                If(self.output_fifo.writable,
+                    self.output_fifo.din.eq(REPORT_SPECIAL | SPECIAL_OVERRUN),
+                    self.output_fifo.we.eq(1),
+                    NextState("OVERRUN")
+                )
+            )
+            serializer.act("OVERRUN",
+                NextState("OVERRUN")
             )
 
 
@@ -421,9 +456,13 @@ class TraceDecoder:
 
                     self._state = "IDLE"
 
-            elif self._state in "DELAY" and is_special and special == SPECIAL_DONE:
+            elif self._state in "DELAY" and is_special and \
+                        special in (SPECIAL_DONE, SPECIAL_OVERRUN):
                 self._flush_timestamp()
-                self._state = "DONE"
+                if special == SPECIAL_DONE:
+                    self._state = "DONE"
+                elif special == SPECIAL_OVERRUN:
+                    self._state = "OVERRUN"
 
             else:
                 raise TraceDecodingError("at byte offset %d: invalid byte %#04x for state %s" %
@@ -437,7 +476,9 @@ class TraceDecoder:
         If ``pending`` is ``True``, also flushes pending events; this may cause duplicate
         timestamps if more events arrive after the flush.
         """
-        if pending and self._pending or self._state == "DONE":
+        if self._state == "OVERRUN":
+            self._timeline.append((self._timestamp, "overrun"))
+        elif pending and self._pending or self._state == "DONE":
             self._timeline.append((self._timestamp, self._pending))
             self._pending = OrderedDict()
 
@@ -445,7 +486,7 @@ class TraceDecoder:
         return timeline
 
     def is_done(self):
-        return self._state == "DONE"
+        return self._state in ("DONE", "OVERRUN")
 
 # -------------------------------------------------------------------------------------------------
 
@@ -691,7 +732,22 @@ class EventAnalyzerTestCase(unittest.TestCase):
 
     @simulation_test(sources=(1,))
     def test_delay_max(self, tb):
-        yield tb.dut._delay_timer.eq(0xffff)
+        yield tb.dut._delay_timer.eq(0xfffe)
+        yield from tb.trigger(0, 1)
+        yield from tb.step()
+        yield from self.assertEmitted(tb, [
+            REPORT_DELAY|0b0000011,
+            REPORT_DELAY|0b1111111,
+            REPORT_DELAY|0b1111111,
+            REPORT_EVENT|0, 0b1
+        ], [
+            (0xffff, {"0": 0b1}),
+        ])
+
+    @simulation_test(sources=(1,))
+    def test_delay_overflow(self, tb):
+        yield tb.dut._delay_timer.eq(0xfffe)
+        yield
         yield from tb.trigger(0, 1)
         yield from tb.step()
         yield from self.assertEmitted(tb, [
@@ -704,8 +760,9 @@ class EventAnalyzerTestCase(unittest.TestCase):
         ])
 
     @simulation_test(sources=(1,))
-    def test_delay_overflow(self, tb):
-        yield tb.dut._delay_timer.eq(0xffff)
+    def test_delay_overflow_p1(self, tb):
+        yield tb.dut._delay_timer.eq(0xfffe)
+        yield
         yield
         yield from tb.trigger(0, 1)
         yield from tb.step()
@@ -719,37 +776,21 @@ class EventAnalyzerTestCase(unittest.TestCase):
         ])
 
     @simulation_test(sources=(1,))
-    def test_delay_overflow_p1(self, tb):
-        yield tb.dut._delay_timer.eq(0xffff)
-        yield
-        yield
-        yield from tb.trigger(0, 1)
-        yield from tb.step()
-        yield from self.assertEmitted(tb, [
-            REPORT_DELAY|0b0000100,
-            REPORT_DELAY|0b0000000,
-            REPORT_DELAY|0b0000010,
-            REPORT_EVENT|0, 0b1
-        ], [
-            (0x10002, {"0": 0b1}),
-        ])
-
-    @simulation_test(sources=(1,))
     def test_delay_4_septet(self, tb):
         for _ in range(64):
-            yield tb.dut._delay_timer.eq(0xffff)
+            yield tb.dut._delay_timer.eq(0xfffe)
             yield
 
         yield from tb.trigger(0, 1)
         yield from tb.step()
         yield from self.assertEmitted(tb, [
-            REPORT_DELAY|0b0000010,
-            REPORT_DELAY|0b0000000,
-            REPORT_DELAY|0b0000000,
             REPORT_DELAY|0b0000001,
+            REPORT_DELAY|0b1111111,
+            REPORT_DELAY|0b1111111,
+            REPORT_DELAY|0b1000001,
             REPORT_EVENT|0, 0b1
         ], [
-            (0x10000 * 64 + 1, {"0": 0b1}),
+            (0xffff * 64 + 1, {"0": 0b1}),
         ])
 
     @simulation_test(sources=(1,))
@@ -783,3 +824,28 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield tb.fifo.re.eq(0)
         yield
         self.assertEqual((yield tb.dut.throttle), 0)
+
+    @simulation_test(sources=(1,))
+    def test_overrun(self, tb):
+        for x in range(20):
+            yield from tb.trigger(0, 1)
+            yield from tb.step()
+            self.assertEqual((yield tb.dut.overrun), 0)
+        yield from tb.trigger(0, 1)
+        yield from tb.step()
+        self.assertEqual((yield tb.dut.overrun), 1)
+        yield tb.fifo.re.eq(1)
+        for x in range(61):
+            while not (yield tb.fifo.readable):
+                yield
+            yield
+        yield tb.fifo.re.eq(0)
+        yield
+        yield from self.assertEmitted(tb, [
+            REPORT_DELAY|0b0000100,
+            REPORT_DELAY|0b0000000,
+            REPORT_DELAY|0b0000000,
+            REPORT_SPECIAL|SPECIAL_OVERRUN,
+        ], [
+            (0x10000, "overrun"),
+        ], flush_pending=False)

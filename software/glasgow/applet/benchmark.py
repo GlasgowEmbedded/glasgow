@@ -91,7 +91,7 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
     __all_modes = ["source", "sink", "loopback"]
 
     def build(self, target, args):
-        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
+        self.mux_interface = iface = target.multiplexer.claim_interface(self, args, throttle="none")
         mode,  self.__addr_mode  = target.registers.add_rw(2)
         error, self.__addr_error = target.registers.add_ro(1)
         subtarget = iface.add_subtarget(BenchmarkSubtarget(

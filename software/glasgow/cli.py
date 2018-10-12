@@ -400,6 +400,14 @@ async def _main():
                     while not trace_decoder.is_done():
                         trace_decoder.process(await analyzer_iface.read())
                         for cycle, events in trace_decoder.flush():
+                            if events == "overrun":
+                                target.analyzer.logger.error("FIFO overrun, shutting down")
+
+                                for name in signals:
+                                    vcd_writer.change(signals[name], next_timestamp, "x")
+                                timestamp += 1e3 # 1us
+                                break
+
                             event_repr = " ".join("{}={}".format(n, v)
                                                   for n, v in events.items())
                             target.analyzer.logger.trace("cycle %d: %s", cycle, event_repr)
