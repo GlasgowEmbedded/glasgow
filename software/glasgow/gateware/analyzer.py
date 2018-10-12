@@ -125,17 +125,19 @@ class EventAnalyzer(Module):
 
         self.submodules.delay_fifo = delay_fifo = \
             SyncFIFOBuffered(width=self.delay_width, depth=event_depth)
-        delay_timer = self._delay_timer = Signal(self.delay_width, reset=1)
+        delay_timer = self._delay_timer = Signal(self.delay_width)
         self.sync += [
             If(delay_fifo.we,
-                delay_timer.eq(1)
+                delay_timer.eq(0)
             ).Else(
                 delay_timer.eq(delay_timer + 1)
             )
         ]
         self.comb += [
             delay_fifo.din.eq(delay_timer),
-            delay_fifo.we.eq(event_fifo.we | (delay_timer == ((1 << self.delay_width) - 1))),
+            delay_fifo.we.eq(event_fifo.we |
+                             (delay_timer == ((1 << self.delay_width) - 1)) |
+                             self.done),
         ]
 
         for event_source in self.event_sources:
@@ -176,7 +178,7 @@ class EventAnalyzer(Module):
         serializer.act("WAIT-EVENT",
             If(delay_fifo.readable,
                 delay_fifo.re.eq(1),
-                NextValue(delay_counter, delay_counter + delay_fifo.dout),
+                NextValue(delay_counter, delay_counter + delay_fifo.dout + 1),
             ),
             If(event_fifo.readable,
                 event_fifo.re.eq(1),
@@ -186,7 +188,7 @@ class EventAnalyzer(Module):
                     NextState("REPORT-DELAY")
                 )
             ).Elif(self.done,
-                NextState("REPORT-DONE")
+                NextState("REPORT-DELAY")
             )
         )
         serializer.act("REPORT-DELAY",
@@ -208,8 +210,12 @@ class EventAnalyzer(Module):
                     NextValue(delay_counter, 0),
                     If(rep_throttle_cur != rep_throttle_new,
                         NextState("REPORT-THROTTLE")
-                    ).Else(
+                    ).Elif(event_encoder.i,
                         NextState("REPORT-EVENT")
+                    ).Elif(self.done,
+                        NextState("REPORT-DONE")
+                    ).Else(
+                        NextState("WAIT-EVENT")
                     )
                 ]
             else:
@@ -411,7 +417,8 @@ class TraceDecoder:
 
                     self._state = "IDLE"
 
-            elif self._state in "IDLE" and is_special and special == SPECIAL_DONE:
+            elif self._state in "DELAY" and is_special and special == SPECIAL_DONE:
+                self._flush_timestamp()
                 self._state = "DONE"
 
             else:
@@ -658,10 +665,10 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield from tb.step()
         yield from self.assertEmitted(tb, [
             REPORT_DELAY|0b0000001,
-            REPORT_DELAY|0b1110000,
+            REPORT_DELAY|0b1110001,
             REPORT_EVENT|0, 0b1
         ], [
-            (0b1_1110000, {"0": 0b1}),
+            (0b1_1110001, {"0": 0b1}),
         ])
 
     @simulation_test(sources=(1,))
@@ -672,30 +679,15 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield from self.assertEmitted(tb, [
             REPORT_DELAY|0b0000001,
             REPORT_DELAY|0b0011000,
-            REPORT_DELAY|0b1100011,
+            REPORT_DELAY|0b1100100,
             REPORT_EVENT|0, 0b1
         ], [
-            (0b01_0011000_1100011, {"0": 0b1}),
+            (0b01_0011000_1100100, {"0": 0b1}),
         ])
 
     @simulation_test(sources=(1,))
     def test_delay_max(self, tb):
         yield tb.dut._delay_timer.eq(0xffff)
-        yield from tb.trigger(0, 1)
-        yield from tb.step()
-        yield from self.assertEmitted(tb, [
-            REPORT_DELAY|0b0000011,
-            REPORT_DELAY|0b1111111,
-            REPORT_DELAY|0b1111111,
-            REPORT_EVENT|0, 0b1
-        ], [
-            (0xffff, {"0": 0b1}),
-        ])
-
-    @simulation_test(sources=(1,))
-    def test_delay_overflow(self, tb):
-        yield tb.dut._delay_timer.eq(0xffff)
-        yield
         yield from tb.trigger(0, 1)
         yield from tb.step()
         yield from self.assertEmitted(tb, [
@@ -708,9 +700,8 @@ class EventAnalyzerTestCase(unittest.TestCase):
         ])
 
     @simulation_test(sources=(1,))
-    def test_delay_overflow_p1(self, tb):
+    def test_delay_overflow(self, tb):
         yield tb.dut._delay_timer.eq(0xffff)
-        yield
         yield
         yield from tb.trigger(0, 1)
         yield from tb.step()
@@ -724,6 +715,22 @@ class EventAnalyzerTestCase(unittest.TestCase):
         ])
 
     @simulation_test(sources=(1,))
+    def test_delay_overflow_p1(self, tb):
+        yield tb.dut._delay_timer.eq(0xffff)
+        yield
+        yield
+        yield from tb.trigger(0, 1)
+        yield from tb.step()
+        yield from self.assertEmitted(tb, [
+            REPORT_DELAY|0b0000100,
+            REPORT_DELAY|0b0000000,
+            REPORT_DELAY|0b0000010,
+            REPORT_EVENT|0, 0b1
+        ], [
+            (0x10002, {"0": 0b1}),
+        ])
+
+    @simulation_test(sources=(1,))
     def test_delay_4_septet(self, tb):
         for _ in range(64):
             yield tb.dut._delay_timer.eq(0xffff)
@@ -732,13 +739,13 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield from tb.trigger(0, 1)
         yield from tb.step()
         yield from self.assertEmitted(tb, [
+            REPORT_DELAY|0b0000010,
+            REPORT_DELAY|0b0000000,
+            REPORT_DELAY|0b0000000,
             REPORT_DELAY|0b0000001,
-            REPORT_DELAY|0b1111111,
-            REPORT_DELAY|0b1111111,
-            REPORT_DELAY|0b1000001,
             REPORT_EVENT|0, 0b1
         ], [
-            (0xffff * 64 + 1, {"0": 0b1}),
+            (0x10000 * 64 + 1, {"0": 0b1}),
         ])
 
     @simulation_test(sources=(1,))
@@ -750,9 +757,11 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield from self.assertEmitted(tb, [
             REPORT_DELAY|2,
             REPORT_EVENT|0, 0b1,
+            REPORT_DELAY|2,
             REPORT_SPECIAL|SPECIAL_DONE
         ], [
-            (2, {"0": 0b1})
+            (2, {"0": 0b1}),
+            (4, {})
         ], flush_pending=False)
 
     @simulation_test(sources=(1,))

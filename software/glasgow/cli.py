@@ -395,7 +395,7 @@ async def _main():
                                 vcd_writer.change(signals[name], timestamp, value)
                             vcd_writer.flush()
 
-                    vcd_writer.close()
+                    vcd_writer.close(timestamp)
 
                 async def run_applet():
                     logger.info("running handler for applet %r", args.applet)
