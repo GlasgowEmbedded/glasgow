@@ -1,6 +1,7 @@
 import logging
 from migen import *
 from migen.fhdl.bitcontainer import value_bits_sign
+from migen.genlib.cdc import MultiReg
 from migen.genlib.fifo import _FIFOInterface
 
 from ..gateware.analyzer import *
@@ -59,8 +60,10 @@ class GlasgowAnalyzer(Module):
         pin_oes = []
         pin_ios = []
         for (name, triple) in self._pins:
+            sync_i = Signal.like(triple.i)
+            self.specials += MultiReg(triple.i, sync_i)
             pin_oes.append((name, triple.oe))
-            pin_ios.append((name, Mux(triple.oe, triple.o, triple.i)))
+            pin_ios.append((name, Mux(triple.oe, triple.o, sync_i)))
 
         sig_oes = Cat(oe for n, oe in pin_oes)
         reg_oes = Signal.like(sig_oes)
