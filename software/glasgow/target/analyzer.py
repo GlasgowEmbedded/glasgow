@@ -19,6 +19,7 @@ class GlasgowAnalyzer(Module):
             EventAnalyzer(output_fifo=self.mux_interface.get_in_fifo(),
                           event_depth=event_depth)
         self.event_sources = self.event_analyzer.event_sources
+        self.throttle      = self.event_analyzer.throttle
 
         self.done, self.addr_done = registers.add_rw(1)
         self.comb += self.event_analyzer.done.eq(self.done)

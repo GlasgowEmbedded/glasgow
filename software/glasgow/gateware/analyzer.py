@@ -10,12 +10,15 @@ from migen.genlib.fsm import FSM
 __all__ = ["EventSource", "EventAnalyzer", "TraceDecodingError", "TraceDecoder"]
 
 
-REPORT_DELAY      = 0b10000000
-REPORT_DELAY_MASK = 0b10000000
-REPORT_EVENT      = 0b01000000
-REPORT_EVENT_MASK = 0b11000000
-REPORT_DONE       = 0b00000000
-REPORT_DONE_MASK  = 0b11000000
+REPORT_DELAY        = 0b10000000
+REPORT_DELAY_MASK   = 0b10000000
+REPORT_EVENT        = 0b01000000
+REPORT_EVENT_MASK   = 0b11000000
+REPORT_SPECIAL      = 0b00000000
+REPORT_SPECIAL_MASK = 0b11000000
+SPECIAL_DONE        =   0b000000
+SPECIAL_THROTTLE    =   0b000011
+SPECIAL_DETHROTTLE  =   0b000010
 
 
 class EventSource(Module):
@@ -73,6 +76,7 @@ class EventAnalyzer(Module):
         self.event_depth   = event_depth
         self.event_sources = Array()
         self.done          = Signal()
+        self.throttle      = Signal()
 
     def add_event_source(self, name, width=0, fields=(), depth=None):
         if depth is None:
@@ -87,17 +91,36 @@ class EventAnalyzer(Module):
         assert max(s.width for s in self.event_sources) <= 32
 
         # Fill the event, event data, and delay FIFOs.
+        throttle_on    = Signal()
+        throttle_off   = Signal()
+        throttle_edge  = Signal()
+        throttle_fifos = []
+        self.sync += [
+            If(~self.throttle & throttle_on,
+                self.throttle.eq(1),
+                throttle_edge.eq(1)
+            ).Elif(self.throttle & throttle_off,
+                self.throttle.eq(0),
+                throttle_edge.eq(1)
+            ).Else(
+                throttle_edge.eq(0)
+            )
+        ]
+
+        event_width = 1 + len(self.event_sources)
         if self.event_depth is None:
-            event_depth = min(self._depth_for_width(len(self.event_sources)),
+            event_depth = min(self._depth_for_width(event_width),
                               self._depth_for_width(self.delay_width))
         else:
             event_depth = self.event_depth
 
         self.submodules.event_fifo = event_fifo = \
-            SyncFIFOBuffered(width=len(self.event_sources), depth=event_depth)
+            SyncFIFOBuffered(width=event_width, depth=event_depth)
+        throttle_fifos.append(self.event_fifo)
         self.comb += [
-            event_fifo.din.eq(Cat([s.trigger for s in self.event_sources])),
-            event_fifo.we.eq(reduce(lambda a, b: a | b, (s.trigger for s in self.event_sources)))
+            event_fifo.din.eq(Cat(self.throttle, [s.trigger for s in self.event_sources])),
+            event_fifo.we.eq(reduce(lambda a, b: a | b, (s.trigger for s in self.event_sources)) |
+                             throttle_edge)
         ]
 
         self.submodules.delay_fifo = delay_fifo = \
@@ -120,12 +143,23 @@ class EventAnalyzer(Module):
                 event_source.submodules.data_fifo = event_data_fifo = \
                     SyncFIFOBuffered(event_source.width, event_source.depth)
                 self.submodules += event_source
+                throttle_fifos.append(event_data_fifo)
                 self.comb += [
                     event_data_fifo.din.eq(event_source.data),
                     event_data_fifo.we.eq(event_source.trigger),
                 ]
             else:
                 event_source.submodules.data_fifo = _FIFOInterface(1, 0)
+
+        # Throttle applets based on FIFO levels with hysteresis.
+        self.comb += [
+            throttle_on .eq(reduce(lambda a, b: a | b,
+                (f.fifo.level >= f.depth - f.depth // (4 if f.depth > 4 else 2)
+                 for f in throttle_fifos))),
+            throttle_off.eq(reduce(lambda a, b: a & b,
+                (f.fifo.level <            f.depth // (4 if f.depth > 4 else 2)
+                 for f in throttle_fifos))),
+        ]
 
         # Dequeue events, and serialize events and event data.
         self.submodules.event_encoder = event_encoder = \
@@ -135,6 +169,8 @@ class EventAnalyzer(Module):
         self.comb += event_decoder.i.eq(event_encoder.o)
 
         self.submodules.serializer = serializer = FSM(reset_state="WAIT-EVENT")
+        rep_throttle_new = Signal()
+        rep_throttle_cur = Signal()
         delay_septets = 5
         delay_counter = Signal(7 * delay_septets)
         serializer.act("WAIT-EVENT",
@@ -144,8 +180,9 @@ class EventAnalyzer(Module):
             ),
             If(event_fifo.readable,
                 event_fifo.re.eq(1),
-                NextValue(event_encoder.i, event_fifo.dout),
-                If(event_fifo.dout != 0,
+                NextValue(event_encoder.i, event_fifo.dout[1:]),
+                NextValue(rep_throttle_new, event_fifo.dout[0]),
+                If((event_fifo.dout != 0) | (rep_throttle_cur != rep_throttle_new),
                     NextState("REPORT-DELAY")
                 )
             ).Elif(self.done,
@@ -169,7 +206,11 @@ class EventAnalyzer(Module):
             if septet_no == 1:
                 next_state = [
                     NextValue(delay_counter, 0),
-                    NextState("REPORT-EVENT")
+                    If(rep_throttle_cur != rep_throttle_new,
+                        NextState("REPORT-THROTTLE")
+                    ).Else(
+                        NextState("REPORT-EVENT")
+                    )
                 ]
             else:
                 next_state = [
@@ -183,6 +224,22 @@ class EventAnalyzer(Module):
                     *next_state
                 )
             )
+        serializer.act("REPORT-THROTTLE",
+            If(self.output_fifo.writable,
+                NextValue(rep_throttle_cur, rep_throttle_new),
+                If(rep_throttle_new,
+                    self.output_fifo.din.eq(REPORT_SPECIAL | SPECIAL_THROTTLE),
+                ).Else(
+                    self.output_fifo.din.eq(REPORT_SPECIAL | SPECIAL_DETHROTTLE),
+                ),
+                self.output_fifo.we.eq(1),
+                If(event_encoder.n,
+                    NextState("WAIT-EVENT")
+                ).Else(
+                    NextState("REPORT-EVENT")
+                )
+            )
+        )
         event_source = self.event_sources[event_encoder.o]
         event_data   = Signal(32)
         serializer.act("REPORT-EVENT",
@@ -232,7 +289,7 @@ class EventAnalyzer(Module):
             )
             serializer.act("REPORT-DONE",
                 If(self.output_fifo.writable,
-                    self.output_fifo.din.eq(REPORT_DONE),
+                    self.output_fifo.din.eq(REPORT_SPECIAL | SPECIAL_DONE),
                     self.output_fifo.we.eq(1),
                     NextState("DONE")
                 )
@@ -280,30 +337,50 @@ class TraceDecoder:
             else:
                 yield (event_source.name, event_source.width)
 
+        yield ("throttle", 1)
+
+    def _flush_timestamp(self):
+        if self._delay == 0:
+            return
+
+        if self._pending:
+            self._timeline.append((self._timestamp, self._pending))
+            self._pending = OrderedDict()
+
+        if self.absolute_timestamps:
+            self._timestamp += self._delay
+        else:
+            self._timestamp  = self._delay
+        self._delay = 0
+
     def process(self, data):
         """
         Incrementally parse a chunk of analyzer trace, and record events in it.
         """
         for octet in data:
-            is_delay = ((octet & REPORT_DELAY_MASK) == REPORT_DELAY)
-            is_event = ((octet & REPORT_EVENT_MASK) == REPORT_EVENT)
-            is_done  = ((octet & REPORT_DONE_MASK)  == REPORT_DONE)
+            is_delay   = ((octet & REPORT_DELAY_MASK)   == REPORT_DELAY)
+            is_event   = ((octet & REPORT_EVENT_MASK)   == REPORT_EVENT)
+            is_special = ((octet & REPORT_SPECIAL_MASK) == REPORT_SPECIAL)
+            special    = octet & ~REPORT_SPECIAL
 
             if self._state == "IDLE" and is_delay:
                 self._state = "DELAY"
                 self._delay = octet & ~REPORT_DELAY_MASK
+
             elif self._state == "DELAY" and is_delay:
                 self._delay = (self._delay << 7) | (octet & ~REPORT_DELAY_MASK)
+
+            elif self._state == "DELAY" and is_special and \
+                        special in (SPECIAL_THROTTLE, SPECIAL_DETHROTTLE):
+                self._flush_timestamp()
+
+                if special == SPECIAL_THROTTLE:
+                    self._pending["throttle"] = 1
+                elif special == SPECIAL_DETHROTTLE:
+                    self._pending["throttle"] = 0
+
             elif self._state in ("IDLE", "DELAY") and is_event:
-                if self._delay > 0:
-                    if self._pending:
-                        self._timeline.append((self._timestamp, self._pending))
-                        self._pending = OrderedDict()
-                    if self.absolute_timestamps:
-                        self._timestamp += self._delay
-                    else:
-                        self._timestamp  = self._delay
-                    self._delay = 0
+                self._flush_timestamp()
 
                 if (octet & ~REPORT_EVENT_MASK) > len(self.event_sources):
                     raise TraceDecodingError("at byte offset %d: event source out of bounds" %
@@ -316,6 +393,7 @@ class TraceDecoder:
                     self._event_off  = self._event_src.width
                     self._event_data = 0
                     self._state = "EVENT"
+
             elif self._state == "EVENT":
                 self._event_data <<= 8
                 self._event_data  |= octet
@@ -332,8 +410,10 @@ class TraceDecoder:
                         self._pending[self._event_src.name] = self._event_data
 
                     self._state = "IDLE"
-            elif self._state == "IDLE" and is_done:
+
+            elif self._state in "IDLE" and is_special and special == SPECIAL_DONE:
                 self._state = "DONE"
+
             else:
                 raise TraceDecodingError("at byte offset %d: invalid byte %#04x for state %s" %
                                          (self._byte_off, octet, self._state))
@@ -349,6 +429,7 @@ class TraceDecoder:
         if pending and self._pending or self._state == "DONE":
             self._timeline.append((self._timestamp, self._pending))
             self._pending = OrderedDict()
+
         timeline, self._timeline = self._timeline, []
         return timeline
 
@@ -400,7 +481,7 @@ class EventAnalyzerTestbench(Module):
 
 class EventAnalyzerTestCase(unittest.TestCase):
     def setUp(self):
-        self.tb = EventAnalyzerTestbench(event_depth=4)
+        self.tb = EventAnalyzerTestbench(event_depth=16)
 
     def configure(self, tb, sources):
         for n, args in enumerate(sources):
@@ -669,7 +750,23 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield from self.assertEmitted(tb, [
             REPORT_DELAY|2,
             REPORT_EVENT|0, 0b1,
-            REPORT_DONE
+            REPORT_SPECIAL|SPECIAL_DONE
         ], [
             (2, {"0": 0b1})
         ], flush_pending=False)
+
+    @simulation_test(sources=(1,))
+    def test_throttle_hyst(self, tb):
+        for x in range(17):
+            yield from tb.trigger(0, 1)
+            yield from tb.step()
+            self.assertEqual((yield tb.dut.throttle), 0)
+        yield from tb.trigger(0, 1)
+        yield from tb.step()
+        self.assertEqual((yield tb.dut.throttle), 1)
+        yield tb.fifo.re.eq(1)
+        for x in range(51):
+            yield
+        yield tb.fifo.re.eq(0)
+        yield
+        self.assertEqual((yield tb.dut.throttle), 0)
