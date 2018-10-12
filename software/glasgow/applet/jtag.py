@@ -8,6 +8,7 @@ from migen.genlib.fsm import FSM
 
 from . import *
 from ..gateware.pads import *
+from ..database.jedec import *
 
 
 class JTAGBus(Module):
@@ -193,7 +194,7 @@ class JTAGInterface:
     def _log(self, message, *args):
         self._logger.log(self._level, "JTAG: " + message, *args)
 
-    # Low-level JTAG commands
+    # Low-level operations
 
     async def shift_tms(self, tms_bits):
         tms_bits = bitarray(tms_bits, endian="little")
@@ -202,12 +203,13 @@ class JTAGInterface:
             CMD_SHIFT_TMS|BIT_DATA_OUT, len(tms_bits)))
         await self.lower.write(tms_bits.tobytes())
 
-    async def shift_tdio(self, tdi_bits):
+    async def shift_tdio(self, tdi_bits, last=True):
         tdi_bits = bitarray(tdi_bits, endian="little")
         tdo_bits = bitarray(endian="little")
         self._log("shift tdio-i=<%s>", tdi_bits.to01())
         await self.lower.write(struct.pack("<BH",
-            CMD_SHIFT_TDIO|BIT_DATA_IN|BIT_DATA_OUT|BIT_LAST, len(tdi_bits)))
+            CMD_SHIFT_TDIO|BIT_DATA_IN|BIT_DATA_OUT|(BIT_LAST if last else 0),
+            len(tdi_bits)))
         tdi_bytes = tdi_bits.tobytes()
         await self.lower.write(tdi_bytes)
         tdo_bytes = await self.lower.read(len(tdi_bytes))
@@ -216,18 +218,20 @@ class JTAGInterface:
         self._log("shift tdio-o=<%s>", tdo_bits.to01())
         return tdo_bits
 
-    async def shift_tdi(self, tdi_bits):
+    async def shift_tdi(self, tdi_bits, last=True):
         tdi_bits = bitarray(tdi_bits, endian="little")
         self._log("shift tdi=<%s>", tdi_bits.to01())
         await self.lower.write(struct.pack("<BH",
-            CMD_SHIFT_TDIO|BIT_DATA_OUT|BIT_LAST, len(tdi_bits)))
+            CMD_SHIFT_TDIO|BIT_DATA_OUT|(BIT_LAST if last else 0),
+            len(tdi_bits)))
         tdi_bytes = tdi_bits.tobytes()
         await self.lower.write(tdi_bytes)
 
-    async def shift_tdo(self, count):
+    async def shift_tdo(self, count, last=True):
         tdo_bits = bitarray(endian="little")
         await self.lower.write(struct.pack("<BH",
-            CMD_SHIFT_TDIO|BIT_DATA_IN|BIT_LAST, count))
+            CMD_SHIFT_TDIO|BIT_DATA_IN|(BIT_LAST if last else 0),
+            count))
         tdo_bytes = await self.lower.read((count + 7) // 8)
         tdo_bits.frombytes(bytes(tdo_bytes))
         while len(tdo_bits) > count: tdo_bits.pop()
@@ -239,31 +243,87 @@ class JTAGInterface:
         await self.lower.write(struct.pack("<BH",
             CMD_SHIFT_TDIO, count))
 
-    # High-level JTAG commands
+    # State machine transitions
+
+    async def _enter_run_test_idle(self):
+        await self.shift_tms("11111") # * -> Test-Logic-Reset
+        await self.shift_tms("0") # Test-Logic-Reset -> Run-Test/Idle
+
+    async def _enter_shift_dr(self):
+        await self.shift_tms("100") # Run-Test/Idle -> Shift-DR
+
+    async def _enter_shift_ir(self):
+        await self.shift_tms("1100") # Run-Test/Idle -> Shift-IR
+
+    async def _leave_shift_xr(self):
+        await self.shift_tms("10") # Shift-?R -> Run-Test/Idle
+
+    # High-level register manipulation
 
     async def test_reset(self):
         self._log("test reset")
-        await self.shift_tms("111110")
+        await self._enter_run_test_idle()
 
     async def shift_ir_out(self, count):
         self._log("shift ir")
-        await self.shift_tms("1100")
+        await self._enter_shift_ir()
         data = await self.shift_tdo(count)
-        await self.shift_tms("10")
+        await self._leave_shift_xr()
         return data
 
     async def shift_ir_in(self, data):
         self._log("shift ir")
-        await self.shift_tms("1100")
+        await self._enter_shift_ir()
         await self.shift_tdi(data)
-        await self.shift_tms("10")
+        await self._leave_shift_xr()
 
     async def shift_dr(self, data):
         self._log("shift dr")
-        await self.shift_tms("100")
+        await self._enter_shift_dr()
         data = await self.shift_tdio(data)
-        await self.shift_tms("10")
+        await self._leave_shift_xr()
         return data
+
+    async def shift_dr_out(self, count):
+        self._log("shift dr")
+        await self._enter_shift_dr()
+        data = await self.shift_tdo(count)
+        await self._leave_shift_xr()
+        return data
+
+    async def shift_dr_in(self, data):
+        self._log("shift dr")
+        await self._enter_shift_dr()
+        await self.shift_tdi(data)
+        await self._leave_shift_xr()
+
+    # Specialized operations
+
+    async def scan_idcode(self):
+        await self.test_reset()
+
+        self._log("shift idcode")
+        await self._enter_shift_dr()
+
+        idcodes = []
+        idcode_bits = bitarray()
+        while True:
+            while True:
+                first_bit = await self.shift_tdo(1, last=False)
+                if first_bit[0]:
+                    break # IDCODE
+                else:
+                    idcodes.append(None)
+                    pass  # BYPASS
+
+            idcode_bits = first_bit + await self.shift_tdo(31, last=False)
+            idcode, = struct.unpack("<L", idcode_bits.tobytes())
+            if idcode == 0xffffffff:
+                break
+            idcodes.append(idcode)
+
+        await self._leave_shift_xr()
+        return idcodes
 
 
 class JTAGApplet(GlasgowApplet, name="jtag"):
@@ -302,18 +362,29 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
 
     @classmethod
     def add_interact_arguments(cls, parser):
-        pass
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+
+        p_scan = p_operation.add_parser(
+            "scan", help="scan JTAG chain and attempt to identify devices",
+            description="""
+            Reset the JTAG TAPs and shift IDCODE or BYPASS register values out to determine
+            the count and (hopefully) identity of the devices in the scan chain.
+            """)
 
     async def interact(self, device, args, jtag_iface):
-        await jtag_iface.test_reset()
-        ir_chain = await jtag_iface.shift_ir_out(32)
-        self.logger.info("IR chain: <%s>", ir_chain.to01())
-
-        await jtag_iface.test_reset()
-        idcode = await jtag_iface.shift_dr("1"*32)
-        idcode, = struct.unpack("<L", idcode[0:].tobytes())
-        self.logger.info("IDCODE %#010x", idcode)
-        await jtag_iface.lower.flush()
+        if args.operation == "scan":
+            await jtag_iface.test_reset()
+            for n, idcode in enumerate(await jtag_iface.scan_idcode()):
+                if idcode is None:
+                    self.logger.info("TAP #%d: BYPASS")
+                else:
+                    mfg_id   = (idcode >>  1) &  0x7ff
+                    mfg_name = jedec_mfg_name_from_bank_id(mfg_id >> 7, mfg_id & 0x7f)
+                    part_id  = (idcode >> 12) & 0xffff
+                    version  = (idcode >> 28) &    0xf
+                    self.logger.info("TAP #%d: IDCODE=%#10x", n, idcode)
+                    self.logger.info("manufacturer=%#05x (%s) part=%#06x version=%#03x",
+                                     mfg_id, mfg_name, part_id, version)
 
 # -------------------------------------------------------------------------------------------------
 

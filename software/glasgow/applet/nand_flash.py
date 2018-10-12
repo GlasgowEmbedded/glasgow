@@ -426,7 +426,7 @@ class NANDFlashApplet(GlasgowApplet, name="nand-flash"):
             self.logger.error("JEDEC identification not present")
             return
 
-        manufacturer_name = jedec_manufacturer_name([manufacturer_id]) or "unknown"
+        manufacturer_name = jedec_mfg_name_from_bytes([manufacturer_id]) or "unknown"
         self.logger.info("JEDEC manufacturer %#04x (%s) device %#04x",
                          manufacturer_id, manufacturer_name, device_id)
 

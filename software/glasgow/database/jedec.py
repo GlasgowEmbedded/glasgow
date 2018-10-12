@@ -1,17 +1,23 @@
 # Version: JEDEC JEP106AV
 
-__all__ = ["jedec_manufacturer_name"]
+__all__ = ["jedec_mfg_name_from_bytes", "jedec_mfg_name_from_bank_id"]
 
 
-def jedec_manufacturer_name(manufacturer_ids):
+def jedec_mfg_name_from_bytes(mfg_ids):
     bank = 0
-    for manufacturer_id in manufacturer_ids:
-        if manufacturer_id == 0x7F:
+    for mfg_id in mfg_ids:
+        if mfg_id == 0x7F:
             bank += 1
         else:
             for (number, name, code) in _manufacturers[bank]:
-                if code == manufacturer_id:
+                if code == mfg_id:
                     return name
+
+
+def jedec_mfg_name_from_bank_id(bank, mfg_id):
+    for (number, name, code) in _manufacturers[bank]:
+        if code == mfg_id:
+            return name
 
 
 _manufacturers = [
