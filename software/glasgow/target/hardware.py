@@ -73,6 +73,16 @@ class GlasgowHardwareTarget(Module):
 
         if with_analyzer:
             self.submodules.analyzer = GlasgowAnalyzer(self.registers, self.multiplexer)
+        else:
+            self.analyzer = None
+
+    # TODO: adjust the logic in do_finalize in migen to recurse?
+    def finalize(self, *args, **kwargs):
+        if not self.finalized:
+            if self.analyzer:
+                self.analyzer._finalize_pin_events()
+
+            super().finalize(*args, **kwargs)
 
     def get_fragment(self):
         # TODO: shouldn't this be done in migen?

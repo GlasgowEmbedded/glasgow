@@ -14,10 +14,10 @@ class GlasgowAnalyzer(Module):
 
     def __init__(self, registers, multiplexer, event_depth=None):
         multiplexer.set_analyzer(self)
-        self.mux_interface = multiplexer.claim_interface(self, args=None, with_analyzer=False)
-        self.submodules.event_analyzer = \
+        self.mux_interface  = multiplexer.claim_interface(self, args=None, with_analyzer=False)
+        self.event_analyzer = self.mux_interface.add_subtarget(
             EventAnalyzer(output_fifo=self.mux_interface.get_in_fifo(),
-                          event_depth=event_depth)
+                          event_depth=event_depth))
         self.event_sources = self.event_analyzer.event_sources
         self.throttle      = self.event_analyzer.throttle
 
@@ -53,6 +53,9 @@ class GlasgowAnalyzer(Module):
         if not self._pins:
             return
 
+        reg_reset = Signal()
+        self.sync += reg_reset.eq(self.event_analyzer.reset)
+
         pin_oes = []
         pin_ios = []
         for (name, triple) in self._pins:
@@ -75,15 +78,8 @@ class GlasgowAnalyzer(Module):
             name="io", width=value_bits_sign(sig_ios)[0],
             fields=[(name, value_bits_sign(io)[0]) for name, io in pin_ios])
         self.comb += [
-            oe_event_source.trigger.eq(sig_oes != reg_oes),
+            oe_event_source.trigger.eq(reg_reset | (sig_oes != reg_oes)),
             oe_event_source.data.eq(sig_oes),
-            io_event_source.trigger.eq(sig_ios != reg_ios),
+            io_event_source.trigger.eq(reg_reset | (sig_ios != reg_ios)),
             io_event_source.data.eq(sig_ios),
         ]
-
-    # TODO: adjust the logic in do_finalize in migen to recurse?
-    def finalize(self, *args, **kwargs):
-        if not self.finalized:
-            self._finalize_pin_events()
-
-            super().finalize(*args, **kwargs)
