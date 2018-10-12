@@ -41,7 +41,7 @@ setup(
     #description="TODO",
     #long_description="""TODO""",
     license="0-clause BSD License",
-    install_requires=["migen", "fx2>=0.6"],
+    install_requires=["migen", "fx2>=0.6", "pyvcd"],
     depndency_links=[
         "git+https://github.com/m-labs/migen.git#egg=migen",
     ],
