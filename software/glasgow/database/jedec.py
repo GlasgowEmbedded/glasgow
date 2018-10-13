@@ -1,6 +1,6 @@
 # Version: JEDEC JEP106AV
 
-__all__ = ["jedec_mfg_name_from_bytes", "jedec_mfg_name_from_bank_id"]
+__all__ = ["jedec_mfg_name_from_bytes", "jedec_mfg_name_from_bank_num"]
 
 
 def jedec_mfg_name_from_bytes(mfg_ids):
@@ -14,9 +14,9 @@ def jedec_mfg_name_from_bytes(mfg_ids):
                     return name
 
 
-def jedec_mfg_name_from_bank_id(bank, mfg_id):
+def jedec_mfg_name_from_bank_num(bank, mfg_num):
     for (number, name, code) in _manufacturers[bank]:
-        if code == mfg_id:
+        if number == mfg_num:
             return name
 
 

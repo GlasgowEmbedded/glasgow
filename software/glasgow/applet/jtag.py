@@ -512,7 +512,7 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
                                      tap, ir_length)
                 else:
                     mfg_id   = (idcode >>  1) &  0x7ff
-                    mfg_name = jedec_mfg_name_from_bank_id(mfg_id >> 7, mfg_id & 0x7f) or \
+                    mfg_name = jedec_mfg_name_from_bank_num(mfg_id >> 7, mfg_id & 0x7f) or \
                                     "unknown"
                     part_id  = (idcode >> 12) & 0xffff
                     version  = (idcode >> 28) &    0xf
