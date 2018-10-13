@@ -300,7 +300,7 @@ class JTAGInterface:
 
     # Specialized operations
 
-    async def scan_idcode(self):
+    async def scan_idcode(self, limit=8):
         await self.test_reset()
 
         self._log("shift idcode")
@@ -308,14 +308,16 @@ class JTAGInterface:
 
         idcodes = []
         idcode_bits = bitarray()
-        while True:
-            while True:
+        while len(idcodes) < limit:
+            while len(idcodes) < limit:
                 first_bit = await self.shift_tdo(1, last=False)
                 if first_bit[0]:
                     break # IDCODE
                 else:
                     idcodes.append(None)
                     pass  # BYPASS
+            else:
+                return None
 
             idcode_bits = first_bit + await self.shift_tdo(31, last=False)
             idcode, = struct.unpack("<L", idcode_bits.tobytes())
@@ -377,18 +379,21 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
 
     async def interact(self, device, args, jtag_iface):
         if args.operation == "scan":
-            await jtag_iface.test_reset()
-            for n, idcode in enumerate(await jtag_iface.scan_idcode()):
-                if idcode is None:
-                    self.logger.info("TAP #%d: BYPASS")
-                else:
-                    mfg_id   = (idcode >>  1) &  0x7ff
-                    mfg_name = jedec_mfg_name_from_bank_id(mfg_id >> 7, mfg_id & 0x7f)
-                    part_id  = (idcode >> 12) & 0xffff
-                    version  = (idcode >> 28) &    0xf
-                    self.logger.info("TAP #%d: IDCODE=%#10x", n, idcode)
-                    self.logger.info("manufacturer=%#05x (%s) part=%#06x version=%#03x",
-                                     mfg_id, mfg_name, part_id, version)
+            idcodes = await jtag_iface.scan_idcode()
+            if not idcodes:
+                self.logger.warning("chain scan discovered no devices")
+            else:
+                for n, idcode in enumerate(idcodes):
+                    if idcode is None:
+                        self.logger.info("TAP #%d: BYPASS", n)
+                    else:
+                        mfg_id   = (idcode >>  1) &  0x7ff
+                        mfg_name = jedec_mfg_name_from_bank_id(mfg_id >> 7, mfg_id & 0x7f)
+                        part_id  = (idcode >> 12) & 0xffff
+                        version  = (idcode >> 28) &    0xf
+                        self.logger.info("TAP #%d: IDCODE=%#10x", n, idcode)
+                        self.logger.info("manufacturer=%#05x (%s) part=%#06x version=%#03x",
+                                         mfg_id, mfg_name, part_id, version)
 
         if args.operation == "repl":
             await AsyncInteractiveConsole(locals={"jtag_iface":jtag_iface}).interact()
