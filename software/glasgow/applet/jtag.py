@@ -34,9 +34,9 @@ class JTAGBus(Module):
             MultiReg(pads.tdo_t.i, self.tdo),
         ]
         if hasattr(pads, "trst_t"):
-            self.comb += [
+            self.sync += [
                 pads.trst_t.oe.eq(1),
-                pads.trst_t.o.eq(self.trst)
+                pads.trst_t.o.eq(~self.trst)
             ]
 
 
@@ -86,7 +86,7 @@ class JTAGSubtarget(Module):
         self.fsm.act("COMMAND",
             If((cmd & CMD_MASK) == CMD_RESET,
                 timer_stb.eq(1),
-                NextValue(bus.trst, 0),
+                NextValue(bus.trst, 1),
                 NextState("TEST-RESET")
             ).Elif(((cmd & CMD_MASK) == CMD_SHIFT_TMS) |
                    ((cmd & CMD_MASK) == CMD_SHIFT_TDIO),
@@ -97,7 +97,7 @@ class JTAGSubtarget(Module):
         )
         self.fsm.act("TEST-RESET",
             If(timer_rdy,
-                NextValue(bus.trst, 1),
+                NextValue(bus.trst, 0),
                 NextState("RECV-COMMAND")
             )
         )
@@ -197,6 +197,11 @@ class JTAGInterface:
 
     # Low-level operations
 
+    async def pulse_trst(self):
+        self._log("pulse trst")
+        await self.lower.write(struct.pack("<B",
+            CMD_RESET))
+
     async def shift_tms(self, tms_bits):
         tms_bits = bitarray(tms_bits, endian="little")
         self._log("shift tms=<%s>", tms_bits.to01())
@@ -247,6 +252,7 @@ class JTAGInterface:
     # State machine transitions
 
     async def _enter_run_test_idle(self):
+        await self.pulse_trst()
         await self.shift_tms("11111") # * -> Test-Logic-Reset
         await self.shift_tms("0") # Test-Logic-Reset -> Run-Test/Idle
 
