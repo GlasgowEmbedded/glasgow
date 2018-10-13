@@ -324,7 +324,8 @@ class JTAGInterface:
                     idcodes.append(None)
                     pass  # BYPASS
             else:
-                return None
+                self._log("too many idcodes")
+                return
 
             idcode_bits = first_bit + await self.shift_tdo(31, last=False)
             idcode, = struct.unpack("<L", idcode_bits.tobytes())
@@ -372,6 +373,61 @@ class JTAGInterface:
 
         return irs
 
+    async def select_tap(self, tap):
+        idcodes = await self.scan_idcode()
+        if not idcodes:
+            return
+
+        irs = await self.scan_ir(count=len(idcodes))
+        if not irs:
+            return
+
+        if tap >= len(irs):
+            self._log("tap %d not present on chain")
+            return
+
+        ir_offset, ir_length = irs[tap]
+        total_ir_length = sum(length for offset, length in irs)
+
+        dr_offset = tap
+        total_dr_length = len(idcodes)
+
+        bypass = bitarray("1", endian="little")
+        def affix(offset, length, total_length):
+            prefix = bypass * offset
+            suffix = bypass * (total_length - offset - length)
+            return prefix, suffix
+
+        return TAPInterface(self,
+            *affix(ir_offset, ir_length, total_ir_length),
+            *affix(dr_offset, 1,         total_dr_length))
+
+
+class TAPInterface:
+    def __init__(self, lower, ir_prefix, ir_suffix, dr_prefix, dr_suffix):
+        self.lower = lower
+        self._ir_prefix = ir_prefix
+        self._ir_suffix = ir_suffix
+        self._dr_prefix = dr_prefix
+        self._dr_suffix = dr_suffix
+
+    async def shift_ir_in(self, data):
+        data = bitarray(data, endian="little")
+        await self.lower.shift_ir_in(self._ir_prefix + data + self._ir_suffix)
+
+    async def shift_dr(self, data):
+        data = bitarray(data, endian="little")
+        data = await self.lower.shift_dr(self._dr_prefix + data + self._dr_suffix)
+        return data[len(self._dr_prefix):-len(self._dr_suffix)]
+
+    async def shift_dr_out(self, count):
+        data = await self.lower.shift_dr_out(len(self._dr_prefix) + count + len(self._dr_suffix))
+        return data[len(self._dr_prefix):-len(self._dr_suffix)-1]
+
+    async def shift_dr_in(self, data):
+        data = bitarray(data, endian="little")
+        await self.lower.shift_dr_in(self._dr_prefix + data + self._dr_suffix)
+
 
 class JTAGApplet(GlasgowApplet, name="jtag"):
     logger = logging.getLogger(__name__)
@@ -418,8 +474,14 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
             the count and (hopefully) identity of the devices in the scan chain.
             """)
 
-        p_operation.add_parser(
-            "repl", help="drop into Python shell; use `jtag_iface` to communicate")
+        p_jtag_repl = p_operation.add_parser(
+            "jtag-repl", help="drop into Python shell; use `jtag_iface` to communicate")
+
+        p_tap_repl = p_operation.add_parser(
+            "tap-repl", help="drop into Python shell; use `tap_iface` to communicate")
+        p_tap_repl.add_argument(
+            "tap", metavar="TAP-NO", type=int, default=0, nargs="?",
+            help="select TAP #TAP-NO for communication")
 
     async def interact(self, device, args, jtag_iface):
         await jtag_iface.pulse_trst()
@@ -435,10 +497,10 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
                 self.logger.warning("IR scan does not match DR scan")
                 return
 
-            for n, (idcode, (ir_offset, ir_length)) in enumerate(zip(idcodes, irs)):
+            for tap, (idcode, (ir_offset, ir_length)) in enumerate(zip(idcodes, irs)):
                 if idcode is None:
                     self.logger.info("TAP #%d: IR[%d] BYPASS",
-                                     n, ir_length)
+                                     tap, ir_length)
                 else:
                     mfg_id   = (idcode >>  1) &  0x7ff
                     mfg_name = jedec_mfg_name_from_bank_id(mfg_id >> 7, mfg_id & 0x7f) or \
@@ -446,12 +508,20 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
                     part_id  = (idcode >> 12) & 0xffff
                     version  = (idcode >> 28) &    0xf
                     self.logger.info("TAP #%d: IR[%d] IDCODE=%#010x",
-                                     n, ir_length, idcode)
+                                     tap, ir_length, idcode)
                     self.logger.info("manufacturer=%#05x (%s) part=%#06x version=%#03x",
                                      mfg_id, mfg_name, part_id, version)
 
-        if args.operation == "repl":
+        if args.operation == "jtag-repl":
             await AsyncInteractiveConsole(locals={"jtag_iface":jtag_iface}).interact()
+
+        if args.operation == "tap-repl":
+            tap_iface = await jtag_iface.select_tap(args.tap)
+            if not tap_iface:
+                self.logger.error("cannot select TAP #%d" % args.tap)
+                return
+
+            await AsyncInteractiveConsole(locals={"tap_iface":tap_iface}).interact()
 
 # -------------------------------------------------------------------------------------------------
 
