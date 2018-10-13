@@ -311,30 +311,32 @@ class JTAGInterface:
         self._log("scan idcode")
         await self._enter_shift_dr()
 
-        idcodes = []
-        idcode_bits = bitarray()
-        while len(idcodes) < max_idcodes:
+        try:
+            idcodes = []
+            idcode_bits = bitarray()
             while len(idcodes) < max_idcodes:
-                first_bit = await self.shift_tdo(1, last=False)
-                if first_bit[0]:
-                    self._log("found idcode")
-                    break # IDCODE
+                while len(idcodes) < max_idcodes:
+                    first_bit = await self.shift_tdo(1, last=False)
+                    if first_bit[0]:
+                        self._log("found idcode")
+                        break # IDCODE
+                    else:
+                        self._log("found bypass")
+                        idcodes.append(None)
+                        pass  # BYPASS
                 else:
-                    self._log("found bypass")
-                    idcodes.append(None)
-                    pass  # BYPASS
-            else:
-                self._log("too many idcodes")
-                return
+                    self._log("too many idcodes")
+                    return
 
-            idcode_bits = first_bit + await self.shift_tdo(31, last=False)
-            idcode, = struct.unpack("<L", idcode_bits.tobytes())
-            if idcode == 0xffffffff:
-                break
-            idcodes.append(idcode)
+                idcode_bits = first_bit + await self.shift_tdo(31, last=False)
+                idcode, = struct.unpack("<L", idcode_bits.tobytes())
+                if idcode == 0xffffffff:
+                    break
+                idcodes.append(idcode)
 
-        await self._leave_shift_xr()
-        return idcodes
+            return idcodes
+        finally:
+            await self._leave_shift_xr()
 
     async def scan_ir(self, count=None, max_length=128):
         await self.test_reset()
@@ -342,36 +344,40 @@ class JTAGInterface:
         self._log("scan ir")
         await self._enter_shift_ir()
 
-        ir_0, = await self.shift_tdo(1, last=False)
-        if not ir_0:
-            self._log("invalid ir[0]")
-            return
-
-        irs = []
-        ir_offset = 0
-        while count is None or len(irs) < count:
-            ir_1, = await self.shift_tdo(1, last=False)
-            if ir_1:
-                break
-
-            ir_length = 2
-            while ir_length < max_length:
-                ir_n, = await self.shift_tdo(1, last=False)
-                if ir_n:
-                    break
-                ir_length += 1
-            else:
-                self._log("overlong ir")
+        try:
+            ir_0, = await self.shift_tdo(1, last=False)
+            if not ir_0:
+                self._log("invalid ir[0]")
                 return
 
-            irs.append((ir_offset, ir_length))
-            ir_offset += ir_length
+            irs = []
+            ir_offset = 0
+            while count is None or len(irs) < count:
+                ir_1, = await self.shift_tdo(1, last=False)
+                if ir_1:
+                    break
 
-        if count is not None and len(irs) != count:
-            self._log("ir count does not match idcode count")
-            return
+                ir_length = 2
+                while ir_length < max_length:
+                    ir_n, = await self.shift_tdo(1, last=False)
+                    if ir_n:
+                        break
+                    ir_length += 1
+                else:
+                    self._log("overlong ir")
+                    return
 
-        return irs
+                irs.append((ir_offset, ir_length))
+                ir_offset += ir_length
+
+            if count is not None and len(irs) != count:
+                self._log("ir count does not match idcode count")
+                return
+
+            return irs
+        finally:
+            await self.shift_tdo(1, last=True)
+            await self._leave_shift_xr()
 
     async def select_tap(self, tap):
         idcodes = await self.scan_idcode()
@@ -410,6 +416,9 @@ class TAPInterface:
         self._ir_suffix = ir_suffix
         self._dr_prefix = dr_prefix
         self._dr_suffix = dr_suffix
+
+    async def test_reset(self):
+        await self.lower.test_reset()
 
     async def shift_ir_in(self, data):
         data = bitarray(data, endian="little")
