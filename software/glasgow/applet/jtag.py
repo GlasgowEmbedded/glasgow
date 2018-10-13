@@ -394,10 +394,11 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
                         self.logger.info("TAP #%d: BYPASS", n)
                     else:
                         mfg_id   = (idcode >>  1) &  0x7ff
-                        mfg_name = jedec_mfg_name_from_bank_id(mfg_id >> 7, mfg_id & 0x7f)
+                        mfg_name = jedec_mfg_name_from_bank_id(mfg_id >> 7, mfg_id & 0x7f) or \
+                                        "unknown"
                         part_id  = (idcode >> 12) & 0xffff
                         version  = (idcode >> 28) &    0xf
-                        self.logger.info("TAP #%d: IDCODE=%#10x", n, idcode)
+                        self.logger.info("TAP #%d: IDCODE=%#010x", n, idcode)
                         self.logger.info("manufacturer=%#05x (%s) part=%#06x version=%#03x",
                                          mfg_id, mfg_name, part_id, version)
 
