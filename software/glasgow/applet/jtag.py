@@ -9,6 +9,7 @@ from migen.genlib.fsm import FSM
 from . import *
 from ..gateware.pads import *
 from ..database.jedec import *
+from ..pyrepl import *
 
 
 class JTAGBus(Module):
@@ -371,6 +372,9 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
             the count and (hopefully) identity of the devices in the scan chain.
             """)
 
+        p_operation.add_parser(
+            "repl", help="drop into Python shell; use `jtag_iface` to communicate")
+
     async def interact(self, device, args, jtag_iface):
         if args.operation == "scan":
             await jtag_iface.test_reset()
@@ -385,6 +389,9 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
                     self.logger.info("TAP #%d: IDCODE=%#10x", n, idcode)
                     self.logger.info("manufacturer=%#05x (%s) part=%#06x version=%#03x",
                                      mfg_id, mfg_name, part_id, version)
+
+        if args.operation == "repl":
+            await AsyncInteractiveConsole(locals={"jtag_iface":jtag_iface}).interact()
 
 # -------------------------------------------------------------------------------------------------
 
