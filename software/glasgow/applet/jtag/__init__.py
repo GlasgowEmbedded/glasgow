@@ -346,6 +346,7 @@ class JTAGInterface:
 
             return idcodes
         finally:
+            await self.shift_tdo(1, last=True)
             await self._leave_shift_xr()
 
     async def scan_ir(self, count=None, max_length=128):
@@ -389,6 +390,34 @@ class JTAGInterface:
             await self.shift_tdo(1, last=True)
             await self._leave_shift_xr()
 
+    async def scan_dr_length(self, max_length=128):
+        self._log("scan dr length")
+
+        try:
+            await self._enter_shift_dr()
+
+            # Fill the entire DR chain with ones.
+            data = await self.shift_tdio(bitarray("1") * max_length, last=False)
+
+            length = 0
+            while length < max_length:
+                out = await self.shift_tdio(bitarray("0"), last=False)
+                if out[0] == 0:
+                    break
+                length += 1
+            else:
+                self._log("overlong dr")
+                return
+
+            # Restore the old contents, just in case this matters.
+            await self.shift_tdi(data[:length], last=True)
+
+            assert length > 0
+            return length
+
+        finally:
+            await self._leave_shift_xr()
+
     async def select_tap(self, tap):
         idcodes = await self.scan_idcode()
         if not idcodes:
@@ -422,10 +451,12 @@ class JTAGInterface:
 class TAPInterface:
     def __init__(self, lower, ir_prefix, ir_suffix, dr_prefix, dr_suffix):
         self.lower = lower
-        self._ir_prefix = ir_prefix
-        self._ir_suffix = ir_suffix
-        self._dr_prefix = dr_prefix
-        self._dr_suffix = dr_suffix
+        self._ir_prefix   = ir_prefix
+        self._ir_suffix   = ir_suffix
+        self._ir_overhead = len(ir_prefix) + len(ir_suffix)
+        self._dr_prefix   = dr_prefix
+        self._dr_suffix   = dr_suffix
+        self._dr_overhead = len(dr_prefix) + len(dr_suffix)
 
     async def test_reset(self):
         await self.lower.test_reset()
@@ -443,8 +474,7 @@ class TAPInterface:
             return data[len(self._dr_prefix):]
 
     async def read_dr(self, count, idempotent=False):
-        data = await self.lower.read_dr(len(self._dr_prefix) + count + len(self._dr_suffix),
-                                        idempotent=idempotent)
+        data = await self.lower.read_dr(self._dr_overhead + count, idempotent=idempotent)
         if self._dr_suffix:
             return data[len(self._dr_prefix):-len(self._dr_suffix)]
         else:
@@ -453,6 +483,13 @@ class TAPInterface:
     async def write_dr(self, data):
         data = bitarray(data, endian="little")
         await self.lower.write_dr(self._dr_prefix + data + self._dr_suffix)
+
+    async def scan_dr_length(self, max_length=128):
+        length = await self.lower.scan_dr_length(self._dr_overhead + max_length)
+        if length is None:
+            return
+        assert length > self._dr_overhead
+        return length - self._dr_overhead
 
 
 class JTAGApplet(GlasgowApplet, name="jtag"):
