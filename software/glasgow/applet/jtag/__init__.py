@@ -6,10 +6,10 @@ from migen import *
 from migen.genlib.cdc import MultiReg
 from migen.genlib.fsm import FSM
 
-from . import *
-from ..gateware.pads import *
-from ..database.jedec import *
-from ..pyrepl import *
+from .. import *
+from ...gateware.pads import *
+from ...database.jedec import *
+from ...pyrepl import *
 
 
 class JTAGBus(Module):
@@ -270,35 +270,28 @@ class JTAGInterface:
         self._log("test reset")
         await self._enter_run_test_idle()
 
-    async def shift_ir_out(self, count):
-        self._log("shift ir")
-        await self._enter_shift_ir()
-        data = await self.shift_tdo(count)
-        await self._leave_shift_xr()
-        return data
-
-    async def shift_ir_in(self, data):
-        self._log("shift ir")
+    async def write_ir(self, data):
+        self._log("write ir")
         await self._enter_shift_ir()
         await self.shift_tdi(data)
         await self._leave_shift_xr()
 
-    async def shift_dr(self, data):
-        self._log("shift dr")
+    async def exchange_dr(self, data):
+        self._log("exchange dr")
         await self._enter_shift_dr()
         data = await self.shift_tdio(data)
         await self._leave_shift_xr()
         return data
 
-    async def shift_dr_out(self, count):
-        self._log("shift dr")
+    async def read_dr(self, count):
+        self._log("read dr")
         await self._enter_shift_dr()
         data = await self.shift_tdo(count)
         await self._leave_shift_xr()
         return data
 
-    async def shift_dr_in(self, data):
-        self._log("shift dr")
+    async def write_dr(self, data):
+        self._log("write dr")
         await self._enter_shift_dr()
         await self.shift_tdi(data)
         await self._leave_shift_xr()
@@ -395,7 +388,7 @@ class JTAGInterface:
         ir_offset, ir_length = irs[tap]
         total_ir_length = sum(length for offset, length in irs)
 
-        dr_offset = tap
+        dr_offset, dr_length = tap, 1
         total_dr_length = len(idcodes)
 
         bypass = bitarray("1", endian="little")
@@ -406,7 +399,7 @@ class JTAGInterface:
 
         return TAPInterface(self,
             *affix(ir_offset, ir_length, total_ir_length),
-            *affix(dr_offset, 1,         total_dr_length))
+            *affix(dr_offset, dr_length, total_dr_length))
 
 
 class TAPInterface:
@@ -420,22 +413,22 @@ class TAPInterface:
     async def test_reset(self):
         await self.lower.test_reset()
 
-    async def shift_ir_in(self, data):
+    async def write_ir(self, data):
         data = bitarray(data, endian="little")
-        await self.lower.shift_ir_in(self._ir_prefix + data + self._ir_suffix)
+        await self.lower.write_ir(self._ir_prefix + data + self._ir_suffix)
 
-    async def shift_dr(self, data):
+    async def exchange_dr(self, data):
         data = bitarray(data, endian="little")
         data = await self.lower.shift_dr(self._dr_prefix + data + self._dr_suffix)
         return data[len(self._dr_prefix):-len(self._dr_suffix)]
 
-    async def shift_dr_out(self, count):
-        data = await self.lower.shift_dr_out(len(self._dr_prefix) + count + len(self._dr_suffix))
+    async def read_dr(self, count):
+        data = await self.lower.read_dr(len(self._dr_prefix) + count + len(self._dr_suffix))
         return data[len(self._dr_prefix):-len(self._dr_suffix)-1]
 
-    async def shift_dr_in(self, data):
+    async def write_dr(self, data):
         data = bitarray(data, endian="little")
-        await self.lower.shift_dr_in(self._dr_prefix + data + self._dr_suffix)
+        await self.lower.write_dr(self._dr_prefix + data + self._dr_suffix)
 
 
 class JTAGApplet(GlasgowApplet, name="jtag"):
@@ -489,8 +482,8 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
         p_tap_repl = p_operation.add_parser(
             "tap-repl", help="drop into Python shell; use `tap_iface` to communicate")
         p_tap_repl.add_argument(
-            "tap", metavar="TAP-NO", type=int, default=0, nargs="?",
-            help="select TAP #TAP-NO for communication")
+            "tap_index", metavar="INDEX", type=int, default=0, nargs="?",
+            help="select TAP #INDEX for communication (default: %(default)s)")
 
     async def interact(self, device, args, jtag_iface):
         await jtag_iface.pulse_trst()
@@ -506,10 +499,10 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
                 self.logger.warning("IR scan does not match DR scan")
                 return
 
-            for tap, (idcode, (ir_offset, ir_length)) in enumerate(zip(idcodes, irs)):
+            for tap_index, (idcode, (ir_offset, ir_length)) in enumerate(zip(idcodes, irs)):
                 if idcode is None:
                     self.logger.info("TAP #%d: IR[%d] BYPASS",
-                                     tap, ir_length)
+                                     tap_index, ir_length)
                 else:
                     mfg_id   = (idcode >>  1) &  0x7ff
                     mfg_name = jedec_mfg_name_from_bank_num(mfg_id >> 7, mfg_id & 0x7f) or \
@@ -517,7 +510,7 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
                     part_id  = (idcode >> 12) & 0xffff
                     version  = (idcode >> 28) &    0xf
                     self.logger.info("TAP #%d: IR[%d] IDCODE=%#010x",
-                                     tap, ir_length, idcode)
+                                     tap_index, ir_length, idcode)
                     self.logger.info("manufacturer=%#05x (%s) part=%#06x version=%#03x",
                                      mfg_id, mfg_name, part_id, version)
 
@@ -525,9 +518,9 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
             await AsyncInteractiveConsole(locals={"jtag_iface":jtag_iface}).interact()
 
         if args.operation == "tap-repl":
-            tap_iface = await jtag_iface.select_tap(args.tap)
+            tap_iface = await jtag_iface.select_tap(args.tap_index)
             if not tap_iface:
-                self.logger.error("cannot select TAP #%d" % args.tap)
+                self.logger.error("cannot select TAP #%d" % args.tap_index)
                 return
 
             await AsyncInteractiveConsole(locals={"tap_iface":tap_iface}).interact()
