@@ -1,3 +1,6 @@
+# Ref: MIPS® EJTAG Specification
+# Document Number: MD00047 Revision 6.10
+
 import struct
 import logging
 from collections import defaultdict
@@ -5,6 +8,7 @@ from bitarray import bitarray
 
 from . import JTAGApplet
 from .. import *
+from ...arch.mips import *
 from ...support.bits import *
 from ...support.aobject import *
 from ...pyrepl import *
@@ -77,8 +81,17 @@ DR_CONTROL = Bitfield("DR_CONTROL", 4, [
 ])
 
 
-DRSEG_addr     = 0xffff_ffff_ff30_0000
-DRSEG_DCR_addr = DRSEG_addr + 0x0000
+CP0_Debug_addr  = (23, 0)
+CP0_Debug2_addr = (23, 6)
+CP0_DEPC_addr   = (24, 0)
+CP0_DESAVE_addr = (31, 0)
+
+
+DMSEG_addr      = 0xffff_ffff_ff20_0000
+DMSEG_TRAP_addr = DMSEG_addr + 0x0200
+
+DRSEG_addr      = 0xffff_ffff_ff30_0000
+DRSEG_DCR_addr  = DRSEG_addr + 0x0000
 
 
 class EJTAGInterface(aobject):
@@ -100,6 +113,8 @@ class EJTAGInterface(aobject):
         await self._enable_probe()
 
         self.bits      = 64 if self._impcode.MIPS32_64 else 32
+        self._prec     = self.bits // 4
+        self._ws       = self.bits // 8
         self.cpunum    = self._impcode.TypeInfo
         self.ejtag_ver = EJTAGver_values[self._impcode.EJTAGver]
 
@@ -145,18 +160,17 @@ class EJTAGInterface(aobject):
     async def _read_address(self):
         await self.lower.write_ir(IR_ADDRESS)
         address_bits = await self.lower.read_dr(self._address_length)
-        # Sign-extend the address, so that the kseg addresses are compatible between 32-bit
-        # and 64-bit processors. (Yes, kseg addresses are intended to be negative.)
         address_bits.extend(address_bits[-1:] * (64 - self._address_length))
         address, = struct.unpack("<q", address_bits.tobytes())
-        self._log("read ADDRESS %#018x", address & 0xffff_ffff_ffff_ffff)
+        address &= ((1 << self.bits) - 1)
+        self._log("read ADDRESS %#0.*x", self._prec, address)
         return address
 
     async def _write_address(self, address):
-        # See _read_address. NB: ADDRESS is only writable in EJTAG v1.x/2.0.
-        self._log("write ADDRESS %#018x", address & 0xffff_ffff_ffff_ffff)
+        # See _read_address. NB: ADDRESS is only writable in EJTAG v1.x/2.0 with DMAAcc.
+        self._log("write ADDRESS %#0.*x", self._prec, address)
         address_bits = bitarray(endian="little")
-        address_bits.frombytes(struct.pack("<Q", address & 0xffff_ffff_ffff_ffff))
+        address_bits.frombytes(struct.pack("<Q", address))
         await self.lower.write_ir(IR_ADDRESS)
         await self.lower.write_dr(address_bits[:self._address_length])
 
@@ -167,11 +181,11 @@ class EJTAGInterface(aobject):
             data, = struct.unpack("<L", data_bits.tobytes())
         elif self.bits == 64:
             data, = struct.unpack("<Q", data_bits.tobytes())
-        self._log("read DATA %#0.*x", self.bits // 4, data)
+        self._log("read DATA %#0.*x", self._prec, data)
         return data
 
     async def _write_data(self, data):
-        self._log("write DATA %#0.*x", self.bits // 4, data)
+        self._log("write DATA %#0.*x", self._prec, data)
         await self.lower.write_ir(IR_DATA)
         data_bits = bitarray(endian="little")
         if self.bits == 32:
@@ -180,26 +194,26 @@ class EJTAGInterface(aobject):
             data_bits.frombytes(struct.pack("<Q", data))
         await self.lower.write_dr(data_bits)
 
-    async def _dma_read(self, address, size):
-        self._log("DMA: read address=%#018x size=%d", address, size)
+    async def _dmaacc_read(self, address, size):
+        self._log("DMAAcc: read address=%#0.*x size=%d", self._prec, address, size)
         await self._write_address(address)
         await self._exchange_control(DMAAcc=1, DRWn=1, Dsz=size, DStrt=1)
         for _ in range(3):
             control = await self._exchange_control(DMAAcc=1)
             if not control.DStrt: break
         else:
-            raise GlasgowAppletError("DMA: read hang")
+            raise GlasgowAppletError("DMAAcc: read hang")
         if control.DErr:
-            raise GlasgowAppletError("DMA: read error address=%#018x size=%d" %
-                                     (address, size))
+            raise GlasgowAppletError("DMAAcc: read error address=%#0.*x size=%d" %
+                                     (self._prec, address, size))
         data = await self._read_data()
-        self._log("DMA: data=%#0.*x", self.bits // 4, data)
+        self._log("DMAAcc: data=%#0.*x", self._prec, data)
         await self._exchange_control(DMAAcc=0)
         return data
 
-    async def _dma_write(self, address, size, data):
-        self._log("DMA: write address=%#018x size=%d data=%#0.*x",
-                  address, size, self.bits // 4, data)
+    async def _dma_accwrite(self, address, size, data):
+        self._log("DMAAcc: write address=%#0.*x size=%d data=%#0.*x",
+                  self._prec, address, size, self._prec, data)
         await self._write_address(address)
         await self._write_data(data)
         await self._exchange_control(DMAAcc=1, DRWn=0, Dsz=size, DStrt=1)
@@ -207,10 +221,10 @@ class EJTAGInterface(aobject):
             control = await self._exchange_control(DMAAcc=1)
             if not control.DStrt: break
         else:
-            raise GlasgowAppletError("DMA: write hang")
+            raise GlasgowAppletError("DMAAcc: write hang")
         if control.DErr:
-            raise GlasgowAppletError("DMA: write error address=%#018x size=%d" %
-                                     (address, size))
+            raise GlasgowAppletError("DMAAcc: write error address=%#0.*x size=%d" %
+                                     (self._prec, address, size))
         await self._exchange_control(DMAAcc=0)
 
     async def debug_break(self):
@@ -220,14 +234,108 @@ class EJTAGInterface(aobject):
             # Undocumented sequence to disable memory protection for dmseg. The bit 2 is
             # documented as NMIpend, but on EJTAG 1.x/2.0 it is actually MP. It is only possible
             # to clear it via DMAAcc because PrAcc requires debug mode to already work.
-            dcr  = await self._dma_read(DRSEG_DCR_addr, 2)
+            dcr  = await self._dmaacc_read(DRSEG_DCR_addr, 2)
             dcr &= ~(1<<2)
-            await self._dma_write(DRSEG_DCR_addr, 2, dcr)
+            await self._dma_accwrite(DRSEG_DCR_addr, 2, dcr)
 
         await self._exchange_control(EjtagBrk=1)
         control = await self._exchange_control()
         if control.EjtagBrk:
             raise GlasgowAppletError("failed to enter debug mode")
+
+    async def run_pracc(self, code, data=[], max_steps=1024):
+        temp     = [0] * 0x80
+
+        code_beg = (DMSEG_addr + 0x0200)  & ((1 << self.bits) - 1)
+        code_end = code_beg   + len(code) * 4
+        temp_beg = (DMSEG_addr + 0x1000)  & ((1 << self.bits) - 1)
+        temp_end = temp_beg   + len(temp) * 4
+        data_beg = (DMSEG_addr + 0x1200)  & ((1 << self.bits) - 1)
+        data_end = data_beg   + len(data) * 4
+
+        for step in range(max_steps):
+            for _ in range(3):
+                control = await self._exchange_control()
+                if step == 0 and not control.DM:
+                    raise GlasgowAppletError("PrAcc: DM low on entry")
+                elif not control.DM:
+                    self._log("PrAcc: debug return")
+                    return
+                elif control.PrAcc:
+                    break
+            else:
+                raise GlasgowAppletError("PrAcc: PrAcc stuck low")
+
+            address = await self._read_address()
+            if step > 0 and address == code_beg:
+                self._log("PrAcc: debug suspend")
+                break
+
+            if address in range(code_beg, code_end):
+                area, area_beg, area_wr, area_name = code, code_beg, False, "code"
+            elif address in range(temp_beg, temp_end):
+                area, area_beg, area_wr, area_name = temp, temp_beg, True,  "temp"
+            elif address in range(data_beg, data_end):
+                area, area_beg, area_wr, area_name = data, data_beg, True,  "data"
+            else:
+                raise GlasgowAppletError("PrAcc: address %#0.*x out of range" %
+                                         (self._prec, address))
+
+            area_off = (address - area_beg) // 4
+            if control.PRnW:
+                if not area_wr:
+                    raise GlasgowAppletError("PrAcc: write access to %s at %#0.*x" %
+                                             (area_name, self._prec, address))
+
+                word = await self._read_data()
+                self._log("PrAcc: write %s [%#06x] = %#0.*x",
+                          area_name, address & 0xffff, self._prec, word)
+                area[area_off] = word
+            else:
+                self._log("PrAcc: read %s [%#06x] = %#0.*x",
+                          area_name, address & 0xffff, self._prec, area[area_off])
+                await self._write_data(area[area_off])
+
+            await self._exchange_control(PrAcc=0)
+
+        else:
+            raise GlasgowAppletError("PrAcc: step limit exceeded")
+
+        return data
+
+    async def _pracc_prologue(self):
+        await self.run_pracc(code=[
+            MTC0 (1, *CP0_DESAVE_addr),
+            LUI  (1, 0xff20),
+            ORI  (1, 1, 0x1200),
+            B    (-4),
+            NOP  (),
+            NOP  (),
+        ])
+
+    async def _pracc_epilogue(self):
+        await self.run_pracc(code=[
+            MFC0 (1, *CP0_DESAVE_addr),
+            DERET(),
+            NOP  (),
+            NOP  (),
+            NOP  (),
+        ])
+
+    async def _pracc_read_regs(self):
+        return await self.run_pracc(code=[
+            SW   (2, self._ws *  2, 1),
+            MFC0 (2, *CP0_DESAVE_addr),
+            SW   (2, self._ws *  1, 1),
+            *[SW (n, self._ws *  n, 1) for n in range(3, 32)],
+            MFC0 (2, *CP0_DEPC_addr),
+            SW   (2, self._ws * 32, 1),
+            LW   (2, self._ws *  2, 1),
+            NOP  (),
+            B    (-37),
+            NOP  (),
+            NOP  (),
+        ], data=[0] * 33)
 
 
 class JTAGMIPSApplet(JTAGApplet, name="jtag-mips"):
@@ -259,12 +367,27 @@ class JTAGMIPSApplet(JTAGApplet, name="jtag-mips"):
     def add_interact_arguments(cls, parser):
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
+        p_regs = p_operation.add_parser(
+            "state", help="dump registers")
+
         p_repl = p_operation.add_parser(
             "repl", help="drop into Python shell; use `ejtag_iface` to communicate")
 
     async def interact(self, device, args, ejtag_iface):
         self.logger.info("found MIPS%d CPU %#x (EJTAG version %s)",
                          ejtag_iface.bits, ejtag_iface.cpunum, ejtag_iface.ejtag_ver)
+
+        if args.operation == "state":
+            await ejtag_iface.debug_break()
+            await ejtag_iface._pracc_prologue()
+            regs = await ejtag_iface._pracc_read_regs()
+            await ejtag_iface._pracc_epilogue()
+
+            for reg, value in enumerate(regs):
+                if reg == 32:
+                    print("$pc = {:08x}".format(value))
+                else:
+                    print("${:<2} = {:08x}".format(reg, value))
 
         if args.operation == "repl":
             await AsyncInteractiveConsole(locals={"ejtag_iface":ejtag_iface}).interact()
