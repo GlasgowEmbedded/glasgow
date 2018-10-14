@@ -283,10 +283,17 @@ class JTAGInterface:
         await self._leave_shift_xr()
         return data
 
-    async def read_dr(self, count):
-        self._log("read dr")
+    async def read_dr(self, count, idempotent=False):
+        if idempotent:
+            self._log("read dr idempotent")
+        else:
+            self._log("read dr")
         await self._enter_shift_dr()
-        data = await self.shift_tdo(count)
+        data = await self.shift_tdo(count, last=not idempotent)
+        if idempotent:
+            # Shift what we just read back in. This is useful to avoid disturbing any bits
+            # in R/W DRs when we go through Update-DR.
+            await self.shift_tdi(data)
         await self._leave_shift_xr()
         return data
 
@@ -422,8 +429,9 @@ class TAPInterface:
         data = await self.lower.shift_dr(self._dr_prefix + data + self._dr_suffix)
         return data[len(self._dr_prefix):-len(self._dr_suffix)]
 
-    async def read_dr(self, count):
-        data = await self.lower.read_dr(len(self._dr_prefix) + count + len(self._dr_suffix))
+    async def read_dr(self, count, idempotent=False):
+        data = await self.lower.read_dr(len(self._dr_prefix) + count + len(self._dr_suffix),
+                                        idempotent=idempotent)
         return data[len(self._dr_prefix):-len(self._dr_suffix)-1]
 
     async def write_dr(self, data):
