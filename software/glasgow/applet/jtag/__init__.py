@@ -436,13 +436,19 @@ class TAPInterface:
 
     async def exchange_dr(self, data):
         data = bitarray(data, endian="little")
-        data = await self.lower.shift_dr(self._dr_prefix + data + self._dr_suffix)
-        return data[len(self._dr_prefix):-len(self._dr_suffix)]
+        data = await self.lower.exchange_dr(self._dr_prefix + data + self._dr_suffix)
+        if self._dr_suffix:
+            return data[len(self._dr_prefix):-len(self._dr_suffix)]
+        else:
+            return data[len(self._dr_prefix):]
 
     async def read_dr(self, count, idempotent=False):
         data = await self.lower.read_dr(len(self._dr_prefix) + count + len(self._dr_suffix),
                                         idempotent=idempotent)
-        return data[len(self._dr_prefix):-len(self._dr_suffix)-1]
+        if self._dr_suffix:
+            return data[len(self._dr_prefix):-len(self._dr_suffix)]
+        else:
+            return data[len(self._dr_prefix):]
 
     async def write_dr(self, data):
         data = bitarray(data, endian="little")
