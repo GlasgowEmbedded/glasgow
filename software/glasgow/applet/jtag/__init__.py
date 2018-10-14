@@ -513,8 +513,8 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
         access.add_pin_argument(parser, "trst")
 
         parser.add_argument(
-            "-f", "--frequency", metavar="FREQ", type=int, default=100000,
-            help="set clock period to FREQ Hz (default: %(default)s)")
+            "-f", "--frequency", metavar="FREQ", type=int, default=100,
+            help="set clock period to FREQ kHz (default: %(default)s)")
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
@@ -522,7 +522,7 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
-            period_cyc=target.sys_clk_freq // args.frequency,
+            period_cyc=target.sys_clk_freq // (args.frequency * 1000),
         ))
 
     async def run(self, device, args):
