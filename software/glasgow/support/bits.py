@@ -46,6 +46,11 @@ class _PackedUnion(Union):
 
         super().__init__(bits_cls(**fields))
 
+    def copy(self):
+        pack = self.__class__()
+        pack._bytes_[:] = self._bytes_[:]
+        return pack
+
     def to_bytes(self):
         return bytes(self._bytes_)
 
@@ -57,12 +62,18 @@ class _PackedUnion(Union):
         data.frombytes(self.to_bytes())
         return data
 
-    def bits_repr(self):
+    def bits_repr(self, omit_zero=False):
         fields = []
         for f_name, f_type, f_width in self._bits_._fields_:
             if f_name.startswith("_reserved_"):
                 continue
-            fields.append("{}={:0{}b}".format(f_name, getattr(self._bits_, f_name), f_width))
+
+            f_value = getattr(self._bits_, f_name)
+            if omit_zero and not f_value:
+                continue
+
+            fields.append("{}={:0{}b}".format(f_name, f_value, f_width))
+
         return " ".join(fields)
 
     def __repr__(self):
@@ -144,3 +155,10 @@ class BitfieldTestCase(unittest.TestCase):
         bf = Bitfield("bf", 2, [("a", 3), ("b", 5)])
         x = bf(1, 2)
         self.assertEqual(repr(x), "<%s.bf a=001 b=00010>" % __name__)
+
+    def test_copy(self):
+        bf = Bitfield("bf", 2, [("a", 3), ("b", 5)])
+        x1 = bf(1, 2)
+        x2 = x1.copy()
+        self.assertFalse(x1 is x2)
+        self.assertEqual(x1, x2)
