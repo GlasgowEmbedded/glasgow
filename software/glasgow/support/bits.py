@@ -46,18 +46,18 @@ class _PackedUnion(Union):
 
         super().__init__(bits_cls(**fields))
 
-    def as_bytes(self):
+    def to_bytes(self):
         return bytes(self._bytes_)
 
-    def as_bytearray(self):
+    def to_bytearray(self):
         return bytearray(self._bytes_)
 
-    def as_bitarray(self):
+    def to_bitarray(self):
         data = bitarray(endian="little")
-        data.frombytes(self.as_bytes())
+        data.frombytes(self.to_bytes())
         return data
 
-    def _bits_repr_(self):
+    def bits_repr(self):
         fields = []
         for f_name, f_type, f_width in self._bits_._fields_:
             if f_name.startswith("_reserved_"):
@@ -66,7 +66,7 @@ class _PackedUnion(Union):
         return " ".join(fields)
 
     def __repr__(self):
-        return "<{}.{} {}>".format(self.__module__, self.__class__.__name__, self._bits_repr_())
+        return "<{}.{} {}>".format(self.__module__, self.__class__.__name__, self.bits_repr())
 
     def __eq__(self, other):
         return self._bytes_[:] == other._bytes_[:]
@@ -121,24 +121,24 @@ class BitfieldTestCase(unittest.TestCase):
     def test_bytes(self):
         bf = Bitfield("bf", 2, [("a", 3), ("b", 5)])
         x = bf(1, 2)
-        self.assertIsInstance(x.as_bytes(), bytes)
-        self.assertEqual(x.as_bytes(), b"\x11\x00")
-        self.assertEqual(bf.from_bytes(x.as_bytes()), x)
+        self.assertIsInstance(x.to_bytes(), bytes)
+        self.assertEqual(x.to_bytes(), b"\x11\x00")
+        self.assertEqual(bf.from_bytes(x.to_bytes()), x)
 
     def test_bytearray(self):
         bf = Bitfield("bf", 2, [("a", 3), ("b", 5)])
         x = bf(1, 2)
-        self.assertIsInstance(x.as_bytearray(), bytearray)
-        self.assertEqual(x.as_bytearray(), bytearray(b"\x11\x00"))
-        self.assertEqual(bf.from_bytearray(x.as_bytearray()), x)
+        self.assertIsInstance(x.to_bytearray(), bytearray)
+        self.assertEqual(x.to_bytearray(), bytearray(b"\x11\x00"))
+        self.assertEqual(bf.from_bytearray(x.to_bytearray()), x)
 
     def test_bitaray(self):
         bf = Bitfield("bf", 2, [("a", 3), ("b", 5)])
         x = bf(1, 2)
-        self.assertIsInstance(x.as_bitarray(), bitarray)
-        self.assertEqual(x.as_bitarray().endian(), "little")
-        self.assertEqual(x.as_bitarray(), bitarray(b"1000100000000000", endian="little"))
-        self.assertEqual(bf.from_bitarray(x.as_bitarray()), x)
+        self.assertIsInstance(x.to_bitarray(), bitarray)
+        self.assertEqual(x.to_bitarray().endian(), "little")
+        self.assertEqual(x.to_bitarray(), bitarray(b"1000100000000000", endian="little"))
+        self.assertEqual(bf.from_bitarray(x.to_bitarray()), x)
 
     def test_repr(self):
         bf = Bitfield("bf", 2, [("a", 3), ("b", 5)])
