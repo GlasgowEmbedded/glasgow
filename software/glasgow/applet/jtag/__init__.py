@@ -192,6 +192,8 @@ class JTAGInterface:
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
+        self._current_ir = None
+
     def _log(self, message, *args):
         self._logger.log(self._level, "JTAG: " + message, *args)
 
@@ -201,6 +203,7 @@ class JTAGInterface:
         self._log("pulse trst")
         await self.lower.write(struct.pack("<B",
             CMD_RESET))
+        self._current_ir = None
 
     async def shift_tms(self, tms_bits):
         tms_bits = bitarray(tms_bits, endian="little")
@@ -244,8 +247,8 @@ class JTAGInterface:
         self._log("shift tdo=<%s>", tdo_bits.to01())
         return tdo_bits
 
-    async def clock(self, count):
-        self._log("clock count=%d", count)
+    async def shift_td(self, count):
+        self._log("shift td count=%d", count)
         await self.lower.write(struct.pack("<BH",
             CMD_SHIFT_TDIO, count))
 
@@ -269,8 +272,15 @@ class JTAGInterface:
     async def test_reset(self):
         self._log("test reset")
         await self._enter_run_test_idle()
+        self._current_ir = None
 
     async def write_ir(self, data):
+        if data == self._current_ir:
+            self._log("write ir (elided)")
+            return
+        else:
+            self._current_ir = bitarray(data, endian="little")
+
         self._log("write ir")
         await self._enter_shift_ir()
         await self.shift_tdi(data)
