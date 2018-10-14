@@ -292,7 +292,7 @@ async def _main():
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO + args.quiet * 10 - args.verbose * 10)
     handler = logging.StreamHandler()
-    formatter_args = {"fmt": "[{levelname:>8s}] {name:s}: {message:s}", "style": "{"}
+    formatter_args = {"fmt": "{levelname[0]:s}: {name:s}: {message:s}", "style": "{"}
     if sys.stderr.isatty() and sys.platform != 'win32':
         handler.setFormatter(ANSIColorFormatter(**formatter_args))
     else:
