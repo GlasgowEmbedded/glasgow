@@ -98,6 +98,9 @@ class JTAGSubtarget(Module):
         self.fsm.act("TEST-RESET",
             If(timer_rdy,
                 NextValue(bus.trst, 0),
+                # IEEE 1149.1 3.6.1 (d): "To ensure deterministic operation of the test logic,
+                # TMS should be held at 1 while the signal applied at TRST* changes from 0 to 1."
+                NextValue(bus.tms,  1),
                 NextState("RECV-COMMAND")
             )
         )
