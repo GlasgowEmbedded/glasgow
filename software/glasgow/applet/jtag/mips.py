@@ -96,27 +96,27 @@ DRSEG_DCR_addr  = DRSEG_addr + 0x0000
 
 class EJTAGInterface(aobject):
     async def __init__(self, interface, logger):
-        self.lower   = interface
-        self._logger = logger
-        self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+        self.lower    = interface
+        self._logger  = logger
+        self._level   = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
         self._control = DR_CONTROL()
-
+        self._state   = "Probe"
         await self._probe()
 
     def _log(self, message, *args):
         self._logger.log(self._level, "EJTAG: " + message, *args)
 
-    async def _probe(self):
-        await self._read_impcode()
-        await self._scan_address_length()
-        await self._enable_probe()
+    def _check_state(self, action, *states):
+        if self._state not in states:
+            raise GlasgowAppletError("cannot %s: not in %s state" %
+                                     (action, ", ".join(states)))
 
-        self.bits      = 64 if self._impcode.MIPS32_64 else 32
-        self._prec     = self.bits // 4
-        self._ws       = self.bits // 8
-        self.cpunum    = self._impcode.TypeInfo
-        self.ejtag_ver = EJTAGver_values[self._impcode.EJTAGver]
+    def _change_state(self, state):
+        self._log("set state %s", state)
+        self._state = state
+
+    # Low-level register manipulation
 
     async def _read_impcode(self):
         await self.lower.write_ir(IR_IMPCODE)
@@ -162,7 +162,7 @@ class EJTAGInterface(aobject):
         address_bits = await self.lower.read_dr(self._address_length)
         address_bits.extend(address_bits[-1:] * (64 - self._address_length))
         address, = struct.unpack("<q", address_bits.tobytes())
-        address &= ((1 << self.bits) - 1)
+        address &= self._mask
         self._log("read ADDRESS %#0.*x", self._prec, address)
         return address
 
@@ -227,7 +227,31 @@ class EJTAGInterface(aobject):
                                      (self._prec, address, size))
         await self._exchange_control(DMAAcc=0)
 
-    async def debug_break(self):
+    # Target state management
+
+    async def _probe(self):
+        self._check_state("probe", "Probe")
+
+        await self._read_impcode()
+        await self._scan_address_length()
+        await self._enable_probe()
+
+        self.bits      = 64 if self._impcode.MIPS32_64 else 32
+        self._prec     = self.bits // 4
+        self._ws       = self.bits // 8
+        self._mask     = ((1 << self.bits) - 1)
+        self.cpunum    = self._impcode.TypeInfo
+        self.ejtag_ver = EJTAGver_values[self._impcode.EJTAGver]
+
+        control = await self._exchange_control()
+        if control.DM:
+            raise GlasgowAppletError("target already in debug mode")
+        else:
+            self._change_state("Running")
+
+    async def _ejtag_debug_interrupt(self):
+        self._check_state("assert debug interrupt", "Running")
+
         if self.ejtag_ver == "1.x/2.0":
             self._logger.warning("found cursed EJTAG 1.x/2.0 CPU, using undocumented "
                                  "DCR.MP workaround")
@@ -243,14 +267,19 @@ class EJTAGInterface(aobject):
         if control.EjtagBrk:
             raise GlasgowAppletError("failed to enter debug mode")
 
-    async def run_pracc(self, code, data=[], max_steps=1024):
+        self._change_state("Interrupted")
+
+    async def _exec_pracc(self, code, data=[], max_steps=1024, state="Stopped"):
+        self._check_state("execute PrAcc", state)
+        self._change_state("PrAcc")
+
         temp     = [0] * 0x80
 
-        code_beg = (DMSEG_addr + 0x0200)  & ((1 << self.bits) - 1)
+        code_beg = (DMSEG_addr + 0x0200)  & self._mask
         code_end = code_beg   + len(code) * 4
-        temp_beg = (DMSEG_addr + 0x1000)  & ((1 << self.bits) - 1)
+        temp_beg = (DMSEG_addr + 0x1000)  & self._mask
         temp_end = temp_beg   + len(temp) * 4
-        data_beg = (DMSEG_addr + 0x1200)  & ((1 << self.bits) - 1)
+        data_beg = (DMSEG_addr + 0x1200)  & self._mask
         data_end = data_beg   + len(data) * 4
 
         for step in range(max_steps):
@@ -260,6 +289,7 @@ class EJTAGInterface(aobject):
                     raise GlasgowAppletError("PrAcc: DM low on entry")
                 elif not control.DM:
                     self._log("PrAcc: debug return")
+                    self._change_state("Running")
                     return
                 elif control.PrAcc:
                     break
@@ -269,6 +299,7 @@ class EJTAGInterface(aobject):
             address = await self._read_address()
             if step > 0 and address == code_beg:
                 self._log("PrAcc: debug suspend")
+                self._change_state("Stopped")
                 break
 
             if address in range(code_beg, code_end):
@@ -303,8 +334,10 @@ class EJTAGInterface(aobject):
 
         return data
 
+    # PrAcc fragment runners
+
     async def _pracc_prologue(self):
-        await self.run_pracc(code=[
+        await self._exec_pracc(state="Interrupted", code=[
             MTC0 (1, *CP0_DESAVE_addr),
             LUI  (1, 0xff20),
             ORI  (1, 1, 0x1200),
@@ -314,7 +347,7 @@ class EJTAGInterface(aobject):
         ])
 
     async def _pracc_epilogue(self):
-        await self.run_pracc(code=[
+        await self._exec_pracc(code=[
             MFC0 (1, *CP0_DESAVE_addr),
             DERET(),
             NOP  (),
@@ -323,7 +356,7 @@ class EJTAGInterface(aobject):
         ])
 
     async def _pracc_read_regs(self):
-        return await self.run_pracc(code=[
+        return await self._exec_pracc(code=[
             SW   (2, self._ws *  2, 1),
             MFC0 (2, *CP0_DESAVE_addr),
             SW   (2, self._ws *  1, 1),
@@ -336,6 +369,24 @@ class EJTAGInterface(aobject):
             NOP  (),
             NOP  (),
         ], data=[0] * 33)
+
+    # Public API
+
+    async def is_stopped(self):
+        return self._state == "Stopped"
+
+    async def stop(self):
+        self._check_state("stop target", "Running")
+        await self._ejtag_debug_interrupt()
+        await self._pracc_prologue()
+
+    async def resume(self):
+        self._check_state("resume target", "Stopped")
+        await self._pracc_epilogue()
+
+    async def read_registers(self):
+        self._check_state("read registers", "Stopped")
+        return await self._pracc_read_regs()
 
 
 class JTAGMIPSApplet(JTAGApplet, name="jtag-mips"):
@@ -378,10 +429,9 @@ class JTAGMIPSApplet(JTAGApplet, name="jtag-mips"):
                          ejtag_iface.bits, ejtag_iface.cpunum, ejtag_iface.ejtag_ver)
 
         if args.operation == "state":
-            await ejtag_iface.debug_break()
-            await ejtag_iface._pracc_prologue()
-            regs = await ejtag_iface._pracc_read_regs()
-            await ejtag_iface._pracc_epilogue()
+            await ejtag_iface.stop()
+            regs = await ejtag_iface.read_registers()
+            await ejtag_iface.resume()
 
             for reg, value in enumerate(regs):
                 if reg == 32:
