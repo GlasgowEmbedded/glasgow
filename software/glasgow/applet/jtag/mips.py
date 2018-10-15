@@ -4,100 +4,16 @@
 import struct
 import logging
 import asyncio
-from collections import defaultdict
 from bitarray import bitarray
 
 from . import JTAGApplet
 from .. import *
-from ...support.bits import *
 from ...support.aobject import *
 from ...support.endpoint import *
 from ...pyrepl import *
 from ...arch.mips import *
+from ...arch.mips_ejtag import *
 from ...protocol.gdb_remote import *
-
-
-IR_IMPCODE    = bitarray("11000", endian="little")
-IR_ADDRESS    = bitarray("00010", endian="little")
-IR_DATA       = bitarray("10010", endian="little")
-IR_CONTROL    = bitarray("01010", endian="little")
-IR_ALL        = bitarray("11010", endian="little")
-IR_EJTAGBOOT  = bitarray("00110", endian="little")
-IR_NORMALBOOT = bitarray("10110", endian="little")
-IR_FASTDATA   = bitarray("01110", endian="little")
-IR_PCSAMPLE   = bitarray("00101", endian="little")
-IR_FDC        = bitarray("11101", endian="little")
-
-
-EJTAGver_values = defaultdict(lambda: "reserved", {
-    0: "1.x/2.0",
-    1: "2.5",
-    2: "2.6",
-    3: "3.1",
-    4: "4.0",
-    5: "5.0",
-})
-
-
-DR_IMPCODE = Bitfield("DR_IMPCODE", 4, [
-    ("MIPS32_64",  1),
-    ("TypeInfo",  10),
-    ("Type",       2),
-    ("NoDMA",      1),
-    (None,         1),
-    ("MIPS16",     1),
-    (None,         3),
-    ("ASID_Size",  2),
-    (None,         1),
-    ("DINT_sup",   1),
-    (None,         3),
-    ("R4k_R3k",    1),
-    ("EJTAGver",   3),
-])
-
-
-DR_CONTROL = Bitfield("DR_CONTROL", 4, [
-    (None,         3),
-    ("DM",         1),
-    (None,         1),
-    ("DLock",      1), # Undocumented, EJTAG 1.x/2.0 specific
-    (None,         1),
-    ("Dsz",        2), # Undocumented, EJTAG 1.x/2.0 specific
-    ("DRWn",       1), # Undocumented, EJTAG 1.x/2.0 specific
-    ("DErr",       1), # Undocumented, EJTAG 1.x/2.0 specific
-    ("DStrt",      1), # Undocumented, EJTAG 1.x/2.0 specific
-    ("EjtagBrk",   1),
-    ("ISAOnDebug", 1),
-    ("ProbTrap",   1),
-    ("ProbEn",     1),
-    ("PrRst",      1),
-    ("DMAAcc",     1), # Undocumented, EJTAG 1.x/2.0 specific
-    ("PrAcc",      1),
-    ("PRnW",       1),
-    ("PerRst",     1),
-    ("Halt",       1),
-    ("Doze",       1),
-    ("VPED",       1),
-    (None,         5),
-    ("Psz",        2),
-    ("Rocc",       1),
-])
-
-
-CP0_BadVAddr_addr = ( 8, 0)
-CP0_SR_addr       = (12, 0)
-CP0_Cause_addr    = (13, 0)
-CP0_Debug_addr    = (23, 0)
-CP0_Debug2_addr   = (23, 6)
-CP0_DEPC_addr     = (24, 0)
-CP0_DESAVE_addr   = (31, 0)
-
-
-DMSEG_addr      = 0xffff_ffff_ff20_0000
-DMSEG_TRAP_addr = DMSEG_addr + 0x0200
-
-DRSEG_addr      = 0xffff_ffff_ff30_0000
-DRSEG_DCR_addr  = DRSEG_addr + 0x0000
 
 
 class EJTAGInterface(aobject, GDBRemote):
