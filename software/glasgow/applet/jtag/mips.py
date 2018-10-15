@@ -351,8 +351,8 @@ class EJTAGInterface(aobject, GDBRemote):
             cp0_debug = CP0_Debug.from_int(await self._pracc_read_cp0(CP0_Debug_addr))
             self._has_sst = not cp0_debug.NoSSt
 
-    async def _pracc_read_registers(self):
-        self._log("PrAcc: read registers")
+    async def _pracc_get_registers(self):
+        self._log("PrAcc: get registers")
 
         Rdata, Racc, *_ = range(1, 32)
         return await self._exec_pracc(code=[
@@ -375,6 +375,43 @@ class EJTAGInterface(aobject, GDBRemote):
             LW   (Racc, self._ws *  2, Rdata),
             NOP  (),
         ], data=[0] * 38)
+
+    async def _pracc_get_gpr(self, number):
+        Rdata, Racc, *_ = range(1, 32)
+        if number != Rdata:
+            value, = await self._exec_pracc(code=[
+                SW   (number, 0, Rdata),
+                NOP  ()
+            ], data=[0])
+        else:
+            value, = await self._exec_pracc(code=[
+                SW   (Racc, self._ws * -1, Rdata),
+                MFC0 (Racc, *CP0_DESAVE_addr),
+                SW   (Racc, 0, Rdata),
+                LW   (Racc, self._ws * -1, Rdata),
+                NOP  ()
+            ], data=[0])
+
+        self._log("PrAcc: get $%d = %.*x", number, self._prec, value)
+        return value
+
+    async def _pracc_set_gpr(self, number, value):
+        self._log("PrAcc: set $%d = %.*x", number, self._prec, value)
+
+        Rdata, Racc, *_ = range(1, 32)
+        if number != Rdata:
+            return await self._exec_pracc(code=[
+                LW   (number, 0, Rdata),
+                NOP  ()
+            ], data=[value])
+        else:
+            return await self._exec_pracc(code=[
+                SW   (Racc, self._ws * -1, Rdata),
+                LW   (Racc, 0, Rdata),
+                MTC0 (Racc, *CP0_DESAVE_addr),
+                LW   (Racc, self._ws * -1, Rdata),
+                NOP  ()
+            ], data=[value])
 
     # PrAcc memory read/write
 
@@ -479,9 +516,27 @@ class EJTAGInterface(aobject, GDBRemote):
             await self._pracc_write_cp0(CP0_DEPC_addr, addr)
         await self._pracc_single_step()
 
-    async def target_get_all_registers(self):
-        self._check_state("get all registers", "Stopped")
-        return await self._pracc_read_registers()
+    async def target_get_registers(self):
+        self._check_state("get registers", "Stopped")
+        return await self._pracc_get_registers()
+
+    async def target_get_register(self, number):
+        self._check_state("get register", "Stopped")
+        if number in range(0, 32):
+            return await self._pracc_get_gpr(number)
+        elif number == 37:
+            return await self._pracc_read_cp0(CP0_DEPC_addr)
+        else:
+            raise GlasgowAppletError("getting register %d not supported" % number)
+
+    async def target_set_register(self, number, value):
+        self._check_state("set register", "Stopped")
+        if number in range(0, 32):
+            await self._pracc_set_gpr(number, value)
+        elif number == 37:
+            await self._pracc_write_cp0(CP0_DEPC_addr, value)
+        else:
+            raise GlasgowAppletError("setting register %d not supported" % number)
 
     async def target_read_memory(self, address, length):
         self._check_state("read memory", "Stopped")
@@ -557,3 +612,7 @@ class JTAGMIPSApplet(JTAGApplet, name="jtag-mips"):
 
         if args.operation == "repl":
             await AsyncInteractiveConsole(locals={"ejtag_iface":ejtag_iface}).interact()
+
+            # Same as above.
+            if not ejtag_iface.target_running():
+                await ejtag_iface.target_resume()

@@ -43,7 +43,7 @@ class GDBRemote(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    async def target_get_all_registers(self):
+    async def target_get_registers(self):
         pass
 
     @abstractmethod
@@ -181,12 +181,25 @@ class GDBRemote(metaclass=ABCMeta):
         # "Get all registers of the target."
         if command == b"g":
             registers = bytearray()
-            for register in await self.target_get_all_registers():
+            for register in await self.target_get_registers():
                 if register is None:
                     registers += b"xx" * self.target_word_size()
                 else:
                     registers += b"%.*x" % (self.target_word_size() * 2, register)
             return registers
+
+        # "Get specific register of the target."
+        if command.startswith(b"p"):
+            number = int(command[1:], 16)
+            value  = await self.target_get_register(number)
+            return b"%.*x" % (self.target_word_size() * 2, value)
+
+        # "Set specific register of the target."
+        if command.startswith(b"P"):
+            number_asc, value_asc = command[1:].split(b"=")
+            number, value = int(number_asc, 16), int(value_asc, 16)
+            await self.target_set_register(number, value)
+            return b"OK"
 
         # "Read specified memory range of the target."
         if command.startswith(b"m"):
