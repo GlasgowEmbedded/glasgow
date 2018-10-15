@@ -39,6 +39,10 @@ class GDBRemote(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    async def target_single_step(self, addr=None):
+        pass
+
+    @abstractmethod
     async def target_get_all_registers(self):
         pass
 
@@ -71,7 +75,7 @@ class GDBRemote(metaclass=ABCMeta):
                         checksum = -1
                     if sum(command) & 0xff != checksum:
                         self.gdb_log(logging.ERROR, "invalid checksum for command <%s>", command)
-                elif command == b"\x03":
+                elif delimiter == b"\x03":
                     command  = b"^C"
                 if not no_ack_mode:
                     await endpoint.send(b"+")
@@ -85,10 +89,12 @@ class GDBRemote(metaclass=ABCMeta):
                 else:
                     try:
                         response = await self.gdb_process(command)
+                        command_failed = False
                     except GlasgowAppletError as e:
                         self.gdb_log(logging.ERROR, "command <%s> caused an error: %s",
                                      command_asc, str(e))
                         response = b"E00;%s" % str(e).encode("ascii")
+                        command_failed = True
 
                 while True:
                     response_asc = response.decode("ascii", errors="replace")
@@ -106,6 +112,9 @@ class GDBRemote(metaclass=ABCMeta):
                         else:
                             self.gdb_log(logging.error, "unrecognized acknowledgement")
                             endpoint.close()
+
+                if command_failed:
+                    await endpoint.close()
 
         except asyncio.CancelledError:
             pass
@@ -148,6 +157,15 @@ class GDBRemote(metaclass=ABCMeta):
         if command == b"c":
             await self.target_resume()
             return b"OK"
+
+        # "Single-step target [but first jump to this address]."
+        if command.startswith(b"s"):
+            if len(command) > 1:
+                address = int(command[1:], 16)
+            else:
+                address = None
+            await self.target_single_step(address)
+            return b"S00"
 
         # "Interrupt target."
         if command == b"^C":

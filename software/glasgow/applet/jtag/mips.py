@@ -21,7 +21,9 @@ class EJTAGInterface(aobject, GDBRemote):
         self.lower    = interface
         self._logger  = logger
         self._level   = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+
         self._cursed  = False
+        self._has_sst = None
 
         self._control = DR_CONTROL()
         self._state   = "Probe"
@@ -117,6 +119,8 @@ class EJTAGInterface(aobject, GDBRemote):
             data_bits.frombytes(struct.pack("<Q", data))
         await self.lower.write_dr(data_bits)
 
+    # DMAAcc memory read/write
+
     async def _dmaacc_read(self, address, size):
         self._log("DMAAcc: read address=%#0.*x size=%d", self._prec, address, size)
         await self._write_address(address)
@@ -150,7 +154,7 @@ class EJTAGInterface(aobject, GDBRemote):
                                      (self._prec, address, size))
         await self._exchange_control(DMAAcc=0)
 
-    # Target state management
+    # PrAcc state management
 
     async def _probe(self):
         self._check_state("probe", "Probe")
@@ -172,14 +176,9 @@ class EJTAGInterface(aobject, GDBRemote):
         else:
             self._change_state("Running")
 
-    async def _ejtag_debug_interrupt(self):
-        self._check_state("assert debug interrupt", "Running")
-
         if self.ejtag_ver == "1.x/2.0":
-            if not self._cursed:
-                self._cursed = True
-                self._logger.warning("found cursed EJTAG 1.x/2.0 CPU, using undocumented "
-                                     "DCR.MP workaround")
+            self._logger.warning("found cursed EJTAG 1.x/2.0 CPU, using undocumented "
+                                 "DCR.MP bit to enable PrAcc")
             # Undocumented sequence to disable memory protection for dmseg. The bit 2 is
             # documented as NMIpend, but on EJTAG 1.x/2.0 it is actually MP. It is only possible
             # to clear it via DMAAcc because PrAcc requires debug mode to already work.
@@ -187,14 +186,15 @@ class EJTAGInterface(aobject, GDBRemote):
             dcr &= ~(1<<2)
             await self._dma_accwrite(DRSEG_DCR_addr, 2, dcr)
 
+    async def _ejtag_debug_interrupt(self):
+        self._check_state("assert debug interrupt", "Running")
         await self._exchange_control(EjtagBrk=1)
         control = await self._exchange_control()
         if control.EjtagBrk:
             raise GlasgowAppletError("failed to enter debug mode")
-
         self._change_state("Interrupted")
 
-    async def _exec_pracc(self, code, data=[], max_steps=1024, state="Stopped"):
+    async def _exec_pracc_bare(self, code, data=[], max_steps=1024, state="Stopped"):
         self._check_state("execute PrAcc", state)
         self._change_state("PrAcc")
 
@@ -211,19 +211,19 @@ class EJTAGInterface(aobject, GDBRemote):
             for _ in range(3):
                 control = await self._exchange_control()
                 if step == 0 and not control.DM:
-                    raise GlasgowAppletError("PrAcc: DM low on entry")
+                    raise GlasgowAppletError("Exec_PrAcc: DM low on entry")
                 elif not control.DM:
-                    self._log("PrAcc: debug return")
+                    self._log("Exec_PrAcc: debug return")
                     self._change_state("Running")
                     return
                 elif control.PrAcc:
                     break
             else:
-                raise GlasgowAppletError("PrAcc: PrAcc stuck low")
+                raise GlasgowAppletError("Exec_PrAcc: PrAcc stuck low")
 
             address = await self._read_address()
             if step > 0 and address == code_beg:
-                self._log("PrAcc: debug suspend")
+                self._log("Exec_PrAcc: debug suspend")
                 self._change_state("Stopped")
                 break
 
@@ -234,47 +234,61 @@ class EJTAGInterface(aobject, GDBRemote):
             elif address in range(data_beg, data_end):
                 area, area_beg, area_wr, area_name = data, data_beg, True,  "data"
             else:
-                raise GlasgowAppletError("PrAcc: address %#0.*x out of range" %
+                raise GlasgowAppletError("Exec_PrAcc: address %#0.*x out of range" %
                                          (self._prec, address))
 
             area_off = (address - area_beg) // 4
             if control.PRnW:
                 if not area_wr:
-                    raise GlasgowAppletError("PrAcc: write access to %s at %#0.*x" %
+                    raise GlasgowAppletError("Exec_PrAcc: write access to %s at %#0.*x" %
                                              (area_name, self._prec, address))
 
                 word = await self._read_data()
-                self._log("PrAcc: write %s [%#06x] = %#0.*x",
+                self._log("Exec_PrAcc: write %s [%#06x] = %#0.*x",
                           area_name, address & 0xffff, self._prec, word)
                 area[area_off] = word
             else:
-                self._log("PrAcc: read %s [%#06x] = %#0.*x",
+                self._log("Exec_PrAcc: read %s [%#06x] = %#0.*x",
                           area_name, address & 0xffff, self._prec, area[area_off])
                 await self._write_data(area[area_off])
 
             await self._exchange_control(PrAcc=0)
 
         else:
-            raise GlasgowAppletError("PrAcc: step limit exceeded")
+            raise GlasgowAppletError("Exec_PrAcc: step limit exceeded")
 
         return data
 
-    # PrAcc fragment runners
+    async def _exec_pracc(self, code, *args, **kwargs):
+        code = [
+            *code,
+            B    (-len(code)-1),
+            NOP  (),
+            NOP  (),
+        ]
+        return await self._exec_pracc_bare(code=code, *args, **kwargs)
 
-    async def _pracc_prologue(self):
+    # PrAcc control flow management
+
+    async def _pracc_debug_enter(self):
+        self._log("PrAcc: debug enter")
+
         Rdata, *_ = range(1, 32)
         await self._exec_pracc(state="Interrupted", code=[
             MTC0 (Rdata, *CP0_DESAVE_addr),
             LUI  (Rdata, 0xff20),
             ORI  (Rdata, Rdata, 0x1200),
-            B    (-4),
-            NOP  (),
-            NOP  (),
         ])
 
-    async def _pracc_epilogue(self):
+        # We can't probe some target capabilities before we stop for the first time,
+        # so do it now, if necessary.
+        await self._pracc_probe()
+
+    async def _pracc_debug_return(self):
+        self._log("PrAcc: debug return")
+
         Rdata, *_ = range(1, 32)
-        await self._exec_pracc(code=[
+        await self._exec_pracc_bare(code=[
             MFC0 (Rdata, *CP0_DESAVE_addr),
             DERET(),
             NOP  (),
@@ -282,7 +296,64 @@ class EJTAGInterface(aobject, GDBRemote):
             NOP  (),
         ])
 
-    async def _pracc_read_regs(self):
+    async def _pracc_single_step(self):
+        self._log("PrAcc: single step")
+
+        Racc, *_ = range(1, 32)
+        await self._exec_pracc_bare(code=[
+            MFC0 (Racc, *CP0_Debug_addr),
+            ORI  (Racc, Racc, 0x0100), # set SSt
+            MTC0 (Racc, *CP0_Debug_addr),
+            MFC0 (Racc, *CP0_DESAVE_addr),
+            DERET(),
+            NOP  (),
+            NOP  (),
+            NOP  (),
+        ])
+        await self._exec_pracc(code=[
+            MTC0 (Racc, *CP0_DESAVE_addr),
+            MFC0 (Racc, *CP0_Debug_addr),
+            ORI  (Racc, Racc, 0x0100),
+            XORI (Racc, Racc, 0x0100), # clear SSt
+            MTC0 (Racc, *CP0_Debug_addr),
+            LUI  (Racc, 0xff20),
+            ORI  (Racc, Racc, 0x1200),
+        ])
+
+    async def _pracc_read_cp0(self, address):
+        Rdata, Racc, *_ = range(1, 32)
+        value, = await self._exec_pracc(code=[
+            SW   (Racc, self._ws * -1, Rdata),
+            MFC0 (Racc, *address),
+            SW   (Racc, 0, Rdata),
+            LW   (Racc, self._ws * -1, Rdata),
+            NOP  (),
+        ], data=[0])
+
+        self._log("PrAcc: read CP0 %s = %#.*x", address, self._prec, value)
+        return value
+
+    async def _pracc_write_cp0(self, address, value):
+        self._log("PrAcc: write CP0 %s = %#.*x", address, self._prec, value)
+
+        Rdata, Racc, *_ = range(1, 32)
+        await self._exec_pracc(code=[
+            SW   (Racc, self._ws * -1, Rdata),
+            LW   (Racc, 0, Rdata),
+            MTC0 (Racc, *address),
+            LW   (Racc, self._ws * -1, Rdata),
+            NOP  (),
+        ], data=[value])
+
+    async def _pracc_probe(self):
+        if self._has_sst is None:
+            self._log("PrAcc: probe NoSSt")
+            cp0_debug = CP0_Debug.from_int(await self._pracc_read_cp0(CP0_Debug_addr))
+            self._has_sst = not cp0_debug.NoSSt
+
+    async def _pracc_read_registers(self):
+        self._log("PrAcc: read registers")
+
         Rdata, Racc, *_ = range(1, 32)
         return await self._exec_pracc(code=[
             SW   (Racc, self._ws *  2, Rdata),
@@ -303,10 +374,9 @@ class EJTAGInterface(aobject, GDBRemote):
             SW   (Racc, self._ws * 37, Rdata),
             LW   (Racc, self._ws *  2, Rdata),
             NOP  (),
-            B    (-47),
-            NOP  (),
-            NOP  (),
         ], data=[0] * 38)
+
+    # PrAcc memory read/write
 
     async def _pracc_copy_word(self, address, value, is_read):
         Rdata, Raddr, Racc, *_ = range(1, 32)
@@ -320,16 +390,16 @@ class EJTAGInterface(aobject, GDBRemote):
             LW   (Racc,  self._ws * -2, Rdata),
             LW   (Raddr, self._ws * -1, Rdata),
             NOP  (),
-            B    (-10),
-            NOP  (),
-            NOP  (),
         ], data=[value]))[0]
 
     async def _pracc_read_word(self, address):
-        return await self._pracc_copy_word(address, value=0, is_read=True)
+        value = await self._pracc_copy_word(address, value=0, is_read=True)
+        self._log("PrAcc: read [%#.*x] = %#.*x", self._prec, address, self._prec, value)
+        return value
 
     async def _pracc_write_word(self, address, value):
-        return await self._pracc_copy_word(address, value, is_read=False)
+        self._log("PrAcc: write [%#.*x] = %#.*x", self._prec, address, self._prec, value)
+        await self._pracc_copy_word(address, value, is_read=False)
 
     async def _pracc_copy_memory(self, address, length, data, is_read):
         assert length <= 0x200
@@ -360,9 +430,6 @@ class EJTAGInterface(aobject, GDBRemote):
             LW   (Rlen, self._ws * -3, Rdata),
             LW   (Rsrc, self._ws * -2, Rdata),
             LW   (Rdst, self._ws * -1, Rdata),
-            NOP  (),
-            B    (-22),
-            NOP  (),
             NOP  (),
         ], data=data)
 
@@ -398,15 +465,23 @@ class EJTAGInterface(aobject, GDBRemote):
     async def target_stop(self):
         self._check_state("stop", "Running")
         await self._ejtag_debug_interrupt()
-        await self._pracc_prologue()
+        await self._pracc_debug_enter()
 
     async def target_resume(self):
         self._check_state("resume", "Stopped")
-        await self._pracc_epilogue()
+        await self._pracc_debug_return()
+
+    async def target_single_step(self, addr=None):
+        self._check_state("single step", "Stopped")
+        if not self._has_sst:
+            raise GlasgowAppletError("target does not support single stepping")
+        if addr is not None:
+            await self._pracc_write_cp0(CP0_DEPC_addr, addr)
+        await self._pracc_single_step()
 
     async def target_get_all_registers(self):
         self._check_state("get all registers", "Stopped")
-        return await self._pracc_read_regs()
+        return await self._pracc_read_registers()
 
     async def target_read_memory(self, address, length):
         self._check_state("read memory", "Stopped")
@@ -426,7 +501,7 @@ class JTAGMIPSApplet(JTAGApplet, name="jtag-mips"):
         super().add_run_arguments(parser, access)
 
         parser.add_argument(
-            "tap_index", metavar="INDEX", type=int, default=0, nargs="?",
+            "--tap-index", metavar="INDEX", type=int, default=0,
             help="select TAP #INDEX for communication (default: %(default)s)")
 
     async def run(self, device, args):
@@ -448,6 +523,9 @@ class JTAGMIPSApplet(JTAGApplet, name="jtag-mips"):
 
         p_gdb = p_operation.add_parser(
             "gdb", help="start a GDB remote protocol server")
+        p_gdb.add_argument(
+            "-1", "--once", default=False, action="store_true",
+            help="exit when the remote client disconnects")
         ServerEndpoint.add_argument(p_gdb, "gdb_endpoint", default="tcp::1234")
 
         p_repl = p_operation.add_parser(
@@ -468,13 +546,14 @@ class JTAGMIPSApplet(JTAGApplet, name="jtag-mips"):
 
         if args.operation == "gdb":
             endpoint = await ServerEndpoint("GDB socket", self.logger, args.gdb_endpoint)
-            await ejtag_iface.gdb_run(endpoint)
+            while not args.once:
+                await ejtag_iface.gdb_run(endpoint)
+
+                # Unless we resume the target here, we might not be able to re-enter the debug
+                # mode, because EJTAG TAP reset appears to irreversibly destroy some state
+                # necessary for PrAcc to continue working.
+                if not ejtag_iface.target_running():
+                    await ejtag_iface.target_resume()
 
         if args.operation == "repl":
             await AsyncInteractiveConsole(locals={"ejtag_iface":ejtag_iface}).interact()
-
-        # Unless we resume the target here, we might not be able to re-enter the debug
-        # mode, because EJTAG TAP reset appears to irreversibly destroy some state
-        # necessary for PrAcc to continue working.
-        if not ejtag_iface.target_running():
-            await ejtag_iface.target_resume()

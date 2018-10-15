@@ -46,10 +46,12 @@ class ServerEndpoint(aobject, asyncio.Protocol):
         loop = asyncio.get_event_loop()
         if proto == "unix":
             self.server = await loop.create_unix_server(lambda: self, *proto_args, backlog=1)
-            self._log(logging.INFO, "listening at unix:%s", *proto_args)
+            unix_path, = proto_args
+            self._log(logging.INFO, "listening at unix:%s", unix_path)
         elif proto == "tcp":
             self.server = await loop.create_server(lambda: self, *proto_args, backlog=1)
-            self._log(logging.INFO, "listening at tcp:%s:%d", *proto_args)
+            tcp_host, tcp_port = proto_args
+            self._log(logging.INFO, "listening at tcp:%s:%d", tcp_host or "*", tcp_port)
         else:
             raise ValueError("unknown protocol %s" % proto)
 

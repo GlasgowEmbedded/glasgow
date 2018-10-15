@@ -17,6 +17,7 @@ __all__ = [
     # CP0
     "CP0_BadVAddr_addr", "CP0_SR_addr", "CP0_Cause_addr", "CP0_Debug_addr", "CP0_Debug2_addr",
     "CP0_DEPC_addr", "CP0_DESAVE_addr",
+    "CP0_Debug", "CP0_Debug2",
     # DMSEG
     "DMSEG_addr", "DMSEG_TRAP_addr", "DRSEG_addr", "DRSEG_DCR_addr", "DRSEG_DCR",
 ]

@@ -10,6 +10,12 @@ __all__ = ["Bitfield"]
 
 class _PackedUnion(Union):
     @classmethod
+    def from_int(cls, data):
+        pack = cls()
+        pack._int_ = data
+        return pack
+
+    @classmethod
     def from_bytes(cls, data):
         data = bytes(data)
         pack = cls()
@@ -50,6 +56,9 @@ class _PackedUnion(Union):
         pack = self.__class__()
         pack._bytes_[:] = self._bytes_[:]
         return pack
+
+    def to_int(self):
+        return self._int_
 
     def to_bytes(self):
         return bytes(self._bytes_)
@@ -105,8 +114,9 @@ def Bitfield(name, size_bytes, fields):
     pack_cls.__module__ = mod
     pack_cls._packed_ = True
     pack_cls._anonymous_ = ("_bits_",)
-    pack_cls._fields_ = [("_bits_", bits_cls),
-                         ("_bytes_", c_ubyte * size_bytes)]
+    pack_cls._fields_ = [("_bits_",  bits_cls),
+                         ("_bytes_", c_ubyte * size_bytes),
+                         ("_int_",   c_uint64)]
 
     return pack_cls
 
