@@ -50,6 +50,10 @@ class GDBRemote(metaclass=ABCMeta):
     async def target_read_memory(self, address, length):
         pass
 
+    @abstractmethod
+    async def target_write_memory(self, address, data):
+        pass
+
     async def gdb_run(self, endpoint):
         self.__non_stop = False
 
@@ -196,8 +200,7 @@ class GDBRemote(metaclass=ABCMeta):
 
         # "Set specific register of the target."
         if command.startswith(b"P"):
-            number_asc, value_asc = command[1:].split(b"=")
-            number, value = int(number_asc, 16), int(value_asc, 16)
+            number, value = map(lambda x: int(x, 16), command[1:].split(b"="))
             await self.target_set_register(number, value)
             return b"OK"
 
@@ -206,5 +209,12 @@ class GDBRemote(metaclass=ABCMeta):
             address, length = map(lambda x: int(x, 16), command[1:].split(b","))
             data = await self.target_read_memory(address, length)
             return data.hex().encode("ascii")
+
+        # "Write specified memory range of the target."
+        if command.startswith(b"M"):
+            location, data = command[1:].split(b":")
+            address, _length = map(lambda x: int(x, 16), location.split(b","))
+            await self.target_write_memory(address, bytes.fromhex(data.decode("ascii")))
+            return b"OK"
 
         return b""

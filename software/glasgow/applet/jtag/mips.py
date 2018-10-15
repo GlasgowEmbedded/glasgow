@@ -456,10 +456,10 @@ class EJTAGInterface(aobject, GDBRemote):
             OR   (Rdst, 0, Rdata if is_read else Racc),
             OR   (Rsrc, 0, Racc  if is_read else Rdata),
             ORI  (Rlen, 0, length),
-            LBU  (Racc, 0, Rsrc),
-            ADDI (Rsrc, Rsrc, 1),
-            SW   (Racc, 0, Rdst),
-            ADDI (Rdst, Rdst, 4),
+            LBU  (Racc, 0, Rsrc) if is_read else LW   (Racc, 0, Rsrc),
+            ADDI (Rsrc, Rsrc,  1 if is_read else 4),
+            SW   (Racc, 0, Rdst) if is_read else SB   (Racc, 0, Rdst),
+            ADDI (Rdst, Rdst,  4 if is_read else 1),
             ADDI (Rlen, Rlen, -1),
             BGTZ (Rlen, -6),
             NOP  (),
@@ -541,6 +541,10 @@ class EJTAGInterface(aobject, GDBRemote):
     async def target_read_memory(self, address, length):
         self._check_state("read memory", "Stopped")
         return await self._pracc_read_memory(address, length)
+
+    async def target_write_memory(self, address, data):
+        self._check_state("write memory", "Stopped")
+        return await self._pracc_write_memory(address, data)
 
 
 class JTAGMIPSApplet(JTAGApplet, name="jtag-mips"):
