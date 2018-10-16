@@ -12,7 +12,6 @@ from ...support.aobject import *
 from ...support.endpoint import *
 from ...pyrepl import *
 from ...arch.mips import *
-from ...arch.mips_ejtag import *
 from ...protocol.gdb_remote import *
 
 
