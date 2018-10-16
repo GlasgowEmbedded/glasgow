@@ -105,8 +105,6 @@ class ServerEndpoint(aobject, asyncio.Protocol):
             item = self._queue.popleft()
             if isinstance(item, Exception):
                 self._future.set_exception(item)
-            elif item is None:
-                self._future.cancel()
             else:
                 self._future.set_result(item)
             self._future = None
@@ -114,12 +112,11 @@ class ServerEndpoint(aobject, asyncio.Protocol):
     async def _refill(self):
         self._future = future = asyncio.Future()
         self._check_future()
-        try:
-            self._buffer = await future
-        except asyncio.CancelledError:
+        self._buffer = await future
+        if self._buffer is None:
+            self._buffer = b""
             self._log(logging.TRACE, "recv end-of-stream")
             self._recv_epoch += 1
-            raise
 
     async def recv(self, length=0):
         data = bytearray()
@@ -159,6 +156,11 @@ class ServerEndpoint(aobject, asyncio.Protocol):
 
         self._log(logging.TRACE, "recv <%s%s>", data.hex(), separator.hex())
         return data
+
+    async def recv_wait(self):
+        if not self._buffer:
+            self._log(logging.TRACE, "recv wait")
+            await self._refill()
 
     async def send(self, data):
         data = bytes(data)

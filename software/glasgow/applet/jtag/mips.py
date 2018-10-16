@@ -18,12 +18,13 @@ from ...protocol.gdb_remote import *
 
 class EJTAGInterface(aobject, GDBRemote):
     async def __init__(self, interface, logger):
-        self.lower    = interface
-        self._logger  = logger
-        self._level   = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+        self.lower   = interface
+        self._logger = logger
+        self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
-        self._cursed  = False
-        self._has_sst = None
+        self._pracc_probed = False
+        self._has_sst      = None
+        self._instr_brkpts = None
 
         self._control = DR_CONTROL()
         self._state   = "Probe"
@@ -170,13 +171,34 @@ class EJTAGInterface(aobject, GDBRemote):
         self.cpunum    = self._impcode.TypeInfo
         self.ejtag_ver = EJTAGver_values[self._impcode.EJTAGver]
 
+        if self._impcode.EJTAGver == 0:
+            self._DRSEG_IBS_addr  = DRSEG_IBS_addr_v1
+            self._DRSEG_DBS_addr  = DRSEG_DBS_addr_v1
+            self._DRSEG_IBAn_addr = DRSEG_IBAn_addr_v1
+            self._DRSEG_IBCn_addr = DRSEG_IBCn_addr_v1
+            self._DRSEG_IBMn_addr = DRSEG_IBMn_addr_v1
+            self._DRSEG_DBAn_addr = DRSEG_DBAn_addr_v1
+            self._DRSEG_DBCn_addr = DRSEG_DBCn_addr_v1
+            self._DRSEG_DBMn_addr = DRSEG_DBMn_addr_v1
+            self._DRSEG_DBVn_addr = DRSEG_DBVn_addr_v1
+        else:
+            self._DRSEG_IBS_addr  = DRSEG_IBS_addr
+            self._DRSEG_DBS_addr  = DRSEG_DBS_addr
+            self._DRSEG_IBAn_addr = DRSEG_IBAn_addr
+            self._DRSEG_IBCn_addr = DRSEG_IBCn_addr
+            self._DRSEG_IBMn_addr = DRSEG_IBMn_addr
+            self._DRSEG_DBAn_addr = DRSEG_DBAn_addr
+            self._DRSEG_DBCn_addr = DRSEG_DBCn_addr
+            self._DRSEG_DBMn_addr = DRSEG_DBMn_addr
+            self._DRSEG_DBVn_addr = DRSEG_DBVn_addr
+
         control = await self._exchange_control()
         if control.DM:
             raise GlasgowAppletError("target already in debug mode")
         else:
             self._change_state("Running")
 
-        if self.ejtag_ver == "1.x/2.0":
+        if self._impcode.EJTAGver == 0:
             self._logger.warning("found cursed EJTAG 1.x/2.0 CPU, using undocumented "
                                  "DCR.MP bit to enable PrAcc")
             # Undocumented sequence to disable memory protection for dmseg. The bit 2 is
@@ -192,10 +214,17 @@ class EJTAGInterface(aobject, GDBRemote):
         control = await self._exchange_control()
         if control.EjtagBrk:
             raise GlasgowAppletError("failed to enter debug mode")
-        self._change_state("Interrupted")
 
-    async def _exec_pracc_bare(self, code, data=[], max_steps=1024, state="Stopped"):
-        self._check_state("execute PrAcc", state)
+    async def _check_for_debug_interrupt(self):
+        self._check_state("check for debug interrupt", "Running")
+        control = await self._exchange_control()
+        if control.DM:
+            self._change_state("Interrupted")
+        return control.DM
+
+    async def _exec_pracc_bare(self, code, data=[], max_steps=1024,
+                               entry_state="Stopped", suspend_state="Stopped"):
+        self._check_state("execute PrAcc", entry_state)
         self._change_state("PrAcc")
 
         temp     = [0] * 0x80
@@ -224,7 +253,7 @@ class EJTAGInterface(aobject, GDBRemote):
             address = await self._read_address()
             if step > 0 and address == code_beg:
                 self._log("Exec_PrAcc: debug suspend")
-                self._change_state("Stopped")
+                self._change_state(suspend_state)
                 break
 
             if address in range(code_beg, code_end):
@@ -274,11 +303,11 @@ class EJTAGInterface(aobject, GDBRemote):
         self._log("PrAcc: debug enter")
 
         Rdata, *_ = range(1, 32)
-        await self._exec_pracc(state="Interrupted", code=[
+        await self._exec_pracc(code=[
             MTC0 (Rdata, *CP0_DESAVE_addr),
             LUI  (Rdata, 0xff20),
             ORI  (Rdata, Rdata, 0x1200),
-        ])
+        ], entry_state="Interrupted")
 
         # We can't probe some target capabilities before we stop for the first time,
         # so do it now, if necessary.
@@ -294,7 +323,7 @@ class EJTAGInterface(aobject, GDBRemote):
             NOP  (),
             NOP  (),
             NOP  (),
-        ])
+        ], suspend_state="Interrupted")
 
     async def _pracc_single_step(self):
         self._log("PrAcc: single step")
@@ -346,10 +375,21 @@ class EJTAGInterface(aobject, GDBRemote):
         ], data=[value])
 
     async def _pracc_probe(self):
-        if self._has_sst is None:
-            self._log("PrAcc: probe NoSSt")
-            cp0_debug = CP0_Debug.from_int(await self._pracc_read_cp0(CP0_Debug_addr))
-            self._has_sst = not cp0_debug.NoSSt
+        if self._pracc_probed:
+            return
+
+        self._log("PrAcc: probe CP0.Debug.NoSSt")
+        cp0_debug = CP0_Debug.from_int(await self._pracc_read_cp0(CP0_Debug_addr))
+        self._has_sst = not cp0_debug.NoSSt
+        if not self._has_sst:
+            self._logger.warning("target does not support single-stepping")
+
+        self._log("PrAcc: probe IBS.BCN")
+        ibs = DRSEG_IBS.from_int(await self._pracc_read_word(self._DRSEG_IBS_addr))
+        self._instr_brkpts = [None] * ibs.BCN
+        self._logger.info("target has %d instruction breakpoints", len(self._instr_brkpts))
+
+        self._pracc_probed = True
 
     async def _pracc_get_registers(self):
         self._log("PrAcc: get registers")
@@ -502,19 +542,57 @@ class EJTAGInterface(aobject, GDBRemote):
     async def target_stop(self):
         self._check_state("stop", "Running")
         await self._ejtag_debug_interrupt()
+        await self._check_for_debug_interrupt()
         await self._pracc_debug_enter()
 
-    async def target_resume(self):
-        self._check_state("resume", "Stopped")
+    async def target_continue(self):
+        self._check_state("continue", "Stopped")
         await self._pracc_debug_return()
+        if self._state == "Interrupted":
+            await self._pracc_debug_enter()
+            return
 
-    async def target_single_step(self, addr=None):
+        while self._state == "Running":
+            await asyncio.sleep(0.5)
+            if await self._check_for_debug_interrupt():
+                await self._pracc_debug_enter()
+
+    async def target_single_step(self):
         self._check_state("single step", "Stopped")
         if not self._has_sst:
             raise GlasgowAppletError("target does not support single stepping")
-        if addr is not None:
-            await self._pracc_write_cp0(CP0_DEPC_addr, addr)
         await self._pracc_single_step()
+
+    async def target_detach(self):
+        if self._state == "Running":
+            await self.target_stop()
+        for index, address in enumerate(self._instr_brkpts):
+            if address is not None:
+                await self._pracc_write_word(self._DRSEG_IBCn_addr(index), 0)
+                self._instr_brkpts[index] = None
+        await self._pracc_debug_return()
+
+    async def target_set_instr_breakpt(self, addr):
+        self._check_state("set instruction breakpoint", "Stopped")
+        for index in range(len(self._instr_brkpts)):
+            if self._instr_brkpts[index] is None:
+                await self._pracc_write_word(self._DRSEG_IBAn_addr(index), addr)
+                await self._pracc_write_word(self._DRSEG_IBMn_addr(index), 0)
+                await self._pracc_write_word(self._DRSEG_IBCn_addr(index), DRSEG_IBC(1).to_int())
+                self._instr_brkpts[index] = addr
+                return True
+        else:
+            return False
+
+    async def target_clear_instr_breakpt(self, addr):
+        self._check_state("clear instruction breakpoint", "Stopped")
+        for index in range(len(self._instr_brkpts)):
+            if self._instr_brkpts[index] == addr:
+                await self._pracc_write_word(self._DRSEG_IBCn_addr(index), 0)
+                self._instr_brkpts[index] = None
+                return True
+        else:
+            return False
 
     async def target_get_registers(self):
         self._check_state("get registers", "Stopped")
@@ -540,11 +618,17 @@ class EJTAGInterface(aobject, GDBRemote):
 
     async def target_read_memory(self, address, length):
         self._check_state("read memory", "Stopped")
-        return await self._pracc_read_memory(address, length)
+        if address % self._ws == 0 and length == self._ws:
+            return struct.pack("<L", await self._pracc_read_word(address))
+        else:
+            return await self._pracc_read_memory(address, length)
 
     async def target_write_memory(self, address, data):
         self._check_state("write memory", "Stopped")
-        return await self._pracc_write_memory(address, data)
+        if address % self._ws == 0 and len(data) == self._ws:
+            await self._pracc_write_word(address, *struct.unpack("<L", data))
+        else:
+            await self._pracc_write_memory(address, data)
 
 
 class JTAGMIPSApplet(JTAGApplet, name="jtag-mips"):
@@ -597,7 +681,7 @@ class JTAGMIPSApplet(JTAGApplet, name="jtag-mips"):
         if args.operation == "registers":
             await ejtag_iface.target_stop()
             reg_values = await ejtag_iface.target_get_all_registers()
-            await ejtag_iface.target_resume()
+            await ejtag_iface.target_detach()
 
             reg_names = ejtag_iface.target_register_names()
             for name, value in zip(reg_names, reg_values):
@@ -608,15 +692,13 @@ class JTAGMIPSApplet(JTAGApplet, name="jtag-mips"):
             while not args.once:
                 await ejtag_iface.gdb_run(endpoint)
 
-                # Unless we resume the target here, we might not be able to re-enter the debug
-                # mode, because EJTAG TAP reset appears to irreversibly destroy some state
-                # necessary for PrAcc to continue working.
-                if not ejtag_iface.target_running():
-                    await ejtag_iface.target_resume()
+                # Unless we detach from the target here, we might not be able to re-enter
+                # the debug mode, because EJTAG TAP reset appears to irreversibly destroy
+                # some state necessary for PrAcc to continue working.
+                await ejtag_iface.target_detach()
 
         if args.operation == "repl":
             await AsyncInteractiveConsole(locals={"ejtag_iface":ejtag_iface}).interact()
 
             # Same as above.
-            if not ejtag_iface.target_running():
-                await ejtag_iface.target_resume()
+            await ejtag_iface.target_detach()

@@ -27,6 +27,10 @@ class GDBRemote(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def target_register_names(self):
+        pass
+
+    @abstractmethod
     def target_running(self):
         pass
 
@@ -35,15 +39,27 @@ class GDBRemote(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    async def target_resume(self):
+    async def target_continue(self):
         pass
 
     @abstractmethod
-    async def target_single_step(self, addr=None):
+    async def target_single_step(self):
+        pass
+
+    @abstractmethod
+    async def target_detach(self):
         pass
 
     @abstractmethod
     async def target_get_registers(self):
+        pass
+
+    @abstractmethod
+    async def target_get_register(self, number):
+        pass
+
+    @abstractmethod
+    async def target_set_register(self, number, value):
         pass
 
     @abstractmethod
@@ -52,6 +68,14 @@ class GDBRemote(metaclass=ABCMeta):
 
     @abstractmethod
     async def target_write_memory(self, address, data):
+        pass
+
+    @abstractmethod
+    async def target_set_instr_breakpt(self, addr):
+        pass
+
+    @abstractmethod
+    async def target_clear_instr_breakpt(self, addr):
         pass
 
     async def gdb_run(self, endpoint):
@@ -63,24 +87,21 @@ class GDBRemote(metaclass=ABCMeta):
             while True:
                 while True:
                     delimiter = await endpoint.recv(1)
-                    if delimiter in (b"$", b"\x03"):
+                    if delimiter == b"$":
                         break
-                    elif delimiter == b"+":
+                    elif delimiter in (b"+", b"\x03"):
                         pass
                     else:
                         self.gdb_log(logging.WARN, "received junk: <%s>", delimiter.hex())
 
-                if delimiter == b"$":
-                    command  = await endpoint.recv_until(b"#")
-                    checksum = await endpoint.recv(2)
-                    try:
-                        checksum = int(checksum, 16)
-                    except ValueError:
-                        checksum = -1
-                    if sum(command) & 0xff != checksum:
-                        self.gdb_log(logging.ERROR, "invalid checksum for command <%s>", command)
-                elif delimiter == b"\x03":
-                    command  = b"^C"
+                command  = await endpoint.recv_until(b"#")
+                checksum = await endpoint.recv(2)
+                try:
+                    checksum = int(checksum, 16)
+                except ValueError:
+                    checksum = -1
+                if sum(command) & 0xff != checksum:
+                    self.gdb_log(logging.ERROR, "invalid checksum for command <%s>", command)
                 if not no_ack_mode:
                     await endpoint.send(b"+")
 
@@ -92,13 +113,17 @@ class GDBRemote(metaclass=ABCMeta):
                     response = b"OK"
                 else:
                     try:
-                        response = await self.gdb_process(command)
+                        response = await self._gdb_process(command, lambda: endpoint.recv_wait())
                         command_failed = False
                     except GlasgowAppletError as e:
                         self.gdb_log(logging.ERROR, "command <%s> caused an error: %s",
                                      command_asc, str(e))
-                        response = b"E00;%s" % str(e).encode("ascii")
+                        response = b"E99;%s" % str(e).encode("ascii")
                         command_failed = True
+
+                if response[0:1] == b"E":
+                    # Strip error strings if not supported by the debugger.
+                    response = response[0:3]
 
                 while True:
                     response_asc = response.decode("ascii", errors="replace")
@@ -109,21 +134,26 @@ class GDBRemote(metaclass=ABCMeta):
                         break
                     else:
                         ack = await endpoint.recv(1)
+                        while ack == b"\x03":
+                            ack = await endpoint.recv(1)
                         if ack == b"+":
                             break
                         elif ack == b"-":
                             continue
                         else:
-                            self.gdb_log(logging.error, "unrecognized acknowledgement")
-                            endpoint.close()
+                            self.gdb_log(logging.ERROR, "unrecognized acknowledgement <%s>",
+                                         ack.decode("ascii"))
+                            await endpoint.close()
+                            return
 
                 if command_failed:
                     await endpoint.close()
+                    return
 
         except asyncio.CancelledError:
             pass
 
-    async def gdb_process(self, command):
+    async def _gdb_process(self, command, make_recv_fut):
         # (lldb) "What are the properties of machine the target is running on?"
         if command == b"qHostInfo":
             info = [
@@ -153,33 +183,33 @@ class GDBRemote(metaclass=ABCMeta):
             if self.target_running():
                 await self.target_stop()
 
-            # "Target caught signal 0."
-            # Not an actual signal, just needed for protocol compliance.
-            return b"S00"
+            # "Target caught signal SIGTRAP."
+            return b"S05"
 
         # "Resume target."
         if command == b"c":
-            await self.target_resume()
-            return b"OK"
+            continue_fut  = asyncio.ensure_future(self.target_continue())
+            interrupt_fut = asyncio.ensure_future(make_recv_fut())
+            await asyncio.wait([continue_fut, interrupt_fut], return_when=asyncio.FIRST_COMPLETED)
+            if interrupt_fut.done():
+                await interrupt_fut
+            else:
+                interrupt_fut.cancel()
+            if continue_fut.done():
+                await continue_fut
+            else:
+                continue_fut.cancel()
+                await self.target_stop()
+            return b"S05"
 
         # "Single-step target [but first jump to this address]."
-        if command.startswith(b"s"):
-            if len(command) > 1:
-                address = int(command[1:], 16)
-            else:
-                address = None
-            await self.target_single_step(address)
-            return b"S00"
-
-        # "Interrupt target."
-        if command == b"^C":
-            await self.target_stop()
-            return b"S00"
+        if command == b"s":
+            await self.target_single_step()
+            return b"S05"
 
         # "Detach from target."
         if command == b"D":
-            if not self.target_running():
-                await self.target_resume()
+            await self.target_detach()
             return b"OK"
 
         # "Get all registers of the target."
@@ -195,14 +225,20 @@ class GDBRemote(metaclass=ABCMeta):
         # "Get specific register of the target."
         if command.startswith(b"p"):
             number = int(command[1:], 16)
-            value  = await self.target_get_register(number)
-            return b"%.*x" % (self.target_word_size() * 2, value)
+            if number < len(self.target_register_names()):
+                value  = await self.target_get_register(number)
+                return b"%.*x" % (self.target_word_size() * 2, value)
+            else:
+                return b"E00;unrecognized register"
 
         # "Set specific register of the target."
         if command.startswith(b"P"):
             number, value = map(lambda x: int(x, 16), command[1:].split(b"="))
-            await self.target_set_register(number, value)
-            return b"OK"
+            if number < len(self.target_register_names()):
+                await self.target_set_register(number, value)
+                return b"OK"
+            else:
+                return b"E00;unrecognized register"
 
         # "Read specified memory range of the target."
         if command.startswith(b"m"):
@@ -216,5 +252,19 @@ class GDBRemote(metaclass=ABCMeta):
             address, _length = map(lambda x: int(x, 16), location.split(b","))
             await self.target_write_memory(address, bytes.fromhex(data.decode("ascii")))
             return b"OK"
+
+        if command.startswith(b"Z1"):
+            address, _kind = map(lambda x: int(x, 16), command[3:].split(b","))
+            if await self.target_set_instr_breakpt(address):
+                return b"OK"
+            else:
+                return b"E00;out of hardware breakpoints"
+
+        if command.startswith(b"z1"):
+            address, _kind = map(lambda x: int(x, 16), command[3:].split(b","))
+            if await self.target_clear_instr_breakpt(address):
+                return b"OK"
+            else:
+                return b"E00;hardware breakpoint not set"
 
         return b""
