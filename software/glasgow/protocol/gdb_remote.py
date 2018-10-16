@@ -71,11 +71,19 @@ class GDBRemote(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    async def target_set_instr_breakpt(self, addr):
+    async def target_set_software_breakpt(self, address):
         pass
 
     @abstractmethod
-    async def target_clear_instr_breakpt(self, addr):
+    async def target_clear_software_breakpt(self, address):
+        pass
+
+    @abstractmethod
+    async def target_set_instr_breakpt(self, address):
+        pass
+
+    @abstractmethod
+    async def target_clear_instr_breakpt(self, address):
         pass
 
     async def gdb_run(self, endpoint):
@@ -101,12 +109,12 @@ class GDBRemote(metaclass=ABCMeta):
                 except ValueError:
                     checksum = -1
                 if sum(command) & 0xff != checksum:
-                    self.gdb_log(logging.ERROR, "invalid checksum for command <%s>", command)
+                    self.gdb_log(logging.ERROR, "invalid checksum for command '%s'", command)
                 if not no_ack_mode:
                     await endpoint.send(b"+")
 
                 command_asc = command.decode("ascii", errors="replace")
-                self.gdb_log(logging.DEBUG, "recv <%s>", command_asc)
+                self.gdb_log(logging.DEBUG, "recv '%s'", command_asc)
 
                 if command == b"QStartNoAckMode":
                     no_ack_mode = True
@@ -116,18 +124,23 @@ class GDBRemote(metaclass=ABCMeta):
                         response = await self._gdb_process(command, lambda: endpoint.recv_wait())
                         command_failed = False
                     except GlasgowAppletError as e:
-                        self.gdb_log(logging.ERROR, "command <%s> caused an error: %s",
+                        self.gdb_log(logging.ERROR, "command '%s' caused an unrecoverable "
+                                                    "error: %s",
                                      command_asc, str(e))
                         response = b"E99;%s" % str(e).encode("ascii")
                         command_failed = True
 
                 if response[0:1] == b"E":
+                    if not command_failed:
+                        self.gdb_log(logging.WARNING, "command '%s' caused an error: %s",
+                                     command_asc, response[4:].decode("ascii"))
+
                     # Strip error strings if not supported by the debugger.
                     response = response[0:3]
 
                 while True:
                     response_asc = response.decode("ascii", errors="replace")
-                    self.gdb_log(logging.DEBUG, "send <%s>", response_asc)
+                    self.gdb_log(logging.DEBUG, "send '%s'", response_asc)
 
                     await endpoint.send(b"$%s#%02x" % (response, sum(response) & 0xff))
                     if no_ack_mode:
@@ -141,8 +154,8 @@ class GDBRemote(metaclass=ABCMeta):
                         elif ack == b"-":
                             continue
                         else:
-                            self.gdb_log(logging.ERROR, "unrecognized acknowledgement <%s>",
-                                         ack.decode("ascii"))
+                            self.gdb_log(logging.ERROR, "unrecognized acknowledgement '%s'",
+                                         ack.decode("ascii", errors="replace"))
                             await endpoint.close()
                             return
 
@@ -252,6 +265,20 @@ class GDBRemote(metaclass=ABCMeta):
             address, _length = map(lambda x: int(x, 16), location.split(b","))
             await self.target_write_memory(address, bytes.fromhex(data.decode("ascii")))
             return b"OK"
+
+        if command.startswith(b"Z0"):
+            address, _kind = map(lambda x: int(x, 16), command[3:].split(b","))
+            if await self.target_set_software_breakpt(address):
+                return b"OK"
+            else:
+                return b"E00;cannot set software breakpoint"
+
+        if command.startswith(b"z0"):
+            address, _kind = map(lambda x: int(x, 16), command[3:].split(b","))
+            if await self.target_clear_software_breakpt(address):
+                return b"OK"
+            else:
+                return b"E00;hardware breakpoint not set"
 
         if command.startswith(b"Z1"):
             address, _kind = map(lambda x: int(x, 16), command[3:].split(b","))

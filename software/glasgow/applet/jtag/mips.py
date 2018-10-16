@@ -22,13 +22,16 @@ class EJTAGInterface(aobject, GDBRemote):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
-        self._pracc_probed = False
-        self._has_sst      = None
-        self._instr_brkpts = None
-
         self._control = DR_CONTROL()
         self._state   = "Probe"
         await self._probe()
+
+        self._pracc_probed = False
+        self._cp0_config   = None
+        self._cp0_config1  = None
+        self._cp0_debug    = None
+        self._instr_brkpts = []
+        self._softw_brkpts = {}
 
     def _log(self, message, *args):
         self._logger.log(self._level, "EJTAG: " + message, *args)
@@ -162,14 +165,15 @@ class EJTAGInterface(aobject, GDBRemote):
 
         await self._read_impcode()
         await self._scan_address_length()
-        await self._enable_probe()
 
         self.bits      = 64 if self._impcode.MIPS32_64 else 32
         self._prec     = self.bits // 4
         self._ws       = self.bits // 8
         self._mask     = ((1 << self.bits) - 1)
-        self.cpunum    = self._impcode.TypeInfo
-        self.ejtag_ver = EJTAGver_values[self._impcode.EJTAGver]
+
+        self._logger.info("found MIPS%d CPU %#x (EJTAG version %s)",
+                          self.bits, self._impcode.TypeInfo,
+                          DR_IMPCODE_EJTAGver_values[self._impcode.EJTAGver])
 
         if self._impcode.EJTAGver == 0:
             self._DRSEG_IBS_addr  = DRSEG_IBS_addr_v1
@@ -195,8 +199,6 @@ class EJTAGInterface(aobject, GDBRemote):
         control = await self._exchange_control()
         if control.DM:
             raise GlasgowAppletError("target already in debug mode")
-        else:
-            self._change_state("Running")
 
         if self._impcode.EJTAGver == 0:
             self._logger.warning("found cursed EJTAG 1.x/2.0 CPU, using undocumented "
@@ -207,6 +209,9 @@ class EJTAGInterface(aobject, GDBRemote):
             dcr  = await self._dmaacc_read(DRSEG_DCR_addr, 2)
             dcr &= ~(1<<2)
             await self._dma_accwrite(DRSEG_DCR_addr, 2, dcr)
+
+        await self._enable_probe()
+        self._change_state("Running")
 
     async def _ejtag_debug_interrupt(self):
         self._check_state("assert debug interrupt", "Running")
@@ -378,14 +383,47 @@ class EJTAGInterface(aobject, GDBRemote):
         if self._pracc_probed:
             return
 
-        self._log("PrAcc: probe CP0.Debug.NoSSt")
-        cp0_debug = CP0_Debug.from_int(await self._pracc_read_cp0(CP0_Debug_addr))
-        self._has_sst = not cp0_debug.NoSSt
-        if not self._has_sst:
+        self._cp0_config = CP0_Config.from_int(await self._pracc_read_cp0(CP0_Config_addr))
+        self._log("CP0.Config %s", self._cp0_config.bits_repr(omit_zero=True))
+        self._logger.info("target is a %s %s %s endian CPU with %s MMU",
+                          CP0_Config_AT_values[self._cp0_config.AT],
+                          CP0_Config_AR_values[self._cp0_config.AR],
+                          CP0_Config_BE_values[self._cp0_config.BE],
+                          CP0_Config_MT_values[self._cp0_config.MT])
+        self._logger.info("KUSEG cache policy: %s",   CP0_Config_Kx_values[self._cp0_config.KU])
+        self._logger.info("KSEG0 cache policy: %s",   CP0_Config_Kx_values[self._cp0_config.K0])
+        self._logger.info("KSEG2/3 cache policy: %s", CP0_Config_Kx_values[self._cp0_config.K23])
+
+        self._cp0_config1 = CP0_Config1.from_int(await self._pracc_read_cp0(CP0_Config1_addr))
+        self._log("CP0.Config1 %s", self._cp0_config1.bits_repr(omit_zero=True))
+        for cache_side, way_enc, line_enc, sets_enc in [
+            ("I", self._cp0_config1.IA, self._cp0_config1.IL, self._cp0_config1.IS),
+            ("D", self._cp0_config1.DA, self._cp0_config1.DL, self._cp0_config1.DS),
+        ]:
+            way_count  = 1 + way_enc
+            line_size  = 2 << (1 + line_enc)
+            set_count  = 2 << (5 + sets_enc) if sets_enc != 7 else 32
+            cache_size = line_size * set_count * way_count
+            if line_enc == 0:
+                self._logger.info("%s-cache is absent",
+                                  cache_side)
+            elif way_count == 0:
+                self._logger.info("%s-cache is %d KiB direct-mapped",
+                                  cache_side, cache_size / 1024)
+            else:
+                self._logger.info("%s-cache is %d KiB %d-way set-associative",
+                                  cache_side, cache_size / 1024, way_count)
+
+        self._cp0_config1 = CP0_Config1.from_int(await self._pracc_read_cp0(CP0_Config1_addr))
+        self._log("CP0.Config1 %s", self._cp0_config1.bits_repr(omit_zero=True))
+
+        self._cp0_debug = CP0_Debug.from_int(await self._pracc_read_cp0(CP0_Debug_addr))
+        self._log("CP0.Debug %s", self._cp0_debug.bits_repr(omit_zero=True))
+        if self._cp0_debug.NoSSt:
             self._logger.warning("target does not support single-stepping")
 
-        self._log("PrAcc: probe IBS.BCN")
         ibs = DRSEG_IBS.from_int(await self._pracc_read_word(self._DRSEG_IBS_addr))
+        self._log("IBS %s", self._cp0_config.bits_repr(omit_zero=True))
         self._instr_brkpts = [None] * ibs.BCN
         self._logger.info("target has %d instruction breakpoints", len(self._instr_brkpts))
 
@@ -517,6 +555,65 @@ class EJTAGInterface(aobject, GDBRemote):
     async def _pracc_write_memory(self, address, data):
         await self._pracc_copy_memory(address, len(data), [*data], is_read=False)
 
+    # PrAcc cache operations
+
+    async def _pracc_sync_icache_r1(self, address):
+        Rdata, Raddr, *_ = range(1, 32)
+        return (await self._exec_pracc(code=[
+            SW   (Raddr, self._ws * -1, Rdata),
+            LUI  (Raddr, address >> 16),
+            CACHE(0b110_01, address, Raddr), # D_HIT_WRITEBACK
+            CACHE(0b100_00, address, Raddr), # I_HIT_INVALIDATE
+            SYNC (),
+            LW   (Raddr, self._ws * -1, Rdata),
+            NOP  (),
+        ]))
+
+    async def _pracc_sync_icache_r2(self, address):
+        Rdata, Raddr, *_ = range(1, 32)
+        return (await self._exec_pracc(code=[
+            SW   (Raddr, self._ws * -1, Rdata),
+            LUI  (Raddr, address >> 16),
+            SYNCI(address, Raddr),
+            SYNC (),
+            LW   (Raddr, self._ws * -1, Rdata),
+            NOP  (),
+        ]))
+
+    async def _pracc_sync_icache(self, address):
+        if (address & DMSEG_mask) == DMSEG_addr & self._mask:
+            policy = 2
+        elif (address & KSEGx_mask) == KUSEG_addr & self._mask:
+            policy = self._cp0_config.KU
+        elif (address & KSEGx_mask) == KSEG0_addr & self._mask:
+            policy = self._cp0_config.K0
+        elif (address & KSEGx_mask) == KSEG1_addr & self._mask:
+            policy = 2 # uncached
+        elif (address & KSEGx_mask) in (KSEG2_addr & self._mask,
+                                        KSEG3_addr & self._mask):
+            policy = self._cp0_config.K23
+        else:
+            print(address & KSEGx_mask,
+                  DMSEG_addr,
+                  KUSEG_addr,
+                  KSEG0_addr,
+                  KSEG1_addr,
+                  KSEG2_addr,
+                  KSEG3_addr)
+            assert False
+
+        if policy == 2:
+            return # Uncached, we're fine.
+
+        if self._cp0_config.AR == 0: # R1
+            self._log("PrAcc: MIPS R1 I-cache sync")
+            await self._pracc_sync_icache_r1(address)
+        elif self._cp0_config.AR == 1: # R2
+            self._log("PrAcc: MIPS R2 I-cache sync")
+            await self._pracc_sync_icache_r2(address)
+        else:
+            raise GlasgowAppletError("cannot sync I-cache on unknown architecture release")
+
     # Public API / GDB remote implementation
 
     def gdb_log(self, level, message, *args):
@@ -539,6 +636,9 @@ class EJTAGInterface(aobject, GDBRemote):
     def target_running(self):
         return self._state == "Running"
 
+    def target_attached(self):
+        return not self.target_running() or any(self._instr_brkpts) or self._softw_brkpts
+
     async def target_stop(self):
         self._check_state("stop", "Running")
         await self._ejtag_debug_interrupt()
@@ -559,7 +659,7 @@ class EJTAGInterface(aobject, GDBRemote):
 
     async def target_single_step(self):
         self._check_state("single step", "Stopped")
-        if not self._has_sst:
+        if self._cp0_debug.NoSSt:
             raise GlasgowAppletError("target does not support single stepping")
         await self._pracc_single_step()
 
@@ -570,24 +670,52 @@ class EJTAGInterface(aobject, GDBRemote):
             if address is not None:
                 await self._pracc_write_word(self._DRSEG_IBCn_addr(index), 0)
                 self._instr_brkpts[index] = None
+        for address, saved_instr in self._softw_brkpts.items():
+            await self._pracc_write_word(address, self._softw_brkpts[address])
+            await self._pracc_sync_icache(address)
+        self._softw_brkpts = {}
         await self._pracc_debug_return()
 
-    async def target_set_instr_breakpt(self, addr):
+    async def target_set_software_breakpt(self, address):
+        self._check_state("set software breakpoint", "Stopped")
+        if address in self._softw_brkpts:
+            saved_instr = self._softw_brkpts[address]
+        else:
+            saved_instr = await self._pracc_read_word(address)
+        await self._pracc_write_word(address, SDBBP())
+        if await self._pracc_read_word(address) == SDBBP():
+            await self._pracc_sync_icache(address)
+            self._softw_brkpts[address] = saved_instr
+            return True
+        else:
+            return False
+
+    async def target_clear_software_breakpt(self, address):
+        self._check_state("clear software breakpoint", "Stopped")
+        if address in self._softw_brkpts:
+            await self._pracc_write_word(address, self._softw_brkpts[address])
+            await self._pracc_sync_icache(address)
+            del self._softw_brkpts[address]
+            return True
+        else:
+            return False
+
+    async def target_set_instr_breakpt(self, address):
         self._check_state("set instruction breakpoint", "Stopped")
         for index in range(len(self._instr_brkpts)):
             if self._instr_brkpts[index] is None:
-                await self._pracc_write_word(self._DRSEG_IBAn_addr(index), addr)
+                await self._pracc_write_word(self._DRSEG_IBAn_addr(index), address)
                 await self._pracc_write_word(self._DRSEG_IBMn_addr(index), 0)
                 await self._pracc_write_word(self._DRSEG_IBCn_addr(index), DRSEG_IBC(1).to_int())
-                self._instr_brkpts[index] = addr
+                self._instr_brkpts[index] = address
                 return True
         else:
             return False
 
-    async def target_clear_instr_breakpt(self, addr):
+    async def target_clear_instr_breakpt(self, address):
         self._check_state("clear instruction breakpoint", "Stopped")
         for index in range(len(self._instr_brkpts)):
-            if self._instr_brkpts[index] == addr:
+            if self._instr_brkpts[index] == address:
                 await self._pracc_write_word(self._DRSEG_IBCn_addr(index), 0)
                 self._instr_brkpts[index] = None
                 return True
@@ -675,9 +803,6 @@ class JTAGMIPSApplet(JTAGApplet, name="jtag-mips"):
             "repl", help="drop into Python shell; use `ejtag_iface` to communicate")
 
     async def interact(self, device, args, ejtag_iface):
-        self.logger.info("found MIPS%d CPU %#x (EJTAG version %s)",
-                         ejtag_iface.bits, ejtag_iface.cpunum, ejtag_iface.ejtag_ver)
-
         if args.operation == "registers":
             await ejtag_iface.target_stop()
             reg_values = await ejtag_iface.target_get_all_registers()
@@ -695,10 +820,12 @@ class JTAGMIPSApplet(JTAGApplet, name="jtag-mips"):
                 # Unless we detach from the target here, we might not be able to re-enter
                 # the debug mode, because EJTAG TAP reset appears to irreversibly destroy
                 # some state necessary for PrAcc to continue working.
-                await ejtag_iface.target_detach()
+                if ejtag_iface.target_attached():
+                    await ejtag_iface.target_detach()
 
         if args.operation == "repl":
             await AsyncInteractiveConsole(locals={"ejtag_iface":ejtag_iface}).interact()
 
             # Same as above.
-            await ejtag_iface.target_detach()
+            if ejtag_iface.target_attached():
+                await ejtag_iface.target_detach()

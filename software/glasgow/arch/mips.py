@@ -11,7 +11,7 @@ __all__ = [
     "BEQ", "BNE", "BLEZ", "BGTZ", "ADDI", "ADDIU", "SLTI", "SLTIU", "ANDI", "ORI", "XORI",
     "LUI", "LB", "LH", "LW", "LBU", "LHU", "SB", "SH", "SW",
     # Misc
-    "MFC0", "MTC0", "DERET",
+    "MFC0", "MTC0", "DERET", "SDBBP", "SYNC", "SYNCI", "CACHE",
     # Pseudo
     "NOP", "B",
 ]
@@ -102,10 +102,15 @@ def SW   (rt, im, rs):    return I_FORMAT(op=0x2B, rs=rs, rt=rt, im=im)
 
 # Misc instructions
 
-def MFC0 (rt, rd, sel=0): return R_FORMAT(op=0x10, rs=0x00, rt=rt, rd=rd, sa=0, fn=sel & 0b111)
-def MTC0 (rt, rd, sel=0): return R_FORMAT(op=0x10, rs=0x04, rt=rt, rd=rd, sa=0, fn=sel & 0b111)
-def DERET():              return R_FORMAT(op=0x10, rs=0x10, rt= 0, rd= 0, sa=0, fn=0x1f)
-def SDBBP():              return R_FORMAT(op=0x1c, rs=0x00, rt= 0, rd= 0, sa=0, fn=0x1f)
+def MFC0 (rt, rd, sel=0): return R_FORMAT(op=0x10, rs=0x00, rt=rt,   rd=rd, sa=0, fn=sel & 0b111)
+def MTC0 (rt, rd, sel=0): return R_FORMAT(op=0x10, rs=0x04, rt=rt,   rd=rd, sa=0, fn=sel & 0b111)
+
+def DERET():              return R_FORMAT(op=0x10, rs=0x10, rt=0x00, rd= 0, sa=0, fn=0x1f)
+def SDBBP():              return R_FORMAT(op=0x1c, rs=0x00, rt=0x00, rd= 0, sa=0, fn=0x3f)
+
+def SYNC ():              return R_FORMAT(op=0x00, rs=0x00, rt=0x00, rd= 0, sa=0, fn=0x0f)
+def SYNCI(im, rs):        return I_FORMAT(op=0x01, rs=rs,   rt=0x1f, im=im)
+def CACHE(op, im, rs):    return I_FORMAT(op=0x2f, rs=rs,   rt=op,   im=im)
 
 # Pseudo-instructions
 

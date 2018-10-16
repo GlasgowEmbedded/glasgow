@@ -12,22 +12,27 @@ __all__ = [
     "IR_IMPCODE", "IR_ADDRESS", "IR_DATA", "IR_CONTROL", "IR_ALL", "IR_EJTAGBOOT", "IR_NORMALBOOT",
     "IR_FASTDATA", "IR_PCSAMPLE", "IR_FDC",
     # DR
-    "DR_IMPCODE", "EJTAGver_values",
+    "DR_IMPCODE", "DR_IMPCODE_EJTAGver_values",
     "DR_CONTROL",
+    # Address space
+    "KUSEG_addr", "KSEG0_addr", "KSEG1_addr", "KSEG2_addr", "KSEG3_addr", "KSEGx_mask",
     # CP0
-    "CP0_BadVAddr_addr", "CP0_SR_addr", "CP0_Cause_addr", "CP0_Debug_addr", "CP0_Debug2_addr",
-    "CP0_DEPC_addr", "CP0_DESAVE_addr",
+    "CP0_BadVAddr_addr", "CP0_SR_addr", "CP0_Cause_addr", "CP0_Config_addr", "CP0_Config1_addr",
+    "CP0_Config2_addr", "CP0_Config3_addr", "CP0_Debug_addr", "CP0_Debug2_addr", "CP0_DEPC_addr",
+    "CP0_DESAVE_addr",
+    "CP0_Config", "CP0_Config_Kx_values", "CP0_Config_MT_values", "CP0_Config_AR_values",
+    "CP0_Config_AT_values", "CP0_Config_BE_values",
+    "CP0_Config1",
     "CP0_Debug", "CP0_Debug2",
     # DMSEG
-    "DMSEG_addr", "DMSEG_TRAP_addr",
-    # DRSEG
-    "DRSEG_addr", "DRSEG_DCR_addr", "DRSEG_IBS_addr", "DRSEG_IBAn_addr", "DRSEG_IBMn_addr",
-    "DRSEG_IBASIDn_addr", "DRSEG_IBCn_addr", "DRSEG_IBCCn_addr", "DRSEG_IBPCn_addr",
-    "DRSEG_DBS_addr", "DRSEG_DBAn_addr", "DRSEG_DBMn_addr", "DRSEG_DBASIDn_addr",
-    "DRSEG_DBCn_addr", "DRSEG_DBVn_addr", "DRSEG_DBCCn_addr", "DRSEG_DBPCn_addr",
-    "DRSEG_IBS_addr_v1", "DRSEG_DBS_addr_v1", "DRSEG_IBAn_addr_v1", "DRSEG_IBCn_addr_v1",
-    "DRSEG_IBMn_addr_v1", "DRSEG_DBAn_addr_v1", "DRSEG_DBCn_addr_v1", "DRSEG_DBMn_addr_v1",
-    "DRSEG_DBVn_addr_v1",
+    "DMSEG_addr", "DMSEG_mask",
+    "DRSEG_addr", "DMSEG_TRAP_addr", "DRSEG_DCR_addr", "DRSEG_IBS_addr", "DRSEG_IBAn_addr",
+    "DRSEG_IBMn_addr", "DRSEG_IBASIDn_addr", "DRSEG_IBCn_addr", "DRSEG_IBCCn_addr",
+    "DRSEG_IBPCn_addr", "DRSEG_DBS_addr", "DRSEG_DBAn_addr", "DRSEG_DBMn_addr",
+    "DRSEG_DBASIDn_addr", "DRSEG_DBCn_addr", "DRSEG_DBVn_addr", "DRSEG_DBCCn_addr",
+    "DRSEG_DBPCn_addr", "DRSEG_IBS_addr_v1", "DRSEG_DBS_addr_v1", "DRSEG_IBAn_addr_v1",
+    "DRSEG_IBCn_addr_v1", "DRSEG_IBMn_addr_v1", "DRSEG_DBAn_addr_v1", "DRSEG_DBCn_addr_v1",
+    "DRSEG_DBMn_addr_v1", "DRSEG_DBVn_addr_v1",
     "DRSEG_DCR", "DRSEG_IBS", "DRSEG_IBC", "DRSEG_DBS", "DRSEG_DBC",
 ]
 
@@ -64,7 +69,7 @@ DR_IMPCODE = Bitfield("DR_IMPCODE", 4, [
     ("EJTAGver",   3),
 ])
 
-EJTAGver_values = defaultdict(lambda: "reserved", {
+DR_IMPCODE_EJTAGver_values = defaultdict(lambda: "unknown", {
     0: "1.x/2.0",
     1: "2.5",
     2: "2.6",
@@ -102,15 +107,95 @@ DR_CONTROL = Bitfield("DR_CONTROL", 4, [
     ("Rocc",       1),
 ])
 
+# Address space
+
+KUSEG_addr = 0x0000_0000_0000_0000
+KSEG0_addr = 0xffff_ffff_8000_0000
+KSEG1_addr = 0xffff_ffff_a000_0000
+KSEG2_addr = 0xffff_ffff_c000_0000
+KSEG3_addr = 0xffff_ffff_e000_0000
+
+KSEGx_mask = 0xffff_ffff_e000_0000
+
 # CP0 addresses
 
 CP0_BadVAddr_addr = ( 8, 0)
 CP0_SR_addr       = (12, 0)
 CP0_Cause_addr    = (13, 0)
+CP0_Config_addr   = (16, 0)
+CP0_Config1_addr  = (16, 1)
+CP0_Config2_addr  = (16, 2)
+CP0_Config3_addr  = (16, 3)
 CP0_Debug_addr    = (23, 0)
 CP0_Debug2_addr   = (23, 6)
 CP0_DEPC_addr     = (24, 0)
 CP0_DESAVE_addr   = (31, 0)
+
+# CP0 Config layout
+
+CP0_Config = Bitfield("CP0_Config", 4, [
+    ("K0",         3),
+    (None,         4),
+    ("MT",         3),
+    ("AR",         3),
+    ("AT",         2),
+    ("BE",         1),
+    (None,         9),
+    ("KU",         3),
+    ("K23",        3),
+    ("M",          1),
+])
+
+CP0_Config_Kx_values = defaultdict(lambda: "unknown", {
+    # Values 0/1 not defined in MIPS reference, but seem consistent among vendors
+    0: "write-through write-no-allocate",
+    1: "write-through write-allocate",
+    2: "uncached",
+    3: "write-back write-allocate",
+})
+
+CP0_Config_MT_values = defaultdict(lambda: "unknown", {
+    0: "absent",
+    1: "standard TLB",
+    2: "standard BAT",
+    3: "standard fixed",
+})
+
+CP0_Config_AR_values = defaultdict(lambda: "unknown", {
+    0: "R1",
+    1: "R2",
+})
+
+CP0_Config_AT_values = defaultdict(lambda: "unknown", {
+    0: "MIPS32",
+    1: "MIPS64 32-bit",
+    2: "MIPS64 64-bit",
+})
+
+CP0_Config_BE_values = {
+    0: "little",
+    1: "big",
+}
+
+# CP0 Config1 layout
+
+CP0_Config1 = Bitfield("CP0_Config1", 4, [
+    ("FP",         1),
+    ("EP",         1),
+    ("CA",         1),
+    ("WR",         1),
+    ("PC",         1),
+    ("MD",         1),
+    ("C2",         1),
+    ("DA",         3),
+    ("DL",         3),
+    ("DS",         3),
+    ("IA",         3),
+    ("IL",         3),
+    ("IS",         3),
+    ("MMUSize_m1", 6),
+    ("M",          1),
+])
 
 # CP0 Debug layout
 
@@ -152,14 +237,13 @@ CP0_Debug2 = Bitfield("CP0_Debug2", 4, [
     ("Prm",        1),
 ])
 
-# DMSEG addresses
+# DMSEG/DRSEG addresses
 
 DMSEG_addr          = 0xffff_ffff_ff20_0000
-DMSEG_TRAP_addr     = DMSEG_addr + 0x0200
-
-# DRSEG addresses
-
 DRSEG_addr          = 0xffff_ffff_ff30_0000
+DMSEG_mask          = 0xffff_ffff_ffe0_0000
+
+DMSEG_TRAP_addr     = DMSEG_addr + 0x0200
 DRSEG_DCR_addr      = DRSEG_addr + 0x0000
 
 # DRSEG addresses in EJTAG 2.5+
