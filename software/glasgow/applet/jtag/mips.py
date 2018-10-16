@@ -792,7 +792,25 @@ class JTAGMIPSApplet(JTAGApplet, name="jtag-mips"):
     logger = logging.getLogger(__name__)
     help = "debug MIPS processors via EJTAG"
     description = """
-    TBD
+    Debug MIPS processors via the EJTAG interface.
+
+    This applet supports dumping CPU state, which is also useful to check if the CPU is recognized
+    correctly, and running a GDB remote protocol server for a debugger. The supported debugger
+    features are:
+
+        * Starting, stopping and single-stepping.
+        * Hardware and software breakpoints.
+        * Register and memory reads and writes.
+
+    Notable omissions include:
+
+        * Floating point.
+        * Tracepoints and watchpoints.
+
+    The applet has been written with 32- and 64-bit CPUs with EJTAG 1.x-5.x in mind, but has only
+    been tested on a big endian MIPS32 R1 EJTAG 1.x/2.0 CPU. As such, use with any other CPUs
+    might or might not be possible. In particular, it certainly does not currently work on
+    little-endian CPUs. Sorry about that.
     """
 
     @classmethod
@@ -817,8 +835,8 @@ class JTAGMIPSApplet(JTAGApplet, name="jtag-mips"):
     def add_interact_arguments(cls, parser):
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
-        p_registers = p_operation.add_parser(
-            "registers", help="dump registers")
+        p_dump_state = p_operation.add_parser(
+            "dump-state", help="dump CPU state")
 
         p_gdb = p_operation.add_parser(
             "gdb", help="start a GDB remote protocol server")
@@ -831,9 +849,9 @@ class JTAGMIPSApplet(JTAGApplet, name="jtag-mips"):
             "repl", help="drop into Python shell; use `ejtag_iface` to communicate")
 
     async def interact(self, device, args, ejtag_iface):
-        if args.operation == "registers":
+        if args.operation == "dump-state":
             await ejtag_iface.target_stop()
-            reg_values = await ejtag_iface.target_get_all_registers()
+            reg_values = await ejtag_iface.target_get_registers()
             await ejtag_iface.target_detach()
 
             reg_names = ejtag_iface.target_register_names()
