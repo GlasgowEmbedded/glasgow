@@ -3,8 +3,8 @@
 
 __all__ = [
     # R-format
-    "SLL", "SRL", "SRA", "JR", "JALR", "MFHI", "MFLO", "DIV", "DIVU", "MULT", "MULTU",
-    "ADD", "ADDU", "SUB", "SUBU", "AND", "OR", "XOR", "NOR", "SLT", "SLTU",
+    "SLL", "SRL", "SRA", "JR", "JALR", "MFHI", "MTHI", "MFLO", "MTLO", "DIV", "DIVU", "MULT",
+    "MULTU", "ADD", "ADDU", "SUB", "SUBU", "AND", "OR", "XOR", "NOR", "SLT", "SLTU",
     # J-format
     "J", "JAL",
     # I-format
@@ -46,7 +46,9 @@ def JR   (rs):            return R_FORMAT(op=0x00, rs=rs, rt= 0, rd= 0, sa=0,  f
 def JALR (rd, rs):        return R_FORMAT(op=0x00, rs=rs, rt= 0, rd=rd, sa=0,  fn=0x09)
 
 def MFHI (rd):            return R_FORMAT(op=0x00, rs= 0, rt= 0, rd=rd, sa=0,  fn=0x10)
-def MFLO (rd):            return R_FORMAT(op=0x00, rs= 0, rt= 0, rd=rd, sa=0,  fn=0x12)
+def MTHI (rd):            return R_FORMAT(op=0x00, rs= 0, rt= 0, rd=rd, sa=0,  fn=0x11)
+def MFLO (rs):            return R_FORMAT(op=0x00, rs=rs, rt= 0, rd= 0, sa=0,  fn=0x12)
+def MTLO (rs):            return R_FORMAT(op=0x00, rs=rs, rt= 0, rd= 0, sa=0,  fn=0x13)
 
 def DIV  (rs, rt):        return R_FORMAT(op=0x00, rs=rs, rt=rt, rd= 0, sa=0,  fn=0x1A)
 def DIVU (rs, rt):        return R_FORMAT(op=0x00, rs=rs, rt=rt, rd= 0, sa=0,  fn=0x1B)

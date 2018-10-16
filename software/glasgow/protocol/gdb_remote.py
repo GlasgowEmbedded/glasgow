@@ -55,6 +55,10 @@ class GDBRemote(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    async def target_set_registers(self, registers):
+        pass
+
+    @abstractmethod
     async def target_get_register(self, number):
         pass
 
@@ -227,13 +231,13 @@ class GDBRemote(metaclass=ABCMeta):
 
         # "Get all registers of the target."
         if command == b"g":
-            registers = bytearray()
+            values = bytearray()
             for register in await self.target_get_registers():
                 if register is None:
-                    registers += b"xx" * self.target_word_size()
+                    values += b"xx" * self.target_word_size()
                 else:
-                    registers += b"%.*x" % (self.target_word_size() * 2, register)
-            return registers
+                    values += b"%.*x" % (self.target_word_size() * 2, register)
+            return values
 
         # "Get specific register of the target."
         if command.startswith(b"p"):
@@ -243,6 +247,15 @@ class GDBRemote(metaclass=ABCMeta):
                 return b"%.*x" % (self.target_word_size() * 2, value)
             else:
                 return b"E00;unrecognized register"
+
+        # "Set all registers of the target."
+        if command.startswith(b"G"):
+            values = command[1:]
+            registers = []
+            while values:
+                registers.append(int(values[:self.target_word_size() * 2]))
+                values = values[self.target_word_size() * 2:]
+            await self.target_set_registers(registers)
 
         # "Set specific register of the target."
         if command.startswith(b"P"):

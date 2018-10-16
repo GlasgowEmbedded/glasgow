@@ -453,6 +453,31 @@ class EJTAGInterface(aobject, GDBRemote):
             NOP  (),
         ], data=[0] * 38)
 
+    async def _pracc_set_registers(self, registers):
+        self._log("PrAcc: set registers")
+
+        Rdata, Racc, *_ = range(1, 32)
+        await self._exec_pracc(code=[
+            SW   (Racc, self._ws *  2, Rdata),
+            LW   (Racc, self._ws *  1, Rdata),
+            MTC0 (Racc, *CP0_DESAVE_addr),
+            *[LW (Rn,   self._ws * Rn, 1) for Rn in range(3, 32)],
+            LW   (Racc, self._ws * 32, Rdata),
+            MTC0 (Racc, *CP0_SR_addr),
+            LW   (Racc, self._ws * 33, Rdata),
+            MTLO (Racc),
+            LW   (Racc, self._ws * 34, Rdata),
+            MTHI (Racc),
+            LW   (Racc, self._ws * 35, Rdata),
+            MTC0 (Racc, *CP0_BadVAddr_addr),
+            LW   (Racc, self._ws * 36, Rdata),
+            MTC0 (Racc, *CP0_Cause_addr),
+            LW   (Racc, self._ws * 37, Rdata),
+            MTC0 (Racc, *CP0_DEPC_addr),
+            LW   (Racc, self._ws *  2, Rdata),
+            NOP  (),
+        ], data=registers)
+
     async def _pracc_get_gpr(self, number):
         Rdata, Racc, *_ = range(1, 32)
         if number != Rdata:
@@ -724,6 +749,10 @@ class EJTAGInterface(aobject, GDBRemote):
     async def target_get_registers(self):
         self._check_state("get registers", "Stopped")
         return await self._pracc_get_registers()
+
+    async def target_set_registers(self, registers):
+        self._check_state("get registers", "Stopped")
+        await self._pracc_set_registers(registers)
 
     async def target_get_register(self, number):
         self._check_state("get register", "Stopped")
