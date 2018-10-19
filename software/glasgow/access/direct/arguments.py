@@ -56,20 +56,27 @@ class DirectArguments(AccessArguments):
     def _pin_set(self, width, arg):
         if re.match(r"^[0-9]+:[0-9]+$", arg):
             first, last = map(int, arg.split(":"))
-            numbers = list(range(first, last))
+            numbers = list(range(first, last + 1))
         elif re.match(r"^[0-9]+(,[0-9]+)*$", arg):
             numbers = list(map(int, arg.split(",")))
         else:
             self._arg_error("{} is not a valid pin number set", arg)
-        if len(numbers) != width:
+        if len(numbers) not in width:
+            if len(width) == 1:
+                width_desc = str(width[0])
+            else:
+                width_desc = "{}..{}".format(width.start, width.stop - 1)
             self._arg_error("set {} includes {} pins, but {} pins are required",
-                            arg, len(numbers), width)
+                            arg, len(numbers), width_desc)
         return numbers
 
     def _add_pin_set_argument(self, parser, name, width, default, required):
         help = "bind the applet I/O lines {!r} to pins SET".format(name)
         if default is not None:
             help += " (default: %(default)s)"
+
+        if isinstance(width, int):
+            width = range(width, width + 1)
 
         opt_name = "--pins-" + name.lower().replace("_", "-")
         parser.add_argument(
