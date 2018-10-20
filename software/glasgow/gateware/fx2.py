@@ -69,6 +69,27 @@ class _FIFOWithOverflow(Module, _FIFOInterface):
         ]
 
 
+class _FIFOWithFlush(Module, _FIFOInterface):
+    def __init__(self, fifo, async=False, auto_flush=True):
+        _FIFOInterface.__init__(self, fifo.width, fifo.depth)
+
+        self.submodules.fifo = fifo
+
+        self.dout     = fifo.dout
+        self.re       = fifo.re
+        self.readable = fifo.readable
+        self.din      = fifo.din
+        self.we       = fifo.we
+        self.writable = fifo.writable
+
+        self.flush    = Signal(reset=auto_flush)
+        if async:
+            self._flush_s  = Signal()
+            self.speicals += MultiReg(self.flush, self._flush_s)
+        else:
+            self._flush_s  = self.flush
+
+
 class _RegisteredTristate(Module):
     def __init__(self, io):
 
@@ -119,9 +140,8 @@ class FX2Arbiter(Module):
 
         self.out_fifos = Array([_FIFOWithOverflow(_DummyFIFO(width=8))
                                 for _ in range(2)])
-        self. in_fifos = Array([_DummyFIFO(width=8)
+        self. in_fifos = Array([_FIFOWithFlush(_DummyFIFO(width=8))
                                 for _ in range(2)])
-        self.streaming = Array([False for _ in range(2)])
 
     def do_finalize(self):
         bus  = self.bus
@@ -201,9 +221,7 @@ class FX2Arbiter(Module):
             If(rdy.part(addr, 1),
                 self.in_fifos[addr[0]].re.eq(1),
                 slwr.eq(1)
-            ).Elif(~flag.part(addr, 1) &
-                   ~self.in_fifos[addr[0]].readable &
-                   self.streaming[addr[0]],
+            ).Elif(~flag.part(addr, 1) & ~self.in_fifos[addr[0]].readable,
                 # The ~FULL flag went down, and it goes down one sample earlier than the actual
                 # FULL condition. So we have one more byte free. However, the FPGA-side streaming
                 # FIFO became empty simultaneously.
@@ -215,14 +233,14 @@ class FX2Arbiter(Module):
                 # This shouldn't cause any problems.
                 pend.eq(1),
                 NextState("NEXT")
-            ).Elif(flag.part(addr, 1) &
-                   ~self.streaming[addr[0]],
-                # The FPGA-side non-streaming FIFO is empty, but the FX2-side FIFO is not full yet.
+            ).Elif(flag.part(addr, 1) & self.in_fifos[addr[0]]._flush_s,
+                # The FX2-side FIFO is not full yet, but the flush flag is asserted.
                 # Commit the short packet.
                 pend.eq(1),
                 NextState("NEXT")
             ).Else(
-                # Either the FPGA-side streaming FIFO is empty, or the FX2-side FIFO is full.
+                # Either the FPGA-side FIFO is empty, or the FX2-side FIFO is full, or the flush
+                # flag is not asserted.
                 # FX2 automatically commits a full FIFO, so we don't need to do anything here.
                 NextState("NEXT")
             )
@@ -240,7 +258,7 @@ class FX2Arbiter(Module):
             )
         )
 
-    def _make_fifo(self, arbiter_side, logic_side, cd_logic, reset, depth, wrapper=lambda x: x):
+    def _make_fifo(self, arbiter_side, logic_side, cd_logic, reset, depth, wrapper):
         if cd_logic is None:
             fifo = wrapper(SyncFIFOBuffered(8, depth))
 
@@ -270,19 +288,26 @@ class FX2Arbiter(Module):
         assert 0 <= n < 2
         assert isinstance(self.out_fifos[n].fifo, _DummyFIFO)
 
-        fifo = self._make_fifo(arbiter_side="write", logic_side="read",
-                               cd_logic=clock_domain, reset=reset,
-                               depth=depth, wrapper=lambda x: _FIFOWithOverflow(x))
+        fifo = self._make_fifo(arbiter_side="write",
+                               logic_side="read",
+                               cd_logic=clock_domain,
+                               reset=reset,
+                               depth=depth,
+                               wrapper=lambda x: _FIFOWithOverflow(x))
         self.out_fifos[n] = fifo
         return fifo
 
-    def get_in_fifo(self, n, depth=512, streaming=False, clock_domain=None, reset=None):
+    def get_in_fifo(self, n, depth=512, auto_flush=True, clock_domain=None, reset=None):
         assert 0 <= n < 2
-        assert isinstance(self.in_fifos[n], _DummyFIFO)
+        assert isinstance(self.in_fifos[n].fifo, _DummyFIFO)
 
-        fifo = self._make_fifo(arbiter_side="read", logic_side="write",
-                               cd_logic=clock_domain, reset=reset,
-                               depth=depth)
+        fifo = self._make_fifo(arbiter_side="read",
+                               logic_side="write",
+                               cd_logic=clock_domain,
+                               reset=reset,
+                               depth=depth,
+                               wrapper=lambda x: _FIFOWithFlush(x,
+                                    async=clock_domain is not None,
+                                    auto_flush=auto_flush))
         self.in_fifos[n] = fifo
-        self.streaming[n] = streaming
         return fifo

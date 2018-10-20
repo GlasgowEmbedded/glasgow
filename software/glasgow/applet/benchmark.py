@@ -97,7 +97,7 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
         subtarget = iface.add_subtarget(BenchmarkSubtarget(
             mode=mode,
             error=error,
-            in_fifo=iface.get_in_fifo(),
+            in_fifo=iface.get_in_fifo(auto_flush=False),
             out_fifo=iface.get_out_fifo(),
         ))
 

@@ -47,7 +47,7 @@ class SimulationMultiplexerInterface(AccessMultiplexerInterface):
 
         return fifo
 
-    def get_in_fifo(self, depth=512, streaming=False, clock_domain=None):
+    def get_in_fifo(self, depth=512, auto_flush=False, clock_domain=None):
         assert self.in_fifo is None
 
         self.submodules.in_fifo = self._make_fifo(

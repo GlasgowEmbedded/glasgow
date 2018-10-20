@@ -145,7 +145,7 @@ class RGBGrabberApplet(GlasgowApplet, name="rgb-grabber"):
             columns=args.columns,
             vblank=args.vblank,
             pads=iface.get_pads(args, pins=("dck",), pin_sets=("r", "g", "b")),
-            in_fifo=iface.get_in_fifo(depth=512 * 30, streaming=True),
+            in_fifo=iface.get_in_fifo(depth=512 * 30, auto_flush=False),
         ))
 
     async def run(self, device, args):
