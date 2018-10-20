@@ -85,7 +85,7 @@ class _FIFOWithFlush(Module, _FIFOInterface):
         self.flush    = Signal(reset=auto_flush)
         if async:
             self._flush_s  = Signal()
-            self.speicals += MultiReg(self.flush, self._flush_s)
+            self.specials += MultiReg(self.flush, self._flush_s, reset=auto_flush)
         else:
             self._flush_s  = self.flush
 

@@ -1,4 +1,5 @@
 import usb1
+import math
 
 from .. import AccessDemultiplexer, AccessDemultiplexerInterface
 
@@ -72,11 +73,12 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         self.logger.trace("deasserting reset")
         await self.device.write_register(self._addr_reset, 0)
 
-    async def _read_packet(self):
-        packet = await self.device.bulk_read(self._endpoint_in, self._in_packet_size)
+    async def _read_packet(self, hint=0):
+        buffers = max(1, math.ceil(hint / self._endpoint_in))
+        packet  = await self.device.bulk_read(self._endpoint_in, self._in_packet_size * buffers)
         self._buffer_in += packet
 
-    async def read(self, length=None):
+    async def read(self, length=None, hint=0):
         if len(self._buffer_out) > 0:
             # Flush the buffer, so that everything written before the read reaches the device.
             await self.flush()
@@ -86,13 +88,13 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
             length = len(self._buffer_in)
         elif length is None:
             # Return whatever is received in the next transfer, even if it's nothing.
-            await self._read_packet()
+            await self._read_packet(hint)
             length = len(self._buffer_in)
         else:
             # Return exactly the requested length.
             while len(self._buffer_in) < length:
                 self.logger.trace("FIFO: need %d bytes", length - len(self._buffer_in))
-                await self._read_packet()
+                await self._read_packet(hint)
 
         result = self._buffer_in[:length]
         self._buffer_in = self._buffer_in[length:]

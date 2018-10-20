@@ -128,7 +128,7 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
                 await iface.reset()
 
                 begin  = time.time()
-                actual = await iface.read(len(golden))
+                actual = await iface.read(len(golden), hint=2048)
                 end    = time.time()
 
                 error = (actual != golden)
