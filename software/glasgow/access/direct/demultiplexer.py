@@ -19,7 +19,7 @@ class DirectDemultiplexer(AccessDemultiplexer):
             for port in args.port_spec:
                 await self.device.mirror_voltage(port)
                 applet.logger.info("port %s voltage set to %.1f V",
-                                   port, self.device.get_voltage(port))
+                                   port, await self.device.get_voltage(port))
         elif hasattr(args, "voltage") and args.voltage is not None:
             await self.device.set_voltage(args.port_spec, args.voltage)
             applet.logger.info("port(s) %s voltage set to %.1f V",

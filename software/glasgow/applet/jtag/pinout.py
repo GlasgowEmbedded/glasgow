@@ -90,7 +90,7 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_set_argument(parser, "jtag", width=range(4, 9))
+        access.add_pin_set_argument(parser, "jtag", width=range(4, 9), required=True)
 
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=10,
@@ -218,36 +218,78 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
         if pull_down_pins:
             self.logger.info("pull-L: %s", self._pins_to_str(pull_down_pins))
 
-        self.logger.info("detecting TCK, TMS and TDO")
-        tck_tms_tdo = []
-        for pin_tck in self.pins:
-            for pin_tms in self.pins - {pin_tck}:
-                self.logger.debug("trying TCK=%s TMS=%s",
-                                  self.pin_names[pin_tck], self.pin_names[pin_tms])
-                tdo_pins = await self._detect_tdo(iface, 1 << pin_tck, 1 << pin_tms)
-                for pin_tdo in tdo_pins - {pin_tck, pin_tms}:
-                    self.logger.info("shifted 10 out of IR with TCK=%s TMS=%s TDO=%s",
-                                     self.pin_names[pin_tck], self.pin_names[pin_tms],
-                                     self.pin_names[pin_tdo])
-                    tck_tms_tdo.append((pin_tck, pin_tms, pin_tdo))
+        if pull_down_pins and len(self.pins) > 4:
+            self.logger.info("found pins with pull-downs, will probe TRST#")
+        elif len(self.pins) > 4:
+            self.logger.info("no pins with pull-downs, not probing TRST#")
 
-        self.logger.info("detecting TDI")
-        tck_tms_tdi_tdo = []
-        for (pin_tck, pin_tms, pin_tdo) in tck_tms_tdo:
-            for pin_tdi in self.pins - {pin_tck, pin_tms, pin_tdo}:
-                self.logger.debug("trying TCK=%s TMS=%s TDI=%s TDO=%s",
-                                  self.pin_names[pin_tck], self.pin_names[pin_tms],
-                                  self.pin_names[pin_tdi], self.pin_names[pin_tdo])
-                ir_lens = await self._detect_tdi(iface, 1 << pin_tck, 1 << pin_tms,
-                                                 1 << pin_tdi, 1 << pin_tdo)
-                for ir_len in ir_lens:
-                    self.logger.info("shifted %d-bit IR with TCK=%s TMS=%s TDI=%s TDO=%s",
-                                     ir_len,
-                                     self.pin_names[pin_tck], self.pin_names[pin_tms],
-                                     self.pin_names[pin_tdi], self.pin_names[pin_tdo])
-                else:
-                    continue
-                tck_tms_tdi_tdo.append((pin_tck, pin_tms, pin_tdi, pin_tdo))
+        results = []
+        for pin_trst in [None, *pull_down_pins]:
+            if pin_trst is None:
+                self.logger.info("detecting TCK, TMS and TDO")
+                pins = self.pins
+            else:
+                self.logger.info("detecting TCK, TMS and TDO with TRST#=%s",
+                                 self.pin_names[pin_trst])
+                pins = self.pins - {pin_trst}
+
+            tck_tms_tdo = []
+            for pin_tck in pins:
+                for pin_tms in pins - {pin_tck}:
+                    self.logger.debug("trying TCK=%s TMS=%s",
+                                      self.pin_names[pin_tck], self.pin_names[pin_tms])
+                    tdo_pins = await self._detect_tdo(iface, 1 << pin_tck, 1 << pin_tms,
+                                                      1 << pin_trst if pin_trst else 0)
+                    for pin_tdo in tdo_pins - {pin_tck, pin_tms}:
+                        self.logger.info("shifted 10 out of IR with TCK=%s TMS=%s TDO=%s",
+                                         self.pin_names[pin_tck], self.pin_names[pin_tms],
+                                         self.pin_names[pin_tdo])
+                        tck_tms_tdo.append((pin_tck, pin_tms, pin_tdo))
+
+            if not tck_tms_tdo:
+                continue
+
+            self.logger.info("detecting TDI")
+            for (pin_tck, pin_tms, pin_tdo) in tck_tms_tdo:
+                for pin_tdi in pins - {pin_tck, pin_tms, pin_tdo}:
+                    self.logger.debug("trying TCK=%s TMS=%s TDI=%s TDO=%s",
+                                      self.pin_names[pin_tck], self.pin_names[pin_tms],
+                                      self.pin_names[pin_tdi], self.pin_names[pin_tdo])
+                    ir_lens = await self._detect_tdi(iface, 1 << pin_tck, 1 << pin_tms,
+                                                     1 << pin_tdi, 1 << pin_tdo,
+                                                     1 << pin_trst if pin_trst else 0)
+                    for ir_len in ir_lens:
+                        self.logger.info("shifted %d-bit IR with TCK=%s TMS=%s TDI=%s TDO=%s",
+                                         ir_len,
+                                         self.pin_names[pin_tck], self.pin_names[pin_tms],
+                                         self.pin_names[pin_tdi], self.pin_names[pin_tdo])
+                        results.append((pin_tck, pin_tms, pin_tdi, pin_tdo, pin_trst))
+                    else:
+                        continue
+
+            if results:
+                self.logger.info("JTAG interface detected, not probing TRST#")
+                break
+
+        if len(results) == 0:
+            self.logger.warning("no JTAG interface detected")
+        elif len(results) == 1:
+            pin_tck, pin_tms, pin_tdi, pin_tdo, pin_trst = results[0]
+            args = ["jtag"]
+            if pin_tck != 0:
+                args += ["--pin-tck", pin_tck]
+            if pin_tms != 1:
+                args += ["--pin-tms", pin_tms]
+            if pin_tdi != 2:
+                args += ["--pin-tdi", pin_tdi]
+            if pin_tdo != 3:
+                args += ["--pin-tdo", pin_tdo]
+            if pin_trst is not None:
+                args += ["--pin-trst", pin_trst]
+            self.logger.info("use `%s` as arguments", " ".join(args))
+        else:
+            self.logger.warning("more than one JTAG interface detected; this likely a false "
+                                "positive")
 
 # -------------------------------------------------------------------------------------------------
 
