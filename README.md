@@ -1,5 +1,8 @@
 Glasgow = Bus Pirate + Bus Blaster + Logic Sniffer
 ====
+
+**Want one? [Subscribe here](https://mailchi.mp/44980ff6f0ab/glasgow-announcements)**
+
 Glasgow is a 50 MHz 1V8/2V5/3V3/3V6/5V0 bus multitool,
 think [Bus Pirate](http://dangerousprototypes.com/docs/Bus_Pirate) + [Bus Blaster](http://dangerousprototypes.com/docs/Bus_Blaster) + [Logic Sniffer](http://dangerousprototypes.com/docs/Open_Bench_Logic_Sniffer)
 all in one reconfigurable package.
