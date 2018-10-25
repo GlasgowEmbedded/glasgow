@@ -174,9 +174,22 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
     Identify, read, and write arbitrary areas of a 25Cxx-compatible Flash memory.
     """
 
+    @classmethod
+    def add_build_arguments(cls, parser, access):
+        super().add_build_arguments(parser, access)
+
+        access.add_pin_argument(parser, "hold")
+
     def build(self, target, args):
         subtarget = super().build(target, args)
         subtarget.comb += subtarget.bus.oe.eq(subtarget.bus.ss == args.ss_active)
+
+        if args.pin_hold:
+            hold_t = self.mux_interface.get_pin(args.pin_hold)
+            subtarget.comb += [
+                hold_t.oe.eq(1),
+                hold_t.o.eq(1),
+            ]
 
     async def run(self, device, args):
         spi_iface = await super().run(device, args)
