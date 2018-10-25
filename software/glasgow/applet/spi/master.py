@@ -79,6 +79,7 @@ class SPIMasterSubtarget(Module):
 
         self.submodules.fsm = FSM(reset_state="COUNT-MSB")
         self.fsm.act("COUNT-MSB",
+            in_fifo.flush.eq(1),
             If(out_fifo.readable,
                 out_fifo.re.eq(1),
                 NextValue(count[8:], out_fifo.dout),
@@ -211,7 +212,7 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
         return iface.add_subtarget(SPIMasterSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
-            in_fifo=iface.get_in_fifo(),
+            in_fifo=iface.get_in_fifo(auto_flush=False),
             bit_rate=args.bit_rate * 1000,
             sck_idle=args.sck_idle,
             sck_edge=args.sck_edge,

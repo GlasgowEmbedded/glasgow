@@ -58,7 +58,7 @@ class SPIFlash25CInterface:
 
     async def _read_command(self, address, length, chunk_size, cmd, dummy=0):
         if chunk_size is None:
-            chunk_size = 512
+            chunk_size = 251 # FIXME: raise once #44 is fixed
 
         data = bytearray()
         while length > 0:
