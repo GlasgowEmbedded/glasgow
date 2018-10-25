@@ -81,14 +81,14 @@ class SPIMasterSubtarget(Module):
         self.fsm.act("COUNT-MSB",
             If(out_fifo.readable,
                 out_fifo.re.eq(1),
-                NextValue(count, out_fifo.dout << 8),
+                NextValue(count[8:], out_fifo.dout),
                 NextState("COUNT-LSB")
             )
         )
         self.fsm.act("COUNT-LSB",
              If(out_fifo.readable,
                 out_fifo.re.eq(1),
-                NextValue(count, count | out_fifo.dout),
+                NextValue(count[0:], out_fifo.dout),
                 NextState("COUNT-CHECK")
              )
         )
