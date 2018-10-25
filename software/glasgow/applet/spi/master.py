@@ -23,7 +23,7 @@ class SPIBus(Module):
         ]
         if hasattr(pads, "ss_t"):
             self.comb += [
-                pads.ss_t.oe.eq(self.oe),
+                pads.ss_t.oe.eq(1),
                 pads.ss_t.o.eq(self.ss),
             ]
         if hasattr(pads, "mosi_t"):
