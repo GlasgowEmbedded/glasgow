@@ -179,8 +179,8 @@
 # if the receiver stays synchronized to <K.C2> after encountering the <0 K.A1> sequence.
 #
 # Also note that since the comma K.C2 can be produced by normal encoded data, it is not actually
-# useful for synchronization. The raw read track WD1772 resyncs on each K.A1 and K.C2, and
-# the latter causes loss of sync in the middle of a track, and this can indeed be easily
+# useful for synchronization. The raw read track command of WD1772 resyncs on each K.A1 and K.C2,
+# and the latter causes loss of sync in the middle of a track, and this can indeed be easily
 # reproduced. There is generally no point in recognizing K.C2 at all.
 #
 # Other than the (recognized and accepted) coding violation, a comma behaves exactly like any
@@ -356,8 +356,9 @@ class ShugartFloppySubtarget(Module):
             ).Elif(cmd == CMD_TRK,
                 If(out_fifo.readable,
                     out_fifo.re.eq(1),
-                    NextValue(tgt_trk, out_fifo.dout),
-                    NextValue(bus.dir, out_fifo.dout > cur_trk),
+                    NextValue(tgt_trk, out_fifo.dout[1:]),
+                    NextValue(bus.dir, out_fifo.dout[1:] > cur_trk),
+                    NextValue(bus.side1, out_fifo.dout[0]),
                     NextValue(timer, setup_cyc - 1),
                     NextState("TRACK-STEP")
                 )
@@ -779,7 +780,7 @@ class ShugartFloppyApplet(GlasgowApplet, name="shugart-floppy"):
                 for track in range(args.first, args.last + 1):
                     await floppy_iface.seek_track(track)
                     data = await floppy_iface.read_track_raw(hint=cycles // 8)
-                    args.file.write(struct.pack(">BL", track, len(data)))
+                    args.file.write(struct.pack(">BBL", track & 1, track >> 1, len(data)))
                     args.file.write(data)
                     args.file.flush()
 
