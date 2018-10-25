@@ -31,7 +31,7 @@ class SPIFlash25CInterface:
 
     async def wakeup(self):
         self._log("wakeup")
-        await self._command(0xAB)
+        await self._command(0xAB, dummy=4)
 
     async def deep_sleep(self):
         self._log("deep sleep")
