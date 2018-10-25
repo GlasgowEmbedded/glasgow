@@ -89,6 +89,18 @@ class _FIFOWithFlush(Module, _FIFOInterface):
         else:
             self._flush_s  = self.flush
 
+        self.flushed  = Signal()
+        self.queued   = Signal()
+        self._pending = Signal()
+        self.sync += [
+            If(self.flushed,
+                self._pending.eq(0)
+            ).Elif(self.readable & self.re,
+                self._pending.eq(1)
+            ),
+            self.queued.eq(self._flush_s & self._pending)
+        ]
+
 
 class _RegisteredTristate(Module):
     def __init__(self, io):
@@ -158,10 +170,11 @@ class FX2Arbiter(Module):
             bus.fifoadr_t.oe.eq(1),
             bus.fifoadr_t.o.eq(addr),
             flag.eq(bus.flag_t.i),
-            rdy.eq(Cat([fifo.fifo.writable for fifo in self.out_fifos] +
-                       [fifo.readable for fifo in self.in_fifos]) &
+            rdy.eq(Cat([fifo.fifo.writable          for fifo in self.out_fifos] +
+                       [fifo.readable | fifo.queued for fifo in self. in_fifos]) &
                    flag),
             self.out_fifos[addr[0]].din.eq(bus.fd_t.i),
+            self.in_fifos[addr[0]].flushed.eq(pend),
             bus.fd_t.o.eq(self.in_fifos[addr[0]].dout),
             bus.fd_t.oe.eq(fdoe),
             bus.sloe_t.oe.eq(1),
@@ -218,32 +231,36 @@ class FX2Arbiter(Module):
             NextState("XFER-IN")
         )
         self.fsm.act("XFER-IN",
-            If(rdy.part(addr, 1),
+            If(flag.part(addr, 1) & self.in_fifos[addr[0]].readable,
                 self.in_fifos[addr[0]].re.eq(1),
                 slwr.eq(1)
             ).Elif(~flag.part(addr, 1) & ~self.in_fifos[addr[0]].readable,
                 # The ~FULL flag went down, and it goes down one sample earlier than the actual
-                # FULL condition. So we have one more byte free. However, the FPGA-side streaming
-                # FIFO became empty simultaneously.
+                # FULL condition. So we have one more byte free. However, the FPGA-side FIFO
+                # became empty simultaneously.
                 #
                 # If we schedule the next FIFO right now, the ~FULL flag will never come back down,
                 # so disregard the fact that the FIFO is streaming just for this corner case,
                 # and commit a packet one byte shorter than the complete FIFO.
                 #
                 # This shouldn't cause any problems.
-                pend.eq(1),
-                NextState("NEXT")
-            ).Elif(flag.part(addr, 1) & self.in_fifos[addr[0]]._flush_s,
+                NextState("PKTEND-IN")
+            ).Elif(flag.part(addr, 1) & self.in_fifos[addr[0]].queued,
                 # The FX2-side FIFO is not full yet, but the flush flag is asserted.
                 # Commit the short packet.
-                pend.eq(1),
-                NextState("NEXT")
+                NextState("PKTEND-IN")
             ).Else(
                 # Either the FPGA-side FIFO is empty, or the FX2-side FIFO is full, or the flush
                 # flag is not asserted.
                 # FX2 automatically commits a full FIFO, so we don't need to do anything here.
                 NextState("NEXT")
             )
+        )
+        self.fsm.act("PKTEND-IN",
+            # See datasheet "Slave FIFO Synchronous Packet End Strobe Parameters" for
+            # an explanation of why this is asserted one cycle after the last SLWR pulse.
+            pend.eq(1),
+            NextState("NEXT")
         )
         self.fsm.act("SETUP-OUT",
             slrd.eq(1),
