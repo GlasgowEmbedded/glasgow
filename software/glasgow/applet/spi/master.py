@@ -208,7 +208,7 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        iface.add_subtarget(SPIMasterSubtarget(
+        return iface.add_subtarget(SPIMasterSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
