@@ -146,6 +146,7 @@ from .jtag.pinout import JTAGPinoutApplet
 from .nand_flash import NANDFlashApplet
 from .program_ice40 import ProgramICE40Applet
 from .selftest import SelfTestApplet
+from .shugart_floppy import ShugartFloppyApplet
 from .spi.master import SPIMasterApplet
 from .spi.flash_25c import SPIFlash25CApplet
 from .spi.flash_avr import SPIFlashAVRApplet
