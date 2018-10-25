@@ -28,11 +28,10 @@ class _FIFOReadPort(Module):
 
         self.re       = Signal()
         self.readable = Signal()
-        self.dout     = Signal.like(fifo.dout)
+        self.dout     = fifo.dout
         self.comb += [
             fifo.re.eq(self._ce & self.readable & self.re),
-            self.readable.eq(self._de & fifo.readable),
-            self.dout.eq(fifo.dout)
+            self.readable.eq(self._de & fifo.readable)
         ]
 
 
@@ -60,13 +59,11 @@ class _FIFOWritePort(Module):
 
         self.we       = Signal()
         self.writable = Signal()
-        self.din      = Signal.like(fifo.din)
-        self.flush    = Signal(reset=fifo.flush.reset)
+        self.din      = fifo.din
+        self.flush    = fifo.flush
         self.comb += [
             fifo.we.eq(self._ce & self.writable & self.we),
-            self.writable.eq(self._de & fifo.writable),
-            fifo.din.eq(self.din),
-            fifo.flush.eq(self.flush),
+            self.writable.eq(self._de & fifo.writable)
         ]
 
 
