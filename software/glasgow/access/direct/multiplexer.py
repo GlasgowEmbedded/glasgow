@@ -61,7 +61,7 @@ class _FIFOWritePort(Module):
         self.we       = Signal()
         self.writable = Signal()
         self.din      = Signal.like(fifo.din)
-        self.flush    = Signal()
+        self.flush    = Signal(reset=fifo.flush.reset)
         self.comb += [
             fifo.we.eq(self._ce & self.writable & self.we),
             self.writable.eq(self._de & fifo.writable),
