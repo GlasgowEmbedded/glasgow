@@ -157,7 +157,8 @@
 #   01 00 10 01 01 10 01 10
 #
 # The MFM encoding does not inherently define any commas, but two commas are commonly used,
-# C2 with coding violation and A1 with coding violation, hereafter called "K.C2" and "K.A1".
+# C2 with coding violation and A1 with coding violation, hereafter called "K.C2" and "K.A1",
+# (also conventionally called "5224" and "4489", respectively, in the context of floppy drives).
 # Their encoding is as follows, with * marking the violation (symbol 00 after symbol 10):
 #
 #   K.C2: 01 01 00 10 00 10 01 00
@@ -165,12 +166,22 @@
 #   K.A1: 01 00 01 00 10 00 10 01
 #                         *
 #
-# These commas are used because normal MFM-encoded data never produces these bit streams, including
-# if the output is considered 180° out of phase. Thus, they may be safely used for synchronization.
+# The comma K.A1 is used because normal MFM-encoded data never produces its bit stream, including
+# if the output is considered 180° out of phase. Thus, it may be safely used for synchronization.
+# The comma K.C2 is produced if the sequence <000101001> is encoded and read 180° out of phase,
+# producing a sequence containing K.C2:
+#
+#   ?0 10 10 01 00 01 00 10 01
+#    0  0  0  1  0  1  0  0  1
 #
 # Note that encountering a comma implies a requirement to realign the bitstream immediately.
 # This includes such sequences as <K.C2 0 K.A1 K.A1>, which would produce an invalid reading
 # if the receiver stays synchronized to <K.C2> after encountering the <0 K.A1> sequence.
+#
+# Also note that since the comma K.C2 can be produced by normal encoded data, it is not actually
+# useful for synchronization. The raw read track WD1772 resyncs on each K.A1 and K.C2, and
+# the latter causes loss of sync in the middle of a track, and this can indeed be easily
+# reproduced. There is generally no point in recognizing K.C2 at all.
 #
 # Other than the (recognized and accepted) coding violation, a comma behaves exactly like any
 # other encoded byte; if a zero is encoded after K.C2, it is encoded as 10, and if after K.A1,
@@ -633,22 +644,17 @@ class SoftwareMFMDecoder:
                 shreg += next(chipstream)
 
             synced_now = False
-            for sync_code, sync_bits, sync_prev in (
-                ("K.C2", [0,1,0,1,0,0,1,0, 0,0,1,0,0,1,0,0], 0),
-                ("K.A1", [0,1,0,0,0,1,0,0, 1,0,0,0,1,0,0,1], 1),
-            ):
-                for sync_offset in (0, 1):
-                    if shreg[sync_offset:sync_offset + 16] == sync_bits:
-                        if not synced or sync_offset != 0:
-                            self._log("demod sync=%s chip-off=%d", sync_code, offset + sync_offset)
-                        offset += sync_offset + 16
-                        shreg   = shreg[sync_offset + 16:]
-                        synced  = True
-                        prev    = sync_prev
-                        bits    = []
-                        yield sync_code
-                        synced_now = True
-                    if synced_now: break
+            for sync_offset in (0, 1):
+                if shreg[sync_offset:sync_offset + 16] == [0,1,0,0,0,1,0,0, 1,0,0,0,1,0,0,1]:
+                    if not synced or sync_offset != 0:
+                        self._log("sync=K.A1 chip-off=%d", offset + sync_offset)
+                    offset += sync_offset + 16
+                    shreg   = shreg[sync_offset + 16:]
+                    synced  = True
+                    prev    = 1
+                    bits    = []
+                    yield "K.A1"
+                    synced_now = True
                 if synced_now: break
 
             if synced_now:
@@ -666,7 +672,7 @@ class SoftwareMFMDecoder:
                     curr = 0
                 else:
                     synced = False
-                    self._log("demod desync chip-off=%d bitno=%d prev=%d cell=%d%d",
+                    self._log("desync chip-off=%d bitno=%d prev=%d cell=%d%d",
                               offset, len(bits), prev, *shreg[0:2])
 
                 if synced:
