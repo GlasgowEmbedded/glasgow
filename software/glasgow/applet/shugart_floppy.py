@@ -147,6 +147,10 @@
 #   * Encode bit 0 as 00 -if- the preceding bit was 1 (symbol 01).
 #   * Encode bit 0 as 10 -if- the preceding bit was 0 (symbol 00 or 10).
 #
+# It can be seen that this line code only produces pulses of 2, 3, or 4 bit times in length,
+# in other words, 10, 100, and 1000. All other pulses are illegal, and indicative of a mis-locked
+# PLL or faulty medium.
+#
 # The bits are encoded MSB first. For example, 0x9A (0b10011010) is encoded as follows:
 #
 #   01 00 10 01 01 10 01 10
@@ -175,11 +179,13 @@
 #
 #     4E: 10 01 00 10 01 01 01 00
 #
-# A sequence of encoded 4E bytes produces infinite repeats of the pattern 1001001001010100,
+# A sequence of encoded 4E bytes produces infinite repeats of the pattern <1001001001010100>,
 # which can be used to train a phase-locked loop. This is important because recovering a clock
-# from the MFM encoded data is inherently ambiguous; for an incoming pulse train of the form
-# 10101010... where the bit time is 3x, it is equvally valid for a PLL to lock onto the smaller
-# period, effectively treating the incoming pulse train as 100100100... where the bit time is 2x.
+# from the MFM encoded data is inherently ambiguous; e.g. for an incoming pulse train of the form
+# <10101010...> where the bit time is 3x, it is equvally valid for a PLL to lock onto the smaller
+# period, effectively treating the incoming pulse train as <100100100...> where the bit time is 2x.
+# Rejecting the sequence <1000> as invalid while locking the PLL makes clock recovery easier by
+# effectively placing a lower bound on the bit time.
 #
 # Track layout
 # ------------
@@ -559,26 +565,26 @@ class SoftwareMFMDecoder:
                     state      = "WINDOW-NEG"
             elif state == "WINDOW-NEG":
                 if edge:
-                    if (not locked and window_no in (2,    4) or
+                    if (not locked and window_no in (2, 3) or
                             locked and window_no in (2, 3, 4)):
                         in_phase += 1
                     else:
                         in_phase  = 0
                         if locked:
-                            self._log("pll loss win+=%d bit-off=%d", window_no, offset)
+                            self._log("pll loss +win=%d bit-off=%d", window_no, offset)
                     if bit_time > 2 * bit_tol:
                         bit_time  -= 1
                 elif window == bit_tol:
                     state      = "WINDOW-POS"
             elif state == "WINDOW-POS":
                 if edge:
-                    if (not locked and window_no in (2,    4) or
+                    if (not locked and window_no in (2, 3) or
                             locked and window_no in (2, 3, 4)):
                         in_phase += 1
                     else:
                         in_phase  = 0
                         if locked:
-                            self._log("pll loss win-=%d bit-off=%d", window_no, offset)
+                            self._log("pll loss -win=%d bit-off=%d", window_no, offset)
                     bit_time  += 1
                 elif window == bit_tol + bit_tol:
                     if locked: yield [0]
