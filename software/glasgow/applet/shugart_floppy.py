@@ -1,6 +1,208 @@
 # Acknowledgements: thanks to William D. Jones (@cr1901), Eric Smith (@brouhaha) for explaining
 # to me (whitequark) how floppy drives work.
 
+# The protocols and standards are diffuse, scarce, and generally hard to understand, so here's
+# a quick introduction to the entire stack.
+#
+# Note that all paragraphs below aren't authoritative statements on (ancient) circuit design,
+# but just my own understanding and the results of my own experiments on floppy drives.
+# I'm not old enough to actually have designed with any of these parts. Corrections welcome.
+#   --whitequark
+#
+# Floppy drive bus logic
+# ----------------------
+#
+# The entire Shugart bus is a TTL bus. Not TTL *level* bus, mind you (though it does use 5V);
+# it uses actual transistor-transistor logic. To recap, TTL logic works by having a pull-up
+# resistor and having (often a few) transistors in a common-emitter configuration. This resistor
+# might actually be present on the die, or not! Conversely, the inputs connect to transistor
+# bases, and so are *not* high-impedance. Note also that the common logic implemented in TTL
+# would naturally have inverting outputs unless one specifically adds inverting transistors
+# on the outputs.
+#
+# In practice, this has the following consequences:
+#
+#   1. The logic levels on the bus are inverted wrt physical levels. I.e. "active" is 0 V,
+#      and "inactive" is Vcc (that is, 5 V).
+#   2. Any inputs of the device sink a small amount of current when they are being driven
+#      logically high (to 0 V), so the bus master needs to source that. They might be
+#      pulled up with a small value resistor, so the bus master must be prepared to sink
+#      the pull-up current, at least 32 mA.
+#   3. Any outputs of the device can sink large amounts of current, at least 32 mA, and might
+#      or might not be pulled up on the device. So, the bus master must add the pull-ups,
+#      in case the outputs aren't already terminated.
+#
+# Floppy drive constraints
+# ------------------------
+#
+# In spite of having a TTL interface, the floppy drive is effectively an analog device.
+# It is not synchronous to any clock, the drive circuitry has plenty of constraints defined
+# in terms of mechanical movement, and the magnetic head interface is entirely analog.
+# The circuitry within the floppy drive does bare minimum maintenance (for example, it will
+# maintain a constant and reasonably well defined rotational speed), but nothing beyond that.
+# It is the job of the controller to transfer data into and out of the digital domain.
+#
+# Floppy drive bus signals
+# ------------------------
+#
+# The floppy drive bus (aka Shugart bus, after the inventor) usually (always?) uses a 34-pin
+# IDC cable and connector. All of the odd pins carry ground, and half of them are missing.
+#
+# The remaining signals are assigned as follows, with "input" being the input of the drive:
+#
+#   No. Name  Dir Function
+#    2. REDWC  I  Density Select
+#    4.  N/C
+#    6.  N/C
+#    8. Index  O  Index (See Note 2)
+#   10. MOTEA  I  Motor Enable A
+#   12. DRVSA  I  Drive Select A
+#   14. DRVSB  I  Drive Select B
+#   16. MOTEB  I  Motor Enable B
+#   18. DIR    I  Head Direction Select
+#   20. STEP   I  Head Step Strobe
+#   22. WDATA  I  Write Data
+#   24. WGATE  I  Write Enable
+#   26. TRK00  O  Track 00
+#   28. WPT    O  Write Protect
+#   30. RDATA  O  Read Data
+#   32. SIDE1  I  Head Select
+#   34. RDY    O  Drive Ready
+#
+# Pin functions are explained as follows:
+#
+#   * REDWC does not have any function on 3.5" drives, since the drives can handle disks of
+#     any density, and the density is keyed on the disc itself. Should be treated as Reserved
+#     on 3.5" drives.
+#   * INDEX is a strobe that on 3.5" drives becomes active at some predefined region once per
+#     revolution of the drive motor. (This is usually implemented with a Hall sensor.) This strobe
+#     has no correlation to any positioning or data on the disk, and should only be used to read
+#     a complete track, by reading from INDEX strobe to INDEX strobe.
+#   * Any single drive is selected (activates its output drives) with a DRVSx signal, and spins
+#     its motor when MOTEx signal is asserted. This is selected with a jumper, usually a solder
+#     jumper, on the drive. By convention, drives are jumpered to respond to DRVSB/MOTEB.
+#     The IBM PC floppy drive cables use a 7-pin twist that causes both drives to observe
+#     the appropriate host control signals on DRVSB/MOTEB.
+#   * A pulse on STEP moves the head one track in the direction determined by DIR; when DIR
+#     is active, a STEP pulse moves the head towards track 0. DIR to STEP S/H time is 1/25 us.
+#     Minimum STEP pulse width is 7 us and period is 6 ms.
+#   * TRK00 becomes active when the head is positioned at track 0. This is done with
+#     an optocoupler. The head will usually not move beyond track 0, but will attempt to move
+#     (and fail to do so) beyond track 80.
+#   * RDATA and WDATA transmit and receive pulse trains where pulses indicate changes in
+#     magnetic flux. More on that later.
+#   * When WGATE is active, pulse train on WDATA is written to the disk. Else, it is ignored.
+#   * WPT is active when the disk is configured to be read-only by obscuring a window with
+#     a sliding tab. This is detected with a microswitch. (TO BE EXPANDED)
+#   * RDY is (TO BE EXPANDED)
+#
+# Floppy drive mechanics
+# ----------------------
+#
+# A few timing requirements have to be absolutely respected in order for mechanics to work
+# properly. These include:
+#
+#   1. Time from MOTEx rising edge to accessing any data: 250 ms.
+#      This allows the motor to reach a stable rotational speed.
+#   2. Time from moving the head to accessing any data: 15 ms.
+#      This allows the head to cease vibrating.
+#
+# Fundamentals of data encoding
+# -----------------------------
+#
+# The floppy disk read head is an inductive device, and so it senses a derivative of the magnetic
+# flux. When the magnetic domain changes orientation, the read head produces a pulse. This pulse
+# is detected by the analog circuitry in the drive, which performs basic signal conditioning.
+# The pulse amplitude can vary greatly, and so automatic gain control is employed to bring
+# the pulse to logic levels. AGC requires at least a single flux reversal per 12 us, or else it
+# would overcompensate and start to amplify random noise. (This is sometimes used as a copy
+# protection mechanism.)
+#
+# Thus, the pulse train that comes from RDATA can be described as pulse density modulated.
+# Each pulse has roughly the same duration (defined by drive design), but the interval between
+# pulses varies and corresponds to the flux domain sizes. There is no correspondence between
+# absolute magnetization direction and pulse train, i.e. reading NNNNNNNNSS produces the same
+# pulse as reading SSSSSSSSNN.
+#
+# Higher layers have to handle synchronization and minimum pulse density requirements for this
+# encoding scheme. On IBM PC, only FM and MFM were used, with FM being largely irrelevant.
+#
+# MFM modulation scheme
+# ---------------------
+#
+# The pulse train is generally divided into equal bit times, and presence of a pulse during
+# a certain bit window is treated as line "1", whereas absence of a pulse as line "0".
+# The duration of the pulse is, as can be seen from the description above, irrelevant, and
+# for practical purposes a demodulator can be purely edge triggered.
+#
+# MFM, although not usually described as such, is a classic 1b2b line code. It only attempts to
+# provide guaranteed state changes for AGC and clock recovery, and makes no attempt at e.g. DC
+# balance (which indeed is not necessary for the medium). MFM uses three different symbols
+# (conventionally called "cells" in the context of floppy drives), 01, 10 and 00, and uses
+# coding violations as commas instead of special symbols.
+#
+# The MFM encoding process works as follows.
+#
+#   * Encode bit 1 as 01.
+#   * Encode bit 0 as 00 -if- the preceding bit was 1 (symbol 01).
+#   * Encode bit 0 as 10 -if- the preceding bit was 0 (symbol 00 or 10).
+#
+# The bits are encoded MSB first. For example, 0x9A (0b10011010) is encoded as follows:
+#
+#   01 00 10 01 01 10 01 10
+#
+# The MFM encoding does not inherently define any commas, but two commas are commonly used,
+# C2 with coding violation and A1 with coding violation, hereafter called "K.C2" and "K.A1".
+# Their encoding is as follows, with * marking the violation (symbol 00 after symbol 10):
+#
+#   K.C2: 01 01 00 10 00 10 01 00
+#                      *
+#   K.A1: 01 00 01 00 10 00 10 01
+#                         *
+#
+# These commas are used because normal MFM-encoded data never produces these bit streams, including
+# if the output is considered 180° out of phase. Thus, they may be safely used for synchronization.
+#
+# Note that encountering a comma implies a requirement to realign the bitstream immediately.
+# This includes such sequences as <K.C2 0 K.A1 K.A1>, which would produce an invalid reading
+# if the receiver stays synchronized to <K.C2> after encountering the <0 K.A1> sequence.
+#
+# Other than the (recognized and accepted) coding violation, a comma behaves exactly like any
+# other encoded byte; if a zero is encoded after K.C2, it is encoded as 10, and if after K.A1,
+# it is encoded as 00.
+#
+# Although not special in any way, an additional useful code is 0x4E. This is encoded as:
+#
+#     4E: 10 01 00 10 01 01 01 00
+#
+# A sequence of encoded 4E bytes produces infinite repeats of the pattern 1001001001010100,
+# which can be used to train a phase-locked loop. This is important because recovering a clock
+# from the MFM encoded data is inherently ambiguous; for an incoming pulse train of the form
+# 10101010... where the bit time is 3x, it is equvally valid for a PLL to lock onto the smaller
+# period, effectively treating the incoming pulse train as 100100100... where the bit time is 2x.
+#
+# Track layout
+# ------------
+#
+# The IBM floppy disk track format is designed to be rewritable sector-by-sector. As such,
+# it has the following general layout, with N being roughly variable, and X roughly fixed:
+#
+#   (N gap bytes) (X zero bytes) (sync/type) (header) (CRC)
+#   (N gap bytes) (X zero bytes) (sync/type) (data)   (CRC) ... and so on, repeated.
+#
+# The purpose of the gap bytes is as follows. Rewriting the data for a single sector requires
+# first positioning the head at this sector, and then switching from reading to writing.
+# The sector header, separate from data, allows for such positioning. Gap bytes (0x4E, for
+# the reasons stated above), carry no semantic meaning and can be overwritten, requiring no
+# precise timing for such writes, and additionally tolerating the erase head affecting a larger
+# area of the medium than the write head. (I.e. there is always slightly more data erased
+# than there is written.)
+#
+# Track format
+# ------------
+#
+# (TO BE EXPANDED)
+
 import logging
 import asyncio
 import argparse
