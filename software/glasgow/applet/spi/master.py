@@ -54,6 +54,12 @@ class SPIBus(Module):
             assert False
 
 
+CMD_XFER    = 0x00
+CMD_READ    = 0x01
+CMD_WRITE   = 0x02
+BIT_HOLD_SS = 0x80
+
+
 class SPIMasterSubtarget(Module):
     def __init__(self, pads, out_fifo, in_fifo, bit_rate, sck_idle, sck_edge, ss_active):
         self.submodules.bus = SPIBus(pads, sck_idle, sck_edge, ss_active)
@@ -63,6 +69,7 @@ class SPIMasterSubtarget(Module):
         half_cyc = round(30e6 // (bit_rate * 2))
         timer    = Signal(max=half_cyc)
 
+        cmd   = Signal(8)
         count = Signal(16)
         bitno = Signal(max=8, reset=7)
         oreg  = Signal(8)
@@ -77,16 +84,23 @@ class SPIMasterSubtarget(Module):
             )
         ]
 
-        self.submodules.fsm = FSM(reset_state="COUNT-MSB")
-        self.fsm.act("COUNT-MSB",
+        self.submodules.fsm = FSM(reset_state="RECV-COMMAND")
+        self.fsm.act("RECV-COMMAND",
             in_fifo.flush.eq(1),
             If(out_fifo.readable,
                 out_fifo.re.eq(1),
-                NextValue(count[8:], out_fifo.dout),
-                NextState("COUNT-LSB")
+                NextValue(cmd, out_fifo.dout),
+                NextState("RECV-COUNT-MSB")
             )
         )
-        self.fsm.act("COUNT-LSB",
+        self.fsm.act("RECV-COUNT-MSB",
+            If(out_fifo.readable,
+                out_fifo.re.eq(1),
+                NextValue(count[8:], out_fifo.dout),
+                NextState("RECV-COUNT-LSB")
+            )
+        )
+        self.fsm.act("RECV-COUNT-LSB",
              If(out_fifo.readable,
                 out_fifo.re.eq(1),
                 NextValue(count[0:], out_fifo.dout),
@@ -95,17 +109,21 @@ class SPIMasterSubtarget(Module):
         )
         self.fsm.act("COUNT-CHECK",
             If(count == 0,
-                NextState("COUNT-MSB")
+                NextState("RECV-COMMAND")
             ).Else(
                 NextValue(self.bus.ss, ss_active),
-                NextState("DATA-OUT")
+                NextState("RECV-DATA")
             )
         )
-        self.fsm.act("DATA-OUT",
-            If(out_fifo.readable,
+        self.fsm.act("RECV-DATA",
+            If(cmd[:4] != CMD_READ,
                 out_fifo.re.eq(1),
-                NextValue(count, count - 1),
                 NextValue(oreg, out_fifo.dout),
+            ).Else(
+                NextValue(oreg, 0)
+            ),
+            If((cmd[:4] == CMD_READ) | out_fifo.readable,
+                NextValue(count, count - 1),
                 NextValue(timer, half_cyc - 1),
                 NextState("TRANSFER")
             )
@@ -117,28 +135,32 @@ class SPIMasterSubtarget(Module):
                 If((self.bus.sck == (not sck_idle)),
                     NextValue(bitno, bitno - 1),
                     If(bitno == 0,
-                        NextState("DATA-IN")
+                        NextState("SEND-DATA")
                     )
                 )
             ).Else(
                 NextValue(timer, timer - 1)
             )
         )
-        self.fsm.act("DATA-IN",
-            in_fifo.din.eq(ireg),
-            If(in_fifo.writable,
+        self.fsm.act("SEND-DATA",
+            If(cmd[:4] != CMD_WRITE,
+                in_fifo.din.eq(ireg),
                 in_fifo.we.eq(1),
+            ),
+            If((cmd[:4] == CMD_WRITE) | in_fifo.writable,
                 If(count == 0,
                     NextState("WAIT")
                 ).Else(
-                    NextState("DATA-OUT")
+                    NextState("RECV-DATA")
                 )
             )
         )
         self.fsm.act("WAIT",
             If(timer == 0,
-                NextValue(self.bus.ss, not ss_active),
-                NextState("COUNT-MSB")
+                If((cmd & BIT_HOLD_SS) == 0,
+                    NextValue(self.bus.ss, not ss_active),
+                ),
+                NextState("RECV-COMMAND")
             ).Else(
                 NextValue(timer, timer - 1)
             )
@@ -158,19 +180,41 @@ class SPIMasterInterface:
         self._log("reset")
         await self.lower.reset()
 
-    async def transfer(self, data):
+    async def transfer(self, data, hold_ss=False):
         assert len(data) <= 0xffff
         data = bytes(data)
 
-        self._log("out=<%s>", data.hex())
+        self._log("xfer-out=<%s>", data.hex())
 
-        await self.lower.write(struct.pack(">H", len(data)))
+        cmd = CMD_XFER | (BIT_HOLD_SS if hold_ss else 0)
+        await self.lower.write(struct.pack(">BH", cmd, len(data)))
         await self.lower.write(data)
         data = await self.lower.read(len(data))
 
-        self._log("in=<%s>", data.hex())
+        self._log("xfer-in=<%s>", data.hex())
 
         return data
+
+    async def read(self, count, hold_ss=False):
+        assert count <= 0xffff
+
+        cmd = CMD_READ | (BIT_HOLD_SS if hold_ss else 0)
+        await self.lower.write(struct.pack(">BH", cmd, count))
+        data = await self.lower.read(count)
+
+        self._log("read-in=<%s>", data.hex())
+
+        return data
+
+    async def write(self, data, hold_ss=False):
+        assert len(data) <= 0xffff
+        data = bytes(data)
+
+        self._log("write-out=<%s>", data.hex())
+
+        cmd = CMD_WRITE | (BIT_HOLD_SS if hold_ss else 0)
+        await self.lower.write(struct.pack(">BH", cmd, len(data)))
+        await self.lower.write(data)
 
 
 class SPIMasterApplet(GlasgowApplet, name="spi-master"):
