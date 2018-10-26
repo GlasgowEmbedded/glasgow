@@ -1080,18 +1080,19 @@ class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
                         while lba > next_lba:
                             self.logger.error("sector at LBA %d missing",
                                               next_lba)
+
+                            args.linear_file.seek(next_lba * args.sector_size)
+                            args.linear_file.write(b"\xFA\x11" * (args.sector_size // 2))
+
                             missing  += 1
                             next_lba += 1
-                        next_lba += 1
 
-                        lua = lba * args.sector_size
-                        if len(image) < lua:
-                            image += b"\xFA\x11" * ((lua - len(image)) // 2)
-                        image[lua:lua + args.sector_size] = sectors[lba]
+                        args.linear_file.seek(lba * args.sector_size)
+                        args.linear_file.write(sectors[lba])
+                        next_lba += 1
 
             finally:
                 self.logger.info("%d/%d sectors missing", missing, next_lba)
-                args.linear_file.write(image)
 
 # -------------------------------------------------------------------------------------------------
 
