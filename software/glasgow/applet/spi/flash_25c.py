@@ -5,6 +5,7 @@ import logging
 import argparse
 
 from .. import *
+from ...database.jedec import *
 from .master import SPIMasterApplet
 
 
@@ -298,11 +299,13 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
             long_manufacturer_id, long_device_id = \
                 await flash_iface.read_manufacturer_long_device_id()
             if long_manufacturer_id == manufacturer_id:
-                self.logger.info("JEDEC manufacturer ID: %#04x, device ID: %#06x",
-                                 long_manufacturer_id, long_device_id)
+                manufacturer_name = jedec_mfg_name_from_bytes([long_manufacturer_id]) or "unknown"
+                self.logger.info("JEDEC manufacturer %#04x (%s) device %#04x",
+                                 long_manufacturer_id, manufacturer_name, long_device_id)
             else:
-                self.logger.info("JEDEC manufacturer ID: %#04x, device ID: %#04x",
-                                 manufacturer_id, device_id)
+                manufacturer_name = jedec_mfg_name_from_bytes([manufacturer_id]) or "unknown"
+                self.logger.info("JEDEC manufacturer %#04x (%s) device %#04x",
+                                 manufacturer_id, manufacturer_name, device_id)
 
         if args.operation in ("read", "fast-read"):
             if args.operation == "read":
