@@ -219,7 +219,66 @@
 # Track format
 # ------------
 #
-# (TO BE EXPANDED)
+# The most common floppy disk track format is IBM System 34. Unlike the details in the previous
+# section (which apply with minor modifications to any format that uses sector granularity
+# writes), these are specific for this track format. Nevertheless, the actual System 34 track
+# format is *very* redundant, and many parts of it (e.g. anything to do with the K.C2 comma)
+# are not required for full functionality, not used by most controllers, not written by many
+# formatters, do not provide any benefit for verification (other than for copy protection
+# and forensics purposes, which are out of scope for this document), and can be extremely variable
+# in practice (e.g. the 2.88M format does away with most gap bytes). Thus, only the essential
+# parts of the track format are documented, which are necessary and sufficient to produce
+# a reasonably interoperable implementation.
+#
+# The track format consists of self-delimiting chunks, hereafter called "packets". A track
+# will contain a number and sequence of packets generally set during formatting and dependent
+# only on the media density.
+#
+# There are two System 34 packet types: the header packet and the data packet. The header packet
+# indicates the sector number and corresponding data packet size, and also includes (redundant)
+# location information, specifically cylinder and head numbers. The data packet contains sector
+# data as-is.
+#
+# Each packet begins with a <K.A1 K.A1 K.A1 tt> sequence, where <tt> is a byte indicating
+# the packet type; <FE> is followed by a header packet, and <FB> by a data packet.
+# Each packet ends with a two-byte 16-bit CRC with generator polynomial 0x11021 (alternatively,
+# x^16 + x^12 + x^5 + 1), initial value 0xffff, and no bit reversal. (Astute readers
+# will recognize this as the "incorrect" CCITT CRC-16. Go figure.) The CRC includes the entire
+# packet, including the three initial commas. As is usual, running the CRC over the entire packet
+# leaves the residue zero if the packet has not been corrupted.
+#
+# Each packet is preceded by a number of gap (4E) and sync (00) bytes. In theory, the number of
+# preceding sync bytes should be 12, and the number of gap bytes should be at least 50 for
+# header packets and at least 20 for data packets, but in practice these requirements are
+# stretched, without much harm to any high-quality controller.
+#
+# In theory, before the gap and sync bytes for the header packet there should be a sync packet
+# with the <K.C2 K.C2 K.C2 FC> sequence (and its own gap and sync bytes as well), but it does
+# not carry any useful information and I have not observed it on any of my floppies.
+#
+# In a more visual form, the packet formats are as follows:
+#
+#   Header packet: <4E 4E... 4E 00... 00 00
+#                   K.A1 K.A1 K.A1 FE cn hn sn sz ch cl>,
+#   where:
+#     - cn is the cylinder number,
+#     - hn is the head number,
+#     - sn is the sector number,
+#     - sz is the encoded sector size, where size equals 1<<(7+sz),
+#     - chcl is the CRC.
+#
+#   Data packet:   <4E 4E... 4E 00... 00 00
+#                   K.A1 K.A1 K.A1 dd dd dd dd... ch cl>,
+#   where:
+#     - dd... are the 1<<(7+sz) data bytes, for sz from preceding header packet,
+#     - chcl is the CRC.
+#
+# The number of gap bytes can be significant (easily ~20% of the entire floppy surface), and is
+# directly related to rewritability of the drive. A non-rewritable disk (or a disk designed
+# to be always rewritten at track granularity, although industry has not produced any such
+# standard disks, drives, or formats to my knowledge) does not require any gap bytes other than
+# however many are necessary for the PLL in the controller to lock, and some more to pad the space
+# on the track where its end meets its beginning. Such a floppy would have a much larger density.
 
 import logging
 import asyncio
