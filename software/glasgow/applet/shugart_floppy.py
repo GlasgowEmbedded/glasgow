@@ -606,8 +606,9 @@ class SoftwareMFMDecoder:
 
     def lock(self, bitstream):
         cur_bit   = 0
-        bit_tol   = 10
-        bit_time  = 2 * bit_tol
+        bit_tol   = 12
+        bit_min   = 16
+        bit_time  = bit_min
         state     = "START"
         cell      = 0
         window    = 0
@@ -619,17 +620,18 @@ class SoftwareMFMDecoder:
             cur_bit = new_bit
 
             # |clk-------------|clk-------------|clk-------------|...
-            # /¯¯¯\________WWWWWWWW_________WWWWWWWW______________...
+            # /¯¯¯\________WWWWWWWWW________WWWWWWWWW_____________...
             # 0000000000111111111122222222223333333333444444444455
             # 0123456789012345678901234567890123456789012345678901...
             # ^ START      ^ WINDOW-NEG     ^ WINDOW-NEG
-            #                  ^ WINDOW-POS     ^ WINDOW-POS
+            #                  ^ WINDOW-EXA     ^ WINDOW-EXA
+            #                   ^ WINDOW-POS     ^ WINDOW-POS
             #                      ^ CONTINUE       ^ CONTINUE    ...
 
             if state == "START":
                 if edge:
                     in_phase   = 0
-                    bit_time   = 2 * bit_tol
+                    bit_time   = bit_min
                     self._log("pll loss leader bit-off=%d", offset)
                 elif window == bit_time - bit_tol:
                     window     = 0
@@ -644,9 +646,20 @@ class SoftwareMFMDecoder:
                         in_phase  = 0
                         if locked:
                             self._log("pll loss +win=%d bit-off=%d", window_no, offset)
-                    if bit_time > 2 * bit_tol:
+                    if bit_time > bit_min:
                         bit_time  -= 1
                 elif window == bit_tol:
+                    state      = "WINDOW-EXA"
+            elif state == "WINDOW-EXA":
+                if edge:
+                    if (not locked and window_no in (2, 3) or
+                            locked and window_no in (2, 3, 4)):
+                        in_phase += 1
+                    else:
+                        in_phase  = 0
+                        if locked:
+                            self._log("pll loss =win=%d bit-off=%d", window_no, offset)
+                elif window == bit_tol + 1:
                     state      = "WINDOW-POS"
             elif state == "WINDOW-POS":
                 if edge:
@@ -658,7 +671,7 @@ class SoftwareMFMDecoder:
                         if locked:
                             self._log("pll loss -win=%d bit-off=%d", window_no, offset)
                     bit_time  += 1
-                elif window == bit_tol + bit_tol:
+                elif window == bit_tol + 1 + bit_tol:
                     if locked: yield [0]
                     state      = "CONTINUE"
             elif state == "CONTINUE":
