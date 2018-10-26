@@ -18,13 +18,14 @@ class SPIFlash25CInterface:
     def _log(self, message, *args):
         self._logger.log(self._level, "SPI Flash 25C: " + message, *args)
 
-    async def _command(self, cmd, arg=[], dummy=0, ret=0):
+    async def _command(self, cmd, arg=[], dummy=0, ret=0, hold_ss=False):
         arg = bytes(arg)
 
         self._log("cmd=%02X arg=<%s> dummy=%d ret=%d", cmd, arg.hex(), dummy, ret)
 
-        result = await self.lower.transfer([cmd, *arg, *[0 for _ in range(dummy + ret)]])
-        result = result[1 + len(arg) + dummy:]
+        await self.lower.write([cmd, *arg, *[0 for _ in range(dummy)]],
+                               hold_ss=(ret > 0))
+        result = await self.lower.read(ret)
 
         self._log("result=<%s>", result.hex())
 
@@ -59,7 +60,7 @@ class SPIFlash25CInterface:
 
     async def _read_command(self, address, length, chunk_size, cmd, dummy=0):
         if chunk_size is None:
-            chunk_size = 251 # FIXME: raise once #44 is fixed
+            chunk_size = 0xff # FIXME: raise once #44 is fixed
 
         data = bytearray()
         while length > 0:
