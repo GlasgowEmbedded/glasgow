@@ -806,14 +806,14 @@ class ShugartFloppyApplet(GlasgowApplet, name="shugart-floppy"):
         p_read_raw = p_operation.add_parser(
             "read-raw", help="read raw track data")
         p_read_raw.add_argument(
-            "file", metavar="FILE", type=argparse.FileType("wb"),
-            help="write bit stream to FILE")
+            "file", metavar="RAW-FILE", type=argparse.FileType("wb"),
+            help="write raw image to RAW-FILE")
         p_read_raw.add_argument(
             "first", metavar="FIRST", type=int,
             help="read from track FIRST")
         p_read_raw.add_argument(
             "last", metavar="LAST", type=int,
-            help="read until track LAST (inclusive)")
+            help="read until track LAST (inclusive; 161 for most 3.5\" disks)")
 
         p_read_track = p_operation.add_parser(
             "read-track", help="read and MFM-decode track data")
@@ -913,21 +913,21 @@ class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
         p_index = p_operation.add_parser(
             "index", help="discover and verify raw disk image contents and MFM sectors")
         p_index.add_argument(
-            "file", metavar="FILE", type=argparse.FileType("rb"),
-            help="read raw disk image from FILE")
+            "file", metavar="RAW-FILE", type=argparse.FileType("rb"),
+            help="read raw disk image from RAW-FILE")
 
-        p_extract = p_operation.add_parser(
-            "extract", help="extract raw disk images into linear disk images")
-        p_extract.add_argument(
+        p_raw2img = p_operation.add_parser(
+            "raw2img", help="extract raw disk images into linear disk images")
+        p_raw2img.add_argument(
             "-s", "--sector-size", metavar="BYTES", type=int, default=512,
             help="amount of bytes per sector (~always the default: %(default)s)")
-        p_extract.add_argument(
+        p_raw2img.add_argument(
             "-t", "--sectors-per-track", metavar="COUNT", type=int, required=True,
             help="amount of sectors per track (9 for DD, 18 for HD, ...)")
-        p_extract.add_argument(
+        p_raw2img.add_argument(
             "raw_file", metavar="RAW-FILE", type=argparse.FileType("rb"),
             help="read raw disk image from RAW-FILE")
-        p_extract.add_argument(
+        p_raw2img.add_argument(
             "linear_file", metavar="LINEAR-FILE", type=argparse.FileType("wb"),
             help="write linear disk image to LINEAR-FILE")
 
@@ -1032,7 +1032,7 @@ class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
                 for _ in self.iter_mfm_sectors(symbstream, verbose=True):
                     pass
 
-        if args.operation == "extract":
+        if args.operation == "raw2img":
             image    = bytearray()
             last_lba = 0
             missing  = 0
