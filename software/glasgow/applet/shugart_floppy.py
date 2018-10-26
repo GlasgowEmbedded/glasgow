@@ -226,6 +226,8 @@ import asyncio
 import argparse
 import struct
 import random
+import itertools
+import crcmod
 import math
 from migen import *
 from migen.genlib.fsm import FSM
@@ -539,12 +541,11 @@ class SoftwareMFMDecoder:
                 yield (byte >> bit) & 1
 
     @staticmethod
-    def repeat(bitstream):
-        yield from bitstream()
+    def cycle(bitstream):
         yield from bitstream()
         yield from bitstream()
 
-    def pll(self, bitstream):
+    def lock(self, bitstream):
         cur_bit   = 0
         bit_tol   = 10
         bit_time  = 2 * bit_tol
@@ -646,7 +647,7 @@ class SoftwareMFMDecoder:
 
             synced_now = False
             for sync_offset in (0, 1):
-                if shreg[sync_offset:sync_offset + 16] == [0,1,0,0,0,1,0,0, 1,0,0,0,1,0,0,1]:
+                if shreg[sync_offset:sync_offset + 16] == [0,1,0,0,0,1,0,0,1,0,0,0,1,0,0,1]:
                     if not synced or sync_offset != 0:
                         self._log("sync=K.A1 chip-off=%d", offset + sync_offset)
                     offset += sync_offset + 16
@@ -654,7 +655,7 @@ class SoftwareMFMDecoder:
                     synced  = True
                     prev    = 1
                     bits    = []
-                    yield "K.A1"
+                    yield (1, 0xA1)
                     synced_now = True
                 if synced_now: break
 
@@ -683,7 +684,7 @@ class SoftwareMFMDecoder:
 
                     bits.append(curr)
                     if len(bits) == 8:
-                        yield "%02X" % sum(bit << (7 - n) for n, bit in enumerate(bits))
+                        yield (0, sum(bit << (7 - n) for n, bit in enumerate(bits)))
                         bits = []
 
 
@@ -788,11 +789,12 @@ class ShugartFloppyApplet(GlasgowApplet, name="shugart-floppy"):
                 await floppy_iface.seek_track(args.track)
                 bytestream = await floppy_iface.read_track_raw(hint=cycles // 8)
                 mfm        = SoftwareMFMDecoder(self.logger)
-                bitstream  = mfm.repeat(lambda: mfm.bits(bytestream))
-                chipstream = mfm.pll(bitstream)
-                datastream = mfm.demodulate(chipstream)
-                for _ in range(600*2):
-                    print(next(datastream), end=" ", flush=True)
+                datastream = mfm.demodulate(mfm.lock(itertools.cycle(mfm.bits(bytestream))))
+                for comma, data in itertools.islice(datastream, 10):
+                    if comma:
+                        print("K.%02X" % data, end=" ")
+                    else:
+                        print("%02X" % data, end=" ")
                 print()
 
             if args.operation == "test-pll":
@@ -806,7 +808,7 @@ class ShugartFloppyApplet(GlasgowApplet, name="shugart-floppy"):
                 try:
                     for _ in range(args.count):
                         start = random.randint(0, len(bitstream) // 2)
-                        next(mfm.pll(bitstream[start:]))
+                        next(mfm.lock(bitstream[start:]))
                         lock_times.append(mfm._lock_time)
                         bit_times.append(mfm._bit_time)
                         print(".", end="", flush=True)
@@ -824,6 +826,122 @@ class ShugartFloppyApplet(GlasgowApplet, name="shugart-floppy"):
                                      max(bit_times))
         finally:
             await floppy_iface.stop()
+
+# -------------------------------------------------------------------------------------------------
+
+class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
+    help = "manipulate disk images captured from IBM/Shugart floppy drives"
+    description = """
+    TBD
+    """
+
+    @classmethod
+    def add_arguments(cls, parser):
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+
+        p_index = p_operation.add_parser(
+            "index", help="discover and verify disk image contents and MFM sectors")
+        p_index.add_argument(
+            "file", metavar="FILE", type=argparse.FileType("rb"),
+            help="read disk image from FILE")
+
+    crc_mfm = staticmethod(crcmod.mkCrcFun(0x11021, initCrc=0xffff, rev=False))
+
+    def iter_tracks(self, file):
+        while True:
+            header = file.read(struct.calcsize(">BBL"))
+            if header == b"": break
+            head, track, size = struct.unpack(">BBL", header)
+            yield head, track, file.read(size)
+
+    def iter_mfm_sectors(self, symbstream):
+        state   = "IDLE"
+        count   = 0
+        data    = bytearray()
+        seen    = set()
+        header  = None
+        size    = None
+        for offset, (comma, symbol) in enumerate(symbstream):
+            self.logger.trace("state=%s sym=%s.%02X",
+                              state, "K" if comma else "D", symbol)
+
+            if comma and symbol == 0xA1:
+                if state == "IDLE":
+                    data.clear()
+                    count  = 1
+                    state  = "SYNC"
+                elif state == "SYNC":
+                    count += 1
+                else:
+                    self.logger.warning("desync sym-off=%d state=%s sym=K.A1",
+                                        offset, state)
+                    data.clear()
+                    count  = 1
+                    state  = "SYNC"
+
+                data.append(symbol)
+                continue
+
+            data.append(symbol)
+            if state == "IDLE":
+                continue
+            elif state == "SYNC":
+                if count < 3:
+                    self.logger.warning("early data sym-off=%d sync-n=%d",
+                                        offset, count)
+                if symbol == 0xFE:
+                    count = 6 # CYL+HD+SEC+NO+CRCH/L
+                    state = "FORMAT"
+                elif symbol == 0xFB:
+                    if header is None:
+                        self.logger.warning("spurious sector sym-off=%d",
+                                            offset)
+                    else:
+                        count = 2 + size # DATA+CRCH/L
+                        state = "SECTOR"
+                else:
+                    self.logger.warning("unknown start sym-off=%d type=%02X",
+                                        offset, symbol)
+                    state = "IDLE"
+                continue
+
+            if state in ("FORMAT", "SECTOR"):
+                count -= 1
+                if count == 0 and self.crc_mfm(data) != 0:
+                    self.logger.warning("wrong checksum sym-off=%d state=%s type=%02X",
+                                        offset, state, data[2])
+                    state = "IDLE"
+                    continue
+
+            if count == 0 and state == "FORMAT":
+                cyl, hd, sec, no = struct.unpack(">BBBB", data[4:-2])
+                size = 1 << (7 + no)
+
+                header = cyl, hd, sec
+                if header in seen:
+                    self.logger.debug("done")
+                    break
+                seen.add(header)
+
+                self.logger.info("header cyl=%2d hd=%d sec=%2d size=%d",
+                                 *header, size)
+
+            if count == 0 and state == "SECTOR":
+                yield (*header, data[4:-2])
+
+            if count == 0:
+                state = "IDLE"
+
+    async def run(self, args):
+        if args.operation == "index":
+            for head, track, bytestream in self.iter_tracks(args.file):
+                self.logger.info("head %d track %d: %d samples captured",
+                                head, track, len(bytestream) * 8)
+
+                mfm        = SoftwareMFMDecoder(self.logger)
+                symbstream = mfm.demodulate(mfm.lock(mfm.cycle(lambda: mfm.bits(bytestream))))
+                for _ in self.iter_mfm_sectors(symbstream):
+                    pass
 
 # -------------------------------------------------------------------------------------------------
 
