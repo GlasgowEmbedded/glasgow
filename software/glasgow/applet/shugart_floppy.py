@@ -911,7 +911,7 @@ class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
     the necessary geometry, and all areas that were not recovered from the raw image are filled
     with the following repeating byte patterns:
 
-        * <1057> ("LOST") for sectors completely missing from the raw image;
+        * <FA11> for sectors completely missing from the raw image;
         * <DEAD> for sectors whose header was found but data was corrupted;
         * <BAAD> for sectors that were marked as "deleted" (i.e. bad blocks) in the raw image,
           and no decoding was attempted.
@@ -1047,7 +1047,7 @@ class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
 
         if args.operation == "raw2img":
             image    = bytearray()
-            last_lba = 0
+            next_lba = 0
             missing  = 0
 
             try:
@@ -1064,6 +1064,9 @@ class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
                             continue
 
                         lba = ((cyl << 1) + hd) * args.sectors_per_track + (sec - 1)
+                        self.logger.debug("mapping C/H/S %d/%d/%d to LBA %d",
+                                          cyl, hd, sec, lba)
+
                         if len(data) != args.sector_size:
                             self.logger.error("sector at LBA %d has size %d (%d expected)",
                                               lba, len(data), args.sector_size)
@@ -1074,20 +1077,20 @@ class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
                             sectors[lba] = data
 
                     for lba in sorted(sectors):
-                        while lba > last_lba + 1:
+                        while lba > next_lba:
                             self.logger.error("sector at LBA %d missing",
-                                              last_lba)
+                                              next_lba)
                             missing  += 1
-                            last_lba += 1
-                        last_lba += 1
+                            next_lba += 1
+                        next_lba += 1
 
                         lua = lba * args.sector_size
                         if len(image) < lua:
-                            image += b"\x10\x57" * ((lua - len(image)) // 2)
+                            image += b"\xFA\x11" * ((lua - len(image)) // 2)
                         image[lua:lua + args.sector_size] = sectors[lba]
 
             finally:
-                self.logger.info("%d/%d sectors missing", missing, last_lba)
+                self.logger.info("%d/%d sectors missing", missing, next_lba)
                 args.linear_file.write(image)
 
 # -------------------------------------------------------------------------------------------------
