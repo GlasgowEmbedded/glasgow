@@ -51,6 +51,19 @@ class TextHelpFormatter(argparse.HelpFormatter):
         return re.sub(r"((?!\n\n)(?!\n\s+(?:\*|\d+\.)).)+(\n*)?", filler, text, flags=re.S)
 
 
+def create_argparser():
+    parser = argparse.ArgumentParser(formatter_class=TextHelpFormatter)
+
+    parser.add_argument(
+        "-v", "--verbose", default=0, action="count",
+        help="increase logging verbosity")
+    parser.add_argument(
+        "-q", "--quiet", default=0, action="count",
+        help="decrease logging verbosity")
+
+    return parser
+
+
 def get_argparser():
     def add_subparsers(parser, **kwargs):
         if isinstance(parser, argparse._MutuallyExclusiveGroup):
@@ -76,46 +89,49 @@ def get_argparser():
         for applet_name, applet in GlasgowApplet.all_applets.items():
             if mode == "test" and not hasattr(applet, "test_cls"):
                 continue
+            if mode == "tool" and not hasattr(applet, "tool_cls"):
+                continue
 
-            help        = applet.help
-            description = applet.description
+            if mode == "tool":
+                help        = applet.tool_cls.help
+                description = applet.tool_cls.description
+            else:
+                help        = applet.help
+                description = applet.description
             if applet.preview:
                 help += " (PREVIEW QUALITY APPLET)"
-                description = "    This applet is PREVIEW QUALITY and may CORRUPT DATA or have " \
-                              "missing features. Use at your own risk.\n" + description
+                description = "    This applet is PREVIEW QUALITY and may CORRUPT DATA or " \
+                              "have missing features. Use at your own risk.\n" + description
 
             p_applet = subparsers.add_parser(
                 applet_name, help=help, description=description,
                 formatter_class=TextHelpFormatter)
+
             if mode == "test":
                 p_applet.add_argument(
                     "tests", metavar="TEST", nargs="*",
                     help="test cases to run")
-                continue
 
-            access_args = DirectArguments(applet_name=applet_name,
-                                          default_port="AB",
-                                          pin_count=16)
-            if mode == "run":
-                g_applet_build = p_applet.add_argument_group("build arguments")
-                applet.add_build_arguments(g_applet_build, access_args)
-                g_applet_run = p_applet.add_argument_group("run arguments")
-                applet.add_run_arguments(g_applet_run, access_args)
-                # FIXME: this makes it impossiblt to add subparsers in applets
-                # g_applet_interact = p_applet.add_argument_group("interact arguments")
-                # applet.add_interact_arguments(g_applet_interact)
-                applet.add_interact_arguments(p_applet)
-            else:
-                applet.add_build_arguments(p_applet, access_args)
+            if mode in ("build", "run"):
+                access_args = DirectArguments(applet_name=applet_name,
+                                              default_port="AB",
+                                              pin_count=16)
+                if mode == "run":
+                    g_applet_build = p_applet.add_argument_group("build arguments")
+                    applet.add_build_arguments(g_applet_build, access_args)
+                    g_applet_run = p_applet.add_argument_group("run arguments")
+                    applet.add_run_arguments(g_applet_run, access_args)
+                    # FIXME: this makes it impossiblt to add subparsers in applets
+                    # g_applet_interact = p_applet.add_argument_group("interact arguments")
+                    # applet.add_interact_arguments(g_applet_interact)
+                    applet.add_interact_arguments(p_applet)
+                if mode == "build":
+                    applet.add_build_arguments(p_applet, access_args)
 
-    parser = argparse.ArgumentParser(formatter_class=TextHelpFormatter)
+            if mode == "tool":
+                applet.tool_cls.add_arguments(p_applet)
 
-    parser.add_argument(
-        "-v", "--verbose", default=0, action="count",
-        help="increase logging verbosity")
-    parser.add_argument(
-        "-q", "--quiet", default=0, action="count",
-        help="decrease logging verbosity")
+    parser = create_argparser()
 
     subparsers = parser.add_subparsers(dest="action", metavar="COMMAND")
     subparsers.required = True
@@ -164,6 +180,11 @@ def get_argparser():
         "--bitstream", metavar="FILENAME", type=argparse.FileType("rb"),
         help="read bitstream from the specified file")
     add_applet_arg(g_run_bitstream, mode="run")
+
+    p_tool = subparsers.add_parser(
+        "tool", formatter_class=TextHelpFormatter,
+        help="run an offline tool provided with an applet")
+    add_applet_arg(p_tool, mode="tool")
 
     p_flash = subparsers.add_parser(
         "flash", formatter_class=TextHelpFormatter,
@@ -284,9 +305,7 @@ class ANSIColorFormatter(logging.Formatter):
         return "{}{}\033[0m".format(color, super().format(record))
 
 
-async def _main():
-    args = get_argparser().parse_args()
-
+def create_logger(args):
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO + args.quiet * 10 - args.verbose * 10)
     handler = logging.StreamHandler()
@@ -297,9 +316,14 @@ async def _main():
         handler.setFormatter(logging.Formatter(**formatter_args))
     root_logger.addHandler(handler)
 
+
+async def _main():
+    args = get_argparser().parse_args()
+    create_logger(args)
+
     try:
         firmware_file = os.path.join(os.path.dirname(__file__), "glasgow.ihex")
-        if args.action in ("build", "test"):
+        if args.action in ("build", "test", "tool"):
             pass
         elif args.action == "factory":
             device = GlasgowHardwareDevice(firmware_file, VID_CYPRESS, PID_FX2)
@@ -447,6 +471,10 @@ async def _main():
                 with args.bitstream as f:
                     logger.info("downloading bitstream from %r", f.name)
                     await device.download_bitstream(f.read())
+
+        if args.action == "tool":
+            tool = GlasgowApplet.all_applets[args.applet].tool_cls()
+            await tool.run(args)
 
         if args.action == "flash":
             logger.info("reading device configuration")

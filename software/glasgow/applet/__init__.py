@@ -2,7 +2,7 @@ import re
 import argparse
 
 
-__all__ = ["GlasgowAppletError", "GlasgowApplet", "GlasgowAppletTestCase",
+__all__ = ["GlasgowAppletError", "GlasgowApplet", "GlasgowAppletTool", "GlasgowAppletTestCase",
            "synthesis_test", "applet_simulation_test"]
 
 
@@ -45,6 +45,23 @@ class GlasgowApplet:
         pass
 
     async def interact(self, device, args, interface):
+        pass
+
+# -------------------------------------------------------------------------------------------------
+
+class GlasgowAppletTool:
+    def __init_subclass__(cls, applet, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        applet.tool_cls = cls
+        cls.applet_cls  = applet
+        cls.logger      = applet.logger
+
+    @classmethod
+    def add_arguments(cls, parser):
+        pass
+
+    async def run(self, args):
         pass
 
 # -------------------------------------------------------------------------------------------------
