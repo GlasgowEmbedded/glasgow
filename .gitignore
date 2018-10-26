@@ -11,3 +11,5 @@ _autosave-*
 /*.v
 /*.bin
 /*.zip
+/*.img
+/*.raw

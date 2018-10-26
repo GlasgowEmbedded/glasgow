@@ -169,7 +169,7 @@
 # The comma K.A1 is used because normal MFM-encoded data never produces its bit stream, including
 # if the output is considered 180° out of phase. Thus, it may be safely used for synchronization.
 # The comma K.C2 is produced if the sequence <000101001> is encoded and read 180° out of phase,
-# producing a sequence containing K.C2:
+# resulting in a sequence containing K.C2:
 #
 #   ?0 10 10 01 00 01 00 10 01
 #    0  0  0  1  0  1  0  0  1
@@ -830,9 +830,21 @@ class ShugartFloppyApplet(GlasgowApplet, name="shugart-floppy"):
 # -------------------------------------------------------------------------------------------------
 
 class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
-    help = "manipulate disk images captured from IBM/Shugart floppy drives"
+    help = "manipulate raw disk images captured from IBM/Shugart floppy drives"
     description = """
-    TBD
+    Dissect raw disk images (i.e. RDATA samples) and extract MFM-encoded sectors into linear
+    disk images.
+
+    Any errors during extraction are logged, the linear image is filled and padded to
+    the necessary geometry, and all areas that were not recovered from the raw image are filled
+    with the following repeating byte patterns:
+
+        * <1057> ("LOST") for sectors completely missing from the raw image;
+        * <DEAD> for sectors whose header was found but data was corrupted;
+        * <BAAD> for sectors that were marked as "deleted" (i.e. bad blocks) in the raw image,
+          and no decoding was attempted.
+
+    ("Deleted" sectors are not currently recognized.)
     """
 
     @classmethod
@@ -840,10 +852,25 @@ class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
         p_index = p_operation.add_parser(
-            "index", help="discover and verify disk image contents and MFM sectors")
+            "index", help="discover and verify raw disk image contents and MFM sectors")
         p_index.add_argument(
             "file", metavar="FILE", type=argparse.FileType("rb"),
-            help="read disk image from FILE")
+            help="read raw disk image from FILE")
+
+        p_extract = p_operation.add_parser(
+            "extract", help="extract raw disk images into linear disk images")
+        p_extract.add_argument(
+            "-s", "--sector-size", metavar="BYTES", type=int, default=512,
+            help="amount of bytes per sector (~always the default: %(default)s)")
+        p_extract.add_argument(
+            "-t", "--sectors-per-track", metavar="COUNT", type=int, required=True,
+            help="amount of sectors per track (9 for DD, 18 for HD, ...)")
+        p_extract.add_argument(
+            "raw_file", metavar="RAW-FILE", type=argparse.FileType("rb"),
+            help="read raw disk image from RAW-FILE")
+        p_extract.add_argument(
+            "linear_file", metavar="LINEAR-FILE", type=argparse.FileType("wb"),
+            help="write linear disk image to LINEAR-FILE")
 
     crc_mfm = staticmethod(crcmod.mkCrcFun(0x11021, initCrc=0xffff, rev=False))
 
@@ -854,7 +881,7 @@ class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
             head, track, size = struct.unpack(">BBL", header)
             yield head, track, file.read(size)
 
-    def iter_mfm_sectors(self, symbstream):
+    def iter_mfm_sectors(self, symbstream, verbose=False):
         state   = "IDLE"
         count   = 0
         data    = bytearray()
@@ -900,7 +927,7 @@ class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
                         count = 2 + size # DATA+CRCH/L
                         state = "SECTOR"
                 else:
-                    self.logger.warning("unknown start sym-off=%d type=%02X",
+                    self.logger.warning("unknown mark sym-off=%d type=%02X",
                                         offset, symbol)
                     state = "IDLE"
                 continue
@@ -923,11 +950,14 @@ class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
                     break
                 seen.add(header)
 
-                self.logger.info("header cyl=%2d hd=%d sec=%2d size=%d",
-                                 *header, size)
+                self.logger.log(logging.INFO if verbose else logging.DEBUG,
+                                "header cyl=%2d hd=%d sec=%2d size=%d",
+                                *header, size)
 
             if count == 0 and state == "SECTOR":
-                yield (*header, data[4:-2])
+                yield (header, data[4:-2])
+
+                header = None
 
             if count == 0:
                 state = "IDLE"
@@ -936,12 +966,57 @@ class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
         if args.operation == "index":
             for head, track, bytestream in self.iter_tracks(args.file):
                 self.logger.info("head %d track %d: %d samples captured",
-                                head, track, len(bytestream) * 8)
+                                 head, track, len(bytestream) * 8)
 
                 mfm        = SoftwareMFMDecoder(self.logger)
                 symbstream = mfm.demodulate(mfm.lock(mfm.cycle(lambda: mfm.bits(bytestream))))
-                for _ in self.iter_mfm_sectors(symbstream):
+                for _ in self.iter_mfm_sectors(symbstream, verbose=True):
                     pass
+
+        if args.operation == "extract":
+            image    = bytearray()
+            last_lba = 0
+            missing  = 0
+
+            try:
+                for head, track, bytestream in self.iter_tracks(args.raw_file):
+                    mfm        = SoftwareMFMDecoder(self.logger)
+                    symbstream = mfm.demodulate(mfm.lock(mfm.cycle(lambda: mfm.bits(bytestream))))
+
+                    sectors    = {}
+                    for (cyl, hd, sec), data in self.iter_mfm_sectors(symbstream):
+                        if sec not in range(1, 1 + args.sectors_per_track):
+                            self.logger.error("sector at C/H/S %d/%d/%d overflows track geometry "
+                                              "(%d sectors per track)",
+                                              cyl, hd, sec, args.sectors_per_track)
+                            continue
+
+                        lba = ((cyl << 1) + hd) * args.sectors_per_track + (sec - 1)
+                        if len(data) != args.sector_size:
+                            self.logger.error("sector at LBA %d has size %d (%d expected)",
+                                              lba, len(data), args.sector_size)
+                        elif lba in sectors:
+                            self.logger.error("duplicate sector at LBA %d",
+                                              lba)
+                        else:
+                            sectors[lba] = data
+
+                    for lba in sorted(sectors):
+                        while lba > last_lba + 1:
+                            self.logger.error("sector at LBA %d missing",
+                                              last_lba)
+                            missing  += 1
+                            last_lba += 1
+                        last_lba += 1
+
+                        lua = lba * args.sector_size
+                        if len(image) < lua:
+                            image += b"\x10\x57" * ((lua - len(image)) // 2)
+                        image[lua:lua + args.sector_size] = sectors[lba]
+
+            finally:
+                self.logger.info("%d/%d sectors missing", missing, last_lba)
+                args.linear_file.write(image)
 
 # -------------------------------------------------------------------------------------------------
 
