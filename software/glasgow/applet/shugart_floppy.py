@@ -168,20 +168,28 @@
 #
 # The comma K.A1 is used because normal MFM-encoded data never produces its bit stream, including
 # if the output is considered 180° out of phase. Thus, it may be safely used for synchronization.
+#
 # The comma K.C2 is produced if the sequence <000101001> is encoded and read 180° out of phase,
 # resulting in a sequence containing K.C2:
 #
 #   ?0 10 10 01 00 01 00 10 01
 #    0  0  0  1  0  1  0  0  1
 #
+# However, the *repeated* comma K.C2 cannot result from reading a stream of normal data 180° out
+# of phase, because that would include an illegal sequence <1000> on their boundary:
+#
+#   ?0 10 10 01 00 01 00 10 00 10 10 01 00 01 00 10 0?
+#    <       first K.C2     ><       second K.C2    >
+#                           *  coding violation
+#
 # Note that encountering a comma implies a requirement to realign the bitstream immediately.
 # This includes such sequences as <K.C2 0 K.A1 K.A1>, which would produce an invalid reading
 # if the receiver stays synchronized to <K.C2> after encountering the <0 K.A1> sequence.
 #
-# Also note that since the comma K.C2 can be produced by normal encoded data, it is not actually
-# useful for synchronization. The raw read track command of WD1772 resyncs on each K.A1 and K.C2,
-# and the latter causes loss of sync in the middle of a track, and this can indeed be easily
-# reproduced. There is generally no point in recognizing K.C2 at all.
+# Also note that since the single comma K.C2 can be produced by normal encoded data, it is less
+# useful for synchronization, as it is necessary to watch for at least two repeats of it.
+# The raw read track command of WD1772 resyncs on each single occurrence of K.A1 and K.C2, with
+# the latter causing loss of sync in the middle of a track.
 #
 # Other than the (recognized and accepted) coding violation, a comma behaves exactly like any
 # other encoded byte; if a zero is encoded after K.C2, it is encoded as 10, and if after K.A1,
@@ -254,7 +262,9 @@
 #
 # In theory, before the gap and sync bytes for the header packet there should be a sync packet
 # with the <K.C2 K.C2 K.C2 FC> sequence (and its own gap and sync bytes as well), but it does
-# not carry any useful information and I have not observed it on any of my floppies.
+# not carry any useful information and I have not observed it on any of my floppies. Combined
+# with the issues synchronizing on K.C2 described above, there is likely no point in recognizing
+# K.C2 at all.
 #
 # In a more visual form, the packet formats are as follows:
 #
