@@ -9,6 +9,16 @@ from ...database.jedec import *
 from .master import SPIMasterApplet
 
 
+class SPIFlash25CError(GlasgowAppletError):
+    pass
+
+
+BIT_WIP  = 0b00000001
+BIT_WEL  = 0b00000010
+BIT_CP   = 0b01000000
+BIT_SRWD = 0b10000000
+
+
 class SPIFlash25CInterface:
     def __init__(self, interface, logger):
         self.lower       = interface
@@ -98,29 +108,37 @@ class SPIFlash25CInterface:
         self._log("write disable")
         await self._command(0x04)
 
-    async def write_in_progress(self):
-        return bool((await self.read_status()) & 1)
+    async def write_in_progress(self, command="write"):
+        status = await self.read_status()
+        if status & BIT_WEL and not status & BIT_WIP:
+            # Looks like some flashes (this was determined on Macronix MX25L3205D) have a race
+            # condition between WIP going low and WEL going low, so we can sometimes observe
+            # that. Work around by checking twice in a row. Sigh.
+            status = await self.read_status()
+            if status & BIT_WEL and not status & BIT_WIP:
+                raise SPIFlash25CError("{} command failed (status {:08b})".format(command, status))
+        return bool(status & BIT_WIP)
 
     async def sector_erase(self, address):
         self._log("sector erase addr=%#08x", address)
         await self._command(0x20, arg=self._format_addr(address))
-        while await self.write_in_progress(): pass
+        while await self.write_in_progress(command="sector erase"): pass
 
     async def block_erase(self, address):
         self._log("block erase addr=%#08x", address)
         await self._command(0x52, arg=self._format_addr(address))
-        while await self.write_in_progress(): pass
+        while await self.write_in_progress(command="block erase"): pass
 
     async def chip_erase(self):
         self._log("chip erase")
         await self._command(0x60)
-        while await self.write_in_progress(): pass
+        while await self.write_in_progress(command="chip erase"): pass
 
     async def page_program(self, address, data):
         data = bytes(data)
         self._log("page program addr=%#08x data=<%s>", address, data.hex())
         await self._command(0x02, arg=self._format_addr(address) + data)
-        while await self.write_in_progress(): pass
+        while await self.write_in_progress(command="page program"): pass
 
     async def program(self, address, data, page_size,
                       callback=lambda done, total, status: None):
@@ -297,6 +315,14 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
 
     async def interact(self, device, args, flash_iface):
         await flash_iface.wakeup()
+
+        if args.operation in ("program-page", "program",
+                              "erase-sector", "erase-block", "erase-chip",
+                              "erase-program"):
+            status = await flash_iface.read_status()
+            if status & 0b001111100:
+                self.logger.warning("block protect bits are set to %s, program/erase command "
+                                    "might not succeed", "{:05b}".format((status >> 2) & 0b11111))
 
         if args.operation == "identify":
             manufacturer_id, device_id = \
