@@ -15,8 +15,9 @@ class SPIFlash25CError(GlasgowAppletError):
 
 BIT_WIP  = 0b00000001
 BIT_WEL  = 0b00000010
+MSK_PROT = 0b00111100
 BIT_CP   = 0b01000000
-BIT_SRWD = 0b10000000
+BIT_ERR  = 0b10000000
 
 
 class SPIFlash25CInterface:
@@ -96,10 +97,6 @@ class SPIFlash25CInterface:
         self._log("read status=%s", "{:#010b}".format(status))
         return status
 
-    async def write_status(self, status):
-        self._log("write status=%s", "{:#010b}".format(status))
-        await self._command(0x01, arg=[status])
-
     async def write_enable(self):
         self._log("write enable")
         await self._command(0x06)
@@ -119,26 +116,31 @@ class SPIFlash25CInterface:
                 raise SPIFlash25CError("{} command failed (status {:08b})".format(command, status))
         return bool(status & BIT_WIP)
 
+    async def write_status(self, status):
+        self._log("write status=%s", "{:#010b}".format(status))
+        await self._command(0x01, arg=[status])
+        while await self.write_in_progress(command="WRITE STATUS"): pass
+
     async def sector_erase(self, address):
         self._log("sector erase addr=%#08x", address)
         await self._command(0x20, arg=self._format_addr(address))
-        while await self.write_in_progress(command="sector erase"): pass
+        while await self.write_in_progress(command="SECTOR ERASE"): pass
 
     async def block_erase(self, address):
         self._log("block erase addr=%#08x", address)
         await self._command(0x52, arg=self._format_addr(address))
-        while await self.write_in_progress(command="block erase"): pass
+        while await self.write_in_progress(command="BLOCK ERASE"): pass
 
     async def chip_erase(self):
         self._log("chip erase")
         await self._command(0x60)
-        while await self.write_in_progress(command="chip erase"): pass
+        while await self.write_in_progress(command="CHIP ERASE"): pass
 
     async def page_program(self, address, data):
         data = bytes(data)
         self._log("page program addr=%#08x data=<%s>", address, data.hex())
         await self._command(0x02, arg=self._format_addr(address) + data)
-        while await self.write_in_progress(command="page program"): pass
+        while await self.write_in_progress(command="PAGE PROGRAM"): pass
 
     async def program(self, address, data, page_size,
                       callback=lambda done, total, status: None):
@@ -223,6 +225,8 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
             return int(arg, 0)
         def hex_bytes(arg):
             return bytes.fromhex(arg)
+        def bits(arg):
+            return int(arg, 2)
 
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
@@ -299,6 +303,13 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
         add_page_argument(p_erase_program)
         add_program_arguments(p_erase_program)
 
+        p_protect = p_operation.add_parser(
+            "protect", help="query and set block protection using READ/WRITE STATUS "
+                            "REGISTER commands")
+        p_protect.add_argument(
+            "bits", metavar="BITS", type=bits, nargs="?",
+            help="set SR.BP[3:0] to BITS")
+
         p_verify = p_operation.add_parser(
             "verify", help="read memory using READ command and verify contents")
         add_program_arguments(p_verify)
@@ -320,9 +331,10 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
                               "erase-sector", "erase-block", "erase-chip",
                               "erase-program"):
             status = await flash_iface.read_status()
-            if status & 0b001111100:
+            if status & MSK_PROT:
                 self.logger.warning("block protect bits are set to %s, program/erase command "
-                                    "might not succeed", "{:05b}".format((status >> 2) & 0b11111))
+                                    "might not succeed", "{:04b}"
+                                    .format((status & MSK_PROT) >> 2))
 
         if args.operation == "identify":
             manufacturer_id, device_id = \
@@ -394,6 +406,16 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
         if args.operation == "erase-chip":
             await flash_iface.write_enable()
             await flash_iface.chip_erase()
+
+        if args.operation == "protect":
+            status = await flash_iface.read_status()
+            if args.bits is None:
+                self.logger.info("block protect bits are set to %s",
+                                 "{:04b}".format((status & MSK_PROT) >> 2))
+            else:
+                status = (status & ~MSK_PROT) | ((args.bits << 2) & MSK_PROT)
+                await flash_iface.write_enable()
+                await flash_iface.write_status(status)
 
 # -------------------------------------------------------------------------------------------------
 
