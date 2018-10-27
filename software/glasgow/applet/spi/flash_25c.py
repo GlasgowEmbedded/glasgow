@@ -281,6 +281,10 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
         add_page_argument(p_erase_program)
         add_program_arguments(p_erase_program)
 
+        p_verify = p_operation.add_parser(
+            "verify", help="read memory using READ command and verify contents")
+        add_program_arguments(p_verify)
+
     @staticmethod
     def _show_progress(done, total, status):
         if sys.stdout.isatty():
@@ -334,6 +338,24 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
             if args.operation == "erase-program":
                 await flash_iface.erase_program(args.address, data, args.sector_size,
                                                 args.page_size, callback=self._show_progress)
+
+        if args.operation == "verify":
+            if args.data is not None:
+                gold_data = args.data
+            if args.file is not None:
+                gold_data = args.file.read()
+
+            flash_data = await flash_iface.read(args.address, len(gold_data))
+            if gold_data == flash_data:
+                self.logger.info("verify PASS")
+            else:
+                for offset, (gold_byte, flash_byte) in enumerate(zip(gold_data, flash_data)):
+                    if gold_byte != flash_byte:
+                        different_at = args.address + offset
+                        break
+                self.logger.error("first differing byte at %#08x (expected %#04x, actual %#04x)",
+                                  different_at, gold_byte, flash_byte)
+                raise GlasgowAppletError("verify FAIL")
 
         if args.operation in ("erase-sector", "erase-block"):
             for address in args.addresses:
