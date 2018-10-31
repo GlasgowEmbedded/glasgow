@@ -33,7 +33,7 @@ usb_desc_configuration_c usb_configs[] = {
     .wTotalLength         = sizeof(struct usb_desc_configuration) +
                             4 * sizeof(struct usb_desc_interface) +
                             4 * sizeof(struct usb_desc_endpoint),
-    .bNumInterfaces       = 4,
+    .bNumInterfaces       = 2,
     .bConfigurationValue  = 1,
     .iConfiguration       = 4,
     .bmAttributes         = USB_ATTR_RESERVED_1,
@@ -45,7 +45,7 @@ usb_desc_configuration_c usb_configs[] = {
     .wTotalLength         = sizeof(struct usb_desc_configuration) +
                             2 * sizeof(struct usb_desc_interface) +
                             2 * sizeof(struct usb_desc_endpoint),
-    .bNumInterfaces       = 2,
+    .bNumInterfaces       = 1,
     .bConfigurationValue  = 2,
     .iConfiguration       = 5,
     .bmAttributes         = USB_ATTR_RESERVED_1,
