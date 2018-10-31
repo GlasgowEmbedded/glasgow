@@ -53,124 +53,63 @@ usb_desc_configuration_c usb_configs[] = {
   },
 };
 
-usb_desc_interface_c usb_interfaces[] = {
-  { // No endpoints
-    .bLength              = sizeof(struct usb_desc_interface),
-    .bDescriptorType      = USB_DESC_INTERFACE,
-    .bInterfaceNumber     = 0,
-    .bAlternateSetting    = 0,
-    .bNumEndpoints        = 0,
-    .bInterfaceClass      = 255,
-    .bInterfaceSubClass   = 255,
-    .bInterfaceProtocol   = 255,
-    .iInterface           = 6,
-  },
-  { // EP2OUT BULK + EP6IN BULK
-    .bLength              = sizeof(struct usb_desc_interface),
-    .bDescriptorType      = USB_DESC_INTERFACE,
-    .bInterfaceNumber     = 0,
-    .bAlternateSetting    = 1,
-    .bNumEndpoints        = 2,
-    .bInterfaceClass      = 255,
-    .bInterfaceSubClass   = 255,
-    .bInterfaceProtocol   = 255,
-    .iInterface           = 7,
-  },
-  { // No endpoints
-    .bLength              = sizeof(struct usb_desc_interface),
-    .bDescriptorType      = USB_DESC_INTERFACE,
-    .bInterfaceNumber     = 1,
-    .bAlternateSetting    = 0,
-    .bNumEndpoints        = 0,
-    .bInterfaceClass      = 255,
-    .bInterfaceSubClass   = 255,
-    .bInterfaceProtocol   = 255,
-    .iInterface           = 8,
-  },
-  { // EP4OUT BULK + EP8IN BULK
-    .bLength              = sizeof(struct usb_desc_interface),
-    .bDescriptorType      = USB_DESC_INTERFACE,
-    .bInterfaceNumber     = 1,
-    .bAlternateSetting    = 1,
-    .bNumEndpoints        = 2,
-    .bInterfaceClass      = 255,
-    .bInterfaceSubClass   = 255,
-    .bInterfaceProtocol   = 255,
-    .iInterface           = 9,
-  },
-  { // No endpoints
-    .bLength              = sizeof(struct usb_desc_interface),
-    .bDescriptorType      = USB_DESC_INTERFACE,
-    .bInterfaceNumber     = 0,
-    .bAlternateSetting    = 0,
-    .bNumEndpoints        = 0,
-    .bInterfaceClass      = 255,
-    .bInterfaceSubClass   = 255,
-    .bInterfaceProtocol   = 255,
-    .iInterface           = 10,
-  },
-  { // EP2OUT BULK + EP6IN BULK
-    .bLength              = sizeof(struct usb_desc_interface),
-    .bDescriptorType      = USB_DESC_INTERFACE,
-    .bInterfaceNumber     = 0,
-    .bAlternateSetting    = 1,
-    .bNumEndpoints        = 2,
-    .bInterfaceClass      = 255,
-    .bInterfaceSubClass   = 255,
-    .bInterfaceProtocol   = 255,
-    .iInterface           = 11,
+#define USB_INTERFACE(bInterfaceNumber_, bAlternateSetting_, bNumEndpoints_, iInterface_) \
+  {                                                                                       \
+    .bLength              = sizeof(struct usb_desc_interface),                            \
+    .bDescriptorType      = USB_DESC_INTERFACE,                                           \
+    .bInterfaceNumber     = bInterfaceNumber_,                                            \
+    .bAlternateSetting    = bAlternateSetting_,                                           \
+    .bNumEndpoints        = bNumEndpoints_,                                               \
+    .bInterfaceClass      = 255,                                                          \
+    .bInterfaceSubClass   = 255,                                                          \
+    .bInterfaceProtocol   = 255,                                                          \
+    .iInterface           = iInterface_,                                                  \
   }
+
+usb_desc_interface_c usb_interfaces[] = {
+  // No endpoints
+  USB_INTERFACE(/*bInterfaceNumber=*/0, /*bAlternateSetting=*/0, /*bNumEndpoints=*/0,
+                /*iInterface=*/6),
+  // EP2OUT BULK + EP6IN BULK
+  USB_INTERFACE(/*bInterfaceNumber=*/0, /*bAlternateSetting=*/1, /*bNumEndpoints=*/2,
+                /*iInterface=*/7),
+  // No endpoints
+  USB_INTERFACE(/*bInterfaceNumber=*/1, /*bAlternateSetting=*/0, /*bNumEndpoints=*/0,
+                /*iInterface=*/8),
+  // EP4OUT BULK + EP8IN BULK
+  USB_INTERFACE(/*bInterfaceNumber=*/1, /*bAlternateSetting=*/1, /*bNumEndpoints=*/2,
+                /*iInterface=*/9),
+  // No endpoints
+  USB_INTERFACE(/*bInterfaceNumber=*/0, /*bAlternateSetting=*/0, /*bNumEndpoints=*/0,
+                /*iInterface=*/10),
+  // EP2OUT BULK + EP6IN BULK
+  USB_INTERFACE(/*bInterfaceNumber=*/0, /*bAlternateSetting=*/1, /*bNumEndpoints=*/2,
+                /*iInterface=*/11),
 };
 
+#define USB_BULK_ENDPOINT(bEndpointAddress_)                                              \
+  {                                                                                       \
+    .bLength              = sizeof(struct usb_desc_endpoint),                             \
+    .bDescriptorType      = USB_DESC_ENDPOINT,                                            \
+    .bEndpointAddress     = bEndpointAddress_,                                            \
+    .bmAttributes         = USB_XFER_BULK,                                                \
+    .wMaxPacketSize       = 512,                                                          \
+    .bInterval            = 0,                                                            \
+  }
+
 usb_desc_endpoint_c usb_endpoints[] = {
-  { // EP2OUT BULK
-    .bLength              = sizeof(struct usb_desc_endpoint),
-    .bDescriptorType      = USB_DESC_ENDPOINT,
-    .bEndpointAddress     = 2,
-    .bmAttributes         = USB_XFER_BULK,
-    .wMaxPacketSize       = 512,
-    .bInterval            = 0,
-  },
-  { // EP6IN BULK
-    .bLength              = sizeof(struct usb_desc_endpoint),
-    .bDescriptorType      = USB_DESC_ENDPOINT,
-    .bEndpointAddress     = 6|USB_DIR_IN,
-    .bmAttributes         = USB_XFER_BULK,
-    .wMaxPacketSize       = 512,
-    .bInterval            = 0,
-  },
-  { // EP4OUT BULK
-    .bLength              = sizeof(struct usb_desc_endpoint),
-    .bDescriptorType      = USB_DESC_ENDPOINT,
-    .bEndpointAddress     = 4,
-    .bmAttributes         = USB_XFER_BULK,
-    .wMaxPacketSize       = 512,
-    .bInterval            = 0,
-  },
-  { // EP8IN BULK
-    .bLength              = sizeof(struct usb_desc_endpoint),
-    .bDescriptorType      = USB_DESC_ENDPOINT,
-    .bEndpointAddress     = 8|USB_DIR_IN,
-    .bmAttributes         = USB_XFER_BULK,
-    .wMaxPacketSize       = 512,
-    .bInterval            = 0,
-  },
-  { // EP2OUT BULK
-    .bLength              = sizeof(struct usb_desc_endpoint),
-    .bDescriptorType      = USB_DESC_ENDPOINT,
-    .bEndpointAddress     = 2,
-    .bmAttributes         = USB_XFER_BULK,
-    .wMaxPacketSize       = 512,
-    .bInterval            = 0,
-  },
-  { // EP6IN BULK
-    .bLength              = sizeof(struct usb_desc_endpoint),
-    .bDescriptorType      = USB_DESC_ENDPOINT,
-    .bEndpointAddress     = 6|USB_DIR_IN,
-    .bmAttributes         = USB_XFER_BULK,
-    .wMaxPacketSize       = 512,
-    .bInterval            = 0,
-  },
+  // EP2OUT BULK
+  USB_BULK_ENDPOINT(/*bEndpointAddress=*/2|USB_DIR_OUT),
+  // EP6IN  BULK
+  USB_BULK_ENDPOINT(/*bEndpointAddress=*/6|USB_DIR_IN ),
+  // EP4OUT BULK
+  USB_BULK_ENDPOINT(/*bEndpointAddress=*/4|USB_DIR_OUT),
+  // EP8IN  BULK
+  USB_BULK_ENDPOINT(/*bEndpointAddress=*/8|USB_DIR_IN ),
+  // EP2OUT BULK
+  USB_BULK_ENDPOINT(/*bEndpointAddress=*/2|USB_DIR_OUT),
+  // EP6IN  BULK
+  USB_BULK_ENDPOINT(/*bEndpointAddress=*/6|USB_DIR_IN ),
 };
 
 usb_ascii_string_c usb_strings[] = {
