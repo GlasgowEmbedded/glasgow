@@ -170,8 +170,8 @@ def get_argparser():
         "run", formatter_class=TextHelpFormatter,
         help="load an applet bitstream and run applet code")
     p_run.add_argument(
-        "--force", default=False, action="store_true",
-        help="reload bitstream even if an identical one is loaded")
+        "--rebuild", default=False, action="store_true",
+        help="rebuild bitstream even if an identical one is already loaded")
     p_run.add_argument(
         "--trace", metavar="FILENAME", type=argparse.FileType("wt"), default=None,
         help="trace applet I/O to FILENAME")
@@ -374,7 +374,7 @@ async def _main():
                 device.demultiplexer = DirectDemultiplexer(device)
 
                 bitstream_id = target.get_bitstream_id()
-                if await device.bitstream_id() == bitstream_id and not args.force:
+                if await device.bitstream_id() == bitstream_id and not args.rebuild:
                     logger.info("device already has bitstream ID %s", bitstream_id.hex())
                 else:
                     logger.info("building bitstream ID %s for applet %r",
