@@ -3167,9 +3167,9 @@ Text Label 6200 3850 0    50   ~ 0
 D7
 Text Label 6200 4150 0    50   ~ 0
 D6
-Text Label 6800 3350 0    50   ~ 0
+Text Label 6200 3650 0    50   ~ 0
 D1
-Text Label 6750 3700 0    50   ~ 0
+Text Label 6200 3750 0    50   ~ 0
 D0
 Entry Wire Line
 	6550 3850 6650 3950
@@ -3248,14 +3248,22 @@ Wire Wire Line
 Connection ~ 4550 5200
 Wire Wire Line
 	4550 5200 4550 5500
+Entry Wire Line
+	6550 3650 6650 3750
+Entry Wire Line
+	6550 3750 6650 3850
+Wire Wire Line
+	6200 3650 6550 3650
+Wire Wire Line
+	6200 3750 6550 3750
 Wire Bus Line
 	4350 6250 6650 6250
 Wire Bus Line
 	8000 2600 8000 4800
 Wire Bus Line
-	4350 2150 4350 6250
+	9650 2400 9650 4800
 Wire Bus Line
 	6650 2550 6650 6250
 Wire Bus Line
-	9650 2400 9650 4800
+	4350 2150 4350 6250
 $EndSCHEMATC
