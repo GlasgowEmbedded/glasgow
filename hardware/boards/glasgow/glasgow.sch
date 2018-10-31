@@ -2872,7 +2872,7 @@ Text Label 17550 5200 0    50   ~ 0
 Z10_P
 Text Label 17550 5300 0    50   ~ 0
 Z10_N
-Text Label 17550 5400 0    50   ~ 0
+Text Label 15950 3500 2    50   ~ 0
 Z11_P
 Text Label 17550 5500 0    50   ~ 0
 Z11_N
@@ -3256,6 +3256,150 @@ Wire Wire Line
 	6200 3650 6550 3650
 Wire Wire Line
 	6200 3750 6550 3750
+$Comp
+L Connector_Generic:Conn_02x22_Odd_Even J5
+U 1 1 5D3E6DA7
+P 16150 4300
+F 0 "J5" H 16200 5517 50  0000 C CNN
+F 1 "Conn_02x22_Odd_Even" H 16200 5426 50  0000 C CNN
+F 2 "Connector_PinHeader_1.27mm:PinHeader_2x22_P1.27mm_Vertical_SMD" H 16150 4300 50  0001 C CNN
+F 3 "~" H 16150 4300 50  0001 C CNN
+	1    16150 4300
+	1    0    0    -1
+$EndComp
+Wire Wire Line
+	15950 3300 15850 3300
+Wire Wire Line
+	15850 3300 15850 3600
+Wire Wire Line
+	16450 3300 16700 3300
+Wire Wire Line
+	16700 3300 16700 3100
+Wire Wire Line
+	16450 3400 16900 3400
+Wire Wire Line
+	16900 3400 16900 3100
+Wire Wire Line
+	16450 3500 17100 3500
+Wire Wire Line
+	17100 3500 17100 3100
+$Comp
+L power:+3.3V #PWR0102
+U 1 1 5D502274
+P 16900 3100
+F 0 "#PWR0102" H 16900 2950 50  0001 C CNN
+F 1 "+3.3V" H 16915 3273 50  0000 C CNN
+F 2 "" H 16900 3100 50  0001 C CNN
+F 3 "" H 16900 3100 50  0001 C CNN
+	1    16900 3100
+	-1   0    0    -1
+$EndComp
+$Comp
+L power:+1V2 #PWR0105
+U 1 1 5D5023DF
+P 17100 3100
+F 0 "#PWR0105" H 17100 2950 50  0001 C CNN
+F 1 "+1V2" H 17115 3273 50  0000 C CNN
+F 2 "" H 17100 3100 50  0001 C CNN
+F 3 "" H 17100 3100 50  0001 C CNN
+	1    17100 3100
+	-1   0    0    -1
+$EndComp
+$Comp
+L power:+5V #PWR0110
+U 1 1 5D50249A
+P 16700 3100
+F 0 "#PWR0110" H 16700 2950 50  0001 C CNN
+F 1 "+5V" H 16715 3273 50  0000 C CNN
+F 2 "" H 16700 3100 50  0001 C CNN
+F 3 "" H 16700 3100 50  0001 C CNN
+	1    16700 3100
+	-1   0    0    -1
+$EndComp
+Wire Wire Line
+	16450 3800 16550 3800
+Wire Wire Line
+	16550 3800 16550 4100
+Wire Wire Line
+	16550 5550 16200 5550
+$Comp
+L power:GND #PWR0114
+U 1 1 5D532335
+P 16200 5550
+F 0 "#PWR0114" H 16200 5300 50  0001 C CNN
+F 1 "GND" H 16205 5377 50  0000 C CNN
+F 2 "" H 16200 5550 50  0001 C CNN
+F 3 "" H 16200 5550 50  0001 C CNN
+	1    16200 5550
+	-1   0    0    -1
+$EndComp
+Connection ~ 16200 5550
+Wire Wire Line
+	16200 5550 15850 5550
+Wire Wire Line
+	16550 4100 16450 4100
+Connection ~ 16550 4100
+Wire Wire Line
+	16550 4100 16550 4400
+Wire Wire Line
+	16450 4400 16550 4400
+Connection ~ 16550 4400
+Wire Wire Line
+	16550 4400 16550 4700
+Wire Wire Line
+	16550 4700 16450 4700
+Connection ~ 16550 4700
+Wire Wire Line
+	16550 4700 16550 5000
+Wire Wire Line
+	16450 5000 16550 5000
+Connection ~ 16550 5000
+Wire Wire Line
+	16550 5000 16550 5300
+Wire Wire Line
+	16550 5300 16450 5300
+Connection ~ 16550 5300
+Wire Wire Line
+	16550 5300 16550 5550
+Wire Wire Line
+	15950 3600 15850 3600
+Connection ~ 15850 3600
+Wire Wire Line
+	15850 3600 15850 3900
+Wire Wire Line
+	15950 3900 15850 3900
+Connection ~ 15850 3900
+Wire Wire Line
+	15850 3900 15850 4200
+Wire Wire Line
+	15950 4200 15850 4200
+Connection ~ 15850 4200
+Wire Wire Line
+	15850 4200 15850 4500
+Wire Wire Line
+	15950 4500 15850 4500
+Connection ~ 15850 4500
+Wire Wire Line
+	15850 4500 15850 4800
+Wire Wire Line
+	15950 4800 15850 4800
+Connection ~ 15850 4800
+Wire Wire Line
+	15850 4800 15850 5100
+Wire Wire Line
+	15950 5100 15850 5100
+Connection ~ 15850 5100
+Wire Wire Line
+	15850 5100 15850 5400
+Wire Wire Line
+	15950 5400 15850 5400
+Connection ~ 15850 5400
+Wire Wire Line
+	15850 5400 15850 5550
+Text Label 16900 5400 2    50   ~ 0
+VIO_AUX
+Wire Wire Line
+	16450 5400 16900 5400
 Wire Bus Line
 	4350 6250 6650 6250
 Wire Bus Line
@@ -3266,15 +3410,56 @@ Wire Bus Line
 	6650 2550 6650 6250
 Wire Bus Line
 	4350 2150 4350 6250
-$Comp
-L Connector_Generic:Conn_02x24_Odd_Even J5
-U 1 1 5D3E6DA7
-P 16850 4300
-F 0 "J5" H 16900 5617 50  0000 C CNN
-F 1 "Conn_02x24_Odd_Even" H 16900 5526 50  0000 C CNN
-F 2 "Connector_PinHeader_1.27mm:PinHeader_2x24_P1.27mm_Vertical_SMD" H 16850 4300 50  0001 C CNN
-F 3 "~" H 16850 4300 50  0001 C CNN
-	1    16850 4300
-	1    0    0    -1
-$EndComp
+Text Label 16450 3600 0    50   ~ 0
+Z12_P
+Text Label 16450 3700 0    50   ~ 0
+Z12_N
+Text Label 16450 3900 0    50   ~ 0
+Z9_N
+Text Label 16450 4000 0    50   ~ 0
+Z9_P
+Text Label 16450 4200 0    50   ~ 0
+Z7_N
+Text Label 16450 4300 0    50   ~ 0
+Z7_P
+Text Label 16450 4500 0    50   ~ 0
+Z5_N
+Text Label 16450 4600 0    50   ~ 0
+Z5_P
+Text Label 16450 4800 0    50   ~ 0
+Z4_P
+Text Label 16450 4900 0    50   ~ 0
+Z4_N
+Text Label 16450 5100 0    50   ~ 0
+Z1_N
+Text Label 16450 5200 0    50   ~ 0
+Z1_P
+Text Label 15950 5300 2    50   ~ 0
+Z0_N
+Text Label 15950 5200 2    50   ~ 0
+Z0_P
+Text Label 15950 5000 2    50   ~ 0
+Z2_P
+Text Label 15950 4900 2    50   ~ 0
+Z2_N
+Text Label 15950 4700 2    50   ~ 0
+Z3_N
+Text Label 15950 4600 2    50   ~ 0
+Z3_P
+Text Label 15950 4400 2    50   ~ 0
+Z6_N
+Text Label 15950 4300 2    50   ~ 0
+Z6_P
+Text Label 15950 4100 2    50   ~ 0
+Z8_N
+Text Label 15950 4000 2    50   ~ 0
+Z8_P
+Text Label 15950 3800 2    50   ~ 0
+Z10_N
+Text Label 15950 3700 2    50   ~ 0
+Z10_P
+Text Label 17550 5400 0    50   ~ 0
+Z11_P
+Text Label 15950 3400 2    50   ~ 0
+Z11_N
 $EndSCHEMATC
