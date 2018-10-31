@@ -6,7 +6,7 @@
 #include <fx2delay.h>
 #include <fx2i2c.h>
 #include <fx2eeprom.h>
-#include <usbms.h>
+#include <usbmicrosoft.h>
 #include "glasgow.h"
 
 usb_desc_device_c usb_device = {
@@ -760,7 +760,7 @@ __endasm;
   TR2 = true;
   // Clear all EPn IRQs, since we don't really need this IRQ to be fine-grained.
   CLEAR_USB_IRQ();
-  EPIRQ = 0b11110011; //_EP0IN|_EP0OUT|_EP2|_EP4|_EP6|_EP8
+  EPIRQ = _EPI_EP0IN|_EPI_EP0OUT|_EPI_EP2|_EPI_EP4|_EPI_EP6|_EPI_EP8;
 
 __asm
   pop  _DPS
@@ -800,7 +800,7 @@ int main() {
   ET2 = true;
 
   // Set up endpoint interrupts for ACT LED.
-  EPIE |= 0b11110011; //_EP0IN|_EP0OUT|_EP2|_EP4|_EP6|_EP8
+  EPIE |= _EPI_EP0IN|_EPI_EP0OUT|_EPI_EP2|_EPI_EP4|_EPI_EP6|_EPI_EP8;
 
   // Set up interrupt for ADC ALERT.
   EX0 = true;
