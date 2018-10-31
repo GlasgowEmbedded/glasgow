@@ -387,6 +387,9 @@ class ShugartFloppySubtarget(Module):
         tgt_trk = Signal.like(cur_trk)
         trk_len = Signal(24)
 
+        cur_rot = Signal(max=16)
+        tgt_rot = Signal.like(cur_rot)
+
         shreg   = Signal(8)
         bitno   = Signal(max=8)
         trailer = Signal(max=254)
@@ -439,11 +442,11 @@ class ShugartFloppySubtarget(Module):
                     NextState("MEASURE")
                 )
             ).Elif(cmd == CMD_READ_RAW,
-                If(bus.index_e,
-                    NextValue(shreg, bus.rdata),
-                    NextValue(bitno, 1),
-                    NextValue(pkt_len, 0),
-                    NextState("READ-RAW")
+                If(out_fifo.readable,
+                    out_fifo.re.eq(1),
+                    NextValue(cur_rot, 0),
+                    NextValue(tgt_rot, out_fifo.dout),
+                    NextState("READ-RAW-SYNC")
                 )
             )
         )
@@ -494,11 +497,22 @@ class ShugartFloppySubtarget(Module):
                     NextState("WRITE-MEASURE-%d" % (n + 1) if n < 2 else "READ-COMMAND")
                 )
             )
-        self.fsm.act("READ-RAW",
+        self.fsm.act("READ-RAW-SYNC",
             If(bus.index_e,
+                NextValue(shreg, bus.rdata),
+                NextValue(bitno, 1),
+                NextValue(pkt_len, 0),
+                NextState("READ-RAW")
+            )
+        )
+        self.fsm.act("READ-RAW",
+            If((cur_rot == tgt_rot) & bus.index_e,
                 NextValue(trailer, TLR_DATA + pkt_len),
                 NextState("WRITE-TRAILER")
             ).Else(
+                If(bus.index_e,
+                    NextValue(cur_rot, cur_rot + 1)
+                ),
                 NextValue(shreg, Cat(bus.rdata, shreg)),
                 NextValue(bitno, bitno + 1),
                 If(bitno == 7,
@@ -578,13 +592,13 @@ class ShugartFloppyInterface:
         if trailer != TLR_ERROR:
             return data[:trailer]
 
-    async def read_track_raw(self, hint):
+    async def read_track_raw(self, hint, redundancy=1):
         self._log("read track raw")
         index = 0
         data  = bytearray()
-        await self.lower.write([CMD_READ_RAW])
+        await self.lower.write([CMD_READ_RAW, redundancy])
         while True:
-            packet = await self._read_packet(hint)
+            packet = await self._read_packet(hint * redundancy)
             if packet is None:
                 raise GlasgowAppletError("FIFO overflow while reading track")
 
@@ -829,6 +843,9 @@ class ShugartFloppyApplet(GlasgowApplet, name="shugart-floppy"):
         p_read_raw = p_operation.add_parser(
             "read-raw", help="read raw track data")
         p_read_raw.add_argument(
+            "-R", "--redundancy", metavar="N", type=int, default=1,
+            help="read track N+1 times (i.e. with N redundant copies)")
+        p_read_raw.add_argument(
             "file", metavar="RAW-FILE", type=argparse.FileType("wb"),
             help="write raw image to RAW-FILE")
         p_read_raw.add_argument(
@@ -862,7 +879,8 @@ class ShugartFloppyApplet(GlasgowApplet, name="shugart-floppy"):
             if args.operation == "read-raw":
                 for track in range(args.first, args.last + 1):
                     await floppy_iface.seek_track(track)
-                    data = await floppy_iface.read_track_raw(hint=cycles // 8)
+                    data = await floppy_iface.read_track_raw(hint=cycles // 8,
+                                                             redundancy=args.redundancy)
                     args.file.write(struct.pack(">BBL", track & 1, track >> 1, len(data)))
                     args.file.write(data)
                     args.file.flush()
@@ -936,6 +954,9 @@ class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
         p_index = p_operation.add_parser(
             "index", help="discover and verify raw disk image contents and MFM sectors")
         p_index.add_argument(
+            "-n", "--no-decode", action="store_true", default=False,
+            help="do not attempt to decode track data, just index tracks (much faster)")
+        p_index.add_argument(
             "file", metavar="RAW-FILE", type=argparse.FileType("rb"),
             help="read raw disk image from RAW-FILE")
 
@@ -961,13 +982,12 @@ class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
             header = file.read(struct.calcsize(">BBL"))
             if header == b"": break
             head, track, size = struct.unpack(">BBL", header)
-            yield head, track, file.read(size)
+            yield track, head, file.read(size)
 
     def iter_mfm_sectors(self, symbstream, verbose=False):
         state   = "IDLE"
         count   = 0
         data    = bytearray()
-        seen    = set()
         header  = None
         size    = None
         for offset, (comma, symbol) in enumerate(symbstream):
@@ -1027,13 +1047,8 @@ class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
                 size = 1 << (7 + no)
 
                 header = cyl, hd, sec
-                if header in seen:
-                    self.logger.debug("done")
-                    break
-                seen.add(header)
-
                 self.logger.log(logging.INFO if verbose else logging.DEBUG,
-                                "header cyl=%2d hd=%d sec=%2d size=%d",
+                                "  header cyl=%2d hd=%d sec=%2d size=%d",
                                 *header, size)
 
             if count == 0 and state == "SECTOR":
@@ -1047,11 +1062,13 @@ class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
     async def run(self, args):
         if args.operation == "index":
             for head, track, bytestream in self.iter_tracks(args.file):
-                self.logger.info("head %d track %d: %d samples captured",
+                self.logger.info("track %d head %d: %d samples captured",
                                  head, track, len(bytestream) * 8)
+                if args.no_decode:
+                    continue
 
                 mfm        = SoftwareMFMDecoder(self.logger)
-                symbstream = mfm.demodulate(mfm.lock(mfm.cycle(lambda: mfm.bits(bytestream))))
+                symbstream = mfm.demodulate(mfm.lock(mfm.bits(bytestream)))
                 for _ in self.iter_mfm_sectors(symbstream, verbose=True):
                     pass
 
@@ -1061,11 +1078,16 @@ class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
             missing  = 0
 
             try:
+                curr_lba = 0
                 for head, track, bytestream in self.iter_tracks(args.raw_file):
+                    self.logger.info("processing track %d head %d",
+                                     head, track)
+
                     mfm        = SoftwareMFMDecoder(self.logger)
-                    symbstream = mfm.demodulate(mfm.lock(mfm.cycle(lambda: mfm.bits(bytestream))))
+                    symbstream = mfm.demodulate(mfm.lock(mfm.bits(bytestream)))
 
                     sectors    = {}
+                    seen       = set()
                     for (cyl, hd, sec), data in self.iter_mfm_sectors(symbstream):
                         if sec not in range(1, 1 + args.sectors_per_track):
                             self.logger.error("sector at C/H/S %d/%d/%d overflows track geometry "
@@ -1073,9 +1095,19 @@ class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
                                               cyl, hd, sec, args.sectors_per_track)
                             continue
 
+                        if sec in seen:
+                            # Due to read redundancy, seeing this is not an error in general,
+                            # though this could be a sign of a strange invalid track. We do not
+                            # currently aim to handle these cases, so just ignore them.
+                            self.logger.debug("duplicate sector at C/H/S %d/%d/%d",
+                                              cyl, hd, sec)
+                            continue
+                        else:
+                            seen.add(sec)
+
                         lba = ((cyl << 1) + hd) * args.sectors_per_track + (sec - 1)
-                        self.logger.debug("mapping C/H/S %d/%d/%d to LBA %d",
-                                          cyl, hd, sec, lba)
+                        self.logger.info("  mapping C/H/S %d/%d/%d to LBA %d",
+                                         cyl, hd, sec, lba)
 
                         if len(data) != args.sector_size:
                             self.logger.error("sector at LBA %d has size %d (%d expected)",
@@ -1086,23 +1118,24 @@ class ShugartFloppyAppletTool(GlasgowAppletTool, applet=ShugartFloppyApplet):
                         else:
                             sectors[lba] = data
 
-                    for lba in sorted(sectors):
-                        while lba > next_lba:
-                            self.logger.error("sector at LBA %d missing",
-                                              next_lba)
+                        if len(seen) == args.sectors_per_track:
+                            self.logger.debug("found all sectors on this track")
+                            break
 
-                            args.linear_file.seek(next_lba * args.sector_size)
-                            args.linear_file.write(b"\xFA\x11" * (args.sector_size // 2))
-
+                    last_lba = curr_lba + args.sectors_per_track
+                    while curr_lba < last_lba:
+                        if curr_lba in sectors:
+                            args.linear_file.seek(curr_lba * args.sector_size)
+                            args.linear_file.write(sectors[curr_lba])
+                        else:
                             missing  += 1
-                            next_lba += 1
-
-                        args.linear_file.seek(lba * args.sector_size)
-                        args.linear_file.write(sectors[lba])
-                        next_lba += 1
-
+                            args.linear_file.seek(curr_lba * args.sector_size)
+                            args.linear_file.write(b"\xFA\x11" * (args.sector_size // 2))
+                            self.logger.error("sector at LBA %d missing",
+                                              curr_lba)
+                        curr_lba += 1
             finally:
-                self.logger.info("%d/%d sectors missing", missing, next_lba)
+                self.logger.info("%d/%d sectors missing", missing, last_lba)
 
 # -------------------------------------------------------------------------------------------------
 
