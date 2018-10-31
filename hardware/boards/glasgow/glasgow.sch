@@ -3266,4 +3266,15 @@ Wire Bus Line
 	6650 2550 6650 6250
 Wire Bus Line
 	4350 2150 4350 6250
+$Comp
+L Connector_Generic:Conn_02x24_Odd_Even J5
+U 1 1 5D3E6DA7
+P 16850 4300
+F 0 "J5" H 16900 5617 50  0000 C CNN
+F 1 "Conn_02x24_Odd_Even" H 16900 5526 50  0000 C CNN
+F 2 "Connector_PinHeader_1.27mm:PinHeader_2x24_P1.27mm_Vertical_SMD" H 16850 4300 50  0001 C CNN
+F 3 "~" H 16850 4300 50  0001 C CNN
+	1    16850 4300
+	1    0    0    -1
+$EndComp
 $EndSCHEMATC
