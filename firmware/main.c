@@ -747,13 +747,6 @@ void isr_TF2() __interrupt(_INT_TF2) {
 }
 
 static void isr_EPn() __interrupt {
-  // The sdcc prologue/epilogue only save/restore DPH0/DPL0, but if DPS is 1, then we would
-  // in fact modify DPH1/DPL1 when loading dptr with mov dptr.
-__asm
-  push _DPS
-  mov  _DPS, #0
-__endasm;
-
   // Inlined from led_act_set() for call-free interrupt code.
   IOD |= (1<<PIND_LED_ACT);
   // Just let it run, at the maximum reload value we get a pulse width of around 16ms.
@@ -761,10 +754,6 @@ __endasm;
   // Clear all EPn IRQs, since we don't really need this IRQ to be fine-grained.
   CLEAR_USB_IRQ();
   EPIRQ = _EPI_EP0IN|_EPI_EP0OUT|_EPI_EP2|_EPI_EP4|_EPI_EP6|_EPI_EP8;
-
-__asm
-  pop  _DPS
-__endasm;
 }
 
 void isr_EP0IN()  __interrupt __naked { __asm ljmp _isr_EPn __endasm; }
