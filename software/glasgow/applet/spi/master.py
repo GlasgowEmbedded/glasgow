@@ -1,6 +1,7 @@
 import struct
 import logging
 import asyncio
+import math
 from migen import *
 from migen.genlib.fsm import *
 from migen.genlib.cdc import *
@@ -61,12 +62,12 @@ BIT_HOLD_SS = 0x80
 
 
 class SPIMasterSubtarget(Module):
-    def __init__(self, pads, out_fifo, in_fifo, bit_rate, sck_idle, sck_edge, ss_active):
+    def __init__(self, pads, out_fifo, in_fifo, period_cyc, sck_idle, sck_edge, ss_active):
         self.submodules.bus = SPIBus(pads, sck_idle, sck_edge, ss_active)
 
         ###
 
-        half_cyc = round(30e6 // (bit_rate * 2))
+        half_cyc = period_cyc // 2
         timer    = Signal(max=half_cyc)
 
         cmd   = Signal(8)
@@ -257,7 +258,7 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
-            bit_rate=args.bit_rate * 1000,
+            period_cyc=math.ceil(target.sys_clk_freq / (args.bit_rate * 1000)),
             sck_idle=args.sck_idle,
             sck_edge=args.sck_edge,
             ss_active=args.ss_active,
