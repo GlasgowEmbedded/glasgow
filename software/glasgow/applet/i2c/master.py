@@ -1,5 +1,6 @@
 import argparse
 import logging
+import math
 from migen import *
 from migen.genlib.fsm import *
 
@@ -48,9 +49,7 @@ class I2CPadsWrapper(Module):
 
 
 class I2CMasterSubtarget(Module):
-    def __init__(self, pads, out_fifo, in_fifo, bit_rate):
-        period_cyc = round(30e6 // bit_rate)
-
+    def __init__(self, pads, out_fifo, in_fifo, period_cyc):
         self.submodules.pads = I2CPadsWrapper(pads)
         self.submodules.i2c_master = I2CMaster(self.pads, period_cyc)
 
@@ -306,7 +305,7 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
-            bit_rate=args.bit_rate * 1000,
+            period_cyc=math.ceil(target.sys_clk_freq / (args.bit_rate * 1000))
         ))
 
     async def run(self, device, args):
@@ -358,3 +357,10 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
 
         if args.repl:
             await AsyncInteractiveConsole(locals={"i2c_iface":i2c_iface}).interact()
+
+# -------------------------------------------------------------------------------------------------
+
+class I2CMasterAppletTestCase(GlasgowAppletTestCase, applet=I2CMasterApplet):
+    @synthesis_test
+    def test_build(self):
+        self.assertBuilds(args=["--pin-scl-io", "0", "--pin-sda-io", "1"])
