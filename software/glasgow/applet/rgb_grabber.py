@@ -4,11 +4,11 @@ from migen import *
 from migen.genlib.fsm import *
 from migen.genlib.cdc import *
 
-from . import GlasgowApplet
+from . import *
 
 
 class RGBGrabberSubtarget(Module):
-    def __init__(self, rows, columns, vblank, pads, in_fifo):
+    def __init__(self, rows, columns, vblank, pads, in_fifo, sys_clk_freq):
         rx    = Signal(5)
         gx    = Signal(5)
         bx    = Signal(5)
@@ -100,7 +100,7 @@ class RGBGrabberSubtarget(Module):
             )
         )
 
-        vblank_cyc = math.ceil(vblank * 0.9 * 30e6) # reset at 90% vblank
+        vblank_cyc = math.ceil(vblank * 0.9 * sys_clk_freq) # reset at 90% vblank
         timer      = Signal(max=vblank_cyc)
         self.sync += [
             If(dck,
@@ -146,6 +146,7 @@ class RGBGrabberApplet(GlasgowApplet, name="rgb-grabber"):
             vblank=args.vblank,
             pads=iface.get_pads(args, pins=("dck",), pin_sets=("r", "g", "b")),
             in_fifo=iface.get_in_fifo(depth=512 * 30, auto_flush=False),
+            sys_clk_freq=target.sys_clk_freq,
         ))
 
     async def run(self, device, args):
@@ -159,3 +160,12 @@ class RGBGrabberApplet(GlasgowApplet, name="rgb-grabber"):
             row   = ((sync & 0x01) << 7) | (await iface.read(1))[0]
 
             print("frame {} row {}".format(frame, row))
+
+# -------------------------------------------------------------------------------------------------
+
+class RGBGrabberAppletTestCase(GlasgowAppletTestCase, applet=RGBGrabberApplet):
+    @synthesis_test
+    def test_build(self):
+        self.assertBuilds(args=["--pins-r", "0:4", "--pins-g", "5:9", "--pins-b", "10:14",
+                                "--pin-dck", "15", "--columns", "160", "--rows", "144",
+                                "--vblank", "960"])
