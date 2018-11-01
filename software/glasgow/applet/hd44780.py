@@ -58,7 +58,7 @@ CMD_DDRAM_ADDRESS  = 0b10000000
 
 
 class HD44780Subtarget(Module):
-    def __init__(self, pads, out_fifo, in_fifo):
+    def __init__(self, pads, out_fifo, in_fifo, sys_clk_freq):
         di = Signal(4)
         self.comb += [
             pads.rs_t.oe.eq(1),
@@ -70,10 +70,10 @@ class HD44780Subtarget(Module):
             MultiReg(pads.d_t.i, di)
         ]
 
-        rx_setup_cyc = math.ceil(60e-9 * 30e6)
-        e_pulse_cyc  = math.ceil(500e-9 * 30e6)
-        e_wait_cyc   = math.ceil(700e-9 * 30e6)
-        cmd_wait_cyc = math.ceil(1.52e-3 * 30e6)
+        rx_setup_cyc = math.ceil(60e-9 * sys_clk_freq)
+        e_pulse_cyc  = math.ceil(500e-9 * sys_clk_freq)
+        e_wait_cyc   = math.ceil(700e-9 * sys_clk_freq)
+        cmd_wait_cyc = math.ceil(1.52e-3 * sys_clk_freq)
         timer        = Signal(max=max([rx_setup_cyc, e_pulse_cyc, e_wait_cyc, cmd_wait_cyc]))
 
         cmd  = Signal(8)
@@ -210,6 +210,7 @@ class HD44780Applet(GlasgowApplet, name="hd44780"):
             pads=iface.get_pads(args, pins=("rs", "rw", "e"), pin_sets=("d",)),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
+            sys_clk_freq=target.sys_clk_freq,
         ))
 
     @classmethod
@@ -265,3 +266,10 @@ class HD44780Applet(GlasgowApplet, name="hd44780"):
             await cmd(CMD_DDRAM_ADDRESS|0x40)
             await data(datetime.now().strftime("%y-%m-%d").encode("ascii"))
             await iface.flush()
+
+# -------------------------------------------------------------------------------------------------
+
+class HD44780AppletTestCase(GlasgowAppletTestCase, applet=HD44780Applet):
+    @synthesis_test
+    def test_build(self):
+        self.assertBuilds()
