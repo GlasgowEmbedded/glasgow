@@ -276,16 +276,12 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
         elif len(results) == 1:
             pin_tck, pin_tms, pin_tdi, pin_tdo, pin_trst = results[0]
             args = ["jtag"]
-            if pin_tck != 0:
-                args += ["--pin-tck", pin_tck]
-            if pin_tms != 1:
-                args += ["--pin-tms", pin_tms]
-            if pin_tdi != 2:
-                args += ["--pin-tdi", pin_tdi]
-            if pin_tdo != 3:
-                args += ["--pin-tdo", pin_tdo]
+            args += ["--pin-tck", str(pin_tck)]
+            args += ["--pin-tms", str(pin_tms)]
+            args += ["--pin-tdi", str(pin_tdi)]
+            args += ["--pin-tdo", str(pin_tdo)]
             if pin_trst is not None:
-                args += ["--pin-trst", pin_trst]
+                args += ["--pin-trst", str(pin_trst)]
             self.logger.info("use `%s` as arguments", " ".join(args))
         else:
             self.logger.warning("more than one JTAG interface detected; this likely a false "
