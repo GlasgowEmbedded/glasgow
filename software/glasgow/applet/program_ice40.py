@@ -8,7 +8,7 @@ from . import *
 
 
 class ProgramICE40Subtarget(Module):
-    def __init__(self, pads, out_fifo):
+    def __init__(self, pads, out_fifo, sys_clk_freq):
         oe = Signal()
         self.comb += [
             pads.rst_n_t.oe.eq(1),
@@ -17,8 +17,8 @@ class ProgramICE40Subtarget(Module):
             pads.si_t.oe.eq(oe),
         ]
 
-        reset_cyc = math.ceil(1e-6 * 30e6)
-        start_cyc = math.ceil(1200e-6 * 30e6)
+        reset_cyc = math.ceil(1e-6 * sys_clk_freq)
+        start_cyc = math.ceil(1200e-6 * sys_clk_freq)
         done_cyc  = 49
         timer     = Signal(max=start_cyc)
 
@@ -137,6 +137,7 @@ class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
         iface.add_subtarget(ProgramICE40Subtarget(
             pads=iface.get_pads(args, pins=self.pins),
             out_fifo=iface.get_out_fifo(),
+            sys_clk_freq=target.sys_clk_freq,
         ))
 
     @classmethod
@@ -164,3 +165,10 @@ class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
         #     raise Exception("Port {} voltage went out of range during programming"
         #                     .format(args.port))
         # TODO: check CDONE
+
+# -------------------------------------------------------------------------------------------------
+
+class ProgramICE40AppletTestCase(GlasgowAppletTestCase, applet=ProgramICE40Applet):
+    @synthesis_test
+    def test_build(self):
+        self.assertBuilds()
