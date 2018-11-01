@@ -559,10 +559,6 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
             have UNPREDICTABLE side effects that, due to the nature of JTAG, can permanently
             damage your target. Use with care.
 
-            Note that implemented IR values can select single-bit registers other than DR,
-            so 1-bit DR length is not an indication of register presence. (E.g. CLAMP and
-            HIGHZ are 1-bit.)
-
             Note that while unimplemented IR values are required to select the BYPASS DR,
             in practice, many apparently (from the documentation) unimplemented IR values
             would actually select reserved DRs instead, which can lead to confusion. In some
