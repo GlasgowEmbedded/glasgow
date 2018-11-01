@@ -393,7 +393,7 @@ class JTAGInterface:
             await self.shift_tdo(1, last=True)
             await self._leave_shift_xr()
 
-    async def scan_dr_length(self, max_length=128):
+    async def scan_dr_length(self, max_length, zero_ok=False):
         self._log("scan dr length")
 
         try:
@@ -415,7 +415,9 @@ class JTAGInterface:
             # Restore the old contents, just in case this matters.
             await self.shift_tdi(data[:length], last=True)
 
-            assert length > 0
+            if not zero_ok:
+                assert length > 0
+            self._log("scan dr length=%d", length)
             return length
 
         finally:
@@ -487,11 +489,12 @@ class TAPInterface:
         data = bitarray(data, endian="little")
         await self.lower.write_dr(self._dr_prefix + data + self._dr_suffix)
 
-    async def scan_dr_length(self, max_length=128):
-        length = await self.lower.scan_dr_length(self._dr_overhead + max_length)
+    async def scan_dr_length(self, max_length, zero_ok=False):
+        length = await self.lower.scan_dr_length(max_length=self._dr_overhead + max_length,
+                                                 zero_ok=zero_ok)
         if length is None:
             return
-        assert length > self._dr_overhead
+        assert length >= self._dr_overhead
         return length - self._dr_overhead
 
 
@@ -562,8 +565,12 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
 
             Note that while unimplemented IR values are required to select the BYPASS DR,
             in practice, many apparently (from the documentation) unimplemented IR values
-            would actually select reserved DRs instead, which can lead to confusion.
+            would actually select reserved DRs instead, which can lead to confusion. In some
+            cases they even select a constant 0 level on TDO!
             """)
+        p_enumerate_ir.add_argument(
+            "--max-dr-length", metavar="LENGTH", type=int, default=1024,
+            help="give up scanning DR after LENGTH bits")
         p_enumerate_ir.add_argument(
             "tap_indexes", metavar="INDEX", type=int, nargs="+",
             help="enumerate IR values for TAP #INDEX")
@@ -612,13 +619,20 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
                 ir_offset, ir_length = irs[tap_index]
                 self.logger.info("TAP #%d: IR[%d]", tap_index, ir_length)
 
+                tap_iface = await jtag_iface.select_tap(tap_index)
                 for ir_value in range(0, (1 << ir_length)):
-                    await jtag_iface.pulse_trst()
-                    tap_iface = await jtag_iface.select_tap(tap_index)
-                    await tap_iface.write_ir(ir_value)
-                    dr_length = await tap_iface.scan_dr_length()
-                    self.logger.info("  IR=%s DR[%d]",
-                                     "{:0{}b}".format(ir_value, ir_length), dr_length)
+                    await tap_iface.test_reset()
+                    await tap_iface.write_ir([ir_value & (1 << bit) for bit in range(ir_length)])
+                    dr_length = await tap_iface.scan_dr_length(max_length=args.max_dr_length,
+                                                               zero_ok=True)
+                    if dr_length == 0:
+                        level = logging.WARN
+                    elif dr_length == 1:
+                        level = logging.DEBUG
+                    else:
+                        level = logging.INFO
+                    self.logger.log(level, "  IR=%s DR[%d]",
+                                    "{:0{}b}".format(ir_value, ir_length), dr_length)
 
         if args.operation == "jtag-repl":
             await AsyncInteractiveConsole(locals={"jtag_iface":jtag_iface}).interact()
