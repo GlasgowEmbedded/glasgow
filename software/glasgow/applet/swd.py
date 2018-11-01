@@ -3,6 +3,7 @@
 import logging
 import asyncio
 import struct
+import math
 from migen import *
 from migen.fhdl.bitcontainer import value_bits_sign
 from migen.genlib.fsm import *
@@ -13,7 +14,7 @@ from ..pyrepl import *
 
 
 class SWDBus(Module):
-    def __init__(self, pads, bit_rate):
+    def __init__(self, pads, period_cyc):
         self.di  = Signal(52)
         self.do  = Signal(33)
         self.w   = Signal()
@@ -38,7 +39,7 @@ class SWDBus(Module):
             pads.tmp_t.o.eq(oe),
         ]
 
-        half_cyc = round(30e6 // (bit_rate * 2))
+        half_cyc = period_cyc // 2
         timer    = Signal(max=half_cyc)
         stb      = Signal()
         self.sync += [
@@ -141,8 +142,8 @@ CMD_JTAG_TO_SWD = 0xfe
 
 
 class SWDSubtarget(Module):
-    def __init__(self, pads, out_fifo, in_fifo, bit_rate):
-        self.submodules.bus = SWDBus(pads, bit_rate)
+    def __init__(self, pads, out_fifo, in_fifo, period_cyc):
+        self.submodules.bus = SWDBus(pads, period_cyc)
 
         ###
 
@@ -379,7 +380,7 @@ class SWDApplet(GlasgowApplet, name="swd"):
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
-            bit_rate=args.bit_rate * 1000,
+            period_cyc=math.ceil(target.sys_clk_freq / (args.bit_rate * 1000))
         ))
 
     async def run(self, device, args):
