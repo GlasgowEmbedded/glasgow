@@ -551,10 +551,11 @@ class ShugartFloppySubtarget(Module):
 
 
 class ShugartFloppyInterface:
-    def __init__(self, interface, logger):
+    def __init__(self, interface, logger, sys_clk_freq):
         self.lower   = interface
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+        self._sys_clk_freq = sys_clk_freq
 
     def _log(self, message, *args):
         self._logger.log(self._level, "Shugart Floppy: " + message, *args)
@@ -583,7 +584,9 @@ class ShugartFloppyInterface:
         result = await self.lower.read(3)
         cycles = result[0] | (result[1] << 8) | (result[2] << 16)
         self._log("measure track cycles=%d ms=%.3f rpm=%.3f",
-                  cycles, cycles / 30e6 * 1e3, 30e6 / cycles * 60)
+                  cycles,
+                  cycles / self._sys_clk_freq * 1e3,
+                  self._sys_clk_freq / cycles * 60)
         return cycles
 
     async def _read_packet(self, hint):
@@ -825,6 +828,7 @@ class ShugartFloppyApplet(GlasgowApplet, name="shugart-floppy"):
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
+        self._sys_clk_freq = target.sys_clk_freq
         iface.add_subtarget(ShugartFloppySubtarget(
             pins=iface.get_pads(pins=self.pins, args=args),
             out_fifo=iface.get_out_fifo(),
@@ -834,7 +838,7 @@ class ShugartFloppyApplet(GlasgowApplet, name="shugart-floppy"):
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        return ShugartFloppyInterface(iface, self.logger)
+        return ShugartFloppyInterface(iface, self.logger, self._sys_clk_freq)
 
     @classmethod
     def add_interact_arguments(cls, parser):
