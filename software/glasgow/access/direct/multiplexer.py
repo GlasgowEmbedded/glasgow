@@ -68,11 +68,11 @@ class _FIFOWritePort(Module):
 
 
 class DirectMultiplexer(AccessMultiplexer):
-    def __init__(self, ports, fifo_count, registers, fx2_arbiter):
+    def __init__(self, ports, pipes, registers, fx2_arbiter):
         self._ports         = ports
         self._claimed_ports = set()
-        self._fifo_count    = fifo_count
-        self._claimed_fifos = 0
+        self._pipes         = pipes
+        self._claimed_pipes = 0
         self._analyzer      = None
         self._registers     = registers
         self._fx2_arbiter   = fx2_arbiter
@@ -82,11 +82,11 @@ class DirectMultiplexer(AccessMultiplexer):
         self._analyzer = analyzer
 
     def claim_interface(self, applet, args, with_analyzer=True, throttle="fifo"):
-        if self._claimed_fifos == self._fifo_count:
-            applet.logger.error("cannot claim USB FIFO: out of FIFOs")
+        if self._claimed_pipes == len(self._pipes):
+            applet.logger.error("cannot claim pipe: out of pipes")
             return None
-        fifo_num = self._claimed_fifos
-        self._claimed_fifos += 1
+        pipe_num = self._claimed_pipes
+        self._claimed_pipes += 1
 
         pins = []
         pin_names = []
@@ -108,6 +108,8 @@ class DirectMultiplexer(AccessMultiplexer):
                     port_signal = self._ports[port]()
                     pins += [port_signal[bit] for bit in range(port_signal.nbits)]
                     pin_names += ["{}{}".format(port, bit) for bit in range(port_signal.nbits)]
+        else:
+            iface_spec = []
 
         if with_analyzer and self._analyzer:
             analyzer = self._analyzer
@@ -115,21 +117,28 @@ class DirectMultiplexer(AccessMultiplexer):
             analyzer = None
             throttle = "none"
 
+        if iface_spec:
+            applet.logger.debug("claimed pipe %s and port(s) %s",
+                                self._pipes[pipe_num], ", ".join(sorted(iface_spec)))
+        else:
+            applet.logger.debug("claimed pipe %s",
+                                self._pipes[pipe_num])
+
         iface = DirectMultiplexerInterface(applet, analyzer, self._registers,
-            self._fx2_arbiter, fifo_num, pins, pin_names, throttle)
+            self._fx2_arbiter, pipe_num, pins, pin_names, throttle)
         self.submodules += iface
         return iface
 
 
 class DirectMultiplexerInterface(AccessMultiplexerInterface):
-    def __init__(self, applet, analyzer, registers, fx2_arbiter, fifo_num, pins, pin_names,
+    def __init__(self, applet, analyzer, registers, fx2_arbiter, pipe_num, pins, pin_names,
                  throttle):
         assert throttle in ("full", "fifo", "none")
 
         super().__init__(applet, analyzer)
         self._registers   = registers
         self._fx2_arbiter = fx2_arbiter
-        self._fifo_num    = fifo_num
+        self._pipe_num    = pipe_num
         self._pins        = pins
         self._pin_names   = pin_names
         self._throttle    = throttle
@@ -159,13 +168,13 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
         return fifo
 
     def get_in_fifo(self, **kwargs):
-        fifo = self._fx2_arbiter.get_in_fifo(self._fifo_num, **kwargs, reset=self.reset)
+        fifo = self._fx2_arbiter.get_in_fifo(self._pipe_num, **kwargs, reset=self.reset)
         if self.analyzer:
             self.analyzer.add_in_fifo_event(self.applet, fifo)
         return self._throttle_fifo(_FIFOWritePort(fifo))
 
     def get_out_fifo(self, **kwargs):
-        fifo = self._fx2_arbiter.get_out_fifo(self._fifo_num, **kwargs, reset=self.reset)
+        fifo = self._fx2_arbiter.get_out_fifo(self._pipe_num, **kwargs, reset=self.reset)
         if self.analyzer:
             self.analyzer.add_out_fifo_event(self.applet, fifo)
         return self._throttle_fifo(_FIFOReadPort(fifo))

@@ -117,15 +117,15 @@ usb_ascii_string_c usb_strings[] = {
   [1] = "Glasgow Debug Tool",
   [2] = "X-XXXXXXXXXXXXXXXX",
   // Configurations
-  [3] = "Port A at {2x512B EP2OUT, 2x512B EP6IN}, B at {2x512B EP4OUT, 2x512B EP8IN}",
-  [4] = "Ports AB at {4x512B EP2OUT, 4x512B EP6IN}",
+  [3] = "Pipe Q at {2x512B EP2OUT/EP6IN}, R at {2x512B EP4OUT/EP8IN}",
+  [4] = "Pipe Q at {4x512B EP2OUT/EP6IN}",
   // Interfaces
-  [5] = "Port A disabled",
-  [6] = "Port A at {2x512B EP2OUT BULK, 2x512B EP6IN BULK}",
-  [7] = "Port B disabled",
-  [8] = "Port B at {2x512B EP4OUT BULK, 2x512B EP8IN BULK}",
-  [9] = "Port AB disabled",
-  [10] = "Port AB at {4x512B EP2OUT BULK, 4x512B EP6IN BULK}",
+  [5] = "Pipe Q disabled",
+  [6] = "Pipe Q at {2x512B EP2OUT/EP6IN BULK}",
+  [7] = "Pipe R disabled",
+  [8] = "Pipe R at {2x512B EP4OUT/EP8IN BULK}",
+  [9] = "Pipe Q disabled",
+  [10] = "Pipe Q at {4x512B EP2OUT/EP6IN BULK}",
 };
 
 usb_descriptor_set_c usb_descriptor_set = {

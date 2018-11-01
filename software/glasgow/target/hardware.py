@@ -68,7 +68,8 @@ class GlasgowHardwareTarget(Module):
                 "B": lambda: self.platform.request("io", 1),
                 "S": lambda: self.platform.request("sync")
             }
-            self.submodules.multiplexer = multiplexer_cls(ports=ports, fifo_count=2,
+            pipes = "PQ"
+            self.submodules.multiplexer = multiplexer_cls(ports=ports, pipes=pipes,
                 registers=self.registers, fx2_arbiter=self.fx2_arbiter)
 
         if with_analyzer:

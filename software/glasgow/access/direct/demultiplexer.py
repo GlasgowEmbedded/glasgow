@@ -10,8 +10,8 @@ class DirectDemultiplexer(AccessDemultiplexer):
         self._claimed    = set()
 
     async def claim_interface(self, applet, mux_interface, args):
-        assert mux_interface._fifo_num not in self._claimed
-        self._claimed.add(mux_interface._fifo_num)
+        assert mux_interface._pipe_num not in self._claimed
+        self._claimed.add(mux_interface._pipe_num)
 
         iface = DirectDemultiplexerInterface(self.device, applet, mux_interface)
         self._interfaces.append(iface)
@@ -36,7 +36,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
     def __init__(self, device, applet, mux_interface):
         super().__init__(device, applet)
 
-        self._fifo_num   = mux_interface._fifo_num
+        self._pipe_num   = mux_interface._pipe_num
         self._addr_reset = mux_interface._addr_reset
 
         config_num = self.device.usb.getConfiguration()
@@ -45,8 +45,8 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
                 break
 
         interfaces = list(config.iterInterfaces())
-        assert self._fifo_num <= len(interfaces)
-        interface = interfaces[self._fifo_num]
+        assert self._pipe_num <= len(interfaces)
+        interface = interfaces[self._pipe_num]
 
         settings = list(interface.iterSettings())
         setting = settings[1] # alt-setting 1 has the actual endpoints
@@ -61,15 +61,15 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
                 self._out_packet_size = packet_size
         assert self._endpoint_in != None and self._endpoint_out != None
 
-        self._interface  = self.device.usb.claimInterface(self._fifo_num)
+        self._interface  = self.device.usb.claimInterface(self._pipe_num)
         self._buffer_in  = bytearray()
         self._buffer_out = bytearray()
 
     async def reset(self):
         self.logger.trace("asserting reset")
         await self.device.write_register(self._addr_reset, 1)
-        self.logger.trace("synchronizing FIFO")
-        self.device.usb.setInterfaceAltSetting(self._fifo_num, 1)
+        self.logger.trace("synchronizing FIFOs")
+        self.device.usb.setInterfaceAltSetting(self._pipe_num, 1)
         self.logger.trace("deasserting reset")
         await self.device.write_register(self._addr_reset, 0)
 
