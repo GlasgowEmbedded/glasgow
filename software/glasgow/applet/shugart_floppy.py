@@ -45,7 +45,8 @@
 # Floppy drive bus signals
 # ------------------------
 #
-# The floppy drive bus (also called the Shugart bus, after the inventor) usually uses a 34-pin IDC # cable and connector. (The original Shugart bus used a 50-pin connector, but the same electrical
+# The floppy drive bus (also called the Shugart bus, after the inventor) usually uses a 34-pin IDC
+# cable and connector. (The original Shugart bus used a 50-pin connector, but the same electrical
 # interface; these are used interchangeably in this document). All of the odd pins carry ground,
 # and half of them are missing in the floppy drive connector.
 #
