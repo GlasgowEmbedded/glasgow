@@ -497,9 +497,9 @@ class TAPInterface:
 
 class JTAGApplet(GlasgowApplet, name="jtag"):
     logger = logging.getLogger(__name__)
-    help = "test integrated circuits via JTAG"
+    help = "test integrated circuits via IEEE 1149.1 JTAG"
     description = """
-    Identify, test and debug integrated circuits and board assemblies via JTAG.
+    Identify, test and debug integrated circuits and board assemblies via IEEE 1149.1 JTAG.
     """
 
     __pins = ("tck", "tms", "tdi", "tdo", "trst")
@@ -540,6 +540,34 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
             the count and (hopefully) identity of the devices in the scan chain.
             """)
 
+        p_enumerate_ir = p_operation.add_parser(
+            "enumerate-ir", help="use heuristics to enumerate JTAG IR values (DANGEROUS)",
+            description="""
+            THIS COMMAND CAN HAVE POTENTIALLY DESTRUCTIVE CONSEQUENCES.
+
+            IEEE 1149.1 requires that any unimplemented IR value select the BYPASS DR.
+            By exploiting this, and measuring DR lengths for every possible IR value,
+            we can discover DR lengths for every IR value.
+
+            Note that discovering DR length requires going through Capture-DR and Update-DR
+            states. While we strive to be as unobtrustive as possible by shifting the original
+            DR value back after we discover DR length, there is no guarantee that updating DR
+            with the captured DR value is side effect free. As such, this command can potentially
+            have UNPREDICTABLE side effects that, due to the nature of JTAG, can permanently
+            damage your target. Use with care.
+
+            Note that implemented IR values can select single-bit registers other than DR,
+            so 1-bit DR length is not an indication of register presence. (E.g. CLAMP and
+            HIGHZ are 1-bit.)
+
+            Note that while unimplemented IR values are required to select the BYPASS DR,
+            in practice, many apparently (from the documentation) unimplemented IR values
+            would actually select reserved DRs instead, which can lead to confusion.
+            """)
+        p_enumerate_ir.add_argument(
+            "tap_indexes", metavar="INDEX", type=int, nargs="+",
+            help="enumerate IR values for TAP #INDEX")
+
         p_jtag_repl = p_operation.add_parser(
             "jtag-repl", help="drop into Python shell; use `jtag_iface` to communicate")
 
@@ -552,7 +580,7 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
     async def interact(self, device, args, jtag_iface):
         await jtag_iface.pulse_trst()
 
-        if args.operation == "scan":
+        if args.operation in ("scan", "enumerate-ir"):
             idcodes = await jtag_iface.scan_idcode()
             if not idcodes:
                 self.logger.warning("DR scan discovered no devices")
@@ -563,6 +591,7 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
                 self.logger.warning("IR scan does not match DR scan")
                 return
 
+        if args.operation == "scan":
             for tap_index, (idcode, (ir_offset, ir_length)) in enumerate(zip(idcodes, irs)):
                 if idcode is None:
                     self.logger.info("TAP #%d: IR[%d] BYPASS",
@@ -577,6 +606,19 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
                                      tap_index, ir_length, idcode)
                     self.logger.info("manufacturer=%#05x (%s) part=%#06x version=%#03x",
                                      mfg_id, mfg_name, part_id, version)
+
+        if args.operation == "enumerate-ir":
+            for tap_index in args.tap_indexes or range(len(irs)):
+                ir_offset, ir_length = irs[tap_index]
+                self.logger.info("TAP #%d: IR[%d]", tap_index, ir_length)
+
+                for ir_value in range(0, (1 << ir_length)):
+                    await jtag_iface.pulse_trst()
+                    tap_iface = await jtag_iface.select_tap(tap_index)
+                    await tap_iface.write_ir(ir_value)
+                    dr_length = await tap_iface.scan_dr_length()
+                    self.logger.info("  IR=%s DR[%d]",
+                                     "{:0{}b}".format(ir_value, ir_length), dr_length)
 
         if args.operation == "jtag-repl":
             await AsyncInteractiveConsole(locals={"jtag_iface":jtag_iface}).interact()
