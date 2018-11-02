@@ -277,6 +277,10 @@ class JTAGInterface:
         await self._enter_run_test_idle()
         self._current_ir = None
 
+    async def run_test_idle(self, count):
+        self._log("run-test/idle count=%d", count)
+        await self.shift_td(count)
+
     async def write_ir(self, data):
         if data == self._current_ir:
             self._log("write ir (elided)")
@@ -465,6 +469,9 @@ class TAPInterface:
 
     async def test_reset(self):
         await self.lower.test_reset()
+
+    async def run_test_idle(self, count):
+        await self.lower.run_test_idle(count)
 
     async def write_ir(self, data):
         data = bitarray(data, endian="little")
