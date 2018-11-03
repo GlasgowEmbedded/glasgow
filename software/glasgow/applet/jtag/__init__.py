@@ -280,6 +280,9 @@ class JTAGInterface:
 
     async def run_test_idle(self, count):
         self._log("run-test/idle count=%d", count)
+        while count > 0xffff:
+            await self.shift_td(0xffff)
+            count -= 0xffff
         await self.shift_td(count)
 
     async def write_ir(self, data):

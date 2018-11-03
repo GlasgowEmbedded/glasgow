@@ -30,7 +30,7 @@
 #     write strobe; an entire block is loaded into a buffer first, and then written in one cycle.
 #   * Check for FBULK and FPGM success (and probably FERASE success too) is a check for valid bit
 #     being high and strobe bit being low.
-#   * FBULK needs 200 ms in Run-Test, and FPGM w/ strobe needs 20 ms in Run-Test.
+#   * FBULK needs 200 ms / 200k cycles, and FPGM w/ strobe needs 20 ms / 20 k cycles in Run-Test.
 #
 # Bitstream structure
 # -------------------
@@ -200,6 +200,17 @@
 #   105, 106, 107, 108, 109, 110, 111, 112
 #
 # It is split into half-nibbles, and written MSB first into bits 6 and 7 of the device words.
+#
+# Other notes
+# -----------
+#
+# The programming process is not self-timed and requires a clock to be provided in Run-Test/Idle
+# state; otherwise programming will fail. Thus, this applet assumes that the number of clock
+# cycles, and not the programming time, per se, is critical. This might not be true.
+#
+# The FPGMI instruction works similarly to FVFYI, but it looks like the counter is only set
+# by FPGM in a way that it is reused by FPGMI once FPGM DR is updated once with the strobe bit
+# set.
 
 import struct
 import logging
@@ -214,9 +225,14 @@ from ...arch.xilinx.xc9500 import *
 from ...database.xilinx.xc9500 import *
 
 
+BLOCK_FUSES = 432
+BLOCK_WORDS = 15
+GROUP_WORDS = 5
+
+
 def jed_to_device_address(jed_address):
-    block_num = jed_address // 432
-    block_bit = jed_address  % 432
+    block_num = jed_address // BLOCK_FUSES
+    block_bit = jed_address  % BLOCK_FUSES
     word_address = block_num * 15
     if block_bit < 9 * 32:
         word_address += block_bit // 32
@@ -226,9 +242,9 @@ def jed_to_device_address(jed_address):
 
 
 def bitstream_to_device_address(word_address):
-    block_num = word_address // 15
-    block_off = word_address  % 15
-    return 32 * block_num + 8 * (block_off // 5) + block_off % 5
+    block_num = word_address // BLOCK_WORDS
+    block_off = word_address  % BLOCK_WORDS
+    return 32 * block_num + 8 * (block_off // GROUP_WORDS) + block_off % GROUP_WORDS
 
 
 class XC9500Interface:
@@ -317,12 +333,12 @@ class XC9500Interface:
         isaddr = DR_ISADDRESS(valid=1, strobe=1, address=0xffff)
         await self.lower.write_dr(isaddr.to_bitarray()[:18])
 
-        await self.lower.run_test_idle(int(self._frequency * 200e-3)) # 200 ms
+        await self.lower.run_test_idle(200_000)
 
         isaddr_bits = await self.lower.read_dr(18)
         isaddr = DR_ISADDRESS.from_bitarray(isaddr_bits)
         if not (isaddr.valid and not isaddr.strobe):
-            raise GlasgowAppletError("bulk erase failed")
+            raise GlasgowAppletError("bulk erase failed %s" % isaddr.bits_repr())
 
     async def _fpgm(self, address, words):
         await self.lower.write_ir(IR_FPGM)
@@ -331,31 +347,68 @@ class XC9500Interface:
             dev_address = bitstream_to_device_address(address + offset)
             self._log("program address=%03x data=%s",
                       dev_address, "{:032b}".format(word))
-            strobe = (offset % 15 == 14)
+            strobe = (offset % BLOCK_WORDS == BLOCK_WORDS - 1)
             isconf = DR_ISCONFIGURATION(valid=1, strobe=strobe, address=dev_address, data=word)
             await self.lower.write_dr(isconf.to_bitarray()[:50])
 
             if strobe:
-                await self.lower.run_test_idle(int(self._frequency * 20e-3)) # 200 ms
+                await self.lower.run_test_idle(20_000)
 
-        isconf_bits = await self.lower.read_dr(50)
-        isconf = DR_ISCONFIGURATION.from_bitarray(isconf_bits)
-        if not (isconf.valid and not isconf.strobe):
-            raise GlasgowAppletError("program failed")
+                isconf = DR_ISCONFIGURATION(address=dev_address)
+                isconf_bits = await self.lower.exchange_dr(isconf.to_bitarray()[:50])
+                isconf = DR_ISCONFIGURATION.from_bitarray(isconf_bits)
+                if not (isconf.valid and not isconf.strobe):
+                    self._logger.warn("program word %03x failed %s"
+                                      % (offset, isconf.bits_repr()))
 
-        return words
+        if not words:
+            dev_address = bitstream_to_device_address(address)
+            isconf = DR_ISCONFIGURATION(valid=1, address=dev_address)
+            await self.lower.write_dr(isconf.to_bitarray()[:50])
 
-    async def program(self, address, words):
-        # We don't fully know how FPGMI works; specifically, how to handle failed writes.
-        return await self._fpgm(address, words)
+    async def _fpgmi(self, words):
+        await self.lower.write_ir(IR_FPGMI)
+
+        for offset, word in enumerate(words):
+            self._log("program autoinc data=%s",
+                      "{:032b}".format(word))
+            strobe = (offset % BLOCK_WORDS == BLOCK_WORDS - 1)
+            isdata = DR_ISDATA(valid=1, strobe=strobe, data=word)
+            await self.lower.write_dr(isdata.to_bitarray()[:34])
+
+            if strobe:
+                await self.lower.run_test_idle(20_000)
+
+                isdata = DR_ISDATA()
+                isdata_bits = await self.lower.exchange_dr(isdata.to_bitarray()[:34])
+                isdata = DR_ISDATA.from_bitarray(isdata_bits)
+                if not (isdata.valid and not isdata.strobe):
+                    self._logger.warn("program autoinc word %03x failed %s"
+                                      % (offset, isdata.bits_repr()))
+
+    async def program(self, address, words, fast=True):
+        assert address % BLOCK_WORDS == 0 and len(words) % BLOCK_WORDS == 0
+
+        if fast:
+            # Use FPGM to program first block and set the address counter.
+            await self._fpgm(0, words[:BLOCK_WORDS])
+            # Use FPGMI for much faster following writes.
+            return await self._fpgmi(words[BLOCK_WORDS:])
+        else:
+            # Use FPGM for all writes.
+            return await self._fpgm(address, words)
 
 
 class JTAGXC9500Applet(JTAGApplet, name="jtag-xc9500"):
-    preview = True
     logger = logging.getLogger(__name__)
     help = "program Xilinx XC9500 CPLDs via JTAG"
     description = """
     Program, verify, and read out Xilinx XC9500 series CPLD bitstreams via the JTAG interface.
+
+    It is recommended to use TCK frequency between 100 and 250 kHz for programming.
+
+    The "program word failed" messages during programming do not necessarily mean a failed
+    programming attempt or a bad device. Always verify the programmed bitstream.
 
     The list of supported devices is:
 {devices}
@@ -388,6 +441,10 @@ class JTAGXC9500Applet(JTAGApplet, name="jtag-xc9500"):
 
     @classmethod
     def add_interact_arguments(cls, parser):
+        parser.add_argument(
+            "--slow", default=False, action="store_true",
+            help="use slower but potentially more robust algorithms, where applicable")
+
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
         p_read_bit = p_operation.add_parser(
@@ -427,7 +484,8 @@ class JTAGXC9500Applet(JTAGApplet, name="jtag-xc9500"):
         try:
             if args.operation == "read-bit":
                 await xc9500_iface.programming_enable()
-                for word in await xc9500_iface.read(0, device.bitstream_words):
+                for word in await xc9500_iface.read(0, device.bitstream_words,
+                                                    fast=not args.slow):
                     args.bit_file.write(struct.pack("<L", word))
 
             if args.operation in ("program-bit", "verify-bit"):
@@ -443,14 +501,16 @@ class JTAGXC9500Applet(JTAGApplet, name="jtag-xc9500"):
 
             if args.operation == "program-bit":
                 await xc9500_iface.programming_enable()
-                await xc9500_iface.program(0, words)
+                await xc9500_iface.program(0, words,
+                                           fast=not args.slow)
 
             if args.operation == "verify-bit":
                 await xc9500_iface.programming_enable()
-                for offset, (device_word, gold_word) in \
-                        enumerate(zip(await xc9500_iface.read(0, device.bitstream_words), words)):
+                device_words = await xc9500_iface.read(0, device.bitstream_words,
+                                                       fast=not args.slow)
+                for offset, (device_word, gold_word) in enumerate(zip(device_words, words)):
                     if device_word != gold_word:
-                        raise GlasgowAppletError("bitstream verification failed at word %d"
+                        raise GlasgowAppletError("bitstream verification failed at word %03x"
                                                  % offset)
 
             if args.operation == "erase":
