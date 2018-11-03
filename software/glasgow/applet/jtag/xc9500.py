@@ -18,7 +18,7 @@
 #
 # Functional observations from black-box hardware reverse engineering:
 #   * There is no need to shift DR after selecting ISPENABLE. ISPENABLE is shifted and completely
-#     ignored by SVF files
+#     ignored by SVF files.
 #   * The general format of DR seems to be valid bit, strobe bit, then payload. FPGMI, FVFYI
 #     use 32-bit data as payload; FERASE, FBULK, FBLANK use 16-bit address as payload;
 #     FPGM, FVFY use a concatenated data plus address payload.
@@ -44,6 +44,7 @@
 # by 6 4x6 L-fields. The entire XC9572XL bitstream consists of exactly 108 of such blocks.
 # This can be verified by matching the JED file against a regexp:
 #    (L\d{7}( [01]{8}){4}\*\n){9}(L\d{7}( [01]{6}){4}\*\n){6}
+# There are 1620 L-fields in total.
 #
 # From reverse engineering, the XC9572XL bitstream is organized as 1620x32. This is determined
 # because after 1620 reads from FVFYI, the bitstream starts to repeat.
