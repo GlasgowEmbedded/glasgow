@@ -160,6 +160,7 @@ from .i2c.tps6598x import I2CTPS6598xApplet
 from .jtag import JTAGApplet
 from .jtag.mips import JTAGMIPSApplet
 from .jtag.pinout import JTAGPinoutApplet
+from .jtag.xc9500 import JTAGXC9500Applet
 from .nand_flash import NANDFlashApplet
 from .program_ice40 import ProgramICE40Applet
 from .selftest import SelfTestApplet

@@ -13,3 +13,6 @@ _autosave-*
 /*.zip
 /*.img
 /*.raw
+/*.jed
+/*.svf
+/*.bit

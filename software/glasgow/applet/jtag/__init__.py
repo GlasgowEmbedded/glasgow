@@ -9,6 +9,7 @@ from migen.genlib.fsm import FSM
 from .. import *
 from ...gateware.pads import *
 from ...database.jedec import *
+from ...arch.jtag import *
 from ...pyrepl import *
 
 
@@ -602,20 +603,19 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
                 return
 
         if args.operation == "scan":
-            for tap_index, (idcode, (ir_offset, ir_length)) in enumerate(zip(idcodes, irs)):
-                if idcode is None:
+            for tap_index, (idcode_value, (ir_offset, ir_length)) in enumerate(zip(idcodes, irs)):
+                if idcode_value is None:
                     self.logger.info("TAP #%d: IR[%d] BYPASS",
                                      tap_index, ir_length)
                 else:
-                    mfg_id   = (idcode >>  1) &  0x7ff
-                    mfg_name = jedec_mfg_name_from_bank_num(mfg_id >> 7, mfg_id & 0x7f) or \
+                    idcode   = DR_IDCODE.from_int(idcode_value)
+                    mfg_name = jedec_mfg_name_from_bank_num(idcode.mfg_id >> 7,
+                                                            idcode.mfg_id & 0x7f) or \
                                     "unknown"
-                    part_id  = (idcode >> 12) & 0xffff
-                    version  = (idcode >> 28) &    0xf
                     self.logger.info("TAP #%d: IR[%d] IDCODE=%#010x",
-                                     tap_index, ir_length, idcode)
+                                     tap_index, ir_length, idcode_value)
                     self.logger.info("manufacturer=%#05x (%s) part=%#06x version=%#03x",
-                                     mfg_id, mfg_name, part_id, version)
+                                     idcode.mfg_id, mfg_name, idcode.part_id, idcode.version)
 
         if args.operation == "enumerate-ir":
             for tap_index in args.tap_indexes or range(len(irs)):
