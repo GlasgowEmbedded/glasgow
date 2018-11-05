@@ -15,11 +15,12 @@ from ...pyrepl import *
 
 class JTAGBus(Module):
     def __init__(self, pads):
-        self.tck  = Signal(reset=1)
-        self.tms  = Signal(reset=1)
-        self.tdo  = Signal(reset=1)
-        self.tdi  = Signal(reset=1)
-        self.trst = Signal(reset=1)
+        self.tck = Signal(reset=1)
+        self.tms = Signal(reset=1)
+        self.tdo = Signal(reset=1)
+        self.tdi = Signal(reset=1)
+        self.trst_z = Signal(reset=0)
+        self.trst   = Signal(reset=1)
 
         ###
 
@@ -36,13 +37,14 @@ class JTAGBus(Module):
         ]
         if hasattr(pads, "trst_t"):
             self.sync += [
-                pads.trst_t.oe.eq(1),
+                pads.trst_t.oe.eq(~self.trst_z),
                 pads.trst_t.o.eq(~self.trst)
             ]
 
 
 CMD_MASK       = 0b11110000
 CMD_RESET      = 0b00000000
+CMD_TRST       = 0b00010000
 CMD_SHIFT_TMS  = 0b00100000
 CMD_SHIFT_TDIO = 0b00110000
 BIT_DATA_OUT   =     0b0001
@@ -87,8 +89,13 @@ class JTAGSubtarget(Module):
         self.fsm.act("COMMAND",
             If((cmd & CMD_MASK) == CMD_RESET,
                 timer_stb.eq(1),
-                NextValue(bus.trst, 1),
+                NextValue(bus.trst_z, 0),
+                NextValue(bus.trst,   1),
                 NextState("TEST-RESET")
+            ).Elif((cmd & CMD_MASK) == CMD_TRST,
+                NextValue(bus.trst_z, cmd[0]),
+                NextValue(bus.trst,   cmd[1]),
+                NextState("RECV-COMMAND")
             ).Elif(((cmd & CMD_MASK) == CMD_SHIFT_TMS) |
                    ((cmd & CMD_MASK) == CMD_SHIFT_TDIO),
                 NextState("RECV-COUNT-1")
@@ -196,12 +203,24 @@ class JTAGInterface:
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
+        self._state      = "Unknown"
         self._current_ir = None
 
     def _log(self, message, *args):
         self._logger.log(self._level, "JTAG: " + message, *args)
 
     # Low-level operations
+
+    async def set_trst(self, state):
+        if state is None:
+            self._log("set trst=z")
+            await self.lower.write(struct.pack("<B",
+                CMD_TRST|0b01))
+        else:
+            state = state & 1
+            self._log("set trst=%d", state)
+            await self.lower.write(struct.pack("<B",
+                CMD_TRST|(state << 1)))
 
     async def pulse_trst(self):
         self._log("pulse trst")
@@ -216,7 +235,17 @@ class JTAGInterface:
             CMD_SHIFT_TMS|BIT_DATA_OUT, len(tms_bits)))
         await self.lower.write(tms_bits.tobytes())
 
+    def _shift_last(self, last):
+        if last:
+            if self._state == "Shift-IR":
+                self._log("state Shift-IR → Exit1-IR")
+                self._state = "Exit1-IR"
+            elif self._state == "Shift-DR":
+                self._log("state Shift-DR → Exit1-DR")
+                self._state = "Exit1-DR"
+
     async def shift_tdio(self, tdi_bits, last=True):
+        assert self._state in ("Shift-IR", "Shift-DR")
         tdi_bits = bitarray(tdi_bits, endian="little")
         tdo_bits = bitarray(endian="little")
         self._log("shift tdio-i=<%s>", tdi_bits.to01())
@@ -229,9 +258,11 @@ class JTAGInterface:
         tdo_bits.frombytes(bytes(tdo_bytes))
         while len(tdo_bits) > len(tdi_bits): tdo_bits.pop()
         self._log("shift tdio-o=<%s>", tdo_bits.to01())
+        self._shift_last(last)
         return tdo_bits
 
     async def shift_tdi(self, tdi_bits, last=True):
+        assert self._state in ("Shift-IR", "Shift-DR")
         tdi_bits = bitarray(tdi_bits, endian="little")
         self._log("shift tdi=<%s>", tdi_bits.to01())
         await self.lower.write(struct.pack("<BH",
@@ -239,8 +270,10 @@ class JTAGInterface:
             len(tdi_bits)))
         tdi_bytes = tdi_bits.tobytes()
         await self.lower.write(tdi_bytes)
+        self._shift_last(last)
 
     async def shift_tdo(self, count, last=True):
+        assert self._state in ("Shift-IR", "Shift-DR")
         tdo_bits = bitarray(endian="little")
         await self.lower.write(struct.pack("<BH",
             CMD_SHIFT_TDIO|BIT_DATA_IN|(BIT_LAST if last else 0),
@@ -249,41 +282,101 @@ class JTAGInterface:
         tdo_bits.frombytes(bytes(tdo_bytes))
         while len(tdo_bits) > count: tdo_bits.pop()
         self._log("shift tdo=<%s>", tdo_bits.to01())
+        self._shift_last(last)
         return tdo_bits
 
-    async def shift_td(self, count):
-        self._log("shift td count=%d", count)
+    async def pulse_tck(self, count):
+        assert self._state in ("Run-Test/Idle", "Shift-IR", "Shift-DR", "Pause-IR", "Pause-DR")
+        self._log("pulse tck count=%d", count)
+        while count > 0xffff:
+            await self.lower.write(struct.pack("<BH",
+                CMD_SHIFT_TDIO, 0xffff))
+            count -= 0xffff
         await self.lower.write(struct.pack("<BH",
             CMD_SHIFT_TDIO, count))
 
     # State machine transitions
 
-    async def _enter_run_test_idle(self):
-        await self.shift_tms("11111") # * -> Test-Logic-Reset
-        await self.shift_tms("0") # Test-Logic-Reset -> Run-Test/Idle
+    async def enter_test_logic_reset(self, force=True):
+        if force:
+            self._log("state * → Test-Logic-Reset")
+        elif self._state != "Test-Logic-Reset":
+            self._log("state %s → Test-Logic-Reset", self._state)
+        else:
+            return
 
-    async def _enter_shift_dr(self):
-        await self.shift_tms("100") # Run-Test/Idle -> Shift-DR
+        await self.shift_tms("11111")
+        self._state = "Test-Logic-Reset"
 
-    async def _enter_shift_ir(self):
-        await self.shift_tms("1100") # Run-Test/Idle -> Shift-IR
+    async def enter_run_test_idle(self):
+        if self._state == "Run-Test/Idle": return
 
-    async def _leave_shift_xr(self):
-        await self.shift_tms("10") # Shift-?R -> Run-Test/Idle
+        self._log("state %s → Run-Test/Idle", self._state)
+        if self._state == "Test-Logic-Reset":
+            await self.shift_tms("0")
+        elif self._state in ("Exit1-IR", "Exit1-DR"):
+            await self.shift_tms("10")
+        elif self._state in ("Pause-IR", "Pause-DR"):
+            await self.shift_tms("110")
+        else:
+            assert False
+        self._state = "Run-Test/Idle"
+
+    async def enter_shift_ir(self):
+        if self._state == "Shift-IR": return
+
+        self._log("state %s → Shift-IR", self._state)
+        if self._state == "Test-Logic-Reset":
+            await self.shift_tms("01100")
+        elif self._state == "Run-Test/Idle":
+            await self.shift_tms("1100")
+        else:
+            assert False
+        self._state = "Shift-IR"
+
+    async def enter_pause_ir(self):
+        if self._state == "Pause-IR": return
+
+        self._log("state %s → Pause-IR", self._state)
+        if self._state == "Exit1-IR":
+            await self.shift_tms("0")
+        else:
+            assert False
+        self._state = "Pause-IR"
+
+    async def enter_shift_dr(self):
+        if self._state == "Shift-DR": return
+
+        self._log("state %s → Shift-DR", self._state)
+        if self._state == "Test-Logic-Reset":
+            await self.shift_tms("0100")
+        elif self._state == "Run-Test/Idle":
+            await self.shift_tms("100")
+        else:
+            assert False
+        self._state = "Shift-DR"
+
+    async def enter_pause_dr(self):
+        if self._state == "Pause-DR": return
+
+        self._log("state %s → Pause-DR", self._state)
+        if self._state == "Exit1-DR":
+            await self.shift_tms("0")
+        else:
+            assert False
+        self._state = "Pause-DR"
 
     # High-level register manipulation
 
     async def test_reset(self):
         self._log("test reset")
-        await self._enter_run_test_idle()
+        await self.enter_test_logic_reset()
+        await self.enter_run_test_idle()
         self._current_ir = None
 
     async def run_test_idle(self, count):
         self._log("run-test/idle count=%d", count)
-        while count > 0xffff:
-            await self.shift_td(0xffff)
-            count -= 0xffff
-        await self.shift_td(count)
+        await self.pulse_tck(count)
 
     async def write_ir(self, data):
         if data == self._current_ir:
@@ -293,15 +386,15 @@ class JTAGInterface:
             self._current_ir = bitarray(data, endian="little")
 
         self._log("write ir")
-        await self._enter_shift_ir()
+        await self.enter_shift_ir()
         await self.shift_tdi(data)
-        await self._leave_shift_xr()
+        await self.enter_run_test_idle()
 
     async def exchange_dr(self, data):
         self._log("exchange dr")
-        await self._enter_shift_dr()
+        await self.enter_shift_dr()
         data = await self.shift_tdio(data)
-        await self._leave_shift_xr()
+        await self.enter_run_test_idle()
         return data
 
     async def read_dr(self, count, idempotent=False):
@@ -309,20 +402,20 @@ class JTAGInterface:
             self._log("read dr idempotent")
         else:
             self._log("read dr")
-        await self._enter_shift_dr()
+        await self.enter_shift_dr()
         data = await self.shift_tdo(count, last=not idempotent)
         if idempotent:
             # Shift what we just read back in. This is useful to avoid disturbing any bits
             # in R/W DRs when we go through Update-DR.
             await self.shift_tdi(data)
-        await self._leave_shift_xr()
+        await self.enter_run_test_idle()
         return data
 
     async def write_dr(self, data):
         self._log("write dr")
-        await self._enter_shift_dr()
+        await self.enter_shift_dr()
         await self.shift_tdi(data)
-        await self._leave_shift_xr()
+        await self.enter_run_test_idle()
 
     # Specialized operations
 
@@ -330,7 +423,7 @@ class JTAGInterface:
         await self.test_reset()
 
         self._log("scan idcode")
-        await self._enter_shift_dr()
+        await self.enter_shift_dr()
 
         try:
             idcodes = []
@@ -358,13 +451,13 @@ class JTAGInterface:
             return idcodes
         finally:
             await self.shift_tdo(1, last=True)
-            await self._leave_shift_xr()
+            await self.enter_run_test_idle()
 
     async def scan_ir(self, count=None, max_length=128):
         await self.test_reset()
 
         self._log("scan ir")
-        await self._enter_shift_ir()
+        await self.enter_shift_ir()
 
         try:
             ir_0, = await self.shift_tdo(1, last=False)
@@ -399,13 +492,13 @@ class JTAGInterface:
             return irs
         finally:
             await self.shift_tdo(1, last=True)
-            await self._leave_shift_xr()
+            await self.enter_run_test_idle()
 
     async def scan_dr_length(self, max_length, zero_ok=False):
         self._log("scan dr length")
 
         try:
-            await self._enter_shift_dr()
+            await self.enter_shift_dr()
 
             # Fill the entire DR chain with ones.
             data = await self.shift_tdio(bitarray("1") * max_length, last=False)
@@ -429,7 +522,7 @@ class JTAGInterface:
             return length
 
         finally:
-            await self._leave_shift_xr()
+            await self.enter_run_test_idle()
 
     async def select_tap(self, tap):
         idcodes = await self.scan_idcode()

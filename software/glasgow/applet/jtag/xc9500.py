@@ -247,7 +247,7 @@ def bitstream_to_device_address(word_address):
     return 32 * block_num + 8 * (block_off // GROUP_WORDS) + block_off % GROUP_WORDS
 
 
-class XC9500Interface:
+class JTAGXC9500Interface:
     def __init__(self, interface, logger, frequency):
         self.lower   = interface
         self._logger = logger
@@ -437,7 +437,7 @@ class JTAGXC9500Applet(JTAGApplet, name="jtag-xc9500"):
         if not tap_iface:
             raise GlasgowAppletError("cannot select TAP #%d" % args.tap_index)
 
-        return XC9500Interface(tap_iface, self.logger, args.frequency * 1000)
+        return JTAGXC9500Interface(tap_iface, self.logger, args.frequency * 1000)
 
     @classmethod
     def add_interact_arguments(cls, parser):
@@ -472,7 +472,7 @@ class JTAGXC9500Applet(JTAGApplet, name="jtag-xc9500"):
         idcode, device = await xc9500_iface.identify()
         if device is None:
             raise GlasgowAppletError("cannot operate on unknown device IDCODE=%08x"
-                                     % (revision, idcode))
+                                     % idcode.to_int())
         self.logger.info("IDCODE=%08x device=%s rev=%d",
                          idcode.to_int(), device.name, idcode.version)
 
