@@ -69,28 +69,32 @@ class SPIFlash25CInterface:
     def _format_addr(self, addr):
         return bytes([(addr >> 16) & 0xff, (addr >> 8) & 0xff, addr & 0xff])
 
-    async def _read_command(self, address, length, chunk_size, cmd, dummy=0):
+    async def _read_command(self, address, length, chunk_size, cmd, dummy=0,
+                            callback=lambda done, total, status: None):
         if chunk_size is None:
             chunk_size = 0xff # FIXME: raise once #44 is fixed
 
         data = bytearray()
-        while length > 0:
-            chunk   = await self._command(cmd, arg=self._format_addr(address),
-                                          dummy=dummy, ret=min(chunk_size, length))
-            data   += chunk
-
-            length  -= len(chunk)
+        while length > len(data):
+            callback(len(data), length, "reading address {:#08x}".format(address))
+            chunk    = await self._command(cmd, arg=self._format_addr(address),
+                                           dummy=dummy, ret=min(chunk_size, length - len(data)))
+            data    += chunk
             address += len(chunk)
 
         return data
 
-    async def read(self, address, length, chunk_size=None):
+    async def read(self, address, length, chunk_size=None,
+                   callback=lambda done, total, status: None):
         self._log("read addr=%#08x len=%d", address, length)
-        return await self._read_command(address, length, chunk_size, cmd=0x03)
+        return await self._read_command(address, length, chunk_size, cmd=0x03,
+                                        callback=callback)
 
-    async def fast_read(self, address, length, chunk_size=None):
+    async def fast_read(self, address, length, chunk_size=None,
+                        callback=lambda done, total, status: None):
         self._log("fast read addr=%#08x len=%d", address, length)
-        return await self._read_command(address, length, chunk_size, cmd=0x0B, dummy=1)
+        return await self._read_command(address, length, chunk_size, cmd=0x0B, dummy=1,
+                                        callback=callback)
 
     async def read_status(self):
         status, = await self._command(0x05, ret=1)
@@ -352,9 +356,11 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
 
         if args.operation in ("read", "fast-read"):
             if args.operation == "read":
-                data = await flash_iface.read(args.address, args.length)
+                data = await flash_iface.read(args.address, args.length,
+                                              callback=self._show_progress)
             if args.operation == "fast-read":
-                data = await flash_iface.fast_read(args.address, args.length)
+                data = await flash_iface.fast_read(args.address, args.length,
+                                                   callback=self._show_progress)
 
             if args.file:
                 args.file.write(data)
