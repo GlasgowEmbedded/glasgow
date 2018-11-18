@@ -13,9 +13,3 @@ install:
 script:
   - "(cd software && python setup.py install)"
   - "(cd software && python setup.py test)"
-notifications:
-  irc:
-    channels:
-      - "chat.freenode.net##openfpga"
-    use_notice: true
-    skip_join: true
