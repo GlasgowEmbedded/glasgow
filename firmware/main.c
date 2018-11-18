@@ -338,7 +338,7 @@ void handle_pending_usb_setup() {
   __xdata struct usb_req_setup *req = (__xdata struct usb_req_setup *)SETUPDAT;
 
   // EEPROM read/write requests
-  if(req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT &&
+  if(req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
      req->bRequest == USB_REQ_LIBFX2_PAGE_SIZE) {
     pending_setup = false;
 
@@ -347,8 +347,8 @@ void handle_pending_usb_setup() {
     return;
   }
 
-  if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN ||
-      req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
+  if((req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN) ||
+      req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT)) &&
      (req->bRequest == USB_REQ_CYPRESS_EEPROM_DB ||
       req->bRequest == USB_REQ_EEPROM)) {
     bool     arg_read = (req->bmRequestType & USB_DIR_IN);
@@ -411,8 +411,8 @@ void handle_pending_usb_setup() {
   }
 
   // FPGA register read/write requests
-  if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN ||
-      req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
+  if((req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN) ||
+      req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT)) &&
      req->bRequest == USB_REQ_REGISTER) {
     bool     arg_read = (req->bmRequestType & USB_DIR_IN);
     uint8_t  arg_addr = req->wValue;
@@ -439,7 +439,7 @@ void handle_pending_usb_setup() {
   }
 
   // Device status request
-  if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN) &&
+  if((req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN)) &&
      req->bRequest == USB_REQ_STATUS &&
      req->wLength == 1) {
     pending_setup = false;
@@ -454,7 +454,7 @@ void handle_pending_usb_setup() {
   }
 
   // Bitstream download request
-  if(req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT &&
+  if(req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
      req->bRequest == USB_REQ_FPGA_CFG &&
      (req->wIndex == 0 || req->wIndex == bitstream_idx + 1)) {
     uint16_t arg_idx = req->wIndex;
@@ -482,8 +482,8 @@ void handle_pending_usb_setup() {
   }
 
   // Bitstream ID get/set request
-  if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN ||
-      req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
+  if((req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN) ||
+      req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT)) &&
      req->bRequest == USB_REQ_BITSTREAM_ID &&
      req->wLength == BITSTREAM_ID_SIZE) {
     bool arg_get = (req->bmRequestType & USB_DIR_IN);
@@ -510,8 +510,8 @@ void handle_pending_usb_setup() {
   }
 
   // I/O voltage get/set request
-  if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN ||
-      req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
+  if((req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN) ||
+      req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT)) &&
      req->bRequest == USB_REQ_IO_VOLT &&
      req->wLength == 2) {
     bool     arg_get = (req->bmRequestType & USB_DIR_IN);
@@ -537,7 +537,7 @@ void handle_pending_usb_setup() {
   }
 
   // Voltage sense request
-  if(req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN &&
+  if(req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN) &&
      req->bRequest == USB_REQ_SENSE_VOLT &&
      req->wLength == 2) {
     uint8_t  arg_mask = req->wIndex;
@@ -554,8 +554,8 @@ void handle_pending_usb_setup() {
   }
 
   // Voltage alert get/set request
-  if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN ||
-      req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
+  if((req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN) ||
+      req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT)) &&
      req->bRequest == USB_REQ_ALERT_VOLT &&
      req->wLength == 4) {
     bool     arg_get = (req->bmRequestType & USB_DIR_IN);
@@ -581,7 +581,7 @@ void handle_pending_usb_setup() {
   }
 
   // Alert poll request
-  if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN) &&
+  if((req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN)) &&
      req->bRequest == USB_REQ_POLL_ALERT &&
      req->wLength == 1) {
     pending_setup = false;
@@ -596,7 +596,7 @@ void handle_pending_usb_setup() {
   }
 
   // I/O buffer enable request
-  if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
+  if((req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT)) &&
      req->bRequest == USB_REQ_IOBUF_ENABLE &&
      req->wLength == 0) {
     bool arg_enable = req->wValue;
@@ -609,8 +609,8 @@ void handle_pending_usb_setup() {
   }
 
   // I/O voltage limit get/set request
-  if((req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN ||
-      req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
+  if((req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN) ||
+      req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT)) &&
      req->bRequest == USB_REQ_LIMIT_VOLT &&
      req->wLength == 2) {
     bool     arg_get = (req->bmRequestType & USB_DIR_IN);
@@ -644,7 +644,7 @@ void handle_pending_usb_setup() {
   }
 
   // Microsoft descriptor requests
-  if(req->bmRequestType == USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN &&
+  if(req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN) &&
      req->bRequest == USB_REQ_GET_MS_DESCRIPTOR) {
     enum usb_descriptor_microsoft arg_desc = req->wIndex;
     pending_setup = false;
