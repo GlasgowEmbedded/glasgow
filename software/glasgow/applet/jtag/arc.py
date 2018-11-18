@@ -9,7 +9,7 @@ from . import JTAGApplet
 from .. import *
 from ...pyrepl import *
 from ...arch.jtag import *
-from ...arch.arc.jtag import *
+from ...arch.arc import *
 from ...database.arc import *
 
 
@@ -51,7 +51,7 @@ class JTAGARCInterface:
         else:
             assert False
 
-        self._log("read space=%s address=%08x", space, address)
+        self._log("read %s address=%08x", space, address)
         dr_address = DR_ADDRESS(Address=address)
         await self.lower.write_ir(IR_ADDRESS)
         await self.lower.write_dr(dr_address.to_bitarray())
@@ -74,7 +74,7 @@ class JTAGARCInterface:
         else:
             assert False
 
-        self._log("write space=%s address=%08x data=%08x", space, address, data)
+        self._log("write %s address=%08x data=%08x", space, address, data)
         dr_address = DR_ADDRESS(Address=address)
         await self.lower.write_ir(IR_ADDRESS)
         await self.lower.write_dr(dr_address.to_bitarray())
@@ -84,6 +84,9 @@ class JTAGARCInterface:
         await self.lower.write_ir(IR_TXN_COMMAND)
         await self.lower.write_dr(dr_txn_command)
         await self._wait_txn()
+
+    async def set_halted(self, halted):
+        await self.write(AUX_STATUS32_addr, AUX_STATUS32(halted=halted).to_int(), space="aux")
 
 
 class JTAGARCApplet(JTAGApplet, name="jtag-arc"):
