@@ -158,6 +158,7 @@ from .i2c.bmp280 import I2CBMP280Applet
 from .i2c.eeprom_24c import I2CEEPROM24CApplet
 from .i2c.tps6598x import I2CTPS6598xApplet
 from .jtag import JTAGApplet
+from .jtag.arc import JTAGARCApplet
 from .jtag.mips import JTAGMIPSApplet
 from .jtag.pinout import JTAGPinoutApplet
 from .jtag.svf import JTAGSVFApplet
