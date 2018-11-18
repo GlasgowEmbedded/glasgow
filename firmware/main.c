@@ -13,9 +13,9 @@ usb_desc_device_c usb_device = {
   .bLength              = sizeof(struct usb_desc_device),
   .bDescriptorType      = USB_DESC_DEVICE,
   .bcdUSB               = 0x0200,
-  .bDeviceClass         = 255,
-  .bDeviceSubClass      = 255,
-  .bDeviceProtocol      = 255,
+  .bDeviceClass         = USB_DEV_CLASS_PER_INTERFACE,
+  .bDeviceSubClass      = USB_DEV_SUBCLASS_PER_INTERFACE,
+  .bDeviceProtocol      = USB_DEV_PROTOCOL_PER_INTERFACE,
   .bMaxPacketSize0      = 64,
   .idVendor             = VID_QIHW,
   .idProduct            = PID_GLASGOW,
@@ -26,33 +26,6 @@ usb_desc_device_c usb_device = {
   .bNumConfigurations   = 2,
 };
 
-usb_desc_configuration_c usb_configs[] = {
-  {
-    .bLength              = sizeof(struct usb_desc_configuration),
-    .bDescriptorType      = USB_DESC_CONFIGURATION,
-    .wTotalLength         = sizeof(struct usb_desc_configuration) +
-                            4 * sizeof(struct usb_desc_interface) +
-                            4 * sizeof(struct usb_desc_endpoint),
-    .bNumInterfaces       = 2,
-    .bConfigurationValue  = 1,
-    .iConfiguration       = 4,
-    .bmAttributes         = USB_ATTR_RESERVED_1,
-    .bMaxPower            = 250,
-  },
-  {
-    .bLength              = sizeof(struct usb_desc_configuration),
-    .bDescriptorType      = USB_DESC_CONFIGURATION,
-    .wTotalLength         = sizeof(struct usb_desc_configuration) +
-                            2 * sizeof(struct usb_desc_interface) +
-                            2 * sizeof(struct usb_desc_endpoint),
-    .bNumInterfaces       = 1,
-    .bConfigurationValue  = 2,
-    .iConfiguration       = 5,
-    .bmAttributes         = USB_ATTR_RESERVED_1,
-    .bMaxPower            = 250,
-  },
-};
-
 #define USB_INTERFACE(bInterfaceNumber_, bAlternateSetting_, bNumEndpoints_, iInterface_) \
   {                                                                                       \
     .bLength              = sizeof(struct usb_desc_interface),                            \
@@ -60,32 +33,27 @@ usb_desc_configuration_c usb_configs[] = {
     .bInterfaceNumber     = bInterfaceNumber_,                                            \
     .bAlternateSetting    = bAlternateSetting_,                                           \
     .bNumEndpoints        = bNumEndpoints_,                                               \
-    .bInterfaceClass      = 255,                                                          \
-    .bInterfaceSubClass   = 255,                                                          \
-    .bInterfaceProtocol   = 255,                                                          \
+    .bInterfaceClass      = USB_IFACE_CLASS_VENDOR,                                       \
+    .bInterfaceSubClass   = USB_IFACE_SUBCLASS_VENDOR,                                    \
+    .bInterfaceProtocol   = USB_IFACE_PROTOCOL_VENDOR,                                    \
     .iInterface           = iInterface_,                                                  \
   }
 
-usb_desc_interface_c usb_interfaces[] = {
-  // No endpoints
+usb_desc_interface_c usb_interface_0_disabled =
   USB_INTERFACE(/*bInterfaceNumber=*/0, /*bAlternateSetting=*/0, /*bNumEndpoints=*/0,
-                /*iInterface=*/6),
-  // EP2OUT BULK + EP6IN BULK
+                /*iInterface=*/6);
+usb_desc_interface_c usb_interface_0_double =
   USB_INTERFACE(/*bInterfaceNumber=*/0, /*bAlternateSetting=*/1, /*bNumEndpoints=*/2,
-                /*iInterface=*/7),
-  // No endpoints
+                /*iInterface=*/7);
+usb_desc_interface_c usb_interface_0_quad =
+  USB_INTERFACE(/*bInterfaceNumber=*/0, /*bAlternateSetting=*/1, /*bNumEndpoints=*/2,
+                /*iInterface=*/8);
+usb_desc_interface_c usb_interface_1_disabled =
   USB_INTERFACE(/*bInterfaceNumber=*/1, /*bAlternateSetting=*/0, /*bNumEndpoints=*/0,
-                /*iInterface=*/8),
-  // EP4OUT BULK + EP8IN BULK
+                /*iInterface=*/6);
+usb_desc_interface_c usb_interface_1_double =
   USB_INTERFACE(/*bInterfaceNumber=*/1, /*bAlternateSetting=*/1, /*bNumEndpoints=*/2,
-                /*iInterface=*/9),
-  // No endpoints
-  USB_INTERFACE(/*bInterfaceNumber=*/0, /*bAlternateSetting=*/0, /*bNumEndpoints=*/0,
-                /*iInterface=*/10),
-  // EP2OUT BULK + EP6IN BULK
-  USB_INTERFACE(/*bInterfaceNumber=*/0, /*bAlternateSetting=*/1, /*bNumEndpoints=*/2,
-                /*iInterface=*/11),
-};
+                /*iInterface=*/7);
 
 #define USB_BULK_ENDPOINT(bEndpointAddress_)                                              \
   {                                                                                       \
@@ -97,19 +65,60 @@ usb_desc_interface_c usb_interfaces[] = {
     .bInterval            = 0,                                                            \
   }
 
-usb_desc_endpoint_c usb_endpoints[] = {
-  // EP2OUT BULK
-  USB_BULK_ENDPOINT(/*bEndpointAddress=*/2|USB_DIR_OUT),
-  // EP6IN  BULK
-  USB_BULK_ENDPOINT(/*bEndpointAddress=*/6|USB_DIR_IN ),
-  // EP4OUT BULK
-  USB_BULK_ENDPOINT(/*bEndpointAddress=*/4|USB_DIR_OUT),
-  // EP8IN  BULK
-  USB_BULK_ENDPOINT(/*bEndpointAddress=*/8|USB_DIR_IN ),
-  // EP2OUT BULK
-  USB_BULK_ENDPOINT(/*bEndpointAddress=*/2|USB_DIR_OUT),
-  // EP6IN  BULK
-  USB_BULK_ENDPOINT(/*bEndpointAddress=*/6|USB_DIR_IN ),
+usb_desc_endpoint_c usb_endpoint_2_out =
+  USB_BULK_ENDPOINT(/*bEndpointAddress=*/2|USB_DIR_OUT);
+usb_desc_endpoint_c usb_endpoint_4_out =
+  USB_BULK_ENDPOINT(/*bEndpointAddress=*/4|USB_DIR_OUT);
+usb_desc_endpoint_c usb_endpoint_6_in =
+  USB_BULK_ENDPOINT(/*bEndpointAddress=*/6|USB_DIR_IN );
+usb_desc_endpoint_c usb_endpoint_8_in =
+  USB_BULK_ENDPOINT(/*bEndpointAddress=*/8|USB_DIR_IN );
+
+usb_configuration_c usb_config_2_pipes = {
+  {
+    .bLength              = sizeof(struct usb_desc_configuration),
+    .bDescriptorType      = USB_DESC_CONFIGURATION,
+    .bNumInterfaces       = 2,
+    .bConfigurationValue  = 1,
+    .iConfiguration       = 4,
+    .bmAttributes         = USB_ATTR_RESERVED_1,
+    .bMaxPower            = 250,
+  },
+  {
+    { .interface  = &usb_interface_0_disabled },
+    { .interface  = &usb_interface_0_double   },
+    { .endpoint   = &usb_endpoint_2_out       },
+    { .endpoint   = &usb_endpoint_6_in        },
+    { .interface  = &usb_interface_1_disabled },
+    { .interface  = &usb_interface_1_double   },
+    { .endpoint   = &usb_endpoint_4_out       },
+    { .endpoint   = &usb_endpoint_8_in        },
+    { 0 }
+  }
+};
+
+usb_configuration_c usb_config_1_pipe = {
+  {
+    .bLength              = sizeof(struct usb_desc_configuration),
+    .bDescriptorType      = USB_DESC_CONFIGURATION,
+    .bNumInterfaces       = 1,
+    .bConfigurationValue  = 2,
+    .iConfiguration       = 5,
+    .bmAttributes         = USB_ATTR_RESERVED_1,
+    .bMaxPower            = 250,
+  },
+  {
+    { .interface  = &usb_interface_0_disabled },
+    { .interface  = &usb_interface_0_quad     },
+    { .endpoint   = &usb_endpoint_2_out       },
+    { .endpoint   = &usb_endpoint_6_in        },
+    { 0 }
+  }
+};
+
+usb_configuration_set_c usb_configs[] = {
+  &usb_config_2_pipes,
+  &usb_config_1_pipe,
 };
 
 usb_ascii_string_c usb_strings[] = {
@@ -120,24 +129,17 @@ usb_ascii_string_c usb_strings[] = {
   [3] = "Pipe Q at {2x512B EP2OUT/EP6IN}, R at {2x512B EP4OUT/EP8IN}",
   [4] = "Pipe Q at {4x512B EP2OUT/EP6IN}",
   // Interfaces
-  [5] = "Pipe Q disabled",
-  [6] = "Pipe Q at {2x512B EP2OUT/EP6IN BULK}",
-  [7] = "Pipe R disabled",
-  [8] = "Pipe R at {2x512B EP4OUT/EP8IN BULK}",
-  [9] = "Pipe Q disabled",
-  [10] = "Pipe Q at {4x512B EP2OUT/EP6IN BULK}",
+  [5] = "Disabled",
+  [6] = "Double-buffered 512B",
+  [7] = "Quad-buffered 512B",
 };
 
 usb_descriptor_set_c usb_descriptor_set = {
-  .device          = &usb_device,
-  .config_count    = ARRAYSIZE(usb_configs),
-  .configs         = usb_configs,
-  .interface_count = ARRAYSIZE(usb_interfaces),
-  .interfaces      = usb_interfaces,
-  .endpoint_count  = ARRAYSIZE(usb_endpoints),
-  .endpoints       = usb_endpoints,
-  .string_count    = ARRAYSIZE(usb_strings),
-  .strings         = usb_strings,
+  .device           = &usb_device,
+  .config_count     = ARRAYSIZE(usb_configs),
+  .configs          = usb_configs,
+  .string_count     = ARRAYSIZE(usb_strings),
+  .strings          = usb_strings,
 };
 
 usb_desc_microsoft_v10_c usb_microsoft = {
