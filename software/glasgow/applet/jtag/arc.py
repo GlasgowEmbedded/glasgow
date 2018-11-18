@@ -3,7 +3,6 @@
 
 import logging
 import argparse
-import struct
 
 from . import JTAGApplet
 from .. import *
@@ -90,7 +89,6 @@ class JTAGARCInterface:
 
 
 class JTAGARCApplet(JTAGApplet, name="jtag-arc"):
-    preview = True
     logger = logging.getLogger(__name__)
     help = "debug ARC processors via JTAG"
     description = """
