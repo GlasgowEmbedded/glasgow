@@ -15,5 +15,5 @@ DR_IDCODE = Bitfield("DR_IDCODE", 4, [
     ("present",  1),
     ("mfg_id",  11),
     ("part_id", 16),
-    ("version",  8),
+    ("version",  4),
 ])
