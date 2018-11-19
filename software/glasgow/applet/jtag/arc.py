@@ -5,6 +5,14 @@
 # Ref: Microchip MEC1609 Mixed Signal Mobile Embedded Flash ARC EC BC-Link/VLPC Base Component
 # Document Number: DS00002485A
 
+# The ARC JTAG TAP core has an important quirk: all transactions are initiated by a TCK pulse
+# in Run-Test/Idle state:
+#
+#   The Run-Test/Idle state always precedes the Test-Logic-Reset, Update-DR and Update-IR states
+#   on the rising edge of TCK when TMS is low. This state is employed to initiate a read/write
+#   access or place the JTAG module in the idle state. The read/write access defined by the
+#   address, data and command registers only occurs once on entry to Run-Test/Idle.
+
 import logging
 import argparse
 
@@ -60,6 +68,7 @@ class JTAGARCInterface:
         await self.lower.write_dr(dr_address.to_bitarray())
         await self.lower.write_ir(IR_TXN_COMMAND)
         await self.lower.write_dr(dr_txn_command)
+        await self.lower.run_test_idle(1)
         await self._wait_txn()
         await self.lower.write_ir(IR_DATA)
         dr_data_bits = await self.lower.read_dr(32)
@@ -86,6 +95,7 @@ class JTAGARCInterface:
         await self.lower.write_dr(dr_data.to_bitarray())
         await self.lower.write_ir(IR_TXN_COMMAND)
         await self.lower.write_dr(dr_txn_command)
+        await self.lower.run_test_idle(1)
         await self._wait_txn()
 
     async def set_halted(self, halted):
