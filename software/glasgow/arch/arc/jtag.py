@@ -1,5 +1,5 @@
-# Ref: Microchip MEC1618/MEC1618i Low Power 32-bit Microcontroller with Embedded Flash
-# Document Number: DS00002339A
+# Ref: ARC® 700 External Interfaces Reference
+# Document Number: 5117-014
 
 from bitarray import bitarray
 

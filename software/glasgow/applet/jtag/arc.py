@@ -1,5 +1,9 @@
+# Ref: ARC® 700 External Interfaces Reference
+# Document Number: 5117-014
 # Ref: Microchip MEC1618/MEC1618i Low Power 32-bit Microcontroller with Embedded Flash
 # Document Number: DS00002339A
+# Ref: Microchip MEC1609 Mixed Signal Mobile Embedded Flash ARC EC BC-Link/VLPC Base Component
+# Document Number: DS00002485A
 
 import logging
 import argparse
@@ -25,9 +29,9 @@ class JTAGARCInterface:
         await self.lower.write_ir(IR_IDCODE)
         idcode_bits = await self.lower.read_dr(32)
         idcode = DR_IDCODE.from_bitarray(idcode_bits)
-        self._log("read IDCODE mfg_id=%03x part_id=%04x",
-                  idcode.mfg_id, idcode.part_id)
-        device = devices[idcode.mfg_id, idcode.part_id]
+        self._log("read IDCODE mfg_id=%03x arc_type=%02x arc_number=%03x",
+                  idcode.mfg_id, idcode.part_id & 0b111111, idcode.part_id >> 6)
+        device = devices[idcode.mfg_id, idcode.part_id & 0b111111]
         return idcode, device
 
     async def _wait_txn(self):
