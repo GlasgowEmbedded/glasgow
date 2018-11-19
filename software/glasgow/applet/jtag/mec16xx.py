@@ -1,5 +1,7 @@
-# Ref: Microchip MEC1618/MEC1618i Low Power 32-bit Microcontroller with Embedded Flash
+# Ref: Microchip MEC1618 Low Power 32-bit Microcontroller with Embedded Flash
 # Document Number: DS00002339A
+# Ref: Microchip MEC1609 Mixed Signal Mobile Embedded Flash ARC EC BC-Link/VLPC Base Component
+# Document Number: DS00002485A
 
 import logging
 import argparse
@@ -15,7 +17,7 @@ from ...arch.arc import *
 FIRMWARE_SIZE = 0x30_000
 
 
-class JTAGMEC1618Interface(aobject):
+class JTAGMEC16xxInterface(aobject):
     async def __init__(self, interface, logger):
         self.lower   = interface
         self._logger = logger
@@ -30,7 +32,7 @@ class JTAGMEC1618Interface(aobject):
         await self.lower.set_halted(True)
 
     def _log(self, message, *args):
-        self._logger.log(self._level, "MEC1618: " + message, *args)
+        self._logger.log(self._level, "MEC16xx: " + message, *args)
 
     async def read_firmware(self):
         words = []
@@ -40,17 +42,17 @@ class JTAGMEC1618Interface(aobject):
         return words
 
 
-class JTAGMEC1618Applet(JTAGARCApplet, name="jtag-mec1618"):
+class JTAGMEC16xxApplet(JTAGARCApplet, name="jtag-mec16xx"):
     preview = True
     logger = logging.getLogger(__name__)
-    help = "debug Microchip MEC1618 embedded controller via JTAG"
+    help = "debug Microchip MEC16xx embedded controller via JTAG"
     description = """
-    Debug Microchip MEC1618/MEC1618i embedded controller via the JTAG interface.
+    Debug Microchip MEC16xx/MEC16xxi embedded controller via the JTAG interface.
     """
 
     async def run(self, device, args):
         arc_iface = await super().run(device, args)
-        return await JTAGMEC1618Interface(arc_iface, self.logger)
+        return await JTAGMEC16xxInterface(arc_iface, self.logger)
 
     @classmethod
     def add_interact_arguments(cls, parser):
