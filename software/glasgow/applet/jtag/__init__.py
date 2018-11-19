@@ -376,6 +376,7 @@ class JTAGInterface:
 
     async def run_test_idle(self, count):
         self._log("run-test/idle count=%d", count)
+        await self.enter_run_test_idle()
         await self.pulse_tck(count)
 
     async def write_ir(self, data):
