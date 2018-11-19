@@ -42,7 +42,7 @@ class JTAGARCInterface:
             status = DR_STATUS.from_bitarray(status_bits)
             self._log("status %s", status.bits_repr())
             if status.FL:
-                raise GlasgowAppletError("transaction failed")
+                raise GlasgowAppletError("transaction failed: %s" % status.bits_repr())
 
     async def read(self, address, space):
         if space == "memory":
