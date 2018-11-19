@@ -321,6 +321,8 @@ class JTAGInterface:
             await self.shift_tms("10")
         elif self._state in ("Pause-IR", "Pause-DR"):
             await self.shift_tms("110")
+        elif self._state in ("Update-IR", "Update-DR"):
+            await self.shift_tms("0")
         else:
             assert False
         self._state = "Run-Test/Idle"
@@ -331,7 +333,7 @@ class JTAGInterface:
         self._log_l("state %s → Shift-IR", self._state)
         if self._state == "Test-Logic-Reset":
             await self.shift_tms("01100")
-        elif self._state == "Run-Test/Idle":
+        elif self._state in ("Run-Test/Idle", "Update-IR", "Update-DR"):
             await self.shift_tms("1100")
         else:
             assert False
@@ -347,13 +349,25 @@ class JTAGInterface:
             assert False
         self._state = "Pause-IR"
 
+    async def enter_update_ir(self):
+        if self._state == "Update-IR": return
+
+        self._log_l("state %s → Update-IR", self._state)
+        if self._state == "Shift-IR":
+            await self.shift_tms("11")
+        elif self._state == "Exit1-IR":
+            await self.shift_tms("1")
+        else:
+            assert False
+        self._state = "Update-IR"
+
     async def enter_shift_dr(self):
         if self._state == "Shift-DR": return
 
         self._log_l("state %s → Shift-DR", self._state)
         if self._state == "Test-Logic-Reset":
             await self.shift_tms("0100")
-        elif self._state == "Run-Test/Idle":
+        elif self._state in ("Run-Test/Idle", "Update-IR", "Update-DR"):
             await self.shift_tms("100")
         else:
             assert False
@@ -368,6 +382,18 @@ class JTAGInterface:
         else:
             assert False
         self._state = "Pause-DR"
+
+    async def enter_update_dr(self):
+        if self._state == "Update-DR": return
+
+        self._log_l("state %s → Update-DR", self._state)
+        if self._state == "Shift-DR":
+            await self.shift_tms("11")
+        elif self._state == "Exit1-DR":
+            await self.shift_tms("1")
+        else:
+            assert False
+        self._state = "Update-DR"
 
     # High-level register manipulation
 
@@ -392,13 +418,13 @@ class JTAGInterface:
         self._log_h("write ir=<%s>", data.to01())
         await self.enter_shift_ir()
         await self.shift_tdi(data)
-        await self.enter_run_test_idle()
+        await self.enter_update_ir()
 
     async def exchange_dr(self, data):
         self._log_h("exchange dr")
         await self.enter_shift_dr()
         data = await self.shift_tdio(data)
-        await self.enter_run_test_idle()
+        await self.enter_update_dr()
         return data
 
     async def read_dr(self, count, idempotent=False):
@@ -408,7 +434,7 @@ class JTAGInterface:
             # Shift what we just read back in. This is useful to avoid disturbing any bits
             # in R/W DRs when we go through Update-DR.
             await self.shift_tdi(data)
-        await self.enter_run_test_idle()
+        await self.enter_update_dr()
         if idempotent:
             self._log_h("read idempotent dr=<%s>", data.to01())
         else:
@@ -419,7 +445,7 @@ class JTAGInterface:
         self._log_h("write dr=<%s>", data.to01())
         await self.enter_shift_dr()
         await self.shift_tdi(data)
-        await self.enter_run_test_idle()
+        await self.enter_update_dr()
 
     # Specialized operations
 
