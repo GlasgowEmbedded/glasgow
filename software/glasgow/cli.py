@@ -60,6 +60,9 @@ def create_argparser():
     parser.add_argument(
         "-q", "--quiet", default=0, action="count",
         help="decrease logging verbosity")
+    parser.add_argument(
+        "-F", "--filter-log", metavar="FILTER", type=str, action="append",
+        help="enable maximum verbosity for log messages starting with 'FILTER: '")
 
     return parser
 
@@ -305,16 +308,39 @@ class ANSIColorFormatter(logging.Formatter):
         return "{}{}\033[0m".format(color, super().format(record))
 
 
+class SubjectFilter:
+    def __init__(self, level, subjects):
+        self.level    = level
+        self.subjects = subjects
+
+    def filter(self, record):
+        levelno = record.levelno
+        for subject in self.subjects:
+            if record.msg.startswith(subject + ": "):
+                levelno = logging.DEBUG
+        return levelno >= self.level
+
+
 def create_logger(args):
-    root_logger = logging.getLogger()
-    root_logger.setLevel(logging.INFO + args.quiet * 10 - args.verbose * 10)
-    handler = logging.StreamHandler()
     formatter_args = {"fmt": "{levelname[0]:s}: {name:s}: {message:s}", "style": "{"}
+    handler = logging.StreamHandler()
     if sys.stderr.isatty() and sys.platform != 'win32':
         handler.setFormatter(ANSIColorFormatter(**formatter_args))
     else:
         handler.setFormatter(logging.Formatter(**formatter_args))
+
+    root_logger = logging.getLogger()
     root_logger.addHandler(handler)
+
+    level = logging.INFO + args.quiet * 10 - args.verbose * 10
+    if args.filter_log:
+        handler.addFilter(SubjectFilter(level, args.filter_log))
+        root_logger.setLevel(logging.TRACE)
+    else:
+        # By setting the log level on the root logger, we avoid creating LogRecords in the first
+        # place instead of filtering them later; we have a *lot* of logging, so this is much
+        # more efficient.
+        root_logger.setLevel(level)
 
 
 async def _main():
