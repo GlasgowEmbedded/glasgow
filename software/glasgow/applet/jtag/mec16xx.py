@@ -12,6 +12,7 @@ from .. import *
 from ...support.aobject import *
 from ...pyrepl import *
 from ...arch.arc import *
+from ...arch.arc.mec16xx import *
 
 
 FIRMWARE_SIZE = 0x30_000
@@ -34,12 +35,25 @@ class JTAGMEC16xxInterface(aobject):
     def _log(self, message, *args):
         self._logger.log(self._level, "MEC16xx: " + message, *args)
 
-    async def read_firmware(self):
+    async def read_firmware_mapped(self, size):
         words = []
-        for offset in range(0, FIRMWARE_SIZE, 4):
-            self._log("read firmware offset=%05x", offset)
+        for offset in range(0, size, 4):
+            self._log("read firmware mapped offset=%05x", offset)
             words.append(await self.lower.read(offset, space="memory"))
         return words
+
+    async def emergency_flash_erase(self):
+        tap_iface = self.lower.lower
+
+        await tap_iface.write_ir(IR_RESET_TEST)
+        dr_reset_test = DR_RESET_TEST(POR_EN=1)
+        await tap_iface.write_dr(dr_reset_test.to_bitarray())
+        dr_reset_test.VTR_POR = 1
+        await tap_iface.write_dr(dr_reset_test.to_bitarray())
+        dr_reset_test.ME = 1
+        await tap_iface.write_dr(dr_reset_test.to_bitarray())
+        dr_reset_test.VTR_POR = 0
+        await tap_iface.write_dr(dr_reset_test.to_bitarray())
 
 
 class JTAGMEC16xxApplet(JTAGARCApplet, name="jtag-mec16xx"):
@@ -58,6 +72,9 @@ class JTAGMEC16xxApplet(JTAGARCApplet, name="jtag-mec16xx"):
     def add_interact_arguments(cls, parser):
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
+        p_emergency_erase = p_operation.add_parser(
+            "emergency-erase", help="emergency erase firmware")
+
         p_read_firmware = p_operation.add_parser(
             "read-firmware", help="read EC firmware")
         p_read_firmware.add_argument(
@@ -68,8 +85,11 @@ class JTAGMEC16xxApplet(JTAGARCApplet, name="jtag-mec16xx"):
             "repl", help="drop into Python shell; use `mec_iface` to communicate")
 
     async def interact(self, device, args, mec_iface):
+        if args.operation == "emergency-erase":
+            await mec_iface.emergency_flash_erase()
+
         if args.operation == "read-firmware":
-            for word in await mec_iface.read_firmware():
+            for word in await mec_iface.read_firmware_mapped(size=FIRMWARE_SIZE):
                 args.file.write(struct.pack("<L", word))
 
         if args.operation == "repl":

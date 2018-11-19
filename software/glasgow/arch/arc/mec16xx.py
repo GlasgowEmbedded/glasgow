@@ -7,6 +7,8 @@ from ...support.bits import *
 
 
 __all__ = [
+    # JTAG registers
+    "DR_RESET_TEST",
     # Flash registers
     "Flash_Mbx_Index_addr", "Flash_Mbx_Data_addr",
     "Flash_Data_addr", "Flash_Address_addr", "Flash_Command_addr", "Flash_Status_addr",
@@ -15,6 +17,16 @@ __all__ = [
     "Flash_Config",
 ]
 
+DR_RESET_TEST = Bitfield("DR_RESET_TEST", 4, [
+    # Probably ME. It seems to work for me, but none of SMSC documents ever coherently point
+    # to a single DR with the ME bit *or* specify the location of the ME bit. Cursed.
+    ("ME",      1),
+    ("VCC_POR", 1),
+    ("VTR_POR", 1),
+    ("POR_EN",  1),
+    (None,      27),
+    ("GANG_EN", 1),
+])
 
 Flash_base_addr     = 0xff_3800
 
