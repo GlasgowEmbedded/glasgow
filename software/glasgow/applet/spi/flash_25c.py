@@ -426,6 +426,7 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
 # -------------------------------------------------------------------------------------------------
 
 class SPIFlash25CAppletTestCase(GlasgowAppletTestCase, applet=SPIFlash25CApplet):
+    @synthesis_test
     def test_build(self):
         self.assertBuilds(args=["--pin-sck",  "0", "--pin-ss",   "1",
                                 "--pin-mosi", "2", "--pin-miso", "3"])

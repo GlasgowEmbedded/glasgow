@@ -284,6 +284,7 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
 # -------------------------------------------------------------------------------------------------
 
 class SPIMasterAppletTestCase(GlasgowAppletTestCase, applet=SPIMasterApplet):
+    @synthesis_test
     def test_build(self):
         self.assertBuilds(args=["--pin-sck",  "0", "--pin-ss",   "1",
                                 "--pin-mosi", "2", "--pin-miso", "3"])
