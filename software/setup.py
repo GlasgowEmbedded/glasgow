@@ -42,7 +42,7 @@ setup(
     #long_description="""TODO""",
     license="0-clause BSD License",
     install_requires=["migen", "fx2>=0.6", "pyvcd", "bitarray", "crcmod"],
-    depndency_links=[
+    dependency_links=[
         "git+https://github.com/m-labs/migen.git#egg=migen",
     ],
     packages=find_packages(),
