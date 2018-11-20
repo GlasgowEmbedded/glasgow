@@ -1,4 +1,5 @@
 import time
+import math
 import struct
 import logging
 import asyncio
@@ -269,7 +270,7 @@ class SPIFlashAVRApplet(GlasgowApplet, name="spi-flash-avr"):
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
-            bit_rate=args.bit_rate * 1000,
+            period_cyc=math.ceil(target.sys_clk_freq / (args.bit_rate * 1000)),
             sck_idle=0,
             sck_edge="rising",
             ss_active=0,
