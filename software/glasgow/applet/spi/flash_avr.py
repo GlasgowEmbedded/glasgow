@@ -465,5 +465,6 @@ class SPIFlashAVRApplet(GlasgowApplet, name="spi-flash-avr"):
 # -------------------------------------------------------------------------------------------------
 
 class SPIFlashAVRAppleTestCase(GlasgowAppletTestCase, applet=SPIFlashAVRApplet):
+    @synthesis_test
     def test_build(self):
         self.assertBuilds()
