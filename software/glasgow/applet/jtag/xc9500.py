@@ -418,7 +418,7 @@ class JTAGXC9500Applet(JTAGApplet, name="jtag-xc9500"):
     from both .jed and .svf bitstream formats, but matches the internal device programming
     architecture.
     """.format(
-        devices="\n".join(map(lambda x: "        * {.name}\n".format(x), devices.values()))
+        devices="\n".join(map(lambda x: "        * {.name}".format(x), devices.values()))
     )
 
     @classmethod

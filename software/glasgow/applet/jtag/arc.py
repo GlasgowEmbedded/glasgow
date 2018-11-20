@@ -114,7 +114,7 @@ class JTAGARCApplet(JTAGApplet, name="jtag-arc"):
     There is currently no debug server implemented. This applet only allows manipulating Memory,
     Core and Aux spaces via a Python REPL.
     """.format(
-        devices="\n".join(map(lambda x: "        * {.name}\n".format(x), devices.values()))
+        devices="\n".join(map(lambda x: "        * {.name}".format(x), devices.values()))
     )
 
     @classmethod
