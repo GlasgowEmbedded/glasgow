@@ -117,6 +117,7 @@ class ServerEndpoint(aobject, asyncio.Protocol):
             self._buffer = b""
             self._log(logging.TRACE, "recv end-of-stream")
             self._recv_epoch += 1
+            raise asyncio.CancelledError
 
     async def recv(self, length=0):
         data = bytearray()
