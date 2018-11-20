@@ -2,6 +2,7 @@ from migen import *
 from migen.genlib.fifo import _FIFOInterface, AsyncFIFO, SyncFIFOBuffered
 
 from .. import AccessMultiplexer, AccessMultiplexerInterface
+from ...gateware.fx2 import _FIFOWithFlush
 
 
 class SimulationMultiplexer(AccessMultiplexer):
@@ -29,16 +30,16 @@ class SimulationMultiplexerInterface(AccessMultiplexerInterface):
     def build_pin_tristate(self, pin, oe, o, i):
         pass
 
-    def _make_fifo(self, arbiter_side, logic_side, cd_logic, depth):
+    def _make_fifo(self, arbiter_side, logic_side, cd_logic, depth, wrapper=lambda x: x):
         if cd_logic is None:
-            fifo = SyncFIFOBuffered(8, depth)
+            fifo = wrapper(SyncFIFOBuffered(8, depth))
         else:
             assert isinstance(cd_logic, ClockDomain)
 
-            fifo = ClockDomainsRenamer({
+            fifo = wrapper(ClockDomainsRenamer({
                 arbiter_side: "sys",
                 logic_side:   "logic",
-            })(AsyncFIFO(8, depth))
+            })(AsyncFIFO(8, depth)))
 
             fifo.clock_domains.cd_logic = ClockDomain()
             self.comb += fifo.cd_logic.clk.eq(cd_logic.clk)
@@ -51,7 +52,9 @@ class SimulationMultiplexerInterface(AccessMultiplexerInterface):
         assert self.in_fifo is None
 
         self.submodules.in_fifo = self._make_fifo(
-            arbiter_side="read", logic_side="write", cd_logic=clock_domain, depth=depth)
+            arbiter_side="read", logic_side="write", cd_logic=clock_domain, depth=depth,
+            wrapper=lambda x: _FIFOWithFlush(x, async=clock_domain is not None,
+                                             auto_flush=auto_flush))
         return self.in_fifo
 
     def get_out_fifo(self, depth=512, clock_domain=None):
