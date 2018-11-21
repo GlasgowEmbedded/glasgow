@@ -5,8 +5,8 @@ import time
 from migen import *
 from migen.genlib.fsm import *
 
-from . import *
-from ..gateware.lfsr import *
+from .. import *
+from ...gateware.lfsr import *
 
 
 MODE_SOURCE   = 1

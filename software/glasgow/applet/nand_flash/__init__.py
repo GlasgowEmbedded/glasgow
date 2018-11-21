@@ -6,9 +6,9 @@ from migen import *
 from migen.genlib.cdc import MultiReg
 from migen.genlib.fsm import FSM
 
-from . import *
-from ..database.jedec import *
-from ..pyrepl import *
+from .. import *
+from ...database.jedec import *
+from ...pyrepl import *
 
 
 CMD_CONTROL = 0x01

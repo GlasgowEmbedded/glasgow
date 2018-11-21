@@ -13,7 +13,7 @@ from migen import *
 from migen.genlib.fsm import *
 from migen.genlib.cdc import MultiReg
 
-from . import *
+from .. import *
 
 
 # FPGA commands

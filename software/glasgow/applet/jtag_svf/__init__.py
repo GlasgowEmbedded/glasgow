@@ -3,8 +3,8 @@ import logging
 import argparse
 from bitarray import bitarray
 
-from . import JTAGApplet
 from .. import *
+from ..jtag import JTAGApplet
 from ...arch.jtag import *
 from ...protocol.jtag_svf import *
 

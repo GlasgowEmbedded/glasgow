@@ -5,8 +5,8 @@ import logging
 import argparse
 
 from .. import *
+from ..spi_master import SPIMasterApplet
 from ...database.jedec import *
-from .master import SPIMasterApplet
 
 
 class SPIFlash25CError(GlasgowAppletError):

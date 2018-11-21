@@ -16,8 +16,8 @@
 import logging
 import argparse
 
-from . import JTAGApplet
 from .. import *
+from ..jtag import JTAGApplet
 from ...pyrepl import *
 from ...arch.jtag import *
 from ...arch.arc import *

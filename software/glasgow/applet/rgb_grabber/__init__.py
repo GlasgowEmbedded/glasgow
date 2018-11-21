@@ -4,7 +4,7 @@ from migen import *
 from migen.genlib.fsm import *
 from migen.genlib.cdc import *
 
-from . import *
+from .. import *
 
 
 class RGBGrabberSubtarget(Module):

@@ -6,8 +6,8 @@ import logging
 import asyncio
 from bitarray import bitarray
 
-from . import JTAGApplet
 from .. import *
+from ..jtag import JTAGApplet
 from ...support.aobject import *
 from ...support.endpoint import *
 from ...pyrepl import *

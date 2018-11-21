@@ -2,7 +2,7 @@ import logging
 import asyncio
 from migen import *
 
-from . import GlasgowApplet
+from .. import *
 
 
 class SelfTestSubtarget(Module):

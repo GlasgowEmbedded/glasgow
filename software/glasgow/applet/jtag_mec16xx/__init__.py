@@ -7,8 +7,8 @@ import logging
 import argparse
 import struct
 
-from .arc import JTAGARCApplet
 from .. import *
+from ..jtag_arc import JTAGARCApplet
 from ...support.aobject import *
 from ...pyrepl import *
 from ...arch.arc import *

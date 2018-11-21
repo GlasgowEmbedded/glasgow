@@ -218,8 +218,8 @@ import argparse
 import re
 from bitarray import bitarray
 
-from . import JTAGApplet
 from .. import *
+from ..jtag import JTAGApplet
 from ...arch.jtag import *
 from ...arch.xilinx.xc9500 import *
 from ...database.xilinx.xc9500 import *

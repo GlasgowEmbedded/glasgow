@@ -4,7 +4,7 @@ import logging
 import asyncio
 
 from .. import *
-from .master import I2CMasterApplet
+from ..i2c_master import I2CMasterApplet
 
 
 REG_CAL_T1      = 0x88 # 16-bit unsigned

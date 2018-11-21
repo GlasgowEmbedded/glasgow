@@ -9,7 +9,7 @@ from migen import *
 from fx2.format import autodetect, input_data, output_data
 
 from .. import *
-from .master import SPIMasterSubtarget, SPIMasterInterface
+from ..spi_master import SPIMasterSubtarget, SPIMasterInterface
 
 
 AVRDevice = collections.namedtuple("AVRDevice",

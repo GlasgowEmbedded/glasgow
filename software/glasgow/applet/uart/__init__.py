@@ -5,9 +5,9 @@ import asyncio
 from migen import *
 from migen.genlib.fsm import *
 
-from . import *
-from ..gateware.pads import *
-from ..gateware.uart import *
+from .. import *
+from ...gateware.pads import *
+from ...gateware.uart import *
 
 
 class UARTSubtarget(Module):

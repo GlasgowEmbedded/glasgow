@@ -2,7 +2,7 @@ import logging
 import asyncio
 
 from .. import *
-from .master import I2CMasterApplet
+from ..i2c_master import I2CMasterApplet
 
 
 class TPS6598xI2CInterface:

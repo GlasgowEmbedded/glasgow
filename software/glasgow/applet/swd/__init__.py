@@ -8,9 +8,9 @@ from migen import *
 from migen.fhdl.bitcontainer import value_bits_sign
 from migen.genlib.fsm import *
 
-from . import *
-from ..gateware.pads import *
-from ..pyrepl import *
+from .. import *
+from ...gateware.pads import *
+from ...pyrepl import *
 
 
 class SWDBus(Module):

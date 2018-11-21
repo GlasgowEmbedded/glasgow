@@ -4,7 +4,7 @@ import logging
 from migen import *
 from migen.genlib.fsm import *
 
-from . import *
+from .. import *
 
 
 class ProgramICE40Subtarget(Module):
