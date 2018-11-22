@@ -197,7 +197,12 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
     logger = logging.getLogger(__name__)
     help = "read and write 25C-compatible Flash memories"
     description = """
-    Identify, read, and write arbitrary areas of a 25Cxx-compatible Flash memory.
+    Identify, read, erase, or program a 25C series compatible Flash memory, such as
+    Microchip 25C320, Winbond 25Q64, Macronix MX25L1605, or hundreds of other memories that
+    typically have "25X" where X is a letter in their part number.
+
+    When using this applet for erasing or programming, it is necessary to look up the page
+    and sector sizes in the memory datasheet.
     """
 
     @classmethod
