@@ -399,13 +399,7 @@ async def _main():
                 target, applet = _applet(args)
                 device.demultiplexer = DirectDemultiplexer(device)
 
-                bitstream_id = target.get_bitstream_id()
-                if await device.bitstream_id() == bitstream_id and not args.rebuild:
-                    logger.info("device already has bitstream ID %s", bitstream_id.hex())
-                else:
-                    logger.info("building bitstream ID %s for applet %r",
-                                bitstream_id.hex(), args.applet)
-                    await device.download_bitstream(target.get_bitstream(debug=True), bitstream_id)
+                await device.download_target(target, rebuild=args.rebuild)
 
                 if args.trace:
                     logger.info("starting applet analyzer")
