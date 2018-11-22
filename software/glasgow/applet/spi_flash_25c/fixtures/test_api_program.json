@@ -1,0 +1,16 @@
+{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "06"}], "kwargs": {"hold_ss": false}, "result": null}
+{"method": "read", "async": true, "args": [0], "kwargs": {}, "result": {"__class__": "bytearray", "hex": ""}}
+{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "06"}], "kwargs": {"hold_ss": false}, "result": null}
+{"method": "read", "async": true, "args": [0], "kwargs": {}, "result": {"__class__": "bytearray", "hex": ""}}
+{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "020001fa6265666f7265"}], "kwargs": {"hold_ss": false}, "result": null}
+{"method": "read", "async": true, "args": [0], "kwargs": {}, "result": {"__class__": "bytearray", "hex": ""}}
+{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "05"}], "kwargs": {"hold_ss": true}, "result": null}
+{"method": "read", "async": true, "args": [1], "kwargs": {}, "result": {"__class__": "bytearray", "hex": "00"}}
+{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "06"}], "kwargs": {"hold_ss": false}, "result": null}
+{"method": "read", "async": true, "args": [0], "kwargs": {}, "result": {"__class__": "bytearray", "hex": ""}}
+{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "020002002f6166746572"}], "kwargs": {"hold_ss": false}, "result": null}
+{"method": "read", "async": true, "args": [0], "kwargs": {}, "result": {"__class__": "bytearray", "hex": ""}}
+{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "05"}], "kwargs": {"hold_ss": true}, "result": null}
+{"method": "read", "async": true, "args": [1], "kwargs": {}, "result": {"__class__": "bytearray", "hex": "00"}}
+{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "030001fa"}], "kwargs": {"hold_ss": true}, "result": null}
+{"method": "read", "async": true, "args": [12], "kwargs": {}, "result": {"__class__": "bytearray", "hex": "6265666f72652f6166746572"}}

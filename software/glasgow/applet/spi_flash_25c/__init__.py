@@ -34,7 +34,7 @@ class SPIFlash25CInterface:
 
         self._log("cmd=%02X arg=<%s> dummy=%d ret=%d", cmd, arg.hex(), dummy, ret)
 
-        await self.lower.write([cmd, *arg, *[0 for _ in range(dummy)]],
+        await self.lower.write(bytearray([cmd, *arg, *[0 for _ in range(dummy)]]),
                                hold_ss=(ret > 0))
         result = await self.lower.read(ret)
 
@@ -218,7 +218,7 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
             ]
 
     async def run(self, device, args):
-        spi_iface = await super().run(device, args)
+        spi_iface = await self.run_lower(SPIFlash25CApplet, device, args)
         return SPIFlash25CInterface(spi_iface, self.logger)
 
     @classmethod
@@ -425,8 +425,131 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
 
 # -------------------------------------------------------------------------------------------------
 
+import unittest
+
+
 class SPIFlash25CAppletTestCase(GlasgowAppletTestCase, applet=SPIFlash25CApplet):
     @synthesis_test
     def test_build(self):
         self.assertBuilds(args=["--pin-sck",  "0", "--pin-ss",   "1",
                                 "--pin-mosi", "2", "--pin-miso", "3"])
+
+    # Flash used for testing: Winbond 25Q32BVSIG
+    hardware_args = [
+        "--voltage",  "3.3",
+        "--pin-ss",   "0", "--pin-miso", "1",
+        "--pin-mosi", "2", "--pin-sck",  "3",
+        "--pin-hold", "4"
+    ]
+    dut_ids = (0xef, 0x15, 0x4016)
+    dut_page_size   = 0x100
+    dut_sector_size = 0x1000
+    dut_block_size  = 0x10000
+
+    async def setup_flash_data(self, mode):
+        flash_iface = await self.run_hardware_applet(mode)
+        if mode == "record":
+            await flash_iface.write_enable()
+            await flash_iface.sector_erase(0)
+            await flash_iface.write_enable()
+            await flash_iface.page_program(0, b"Hello, world!")
+            await flash_iface.write_enable()
+            await flash_iface.sector_erase(self.dut_sector_size)
+            await flash_iface.write_enable()
+            await flash_iface.page_program(self.dut_sector_size, b"Some more data")
+            await flash_iface.write_enable()
+            await flash_iface.sector_erase(self.dut_block_size)
+            await flash_iface.write_enable()
+            await flash_iface.page_program(self.dut_block_size, b"One block later")
+        return flash_iface
+
+    @applet_hardware_test(args=hardware_args)
+    async def test_api_sleep_wake(self, flash_iface):
+        await flash_iface.wakeup()
+        await flash_iface.deep_sleep()
+
+    @applet_hardware_test(args=hardware_args)
+    async def test_api_device_ids(self, flash_iface):
+        self.assertEqual(await flash_iface.read_device_id(),
+                         (self.dut_ids[1],))
+        self.assertEqual(await flash_iface.read_manufacturer_device_id(),
+                         (self.dut_ids[0], self.dut_ids[1]))
+        self.assertEqual(await flash_iface.read_manufacturer_long_device_id(),
+                         (self.dut_ids[0], self.dut_ids[2]))
+
+    @applet_hardware_test(setup="setup_flash_data", args=hardware_args)
+    async def test_api_read(self, flash_iface):
+        self.assertEqual(await flash_iface.read(0, 13),
+                         b"Hello, world!")
+        self.assertEqual(await flash_iface.read(self.dut_sector_size, 14),
+                         b"Some more data")
+
+    @applet_hardware_test(setup="setup_flash_data", args=hardware_args)
+    async def test_api_fast_read(self, flash_iface):
+        self.assertEqual(await flash_iface.fast_read(0, 13),
+                         b"Hello, world!")
+        self.assertEqual(await flash_iface.fast_read(self.dut_sector_size, 14),
+                         b"Some more data")
+
+    @applet_hardware_test(setup="setup_flash_data", args=hardware_args)
+    async def test_api_sector_erase(self, flash_iface):
+        await flash_iface.write_enable()
+        await flash_iface.sector_erase(0)
+        self.assertEqual(await flash_iface.read(0, 16),
+                         b"\xff" * 16)
+        self.assertEqual(await flash_iface.read(self.dut_sector_size, 14),
+                         b"Some more data")
+        await flash_iface.write_enable()
+        await flash_iface.sector_erase(self.dut_sector_size)
+        self.assertEqual(await flash_iface.read(self.dut_sector_size, 16),
+                         b"\xff" * 16)
+
+    @applet_hardware_test(setup="setup_flash_data", args=hardware_args)
+    async def test_api_block_erase(self, flash_iface):
+        await flash_iface.write_enable()
+        await flash_iface.block_erase(0)
+        self.assertEqual(await flash_iface.read(0, 16),
+                         b"\xff" * 16)
+        self.assertEqual(await flash_iface.read(self.dut_sector_size, 16),
+                         b"\xff" * 16)
+        self.assertEqual(await flash_iface.read(self.dut_block_size, 15),
+                         b"One block later")
+        await flash_iface.write_enable()
+        await flash_iface.block_erase(self.dut_block_size)
+        self.assertEqual(await flash_iface.read(self.dut_block_size, 16),
+                         b"\xff" * 16)
+
+    @applet_hardware_test(setup="setup_flash_data", args=hardware_args)
+    async def test_api_chip_erase(self, flash_iface):
+        await flash_iface.write_enable()
+        await flash_iface.chip_erase()
+        self.assertEqual(await flash_iface.read(0, 16),
+                         b"\xff" * 16)
+        self.assertEqual(await flash_iface.read(self.dut_sector_size, 16),
+                         b"\xff" * 16)
+        self.assertEqual(await flash_iface.read(self.dut_block_size, 16),
+                         b"\xff" * 16)
+
+    @applet_hardware_test(setup="setup_flash_data", args=hardware_args)
+    async def test_api_page_program(self, flash_iface):
+        await flash_iface.write_enable()
+        await flash_iface.page_program(self.dut_page_size * 2, b"test")
+        self.assertEqual(await flash_iface.read(self.dut_page_size * 2, 4),
+                         b"test")
+
+    @applet_hardware_test(setup="setup_flash_data", args=hardware_args)
+    async def test_api_program(self, flash_iface):
+        # crosses the page boundary
+        await flash_iface.write_enable()
+        await flash_iface.program(self.dut_page_size * 2 - 6, b"before/after", page_size=0x100)
+        self.assertEqual(await flash_iface.read(self.dut_page_size * 2 - 6, 12),
+                         b"before/after")
+
+    @unittest.skip("seems broken??")
+    @applet_hardware_test(setup="setup_flash_data", args=hardware_args)
+    async def test_api_erase_program(self, flash_iface):
+        await flash_iface.write_enable()
+        await flash_iface.erase_program(0, b"Bye  ",
+            page_size=0x100, sector_size=self.dut_sector_size)
+        self.assertEqual(await flash_iface.read(0, 14),
+                         b"Bye  , world!")

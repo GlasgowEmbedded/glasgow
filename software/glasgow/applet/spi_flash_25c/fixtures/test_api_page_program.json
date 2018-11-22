@@ -1,0 +1,8 @@
+{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "06"}], "kwargs": {"hold_ss": false}, "result": null}
+{"method": "read", "async": true, "args": [0], "kwargs": {}, "result": {"__class__": "bytearray", "hex": ""}}
+{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "0200020074657374"}], "kwargs": {"hold_ss": false}, "result": null}
+{"method": "read", "async": true, "args": [0], "kwargs": {}, "result": {"__class__": "bytearray", "hex": ""}}
+{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "05"}], "kwargs": {"hold_ss": true}, "result": null}
+{"method": "read", "async": true, "args": [1], "kwargs": {}, "result": {"__class__": "bytearray", "hex": "00"}}
+{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "03000200"}], "kwargs": {"hold_ss": true}, "result": null}
+{"method": "read", "async": true, "args": [4], "kwargs": {}, "result": {"__class__": "bytearray", "hex": "74657374"}}

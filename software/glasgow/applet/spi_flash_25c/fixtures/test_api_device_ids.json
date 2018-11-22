@@ -1,0 +1,6 @@
+{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "ab000000"}], "kwargs": {"hold_ss": true}, "result": null}
+{"method": "read", "async": true, "args": [1], "kwargs": {}, "result": {"__class__": "bytearray", "hex": "15"}}
+{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "90000000"}], "kwargs": {"hold_ss": true}, "result": null}
+{"method": "read", "async": true, "args": [2], "kwargs": {}, "result": {"__class__": "bytearray", "hex": "ef15"}}
+{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "9f"}], "kwargs": {"hold_ss": true}, "result": null}
+{"method": "read", "async": true, "args": [3], "kwargs": {}, "result": {"__class__": "bytearray", "hex": "ef4016"}}

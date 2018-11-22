@@ -1,0 +1,4 @@
+{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "ab00000000"}], "kwargs": {"hold_ss": false}, "result": null}
+{"method": "read", "async": true, "args": [0], "kwargs": {}, "result": {"__class__": "bytearray", "hex": ""}}
+{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "b9"}], "kwargs": {"hold_ss": false}, "result": null}
+{"method": "read", "async": true, "args": [0], "kwargs": {}, "result": {"__class__": "bytearray", "hex": ""}}
