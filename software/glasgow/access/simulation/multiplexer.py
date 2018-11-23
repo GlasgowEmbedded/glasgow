@@ -53,7 +53,7 @@ class SimulationMultiplexerInterface(AccessMultiplexerInterface):
 
         self.submodules.in_fifo = self._make_fifo(
             arbiter_side="read", logic_side="write", cd_logic=clock_domain, depth=depth,
-            wrapper=lambda x: _FIFOWithFlush(x, async=clock_domain is not None,
+            wrapper=lambda x: _FIFOWithFlush(x, asynchronous=clock_domain is not None,
                                              auto_flush=auto_flush))
         return self.in_fifo
 

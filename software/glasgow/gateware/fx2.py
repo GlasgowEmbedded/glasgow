@@ -71,7 +71,7 @@ class _FIFOWithOverflow(Module, _FIFOInterface):
 
 
 class _FIFOWithFlush(Module, _FIFOInterface):
-    def __init__(self, fifo, async=False, auto_flush=True):
+    def __init__(self, fifo, asynchronous=False, auto_flush=True):
         _FIFOInterface.__init__(self, fifo.width, fifo.depth)
 
         self.submodules.fifo = fifo
@@ -84,7 +84,7 @@ class _FIFOWithFlush(Module, _FIFOInterface):
         self.writable = fifo.writable
 
         self.flush    = Signal(reset=auto_flush)
-        if async:
+        if asynchronous:
             self._flush_s  = Signal()
             self.specials += MultiReg(self.flush, self._flush_s, reset=auto_flush)
         else:
@@ -325,7 +325,7 @@ class FX2Arbiter(Module):
                                reset=reset,
                                depth=depth,
                                wrapper=lambda x: _FIFOWithFlush(x,
-                                    async=clock_domain is not None,
+                                    asynchronous=clock_domain is not None,
                                     auto_flush=auto_flush))
         self.in_fifos[n] = fifo
         return fifo
