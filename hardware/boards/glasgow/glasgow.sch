@@ -267,32 +267,32 @@ F 5 "TMK107BJ154KA-T" H -450 -250 50  0001 C CNN "MPN"
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	1400 1000 1400 950
+	1400 1000 1400 950 
 Wire Wire Line
-	1400 950  1700 950
+	1400 950  1700 950 
 Wire Wire Line
 	3200 950  3200 1000
 Wire Wire Line
 	2900 950  2900 1000
-Connection ~ 2900 950
+Connection ~ 2900 950 
 Wire Wire Line
 	2600 950  2600 1000
-Connection ~ 2600 950
+Connection ~ 2600 950 
 Wire Wire Line
 	2300 950  2300 1000
-Connection ~ 2300 950
+Connection ~ 2300 950 
 Wire Wire Line
-	2300 950  2600 950
+	2300 950  2600 950 
 Wire Wire Line
 	2000 950  2000 1000
-Connection ~ 2000 950
+Connection ~ 2000 950 
 Wire Wire Line
-	2000 950  2150 950
+	2000 950  2150 950 
 Wire Wire Line
 	1700 950  1700 1000
-Connection ~ 1700 950
+Connection ~ 1700 950 
 Wire Wire Line
-	1700 950  2000 950
+	1700 950  2000 950 
 Wire Wire Line
 	1400 1300 1400 1350
 Wire Wire Line
@@ -334,10 +334,10 @@ F 5 "LMK107BJ475KAHT" H -450 -250 50  0001 C CNN "MPN"
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	1400 950  1000 950
+	1400 950  1000 950 
 Wire Wire Line
 	1000 950  1000 1000
-Connection ~ 1400 950
+Connection ~ 1400 950 
 Wire Wire Line
 	1400 1350 1000 1350
 Wire Wire Line
@@ -442,14 +442,14 @@ F 0 "#PWR01" H 2150 750 50  0001 C CNN
 F 1 "+3.3V" H 2165 1073 50  0000 C CNN
 F 2 "" H 2150 900 50  0001 C CNN
 F 3 "" H 2150 900 50  0001 C CNN
-	1    2150 900
+	1    2150 900 
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	2150 900  2150 950
-Connection ~ 2150 950
+	2150 900  2150 950 
+Connection ~ 2150 950 
 Wire Wire Line
-	2150 950  2300 950
+	2150 950  2300 950 
 $Comp
 L power:GND #PWR02
 U 1 1 5ACFB88D
@@ -848,13 +848,13 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 3500 1150 50 
 F 4 "Taiyo Yuden" H -450 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -450 -250 50  0001 C CNN "MPN"
 	1    3500 1150
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	3500 1000 3500 950
+	3500 1000 3500 950 
 Wire Wire Line
-	3500 950  3200 950
-Connection ~ 3200 950
+	3500 950  3200 950 
+Connection ~ 3200 950 
 Wire Wire Line
 	3500 1300 3500 1350
 Wire Wire Line
@@ -1013,7 +1013,7 @@ F 1 "+3.3V" V 7000 4400 50  0000 C CNN
 F 2 "" H 7000 4150 50  0001 C CNN
 F 3 "" H 7000 4150 50  0001 C CNN
 	1    7000 4150
-	0    1    1    0
+	0    1    1    0   
 $EndComp
 Wire Wire Line
 	900  5250 1100 5250
@@ -1029,7 +1029,7 @@ F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf
 F 4 "Taiyo Yuden" H -650 -250 50  0001 C CNN "Mfg"
 F 5 "LMK107BJ475KAHT" H -650 -250 50  0001 C CNN "MPN"
 	1    4050 1150
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C20
@@ -1042,7 +1042,7 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 4450 1150 50 
 F 4 "Taiyo Yuden" H -650 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -650 -250 50  0001 C CNN "MPN"
 	1    4450 1150
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C21
@@ -1055,7 +1055,7 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 4800 1150 50 
 F 4 "Taiyo Yuden" H -650 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -650 -250 50  0001 C CNN "MPN"
 	1    4800 1150
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C22
@@ -1068,7 +1068,7 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 5150 1150 50 
 F 4 "Taiyo Yuden" H -650 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -650 -250 50  0001 C CNN "MPN"
 	1    5150 1150
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C23
@@ -1081,7 +1081,7 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 5500 1150 50 
 F 4 "Taiyo Yuden" H -650 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -650 -250 50  0001 C CNN "MPN"
 	1    5500 1150
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C24
@@ -1094,7 +1094,7 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 6600 1150 50 
 F 4 "Taiyo Yuden" H -50 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -50 -250 50  0001 C CNN "MPN"
 	1    6600 1150
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C25
@@ -1107,33 +1107,33 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 7300 1150 50 
 F 4 "Taiyo Yuden" H 300 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 300 -250 50  0001 C CNN "MPN"
 	1    7300 1150
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	4050 1300 4050 1350
 Wire Wire Line
 	4050 1350 4450 1350
 Wire Wire Line
-	4050 1000 4050 950
+	4050 1000 4050 950 
 Wire Wire Line
-	4050 950  4450 950
+	4050 950  4450 950 
 Wire Wire Line
-	5500 1000 5500 950
+	5500 1000 5500 950 
 Wire Wire Line
-	5150 1000 5150 950
-Connection ~ 5150 950
+	5150 1000 5150 950 
+Connection ~ 5150 950 
 Wire Wire Line
-	5150 950  5500 950
+	5150 950  5500 950 
 Wire Wire Line
-	4800 1000 4800 950
-Connection ~ 4800 950
+	4800 1000 4800 950 
+Connection ~ 4800 950 
 Wire Wire Line
-	4800 950  5150 950
+	4800 950  5150 950 
 Wire Wire Line
-	4450 1000 4450 950
-Connection ~ 4450 950
+	4450 1000 4450 950 
+Connection ~ 4450 950 
 Wire Wire Line
-	4450 950  4800 950
+	4450 950  4800 950 
 Wire Wire Line
 	4450 1300 4450 1350
 Connection ~ 4450 1350
@@ -1160,7 +1160,7 @@ F 1 "GND" H 5005 1227 50  0000 C CNN
 F 2 "" H 5000 1400 50  0001 C CNN
 F 3 "" H 5000 1400 50  0001 C CNN
 	1    5000 1400
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:+3.3V #PWR0109
@@ -1170,11 +1170,11 @@ F 0 "#PWR0109" H 5150 750 50  0001 C CNN
 F 1 "+3.3V" H 5165 1073 50  0000 C CNN
 F 2 "" H 5150 900 50  0001 C CNN
 F 3 "" H 5150 900 50  0001 C CNN
-	1    5150 900
-	1    0    0    -1
+	1    5150 900 
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	5150 900  5150 950
+	5150 900  5150 950 
 $Comp
 L power:GND #PWR0111
 U 1 1 5B1E7C81
@@ -1184,7 +1184,7 @@ F 1 "GND" H 6605 1227 50  0000 C CNN
 F 2 "" H 6600 1400 50  0001 C CNN
 F 3 "" H 6600 1400 50  0001 C CNN
 	1    6600 1400
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:+1V2 #PWR0112
@@ -1194,8 +1194,8 @@ F 0 "#PWR0112" H 6600 750 50  0001 C CNN
 F 1 "+1V2" H 6615 1073 50  0000 C CNN
 F 2 "" H 6600 900 50  0001 C CNN
 F 3 "" H 6600 900 50  0001 C CNN
-	1    6600 900
-	1    0    0    -1
+	1    6600 900 
+	1    0    0    -1  
 $EndComp
 $Comp
 L Graphic:Logo_Open_Hardware_Large #LOGO1
@@ -1206,7 +1206,7 @@ F 1 "Logo_Open_Hardware_Large" H 1900 5700 50  0001 C CNN
 F 2 "" H 1900 6100 50  0001 C CNN
 F 3 "~" H 1900 6100 50  0001 C CNN
 	1    1900 6100
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L Regulator_Linear:MIC5355-S4YMME U8
@@ -1219,7 +1219,7 @@ F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/mic5355_6.pdf" H 9450 6100 
 F 4 "Microchip" H -450 0   50  0001 C CNN "Mfg"
 F 5 "MIC5355-S4YMME" H -450 0   50  0001 C CNN "MPN"
 	1    9450 5750
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L Power_Supervisor:LM3880 U7
@@ -1232,7 +1232,7 @@ F 3 "http://www.ti.com/lit/ds/symlink/lm3880.pdf" H 9450 4400 50  0001 C CNN
 F 4 "Texas Instruments" H 1750 -1350 50  0001 C CNN "Mfg"
 F 5 "LM3880MFX-1AF/NOPB" H 1750 -1350 50  0001 C CNN "MPN"
 	1    9450 4400
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	9850 4500 10250 4500
@@ -1251,7 +1251,7 @@ F 1 "GND" H 9455 4577 50  0000 C CNN
 F 2 "" H 9450 4750 50  0001 C CNN
 F 3 "" H 9450 4750 50  0001 C CNN
 	1    9450 4750
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR036
@@ -1262,7 +1262,7 @@ F 1 "GND" H 9455 5927 50  0000 C CNN
 F 2 "" H 9450 6100 50  0001 C CNN
 F 3 "" H 9450 6100 50  0001 C CNN
 	1    9450 6100
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	9450 6050 9450 6100
@@ -1277,7 +1277,7 @@ F 1 "+5V" H 9465 4223 50  0000 C CNN
 F 2 "" H 9450 4050 50  0001 C CNN
 F 3 "" H 9450 4050 50  0001 C CNN
 	1    9450 4050
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	9450 4050 9450 4100
@@ -1290,7 +1290,7 @@ F 1 "+5V" H 9015 5773 50  0000 C CNN
 F 2 "" H 9000 5600 50  0001 C CNN
 F 3 "" H 9000 5600 50  0001 C CNN
 	1    9000 5600
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	9000 5600 9000 5650
@@ -1305,7 +1305,7 @@ F 1 "+1V2" H 9965 5823 50  0000 C CNN
 F 2 "" H 9950 5650 50  0001 C CNN
 F 3 "" H 9950 5650 50  0001 C CNN
 	1    9950 5650
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:+3.3V #PWR033
@@ -1316,7 +1316,7 @@ F 1 "+3.3V" H 10365 5823 50  0000 C CNN
 F 2 "" H 10350 5650 50  0001 C CNN
 F 3 "" H 10350 5650 50  0001 C CNN
 	1    10350 5650
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	9850 4300 10250 4300
@@ -1333,7 +1333,7 @@ F 3 "" H 8500 5750 50  0001 C CNN
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
 F 5 "RC0603FR-10100KL" H -450 0   50  0001 C CNN "MPN"
 	1    8500 5750
-	0    1    1    0
+	0    1    1    0   
 $EndComp
 $Comp
 L power:GND #PWR039
@@ -1344,7 +1344,7 @@ F 1 "GND" H 9955 6077 50  0000 C CNN
 F 2 "" H 9950 6250 50  0001 C CNN
 F 3 "" H 9950 6250 50  0001 C CNN
 	1    9950 6250
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR040
@@ -1355,7 +1355,7 @@ F 1 "GND" H 10355 6077 50  0000 C CNN
 F 2 "" H 10350 6250 50  0001 C CNN
 F 3 "" H 10350 6250 50  0001 C CNN
 	1    10350 6250
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	9950 6200 9950 6250
@@ -1384,7 +1384,7 @@ F 3 "" H 8500 5850 50  0001 C CNN
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
 F 5 "RC0603FR-10100KL" H -450 0   50  0001 C CNN "MPN"
 	1    8500 5850
-	0    1    -1   0
+	0    1    -1   0   
 $EndComp
 $Comp
 L power:+5V #PWR034
@@ -1395,7 +1395,7 @@ F 1 "+5V" H 8315 5873 50  0000 C CNN
 F 2 "" H 8300 5700 50  0001 C CNN
 F 3 "" H 8300 5700 50  0001 C CNN
 	1    8300 5700
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	8300 5700 8300 5750
@@ -1426,7 +1426,7 @@ F 1 "GND" H 9005 6077 50  0000 C CNN
 F 2 "" H 9000 6250 50  0001 C CNN
 F 3 "" H 9000 6250 50  0001 C CNN
 	1    9000 6250
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	9000 6200 9000 6250
@@ -1441,7 +1441,7 @@ F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf
 F 4 "Taiyo Yuden" H -450 0   50  0001 C CNN "Mfg"
 F 5 "LMK107BJ475KAHT" H -450 0   50  0001 C CNN "MPN"
 	1    9000 6050
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C27
@@ -1454,7 +1454,7 @@ F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf
 F 4 "Taiyo Yuden" H -450 0   50  0001 C CNN "Mfg"
 F 5 "LMK107BJ475KAHT" H -450 0   50  0001 C CNN "MPN"
 	1    9950 6050
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C28
@@ -1467,7 +1467,7 @@ F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf
 F 4 "Taiyo Yuden" H -450 0   50  0001 C CNN "Mfg"
 F 5 "LMK107BJ475KAHT" H -450 0   50  0001 C CNN "MPN"
 	1    10350 6050
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L Device:R R4
@@ -1480,7 +1480,7 @@ F 3 "" H 2800 3350 50  0001 C CNN
 F 4 "Yageo" H 650 -250 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-10100KL" H 650 -250 50  0001 C CNN "MPN"
 	1    2800 3350
-	1    0    0    1
+	1    0    0    1   
 $EndComp
 $Comp
 L power:+3.3V #PWR028
@@ -1491,7 +1491,7 @@ F 1 "+3.3V" H 2500 3200 50  0000 L CNN
 F 2 "" H 2800 3150 50  0001 C CNN
 F 3 "" H 2800 3150 50  0001 C CNN
 	1    2800 3150
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	2800 3150 2800 3200
@@ -1511,7 +1511,7 @@ F 3 "" H 8750 4600 50  0001 C CNN
 F 4 "Yageo" H 1750 -1350 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-10100KL" H 1750 -1350 50  0001 C CNN "MPN"
 	1    8750 4600
-	1    0    0    1
+	1    0    0    1   
 $EndComp
 $Comp
 L Device:R R5
@@ -1524,7 +1524,7 @@ F 3 "https://www.mouser.hk/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf"
 F 4 "Yageo" H 1750 -1350 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-10220KL" H 1750 -1350 50  0001 C CNN "MPN"
 	1    8750 4200
-	1    0    0    1
+	1    0    0    1   
 $EndComp
 $Comp
 L power:+5V #PWR029
@@ -1535,7 +1535,7 @@ F 1 "+5V" H 8765 4173 50  0000 C CNN
 F 2 "" H 8750 4000 50  0001 C CNN
 F 3 "" H 8750 4000 50  0001 C CNN
 	1    8750 4000
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	8750 4000 8750 4050
@@ -1553,7 +1553,7 @@ F 1 "GND" H 8755 4627 50  0000 C CNN
 F 2 "" H 8750 4800 50  0001 C CNN
 F 3 "" H 8750 4800 50  0001 C CNN
 	1    8750 4800
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	8750 4750 8750 4800
@@ -1578,7 +1578,7 @@ F 3 "" H 7600 1750 50  0001 C CNN
 F 4 "Yageo" H 3200 -1800 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-10100KL" H 3200 -1800 50  0001 C CNN "MPN"
 	1    7600 1750
-	0    -1   1    0
+	0    -1   1    0   
 $EndComp
 $Comp
 L power:GND #PWR0113
@@ -1589,7 +1589,7 @@ F 1 "GND" H 7450 1600 50  0000 C CNN
 F 2 "" H 7400 1750 50  0001 C CNN
 F 3 "" H 7400 1750 50  0001 C CNN
 	1    7400 1750
-	0    1    -1   0
+	0    1    -1   0   
 $EndComp
 Entry Wire Line
 	4600 4150 4700 4250
@@ -1614,69 +1614,6 @@ VUSB
 Wire Wire Line
 	4250 2050 4600 2050
 $Comp
-L Connector_Generic:Conn_01x02 J4
-U 1 1 5AD91BD1
-P 9500 -750
-F 0 "J4" H 9500 -950 50  0000 C CNN
-F 1 "Conn_01x02" H 9580 -849 50  0001 L CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Horizontal" H 9500 -750 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/418/NG_CD_640455_Y3-1255934.pdf" H 9500 -750 50  0001 C CNN
-F 4 "Molex" H -1100 -3600 50  0001 C CNN "Mfg"
-F 5 "22-05-3021" H -1100 -3600 50  0001 C CNN "MPN"
-	1    9500 -750
-	1    0    0    1
-$EndComp
-$Comp
-L power:GND #PWR042
-U 1 1 5AD91E5D
-P 9250 -700
-F 0 "#PWR042" H 9250 -950 50  0001 C CNN
-F 1 "GND" H 9255 -873 50  0000 C CNN
-F 2 "" H 9250 -700 50  0001 C CNN
-F 3 "" H 9250 -700 50  0001 C CNN
-	1    9250 -700
-	1    0    0    -1
-$EndComp
-Wire Wire Line
-	9300 -750 9250 -750
-Wire Wire Line
-	9250 -750 9250 -700
-Wire Wire Line
-	8950 -850 9250 -850
-Text Label 8950 -850 0    50   ~ 0
-~SYNC
-$Comp
-L Device:R R10
-U 1 1 5ADEDED6
-P 9250 -1050
-F 0 "R10" H 9180 -1096 50  0000 R CNN
-F 1 "130" H 9180 -1005 50  0000 R CNN
-F 2 "Resistor_SMD:R_0402_1005Metric" V 9180 -1050 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-AC_51_RoHS_L_6-1152827.pdf" H 9250 -1050 50  0001 C CNN
-F 4 "Yageo" H -1100 -3600 50  0001 C CNN "Mfg"
-F 5 "AC0603FR-07130RL" H -1100 -3600 50  0001 C CNN "MPN"
-	1    9250 -1050
-	1    0    0    1
-$EndComp
-$Comp
-L power:+3.3V #PWR041
-U 1 1 5ADEE366
-P 9250 -1250
-F 0 "#PWR041" H 9250 -1400 50  0001 C CNN
-F 1 "+3.3V" H 9265 -1077 50  0000 C CNN
-F 2 "" H 9250 -1250 50  0001 C CNN
-F 3 "" H 9250 -1250 50  0001 C CNN
-	1    9250 -1250
-	1    0    0    -1
-$EndComp
-Wire Wire Line
-	9250 -1250 9250 -1200
-Wire Wire Line
-	9250 -900 9250 -850
-Connection ~ 9250 -850
-Wire Wire Line
-	9250 -850 9300 -850
-$Comp
 L Connector:Test_Point TP1
 U 1 1 5ADB3D1E
 P 2300 3350
@@ -1685,7 +1622,7 @@ F 1 "5V" V 2404 3424 50  0001 C CNN
 F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 2500 3350 50  0001 C CNN
 F 3 "~" H 2500 3350 50  0001 C CNN
 	1    2300 3350
-	0    1    1    0
+	0    1    1    0   
 $EndComp
 $Comp
 L Connector:Test_Point TP2
@@ -1696,7 +1633,7 @@ F 1 "1V2" V 10104 5774 50  0001 C CNN
 F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 10200 5700 50  0001 C CNN
 F 3 "~" H 10200 5700 50  0001 C CNN
 	1    10000 5700
-	0    1    1    0
+	0    1    1    0   
 $EndComp
 $Comp
 L Connector:Test_Point TP3
@@ -1707,7 +1644,7 @@ F 1 "3V3" V 10504 5774 50  0001 C CNN
 F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 10600 5700 50  0001 C CNN
 F 3 "~" H 10600 5700 50  0001 C CNN
 	1    10400 5700
-	0    1    1    0
+	0    1    1    0   
 $EndComp
 Wire Wire Line
 	10400 5700 10350 5700
@@ -1745,8 +1682,8 @@ F 2 "LED_SMD:LED_0603_1608Metric_Pad0.82x1.00mm_HandSolder" H 9800 900 50  0001 
 F 3 "https://www.mouser.com/datasheet/2/445/150060GS75000-368921.pdf" H 9800 900 50  0001 C CNN
 F 4 "Wurth Electronics" H -450 0   50  0001 C CNN "Mfg"
 F 5 "150060GS75000" H -450 0   50  0001 C CNN "MPN"
-	1    9800 900
-	-1   0    0    1
+	1    9800 900 
+	-1   0    0    1   
 $EndComp
 $Comp
 L power:+3.3V #PWR0119
@@ -1756,8 +1693,8 @@ F 0 "#PWR0119" H 9250 750 50  0001 C CNN
 F 1 "+3.3V" V 9250 1150 50  0000 C CNN
 F 2 "" H 9250 900 50  0001 C CNN
 F 3 "" H 9250 900 50  0001 C CNN
-	1    9250 900
-	0    -1   -1   0
+	1    9250 900 
+	0    -1   -1   0   
 $EndComp
 Text Notes 9700 750  0    50   ~ 0
 All at 30 mcd
@@ -1772,7 +1709,7 @@ F 3 "https://www.mouser.com/datasheet/2/445/150060GS75000-368921.pdf" H 9800 110
 F 4 "Wurth Electronics" H -450 0   50  0001 C CNN "Mfg"
 F 5 "150060GS75000" H -450 0   50  0001 C CNN "MPN"
 	1    9800 1100
-	-1   0    0    1
+	-1   0    0    1   
 $EndComp
 $Comp
 L Device:LED D3
@@ -1785,7 +1722,7 @@ F 3 "https://www.mouser.com/datasheet/2/445/150060GS75000-368921.pdf" H 9800 130
 F 4 "Wurth Electronics" H -450 0   50  0001 C CNN "Mfg"
 F 5 "150060GS75000" H -450 0   50  0001 C CNN "MPN"
 	1    9800 1300
-	-1   0    0    1
+	-1   0    0    1   
 $EndComp
 $Comp
 L Device:LED D4
@@ -1798,7 +1735,7 @@ F 3 "https://www.mouser.com/datasheet/2/445/150060YS75000-368983.pdf" H 9800 150
 F 4 "Wurth Electronics" H -450 0   50  0001 C CNN "Mfg"
 F 5 "150060YS75000" H -450 0   50  0001 C CNN "MPN"
 	1    9800 1500
-	-1   0    0    1
+	-1   0    0    1   
 $EndComp
 $Comp
 L Device:LED D5
@@ -1811,10 +1748,10 @@ F 3 "https://www.mouser.com/datasheet/2/445/150060RS75000-368563.pdf" H 9800 170
 F 4 "Wurth Electronics" H -450 0   50  0001 C CNN "Mfg"
 F 5 "150060RS75000" H -450 0   50  0001 C CNN "MPN"
 	1    9800 1700
-	-1   0    0    1
+	-1   0    0    1   
 $EndComp
 Wire Wire Line
-	10000 900  9950 900
+	10000 900  9950 900 
 Wire Wire Line
 	9950 1100 10000 1100
 Wire Wire Line
@@ -1835,10 +1772,10 @@ F 1 "GND" H 10005 1577 50  0000 C CNN
 F 2 "" H 10000 1750 50  0001 C CNN
 F 3 "" H 10000 1750 50  0001 C CNN
 	1    10000 1750
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Notes Line
-	10350 850  10400 850
+	10350 850  10400 850 
 Wire Notes Line
 	10400 850  10400 1350
 Wire Notes Line
@@ -1855,8 +1792,8 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 900 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 900 50  0001 C CNN
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
 F 5 "RC0603FR-132K2L" H -450 0   50  0001 C CNN "MPN"
-	1    9450 900
-	0    -1   1    0
+	1    9450 900 
+	0    -1   1    0   
 $EndComp
 Wire Wire Line
 	9300 1100 8900 1100
@@ -1875,9 +1812,9 @@ LED_ACT
 Text Label 8900 1700 0    50   ~ 0
 LED_ERR
 Wire Wire Line
-	9250 900  9300 900
+	9250 900  9300 900 
 Wire Wire Line
-	9600 900  9650 900
+	9600 900  9650 900 
 Text Notes 10450 1550 0    50   ~ 0
 5 mA
 $Comp
@@ -1891,7 +1828,7 @@ F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
 F 5 "RC0603FR-13390RL" H -450 0   50  0001 C CNN "MPN"
 	1    9450 1500
-	0    -1   1    0
+	0    -1   1    0   
 $EndComp
 Wire Notes Line
 	10350 1500 10400 1500
@@ -1918,7 +1855,7 @@ F 3 "https://www.mouser.hk/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf"
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
 F 5 "RC0603FR-07604RL" H -450 0   50  0001 C CNN "MPN"
 	1    9450 1700
-	0    -1   1    0
+	0    -1   1    0   
 $EndComp
 $Comp
 L Device:R R13
@@ -1931,7 +1868,7 @@ F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
 F 5 "RC0603FR-132K2L" H -450 0   50  0001 C CNN "MPN"
 	1    9450 1100
-	0    -1   1    0
+	0    -1   1    0   
 $EndComp
 $Comp
 L Device:R R14
@@ -1944,7 +1881,7 @@ F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
 F 5 "RC0603FR-132K2L" H -450 0   50  0001 C CNN "MPN"
 	1    9450 1300
-	0    -1   1    0
+	0    -1   1    0   
 $EndComp
 Wire Wire Line
 	4800 4350 4850 4350
@@ -1961,7 +1898,7 @@ F 3 "" H 5050 4450 50  0001 C CNN
 F 4 "Yageo" H 650 -850 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-10100KL" H 650 -850 50  0001 C CNN "MPN"
 	1    5050 4450
-	0    -1   -1   0
+	0    -1   -1   0   
 $EndComp
 $Comp
 L power:+3.3V #PWR0121
@@ -1972,7 +1909,7 @@ F 1 "+3.3V" H 5265 4623 50  0000 C CNN
 F 2 "" H 5250 4450 50  0001 C CNN
 F 3 "" H 5250 4450 50  0001 C CNN
 	1    5250 4450
-	0    1    1    0
+	0    1    1    0   
 $EndComp
 Wire Wire Line
 	5200 4450 5250 4450
@@ -2047,7 +1984,7 @@ F 3 "" H 5050 3600 50  0001 C CNN
 F 4 "Yageo" H 650 -450 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-10100KL" H 650 -450 50  0001 C CNN "MPN"
 	1    5050 3600
-	0    -1   1    0
+	0    -1   1    0   
 $EndComp
 Wire Wire Line
 	5200 3600 5250 3600
@@ -2062,7 +1999,7 @@ F 3 "" H 5050 3100 50  0001 C CNN
 F 4 "Yageo" H 650 -100 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-10100KL" H 650 -100 50  0001 C CNN "MPN"
 	1    5050 3100
-	0    -1   1    0
+	0    -1   1    0   
 $EndComp
 Wire Wire Line
 	5200 3100 5250 3100
@@ -2103,7 +2040,7 @@ F 1 "SDA" V 2654 5224 50  0001 C CNN
 F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 2750 5150 50  0001 C CNN
 F 3 "~" H 2750 5150 50  0001 C CNN
 	1    2550 5150
-	-1   0    0    1
+	-1   0    0    1   
 $EndComp
 $Comp
 L Connector:Test_Point TP5
@@ -2114,7 +2051,7 @@ F 1 "SCL" V 2754 5224 50  0001 C CNN
 F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 2850 5150 50  0001 C CNN
 F 3 "~" H 2850 5150 50  0001 C CNN
 	1    2650 5150
-	-1   0    0    1
+	-1   0    0    1   
 $EndComp
 Wire Wire Line
 	2550 4950 2550 5150
@@ -2129,7 +2066,7 @@ F 1 "CLKREF" V 5504 6224 50  0001 C CNN
 F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 5600 6150 50  0001 C CNN
 F 3 "~" H 5600 6150 50  0001 C CNN
 	1    5400 6150
-	0    1    -1   0
+	0    1    -1   0   
 $EndComp
 Entry Wire Line
 	5000 6250 5100 6150
@@ -2138,11 +2075,11 @@ Wire Wire Line
 Text Label 5150 6150 0    50   ~ 0
 CLKREF
 Wire Wire Line
-	2900 950  3200 950
+	2900 950  3200 950 
 Wire Wire Line
 	2900 1350 3200 1350
 Wire Wire Line
-	2600 950  2900 950
+	2600 950  2900 950 
 Wire Wire Line
 	2600 1350 2900 1350
 Text Notes 6400 4500 0    50   ~ 0
@@ -2158,7 +2095,7 @@ F 3 "https://www.mouser.com/datasheet/2/741/LFXTAL058124Reel-940455.pdf" H 2450 
 F 4 "IQD" H 650 -250 50  0001 C CNN "Mfg"
 F 5 "LFXTAL058124REEL" H 650 -250 50  0001 C CNN "MPN"
 	1    2450 2700
-	0    -1   -1   0
+	0    -1   -1   0   
 $EndComp
 Wire Wire Line
 	2000 2450 2000 2700
@@ -2188,7 +2125,7 @@ F 1 "GND" H 5300 2950 50  0000 C CNN
 F 2 "" H 5250 3100 50  0001 C CNN
 F 3 "" H 5250 3100 50  0001 C CNN
 	1    5250 3100
-	0    -1   -1   0
+	0    -1   -1   0   
 $EndComp
 $Comp
 L power:GND #PWR0124
@@ -2199,7 +2136,7 @@ F 1 "GND" H 5300 3450 50  0000 C CNN
 F 2 "" H 5250 3600 50  0001 C CNN
 F 3 "" H 5250 3600 50  0001 C CNN
 	1    5250 3600
-	0    -1   -1   0
+	0    -1   -1   0   
 $EndComp
 $Comp
 L Connector:Test_Point TP7
@@ -2210,7 +2147,7 @@ F 1 "3V3" V 5504 6124 50  0001 C CNN
 F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 5600 6050 50  0001 C CNN
 F 3 "~" H 5600 6050 50  0001 C CNN
 	1    5400 6050
-	0    1    -1   0
+	0    1    -1   0   
 $EndComp
 Entry Wire Line
 	4900 6250 5000 6150
@@ -2237,7 +2174,7 @@ F 1 "GND" H 1755 3727 50  0000 C CNN
 F 2 "" H 1750 3900 50  0001 C CNN
 F 3 "" H 1750 3900 50  0001 C CNN
 	1    1750 3900
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	2150 3500 2300 3500
@@ -2254,7 +2191,7 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 1050 3700 50 
 F 4 "Taiyo Yuden" H -2050 -3300 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -2050 -3300 50  0001 C CNN "MPN"
 	1    1050 3700
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR045
@@ -2265,7 +2202,7 @@ F 1 "GND" H 1055 3727 50  0000 C CNN
 F 2 "" H 1050 3900 50  0001 C CNN
 F 3 "" H 1050 3900 50  0001 C CNN
 	1    1050 3900
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	2200 4250 2850 4250
@@ -2290,7 +2227,7 @@ F 1 "ICE40HX8K-BG121" H 7100 1750 50  0000 C CNN
 F 2 "Package_BGA:BGA-121_9.0x9.0mm_Layout11x11_P0.8mm_Ball0.4mm_Pad0.35mm_NSMD" H 6800 1700 50  0001 C CNN
 F 3 "http://www.latticesemi.com/Products/FPGAandCPLD/iCE40" H 5950 4150 50  0001 C CNN
 	3    6800 3150
-	-1   0    0    -1
+	-1   0    0    -1  
 $EndComp
 $Comp
 L FPGA_Lattice:ICE40HX8K-BG121 U30
@@ -2301,7 +2238,7 @@ F 1 "ICE40HX8K-BG121" H 6800 4700 50  0000 L CNN
 F 2 "Package_BGA:BGA-121_9.0x9.0mm_Layout11x11_P0.8mm_Ball0.4mm_Pad0.35mm_NSMD" H 7050 3950 50  0001 C CNN
 F 3 "http://www.latticesemi.com/Products/FPGAandCPLD/iCE40" H 6200 6400 50  0001 C CNN
 	5    7050 5400
-	-1   0    0    -1
+	-1   0    0    -1  
 $EndComp
 Wire Wire Line
 	7650 5300 7750 5300
@@ -2328,7 +2265,7 @@ F 1 "GND" H 7355 5927 50  0000 C CNN
 F 2 "" H 7350 6100 50  0001 C CNN
 F 3 "" H 7350 6100 50  0001 C CNN
 	1    7350 6100
-	-1   0    0    -1
+	-1   0    0    -1  
 $EndComp
 $Comp
 L power:+3.3V #PWR0104
@@ -2339,7 +2276,7 @@ F 1 "+3.3V" H 6815 2023 50  0000 C CNN
 F 2 "" H 6800 1850 50  0001 C CNN
 F 3 "" H 6800 1850 50  0001 C CNN
 	1    6800 1850
-	-1   0    0    -1
+	-1   0    0    -1  
 $EndComp
 $Comp
 L power:+1V2 #PWR0157
@@ -2350,7 +2287,7 @@ F 1 "+1V2" H 6965 4873 50  0000 C CNN
 F 2 "" H 6950 4700 50  0001 C CNN
 F 3 "" H 6950 4700 50  0001 C CNN
 	1    6950 4700
-	-1   0    0    -1
+	-1   0    0    -1  
 $EndComp
 $Comp
 L power:+3.3V #PWR0158
@@ -2361,7 +2298,7 @@ F 1 "+3.3V" H 7365 4823 50  0000 C CNN
 F 2 "" H 7350 4650 50  0001 C CNN
 F 3 "" H 7350 4650 50  0001 C CNN
 	1    7350 4650
-	-1   0    0    -1
+	-1   0    0    -1  
 $EndComp
 $Comp
 L Device:C C76
@@ -2374,7 +2311,7 @@ F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf
 F 4 "Taiyo Yuden" H -1500 3700 50  0001 C CNN "Mfg"
 F 5 "LMK107BJ475KAHT" H -1500 3700 50  0001 C CNN "MPN"
 	1    6100 5250
-	-1   0    0    -1
+	-1   0    0    -1  
 $EndComp
 $Comp
 L Device:C C77
@@ -2387,7 +2324,7 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 6950 1150 50 
 F 4 "Taiyo Yuden" H -50 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -50 -250 50  0001 C CNN "MPN"
 	1    6950 1150
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C78
@@ -2400,7 +2337,7 @@ F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf
 F 4 "Taiyo Yuden" H -1150 3700 50  0001 C CNN "Mfg"
 F 5 "LMK107BJ475KAHT" H -1150 3700 50  0001 C CNN "MPN"
 	1    6450 5250
-	-1   0    0    -1
+	-1   0    0    -1  
 $EndComp
 $Comp
 L Device:C C79
@@ -2413,7 +2350,7 @@ F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf
 F 4 "Taiyo Yuden" H -1150 4100 50  0001 C CNN "Mfg"
 F 5 "LMK107BJ475KAHT" H -1150 4100 50  0001 C CNN "MPN"
 	1    6450 5650
-	-1   0    0    -1
+	-1   0    0    -1  
 $EndComp
 $Comp
 L Device:C C80
@@ -2426,7 +2363,7 @@ F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf
 F 4 "Taiyo Yuden" H -1500 4100 50  0001 C CNN "Mfg"
 F 5 "LMK107BJ475KAHT" H -1500 4100 50  0001 C CNN "MPN"
 	1    6100 5650
-	-1   0    0    -1
+	-1   0    0    -1  
 $EndComp
 Wire Wire Line
 	6100 5500 6450 5500
@@ -2451,7 +2388,7 @@ F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf
 F 4 "Yageo" H -1650 3950 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-07100RL" H -1650 3950 50  0001 C CNN "MPN"
 	1    5950 5100
-	0    1    1    0
+	0    1    1    0   
 $EndComp
 $Comp
 L Device:R R32
@@ -2464,7 +2401,7 @@ F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf
 F 4 "Yageo" H -1650 4350 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-07100RL" H -1650 4350 50  0001 C CNN "MPN"
 	1    5950 5500
-	0    1    1    0
+	0    1    1    0   
 $EndComp
 $Comp
 L power:+1V2 #PWR096
@@ -2475,7 +2412,7 @@ F 1 "+1V2" H 5715 5373 50  0000 C CNN
 F 2 "" H 5700 5200 50  0001 C CNN
 F 3 "" H 5700 5200 50  0001 C CNN
 	1    5700 5200
-	-1   0    0    -1
+	-1   0    0    -1  
 $EndComp
 Wire Wire Line
 	5800 5100 5750 5100
@@ -2501,10 +2438,10 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 7650 1150 50 
 F 4 "Taiyo Yuden" H 1000 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 1000 -250 50  0001 C CNN "MPN"
 	1    7650 1150
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	6600 900  6600 950
+	6600 900  6600 950 
 Wire Wire Line
 	6600 1300 6600 1350
 Wire Wire Line
@@ -2515,17 +2452,17 @@ Connection ~ 6600 1350
 Wire Wire Line
 	6600 1350 6600 1400
 Wire Wire Line
-	6600 950  6950 950
+	6600 950  6950 950 
 Wire Wire Line
 	7650 950  7650 1000
-Connection ~ 6600 950
+Connection ~ 6600 950 
 Wire Wire Line
 	6600 950  6600 1000
 Wire Wire Line
-	7300 1000 7300 950
-Connection ~ 7300 950
+	7300 1000 7300 950 
+Connection ~ 7300 950 
 Wire Wire Line
-	7300 950  7650 950
+	7300 950  7650 950 
 Wire Wire Line
 	7300 1300 7300 1350
 Connection ~ 7300 1350
@@ -2537,10 +2474,10 @@ Connection ~ 6950 1350
 Wire Wire Line
 	6950 1350 7300 1350
 Wire Wire Line
-	6950 1000 6950 950
-Connection ~ 6950 950
+	6950 1000 6950 950 
+Connection ~ 6950 950 
 Wire Wire Line
-	6950 950  7300 950
+	6950 950  7300 950 
 $Comp
 L Device:C C81
 U 1 1 5C2C0B38
@@ -2552,7 +2489,7 @@ F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 5850 1150 50 
 F 4 "Taiyo Yuden" H -300 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -300 -250 50  0001 C CNN "MPN"
 	1    5850 1150
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	5500 1350 5850 1350
@@ -2560,10 +2497,10 @@ Wire Wire Line
 	5850 1350 5850 1300
 Connection ~ 5500 1350
 Wire Wire Line
-	5500 950  5850 950
+	5500 950  5850 950 
 Wire Wire Line
 	5850 950  5850 1000
-Connection ~ 5500 950
+Connection ~ 5500 950 
 Text Label 6450 5100 2    50   ~ 0
 VCCPLL0
 Text Label 6450 5500 2    50   ~ 0
@@ -2709,15 +2646,15 @@ Connection ~ 2300 3350
 Wire Wire Line
 	2300 3350 2300 3500
 $Sheet
-S 9150 2600 550  700
+S 9150 2600 550  700 
 U 5C7B59B0
 F0 "IO_Banks" 50
 F1 "io_banks.sch" 50
-F2 "ENVA" I L 9150 2700 50
-F3 "ENVB" I L 9150 2800 50
-F4 "SDA" I L 9150 2950 50
-F5 "SCL" I L 9150 3050 50
-F6 "~ALERT" I L 9150 3200 50
+F2 "ENVA" I L 9150 2700 50 
+F3 "ENVB" I L 9150 2800 50 
+F4 "SDA" I L 9150 2950 50 
+F5 "SCL" I L 9150 3050 50 
+F6 "~ALERT" I L 9150 3200 50 
 $EndSheet
 Wire Wire Line
 	8850 2800 9150 2800
@@ -2745,7 +2682,7 @@ F 3 "http://www.ti.com/lit/ds/symlink/tpd3s014.pdf" H 1550 3850 50  0001 C CNN
 F 4 "TPD3S014DBVR" H 250 0   50  0001 C CNN "MPN"
 F 5 "Texas Instruments" H 250 0   50  0001 C CNN "Mfg"
 	1    1750 3600
-	1    0    0    -1
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	2150 3700 2200 3700
