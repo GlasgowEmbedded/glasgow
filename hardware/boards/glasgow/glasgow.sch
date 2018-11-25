@@ -287,8 +287,6 @@ Wire Wire Line
 	2000 950  2000 1000
 Connection ~ 2000 950 
 Wire Wire Line
-	2000 950  2150 950 
-Wire Wire Line
 	1700 950  1700 1000
 Connection ~ 1700 950 
 Wire Wire Line
@@ -308,12 +306,8 @@ Wire Wire Line
 	2000 1300 2000 1350
 Connection ~ 2000 1350
 Wire Wire Line
-	2000 1350 2150 1350
-Wire Wire Line
 	2300 1300 2300 1350
 Connection ~ 2300 1350
-Wire Wire Line
-	2300 1350 2600 1350
 Wire Wire Line
 	2600 1300 2600 1350
 Connection ~ 2600 1350
@@ -437,35 +431,29 @@ $EndComp
 $Comp
 L power:+3.3V #PWR01
 U 1 1 5ACF96C5
-P 2150 900
-F 0 "#PWR01" H 2150 750 50  0001 C CNN
-F 1 "+3.3V" H 2165 1073 50  0000 C CNN
-F 2 "" H 2150 900 50  0001 C CNN
-F 3 "" H 2150 900 50  0001 C CNN
-	1    2150 900 
+P 1000 900
+F 0 "#PWR01" H 1000 750 50  0001 C CNN
+F 1 "+3.3V" H 1015 1073 50  0000 C CNN
+F 2 "" H 1000 900 50  0001 C CNN
+F 3 "" H 1000 900 50  0001 C CNN
+	1    1000 900 
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	2150 900  2150 950 
-Connection ~ 2150 950 
-Wire Wire Line
-	2150 950  2300 950 
+	1000 900  1000 950 
 $Comp
 L power:GND #PWR02
 U 1 1 5ACFB88D
-P 2150 1400
-F 0 "#PWR02" H 2150 1150 50  0001 C CNN
-F 1 "GND" H 2155 1227 50  0000 C CNN
-F 2 "" H 2150 1400 50  0001 C CNN
-F 3 "" H 2150 1400 50  0001 C CNN
-	1    2150 1400
+P 1000 1400
+F 0 "#PWR02" H 1000 1150 50  0001 C CNN
+F 1 "GND" H 1005 1227 50  0000 C CNN
+F 2 "" H 1000 1400 50  0001 C CNN
+F 3 "" H 1000 1400 50  0001 C CNN
+	1    1000 1400
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	2150 1400 2150 1350
-Connection ~ 2150 1350
-Wire Wire Line
-	2150 1350 2300 1350
+	1000 1400 1000 1350
 $Comp
 L Device:C C12
 U 1 1 5AD0B949
@@ -577,7 +565,6 @@ Wire Wire Line
 NoConn ~ 4250 7100
 NoConn ~ 3450 7100
 NoConn ~ 5500 7100
-NoConn ~ 5500 7000
 Wire Wire Line
 	3400 7000 3450 7000
 Wire Wire Line
@@ -600,18 +587,16 @@ NoConn ~ 6300 7100
 $Comp
 L power:+3.3V #PWR022
 U 1 1 5ACFBC98
-P 5450 6850
-F 0 "#PWR022" H 5450 6700 50  0001 C CNN
-F 1 "+3.3V" H 5465 7023 50  0000 C CNN
-F 2 "" H 5450 6850 50  0001 C CNN
-F 3 "" H 5450 6850 50  0001 C CNN
-	1    5450 6850
+P 5450 6650
+F 0 "#PWR022" H 5450 6500 50  0001 C CNN
+F 1 "+3.3V" H 5465 6823 50  0000 C CNN
+F 2 "" H 5450 6650 50  0001 C CNN
+F 3 "" H 5450 6650 50  0001 C CNN
+	1    5450 6650
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	5500 6900 5450 6900
-Wire Wire Line
-	5450 6900 5450 6850
 $Comp
 L power:+3.3V #PWR021
 U 1 1 5AD04B8D
@@ -639,124 +624,62 @@ F 5 "TMK107BJ154KA-T" H 0   0   50  0001 C CNN "MPN"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:C C14
-U 1 1 5AD0E562
-P 2750 7000
-F 0 "C14" H 2865 7046 50  0000 L CNN
-F 1 "4u7" H 2865 6955 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 2788 6850 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 2750 7000 50  0001 C CNN
-F 4 "Taiyo Yuden" H 0   0   50  0001 C CNN "Mfg"
-F 5 "LMK107BJ475KAHT" H 0   0   50  0001 C CNN "MPN"
-	1    2750 7000
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	2750 6850 2750 6800
-Wire Wire Line
-	2750 6800 3100 6800
-Wire Wire Line
-	3100 6800 3100 6850
-Wire Wire Line
-	2750 7150 2750 7200
-Wire Wire Line
-	2750 7200 3100 7200
-Wire Wire Line
-	3100 7200 3100 7150
-$Comp
 L power:GND #PWR024
 U 1 1 5AD18F3D
-P 2750 7250
-F 0 "#PWR024" H 2750 7000 50  0001 C CNN
-F 1 "GND" H 2755 7077 50  0000 C CNN
-F 2 "" H 2750 7250 50  0001 C CNN
-F 3 "" H 2750 7250 50  0001 C CNN
-	1    2750 7250
+P 3100 7250
+F 0 "#PWR024" H 3100 7000 50  0001 C CNN
+F 1 "GND" H 3105 7077 50  0000 C CNN
+F 2 "" H 3100 7250 50  0001 C CNN
+F 3 "" H 3100 7250 50  0001 C CNN
+	1    3100 7250
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	2750 7200 2750 7250
-Connection ~ 2750 7200
 $Comp
 L power:+3.3V #PWR019
 U 1 1 5AD20203
-P 2750 6750
-F 0 "#PWR019" H 2750 6600 50  0001 C CNN
-F 1 "+3.3V" H 2765 6923 50  0000 C CNN
-F 2 "" H 2750 6750 50  0001 C CNN
-F 3 "" H 2750 6750 50  0001 C CNN
-	1    2750 6750
+P 3100 6750
+F 0 "#PWR019" H 3100 6600 50  0001 C CNN
+F 1 "+3.3V" H 3115 6923 50  0000 C CNN
+F 2 "" H 3100 6750 50  0001 C CNN
+F 3 "" H 3100 6750 50  0001 C CNN
+	1    3100 6750
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	2750 6750 2750 6800
-Connection ~ 2750 6800
 $Comp
 L Device:C C17
 U 1 1 5AD48D38
-P 5150 7000
-F 0 "C17" H 5265 7046 50  0000 L CNN
-F 1 "u1" H 5265 6955 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0402_1005Metric" H 5188 6850 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 5150 7000 50  0001 C CNN
-F 4 "Taiyo Yuden" H 0   0   50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H 0   0   50  0001 C CNN "MPN"
-	1    5150 7000
+P 4950 7000
+F 0 "C17" H 5065 7046 50  0000 L CNN
+F 1 "u1" H 5065 6955 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 4988 6850 50  0001 C CNN
+F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 4950 7000 50  0001 C CNN
+F 4 "Taiyo Yuden" H -200 0   50  0001 C CNN "Mfg"
+F 5 "TMK107BJ154KA-T" H -200 0   50  0001 C CNN "MPN"
+	1    4950 7000
 	1    0    0    -1  
 $EndComp
-$Comp
-L Device:C C16
-U 1 1 5AD48D40
-P 4800 7000
-F 0 "C16" H 4915 7046 50  0000 L CNN
-F 1 "4u7" H 4915 6955 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 4838 6850 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 4800 7000 50  0001 C CNN
-F 4 "Taiyo Yuden" H 0   0   50  0001 C CNN "Mfg"
-F 5 "LMK107BJ475KAHT" H 0   0   50  0001 C CNN "MPN"
-	1    4800 7000
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	4800 6850 4800 6800
-Wire Wire Line
-	4800 6800 5150 6800
-Wire Wire Line
-	5150 6800 5150 6850
-Wire Wire Line
-	4800 7150 4800 7200
-Wire Wire Line
-	4800 7200 5150 7200
-Wire Wire Line
-	5150 7200 5150 7150
 $Comp
 L power:GND #PWR025
 U 1 1 5AD48D4D
-P 4800 7250
-F 0 "#PWR025" H 4800 7000 50  0001 C CNN
-F 1 "GND" H 4805 7077 50  0000 C CNN
-F 2 "" H 4800 7250 50  0001 C CNN
-F 3 "" H 4800 7250 50  0001 C CNN
-	1    4800 7250
+P 4950 7250
+F 0 "#PWR025" H 4950 7000 50  0001 C CNN
+F 1 "GND" H 4955 7077 50  0000 C CNN
+F 2 "" H 4950 7250 50  0001 C CNN
+F 3 "" H 4950 7250 50  0001 C CNN
+	1    4950 7250
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	4800 7200 4800 7250
-Connection ~ 4800 7200
 $Comp
 L power:+3.3V #PWR020
 U 1 1 5AD48D55
-P 4800 6750
-F 0 "#PWR020" H 4800 6600 50  0001 C CNN
-F 1 "+3.3V" H 4815 6923 50  0000 C CNN
-F 2 "" H 4800 6750 50  0001 C CNN
-F 3 "" H 4800 6750 50  0001 C CNN
-	1    4800 6750
+P 4950 6750
+F 0 "#PWR020" H 4950 6600 50  0001 C CNN
+F 1 "+3.3V" H 4965 6923 50  0000 C CNN
+F 2 "" H 4950 6750 50  0001 C CNN
+F 3 "" H 4950 6750 50  0001 C CNN
+	1    4950 6750
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	4800 6750 4800 6800
-Connection ~ 4800 6800
 NoConn ~ 1300 4750
 $Comp
 L Mechanical:Mounting_Hole_PAD MK1
@@ -1021,145 +944,128 @@ Connection ~ 900  5250
 $Comp
 L Device:C C19
 U 1 1 5B0DCCFB
-P 4050 1150
-F 0 "C19" H 4165 1196 50  0000 L CNN
-F 1 "4u7" H 4165 1105 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 4088 1000 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 4050 1150 50  0001 C CNN
-F 4 "Taiyo Yuden" H -650 -250 50  0001 C CNN "Mfg"
-F 5 "LMK107BJ475KAHT" H -650 -250 50  0001 C CNN "MPN"
-	1    4050 1150
+P 5150 1150
+F 0 "C19" H 5265 1196 50  0000 L CNN
+F 1 "4u7" H 5265 1105 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 5188 1000 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 5150 1150 50  0001 C CNN
+F 4 "Taiyo Yuden" H 450 -250 50  0001 C CNN "Mfg"
+F 5 "LMK107BJ475KAHT" H 450 -250 50  0001 C CNN "MPN"
+	1    5150 1150
 	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C20
 U 1 1 5B0DCDB9
-P 4450 1150
-F 0 "C20" H 4565 1196 50  0000 L CNN
-F 1 "u1" H 4565 1105 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0402_1005Metric" H 4488 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 4450 1150 50  0001 C CNN
-F 4 "Taiyo Yuden" H -650 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H -650 -250 50  0001 C CNN "MPN"
-	1    4450 1150
+P 5550 1150
+F 0 "C20" H 5665 1196 50  0000 L CNN
+F 1 "u1" H 5665 1105 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 5588 1000 50  0001 C CNN
+F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 5550 1150 50  0001 C CNN
+F 4 "Taiyo Yuden" H 450 -250 50  0001 C CNN "Mfg"
+F 5 "TMK107BJ154KA-T" H 450 -250 50  0001 C CNN "MPN"
+	1    5550 1150
 	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C21
 U 1 1 5B0DCF1B
-P 4800 1150
-F 0 "C21" H 4915 1196 50  0000 L CNN
-F 1 "u1" H 4915 1105 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0402_1005Metric" H 4838 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 4800 1150 50  0001 C CNN
-F 4 "Taiyo Yuden" H -650 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H -650 -250 50  0001 C CNN "MPN"
-	1    4800 1150
-	1    0    0    -1  
-$EndComp
-$Comp
-L Device:C C22
-U 1 1 5B0DCF89
-P 5150 1150
-F 0 "C22" H 5265 1196 50  0000 L CNN
-F 1 "u1" H 5265 1105 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0402_1005Metric" H 5188 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 5150 1150 50  0001 C CNN
-F 4 "Taiyo Yuden" H -650 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H -650 -250 50  0001 C CNN "MPN"
-	1    5150 1150
+P 5900 1150
+F 0 "C21" H 6015 1196 50  0000 L CNN
+F 1 "u1" H 6015 1105 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 5938 1000 50  0001 C CNN
+F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 5900 1150 50  0001 C CNN
+F 4 "Taiyo Yuden" H 450 -250 50  0001 C CNN "Mfg"
+F 5 "TMK107BJ154KA-T" H 450 -250 50  0001 C CNN "MPN"
+	1    5900 1150
 	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C23
 U 1 1 5B0DD01D
-P 5500 1150
-F 0 "C23" H 5615 1196 50  0000 L CNN
-F 1 "u1" H 5615 1105 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0402_1005Metric" H 5538 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 5500 1150 50  0001 C CNN
-F 4 "Taiyo Yuden" H -650 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H -650 -250 50  0001 C CNN "MPN"
-	1    5500 1150
+P 6250 1150
+F 0 "C23" H 6365 1196 50  0000 L CNN
+F 1 "u1" H 6365 1105 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 6288 1000 50  0001 C CNN
+F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 6250 1150 50  0001 C CNN
+F 4 "Taiyo Yuden" H 100 -250 50  0001 C CNN "Mfg"
+F 5 "TMK107BJ154KA-T" H 100 -250 50  0001 C CNN "MPN"
+	1    6250 1150
 	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C24
 U 1 1 5B0DD093
-P 6600 1150
-F 0 "C24" H 6715 1196 50  0000 L CNN
-F 1 "u1" H 6715 1105 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0402_1005Metric" H 6638 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 6600 1150 50  0001 C CNN
-F 4 "Taiyo Yuden" H -50 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H -50 -250 50  0001 C CNN "MPN"
-	1    6600 1150
+P 7700 1150
+F 0 "C24" H 7815 1196 50  0000 L CNN
+F 1 "u1" H 7815 1105 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 7738 1000 50  0001 C CNN
+F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 7700 1150 50  0001 C CNN
+F 4 "Taiyo Yuden" H 1050 -250 50  0001 C CNN "Mfg"
+F 5 "TMK107BJ154KA-T" H 1050 -250 50  0001 C CNN "MPN"
+	1    7700 1150
 	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C25
 U 1 1 5B0DD103
-P 7300 1150
-F 0 "C25" H 7415 1196 50  0000 L CNN
-F 1 "u1" H 7415 1105 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0402_1005Metric" H 7338 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 7300 1150 50  0001 C CNN
-F 4 "Taiyo Yuden" H 300 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H 300 -250 50  0001 C CNN "MPN"
-	1    7300 1150
+P 8050 1150
+F 0 "C25" H 8165 1196 50  0000 L CNN
+F 1 "u1" H 8165 1105 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 8088 1000 50  0001 C CNN
+F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 8050 1150 50  0001 C CNN
+F 4 "Taiyo Yuden" H 1050 -250 50  0001 C CNN "Mfg"
+F 5 "TMK107BJ154KA-T" H 1050 -250 50  0001 C CNN "MPN"
+	1    8050 1150
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	4050 1300 4050 1350
+	5150 1300 5150 1350
 Wire Wire Line
-	4050 1350 4450 1350
-Wire Wire Line
-	4050 1000 4050 950 
-Wire Wire Line
-	4050 950  4450 950 
-Wire Wire Line
-	5500 1000 5500 950 
+	5150 1350 5550 1350
 Wire Wire Line
 	5150 1000 5150 950 
-Connection ~ 5150 950 
 Wire Wire Line
-	5150 950  5500 950 
+	5150 950  5550 950 
 Wire Wire Line
-	4800 1000 4800 950 
-Connection ~ 4800 950 
+	6600 1000 6600 950 
 Wire Wire Line
-	4800 950  5150 950 
+	6250 1000 6250 950 
+Connection ~ 6250 950 
 Wire Wire Line
-	4450 1000 4450 950 
-Connection ~ 4450 950 
+	6250 950  6600 950 
 Wire Wire Line
-	4450 950  4800 950 
+	5900 1000 5900 950 
+Connection ~ 5900 950 
 Wire Wire Line
-	4450 1300 4450 1350
-Connection ~ 4450 1350
+	5550 1000 5550 950 
+Connection ~ 5550 950 
 Wire Wire Line
-	4450 1350 4800 1350
+	5550 950  5900 950 
 Wire Wire Line
-	4800 1300 4800 1350
-Connection ~ 4800 1350
+	5550 1300 5550 1350
+Connection ~ 5550 1350
 Wire Wire Line
-	4800 1350 5000 1350
+	5550 1350 5900 1350
 Wire Wire Line
-	5150 1300 5150 1350
-Connection ~ 5150 1350
+	5900 1300 5900 1350
+Connection ~ 5900 1350
 Wire Wire Line
-	5150 1350 5500 1350
+	6250 1300 6250 1350
+Connection ~ 6250 1350
 Wire Wire Line
-	5500 1300 5500 1350
+	6250 1350 6600 1350
+Wire Wire Line
+	6600 1300 6600 1350
 $Comp
 L power:GND #PWR0108
 U 1 1 5B18003A
-P 5000 1400
-F 0 "#PWR0108" H 5000 1150 50  0001 C CNN
-F 1 "GND" H 5005 1227 50  0000 C CNN
-F 2 "" H 5000 1400 50  0001 C CNN
-F 3 "" H 5000 1400 50  0001 C CNN
-	1    5000 1400
+P 5150 1400
+F 0 "#PWR0108" H 5150 1150 50  0001 C CNN
+F 1 "GND" H 5155 1227 50  0000 C CNN
+F 2 "" H 5150 1400 50  0001 C CNN
+F 3 "" H 5150 1400 50  0001 C CNN
+	1    5150 1400
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -1178,23 +1084,23 @@ Wire Wire Line
 $Comp
 L power:GND #PWR0111
 U 1 1 5B1E7C81
-P 6600 1400
-F 0 "#PWR0111" H 6600 1150 50  0001 C CNN
-F 1 "GND" H 6605 1227 50  0000 C CNN
-F 2 "" H 6600 1400 50  0001 C CNN
-F 3 "" H 6600 1400 50  0001 C CNN
-	1    6600 1400
+P 7000 1400
+F 0 "#PWR0111" H 7000 1150 50  0001 C CNN
+F 1 "GND" H 7005 1227 50  0000 C CNN
+F 2 "" H 7000 1400 50  0001 C CNN
+F 3 "" H 7000 1400 50  0001 C CNN
+	1    7000 1400
 	1    0    0    -1  
 $EndComp
 $Comp
 L power:+1V2 #PWR0112
 U 1 1 5B1F6B67
-P 6600 900
-F 0 "#PWR0112" H 6600 750 50  0001 C CNN
-F 1 "+1V2" H 6615 1073 50  0000 C CNN
-F 2 "" H 6600 900 50  0001 C CNN
-F 3 "" H 6600 900 50  0001 C CNN
-	1    6600 900 
+P 7000 900
+F 0 "#PWR0112" H 7000 750 50  0001 C CNN
+F 1 "+1V2" H 7015 1073 50  0000 C CNN
+F 2 "" H 7000 900 50  0001 C CNN
+F 3 "" H 7000 900 50  0001 C CNN
+	1    7000 900 
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -1931,30 +1837,6 @@ Wire Wire Line
 Connection ~ 10000 1500
 Wire Wire Line
 	10000 1500 10000 1700
-$Comp
-L Mechanical:Mounting_Hole MK5
-U 1 1 5ADBCE07
-P 1750 7000
-F 0 "MK5" H 1700 7150 50  0000 L CNN
-F 1 "Mounting_Hole" H 1850 6955 50  0001 L CNN
-F 2 "MountingHole:MountingHole_2.5mm" H 1750 7000 50  0001 C CNN
-F 3 "" H 1750 7000 50  0001 C CNN
-	1    1750 7000
-	1    0    0    -1  
-$EndComp
-$Comp
-L Mechanical:Mounting_Hole MK6
-U 1 1 5ADBD505
-P 1950 7000
-F 0 "MK6" H 1900 7150 50  0000 L CNN
-F 1 "Mounting_Hole" H 2050 6955 50  0001 L CNN
-F 2 "MountingHole:MountingHole_2.5mm" H 1950 7000 50  0001 C CNN
-F 3 "" H 1950 7000 50  0001 C CNN
-	1    1950 7000
-	1    0    0    -1  
-$EndComp
-Text Notes 1650 7200 0    50   ~ 0
-Stencil alignment
 Text Notes 8350 5100 0    50   ~ 0
 Turn on at VBUS >4.5V
 Text Notes 3550 7650 0    50   ~ 0
@@ -2214,10 +2096,7 @@ Wire Wire Line
 Wire Wire Line
 	7000 4150 7000 4200
 Wire Wire Line
-	5000 1400 5000 1350
-Connection ~ 5000 1350
-Wire Wire Line
-	5000 1350 5150 1350
+	5150 1400 5150 1350
 $Comp
 L FPGA_Lattice:ICE40HX8K-BG121 U30
 U 3 1 5BD3E5FD
@@ -2301,125 +2180,100 @@ F 3 "" H 7350 4650 50  0001 C CNN
 	-1   0    0    -1  
 $EndComp
 $Comp
-L Device:C C76
-U 1 1 5C364E77
-P 6100 5250
-F 0 "C76" H 6215 5296 50  0000 L CNN
-F 1 "4u7" H 6215 5205 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 6138 5100 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 6100 5250 50  0001 C CNN
-F 4 "Taiyo Yuden" H -1500 3700 50  0001 C CNN "Mfg"
-F 5 "LMK107BJ475KAHT" H -1500 3700 50  0001 C CNN "MPN"
-	1    6100 5250
-	-1   0    0    -1  
-$EndComp
-$Comp
 L Device:C C77
 U 1 1 5BCEDC3E
-P 6950 1150
-F 0 "C77" H 7065 1196 50  0000 L CNN
-F 1 "u1" H 7065 1105 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0402_1005Metric" H 6988 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 6950 1150 50  0001 C CNN
-F 4 "Taiyo Yuden" H -50 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H -50 -250 50  0001 C CNN "MPN"
-	1    6950 1150
+P 8400 1150
+F 0 "C77" H 8515 1196 50  0000 L CNN
+F 1 "u1" H 8515 1105 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 8438 1000 50  0001 C CNN
+F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 8400 1150 50  0001 C CNN
+F 4 "Taiyo Yuden" H 1400 -250 50  0001 C CNN "Mfg"
+F 5 "TMK107BJ154KA-T" H 1400 -250 50  0001 C CNN "MPN"
+	1    8400 1150
 	1    0    0    -1  
 $EndComp
 $Comp
 L Device:C C78
 U 1 1 5BDA7918
-P 6450 5250
-F 0 "C78" H 6565 5296 50  0000 L CNN
-F 1 "u1" H 6565 5205 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0402_1005Metric" H 6488 5100 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 6450 5250 50  0001 C CNN
-F 4 "Taiyo Yuden" H -1150 3700 50  0001 C CNN "Mfg"
-F 5 "LMK107BJ475KAHT" H -1150 3700 50  0001 C CNN "MPN"
-	1    6450 5250
+P 6400 5250
+F 0 "C78" H 6515 5296 50  0000 L CNN
+F 1 "u1" H 6515 5205 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 6438 5100 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 6400 5250 50  0001 C CNN
+F 4 "Taiyo Yuden" H -1200 3700 50  0001 C CNN "Mfg"
+F 5 "LMK107BJ475KAHT" H -1200 3700 50  0001 C CNN "MPN"
+	1    6400 5250
 	-1   0    0    -1  
 $EndComp
 $Comp
 L Device:C C79
 U 1 1 5BDA8948
-P 6450 5650
-F 0 "C79" H 6565 5696 50  0000 L CNN
-F 1 "u1" H 6565 5605 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0402_1005Metric" H 6488 5500 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 6450 5650 50  0001 C CNN
-F 4 "Taiyo Yuden" H -1150 4100 50  0001 C CNN "Mfg"
-F 5 "LMK107BJ475KAHT" H -1150 4100 50  0001 C CNN "MPN"
-	1    6450 5650
+P 6400 5650
+F 0 "C79" H 6515 5696 50  0000 L CNN
+F 1 "u1" H 6515 5605 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 6438 5500 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 6400 5650 50  0001 C CNN
+F 4 "Taiyo Yuden" H -1200 4100 50  0001 C CNN "Mfg"
+F 5 "LMK107BJ475KAHT" H -1200 4100 50  0001 C CNN "MPN"
+	1    6400 5650
 	-1   0    0    -1  
 $EndComp
 $Comp
 L Device:C C80
 U 1 1 5BDA8A1E
-P 6100 5650
-F 0 "C80" H 6215 5696 50  0000 L CNN
-F 1 "4u7" H 6215 5605 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 6138 5500 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 6100 5650 50  0001 C CNN
-F 4 "Taiyo Yuden" H -1500 4100 50  0001 C CNN "Mfg"
-F 5 "LMK107BJ475KAHT" H -1500 4100 50  0001 C CNN "MPN"
-	1    6100 5650
+P 6000 5650
+F 0 "C80" H 6115 5696 50  0000 L CNN
+F 1 "4u7" H 6115 5605 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 6038 5500 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 6000 5650 50  0001 C CNN
+F 4 "Taiyo Yuden" H -1600 4100 50  0001 C CNN "Mfg"
+F 5 "LMK107BJ475KAHT" H -1600 4100 50  0001 C CNN "MPN"
+	1    6000 5650
 	-1   0    0    -1  
 $EndComp
-Wire Wire Line
-	6100 5500 6450 5500
-Connection ~ 6450 5500
-Wire Wire Line
-	6450 5800 6100 5800
-Connection ~ 6450 5800
-Wire Wire Line
-	6450 5400 6100 5400
-Connection ~ 6450 5400
-Wire Wire Line
-	6100 5100 6450 5100
-Connection ~ 6450 5100
 $Comp
 L Device:R R31
 U 1 1 5BF227E9
-P 5950 5100
-F 0 "R31" V 5850 5250 50  0000 R CNN
-F 1 "100" V 5750 5250 50  0000 R CNN
-F 2 "Resistor_SMD:R_0402_1005Metric" V 5880 5100 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 5950 5100 50  0001 C CNN
-F 4 "Yageo" H -1650 3950 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-07100RL" H -1650 3950 50  0001 C CNN "MPN"
-	1    5950 5100
+P 5750 5100
+F 0 "R31" V 5650 5250 50  0000 R CNN
+F 1 "100" V 5550 5250 50  0000 R CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 5680 5100 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 5750 5100 50  0001 C CNN
+F 4 "Yageo" H -1850 3950 50  0001 C CNN "Mfg"
+F 5 "RC0603FR-07100RL" H -1850 3950 50  0001 C CNN "MPN"
+	1    5750 5100
 	0    1    1    0   
 $EndComp
 $Comp
 L Device:R R32
 U 1 1 5BF22E2D
-P 5950 5500
-F 0 "R32" V 5850 5650 50  0000 R CNN
-F 1 "100" V 5850 5450 50  0000 R CNN
-F 2 "Resistor_SMD:R_0402_1005Metric" V 5880 5500 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 5950 5500 50  0001 C CNN
-F 4 "Yageo" H -1650 4350 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-07100RL" H -1650 4350 50  0001 C CNN "MPN"
-	1    5950 5500
+P 5750 5500
+F 0 "R32" V 5650 5650 50  0000 R CNN
+F 1 "100" V 5650 5450 50  0000 R CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 5680 5500 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 5750 5500 50  0001 C CNN
+F 4 "Yageo" H -1850 4350 50  0001 C CNN "Mfg"
+F 5 "RC0603FR-07100RL" H -1850 4350 50  0001 C CNN "MPN"
+	1    5750 5500
 	0    1    1    0   
 $EndComp
 $Comp
 L power:+1V2 #PWR096
 U 1 1 5BF22F79
-P 5700 5200
-F 0 "#PWR096" H 5700 5050 50  0001 C CNN
-F 1 "+1V2" H 5715 5373 50  0000 C CNN
-F 2 "" H 5700 5200 50  0001 C CNN
-F 3 "" H 5700 5200 50  0001 C CNN
-	1    5700 5200
+P 5500 5200
+F 0 "#PWR096" H 5500 5050 50  0001 C CNN
+F 1 "+1V2" H 5515 5373 50  0000 C CNN
+F 2 "" H 5500 5200 50  0001 C CNN
+F 3 "" H 5500 5200 50  0001 C CNN
+	1    5500 5200
 	-1   0    0    -1  
 $EndComp
 Wire Wire Line
-	5800 5100 5750 5100
+	5600 5100 5550 5100
 Wire Wire Line
-	5750 5100 5750 5200
+	5550 5100 5550 5200
 Wire Wire Line
-	5750 5500 5800 5500
+	5550 5500 5600 5500
 Wire Wire Line
 	7050 4700 7050 4650
 Wire Wire Line
@@ -2430,84 +2284,70 @@ Connection ~ 7350 4650
 $Comp
 L Device:C C18
 U 1 1 5C082B33
-P 7650 1150
-F 0 "C18" H 7765 1196 50  0000 L CNN
-F 1 "u1" H 7765 1105 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0402_1005Metric" H 7688 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 7650 1150 50  0001 C CNN
-F 4 "Taiyo Yuden" H 1000 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H 1000 -250 50  0001 C CNN "MPN"
-	1    7650 1150
+P 7350 1150
+F 0 "C18" H 7465 1196 50  0000 L CNN
+F 1 "u1" H 7465 1105 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 7388 1000 50  0001 C CNN
+F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 7350 1150 50  0001 C CNN
+F 4 "Taiyo Yuden" H 700 -250 50  0001 C CNN "Mfg"
+F 5 "TMK107BJ154KA-T" H 700 -250 50  0001 C CNN "MPN"
+	1    7350 1150
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	6600 900  6600 950 
+	7000 900  7000 950 
 Wire Wire Line
-	6600 1300 6600 1350
+	7000 1300 7000 1350
 Wire Wire Line
-	6600 1350 6950 1350
+	7000 1350 7350 1350
 Wire Wire Line
-	7650 1350 7650 1300
-Connection ~ 6600 1350
+	8050 1350 8050 1300
 Wire Wire Line
-	6600 1350 6600 1400
+	7000 1350 7000 1400
 Wire Wire Line
-	6600 950  6950 950 
+	7000 950  7350 950 
 Wire Wire Line
-	7650 950  7650 1000
-Connection ~ 6600 950 
+	8050 950  8050 1000
 Wire Wire Line
-	6600 950  6600 1000
+	7000 950  7000 1000
 Wire Wire Line
-	7300 1000 7300 950 
-Connection ~ 7300 950 
+	7700 1000 7700 950 
+Connection ~ 7700 950 
 Wire Wire Line
-	7300 950  7650 950 
+	7700 1300 7700 1350
+Connection ~ 7700 1350
 Wire Wire Line
-	7300 1300 7300 1350
-Connection ~ 7300 1350
+	7700 1350 8050 1350
 Wire Wire Line
-	7300 1350 7650 1350
+	7350 1300 7350 1350
+Connection ~ 7350 1350
 Wire Wire Line
-	6950 1300 6950 1350
-Connection ~ 6950 1350
+	7350 1350 7700 1350
 Wire Wire Line
-	6950 1350 7300 1350
+	7350 1000 7350 950 
+Connection ~ 7350 950 
 Wire Wire Line
-	6950 1000 6950 950 
-Connection ~ 6950 950 
-Wire Wire Line
-	6950 950  7300 950 
+	7350 950  7700 950 
 $Comp
 L Device:C C81
 U 1 1 5C2C0B38
-P 5850 1150
-F 0 "C81" H 5965 1196 50  0000 L CNN
-F 1 "u1" H 5965 1105 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0402_1005Metric" H 5888 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 5850 1150 50  0001 C CNN
-F 4 "Taiyo Yuden" H -300 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H -300 -250 50  0001 C CNN "MPN"
-	1    5850 1150
+P 6600 1150
+F 0 "C81" H 6715 1196 50  0000 L CNN
+F 1 "u1" H 6715 1105 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 6638 1000 50  0001 C CNN
+F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 6600 1150 50  0001 C CNN
+F 4 "Taiyo Yuden" H 450 -250 50  0001 C CNN "Mfg"
+F 5 "TMK107BJ154KA-T" H 450 -250 50  0001 C CNN "MPN"
+	1    6600 1150
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	5500 1350 5850 1350
-Wire Wire Line
-	5850 1350 5850 1300
-Connection ~ 5500 1350
-Wire Wire Line
-	5500 950  5850 950 
-Wire Wire Line
-	5850 950  5850 1000
-Connection ~ 5500 950 
-Text Label 6450 5100 2    50   ~ 0
+Text Label 6350 5100 2    50   ~ 0
 VCCPLL0
-Text Label 6450 5500 2    50   ~ 0
+Text Label 6350 5500 2    50   ~ 0
 VCCPLL1
-Text Label 6450 5400 2    50   ~ 0
+Text Label 6350 5400 2    50   ~ 0
 GNDPLL0
-Text Label 6450 5800 2    50   ~ 0
+Text Label 6350 5800 2    50   ~ 0
 GNDPLL1
 Wire Wire Line
 	6200 2150 5750 2150
@@ -2515,8 +2355,6 @@ Text Label 7850 2150 2    50   ~ 0
 ~FPGA_RESET
 Text Label 5750 2150 0    50   ~ 0
 FPGA_DONE
-Connection ~ 6100 5500
-Connection ~ 6100 5100
 Wire Wire Line
 	4800 4750 4800 4350
 Text Label 7400 2650 0    50   ~ 0
@@ -2612,10 +2450,10 @@ Wire Wire Line
 Wire Wire Line
 	4500 2950 4850 2950
 Wire Wire Line
-	5700 5200 5750 5200
-Connection ~ 5750 5200
+	5500 5200 5550 5200
+Connection ~ 5550 5200
 Wire Wire Line
-	5750 5200 5750 5500
+	5550 5200 5550 5500
 Entry Wire Line
 	7750 3650 7850 3750
 Entry Wire Line
@@ -2700,10 +2538,130 @@ Wire Wire Line
 	1300 4550 2300 4550
 Wire Wire Line
 	1300 4650 2200 4650
+Wire Wire Line
+	4950 6750 4950 6850
+Wire Wire Line
+	4950 7150 4950 7250
+Wire Wire Line
+	3100 6750 3100 6850
+Wire Wire Line
+	3100 7150 3100 7250
+$Comp
+L Device:C C14
+U 1 1 5C9CEA94
+P 7000 1150
+F 0 "C14" H 7115 1196 50  0000 L CNN
+F 1 "4u7" H 7115 1105 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 7038 1000 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 7000 1150 50  0001 C CNN
+F 4 "Taiyo Yuden" H 5550 -250 50  0001 C CNN "Mfg"
+F 5 "LMK107BJ475KAHT" H 5550 -250 50  0001 C CNN "MPN"
+	1    7000 1150
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7700 950  8050 950 
+Wire Wire Line
+	8400 950  8050 950 
+Connection ~ 8050 950 
+Wire Wire Line
+	8400 950  8400 1000
+Wire Wire Line
+	8400 1300 8400 1350
+Wire Wire Line
+	8400 1350 8050 1350
+Connection ~ 8050 1350
+Text Notes 1100 900  0    50   ~ 0
+FX2 3V3 decoupling
+Text Notes 5250 900  0    50   ~ 0
+FPGA 3V3 decoupling
+Text Notes 7100 900  0    50   ~ 0
+FPGA 1V2 decoupling
+Wire Wire Line
+	2000 950  2300 950 
+Wire Wire Line
+	2000 1350 2300 1350
+Wire Wire Line
+	2300 1350 2600 1350
+Wire Wire Line
+	5900 1350 6250 1350
+Wire Wire Line
+	5900 950  6250 950 
+Connection ~ 1000 950 
+Connection ~ 1000 1350
+Connection ~ 5150 950 
+Connection ~ 5150 1350
+Connection ~ 7000 1350
+Connection ~ 7000 950 
+Text Notes 9750 3200 0    50   ~ 0
+Addr A DAC: 0001100\nAddr B DAC: 0001101\nAddr A Pull: 0100000\nAddr B Pull: 0100001\nAddr A ADC: 1010100\nAddr B ADC: 1010101
+Wire Wire Line
+	6000 5500 6400 5500
+Connection ~ 6400 5500
+Wire Wire Line
+	6400 5500 6450 5500
+Wire Wire Line
+	6000 5800 6400 5800
+Connection ~ 6400 5800
+Wire Wire Line
+	6400 5800 6450 5800
+Wire Wire Line
+	6000 5400 6400 5400
+Connection ~ 6400 5400
+Wire Wire Line
+	6400 5400 6450 5400
+Connection ~ 6400 5100
+Wire Wire Line
+	6400 5100 6450 5100
+Wire Wire Line
+	6000 5500 5900 5500
+Connection ~ 6000 5500
+Wire Wire Line
+	5900 5100 6000 5100
+Wire Wire Line
+	6000 5100 6400 5100
+Connection ~ 6000 5100
+$Comp
+L Device:C C76
+U 1 1 5C364E77
+P 6000 5250
+F 0 "C76" H 6115 5296 50  0000 L CNN
+F 1 "4u7" H 6115 5205 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 6038 5100 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 6000 5250 50  0001 C CNN
+F 4 "Taiyo Yuden" H -1600 3700 50  0001 C CNN "Mfg"
+F 5 "LMK107BJ475KAHT" H -1600 3700 50  0001 C CNN "MPN"
+	1    6000 5250
+	-1   0    0    -1  
+$EndComp
+NoConn ~ 4250 2950
+NoConn ~ 4250 3550
+$Comp
+L Device:R R40
+U 1 1 5CDC036D
+P 5300 6800
+F 0 "R40" H 5370 6846 50  0000 L CNN
+F 1 "DNP" H 5370 6755 50  0000 L CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 5230 6800 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 5300 6800 50  0001 C CNN
+F 4 "Yageo" H 4150 1750 50  0001 C CNN "Mfg"
+F 5 "RC0603FR-131ML" H 4150 1750 50  0001 C CNN "MPN"
+	1    5300 6800
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	5500 7000 5300 7000
+Wire Wire Line
+	5300 6950 5300 7000
+Wire Wire Line
+	5450 6650 5450 6900
+Wire Wire Line
+	5300 6650 5450 6650
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
-	7850 2550 7850 6250
-Wire Bus Line
 	4700 2150 4700 6250
+Wire Bus Line
+	7850 2550 7850 6250
+Connection ~ 5450 6650
 $EndSCHEMATC
