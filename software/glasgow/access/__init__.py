@@ -67,7 +67,7 @@ class AccessMultiplexerInterface(Module, metaclass=ABCMeta):
         pass
 
     def get_pins(self, pins, name=None):
-        triple = TSTriple(len(pins))
+        triple = TSTriple(len(pins), name=name)
         for n, pin in enumerate(pins):
             self.build_pin_tristate(pin, triple.oe, triple.o[n], triple.i[n])
 
