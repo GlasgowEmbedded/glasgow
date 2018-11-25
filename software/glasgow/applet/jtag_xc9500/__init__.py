@@ -275,10 +275,12 @@ class JTAGXC9500Interface:
     async def programming_enable(self):
         self._log("programming enable")
         await self.lower.write_ir(IR_ISPEN)
+        await self.lower.run_test_idle(1)
 
     async def programming_disable(self):
         self._log("programming disable")
         await self.lower.write_ir(IR_ISPEX)
+        await self.lower.run_test_idle(1)
 
     async def _fvfy(self, address, count):
         await self.lower.write_ir(IR_FVFY)
@@ -306,6 +308,8 @@ class JTAGXC9500Interface:
         words = []
         index = 0
         while index < count:
+            await self.lower.run_test_idle(1)
+
             isdata_bits = await self.lower.read_dr(34)
             isdata = DR_ISDATA.from_bitarray(isdata_bits)
             if isdata.valid:
@@ -351,7 +355,9 @@ class JTAGXC9500Interface:
             isconf = DR_ISCONFIGURATION(valid=1, strobe=strobe, address=dev_address, data=word)
             await self.lower.write_dr(isconf.to_bitarray()[:50])
 
-            if strobe:
+            if not strobe:
+                await self.lower.run_test_idle(1)
+            else:
                 await self.lower.run_test_idle(20_000)
 
                 isconf = DR_ISCONFIGURATION(address=dev_address)
