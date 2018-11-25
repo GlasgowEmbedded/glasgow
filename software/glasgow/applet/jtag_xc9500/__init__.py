@@ -292,6 +292,8 @@ class JTAGXC9500Interface:
 
         words = []
         for offset in range(count):
+            await self.lower.run_test_idle(1)
+
             dev_address = bitstream_to_device_address(address + offset + 1)
             isconf = DR_ISCONFIGURATION(valid=1, strobe=1, address=dev_address)
             isconf_bits = await self.lower.exchange_dr(isconf.to_bitarray()[:50])
@@ -382,7 +384,9 @@ class JTAGXC9500Interface:
             isdata = DR_ISDATA(valid=1, strobe=strobe, data=word)
             await self.lower.write_dr(isdata.to_bitarray()[:34])
 
-            if strobe:
+            if not strobe:
+                await self.lower.run_test_idle(1)
+            else:
                 await self.lower.run_test_idle(20_000)
 
                 isdata = DR_ISDATA()
