@@ -27,6 +27,7 @@ from migen import *
 from migen.genlib.fsm import *
 from migen.genlib.cdc import MultiReg
 from migen.genlib.fifo import _FIFOInterface, AsyncFIFO, SyncFIFO, SyncFIFOBuffered
+from migen.genlib.resetsync import AsyncResetSynchronizer
 
 
 __all__ = ["FX2Arbiter"]
@@ -287,17 +288,31 @@ class FX2Arbiter(Module):
             assert isinstance(cd_logic, ClockDomain)
 
             fifo = wrapper(ClockDomainsRenamer({
-                arbiter_side: "sys",
+                arbiter_side: "arbiter",
                 logic_side:   "logic",
             })(AsyncFIFO(8, depth)))
 
+            # Note that for the reset to get asserted AND deasserted, the logic clock domain must
+            # have a running clock. This is because, while AsyncResetSynchronizer is indeed
+            # asynchronous, the registers in the FIFO logic clock domain reset synchronous
+            # to the logic clock, as this is how Migen handles clock domain reset signals.
+            #
+            # If the logic clock domain does not have a single clock transition between assertion
+            # and deassertion of FIFO reset, and the FIFO has not been empty at the time when
+            # reset has been asserted, stale data will be read from the FIFO after deassertion.
+            #
+            # This can lead to all sorts of framing issues, and is rather unfortunate, but at
+            # the moment I do not know of a way to fix this, since Migen does not support
+            # asynchronous resets.
+            fifo.clock_domains.cd_arbiter = ClockDomain(reset_less=reset is None)
+            fifo.clock_domains.cd_logic   = ClockDomain(reset_less=reset is None)
+            fifo.comb += [
+                fifo.cd_arbiter.clk.eq(ClockSignal()),
+                fifo.cd_logic.clk.eq(cd_logic.clk),
+            ]
             if reset is not None:
-                raise NotImplementedError("reset not yet implemented for async FIFOs")
-
-            fifo.clock_domains.cd_logic = ClockDomain()
-            self.comb += fifo.cd_logic.clk.eq(cd_logic.clk)
-            if cd_logic.rst is not None:
-                self.comb += fifo.cd_logic.rst.eq(cd_logic.rst)
+                fifo.comb += fifo.cd_arbiter.rst.eq(reset)
+                fifo.specials += AsyncResetSynchronizer(fifo.cd_logic, reset)
 
         self.submodules += fifo
         return fifo
