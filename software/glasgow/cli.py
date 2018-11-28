@@ -592,13 +592,15 @@ async def _main():
 
         if args.action == "build":
             target, applet = _applet(args)
-            logger.info("building bitstream for applet %r", args.applet)
             if args.type in ("v", "verilog"):
+                logger.info("building Verilog for applet %r", args.applet)
                 target.get_verilog().write(args.filename or args.applet + ".v")
             if args.type in ("bin", "bitstream"):
+                logger.info("building bitstream for applet %r", args.applet)
                 with open(args.filename or args.applet + ".bin", "wb") as f:
                     f.write(target.get_bitstream(debug=True))
             if args.type in ("zip", "archive"):
+                logger.info("building archive for applet %r", args.applet)
                 with target.get_build_tree() as tree:
                     if args.filename:
                         basename, = os.path.splitext(args.filename)
