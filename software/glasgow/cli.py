@@ -18,7 +18,6 @@ from .device.config import GlasgowConfig
 from .target.hardware import GlasgowHardwareTarget
 from .gateware.analyzer import TraceDecoder
 from .device.hardware import VID_QIHW, PID_GLASGOW, GlasgowHardwareDevice
-from .internal_test import *
 from .access.direct import *
 from .applet import *
 from .pyrepl import *
@@ -241,28 +240,6 @@ def get_argparser():
         "test", formatter_class=TextHelpFormatter,
         help="(advanced) test applet logic without target hardware")
     add_applet_arg(p_test, mode="test", required=True)
-
-    p_internal_test = subparsers.add_parser(
-        "internal-test", help="(advanced) verify device functionality")
-
-    internal_test_subparsers = p_internal_test.add_subparsers(dest="mode", metavar="MODE")
-    internal_test_subparsers.required = True
-
-    p_internal_test_toggle_io = internal_test_subparsers.add_parser(
-        "toggle-io", help="output 1 kHz square wave on all I/O pins at 3.3 V")
-    p_internal_test_mirror_i2c = internal_test_subparsers.add_parser(
-        "mirror-i2c", help="mirror {SDA,SCL} on A[0-1] at 3.3 V")
-    p_internal_test_shift_out = internal_test_subparsers.add_parser(
-        "shift-out", help="shift bytes from EP2OUT MSB first via {CLK,DO} on A[0-1] at 3.3 V")
-    p_internal_test_shift_out.add_argument(
-        "--async", dest="is_async", default=False, action="store_true",
-        help="use asynchronous FIFO")
-    p_internal_test_gen_seq = internal_test_subparsers.add_parser(
-        "gen-seq", help="read limit from EP4IN and generate sequence on {EP2OUT,EP6OUT}")
-    p_internal_test_pll = internal_test_subparsers.add_parser(
-        "pll", help="use PLL to output 15 MHz on SYNC port")
-    p_internal_test_registers = internal_test_subparsers.add_parser(
-        "registers", help="add I2C RW register [0] and RO register [1] = [0] << 1")
 
     p_factory = subparsers.add_parser(
         "factory", formatter_class=TextHelpFormatter,
@@ -630,29 +607,6 @@ async def _main():
                 for _, traceback in result.errors + result.failures:
                     print(traceback, end="", file=sys.stderr)
                 return 1
-
-        if args.action == "internal-test":
-            if args.mode == "toggle-io":
-                await device.download_bitstream(TestToggleIO().get_bitstream(debug=True))
-                await device.set_voltage("AB", 3.3)
-
-            if args.mode == "mirror-i2c":
-                await device.download_bitstream(TestMirrorI2C().get_bitstream(debug=True))
-                await device.set_voltage("A", 3.3)
-
-            if args.mode == "shift-out":
-                await device.download_bitstream(TestShiftOut(is_async=args.is_async)
-                                                .get_bitstream(debug=True))
-                await device.set_voltage("A", 3.3)
-
-            if args.mode == "gen-seq":
-                await device.download_bitstream(TestGenSeq().get_bitstream(debug=True))
-
-            if args.mode == "pll":
-                await device.download_bitstream(TestPLL().get_bitstream(debug=True))
-
-            if args.mode == "registers":
-                await device.download_bitstream(TestRegisters().get_bitstream(debug=True))
 
         if args.action == "factory":
             logger.info("reading device configuration")
