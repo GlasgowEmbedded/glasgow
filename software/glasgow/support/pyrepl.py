@@ -32,9 +32,10 @@ class AsyncInteractiveConsole(code.InteractiveConsole):
     def runcode(self, code):
         try:
             exec(code, self.locals)
-            result = self.locals["__builtins__"]["_"]
-            if asyncio.iscoroutine(result):
-                self._fut = self.locals["__builtins__"]["_"] = asyncio.ensure_future(result)
+            builtins = self.locals["__builtins__"]
+            if "_" in builtins:
+                if asyncio.iscoroutine(builtins["_"]):
+                    self._fut = builtins["_"] = asyncio.ensure_future(builtins["_"])
         except SystemExit:
             raise
         except:
