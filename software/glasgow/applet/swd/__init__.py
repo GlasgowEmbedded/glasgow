@@ -10,7 +10,7 @@ from migen.genlib.fsm import *
 
 from .. import *
 from ...gateware.pads import *
-from ...pyrepl import *
+from ...support.pyrepl import *
 
 
 class SWDBus(Module):

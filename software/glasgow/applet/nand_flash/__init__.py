@@ -8,7 +8,7 @@ from migen.genlib.fsm import FSM
 
 from .. import *
 from ...database.jedec import *
-from ...pyrepl import *
+from ...support.pyrepl import *
 
 
 CMD_CONTROL = 0x01

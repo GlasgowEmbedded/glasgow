@@ -10,7 +10,7 @@ import struct
 from .. import *
 from ..jtag_arc import JTAGARCApplet
 from ...support.aobject import *
-from ...pyrepl import *
+from ...support.pyrepl import *
 from ...arch.arc import *
 from ...arch.arc.mec16xx import *
 

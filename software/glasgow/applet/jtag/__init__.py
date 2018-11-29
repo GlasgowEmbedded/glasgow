@@ -7,10 +7,10 @@ from migen.genlib.cdc import MultiReg
 from migen.genlib.fsm import FSM
 
 from .. import *
+from ...support.pyrepl import *
 from ...gateware.pads import *
 from ...database.jedec import *
 from ...arch.jtag import *
-from ...pyrepl import *
 
 
 class JTAGBus(Module):

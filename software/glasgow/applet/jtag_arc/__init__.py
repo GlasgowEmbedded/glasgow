@@ -18,7 +18,7 @@ import argparse
 
 from .. import *
 from ..jtag import JTAGApplet
-from ...pyrepl import *
+from ...support.pyrepl import *
 from ...arch.jtag import *
 from ...arch.arc import *
 from ...database.arc import *

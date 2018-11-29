@@ -20,7 +20,7 @@ from .gateware.analyzer import TraceDecoder
 from .device.hardware import VID_QIHW, PID_GLASGOW, GlasgowHardwareDevice
 from .access.direct import *
 from .applet import *
-from .pyrepl import *
+from .support.pyrepl import *
 
 
 logger = logging.getLogger(__name__)

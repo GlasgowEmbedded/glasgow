@@ -10,7 +10,7 @@ from .. import *
 from ..jtag import JTAGApplet
 from ...support.aobject import *
 from ...support.endpoint import *
-from ...pyrepl import *
+from ...support.pyrepl import *
 from ...arch.mips import *
 from ...protocol.gdb_remote import *
 
