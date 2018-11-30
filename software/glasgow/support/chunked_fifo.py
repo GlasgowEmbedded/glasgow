@@ -49,7 +49,7 @@ class ChunkedFIFO:
         return result
 
     def __bool__(self):
-        return bool(self._queue)
+        return bool(self._queue) or self._chunk is not None
 
     def __len__(self):
         length = sum(len(chunk) for chunk in self._queue)
@@ -110,8 +110,12 @@ class ChunkedFIFOTestCase(unittest.TestCase):
 
     def test_bool(self):
         self.assertFalse(self.fifo)
-        self.fifo.write(b"A")
+        self.fifo.write(b"ABC")
         self.assertTrue(self.fifo)
+        self.fifo.read(1)
+        self.assertTrue(self.fifo)
+        self.fifo.read(2)
+        self.assertFalse(self.fifo)
 
     def test_len(self):
         self.assertEqual(len(self.fifo), 0)
