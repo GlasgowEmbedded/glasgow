@@ -48,7 +48,7 @@ class BenchmarkSubtarget(Module):
                 in_fifo.din.eq(self.lfsr.value[8:16]),
                 in_fifo.we.eq(1),
                 self.lfsr.ce.eq(1),
-                NextState("MODE")
+                NextState("SOURCE-1")
             )
         )
         self.fsm.act("SINK-1",
@@ -67,7 +67,7 @@ class BenchmarkSubtarget(Module):
                 ),
                 out_fifo.re.eq(1),
                 self.lfsr.ce.eq(1),
-                NextState("MODE")
+                NextState("SINK-1")
             )
         )
 
