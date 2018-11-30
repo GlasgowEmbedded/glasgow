@@ -8,6 +8,7 @@ import threading
 from fx2 import REQ_RAM, REG_CPUCS
 from fx2.format import input_data
 
+from ..support.logging import *
 from . import GlasgowDeviceError
 
 
@@ -155,7 +156,7 @@ class GlasgowHardwareDevice:
                      request_type, request, value, index, length)
         data = await self._do_transfer(is_read=True, setup=lambda transfer:
             transfer.setControl(request_type|usb1.ENDPOINT_IN, request, value, index, length))
-        logger.trace("USB: CONTROL IN data=<%s> (completed)", data.hex())
+        logger.trace("USB: CONTROL IN data=<%s> (completed)", dump_hex(data))
         return data
 
     async def control_write(self, request_type, request, value, index, data):
@@ -163,7 +164,7 @@ class GlasgowHardwareDevice:
             data = bytes(data)
         logger.trace("USB: CONTROL OUT type=%#04x request=%#04x "
                      "value=%#06x index=%#06x data=<%s> (submit)",
-                     request_type, request, value, index, data.hex())
+                     request_type, request, value, index, dump_hex(data))
         await self._do_transfer(is_read=False, setup=lambda transfer:
             transfer.setControl(request_type|usb1.ENDPOINT_OUT, request, value, index, data))
         logger.trace("USB: CONTROL OUT (completed)")
@@ -172,13 +173,13 @@ class GlasgowHardwareDevice:
         logger.trace("USB: BULK EP%d IN length=%d (submit)", endpoint & 0x7f, length)
         data = await self._do_transfer(is_read=True, setup=lambda transfer:
             transfer.setBulk(endpoint|usb1.ENDPOINT_IN, length))
-        logger.trace("USB: BULK EP%d IN data=<%s> (completed)", endpoint & 0x7f, data.hex())
+        logger.trace("USB: BULK EP%d IN data=<%s> (completed)", endpoint & 0x7f, dump_hex(data))
         return data
 
     async def bulk_write(self, endpoint, data):
         if not isinstance(data, (bytes, bytearray)):
             data = bytes(data)
-        logger.trace("USB: BULK EP%d OUT data=<%s> (submit)", endpoint & 0x7f, data.hex())
+        logger.trace("USB: BULK EP%d OUT data=<%s> (submit)", endpoint & 0x7f, dump_hex(data))
         await self._do_transfer(is_read=False, setup=lambda transfer:
             transfer.setBulk(endpoint|usb1.ENDPOINT_OUT, data))
         logger.trace("USB: BULK EP%d OUT (completed)", endpoint & 0x7f)

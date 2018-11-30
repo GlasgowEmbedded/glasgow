@@ -20,6 +20,7 @@ from .gateware.analyzer import TraceDecoder
 from .device.hardware import VID_QIHW, PID_GLASGOW, GlasgowHardwareDevice
 from .access.direct import *
 from .applet import *
+from .support.logging import *
 from .support.pyrepl import *
 
 
@@ -310,6 +311,9 @@ def create_logger(args):
     root_logger.addHandler(handler)
 
     level = logging.INFO + args.quiet * 10 - args.verbose * 10
+    if level < 0:
+        dump_hex.limit = 0
+
     if args.filter_log:
         handler.addFilter(SubjectFilter(level, args.filter_log))
         root_logger.setLevel(logging.TRACE)

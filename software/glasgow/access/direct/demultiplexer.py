@@ -1,6 +1,7 @@
 import usb1
 import math
 
+from ...support.logging import *
 from ...support.chunked_fifo import *
 from .. import AccessDemultiplexer, AccessDemultiplexerInterface
 
@@ -105,7 +106,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
             # Always return a memoryview object, to avoid hard to detect edge cases downstream.
             result = memoryview(result)
 
-        self.logger.trace("FIFO: read <%s>", result.hex())
+        self.logger.trace("FIFO: read <%s>", dump_hex(result))
         return result
 
     async def _write_packet(self):
@@ -143,10 +144,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         await self.device.bulk_write(self._endpoint_out, packet)
 
     async def write(self, data):
-        if not isinstance(data, (bytes, bytearray, memoryview)):
-            data = bytes(data)
-
-        self.logger.trace("FIFO: write <%s>", data.hex())
+        self.logger.trace("FIFO: write <%s>", dump_hex(data))
         self._buffer_out.write(data)
 
         if len(self._buffer_out) > self._out_packet_size:

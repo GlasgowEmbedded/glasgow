@@ -1,6 +1,7 @@
 import asyncio
 from migen import *
 
+from ...support.logging import *
 from .. import AccessDemultiplexer, AccessDemultiplexerInterface
 
 
@@ -34,13 +35,13 @@ class SimulationDemultiplexerInterface(AccessDemultiplexerInterface):
                 data.append((yield from self._in_fifo.read()))
 
         data = bytes(data)
-        self.logger.trace("FIFO: read <%s>", data.hex())
+        self.logger.trace("FIFO: read <%s>", dump_hex(data))
         return data
 
     @asyncio.coroutine
     def write(self, data):
         data = bytes(data)
-        self.logger.trace("FIFO: write <%s>", data.hex())
+        self.logger.trace("FIFO: write <%s>", dump_hex(data))
 
         for byte in data:
             while not (yield self._out_fifo.writable):
