@@ -26,6 +26,17 @@ usb_desc_device_c usb_device = {
   .bNumConfigurations   = 2,
 };
 
+usb_desc_device_qualifier_c usb_device_qualifier = {
+  .bLength              = sizeof(struct usb_desc_device_qualifier),
+  .bDescriptorType      = USB_DESC_DEVICE_QUALIFIER,
+  .bcdUSB               = 0x0200,
+  .bDeviceClass         = USB_DEV_CLASS_PER_INTERFACE,
+  .bDeviceSubClass      = USB_DEV_SUBCLASS_PER_INTERFACE,
+  .bDeviceProtocol      = USB_DEV_PROTOCOL_PER_INTERFACE,
+  .bMaxPacketSize0      = 8,
+  .bNumConfigurations   = 0,
+};
+
 #define USB_INTERFACE(bInterfaceNumber_, bAlternateSetting_, bNumEndpoints_, iInterface_) \
   {                                                                                       \
     .bLength              = sizeof(struct usb_desc_interface),                            \
@@ -136,6 +147,7 @@ usb_ascii_string_c usb_strings[] = {
 
 usb_descriptor_set_c usb_descriptor_set = {
   .device           = &usb_device,
+  .device_qualifier = &usb_device_qualifier,
   .config_count     = ARRAYSIZE(usb_configs),
   .configs          = usb_configs,
   .string_count     = ARRAYSIZE(usb_strings),
