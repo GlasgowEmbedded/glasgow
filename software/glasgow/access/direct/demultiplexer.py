@@ -6,6 +6,31 @@ from ...support.chunked_fifo import *
 from .. import AccessDemultiplexer, AccessDemultiplexerInterface
 
 
+# On Linux, the total amount of in-flight USB requests for the entire system is limited
+# by usbfs_memory_mb parameter of the module usbcore; it is 16 MB by default. This
+# limitation was introduced in commit add1aaeabe6b08ed26381a2a06e505b2f09c3ba5, with
+# the following (bullshit) justification:
+#
+#   While it is generally a good idea to avoid large transfer buffers
+#   (because the data has to be bounced to/from a contiguous kernel-space
+#   buffer), it's not the kernel's job to enforce such limits.  Programs
+#   should be allowed to submit URBs as large as they like; if there isn't
+#   sufficient contiguous memory available then the submission will fail
+#   with a simple ENOMEM error.
+#
+#   On the other hand, we would like to prevent programs from submitting a
+#   lot of small URBs and using up all the DMA-able kernel memory. [...]
+#
+# In other words, there is be a platform-specific limit for USB I/O size, which is not
+# discoverable via libusb, and hitting which does not result in a sensible error returned
+# from libusb (it returns LIBUSB_ERROR_IO even though USBDEVFS_SUBMITURB ioctl correctly
+# returns -ENOMEM, so it is not even possible to be optimistic and back off after hitting it.
+#
+# To deal with this, use requests of at most 1024 EP buffer sizes (512 KiB with the FX2) as
+# an arbitrary cutoff, and hope for the best.
+_max_buffers_per_io = 1024
+
+
 class DirectDemultiplexer(AccessDemultiplexer):
     def __init__(self, device):
         super().__init__(device)
@@ -76,11 +101,16 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         await self.device.write_register(self._addr_reset, 0)
 
     async def _read_packet(self, hint=0):
-        buffers = max(1, math.ceil(hint / self._endpoint_in))
+        buffers = min(_max_buffers_per_io, max(1, math.ceil(hint / self._endpoint_in)))
         packet  = await self.device.bulk_read(self._endpoint_in, self._in_packet_size * buffers)
         self._buffer_in.write(packet)
 
     async def read(self, length=None, hint=0):
+        # Always try to allocate at least as many USB buffers as the amount of data we know we're
+        # going to read from the FIFO. The real value is capped to avoid hitting platform-specific
+        # limits for USB I/O size (see above).
+        hint = max(hint, length)
+
         if len(self._buffer_out) > 0:
             # Flush the buffer, so that everything written before the read reaches the device.
             await self.flush()
@@ -110,27 +140,9 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         return result
 
     async def _write_packet(self):
-        # On Linux, the total amount of in-flight USB requests for the entire system is limited
-        # by usbfs_memory_mb parameter of the module usbcore; it is 16 MB by default. This
-        # limitation was introduced in commit add1aaeabe6b08ed26381a2a06e505b2f09c3ba5, with
-        # the following (bullshit) justification:
-        #
-        #   While it is generally a good idea to avoid large transfer buffers
-        #   (because the data has to be bounced to/from a contiguous kernel-space
-        #   buffer), it's not the kernel's job to enforce such limits.  Programs
-        #   should be allowed to submit URBs as large as they like; if there isn't
-        #   sufficient contiguous memory available then the submission will fail
-        #   with a simple ENOMEM error.
-        #
-        #   On the other hand, we would like to prevent programs from submitting a
-        #   lot of small URBs and using up all the DMA-able kernel memory. [...]
-
         # Fast path: read as much contiguous data as possible, but not too much, as there might
-        # be a platform-specific limit for USB I/O size (see above), which is not discoverable
-        # via libusb and hitting which does not result in a sensible error returned from libusb,
-        # so we cannot even back off. Use 1024 EP buffer sizes (512 KiB with the FX2) as
-        # an arbitrary cutoff, and hope for the best.
-        packet = self._buffer_out.read(self._out_packet_size * 1024)
+        # be a platform-specific limit for USB I/O size (see above).
+        packet = self._buffer_out.read(self._out_packet_size * _max_buffers_per_io)
 
         if len(packet) < self._out_packet_size and self._buffer_out:
             # Slow path: USB is annoyingly high latency with small packets, so if we only got a few
