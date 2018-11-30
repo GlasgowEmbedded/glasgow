@@ -1,13 +1,14 @@
 import usb1
 import math
 
+from ...support.chunked_fifo import *
 from .. import AccessDemultiplexer, AccessDemultiplexerInterface
 
 
 class DirectDemultiplexer(AccessDemultiplexer):
     def __init__(self, device):
         super().__init__(device)
-        self._claimed    = set()
+        self._claimed = set()
 
     async def claim_interface(self, applet, mux_interface, args):
         assert mux_interface._pipe_num not in self._claimed
@@ -62,8 +63,8 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         assert self._endpoint_in != None and self._endpoint_out != None
 
         self._interface  = self.device.usb.claimInterface(self._pipe_num)
-        self._buffer_in  = bytearray()
-        self._buffer_out = bytearray()
+        self._buffer_in  = ChunkedFIFO()
+        self._buffer_out = ChunkedFIFO()
 
     async def reset(self):
         self.logger.trace("asserting reset")
@@ -76,7 +77,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
     async def _read_packet(self, hint=0):
         buffers = max(1, math.ceil(hint / self._endpoint_in))
         packet  = await self.device.bulk_read(self._endpoint_in, self._in_packet_size * buffers)
-        self._buffer_in += packet
+        self._buffer_in.write(packet)
 
     async def read(self, length=None, hint=0):
         if len(self._buffer_out) > 0:
@@ -96,27 +97,62 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
                 self.logger.trace("FIFO: need %d bytes", length - len(self._buffer_in))
                 await self._read_packet(hint)
 
-        result = self._buffer_in[:length]
-        self._buffer_in = self._buffer_in[length:]
+        result = self._buffer_in.read(length)
+        if len(result) < length:
+            result = bytearray(result)
+            while len(result) < length:
+                result += self._buffer_in.read(length - len(result))
+            # Always return a memoryview object, to avoid hard to detect edge cases downstream.
+            result = memoryview(result)
+
         self.logger.trace("FIFO: read <%s>", result.hex())
         return result
 
     async def _write_packet(self):
-        packet = self._buffer_out[:self._out_packet_size]
-        self._buffer_out = self._buffer_out[self._out_packet_size:]
+        # On Linux, the total amount of in-flight USB requests for the entire system is limited
+        # by usbfs_memory_mb parameter of the module usbcore; it is 16 MB by default. This
+        # limitation was introduced in commit add1aaeabe6b08ed26381a2a06e505b2f09c3ba5, with
+        # the following (bullshit) justification:
+        #
+        #   While it is generally a good idea to avoid large transfer buffers
+        #   (because the data has to be bounced to/from a contiguous kernel-space
+        #   buffer), it's not the kernel's job to enforce such limits.  Programs
+        #   should be allowed to submit URBs as large as they like; if there isn't
+        #   sufficient contiguous memory available then the submission will fail
+        #   with a simple ENOMEM error.
+        #
+        #   On the other hand, we would like to prevent programs from submitting a
+        #   lot of small URBs and using up all the DMA-able kernel memory. [...]
+
+        # Fast path: read as much contiguous data as possible, but not too much, as there might
+        # be a platform-specific limit for USB I/O size (see above), which is not discoverable
+        # via libusb and hitting which does not result in a sensible error returned from libusb,
+        # so we cannot even back off. Use 1024 EP buffer sizes (512 KiB with the FX2) as
+        # an arbitrary cutoff, and hope for the best.
+        packet = self._buffer_out.read(self._out_packet_size * 1024)
+
+        if len(packet) < self._out_packet_size and self._buffer_out:
+            # Slow path: USB is annoyingly high latency with small packets, so if we only got a few
+            # bytes from the FIFO, and there is much more in it, spend CPU time to aggregate that
+            # into at least one EP buffer sized packet, as this is likely to result in overall
+            # reduction of runtime.
+            packet = bytearray(packet)
+            while len(packet) < self._out_packet_size and self._buffer_out:
+                packet += self._buffer_out.read(self._out_packet_size)
+
         await self.device.bulk_write(self._endpoint_out, packet)
 
     async def write(self, data):
-        if not isinstance(data, (bytes, bytearray)):
+        if not isinstance(data, (bytes, bytearray, memoryview)):
             data = bytes(data)
 
         self.logger.trace("FIFO: write <%s>", data.hex())
-        self._buffer_out += data
+        self._buffer_out.write(data)
 
         if len(self._buffer_out) > self._out_packet_size:
             await self._write_packet()
 
     async def flush(self):
         self.logger.trace("FIFO: flush")
-        while len(self._buffer_out) > 0:
+        while self._buffer_out:
             await self._write_packet()
