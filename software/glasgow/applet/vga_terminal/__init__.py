@@ -115,10 +115,14 @@ class VGATerminalApplet(VGAOutputApplet, name="vga-terminal"):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        parser.add_argument(
+        g_font = parser.add_mutually_exclusive_group()
+        g_font.add_argument(
+            "-fb", "--font-builtin", metavar="FILE", type=str, default="ibmvga8x16",
+            choices=["ibmvga8x16", "ibmvga8x14", "ibmvga8x8", "ibmvga8x8hi"],
+            help="load builtin font NAME (default: %(default)s, one of: %(choices)s)")
+        g_font.add_argument(
             "-fd", "--font-data", metavar="FILE", type=argparse.FileType("rb"),
-            default=os.path.join(os.path.dirname(__file__), "ibmvga8x16.bin"),
-            help="load character generator ROM from FILE (default: ibmvga8x16.bin)")
+            help="load font ROM from FILE")
         parser.add_argument(
             "-fw", "--font-width", metavar="PX", type=int, default=8,
             help="set font width to PX pixels (default: %(default)s)")
@@ -130,11 +134,18 @@ class VGATerminalApplet(VGAOutputApplet, name="vga-terminal"):
         vga = super().build(target, args, test_pattern=False)
         iface = self.mux_interface
 
+        if args.font_data:
+            font_data = args.font_data.read()
+        else:
+            font_path = os.path.join(os.path.dirname(__file__), args.font_builtin + ".bin")
+            with open(font_path, "rb") as f:
+                font_data = f.read()
+
         subtarget = iface.add_subtarget(VGATerminalSubtarget(
             vga=vga,
             h_active=args.h_active,
             v_active=args.v_active,
-            font_data=args.font_data.read(),
+            font_data=font_data,
             font_width=args.font_width,
             font_height=args.font_height,
             blink_cyc=int(args.pix_clk_freq * 1e6 / 2),
