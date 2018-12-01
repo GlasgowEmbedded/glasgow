@@ -15,7 +15,10 @@ class ChunkedFIFO:
         if not data:
             return
 
-        self._queue.append(memoryview(data))
+        try:
+            self._queue.append(memoryview(data))
+        except TypeError:
+            self._queue.append(memoryview(bytes(data)))
 
     def read(self, max_length=None):
         """
