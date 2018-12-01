@@ -1,36 +1,39 @@
+import os
+import asyncio
 import logging
 import argparse
-import os
 from migen import *
 
 from .. import *
 from ..vga_output import VGAOutputApplet
+from .cpu import *
 
 
 class VGATerminalSubtarget(Module):
     def __init__(self, vga, h_active, v_active, font_data, font_width, font_height, blink_cyc,
-                 char_mem_init=[], attr_mem_init=[]):
-        char_mem = Memory(width=8, depth=(h_active // font_width) * (v_active // font_height),
-                          init=char_mem_init)
-        attr_mem = Memory(width=5, depth=char_mem.depth,
-                          init=attr_mem_init)
+                 out_fifo, char_mem_init=[], attr_mem_init=[]):
+        char_width  = (h_active // font_width)
+        char_height = (v_active // font_height)
+
+        char_mem = Memory(width=8, depth=char_width * char_height, init=char_mem_init)
+        attr_mem = Memory(width=5, depth=char_width * char_height, init=attr_mem_init)
         self.specials += [char_mem, attr_mem]
 
-        char_rdport = char_mem.get_port(has_re=True, clock_domain="pix")
-        attr_rdport = attr_mem.get_port(has_re=True, clock_domain="pix")
-        self.specials += [char_rdport, attr_rdport]
+        char_port = char_mem.get_port(has_re=True, clock_domain="pix")
+        attr_port = attr_mem.get_port(has_re=True, clock_domain="pix")
+        self.specials += [char_port, attr_port]
 
         char_ctr   = Signal(max=char_mem.depth)
         char_l_ctr = Signal.like(char_ctr)
-        char_data  = Signal.like(char_rdport.dat_r)
-        attr_data  = Signal.like(attr_rdport.dat_r)
+        char_data  = Signal.like(char_port.dat_r)
+        attr_data  = Signal.like(attr_port.dat_r)
         self.comb += [
-            char_rdport.re.eq(1),
-            char_rdport.adr.eq(char_ctr),
-            char_data.eq(char_rdport.dat_r),
-            attr_rdport.re.eq(1),
-            attr_rdport.adr.eq(char_ctr),
-            attr_data.eq(attr_rdport.dat_r),
+            char_port.re.eq(1),
+            char_port.adr.eq(char_ctr),
+            char_data.eq(char_port.dat_r),
+            attr_port.re.eq(1),
+            attr_port.adr.eq(char_ctr),
+            attr_data.eq(attr_port.dat_r),
         ]
 
         font_mem = Memory(width=font_width, depth=font_height * 256, init=font_data)
@@ -103,6 +106,100 @@ class VGATerminalSubtarget(Module):
             vga.pix.b.eq(pix_fg & attr_reg[2]),
         ]
 
+        self.submodules.cpu = ClockDomainsRenamer("pix")(BonelessCPU(
+            char_mem=char_mem,
+            attr_mem=attr_mem,
+            out_fifo=out_fifo,
+            code_init=[
+                L("clear"),
+                    LDIW(-char_width * char_height),
+                    STB(),
+                L("clear-loop"),
+                    LDI(0),
+                    STMC(),
+                    ADJ(1),
+                    LDP(),
+                    ADDB(),
+                    JN("clear-loop"),
+                    LDI(0),
+                    STP(),
+                L("recv"),
+                    LDF(),
+                    JE(0x0a, "lf"),
+                    JE(0x0d, "cr"),
+                L("echo"),
+                    LDIH(0b111),
+                    STMC(),
+                    STMA(),
+                    ADJ(1),
+                    J("scroll-chk"),
+                L("lf"),
+                    ADJ(char_width),
+                    J("scroll-chk"),
+                L("cr"),
+                    LDP(),
+                L("cr-find-col"),
+                    JL(char_width, "cr-sub-col"),
+                    ADDI(-char_width),
+                    J("cr-find-col"),
+                L("cr-sub-col"),
+                    NEG(),
+                    STB(),
+                    LDP(),
+                    ADDB(),
+                    STP(),
+                    J("recv"),
+                L("scroll-chk"),
+                    LDIW(-char_width * char_height),
+                    STB(),
+                    LDP(),
+                    ADDB(),
+                    JN("recv"),
+                L("scroll"),
+                    ADJ(-char_width),
+                    LDP(),
+                    STC(),
+                    LDIW(-char_width * (char_height - 1)),
+                    STB(),
+                    LDI(0),
+                    STP(),
+                L("scroll-loop"),
+                    ADJ(char_width),
+                    LDMC(),
+                    LDMA(),
+                    ADJ(-char_width),
+                    STMC(),
+                    STMA(),
+                    ADJ(1),
+                    LDP(),
+                    ADDB(),
+                    JN("scroll-loop"),
+                    LDC(),
+                L("scroll-find-col"),
+                    JL(char_width, "scroll-sub-col"),
+                    ADDI(-char_width),
+                    J("scroll-find-col"),
+                L("scroll-sub-col"),
+                    NEG(),
+                    STB(),
+                    LDC(),
+                    ADDB(),
+                    STP(),
+                    LDIW(-char_width * char_height),
+                    STB(),
+                L("scroll-blank-row"),
+                    LDI(0),
+                    STMC(),
+                    ADJ(1),
+                    LDP(),
+                    ADDB(),
+                    JN("scroll-blank-row"),
+                    LDC(),
+                    STP(),
+                    J("recv"),
+            ]
+        ))
+
 
 class VGATerminalApplet(VGAOutputApplet, name="vga-terminal"):
     logger = logging.getLogger(__name__)
@@ -149,15 +246,20 @@ class VGATerminalApplet(VGAOutputApplet, name="vga-terminal"):
             font_width=args.font_width,
             font_height=args.font_height,
             blink_cyc=int(args.pix_clk_freq * 1e6 / 2),
-            char_mem_init=
-                b"Hello world! " +
-                b"0123456789" * 120 +
-                b"    imgay",
-            attr_mem_init=
-                [0x7] * 13 +
-                (list(range(9,16)) + list(range(1,8))) * 86 +
-                [16|3,16|5,16|7,16|5,16|3],
+            out_fifo=iface.get_out_fifo(clock_domain=vga.cd_pix),
         ))
+
+    async def interact(self, device, args, term_iface):
+        import pty
+
+        master, slave = pty.openpty()
+        self.logger.info("PTY: opened %s", os.ttyname(slave))
+
+        while True:
+            data = await asyncio.get_event_loop().run_in_executor(None,
+                lambda: os.read(master, 1024))
+            await term_iface.write(data)
+            await term_iface.flush()
 
 # -------------------------------------------------------------------------------------------------
 
