@@ -2,7 +2,11 @@ import functools
 from migen import *
 
 
-__all__ = ["simulation_test"]
+__all__ = ["GatewareBuildError", "simulation_test"]
+
+
+class GatewareBuildError(Exception):
+    pass
 
 
 def simulation_test(case=None, **kwargs):

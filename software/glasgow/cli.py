@@ -16,6 +16,7 @@ from fx2.format import input_data, diff_data
 from .device import GlasgowDeviceError
 from .device.config import GlasgowConfig
 from .target.hardware import GlasgowHardwareTarget
+from .gateware import GatewareBuildError
 from .gateware.analyzer import TraceDecoder
 from .device.hardware import VID_QIHW, PID_GLASGOW, GlasgowHardwareDevice
 from .access.direct import *
@@ -641,6 +642,10 @@ async def _main():
 
     except GlasgowDeviceError as e:
         logger.error(e)
+        return 1
+
+    except GatewareBuildError as e:
+        applet.logger.error(e)
         return 1
 
     return 0
