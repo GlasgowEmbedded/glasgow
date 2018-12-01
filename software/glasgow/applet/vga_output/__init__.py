@@ -31,7 +31,7 @@ class VGAOutput(Module):
 
 
 class VGAOutputSubtarget(Module):
-    def __init__(self, pads, v_front, v_sync, v_back, v_active, h_front, h_sync, h_back, h_active,
+    def __init__(self, pads, h_front, h_sync, h_back, h_active, v_front, v_sync, v_back, v_active,
                  sys_clk_freq, pix_clk_freq):
         self.submodules.output = output = VGAOutput(pads)
 
@@ -41,49 +41,54 @@ class VGAOutputSubtarget(Module):
         h_total = h_front + h_sync + h_back + h_active
         v_total = v_front + v_sync + v_back + v_active
 
-        self.h_ctr = h_ctr = Signal(max=h_total)
-        self.v_ctr = v_ctr = Signal(max=v_total)
-        self.pix   = pix   = Record([
+        self.h_ctr = Signal(max=h_total)
+        self.v_ctr = Signal(max=v_total)
+        self.h_en  = Signal()
+        self.v_en  = Signal()
+        self.h_stb = Signal()
+        self.v_stb = Signal()
+        self.pix   = Record([
             ("r", 1),
             ("g", 1),
             ("b", 1),
         ])
-
-        h_en = Signal()
-        v_en = Signal()
+        self.comb += [
+            self.h_stb.eq(self.h_ctr == h_active),
+            self.v_stb.eq(self.h_stb & (self.v_ctr == v_active)),
+        ]
         self.sync.pix += [
-            If(h_ctr == h_total - 1,
-                If(v_ctr == v_total - 1,
-                    v_ctr.eq(0)
+            If(self.h_ctr == h_total - 1,
+                If(self.v_ctr == v_total - 1,
+                    self.v_ctr.eq(0)
                 ).Else(
-                    v_ctr.eq(v_ctr + 1)
+                    self.v_ctr.eq(self.v_ctr + 1)
                 ),
-                h_ctr.eq(0),
+                self.h_ctr.eq(0),
             ).Else(
-                h_ctr.eq(h_ctr + 1)
+                self.h_ctr.eq(self.h_ctr + 1)
             ),
-            If(h_ctr == 0,
-                h_en.eq(1),
-            ).Elif(h_ctr == h_active,
-                h_en.eq(0),
-            ).Elif(h_ctr == h_active + h_front,
+            If(self.h_ctr == 0,
+                self.h_en.eq(1),
+            ).Elif(self.h_ctr == h_active,
+                self.h_en.eq(0),
+            ).Elif(self.h_ctr == h_active + h_front,
                 output.hs.eq(1)
-            ).Elif(h_ctr == h_active + h_front + h_sync,
+            ).Elif(self.h_ctr == h_active + h_front + h_sync,
                 output.hs.eq(0)
             ),
-            If(v_ctr == 0,
-                v_en.eq(1),
-            ).Elif(v_ctr == v_active,
-                v_en.eq(0),
-            ).Elif(v_ctr == v_active + v_front,
+            If(self.v_ctr == 0,
+                self.v_en.eq(1),
+            ).Elif(self.v_ctr == v_active,
+                self.v_en.eq(0),
+            ).Elif(self.v_ctr == v_active + v_front,
                 output.vs.eq(1)
-            ).Elif(v_ctr == v_active + v_front + v_sync,
+            ).Elif(self.v_ctr == v_active + v_front + v_sync,
                 output.vs.eq(0)
             ),
-            If(v_en & h_en,
-                output.r.eq(pix.r),
-                output.g.eq(pix.g),
-                output.b.eq(pix.b),
+            If(self.v_en & self.h_en,
+                output.r.eq(self.pix.r),
+                output.g.eq(self.pix.g),
+                output.b.eq(self.pix.b),
             ).Else(
                 output.r.eq(0),
                 output.g.eq(0),
@@ -149,26 +154,29 @@ class VGAOutputApplet(GlasgowApplet, name="vga-output"):
             "-va", "--v-active", metavar="N", type=int, default=480,
             help="set vertical resolution to N line clocks (default: %(default)s)")
 
-    def build(self, target, args):
+    def build(self, target, args, test_pattern=True):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(VGAOutputSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
-            v_front=args.v_front,
-            v_sync=args.v_sync,
-            v_back=args.v_back,
-            v_active=args.v_active,
             h_front=args.h_front,
             h_sync=args.h_sync,
             h_back=args.h_back,
             h_active=args.h_active,
+            v_front=args.v_front,
+            v_sync=args.v_sync,
+            v_back=args.v_back,
+            v_active=args.v_active,
             sys_clk_freq=target.sys_clk_freq,
             pix_clk_freq=args.pix_clk_freq * 1e6,
         ))
         target.platform.add_period_constraint(subtarget.cd_pix.clk, 1e3 / args.pix_clk_freq)
 
-        subtarget.comb += \
-            Cat(subtarget.pix.r, subtarget.pix.g, subtarget.pix.b) \
-                .eq(subtarget.h_ctr[5:] + subtarget.v_ctr[5:])
+        if test_pattern:
+            subtarget.comb += \
+                Cat(subtarget.pix.r, subtarget.pix.g, subtarget.pix.b) \
+                    .eq(subtarget.h_ctr[5:] + subtarget.v_ctr[5:])
+
+        return subtarget
 
     async def run(self, device, args):
         return await device.demultiplexer.claim_interface(self, self.mux_interface, args)
