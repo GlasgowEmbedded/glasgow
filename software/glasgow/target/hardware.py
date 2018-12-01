@@ -3,17 +3,22 @@ import os
 import sys
 import tempfile
 import shutil
+import logging
 from migen import *
 
 from ..gateware.pads import Pads
 from ..gateware.i2c import I2CSlave
 from ..gateware.registers import I2CRegisters
 from ..gateware.fx2 import FX2Arbiter
+from ..gateware.platform.lattice import special_overrides
 from ..platform import GlasgowPlatform
 from .analyzer import GlasgowAnalyzer
 
 
 __all__ = ["GlasgowHardwareTarget"]
+
+
+logger = logging.getLogger(__name__)
 
 
 class _CRG(Module):
@@ -93,10 +98,10 @@ class GlasgowHardwareTarget(Module):
         return super().get_fragment()
 
     def build(self, **kwargs):
-        self.platform.build(self, **kwargs)
+        self.platform.build(self, special_overrides=special_overrides, **kwargs)
 
     def get_verilog(self, **kwargs):
-        return self.platform.get_verilog(self)
+        return self.platform.get_verilog(self, special_overrides=special_overrides)
 
     def get_bitstream_id(self, **kwargs):
         verilog = str(self.get_verilog(**kwargs))
@@ -113,7 +118,7 @@ class GlasgowHardwareTarget(Module):
                 shutil.rmtree(build_dir)
         except:
             if debug:
-                print("Keeping build tree as " + build_dir, file=sys.stderr)
+                logger.info("keeping build tree as %s", build_dir)
             raise
         finally:
             if not debug:
