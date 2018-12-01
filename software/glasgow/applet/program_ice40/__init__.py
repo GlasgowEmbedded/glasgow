@@ -152,12 +152,8 @@ class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
 
         bitstream = args.bitstream.read()
-        while len(bitstream) > 0:
-            chunk = bitstream[:255]
-            bitstream = bitstream[255:]
-            await iface.write([len(chunk)])
-            await iface.write(chunk)
-        await iface.write([0])
+        await iface.write(bitstream)
+        await iface.write(b'\x00')
         await iface.flush()
 
         # TODO: do this nicely
