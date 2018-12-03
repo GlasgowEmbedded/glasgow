@@ -146,8 +146,8 @@ class BonelessCore(Module):
                     OPCODE_ADDI: NextState("I-EXECUTE-MOVx/ADDI"),
                     OPCODE_LDI:  NextState("M/I-LOAD-1"),
                     OPCODE_STI:  NextState("M/I-STORE-1"),
-                    # OPCODE_JAL:  NextState(),
-                    # OPCODE_JR:   NextState(),
+                    OPCODE_JAL:  NextState("I-EXECUTE-Jx"),
+                    OPCODE_JR:   NextState("I-EXECUTE-Jx"),
                 })
             ).Elif(i_clsC,
                 If(s_cond == i_flag,
@@ -250,13 +250,22 @@ class BonelessCore(Module):
         )
         self.fsm.act("I-EXECUTE-MOVx/ADDI",
             mem_port.adr.eq(Cat(i_regZ, r_win)),
-            Case(Cat(i_code2, C(0, 1), C(OPCLASS_I, 2)), {
+            Case(Cat(i_code2, C(0b0, 1), C(OPCLASS_I, 2)), {
                 OPCODE_MOVL: mem_port.dat_w.eq(Cat(i_imm8, C(0, 8))),
                 OPCODE_MOVH: mem_port.dat_w.eq(Cat(C(0, 8), i_imm8)),
                 OPCODE_MOVA: mem_port.dat_w.eq(AddSignedImm(r_pc, i_imm8)),
                 OPCODE_ADDI: mem_port.dat_w.eq(AddSignedImm(mem_port.dat_r, i_imm8)),
             }),
             mem_port.we.eq(1),
+            NextState("FETCH")
+        )
+        self.fsm.act("I-EXECUTE-Jx",
+            mem_port.adr.eq(Cat(i_regZ, r_win)),
+            mem_port.dat_w.eq(r_pc),
+            Case(Cat(i_code1, C(0b11, 2), C(OPCLASS_I, 2)), {
+                OPCODE_JAL: [NextValue(r_pc, AddSignedImm(r_pc, i_imm11)), mem_port.we.eq(1)],
+                OPCODE_JR:  [NextValue(r_pc, AddSignedImm(mem_port.dat_r, i_imm11))]
+            }),
             NextState("FETCH")
         )
         self.fsm.act("HALT",
@@ -509,3 +518,22 @@ class BonelessTestCase(unittest.TestCase):
     def test_STI(self, tb):
         yield from self.run_core(tb)
         yield from self.assertMemory(tb, 6, 0x1234)
+
+    @simulation_test(code=[JAL (R0, 1),
+                           MOVL(R1, 1),
+                           MOVL(R2, 1)])
+    def test_JAL(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertMemory(tb, 0, 0x0009)
+        yield from self.assertMemory(tb, 1, 0x0000)
+        yield from self.assertMemory(tb, 2, 0x0001)
+
+    @simulation_test(regs=[0x0004],
+                     code=[JR  (R0, 6),
+                           MOVL(R1, 1),
+                           MOVL(R2, 1)])
+    def test_JR(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertMemory(tb, 0, 0x0004)
+        yield from self.assertMemory(tb, 1, 0x0000)
+        yield from self.assertMemory(tb, 2, 0x0001)

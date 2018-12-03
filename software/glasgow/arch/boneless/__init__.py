@@ -111,10 +111,10 @@
 #   - code=000 MOVL
 #   - code=001 MOVH
 #   - code=010 MOVA
-#   - code=011 JAL
+#   - code=011 ADDI/SUBI
 #   - code=100 LDI
 #   - code=101 STI
-#   - code=110 ADDI/SUBI
+#   - code=110 JAL
 #   - code=111 JR
 # * class=C
 #   - code=000
