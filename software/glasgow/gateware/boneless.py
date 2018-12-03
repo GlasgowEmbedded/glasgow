@@ -140,13 +140,13 @@ class BonelessCore(Module):
                 mem_port.adr.eq(Cat(i_regZ, r_win)),
                 mem_port.re.eq(1),
                 Case(Cat(i_code3, C(OPCLASS_I, 2)), {
-                    OPCODE_MOVL: NextState("I-STORE-MOVx"),
-                    OPCODE_MOVH: NextState("I-STORE-MOVx"),
-                    OPCODE_MOVA: NextState("I-STORE-MOVx"),
-                    # OPCODE_JAL:  NextState(),
+                    OPCODE_MOVL: NextState("I-EXECUTE-MOVx/ADDI"),
+                    OPCODE_MOVH: NextState("I-EXECUTE-MOVx/ADDI"),
+                    OPCODE_MOVA: NextState("I-EXECUTE-MOVx/ADDI"),
+                    OPCODE_ADDI: NextState("I-EXECUTE-MOVx/ADDI"),
                     # OPCODE_LDI:  NextState(),
                     # OPCODE_STI:  NextState(),
-                    # OPCODE_ADDI: NextState(),
+                    # OPCODE_JAL:  NextState(),
                     # OPCODE_JR:   NextState(),
                 })
             ).Elif(i_clsC,
@@ -240,12 +240,13 @@ class BonelessCore(Module):
             ext_port.we.eq(i_ext),
             NextState("FETCH")
         )
-        self.fsm.act("I-STORE-MOVx",
+        self.fsm.act("I-EXECUTE-MOVx/ADDI",
             mem_port.adr.eq(Cat(i_regZ, r_win)),
             Case(Cat(i_code2, C(0, 1), C(OPCLASS_I, 2)), {
                 OPCODE_MOVL: mem_port.dat_w.eq(Cat(i_imm8, C(0, 8))),
                 OPCODE_MOVH: mem_port.dat_w.eq(Cat(C(0, 8), i_imm8)),
                 OPCODE_MOVA: mem_port.dat_w.eq(AddSignedImm(r_pc, i_imm8)),
+                OPCODE_ADDI: mem_port.dat_w.eq(AddSignedImm(mem_port.dat_r, i_imm8)),
             }),
             mem_port.we.eq(1),
             NextState("FETCH")
@@ -469,12 +470,20 @@ class BonelessTestCase(unittest.TestCase):
         yield from self.run_core(tb)
         yield from self.assertMemory(tb, 0, 0x000a)
 
-    # @simulation_test(regs=[0xabcd, 0xabcd],
-    #                  code=[MOVI(R0, 0x12),
-    #                        MOVI(R1, 0x1234),
-    #                        MOVI(R2, 0x89ab)])
-    # def test_MOVI(self, tb):
-    #     yield from self.run_core(tb)
-    #     yield from self.assertMemory(tb, 0, 0x0012)
-    #     yield from self.assertMemory(tb, 1, 0x1234)
-    #     yield from self.assertMemory(tb, 2, 0x89ab)
+    @simulation_test(regs=[1234, 1234],
+                     code=[ADDI(R0, +42),
+                           ADDI(R1, -42)])
+    def test_ADDI(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertMemory(tb, 0, 1234+42)
+        yield from self.assertMemory(tb, 1, 1234-42)
+
+    @simulation_test(regs=[0xabcd, 0xabcd],
+                     code=[MOVI(R0, 0x12),
+                           MOVI(R1, 0x1234),
+                           MOVI(R2, 0x89ab)])
+    def test_MOVI(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertMemory(tb, 0, 0x0012)
+        yield from self.assertMemory(tb, 1, 0x1234)
+        yield from self.assertMemory(tb, 2, 0x89ab)
