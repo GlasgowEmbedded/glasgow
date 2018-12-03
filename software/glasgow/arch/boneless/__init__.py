@@ -72,15 +72,15 @@
 # -----------------------
 #
 # * class=A
-#   - code=0 (arithmetic)
-#     + type=00 ADD
-#     + type=01 SUB
-#     + type=10 CMP
-#     + type=11 (1 unassigned)
-#   - code=1 (logic)
+#   - code=0 (logic)
 #     + type=00 AND
 #     + type=01 OR
 #     + type=10 XOR
+#     + type=11 (1 unassigned)
+#   - code=1 (arithmetic)
+#     + type=00 ADD
+#     + type=01 SUB
+#     + type=10 CMP
 #     + type=11 (1 unassigned)
 # * class=S
 #   - code=0
@@ -133,6 +133,15 @@
 # Mnemonic:  MOVA Rd, ±off
 # Operation: Rd ← PC+1+off
 #
+# Logic instructions
+# ------------------
+#
+# Mnemonic:  AND  Rd, Ra, Rb
+#            OR   Rd, Ra, Rb
+#            XOR  Rd, Ra, Rb
+# Operation: Rd ← Ra · Rb
+#            ZSCO ← flags(Rd)
+#
 # Arithmetic instructions
 # -----------------------
 #
@@ -149,15 +158,6 @@
 # Mnemonic:  CMP  Rb, Ra
 # Operation: t  ← Ra - Rb
 #            ZSCO ← flags(t)
-#
-# Logic instructions
-# ------------------
-#
-# Mnemonic:  AND  Rd, Ra, Rb
-#            OR   Rd, Ra, Rb
-#            XOR  Rd, Ra, Rb
-# Operation: Rd ← Ra · Rb
-#            ZSCO ← flags(Rd)
 #
 # Shift instructions
 # ------------------

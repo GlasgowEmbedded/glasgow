@@ -1,3 +1,6 @@
+from .opcode import *
+
+
 __all__ = [
     "R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7",
     "ADD", "ADDI", "ADDU", "AND", "CMP", "J", "JAL", "JE", "JG", "JGE", "JL", "JLE", "JNE",
@@ -45,13 +48,15 @@ def C_FORMAT(opcode, off):
 R0, R1, R2, R3, R4, R5, R6, R7 = range(8)
 
 
-def ADD (rd, ra, rb):  return [A_FORMAT(OPCODE_ARITH,   OPTYPE_ADD, rd, ra, rb)]
-def SUB (rd, ra, rb):  return [A_FORMAT(OPCODE_ARITH,   OPTYPE_SUB, rd, ra, rb)]
-def CMP (rd, ra, rb):  return [A_FORMAT(OPCODE_ARITH,   OPTYPE_CMP, rd, ra, rb)]
+def NOP ():            return [A_FORMAT(OPCODE_LOGIC,   OPTYPE_AND,  0,  0,  0)]
 
 def AND (rd, ra, rb):  return [A_FORMAT(OPCODE_LOGIC,   OPTYPE_AND, rd, ra, rb)]
 def OR  (rd, ra, rb):  return [A_FORMAT(OPCODE_LOGIC,   OPTYPE_OR,  rd, ra, rb)]
 def XOR (rd, ra, rb):  return [A_FORMAT(OPCODE_LOGIC,   OPTYPE_XOR, rd, ra, rb)]
+
+def ADD (rd, ra, rb):  return [A_FORMAT(OPCODE_ARITH,   OPTYPE_ADD, rd, ra, rb)]
+def SUB (rd, ra, rb):  return [A_FORMAT(OPCODE_ARITH,   OPTYPE_SUB, rd, ra, rb)]
+def CMP (rd, ra, rb):  return [A_FORMAT(OPCODE_ARITH,   OPTYPE_CMP, rd, ra, rb)]
 
 def SLL (rd, ra, amt): return [S_FORMAT(OPCODE_SHIFT_L, OPTYPE_SLL, rd, ra, amt)]
 def ROT (rd, ra, amt): return [S_FORMAT(OPCODE_SHIFT_L, OPTYPE_ROT, rd, ra, amt)]
