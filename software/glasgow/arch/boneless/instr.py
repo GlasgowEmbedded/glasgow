@@ -15,7 +15,7 @@ __all__ = [
 
 def A_FORMAT(opcode, optype, rd, ra, rb):
     assert rd in range(8) and ra in range(8) and rb in range(8)
-    return (((opcode & 0b11111) << 10) |
+    return (((opcode & 0b11111) << 11) |
             ((    rd &   0b111) <<  8) |
             ((    ra &   0b111) <<  5) |
             ((    rb &   0b111) <<  2) |
@@ -23,7 +23,7 @@ def A_FORMAT(opcode, optype, rd, ra, rb):
 
 def S_FORMAT(opcode, optype, rd, ra, amt):
     assert rd in range(8) and ra in range(8) and amt in range(16)
-    return (((opcode & 0b11111) << 10) |
+    return (((opcode & 0b11111) << 11) |
             ((    rd &   0b111) <<  8) |
             ((    ra &   0b111) <<  5) |
             ((   amt &  0b1111) <<  1) |
@@ -34,7 +34,7 @@ def M_FORMAT(opcode, rsd, ra, off):
     if isinstance(off, str):
         return lambda resolve: M_FORMAT(opcode, rsd, ra, resolve(off))
     assert -16 <= off <= 15
-    return (((opcode & 0b11111) << 10) |
+    return (((opcode & 0b11111) << 11) |
             ((   rsd &   0b111) <<  8) |
             ((    ra &   0b111) <<  5) |
             ((   off & 0b11111) <<  0))
@@ -45,7 +45,7 @@ def I_FORMAT(opcode, rsd, imm, u=False):
         return lambda resolve: I_FORMAT(opcode, rst, resolve(imm), u)
     assert ((not u and -128 <= imm <= 127) or
             (u and imm in range(256)))
-    return (((opcode & 0b11111) << 10) |
+    return (((opcode & 0b11111) << 11) |
             ((   rsd &   0b111) <<  8) |
             ((   imm &    0xff) <<  0))
 
@@ -53,7 +53,7 @@ def C_FORMAT(opcode, off):
     if isinstance(off, str):
         return lambda resolve: C_FORMAT(opcode, resolve(off))
     assert -1024 <= off <= 1023
-    return (((opcode & 0b11111) << 10) |
+    return (((opcode & 0b11111) << 11) |
             ((   off &   0x7ff) <<  0))
 
 
@@ -68,13 +68,13 @@ def XOR (rd, ra, rb):  return [A_FORMAT(OPCODE_LOGIC,   OPTYPE_XOR, rd, ra, rb)]
 
 def ADD (rd, ra, rb):  return [A_FORMAT(OPCODE_ARITH,   OPTYPE_ADD, rd, ra, rb)]
 def SUB (rd, ra, rb):  return [A_FORMAT(OPCODE_ARITH,   OPTYPE_SUB, rd, ra, rb)]
-def CMP (rd, ra, rb):  return [A_FORMAT(OPCODE_ARITH,   OPTYPE_CMP, rd, ra, rb)]
+def CMP (    rb, ra):  return [A_FORMAT(OPCODE_ARITH,   OPTYPE_CMP,  0, ra, rb)]
 
 def SLL (rd, ra, amt): return [S_FORMAT(OPCODE_SHIFT_L, OPTYPE_SLL, rd, ra, amt)]
 def ROT (rd, ra, amt): return [S_FORMAT(OPCODE_SHIFT_L, OPTYPE_ROT, rd, ra, amt)]
 def SRL (rd, ra, amt): return [S_FORMAT(OPCODE_SHIFT_R, OPTYPE_SRL, rd, ra, amt)]
 def SRA (rd, ra, amt): return [S_FORMAT(OPCODE_SHIFT_R, OPTYPE_SRA, rd, ra, amt)]
-def MOV (rd, rs):      return [S_FORMAT(OPCODE_SHIFT_L, OPTYPE_SLL, rd, ra,   0)]
+def MOV (rd, rs):      return [S_FORMAT(OPCODE_SHIFT_L, OPTYPE_SLL, rd, rs,   0)]
 
 def LD  (rd, ra, off): return [M_FORMAT(OPCODE_LD,   rd, ra, off)]
 def ST  (rs, ra, off): return [M_FORMAT(OPCODE_ST,   rs, ra, off)]

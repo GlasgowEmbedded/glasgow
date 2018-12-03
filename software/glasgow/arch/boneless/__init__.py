@@ -21,10 +21,10 @@
 #   * Five instruction classes:
 #     - A-class, for ALU operations.
 #     - S-class, for shift operations.
-#     - M-class, for load-store operations. 5-bit zero-extended offset.
+#     - M-class, for load-store operations. 5-bit single-extended offset.
 #     - I-class, for operations with immediates. 8-bit sign-extended immediate.
 #     - C-class, for control transfers. 11-bit sign-extended offset.
-#   * Four flags: Z (zero), S (sign), C (unsigned carry), O (signed carry).
+#   * Four flags: Z (zero), S (sign), C (carry), O (overflow).
 #   * Secondary address space for special-purpose registers.
 #
 # As a result, Boneless can be efficiently implemented with a single 16-bit wide single-port
@@ -46,7 +46,7 @@
 #             +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 #     I-class | 0 | 1 |  opcode   | R-src/dst |           immediate           |
 #             +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-#     C-class | 1 |  opcode   | F |                 offset                    |
+#     C-class | 1 | condition | F |                 offset                    |
 #             +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
 #
 # Instruction decoding
@@ -67,6 +67,19 @@
 #   * 1xxxx (C-class): jump.
 #
 # As a result, Boneless instruction decoding can be implemented with approximately 10 4-LUTs.
+#
+# Instruction set omissions
+# -------------------------
+#
+# The following instructions were deliberately omitted because of the limited opcode space and
+# less importance than other instructions:
+#   * Add/subtract with carry; shift with carry; rotate through carry.
+#     Can be emulated in software with JC/JNC.
+#   * Move with immediate that preserves register contents.
+#     Loads of 16-bit immediates can be expanded into MOVH and ADDI, with the immediate in MOVH
+#     being adjusted for sign extension performed in ADDI.
+#   * Return from interrupt.
+#     Interrupts are not currently supported.
 #
 # Instruction set summary
 # -----------------------
