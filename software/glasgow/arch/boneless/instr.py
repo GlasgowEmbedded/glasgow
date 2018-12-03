@@ -121,7 +121,7 @@ def MOVI(rd, imm16):
         return MOVL(rd, imm16)
     else:
         return MOVH(rd, (imm16 >> 8) + ((imm16 >> 7) & 1)) + \
-               I_FORMAT(OPCODE_ADDI, rd, imm16 & 0xff, u=True)
+               [I_FORMAT(OPCODE_ADDI, rd, imm16 & 0xff, u=True)]
 
 
 def L(label): return label
