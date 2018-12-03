@@ -4,7 +4,7 @@ EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 4 4
+Sheet 3 4
 Title "I/O Buffer"
 Date ""
 Rev "C0"
@@ -95,7 +95,7 @@ AR Path="/5C7B59B0/5C9E337E/5AFC7F21" Ref="J2"  Part="1"
 AR Path="/5C7B59B0/5C9E338E/5AFC7F21" Ref="J3"  Part="1" 
 F 0 "J2" H 8300 2100 50  0000 C CNN
 F 1 "Conn_02x10_Odd_Even" H 8300 3226 50  0001 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_2x10_P2.54mm_Vertical" H 8250 2700 50  0001 C CNN
+F 2 "Connector_IDC:IDC-Header_2x10_P2.54mm_Vertical" H 8250 2700 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/276/0878342019_PCB_HEADERS-152849.pdf" H 8250 2700 50  0001 C CNN
 F 4 "Molex" H 4550 -450 50  0001 C CNN "Mfg"
 F 5 "87834-2019" H 4550 -450 50  0001 C CNN "MPN"

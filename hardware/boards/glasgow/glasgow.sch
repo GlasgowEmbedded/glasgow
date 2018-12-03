@@ -2742,12 +2742,12 @@ Wire Wire Line
 	1950 6750 1950 6850
 Wire Wire Line
 	1950 7150 1950 7250
+Text Notes 2300 7650 0    50   ~ 0
+Addr: 1100000
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
 	7850 2550 7850 6250
 Wire Bus Line
 	4700 2150 4700 6250
-Text Notes 2300 7650 0    50   ~ 0
-Addr: 1100000
 $EndSCHEMATC
