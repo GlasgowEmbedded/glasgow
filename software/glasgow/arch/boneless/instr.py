@@ -1,11 +1,15 @@
+import types
+
 from .opcode import *
 
 
 __all__ = [
     "R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7",
-    "ADD", "ADDI", "ADDU", "AND", "CMP", "J", "JAL", "JE", "JG", "JGE", "JL", "JLE", "JNE",
-    "JNS", "JNZ", "JR", "JS", "JZ", "LD", "LDI", "LDX", "MOV", "MOVA", "MOVH", "MOVI", "MOVL",
-    "OR", "ROT", "SLL", "SRA", "SRL", "ST", "STI", "STX", "SUB", "SUBI", "SUBU", "XOR",
+    "ADD", "ADDI", "AND", "CMP", "J", "JAL", "JC", "JE", "JNC", "JNE", "JNO", "JNS", "JNZ", "JO",
+    "JR", "JS", "JSGE", "JSGT", "JSLE", "JSLT", "JUGE", "JUGT", "JULE", "JULT", "JZ", "LD", "LDI",
+    "LDX", "MOV", "MOVA", "MOVH", "MOVI", "MOVL", "NOP", "OR", "ROT", "SLL", "SRA", "SRL", "ST",
+    "STI", "STX", "SUB", "SUBI", "XOR",
+    "L", "assemble",
 ]
 
 
@@ -26,20 +30,28 @@ def S_FORMAT(opcode, optype, rd, ra, amt):
             ((optype &     0b1) <<  0))
 
 def M_FORMAT(opcode, rsd, ra, off):
-    assert rsd in range(8) and ra in range(8) and -16 <= off <= 15
+    assert rsd in range(8) and ra in range(8)
+    if isinstance(off, str):
+        return lambda resolve: M_FORMAT(opcode, rsd, ra, resolve(off))
+    assert -16 <= off <= 15
     return (((opcode & 0b11111) << 10) |
             ((   rsd &   0b111) <<  8) |
             ((    ra &   0b111) <<  5) |
             ((   off & 0b11111) <<  0))
 
 def I_FORMAT(opcode, rsd, imm, u=False):
-    assert rsd in range(8) and ((not u and -128 <= imm <= 127) or
-                                (u and imm in range(256)))
+    assert rsd in range(8)
+    if isinstance(imm, str):
+        return lambda resolve: I_FORMAT(opcode, rst, resolve(imm), u)
+    assert ((not u and -128 <= imm <= 127) or
+            (u and imm in range(256)))
     return (((opcode & 0b11111) << 10) |
             ((   rsd &   0b111) <<  8) |
             ((   imm &    0xff) <<  0))
 
 def C_FORMAT(opcode, off):
+    if isinstance(off, str):
+        return lambda resolve: C_FORMAT(opcode, resolve(off))
     assert -1024 <= off <= 1023
     return (((opcode & 0b11111) << 10) |
             ((   off &   0x7ff) <<  0))
@@ -110,3 +122,20 @@ def MOVI(rd, imm16):
     else:
         return MOVH(rd, (imm16 >> 8) + ((imm16 >> 7) & 1)) + \
                I_FORMAT(OPCODE_ADDI, rd, imm16 & 0xff, u=True)
+
+
+def L(label): return label
+
+def assemble(code):
+    flat_code = []
+    labels    = {}
+    for elem in code:
+        if isinstance(elem, str):
+            assert elem not in labels
+            labels[elem] = len(flat_code)
+        else:
+            flat_code += elem
+    for offset, elem in enumerate(flat_code):
+        if isinstance(elem, types.LambdaType):
+            flat_code[offset] = elem(lambda label: labels[label] - offset - 1)
+    return flat_code
