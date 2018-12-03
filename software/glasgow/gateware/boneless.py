@@ -123,18 +123,18 @@ class BonelessCore(Module):
             If(i_clsA,
                 mem_port.adr.eq(Cat(i_regX, r_win)),
                 mem_port.re.eq(1),
-                NextState("A-LOAD")
+                NextState("A-READ")
             ).Elif(i_clsS,
                 mem_port.adr.eq(Cat(i_regY, r_win)),
                 mem_port.re.eq(1),
-                NextState("S-LOAD")
+                NextState("S-READ")
             ).Elif(i_clsM,
                 mem_port.adr.eq(Cat(i_regY, r_win)),
                 mem_port.re.eq(1),
-                If(i_store,
-                    NextState("M-LOAD")
+                If(~i_store,
+                    NextState("M/I-LOAD-1")
                 ).Else(
-                    NextState("M-READ")
+                    NextState("M/I-STORE-1")
                 )
             ).Elif(i_clsI,
                 mem_port.adr.eq(Cat(i_regZ, r_win)),
@@ -144,8 +144,8 @@ class BonelessCore(Module):
                     OPCODE_MOVH: NextState("I-EXECUTE-MOVx/ADDI"),
                     OPCODE_MOVA: NextState("I-EXECUTE-MOVx/ADDI"),
                     OPCODE_ADDI: NextState("I-EXECUTE-MOVx/ADDI"),
-                    # OPCODE_LDI:  NextState(),
-                    # OPCODE_STI:  NextState(),
+                    OPCODE_LDI:  NextState("M/I-LOAD-1"),
+                    OPCODE_STI:  NextState("M/I-STORE-1"),
                     # OPCODE_JAL:  NextState(),
                     # OPCODE_JR:   NextState(),
                 })
@@ -159,7 +159,7 @@ class BonelessCore(Module):
                 )
             )
         )
-        self.fsm.act("A-LOAD",
+        self.fsm.act("A-READ",
             mem_port.adr.eq(Cat(i_regY, r_win)),
             mem_port.re.eq(1),
             NextValue(r_opA, mem_port.dat_r),
@@ -185,7 +185,7 @@ class BonelessCore(Module):
             c_flags.eq(1),
             NextState("FETCH")
         )
-        self.fsm.act("S-LOAD",
+        self.fsm.act("S-READ",
             NextValue(r_opS, mem_port.dat_r),
             NextValue(r_shift, i_shift),
             NextState("S-EXECUTE")
@@ -211,27 +211,35 @@ class BonelessCore(Module):
                 NextState("FETCH")
             )
         )
-        self.fsm.act("M-READ",
-            s_addr.eq(AddSignedImm(mem_port.dat_r, i_imm5)),
+        self.fsm.act("M/I-LOAD-1",
+            If(i_clsI,
+                s_addr.eq(AddSignedImm(r_pc, i_imm8))
+            ).Else(
+                s_addr.eq(AddSignedImm(mem_port.dat_r, i_imm5))
+            ),
             mem_port.adr.eq(s_addr),
             mem_port.re.eq(~i_ext),
             ext_port.adr.eq(s_addr),
             ext_port.re.eq(i_ext),
-            NextState("M-STORE")
+            NextState("M/I-LOAD-2")
         )
-        self.fsm.act("M-STORE",
+        self.fsm.act("M/I-LOAD-2",
             mem_port.adr.eq(Cat(i_regZ, r_win)),
             mem_port.dat_w.eq(Mux(i_ext, ext_port.dat_r, mem_port.dat_r)),
             mem_port.we.eq(1),
             NextState("FETCH")
         )
-        self.fsm.act("M-LOAD",
-            NextValue(r_addr, AddSignedImm(mem_port.dat_r, i_imm5)),
+        self.fsm.act("M/I-STORE-1",
+            If(i_clsI,
+                NextValue(r_addr, AddSignedImm(r_pc, i_imm8))
+            ).Else(
+                NextValue(r_addr, AddSignedImm(mem_port.dat_r, i_imm5))
+            ),
             mem_port.adr.eq(Cat(i_regZ, r_win)),
             mem_port.re.eq(1),
-            NextState("M-WRITE")
+            NextState("M/I-STORE-2")
         )
-        self.fsm.act("M-WRITE",
+        self.fsm.act("M/I-STORE-2",
             mem_port.adr.eq(r_addr),
             mem_port.dat_w.eq(mem_port.dat_r),
             mem_port.we.eq(~i_ext),
@@ -487,3 +495,17 @@ class BonelessTestCase(unittest.TestCase):
         yield from self.assertMemory(tb, 0, 0x0012)
         yield from self.assertMemory(tb, 1, 0x1234)
         yield from self.assertMemory(tb, 2, 0x89ab)
+
+    @simulation_test(regs=[0x0000, 0x0000, 0x0000, 0x0000,
+                           0x0000, 0x0000, 0x1234, 0x0000],
+                     code=[LDI (R0, -3)])
+    def test_LDI(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertMemory(tb, 0, 0x1234)
+
+    @simulation_test(regs=[0x1234, 0x0000, 0x0000, 0x0000,
+                           0x0000, 0x0000, 0x0000, 0x0000],
+                     code=[STI (R0, -3)])
+    def test_STI(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertMemory(tb, 6, 0x1234)
