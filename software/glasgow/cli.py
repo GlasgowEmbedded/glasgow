@@ -247,6 +247,9 @@ def get_argparser():
         "factory", formatter_class=TextHelpFormatter,
         help="(advanced) initial device programming")
     p_factory.add_argument(
+        "--force", default=False, action="store_true",
+        help="reinitialize the device, even if it is already programmed")
+    p_factory.add_argument(
         "--revision", metavar="REVISION", type=str,
         default="B",
         help="revision letter (if not specified: %(default)s)")
@@ -617,8 +620,11 @@ async def _main():
             logger.info("reading device configuration")
             header = await device.read_eeprom("fx2", 0, 8 + 4 + GlasgowConfig.size)
             if not re.match(rb"^\xff+$", header):
-                logger.error("device already factory-programmed")
-                return 1
+                if args.force:
+                    logger.warning("device already factory-programmed, proceeding anyway")
+                else:
+                    logger.error("device already factory-programmed")
+                    return 1
 
             fx2_config = FX2Config(vendor_id=VID_QIHW, product_id=PID_GLASGOW,
                                    device_id=1 + ord(args.revision) - ord('A'),
