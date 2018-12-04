@@ -83,7 +83,7 @@ class BonelessCore(Module):
                 OPCODE_F_S:     s_cond.eq(r_s),
                 OPCODE_F_O:     s_cond.eq(r_o),
                 OPCODE_F_C:     s_cond.eq(r_c),
-                OPCODE_F_CoZ:   s_cond.eq(r_c | r_o),
+                OPCODE_F_CoZ:   s_cond.eq(r_c | r_z),
                 OPCODE_F_SxO:   s_cond.eq(r_s ^ r_o),
                 OPCODE_F_SxOoZ: s_cond.eq((r_s ^ r_o) | r_z),
             })
@@ -99,10 +99,10 @@ class BonelessCore(Module):
                 r_c.eq(s_res[16]),
                 # http://teaching.idallen.com/cst8214/08w/notes/overflow.txt
                 Case(Cat(s_sub | s_cmp, r_opA[15], s_opB[15], s_res[15]), {
-                    0b0001: r_o.eq(1),
+                    0b1000: r_o.eq(1),
                     0b0110: r_o.eq(1),
-                    0b1011: r_o.eq(1),
-                    0b1100: r_o.eq(1),
+                    0b1101: r_o.eq(1),
+                    0b0011: r_o.eq(1),
                     "default": r_o.eq(0),
                 })
             )
@@ -537,3 +537,142 @@ class BonelessTestCase(unittest.TestCase):
         yield from self.assertMemory(tb, 0, 0x0004)
         yield from self.assertMemory(tb, 1, 0x0000)
         yield from self.assertMemory(tb, 2, 0x0001)
+
+    @simulation_test(code=[J   (1), MOVL(R0, 1), MOVL(R1, 1)])
+    def test_J(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertMemory(tb, 0, 0x0000)
+        yield from self.assertMemory(tb, 1, 0x0001)
+
+    @simulation_test(regs=[0x1234, 0x1234,
+                           0x5678, 0x5679],
+                     code=[CMP (R0, R1), JNZ (1), MOVL(R4, 1), MOVL(R5, 1),
+                           CMP (R2, R3), JNZ (1), MOVL(R6, 1), MOVL(R7, 1)])
+    def test_JNZ(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertMemory(tb, 4, 0x0001)
+        yield from self.assertMemory(tb, 5, 0x0001)
+        yield from self.assertMemory(tb, 6, 0x0000)
+        yield from self.assertMemory(tb, 7, 0x0001)
+
+    @simulation_test(regs=[0x1234, 0x1234,
+                           0x5678, 0x5679],
+                     code=[CMP (R0, R1), JZ  (1), MOVL(R4, 1), MOVL(R5, 1),
+                           CMP (R2, R3), JZ  (1), MOVL(R6, 1), MOVL(R7, 1)])
+    def test_JZ(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertMemory(tb, 4, 0x0000)
+        yield from self.assertMemory(tb, 5, 0x0001)
+        yield from self.assertMemory(tb, 6, 0x0001)
+        yield from self.assertMemory(tb, 7, 0x0001)
+
+    @simulation_test(regs=[0x1234, 0x7777,
+                           0x0000, 0x7777],
+                     code=[ADD (R0, R0, R1), JNS (1), MOVL(R4, 1), MOVL(R5, 1),
+                           ADD (R2, R2, R3), JNS (1), MOVL(R6, 1), MOVL(R7, 1)])
+    def test_JNS(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertMemory(tb, 4, 0x0001)
+        yield from self.assertMemory(tb, 5, 0x0001)
+        yield from self.assertMemory(tb, 6, 0x0000)
+        yield from self.assertMemory(tb, 7, 0x0001)
+
+    @simulation_test(regs=[0x1234, 0x7777,
+                           0x0000, 0x7777],
+                     code=[ADD (R0, R0, R1), JS  (1), MOVL(R4, 1), MOVL(R5, 1),
+                           ADD (R2, R2, R3), JS  (1), MOVL(R6, 1), MOVL(R7, 1)])
+    def test_JS(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertMemory(tb, 4, 0x0000)
+        yield from self.assertMemory(tb, 5, 0x0001)
+        yield from self.assertMemory(tb, 6, 0x0001)
+        yield from self.assertMemory(tb, 7, 0x0001)
+
+    @simulation_test(regs=[0x8888, 0x7fff,
+                           0x8888, 0x7777],
+                     code=[ADD (R0, R0, R1), JNC (1), MOVL(R4, 1), MOVL(R5, 1),
+                           ADD (R2, R2, R3), JNC (1), MOVL(R6, 1), MOVL(R7, 1)])
+    def test_JNC(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertMemory(tb, 4, 0x0001)
+        yield from self.assertMemory(tb, 5, 0x0001)
+        yield from self.assertMemory(tb, 6, 0x0000)
+        yield from self.assertMemory(tb, 7, 0x0001)
+
+    @simulation_test(regs=[0x1234, 0x1235],
+                     code=[CMP (R0, R0), JUGT(1), MOVL(R2, 1), MOVL(R3, 1),
+                           CMP (R1, R0), JUGT(1), MOVL(R4, 1), MOVL(R5, 1),
+                           CMP (R0, R1), JUGT(1), MOVL(R6, 1), MOVL(R7, 1)])
+    def test_JUGT(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertMemory(tb, 2, 0x0001)
+        yield from self.assertMemory(tb, 3, 0x0001)
+        yield from self.assertMemory(tb, 4, 0x0000)
+        yield from self.assertMemory(tb, 5, 0x0001)
+        yield from self.assertMemory(tb, 6, 0x0001)
+        yield from self.assertMemory(tb, 7, 0x0001)
+
+    @simulation_test(regs=[0x1234, 0x1235],
+                     code=[CMP (R0, R0), JULE(1), MOVL(R2, 1), MOVL(R3, 1),
+                           CMP (R1, R0), JULE(1), MOVL(R4, 1), MOVL(R5, 1),
+                           CMP (R0, R1), JULE(1), MOVL(R6, 1), MOVL(R7, 1)])
+    def test_JULE(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertMemory(tb, 2, 0x0000)
+        yield from self.assertMemory(tb, 3, 0x0001)
+        yield from self.assertMemory(tb, 4, 0x0001)
+        yield from self.assertMemory(tb, 5, 0x0001)
+        yield from self.assertMemory(tb, 6, 0x0000)
+        yield from self.assertMemory(tb, 7, 0x0001)
+
+    @simulation_test(regs=[0x0123, 0x8123],
+                     code=[CMP (R0, R0), JSGE(1), MOVL(R2, 1), MOVL(R3, 1),
+                           CMP (R1, R0), JSGE(1), MOVL(R4, 1), MOVL(R5, 1),
+                           CMP (R0, R1), JSGE(1), MOVL(R6, 1), MOVL(R7, 1)])
+    def test_JSGE(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertMemory(tb, 2, 0x0000)
+        yield from self.assertMemory(tb, 3, 0x0001)
+        yield from self.assertMemory(tb, 4, 0x0001)
+        yield from self.assertMemory(tb, 5, 0x0001)
+        yield from self.assertMemory(tb, 6, 0x0000)
+        yield from self.assertMemory(tb, 7, 0x0001)
+
+    @simulation_test(regs=[0x0123, 0x8123],
+                     code=[CMP (R0, R0), JSLT(1), MOVL(R2, 1), MOVL(R3, 1),
+                           CMP (R1, R0), JSLT(1), MOVL(R4, 1), MOVL(R5, 1),
+                           CMP (R0, R1), JSLT(1), MOVL(R6, 1), MOVL(R7, 1)])
+    def test_JSLT(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertMemory(tb, 2, 0x0001)
+        yield from self.assertMemory(tb, 3, 0x0001)
+        yield from self.assertMemory(tb, 4, 0x0000)
+        yield from self.assertMemory(tb, 5, 0x0001)
+        yield from self.assertMemory(tb, 6, 0x0001)
+        yield from self.assertMemory(tb, 7, 0x0001)
+
+    @simulation_test(regs=[0x0123, 0x8123],
+                     code=[CMP (R0, R0), JSGT(1), MOVL(R2, 1), MOVL(R3, 1),
+                           CMP (R1, R0), JSGT(1), MOVL(R4, 1), MOVL(R5, 1),
+                           CMP (R0, R1), JSGT(1), MOVL(R6, 1), MOVL(R7, 1)])
+    def test_JSGT(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertMemory(tb, 2, 0x0001)
+        yield from self.assertMemory(tb, 3, 0x0001)
+        yield from self.assertMemory(tb, 4, 0x0001)
+        yield from self.assertMemory(tb, 5, 0x0001)
+        yield from self.assertMemory(tb, 6, 0x0000)
+        yield from self.assertMemory(tb, 7, 0x0001)
+
+    @simulation_test(regs=[0x0123, 0x8123],
+                     code=[CMP (R0, R0), JSLE(1), MOVL(R2, 1), MOVL(R3, 1),
+                           CMP (R1, R0), JSLE(1), MOVL(R4, 1), MOVL(R5, 1),
+                           CMP (R0, R1), JSLE(1), MOVL(R6, 1), MOVL(R7, 1)])
+    def test_JSLE(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertMemory(tb, 2, 0x0000)
+        yield from self.assertMemory(tb, 3, 0x0001)
+        yield from self.assertMemory(tb, 4, 0x0000)
+        yield from self.assertMemory(tb, 5, 0x0001)
+        yield from self.assertMemory(tb, 6, 0x0001)
+        yield from self.assertMemory(tb, 7, 0x0001)
