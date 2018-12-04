@@ -27,13 +27,15 @@ class _StubMemoryPort(Module):
 
 
 class BonelessCore(Module):
-    def __init__(self, reset_addr, mem_port, ext_port=None, simulation=False):
+    def __init__(self, reset_addr, mem_rdport, mem_wrport, ext_port=None, simulation=False):
         if ext_port is None:
             ext_port = _StubMemoryPort("ext")
 
+        pc_bits = max(mem_rdport.adr.nbits, mem_wrport.adr.nbits)
+
         r_insn  = Signal(16)
-        r_pc    = Signal(mem_port.adr.nbits, reset=reset_addr)
-        r_win   = Signal(max(mem_port.adr.nbits - 3, 1))
+        r_pc    = Signal(pc_bits, reset=reset_addr)
+        r_win   = Signal(max(pc_bits - 3, 1))
         r_z     = Signal()
         r_s     = Signal()
         r_c     = Signal()
@@ -108,38 +110,35 @@ class BonelessCore(Module):
             )
         ]
 
+        self.comb += mem_rdport.re.eq(1)
+
         self.submodules.fsm = FSM(reset_state="FETCH")
         self.comb += [
-            s_insn.eq(Mux(self.fsm.ongoing("DECODE/LOAD/JUMP"), mem_port.dat_r, r_insn))
+            s_insn.eq(Mux(self.fsm.ongoing("DECODE/LOAD/JUMP"), mem_rdport.dat_r, r_insn)),
         ]
         self.fsm.act("FETCH",
-            mem_port.adr.eq(r_pc),
-            mem_port.re.eq(1),
+            mem_rdport.adr.eq(r_pc),
             NextValue(r_pc, r_pc + 1),
             NextState("DECODE/LOAD/JUMP")
         )
         self.fsm.act("DECODE/LOAD/JUMP",
-            NextValue(r_insn, mem_port.dat_r),
+            NextValue(r_insn, mem_rdport.dat_r),
             If(i_clsA,
-                mem_port.adr.eq(Cat(i_regX, r_win)),
-                mem_port.re.eq(1),
-                NextState("A-READ")
+                mem_rdport.adr.eq(Cat(i_regX, r_win)),
+                    NextState("A-READ")
             ).Elif(i_clsS,
-                mem_port.adr.eq(Cat(i_regY, r_win)),
-                mem_port.re.eq(1),
-                NextState("S-READ")
+                mem_rdport.adr.eq(Cat(i_regY, r_win)),
+                    NextState("S-READ")
             ).Elif(i_clsM,
-                mem_port.adr.eq(Cat(i_regY, r_win)),
-                mem_port.re.eq(1),
-                If(~i_store,
+                mem_rdport.adr.eq(Cat(i_regY, r_win)),
+                    If(~i_store,
                     NextState("M/I-LOAD-1")
                 ).Else(
                     NextState("M/I-STORE-1")
                 )
             ).Elif(i_clsI,
-                mem_port.adr.eq(Cat(i_regZ, r_win)),
-                mem_port.re.eq(1),
-                Case(Cat(i_code3, C(OPCLASS_I, 2)), {
+                mem_rdport.adr.eq(Cat(i_regZ, r_win)),
+                    Case(Cat(i_code3, C(OPCLASS_I, 2)), {
                     OPCODE_MOVL: NextState("I-EXECUTE-MOVx/ADDI"),
                     OPCODE_MOVH: NextState("I-EXECUTE-MOVx/ADDI"),
                     OPCODE_MOVA: NextState("I-EXECUTE-MOVx/ADDI"),
@@ -160,13 +159,12 @@ class BonelessCore(Module):
             )
         )
         self.fsm.act("A-READ",
-            mem_port.adr.eq(Cat(i_regY, r_win)),
-            mem_port.re.eq(1),
-            NextValue(r_opA, mem_port.dat_r),
+            mem_rdport.adr.eq(Cat(i_regY, r_win)),
+            NextValue(r_opA, mem_rdport.dat_r),
             NextState("A-EXECUTE")
         )
         self.fsm.act("A-EXECUTE",
-            s_opB.eq(mem_port.dat_r),
+            s_opB.eq(mem_rdport.dat_r),
             Case(Cat(i_code1, C(OPCLASS_A, 4)), {
                 OPCODE_LOGIC: Case(i_type2, {
                     OPTYPE_AND:  s_res.eq(r_opA & s_opB),
@@ -179,22 +177,22 @@ class BonelessCore(Module):
                     OPTYPE_CMP: [s_res.eq(r_opA - s_opB), s_cmp.eq(1)],
                 })
             }),
-            mem_port.adr.eq(Cat(i_regZ, r_win)),
-            mem_port.dat_w.eq(s_res),
-            mem_port.we.eq(~s_cmp),
+            mem_wrport.adr.eq(Cat(i_regZ, r_win)),
+            mem_wrport.dat_w.eq(s_res),
+            mem_wrport.we.eq(~s_cmp),
             c_flags.eq(1),
             NextState("FETCH")
         )
         self.fsm.act("S-READ",
-            NextValue(r_opS, mem_port.dat_r),
+            NextValue(r_opS, mem_rdport.dat_r),
             NextValue(r_shift, i_shift),
             NextState("S-EXECUTE")
         )
         self.fsm.act("S-EXECUTE",
             s_res.eq(r_opS),
-            mem_port.adr.eq(Cat(i_regZ, r_win)),
-            mem_port.dat_w.eq(s_res),
-            mem_port.we.eq(1),
+            mem_wrport.adr.eq(Cat(i_regZ, r_win)),
+            mem_wrport.dat_w.eq(s_res),
+            mem_wrport.we.eq(1),
             c_flags.eq(1),
             Case(Cat(i_code1, C(OPCLASS_S, 4)), {
                 OPCODE_SHIFT_L: Case(i_type1, {
@@ -215,56 +213,54 @@ class BonelessCore(Module):
             If(i_clsI,
                 s_addr.eq(AddSignedImm(r_pc, i_imm8))
             ).Else(
-                s_addr.eq(AddSignedImm(mem_port.dat_r, i_imm5))
+                s_addr.eq(AddSignedImm(mem_rdport.dat_r, i_imm5))
             ),
-            mem_port.adr.eq(s_addr),
-            mem_port.re.eq(~i_ext),
+            mem_rdport.adr.eq(s_addr),
             ext_port.adr.eq(s_addr),
             ext_port.re.eq(i_ext),
             NextState("M/I-LOAD-2")
         )
         self.fsm.act("M/I-LOAD-2",
-            mem_port.adr.eq(Cat(i_regZ, r_win)),
-            mem_port.dat_w.eq(Mux(i_ext, ext_port.dat_r, mem_port.dat_r)),
-            mem_port.we.eq(1),
+            mem_wrport.adr.eq(Cat(i_regZ, r_win)),
+            mem_wrport.dat_w.eq(Mux(i_ext, ext_port.dat_r, mem_rdport.dat_r)),
+            mem_wrport.we.eq(1),
             NextState("FETCH")
         )
         self.fsm.act("M/I-STORE-1",
             If(i_clsI,
                 NextValue(r_addr, AddSignedImm(r_pc, i_imm8))
             ).Else(
-                NextValue(r_addr, AddSignedImm(mem_port.dat_r, i_imm5))
+                NextValue(r_addr, AddSignedImm(mem_rdport.dat_r, i_imm5))
             ),
-            mem_port.adr.eq(Cat(i_regZ, r_win)),
-            mem_port.re.eq(1),
+            mem_rdport.adr.eq(Cat(i_regZ, r_win)),
             NextState("M/I-STORE-2")
         )
         self.fsm.act("M/I-STORE-2",
-            mem_port.adr.eq(r_addr),
-            mem_port.dat_w.eq(mem_port.dat_r),
-            mem_port.we.eq(~i_ext),
+            mem_wrport.adr.eq(r_addr),
+            mem_wrport.dat_w.eq(mem_rdport.dat_r),
+            mem_wrport.we.eq(~i_ext),
             ext_port.adr.eq(r_addr),
-            ext_port.dat_w.eq(mem_port.dat_r),
+            ext_port.dat_w.eq(mem_rdport.dat_r),
             ext_port.we.eq(i_ext),
             NextState("FETCH")
         )
         self.fsm.act("I-EXECUTE-MOVx/ADDI",
-            mem_port.adr.eq(Cat(i_regZ, r_win)),
+            mem_wrport.adr.eq(Cat(i_regZ, r_win)),
             Case(Cat(i_code2, C(0b0, 1), C(OPCLASS_I, 2)), {
-                OPCODE_MOVL: mem_port.dat_w.eq(Cat(i_imm8, C(0, 8))),
-                OPCODE_MOVH: mem_port.dat_w.eq(Cat(C(0, 8), i_imm8)),
-                OPCODE_MOVA: mem_port.dat_w.eq(AddSignedImm(r_pc, i_imm8)),
-                OPCODE_ADDI: mem_port.dat_w.eq(AddSignedImm(mem_port.dat_r, i_imm8)),
+                OPCODE_MOVL: mem_wrport.dat_w.eq(Cat(i_imm8, C(0, 8))),
+                OPCODE_MOVH: mem_wrport.dat_w.eq(Cat(C(0, 8), i_imm8)),
+                OPCODE_MOVA: mem_wrport.dat_w.eq(AddSignedImm(r_pc, i_imm8)),
+                OPCODE_ADDI: mem_wrport.dat_w.eq(AddSignedImm(mem_rdport.dat_r, i_imm8)),
             }),
-            mem_port.we.eq(1),
+            mem_wrport.we.eq(1),
             NextState("FETCH")
         )
         self.fsm.act("I-EXECUTE-Jx",
-            mem_port.adr.eq(Cat(i_regZ, r_win)),
-            mem_port.dat_w.eq(r_pc),
+            mem_wrport.adr.eq(Cat(i_regZ, r_win)),
+            mem_wrport.dat_w.eq(r_pc),
             Case(Cat(i_code1, C(0b11, 2), C(OPCLASS_I, 2)), {
-                OPCODE_JAL: [NextValue(r_pc, AddSignedImm(r_pc, i_imm11)), mem_port.we.eq(1)],
-                OPCODE_JR:  [NextValue(r_pc, AddSignedImm(mem_port.dat_r, i_imm11))]
+                OPCODE_JAL: [NextValue(r_pc, AddSignedImm(r_pc, i_imm11)), mem_wrport.we.eq(1)],
+                OPCODE_JR:  [NextValue(r_pc, AddSignedImm(mem_rdport.dat_r, i_imm11))]
             }),
             NextState("FETCH")
         )
@@ -289,8 +285,9 @@ class BonelessSimulationTestbench(Module):
         self.mem = Memory(width=16, depth=len(self.mem_init), init=self.mem_init)
         self.specials += self.mem
 
-        mem_port = self.mem.get_port(has_re=True, write_capable=True)
-        self.specials += mem_port
+        mem_rdport = self.mem.get_port(has_re=True)
+        mem_wrport = self.mem.get_port(has_re=True, write_capable=True)
+        self.specials += [mem_rdport, mem_wrport]
 
         if self.ext_init:
             self.ext = Memory(width=16, depth=len(self.ext_init), init=self.ext_init)
@@ -302,7 +299,8 @@ class BonelessSimulationTestbench(Module):
             ext_port = _StubMemoryPort("ext")
 
         self.submodules.dut = BonelessCore(reset_addr=8,
-            mem_port=mem_port,
+            mem_rdport=mem_rdport,
+            mem_wrport=mem_wrport,
             ext_port=ext_port,
             simulation=True)
 
@@ -701,9 +699,11 @@ class BonelessTestbench(Module):
             ]
 
         self.specials.mem = Memory(width=16, depth=256)
-        self.specials.mem_port = self.mem.get_port(has_re=True, write_capable=True)
+        self.specials.mem_rdport = self.mem.get_port(has_re=True)
+        self.specials.mem_wrport = self.mem.get_port(has_re=True, write_capable=True)
         self.submodules.dut = BonelessCore(reset_addr=8,
-            mem_port=self.mem_port,
+            mem_rdport=self.mem_rdport,
+            mem_wrport=self.mem_wrport,
             ext_port=self.ext_port)
 
 
