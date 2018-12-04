@@ -31,6 +31,11 @@ class BonelessCore(Module):
         if ext_port is None:
             ext_port = _StubMemoryPort("ext")
 
+        def decode(v):
+            d = Signal.like(v)
+            self.comb += d.eq(v)
+            return d
+
         pc_bits = max(mem_rdport.adr.nbits, mem_wrport.adr.nbits)
 
         r_insn  = Signal(16)
@@ -53,29 +58,29 @@ class BonelessCore(Module):
         r_addr  = Signal(16)
 
         s_insn  = Signal(16)
-        i_type1 = s_insn[0:1]
-        i_type2 = s_insn[0:2]
-        i_shift = s_insn[1:5]
-        i_imm5  = s_insn[0:5]
-        i_imm8  = s_insn[0:8]
-        i_imm11 = s_insn[0:11]
-        i_regX  = s_insn[2:5]
-        i_regY  = s_insn[5:8]
-        i_regZ  = s_insn[8:11]
-        i_code1 = s_insn[11:12]
-        i_code2 = s_insn[11:13]
-        i_code3 = s_insn[11:14]
-        i_code5 = s_insn[11:16]
-        i_store = s_insn[11]
-        i_ext   = s_insn[12]
-        i_flag  = s_insn[11]
-        i_cond  = s_insn[12:15]
+        i_type1 = decode(s_insn[0:1])
+        i_type2 = decode(s_insn[0:2])
+        i_shift = decode(s_insn[1:5])
+        i_imm5  = decode(s_insn[0:5])
+        i_imm8  = decode(s_insn[0:8])
+        i_imm11 = decode(s_insn[0:11])
+        i_regX  = decode(s_insn[2:5])
+        i_regY  = decode(s_insn[5:8])
+        i_regZ  = decode(s_insn[8:11])
+        i_code1 = decode(s_insn[11:12])
+        i_code2 = decode(s_insn[11:13])
+        i_code3 = decode(s_insn[11:14])
+        i_code5 = decode(s_insn[11:16])
+        i_store = decode(s_insn[11])
+        i_ext   = decode(s_insn[12])
+        i_flag  = decode(s_insn[11])
+        i_cond  = decode(s_insn[12:15])
 
-        i_clsA  = i_code5[1:5] == OPCLASS_A
-        i_clsS  = i_code5[1:5] == OPCLASS_S
-        i_clsM  = i_code5[2:5] == OPCLASS_M
-        i_clsI  = i_code5[3:5] == OPCLASS_I
-        i_clsC  = i_code5[4:5] == OPCLASS_C
+        i_clsA  = decode(i_code5[1:5] == OPCLASS_A)
+        i_clsS  = decode(i_code5[1:5] == OPCLASS_S)
+        i_clsM  = decode(i_code5[2:5] == OPCLASS_M)
+        i_clsI  = decode(i_code5[3:5] == OPCLASS_I)
+        i_clsC  = decode(i_code5[4:5] == OPCLASS_C)
 
         s_cond  = Signal()
         self.comb += [
