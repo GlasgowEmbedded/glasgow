@@ -7,6 +7,7 @@ build/
 *.vcd
 *.gtkw
 *.ihex
+*.log
 *.*b[ac]k
 _autosave-*
 /*.v

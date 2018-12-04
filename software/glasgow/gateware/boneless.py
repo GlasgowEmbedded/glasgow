@@ -17,19 +17,19 @@ def AddSignedImm(v, i):
         return v + Cat(i, Replicate(i[i_nbits - 1], v.nbits - i_nbits))
 
 
-class DummyExtPort(Module):
-    def __init__(self):
-        self.adr   = Signal(16)
-        self.dat_r = Signal(16)
-        self.re    = Signal()
-        self.dat_w = Signal(16)
-        self.we    = Signal()
+class _StubMemoryPort(Module):
+    def __init__(self, name):
+        self.adr   = Signal(16, name=name + "_adr")
+        self.re    = Signal(1,  name=name + "_re")
+        self.dat_r = Signal(16, name=name + "_dat_r")
+        self.we    = Signal(1,  name=name + "_we")
+        self.dat_w = Signal(16, name=name + "_dat_w")
 
 
 class BonelessCore(Module):
     def __init__(self, reset_addr, mem_port, ext_port=None, simulation=False):
         if ext_port is None:
-            ext_port = DummyExtPort()
+            ext_port = _StubMemoryPort("ext")
 
         r_insn  = Signal(16)
         r_pc    = Signal(mem_port.adr.nbits, reset=reset_addr)
@@ -299,7 +299,7 @@ class BonelessTestbench(Module):
             ext_port = self.ext.get_port(has_re=True, write_capable=True)
             self.specials += ext_port
         else:
-            ext_port = DummyExtPort()
+            ext_port = _StubMemoryPort("ext")
 
         self.submodules.dut = BonelessCore(reset_addr=8,
             mem_port=mem_port,
@@ -676,3 +676,16 @@ class BonelessTestCase(unittest.TestCase):
         yield from self.assertMemory(tb, 5, 0x0001)
         yield from self.assertMemory(tb, 6, 0x0001)
         yield from self.assertMemory(tb, 7, 0x0001)
+
+# -------------------------------------------------------------------------------------------------
+
+from migen.fhdl import verilog
+
+
+if __name__ == "__main__":
+    mem_port = _StubMemoryPort(name="mem")
+    ext_port = _StubMemoryPort(name="ext")
+    ios = {mem_port.adr, mem_port.re, mem_port.dat_r, mem_port.we, mem_port.dat_w,
+           ext_port.adr, ext_port.re, ext_port.dat_r, ext_port.we, ext_port.dat_w}
+    design = verilog.convert(BonelessCore(0x8, mem_port, ext_port), ios=ios, name="boneless")
+    design.write("boneless.v")
