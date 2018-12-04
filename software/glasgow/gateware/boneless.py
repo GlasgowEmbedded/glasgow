@@ -209,11 +209,6 @@ class BonelessCore(Module):
             NextState("S-EXECUTE")
         )
         self.fsm.act("S-EXECUTE",
-            s_res.eq(r_opS),
-            mem_w_a.eq(Cat(i_regZ, r_win)),
-            mem_w_d.eq(s_res),
-            mem_we.eq(1),
-            c_flags.eq(1),
             Case(Cat(i_code1, C(OPCLASS_S, 4)), {
                 OPCODE_SHIFT_L: Case(i_type1, {
                     OPTYPE_SLL: NextValue(r_opS, Cat(C(0, 1),   r_opS[:-1])),
@@ -224,6 +219,11 @@ class BonelessCore(Module):
                     OPTYPE_SRA: NextValue(r_opS, Cat(r_opS[1:], r_opS[-1])),
                 })
             }),
+            s_res.eq(r_opS),
+            mem_w_a.eq(Cat(i_regZ, r_win)),
+            mem_w_d.eq(s_res),
+            mem_we.eq(1),
+            c_flags.eq(1),
             NextValue(r_shift, r_shift - 1),
             If(r_shift == 0,
                 NextState("FETCH")
