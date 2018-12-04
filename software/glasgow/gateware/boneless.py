@@ -280,7 +280,7 @@ from . import simulation_test
 from ..arch.boneless.instr import *
 
 
-class BonelessTestbench(Module):
+class BonelessSimulationTestbench(Module):
     def __init__(self):
         self.mem_init = []
         self.ext_init = []
@@ -309,7 +309,7 @@ class BonelessTestbench(Module):
 
 class BonelessTestCase(unittest.TestCase):
     def setUp(self):
-        self.tb = BonelessTestbench()
+        self.tb = BonelessSimulationTestbench()
 
     def configure(self, tb, code, regs=[], data=[], extr=[]):
         tb.mem_init = [*regs, *[0] * (8 - len(regs))] + assemble(code + [J(-1024)] + data)
@@ -679,13 +679,48 @@ class BonelessTestCase(unittest.TestCase):
 
 # -------------------------------------------------------------------------------------------------
 
+import argparse
 from migen.fhdl import verilog
 
 
+class BonelessTestbench(Module):
+    def __init__(self, has_pins=False):
+        self.submodules.ext_port = _StubMemoryPort("ext")
+
+        if has_pins:
+            self.pins = Signal(16)
+            self.sync += [
+                If(self.ext_port.adr == 0,
+                    If(self.ext_port.re,
+                        self.pins.eq(self.ext_port.dat_w)
+                    ),
+                    If(self.ext_port.we,
+                        self.pins.eq(self.ext_port.dat_r)
+                    )
+                )
+            ]
+
+        self.specials.mem = Memory(width=16, depth=256)
+        self.specials.mem_port = self.mem.get_port(has_re=True, write_capable=True)
+        self.submodules.dut = BonelessCore(reset_addr=8,
+            mem_port=self.mem_port,
+            ext_port=self.ext_port)
+
+
 if __name__ == "__main__":
-    mem_port = _StubMemoryPort(name="mem")
-    ext_port = _StubMemoryPort(name="ext")
-    ios = {mem_port.adr, mem_port.re, mem_port.dat_r, mem_port.we, mem_port.dat_w,
-           ext_port.adr, ext_port.re, ext_port.dat_r, ext_port.we, ext_port.dat_w}
-    design = verilog.convert(BonelessCore(0x8, mem_port, ext_port), ios=ios, name="boneless")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("type", metavar="TYPE", choices=["bus", "pins"], default="bus")
+    args = parser.parse_args()
+
+    if args.type == "bus":
+        tb  = BonelessTestbench()
+        ios = {tb.ext_port.adr,
+               tb.ext_port.re, tb.ext_port.dat_r,
+               tb.ext_port.we, tb.ext_port.dat_w}
+
+    if args.type == "pins":
+        tb  = BonelessTestbench(has_pins=True)
+        ios = {tb.pins}
+
+    design = verilog.convert(tb, ios=ios, name="boneless")
     design.write("boneless.v")
