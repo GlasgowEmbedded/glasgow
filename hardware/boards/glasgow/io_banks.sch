@@ -143,19 +143,6 @@ Wire Wire Line
 	1300 2850 1300 2800
 $Comp
 L FPGA_Lattice:ICE40HX8K-BG121 U?
-U 1 1 5C9E33DB
-P 1300 4250
-AR Path="/5C9E33DB" Ref="U?"  Part="1" 
-AR Path="/5C7B59B0/5C9E33DB" Ref="U30"  Part="1" 
-F 0 "U30" H 950 2600 50  0000 L CNN
-F 1 "ICE40HX8K-BG121" H 950 2700 50  0000 L CNN
-F 2 "Package_BGA:BGA-121_9.0x9.0mm_Layout11x11_P0.8mm_Ball0.4mm_Pad0.35mm_NSMD" H 1300 2800 50  0001 C CNN
-F 3 "http://www.latticesemi.com/Products/FPGAandCPLD/iCE40" H 450 5250 50  0001 C CNN
-	1    1300 4250
-	-1   0    0    -1  
-$EndComp
-$Comp
-L FPGA_Lattice:ICE40HX8K-BG121 U?
 U 2 1 5C9E33E2
 P 4750 4450
 AR Path="/5C9E33E2" Ref="U?"  Part="2" 
@@ -1268,9 +1255,9 @@ Wire Wire Line
 Wire Wire Line
 	1800 4450 1950 4450
 Wire Wire Line
-	1950 4550 1800 4550
+	1950 4550 1850 4550
 Wire Wire Line
-	1800 4650 1950 4650
+	1800 4650 1900 4650
 Wire Wire Line
 	1800 4850 1950 4850
 Wire Wire Line
@@ -1361,7 +1348,6 @@ QA1
 Text Label 1800 5650 0    50   ~ 0
 QA0
 NoConn ~ 1800 5150
-NoConn ~ 1800 4950
 NoConn ~ 1800 5250
 Text Label 1800 4350 0    50   ~ 0
 DA0
@@ -1379,7 +1365,6 @@ Text Label 1800 3750 0    50   ~ 0
 DA6
 Text Label 1800 3950 0    50   ~ 0
 DA7
-NoConn ~ 1800 4750
 $Comp
 L Connector_Generic:Conn_01x03 J10
 U 1 1 5C072C23
@@ -1483,6 +1468,30 @@ Wire Wire Line
 	1800 2850 1800 3450
 Wire Wire Line
 	1800 2850 2350 2850
+$Comp
+L FPGA_Lattice:ICE40HX8K-BG121 U?
+U 1 1 5C9E33DB
+P 1300 4250
+AR Path="/5C9E33DB" Ref="U?"  Part="1" 
+AR Path="/5C7B59B0/5C9E33DB" Ref="U30"  Part="1" 
+F 0 "U30" H 950 2600 50  0000 L CNN
+F 1 "ICE40HX8K-BG121" H 950 2700 50  0000 L CNN
+F 2 "Package_BGA:BGA-121_9.0x9.0mm_Layout11x11_P0.8mm_Ball0.4mm_Pad0.35mm_NSMD" H 1300 2800 50  0001 C CNN
+F 3 "http://www.latticesemi.com/Products/FPGAandCPLD/iCE40" H 450 5250 50  0001 C CNN
+	1    1300 4250
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	1800 4750 1850 4750
+Wire Wire Line
+	1850 4750 1850 4550
+Connection ~ 1850 4550
+Wire Wire Line
+	1850 4550 1800 4550
+Wire Wire Line
+	1800 4950 1900 4950
+Wire Wire Line
+	1900 4950 1900 4650
 Wire Bus Line
 	5850 4950 5850 5800
 Wire Bus Line
@@ -1501,4 +1510,7 @@ Wire Bus Line
 	2050 3850 2050 5800
 Wire Bus Line
 	9050 3200 9050 5800
+Connection ~ 1900 4650
+Wire Wire Line
+	1900 4650 1950 4650
 $EndSCHEMATC
