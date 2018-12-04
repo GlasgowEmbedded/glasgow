@@ -150,8 +150,8 @@ class BonelessCore(Module):
                     OPCODE_ADDI: NextState("I-EXECUTE-MOVx/ADDI"),
                     OPCODE_LDI:  NextState("M/I-LOAD-1"),
                     OPCODE_STI:  NextState("M/I-STORE-1"),
-                    OPCODE_JAL:  NextState("I-EXECUTE-Jx"),
-                    OPCODE_JR:   NextState("I-EXECUTE-Jx"),
+                    OPCODE_JAL:  NextState("I-EXECUTE-JAL"),
+                    OPCODE_JR:   NextState("I-EXECUTE-JR"),
                 })
             ).Elif(i_clsC,
                 If(s_cond == i_flag,
@@ -260,13 +260,15 @@ class BonelessCore(Module):
             mem_wrport.we.eq(1),
             NextState("FETCH")
         )
-        self.fsm.act("I-EXECUTE-Jx",
+        self.fsm.act("I-EXECUTE-JAL",
             mem_wrport.adr.eq(Cat(i_regZ, r_win)),
             mem_wrport.dat_w.eq(r_pc),
-            Case(Cat(i_code1, C(0b11, 2), C(OPCLASS_I, 2)), {
-                OPCODE_JAL: [NextValue(r_pc, AddSignedImm(r_pc, i_imm11)), mem_wrport.we.eq(1)],
-                OPCODE_JR:  [NextValue(r_pc, AddSignedImm(mem_rdport.dat_r, i_imm11))]
-            }),
+            mem_wrport.we.eq(1),
+            NextValue(r_pc, AddSignedImm(r_pc, i_imm11)),
+            NextState("FETCH")
+        )
+        self.fsm.act("I-EXECUTE-JR",
+            NextValue(r_pc, AddSignedImm(mem_rdport.dat_r, i_imm11)),
             NextState("FETCH")
         )
         self.fsm.act("HALT",
