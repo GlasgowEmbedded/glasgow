@@ -130,20 +130,20 @@ class BonelessCore(Module):
             NextValue(r_insn, mem_rdport.dat_r),
             If(i_clsA,
                 mem_rdport.adr.eq(Cat(i_regX, r_win)),
-                    NextState("A-READ")
+                NextState("A-READ")
             ).Elif(i_clsS,
                 mem_rdport.adr.eq(Cat(i_regY, r_win)),
-                    NextState("S-READ")
+                NextState("S-READ")
             ).Elif(i_clsM,
                 mem_rdport.adr.eq(Cat(i_regY, r_win)),
-                    If(~i_store,
+                If(~i_store,
                     NextState("M/I-LOAD-1")
                 ).Else(
                     NextState("M/I-STORE-1")
                 )
             ).Elif(i_clsI,
                 mem_rdport.adr.eq(Cat(i_regZ, r_win)),
-                    Case(Cat(i_code3, C(OPCLASS_I, 2)), {
+                Case(Cat(i_code3, C(OPCLASS_I, 2)), {
                     OPCODE_MOVL: NextState("I-EXECUTE-MOVx/ADDI"),
                     OPCODE_MOVH: NextState("I-EXECUTE-MOVx/ADDI"),
                     OPCODE_MOVA: NextState("I-EXECUTE-MOVx/ADDI"),
