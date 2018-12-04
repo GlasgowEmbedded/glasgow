@@ -71,7 +71,10 @@ def SUB (rd, ra, rb):  return [A_FORMAT(OPCODE_ARITH,   OPTYPE_SUB, rd, ra, rb)]
 def CMP (    rb, ra):  return [A_FORMAT(OPCODE_ARITH,   OPTYPE_CMP,  0, ra, rb)]
 
 def SLL (rd, ra, amt): return [S_FORMAT(OPCODE_SHIFT_L, OPTYPE_SLL, rd, ra, amt)]
-def ROT (rd, ra, amt): return [S_FORMAT(OPCODE_SHIFT_L, OPTYPE_ROT, rd, ra, amt)]
+def ROT (rd, ra, amt): return [S_FORMAT(OPCODE_SHIFT_L, OPTYPE_ROT, rd, ra, amt % 16)]
+def ROL (rd, ra, amt): return [S_FORMAT(OPCODE_SHIFT_L, OPTYPE_ROT, rd, ra, amt % 16)]
+def ROR (rd, ra, amt): return [S_FORMAT(OPCODE_SHIFT_L, OPTYPE_ROT, rd, ra, (16 - amt) % 16)]
+
 def SRL (rd, ra, amt): return [S_FORMAT(OPCODE_SHIFT_R, OPTYPE_SRL, rd, ra, amt)]
 def SRA (rd, ra, amt): return [S_FORMAT(OPCODE_SHIFT_R, OPTYPE_SRA, rd, ra, amt)]
 def MOV (rd, rs):      return [S_FORMAT(OPCODE_SHIFT_L, OPTYPE_SLL, rd, rs,   0)]
