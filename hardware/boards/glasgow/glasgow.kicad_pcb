@@ -11683,7 +11683,6 @@
   (gr_text CLKIF (at 69.4 100.8) (layer F.SilkS) (tstamp 5B8A549F)
     (effects (font (size 1.2 1.2) (thickness 0.16)))
   )
-  (gr_poly (pts (xy 72.56 79.35) (xy 72.96 79.35) (xy 72.96 79.95) (xy 72.56 79.95)) (layer F.Paste) (width 0))
   (gr_line (start 109.85 95.5) (end 116.05 95.5) (layer B.SilkS) (width 0.2))
   (gr_line (start 116.05 95.5) (end 116.05 93) (layer B.SilkS) (width 0.2))
   (gr_line (start 125.8 95.5) (end 116.05 95.5) (layer B.SilkS) (width 0.2))
