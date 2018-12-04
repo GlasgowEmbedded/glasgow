@@ -2464,7 +2464,7 @@ Wire Wire Line
 	7400 3750 7750 3750
 Text Label 7400 3950 0    50   ~ 0
 SDA
-Text Label 7400 4250 0    50   ~ 0
+Text Label 7550 4250 2    50   ~ 0
 SCL
 Wire Wire Line
 	2300 4550 2300 4150
@@ -2744,10 +2744,12 @@ Wire Wire Line
 	1950 7150 1950 7250
 Text Notes 2300 7650 0    50   ~ 0
 Addr: 1100000
+Wire Wire Line
+	7400 4250 7550 4250
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
-	7850 2550 7850 6250
-Wire Bus Line
 	4700 2150 4700 6250
+Wire Bus Line
+	7850 2550 7850 6250
 $EndSCHEMATC
