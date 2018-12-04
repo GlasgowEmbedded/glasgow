@@ -1838,7 +1838,7 @@ Connection ~ 10000 1500
 Wire Wire Line
 	10000 1500 10000 1700
 Text Notes 8350 5100 0    50   ~ 0
-Turn on at VBUS >4.5V
+Turn on at VBUS >4V
 Text Notes 3900 7650 0    50   ~ 0
 Addr: 101001X
 Text Notes 5600 7650 0    50   ~ 0
