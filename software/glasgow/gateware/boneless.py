@@ -285,8 +285,8 @@ class BonelessSimulationTestbench(Module):
         self.mem = Memory(width=16, depth=len(self.mem_init), init=self.mem_init)
         self.specials += self.mem
 
-        mem_rdport = self.mem.get_port(has_re=True)
-        mem_wrport = self.mem.get_port(has_re=True, write_capable=True)
+        mem_rdport = self.mem.get_port(has_re=True, mode=READ_FIRST)
+        mem_wrport = self.mem.get_port(write_capable=True)
         self.specials += [mem_rdport, mem_wrport]
 
         if self.ext_init:
@@ -699,8 +699,8 @@ class BonelessTestbench(Module):
             ]
 
         self.specials.mem = Memory(width=16, depth=256)
-        self.specials.mem_rdport = self.mem.get_port(has_re=True)
-        self.specials.mem_wrport = self.mem.get_port(has_re=True, write_capable=True)
+        self.specials.mem_rdport = self.mem.get_port(has_re=True, mode=READ_FIRST)
+        self.specials.mem_wrport = self.mem.get_port(write_capable=True)
         self.submodules.dut = BonelessCore(reset_addr=8,
             mem_rdport=self.mem_rdport,
             mem_wrport=self.mem_wrport,
