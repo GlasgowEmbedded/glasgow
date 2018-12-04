@@ -153,7 +153,8 @@
 #            OR   Rd, Ra, Rb
 #            XOR  Rd, Ra, Rb
 # Operation: Rd ← Ra · Rb
-#            ZSCO ← flags(Rd)
+#            ZS ← flags(Rd)
+#            CO ← undefined
 #
 # Arithmetic instructions
 # -----------------------
@@ -177,21 +178,25 @@
 #
 # Mnemonic:  SLL  Rd, Ra, amt
 # Operation: Rd ← {Ra[15-amt:0],   amt{0}}
-#            ZSCO ← flags(Rd)
+#            ZS ← flags(Rd)
+#            CO ← undefined
 #
 # Mnemonic:  ROT  Rd, Ra, amt
 #            ROL  Rd, Ra, amt (alias)
 #            ROR  Rd, Ra, amt (pseudo)
 # Operation: Rd ← {Ra[15-amt:0],   Ra[15:15-amt]}
-#            ZSCO ← flags(Rd)
+#            ZS ← flags(Rd)
+#            CO ← undefined
 #
 # Mnemonic:  SRL  Rd, Ra, amt
 # Operation: Rd ← {15-amt{0},      Ra[15:amt]}
-#            ZSCO ← flags(Rd)
+#            ZS ← flags(Rd)
+#            CO ← undefined
 #
 # Mnemonic:  SRA  Rd, Ra, amt
 # Operation: Rd ← {15-amt{Ra[15]}, Ra[15:amt]}
-#            ZSCO ← flags(Rd)
+#            ZS ← flags(Rd)
+#            CO ← undefined
 #
 # Memory instructions
 # -------------------
