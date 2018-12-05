@@ -109,7 +109,8 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         # Always try to allocate at least as many USB buffers as the amount of data we know we're
         # going to read from the FIFO. The real value is capped to avoid hitting platform-specific
         # limits for USB I/O size (see above).
-        hint = max(hint, length)
+        if length is not None:
+            hint = max(hint, length)
 
         if len(self._buffer_out) > 0:
             # Flush the buffer, so that everything written before the read reaches the device.
