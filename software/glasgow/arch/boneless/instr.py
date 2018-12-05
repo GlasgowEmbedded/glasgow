@@ -42,7 +42,7 @@ def M_FORMAT(opcode, rsd, ra, off):
 def I_FORMAT(opcode, rsd, imm, u=False):
     assert rsd in range(8)
     if isinstance(imm, str):
-        return lambda resolve: I_FORMAT(opcode, rst, resolve(imm), u)
+        return lambda resolve: I_FORMAT(opcode, rsd, resolve(imm), u)
     assert ((not u and -128 <= imm <= 127) or
             (u and imm in range(256)))
     return (((opcode & 0b11111) << 11) |
