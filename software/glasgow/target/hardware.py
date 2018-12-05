@@ -111,7 +111,7 @@ class GlasgowHardwareTarget(Module):
         if build_dir is None:
             build_dir = tempfile.mkdtemp(prefix="glasgow_")
         try:
-            self.build(build_dir=build_dir)
+            self.build(build_dir=build_dir, **kwargs)
             with open(os.path.join(build_dir, "top.bin"), "rb") as f:
                 bitstream = f.read()
             if debug:

@@ -170,15 +170,23 @@ def get_argparser():
     add_voltage_arg(p_voltage_limit,
         help="maximum allowed I/O port voltage")
 
+    def add_toolchain_args(parser):
+        parser.add_argument(
+            "--synthesis-opts", metavar="OPTIONS", type=str, default="",
+            help="(advanced) pass OPTIONS to FPGA synthesis toolchain")
+
     p_run = subparsers.add_parser(
         "run", formatter_class=TextHelpFormatter,
         help="load an applet bitstream and run applet code")
+    add_toolchain_args(p_run)
+
     p_run.add_argument(
         "--rebuild", default=False, action="store_true",
         help="rebuild bitstream even if an identical one is already loaded")
     p_run.add_argument(
         "--trace", metavar="FILENAME", type=argparse.FileType("wt"), default=None,
         help="trace applet I/O to FILENAME")
+
     g_run_bitstream = p_run.add_mutually_exclusive_group(required=True)
     g_run_bitstream.add_argument(
         "--bitstream", metavar="FILENAME", type=argparse.FileType("rb"),
@@ -193,6 +201,7 @@ def get_argparser():
     p_flash = subparsers.add_parser(
         "flash", formatter_class=TextHelpFormatter,
         help="program FX2 firmware or applet bitstream into EEPROM")
+    add_toolchain_args(p_flash)
 
     g_flash_firmware = p_flash.add_mutually_exclusive_group()
     g_flash_firmware.add_argument(
@@ -226,6 +235,8 @@ def get_argparser():
     p_build = subparsers.add_parser(
         "build", formatter_class=TextHelpFormatter,
         help="(advanced) build applet logic and save it as a file")
+    add_toolchain_args(p_build)
+
     p_build.add_argument(
         "--trace", default=False, action="store_true",
         help="include applet analyzer")
@@ -328,6 +339,10 @@ def create_logger(args):
         root_logger.setLevel(level)
 
 
+def _toolchain_opts(args):
+    return {"debug": True, "synth_opts": args.synthesis_opts}
+
+
 async def _main():
     args = get_argparser().parse_args()
     create_logger(args)
@@ -384,7 +399,8 @@ async def _main():
                 target, applet = _applet(args)
                 device.demultiplexer = DirectDemultiplexer(device)
 
-                await device.download_target(target, rebuild=args.rebuild)
+                await device.download_target(target, rebuild=args.rebuild,
+                                             toolchain_opts=_toolchain_opts(args))
 
                 if args.trace:
                     logger.info("starting applet analyzer")
@@ -521,7 +537,7 @@ async def _main():
                 logger.info("building bitstream for applet %s", args.applet)
                 target, applet = _applet(args)
                 new_bitstream_id = target.get_bitstream_id()
-                new_bitstream = target.get_bitstream(debug=True)
+                new_bitstream = target.get_bitstream(**_toolchain_opts(args))
 
                 # We always build and reflash the bitstream in case the one currently
                 # in EEPROM is corrupted. If we only compared the ID, there would be
@@ -583,7 +599,7 @@ async def _main():
             if args.type in ("bin", "bitstream"):
                 logger.info("building bitstream for applet %r", args.applet)
                 with open(args.filename or args.applet + ".bin", "wb") as f:
-                    f.write(target.get_bitstream(debug=True))
+                    f.write(target.get_bitstream(**_toolchain_opts(args)))
             if args.type in ("zip", "archive"):
                 logger.info("building archive for applet %r", args.applet)
                 with target.get_build_tree() as tree:
