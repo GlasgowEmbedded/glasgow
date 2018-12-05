@@ -41,7 +41,7 @@ setup(
     #description="TODO",
     #long_description="""TODO""",
     license="0-clause BSD License",
-    install_requires=["migen", "fx2>=0.6", "pyvcd", "bitarray", "crcmod"],
+    install_requires=["migen", "fx2>=0.6", "libusb1>=1.6.6", "pyvcd", "bitarray", "crcmod"],
     dependency_links=[
         "git+https://github.com/m-labs/migen.git#egg=migen",
     ],
