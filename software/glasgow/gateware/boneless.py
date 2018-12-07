@@ -620,6 +620,32 @@ class BonelessTestCase(unittest.TestCase):
         yield from self.assertMemory(tb, 7, 0x0001)
 
     @simulation_test(regs=[0x1234, 0x1235],
+                     code=[CMP (R0, R0), JUGE(1), MOVL(R2, 1), MOVL(R3, 1),
+                           CMP (R1, R0), JUGE(1), MOVL(R4, 1), MOVL(R5, 1),
+                           CMP (R0, R1), JUGE(1), MOVL(R6, 1), MOVL(R7, 1)])
+    def test_JUGE(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertMemory(tb, 2, 0x0000)
+        yield from self.assertMemory(tb, 3, 0x0001)
+        yield from self.assertMemory(tb, 4, 0x0000)
+        yield from self.assertMemory(tb, 5, 0x0001)
+        yield from self.assertMemory(tb, 6, 0x0001)
+        yield from self.assertMemory(tb, 7, 0x0001)
+
+    @simulation_test(regs=[0x1234, 0x1235],
+                     code=[CMP (R0, R0), JULT(1), MOVL(R2, 1), MOVL(R3, 1),
+                           CMP (R1, R0), JULT(1), MOVL(R4, 1), MOVL(R5, 1),
+                           CMP (R0, R1), JULT(1), MOVL(R6, 1), MOVL(R7, 1)])
+    def test_JULT(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertMemory(tb, 2, 0x0001)
+        yield from self.assertMemory(tb, 3, 0x0001)
+        yield from self.assertMemory(tb, 4, 0x0001)
+        yield from self.assertMemory(tb, 5, 0x0001)
+        yield from self.assertMemory(tb, 6, 0x0000)
+        yield from self.assertMemory(tb, 7, 0x0001)
+
+    @simulation_test(regs=[0x1234, 0x1235],
                      code=[CMP (R0, R0), JUGT(1), MOVL(R2, 1), MOVL(R3, 1),
                            CMP (R1, R0), JUGT(1), MOVL(R4, 1), MOVL(R5, 1),
                            CMP (R0, R1), JUGT(1), MOVL(R6, 1), MOVL(R7, 1)])
