@@ -14,6 +14,9 @@ from distutils.errors import DistutilsExecError
 class GlasgowBuildExt(build_ext):
     def run(self):
         try:
+            libfx2_dir = path.join("..", "vendor", "libfx2", "firmware")
+            spawn(["make", "-C", path.join(libfx2_dir)], dry_run=self.dry_run)
+
             firmware_dir = path.join("..", "firmware")
             spawn(["make", "-C", path.join(firmware_dir)], dry_run=self.dry_run)
 
