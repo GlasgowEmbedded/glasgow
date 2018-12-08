@@ -7,8 +7,8 @@ __all__ = [
     "R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7",
     "ADD", "ADDI", "AND", "CMP", "J", "JAL", "JC", "JE", "JNC", "JNE", "JNO", "JNS", "JNZ", "JO",
     "JR", "JS", "JSGE", "JSGT", "JSLE", "JSLT", "JUGE", "JUGT", "JULE", "JULT", "JZ", "LD", "LDI",
-    "LDX", "MOV", "MOVA", "MOVH", "MOVI", "MOVL", "NOP", "OR", "ROT", "SLL", "SRA", "SRL", "ST",
-    "STI", "STX", "SUB", "SUBI", "XOR",
+    "LDX", "MOV", "MOVA", "MOVH", "MOVI", "MOVL", "NOP", "OR", "ROT", "ROL", "ROR", "SLL", "SRA",
+    "SRL", "ST", "STI", "STX", "SUB", "SUBI", "XOR",
     "L", "assemble",
 ]
 
