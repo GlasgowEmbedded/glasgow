@@ -3,7 +3,6 @@ import sys
 import logging
 import asyncio
 from migen import *
-from migen.genlib.fsm import *
 
 from .. import *
 from ...gateware.pads import *

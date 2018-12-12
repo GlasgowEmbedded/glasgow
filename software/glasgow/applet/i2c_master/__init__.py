@@ -2,7 +2,6 @@ import argparse
 import logging
 import math
 from migen import *
-from migen.genlib.fsm import *
 
 from .. import *
 from ...support.pyrepl import *

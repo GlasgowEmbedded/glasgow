@@ -1,6 +1,5 @@
 import logging
 from migen import *
-from migen.fhdl.bitcontainer import value_bits_sign
 from migen.genlib.cdc import MultiReg
 from migen.genlib.fifo import _FIFOInterface
 

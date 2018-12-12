@@ -1,7 +1,6 @@
 # I2C reference: https://www.nxp.com/docs/en/user-guide/UM10204.pdf
 
 from migen import *
-from migen.genlib.fsm import *
 from migen.genlib.cdc import MultiReg
 
 

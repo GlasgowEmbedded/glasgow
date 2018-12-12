@@ -3,7 +3,6 @@
 # http://www.ftdichip.com/Support/Documents/AppNotes/ AN_108_Command_Processor_for_MPSSE_and_MCU_Host_Bus_Emulation_Modes.pdf
 
 from migen import *
-from migen.genlib.fsm import *
 from migen.genlib.cdc import MultiReg
 
 

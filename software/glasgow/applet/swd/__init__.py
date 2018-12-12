@@ -5,8 +5,6 @@ import asyncio
 import struct
 import math
 from migen import *
-from migen.fhdl.bitcontainer import value_bits_sign
-from migen.genlib.fsm import *
 
 from .. import *
 from ...gateware.pads import *

@@ -1,7 +1,6 @@
 from functools import reduce
 from collections import OrderedDict
 from migen import *
-from migen.fhdl.bitcontainer import log2_int
 from migen.genlib.fifo import _FIFOInterface, SyncFIFOBuffered
 from migen.genlib.coding import PriorityEncoder, PriorityDecoder
 from migen.genlib.fsm import FSM

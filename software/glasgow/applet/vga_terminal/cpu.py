@@ -34,7 +34,6 @@
 #   * HLT            ≡  halt
 
 from migen import *
-from migen.genlib.fsm import *
 
 
 __all__ = [

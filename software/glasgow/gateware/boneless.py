@@ -1,7 +1,4 @@
 from migen import *
-from migen.fhdl.bitcontainer import value_bits_sign
-from migen.fhdl.specials import _MemoryPort
-from migen.genlib.fsm import *
 
 from ..arch.boneless.opcode import *
 

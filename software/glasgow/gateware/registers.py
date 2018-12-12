@@ -1,5 +1,4 @@
 from migen import *
-from migen.genlib.fsm import *
 
 
 __all__ = ["Registers", "I2CRegisters"]
