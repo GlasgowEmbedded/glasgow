@@ -68,7 +68,7 @@ def XOR (rd, ra, rb):  return [A_FORMAT(OPCODE_LOGIC,   OPTYPE_XOR, rd, ra, rb)]
 
 def ADD (rd, ra, rb):  return [A_FORMAT(OPCODE_ARITH,   OPTYPE_ADD, rd, ra, rb)]
 def SUB (rd, ra, rb):  return [A_FORMAT(OPCODE_ARITH,   OPTYPE_SUB, rd, ra, rb)]
-def CMP (    rb, ra):  return [A_FORMAT(OPCODE_ARITH,   OPTYPE_CMP,  0, ra, rb)]
+def CMP (    ra, rb):  return [A_FORMAT(OPCODE_ARITH,   OPTYPE_CMP,  0, ra, rb)]
 
 def SLL (rd, ra, amt): return [S_FORMAT(OPCODE_SHIFT_L, OPTYPE_SLL, rd, ra, amt)]
 def ROT (rd, ra, amt): return [S_FORMAT(OPCODE_SHIFT_L, OPTYPE_ROT, rd, ra, amt % 16)]

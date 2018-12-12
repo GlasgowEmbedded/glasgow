@@ -169,7 +169,7 @@
 # Operation: Rd ← Rd + imm
 #            ZSCO ← flags(Rd)
 #
-# Mnemonic:  CMP  Rb, Ra
+# Mnemonic:  CMP  Ra, Rb
 # Operation: t  ← Ra - Rb
 #            ZSCO ← flags(t)
 #
@@ -241,14 +241,14 @@
 #
 # Mnemonic:  JNC  ±off (F=0)
 #            JC   ±off (F=1)
-#            JUGE ±off (F=0)
-#            JULT ±off (F=1)
+#            JULT ±off (F=0)
+#            JUGE ±off (F=1)
 # Operation: if(C = F)
 #              PC ← PC+1+off
 #
-# Mnemonic:  JUGT ±off (F=0)
-#            JULE ±off (F=1)
-# Operation: if((C or Z) = F)
+# Mnemonic:  JULE ±off (F=0)
+#            JUGT ±off (F=1)
+# Operation: if((~C or Z) = F)
 #              PC ← PC+1+off
 #
 # Mnemonic:  JSGE ±off (F=0)

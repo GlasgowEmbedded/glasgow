@@ -105,7 +105,7 @@ class BonelessCore(Module):
                 OPCODE_F_S:     s_cond.eq(r_s),
                 OPCODE_F_O:     s_cond.eq(r_o),
                 OPCODE_F_C:     s_cond.eq(r_c),
-                OPCODE_F_CoZ:   s_cond.eq(r_c | r_z),
+                OPCODE_F_NCoZ:  s_cond.eq(~r_c | r_z),
                 OPCODE_F_SxO:   s_cond.eq(r_s ^ r_o),
                 OPCODE_F_SxOoZ: s_cond.eq((r_s ^ r_o) | r_z),
             })
@@ -116,7 +116,7 @@ class BonelessCore(Module):
         c_flags = Signal()
         self.sync += [
             If(c_flags,
-                r_z.eq(s_res == 0),
+                r_z.eq(s_res[0:16] == 0),
                 r_s.eq(s_res[15]),
                 r_c.eq(s_res[16]),
                 # http://teaching.idallen.com/cst8214/08w/notes/overflow.txt
@@ -193,8 +193,8 @@ class BonelessCore(Module):
                 }),
                 OPCODE_ARITH: Case(i_type2, {
                     OPTYPE_ADD:  s_res.eq(r_opA + s_opB),
-                    OPTYPE_SUB: [s_res.eq(r_opA - s_opB), s_sub.eq(1)],
-                    OPTYPE_CMP: [s_res.eq(r_opA - s_opB), s_cmp.eq(1)],
+                    OPTYPE_SUB: [s_res.eq(r_opA + ((~s_opB) & 0xffff) + 1), s_sub.eq(1)],
+                    OPTYPE_CMP: [s_res.eq(r_opA + ((~s_opB) & 0xffff) + 1), s_cmp.eq(1)],
                 })
             }),
             mem_w_a.eq(Cat(i_regZ, r_win)),
@@ -619,31 +619,30 @@ class BonelessTestCase(unittest.TestCase):
         yield from self.assertMemory(tb, 6, 0x0000)
         yield from self.assertMemory(tb, 7, 0x0001)
 
+    def assertCMPBranch(self, tb, n, taken):
+        r = 2 + n * 2
+        if taken:
+            yield from self.assertMemory(tb, r + 0, 0x0000)
+            yield from self.assertMemory(tb, r + 1, 0x0001)
+        else:
+            yield from self.assertMemory(tb, r + 0, 0x0001)
+            yield from self.assertMemory(tb, r + 1, 0x0001)
+
+    def assertCMPBranchY(self, tb, n):
+        yield from self.assertCMPBranch(tb, n, True)
+
+    def assertCMPBranchN(self, tb, n):
+        yield from self.assertCMPBranch(tb, n, False)
+
     @simulation_test(regs=[0x1234, 0x1235],
                      code=[CMP (R0, R0), JUGE(1), MOVL(R2, 1), MOVL(R3, 1),
                            CMP (R0, R1), JUGE(1), MOVL(R4, 1), MOVL(R5, 1),
                            CMP (R1, R0), JUGE(1), MOVL(R6, 1), MOVL(R7, 1)])
     def test_JUGE(self, tb):
         yield from self.run_core(tb)
-        yield from self.assertMemory(tb, 2, 0x0000)
-        yield from self.assertMemory(tb, 3, 0x0001)
-        yield from self.assertMemory(tb, 4, 0x0000)
-        yield from self.assertMemory(tb, 5, 0x0001)
-        yield from self.assertMemory(tb, 6, 0x0001)
-        yield from self.assertMemory(tb, 7, 0x0001)
-
-    @simulation_test(regs=[0x1234, 0x1235],
-                     code=[CMP (R0, R0), JULT(1), MOVL(R2, 1), MOVL(R3, 1),
-                           CMP (R0, R1), JULT(1), MOVL(R4, 1), MOVL(R5, 1),
-                           CMP (R1, R0), JULT(1), MOVL(R6, 1), MOVL(R7, 1)])
-    def test_JULT(self, tb):
-        yield from self.run_core(tb)
-        yield from self.assertMemory(tb, 2, 0x0001)
-        yield from self.assertMemory(tb, 3, 0x0001)
-        yield from self.assertMemory(tb, 4, 0x0001)
-        yield from self.assertMemory(tb, 5, 0x0001)
-        yield from self.assertMemory(tb, 6, 0x0000)
-        yield from self.assertMemory(tb, 7, 0x0001)
+        yield from self.assertCMPBranchY(tb, 0) # R0 u>= R0 → Y
+        yield from self.assertCMPBranchN(tb, 1) # R0 u>= R1 → N
+        yield from self.assertCMPBranchY(tb, 2) # R1 u>= R0 → Y
 
     @simulation_test(regs=[0x1234, 0x1235],
                      code=[CMP (R0, R0), JUGT(1), MOVL(R2, 1), MOVL(R3, 1),
@@ -651,12 +650,19 @@ class BonelessTestCase(unittest.TestCase):
                            CMP (R1, R0), JUGT(1), MOVL(R6, 1), MOVL(R7, 1)])
     def test_JUGT(self, tb):
         yield from self.run_core(tb)
-        yield from self.assertMemory(tb, 2, 0x0001)
-        yield from self.assertMemory(tb, 3, 0x0001)
-        yield from self.assertMemory(tb, 4, 0x0000)
-        yield from self.assertMemory(tb, 5, 0x0001)
-        yield from self.assertMemory(tb, 6, 0x0001)
-        yield from self.assertMemory(tb, 7, 0x0001)
+        yield from self.assertCMPBranchN(tb, 0) # R0 u> R0 → N
+        yield from self.assertCMPBranchN(tb, 1) # R0 u> R1 → N
+        yield from self.assertCMPBranchY(tb, 2) # R1 u> R0 → Y
+
+    @simulation_test(regs=[0x1234, 0x1235],
+                     code=[CMP (R0, R0), JULT(1), MOVL(R2, 1), MOVL(R3, 1),
+                           CMP (R0, R1), JULT(1), MOVL(R4, 1), MOVL(R5, 1),
+                           CMP (R1, R0), JULT(1), MOVL(R6, 1), MOVL(R7, 1)])
+    def test_JULT(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertCMPBranchN(tb, 0) # R0 u< R0 → N
+        yield from self.assertCMPBranchY(tb, 1) # R0 u< R1 → Y
+        yield from self.assertCMPBranchN(tb, 2) # R1 u< R0 → N
 
     @simulation_test(regs=[0x1234, 0x1235],
                      code=[CMP (R0, R0), JULE(1), MOVL(R2, 1), MOVL(R3, 1),
@@ -664,12 +670,9 @@ class BonelessTestCase(unittest.TestCase):
                            CMP (R1, R0), JULE(1), MOVL(R6, 1), MOVL(R7, 1)])
     def test_JULE(self, tb):
         yield from self.run_core(tb)
-        yield from self.assertMemory(tb, 2, 0x0000)
-        yield from self.assertMemory(tb, 3, 0x0001)
-        yield from self.assertMemory(tb, 4, 0x0001)
-        yield from self.assertMemory(tb, 5, 0x0001)
-        yield from self.assertMemory(tb, 6, 0x0000)
-        yield from self.assertMemory(tb, 7, 0x0001)
+        yield from self.assertCMPBranchY(tb, 0) # R0 u<= R0 → Y
+        yield from self.assertCMPBranchY(tb, 1) # R0 u<= R1 → Y
+        yield from self.assertCMPBranchN(tb, 2) # R1 u<= R0 → N
 
     @simulation_test(regs=[0x0123, 0x8123],
                      code=[CMP (R0, R0), JSGE(1), MOVL(R2, 1), MOVL(R3, 1),
@@ -677,25 +680,9 @@ class BonelessTestCase(unittest.TestCase):
                            CMP (R1, R0), JSGE(1), MOVL(R6, 1), MOVL(R7, 1)])
     def test_JSGE(self, tb):
         yield from self.run_core(tb)
-        yield from self.assertMemory(tb, 2, 0x0000)
-        yield from self.assertMemory(tb, 3, 0x0001)
-        yield from self.assertMemory(tb, 4, 0x0001)
-        yield from self.assertMemory(tb, 5, 0x0001)
-        yield from self.assertMemory(tb, 6, 0x0000)
-        yield from self.assertMemory(tb, 7, 0x0001)
-
-    @simulation_test(regs=[0x0123, 0x8123],
-                     code=[CMP (R0, R0), JSLT(1), MOVL(R2, 1), MOVL(R3, 1),
-                           CMP (R0, R1), JSLT(1), MOVL(R4, 1), MOVL(R5, 1),
-                           CMP (R1, R0), JSLT(1), MOVL(R6, 1), MOVL(R7, 1)])
-    def test_JSLT(self, tb):
-        yield from self.run_core(tb)
-        yield from self.assertMemory(tb, 2, 0x0001)
-        yield from self.assertMemory(tb, 3, 0x0001)
-        yield from self.assertMemory(tb, 4, 0x0000)
-        yield from self.assertMemory(tb, 5, 0x0001)
-        yield from self.assertMemory(tb, 6, 0x0001)
-        yield from self.assertMemory(tb, 7, 0x0001)
+        yield from self.assertCMPBranchY(tb, 0) # R0 s>= R0 → Y
+        yield from self.assertCMPBranchY(tb, 1) # R0 s>= R1 → Y
+        yield from self.assertCMPBranchN(tb, 2) # R1 s>= R0 → N
 
     @simulation_test(regs=[0x0123, 0x8123],
                      code=[CMP (R0, R0), JSGT(1), MOVL(R2, 1), MOVL(R3, 1),
@@ -703,12 +690,19 @@ class BonelessTestCase(unittest.TestCase):
                            CMP (R1, R0), JSGT(1), MOVL(R6, 1), MOVL(R7, 1)])
     def test_JSGT(self, tb):
         yield from self.run_core(tb)
-        yield from self.assertMemory(tb, 2, 0x0001)
-        yield from self.assertMemory(tb, 3, 0x0001)
-        yield from self.assertMemory(tb, 4, 0x0001)
-        yield from self.assertMemory(tb, 5, 0x0001)
-        yield from self.assertMemory(tb, 6, 0x0000)
-        yield from self.assertMemory(tb, 7, 0x0001)
+        yield from self.assertCMPBranchN(tb, 0) # R0 s> R0 → N
+        yield from self.assertCMPBranchY(tb, 1) # R0 s> R1 → Y
+        yield from self.assertCMPBranchN(tb, 2) # R1 s> R0 → N
+
+    @simulation_test(regs=[0x0123, 0x8123],
+                     code=[CMP (R0, R0), JSLT(1), MOVL(R2, 1), MOVL(R3, 1),
+                           CMP (R0, R1), JSLT(1), MOVL(R4, 1), MOVL(R5, 1),
+                           CMP (R1, R0), JSLT(1), MOVL(R6, 1), MOVL(R7, 1)])
+    def test_JSLT(self, tb):
+        yield from self.run_core(tb)
+        yield from self.assertCMPBranchN(tb, 0) # R0 s< R0 → N
+        yield from self.assertCMPBranchN(tb, 1) # R0 s< R1 → N
+        yield from self.assertCMPBranchY(tb, 2) # R1 s< R0 → Y
 
     @simulation_test(regs=[0x0123, 0x8123],
                      code=[CMP (R0, R0), JSLE(1), MOVL(R2, 1), MOVL(R3, 1),
@@ -716,12 +710,9 @@ class BonelessTestCase(unittest.TestCase):
                            CMP (R1, R0), JSLE(1), MOVL(R6, 1), MOVL(R7, 1)])
     def test_JSLE(self, tb):
         yield from self.run_core(tb)
-        yield from self.assertMemory(tb, 2, 0x0000)
-        yield from self.assertMemory(tb, 3, 0x0001)
-        yield from self.assertMemory(tb, 4, 0x0000)
-        yield from self.assertMemory(tb, 5, 0x0001)
-        yield from self.assertMemory(tb, 6, 0x0001)
-        yield from self.assertMemory(tb, 7, 0x0001)
+        yield from self.assertCMPBranchY(tb, 0) # R0 s<= R0 → Y
+        yield from self.assertCMPBranchN(tb, 1) # R0 s<= R1 → N
+        yield from self.assertCMPBranchY(tb, 2) # R1 s<= R0 → Y
 
 # -------------------------------------------------------------------------------------------------
 
