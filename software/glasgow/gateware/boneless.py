@@ -60,6 +60,35 @@ class _ALU(Module):
         ]
 
 
+class _SRU(Module):
+    DIR_L = 0b0
+    DIR_R = 0b1
+
+    def __init__(self, width):
+        self.s_i   = Signal(width)
+        self.s_c   = Signal()
+        self.r_o   = Signal(width)
+
+        self.c_ld  = Signal()
+        self.c_dir = Signal()
+
+        ###
+
+        # The following mux tree is optimized for 4-LUTs, and fits into the optimal 48 4-LUTs
+        # on iCE40 using synth_ice40.
+        s_l  = Signal(width)
+        s_r  = Signal(width)
+        s_i1 = Signal(width)
+        s_i2 = Signal(width)
+        self.comb += [
+            s_l.eq(Cat(self.s_c,     self.r_o[:-1])),
+            s_r.eq(Cat(self.r_o[1:], self.s_c     )),
+            s_i1.eq(Mux(self.c_dir, s_r, s_l)),
+            s_i2.eq(Mux(self.c_ld, self.s_i, s_i1)),
+        ]
+        self.sync += self.r_o.eq(s_i2)
+
+
 class BonelessCore(Module):
     def __init__(self, reset_addr, mem_rdport, mem_wrport, ext_port=None, simulation=False):
         if ext_port is None:
@@ -96,10 +125,7 @@ class BonelessCore(Module):
 
         r_opA   = Signal(16)
         s_opB   = Signal(16)
-
-        r_opS   = Signal(16)
         r_shift = Signal(5)
-
         s_res   = Signal(17)
 
         s_addr  = Signal(16)
@@ -181,6 +207,11 @@ class BonelessCore(Module):
             }),
         ]
 
+        self.submodules.sru = sru = _SRU(width=16)
+        self.comb += [
+            sru.s_i.eq(mem_r_d),
+        ]
+
         self.comb += mem_re.eq(1)
 
         self.submodules.fsm = FSM(reset_state="FETCH")
@@ -244,22 +275,22 @@ class BonelessCore(Module):
             NextState("FETCH")
         )
         self.fsm.act("S-READ",
-            NextValue(r_opS, mem_r_d),
+            sru.c_ld.eq(1),
             NextValue(r_shift, i_shift),
             NextState("S-EXECUTE")
         )
         self.fsm.act("S-EXECUTE",
             Case(Cat(i_code1, C(OPCLASS_S, 4)), {
                 OPCODE_SHIFT_L: Case(i_type1, {
-                    OPTYPE_SLL: NextValue(r_opS, Cat(C(0, 1),   r_opS[:-1])),
-                    OPTYPE_ROT: NextValue(r_opS, Cat(r_opS[-1], r_opS[:-1])),
+                    OPTYPE_SLL: [sru.c_dir.eq(sru.DIR_L), sru.s_c.eq(0)],
+                    OPTYPE_ROT: [sru.c_dir.eq(sru.DIR_L), sru.s_c.eq(sru.r_o[-1])],
                 }),
                 OPCODE_SHIFT_R: Case(i_type1, {
-                    OPTYPE_SRL: NextValue(r_opS, Cat(r_opS[1:], C(0, 1))),
-                    OPTYPE_SRA: NextValue(r_opS, Cat(r_opS[1:], r_opS[-1])),
+                    OPTYPE_SRL: [sru.c_dir.eq(sru.DIR_R), sru.s_c.eq(0)],
+                    OPTYPE_SRA: [sru.c_dir.eq(sru.DIR_R), sru.s_c.eq(sru.r_o[-1])],
                 })
             }),
-            s_res.eq(r_opS),
+            s_res.eq(sru.r_o),
             mem_w_a.eq(Cat(i_regZ, r_win)),
             mem_w_d.eq(s_res),
             mem_we.eq(1),
@@ -788,12 +819,17 @@ class BonelessTestbench(Module):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("type", metavar="TYPE", choices=["bus", "pins", "alu"], default="bus")
+    parser.add_argument(
+        "type", metavar="TYPE", choices=["alu", "sru", "bus", "pins"], default="bus")
     args = parser.parse_args()
 
     if args.type == "alu":
         tb  = _ALU(16)
         ios = {tb.s_a, tb.s_b, tb.s_o, tb.c_sel}
+
+    if args.type == "sru":
+        tb  = _SRU(16)
+        ios = {tb.s_i, tb.s_c, tb.r_o, tb.c_ld, tb.c_dir}
 
     if args.type == "bus":
         tb  = BonelessTestbench()
