@@ -246,8 +246,8 @@
 # Operation: if(C = F)
 #              PC ← PC+1+off
 #
-# Mnemonic:  JULE ±off (F=0)
-#            JUGT ±off (F=1)
+# Mnemonic:  JUGT ±off (F=0)
+#            JULE ±off (F=1)
 # Operation: if((~C or Z) = F)
 #              PC ← PC+1+off
 #
