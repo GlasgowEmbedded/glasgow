@@ -2531,9 +2531,6 @@ Wire Wire Line
 	1300 4350 1350 4350
 Wire Wire Line
 	1050 3500 1350 3500
-Connection ~ 1350 3700
-Wire Wire Line
-	1350 3700 1350 4350
 Wire Wire Line
 	1300 4550 2300 4550
 Wire Wire Line
@@ -2746,10 +2743,26 @@ Text Notes 2300 7650 0    50   ~ 0
 Addr: 1100000
 Wire Wire Line
 	7400 4250 7550 4250
+$Comp
+L Device:Ferrite_Bead FB?
+U 1 1 5C13076A
+P 1350 4050
+F 0 "FB?" H 1200 4150 50  0000 R CNN
+F 1 "Ferrite_Bead" H 1200 4250 50  0000 R CNN
+F 2 "Inductor_SMD:L_0402_1005Metric" V 1280 4050 50  0001 C CNN
+F 3 "~" H 1350 4050 50  0001 C CNN
+	1    1350 4050
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	1350 4200 1350 4350
+Wire Wire Line
+	1350 3900 1350 3700
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
-	4700 2150 4700 6250
-Wire Bus Line
 	7850 2550 7850 6250
+Wire Bus Line
+	4700 2150 4700 6250
+Connection ~ 1350 3700
 $EndSCHEMATC

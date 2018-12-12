@@ -374,6 +374,27 @@ X 4 4 0 -200 50 U 50 50 1 1 P
 ENDDRAW
 ENDDEF
 #
+# Device:Ferrite_Bead
+#
+DEF Device:Ferrite_Bead FB 0 0 N Y 1 F N
+F0 "FB" -150 25 50 V V C CNN
+F1 "Device:Ferrite_Bead" 150 0 50 V V C CNN
+F2 "" -70 0 50 V I C CNN
+F3 "" 0 0 50 H I C CNN
+$FPLIST
+ Inductor_*
+ L_*
+ *Ferrite*
+$ENDFPLIST
+DRAW
+P 2 0 1 0 0 -50 0 -48 N
+P 2 0 1 0 0 50 0 51 N
+P 5 0 1 0 -109 16 -67 89 109 -12 66 -85 -109 16 N
+X ~ 1 0 150 100 D 50 50 1 1 P
+X ~ 2 0 -150 100 U 50 50 1 1 P
+ENDDRAW
+ENDDEF
+#
 # Device:LED
 #
 DEF Device:LED D 0 40 N N 1 F N
