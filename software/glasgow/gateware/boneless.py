@@ -26,6 +26,40 @@ class _StubMemoryPort(Module):
         self.dat_w = Signal(16, name=name + "_dat_w")
 
 
+class _ALU(Module):
+    SEL_AND = 0b1000
+    SEL_OR  = 0b1001
+    SEL_XOR = 0b1010
+    SEL_ADD = 0b0011
+    SEL_SUB = 0b0111
+
+    def __init__(self, width):
+        self.s_a   = Signal(width)
+        self.s_b   = Signal(width)
+        self.s_o   = Signal(width + 1)
+
+        self.c_sel = Signal(4)
+
+        ###
+
+        # The following mux tree is optimized for 4-LUTs, and fits into the optimal 49 4-LUTs
+        # on iCE40 using synth_ice40 with -relut:
+        #  * 16 LUTs for A / A*B / A+B / A⊕B selector
+        #  * 16 LUTs for B / ~B selector
+        #  * 17 LUTs for adder / passthrough selector
+        s_i1 = Signal(width)
+        s_i2 = Signal(width)
+        s_i3 = Signal(width)
+        s_i4 = Signal(width)
+        self.comb += [
+            s_i1.eq(Mux(self.c_sel[0], self.s_a | self.s_b, self.s_a & self.s_b)),
+            s_i2.eq(Mux(self.c_sel[0], self.s_a,            self.s_a ^ self.s_b)),
+            s_i3.eq(Mux(self.c_sel[1], s_i2, s_i1)),
+            s_i4.eq(Mux(self.c_sel[2], ~self.s_b, self.s_b)),
+            self.s_o.eq(Mux(self.c_sel[3], s_i3, s_i3 + s_i4 + self.c_sel[2])),
+        ]
+
+
 class BonelessCore(Module):
     def __init__(self, reset_addr, mem_rdport, mem_wrport, ext_port=None, simulation=False):
         if ext_port is None:
@@ -35,7 +69,6 @@ class BonelessCore(Module):
             d = Signal.like(v)
             self.comb += d.eq(v)
             return d
-
 
         mem_r_a = mem_rdport.adr
         mem_r_d = mem_rdport.dat_r
@@ -130,6 +163,24 @@ class BonelessCore(Module):
             )
         ]
 
+        self.submodules.alu = alu = _ALU(width=16)
+        self.comb += [
+            alu.s_a.eq(r_opA),
+            alu.s_b.eq(s_opB),
+            Case(Cat(i_code1, C(OPCLASS_A, 4)), {
+                OPCODE_LOGIC: Case(i_type2, {
+                    OPTYPE_AND:  alu.c_sel.eq(alu.SEL_AND),
+                    OPTYPE_OR:   alu.c_sel.eq(alu.SEL_OR),
+                    OPTYPE_XOR:  alu.c_sel.eq(alu.SEL_XOR),
+                }),
+                OPCODE_ARITH: Case(i_type2, {
+                    OPTYPE_ADD:  alu.c_sel.eq(alu.SEL_ADD),
+                    OPTYPE_SUB: [alu.c_sel.eq(alu.SEL_SUB), s_sub.eq(1)],
+                    OPTYPE_CMP: [alu.c_sel.eq(alu.SEL_SUB), s_cmp.eq(1)],
+                })
+            }),
+        ]
+
         self.comb += mem_re.eq(1)
 
         self.submodules.fsm = FSM(reset_state="FETCH")
@@ -185,18 +236,7 @@ class BonelessCore(Module):
         )
         self.fsm.act("A-EXECUTE",
             r_opA.eq(mem_r_d),
-            Case(Cat(i_code1, C(OPCLASS_A, 4)), {
-                OPCODE_LOGIC: Case(i_type2, {
-                    OPTYPE_AND:  s_res.eq(r_opA & s_opB),
-                    OPTYPE_OR:   s_res.eq(r_opA | s_opB),
-                    OPTYPE_XOR:  s_res.eq(r_opA ^ s_opB),
-                }),
-                OPCODE_ARITH: Case(i_type2, {
-                    OPTYPE_ADD:  s_res.eq(r_opA + s_opB),
-                    OPTYPE_SUB: [s_res.eq(r_opA + ((~s_opB) & 0xffff) + 1), s_sub.eq(1)],
-                    OPTYPE_CMP: [s_res.eq(r_opA + ((~s_opB) & 0xffff) + 1), s_cmp.eq(1)],
-                })
-            }),
+            s_res.eq(alu.s_o),
             mem_w_a.eq(Cat(i_regZ, r_win)),
             mem_w_d.eq(s_res),
             mem_we.eq(~s_cmp),
@@ -748,8 +788,12 @@ class BonelessTestbench(Module):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("type", metavar="TYPE", choices=["bus", "pins"], default="bus")
+    parser.add_argument("type", metavar="TYPE", choices=["bus", "pins", "alu"], default="bus")
     args = parser.parse_args()
+
+    if args.type == "alu":
+        tb  = _ALU(16)
+        ios = {tb.s_a, tb.s_b, tb.s_o, tb.c_sel}
 
     if args.type == "bus":
         tb  = BonelessTestbench()
