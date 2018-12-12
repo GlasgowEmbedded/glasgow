@@ -122,8 +122,8 @@
 #     + flag=1 (1 unassigned)
 #   - code=001 JNZ/JNE, JZ/JE
 #   - code=010 JNS, JS
-#   - code=011 JNO, JO
-#   - code=100 JNC/JUGE, JC/JULT
+#   - code=011 JNC/JULT, JC/JUGE
+#   - code=100 JNO, JO
 #   - code=101 JUGT, JULE
 #   - code=110 JSGE, JSLT
 #   - code=111 JSGT, JSLE
