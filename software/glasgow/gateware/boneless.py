@@ -59,7 +59,7 @@ class BonelessCore(Module):
         r_z     = Signal()
         r_s     = Signal()
         r_c     = Signal()
-        r_o     = Signal()
+        r_v     = Signal()
 
         r_opA   = Signal(16)
         s_opB   = Signal(16)
@@ -103,11 +103,11 @@ class BonelessCore(Module):
                 OPCODE_F_0:     s_cond.eq(0),
                 OPCODE_F_Z:     s_cond.eq(r_z),
                 OPCODE_F_S:     s_cond.eq(r_s),
-                OPCODE_F_O:     s_cond.eq(r_o),
+                OPCODE_F_V:     s_cond.eq(r_v),
                 OPCODE_F_C:     s_cond.eq(r_c),
                 OPCODE_F_NCoZ:  s_cond.eq(~r_c | r_z),
-                OPCODE_F_SxO:   s_cond.eq(r_s ^ r_o),
-                OPCODE_F_SxOoZ: s_cond.eq((r_s ^ r_o) | r_z),
+                OPCODE_F_SxV:   s_cond.eq(r_s ^ r_v),
+                OPCODE_F_SxVoZ: s_cond.eq((r_s ^ r_v) | r_z),
             })
         ]
 
@@ -121,11 +121,11 @@ class BonelessCore(Module):
                 r_c.eq(s_res[16]),
                 # http://teaching.idallen.com/cst8214/08w/notes/overflow.txt
                 Case(Cat(s_sub | s_cmp, r_opA[15], s_opB[15], s_res[15]), {
-                    0b1000: r_o.eq(1),
-                    0b0110: r_o.eq(1),
-                    0b1101: r_o.eq(1),
-                    0b0011: r_o.eq(1),
-                    "default": r_o.eq(0),
+                    0b1000: r_v.eq(1),
+                    0b0110: r_v.eq(1),
+                    0b1101: r_v.eq(1),
+                    0b0011: r_v.eq(1),
+                    "default": r_v.eq(0),
                 })
             )
         ]

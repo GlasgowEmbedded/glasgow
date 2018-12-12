@@ -24,7 +24,7 @@
 #     - M-class, for load-store operations. 5-bit single-extended offset.
 #     - I-class, for operations with immediates. 8-bit sign-extended immediate.
 #     - C-class, for control transfers. 11-bit sign-extended offset.
-#   * Four flags: Z (zero), S (sign), C (carry), O (overflow).
+#   * Four flags: Z (zero), S (sign), C (carry), V (overflow).
 #   * Secondary address space for special-purpose registers.
 #
 # As a result, Boneless can be efficiently implemented with a single 16-bit wide single-port
@@ -154,7 +154,7 @@
 #            XOR  Rd, Ra, Rb
 # Operation: Rd ← Ra · Rb
 #            ZS ← flags(Rd)
-#            CO ← undefined
+#            CV ← undefined
 #
 # Arithmetic instructions
 # -----------------------
@@ -162,16 +162,16 @@
 # Mnemonic:  ADD  Rd, Ra, Rb
 #            SUB  Rd, Ra, Rb
 # Operation: Rd ← Ra · Rb
-#            ZSCO ← flags(Rd)
+#            ZSCV ← flags(Rd)
 #
 # Mnemonic:  ADDI Rd, ±imm
 #            SUBI Rd, ±imm (pseudo)
 # Operation: Rd ← Rd + imm
-#            ZSCO ← flags(Rd)
+#            ZSCV ← flags(Rd)
 #
 # Mnemonic:  CMP  Ra, Rb
 # Operation: t  ← Ra - Rb
-#            ZSCO ← flags(t)
+#            ZSCV ← flags(t)
 #
 # Shift instructions
 # ------------------
@@ -179,24 +179,24 @@
 # Mnemonic:  SLL  Rd, Ra, amt
 # Operation: Rd ← {Ra[15-amt:0],   amt{0}}
 #            ZS ← flags(Rd)
-#            CO ← undefined
+#            CV ← undefined
 #
 # Mnemonic:  ROT  Rd, Ra, amt
 #            ROL  Rd, Ra, amt (alias)
 #            ROR  Rd, Ra, amt (pseudo)
 # Operation: Rd ← {Ra[15-amt:0],   Ra[15:15-amt]}
 #            ZS ← flags(Rd)
-#            CO ← undefined
+#            CV ← undefined
 #
 # Mnemonic:  SRL  Rd, Ra, amt
 # Operation: Rd ← {15-amt{0},      Ra[15:amt]}
 #            ZS ← flags(Rd)
-#            CO ← undefined
+#            CV ← undefined
 #
 # Mnemonic:  SRA  Rd, Ra, amt
 # Operation: Rd ← {15-amt{Ra[15]}, Ra[15:amt]}
 #            ZS ← flags(Rd)
-#            CO ← undefined
+#            CV ← undefined
 #
 # Memory instructions
 # -------------------
@@ -253,10 +253,10 @@
 #
 # Mnemonic:  JSGE ±off (F=0)
 #            JSLT ±off (F=1)
-# Operation: if((S xor O) = F)
+# Operation: if((S xor V) = F)
 #              PC ← PC+1+off
 #
 # Mnemonic:  JSGT ±off (F=0)
 #            JSLE ±off (F=1)
-# Operation: if(((S xor O) or Z) = F)
+# Operation: if(((S xor V) or Z) = F)
 #              PC ← PC+1+off
