@@ -300,7 +300,6 @@ import itertools
 import crcmod
 import math
 from migen import *
-from migen.genlib.fsm import FSM
 from migen.genlib.cdc import MultiReg
 
 from .. import *

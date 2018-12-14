@@ -4,7 +4,6 @@ import asyncio
 import struct
 from migen import *
 from migen.genlib.cdc import MultiReg
-from migen.genlib.fsm import FSM
 
 from .. import *
 from ...database.jedec import *

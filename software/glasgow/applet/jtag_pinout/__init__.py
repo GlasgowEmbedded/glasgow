@@ -3,7 +3,6 @@ import asyncio
 import random
 from functools import reduce
 from migen import *
-from migen.genlib.fsm import FSM
 from migen.genlib.cdc import MultiReg
 
 from .. import *

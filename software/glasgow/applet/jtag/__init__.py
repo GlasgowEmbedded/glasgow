@@ -4,7 +4,6 @@ import asyncio
 from bitarray import bitarray
 from migen import *
 from migen.genlib.cdc import MultiReg
-from migen.genlib.fsm import FSM
 
 from .. import *
 from ...support.pyrepl import *
