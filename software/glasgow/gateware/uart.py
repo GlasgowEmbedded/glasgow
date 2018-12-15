@@ -299,8 +299,7 @@ from . import simulation_test
 
 class UARTTestbench(Module):
     def __init__(self):
-        self.rx_t = TSTriple()
-        self.rx_t.i = Signal(reset=1)
+        self.rx_t = TSTriple(reset_i=1)
         self.rx_i = self.rx_t.i
 
         self.tx_t = TSTriple()
