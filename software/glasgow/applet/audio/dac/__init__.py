@@ -1,7 +1,7 @@
 import logging
 import asyncio
 import argparse
-from migen import *
+from nmigen.compat import *
 
 from ....support.endpoint import *
 from ....gateware.clockgen import *

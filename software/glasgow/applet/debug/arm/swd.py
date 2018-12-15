@@ -6,7 +6,7 @@ import logging
 import asyncio
 import struct
 import math
-from migen import *
+from nmigen.compat import *
 
 from ....gateware.pads import *
 from ... import *

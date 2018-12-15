@@ -1,5 +1,5 @@
 import logging
-from migen.fhdl.specials import Special
+from nmigen.compat.fhdl.specials import Special
 
 
 __all__ = ["PLL"]

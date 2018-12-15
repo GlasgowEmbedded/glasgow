@@ -62,7 +62,7 @@ import logging
 import argparse
 import asyncio
 from bitarray import bitarray
-from migen import *
+from nmigen.compat import *
 
 from ...interface.spi_master import SPIMasterSubtarget, SPIMasterInterface
 from ... import *

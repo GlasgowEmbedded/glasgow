@@ -5,7 +5,7 @@ import logging
 import asyncio
 import argparse
 import collections
-from migen import *
+from nmigen.compat import *
 from fx2.format import autodetect, input_data, output_data
 
 from ....database.microchip.avr import *

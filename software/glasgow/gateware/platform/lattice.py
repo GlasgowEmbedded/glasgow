@@ -1,4 +1,4 @@
-from migen import *
+from nmigen.compat import *
 
 from .. import GatewareBuildError
 from ..pll import PLL

@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from migen import *
+from nmigen.compat import *
 
 from ..gateware.pads import Pads
 

@@ -3,7 +3,7 @@ import asyncio
 import struct
 import array
 import time
-from migen import *
+from nmigen.compat import *
 
 from ....gateware.lfsr import *
 from ... import *

@@ -2,7 +2,7 @@ import os
 import asyncio
 import logging
 import argparse
-from migen import *
+from nmigen.compat import *
 
 from ... import *
 from ..vga_output import VGAOutputApplet

@@ -62,9 +62,9 @@
 import logging
 import operator
 import asyncio
-from migen import *
-from migen.genlib.cdc import MultiReg
-from migen.genlib.fifo import SyncFIFOBuffered
+from nmigen.compat import *
+from nmigen.compat.genlib.cdc import MultiReg
+from nmigen.compat.genlib.fifo import SyncFIFOBuffered
 
 from ... import *
 

@@ -142,10 +142,10 @@
 # FIFOADR->FLAG                 10.7
 # FIFOADR->FIFODATA             14.3
 
-from migen import *
-from migen.genlib.cdc import MultiReg
-from migen.genlib.fifo import _FIFOInterface, AsyncFIFO, SyncFIFO, SyncFIFOBuffered
-from migen.genlib.resetsync import AsyncResetSynchronizer
+from nmigen.compat import *
+from nmigen.compat.genlib.cdc import MultiReg
+from nmigen.compat.genlib.fifo import _FIFOInterface, AsyncFIFO, SyncFIFO, SyncFIFOBuffered
+from nmigen.compat.genlib.resetsync import AsyncResetSynchronizer
 
 
 __all__ = ["FX2Crossbar"]

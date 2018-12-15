@@ -1,7 +1,7 @@
 import logging
 import math
-from migen import *
-from migen.genlib.cdc import *
+from nmigen.compat import *
+from nmigen.compat.genlib.cdc import *
 
 from ... import *
 

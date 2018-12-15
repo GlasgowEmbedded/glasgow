@@ -1,4 +1,4 @@
-from migen import *
+from nmigen.compat import *
 
 
 __all__ = ["LinearFeedbackShiftRegister"]
@@ -54,7 +54,6 @@ class LinearFeedbackShiftRegister(Module):
 # -------------------------------------------------------------------------------------------------
 
 import unittest
-from migen.fhdl import verilog
 
 from . import simulation_test
 

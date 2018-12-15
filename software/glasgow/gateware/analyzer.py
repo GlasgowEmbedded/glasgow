@@ -1,8 +1,8 @@
 from functools import reduce
 from collections import OrderedDict
-from migen import *
-from migen.genlib.fifo import _FIFOInterface, SyncFIFOBuffered
-from migen.genlib.coding import PriorityEncoder, PriorityDecoder
+from nmigen.compat import *
+from nmigen.compat.genlib.fifo import _FIFOInterface, SyncFIFOBuffered
+from nmigen.compat.genlib.coding import PriorityEncoder, PriorityDecoder
 
 
 __all__ = ["EventSource", "EventAnalyzer", "TraceDecodingError", "TraceDecoder"]
@@ -496,7 +496,6 @@ class TraceDecoder:
 # -------------------------------------------------------------------------------------------------
 
 import unittest
-from migen.fhdl import verilog
 
 from . import simulation_test
 

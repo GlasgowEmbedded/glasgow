@@ -2,7 +2,7 @@ import os
 import sys
 import logging
 import asyncio
-from migen import *
+from nmigen.compat import *
 
 from ....support.endpoint import *
 from ....gateware.pads import *

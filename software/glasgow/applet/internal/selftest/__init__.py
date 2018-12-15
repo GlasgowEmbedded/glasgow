@@ -1,6 +1,6 @@
 import logging
 import asyncio
-from migen import *
+from nmigen.compat import *
 
 from ... import *
 

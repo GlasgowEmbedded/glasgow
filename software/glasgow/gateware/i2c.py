@@ -1,7 +1,7 @@
 # I2C reference: https://www.nxp.com/docs/en/user-guide/UM10204.pdf
 
-from migen import *
-from migen.genlib.cdc import MultiReg
+from nmigen.compat import *
+from nmigen.compat.genlib.cdc import MultiReg
 
 
 __all__ = ['I2CSlave']
@@ -416,7 +416,6 @@ class I2CSlave(Module):
 # -------------------------------------------------------------------------------------------------
 
 import unittest
-from migen.fhdl import verilog
 
 from . import simulation_test
 
@@ -901,8 +900,3 @@ class _DummyPads(Module):
     def __init__(self):
         self.scl_t = TSTriple()
         self.sda_t = TSTriple()
-
-
-if __name__ == "__main__":
-    verilog.convert(I2CMaster(_DummyPads(), 16)).write("i2cmaster.v")
-    verilog.convert(I2CSlave(_DummyPads())).write("i2cslave.v")

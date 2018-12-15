@@ -1,7 +1,7 @@
 import logging
-from migen import *
-from migen.genlib.cdc import MultiReg
-from migen.genlib.fifo import _FIFOInterface
+from nmigen.compat import *
+from nmigen.compat.genlib.cdc import MultiReg
+from nmigen.compat.genlib.fifo import _FIFOInterface
 
 from ..gateware.analyzer import *
 

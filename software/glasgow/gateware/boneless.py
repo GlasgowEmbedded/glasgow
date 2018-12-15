@@ -1,4 +1,4 @@
-from migen import *
+from nmigen.compat import *
 
 from ..arch.boneless.opcode import *
 
@@ -92,7 +92,7 @@ class BonelessCore(Module):
             ext_port = _StubMemoryPort("ext")
 
         def decode(v):
-            d = Signal.like(v)
+            d = Signal.like(v, src_loc_at=1)
             self.comb += d.eq(v)
             return d
 
@@ -787,7 +787,7 @@ class BonelessTestCase(unittest.TestCase):
 # -------------------------------------------------------------------------------------------------
 
 import argparse
-from migen.fhdl import verilog
+from nmigen.compat.fhdl import verilog
 
 
 class BonelessTestbench(Module):
@@ -824,21 +824,21 @@ if __name__ == "__main__":
 
     if args.type == "alu":
         tb  = _ALU(16)
-        ios = {tb.s_a, tb.s_b, tb.s_o, tb.c_sel}
+        ios = (tb.s_a, tb.s_b, tb.s_o, tb.c_sel)
 
     if args.type == "sru":
         tb  = _SRU(16)
-        ios = {tb.s_i, tb.s_c, tb.r_o, tb.c_ld, tb.c_dir}
+        ios = (tb.s_i, tb.s_c, tb.r_o, tb.c_ld, tb.c_dir)
 
     if args.type == "bus":
         tb  = BonelessTestbench()
-        ios = {tb.ext_port.adr,
+        ios = (tb.ext_port.adr,
                tb.ext_port.re, tb.ext_port.dat_r,
-               tb.ext_port.we, tb.ext_port.dat_w}
+               tb.ext_port.we, tb.ext_port.dat_w)
 
     if args.type == "pins":
         tb  = BonelessTestbench(has_pins=True)
-        ios = {tb.pins}
+        ios = (tb.pins,)
 
     design = verilog.convert(tb, ios=ios, name="boneless")
     design.write("boneless.v")

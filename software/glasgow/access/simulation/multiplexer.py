@@ -1,5 +1,5 @@
-from migen import *
-from migen.genlib.fifo import _FIFOInterface, AsyncFIFO, SyncFIFOBuffered
+from nmigen.compat import *
+from nmigen.compat.genlib.fifo import _FIFOInterface, AsyncFIFO, SyncFIFOBuffered
 
 from .. import AccessMultiplexer, AccessMultiplexerInterface
 

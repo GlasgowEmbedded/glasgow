@@ -1,4 +1,4 @@
-from migen import *
+from nmigen.compat import *
 
 
 __all__ = ['Pads']
@@ -82,7 +82,7 @@ class Pads(Module):
 # -------------------------------------------------------------------------------------------------
 
 import unittest
-from migen.fhdl.specials import Tristate
+from nmigen.compat.fhdl.specials import Tristate
 
 
 class PadsTestCase(unittest.TestCase):

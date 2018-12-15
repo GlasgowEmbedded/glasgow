@@ -1,4 +1,4 @@
-from migen import *
+from nmigen.compat import *
 
 
 __all__ = ["ClockGen"]

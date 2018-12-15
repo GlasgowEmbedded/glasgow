@@ -53,13 +53,16 @@ setup(
     license="0-clause BSD License",
     install_requires=[
         "versioneer",
-        "migen>=0.9.1",
+        "nmigen",
         "fx2>=0.6",
         "libusb1>=1.6.6",
         "aiohttp",
         "pyvcd",
         "bitarray",
         "crcmod",
+    ],
+    dependency_links=[
+        "git+https://github.com/m-labs/nmigen.git#egg=nmigen",
     ],
     packages=find_packages(),
     package_data={"": ["*.ihex"]},

@@ -33,7 +33,7 @@
 #   * JN   off       ≡  if(A < 0) PC ← PC + signext(off)
 #   * HLT            ≡  halt
 
-from migen import *
+from nmigen.compat import *
 
 
 __all__ = [

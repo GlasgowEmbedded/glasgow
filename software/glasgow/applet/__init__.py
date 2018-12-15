@@ -96,7 +96,7 @@ import asyncio
 import threading
 import inspect
 import json
-from migen.sim import *
+from nmigen.compat.sim import *
 
 from ..access.simulation import *
 from ..access.direct import *

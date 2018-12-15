@@ -1,4 +1,4 @@
-from migen.build.generic_programmer import GenericProgrammer
+from nmigen.compat.build.generic_programmer import GenericProgrammer
 from ..device.hardware import GlasgowHardwareDevice
 
 

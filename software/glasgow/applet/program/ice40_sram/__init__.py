@@ -1,7 +1,7 @@
 import argparse
 import asyncio
 import logging
-from migen import *
+from nmigen.compat import *
 
 from ...interface.spi_master import SPIMasterApplet
 from ... import *

@@ -2,8 +2,8 @@
 # http://www.ftdichip.com/Support/Documents/AppNotes/AN_135_MPSSE_Basics.pdf
 # http://www.ftdichip.com/Support/Documents/AppNotes/ AN_108_Command_Processor_for_MPSSE_and_MCU_Host_Bus_Emulation_Modes.pdf
 
-from migen import *
-from migen.genlib.cdc import MultiReg
+from nmigen.compat import *
+from nmigen.compat.genlib.cdc import MultiReg
 
 
 __all__ = ['MPSSE']
@@ -427,7 +427,6 @@ class MPSSE(Module):
 # -------------------------------------------------------------------------------------------------
 
 import unittest
-from migen.fhdl import verilog
 
 from . import simulation_test
 
@@ -740,13 +739,3 @@ class MPSSETestCase(unittest.TestCase):
         self.assertEqual((yield from tb.recv_tdi(8, pos=False)), 0xA5)
         yield
         self.assertEqual((yield tb.tck.o), 0)
-
-
-if __name__ == "__main__":
-    tck = TSTriple()
-    tdi = TSTriple()
-    tdo = TSTriple()
-    tms = TSTriple()
-    engine = MPSSE([tck, tdi, tdo, tms])
-
-    verilog.convert(engine).write("mpsse.v")
