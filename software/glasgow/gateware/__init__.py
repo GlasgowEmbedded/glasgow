@@ -1,5 +1,9 @@
 import functools
-from migen import *
+import os
+if os.getenv("NMIGEN"):
+    from nmigen.compat import run_simulation
+else:
+    from migen import run_simulation
 
 
 __all__ = ["GatewareBuildError", "simulation_test"]

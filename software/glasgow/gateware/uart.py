@@ -1,5 +1,10 @@
-from migen import *
-from migen.genlib.cdc import MultiReg
+import os
+if os.getenv("NMIGEN"):
+    from nmigen.compat import *
+    from nmigen.compat.genlib.cdc import MultiReg
+else:
+    from migen import *
+    from migen.genlib.cdc import MultiReg
 
 
 __all__ = ['UART', 'uart_bit_cyc']
