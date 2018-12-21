@@ -373,20 +373,22 @@ class BonelessSimulationTestbench(Module):
 
     def do_finalize(self):
         self.mem = Memory(width=16, depth=len(self.mem_init), init=self.mem_init)
-        self.specials += self.mem
+        self.specials.mem = self.mem
 
         mem_rdport = self.mem.get_port(has_re=True, mode=READ_FIRST)
         mem_wrport = self.mem.get_port(write_capable=True)
-        self.specials += [mem_rdport, mem_wrport]
+        self.specials.mem_r = mem_rdport
+        self.specials.mem_w = mem_wrport
 
         if self.ext_init:
             self.ext = Memory(width=16, depth=len(self.ext_init), init=self.ext_init)
-            self.specials += self.ext
+            self.specials.ext = self.ext
 
             ext_port = self.ext.get_port(has_re=True, write_capable=True)
-            self.specials += ext_port
+            self.specials.ext_rw = ext_port
         else:
             ext_port = _StubMemoryPort("ext")
+            self.submodules.ext_rw = ext_port
 
         self.submodules.dut = BonelessCore(reset_addr=8,
             mem_rdport=mem_rdport,
