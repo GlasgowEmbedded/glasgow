@@ -799,10 +799,10 @@ class BonelessTestbench(Module):
             self.sync += [
                 If(self.ext_port.adr == 0,
                     If(self.ext_port.re,
-                        self.pins.eq(self.ext_port.dat_w)
+                        self.ext_port.dat_r.eq(self.pins)
                     ),
                     If(self.ext_port.we,
-                        self.pins.eq(self.ext_port.dat_r)
+                        self.pins.eq(self.ext_port.dat_w)
                     )
                 )
             ]
