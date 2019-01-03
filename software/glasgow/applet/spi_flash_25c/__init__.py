@@ -222,6 +222,8 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
                 hold_t.o.eq(1),
             ]
 
+        return subtarget
+
     async def run(self, device, args):
         spi_iface = await self.run_lower(SPIFlash25CApplet, device, args)
         return SPIFlash25CInterface(spi_iface, self.logger)
