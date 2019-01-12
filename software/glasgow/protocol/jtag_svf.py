@@ -18,6 +18,10 @@ def _hex_to_bitarray(input_nibbles):
     bits.bytereverse()
     return bits
 
+def _scrub_newlines(input_string):
+    regexp = re.compile(r"\s", re.M)
+    return regexp.sub(lambda m: "", input_string)
+
 
 _commands = (
     "ENDDR", "ENDIR", "FREQUENCY", "HDR", "HIR", "PIO", "PIOMAP", "RUNTEST",
@@ -78,8 +82,8 @@ class SVFLexer:
          lambda m: int(m[1])),
         (r"(\d+(?:\.\d+)?(?:E[+-]?\d+)?)",
          lambda m: float(m[1])),
-        (r"\(\s*([0-9A-F]+)\s*\)",
-         lambda m: _hex_to_bitarray(m[1])),
+        (r"\(\s*(([0-9A-F]|(?:((\n\s*|\r\n\s*)?)))+)\s*\)",  # Match Literals over newlines (with possible alignment whitespace)
+         lambda m: _hex_to_bitarray(_scrub_newlines(m[1]))), # Strip out the newlines and whitespace before converting to bitarray
         (r"\(\s*(.+?)\s*\)",
          lambda m: (m[1],)),
         (r"\Z",
@@ -564,13 +568,19 @@ class SVFLexerTestCase(unittest.TestCase):
         self.assertLexes("1.1",     [1.1])
 
     def test_bitarray(self):
-        self.assertLexes("(0)",     [bitarray("00000000")])
-        self.assertLexes("(1)",     [bitarray("10000000")])
-        self.assertLexes("(F)",     [bitarray("11110000")])
-        self.assertLexes("(f)",     [bitarray("11110000")])
-        self.assertLexes("(0F)",    [bitarray("11110000")])
-        self.assertLexes("(FF)",    [bitarray("11111111")])
-        self.assertLexes("(1AA)",   [bitarray("0101010110000000")])
+        self.assertLexes("(0)",        [bitarray("00000000")])
+        self.assertLexes("(1)",        [bitarray("10000000")])
+        self.assertLexes("(F)",        [bitarray("11110000")])
+        self.assertLexes("(f)",        [bitarray("11110000")])
+        self.assertLexes("(0F)",       [bitarray("11110000")])
+        self.assertLexes("(A\n5)",     [bitarray("10100101")]) # Test literals split over two lines
+        self.assertLexes("(A\n\t5)",   [bitarray("10100101")]) # With potential whitespace
+        self.assertLexes("(A\n  5)",   [bitarray("10100101")])
+        self.assertLexes("(A\r\n5)",   [bitarray("10100101")]) # Support both LF & LFCR
+        self.assertLexes("(A\r\n\t5)", [bitarray("10100101")])
+        self.assertLexes("(A\r\n  5)", [bitarray("10100101")])
+        self.assertLexes("(FF)",       [bitarray("11111111")])
+        self.assertLexes("(1AA)",      [bitarray("0101010110000000")])
 
     def test_literal(self):
         self.assertLexes("(HHZZL)",     [("HHZZL",)])
