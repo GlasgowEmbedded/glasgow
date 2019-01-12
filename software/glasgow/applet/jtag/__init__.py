@@ -334,6 +334,10 @@ class JTAGInterface:
             await self.shift_tms("01100")
         elif self._state in ("Run-Test/Idle", "Update-IR", "Update-DR"):
             await self.shift_tms("1100")
+        elif self._state in ("Pause-DR"):
+            await self.shift_tms("111100")
+        elif self._state in ("Pause-IR"):
+            await self.shift_tms("10")
         else:
             assert False
         self._state = "Shift-IR"
@@ -368,6 +372,10 @@ class JTAGInterface:
             await self.shift_tms("0100")
         elif self._state in ("Run-Test/Idle", "Update-IR", "Update-DR"):
             await self.shift_tms("100")
+        elif self._state in ("Pause-IR"):
+            await self.shift_tms("11100")
+        elif self._state in ("Pause-DR"):
+            await self.shift_tms("10")
         else:
             assert False
         self._state = "Shift-DR"
