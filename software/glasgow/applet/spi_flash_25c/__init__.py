@@ -370,6 +370,7 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
             if args.file:
                 args.file.write(data)
             else:
+                self._show_progress(0, 0, "")
                 print(data.hex())
 
         if args.operation in ("program-page", "program", "erase-program"):
