@@ -13,6 +13,7 @@ from datetime import datetime
 from fx2 import VID_CYPRESS, PID_FX2, FX2Config
 from fx2.format import input_data, diff_data
 
+from ._version import get_versions
 from .device import GlasgowDeviceError
 from .device.config import GlasgowConfig
 from .target.hardware import GlasgowHardwareTarget
@@ -55,6 +56,13 @@ class TextHelpFormatter(argparse.HelpFormatter):
 def create_argparser():
     parser = argparse.ArgumentParser(formatter_class=TextHelpFormatter)
 
+    version = "Glasgow version {version} (Python {python_version})" \
+        .format(python_version=".".join(str(n) for n in sys.version_info[:3]),
+                **get_versions())
+
+    parser.add_argument(
+        "-V", "--version", action="version", version=version,
+        help="show version and exit")
     parser.add_argument(
         "-v", "--verbose", default=0, action="count",
         help="increase logging verbosity")
