@@ -23,26 +23,19 @@ logger = logging.getLogger(__name__)
 
 class _CRG(Module):
     def __init__(self, platform):
-        self.clock_domains.cd_por = ClockDomain(reset_less=True)
         self.clock_domains.cd_sys = ClockDomain()
-
-        clk_if  = platform.request("clk_if")
-        clk_buf = Signal()
         self.specials += [
-            Instance("SB_IO",
+            Instance("SB_GB_IO",
                 p_PIN_TYPE=C(0b000001, 6),
-                io_PACKAGE_PIN=clk_if,
-                o_D_IN_0=clk_buf,
-            ),
-            Instance("SB_GB",
-                i_USER_SIGNAL_TO_GLOBAL_BUFFER=clk_buf,
-                o_GLOBAL_BUFFER_OUTPUT=self.cd_por.clk,
+                io_PACKAGE_PIN=platform.request("clk_if"),
+                o_GLOBAL_BUFFER_OUTPUT=self.cd_sys.clk,
             ),
         ]
 
+        self.clock_domains.cd_por = ClockDomain(reset_less=True)
         reset_delay = Signal(max=2047, reset=2047)
         self.comb += [
-            self.cd_sys.clk.eq(self.cd_por.clk),
+            self.cd_por.clk.eq(self.cd_sys.clk),
             self.cd_sys.rst.eq(reset_delay != 0)
         ]
         self.sync.por += [
