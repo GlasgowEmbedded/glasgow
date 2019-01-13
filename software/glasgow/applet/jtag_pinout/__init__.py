@@ -112,9 +112,9 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
 
     def _bits_to_pins(self, bits):
         pins = []
-        for bit in range(len(self.pins)):
+        for bit, pin in enumerate(self.pins):
             if bits & (1 << bit):
-                pins.append(bit)
+                pins.append(pin)
         return pins
 
     def _pins_to_names(self, pins):
