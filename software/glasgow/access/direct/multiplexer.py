@@ -141,6 +141,7 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
         self._pipe_num    = pipe_num
         self._pins        = pins
         self._pin_names   = pin_names
+        self._used_pins   = set()
         self._throttle    = throttle
 
         self.reset, self._addr_reset = self._registers.add_rw(1, reset=1)
@@ -150,6 +151,7 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
         return self._pin_names[pin]
 
     def build_pin_tristate(self, pin, oe, o, i):
+        self._used_pins.add(pin)
         self.specials += \
             Instance("SB_IO",
                 p_PIN_TYPE=C(0b101001, 6), # PIN_OUTPUT_TRISTATE|PIN_INPUT
@@ -157,6 +159,14 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
                 i_OUTPUT_ENABLE=oe,
                 i_D_OUT_0=o,
                 o_D_IN_0=i,
+            )
+
+    def _build_pin_stub(self, pin):
+        self.specials += \
+            Instance("SB_IO",
+                p_PIN_TYPE=C(0b101001, 6), # PIN_OUTPUT_TRISTATE|PIN_INPUT
+                io_PACKAGE_PIN=self._pins[pin],
+                i_OUTPUT_ENABLE=0,
             )
 
     def _throttle_fifo(self, fifo):
@@ -198,3 +208,8 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
 
         self.submodules += subtarget
         return subtarget
+
+    def do_finalize(self):
+        for pin in range(len(self._pins)):
+            if pin not in self._used_pins:
+                self._build_pin_stub(pin)
