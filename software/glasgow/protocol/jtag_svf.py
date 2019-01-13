@@ -18,10 +18,6 @@ def _hex_to_bitarray(input_nibbles):
     bits.bytereverse()
     return bits
 
-def _scrub_newlines(input_string):
-    regexp = re.compile(r"\s", re.M)
-    return regexp.sub(lambda m: "", input_string)
-
 
 _commands = (
     "ENDDR", "ENDIR", "FREQUENCY", "HDR", "HIR", "PIO", "PIOMAP", "RUNTEST",
@@ -82,8 +78,8 @@ class SVFLexer:
          lambda m: int(m[1])),
         (r"(\d+(?:\.\d+)?(?:E[+-]?\d+)?)",
          lambda m: float(m[1])),
-        (r"\(\s*(([0-9A-F]|(?:((\n\s*|\r\n\s*)?)))+)\s*\)",  # Match Literals over newlines (with possible alignment whitespace)
-         lambda m: _hex_to_bitarray(_scrub_newlines(m[1]))), # Strip out the newlines and whitespace before converting to bitarray
+        (r"\(\s*([0-9A-F\s]+)\s*\)",
+         lambda m: _hex_to_bitarray(re.sub(r"\s+", "", m[1]))),
         (r"\(\s*(.+?)\s*\)",
          lambda m: (m[1],)),
         (r"\Z",
