@@ -10,6 +10,8 @@ from distutils.spawn import spawn
 from distutils.dir_util import mkpath
 from distutils.errors import DistutilsExecError
 
+import versioneer
+
 
 class GlasgowBuildExt(build_ext):
     def run(self):
@@ -38,13 +40,21 @@ class GlasgowBdistEgg(bdist_egg):
 
 setup(
     name="glasgow",
-    version="0.1",
+    version=versioneer.get_version(),
     author="whitequark",
     author_email="whitequark@whitequark.org",
     #description="TODO",
     #long_description="""TODO""",
     license="0-clause BSD License",
-    install_requires=["migen", "fx2>=0.6", "libusb1>=1.6.6", "pyvcd", "bitarray", "crcmod"],
+    install_requires=[
+        "versioneer",
+        "migen",
+        "fx2>=0.6",
+        "libusb1>=1.6.6",
+        "pyvcd",
+        "bitarray",
+        "crcmod"
+    ],
     dependency_links=[
         "git+https://github.com/m-labs/migen.git#egg=migen",
     ],
@@ -64,6 +74,7 @@ setup(
     cmdclass={
         "build_ext": GlasgowBuildExt,
         "bdist_egg": GlasgowBdistEgg,
+        **versioneer.get_cmdclass()
     },
     project_urls={
         #"Documentation": "https://glasgow.readthedocs.io/",
