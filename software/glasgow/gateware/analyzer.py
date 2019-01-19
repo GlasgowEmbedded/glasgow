@@ -169,17 +169,17 @@ class EventAnalyzer(Module):
         # Throttle applets based on FIFO levels with hysteresis.
         self.comb += [
             throttle_on .eq(reduce(lambda a, b: a | b,
-                (f.fifo.level >= f.depth - f.depth // (4 if f.depth > 4 else 2)
+                (f.level >= f.depth - f.depth // (4 if f.depth > 4 else 2)
                  for f in throttle_fifos))),
             throttle_off.eq(reduce(lambda a, b: a & b,
-                (f.fifo.level <            f.depth // (4 if f.depth > 4 else 2)
+                (f.level <            f.depth // (4 if f.depth > 4 else 2)
                  for f in throttle_fifos))),
         ]
 
         # Detect imminent FIFO overrun and trip overrun indication.
         self.comb += [
             overrun_trip.eq(reduce(lambda a, b: a | b,
-                (f.fifo.level == f.depth - 2
+                (f.level == f.depth - 2
                  for f in throttle_fifos)))
         ]
 
@@ -507,7 +507,8 @@ class EventAnalyzerTestbench(Module):
 
     def trigger(self, index, data):
         yield self.dut.event_sources[index].trigger.eq(1)
-        yield self.dut.event_sources[index].data.eq(data)
+        if self.dut.event_sources[index].width > 0:
+            yield self.dut.event_sources[index].data.eq(data)
 
     def step(self):
         yield
@@ -524,6 +525,7 @@ class EventAnalyzerTestbench(Module):
             if not (yield self.fifo.readable):
                 raise ValueError("FIFO underflow")
             data.append((yield from self.fifo.read()))
+            yield
 
         cycle = 16
         while not (yield self.fifo.readable) and cycle < limit:
@@ -815,7 +817,7 @@ class EventAnalyzerTestCase(unittest.TestCase):
 
     @simulation_test(sources=(1,))
     def test_throttle_hyst(self, tb):
-        for x in range(17):
+        for x in range(16):
             yield from tb.trigger(0, 1)
             yield from tb.step()
             self.assertEqual((yield tb.dut.throttle), 0)
@@ -823,7 +825,7 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield from tb.step()
         self.assertEqual((yield tb.dut.throttle), 1)
         yield tb.fifo.re.eq(1)
-        for x in range(51):
+        for x in range(52):
             yield
         yield tb.fifo.re.eq(0)
         yield
@@ -831,7 +833,7 @@ class EventAnalyzerTestCase(unittest.TestCase):
 
     @simulation_test(sources=(1,))
     def test_overrun(self, tb):
-        for x in range(20):
+        for x in range(18):
             yield from tb.trigger(0, 1)
             yield from tb.step()
             self.assertEqual((yield tb.dut.overrun), 0)
@@ -839,7 +841,7 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield from tb.step()
         self.assertEqual((yield tb.dut.overrun), 1)
         yield tb.fifo.re.eq(1)
-        for x in range(61):
+        for x in range(55):
             while not (yield tb.fifo.readable):
                 yield
             yield
