@@ -215,7 +215,7 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
         subtarget = super().build(target, args)
         subtarget.comb += subtarget.bus.oe.eq(subtarget.bus.ss == args.ss_active)
 
-        if args.pin_hold:
+        if args.pin_hold is not None:
             hold_t = self.mux_interface.get_pin(args.pin_hold)
             subtarget.comb += [
                 hold_t.oe.eq(1),
