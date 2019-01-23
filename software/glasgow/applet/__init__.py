@@ -348,7 +348,7 @@ from .jtag_pinout import JTAGPinoutApplet
 from .jtag_svf import JTAGSVFApplet
 from .jtag_xc9500 import JTAGXC9500Applet
 from .nand_flash import NANDFlashApplet
-from .program_ice40 import ProgramICE40Applet
+from .program_ice40_sram import ProgramICE40SRAMApplet
 from .selftest import SelfTestApplet
 from .shugart_floppy import ShugartFloppyApplet
 from .spi_master import SPIMasterApplet
