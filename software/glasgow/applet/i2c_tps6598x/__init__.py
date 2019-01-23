@@ -39,7 +39,7 @@ class TPS6598xI2CInterface:
 
 class I2CTPS6598xApplet(I2CMasterApplet, name="i2c-tps6598x"):
     logger = logging.getLogger(__name__)
-    help = "control TPS6598x"
+    help = "manage TPS6598x USB PD controllers"
     description = """
     Read and write TI TPS6598x USB PD controller registers.
     """
