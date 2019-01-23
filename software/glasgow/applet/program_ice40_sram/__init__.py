@@ -6,7 +6,7 @@ from migen import *
 from .. import *
 
 
-class ProgramICE40Subtarget(Module):
+class ProgramICE40SRAMSubtarget(Module):
     def __init__(self, pads, out_fifo, sys_clk_freq):
         oe = Signal()
         self.comb += [
@@ -117,11 +117,12 @@ class ProgramICE40Subtarget(Module):
         )
 
 
-class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
+class ProgramICE40SRAMApplet(GlasgowApplet, name="program-ice40-sram"):
     logger = logging.getLogger(__name__)
-    help = "program iCE40 FPGAs"
+    help = "program iCE40 FPGAs SRAM"
     description = """
-    Program iCE40 FPGAs.
+    Program iCE40 FPGAs SRAM. This directly loads a bitstream into the FPGA
+    volatile memory.
     """
     pins = ("rst_n", "ss_n", "sck", "si")
 
@@ -133,7 +134,7 @@ class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        iface.add_subtarget(ProgramICE40Subtarget(
+        iface.add_subtarget(ProgramICE40SRAMSubtarget(
             pads=iface.get_pads(args, pins=self.pins),
             out_fifo=iface.get_out_fifo(),
             sys_clk_freq=target.sys_clk_freq,
@@ -167,7 +168,7 @@ class ProgramICE40Applet(GlasgowApplet, name="program-ice40"):
 
 # -------------------------------------------------------------------------------------------------
 
-class ProgramICE40AppletTestCase(GlasgowAppletTestCase, applet=ProgramICE40Applet):
+class ProgramICE40SRAMAppletTestCase(GlasgowAppletTestCase, applet=ProgramICE40SRAMApplet):
     @synthesis_test
     def test_build(self):
         self.assertBuilds()
