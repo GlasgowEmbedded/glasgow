@@ -1,4 +1,4 @@
-(kicad_pcb (version 20171130) (host pcbnew 5.0.0)
+(kicad_pcb (version 20171130) (host pcbnew 5.0.1)
 
   (general
     (thickness 1.6)
@@ -11594,6 +11594,9 @@
       (xy -2.549664 1.91989) (xy -2.469928 1.911165) (xy -2.400256 1.919918)) (layer F.SilkS) (width 0.01))
   )
 
+  (gr_text "Glasgow\nrevC?" (at 74.1 84.9) (layer F.SilkS) (tstamp 5C18905F)
+    (effects (font (size 1.5 1.5) (thickness 0.15)) (justify left))
+  )
   (gr_line (start 56.5 100.3) (end 56.9 100.3) (layer F.SilkS) (width 0.15))
   (gr_line (start 56.3 100.5) (end 56.5 100.3) (layer F.SilkS) (width 0.15))
   (gr_line (start 54.2 100.3) (end 54 100.5) (layer F.SilkS) (width 0.15))
@@ -11697,9 +11700,6 @@
   (gr_line (start 86.3 92.9) (end 84.2 92.9) (layer B.SilkS) (width 0.15))
   (gr_text "@whitequark\n@awygle\n@marcan42" (at 84.5 84.65) (layer F.SilkS) (tstamp 5C1952EF)
     (effects (font (size 1 1) (thickness 0.15)) (justify left))
-  )
-  (gr_text "Glasgow\nrevC0" (at 74.1 84.9) (layer F.SilkS) (tstamp 5C18905F)
-    (effects (font (size 1.5 1.5) (thickness 0.15)) (justify left))
   )
   (gr_text "Wave soldering keepout" (at 104.6 69.4) (layer B.Fab) (tstamp 5C224B6D)
     (effects (font (size 1.5 1.5) (thickness 0.3)))
