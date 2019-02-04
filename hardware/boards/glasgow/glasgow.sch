@@ -682,7 +682,7 @@ F 3 "" H 4950 6750 50  0001 C CNN
 $EndComp
 NoConn ~ 1300 4750
 $Comp
-L Mechanical:Mounting_Hole_PAD MK1
+L Mechanical:MountingHole_Pad MK1
 U 1 1 5AD602A3
 P 900 7050
 F 0 "MK1" H 850 7250 50  0000 L CNN
@@ -693,7 +693,7 @@ F 3 "" H 900 7050 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Mechanical:Mounting_Hole_PAD MK2
+L Mechanical:MountingHole_Pad MK2
 U 1 1 5AD64D62
 P 1100 7050
 F 0 "MK2" H 1050 7250 50  0000 L CNN
@@ -704,7 +704,7 @@ F 3 "" H 1100 7050 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Mechanical:Mounting_Hole_PAD MK3
+L Mechanical:MountingHole_Pad MK3
 U 1 1 5AD64DAE
 P 1300 7050
 F 0 "MK3" H 1250 7250 50  0000 L CNN
@@ -715,7 +715,7 @@ F 3 "" H 1300 7050 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Mechanical:Mounting_Hole_PAD MK4
+L Mechanical:MountingHole_Pad MK4
 U 1 1 5AD64E04
 P 1500 7050
 F 0 "MK4" H 1450 7250 50  0000 L CNN
@@ -1520,7 +1520,7 @@ VUSB
 Wire Wire Line
 	4250 2050 4600 2050
 $Comp
-L Connector:Test_Point TP1
+L Connector:TestPoint TP1
 U 1 1 5ADB3D1E
 P 2300 3350
 F 0 "TP1" V 2200 3400 50  0000 L CNN
@@ -1531,7 +1531,7 @@ F 3 "~" H 2500 3350 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L Connector:Test_Point TP2
+L Connector:TestPoint TP2
 U 1 1 5AE0012C
 P 10000 5700
 F 0 "TP2" V 9900 5850 50  0000 C CNN
@@ -1542,7 +1542,7 @@ F 3 "~" H 10200 5700 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L Connector:Test_Point TP3
+L Connector:TestPoint TP3
 U 1 1 5AE0058E
 P 10400 5700
 F 0 "TP3" V 10300 5850 50  0000 C CNN
@@ -1914,7 +1914,7 @@ Imax(USB) @ 3V3 = 80 mA\nImax @ 3V3 = 209 mA
 Text Notes 8000 2100 0    50   ~ 0
 Imax @ 3V3 = 38 mA (A+B)\nImax @ 5V = 150 mA (A+B)
 $Comp
-L Connector:Test_Point TP4
+L Connector:TestPoint TP4
 U 1 1 5AE223CE
 P 2550 5150
 F 0 "TP4" H 2500 5400 50  0000 L CNN
@@ -1925,7 +1925,7 @@ F 3 "~" H 2750 5150 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L Connector:Test_Point TP5
+L Connector:TestPoint TP5
 U 1 1 5AE22A82
 P 2650 5150
 F 0 "TP5" H 2600 5400 50  0000 C CNN
@@ -1940,7 +1940,7 @@ Wire Wire Line
 Wire Wire Line
 	2650 5150 2650 5050
 $Comp
-L Connector:Test_Point TP6
+L Connector:TestPoint TP6
 U 1 1 5AE93638
 P 5400 6150
 F 0 "TP6" V 5400 6337 50  0000 L CNN
@@ -2021,7 +2021,7 @@ F 3 "" H 5250 3600 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L Connector:Test_Point TP7
+L Connector:TestPoint TP7
 U 1 1 5B12B6CA
 P 5400 6050
 F 0 "TP7" V 5400 6237 50  0000 L CNN
@@ -2758,11 +2758,11 @@ Wire Wire Line
 	1350 4200 1350 4350
 Wire Wire Line
 	1350 3900 1350 3700
+Connection ~ 1350 3700
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
 	7850 2550 7850 6250
 Wire Bus Line
 	4700 2150 4700 6250
-Connection ~ 1350 3700
 $EndSCHEMATC
