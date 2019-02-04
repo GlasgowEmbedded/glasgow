@@ -4,7 +4,7 @@ EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 3 4
+Sheet 4 4
 Title "I/O Buffer"
 Date ""
 Rev "C0"
@@ -2435,4 +2435,43 @@ Wire Wire Line
 	6200 2500 7250 2500
 Wire Wire Line
 	6200 2400 7150 2400
+$Comp
+L Device:R R?
+U 1 1 5C5D4477
+P 9600 2000
+AR Path="/5AF7D604/5C5D4477" Ref="R?"  Part="1" 
+AR Path="/5AFBDC9E/5C5D4477" Ref="R?"  Part="1" 
+AR Path="/5C7B59B0/5C9E337E/5C5D4477" Ref="R42"  Part="1" 
+AR Path="/5C7B59B0/5C9E338E/5C5D4477" Ref="R41"  Part="1" 
+F 0 "R42" H 9530 1954 50  0000 R CNN
+F 1 "1k" H 9530 2045 50  0000 R CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 9530 2000 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-AC_51_RoHS_L_6-1152827.pdf" H 9600 2000 50  0001 C CNN
+F 4 "Yageo" H 3450 -2950 50  0001 C CNN "Mfg"
+F 5 "RC0603FR-0759KL" H 3450 -2950 50  0001 C CNN "MPN"
+	1    9600 2000
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	9250 1750 9600 1750
+Wire Wire Line
+	9600 1750 9600 1850
+Connection ~ 9250 1750
+$Comp
+L power:GND #PWR?
+U 1 1 5C5E94B2
+P 9600 2200
+AR Path="/5AF7D604/5C5E94B2" Ref="#PWR?"  Part="1" 
+AR Path="/5AFBDC9E/5C5E94B2" Ref="#PWR?"  Part="1" 
+AR Path="/5C7B59B0/5C9E337E/5C5E94B2" Ref="#PWR0133"  Part="1" 
+AR Path="/5C7B59B0/5C9E338E/5C5E94B2" Ref="#PWR0131"  Part="1" 
+F 0 "#PWR0133" H 9600 1950 50  0001 C CNN
+F 1 "GND" H 9605 2027 50  0000 C CNN
+F 2 "" H 9600 2200 50  0001 C CNN
+F 3 "" H 9600 2200 50  0001 C CNN
+	1    9600 2200
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9600 2150 9600 2200
 $EndSCHEMATC
