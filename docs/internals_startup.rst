@@ -4,9 +4,9 @@ Provisioning and startup
 Overview
 --------
 
-The Glasgow device contains two non-volatile memories, `ICE_MEM` and `FX2_MEM`, implemented as I²C EEPROMs. The `ICE_MEM` memory contains critical device configuration, and must be factory-programmed in a revision-specific way for the device to be usable. The `FX2_MEM` memory optionally contains FPGA bitstream and is not accessed at all during operation other than when explicitly requested.
+The Glasgow device contains two non-volatile memories, `ICE_MEM` and `FX2_MEM`, implemented as I²C EEPROMs. The `FX2_MEM` memory contains critical device configuration, and must be factory-programmed in a revision-specific way for the device to be usable. The `ICE_MEM` memory optionally contains FPGA bitstream and is not accessed at all during operation other than when explicitly requested.
 
-The `ICE_MEM` memory is logically divided into three parts:
+The `FX2_MEM` memory is logically divided into three parts:
 
   1. FX2 boot configuration (8 bytes);
   2. Glasgow configuration (currently 4 + 64 bytes);
@@ -58,7 +58,7 @@ The ``glasgow flash <applet>`` command writes the bitstream into `ICE_MEM` and c
 Hot reload
 ----------
 
-Hot reload (loading the firmware using ``make -C firmware load``) only results in a proper reset when FX2 is configured in ID-only mode, i.e. it is necessary to run ``glasgow flash --no-firmware`` before using a device for developing firmware.
+Hot reload (loading the firmware using ``make -C firmware load``) only results in a proper reset when FX2 is configured in ID-only mode, i.e. it is necessary to run ``glasgow flash --remove-firmware`` before using a device for developing firmware.
 
 Python API
 ----------
