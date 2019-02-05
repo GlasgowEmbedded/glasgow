@@ -8,30 +8,24 @@ class GlasgowConfig:
     """
     Glasgow EEPROM configuration data.
 
-    :type size: int
-    :attr size:
+    :ivar int size:
         Total size of configuration block (currently 64).
 
-    :type revision: str[1]
-    :attr revision:
+    :ivar str[1] revision:
         Revision letter, ``A``-``Z``.
 
-    :type serial: str[16]
-    :attr serial:
+    :ivar str[16] serial:
         Serial number, in ISO 8601 format.
 
-    :type bitstream_size: int
-    :attr bitstream_size:
+    :ivar int bitstream_size:
         Size of bitstream flashed to ICE_MEM, or 0 if there isn't one.
 
-    :type bitstream_id: bytes[16]
-    :attr bitstream_id:
+    :ivar bytes[16] bitstream_id:
         Opaque string that uniquely identifies bitstream functionality,
         but not necessarily any particular routing and placement.
         Only meaningful if ``bitstream_size`` is set.
 
-    :type voltage_limit: int[2]
-    :attr voltage_limit:
+    :ivar int[2] voltage_limit:
         Maximum allowed I/O port voltage, in millivolts.
     """
     size = 64
