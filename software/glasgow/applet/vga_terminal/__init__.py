@@ -202,6 +202,7 @@ class VGATerminalSubtarget(Module):
 
 
 class VGATerminalApplet(VGAOutputApplet, name="vga-terminal"):
+    preview = True
     logger = logging.getLogger(__name__)
     help = "emulate a teleprinter using a VGA monitor"
     description = """
