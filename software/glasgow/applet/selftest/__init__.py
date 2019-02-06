@@ -8,11 +8,13 @@ from .. import *
 class SelfTestSubtarget(Module):
     def __init__(self, applet, target):
         t_a  = [TSTriple() for _ in range(8)]
-        io_a = target.platform.request("io")
-        self.specials += [t.get_tristate(io_a[i]) for i, t in enumerate(t_a)]
         t_b  = [TSTriple() for _ in range(8)]
-        io_b = target.platform.request("io")
-        self.specials += [t.get_tristate(io_b[i]) for i, t in enumerate(t_b)]
+        io_a = [target.platform.request("port_a", n) for n in range(8)]
+        io_b = [target.platform.request("port_b", n) for n in range(8)]
+        self.specials += [t.get_tristate(io_a[i].io) for i, t in enumerate(t_a)]
+        self.specials += [t.get_tristate(io_b[i].io) for i, t in enumerate(t_b)]
+        self.comb     += [io_a[i].oe.eq(t.oe) for i, t in enumerate(t_a) if hasattr(io_a[i], "oe")]
+        self.comb     += [io_b[i].oe.eq(t.oe) for i, t in enumerate(t_b) if hasattr(io_b[i], "oe")]
 
         reg_oe_a, applet.addr_oe_a = target.registers.add_rw(8)
         reg_o_a,  applet.addr_o_a  = target.registers.add_rw(8)
