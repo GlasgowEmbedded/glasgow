@@ -9,8 +9,18 @@ void fpga_reset() {
   IFCONFIG &= ~(_IFCFG1|_IFCFG0);
 
   // Put FPGA in reset.
-  OED |=  (1<<PIND_CRESET_N);
-  IOD &= ~(1<<PIND_CRESET_N);
+  switch(glasgow_config.revision) {
+    case 'A':
+    case 'B':
+      OED |=  (1<<PIND_CRESET_N_REVAB);
+      IOD &= ~(1<<PIND_CRESET_N_REVAB);
+      break;
+
+    case 'C':
+      OEA |=  (1<<PINA_CRESET_N_REVC);
+      IOA &= ~(1<<PINA_CRESET_N_REVC);
+      break;
+  }
   delay_us(1);
 
   // Configure config pins while FPGA is in reset.
@@ -20,7 +30,16 @@ void fpga_reset() {
   IOB &= ~(1<<PINB_SS_N);
 
   // Release FPGA reset.
-  IOD |=  (1<<PIND_CRESET_N);
+  switch(glasgow_config.revision) {
+    case 'A':
+    case 'B':
+      IOD |=  (1<<PIND_CRESET_N_REVAB);
+      break;
+
+    case 'C':
+      IOA |=  (1<<PINA_CRESET_N_REVC);
+      break;
+  }
   delay_us(1200); // 1200 us for HX8K, 800 us for others
 }
 

@@ -3,25 +3,26 @@
 
 #include <stdbool.h>
 
-#define VID_QIHW      0x20b7
-#define PID_GLASGOW   0x9db1
+#define VID_QIHW              0x20b7
+#define PID_GLASGOW           0x9db1
 
 // PORTA pins
-#define PINA_ALERT_N  0
-#define PINA_CDONE    3
+#define PINA_ALERT_N          0
+#define PINA_CDONE            3
+#define PINA_CRESET_N_REVC    1
 // PORTB pins
-#define PINB_SI       2
-#define PINB_SS_N     3
-#define PINB_SCK      4
+#define PINB_SI               2
+#define PINB_SS_N             3
+#define PINB_SCK              4
 // PORTD pins
-#define PIND_ENVA     0
-#define PIND_CRESET_N 1
-#define PIND_LED_CY   2
-#define PIND_LED_FPGA 3
-#define PIND_LED_ACT  4
-#define PIND_LED_ERR  5
-#define PIND_ENVB     6
-#define PIND_OEQ_N    7
+#define PIND_ENVA             0
+#define PIND_CRESET_N_REVAB   1
+#define PIND_LED_CY           2
+#define PIND_LED_FPGA         3
+#define PIND_LED_ACT          4
+#define PIND_LED_ERR          5
+#define PIND_ENVB             6
+#define PIND_OEQ_N            7
 
 enum {
   // I2C addresses (unshifted)
