@@ -22,8 +22,23 @@ _io = [
         IOStandard("LVCMOS33")
     ),
 
-    ("io", 0, Pins("45 43 42 38 37 36 35 34"), IOStandard("LVCMOS33")),
-    ("io", 1, Pins("32 31 28 27 26 25 23 21"), IOStandard("LVCMOS33")),
+    ("port_a", 0, Subsignal("io", Pins("45")), IOStandard("LVCMOS33")),
+    ("port_a", 1, Subsignal("io", Pins("43")), IOStandard("LVCMOS33")),
+    ("port_a", 2, Subsignal("io", Pins("42")), IOStandard("LVCMOS33")),
+    ("port_a", 3, Subsignal("io", Pins("38")), IOStandard("LVCMOS33")),
+    ("port_a", 4, Subsignal("io", Pins("37")), IOStandard("LVCMOS33")),
+    ("port_a", 5, Subsignal("io", Pins("36")), IOStandard("LVCMOS33")),
+    ("port_a", 6, Subsignal("io", Pins("35")), IOStandard("LVCMOS33")),
+    ("port_a", 7, Subsignal("io", Pins("34")), IOStandard("LVCMOS33")),
+
+    ("port_b", 0, Subsignal("io", Pins("32")), IOStandard("LVCMOS33")),
+    ("port_b", 1, Subsignal("io", Pins("31")), IOStandard("LVCMOS33")),
+    ("port_b", 2, Subsignal("io", Pins("28")), IOStandard("LVCMOS33")),
+    ("port_b", 3, Subsignal("io", Pins("27")), IOStandard("LVCMOS33")),
+    ("port_b", 4, Subsignal("io", Pins("26")), IOStandard("LVCMOS33")),
+    ("port_b", 5, Subsignal("io", Pins("25")), IOStandard("LVCMOS33")),
+    ("port_b", 6, Subsignal("io", Pins("23")), IOStandard("LVCMOS33")),
+    ("port_b", 7, Subsignal("io", Pins("21")), IOStandard("LVCMOS33")),
 
     ("i2c", 0,
         Subsignal("scl", Pins("39")),

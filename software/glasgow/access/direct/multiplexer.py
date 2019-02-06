@@ -89,7 +89,6 @@ class DirectMultiplexer(AccessMultiplexer):
         self._claimed_pipes += 1
 
         pins = []
-        pin_names = []
         if hasattr(args, "port_spec"):
             iface_spec = list(args.port_spec)
 
@@ -105,9 +104,8 @@ class DirectMultiplexer(AccessMultiplexer):
                     applet.logger.error("port %s does not exist", port)
                     return None
                 else:
-                    port_signal = self._ports[port]()
-                    pins += [port_signal[bit] for bit in range(port_signal.nbits)]
-                    pin_names += ["{}{}".format(port, bit) for bit in range(port_signal.nbits)]
+                    port_width, port_req = self._ports[port]
+                    pins += [(port, bit, port_req) for bit in range(port_width)]
         else:
             iface_spec = []
 
@@ -125,13 +123,13 @@ class DirectMultiplexer(AccessMultiplexer):
                                 self._pipes[pipe_num])
 
         iface = DirectMultiplexerInterface(applet, analyzer, self._registers,
-            self._fx2_arbiter, pipe_num, pins, pin_names, throttle)
+            self._fx2_arbiter, pipe_num, pins, throttle)
         self.submodules += iface
         return iface
 
 
 class DirectMultiplexerInterface(AccessMultiplexerInterface):
-    def __init__(self, applet, analyzer, registers, fx2_arbiter, pipe_num, pins, pin_names,
+    def __init__(self, applet, analyzer, registers, fx2_arbiter, pipe_num, pins,
                  throttle):
         assert throttle in ("full", "fifo", "none")
 
@@ -140,33 +138,24 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
         self._fx2_arbiter = fx2_arbiter
         self._pipe_num    = pipe_num
         self._pins        = pins
-        self._pin_names   = pin_names
-        self._used_pins   = set()
         self._throttle    = throttle
 
         self.reset, self._addr_reset = self._registers.add_rw(1, reset=1)
         self.logger.debug("adding reset register at address %#04x", self._addr_reset)
 
-    def get_pin_name(self, pin):
-        return self._pin_names[pin]
+    def get_pin_name(self, pin_num):
+        port, bit, req = self._pins[pin_num]
+        return "{}{}".format(port, bit)
 
-    def build_pin_tristate(self, pin, oe, o, i):
-        self._used_pins.add(pin)
+    def build_pin_tristate(self, pin_num, oe, o, i):
+        port, bit, req = self._pins[pin_num]
         self.specials += \
             Instance("SB_IO",
                 p_PIN_TYPE=C(0b101001, 6), # PIN_OUTPUT_TRISTATE|PIN_INPUT
-                io_PACKAGE_PIN=self._pins[pin],
+                io_PACKAGE_PIN=req(bit).io,
                 i_OUTPUT_ENABLE=oe,
                 i_D_OUT_0=o,
                 o_D_IN_0=i,
-            )
-
-    def _build_pin_stub(self, pin):
-        self.specials += \
-            Instance("SB_IO",
-                p_PIN_TYPE=C(0b101001, 6), # PIN_OUTPUT_TRISTATE|PIN_INPUT
-                io_PACKAGE_PIN=self._pins[pin],
-                i_OUTPUT_ENABLE=0,
             )
 
     def _throttle_fifo(self, fifo):
@@ -208,8 +197,3 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
 
         self.submodules += subtarget
         return subtarget
-
-    def do_finalize(self):
-        for pin in range(len(self._pins)):
-            if pin not in self._used_pins:
-                self._build_pin_stub(pin)
