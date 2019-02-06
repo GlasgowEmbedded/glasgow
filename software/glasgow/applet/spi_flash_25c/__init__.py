@@ -82,6 +82,7 @@ class SPIFlash25CInterface:
             data    += chunk
             address += len(chunk)
 
+        callback(len(data), length, None)
         return data
 
     async def read(self, address, length, chunk_size=None,
