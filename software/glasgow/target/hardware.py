@@ -67,14 +67,17 @@ class GlasgowHardwareTarget(Module):
 
         self.submodules.fx2_arbiter = FX2Arbiter(self.platform.request("fx2"))
 
+        self.ports = {
+            "A": (8, lambda n: self.platform.request("port_a", n)),
+            "B": (8, lambda n: self.platform.request("port_b", n)),
+        }
+
         if multiplexer_cls:
-            ports = {
-                "A": (8, lambda n: self.platform.request("port_a", n)),
-                "B": (8, lambda n: self.platform.request("port_b", n)),
-            }
             pipes = "PQ"
-            self.submodules.multiplexer = multiplexer_cls(ports=ports, pipes=pipes,
+            self.submodules.multiplexer = multiplexer_cls(ports=self.ports, pipes="PQ",
                 registers=self.registers, fx2_arbiter=self.fx2_arbiter)
+        else:
+            self.multiplexer = None
 
         if with_analyzer:
             self.submodules.analyzer = GlasgowAnalyzer(self.registers, self.multiplexer)
@@ -86,6 +89,18 @@ class GlasgowHardwareTarget(Module):
         if not self.finalized:
             if self.analyzer:
                 self.analyzer._finalize_pin_events()
+
+            unused_pins = []
+            for width, req in self.ports.values():
+                for n in range(width):
+                    try:
+                        unused_pins.append(req(n))
+                    except migen.build.generic_platform.ConstraintError:
+                        pass
+            for unused_pin in unused_pins:
+                self.specials += TSTriple().get_tristate(unused_pin.io)
+                if hasattr(unused_pin, "oe"):
+                    self.comb += unused_pin.oe.eq(0)
 
             super().finalize(*args, **kwargs)
 
