@@ -16,7 +16,6 @@ from fx2.format import input_data, diff_data
 from ._version import get_versions
 from .device import GlasgowDeviceError
 from .device.config import GlasgowConfig
-from .platform import GlasgowPlatformRevAB, GlasgowPlatformRevC
 from .target.hardware import GlasgowHardwareTarget
 from .gateware import GatewareBuildError
 from .gateware.analyzer import TraceDecoder
@@ -285,12 +284,7 @@ def get_argparser():
 
 # The name of this function appears in Verilog output, so keep it tidy.
 def _applet(revision, args):
-    platform_cls = {
-        "A": GlasgowPlatformRevAB,
-        "B": GlasgowPlatformRevAB,
-        "C": GlasgowPlatformRevC,
-    }
-    target = GlasgowHardwareTarget(platform_cls=platform_cls[revision],
+    target = GlasgowHardwareTarget(revision=revision,
                                    multiplexer_cls=DirectMultiplexer,
                                    with_analyzer=hasattr(args, "trace") and args.trace)
     applet = GlasgowApplet.all_applets[args.applet]()

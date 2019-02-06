@@ -12,6 +12,7 @@ from ..gateware.i2c import I2CSlave
 from ..gateware.registers import I2CRegisters
 from ..gateware.fx2 import FX2Arbiter
 from ..gateware.platform.lattice import special_overrides
+from ..platform import GlasgowPlatformRevAB, GlasgowPlatformRevC
 from .analyzer import GlasgowAnalyzer
 
 
@@ -48,8 +49,15 @@ class _CRG(Module):
 class GlasgowHardwareTarget(Module):
     sys_clk_freq = 30e6
 
-    def __init__(self, platform_cls, multiplexer_cls=None, with_analyzer=False):
-        self.platform = platform_cls()
+    def __init__(self, revision, multiplexer_cls=None, with_analyzer=False):
+        if revision == "A":
+            self.platform = GlasgowPlatformRevAB()
+        elif revision == "B":
+            self.platform = GlasgowPlatformRevAB()
+        elif revision == "C":
+            self.platform = GlasgowPlatformRevC()
+        else:
+            raise ValueError("Unknown revision")
 
         try:
             unused = self.platform.request("unused")

@@ -83,6 +83,7 @@ from ..target.simulation import *
 from ..target.hardware import *
 from ..device.simulation import *
 from ..device.hardware import *
+from ..platform import GlasgowPlatformRevAB
 
 
 __all__ += ["GlasgowAppletTestCase", "synthesis_test", "applet_simulation_test",
@@ -184,7 +185,8 @@ class GlasgowAppletTestCase(unittest.TestCase):
 
     def assertBuilds(self, access="direct", args=[]):
         if access == "direct":
-            target = GlasgowHardwareTarget(multiplexer_cls=DirectMultiplexer)
+            target = GlasgowHardwareTarget(revision="A",
+                                           multiplexer_cls=DirectMultiplexer)
             access_args = DirectArguments(applet_name=self.applet.name,
                                           default_port="AB", pin_count=16)
         else:
@@ -222,14 +224,17 @@ class GlasgowAppletTestCase(unittest.TestCase):
     def _prepare_hardware_target(self, case, fixture, mode):
         assert mode in ("record", "replay")
 
-        self.target = GlasgowHardwareTarget(multiplexer_cls=DirectMultiplexer)
-        self.applet.build(self.target, self._parsed_args)
-
         if mode == "record":
             self.device = GlasgowHardwareDevice()
             self.device.demultiplexer = DirectDemultiplexer(self.device)
+            revision = self.device.revision
         else:
             self.device = None
+            revision = "A"
+
+        self.target = GlasgowHardwareTarget(revision=revision,
+                                            multiplexer_cls=DirectMultiplexer)
+        self.applet.build(self.target, self._parsed_args)
 
         self._recording = False
         self._recorders = []
