@@ -203,6 +203,11 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
 
     When using this applet for erasing or programming, it is necessary to look up the page
     and sector sizes in the memory datasheet.
+
+    The pinout of a typical 25C Flash IC is as follows:
+
+        * 8-pin:  SS#=1  MISO=2  MOSI=5  SCK=6  HOLD#=7  VCC=8  GND=4
+        * 16-pin: SS#=7  MISO=8  MOSI=15 SCK=16 HOLD#=1  VCC=2  GND=10
     """
 
     @classmethod
