@@ -14,10 +14,10 @@ void fpga_reset() {
   delay_us(1);
 
   // Configure config pins while FPGA is in reset.
-  IOB |=  (1<<PINB_SCK);
-  IOB &= ~(1<<PINB_SS_N);
   OEA &= ~(1<<PINA_CDONE);
   OEB |=  (1<<PINB_SCK)|(1<<PINB_SS_N)|(1<<PINB_SI);
+  IOB |=  (1<<PINB_SCK);
+  IOB &= ~(1<<PINB_SS_N);
 
   // Release FPGA reset.
   IOD |=  (1<<PIND_CRESET_N);
