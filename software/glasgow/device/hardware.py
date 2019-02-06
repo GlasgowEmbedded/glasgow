@@ -87,9 +87,13 @@ class GlasgowHardwareDevice:
         self._open_device(vendor_id, product_id)
 
         device_id = self.usb.getDevice().getbcdDevice()
+        self.revision = chr(ord("A") + (device_id & 0xFF) - 1)
+
         if device_id & 0xFF00 in (0x0000, 0xA000):
-            revision = chr(ord("A") + (device_id & 0xFF) - 1)
-            logger.debug("found rev%s device without firmware", revision)
+            logger.debug("found rev%s device without firmware", self.revision)
+
+            if self.revision not in "ABC":
+                raise GlasgowDeviceError("unknown device revision {}".format(self.revision))
 
             if firmware_file is None:
                 raise GlasgowDeviceError("firmware is not uploaded")
@@ -110,7 +114,7 @@ class GlasgowHardwareDevice:
         # serial = self.usb.getDevice().getSerialNumber()
         serial = self.usb.getASCIIStringDescriptor(
             self.usb.getDevice().device_descriptor.iSerialNumber)
-        logger.debug("found device with serial %s", serial)
+        logger.debug("found rev%s device with serial %s", self.revision, serial)
 
     async def _do_transfer(self, is_read, setup):
         transfer = self.usb.getTransfer()

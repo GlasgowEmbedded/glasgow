@@ -5,13 +5,13 @@ import tempfile
 import shutil
 import logging
 from migen import *
+import migen.build.generic_platform
 
 from ..gateware.pads import Pads
 from ..gateware.i2c import I2CSlave
 from ..gateware.registers import I2CRegisters
 from ..gateware.fx2 import FX2Arbiter
 from ..gateware.platform.lattice import special_overrides
-from ..platform import GlasgowPlatform
 from .analyzer import GlasgowAnalyzer
 
 
@@ -48,8 +48,14 @@ class _CRG(Module):
 class GlasgowHardwareTarget(Module):
     sys_clk_freq = 30e6
 
-    def __init__(self, multiplexer_cls=None, with_analyzer=False):
-        self.platform = GlasgowPlatform()
+    def __init__(self, platform_cls, multiplexer_cls=None, with_analyzer=False):
+        self.platform = platform_cls()
+
+        try:
+            unused = self.platform.request("unused")
+            self.specials += TSTriple(len(unused)).get_tristate(unused)
+        except migen.build.generic_platform.ConstraintError:
+            pass
 
         self.submodules.crg = _CRG(self.platform)
         self.platform.add_period_constraint(self.crg.cd_sys.clk, 1e9 / self.sys_clk_freq)

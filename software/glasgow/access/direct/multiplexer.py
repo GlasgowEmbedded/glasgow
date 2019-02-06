@@ -149,14 +149,17 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
 
     def build_pin_tristate(self, pin_num, oe, o, i):
         port, bit, req = self._pins[pin_num]
+        pin_parts = req(bit)
         self.specials += \
             Instance("SB_IO",
                 p_PIN_TYPE=C(0b101001, 6), # PIN_OUTPUT_TRISTATE|PIN_INPUT
-                io_PACKAGE_PIN=req(bit).io,
+                io_PACKAGE_PIN=pin_parts.io,
                 i_OUTPUT_ENABLE=oe,
                 i_D_OUT_0=o,
                 o_D_IN_0=i,
             )
+        if hasattr(pin_parts, "oe"):
+            self.comb += pin_parts.oe.eq(oe)
 
     def _throttle_fifo(self, fifo):
         self.submodules += fifo

@@ -16,6 +16,7 @@ from fx2.format import input_data, diff_data
 from ._version import get_versions
 from .device import GlasgowDeviceError
 from .device.config import GlasgowConfig
+from .platform import GlasgowPlatformRevAB, GlasgowPlatformRevC
 from .target.hardware import GlasgowHardwareTarget
 from .gateware import GatewareBuildError
 from .gateware.analyzer import TraceDecoder
@@ -229,7 +230,7 @@ def get_argparser():
     add_applet_arg(g_flash_bitstream, mode="build")
 
     def revision(arg):
-        if re.match(r"^[A-Z]$", arg):
+        if arg in "ABC":
             return arg
         else:
             raise argparse.ArgumentTypeError("{} is not a valid revision letter".format(arg))
@@ -245,6 +246,9 @@ def get_argparser():
         help="(advanced) build applet logic and save it as a file")
     add_toolchain_args(p_build)
 
+    p_build.add_argument(
+        "--rev", metavar="REVISION", type=revision,
+        help="board revision")
     p_build.add_argument(
         "--trace", default=False, action="store_true",
         help="include applet analyzer")
@@ -269,9 +273,8 @@ def get_argparser():
         "--force", default=False, action="store_true",
         help="reinitialize the device, even if it is already programmed")
     p_factory.add_argument(
-        "--revision", metavar="REVISION", type=str,
-        default="B",
-        help="revision letter (if not specified: %(default)s)")
+        "--rev", metavar="REVISION", type=revision,
+        help="board revision")
     p_factory.add_argument(
         "--serial", metavar="SERIAL", type=str,
         default=datetime.now().strftime("%Y%m%dT%H%M%SZ"),
@@ -281,8 +284,14 @@ def get_argparser():
 
 
 # The name of this function appears in Verilog output, so keep it tidy.
-def _applet(args):
-    target = GlasgowHardwareTarget(multiplexer_cls=DirectMultiplexer,
+def _applet(revision, args):
+    platform_cls = {
+        "A": GlasgowPlatformRevAB,
+        "B": GlasgowPlatformRevAB,
+        "C": GlasgowPlatformRevC,
+    }
+    target = GlasgowHardwareTarget(platform_cls=platform_cls[revision],
+                                   multiplexer_cls=DirectMultiplexer,
                                    with_analyzer=hasattr(args, "trace") and args.trace)
     applet = GlasgowApplet.all_applets[args.applet]()
     try:
@@ -404,7 +413,7 @@ async def _main():
 
         if args.action == "run":
             if args.applet:
-                target, applet = _applet(args)
+                target, applet = _applet(device.revision, args)
                 device.demultiplexer = DirectDemultiplexer(device)
 
                 await device.download_target(target, rebuild=args.rebuild,
@@ -543,7 +552,7 @@ async def _main():
                     glasgow_config.bitstream_id   = b"\xff"*16
             elif args.applet:
                 logger.info("building bitstream for applet %s", args.applet)
-                target, applet = _applet(args)
+                target, applet = _applet(device.revision, args)
                 new_bitstream_id = target.get_bitstream_id()
                 new_bitstream = target.get_bitstream(**_toolchain_opts(args))
 
@@ -600,7 +609,7 @@ async def _main():
                 logger.info("configuration and firmware identical")
 
         if args.action == "build":
-            target, applet = _applet(args)
+            target, applet = _applet(args.rev, args)
             if args.type in ("v", "verilog"):
                 logger.info("building Verilog for applet %r", args.applet)
                 target.get_verilog().write(args.filename or args.applet + ".v")
@@ -651,9 +660,9 @@ async def _main():
                     return 1
 
             fx2_config = FX2Config(vendor_id=VID_QIHW, product_id=PID_GLASGOW,
-                                   device_id=1 + ord(args.revision) - ord('A'),
+                                   device_id=1 + ord(args.rev) - ord('A'),
                                    i2c_400khz=True)
-            glasgow_config = GlasgowConfig(args.revision, args.serial)
+            glasgow_config = GlasgowConfig(args.rev, args.serial)
             fx2_config.append(0x4000 - GlasgowConfig.size, glasgow_config.encode())
 
             image = fx2_config.encode()
