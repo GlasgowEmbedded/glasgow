@@ -246,7 +246,7 @@ def get_argparser():
     add_toolchain_args(p_build)
 
     p_build.add_argument(
-        "--rev", metavar="REVISION", type=revision,
+        "--rev", metavar="REVISION", type=revision, required=True,
         help="board revision")
     p_build.add_argument(
         "--trace", default=False, action="store_true",
