@@ -338,6 +338,7 @@ def applet_hardware_test(setup="run_hardware_applet", args=[]):
 
 # -------------------------------------------------------------------------------------------------
 
+from .audio_output import AudioOutputApplet
 from .benchmark import BenchmarkApplet
 from .rgb_grabber import RGBGrabberApplet
 from .hd44780 import HD44780Applet
