@@ -9,6 +9,7 @@ import time
 import math
 import argparse
 import logging
+import asyncio
 from migen import *
 from migen.genlib.cdc import MultiReg
 
@@ -219,7 +220,7 @@ class HD44780Applet(GlasgowApplet, name="hd44780"):
             help="power-cycle the port on startup")
 
     async def run(self, device, args):
-        iface = await device.demultiplexer.claim_raw_interface(self, self.mux_interface, timeout=1)
+        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args=None)
 
         if args.reset:
             await device.set_voltage(args.port_spec, 0.0)
