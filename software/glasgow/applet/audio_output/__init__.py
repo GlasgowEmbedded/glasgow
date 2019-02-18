@@ -7,28 +7,50 @@ from ...gateware.pads import *
 
 
 class AudioOutputSubtarget(Module):
-    def __init__(self, pads, out_fifo, sample_cyc):
-        accum = Signal(8)
-        level = Signal(8)
+    def __init__(self, pads, out_fifo, sample_cyc, width):
+        assert width in (1, 2)
+
+        timer = Signal(max=sample_cyc)
+        accum = Signal(width * 8)
+        level = Signal(width * 8)
 
         self.sync += Cat(accum, pads.o_t.o).eq(accum + level)
 
-        timer = Signal(max=sample_cyc)
-        self.sync += [
-            out_fifo.re.eq(0),
-            If(timer == 0,
-                timer.eq(sample_cyc - 1),
-                If(out_fifo.readable,
-                    out_fifo.re.eq(1),
-                    pads.o_t.oe.eq(1),
-                    level.eq(out_fifo.dout)
-                ).Else(
-                    pads.o_t.oe.eq(0),
-                )
-            ).Else(
-                timer.eq(timer - 1)
+        self.submodules.fsm = FSM()
+        self.fsm.act("STANDBY",
+            NextValue(pads.o_t.oe, 0),
+            If(out_fifo.readable,
+                NextValue(pads.o_t.oe, 1),
+                NextState("WAIT")
             )
-        ]
+        )
+        self.fsm.act("WAIT",
+            If(timer == 0,
+                NextValue(timer, sample_cyc - width - 1),
+                NextState("READ-1")
+            ).Else(
+                NextValue(timer, timer - 1)
+            )
+        )
+        self.fsm.act("READ-1",
+            out_fifo.re.eq(1),
+            If(out_fifo.readable,
+                NextValue(level[0:8], out_fifo.dout),
+                NextState("WAIT" if width == 1 else "READ-2")
+            ).Else(
+                NextState("STANDBY")
+            )
+        )
+        if width > 1:
+            self.fsm.act("READ-2",
+                out_fifo.re.eq(1),
+                If(out_fifo.readable,
+                    NextValue(level[8:16], out_fifo.dout),
+                    NextState("WAIT")
+                ).Else(
+                    NextState("STANDBY")
+                )
+            )
 
 
 class AudioOutputApplet(GlasgowApplet, name="audio-output"):
@@ -37,10 +59,13 @@ class AudioOutputApplet(GlasgowApplet, name="audio-output"):
     description = """
     Play sound using a 1-bit sigma-delta DAC, i.e. pulse density modulation.
 
-    Currently, only one sample format is supported: mono unsigned 8-bit.
+    Currently, the supported sample formats are:
+        * mono unsigned 8-bit,
+        * mono unsigned 16-bit little endian.
+
     Other formats may be converted to it using:
 
-        sox <input> -c 1 -r <rate> <output>.u8
+        sox <input> -c 1 -r <rate> <output>.<u8|u16>
     """
 
     __pins = ("o",)
@@ -54,6 +79,9 @@ class AudioOutputApplet(GlasgowApplet, name="audio-output"):
         parser.add_argument(
             "-r", "--sample-rate", metavar="FREQ", type=int, default=8000,
             help="set sample rate to FREQ Hz (default: %(default)d)")
+        parser.add_argument(
+            "-w", "--width", metavar="WIDTH", type=int, default=1,
+            help="set sample width to WIDTH bytes (default: %(default)d)")
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
@@ -61,6 +89,7 @@ class AudioOutputApplet(GlasgowApplet, name="audio-output"):
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             sample_cyc=int(target.sys_clk_freq // args.sample_rate),
+            width=args.width,
         ))
         return subtarget
 
