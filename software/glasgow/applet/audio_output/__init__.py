@@ -101,9 +101,16 @@ class AudioOutputApplet(GlasgowApplet, name="audio-output"):
         parser.add_argument(
             "file", metavar="FILE", type=argparse.FileType("rb"),
             help="read PCM data from FILE")
+        parser.add_argument(
+            "-l", "--loop", default=False, action="store_true",
+            help="loop the input samples")
 
     async def interact(self, device, args, pcm_iface):
-        await pcm_iface.write(args.file.read())
+        pcm_data = args.file.read()
+        while True:
+            await pcm_iface.write(pcm_data)
+            if not args.loop:
+                break
 
 # -------------------------------------------------------------------------------------------------
 
