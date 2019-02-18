@@ -8,11 +8,10 @@ from ...gateware.pads import *
 
 class AudioOutputSubtarget(Module):
     def __init__(self, pads, out_fifo, sample_cyc):
-        count = Signal(8)
-        limit = Signal(8)
+        accum = Signal(8)
+        level = Signal(8)
 
-        self.sync += count.eq(count + 1)
-        self.comb += pads.o_t.o.eq(count < limit)
+        self.sync += Cat(accum, pads.o_t.o).eq(accum + level)
 
         timer = Signal(max=sample_cyc)
         self.sync += [
@@ -22,7 +21,7 @@ class AudioOutputSubtarget(Module):
                 If(out_fifo.readable,
                     out_fifo.re.eq(1),
                     pads.o_t.oe.eq(1),
-                    limit.eq(out_fifo.dout)
+                    level.eq(out_fifo.dout)
                 ).Else(
                     pads.o_t.oe.eq(0),
                 )
@@ -34,9 +33,9 @@ class AudioOutputSubtarget(Module):
 
 class AudioOutputApplet(GlasgowApplet, name="audio-output"):
     logger = logging.getLogger(__name__)
-    help = "play sound using pulse width modulation"
+    help = "play sound using a ΣΔ-DAC"
     description = """
-    Play sound using pulse width modulation.
+    Play sound using a 1-bit sigma-delta DAC, i.e. pulse density modulation.
 
     Currently, only one sample format is supported: mono unsigned 8-bit.
     Other formats may be converted to it using:
