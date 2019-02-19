@@ -97,12 +97,12 @@ class AudioOutputApplet(GlasgowApplet, name="audio-output"):
 
     Other formats may be converted to it using:
 
-        sox <input> -c <channels> -r <rate> <output>.<u8|u16>
+        $ sox <input> -c <channels> -r <rate> <output>.<u8|u16>
 
     For example, to play an ogg file:
 
-        sox samples.ogg -c 2 -r 48000 samples.u16
-        glasgow run audio-output --pins-o 0,1 -r 48000 -w 2 samples.u16
+        $ sox samples.ogg -c 2 -r 48000 samples.u16
+        $ glasgow run audio-output --pins-o 0,1 -r 48000 -w 2 samples.u16
     """
 
     __pin_sets = ("o",)
