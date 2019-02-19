@@ -111,7 +111,7 @@ class AudioOutputApplet(GlasgowApplet, name="audio-output"):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_set_argument(parser, "o", width=range(1, 17), default=True)
+        access.add_pin_set_argument(parser, "o", width=range(1, 17), default=1)
 
         parser.add_argument(
             "-r", "--sample-rate", metavar="FREQ", type=int, default=8000,
