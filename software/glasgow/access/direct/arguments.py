@@ -75,9 +75,6 @@ class DirectArguments(AccessArguments):
         if default is not None:
             help += " (default: %(default)s)"
 
-        if isinstance(width, int):
-            width = range(width, width + 1)
-
         opt_name = "--pins-" + name.lower().replace("_", "-")
         parser.add_argument(
             opt_name, dest="pin_set_{}".format(name), metavar="SET",
@@ -108,8 +105,10 @@ class DirectArguments(AccessArguments):
         self._add_pin_argument(parser, name, default, required)
 
     def add_pin_set_argument(self, parser, name, width, default=None, required=False):
-        if default is True and len(self._free_pins) >= width:
-            default = ",".join([str(self._get_free(self._free_pins)) for _ in range(width)])
+        if isinstance(width, int):
+            width = range(width, width + 1)
+        if default is True and len(self._free_pins) >= width.start:
+            default = ",".join([str(self._get_free(self._free_pins)) for _ in width])
         self._add_pin_set_argument(parser, name, width, default, required)
 
     def add_run_arguments(self, parser):
