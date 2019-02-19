@@ -39,7 +39,7 @@ class AudioOutputSubtarget(Module):
         )
         self.fsm.act("WAIT",
             If(timer == 0,
-                NextValue(timer, sample_cyc - width - 1),
+                NextValue(timer, sample_cyc - len(channels) * width - 1),
                 NextState("CHANNEL-0-READ-1")
             ).Else(
                 NextValue(timer, timer - 1)
