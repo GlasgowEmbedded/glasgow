@@ -5,6 +5,8 @@ Glasgow = Bus Pirate + Bus Blaster + Logic Sniffer
 
 **Let's chat! [Our IRC channel is #glasgow at freenode.net](https://webchat.freenode.net/?channels=glasgow)**.
 
+**Important note: if you are looking to assemble some boards yourself, do NOT pick revA or revB unless you have a COMPLETE understanding of pitfalls associated with the FXMA level shifter.**
+
 Glasgow is a 50 MHz 1V8/2V5/3V3/3V6/5V0 bus multitool,
 think [Bus Pirate](http://dangerousprototypes.com/docs/Bus_Pirate) + [Bus Blaster](http://dangerousprototypes.com/docs/Bus_Blaster) + [Logic Sniffer](http://dangerousprototypes.com/docs/Open_Bench_Logic_Sniffer)
 all in one reconfigurable package.
