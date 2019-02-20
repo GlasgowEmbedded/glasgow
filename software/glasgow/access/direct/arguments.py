@@ -108,8 +108,8 @@ class DirectArguments(AccessArguments):
         if isinstance(width, int):
             width = range(width, width + 1)
         if default is True and len(self._free_pins) >= width.start:
-            default = ",".join([str(self._get_free(self._free_pins)) for _ in width])
-        if isinstance(default, int) and len(self._free_pins) >= default:
+            default = ",".join([str(self._get_free(self._free_pins)) for _ in range(width.start)])
+        elif isinstance(default, int) and len(self._free_pins) >= default:
             default = ",".join([str(self._get_free(self._free_pins)) for _ in range(default)])
         self._add_pin_set_argument(parser, name, width, default, required)
 
