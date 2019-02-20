@@ -192,8 +192,7 @@ class HD44780Applet(GlasgowApplet, name="hd44780"):
     Port pins should be connected to display pins as follows: RS->4, RW->5, E->6,
     D->11,12,13,14. Port voltage is set to 5.0 V.
 
-    Note: the E line is *extremely* susceptible to noise. If the display shows
-    erratic behavior, try routing it away from possible aggressors (RS and R/W).
+    Note: this applet requires revC0+.
     """
 
     @classmethod
