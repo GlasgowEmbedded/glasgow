@@ -97,6 +97,8 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         await self.device.write_register(self._addr_reset, 1)
         self.logger.trace("synchronizing FIFOs")
         self.device.usb.setInterfaceAltSetting(self._pipe_num, 1)
+        self._buffer_in  = ChunkedFIFO()
+        self._buffer_out = ChunkedFIFO()
         self.logger.trace("deasserting reset")
         await self.device.write_register(self._addr_reset, 0)
 
