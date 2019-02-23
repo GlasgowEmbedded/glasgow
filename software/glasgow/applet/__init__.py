@@ -365,3 +365,4 @@ from .swd import SWDApplet
 from .uart import UARTApplet
 from .vga_output import VGAOutputApplet
 from .vga_terminal import VGATerminalApplet
+from .yamaha_opl import YamahaOPLApplet
