@@ -47,6 +47,25 @@
 # broken playback if this is not accounted for. Therefore, for example, the reset sequence has to
 # enable all available advanced features, zero out the registers, and then disable them back for
 # compatibility with OPL clients that expect the compatibility mode to be on.
+#
+# Register latency
+# ----------------
+#
+# Many Yamaha chips physically implement the register file as a kind of bucket brigade device, or
+# a giant multibit shift register, as opposed to a multiport RAM. This goes hand in hand with
+# there being only one physical operator on the chip. On YM3812, the shift register makes one
+# revolution per one sample clock, and therefore any write has to be latched from the bus into
+# an intermediate area, and wait until the right register travels to the physical write port.
+# On YM3812, the latch latency is 12 cycles and the sample takes 72 clocks, therefore each
+# address/data write cycle takes 12+12+72 clocks.
+#
+# VGM timeline
+# ------------
+#
+# The VGM file format assumes that writes happen instantaneously. They do not. On YM3812, a write
+# takes slightly more than one YM3812 sample clock (which is slightly less than one VGM sample
+# clock). This means that two YM3812 writes followed by a 1 sample delay in VGM "invalidate"
+# the delay, by borrowing time from it.
 
 import os.path
 import logging
@@ -155,18 +174,16 @@ OP_MASK   = 0xf0
 
 class YamahaOPLSubtarget(Module):
     def __init__(self, pads, in_fifo, out_fifo,
-                 read_pulse_cyc, write_pulse_cyc, address_latency_cyc, data_latency_cyc,
-                 master_cyc):
+                 master_cyc, read_pulse_cyc, write_pulse_cyc,
+                 latch_clocks, sample_clocks):
         self.submodules.bus = bus = YamahaOPLBus(pads, master_cyc)
 
         # Control
 
+        pulse_timer = Signal(max=max(read_pulse_cyc, write_pulse_cyc))
+        wait_timer  = Signal(16)
 
-        pulse_timer   = Signal(max=max(read_pulse_cyc, write_pulse_cyc))
-        latency_timer = Signal(max=max(address_latency_cyc, data_latency_cyc))
-        sample_timer  = Signal(16)
-
-        enabled  = Signal()
+        enabled     = Signal()
 
         # The code below assumes that the FSM clock is under ~50 MHz, which frees us from the need
         # to explicitly satisfy setup/hold timings.
@@ -205,44 +222,35 @@ class YamahaOPLSubtarget(Module):
                 NextValue(bus.cs, 0),
                 NextValue(bus.wr, 0),
                 If(bus.a == 0b0,
-                    NextValue(latency_timer, address_latency_cyc - 1)
+                    NextValue(wait_timer, latch_clocks - 1)
                 ).Else(
-                    NextValue(latency_timer, data_latency_cyc - 1)
+                    NextValue(wait_timer, latch_clocks + sample_clocks - 1)
                 ),
-                NextState("WRITE-LATENCY")
+                NextState("WAIT-LOOP")
             ).Else(
                 NextValue(pulse_timer, pulse_timer - 1)
-            )
-        )
-        self.control_fsm.act("WRITE-LATENCY",
-            If(bus.stb_m,
-                If(latency_timer == 0,
-                    NextState("IDLE")
-                ).Else(
-                    NextValue(latency_timer, latency_timer - 1)
-                )
             )
         )
         self.control_fsm.act("WAIT-H-BYTE",
             If(out_fifo.readable,
                 out_fifo.re.eq(1),
-                NextValue(sample_timer[8:16], out_fifo.dout),
+                NextValue(wait_timer[8:16], out_fifo.dout),
                 NextState("WAIT-L-BYTE")
             )
         )
         self.control_fsm.act("WAIT-L-BYTE",
             If(out_fifo.readable,
                 out_fifo.re.eq(1),
-                NextValue(sample_timer[0:8], out_fifo.dout),
+                NextValue(wait_timer[0:8], out_fifo.dout),
                 NextState("WAIT-LOOP")
             )
         )
         self.control_fsm.act("WAIT-LOOP",
-            If(sample_timer == 0,
+            If(wait_timer == 0,
                 NextState("IDLE")
             ).Else(
-                If(bus.stb_sh,
-                    NextValue(sample_timer, sample_timer - 1)
+                If(bus.stb_m,
+                    NextValue(wait_timer, wait_timer - 1)
                 )
             )
         )
@@ -294,13 +302,25 @@ class YamahaOPLSubtarget(Module):
 
 
 class YamahaOPLInterface:
-    def __init__(self, interface, logger):
+    def __init__(self, interface, logger, latch_clocks, sample_clocks, instant_writes=True):
         self.lower   = interface
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
+        self.latch_clocks  = latch_clocks
+        self.sample_clocks = sample_clocks
+
+        # Adjust delays such that earlier writes borrow from later delays. Useful for VGM files,
+        # where writes are unphysically assumed to take no time.
+        self._instant_writes = instant_writes
+        self._phase_accum    = 0
+
         self._feature_level  = 1
         self._feature_warned = False
+
+    @property
+    def write_clocks(self):
+        return 2 * self.latch_clocks + self.sample_clocks
 
     def _log(self, message, *args, level=None):
         self._logger.log(self._level if level is None else level, "OPL*: " + message, *args)
@@ -311,7 +331,9 @@ class YamahaOPLInterface:
         # Reset the synthesizer in software; some OPL chips appear to have broken ~IC reset,
         # and in any case this saves a pin. VGM files often do not reset the chip appropriately,
         # nor do they always terminate cleanly, so this is necessary to get a reproducible result.
+        old_instant_writes, self._instant_writes = self._instant_writes, False
         await self._reset_registers()
+        self._instant_writes = old_instant_writes
 
     async def _reset_registers(self):
         # Put YM3812 in OPL2 mode.
@@ -327,7 +349,7 @@ class YamahaOPLInterface:
             await self.write_register(addr, 0x00, check_feature=False)
         # Put YM3812 back in OPL mode.
         await self.write_register(0x01, 0x00, check_feature=False)
-        # Reset feature level.
+        # Reset feature level. We're interested in any new violations.
         self._feature_level  = 1
         self._feature_warned = False
 
@@ -360,13 +382,33 @@ class YamahaOPLInterface:
             self._check_level(address, 2)
 
     async def write_register(self, address, data, check_feature=True):
-        self._log("write [%#04x]=%#04x", address, data)
+        if self._instant_writes:
+            old_phase_accum = self._phase_accum
+            self._phase_accum += self.write_clocks
+            self._log("write [%#04x]=%#04x; phase: %d→%d",
+                      address, data, old_phase_accum, self._phase_accum)
+        else:
+            self._log("write [%#04x]=%#04x",
+                      address, data)
         if check_feature:
             self._check_enable_features(address, data)
         await self.lower.write([OP_WRITE|0, address, OP_WRITE|1, data])
 
-    async def wait_samples(self, count):
-        self._log("wait %d samples", count)
+    async def wait_clocks(self, count):
+        if self._instant_writes:
+            old_phase_accum = self._phase_accum
+            self._phase_accum -= count
+            old_count = count
+            if self._phase_accum < 0:
+                count = -self._phase_accum
+                self._phase_accum = 0
+            else:
+                count = 0
+            self._log("wait %d→%d clocks; phase: %d→%d",
+                      old_count, count, old_phase_accum, self._phase_accum)
+        else:
+            self._log("wait %d clocks",
+                      count)
         while count > 65535:
             await self.lower.write([OP_WAIT, *struct.pack(">H", 65535)])
             count -= 65535
@@ -379,10 +421,11 @@ class YamahaOPLInterface:
 
 class YamahaVGMStreamPlayer(VGMStreamPlayer):
     def __init__(self, reader, opl_iface):
-        self._reader    = reader
-        self._opl_iface = opl_iface
+        self._reader     = reader
+        self._opl_iface  = opl_iface
 
-        self.sample_time = 72 / reader.ym3812_clk # 72 фM per фSY
+        self.clock_rate  = reader.ym3812_clk
+        self.sample_time = opl_iface.sample_clocks / self.clock_rate
 
     async def play(self, disable=True):
         try:
@@ -418,7 +461,7 @@ class YamahaVGMStreamPlayer(VGMStreamPlayer):
         await self._opl_iface.write_register(address, data)
 
     async def wait_seconds(self, delay):
-        await self._opl_iface.wait_samples(int(delay / self.sample_time))
+        await self._opl_iface.wait_clocks(int(delay * self.clock_rate))
 
 
 class YamahaOPLWebInterface:
@@ -481,6 +524,7 @@ class YamahaOPLWebInterface:
                     vgm_stream = gzip.GzipFile(fileobj=vgm_stream)
 
                 vgm_reader = VGMStreamReader(vgm_stream)
+                vgm_player = YamahaVGMStreamPlayer(vgm_reader, self._opl_iface)
             except OSError:
                 raise ValueError("File is not in VGM or VGZ format")
 
@@ -493,12 +537,13 @@ class YamahaOPLWebInterface:
 
             self._logger.info("web: %s: VGM is looped for %.2f/%.2f s",
                               digest, vgm_reader.loop_seconds, vgm_reader.total_seconds)
+
         except ValueError as e:
             self._logger.warning("web: %s: broken upload: %s",
                                  digest, str(e))
             return web.Response(status=400, text=str(e), content_type="text/plain")
 
-        input_rate = vgm_reader.ym3812_clk / 72 # 72 фM per фSY
+        input_rate = 1 / vgm_player.sample_time
         preferred_rate = int(request.headers["X-Preferred-Sample-Rate"])
         resample, output_rate = self._make_resampler(input_rate, preferred_rate)
         self._logger.info("web: %s: sample rate: input %d, preferred %d, output %d",
@@ -512,7 +557,6 @@ class YamahaOPLWebInterface:
 
             input_queue    = asyncio.Queue()
             resample_queue = asyncio.Queue()
-            vgm_player   = YamahaVGMStreamPlayer(vgm_reader, self._opl_iface)
             resample_fut = asyncio.ensure_future(resample(input_queue, resample_queue))
             record_fut   = asyncio.ensure_future(vgm_player.record(input_queue))
             play_fut     = asyncio.ensure_future(vgm_player.play(disable=False))
@@ -626,6 +670,9 @@ class YamahaOPLApplet(GlasgowApplet, name="yamaha-opl"):
         access.add_pin_argument(parser, "mo", default=True)
 
     def build(self, target, args):
+        self.latch_clocks  = 12
+        self.sample_clocks = 72
+
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(YamahaOPLSubtarget(
             pads=iface.get_pads(args, pins=self.__pins, pin_sets=self.__pin_sets),
@@ -636,14 +683,14 @@ class YamahaOPLApplet(GlasgowApplet, name="yamaha-opl"):
             master_cyc=4,#target.sys_clk_freq / 3.58e6,
             read_pulse_cyc=int(target.sys_clk_freq * 200e-9),
             write_pulse_cyc=int(target.sys_clk_freq * 100e-9),
-            address_latency_cyc=12,
-            data_latency_cyc=84,
+            latch_clocks=self.latch_clocks,
+            sample_clocks=self.sample_clocks,
         ))
         return subtarget
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        opl_iface = YamahaOPLInterface(iface, self.logger)
+        opl_iface = YamahaOPLInterface(iface, self.logger, self.latch_clocks, self.sample_clocks)
         await opl_iface.reset()
         return opl_iface
 
