@@ -290,16 +290,31 @@ class YamahaOPLInterface:
         self._log("reset")
         await self.lower.reset()
         # Reset the synthesizer in software; some OPL chips appear to have broken ~IC reset,
-        # and in any case this saves a pin.
+        # and in any case this saves a pin. VGM files often do not reset the chip appropriately,
+        # nor do they always terminate cleanly, so this is necessary to get a reproducible result.
+        await self._reset_registers()
+
+    async def _reset_registers(self):
+        # Yamaha chips that have compatibility features implement them in a somewhat broken way.
+        # When the compatibility feature is disabled, its registers are masked off. However,
+        # the actual feature is still (partially) enabled and it will result in broken playback.
+        # Therefore the reset sequence has to enable all available advanced features, zero out
+        # the registers, and then disable them back for compatibility with OPL clients that expect
+        # the compatibility mode to be on.
+        #
+        # Put YM3812 in OPL2 mode.
+        await self.write_register(0x01, 0x20)
+        # Zero all defined OPL2 registers except TEST.
         for addr in [
-            # All defined OPL2 registers.
-            0x01, 0x02, 0x03, 0x04, 0x08,
+            0x02, 0x03, 0x04, 0x08,
             *range(0x20, 0x36), *range(0x40, 0x56), *range(0x60, 0x76), *range(0x80, 0x96),
             *range(0xA0, 0xA9), *range(0xB0, 0xB9),
             0xBD,
             *range(0xC0, 0xC9), *range(0xE0, 0xF6)
         ]:
             await self.write_register(addr, 0x00)
+        # Put YM3812 back in OPL mode.
+        await self.write_register(0x01, 0x00)
 
     async def enable(self):
         self._log("enable")
