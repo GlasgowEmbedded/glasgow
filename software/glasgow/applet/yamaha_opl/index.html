@@ -116,8 +116,9 @@
             // reasons. This appears to happen only when the console is closed (?!) and I think
             // when the page isn't in focus, and if we don't account for this, the player will
             // hang and require a page reload.
-            if(!player.loop)
+            if(!player.loop) {
               player._playing = 0;
+            }
           }
           player._updateStatus();
           player._scheduleNode();
@@ -164,7 +165,7 @@
           status = "playing (" + event.done + "/" + event.total + " buffers)";
         } else {
           status = "stopped";
-          if(event.done == event.total) {
+          if(player.complete && event.done == event.total - 1) {
             playButton.disabled = false;
             replayButton.disabled = false;
           }
