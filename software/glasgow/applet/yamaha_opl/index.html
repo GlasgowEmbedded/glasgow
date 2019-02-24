@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<head>
+  <title>Yamaha OPL* Web Gateway</title>
+</head>
+<body style="width:50em">
+  <h1>Yamaha OPL* Web Gateway</h1>
+  <p>This webpage lets you submit commands to a real Yamaha YM3812 synthesizer and listen to the output. The synthesizer is a <b>shared resource</b> (and isn't very fast, although it does not have to run in real time), and everyone who submits a file is in the same queue, so you might have to wait until it's your turn.</p>
+  <p>Play a <a href="https://vgmrips.net/packs/chip/ym3812">VGM/VGZ</a> file: <input type="file" id="file" accept=".vgm,.vgz"> <input type="button" id="play" value="Play"> <input type="button" id="replay" value="Replay" disabled></p>
+  <p>Status: <span id="netStatus">idle</span>, <span id="playStatus">stopped</span></p>
+  <p id="errorPane" style="color:red; display:none">Error: <span id="error"></span></p>
+
+  <!--
+    Yes, I know this code is shit. I hate Web. I hate audio. I especially hate web audio.
+    Pull requests welcome.
+
+    And yes, I do transfer raw PCM samples over the network encoded as base64. Deal with it.
+  -->
+  <script type="text/javascript">
+    var BUFFER_AT_LEAST = 100;
+
+    function PCMPlayer() {
+      this._context = new (window.AudioContext || window.webkitAudioContext);
+      this._buffers = [];
+      this._samplesDone = 0;
+      this._samplesTotal = 0;
+
+      this._playing = 0;
+      this._index = 0;
+      this._timestamp = this._context.currentTime;
+
+      this.preferredSampleRate = function() {
+        return this._context.sampleRate;
+      }
+
+      this.addSamples = function(dataView, sampleRate) {
+        var audioBuffer = new AudioBuffer({
+          length: dataView.byteLength / 2,
+          sampleRate: sampleRate
+        });
+        var f32Buffer = audioBuffer.getChannelData(0);
+        for(var i = 0; i < f32Buffer.length; i++)
+          f32Buffer[i] = (dataView.getUint16(i * 2, /*littleEndian=*/true) - 32768) / 32768;
+
+        this._buffers.push(audioBuffer);
+        this._samplesTotal += audioBuffer.length;
+        this._updateStatus();
+      }
+
+      this.scheduleAtLeast = function(atLeast) {
+        if(this._buffers.length - this._index < atLeast) {
+          console.log("need at least", atLeast, "buffers;",
+                      "have ", this._buffers.length - this._index);
+          return;
+        }
+        if(this._playing >= atLeast) return false;
+        var scheduleCount = atLeast - this._playing;
+        console.log("scheduling", scheduleCount, "buffers");
+        for(var i = 0; i < scheduleCount; i++)
+          this._scheduleNode();
+        return true;
+      }
+
+      this._scheduleNode = function(first) {
+        if(this._index == this._buffers.length) return;
+
+        var bufferIndex = this._index++;
+        var audioBuffer = this._buffers[bufferIndex];
+        var audioBufferSource = new AudioBufferSourceNode(this._context, {
+          buffer: audioBuffer
+        });
+        audioBufferSource.connect(this._context.destination);
+        this._playing++;
+        audioBufferSource.start(this._timestamp);
+        console.log("scheduled buffer", bufferIndex, "at", this._timestamp, ";",
+                    "now", this._playing);
+
+        if(this._timestamp < this._context.currentTime)
+          this._timestamp = this._context.currentTime;
+        this._timestamp += audioBuffer.duration;
+
+        var player = this;
+        audioBufferSource.onended = function(event) {
+          player._playing--;
+          player._samplesDone += audioBuffer.length;
+          console.log("finished buffer", bufferIndex, ";",
+                      "now", player._playing);
+          if(bufferIndex == player._buffers.length - 1) {
+            // Chromium appears to not invoke onended for some audio buffer sources for unknown
+            // reasons. This appears to happen only when the console is closed (?!) and I think
+            // when the page isn't in focus, and if we don't account for this, the player will
+            // hang and require a page reload.
+            player._playing = 0;
+            player._samplesDone = player._samplesTotal;
+          }
+          player._updateStatus();
+          player._scheduleNode();
+        }
+      };
+
+      this.rewind = function() {
+        if(this._playing) return;
+
+        this._samplesDone = 0;
+        this._index = 0;
+        this._timestamp = this._context.currentTime;
+      }
+
+      this.onstatuschange = undefined;
+      this._updateStatus = function() {
+        if(this.onstatuschange)
+          this.onstatuschange({
+            playing: this._playing,
+            done: this._samplesDone,
+            total: this._samplesTotal
+          });
+      }
+    }
+
+    var playButton = document.getElementById("play");
+    var replayButton = document.getElementById("replay");
+    var fileInput = document.getElementById("file");
+    var netStatusSpan = document.getElementById("netStatus");
+    var playStatusSpan = document.getElementById("playStatus");
+    var errorPane = document.getElementById("errorPane");
+    var errorSpan = document.getElementById("error");
+    playButton.onclick = function(event) {
+      playButton.disabled = true;
+      replayButton.disabled = true;
+
+      var player = new PCMPlayer();
+      player.onstatuschange = function(event) {
+        var status;
+        if(event.playing) {
+          status = "playing (" + event.done + "/" + event.total + " samples)";
+        } else {
+          status = "stopped";
+          if(event.done == event.total) {
+            playButton.disabled = false;
+            replayButton.disabled = false;
+          }
+        }
+        playStatusSpan.innerText = status;
+      }
+
+      replayButton.onclick = function(event) {
+        playButton.disabled = true;
+        replayButton.disabled = true;
+
+        player.rewind();
+        player.scheduleAtLeast(BUFFER_AT_LEAST);
+      }
+
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", "/vgm", /*async=*/true);
+      xhr.setRequestHeader("X-Preferred-Sample-Rate", player.preferredSampleRate());
+      xhr.seenBytes = 0;
+      xhr.onreadystatechange = function(event) {
+        if(xhr.status >= 400) {
+          errorPane.style.display = "";
+          errorSpan.innerText = xhr.responseText;
+          playButton.disabled = false;
+        }
+
+        if(xhr.status == 200 && xhr.readyState > 2) {
+          errorPane.style.display = "none";
+
+          var CHUNK_SIZE = 4096;
+          while(xhr.responseText.length >= xhr.seenBytes + CHUNK_SIZE) {
+            var chunk = xhr.responseText.substr(xhr.seenBytes, CHUNK_SIZE);
+            var bytes = base64js.toByteArray(chunk);
+            var view = new DataView(bytes.buffer);
+            player.addSamples(view, parseInt(xhr.getResponseHeader("X-Sample-Rate")));
+            if(!player._playing)
+              player.scheduleAtLeast(BUFFER_AT_LEAST);
+            xhr.seenBytes += CHUNK_SIZE;
+          }
+        }
+
+        var status;
+        switch(xhr.readyState) {
+          case 3: status = "streaming";  break;
+          case 4: status = "idle";       break;
+        }
+        if(xhr.readyState == 3)
+          status += " (" + xhr.seenBytes + " bytes)";
+        netStatusSpan.innerText = status;
+      }
+      netStatusSpan.innerText = "waiting";
+      xhr.send(fileInput.files[0]);
+    };
+  </script>
+  <script type="text/javascript">
+    // base64.min.js
+    (function(r){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=r()}else if(typeof define==="function"&&define.amd){define([],r)}else{var e;if(typeof window!=="undefined"){e=window}else if(typeof global!=="undefined"){e=global}else if(typeof self!=="undefined"){e=self}else{e=this}e.base64js=r()}})(function(){var r,e,n;return function(){function r(e,n,t){function o(f,i){if(!n[f]){if(!e[f]){var u="function"==typeof require&&require;if(!i&&u)return u(f,!0);if(a)return a(f,!0);var v=new Error("Cannot find module '"+f+"'");throw v.code="MODULE_NOT_FOUND",v}var d=n[f]={exports:{}};e[f][0].call(d.exports,function(r){var n=e[f][1][r];return o(n||r)},d,d.exports,r,e,n,t)}return n[f].exports}for(var a="function"==typeof require&&require,f=0;f<t.length;f++)o(t[f]);return o}return r}()({"/":[function(r,e,n){"use strict";n.byteLength=d;n.toByteArray=h;n.fromByteArray=p;var t=[];var o=[];var a=typeof Uint8Array!=="undefined"?Uint8Array:Array;var f="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";for(var i=0,u=f.length;i<u;++i){t[i]=f[i];o[f.charCodeAt(i)]=i}o["-".charCodeAt(0)]=62;o["_".charCodeAt(0)]=63;function v(r){var e=r.length;if(e%4>0){throw new Error("Invalid string. Length must be a multiple of 4")}var n=r.indexOf("=");if(n===-1)n=e;var t=n===e?0:4-n%4;return[n,t]}function d(r){var e=v(r);var n=e[0];var t=e[1];return(n+t)*3/4-t}function c(r,e,n){return(e+n)*3/4-n}function h(r){var e;var n=v(r);var t=n[0];var f=n[1];var i=new a(c(r,t,f));var u=0;var d=f>0?t-4:t;for(var h=0;h<d;h+=4){e=o[r.charCodeAt(h)]<<18|o[r.charCodeAt(h+1)]<<12|o[r.charCodeAt(h+2)]<<6|o[r.charCodeAt(h+3)];i[u++]=e>>16&255;i[u++]=e>>8&255;i[u++]=e&255}if(f===2){e=o[r.charCodeAt(h)]<<2|o[r.charCodeAt(h+1)]>>4;i[u++]=e&255}if(f===1){e=o[r.charCodeAt(h)]<<10|o[r.charCodeAt(h+1)]<<4|o[r.charCodeAt(h+2)]>>2;i[u++]=e>>8&255;i[u++]=e&255}return i}function s(r){return t[r>>18&63]+t[r>>12&63]+t[r>>6&63]+t[r&63]}function l(r,e,n){var t;var o=[];for(var a=e;a<n;a+=3){t=(r[a]<<16&16711680)+(r[a+1]<<8&65280)+(r[a+2]&255);o.push(s(t))}return o.join("")}function p(r){var e;var n=r.length;var o=n%3;var a=[];var f=16383;for(var i=0,u=n-o;i<u;i+=f){a.push(l(r,i,i+f>u?u:i+f))}if(o===1){e=r[n-1];a.push(t[e>>2]+t[e<<4&63]+"==")}else if(o===2){e=(r[n-2]<<8)+r[n-1];a.push(t[e>>10]+t[e>>4&63]+t[e<<2&63]+"=")}return a.join("")}},{}]},{},[])("/")});
+  </script>
+</body>

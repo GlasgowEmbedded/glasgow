@@ -58,7 +58,7 @@ class VGMStreamReader:
         self.ym2612_clk    = self._read0("<L")
         self.ym2151_clk    = self._read0("<L")
         # if self._version >= 0x1_50:
-        self.data_offset   = self._offset() + self._read0("<L")
+        self.data_offset   = self._offset() + (self._read0("<L") or 0x0000000C)
         # if self._version >= 0x1_51:
         self.sega_pcm_clk  = self._read0("<L")
         self.sega_pcm_reg  = self._read0("<L")

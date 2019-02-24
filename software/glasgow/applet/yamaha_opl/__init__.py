@@ -32,11 +32,17 @@
 # is as follows, in a Verilog-like syntax:
 #     assign V = {S, {{7{~S}}, M, 7'b0000000}[E+:15]};
 
+import os.path
 import logging
 import argparse
 import struct
 import array
 import asyncio
+import aiohttp.web as web
+import hashlib
+import base64
+import gzip
+import io
 from migen import *
 from migen.genlib.cdc import MultiReg
 
@@ -74,7 +80,7 @@ class YamahaOPLBus(Module):
                 cyc_m.eq(half_master_cyc - 1),
             ).Else(
                 cyc_m.eq(cyc_m - 1)
-            ),
+            )
         ]
 
         clk_m_s = Signal()
@@ -246,6 +252,7 @@ class YamahaOPLSubtarget(Module):
 
         self.submodules.data_fsm = FSM()
         self.data_fsm.act("WAIT-SH",
+            NextValue(in_fifo.flush, ~enabled),
             If(bus.stb_sh & enabled,
                 NextState("SAMPLE")
             )
@@ -279,6 +286,21 @@ class YamahaOPLInterface:
     def _log(self, message, *args):
         self._logger.log(self._level, "OPL*: " + message, *args)
 
+    async def reset(self):
+        self._log("reset")
+        await self.lower.reset()
+        # Reset the synthesizer in software; some OPL chips appear to have broken ~IC reset,
+        # and in any case this saves a pin.
+        for addr in [
+            # All defined OPL2 registers.
+            0x01, 0x02, 0x03, 0x04, 0x08,
+            *range(0x20, 0x36), *range(0x40, 0x56), *range(0x60, 0x76), *range(0x80, 0x96),
+            *range(0xA0, 0xA9), *range(0xB0, 0xB9),
+            0xBD,
+            *range(0xC0, 0xC9), *range(0xE0, 0xF6)
+        ]:
+            await self.write_register(addr, 0x00)
+
     async def enable(self):
         self._log("enable")
         await self.lower.write([OP_ENABLE|1])
@@ -293,35 +315,207 @@ class YamahaOPLInterface:
 
     async def wait_samples(self, count):
         self._log("wait %d samples", count)
+        while count > 65535:
+            await self.lower.write([OP_WAIT, *struct.pack(">H", 65535)])
+            count -= 65535
         await self.lower.write([OP_WAIT, *struct.pack(">H", count)])
 
-    async def read_samples(self, count):
-        return await self.lower.read(count * 2)
+    async def read_samples(self, count, hint=0):
+        self._log("read %d samples", count)
+        return await self.lower.read(count * 2, hint=hint * 2)
 
 
 class YamahaVGMStreamPlayer(VGMStreamPlayer):
     def __init__(self, reader, opl_iface):
-        self._reader     = reader
-        self._opl_iface  = opl_iface
+        self._reader    = reader
+        self._opl_iface = opl_iface
 
         self.sample_time = 72 / reader.ym3812_clk # 72 фM per фSY
 
-    async def play(self):
+    async def play(self, disable=True):
         try:
             await self._opl_iface.enable()
             await self._reader.parse_data(self)
         finally:
-            await self._opl_iface.disable()
+            if disable:
+                await self._opl_iface.disable()
 
-    async def record(self):
-        count = int(self._reader.total_seconds / self.sample_time)
-        return await self._opl_iface.read_samples(count)
+    async def record(self, queue, chunk_count=8192, concurrent=10):
+        total_count = int(self._reader.total_seconds / self.sample_time)
+        done_count  = 0
+
+        async def queue_samples(count):
+            samples = await self._opl_iface.read_samples(count)
+            await queue.put(samples)
+
+        tasks = set()
+        while tasks or done_count == 0:
+            if tasks:
+                done, tasks = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+                for task in done:
+                    await task
+
+            while done_count < total_count and len(tasks) < concurrent:
+                chunk_count = min(chunk_count, total_count - done_count)
+                tasks.add(asyncio.ensure_future(queue_samples(chunk_count)))
+                done_count += chunk_count
+
+        await queue.put(b"")
 
     async def ym3812_write(self, address, data):
         await self._opl_iface.write_register(address, data)
 
     async def wait_seconds(self, delay):
         await self._opl_iface.wait_samples(int(delay / self.sample_time))
+
+
+class YamahaOPLWebInterface:
+    def __init__(self, logger, opl_iface):
+        self._logger    = logger
+        self._opl_iface = opl_iface
+        self._lock      = asyncio.Lock()
+
+    async def serve_index(self, request):
+        with open(os.path.join(os.path.dirname(__file__), "index.html")) as f:
+            return web.Response(text=f.read(), content_type="text/html")
+
+    def _make_resampler(self, actual, preferred):
+        try:
+            import numpy
+            import samplerate
+        except ImportError as e:
+            self._logger.warning("samplerate not installed; expect glitches during playback")
+            async def resample(input_queue, output_queue):
+                while True:
+                    data = await input_queue.get()
+                    await output_queue.put(data)
+                    if not data:
+                        break
+            return resample, actual
+
+        resampler = samplerate.Resampler()
+        def resample_worker(input_data, end):
+            input_array = numpy.frombuffer(input_data, dtype="<u2")
+            input_array = (input_array.astype(numpy.float32) - 32768) / 32768
+            output_array = resampler.process(
+                input_array, ratio=preferred / actual, end_of_input=end)
+            output_array = (output_array * 32768 + 32768).astype(numpy.uint16)
+            return output_array.tobytes()
+        async def resample(input_queue, output_queue):
+            while True:
+                input_data  = await input_queue.get()
+                output_data = await asyncio.get_running_loop().run_in_executor(None,
+                    resample_worker, input_data, not input_data)
+                if output_data:
+                    await output_queue.put(output_data)
+                if not input_data:
+                    await output_queue.put(b"")
+                    break
+        return resample, preferred
+
+    async def serve_vgm(self, request):
+        vgm_data = await request.read()
+        digest = hashlib.sha256(vgm_data).hexdigest()[:16]
+        self._logger.info("web: %s: submitted by %s",
+                          digest, request.remote)
+
+        try:
+            if len(vgm_data) < 0x80:
+                raise ValueError("File is too short to be valid")
+
+            try:
+                vgm_stream = io.BytesIO(vgm_data)
+                if not vgm_data.startswith(b"Vgm "):
+                    vgm_stream = gzip.GzipFile(fileobj=vgm_stream)
+
+                vgm_reader = VGMStreamReader(vgm_stream)
+            except OSError:
+                raise ValueError("File is not in VGM or VGZ format")
+
+            self._logger.info("web: %s: VGM has commands for %s",
+                              digest, ", ".join(vgm_reader.chips()))
+            if vgm_reader.version < 0x1_51 or vgm_reader.ym3812_clk == 0:
+                raise ValueError("VGM file does not contain commands for YM3812")
+        except ValueError as e:
+            self._logger.warning("web: %s: broken upload: %s",
+                                 digest, str(e))
+            return web.Response(status=400, text=str(e), content_type="text/plain")
+
+        input_rate = vgm_reader.ym3812_clk / 72 # 72 фM per фSY
+        preferred_rate = int(request.headers["X-Preferred-Sample-Rate"])
+        resample, output_rate = self._make_resampler(input_rate, preferred_rate)
+        self._logger.info("web: %s: sample rate: input %d, preferred %d, output %d",
+                          digest, input_rate, preferred_rate, output_rate)
+
+        async with self._lock:
+            self._logger.info("web: %s: start streaming",
+                              digest)
+
+            await self._opl_iface.reset()
+
+            input_queue    = asyncio.Queue()
+            resample_queue = asyncio.Queue()
+            vgm_player   = YamahaVGMStreamPlayer(vgm_reader, self._opl_iface)
+            resample_fut = asyncio.ensure_future(resample(input_queue, resample_queue))
+            record_fut   = asyncio.ensure_future(vgm_player.record(input_queue))
+            play_fut     = asyncio.ensure_future(vgm_player.play(disable=False))
+
+            try:
+                response = web.StreamResponse()
+                response.content_type = "text/plain"
+                response.headers["X-Sample-Rate"] = str(output_rate)
+                response.enable_chunked_encoding()
+                await response.prepare(request)
+
+                TRANSPORT_SIZE = 3072
+                output_buffer = bytearray()
+                while True:
+                    if not resample_fut.done() or not resample_queue.empty():
+                        while len(output_buffer) < TRANSPORT_SIZE:
+                            output_chunk   = await resample_queue.get()
+                            output_buffer += output_chunk
+                            if not output_chunk:
+                                break
+
+                    transport_chunk = output_buffer[:TRANSPORT_SIZE]
+                    while len(transport_chunk) < TRANSPORT_SIZE:
+                        # Pad last transport chunk with silence
+                        transport_chunk += struct.pack("<H", 32768)
+                    output_buffer   = output_buffer[TRANSPORT_SIZE:]
+                    await response.write(base64.b64encode(transport_chunk))
+                    if resample_fut.done() and not output_buffer:
+                        break
+
+                for fut in [play_fut, record_fut, resample_fut]:
+                    await fut
+
+                await response.write_eof()
+                self._logger.info("web: %s: done streaming",
+                                  digest)
+
+            except asyncio.CancelledError:
+                self._logger.info("web: %s: cancel streaming",
+                                  digest)
+
+                for fut in [play_fut, record_fut, resample_fut]:
+                    if not fut.done():
+                        fut.cancel()
+                raise
+
+            return response
+
+    async def serve(self):
+        app = web.Application()
+        app.add_routes([
+            web.get ("/", self.serve_index),
+            web.post("/vgm", self.serve_vgm),
+        ])
+
+        runner = web.AppRunner(app)
+        await runner.setup()
+        site = web.TCPSite(runner, "localhost", 8080)
+        await site.start()
+        await asyncio.Future()
 
 
 class YamahaOPLApplet(GlasgowApplet, name="yamaha-opl"):
@@ -339,6 +533,10 @@ class YamahaOPLApplet(GlasgowApplet, name="yamaha-opl"):
     the OPL frequency specified in the input file. E.g. using SoX:
 
         $ play -r 49715 output.u16
+
+    For the web interface, the browser dictates the sample rate. Streaming at the sample rate other
+    than the one requested by the browser is possible, but degrades quality. To stream with
+    the best possible quality, install the samplerate library.
     """
 
     __pin_sets = ("d", "a")
@@ -367,7 +565,7 @@ class YamahaOPLApplet(GlasgowApplet, name="yamaha-opl"):
             # but they work for now. With a better arbiter they should barely matter.
             out_fifo=iface.get_out_fifo(depth=512),
             in_fifo=iface.get_in_fifo(depth=8192, auto_flush=False),
-            master_cyc=target.sys_clk_freq / 3.58e6,
+            master_cyc=4,#target.sys_clk_freq / 3.58e6,
             read_pulse_cyc=int(target.sys_clk_freq * 200e-9),
             write_pulse_cyc=int(target.sys_clk_freq * 100e-9),
             address_latency_cyc=12,
@@ -378,38 +576,58 @@ class YamahaOPLApplet(GlasgowApplet, name="yamaha-opl"):
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
         opl_iface = YamahaOPLInterface(iface, self.logger)
+        await opl_iface.reset()
         return opl_iface
 
     @classmethod
     def add_interact_arguments(cls, parser):
-        parser.add_argument(
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+
+        p_convert = p_operation.add_parser(
+            "convert", help="convert VGM to PCM using OPL hardware")
+        p_convert.add_argument(
             "vgm_file", metavar="VGM-FILE", type=argparse.FileType("rb"),
             help="read commands from VGM-FILE (one of: .vgm .vgm.gz .vgz)")
-        parser.add_argument(
+        p_convert.add_argument(
             "pcm_file", metavar="PCM-FILE", type=argparse.FileType("wb"),
             help="write samples to PCM-FILE")
 
+        p_web = p_operation.add_parser(
+            "web", help="expose OPL hardware via a web interface")
+
     async def interact(self, device, args, opl_iface):
-        vgm_reader = VGMStreamReader.from_file(args.vgm_file)
-        self.logger.info("VGM file contains commands for %s", ", ".join(vgm_reader.chips()))
-        if vgm_reader.ym3812_clk == 0:
-            raise GlasgowAppletError("VGM file does not contain commands for YM3812")
-        if len(vgm_reader.chips()) > 1:
-            self.logger.warning("VGM file contains commands for %s, which will be ignored"
-                                .format(", ".join(vgm_reader.chips())))
+        if args.operation == "convert":
+            vgm_reader = VGMStreamReader.from_file(args.vgm_file)
+            self.logger.info("VGM file contains commands for %s", ", ".join(vgm_reader.chips()))
+            if vgm_reader.version < 0x1_51 or vgm_reader.ym3812_clk == 0:
+                raise GlasgowAppletError("VGM file does not contain commands for YM3812")
+            if len(vgm_reader.chips()) > 1:
+                self.logger.warning("VGM file contains commands for %s, which will be ignored"
+                                    .format(", ".join(vgm_reader.chips())))
 
-        vgm_player = YamahaVGMStreamPlayer(vgm_reader, opl_iface)
-        self.logger.info("recording at sample rate %d Hz", 1 / vgm_player.sample_time)
+            vgm_player = YamahaVGMStreamPlayer(vgm_reader, opl_iface)
+            self.logger.info("recording at sample rate %d Hz", 1 / vgm_player.sample_time)
 
-        play_fut   = asyncio.ensure_future(vgm_player.play())
-        record_fut = asyncio.ensure_future(vgm_player.record())
-        done, pending = await asyncio.wait([play_fut, record_fut],
-                                           return_when=asyncio.FIRST_EXCEPTION)
+            async def write_pcm(input_queue):
+                while True:
+                    input_chunk = await input_queue.get()
+                    if not input_chunk:
+                        break
+                    args.pcm_file.write(input_chunk)
 
-        if play_fut.done():
-            await play_fut
-        if record_fut.done():
-            args.pcm_file.write(record_fut.result())
+            input_queue = asyncio.Queue()
+            play_fut   = asyncio.ensure_future(vgm_player.play(disable=False))
+            record_fut = asyncio.ensure_future(vgm_player.record(input_queue))
+            write_fut  = asyncio.ensure_future(write_pcm(input_queue))
+            done, pending = await asyncio.wait([play_fut, record_fut, write_fut],
+                                               return_when=asyncio.FIRST_EXCEPTION)
+            print(done, pending)
+            for fut in done:
+                await fut
+
+        if args.operation == "web":
+            web_iface = YamahaOPLWebInterface(self.logger, opl_iface)
+            await web_iface.serve()
 
 # -------------------------------------------------------------------------------------------------
 
