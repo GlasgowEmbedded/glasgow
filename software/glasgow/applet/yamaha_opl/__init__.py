@@ -530,7 +530,7 @@ class YamahaOPLWebInterface:
 
             self._logger.info("web: %s: VGM has commands for %s",
                               digest, ", ".join(vgm_reader.chips()))
-            if vgm_reader.version < 0x1_51 or vgm_reader.ym3812_clk == 0:
+            if vgm_reader.ym3812_clk == 0:
                 raise ValueError("VGM file does not contain commands for YM3812")
             if vgm_reader.ym3812_clk & 0xc0000000:
                 raise ValueError("VGM file uses unsupported YM3812 configuration")
@@ -714,7 +714,7 @@ class YamahaOPLApplet(GlasgowApplet, name="yamaha-opl"):
         if args.operation == "convert":
             vgm_reader = VGMStreamReader.from_file(args.vgm_file)
             self.logger.info("VGM file contains commands for %s", ", ".join(vgm_reader.chips()))
-            if vgm_reader.version < 0x1_51 or vgm_reader.ym3812_clk == 0:
+            if vgm_reader.ym3812_clk == 0:
                 raise GlasgowAppletError("VGM file does not contain commands for YM3812")
             if len(vgm_reader.chips()) > 1:
                 self.logger.warning("VGM file contains commands for %s, which will be ignored"
