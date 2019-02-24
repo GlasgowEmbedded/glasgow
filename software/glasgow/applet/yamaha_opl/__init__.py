@@ -488,6 +488,8 @@ class YamahaOPLWebInterface:
                               digest, ", ".join(vgm_reader.chips()))
             if vgm_reader.version < 0x1_51 or vgm_reader.ym3812_clk == 0:
                 raise ValueError("VGM file does not contain commands for YM3812")
+            if vgm_reader.ym3812_clk & 0xc0000000:
+                raise ValueError("VGM file uses unsupported YM3812 configuration")
 
             self._logger.info("web: %s: VGM is looped for %.2f/%.2f s",
                               digest, vgm_reader.loop_seconds, vgm_reader.total_seconds)
