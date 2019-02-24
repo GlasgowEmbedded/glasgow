@@ -436,6 +436,9 @@ class YamahaOPLWebInterface:
                               digest, ", ".join(vgm_reader.chips()))
             if vgm_reader.version < 0x1_51 or vgm_reader.ym3812_clk == 0:
                 raise ValueError("VGM file does not contain commands for YM3812")
+
+            self._logger.info("web: %s: VGM is looped for %.2f/%.2f s",
+                              digest, vgm_reader.loop_seconds, vgm_reader.total_seconds)
         except ValueError as e:
             self._logger.warning("web: %s: broken upload: %s",
                                  digest, str(e))
@@ -464,6 +467,15 @@ class YamahaOPLWebInterface:
                 response = web.StreamResponse()
                 response.content_type = "text/plain"
                 response.headers["X-Sample-Rate"] = str(output_rate)
+                if vgm_reader.loop_samples in (0, vgm_reader.total_samples):
+                    # Either 0 or the entire VGM here means we'll loop the complete track.
+                    loop_skip_to = 0
+                else:
+                    loop_skip_to = int(
+                        (vgm_reader.total_samples - vgm_reader.loop_samples) *
+                        (output_rate / 44100)
+                    )
+                response.headers["X-Loop-Skip-To"] = str(loop_skip_to)
                 response.enable_chunked_encoding()
                 await response.prepare(request)
 

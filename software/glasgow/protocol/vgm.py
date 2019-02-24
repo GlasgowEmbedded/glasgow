@@ -49,6 +49,7 @@ class VGMStreamReader:
         self.total_seconds = self.total_samples / SAMPLE_RATE
         self.loop_offset   = self._offset() + self._read0("<L")
         self.loop_samples  = self._read0("<L")
+        self.loop_seconds  = self.loop_samples / SAMPLE_RATE
         # if self._version >= 0x1_01:
         self.rate          = self._read0("<L")
         # if self._version >= 0x1_10:

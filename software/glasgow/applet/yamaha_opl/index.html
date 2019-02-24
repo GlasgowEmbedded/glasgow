@@ -5,7 +5,7 @@
 <body style="width:50em">
   <h1>Yamaha OPL* Web Gateway</h1>
   <p>This webpage lets you submit commands to a real Yamaha YM3812 synthesizer and listen to the output. The synthesizer is a <b>shared resource</b> (and isn't very fast, although it does not have to run in real time), and everyone who submits a file is in the same queue, so you might have to wait until it's your turn.</p>
-  <p>Play a <a href="https://vgmrips.net/packs/chip/ym3812">VGM/VGZ</a> file: <input type="file" id="file" accept=".vgm,.vgz"> <input type="button" id="play" value="Play"> <input type="button" id="replay" value="Replay" disabled></p>
+  <p>Play a <a href="https://vgmrips.net/packs/chip/ym3812">VGM/VGZ</a> file: <input type="file" id="file" accept=".vgm,.vgz"> <input type="button" id="play" value="Play"> <input type="button" id="replay" value="Replay" disabled> <input type="checkbox" id="loop"> <label for="loop">Loop</label></p>
   <p>Status: <span id="netStatus">idle</span>, <span id="playStatus">stopped</span></p>
   <p id="errorPane" style="color:red; display:none">Error: <span id="error"></span></p>
 
@@ -19,10 +19,16 @@
     var BUFFER_AT_LEAST = 100;
 
     function PCMPlayer() {
+      this.complete = false;
+
+      this.loop = false;
+      this.loopSkipTo = 0;
+
       this._context = new (window.AudioContext || window.webkitAudioContext);
       this._buffers = [];
-      this._samplesDone = 0;
-      this._samplesTotal = 0;
+
+      this._buffersDone = 0;
+      this._buffersTotal = 0;
 
       this._playing = 0;
       this._index = 0;
@@ -40,7 +46,7 @@
           f32Buffer[i] = (dataView.getUint16(i * 2, /*littleEndian=*/true) - 32768) / 32768;
 
         this._buffers.push(audioBuffer);
-        this._samplesTotal += audioBuffer.length;
+        this._buffersTotal++;
         this._updateStatus();
       }
 
@@ -59,15 +65,39 @@
       }
 
       this._scheduleNode = function(first) {
-        if(this._index == this._buffers.length) return;
+        var skipTo = 0;
+        var skipPos = 0;
+        if(this._index == this._buffers.length) {
+          if(this.complete && this.loop) {
+            console.log("looping");
+            this._index = 0;
+            skipTo = this.loopSkipTo;
+          } else return;
+        }
 
-        var bufferIndex = this._index++;
-        var audioBuffer = this._buffers[bufferIndex];
+        while(true) {
+          var bufferOffset = 0;
+          var bufferIndex = this._index++;
+          var audioBuffer = this._buffers[bufferIndex];
+          if(skipTo > 0 && skipPos < skipTo) {
+            if(skipPos + audioBuffer.length < skipTo) {
+              skipPos += audioBuffer.length;
+              console.log("skipped buffer", bufferIndex, "completely");
+              continue;
+            } else {
+              bufferOffset = audioBuffer.duration / audioBuffer.length * (skipTo - skipPos);
+              skipPos = skipTo;
+              console.log("skipped buffer", bufferIndex, "to position", bufferOffset);
+            }
+          }
+          break;
+        }
+
         var audioBufferSource = this._context.createBufferSource();
         audioBufferSource.buffer = audioBuffer;
         audioBufferSource.connect(this._context.destination);
         this._playing++;
-        audioBufferSource.start(this._timestamp);
+        audioBufferSource.start(this._timestamp, bufferOffset);
         console.log("scheduled buffer", bufferIndex, "at", this._timestamp, ";",
                     "now", this._playing);
 
@@ -78,16 +108,16 @@
         var player = this;
         audioBufferSource.onended = function(event) {
           player._playing--;
-          player._samplesDone += audioBuffer.length;
+          player._buffersDone = bufferIndex;
           console.log("finished buffer", bufferIndex, ";",
                       "now", player._playing);
-          if(bufferIndex == player._buffers.length - 1) {
+          if(this.complete && bufferIndex == player._buffers.length - 1) {
             // Chromium appears to not invoke onended for some audio buffer sources for unknown
             // reasons. This appears to happen only when the console is closed (?!) and I think
             // when the page isn't in focus, and if we don't account for this, the player will
             // hang and require a page reload.
-            player._playing = 0;
-            player._samplesDone = player._samplesTotal;
+            if(!player.loop)
+              player._playing = 0;
           }
           player._updateStatus();
           player._scheduleNode();
@@ -97,7 +127,7 @@
       this.rewind = function() {
         if(this._playing) return;
 
-        this._samplesDone = 0;
+        this._buffersDone = 0;
         this._index = 0;
         this._timestamp = this._context.currentTime;
       }
@@ -107,14 +137,15 @@
         if(this.onstatuschange)
           this.onstatuschange({
             playing: this._playing,
-            done: this._samplesDone,
-            total: this._samplesTotal
+            done: this._buffersDone,
+            total: this._buffersTotal
           });
       }
     }
 
     var playButton = document.getElementById("play");
     var replayButton = document.getElementById("replay");
+    var loopCheckbox = document.getElementById("loop");
     var fileInput = document.getElementById("file");
     var netStatusSpan = document.getElementById("netStatus");
     var playStatusSpan = document.getElementById("playStatus");
@@ -125,10 +156,12 @@
       replayButton.disabled = true;
 
       var player = new PCMPlayer();
+      window.player = player;
+
       player.onstatuschange = function(event) {
         var status;
         if(event.playing) {
-          status = "playing (" + event.done + "/" + event.total + " samples)";
+          status = "playing (" + event.done + "/" + event.total + " buffers)";
         } else {
           status = "stopped";
           if(event.done == event.total) {
@@ -147,6 +180,11 @@
         player.scheduleAtLeast(BUFFER_AT_LEAST);
       }
 
+      player.loop = loopCheckbox.checked;
+      loopCheckbox.onchange = function(event) {
+        player.loop = loopCheckbox.checked;
+      }
+
       var xhr = new XMLHttpRequest();
       xhr.open("POST", "/vgm", /*async=*/true);
       xhr.setRequestHeader("X-Preferred-Sample-Rate", player.preferredSampleRate());
@@ -161,6 +199,8 @@
         if(xhr.status == 200 && xhr.readyState > 2) {
           errorPane.style.display = "none";
 
+          player.loopSkipTo = parseInt(xhr.getResponseHeader("X-Loop-Skip-To"));
+
           var CHUNK_SIZE = 4096;
           while(xhr.responseText.length >= xhr.seenBytes + CHUNK_SIZE) {
             var chunk = xhr.responseText.substr(xhr.seenBytes, CHUNK_SIZE);
@@ -170,6 +210,10 @@
             if(!player._playing)
               player.scheduleAtLeast(BUFFER_AT_LEAST);
             xhr.seenBytes += CHUNK_SIZE;
+          }
+
+          if(xhr.readyState == 4) {
+            player.complete = true;
           }
         }
 
