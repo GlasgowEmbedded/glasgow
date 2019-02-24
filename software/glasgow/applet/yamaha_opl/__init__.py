@@ -2,6 +2,9 @@
 # Ref: CATALOG No. LSI-2138123 (YM3812)
 # Ref: CATALOG No. LSI-2438124 (YM3812 Application Manual)
 
+# Glaring omissions
+# -----------------
+#
 # The documentation (which often serves more to confuse than to document), has plenty of typos
 # and omits critical parts. A brief list of datasheet issues, most of which are common for
 # the entire OPL series:
@@ -12,6 +15,9 @@
 #    which differs from series to series and from address to data.
 #     - OPLL/OPL(?)/OPL2(?): address 12 cycles, data 84 cycles. (only documented for OPLL)
 #     - OPL3: address 32 cycles, data 32 cycles. (documented)
+#
+# Bitstream format
+# ----------------
 #
 # The Yamaha DAC bitstream fromat is somewhat underdocumented and confusing. The DAC bitstream
 # has 16 bit dynamic range and uses 13 bit samples in a bespoke floating point format. These 13 bit
@@ -31,6 +37,16 @@
 # The DAC transfer function, which converts DAC bitstream to unsigned 16-bit voltage levels,
 # is as follows, in a Verilog-like syntax:
 #     assign V = {S, {{7{~S}}, M, 7'b0000000}[E+:15]};
+#
+# Compatibility modes
+# -------------------
+#
+# Yamaha chips that have compatibility features implement them in a somewhat broken way. When
+# the compatibility feature is disabled (e.g. bit 5 of 0x01 TEST for YM3812), its registers are
+# masked off. However, the actual feature is still (partially) enabled and it will result in
+# broken playback if this is not accounted for. Therefore, for example, the reset sequence has to
+# enable all available advanced features, zero out the registers, and then disable them back for
+# compatibility with OPL clients that expect the compatibility mode to be on.
 
 import os.path
 import logging
@@ -298,13 +314,6 @@ class YamahaOPLInterface:
         await self._reset_registers()
 
     async def _reset_registers(self):
-        # Yamaha chips that have compatibility features implement them in a somewhat broken way.
-        # When the compatibility feature is disabled, its registers are masked off. However,
-        # the actual feature is still (partially) enabled and it will result in broken playback.
-        # Therefore the reset sequence has to enable all available advanced features, zero out
-        # the registers, and then disable them back for compatibility with OPL clients that expect
-        # the compatibility mode to be on.
-        #
         # Put YM3812 in OPL2 mode.
         await self.write_register(0x01, 0x20, check_feature=False)
         # Zero all defined OPL2 registers except TEST.
