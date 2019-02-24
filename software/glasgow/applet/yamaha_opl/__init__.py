@@ -467,6 +467,8 @@ class YamahaOPLWebInterface:
                 response = web.StreamResponse()
                 response.content_type = "text/plain"
                 response.headers["X-Sample-Rate"] = str(output_rate)
+                total_samples = int(vgm_reader.total_samples * (output_rate / 44100))
+                response.headers["X-Total-Samples"] = str(total_samples)
                 if vgm_reader.loop_samples in (0, vgm_reader.total_samples):
                     # Either 0 or the entire VGM here means we'll loop the complete track.
                     loop_skip_to = 0
