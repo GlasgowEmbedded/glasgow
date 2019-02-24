@@ -327,6 +327,9 @@ class YamahaOPLInterface:
             await self.write_register(addr, 0x00, check_feature=False)
         # Put YM3812 back in OPL mode.
         await self.write_register(0x01, 0x00, check_feature=False)
+        # Reset feature level.
+        self._feature_level  = 1
+        self._feature_warned = False
 
     async def enable(self):
         self._log("enable")
