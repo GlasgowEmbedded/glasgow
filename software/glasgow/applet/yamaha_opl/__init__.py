@@ -283,8 +283,11 @@ class YamahaOPLInterface:
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
-    def _log(self, message, *args):
-        self._logger.log(self._level, "OPL*: " + message, *args)
+        self._feature_level  = 1
+        self._feature_warned = False
+
+    def _log(self, message, *args, level=None):
+        self._logger.log(self._level if level is None else level, "OPL*: " + message, *args)
 
     async def reset(self):
         self._log("reset")
@@ -303,7 +306,7 @@ class YamahaOPLInterface:
         # the compatibility mode to be on.
         #
         # Put YM3812 in OPL2 mode.
-        await self.write_register(0x01, 0x20)
+        await self.write_register(0x01, 0x20, check_feature=False)
         # Zero all defined OPL2 registers except TEST.
         for addr in [
             0x02, 0x03, 0x04, 0x08,
@@ -312,9 +315,9 @@ class YamahaOPLInterface:
             0xBD,
             *range(0xC0, 0xC9), *range(0xE0, 0xF6)
         ]:
-            await self.write_register(addr, 0x00)
+            await self.write_register(addr, 0x00, check_feature=False)
         # Put YM3812 back in OPL mode.
-        await self.write_register(0x01, 0x00)
+        await self.write_register(0x01, 0x00, check_feature=False)
 
     async def enable(self):
         self._log("enable")
@@ -324,8 +327,30 @@ class YamahaOPLInterface:
         self._log("disable")
         await self.lower.write([OP_ENABLE|0])
 
-    async def write_register(self, address, data):
+    def _enable_level(self, feature_level):
+        if self._feature_level < feature_level:
+            self._feature_level = feature_level
+            self._log("enabled feature level %d",
+                      self._feature_level)
+
+    def _check_level(self, feature, feature_level):
+        if not self._feature_warned and self._feature_level < feature_level:
+            self._feature_warned = True
+            self._log("client uses feature [%#04x] with level %d, but only level %d is enabled",
+                      feature, feature_level, self._feature_level,
+                      level=logging.WARN)
+
+    def _check_enable_features(self, address, data):
+        # YM3812 specific
+        if address == 0x01 and data & 0x20:
+            self._enable_level(2)
+        if address in range(0xe0, 0xf7):
+            self._check_level(address, 2)
+
+    async def write_register(self, address, data, check_feature=True):
         self._log("write [%#04x]=%#04x", address, data)
+        if check_feature:
+            self._check_enable_features(address, data)
         await self.lower.write([OP_WRITE|0, address, OP_WRITE|1, data])
 
     async def wait_samples(self, count):
