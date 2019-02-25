@@ -373,15 +373,23 @@ class YamahaOPLInterface:
             self._log("client uses feature [%#04x] with level %d, but only level %d is enabled",
                       feature, feature_level, self._feature_level,
                       level=logging.WARN)
+            self._log("retrying with level %d enabled",
+                      feature_level,
+                      level=logging.WARN)
+            return True
+        return False
 
-    def _check_enable_features(self, address, data):
+    async def _check_enable_features(self, address, data):
         # YM3812 specific
         if address == 0x01 and data & 0x20:
             self._enable_level(2)
         if address in range(0xe0, 0xf7):
-            self._check_level(address, 2)
+            if self._check_level(address, 2):
+                await self.write_register(0x01, 0x20)
 
     async def write_register(self, address, data, check_feature=True):
+        if check_feature:
+            await self._check_enable_features(address, data)
         if self._instant_writes:
             old_phase_accum = self._phase_accum
             self._phase_accum += self.write_clocks
@@ -390,8 +398,6 @@ class YamahaOPLInterface:
         else:
             self._log("write [%#04x]=%#04x",
                       address, data)
-        if check_feature:
-            self._check_enable_features(address, data)
         await self.lower.write([OP_WRITE|0, address, OP_WRITE|1, data])
 
     async def wait_clocks(self, count):
