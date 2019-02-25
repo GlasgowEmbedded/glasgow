@@ -426,11 +426,11 @@ class YamahaOPLInterface:
 
 
 class YamahaVGMStreamPlayer(VGMStreamPlayer):
-    def __init__(self, reader, opl_iface):
+    def __init__(self, reader, opl_iface, clock_rate):
         self._reader     = reader
         self._opl_iface  = opl_iface
 
-        self.clock_rate  = reader.ym3812_clk
+        self.clock_rate  = clock_rate
         self.sample_time = opl_iface.sample_clocks / self.clock_rate
 
     async def play(self, disable=True):
@@ -462,6 +462,9 @@ class YamahaVGMStreamPlayer(VGMStreamPlayer):
                 done_count += chunk_count
 
         await queue.put(b"")
+
+    async def ym3526_write(self, address, data):
+        await self._opl_iface.write_register(address, data)
 
     async def ym3812_write(self, address, data):
         await self._opl_iface.write_register(address, data)
@@ -535,15 +538,19 @@ class YamahaOPLWebInterface:
 
             self._logger.info("web: %s: VGM has commands for %s",
                               digest, ", ".join(vgm_reader.chips()))
-            if vgm_reader.ym3812_clk == 0:
-                raise ValueError("VGM file does not contain commands for YM3812")
-            if vgm_reader.ym3812_clk & 0xc0000000:
-                raise ValueError("VGM file uses unsupported YM3812 configuration")
+            if len(vgm_reader.chips()) != 1:
+                raise ValueError("VGM file contains commands for more than one chip")
+
+            clock_rate = vgm_reader.ym3526_clk or vgm_reader.ym3812_clk
+            if clock_rate == 0:
+                raise ValueError("VGM file does not contain commands for YM3526 or YM3812")
+            if clock_rate & 0xc0000000:
+                raise ValueError("VGM file uses unsupported chip configuration")
 
             self._logger.info("web: %s: VGM is looped for %.2f/%.2f s",
                               digest, vgm_reader.loop_seconds, vgm_reader.total_seconds)
 
-            vgm_player = YamahaVGMStreamPlayer(vgm_reader, self._opl_iface)
+            vgm_player = YamahaVGMStreamPlayer(vgm_reader, self._opl_iface, clock_rate)
         except ValueError as e:
             self._logger.warning("web: %s: broken upload: %s",
                                  digest, str(e))
@@ -726,7 +733,7 @@ class YamahaOPLApplet(GlasgowApplet, name="yamaha-opl"):
                 self.logger.warning("VGM file contains commands for %s, which will be ignored"
                                     .format(", ".join(vgm_reader.chips())))
 
-            vgm_player = YamahaVGMStreamPlayer(vgm_reader, opl_iface)
+            vgm_player = YamahaVGMStreamPlayer(vgm_reader, opl_iface, vgm_reader.ym3812_clk)
             self.logger.info("recording at sample rate %d Hz", 1 / vgm_player.sample_time)
 
             async def write_pcm(input_queue):

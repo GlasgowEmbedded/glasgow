@@ -153,6 +153,8 @@ class VGMStreamReader:
             command = self._read0("B")
             if command == 0x5A:
                 await player.ym3812_write(*self._read("BB"))
+            elif command == 0x5B:
+                await player.ym3526_write(*self._read("BB"))
             elif command == 0x61:
                 samples = self._read0("<H")
                 await player.wait_seconds(samples / SAMPLE_RATE)
