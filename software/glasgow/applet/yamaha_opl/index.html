@@ -27,11 +27,10 @@
       this._context = new (window.AudioContext || window.webkitAudioContext);
       this._buffers = [];
 
-      this._buffersDone = 0;
-      this._buffersTotal = 0;
+      this._queueStart = 0;
+      this._queueEnd = 0;
+      this._queueSize = 0;
 
-      this._playing = 0;
-      this._index = 0;
       this._timestamp = this._context.currentTime;
 
       this.preferredSampleRate = function() {
@@ -46,18 +45,17 @@
           f32Buffer[i] = (dataView.getUint16(i * 2, /*littleEndian=*/true) - 32768) / 32768;
 
         this._buffers.push(audioBuffer);
-        this._buffersTotal++;
         this._updateStatus();
       }
 
       this.scheduleAtLeast = function(atLeast) {
-        if(this._buffers.length - this._index < atLeast) {
+        if(this._buffers.length - this._queueEnd < atLeast) {
           console.log("need at least", atLeast, "buffers;",
-                      "have ", this._buffers.length - this._index);
+                      "have ", this._buffers.length - this._queueEnd);
           return;
         }
-        if(this._playing >= atLeast) return false;
-        var scheduleCount = atLeast - this._playing;
+        if(this._queueSize >= atLeast) return false;
+        var scheduleCount = atLeast - this._queueSize;
         console.log("scheduling", scheduleCount, "buffers");
         for(var i = 0; i < scheduleCount; i++)
           this._scheduleNode();
@@ -67,17 +65,17 @@
       this._scheduleNode = function(first) {
         var skipTo = 0;
         var skipPos = 0;
-        if(this._index == this._buffers.length) {
+        if(this._queueEnd == this._buffers.length) {
           if(this.complete && this.loop) {
             console.log("looping");
-            this._index = 0;
+            this._queueEnd = 0;
             skipTo = this.loopSkipTo;
           } else return;
         }
 
         while(true) {
           var bufferOffset = 0;
-          var bufferIndex = this._index++;
+          var bufferIndex = this._queueEnd++;
           var audioBuffer = this._buffers[bufferIndex];
           if(skipTo > 0 && skipPos < skipTo) {
             if(skipPos + audioBuffer.length < skipTo) {
@@ -96,10 +94,10 @@
         var audioBufferSource = this._context.createBufferSource();
         audioBufferSource.buffer = audioBuffer;
         audioBufferSource.connect(this._context.destination);
-        this._playing++;
+        this._queueSize++;
         audioBufferSource.start(this._timestamp, bufferOffset);
         console.log("scheduled buffer", bufferIndex, "at", this._timestamp, ";",
-                    "now", this._playing);
+                    "now", this._queueSize);
 
         if(this._timestamp < this._context.currentTime)
           this._timestamp = this._context.currentTime;
@@ -107,17 +105,17 @@
 
         var player = this;
         audioBufferSource.onended = function(event) {
-          player._playing--;
-          player._buffersDone = bufferIndex;
+          player._queueSize--;
+          player._queueStart = bufferIndex;
           console.log("finished buffer", bufferIndex, ";",
-                      "now", player._playing);
-          if(this.complete && bufferIndex == player._buffers.length - 1) {
+                      "now", player._queueSize);
+          if(player.complete && bufferIndex == player._buffers.length - 1) {
             // Chromium appears to not invoke onended for some audio buffer sources for unknown
             // reasons. This appears to happen only when the console is closed (?!) and I think
             // when the page isn't in focus, and if we don't account for this, the player will
             // hang and require a page reload.
             if(!player.loop) {
-              player._playing = 0;
+              player._queueSize = 0;
             }
           }
           player._updateStatus();
@@ -126,10 +124,10 @@
       };
 
       this.rewind = function() {
-        if(this._playing) return;
+        if(this._queueSize) return;
 
-        this._buffersDone = 0;
-        this._index = 0;
+        this._queueStart = 0;
+        this._queueEnd = 0;
         this._timestamp = this._context.currentTime;
       }
 
@@ -137,9 +135,9 @@
       this._updateStatus = function() {
         if(this.onstatuschange)
           this.onstatuschange({
-            playing: this._playing,
-            done: this._buffersDone,
-            total: this._buffersTotal
+            playing: !!this._queueSize,
+            done: this._queueStart,
+            total: this._buffers.length,
           });
       }
     }
