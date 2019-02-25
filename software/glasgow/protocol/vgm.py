@@ -165,7 +165,7 @@ class VGMStreamReader:
             elif command == 0x66:
                 break
             elif command in range(0x70, 0x80):
-                samples = command & 0xf
+                samples = (command & 0xf) + 1
                 await player.wait_seconds(samples / SAMPLE_RATE)
             else:
                 raise NotImplementedError("Unknown VGM command {:#04x}".format(command))
