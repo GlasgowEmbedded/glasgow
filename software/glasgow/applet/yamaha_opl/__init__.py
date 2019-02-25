@@ -524,7 +524,6 @@ class YamahaOPLWebInterface:
                     vgm_stream = gzip.GzipFile(fileobj=vgm_stream)
 
                 vgm_reader = VGMStreamReader(vgm_stream)
-                vgm_player = YamahaVGMStreamPlayer(vgm_reader, self._opl_iface)
             except OSError:
                 raise ValueError("File is not in VGM or VGZ format")
 
@@ -538,6 +537,7 @@ class YamahaOPLWebInterface:
             self._logger.info("web: %s: VGM is looped for %.2f/%.2f s",
                               digest, vgm_reader.loop_seconds, vgm_reader.total_seconds)
 
+            vgm_player = YamahaVGMStreamPlayer(vgm_reader, self._opl_iface)
         except ValueError as e:
             self._logger.warning("web: %s: broken upload: %s",
                                  digest, str(e))
