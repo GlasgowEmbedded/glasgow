@@ -30,7 +30,7 @@ I didn't set out to do that but it turns out this design space is really narrow.
 
 This project is a collaboration with [awygle](https://github.com/awygle), who has given invaluable advice on overall design, made all the symbols and footprints and is upstreaming them in KiCAD (the goal is using 100% upstream libraries).
 
-I think this is about as far as you can go while using only FOSS tool chains for firmware/gateware;
-if I ever make a sequel for this board it'll be after [oe1cxw](https://github.com/cliffordwolf) finishes Series 7 bitstream reverse-engineering :)
+~I think this is about as far as you can go while using only FOSS tool chains for firmware/gateware;
+if I ever make a sequel for this board it'll be after [oe1cxw](https://github.com/cliffordwolf) finishes Series 7 bitstream reverse-engineering :)~ Glasgow revE will use an ECP5-5G FPGA, but this is a few years away.
 
 (This README file transcribed from this twitter thread: https://twitter.com/whitequark/status/985040607864176640)
