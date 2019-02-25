@@ -68,7 +68,11 @@ class GlasgowHardwareDevice:
             pass
 
     def _write_ram(self, addr, data):
-        self.usb.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, addr, 0, data)
+        while len(data) > 0:
+            chunk_length = min(len(data), 4096)
+            self.usb.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, addr, 0, data[:chunk_length])
+            addr += chunk_length
+            data = data[chunk_length:]
 
     def _cpu_reset(self, is_reset):
         self._write_ram(REG_CPUCS, [1 if is_reset else 0])
