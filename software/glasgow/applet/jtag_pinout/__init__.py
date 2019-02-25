@@ -266,7 +266,7 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
                     else:
                         continue
 
-            if results:
+            if results and not pin_trst:
                 self.logger.info("JTAG interface detected, not probing TRST#")
                 break
 
