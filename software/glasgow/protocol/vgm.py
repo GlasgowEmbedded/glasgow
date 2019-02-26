@@ -10,6 +10,9 @@ SAMPLE_RATE = 44100
 
 
 class VGMStreamPlayer:
+    async def ym3526_write(self, address, data):
+        raise NotImplementedError("VGMStream.ym3526_write not implemented")
+
     async def ym3812_write(self, address, data):
         raise NotImplementedError("VGMStream.ym3812_write not implemented")
 
