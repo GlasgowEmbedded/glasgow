@@ -415,14 +415,6 @@ class JTAGInterface:
         await self.enter_run_test_idle()
         await self.pulse_tck(count)
 
-    async def read_ir(self, count):
-        await self.enter_shift_ir()
-        # This shifts BYPASS (all ones) in.
-        data = await self.shift_tdo(count, last=True)
-        await self.enter_update_ir()
-        self._log_h("read ir=<%s>", data.to01())
-        return data
-
     async def write_ir(self, data):
         if data == self._current_ir:
             self._log_h("write ir (elided)")
@@ -464,93 +456,17 @@ class JTAGInterface:
 
     # Specialized operations
 
-    async def scan_idcode(self, max_idcodes=8):
-        await self.test_reset()
-
-        self._log_h("scan idcode")
-        await self.enter_shift_dr()
-
-        try:
-            idcodes = []
-            idcode_bits = bitarray()
-            while len(idcodes) < max_idcodes:
-                while len(idcodes) < max_idcodes:
-                    first_bit = await self.shift_tdo(1, last=False)
-                    if first_bit[0]:
-                        break # IDCODE
-                    else:
-                        self._log_h("found bypass")
-                        idcodes.append(None)
-                        pass  # BYPASS
-                else:
-                    self._log_h("too many idcodes")
-                    return
-
-                idcode_bits = first_bit + await self.shift_tdo(31, last=False)
-                idcode, = struct.unpack("<L", idcode_bits.tobytes())
-                if idcode == 0xffffffff:
-                    break
-                self._log_h("found idcode=<%08x>", idcode)
-                idcodes.append(idcode)
-
-            return idcodes
-        finally:
-            await self.shift_tdo(1, last=True)
-            await self.enter_run_test_idle()
-
-    async def scan_ir(self, count=None, max_length=128):
-        await self.test_reset()
-
-        self._log_h("scan ir")
-        await self.enter_shift_ir()
-
-        try:
-            ir_0, = await self.shift_tdo(1, last=False)
-            if not ir_0:
-                self._log_h("invalid ir[0]")
-                return
-
-            irs = []
-            ir_offset = 0
-            while count is None or len(irs) < count:
-                ir_1, = await self.shift_tdo(1, last=False)
-                if ir_1:
-                    break
-
-                ir_length = 2
-                while ir_length < max_length:
-                    ir_n, = await self.shift_tdo(1, last=False)
-                    if ir_n:
-                        break
-                    ir_length += 1
-                else:
-                    self._log_h("overlong ir")
-                    return
-
-                self._log_h("found ir[%d]", ir_length)
-                irs.append((ir_offset, ir_length))
-                ir_offset += ir_length
-
-            if count is not None and len(irs) != count:
-                self._log_h("ir count does not match idcode count")
-                return
-
-            return irs
-        finally:
-            await self.shift_tdo(1, last=True)
-            await self.enter_run_test_idle()
-
-    async def _scan_xr_length(self, xr, max_length, zero_ok=False):
+    async def _scan_xr(self, xr, max_length, zero_ok=False):
         assert xr in ("ir", "dr")
         self._log_h("scan %s length", xr)
 
-        try:
-            if xr ==  "ir":
-                await self.enter_shift_ir()
-            if xr ==  "dr":
-                await self.enter_shift_dr()
+        if xr ==  "ir":
+            await self.enter_shift_ir()
+        if xr ==  "dr":
+            await self.enter_shift_dr()
 
-            # Fill the entire DR chain with ones.
+        try:
+            # Fill the entire register chain with ones.
             data = await self.shift_tdio(bitarray("1") * max_length, last=False)
 
             length = 0
@@ -563,29 +479,87 @@ class JTAGInterface:
                 self._log_h("overlong %s", xr)
                 return
 
-            # Restore the old contents, just in case this matters.
-            await self.shift_tdi(data[:length], last=True)
-
-            if not zero_ok:
-                assert length > 0
-            self._log_h("scan %s length=%d", xr, length)
-            return length
+            self._log_h("scan %s length=%d data=<%s>", xr, length, data[:length].to01())
+            return data[:length]
 
         finally:
+            if xr == "ir":
+                # Fill the register with BYPASS instructions.
+                await self.shift_tdi(bitarray("1") * length, last=True)
+            if xr == "dr":
+                # Restore the old contents, just in case this matters.
+                await self.shift_tdi(data[:length], last=True)
+
             await self.enter_run_test_idle()
 
-    async def scan_ir_length(self, max_length, zero_ok=False):
-        return await self._scan_xr_length("ir", max_length, zero_ok)
+    async def scan_ir(self, max_length):
+        return await self._scan_xr("ir", max_length)
+
+    async def scan_dr(self, max_length):
+        return await self._scan_xr("dr", max_length)
+
+    async def scan_ir_length(self, max_length):
+        return len(await self.scan_ir(max_length))
 
     async def scan_dr_length(self, max_length, zero_ok=False):
-        return await self._scan_xr_length("dr", max_length, zero_ok)
+        length = len(await self.scan_dr(max_length))
+        assert zero_ok or length > 0
+        return length
 
-    async def select_tap(self, tap):
-        idcodes = await self.scan_idcode()
-        if not idcodes:
+    def segment_idcodes(self, dr_value):
+        idcodes = []
+        index = 0
+        while index < len(dr_value):
+            if dr_value[index]:
+                if len(dr_value) - index > 32:
+                    idcode_bits = dr_value[index:index + 32]
+                    idcode, = struct.unpack("<L", idcode_bits.tobytes())
+                    self._log_h("found idcode=<%08x>", idcode)
+                    idcodes.append(idcode)
+                    index += 32
+                else:
+                    self._log_h("found truncated idcode=<%s>", dr_value[index:].to01())
+                    return
+            else:
+                self._log_h("found bypass")
+                idcodes.append(None)
+                index += 1
+
+        return idcodes
+
+    def segment_irs(self, ir_value, count=None):
+        if ir_value[0:2] != bitarray("10"):
+            self._log_h("ir does not start with 10")
+
+        irs = []
+        ir_offset = 0
+        ir_starts = ir_value.search(bitarray("10"))
+        for ir_start0, ir_start1 in zip(ir_starts, ir_starts[1:] + [len(ir_value)]):
+            ir_length = ir_start1 - ir_start0
+            self._log_h("found ir[%d]", ir_length)
+            irs.append((ir_offset, ir_length))
+            ir_offset += ir_length
+
+        if count is not None and len(irs) != count:
+            self._log_h("ir count does not match idcode count")
             return
 
-        irs = await self.scan_ir(count=len(idcodes))
+        return irs
+
+    async def select_tap(self, tap, max_ir_length=128, max_dr_length=1024):
+        dr_value = await self.scan_dr(max_dr_length)
+        if dr_value is None:
+            return
+
+        idcodes = self.segment_idcodes(dr_value)
+        if idcodes is None:
+            return
+
+        ir_value = await self.scan_ir(max_ir_length)
+        if ir_value is None:
+            return
+
+        irs = self.segment_irs(ir_value, count=len(idcodes))
         if not irs:
             return
 
@@ -694,15 +668,14 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
 
     @classmethod
     def add_interact_arguments(cls, parser):
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+        parser.add_argument(
+            "--max-ir-length", metavar="LENGTH", type=int, default=128,
+            help="give up scanning IR after LENGTH bits")
+        parser.add_argument(
+            "--max-dr-length", metavar="LENGTH", type=int, default=1024,
+            help="give up scanning DR after LENGTH bits")
 
-        def add_xr_length_arguments(parser):
-            parser.add_argument(
-                "--max-ir-length", metavar="LENGTH", type=int, default=128,
-                help="give up scanning IR after LENGTH bits")
-            parser.add_argument(
-                "--max-dr-length", metavar="LENGTH", type=int, default=1024,
-                help="give up scanning DR after LENGTH bits")
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
         p_scan = p_operation.add_parser(
             "scan", help="scan JTAG chain and attempt to identify devices",
@@ -710,7 +683,6 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
             Reset the JTAG TAPs and shift IDCODE or BYPASS register values out to determine
             the count and (hopefully) identity of the devices in the scan chain.
             """)
-        add_xr_length_arguments(p_scan)
 
         p_enumerate_ir = p_operation.add_parser(
             "enumerate-ir", help="use heuristics to enumerate JTAG IR values (DANGEROUS)",
@@ -733,7 +705,6 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
             would actually select reserved DRs instead, which can lead to confusion. In some
             cases they even select a constant 0 level on TDO!
             """)
-        add_xr_length_arguments(p_enumerate_ir)
         p_enumerate_ir.add_argument(
             "tap_indexes", metavar="INDEX", type=int, nargs="+",
             help="enumerate IR values for TAP #INDEX")
@@ -749,33 +720,28 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
 
     async def interact(self, device, args, jtag_iface):
         await jtag_iface.pulse_trst()
+        await jtag_iface.test_reset()
 
         if args.operation in ("scan", "enumerate-ir"):
-            await jtag_iface.test_reset()
-            ir_length = await jtag_iface.scan_ir_length(max_length=args.max_ir_length)
-            if not ir_length:
-                self.logger.warning("IR length scan did not terminate")
-                return
-
-            ir_value = await jtag_iface.read_ir(ir_length)
-            self.logger.info("shifted %d-bit IR=<%s>", ir_length, ir_value.to01())
-
-            await jtag_iface.test_reset()
-            dr_length = await jtag_iface.scan_dr_length(max_length=args.max_dr_length)
-            if not dr_length:
+            dr_value = await jtag_iface.scan_dr(max_length=args.max_dr_length)
+            if dr_value is None:
                 self.logger.warning("DR length scan did not terminate")
                 return
+            self.logger.info("shifted %d-bit DR=<%s>", len(dr_value), dr_value.to01())
 
-            dr_value = await jtag_iface.read_dr(dr_length)
-            self.logger.info("shifted %d-bit DR=<%s>", dr_length, dr_value.to01())
-
-            idcodes = await jtag_iface.scan_idcode()
-            if not idcodes:
-                self.logger.warning("DR scan discovered no devices")
+            ir_value = await jtag_iface.scan_ir(max_length=args.max_ir_length)
+            if ir_value is None:
+                self.logger.warning("IR length scan did not terminate")
                 return
-            self.logger.info("DR scan discovered %d devices", len(idcodes))
+            self.logger.info("shifted %d-bit IR=<%s>", len(ir_value), ir_value.to01())
 
-            irs = await jtag_iface.scan_ir(count=len(idcodes))
+            idcodes = jtag_iface.segment_idcodes(dr_value)
+            if not idcodes:
+                self.logger.warning("DR segmentation discovered no devices")
+                return
+            self.logger.info("DR segmentation discovered %d devices", len(idcodes))
+
+            irs = jtag_iface.segment_irs(ir_value, count=len(idcodes))
 
         if args.operation == "scan":
             if not irs:
@@ -805,7 +771,8 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
                 ir_offset, ir_length = irs[tap_index]
                 self.logger.info("TAP #%d: IR[%d]", tap_index, ir_length)
 
-                tap_iface = await jtag_iface.select_tap(tap_index)
+                tap_iface = await jtag_iface.select_tap(tap_index,
+                                                        args.max_ir_length, args.max_dr_length)
                 for ir_value in range(0, (1 << ir_length)):
                     await tap_iface.test_reset()
                     await tap_iface.write_ir([ir_value & (1 << bit) for bit in range(ir_length)])
@@ -824,7 +791,8 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
             await AsyncInteractiveConsole(locals={"jtag_iface":jtag_iface}).interact()
 
         if args.operation == "tap-repl":
-            tap_iface = await jtag_iface.select_tap(args.tap_index)
+            tap_iface = await jtag_iface.select_tap(args.tap_index,
+                                                    args.max_ir_length, args.max_dr_length)
             if not tap_iface:
                 self.logger.error("cannot select TAP #%d" % args.tap_index)
                 return
