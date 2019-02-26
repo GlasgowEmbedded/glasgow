@@ -691,7 +691,10 @@ class YamahaOPLApplet(GlasgowApplet, name="yamaha-opl"):
             # but they work for now. With a better arbiter they should barely matter.
             out_fifo=iface.get_out_fifo(depth=512),
             in_fifo=iface.get_in_fifo(depth=8192, auto_flush=False),
-            master_cyc=4,#target.sys_clk_freq / 3.58e6,
+            # It's useful to run the synthesizer at a frequency significantly higher than real-time
+            # to reduce the time spent waiting. The choice of 7.5 MHz is somewhat arbitrary but
+            # it works well for both the divider in the applet and the synthesizer.
+            master_cyc=target.sys_clk_freq / 7.5e6,
             read_pulse_cyc=int(target.sys_clk_freq * 200e-9),
             write_pulse_cyc=int(target.sys_clk_freq * 100e-9),
             latch_clocks=self.latch_clocks,
