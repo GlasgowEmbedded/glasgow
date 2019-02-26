@@ -104,24 +104,24 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
             period_cyc=int(target.sys_clk_freq // (args.frequency * 1000)),
         ))
 
-        self.pins      = set(args.pin_set_jtag)
-        self.pin_names = {pin: self.mux_interface.get_pin_name(pin) for pin in self.pins}
+        self.bits  = set(range(len(args.pin_set_jtag)))
+        self.pins  = {bit: pin
+                      for bit, pin in enumerate(args.pin_set_jtag)}
+        self.names = {bit: self.mux_interface.get_pin_name(pin)
+                      for bit, pin in enumerate(args.pin_set_jtag)}
 
     async def run(self, device, args):
         return await device.demultiplexer.claim_interface(self, self.mux_interface, args)
 
-    def _bits_to_pins(self, bits):
+    def _word_to_bits(self, bits):
         pins = []
-        for bit, pin in enumerate(self.pins):
+        for bit in self.bits:
             if bits & (1 << bit):
-                pins.append(pin)
+                pins.append(bit)
         return pins
 
-    def _pins_to_names(self, pins):
-        return [self.pin_names[pin] for pin in pins]
-
-    def _pins_to_str(self, pins):
-        return ", ".join(self._pins_to_names(pins))
+    def _bits_to_str(self, pins):
+        return ", ".join(self.names[pin] for pin in pins)
 
     async def _detect_pulls(self, iface):
         for o in (0x00, 0xff):
@@ -135,9 +135,9 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
             ])
         after_low, after_high = await iface.read(2)
 
-        high_z_pins    = self._bits_to_pins(~after_low &  after_high)
-        pull_up_pins   = self._bits_to_pins( after_low &  after_high)
-        pull_down_pins = self._bits_to_pins(~after_low & ~after_high)
+        high_z_pins    = self._word_to_bits(~after_low &  after_high)
+        pull_up_pins   = self._word_to_bits( after_low &  after_high)
+        pull_down_pins = self._word_to_bits(~after_low & ~after_high)
         return high_z_pins, pull_up_pins, pull_down_pins
 
     @staticmethod
@@ -178,7 +178,7 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
         ])
 
         ir_0, ir_1, *_ = await iface.read(2)
-        tdo_pins = self._bits_to_pins(ir_0 & ~ir_1)
+        tdo_pins = self._word_to_bits(ir_0 & ~ir_1)
         return set(tdo_pins)
 
     async def _detect_tdi(self, iface, tck, tms, tdi, tdo, trst=0):
@@ -209,80 +209,80 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
 
     async def interact(self, device, args, iface):
         self.logger.info("detecting pull resistors")
-        high_z_pins, pull_up_pins, pull_down_pins = await self._detect_pulls(iface)
-        if high_z_pins:
-            self.logger.info("high-Z: %s", self._pins_to_str(high_z_pins))
-        if pull_up_pins:
-            self.logger.info("pull-H: %s", self._pins_to_str(pull_up_pins))
-        if pull_down_pins:
-            self.logger.info("pull-L: %s", self._pins_to_str(pull_down_pins))
+        high_z_bits, pull_up_bits, pull_down_bits = await self._detect_pulls(iface)
+        if high_z_bits:
+            self.logger.info("high-Z: %s", self._bits_to_str(high_z_bits))
+        if pull_up_bits:
+            self.logger.info("pull-H: %s", self._bits_to_str(pull_up_bits))
+        if pull_down_bits:
+            self.logger.info("pull-L: %s", self._bits_to_str(pull_down_bits))
 
-        trst_pins = set()
-        if pull_down_pins and len(self.pins) > 4:
+        trst_bits = set()
+        if pull_down_bits and len(self.bits) > 4:
             self.logger.info("found pins with pull-downs, will probe TRST#")
-            trst_pins = pull_down_pins
-        elif len(self.pins) > 4:
+            trst_bits = pull_down_bits
+        elif len(self.bits) > 4:
             self.logger.info("no pins with pull-downs, not probing TRST#")
 
         results = []
-        for pin_trst in [None, *trst_pins]:
-            if pin_trst is None:
+        for bit_trst in [None, *trst_bits]:
+            if bit_trst is None:
                 self.logger.info("detecting TCK, TMS and TDO")
-                pins = self.pins
+                bits = self.bits
             else:
                 self.logger.info("detecting TCK, TMS and TDO with TRST#=%s",
-                                 self.pin_names[pin_trst])
-                pins = self.pins - {pin_trst}
+                                 self.names[bit_trst])
+                bits = self.bits - {bit_trst}
 
             tck_tms_tdo = []
-            for pin_tck in pins:
-                for pin_tms in pins - {pin_tck}:
+            for bit_tck in bits:
+                for bit_tms in bits - {bit_tck}:
                     self.logger.debug("trying TCK=%s TMS=%s",
-                                      self.pin_names[pin_tck], self.pin_names[pin_tms])
-                    tdo_pins = await self._detect_tdo(iface, 1 << pin_tck, 1 << pin_tms,
-                                                      1 << pin_trst if pin_trst else 0)
-                    for pin_tdo in tdo_pins - {pin_tck, pin_tms}:
+                                      self.names[bit_tck], self.names[bit_tms])
+                    tdo_bits = await self._detect_tdo(iface, 1 << bit_tck, 1 << bit_tms,
+                                                      1 << bit_trst if bit_trst else 0)
+                    for bit_tdo in tdo_bits - {bit_tck, bit_tms}:
                         self.logger.info("shifted 10 out of IR with TCK=%s TMS=%s TDO=%s",
-                                         self.pin_names[pin_tck], self.pin_names[pin_tms],
-                                         self.pin_names[pin_tdo])
-                        tck_tms_tdo.append((pin_tck, pin_tms, pin_tdo))
+                                         self.names[bit_tck], self.names[bit_tms],
+                                         self.names[bit_tdo])
+                        tck_tms_tdo.append((bit_tck, bit_tms, bit_tdo))
 
             if not tck_tms_tdo:
                 continue
 
             self.logger.info("detecting TDI")
-            for (pin_tck, pin_tms, pin_tdo) in tck_tms_tdo:
-                for pin_tdi in pins - {pin_tck, pin_tms, pin_tdo}:
+            for (bit_tck, bit_tms, bit_tdo) in tck_tms_tdo:
+                for bit_tdi in bits - {bit_tck, bit_tms, bit_tdo}:
                     self.logger.debug("trying TCK=%s TMS=%s TDI=%s TDO=%s",
-                                      self.pin_names[pin_tck], self.pin_names[pin_tms],
-                                      self.pin_names[pin_tdi], self.pin_names[pin_tdo])
-                    ir_lens = await self._detect_tdi(iface, 1 << pin_tck, 1 << pin_tms,
-                                                     1 << pin_tdi, 1 << pin_tdo,
-                                                     1 << pin_trst if pin_trst else 0)
+                                      self.names[bit_tck], self.names[bit_tms],
+                                      self.names[bit_tdi], self.names[bit_tdo])
+                    ir_lens = await self._detect_tdi(iface, 1 << bit_tck, 1 << bit_tms,
+                                                     1 << bit_tdi, 1 << bit_tdo,
+                                                     1 << bit_trst if bit_trst else 0)
                     for ir_len in ir_lens:
                         self.logger.info("shifted %d-bit IR with TCK=%s TMS=%s TDI=%s TDO=%s",
                                          ir_len,
-                                         self.pin_names[pin_tck], self.pin_names[pin_tms],
-                                         self.pin_names[pin_tdi], self.pin_names[pin_tdo])
-                        results.append((pin_tck, pin_tms, pin_tdi, pin_tdo, pin_trst))
+                                         self.names[bit_tck], self.names[bit_tms],
+                                         self.names[bit_tdi], self.names[bit_tdo])
+                        results.append((bit_tck, bit_tms, bit_tdi, bit_tdo, bit_trst))
                     else:
                         continue
 
-            if results and not pin_trst:
+            if results and not bit_trst:
                 self.logger.info("JTAG interface detected, not probing TRST#")
                 break
 
         if len(results) == 0:
             self.logger.warning("no JTAG interface detected")
         elif len(results) == 1:
-            pin_tck, pin_tms, pin_tdi, pin_tdo, pin_trst = results[0]
+            bit_tck, bit_tms, bit_tdi, bit_tdo, bit_trst = results[0]
             args = ["jtag"]
-            args += ["--pin-tck", str(pin_tck)]
-            args += ["--pin-tms", str(pin_tms)]
-            args += ["--pin-tdi", str(pin_tdi)]
-            args += ["--pin-tdo", str(pin_tdo)]
-            if pin_trst is not None:
-                args += ["--pin-trst", str(pin_trst)]
+            args += ["--pin-tck", str(self.pins[bit_tck])]
+            args += ["--pin-tms", str(self.pins[bit_tms])]
+            args += ["--pin-tdi", str(self.pins[bit_tdi])]
+            args += ["--pin-tdo", str(self.pins[bit_tdo])]
+            if bit_trst is not None:
+                args += ["--pin-trst", str(self.pins[bit_trst])]
             self.logger.info("use `%s` as arguments", " ".join(args))
         else:
             self.logger.warning("more than one JTAG interface detected; this likely a false "
