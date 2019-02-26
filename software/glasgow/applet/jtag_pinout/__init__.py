@@ -240,7 +240,7 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
                     self.logger.debug("trying TCK=%s TMS=%s",
                                       self.names[bit_tck], self.names[bit_tms])
                     tdo_bits = await self._detect_tdo(iface, 1 << bit_tck, 1 << bit_tms,
-                                                      1 << bit_trst if bit_trst else 0)
+                                                      0 if bit_trst is None else 1 << bit_trst)
                     for bit_tdo in tdo_bits - {bit_tck, bit_tms}:
                         self.logger.info("shifted 10 out of IR with TCK=%s TMS=%s TDO=%s",
                                          self.names[bit_tck], self.names[bit_tms],
@@ -258,7 +258,7 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
                                       self.names[bit_tdi], self.names[bit_tdo])
                     ir_lens = await self._detect_tdi(iface, 1 << bit_tck, 1 << bit_tms,
                                                      1 << bit_tdi, 1 << bit_tdo,
-                                                     1 << bit_trst if bit_trst else 0)
+                                                     0 if bit_trst is None else 1 << bit_trst)
                     for ir_len in ir_lens:
                         self.logger.info("shifted %d-bit IR with TCK=%s TMS=%s TDI=%s TDO=%s",
                                          ir_len,
