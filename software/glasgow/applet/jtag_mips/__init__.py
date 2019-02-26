@@ -66,10 +66,13 @@ class EJTAGInterface(aobject, GDBRemote):
         await self.lower.write_ir(IR_CONTROL)
 
         control_bits = await self.lower.exchange_dr(control_bits)
-        control = DR_CONTROL.from_bitarray(control_bits)
-        self._log("read CONTROL %s", control.bits_repr(omit_zero=True))
+        new_control = DR_CONTROL.from_bitarray(control_bits)
+        self._log("read CONTROL %s", new_control.bits_repr(omit_zero=True))
 
-        return control
+        if new_control.Rocc and control.Rocc:
+            raise GlasgowAppletError("target has been unexpectedly reset")
+
+        return new_control
 
     async def _enable_probe(self):
         self._control.ProbEn   = 1
@@ -197,7 +200,8 @@ class EJTAGInterface(aobject, GDBRemote):
             self._DRSEG_DBMn_addr = DRSEG_DBMn_addr
             self._DRSEG_DBVn_addr = DRSEG_DBVn_addr
 
-        control = await self._exchange_control()
+        # Start by acknowledging any reset.
+        control = await self._exchange_control(Rocc=0)
         if control.DM:
             raise GlasgowAppletError("target already in debug mode")
 
