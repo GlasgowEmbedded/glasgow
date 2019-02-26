@@ -46,11 +46,11 @@ IR_FDC        = bitarray("11101", endian="little")
 DR_IMPCODE = Bitfield("DR_IMPCODE", 4, [
     ("MIPS32_64",  1),
     ("TypeInfo",  10),
-    ("Type",       2),
+    ("Type",       3),
     ("NoDMA",      1),
     (None,         1),
     ("MIPS16",     1),
-    (None,         3),
+    (None,         4),
     ("ASID_Size",  2),
     (None,         1),
     ("DINT_sup",   1),

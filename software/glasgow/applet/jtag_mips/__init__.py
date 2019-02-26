@@ -163,6 +163,8 @@ class EJTAGInterface(aobject, GDBRemote):
         self._check_state("probe", "Probe")
 
         await self._read_impcode()
+        self._logger.info("found CPU with IMPCODE=%#10x", self._impcode.to_int())
+
         await self._scan_address_length()
 
         self.bits      = 64 if self._impcode.MIPS32_64 else 32
