@@ -511,7 +511,7 @@ class JTAGInterface:
         index = 0
         while index < len(dr_value):
             if dr_value[index]:
-                if len(dr_value) - index > 32:
+                if len(dr_value) - index >= 32:
                     idcode_bits = dr_value[index:index + 32]
                     idcode, = struct.unpack("<L", idcode_bits.tobytes())
                     self._log_h("found idcode=<%08x>", idcode)
