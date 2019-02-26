@@ -774,8 +774,10 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
                 tap_iface = await jtag_iface.select_tap(tap_index,
                                                         args.max_ir_length, args.max_dr_length)
                 for ir_value in range(0, (1 << ir_length)):
+                    ir_value = bitarray([ir_value & (1 << bit) for bit in range(ir_length)],
+                                        endian="little")
                     await tap_iface.test_reset()
-                    await tap_iface.write_ir([ir_value & (1 << bit) for bit in range(ir_length)])
+                    await tap_iface.write_ir(ir_value)
                     dr_length = await tap_iface.scan_dr_length(max_length=args.max_dr_length,
                                                                zero_ok=True)
                     if dr_length == 0:
@@ -784,8 +786,7 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
                         level = logging.DEBUG
                     else:
                         level = logging.INFO
-                    self.logger.log(level, "  IR=%s DR[%d]",
-                                    "{:0{}b}".format(ir_value, ir_length), dr_length)
+                    self.logger.log(level, "  IR=%s DR[%d]", ir_value.to01(), dr_length)
 
         if args.operation == "jtag-repl":
             await AsyncInteractiveConsole(locals={"jtag_iface":jtag_iface}).interact()
