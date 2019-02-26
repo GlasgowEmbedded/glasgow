@@ -217,13 +217,15 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
         if pull_down_pins:
             self.logger.info("pull-L: %s", self._pins_to_str(pull_down_pins))
 
+        trst_pins = set()
         if pull_down_pins and len(self.pins) > 4:
             self.logger.info("found pins with pull-downs, will probe TRST#")
+            trst_pins = pull_down_pins
         elif len(self.pins) > 4:
             self.logger.info("no pins with pull-downs, not probing TRST#")
 
         results = []
-        for pin_trst in [None, *pull_down_pins]:
+        for pin_trst in [None, *trst_pins]:
             if pin_trst is None:
                 self.logger.info("detecting TCK, TMS and TDO")
                 pins = self.pins
