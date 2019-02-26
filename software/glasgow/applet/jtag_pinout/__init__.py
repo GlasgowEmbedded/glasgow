@@ -217,26 +217,24 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
         if pull_down_bits:
             self.logger.info("pull-L: %s", self._bits_to_str(pull_down_bits))
 
-        trst_bits = set()
-        if pull_down_bits and len(self.bits) > 4:
-            self.logger.info("found pins with pull-downs, will probe TRST#")
-            trst_bits = pull_down_bits
-        elif len(self.bits) > 4:
-            self.logger.info("no pins with pull-downs, not probing TRST#")
+        if len(self.bits) > 4:
+            trst_bits = self.bits
+        else:
+            trst_bits = set()
 
         results = []
         for bit_trst in [None, *trst_bits]:
             if bit_trst is None:
                 self.logger.info("detecting TCK, TMS and TDO")
-                bits = self.bits
+                data_bits = self.bits
             else:
                 self.logger.info("detecting TCK, TMS and TDO with TRST#=%s",
                                  self.names[bit_trst])
-                bits = self.bits - {bit_trst}
+                data_bits = self.bits - {bit_trst}
 
             tck_tms_tdo = []
-            for bit_tck in bits:
-                for bit_tms in bits - {bit_tck}:
+            for bit_tck in data_bits:
+                for bit_tms in data_bits - {bit_tck}:
                     self.logger.debug("trying TCK=%s TMS=%s",
                                       self.names[bit_tck], self.names[bit_tms])
                     tdo_bits = await self._detect_tdo(iface, 1 << bit_tck, 1 << bit_tms,
@@ -252,7 +250,7 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
 
             self.logger.info("detecting TDI")
             for (bit_tck, bit_tms, bit_tdo) in tck_tms_tdo:
-                for bit_tdi in bits - {bit_tck, bit_tms, bit_tdo}:
+                for bit_tdi in data_bits - {bit_tck, bit_tms, bit_tdo}:
                     self.logger.debug("trying TCK=%s TMS=%s TDI=%s TDO=%s",
                                       self.names[bit_tck], self.names[bit_tms],
                                       self.names[bit_tdi], self.names[bit_tdo])
@@ -268,8 +266,15 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
                     else:
                         continue
 
-            if results and not bit_trst:
-                self.logger.info("JTAG interface detected, not probing TRST#")
+            if bit_trst is None:
+                if results:
+                    self.logger.info("JTAG interface detected, not probing TRST#")
+                    break
+                elif trst_bits:
+                    self.logger.info("no JTAG interface detected yet, probing TRST#")
+            elif results:
+                self.logger.info("JTAG interface detected with TRST#=%s",
+                                 self.names[bit_trst])
                 break
 
         if len(results) == 0:
