@@ -662,9 +662,13 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
             period_cyc=target.sys_clk_freq // (args.frequency * 1000),
         ))
 
-    async def run(self, device, args):
+    async def run(self, device, args, reset=True):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        return JTAGInterface(iface, self.logger)
+        jtag_iface = JTAGInterface(iface, self.logger)
+        if reset:
+            await jtag_iface.pulse_trst()
+            await jtag_iface.test_reset()
+        return jtag_iface
 
     @classmethod
     def add_interact_arguments(cls, parser):
@@ -719,9 +723,6 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
             help="select TAP #INDEX for communication (default: %(default)s)")
 
     async def interact(self, device, args, jtag_iface):
-        await jtag_iface.pulse_trst()
-        await jtag_iface.test_reset()
-
         if args.operation in ("scan", "enumerate-ir"):
             dr_value = await jtag_iface.scan_dr(max_length=args.max_dr_length)
             if dr_value is None:

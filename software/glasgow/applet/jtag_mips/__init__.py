@@ -823,8 +823,6 @@ class JTAGMIPSApplet(JTAGApplet, name="jtag-mips"):
 
     async def run(self, device, args):
         jtag_iface = await super().run(device, args)
-        await jtag_iface.pulse_trst()
-
         tap_iface = await jtag_iface.select_tap(args.tap_index)
         if not tap_iface:
             raise GlasgowAppletError("cannot select TAP #%d" % args.tap_index)

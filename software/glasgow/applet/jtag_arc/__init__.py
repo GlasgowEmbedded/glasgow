@@ -127,8 +127,6 @@ class JTAGARCApplet(JTAGApplet, name="jtag-arc"):
 
     async def run(self, device, args):
         jtag_iface = await super().run(device, args)
-        await jtag_iface.test_reset()
-
         tap_iface = await jtag_iface.select_tap(args.tap_index)
         if not tap_iface:
             raise GlasgowAppletError("cannot select TAP #%d" % args.tap_index)
