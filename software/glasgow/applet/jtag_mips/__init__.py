@@ -166,7 +166,7 @@ class EJTAGInterface(aobject, GDBRemote):
         self._check_state("probe", "Probe")
 
         await self._read_impcode()
-        self._logger.info("found CPU with IMPCODE=%#10x", self._impcode.to_int())
+        self._logger.info("found CPU with IMPCODE=%#010x", self._impcode.to_int())
 
         await self._scan_address_length()
 
@@ -814,9 +814,13 @@ class JTAGMIPSApplet(JTAGApplet, name="jtag-mips"):
         * Tracepoints and watchpoints.
 
     The applet has been written with 32- and 64-bit CPUs with EJTAG 1.x-5.x in mind, but has only
-    been tested on a big endian MIPS32 R1 EJTAG 1.x/2.0 CPU. As such, use with any other CPUs
-    might or might not be possible. In particular, it certainly does not currently work on
-    little-endian CPUs. Sorry about that.
+    been tested with the following configurations:
+
+        * MIPS32 R1 big endian with EJTAG 1.x/2.0 (BCM6358);
+        * MIPS32 R1 big endian with EJTAG 2.6 (Infineon ADM5120).
+
+    Other configurations might or might not work. In particular, it certainly does not currently
+    work on little-endian CPUs. Sorry about that.
     """
 
     @classmethod
