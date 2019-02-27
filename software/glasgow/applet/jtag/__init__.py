@@ -778,6 +778,9 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
 
                 tap_iface = await jtag_iface.select_tap(tap_index,
                                                         args.max_ir_length, args.max_dr_length)
+                if not tap_iface:
+                    raise GlasgowAppletError("cannot select TAP #%d" % tap_index)
+
                 for ir_value in range(0, (1 << ir_length)):
                     ir_value = bitarray([ir_value & (1 << bit) for bit in range(ir_length)],
                                         endian="little")
