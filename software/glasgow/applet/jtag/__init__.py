@@ -547,6 +547,8 @@ class JTAGInterface:
         return irs
 
     async def select_tap(self, tap, max_ir_length=128, max_dr_length=1024):
+        await self.test_reset()
+
         dr_value = await self.scan_dr(max_dr_length)
         if dr_value is None:
             return
@@ -666,8 +668,8 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
         jtag_iface = JTAGInterface(iface, self.logger)
         if reset:
+            # If we have a defined TRST#, enable the driver and reset the TAPs to a good state.
             await jtag_iface.pulse_trst()
-            await jtag_iface.test_reset()
         return jtag_iface
 
     @classmethod
@@ -724,6 +726,8 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
 
     async def interact(self, device, args, jtag_iface):
         if args.operation in ("scan", "enumerate-ir"):
+            await jtag_iface.test_reset()
+
             dr_value = await jtag_iface.scan_dr(max_length=args.max_dr_length)
             if dr_value is None:
                 self.logger.warning("DR length scan did not terminate")
