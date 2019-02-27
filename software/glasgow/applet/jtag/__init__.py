@@ -628,9 +628,10 @@ class TAPInterface:
     async def scan_dr_length(self, max_length, zero_ok=False):
         length = await self.lower.scan_dr_length(max_length=self._dr_overhead + max_length,
                                                  zero_ok=zero_ok)
-        if length is None:
+        if length is None or length == 0:
             return
         assert length >= self._dr_overhead
+        assert zero_ok or length - self._dr_overhead > 0
         return length - self._dr_overhead
 
 
@@ -788,13 +789,16 @@ class JTAGApplet(GlasgowApplet, name="jtag"):
                     await tap_iface.write_ir(ir_value)
                     dr_length = await tap_iface.scan_dr_length(max_length=args.max_dr_length,
                                                                zero_ok=True)
-                    if dr_length == 0:
+                    if dr_length is None:
+                        level = logging.ERROR
+                        dr_length = "?"
+                    elif dr_length == 0:
                         level = logging.WARN
                     elif dr_length == 1:
                         level = logging.DEBUG
                     else:
                         level = logging.INFO
-                    self.logger.log(level, "  IR=%s DR[%d]", ir_value.to01(), dr_length)
+                    self.logger.log(level, "  IR=%s DR[%s]", ir_value.to01(), dr_length)
 
         if args.operation == "jtag-repl":
             await AsyncInteractiveConsole(locals={"jtag_iface":jtag_iface}).interact()
