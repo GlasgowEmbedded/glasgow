@@ -24,6 +24,7 @@ class GlasgowApplet:
     preview = False
     help = "applet help missing"
     description = "applet description missing"
+    required_revision = "A"
 
     @classmethod
     def add_build_arguments(cls, parser, access):

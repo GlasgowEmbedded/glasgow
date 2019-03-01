@@ -114,6 +114,10 @@ def get_argparser():
                 help += " (PREVIEW QUALITY APPLET)"
                 description = "    This applet is PREVIEW QUALITY and may CORRUPT DATA or " \
                               "have missing features. Use at your own risk.\n" + description
+            if applet.required_revision > "A":
+                help += " (rev{}+)".format(applet.required_revision)
+                description += "\n    This applet requires Glasgow rev{} or later." \
+                               .format(applet.required_revision)
 
             p_applet = subparsers.add_parser(
                 applet_name, help=help, description=description,
@@ -289,6 +293,9 @@ def _applet(revision, args):
                                    with_analyzer=hasattr(args, "trace") and args.trace)
     applet = GlasgowApplet.all_applets[args.applet]()
     try:
+        if revision < applet.required_revision:
+            raise GlasgowAppletError("applet requires device rev{}+, rev{} found"
+                                     .format(applet.required_revision, revision))
         applet.build(target, args)
     except GlasgowAppletError as e:
         applet.logger.error(e)
