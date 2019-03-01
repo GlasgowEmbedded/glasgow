@@ -634,21 +634,21 @@ void handle_pending_usb_setup() {
       if(!iobuf_get_voltage_limit(arg_mask, (__xdata uint16_t *)EP0BUF)) {
         STALL_EP0();
       } else {
-        if(!eeprom_write(I2C_ADDR_FX2_MEM,
-                         8 + 4 + __builtin_offsetof(struct glasgow_config, voltage_limit),
-                         (__xdata void *)&glasgow_config.voltage_limit,
-                         sizeof(glasgow_config.voltage_limit),
-                         /*double_byte=*/true, /*page_size=*/8, /*timeout=*/255)) {
-          STALL_EP0();
-        } else {
-          SETUP_EP0_BUF(2);
-        }
+        SETUP_EP0_BUF(2);
       }
     } else {
       SETUP_EP0_BUF(2);
       while(EP0CS & _BUSY);
       if(!iobuf_set_voltage_limit(arg_mask, (__xdata uint16_t *)EP0BUF)) {
         latch_status_bit(ST_ERROR);
+      } else {
+        if(!eeprom_write(I2C_ADDR_FX2_MEM,
+                         8 + 4 + __builtin_offsetof(struct glasgow_config, voltage_limit),
+                         (__xdata void *)&glasgow_config.voltage_limit,
+                         sizeof(glasgow_config.voltage_limit),
+                         /*double_byte=*/true, /*page_size=*/8, /*timeout=*/255)) {
+          latch_status_bit(ST_ERROR);
+        }
       }
     }
 
