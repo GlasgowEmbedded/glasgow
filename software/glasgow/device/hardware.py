@@ -31,6 +31,7 @@ REQ_POLL_ALERT   = 0x17
 REQ_BITSTREAM_ID = 0x18
 REQ_IOBUF_ENABLE = 0x19
 REQ_LIMIT_VOLT   = 0x1A
+REQ_PULL         = 0x1B
 
 ST_ERROR         = 1<<0
 ST_FPGA_RDY      = 1<<1
@@ -440,6 +441,30 @@ class GlasgowHardwareDevice:
             return self._mask_to_iobuf_spec(mask)
         except usb1.USBErrorPipe:
             raise GlasgowDeviceError("cannot poll alert status")
+
+    @property
+    def has_pulls(self):
+        return self.revision >= "C"
+
+    async def set_pulls(self, spec, low=set(), high=set()):
+        assert self.has_pulls
+        assert not {bit for bit in low | high if bit >= len(spec) * 8}
+
+        for index, port in enumerate(spec):
+            port_enable = 0
+            port_value  = 0
+            for port_bit in range(0, 8):
+                if index * 8 + port_bit in low | high:
+                    port_enable |= 1 << port_bit
+                if index * 8 + port_bit in high:
+                    port_value  |= 1 << port_bit
+            await self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_PULL,
+                0, self._iobuf_spec_to_mask(port, one=True),
+                struct.pack("BB", port_enable, port_value))
+            # Check if we've succeeded
+            if await self._status() & ST_ERROR:
+                raise GlasgowDeviceError("cannot set I/O port(s) {} pull resistors to low={} high={}"
+                                         .format(spec or "(none)", low or "{}", high or "{}"))
 
     async def _register_error(self, addr):
         if await self._status() & ST_FPGA_RDY:
