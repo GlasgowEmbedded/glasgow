@@ -266,8 +266,20 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
             period_cyc=math.ceil(target.sys_clk_freq / (args.bit_rate * 1000))
         ))
 
+    @classmethod
+    def add_run_arguments(cls, parser, access):
+        super().add_run_arguments(parser, access)
+
+        parser.add_argument(
+            "--pulls", default=False, action="store_true",
+            help="enable integrated pull-ups")
+
     async def run(self, device, args):
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
+        pulls = set()
+        if args.pulls:
+            pulls = {args.pin_scl, args.pin_sda}
+        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
+                                                           pull_high=pulls)
         i2c_iface = I2CMasterInterface(iface, self.logger)
         return i2c_iface
 
