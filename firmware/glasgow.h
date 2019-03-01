@@ -6,6 +6,15 @@
 #define VID_QIHW              0x20b7
 #define PID_GLASGOW           0x9db1
 
+enum {
+  // Board revisions
+  GLASGOW_REV_A  = 0x10,
+  GLASGOW_REV_B  = 0x20,
+  GLASGOW_REV_C0 = 0x30,
+
+  GLASGOW_REV_NA = 0xF9,
+};
+
 // PORTA pins
 #define PINA_ALERT_N          0
 #define PINA_CDONE            3

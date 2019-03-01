@@ -10,13 +10,13 @@ void fpga_reset() {
 
   // Put FPGA in reset.
   switch(glasgow_config.revision) {
-    case 'A':
-    case 'B':
+    case GLASGOW_REV_A:
+    case GLASGOW_REV_B:
       OED |=  (1<<PIND_CRESET_N_REVAB);
       IOD &= ~(1<<PIND_CRESET_N_REVAB);
       break;
 
-    case 'C':
+    case GLASGOW_REV_C0:
       OEA |=  (1<<PINA_CRESET_N_REVC);
       IOA &= ~(1<<PINA_CRESET_N_REVC);
       break;
@@ -31,12 +31,12 @@ void fpga_reset() {
 
   // Release FPGA reset.
   switch(glasgow_config.revision) {
-    case 'A':
-    case 'B':
+    case GLASGOW_REV_A:
+    case GLASGOW_REV_B:
       IOD |=  (1<<PIND_CRESET_N_REVAB);
       break;
 
-    case 'C':
+    case GLASGOW_REV_C0:
       IOA |=  (1<<PINA_CRESET_N_REVC);
       break;
   }

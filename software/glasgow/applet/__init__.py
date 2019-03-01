@@ -24,7 +24,7 @@ class GlasgowApplet:
     preview = False
     help = "applet help missing"
     description = "applet description missing"
-    required_revision = "A"
+    required_revision = "A0"
 
     @classmethod
     def add_build_arguments(cls, parser, access):
@@ -186,7 +186,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
 
     def assertBuilds(self, access="direct", args=[]):
         if access == "direct":
-            target = GlasgowHardwareTarget(revision="A",
+            target = GlasgowHardwareTarget(revision="A0",
                                            multiplexer_cls=DirectMultiplexer)
             access_args = DirectArguments(applet_name=self.applet.name,
                                           default_port="AB", pin_count=16)
@@ -231,7 +231,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
             revision = self.device.revision
         else:
             self.device = None
-            revision = "A"
+            revision = "A0"
 
         self.target = GlasgowHardwareTarget(revision=revision,
                                             multiplexer_cls=DirectMultiplexer)

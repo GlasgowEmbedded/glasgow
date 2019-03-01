@@ -114,7 +114,7 @@ def get_argparser():
                 help += " (PREVIEW QUALITY APPLET)"
                 description = "    This applet is PREVIEW QUALITY and may CORRUPT DATA or " \
                               "have missing features. Use at your own risk.\n" + description
-            if applet.required_revision > "A":
+            if applet.required_revision > "A0":
                 help += " (rev{}+)".format(applet.required_revision)
                 description += "\n    This applet requires Glasgow rev{} or later." \
                                .format(applet.required_revision)
@@ -233,7 +233,7 @@ def get_argparser():
     add_applet_arg(g_flash_bitstream, mode="build")
 
     def revision(arg):
-        if arg in "ABC":
+        if re.match(r"^A0|B0|C0$", string):
             return arg
         else:
             raise argparse.ArgumentTypeError("{} is not a valid revision letter".format(arg))
@@ -661,7 +661,7 @@ async def _main():
                     return 1
 
             fx2_config = FX2Config(vendor_id=VID_QIHW, product_id=PID_GLASGOW,
-                                   device_id=1 + ord(args.rev) - ord('A'),
+                                   device_id=GlasgowConfig.encode_revision(args.rev),
                                    i2c_400khz=True)
             glasgow_config = GlasgowConfig(args.rev, args.serial)
             fx2_config.append(0x4000 - GlasgowConfig.size, glasgow_config.encode())

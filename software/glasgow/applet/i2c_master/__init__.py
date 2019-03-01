@@ -242,7 +242,7 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
 
     Maximum transaction length is 65535 bytes.
     """
-    required_revision = "C"
+    required_revision = "C0"
 
     __pins = ("scl", "sda")
 

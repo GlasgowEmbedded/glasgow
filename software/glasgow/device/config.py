@@ -1,4 +1,5 @@
 import struct
+import re
 
 
 __all__ = ["GlasgowConfig"]
@@ -29,7 +30,7 @@ class GlasgowConfig:
         Maximum allowed I/O port voltage, in millivolts.
     """
     size = 64
-    _encoding = "<1s16sI16s2H"
+    _encoding = "<B16sI16s2H"
 
     def __init__(self, revision, serial, bitstream_size=0, bitstream_id=b"\x00"*16,
                  voltage_limit=None):
@@ -39,12 +40,30 @@ class GlasgowConfig:
         self.bitstream_id   = bitstream_id
         self.voltage_limit  = [5500, 5500] if voltage_limit is None else voltage_limit
 
+    @staticmethod
+    def encode_revision(string):
+        if re.match(r"^[A-Z][0-9]$", string):
+            major, minor = string
+            return ((ord(major) - ord("A") + 1) << 4) | (ord(minor) - ord("0"))
+        else:
+            raise ValueError("invalid revision string {!r}".format(string))
+
+    @staticmethod
+    def decode_revision(value):
+        major, minor = (value & 0xF0) >> 4, value & 0x0F
+        if major == 0:
+            return chr(ord("A") + minor - 1) + "0"
+        elif minor in range(10):
+            return chr(ord("A") + major - 1) + chr(ord("0") + minor)
+        else:
+            raise ValueError("invalid revision value {:#04x}".format(value))
+
     def encode(self):
         """
         Convert configuration to a byte array that can be loaded into memory or EEPROM.
         """
         data = struct.pack(self._encoding,
-                           self.revision.encode("ascii"),
+                           self.encode_revision(self.revision),
                            self.serial.encode("ascii"),
                            self.bitstream_size,
                            self.bitstream_id,
@@ -67,7 +86,7 @@ class GlasgowConfig:
         revision, serial, bitstream_size, bitstream_id, \
             voltage_limit[0], voltage_limit[1] = \
             struct.unpack_from(cls._encoding, data, 0)
-        return cls(revision.decode("ascii"),
+        return cls(self.decode_revision(revision),
                    serial.decode("ascii"),
                    bitstream_size,
                    bitstream_id,

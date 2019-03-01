@@ -135,7 +135,7 @@ usb_configuration_set_c usb_configs[] = {
 usb_ascii_string_c usb_strings[] = {
   [0] = "whitequark research",
   [1] = "Glasgow Debug Tool",
-  [2] = "X-XXXXXXXXXXXXXXXX",
+  [2] = "XX-XXXXXXXXXXXXXXXX",
   // Configurations
   [3] = "Pipe Q at {2x512B EP2OUT/EP6IN}, R at {2x512B EP4OUT/EP8IN}",
   [4] = "Pipe Q at {4x512B EP2OUT/EP6IN}",
@@ -206,10 +206,41 @@ static void config_init() {
 fail:
   // Configuration block is corrupted or missing, load default configuration so that
   // we don't hang or present nonsensical descriptors.
-  glasgow_config.revision = 'Z';
+  glasgow_config.revision = GLASGOW_REV_NA;
   xmemcpy((__xdata void *)glasgow_config.serial, (__xdata void *)"9999999999999999",
           sizeof(glasgow_config.serial));
   glasgow_config.bitstream_size = 0;
+}
+
+// Upgrade legacy revision encoding.
+static void config_fixup() {
+  __xdata uint8_t data;
+
+  switch(glasgow_config.revision) {
+    case 'A': glasgow_config.revision = GLASGOW_REV_A;  break;
+    case 'B': glasgow_config.revision = GLASGOW_REV_B;  break;
+    case 'C': glasgow_config.revision = GLASGOW_REV_C0; break;
+    default: return;
+  }
+
+  // Invalidate the old firmware (if any), since it will get confused if it sees new revision
+  // field contents.
+  data = 0x01; // I2C_400KHZ, no DISCON
+  eeprom_write(I2C_ADDR_FX2_MEM, 7,
+               (__xdata void *)&data, 1,
+               /*double_byte=*/true, /*page_size=*/8, /*timeout=*/255);
+  data = 0xC0; // C0 load
+  eeprom_write(I2C_ADDR_FX2_MEM, 0,
+               (__xdata void *)&data, 1,
+               /*double_byte=*/true, /*page_size=*/8, /*timeout=*/255);
+  // Update Device ID and revision fields.
+  data = glasgow_config.revision;
+  eeprom_write(I2C_ADDR_FX2_MEM, 5,
+               (__xdata void *)&data, 1,
+               /*double_byte=*/true, /*page_size=*/8, /*timeout=*/255);
+  eeprom_write(I2C_ADDR_FX2_MEM, 8 + 4 + __builtin_offsetof(struct glasgow_config, revision),
+               (__xdata void *)&data, 1,
+               /*double_byte=*/true, /*page_size=*/8, /*timeout=*/255);
 }
 
 // Populate descriptors from device configuration, if any.
@@ -217,9 +248,10 @@ static void descriptors_init() {
   __xdata struct usb_desc_device *desc_device = (__xdata struct usb_desc_device *)usb_device;
   __xdata char *desc_serial = (__xdata char *)usb_strings[usb_device.iSerialNumber - 1];
 
-  desc_device->bcdDevice |= 1 + glasgow_config.revision - 'A';
-  desc_serial[0] = glasgow_config.revision;
-  xmemcpy(&desc_serial[2], (__xdata void *)glasgow_config.serial,
+  desc_device->bcdDevice |= glasgow_config.revision;
+  desc_serial[0] = 'A' + (glasgow_config.revision >> 4) - 1;
+  desc_serial[1] = '0' + (glasgow_config.revision & 0xF);
+  xmemcpy(&desc_serial[3], (__xdata void *)glasgow_config.serial,
           sizeof(glasgow_config.serial));
 }
 
@@ -667,7 +699,7 @@ void handle_pending_usb_setup() {
 
     if(arg_get) {
       while(EP0CS & _BUSY);
-      if(glasgow_config.revision < 'C' ||
+      if(glasgow_config.revision < GLASGOW_REV_C0 ||
          !iobuf_get_pull(arg_selector,
                          (__xdata uint8_t *)EP0BUF + 0,
                          (__xdata uint8_t *)EP0BUF + 1)) {
@@ -678,7 +710,7 @@ void handle_pending_usb_setup() {
     } else {
       SETUP_EP0_BUF(2);
       while(EP0CS & _BUSY);
-      if(glasgow_config.revision < 'C' ||
+      if(glasgow_config.revision < GLASGOW_REV_C0 ||
          !iobuf_set_pull(arg_selector,
                          *((__xdata uint8_t *)EP0BUF + 0),
                          *((__xdata uint8_t *)EP0BUF + 1))) {
@@ -759,6 +791,7 @@ int main() {
 
   // Initialize subsystems.
   config_init();
+  config_fixup();
   descriptors_init();
   leds_init();
   iobuf_init_dac_ldo();

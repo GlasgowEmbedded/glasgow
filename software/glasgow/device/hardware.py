@@ -10,6 +10,7 @@ from fx2.format import input_data
 
 from ..support.logging import *
 from . import GlasgowDeviceError
+from .config import GlasgowConfig
 
 
 __all__ = ["GlasgowHardwareDevice"]
@@ -92,28 +93,25 @@ class GlasgowHardwareDevice:
         self._open_device(vendor_id, product_id)
 
         device_id = self.usb.getDevice().getbcdDevice()
-        self.revision = chr(ord("A") + (device_id & 0xFF) - 1)
+        self.revision = GlasgowConfig.decode_revision(device_id & 0xFF)
 
         if device_id & 0xFF00 in (0x0000, 0xA000):
             logger.debug("found rev%s device without firmware", self.revision)
 
-            if self.revision not in "ABC":
-                raise GlasgowDeviceError("unknown device revision {}".format(self.revision))
-
             if firmware_file is None:
                 raise GlasgowDeviceError("firmware is not uploaded")
-            else:
-                logger.debug("loading firmware from %s", firmware_file)
-                with open(firmware_file, "rb") as f:
-                    self._download_firmware(input_data(f, fmt="ihex"))
 
-                # let the device re-enumerate and re-acquire it
-                time.sleep(1)
-                self._open_device(VID_QIHW, PID_GLASGOW)
+            logger.debug("loading firmware from %s", firmware_file)
+            with open(firmware_file, "rb") as f:
+                self._download_firmware(input_data(f, fmt="ihex"))
 
-                # still not the right firmware?
-                if self.usb.getDevice().getbcdDevice() & 0xFF00 in (0x0000, 0xA000):
-                    raise GlasgowDeviceError("firmware upload failed")
+            # let the device re-enumerate and re-acquire it
+            time.sleep(1)
+            self._open_device(VID_QIHW, PID_GLASGOW)
+
+            # still not the right firmware?
+            if self.usb.getDevice().getbcdDevice() & 0xFF00 in (0x0000, 0xA000):
+                raise GlasgowDeviceError("firmware upload failed")
 
         # https://github.com/vpelletier/python-libusb1/issues/39
         # serial = self.usb.getDevice().getSerialNumber()
