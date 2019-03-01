@@ -36,7 +36,7 @@ class DirectDemultiplexer(AccessDemultiplexer):
         super().__init__(device)
         self._claimed = set()
 
-    async def claim_interface(self, applet, mux_interface, args):
+    async def claim_interface(self, applet, mux_interface, args, pull_low=set(), pull_high=set()):
         assert mux_interface._pipe_num not in self._claimed
         self._claimed.add(mux_interface._pipe_num)
 
@@ -54,6 +54,30 @@ class DirectDemultiplexer(AccessDemultiplexer):
                                ", ".join(sorted(args.port_spec)), args.voltage)
         elif hasattr(args, "keep_voltage") and args.keep_voltage:
             applet.logger.info("port voltage unchanged")
+
+        if self.device.has_pulls:
+            await self.device.set_pulls(args.port_spec, pull_low, pull_high)
+            if pull_low or pull_high:
+                applet.logger.info("port(s) %s pull resistors configured",
+                                   ", ".join(sorted(args.port_spec)))
+            else:
+                applet.logger.debug("port(s) %s pull resistors disabled",
+                                    ", ".join(sorted(args.port_spec)))
+        elif pull_low or pull_high:
+            # Some applets request pull resistors for bidirectional pins (e.g. I2C). Such applets
+            # cannot work on revA/B because of the level shifters and the applet should require
+            # an appropriate revision.
+            # Some applets, though, request pull resistors for unidirectional, DUT-controlled pins
+            # (e.g. NAND flash). Such applets can still work on revA/B with appropriate external
+            # pull resistors, so we spend some additional effort to allow for that.
+            if pull_low:
+                applet.logger.warn("port(s) %s requires external pull-down resistors on pins %s",
+                                   ", ".join(sorted(args.port_spec)),
+                                   ", ".join(map(str, pull_low)))
+            if pull_high:
+                applet.logger.warn("port(s) %s requires external pull-up resistors on pins %s",
+                                   ", ".join(sorted(args.port_spec)),
+                                   ", ".join(map(str, pull_high)))
 
         await iface.reset()
         return iface
