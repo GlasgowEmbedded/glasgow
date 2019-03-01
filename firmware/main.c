@@ -236,6 +236,7 @@ enum {
   USB_REQ_BITSTREAM_ID = 0x18,
   USB_REQ_IOBUF_ENABLE = 0x19,
   USB_REQ_LIMIT_VOLT   = 0x1A,
+  USB_REQ_PULL         = 0x1B,
   // Cypress requests
   USB_REQ_CYPRESS_EEPROM_DB = 0xA9,
   // libfx2 requests
@@ -649,6 +650,39 @@ void handle_pending_usb_setup() {
                          /*double_byte=*/true, /*page_size=*/8, /*timeout=*/255)) {
           latch_status_bit(ST_ERROR);
         }
+      }
+    }
+
+    return;
+  }
+
+  // Pull resistor get/set request
+  if((req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN) ||
+      req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT)) &&
+     req->bRequest == USB_REQ_PULL &&
+     req->wLength == 2) {
+    bool     arg_get = (req->bmRequestType & USB_DIR_IN);
+    uint8_t  arg_selector = req->wIndex;
+    pending_setup = false;
+
+    if(arg_get) {
+      while(EP0CS & _BUSY);
+      if(glasgow_config.revision < 'C' ||
+         !iobuf_get_pull(arg_selector,
+                         (__xdata uint8_t *)EP0BUF + 0,
+                         (__xdata uint8_t *)EP0BUF + 1)) {
+        STALL_EP0();
+      } else {
+        SETUP_EP0_BUF(2);
+      }
+    } else {
+      SETUP_EP0_BUF(2);
+      while(EP0CS & _BUSY);
+      if(glasgow_config.revision < 'C' ||
+         !iobuf_set_pull(arg_selector,
+                         *((__xdata uint8_t *)EP0BUF + 0),
+                         *((__xdata uint8_t *)EP0BUF + 1))) {
+        latch_status_bit(ST_ERROR);
       }
     }
 

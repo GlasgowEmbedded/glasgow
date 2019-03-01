@@ -26,14 +26,16 @@
 
 enum {
   // I2C addresses (unshifted)
-  I2C_ADDR_FPGA    = 0b0001000,
-  I2C_ADDR_FX2_MEM = 0b1010001,
-  I2C_ADDR_ICE_MEM = 0b1010010,
-  I2C_ADDR_IOA_DAC = 0b0001100,
-  I2C_ADDR_IOB_DAC = 0b0001101,
-  I2C_ADDR_ALL_DAC = 0b1001000,
-  I2C_ADDR_IOA_ADC = 0b1010100,
-  I2C_ADDR_IOB_ADC = 0b1010101,
+  I2C_ADDR_FPGA     = 0b0001000,
+  I2C_ADDR_FX2_MEM  = 0b1010001,
+  I2C_ADDR_ICE_MEM  = 0b1010010,
+  I2C_ADDR_IOA_DAC  = 0b0001100,
+  I2C_ADDR_IOB_DAC  = 0b0001101,
+  I2C_ADDR_ALL_DAC  = 0b1001000,
+  I2C_ADDR_IOA_ADC  = 0b1010100,
+  I2C_ADDR_IOB_ADC  = 0b1010101,
+  I2C_ADDR_IOA_PULL = 0b0100000,
+  I2C_ADDR_IOB_PULL = 0b0100001,
 };
 
 enum {
@@ -92,6 +94,10 @@ bool iobuf_get_alert(uint8_t selector,
                      __xdata uint16_t *high_millivolts);
 bool iobuf_is_alerted();
 bool iobuf_poll_alert(__xdata uint8_t *mask, bool clear);
+
+// Pull API
+bool iobuf_set_pull(uint8_t selector, uint8_t enable, uint8_t level);
+bool iobuf_get_pull(uint8_t selector, __xdata uint8_t *enable, __xdata uint8_t *level);
 
 // FIFO API
 void fifo_init();
