@@ -16,41 +16,9 @@ CMD_WRITE = 0x04
 CMD_READ  = 0x05
 
 
-class I2CPadsWrapper(Module):
-    def __init__(self, pads):
-        self.scl_t = TSTriple(reset_i=1, reset_o=1, reset_oe=0)
-        self.sda_t = TSTriple(reset_i=1, reset_o=1, reset_oe=0)
-
-        if hasattr(pads, "scl_i_t"):
-            self.comb += self.scl_t.i.eq(pads.scl_i_t.i)
-        if hasattr(pads, "sda_i_t"):
-            self.comb += self.sda_t.i.eq(pads.sda_i_t.i)
-        if hasattr(pads, "scl_o_t"):
-            self.comb += pads.scl_o_t.oe.eq(1)
-            self.comb += pads.scl_o_t.o.eq(~self.scl_t.oe)
-        if hasattr(pads, "sda_o_t"):
-            self.comb += pads.sda_o_t.oe.eq(1)
-            self.comb += pads.sda_o_t.o.eq(~self.sda_t.oe)
-        if hasattr(pads, "scl_oe_t"):
-            self.comb += pads.scl_oe_t.oe.eq(1)
-            self.comb += pads.scl_oe_t.o.eq(self.scl_t.oe)
-        if hasattr(pads, "sda_oe_t"):
-            self.comb += pads.sda_oe_t.oe.eq(1)
-            self.comb += pads.sda_oe_t.o.eq(self.sda_t.oe)
-        if hasattr(pads, "scl_io_t"):
-            self.comb += pads.scl_io_t.oe.eq(self.scl_t.oe)
-            self.comb += pads.scl_io_t.o.eq(self.scl_t.o)
-            self.comb += self.scl_t.i.eq(pads.scl_io_t.i)
-        if hasattr(pads, "sda_io_t"):
-            self.comb += pads.sda_io_t.oe.eq(self.sda_t.oe)
-            self.comb += pads.sda_io_t.o.eq(self.sda_t.o)
-            self.comb += self.sda_t.i.eq(pads.sda_io_t.i)
-
-
 class I2CMasterSubtarget(Module):
     def __init__(self, pads, out_fifo, in_fifo, period_cyc):
-        self.submodules.pads = I2CPadsWrapper(pads)
-        self.submodules.i2c_master = I2CMaster(self.pads, period_cyc)
+        self.submodules.i2c_master = I2CMaster(pads, period_cyc)
 
         ###
 
@@ -274,31 +242,22 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
 
     Maximum transaction length is 65535 bytes.
     """
+    required_revision = "C"
 
-    __pins = ("scl_i", "scl_o", "scl_oe", "scl_io", "sda_i", "sda_o", "sda_oe", "sda_io")
+    __pins = ("scl", "sda")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
         for pin in cls.__pins:
-            access.add_pin_argument(parser, pin)
+            access.add_pin_argument(parser, pin, default=True)
 
         parser.add_argument(
             "-b", "--bit-rate", metavar="FREQ", type=int, default=100,
             help="set I2C bit rate to FREQ kHz (default: %(default)s)")
 
     def build(self, target, args):
-        if not (args.pin_scl_io is not None or
-                (args.pin_scl_i is not None and
-                 (args.pin_scl_o is not None or args.pin_scl_oe is not None))):
-            raise GlasgowAppletError("At least one SCL input and output pin must be specified.")
-
-        if not (args.pin_sda_io is not None or
-                (args.pin_sda_i is not None and
-                 (args.pin_sda_o is not None or args.pin_sda_oe is not None))):
-            raise GlasgowAppletError("At least one SDA input and output pin must be specified.")
-
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(I2CMasterSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
