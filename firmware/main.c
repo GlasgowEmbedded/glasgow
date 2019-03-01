@@ -284,6 +284,26 @@ static bool reset_status_bit(uint8_t bit) {
   return false;
 }
 
+volatile uint8_t i2c_timeout;
+
+void isr_TF0() __interrupt(_INT_TF0) {
+  i2c_timeout++;
+  // About 256 ms at 48 MHz clock.
+  if(i2c_timeout == 16) {
+    led_err_set(1);
+    i2c_cancel = true;
+  }
+}
+
+#define I2C_PROTECT(code) \
+  do {                    \
+    i2c_timeout = 0;      \
+    T0 = 0;               \
+    TR0 = true;           \
+    code                  \
+    TR0 = false;          \
+  } while(0)
+
 // We perform lengthy operations in the main loop to avoid hogging the interrupt.
 // This flag is used for synchronization between the main loop and the ISR;
 // to allow new SETUP requests to arrive while the previous one is still being
@@ -770,6 +790,10 @@ int main() {
   EP1INCFG = 0;
   SYNCDELAY;
   EP1OUTCFG = 0;
+
+  // Use timer 0 in 16-bit timer mode for I2C timeout.
+  TMOD = _M0_0;
+  ET0 = true;
 
   // Use timer 2 in 16-bit timer mode for ACT LED.
   T2CON = _CPRL2;
