@@ -56,13 +56,25 @@ class DirectDemultiplexer(AccessDemultiplexer):
             applet.logger.info("port voltage unchanged")
 
         if self.device.has_pulls:
-            await self.device.set_pulls(args.port_spec, pull_low, pull_high)
-            if pull_low or pull_high:
-                applet.logger.info("port(s) %s pull resistors configured",
-                                   ", ".join(sorted(args.port_spec)))
+            if self.device.revision == "C0":
+                if pull_low or pull_high:
+                    applet.logger.error("Glasgow revC0 has severe restrictions on use of configurable "
+                                        "pull resistors; device may require power cycling")
+                    await self.device.set_pulls(args.port_spec, pull_low, pull_high)
+                else:
+                    # Don't touch the pulls; they're either in the power-on reset high-Z state, or
+                    # they have been touched by the user, and we've warned about that above.
+                    pass
+
             else:
-                applet.logger.debug("port(s) %s pull resistors disabled",
-                                    ", ".join(sorted(args.port_spec)))
+                await self.device.set_pulls(args.port_spec, pull_low, pull_high)
+                if pull_low or pull_high:
+                    applet.logger.info("port(s) %s pull resistors configured",
+                                       ", ".join(sorted(args.port_spec)))
+                else:
+                    applet.logger.debug("port(s) %s pull resistors disabled",
+                                        ", ".join(sorted(args.port_spec)))
+
         elif pull_low or pull_high:
             # Some applets request pull resistors for bidirectional pins (e.g. I2C). Such applets
             # cannot work on revA/B because of the level shifters and the applet should require
