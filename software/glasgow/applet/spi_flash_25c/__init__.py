@@ -10,6 +10,7 @@ import argparse
 from .. import *
 from ..spi_master import SPIMasterApplet
 from ...database.jedec import *
+from ...protocol.sfdp import *
 
 
 class SPIFlash25CError(GlasgowAppletError):
@@ -99,6 +100,10 @@ class SPIFlash25CInterface:
         self._log("fast read addr=%#08x len=%d", address, length)
         return await self._read_command(address, length, chunk_size, cmd=0x0B, dummy=1,
                                         callback=callback)
+
+    async def read_sfdp(self, address, length):
+        self._log("read sfdp addr=%#08x len=%d", address, length)
+        return await self._read_command(address, length, chunk_size=0x100, cmd=0x5A, dummy=1)
 
     async def read_status(self):
         status, = await self._command(0x05, ret=1)
@@ -195,6 +200,15 @@ class SPIFlash25CInterface:
             done    += len(chunk)
 
         callback(done, total, None)
+
+
+class SPIFlash25CSFDPParser(SFDPParser):
+    async def __init__(self, flash_iface):
+        self._flash_iface = flash_iface
+        await super().__init__()
+
+    async def read(self, offset, length):
+        return await self._flash_iface.read_sfdp(offset, length)
 
 
 class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
@@ -379,6 +393,23 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
                     self.logger.info("electronic signature %#04x",
                                      legacy_device_id)
 
+            try:
+                sfdp = await SPIFlash25CSFDPParser(flash_iface)
+                self.logger.info("device has valid SFDP %d.%d (%s) descriptor",
+                                 *sfdp.version, sfdp.jedec_revision)
+                for index, table in enumerate(sfdp):
+                    if table.vendor_id == 0x00: # JEDEC
+                        self.logger.info("  SFDP table #%d: %s %d.%d (%s)",
+                                         index, table, *table.version, table.jedec_revision)
+                    else:
+                        self.logger.info("  SFDP table #%d: %s %d.%d",
+                                         index, table, *table.version)
+                    if any(table):
+                        key_width = max(len(k) for k, v in table) + 1
+                        for key, value in table:
+                            self.logger.info("    %-*s: %s", key_width, key, value)
+            except ValueError as e:
+                self.logger.info("device does not have valid SFDP data: %s", str(e))
 
         if args.operation in ("read", "fast-read"):
             if args.operation == "read":
