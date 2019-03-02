@@ -1,3 +1,6 @@
+# Note: flashes vary in their response to unimplemented commands. Some return 00, some return FF,
+# some will tristate SO.
+
 import re
 import sys
 import struct
@@ -354,23 +357,28 @@ class SPIFlash25CApplet(SPIMasterApplet, name="spi-flash-25c"):
                                     .format((status & MSK_PROT) >> 2))
 
         if args.operation == "identify":
-            manufacturer_id, device_id = \
+            legacy_device_id, = \
+                await flash_iface.read_device_id()
+            short_manufacturer_id, short_device_id = \
                 await flash_iface.read_manufacturer_device_id()
             long_manufacturer_id, long_device_id = \
                 await flash_iface.read_manufacturer_long_device_id()
-            # If a flash does not support command 0x90 (read manufacturer/8-bit device ID),
-            # fall back to command 0x9F (read manufacturer/16-bit device ID). An example of
-            # such flash is the flash macro of Lattice iCE40 FPGA series. In response to command
-            # 0x90, it returns manufacturer ID 0xff, which is not a valid JEDEC ID as it fails
-            # the parity check.
-            if manufacturer_id == 0xff or long_manufacturer_id == manufacturer_id:
+            if short_manufacturer_id not in (0x00, 0xff):
+                manufacturer_name = jedec_mfg_name_from_bytes([short_manufacturer_id]) or "unknown"
+                self.logger.info("JEDEC manufacturer %#04x (%s) device %#04x (8-bit ID)",
+                                 short_manufacturer_id, manufacturer_name, short_device_id)
+            if long_manufacturer_id not in (0x00, 0xff):
                 manufacturer_name = jedec_mfg_name_from_bytes([long_manufacturer_id]) or "unknown"
-                self.logger.info("JEDEC manufacturer %#04x (%s) device %#04x",
+                self.logger.info("JEDEC manufacturer %#04x (%s) device %#06x (16-bit ID)",
                                  long_manufacturer_id, manufacturer_name, long_device_id)
-            else:
-                manufacturer_name = jedec_mfg_name_from_bytes([manufacturer_id]) or "unknown"
-                self.logger.info("JEDEC manufacturer %#04x (%s) device %#04x",
-                                 manufacturer_id, manufacturer_name, device_id)
+            if short_manufacturer_id in (0x00, 0xff) and long_manufacturer_id in (0x00, 0xff):
+                if legacy_device_id in (0x00, 0xff):
+                    self.logger.warn("no electronic signature detected; device not present?")
+                else:
+                    self.logger.info("device lacks JEDEC manufacturer/device ID")
+                    self.logger.info("electronic signature %#04x",
+                                     legacy_device_id)
+
 
         if args.operation in ("read", "fast-read"):
             if args.operation == "read":
