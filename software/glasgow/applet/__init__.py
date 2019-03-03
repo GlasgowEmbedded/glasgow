@@ -336,34 +336,3 @@ def applet_hardware_test(setup="run_hardware_applet", args=[]):
         return wrapper
 
     return decorator
-
-# -------------------------------------------------------------------------------------------------
-
-from .audio_output import AudioOutputApplet
-from .benchmark import BenchmarkApplet
-from .rgb_grabber import RGBGrabberApplet
-from .hd44780 import HD44780Applet
-from .i2c_master import I2CMasterApplet
-from .i2c_bmp280 import I2CBMP280Applet
-from .i2c_eeprom_24c import I2CEEPROM24CApplet
-from .i2c_tps6598x import I2CTPS6598xApplet
-from .jtag import JTAGApplet
-from .jtag_arc import JTAGARCApplet
-from .jtag_mec16xx import JTAGMEC16xxApplet
-from .jtag_mips import JTAGMIPSApplet
-from .jtag_pinout import JTAGPinoutApplet
-from .jtag_svf import JTAGSVFApplet
-from .jtag_xc9500 import JTAGXC9500Applet
-from .nand_flash import NANDFlashApplet
-from .program_ice40_flash import ProgramICE40FlashApplet
-from .program_ice40_sram import ProgramICE40SRAMApplet
-from .selftest import SelfTestApplet
-from .shugart_floppy import ShugartFloppyApplet
-from .spi_master import SPIMasterApplet
-from .spi_flash_25c import SPIFlash25CApplet
-from .spi_flash_avr import SPIFlashAVRApplet
-from .swd import SWDApplet
-from .uart import UARTApplet
-from .vga_output import VGAOutputApplet
-from .vga_terminal import VGATerminalApplet
-from .yamaha_opl import YamahaOPLApplet
