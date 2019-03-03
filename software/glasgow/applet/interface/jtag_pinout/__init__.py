@@ -280,7 +280,7 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
             self.logger.warning("no JTAG interface detected")
         elif len(results) == 1:
             bit_tck, bit_tms, bit_tdi, bit_tdo, bit_trst = results[0]
-            args = ["jtag"]
+            args = ["jtag-probe"]
             args += ["--pin-tck", str(self.pins[bit_tck])]
             args += ["--pin-tms", str(self.pins[bit_tms])]
             args += ["--pin-tdi", str(self.pins[bit_tdi])]
