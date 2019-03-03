@@ -51,7 +51,6 @@ setup(
         "migen",
         "fx2>=0.6",
         "libusb1>=1.6.6",
-        "asyncio",
         "aiohttp",
         "pyvcd",
         "bitarray",
