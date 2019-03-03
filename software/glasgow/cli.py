@@ -317,6 +317,10 @@ class ANSIColorFormatter(logging.Formatter):
 
     def format(self, record):
         color = self.LOG_COLORS.get(record.levelname, "")
+        # glasgow.applet.foo → g.applet.foo
+        record.name = record.name.replace("glasgow.", "g.")
+        # applet.memory._25x → applet.memory.25x
+        record.name = record.name.replace("._", ".")
         return "{}{}\033[0m".format(color, super().format(record))
 
 
