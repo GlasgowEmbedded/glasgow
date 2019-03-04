@@ -16,12 +16,13 @@ class GlasgowAnalyzer(Module):
         multiplexer.set_analyzer(self)
         self.mux_interface  = multiplexer.claim_interface(self, args=None, with_analyzer=False)
         self.event_analyzer = self.mux_interface.add_subtarget(
-            EventAnalyzer(output_fifo=self.mux_interface.get_in_fifo(),
+            EventAnalyzer(output_fifo=self.mux_interface.get_in_fifo(auto_flush=False),
                           event_depth=event_depth))
         self.event_sources = self.event_analyzer.event_sources
         self.throttle      = self.event_analyzer.throttle
 
         self.done, self.addr_done = registers.add_rw(1)
+        self.logger.debug("adding done register at address %#04x", self.addr_done)
         self.comb += self.event_analyzer.done.eq(self.done)
 
         self._pins = []

@@ -328,7 +328,9 @@ class EventAnalyzer(Module):
                 )
             )
             serializer.act("DONE",
-                If(~self.done,
+                If(self.done,
+                    self.output_fifo.flush.eq(1),
+                ).Else(
                     NextState("WAIT-EVENT")
                 )
             )
@@ -340,6 +342,7 @@ class EventAnalyzer(Module):
                 )
             )
             serializer.act("OVERRUN",
+                self.output_fifo.flush.eq(1),
                 NextState("OVERRUN")
             )
 
