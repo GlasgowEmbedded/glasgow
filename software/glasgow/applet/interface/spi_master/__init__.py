@@ -57,17 +57,20 @@ class SPIMasterBus(Module):
 CMD_XFER    = 0x00
 CMD_READ    = 0x01
 CMD_WRITE   = 0x02
+CMD_DELAY   = 0x03
+CMD_SYNC    = 0x04
 BIT_HOLD_SS = 0x80
 
 
 class SPIMasterSubtarget(Module):
-    def __init__(self, pads, out_fifo, in_fifo, period_cyc, sck_idle, sck_edge, ss_active):
+    def __init__(self, pads, out_fifo, in_fifo, period_cyc, delay_cyc,
+                 sck_idle, sck_edge, ss_active):
         self.submodules.bus = SPIMasterBus(pads, sck_idle, sck_edge, ss_active)
 
         ###
 
         half_cyc = period_cyc // 2
-        timer    = Signal(max=half_cyc)
+        timer    = Signal(max=max(half_cyc, delay_cyc))
 
         cmd   = Signal(8)
         count = Signal(16)
@@ -90,7 +93,11 @@ class SPIMasterSubtarget(Module):
             If(out_fifo.readable,
                 out_fifo.re.eq(1),
                 NextValue(cmd, out_fifo.dout),
-                NextState("RECV-COUNT-MSB")
+                If(out_fifo.dout == CMD_SYNC,
+                    NextState("SYNC")
+                ).Else(
+                    NextState("RECV-COUNT-MSB")
+                )
             )
         )
         self.fsm.act("RECV-COUNT-MSB",
@@ -104,7 +111,11 @@ class SPIMasterSubtarget(Module):
              If(out_fifo.readable,
                 out_fifo.re.eq(1),
                 NextValue(count[0:8], out_fifo.dout),
-                NextState("COUNT-CHECK")
+                If(cmd == CMD_DELAY,
+                    NextState("DELAY")
+                ).Else(
+                    NextState("COUNT-CHECK")
+                )
              )
         )
         self.fsm.act("COUNT-CHECK",
@@ -165,6 +176,25 @@ class SPIMasterSubtarget(Module):
                 NextValue(timer, timer - 1)
             )
         )
+        self.fsm.act("DELAY",
+            If(timer == 0,
+                If(count == 0,
+                    NextState("RECV-COMMAND")
+                ).Else(
+                    NextValue(count, count - 1),
+                    NextValue(timer, delay_cyc),
+                )
+            ).Else(
+                NextValue(timer, timer - 1)
+            )
+        )
+        self.fsm.act("SYNC",
+            If(in_fifo.writable,
+                in_fifo.we.eq(1),
+                in_fifo.din.eq(0),
+                NextState("RECV-COMMAND")
+            )
+        )
 
 
 class SPIMasterInterface:
@@ -216,6 +246,26 @@ class SPIMasterInterface:
         await self.lower.write(struct.pack(">BH", cmd, len(data)))
         await self.lower.write(data)
 
+    async def delay_us(self, delay):
+        if delay == 0:
+            return
+
+        self._log("delay=%d us", delay)
+
+        while delay > 0xffff:
+            await self.lower.write(struct.pack(">BH", CMD_DELAY, 0xffff))
+            delay -= 0xffff
+        await self.lower.write(struct.pack(">BH", CMD_DELAY, delay))
+
+    async def delay_ms(self, delay):
+        await self.delay_us(delay * 1000)
+
+    async def synchronize(self):
+        self._log("sync")
+
+        await self.lower.write([CMD_SYNC])
+        await self.lower.read(1)
+
 
 class SPIMasterApplet(GlasgowApplet, name="spi-master"):
     logger = logging.getLogger(__name__)
@@ -258,6 +308,7 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
             period_cyc=math.ceil(target.sys_clk_freq / (args.bit_rate * 1000)),
+            delay_cyc=math.ceil(target.sys_clk_freq / 1e6),
             sck_idle=args.sck_idle,
             sck_edge=args.sck_edge,
             ss_active=args.ss_active,

@@ -271,6 +271,7 @@ class ProgramAVRApplet(GlasgowApplet, name="program-avr"):
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             period_cyc=math.ceil(target.sys_clk_freq / (args.bit_rate * 1000)),
+            delay_cyc=math.ceil(target.sys_clk_freq / 1e6),
             sck_idle=0,
             sck_edge="rising",
             ss_active=0,
