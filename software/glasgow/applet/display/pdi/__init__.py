@@ -43,6 +43,14 @@
 #    the odd lines and then even lines leads to ghosting. It appears that the display has some
 #    logic dependent on scan order, in spite of the scan bytes seemingly implying that the drivers
 #    can be scanned in any desired order.
+#
+#  * The staging differs from that described in the datasheet in two aspects. First, there is no
+#    Compensate stage, since the applet can't know what the old image was. Second, the datasheet
+#    suggests White→Inverse→Normal staging. My experimentation shows that a different staging,
+#    Black→White→Normal→Normal (with two Normal frames, not one Normal frame that's twice as
+#    long!), produces significantly higher contrast, and an even longer staging, Black→White→
+#    Black→White→Normal→Normal has higher contrast and reduced ghosting. I'm guessing these
+#    would be more unpleasant on something like a ebook reader.
 
 import math
 import re
@@ -418,10 +426,14 @@ class DisplayPDIApplet(GlasgowApplet, name="display-pdi"):
             image = bitarray()
             image.frombytes(args.image_file.read())
 
+        stage_ms = 300
+
         await pdi_iface.power_on()
-        await pdi_iface.display_frame(mode="black", time_ms=100)
-        await pdi_iface.display_frame(mode="white", time_ms=100)
-        await pdi_iface.display_frame(mode="white", time_ms=100, image=image)
+        for _ in range(2):
+            await pdi_iface.display_frame(mode="black", time_ms=stage_ms)
+            await pdi_iface.display_frame(mode="white", time_ms=stage_ms)
+        await pdi_iface.display_frame(mode="white", time_ms=stage_ms, image=image)
+        await pdi_iface.display_frame(mode="white", time_ms=stage_ms, image=image)
         await pdi_iface.power_off()
 
 # -------------------------------------------------------------------------------------------------
