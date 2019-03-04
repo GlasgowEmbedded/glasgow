@@ -149,6 +149,9 @@ class SPIMasterSubtarget(Module):
             ),
             If((cmd[:4] == CMD_WRITE) | in_fifo.writable,
                 If(count == 0,
+                    If((cmd & BIT_HOLD_SS) == 0,
+                        NextValue(self.bus.ss, not ss_active),
+                    ),
                     NextState("WAIT")
                 ).Else(
                     NextState("RECV-DATA")
@@ -157,9 +160,6 @@ class SPIMasterSubtarget(Module):
         )
         self.fsm.act("WAIT",
             If(timer == 0,
-                If((cmd & BIT_HOLD_SS) == 0,
-                    NextValue(self.bus.ss, not ss_active),
-                ),
                 NextState("RECV-COMMAND")
             ).Else(
                 NextValue(timer, timer - 1)
