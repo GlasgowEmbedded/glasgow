@@ -327,9 +327,13 @@ class EventAnalyzer(Module):
                     NextState("DONE")
                 )
             )
+            if hasattr(self.output_fifo, "flush"):
+                flush_output_fifo = [self.output_fifo.flush.eq(1)]
+            else:
+                flush_output_fifo = []
             serializer.act("DONE",
                 If(self.done,
-                    self.output_fifo.flush.eq(1),
+                    flush_output_fifo
                 ).Else(
                     NextState("WAIT-EVENT")
                 )
@@ -342,7 +346,7 @@ class EventAnalyzer(Module):
                 )
             )
             serializer.act("OVERRUN",
-                self.output_fifo.flush.eq(1),
+                flush_output_fifo,
                 NextState("OVERRUN")
             )
 
