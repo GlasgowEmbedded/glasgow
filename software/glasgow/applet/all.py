@@ -27,7 +27,7 @@ from .control.tps6598x import ControlTPS6598xApplet
 
 from .sensor.bmp280 import SensorBMP280Applet
 
-from .display.hd44780 import HD44780Applet
+from .display.hd44780 import DisplayHD44780Applet
 
 from .audio.dac import AudioDACApplet
 from .audio.yamaha_opl import AudioYamahaOPLApplet

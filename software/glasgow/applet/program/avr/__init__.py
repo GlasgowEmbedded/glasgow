@@ -464,7 +464,7 @@ class ProgramAVRApplet(GlasgowApplet, name="program-avr"):
 
 # -------------------------------------------------------------------------------------------------
 
-class ProgramAVRAppleTestCase(GlasgowAppletTestCase, applet=ProgramAVRApplet):
+class ProgramAVRAppletTestCase(GlasgowAppletTestCase, applet=ProgramAVRApplet):
     @synthesis_test
     def test_build(self):
         self.assertBuilds()

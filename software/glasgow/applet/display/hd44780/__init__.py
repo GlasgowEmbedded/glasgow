@@ -183,7 +183,7 @@ class HD44780Subtarget(Module):
         )
 
 
-class HD44780Applet(GlasgowApplet, name="display-hd44780"):
+class DisplayHD44780Applet(GlasgowApplet, name="display-hd44780"):
     preview = True
     logger = logging.getLogger(__name__)
     help = "display characters on HD44780-compatible LCDs"
@@ -271,7 +271,7 @@ class HD44780Applet(GlasgowApplet, name="display-hd44780"):
 
 # -------------------------------------------------------------------------------------------------
 
-class HD44780AppletTestCase(GlasgowAppletTestCase, applet=HD44780Applet):
+class DisplayHD44780AppletTestCase(GlasgowAppletTestCase, applet=DisplayHD44780Applet):
     @synthesis_test
     def test_build(self):
         self.assertBuilds()
