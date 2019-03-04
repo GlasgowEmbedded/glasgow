@@ -390,23 +390,33 @@ class DisplayPDIApplet(GlasgowApplet, name="display-pdi"):
 
     @classmethod
     def add_interact_arguments(cls, parser):
-        parser.add_argument(
-            "image_file", metavar="IMAGE-FILE", type=argparse.FileType("rb"),
+        g_pattern = parser.add_mutually_exclusive_group(required=True)
+        g_pattern.add_argument(
+            "--checkerboard", default=False, action="store_true",
+            help="display a checkerboard pattern")
+        g_pattern.add_argument(
+            "image_file", metavar="IMAGE-FILE", type=argparse.FileType("rb"), nargs="?",
             help="image file to display (format: pbm)")
 
     async def interact(self, device, args, pdi_iface):
-        image_header = args.image_file.readline()
-        if image_header != b"P4\n":
-            raise GlasgowAppletError("image file is not a raw PBM file")
-        image_comment = args.image_file.readline()
-        image_size = re.match(rb"^(\d+) (\d+)$", args.image_file.readline())
-        if not image_size:
-            raise GlasgowAppletError("image file is corrupt")
-        image_width, image_height = int(image_size[1]), int(image_size[2])
-        if image_width != pdi_iface.width or image_height != pdi_iface.height:
-            raise GlasgowAppletError("image size does not match display size")
-        image = bitarray()
-        image.frombytes(args.image_file.read())
+        if args.checkerboard:
+            image = bitarray(([0,0,1,1] * (pdi_iface.width // 2) +
+                              [1,1,0,0] * (pdi_iface.width // 2))
+                             * (pdi_iface.height // 4))
+
+        if args.image_file:
+            image_header = args.image_file.readline()
+            if image_header != b"P4\n":
+                raise GlasgowAppletError("image file is not a raw PBM file")
+            image_comment = args.image_file.readline()
+            image_size = re.match(rb"^(\d+) (\d+)$", args.image_file.readline())
+            if not image_size:
+                raise GlasgowAppletError("image file is corrupt")
+            image_width, image_height = int(image_size[1]), int(image_size[2])
+            if image_width != pdi_iface.width or image_height != pdi_iface.height:
+                raise GlasgowAppletError("image size does not match display size")
+            image = bitarray()
+            image.frombytes(args.image_file.read())
 
         await pdi_iface.power_on()
         await pdi_iface.display_frame(mode="black", time_ms=100)
