@@ -580,7 +580,7 @@ P 9450 1050
 AR Path="/5C9E34D0" Ref="R?"  Part="1" 
 AR Path="/5C7B59B0/5C9E34D0" Ref="R11"  Part="1" 
 F 0 "R11" V 9350 1100 50  0000 C CNN
-F 1 "2k2" V 9450 1050 50  0000 C CNN
+F 1 "4k7" V 9450 1050 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1050 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 1050 50  0001 C CNN
 F 4 "Yageo" H -450 150 50  0001 C CNN "Mfg"
@@ -597,7 +597,7 @@ P 9450 1650
 AR Path="/5C9E34DB" Ref="R?"  Part="1" 
 AR Path="/5C7B59B0/5C9E34DB" Ref="R22"  Part="1" 
 F 0 "R22" V 9350 1700 50  0000 C CNN
-F 1 "390" V 9450 1650 50  0000 C CNN
+F 1 "10k" V 9450 1650 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1650 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 1650 50  0001 C CNN
 F 4 "Yageo" H -450 150 50  0001 C CNN "Mfg"
@@ -620,7 +620,7 @@ P 9450 1850
 AR Path="/5C9E34EB" Ref="R?"  Part="1" 
 AR Path="/5C7B59B0/5C9E34EB" Ref="R23"  Part="1" 
 F 0 "R23" V 9350 1900 50  0000 C CNN
-F 1 "604" V 9450 1850 50  0000 C CNN
+F 1 "4k7" V 9450 1850 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1850 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 1850 50  0001 C CNN
 F 4 "Yageo" H -450 150 50  0001 C CNN "Mfg"
@@ -635,7 +635,7 @@ P 9450 1250
 AR Path="/5C9E34F4" Ref="R?"  Part="1" 
 AR Path="/5C7B59B0/5C9E34F4" Ref="R20"  Part="1" 
 F 0 "R20" V 9350 1300 50  0000 C CNN
-F 1 "2k2" V 9450 1250 50  0000 C CNN
+F 1 "10k" V 9450 1250 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1250 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 1250 50  0001 C CNN
 F 4 "Yageo" H -450 150 50  0001 C CNN "Mfg"
@@ -650,7 +650,7 @@ P 9450 1450
 AR Path="/5C9E34FD" Ref="R?"  Part="1" 
 AR Path="/5C7B59B0/5C9E34FD" Ref="R21"  Part="1" 
 F 0 "R21" V 9350 1500 50  0000 C CNN
-F 1 "2k2" V 9450 1450 50  0000 C CNN
+F 1 "6k8" V 9450 1450 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1450 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 1450 50  0001 C CNN
 F 4 "Yageo" H -450 150 50  0001 C CNN "Mfg"
