@@ -11,10 +11,17 @@ class SelfTestSubtarget(Module):
         t_b  = [TSTriple() for _ in range(8)]
         io_a = [target.platform.request("port_a", n) for n in range(8)]
         io_b = [target.platform.request("port_b", n) for n in range(8)]
+        try:
+            user_leds = [target.platform.request("user_led", n) for n in range(5)]
+        except build.generic_platform.ConstraintError:
+            user_leds = None
+
         self.specials += [t.get_tristate(io_a[i].io) for i, t in enumerate(t_a)]
         self.specials += [t.get_tristate(io_b[i].io) for i, t in enumerate(t_b)]
         self.comb     += [io_a[i].oe.eq(t.oe) for i, t in enumerate(t_a) if hasattr(io_a[i], "oe")]
         self.comb     += [io_b[i].oe.eq(t.oe) for i, t in enumerate(t_b) if hasattr(io_b[i], "oe")]
+        if user_leds is not None:
+            self.comb     += [user_leds[i].eq(1) for i in range(5)]
 
         reg_oe_a, applet.addr_oe_a = target.registers.add_rw(8)
         reg_o_a,  applet.addr_o_a  = target.registers.add_rw(8)
