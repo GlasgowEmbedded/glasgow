@@ -1603,7 +1603,7 @@ F 3 "" H 9250 900 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 Text Notes 9700 750  0    50   ~ 0
-All at 30 mcd
+Manually calibrated
 $Comp
 L Device:LED D2
 U 1 1 5B097D14
@@ -1687,7 +1687,7 @@ Wire Notes Line
 Wire Notes Line
 	10400 1350 10350 1350
 Text Notes 10450 1350 0    50   ~ 0
-0.3 mA
+56µA Vf = 2.18V
 $Comp
 L Device:R R12
 U 1 1 5B18B70C
@@ -1722,7 +1722,7 @@ Wire Wire Line
 Wire Wire Line
 	9600 900  9650 900 
 Text Notes 10450 1550 0    50   ~ 0
-5 mA
+536µA Vf = 2.12V
 $Comp
 L Device:R R15
 U 1 1 5B2E1435
@@ -1749,7 +1749,7 @@ Wire Wire Line
 Wire Wire Line
 	9650 1700 9600 1700
 Text Notes 10450 1750 0    50   ~ 0
-3 mA
+159µA Vf = 1.71V
 $Comp
 L Device:R R16
 U 1 1 5B4782C1

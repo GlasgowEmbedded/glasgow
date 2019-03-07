@@ -486,7 +486,7 @@ F 5 "150060GS75000" H -450 150 50  0001 C CNN "MPN"
 	-1   0    0    1   
 $EndComp
 Text Notes 9700 900  0    50   ~ 0
-All at 30 mcd
+Manually calibrated
 $Comp
 L Device:LED D?
 U 1 1 5C9E349B
@@ -1495,6 +1495,22 @@ Wire Wire Line
 Connection ~ 1900 4650
 Wire Wire Line
 	1900 4650 1950 4650
+Wire Notes Line
+	10350 1250 10400 1250
+Wire Notes Line
+	10350 1450 10400 1450
+Text Notes 10450 1100 0    50   ~ 0
+174µA Vf = 2.48V
+Text Notes 10450 1300 0    50   ~ 0
+76µA Vf = 2.54V
+Wire Notes Line
+	10350 1650 10400 1650
+Wire Notes Line
+	10350 1850 10400 1850
+Text Notes 10450 1500 0    50   ~ 0
+116µA Vf = 2.51V
+Wire Notes Line
+	10350 1050 10400 1050
 Wire Bus Line
 	5850 4950 5850 5800
 Wire Bus Line
@@ -1513,4 +1529,8 @@ Wire Bus Line
 	2050 3850 2050 5800
 Wire Bus Line
 	9050 3200 9050 5800
+Text Notes 10450 1700 0    50   ~ 0
+76µA Vf = 2.54V
+Text Notes 10450 1900 0    50   ~ 0
+174µA Vf = 2.48V
 $EndSCHEMATC
