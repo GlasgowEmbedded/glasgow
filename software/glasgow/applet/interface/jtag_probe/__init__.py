@@ -533,12 +533,22 @@ class JTAGInterface:
 
         irs = []
         ir_offset = 0
-        ir_starts = ir_value.search(bitarray("10"))
-        for ir_start0, ir_start1 in zip(ir_starts, ir_starts[1:] + [len(ir_value)]):
-            ir_length = ir_start1 - ir_start0
-            self._log_h("found ir[%d]", ir_length)
+        if count == 1:
+            # 1 TAP case; the entire IR belongs to the only TAP we have.
+            ir_length = len(ir_value)
+            self._log_h("found ir[%d] (1-tap)", ir_length)
             irs.append((ir_offset, ir_length))
-            ir_offset += ir_length
+        else:
+            # >1 TAP case; there is no way to segment IR without knowledge of specific devices
+            # involved, but an IR always starts with 10, and we can use this to try and guess
+            # the IR segmentation. Our segmentation is pessimistic, i.e. it always detects either
+            # as many IRs as TAPs, or more IRs than TAPs.
+            ir_starts = ir_value.search(bitarray("10"))
+            for ir_start0, ir_start1 in zip(ir_starts, ir_starts[1:] + [len(ir_value)]):
+                ir_length = ir_start1 - ir_start0
+                self._log_h("found ir[%d] (n-tap)", ir_length)
+                irs.append((ir_offset, ir_length))
+                ir_offset += ir_length
 
         if count is not None and len(irs) != count:
             self._log_h("ir count does not match idcode count")
