@@ -17,7 +17,7 @@ from .debug.arc import DebugARCApplet
 from .debug.mips import DebugMIPSApplet
 from .debug.arm_swd import DebugARMSWDApplet
 
-from .program.avr import ProgramAVRApplet
+from .program.avr.spi import ProgramAVRSPIApplet
 from .program.ice40_flash import ProgramICE40FlashApplet
 from .program.ice40_sram import ProgramICE40SRAMApplet
 from .program.mec16xx import ProgramMEC16xxApplet
