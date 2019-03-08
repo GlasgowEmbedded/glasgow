@@ -37,19 +37,19 @@ IR_IDCODE   = bitarray("01111111", endian="little") # IDCODE[32]
 IR_BYPASS   = bitarray("11111111", endian="little") # BYPASS[1]
 
 
-DR_ISDATA = Bitfield("DR_ISDATA", 5, [
+DR_ISDATA = Bitfield("DR_ISDATA", 34, [
     ("valid",    1),
     ("strobe",   1),
     ("data",    32),
 ])
 
-DR_ISADDRESS = Bitfield("DR_ISADDRESS", 3, [
+DR_ISADDRESS = Bitfield("DR_ISADDRESS", 18, [
     ("valid",    1),
     ("strobe",   1),
     ("address", 16),
 ])
 
-DR_ISCONFIGURATION = Bitfield("DR_ISCONFIGURATION", 7, [
+DR_ISCONFIGURATION = Bitfield("DR_ISCONFIGURATION", 50, [
     ("valid",    1),
     ("strobe",   1),
     ("data",    32),

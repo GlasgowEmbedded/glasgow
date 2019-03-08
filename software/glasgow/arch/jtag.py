@@ -12,7 +12,7 @@ __all__ = [
 ]
 
 
-DR_IDCODE = Bitfield("DR_IDCODE", 4, [
+DR_IDCODE = Bitfield("DR_IDCODE", 32, [
     ("present",  1),
     ("mfg_id",  11),
     ("part_id", 16),

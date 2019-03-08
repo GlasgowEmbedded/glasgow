@@ -44,7 +44,7 @@ IR_FDC        = bitarray("11101", endian="little")
 
 # IMPCODE DR layout
 
-DR_IMPCODE = Bitfield("DR_IMPCODE", 4, [
+DR_IMPCODE = Bitfield("DR_IMPCODE", 32, [
     ("MIPS32_64",  1),
     ("TypeInfo",  10),
     ("Type",       3),
@@ -71,7 +71,7 @@ DR_IMPCODE_EJTAGver_values = defaultdict(lambda: "unknown", {
 
 # CONTROL DR layout
 
-DR_CONTROL = Bitfield("DR_CONTROL", 4, [
+DR_CONTROL = Bitfield("DR_CONTROL", 32, [
     (None,         3),
     ("DM",         1),
     (None,         1),
@@ -142,7 +142,7 @@ def DRSEG_DBVn_addr_v1(n):  return DRSEG_addr + 0x020c +  0x10 * n
 
 # DRSEG DCR layout
 
-DRSEG_DCR = Bitfield("DRSEG_DCR", 4, [
+DRSEG_DCR = Bitfield("DRSEG_DCR", 32, [
     ("ProbEn",     1),
     ("SRstE",      1),
     ("NMIpend",    1),
@@ -174,7 +174,7 @@ DRSEG_DCR = Bitfield("DRSEG_DCR", 4, [
 
 # DRSEG IBS layout
 
-DRSEG_IBS = Bitfield("DRSEG_IBS", 4, [
+DRSEG_IBS = Bitfield("DRSEG_IBS", 32, [
     ("BS",        15),
     ("IBPshare",   1),
     (None,         8),
@@ -186,7 +186,7 @@ DRSEG_IBS = Bitfield("DRSEG_IBS", 4, [
 
 # DRSEG IBC layout
 
-DRSEG_IBC = Bitfield("DRSEG_IBC", 4, [
+DRSEG_IBC = Bitfield("DRSEG_IBC", 32, [
     ("BE",         1),
     (None,         1),
     ("TE",         1),
@@ -202,7 +202,7 @@ DRSEG_IBC = Bitfield("DRSEG_IBC", 4, [
 
 # DRSEG DBS layout
 
-DRSEG_DBS = Bitfield("DRSEG_DBS", 4, [
+DRSEG_DBS = Bitfield("DRSEG_DBS", 32, [
     ("BS",        15),
     ("DBPshare",   1),
     (None,         8),
@@ -215,7 +215,7 @@ DRSEG_DBS = Bitfield("DRSEG_DBS", 4, [
 
 # DRSEG DBC layout
 
-DRSEG_DBC = Bitfield("DRSEG_DBC", 4, [
+DRSEG_DBC = Bitfield("DRSEG_DBC", 32, [
     ("BE",         1),
     ("IVM",        1),
     ("TE",         1),

@@ -27,7 +27,7 @@ AUX_STATUS32_P0_addr         = 0x0b
 AUX_AUX_USER_SP_addr         = 0x0d
 AUX_INT_VECTOR_BASE_addr     = 0x25
 
-AUX_STATUS32 = Bitfield("AUX_STATUS32", 4, [
+AUX_STATUS32 = Bitfield("AUX_STATUS32", 32, [
     ("H",   1),
     ("E1",  1),
     ("E2",  1),
