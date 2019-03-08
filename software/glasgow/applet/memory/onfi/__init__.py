@@ -375,6 +375,7 @@ class MemoryONFIApplet(GlasgowApplet, name="memory-onfi"):
             "-B", "--block-size", metavar="SIZE", type=size,
             help="Flash block size, in pages (default: autodetect)")
 
+        # TODO(py3.7): add required=True
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
         p_read = p_operation.add_parser(

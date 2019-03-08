@@ -80,6 +80,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
 
     @classmethod
     def add_interact_arguments(cls, parser):
+        # TODO(py3.7): add required=True
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
         p_tty = p_operation.add_parser(

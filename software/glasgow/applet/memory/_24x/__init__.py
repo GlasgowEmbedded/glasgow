@@ -136,7 +136,8 @@ class Memory24xApplet(I2CMasterApplet, name="memory-24x"):
         def hex_bytes(arg):
             return bytes.fromhex(arg)
 
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
+        # TODO(py3.7): add required=True
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
         p_read = p_operation.add_parser(
             "read", help="read memory")

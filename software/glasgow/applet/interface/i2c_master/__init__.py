@@ -285,7 +285,8 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
 
     @classmethod
     def add_interact_arguments(cls, parser):
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
+        # TODO(py3.7): add required=True
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
         def add_scan_id_argument(parser):
             parser.add_argument(
