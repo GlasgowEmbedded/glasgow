@@ -1,9 +1,9 @@
 # Ref: JEDEC JESD216
 # Accession: G00024
 # Ref: JEDEC JESD216A
-# Accession: G00025
+# Accession: G00024A
 # Ref: JEDEC JESD216B
-# Accession: G00026
+# Accession: G00024B
 #
 # Currently, only JESD216 (initial revision) is implemented.
 
