@@ -219,8 +219,8 @@ import re
 from bitarray import bitarray
 
 from ....arch.jtag import *
-from ....arch.xilinx.xc9500 import *
-from ....database.xilinx.xc9500 import *
+from ....arch.xilinx.xc9500xl import *
+from ....database.xilinx.xc9500xl import *
 from ...interface.jtag_probe import JTAGProbeApplet
 from ... import *
 
@@ -247,11 +247,11 @@ def bitstream_to_device_address(word_address):
     return 32 * block_num + 8 * (block_off // GROUP_WORDS) + block_off % GROUP_WORDS
 
 
-class XC9500Error(GlasgowAppletError):
+class XC9500XLError(GlasgowAppletError):
     pass
 
 
-class XC9500Interface:
+class XC9500XLInterface:
     def __init__(self, interface, logger, frequency):
         self.lower   = interface
         self._logger = logger
@@ -348,7 +348,7 @@ class XC9500Interface:
         isaddr_bits = await self.lower.read_dr(18)
         isaddr = DR_ISADDRESS.from_bitarray(isaddr_bits)
         if not (isaddr.valid and not isaddr.strobe):
-            raise XC9500Error("bulk erase failed %s" % isaddr.bits_repr())
+            raise XC9500XLError("bulk erase failed %s" % isaddr.bits_repr())
 
     async def _fpgm(self, address, words):
         await self.lower.write_ir(IR_FPGM)
@@ -413,11 +413,11 @@ class XC9500Interface:
             return await self._fpgm(address, words)
 
 
-class ProgramXC9500Applet(JTAGProbeApplet, name="program-xc9500"):
+class ProgramXC9500XLApplet(JTAGProbeApplet, name="program-xc9500xl"):
     logger = logging.getLogger(__name__)
-    help = "program Xilinx XC9500 CPLDs via JTAG"
+    help = "program Xilinx XC9500XL CPLDs via JTAG"
     description = """
-    Program, verify, and read out Xilinx XC9500 series CPLD bitstreams via the JTAG interface.
+    Program, verify, and read out Xilinx XC9500XL series CPLD bitstreams via the JTAG interface.
 
     It is recommended to use TCK frequency between 100 and 250 kHz for programming.
 
@@ -427,7 +427,7 @@ class ProgramXC9500Applet(JTAGProbeApplet, name="program-xc9500"):
     Supported devices are:
 {devices}
 
-    The Glasgow .bit XC9500 bitstream format is a flat, unstructured sequence of 32-bit words
+    The Glasgow .bit XC9500XL bitstream format is a flat, unstructured sequence of 32-bit words
     comprising the bitstream, written in little endian binary. It is substantially different
     from both .jed and .svf bitstream formats, but matches the internal device programming
     architecture.
@@ -451,7 +451,7 @@ class ProgramXC9500Applet(JTAGProbeApplet, name="program-xc9500"):
         if not tap_iface:
             raise GlasgowAppletError("cannot select TAP #%d" % args.tap_index)
 
-        return XC9500Interface(tap_iface, self.logger, args.frequency * 1000)
+        return XC9500XLInterface(tap_iface, self.logger, args.frequency * 1000)
 
     @classmethod
     def add_interact_arguments(cls, parser):
@@ -536,8 +536,8 @@ class ProgramXC9500Applet(JTAGProbeApplet, name="program-xc9500"):
 
 # -------------------------------------------------------------------------------------------------
 
-class ProgramXC9500AppletTool(GlasgowAppletTool, applet=ProgramXC9500Applet):
-    help = "manipulate Xilinx XC9500 CPLD bitstreams"
+class ProgramXC9500XLAppletTool(GlasgowAppletTool, applet=ProgramXC9500XLApplet):
+    help = "manipulate Xilinx XC9500XL CPLD bitstreams"
     description = """
     See `run jtag-xc9500 --help` for details.
     """
