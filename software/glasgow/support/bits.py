@@ -152,7 +152,7 @@ class _Bitfield:
         for name in names:
             width = self._widths[name]
             value = getattr(self, name)
-            if omit_zero and not f_value:
+            if omit_zero and value == 0:
                 continue
 
             fields.append("{}={:0{}b}".format(name, value, width))
