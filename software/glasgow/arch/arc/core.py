@@ -36,6 +36,7 @@ AUX_STATUS32 = Bitfield("AUX_STATUS32", 32, [
     ("U",   1),
     (None,  4),
     ("L",   1),
+    (None,  19),
 ])
 
 # Build Configuration Registers

@@ -46,6 +46,7 @@ Flash_Command = Bitfield("Flash_Command", 32, [
     ("EC_Int",      1),
     (None,          4),
     ("Reg_Ctl",     1),
+    (None,         23),
 ])
 
 Flash_Mode_Standby  = 0
@@ -65,6 +66,7 @@ Flash_Status = Bitfield("Flash_Status", 32, [
     ("Busy_Err",        1),
     ("CMD_Err",         1),
     ("Protect_Err",     1),
+    (None,             21),
 ])
 
 Flash_Config = Bitfield("Flash_Config", 32, [
@@ -78,4 +80,5 @@ Flash_Config = Bitfield("Flash_Config", 32, [
     ("EEPROM_Access",   1),
     ("EEPROM_Protect",  1),
     ("EEPROM_Force_Block", 1),
+    (None,             21),
 ])
