@@ -69,6 +69,7 @@ class Memory24xInterface:
 class Memory24xApplet(I2CMasterApplet, name="memory-24x"):
     logger = logging.getLogger(__name__)
     help = "read and write 24-series I²C EEPROM memories"
+    default_page_size = 8
     description = """
     Read and write memories compatible with 24-series EEPROM memory, such as Microchip 24C02C,
     Atmel 24C256, or hundreds of other memories that typically have "24X" where X is a letter
@@ -76,12 +77,35 @@ class Memory24xApplet(I2CMasterApplet, name="memory-24x"):
 
     If one address byte is used and an address higher than 255 is specified, either directly
     or implicitly through operation size, the high address bits are logically ORed with
-    the I2C address.
+    the I²C address. In this case the pins used on smaller devices for low address bits are
+    internally not connected.
+
+    # Page size
+
+    The memory performs writes by first latching incoming data into a page buffer, and committing
+    the page buffer after a stop condition. If more data is provided than the page buffer size,
+    or if page boundary is crossed when the address is autoincremneted, a wraparound occurs; this
+    generally results in wrong memory contents after the write operation is complete. The purpose
+    of having a page buffer is to batch updates, since a write of any length between 1 and page
+    size takes the same amount of time.
+
+    Using the correct page size is vitally important for writes. A smaller page size can always
+    be used with a memory that actually has a larger page size, but not vice versa. Using a page
+    size larger than 1 is necessary to get good performance.
+
+    The default page size in this applet is {page_size}, because no memories with page smaller
+    than {page_size} bytes have been observed in the wild so far, and this results in decent
+    performance with all memories. However, it is possible that a memory could have a smaller
+    page size. In that case it is necessary to specify a `--page-size 1` option explicitly.
+    Conversely, specifying a larger page size, when applicable, will significantly improve write
+    performance.
+
+    # Pinout
 
     The pinout of a typical 24-series IC is as follows:
 
         * 8-pin: A0=1  A1=2  A2=3 SDA=5 SCL=6  WP=7 VCC=8 GND=4
-    """
+    """.format(page_size=default_page_size)
 
     @classmethod
     def add_run_arguments(cls, parser, access):
@@ -89,14 +113,14 @@ class Memory24xApplet(I2CMasterApplet, name="memory-24x"):
 
         parser.add_argument(
             "-A", "--i2c-address", type=int, metavar="I2C-ADDR", default=0b1010000,
-            help="I2C address of the memory; typically 0b1010(A2)(A1)(A0) "
+            help="I²C address of the memory; typically 0b1010(A2)(A1)(A0) "
                  "(default: 0b1010000)")
         parser.add_argument(
             "-W", "--address-width", type=int, choices=[1, 2], required=True,
             help="number of address bytes to use (one of: 1 2)")
         parser.add_argument(
-            "-P", "--page-size", type=int, metavar="PAGE-SIZE", default=8,
-            help="page buffer size; writes will be split into PAGE-SIZE byte chunks")
+            "-P", "--page-size", type=int, metavar="PAGE-SIZE", default=cls.default_page_size,
+            help="page buffer size; writes will be split into PAGE-SIZE byte long aligned chunks")
 
     async def run(self, device, args):
         i2c_iface = await super().run(device, args)
