@@ -8,37 +8,12 @@ import collections
 from migen import *
 from fx2.format import autodetect, input_data, output_data
 
+from ....database.atmel.avr import *
 from ...interface.spi_master import SPIMasterSubtarget, SPIMasterInterface
 from ... import *
 
 
-AVRDevice = collections.namedtuple("AVRDevice",
-    ("name", "signature",
-     "calibration_size", "fuses_size",
-     "program_size", "program_page",
-     "eeprom_size",  "eeprom_page"))
-
-devices = [
-    AVRDevice("attiny13a", signature=[0x1e, 0x90, 0x07],
-              calibration_size=2, fuses_size=2,
-              program_size=1024, program_page=32,
-              eeprom_size=64, eeprom_page=4),
-    AVRDevice("attiny25", signature=[0x1e, 0x91, 0x08],
-              calibration_size=2, fuses_size=3,
-              program_size=1024, program_page=32,
-              eeprom_size=128, eeprom_page=4),
-    AVRDevice("attiny45", signature=[0x1e, 0x92, 0x06],
-              calibration_size=2, fuses_size=3,
-              program_size=2048, program_page=64,
-              eeprom_size=256, eeprom_page=4),
-    AVRDevice("attiny85", signature=[0x1e, 0x93, 0x0B],
-              calibration_size=2, fuses_size=3,
-              program_size=4096, program_page=64,
-              eeprom_size=512, eeprom_page=4),
-]
-
-
-class ProgramAVRError(GlasgowAppletError):
+class AVRError(GlasgowAppletError):
     pass
 
 
@@ -69,7 +44,7 @@ class ProgramAVRInterface:
         if echo == 0b0101_0011:
             self._log("synchronization ok")
         else:
-            raise ProgramAVRError("device not present or not synchronized")
+            raise AVRError("device not present or not synchronized")
 
     async def programming_disable(self):
         self._log("programming disable")
@@ -246,8 +221,11 @@ class ProgramAVRApplet(GlasgowApplet, name="program-avr"):
     While programming is disabled, the SPI bus is tristated, so the applet can be used for
     in-circuit programming.
 
-    Supported devices: {}
-    """.format(", ".join(map(lambda d: d.name, devices)))
+    Supported devices are:
+{devices}
+    """.format(
+        devices="\n".join("        * {.name}".format(device) for device in devices)
+    )
 
     __pins = ("reset", "sck", "miso", "mosi")
 
@@ -355,11 +333,7 @@ class ProgramAVRApplet(GlasgowApplet, name="program-avr"):
         await avr_iface.programming_enable()
 
         signature = await avr_iface.read_signature()
-        for device in devices:
-            if device.signature == signature:
-                break
-        else:
-            device = None
+        device = devices_by_signature[signature]
         self.logger.info("device signature: %s (%s)",
             "{:02x} {:02x} {:02x}".format(*signature),
             "unknown" if device is None else device.name)
