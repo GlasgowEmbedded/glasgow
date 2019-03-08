@@ -1,4 +1,5 @@
 import logging
+import argparse
 
 from ...interface.i2c_master import I2CMasterApplet
 from ... import *
@@ -104,23 +105,57 @@ class Memory24xApplet(I2CMasterApplet, name="memory-24x"):
 
     @classmethod
     def add_interact_arguments(cls, parser):
-        parser.add_argument(
-            "-a", "--address", type=int, metavar="ADDR", default=0,
-            help="first memory address of the read or write operation")
-        g_operation = parser.add_mutually_exclusive_group(required=True)
-        g_operation.add_argument(
-            "-r", "--read", type=int, metavar="SIZE",
-            help="read SIZE bytes starting at ADDR")
-        def hex(arg): return bytes.fromhex(arg)
-        g_operation.add_argument(
-            "-w", "--write", type=hex, metavar="DATA",
-            help="write hex bytes DATA starting at ADDR")
+        def address(arg):
+            return int(arg, 0)
+        def length(arg):
+            return int(arg, 0)
+        def hex_bytes(arg):
+            return bytes.fromhex(arg)
+
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
+
+        p_read = p_operation.add_parser(
+            "read", help="read memory")
+        p_read.add_argument(
+            "address", metavar="ADDRESS", type=address,
+            help="read memory starting at address ADDRESS, with wraparound")
+        p_read.add_argument(
+            "length", metavar="LENGTH", type=length,
+            help="read LENGTH bytes from memory")
+        p_read.add_argument(
+            "-f", "--file", metavar="FILENAME", type=argparse.FileType("wb"),
+            help="write memory contents to FILENAME")
+
+        p_write = p_operation.add_parser(
+            "write", help="write memory")
+        p_write.add_argument(
+            "address", metavar="ADDRESS", type=address,
+            help="write memory starting at address ADDRESS")
+        g_data = p_write.add_mutually_exclusive_group(required=True)
+        g_data.add_argument(
+            "-d", "--data", metavar="DATA", type=hex_bytes,
+            help="write memory with DATA as hex bytes")
+        g_data.add_argument(
+            "-f", "--file", metavar="FILENAME", type=argparse.FileType("rb"),
+            help="write memory with contents of FILENAME")
 
     async def interact(self, device, args, m24x_iface):
-        if args.read is not None:
-            result = await m24x_iface.read(args.address, args.read)
-            if result is not None:
-                print(result.hex())
+        if args.operation == "read":
+            data = await m24x_iface.read(args.address, args.length)
+            if data is None:
+                raise GlasgowAppletError("memory did not acknowledge read")
 
-        elif args.write is not None:
-            await m24x_iface.write(args.address, args.write)
+            if args.file:
+                args.file.write(data)
+            else:
+                print(data.hex())
+
+        if args.operation == "write":
+            if args.data is not None:
+                data = args.data
+            if args.file is not None:
+                data = args.file.read()
+
+            success = await m24x_iface.write(args.address, data)
+            if not success:
+                raise GlasgowAppletError("memory did not acknowledge write")
