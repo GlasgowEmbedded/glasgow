@@ -23,12 +23,12 @@ IR_INTEST   = bitarray("01000000", endian="little") # BOUNDARY[..]
 IR_FBLANK   = bitarray("10100111", endian="little") # ISADDRESS[18]
 IR_ISPEN    = bitarray("00010111", endian="little") # ISPENABLE[6]
 IR_ISPENC   = bitarray("10010111", endian="little") # ISPENABLE[6]
-IR_FPGM     = bitarray("01010111", endian="little") # ISCONFIGURATION[50]
-IR_FPGMI    = bitarray("11010111", endian="little") # ISDATA[34]
+IR_FPGM     = bitarray("01010111", endian="little") # ISCONFIGURATION[18+w]
+IR_FPGMI    = bitarray("11010111", endian="little") # ISDATA[2+w]
 IR_FERASE   = bitarray("00110111", endian="little") # ISADDRESS[18]
 IR_FBULK    = bitarray("10110111", endian="little") # ISADDRESS[18]
-IR_FVFY     = bitarray("01110111", endian="little") # ISCONFIGURATION[50]
-IR_FVFYI    = bitarray("11110111", endian="little") # ISDATA[34]
+IR_FVFY     = bitarray("01110111", endian="little") # ISCONFIGURATION[18+w]
+IR_FVFYI    = bitarray("11110111", endian="little") # ISDATA[2+w]
 IR_ISPEX    = bitarray("00001111", endian="little") # BYPASS[1]
 IR_CLAMP    = bitarray("01011111", endian="little") # BYPASS[1]
 IR_HIGHZ    = bitarray("00111111", endian="little") # BYPASS[1]
@@ -37,11 +37,12 @@ IR_IDCODE   = bitarray("01111111", endian="little") # IDCODE[32]
 IR_BYPASS   = bitarray("11111111", endian="little") # BYPASS[1]
 
 
-DR_ISDATA = Bitfield("DR_ISDATA", 34, [
-    ("valid",    1),
-    ("strobe",   1),
-    ("data",    32),
-])
+def DR_ISDATA(width):
+    return Bitfield("DR_ISDATA", 2 + width, [
+        ("valid",    1),
+        ("strobe",   1),
+        ("data", width),
+    ])
 
 DR_ISADDRESS = Bitfield("DR_ISADDRESS", 18, [
     ("valid",    1),
@@ -49,9 +50,10 @@ DR_ISADDRESS = Bitfield("DR_ISADDRESS", 18, [
     ("address", 16),
 ])
 
-DR_ISCONFIGURATION = Bitfield("DR_ISCONFIGURATION", 50, [
-    ("valid",    1),
-    ("strobe",   1),
-    ("data",    32),
-    ("address", 16),
-])
+def DR_ISCONFIGURATION(width):
+    return Bitfield("DR_ISCONFIGURATION", 18 + width, [
+        ("valid",    1),
+        ("strobe",   1),
+        ("data", width),
+        ("address", 16),
+    ])
