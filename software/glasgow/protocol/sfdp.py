@@ -24,7 +24,7 @@ class _JEDECRevisionMixin:
         return "unknown JESD216 revision"
 
 
-_JEDEC_Flash_Param_0 = Bitfield("JEDEC_Flash_Param_0", 4, [
+_JEDEC_Flash_Param_0 = Bitfield("JEDEC_Flash_Param_0", 32, [
     ("block_sector_erase_size",         2),
     ("write_granularity",               1),
     ("volatile_wren_required",          1),
@@ -40,12 +40,12 @@ _JEDEC_Flash_Param_0 = Bitfield("JEDEC_Flash_Param_0", 4, [
     (None,                              9),
 ])
 
-_JEDEC_Flash_Param_1 = Bitfield("JEDEC_Flash_Param_1", 4, [
+_JEDEC_Flash_Param_1 = Bitfield("JEDEC_Flash_Param_1", 32, [
     ("density_value",                   31),
     ("density_over_2gbit",              1),
 ])
 
-_JEDEC_Flash_Param_2 = Bitfield("JEDEC_Flash_Param_2", 4, [
+_JEDEC_Flash_Param_2 = Bitfield("JEDEC_Flash_Param_2", 32, [
     ("_fast_read_1_4_4_wait_states",    5),
     ("_fast_read_1_4_4_mode_bits",      3),
     ("_fast_read_1_4_4_opcode",         8),
@@ -54,7 +54,7 @@ _JEDEC_Flash_Param_2 = Bitfield("JEDEC_Flash_Param_2", 4, [
     ("_fast_read_1_1_4_opcode",         8),
 ])
 
-_JEDEC_Flash_Param_3 = Bitfield("JEDEC_Flash_Param_3", 4, [
+_JEDEC_Flash_Param_3 = Bitfield("JEDEC_Flash_Param_3", 32, [
     ("_fast_read_1_1_2_wait_states",    5),
     ("_fast_read_1_1_2_mode_bits",      3),
     ("_fast_read_1_1_2_opcode",         8),
@@ -63,35 +63,35 @@ _JEDEC_Flash_Param_3 = Bitfield("JEDEC_Flash_Param_3", 4, [
     ("_fast_read_1_2_2_opcode",         8),
 ])
 
-_JEDEC_Flash_Param_4 = Bitfield("JEDEC_Flash_Param_4", 4, [
+_JEDEC_Flash_Param_4 = Bitfield("JEDEC_Flash_Param_4", 32, [
     ("has_2_2_2_fast_read",             1),
     (None,                              3),
     ("has_4_4_4_fast_read",             1),
     (None,                              27),
 ])
 
-_JEDEC_Flash_Param_5 = Bitfield("JEDEC_Flash_Param_5", 4, [
+_JEDEC_Flash_Param_5 = Bitfield("JEDEC_Flash_Param_5", 32, [
     (None,                              16),
     ("_fast_read_2_2_2_wait_states",    5),
     ("_fast_read_2_2_2_mode_bits",      3),
     ("_fast_read_2_2_2_opcode",         8),
 ])
 
-_JEDEC_Flash_Param_6 = Bitfield("JEDEC_Flash_Param_6", 4, [
+_JEDEC_Flash_Param_6 = Bitfield("JEDEC_Flash_Param_6", 32, [
     (None,                              16),
     ("_fast_read_4_4_4_wait_states",    5),
     ("_fast_read_4_4_4_mode_bits",      3),
     ("_fast_read_4_4_4_opcode",         8),
 ])
 
-_JEDEC_Flash_Param_7 = Bitfield("JEDEC_Flash_Param_7", 4, [
+_JEDEC_Flash_Param_7 = Bitfield("JEDEC_Flash_Param_7", 32, [
     ("sector_type_1_size",              8),
     ("sector_type_1_opcode",            8),
     ("sector_type_2_size",              8),
     ("sector_type_2_opcode",            8),
 ])
 
-_JEDEC_Flash_Param_8 = Bitfield("JEDEC_Flash_Param_8", 4, [
+_JEDEC_Flash_Param_8 = Bitfield("JEDEC_Flash_Param_8", 32, [
     ("sector_type_3_size",              8),
     ("sector_type_3_opcode",            8),
     ("sector_type_4_size",              8),
