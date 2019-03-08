@@ -24,6 +24,10 @@ from ...interface.jtag_probe import JTAGProbeApplet
 from ... import *
 
 
+class ARCDebugError(GlasgowAppletError):
+    pass
+
+
 class ARCDebugInterface:
     def __init__(self, interface, logger):
         self.lower   = interface
@@ -50,7 +54,7 @@ class ARCDebugInterface:
             status = DR_STATUS.from_bitarray(status_bits)
             self._log("status %s", status.bits_repr())
             if status.FL:
-                raise GlasgowAppletError("transaction failed: %s" % status.bits_repr())
+                raise ARCDebugError("transaction failed: %s" % status.bits_repr())
 
     async def read(self, address, space):
         if space == "memory":

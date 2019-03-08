@@ -92,6 +92,10 @@ REG_PRESS     = 0xF7 # 20-bit unsigned
 REG_TEMP      = 0xFA # 20-bit unsigned
 
 
+class BMP280Error(GlasgowAppletError):
+    pass
+
+
 class BMP280Interface:
     def __init__(self, interface, logger):
         self._iface   = interface
@@ -137,7 +141,7 @@ class BMP280Interface:
     async def identify(self):
         id = await self._read_reg8(REG_ID)
         if id != BIT_ID:
-            raise GlasgowAppletError("BMP280: wrong ID=%#04x" % id)
+            raise BMP280Error("BMP280: wrong ID=%#04x" % id)
 
     async def _read_cal(self):
         if self._has_cal: return
@@ -216,15 +220,15 @@ class BMP280I2CInterface:
         await self.lower.write(self._i2c_addr, [addr])
         result = await self.lower.read(self._i2c_addr, size)
         if result is None:
-            raise GlasgowAppletError("BMP280 did not acknowledge I2C read at address {:#07b}"
-                                     .format(self._i2c_addr))
+            raise BMP280Error("BMP280 did not acknowledge I2C read at address {:#07b}"
+                              .format(self._i2c_addr))
         return list(result)
 
     async def write(self, addr, data):
         result = await self.lower.write(self._i2c_addr, [addr, *data])
         if not result:
-            raise GlasgowAppletError("BMP280 did not acknowledge I2C write at address {:#07b}"
-                                     .format(self._i2c_addr))
+            raise BMP280Error("BMP280 did not acknowledge I2C write at address {:#07b}"
+                              .format(self._i2c_addr))
 
 
 class SensorBMP280Applet(I2CMasterApplet, name="sensor-bmp280"):

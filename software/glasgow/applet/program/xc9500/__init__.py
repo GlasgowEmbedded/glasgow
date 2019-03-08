@@ -247,7 +247,11 @@ def bitstream_to_device_address(word_address):
     return 32 * block_num + 8 * (block_off // GROUP_WORDS) + block_off % GROUP_WORDS
 
 
-class ProgramXC9500Interface:
+class XC9500Error(GlasgowAppletError):
+    pass
+
+
+class XC9500Interface:
     def __init__(self, interface, logger, frequency):
         self.lower   = interface
         self._logger = logger
@@ -344,7 +348,7 @@ class ProgramXC9500Interface:
         isaddr_bits = await self.lower.read_dr(18)
         isaddr = DR_ISADDRESS.from_bitarray(isaddr_bits)
         if not (isaddr.valid and not isaddr.strobe):
-            raise GlasgowAppletError("bulk erase failed %s" % isaddr.bits_repr())
+            raise XC9500Error("bulk erase failed %s" % isaddr.bits_repr())
 
     async def _fpgm(self, address, words):
         await self.lower.write_ir(IR_FPGM)
@@ -447,7 +451,7 @@ class ProgramXC9500Applet(JTAGProbeApplet, name="program-xc9500"):
         if not tap_iface:
             raise GlasgowAppletError("cannot select TAP #%d" % args.tap_index)
 
-        return ProgramXC9500Interface(tap_iface, self.logger, args.frequency * 1000)
+        return XC9500Interface(tap_iface, self.logger, args.frequency * 1000)
 
     @classmethod
     def add_interact_arguments(cls, parser):

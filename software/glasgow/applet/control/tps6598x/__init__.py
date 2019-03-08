@@ -5,6 +5,10 @@ from ...interface.i2c_master import I2CMasterApplet
 from ... import *
 
 
+class TPS6598xError(GlasgowAppletError):
+    pass
+
+
 class TPS6598xInterface:
     def __init__(self, interface, logger, i2c_address):
         self.lower     = interface
@@ -15,7 +19,7 @@ class TPS6598xInterface:
     @staticmethod
     def _check(result):
         if result is None:
-            raise GlasgowAppletError("TPS6598x did not acknowledge command")
+            raise TPS6598xError("TPS6598x did not acknowledge command")
         return result
 
     async def read_reg(self, address):

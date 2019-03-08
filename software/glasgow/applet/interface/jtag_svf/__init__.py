@@ -9,6 +9,10 @@ from ... import *
 from ..jtag_probe import JTAGProbeApplet
 
 
+class SVFError(GlasgowAppletError):
+    pass
+
+
 class SVFOperation:
     def __init__(self, tdi, smask, tdo, mask):
         self.tdi   = tdi
@@ -33,7 +37,7 @@ class SVFOperation:
                             self.mask  + other.mask)
 
 
-class JTAGSVFInterface(SVFEventHandler):
+class SVFInterface(SVFEventHandler):
     def __init__(self, interface, logger, frequency):
         self.lower   = interface
         self._logger = logger
@@ -53,7 +57,7 @@ class JTAGSVFInterface(SVFEventHandler):
 
     async def _enter_state(self, state, path=[]):
         if path:
-            raise GlasgowAppletError("explicitly providing TAP state path is not supported")
+            raise SVFError("explicitly providing TAP state path is not supported")
 
         if state == "RESET":
             await self.lower.enter_test_logic_reset(force=False)
@@ -68,9 +72,9 @@ class JTAGSVFInterface(SVFEventHandler):
 
     async def svf_frequency(self, frequency):
         if frequency is not None and frequency < self._frequency:
-            raise GlasgowAppletError("FREQUENCY command requires a lower frequency (%.3f kHz) "
-                                     "than the applet is configured for (%.3f kHz)"
-                                     % (frequency / 1e3, args.frequency / 1e3))
+            raise SVFError("FREQUENCY command requires a lower frequency (%.3f kHz) "
+                           "than the applet is configured for (%.3f kHz)"
+                           % (frequency / 1e3, args.frequency / 1e3))
 
     async def svf_trst(self, mode):
         if mode == "ABSENT":
@@ -113,7 +117,7 @@ class JTAGSVFInterface(SVFEventHandler):
         else:
             tdo = await self.lower.shift_tdio(op.tdi)
             if tdo & op.mask != op.tdo & op.mask:
-                raise GlasgowAppletError("SIR command failed: TDO <%s> & <%s> != <%s>"
+                raise SVFError("SIR command failed: TDO <%s> & <%s> != <%s>"
                                          % (tdo.to01(), op.mask.to01(), op.tdo.to01()))
         await self._enter_state(self._endir)
 
@@ -125,13 +129,13 @@ class JTAGSVFInterface(SVFEventHandler):
         else:
             tdo = await self.lower.shift_tdio(op.tdi)
             if tdo & op.mask != op.tdo & op.mask:
-                raise GlasgowAppletError("SDR command failed: TDO <%s> & <%s> != <%s>"
-                                         % (tdo.to01(), op.mask.to01(), op.tdo.to01()))
+                raise SVFError("SDR command failed: TDO <%s> & <%s> != <%s>"
+                               % (tdo.to01(), op.mask.to01(), op.tdo.to01()))
         await self._enter_state(self._enddr)
 
     async def svf_runtest(self, run_state, run_count, run_clock, min_time, max_time, end_state):
         if run_clock != "TCK":
-            raise GlasgowAppletError("RUNTEST clock %s is not supported" % run_count)
+            raise SVFError("RUNTEST clock %s is not supported" % run_count)
         if run_count is None or min_time is not None and run_count / self._frequency < min_time:
             run_count = int(self._frequency * min_time)
         if max_time is not None and run_count / self._frequency > max_time:
@@ -143,10 +147,10 @@ class JTAGSVFInterface(SVFEventHandler):
         await self._enter_state(end_state)
 
     async def svf_piomap(self, mapping):
-        raise GlasgowAppletError("the PIOMAP command is not supported")
+        raise SVFError("the PIOMAP command is not supported")
 
     async def svf_pio(self, vector):
-        raise GlasgowAppletError("the PIO command is not supported")
+        raise SVFError("the PIO command is not supported")
 
 
 class JTAGSVFApplet(JTAGProbeApplet, name="jtag-svf"):
@@ -167,7 +171,7 @@ class JTAGSVFApplet(JTAGProbeApplet, name="jtag-svf"):
         jtag_iface = await super().run(device, args)
         await jtag_iface.pulse_trst()
 
-        return JTAGSVFInterface(jtag_iface, self.logger, args.frequency * 1000)
+        return SVFInterface(jtag_iface, self.logger, args.frequency * 1000)
 
     @classmethod
     def add_interact_arguments(cls, parser):

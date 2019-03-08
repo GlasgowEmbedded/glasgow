@@ -77,7 +77,11 @@ REG_VCOM_LEVEL  = 0x09
 REG_DATA        = 0x0A
 
 
-class PDIInterface:
+class PDIDisplayError(GlasgowAppletError):
+    pass
+
+
+class PDIDisplayInterface:
     def __init__(self, interface, device, logger,
                  addr_cog_power, addr_cog_disch, addr_cog_reset):
         self.lower   = interface
@@ -140,7 +144,7 @@ class PDIInterface:
         await self.lower.synchronize()
 
 
-class PDIG1Interface(PDIInterface):
+class PDIG1DisplayInterface(PDIDisplayInterface):
     _generation = 1
 
     def __init__(self, interface, device, logger,
@@ -178,7 +182,7 @@ class PDIG1Interface(PDIInterface):
         # Verify that COG has the right generation
         cog_id = await self._identify()
         if cog_id != 0x11:
-            raise GlasgowAppletError("COG is not PDI EPD G1 (id={:#04x})".format(cog_id))
+            raise PDIDisplayError("COG is not PDI EPD G1 (id={:#04x})".format(cog_id))
 
         self._log("power on cog driver")
         # Channel Select
@@ -390,7 +394,7 @@ class DisplayPDIApplet(GlasgowApplet, name="display-pdi"):
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
         spi_iface = SPIMasterInterface(iface, self.logger)
-        pdi_iface = PDIG1Interface(spi_iface, device, self.logger,
+        pdi_iface = PDIG1DisplayInterface(spi_iface, device, self.logger,
             self.__addr_cog_power, self.__addr_cog_disch, self.__addr_cog_reset,
             self.__addr_cog_pwmen,
             epd_size=args.size)

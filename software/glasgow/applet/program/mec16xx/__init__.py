@@ -18,7 +18,11 @@ from ... import *
 FIRMWARE_SIZE = 0x30_000
 
 
-class ProgramMEC16xxInterface(aobject):
+class MEC16xxError(GlasgowAppletError):
+    pass
+
+
+class MEC16xxInterface(aobject):
     async def __init__(self, interface, logger):
         self.lower   = interface
         self._logger = logger
@@ -26,8 +30,8 @@ class ProgramMEC16xxInterface(aobject):
 
         idcode, device = await self.lower.identify()
         if device is None or device.name != "ARC6xx":
-            raise GlasgowAppletError("cannot operate on unknown device IDCODE=%08x"
-                                     % idcode.to_int())
+            raise MEC16xxError("cannot operate on unknown device IDCODE=%08x"
+                               % idcode.to_int())
 
         self._log("halting CPU")
         await self.lower.set_halted(True)
@@ -91,9 +95,9 @@ class ProgramMEC16xxInterface(aobject):
             self._log("read Flash_Status %s", flash_status.bits_repr(omit_zero=True))
 
             if flash_status.Busy_Err or flash_status.CMD_Err or flash_status.Protect_Err:
-                raise GlasgowAppletError("Flash command %s failed with status %s"
-                                         % (flash_command.bits_repr(omit_zero=True),
-                                            flash_status.bits_repr(omit_zero=True)))
+                raise MEC16xxError("Flash command %s failed with status %s"
+                                   % (flash_command.bits_repr(omit_zero=True),
+                                      flash_status.bits_repr(omit_zero=True)))
 
     async def read_flash(self, address, count):
         words = []
@@ -135,7 +139,7 @@ class ProgramMEC16xxInterface(aobject):
                 elif data_1 == data_3:
                     data = data_3
                 else:
-                    raise GlasgowAppletError("cannot select a read by majority")
+                    raise MEC16xxError("cannot select a read by majority")
 
             words.append(data)
         return words
@@ -162,7 +166,7 @@ class ProgramMEC16xxApplet(DebugARCApplet, name="program-mec16xx"):
 
     async def run(self, device, args):
         arc_iface = await super().run(device, args)
-        return await ProgramMEC16xxInterface(arc_iface, self.logger)
+        return await MEC16xxInterface(arc_iface, self.logger)
 
     @classmethod
     def add_interact_arguments(cls, parser):

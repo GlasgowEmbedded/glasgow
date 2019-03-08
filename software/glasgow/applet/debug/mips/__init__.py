@@ -15,6 +15,10 @@ from ...interface.jtag_probe import JTAGProbeApplet
 from ... import *
 
 
+class EJTAGError(GlasgowAppletError):
+    pass
+
+
 class EJTAGDebugInterface(aobject, GDBRemote):
     async def __init__(self, interface, logger):
         self.lower   = interface
@@ -37,8 +41,8 @@ class EJTAGDebugInterface(aobject, GDBRemote):
 
     def _check_state(self, action, *states):
         if self._state not in states:
-            raise GlasgowAppletError("cannot %s: not in %s state" %
-                                     (action, ", ".join(states)))
+            raise EJTAGError("cannot %s: not in %s state" %
+                             (action, ", ".join(states)))
 
     def _change_state(self, state):
         self._log("set state %s", state)
@@ -70,7 +74,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         self._log("read CONTROL %s", new_control.bits_repr(omit_zero=True))
 
         if new_control.Rocc and control.Rocc:
-            raise GlasgowAppletError("target has been unexpectedly reset")
+            raise EJTAGError("target has been unexpectedly reset")
 
         return new_control
 
@@ -81,7 +85,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
             control = await self._exchange_control()
             if control.ProbEn and control.ProbTrap: break
         else:
-            raise GlasgowAppletError("ProbTrap/ProbEn stuck low")
+            raise EJTAGError("ProbTrap/ProbEn stuck low")
 
     async def _scan_address_length(self):
         await self.lower.write_ir(IR_ADDRESS)
@@ -135,10 +139,10 @@ class EJTAGDebugInterface(aobject, GDBRemote):
             control = await self._exchange_control(DMAAcc=1)
             if not control.DStrt: break
         else:
-            raise GlasgowAppletError("DMAAcc: read hang")
+            raise EJTAGError("DMAAcc: read hang")
         if control.DErr:
-            raise GlasgowAppletError("DMAAcc: read error address=%#0.*x size=%d" %
-                                     (self._prec, address, size))
+            raise EJTAGError("DMAAcc: read error address=%#0.*x size=%d" %
+                             (self._prec, address, size))
         data = await self._read_data()
         self._log("DMAAcc: data=%#0.*x", self._prec, data)
         await self._exchange_control(DMAAcc=0)
@@ -154,10 +158,10 @@ class EJTAGDebugInterface(aobject, GDBRemote):
             control = await self._exchange_control(DMAAcc=1)
             if not control.DStrt: break
         else:
-            raise GlasgowAppletError("DMAAcc: write hang")
+            raise EJTAGError("DMAAcc: write hang")
         if control.DErr:
-            raise GlasgowAppletError("DMAAcc: write error address=%#0.*x size=%d" %
-                                     (self._prec, address, size))
+            raise EJTAGError("DMAAcc: write error address=%#0.*x size=%d" %
+                             (self._prec, address, size))
         await self._exchange_control(DMAAcc=0)
 
     # PrAcc state management
@@ -203,7 +207,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         # Start by acknowledging any reset.
         control = await self._exchange_control(Rocc=0)
         if control.DM:
-            raise GlasgowAppletError("target already in debug mode")
+            raise EJTAGError("target already in debug mode")
 
         if self._impcode.EJTAGver == 0:
             self._logger.warning("found cursed EJTAG 1.x/2.0 CPU, using undocumented "
@@ -223,7 +227,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         await self._exchange_control(EjtagBrk=1)
         control = await self._exchange_control()
         if control.EjtagBrk:
-            raise GlasgowAppletError("failed to enter debug mode")
+            raise EJTAGError("failed to enter debug mode")
 
     async def _check_for_debug_interrupt(self):
         self._check_state("check for debug interrupt", "Running")
@@ -250,7 +254,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
             for _ in range(3):
                 control = await self._exchange_control()
                 if step == 0 and not control.DM:
-                    raise GlasgowAppletError("Exec_PrAcc: DM low on entry")
+                    raise EJTAGError("Exec_PrAcc: DM low on entry")
                 elif not control.DM:
                     self._log("Exec_PrAcc: debug return")
                     self._change_state("Running")
@@ -258,7 +262,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
                 elif control.PrAcc:
                     break
             else:
-                raise GlasgowAppletError("Exec_PrAcc: PrAcc stuck low")
+                raise EJTAGError("Exec_PrAcc: PrAcc stuck low")
 
             address = await self._read_address()
             if step > 0 and address == code_beg:
@@ -273,14 +277,14 @@ class EJTAGDebugInterface(aobject, GDBRemote):
             elif address in range(data_beg, data_end):
                 area, area_beg, area_wr, area_name = data, data_beg, True,  "data"
             else:
-                raise GlasgowAppletError("Exec_PrAcc: address %#0.*x out of range" %
-                                         (self._prec, address))
+                raise EJTAGError("Exec_PrAcc: address %#0.*x out of range" %
+                                 (self._prec, address))
 
             area_off = (address - area_beg) // 4
             if control.PRnW:
                 if not area_wr:
-                    raise GlasgowAppletError("Exec_PrAcc: write access to %s at %#0.*x" %
-                                             (area_name, self._prec, address))
+                    raise EJTAGError("Exec_PrAcc: write access to %s at %#0.*x" %
+                                     (area_name, self._prec, address))
 
                 word = await self._read_data()
                 self._log("Exec_PrAcc: write %s [%#06x] = %#0.*x",
@@ -294,7 +298,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
             await self._exchange_control(PrAcc=0)
 
         else:
-            raise GlasgowAppletError("Exec_PrAcc: step limit exceeded")
+            raise EJTAGError("Exec_PrAcc: step limit exceeded")
 
         return data
 
@@ -642,7 +646,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
             self._log("PrAcc: MIPS R2 I-cache sync")
             await self._pracc_sync_icache_r2(address)
         else:
-            raise GlasgowAppletError("cannot sync I-cache on unknown architecture release")
+            raise EJTAGError("cannot sync I-cache on unknown architecture release")
 
     # Public API / GDB remote implementation
 
@@ -690,7 +694,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
     async def target_single_step(self):
         self._check_state("single step", "Stopped")
         if self._cp0_debug.NoSSt:
-            raise GlasgowAppletError("target does not support single stepping")
+            raise EJTAGError("target does not support single stepping")
         await self._pracc_single_step()
 
     async def target_detach(self):
@@ -767,7 +771,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         elif number == 37:
             return await self._pracc_read_cp0(CP0_DEPC_addr)
         else:
-            raise GlasgowAppletError("getting register %d not supported" % number)
+            raise EJTAGError("getting register %d not supported" % number)
 
     async def target_set_register(self, number, value):
         self._check_state("set register", "Stopped")
@@ -776,7 +780,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         elif number == 37:
             await self._pracc_write_cp0(CP0_DEPC_addr, value)
         else:
-            raise GlasgowAppletError("setting register %d not supported" % number)
+            raise EJTAGError("setting register %d not supported" % number)
 
     async def target_read_memory(self, address, length):
         self._check_state("read memory", "Stopped")
