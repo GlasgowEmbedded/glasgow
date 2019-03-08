@@ -669,26 +669,16 @@ Wire Wire Line
 Connection ~ 10000 1650
 Wire Wire Line
 	10000 1650 10000 1850
-Text Label 9200 1050 0    50   ~ 0
+Text Label 9150 1050 0    50   ~ 0
 U1
-Text Label 9200 1250 0    50   ~ 0
+Text Label 9150 1250 0    50   ~ 0
 U2
-Text Label 9200 1450 0    50   ~ 0
+Text Label 9150 1450 0    50   ~ 0
 U3
-Text Label 9200 1650 0    50   ~ 0
+Text Label 9150 1650 0    50   ~ 0
 U4
-Text Label 9200 1850 0    50   ~ 0
+Text Label 9150 1850 0    50   ~ 0
 U5
-Wire Wire Line
-	9200 1850 9300 1850
-Wire Wire Line
-	9350 1650 9300 1650
-Wire Wire Line
-	9200 1450 9300 1450
-Wire Wire Line
-	9350 1250 9300 1250
-Wire Wire Line
-	9200 1050 9300 1050
 Text Label 5350 4350 2    50   ~ 0
 U1
 Text Label 5350 4050 2    50   ~ 0
@@ -1282,21 +1272,6 @@ Wire Wire Line
 	5250 5150 5350 5150
 Wire Bus Line
 	5500 5800 5850 5800
-Connection ~ 9300 1050
-Wire Wire Line
-	9300 1050 9350 1050
-Connection ~ 9300 1250
-Wire Wire Line
-	9300 1250 9200 1250
-Connection ~ 9300 1450
-Wire Wire Line
-	9300 1450 9350 1450
-Connection ~ 9300 1650
-Wire Wire Line
-	9300 1650 9200 1650
-Connection ~ 9300 1850
-Wire Wire Line
-	9300 1850 9350 1850
 Wire Bus Line
 	2050 5800 2400 5800
 Text Label 5250 5650 0    50   ~ 0
@@ -1511,6 +1486,20 @@ Text Notes 10450 1500 0    50   ~ 0
 116µA Vf = 2.51V
 Wire Notes Line
 	10350 1050 10400 1050
+Text Notes 10450 1700 0    50   ~ 0
+76µA Vf = 2.54V
+Text Notes 10450 1900 0    50   ~ 0
+174µA Vf = 2.48V
+Wire Wire Line
+	9150 1850 9300 1850
+Wire Wire Line
+	9150 1650 9300 1650
+Wire Wire Line
+	9150 1450 9300 1450
+Wire Wire Line
+	9150 1250 9300 1250
+Wire Wire Line
+	9150 1050 9300 1050
 Wire Bus Line
 	5850 4950 5850 5800
 Wire Bus Line
@@ -1529,8 +1518,4 @@ Wire Bus Line
 	2050 3850 2050 5800
 Wire Bus Line
 	9050 3200 9050 5800
-Text Notes 10450 1700 0    50   ~ 0
-76µA Vf = 2.54V
-Text Notes 10450 1900 0    50   ~ 0
-174µA Vf = 2.48V
 $EndSCHEMATC
