@@ -79,7 +79,7 @@ setup(
     },
     project_urls={
         #"Documentation": "https://glasgow.readthedocs.io/",
-        "Source Code": "https://github.com/whitequark/Glasgow",
-        "Bug Tracker": "https://github.com/whitequark/Glasgow/issues",
+        "Source Code": "https://github.com/GlasgowEmebedded/Glasgow",
+        "Bug Tracker": "https://github.com/GlasgowEmebedded/Glasgow/issues",
     }
 )

@@ -126,7 +126,7 @@ class _RegisteredTristate(Module):
                     # The FX2 output valid window starts well after (5.4 ns past) the iCE40 input
                     # capture window for the rising edge. However, the input capture for
                     # the falling edge is just right.
-                    # See https://github.com/whitequark/Glasgow/issues/89 for details.
+                    # See https://github.com/GlasgowEmbedded/Glasgow/issues/89 for details.
                     o_D_IN_1=get_bit(self.i, bit),
                 )
 
