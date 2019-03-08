@@ -309,11 +309,13 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
                     # We need to read at least one byte in order to transmit a NAK bit
                     # so that the addressed device releases SDA.
                     if await i2c_iface.read(addr, 1, stop=True) is not None:
-                        self.logger.info("scan found read address %s", bin(addr))
+                        self.logger.info("scan found read address %s",
+                                         "{:#09b}".format(addr))
                         responded = True
                 if args.scan_write:
                     if await i2c_iface.write(addr, [], stop=True) is True:
-                        self.logger.info("scan found write address %s", bin(addr))
+                        self.logger.info("scan found write address %s",
+                                         "{:#09b}".format(addr))
                         responded = True
 
                 if responded and args.scan_device_id:
