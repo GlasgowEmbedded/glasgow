@@ -149,4 +149,5 @@ CP0_Debug2 = Bitfield("CP0_Debug2", 32, [
     ("Tup",        1),
     ("DQ",         1),
     ("Prm",        1),
+    (None,        28),
 ])
