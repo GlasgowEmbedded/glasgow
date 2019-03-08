@@ -267,7 +267,7 @@ class XC9500Interface:
         idcode = DR_IDCODE.from_bitarray(idcode_bits)
         self._log("read IDCODE mfg_id=%03x part_id=%04x",
                   idcode.mfg_id, idcode.part_id)
-        device = devices[idcode.mfg_id, idcode.part_id]
+        device = devices_by_idcode[idcode.mfg_id, idcode.part_id]
         return idcode, device
 
     async def read_usercode(self):
@@ -424,7 +424,7 @@ class ProgramXC9500Applet(JTAGProbeApplet, name="program-xc9500"):
     The "program word failed" messages during programming do not necessarily mean a failed
     programming attempt or a bad device. Always verify the programmed bitstream.
 
-    The list of supported devices is:
+    Supported devices are:
 {devices}
 
     The Glasgow .bit XC9500 bitstream format is a flat, unstructured sequence of 32-bit words
@@ -432,7 +432,7 @@ class ProgramXC9500Applet(JTAGProbeApplet, name="program-xc9500"):
     from both .jed and .svf bitstream formats, but matches the internal device programming
     architecture.
     """.format(
-        devices="\n".join(map(lambda x: "        * {.name}".format(x), devices.values()))
+        devices="\n".join("        * {.name}".format(device) for device in devices)
     )
 
     @classmethod
@@ -546,7 +546,7 @@ class ProgramXC9500AppletTool(GlasgowAppletTool, applet=ProgramXC9500Applet):
     def add_arguments(cls, parser):
         def idcode(arg):
             idcode = DR_IDCODE.from_int(int(arg, 16))
-            device = devices[idcode.mfg_id, idcode.part_id]
+            device = devices_by_idcode[idcode.mfg_id, idcode.part_id]
             if device is None:
                 raise argparse.ArgumentTypeError("unknown IDCODE")
             return device
