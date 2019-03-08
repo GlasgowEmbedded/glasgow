@@ -1,4 +1,6 @@
-# Reference: https://static.docs.arm.com/ihi0031/c/IHI0031C_debug_interface_as.pdf
+# Ref: https://static.docs.arm.com/ihi0031/c/IHI0031C_debug_interface_as.pdf
+# Document Number: IHI0031C
+# Accession: G00027
 
 import logging
 import asyncio

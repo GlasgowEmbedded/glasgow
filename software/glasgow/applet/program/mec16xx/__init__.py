@@ -1,7 +1,9 @@
 # Ref: Microchip MEC1618 Low Power 32-bit Microcontroller with Embedded Flash
 # Document Number: DS00002339A
+# Accession: G00005
 # Ref: Microchip MEC1609 Mixed Signal Mobile Embedded Flash ARC EC BC-Link/VLPC Base Component
 # Document Number: DS00002485A
+# Accession: G00006
 
 import logging
 import argparse

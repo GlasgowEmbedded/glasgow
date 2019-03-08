@@ -1,5 +1,6 @@
 # Ref: Intel® Low Pin Count (LPC) Interface Specification
 # Document Number: 251289-001
+# Accession: G00019
 
 # Transaction format summary. Derived from chapters 5-7 of the specification. Note that
 # the specification has plenty of typos, which have been (hopefully) corrected here.

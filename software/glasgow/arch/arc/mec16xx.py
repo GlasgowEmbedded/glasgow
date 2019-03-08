@@ -1,5 +1,6 @@
 # Ref: Microchip MEC1618/MEC1618i Low Power 32-bit Microcontroller with Embedded Flash
 # Document Number: DS00002339A
+# Accession: G00005
 
 from bitarray import bitarray
 

@@ -1,4 +1,5 @@
-# BMP280 reference: https://ae-bst.resource.bosch.com/media/_tech/media/datasheets/BST-BMP280-DS001.pdf
+# Ref: https://ae-bst.resource.bosch.com/media/_tech/media/datasheets/BST-BMP280-DS001.pdf
+# Accession: G00028
 
 import logging
 import asyncio

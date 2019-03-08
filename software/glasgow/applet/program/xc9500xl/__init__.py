@@ -1,5 +1,7 @@
 # Ref: XAPP069 Using the XC9500/XL/XV JTAG Boundary Scan Interface
+# Accession: G00014
 # Ref: XC9572XL BSDL files
+# Accession: G00015
 # Ref: black box reverse engineering of XC9572XL by whitequark
 
 # JTAG IR commands

@@ -1,6 +1,9 @@
 # Ref: CATALOG No. LSI-2130143 (YM3014B)
+# Accession: G00001
 # Ref: CATALOG No. LSI-2138123 (YM3812)
+# Accession: G00002
 # Ref: CATALOG No. LSI-2438124 (YM3812 Application Manual)
+# Accession: G00003
 
 # Glaring omissions
 # -----------------

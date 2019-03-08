@@ -1,6 +1,9 @@
-# Reference: https://www.sparkfun.com/datasheets/LCD/HD44780.pdf
-# Reference: http://ecee.colorado.edu/~mcclurel/SED1278F_Technical_Manual.pdf
-# Reference: https://www.openhacks.com/uploadsproductos/eone-1602a1.pdf
+# Ref: https://www.sparkfun.com/datasheets/LCD/HD44780.pdf
+# Accession: G00008
+# Ref: http://ecee.colorado.edu/~mcclurel/SED1278F_Technical_Manual.pdf
+# Accession: G00009
+# Ref: https://www.openhacks.com/uploadsproductos/eone-1602a1.pdf
+# Accession: G00010
 # Note: HD44780's bus is *asynchronous*. Setup/hold timings are referenced
 # to E falling edge, and BF/AC can and will change while E is high.
 # We make use of it by waiting on BF falling edge when polling the IC.

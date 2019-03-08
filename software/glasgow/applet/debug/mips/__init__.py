@@ -1,5 +1,6 @@
 # Ref: MIPS® EJTAG Specification
 # Document Number: MD00047 Revision 6.10
+# Accession: G00007
 
 import struct
 import logging

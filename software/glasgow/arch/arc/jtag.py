@@ -1,5 +1,6 @@
 # Ref: ARC® 700 External Interfaces Reference
 # Document Number: 5117-014
+# Accession: G00004
 
 from bitarray import bitarray
 

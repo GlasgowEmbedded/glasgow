@@ -1,5 +1,7 @@
 # Ref: https://www.asset-intertech.com/eresources/svf-serial-vector-format-specification-jtag-boundary-scan
+# Accession: G00022
 # Ref: http://www.jtagtest.com/pdf/svf_specification.pdf
+# Accession: G00023
 
 import re
 from abc import ABCMeta, abstractmethod

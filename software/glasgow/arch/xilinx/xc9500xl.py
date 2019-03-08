@@ -1,4 +1,5 @@
 # Ref: https://www.xilinx.com/member/forms/download/sim-model-eval-license-xef.html?filename=xc9500xl.zip
+# Accession: G00015
 # Ref: reverse engineering by whitequark
 
 from bitarray import bitarray

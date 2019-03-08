@@ -1,9 +1,12 @@
 # Ref: Pervasive Displays EM027AS012 2.7” TFT EPD Panel Product Specifications
 # Document Number: 1P033-00
+# Accession: G00011
 # Ref: Pervasive Displays E-paper Display COG Driver Interface Timing (G1)
 # Document Number: 4P008-00
+# Accession: G00012
 # Ref: Pervasive Displays E-paper Display COG Driver Interface Timing (G2)
 # Document Number: 4P015-00
+# Accession: G00013
 
 # G1 COG Startup
 # --------------

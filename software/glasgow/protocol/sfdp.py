@@ -1,4 +1,10 @@
-# Ref: JEDEC JESD216/JESD216A/JESD216B
+# Ref: JEDEC JESD216
+# Accession: G00024
+# Ref: JEDEC JESD216A
+# Accession: G00025
+# Ref: JEDEC JESD216B
+# Accession: G00026
+#
 # Currently, only JESD216 (initial revision) is implemented.
 
 from abc import ABCMeta, abstractmethod

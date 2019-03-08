@@ -1,5 +1,7 @@
 # Ref: https://sourceware.org/binutils/docs/as/ARC_002dRegs.html
+# Accession: G00016
 # Ref: linux/arch/arc/include/asm/arcregs.h
+# Accession: G00017
 
 from ...support.bits import *
 

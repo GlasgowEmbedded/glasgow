@@ -1,9 +1,12 @@
 # Ref: ARC® 700 External Interfaces Reference
 # Document Number: 5117-014
+# Accession: G00004
 # Ref: Microchip MEC1618/MEC1618i Low Power 32-bit Microcontroller with Embedded Flash
 # Document Number: DS00002339A
+# Accession: G00005
 # Ref: Microchip MEC1609 Mixed Signal Mobile Embedded Flash ARC EC BC-Link/VLPC Base Component
 # Document Number: DS00002485A
+# Accession: G00006
 
 # The ARC JTAG TAP core has an important quirk: all transactions are initiated by a TCK pulse
 # in Run-Test/Idle state:
