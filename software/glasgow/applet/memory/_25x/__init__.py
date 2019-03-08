@@ -270,10 +270,10 @@ class Memory25xApplet(SPIMasterApplet, name="memory-25x"):
 
         def add_read_arguments(parser):
             parser.add_argument(
-                "address", metavar="ADDRESS", type=address, default=0,
+                "address", metavar="ADDRESS", type=address,
                 help="read memory starting at address ADDRESS, with wraparound")
             parser.add_argument(
-                "length", metavar="LENGTH", type=length, default=0,
+                "length", metavar="LENGTH", type=length,
                 help="read LENGTH bytes from memory")
             parser.add_argument(
                 "-f", "--file", metavar="FILENAME", type=argparse.FileType("wb"),
@@ -289,7 +289,7 @@ class Memory25xApplet(SPIMasterApplet, name="memory-25x"):
 
         def add_program_arguments(parser):
             parser.add_argument(
-                "address", metavar="ADDRESS", type=address, default=0,
+                "address", metavar="ADDRESS", type=address,
                 help="program memory starting at address ADDRESS")
             g_data = parser.add_mutually_exclusive_group(required=True)
             g_data.add_argument(
