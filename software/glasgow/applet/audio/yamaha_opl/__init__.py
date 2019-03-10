@@ -637,6 +637,12 @@ class YamahaOPLWebInterface:
             web.post("/vgm", self.serve_vgm),
         ])
 
+        try:
+            from aiohttp_remotes import XForwardedRelaxed, setup as setup_remotes
+            await setup_remotes(app, XForwardedRelaxed())
+        except ImportError:
+            self._logger.warning("aiohttp_remotes not installed; X-Forwarded-For will not be used")
+
         runner = web.AppRunner(app,
             access_log_format='%a(%{X-Forwarded-For}i) "%r" %s "%{Referer}i" "%{User-Agent}i"')
         await runner.setup()
