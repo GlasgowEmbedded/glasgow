@@ -519,7 +519,11 @@ async def _main():
 
         if args.action == "tool":
             tool = GlasgowApplet.all_applets[args.applet].tool_cls()
-            await tool.run(args)
+            try:
+                await tool.run(args)
+            except GlasgowAppletError as e:
+                tool.logger.error(e)
+                raise SystemExit()
 
         if args.action == "flash":
             logger.info("reading device configuration")
