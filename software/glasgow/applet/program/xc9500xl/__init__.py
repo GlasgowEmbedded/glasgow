@@ -288,7 +288,7 @@ class XC9500XLInterface:
             xc95xx_iface = None
         else:
             xc95xx_iface = XC95xxXLInterface(self.lower, self._logger, self._frequency, device)
-        return idcode, xc95xx_iface
+        return idcode, device, xc95xx_iface
 
     async def read_usercode(self):
         await self.lower.write_ir(IR_USERCODE)
@@ -339,7 +339,7 @@ class XC95xxXLInterface:
             isconf_bits = await self.lower.exchange_dr(isconf.to_bitarray())
             isconf = self.DR_ISCONFIGURATION.from_bitarray(isconf_bits)
             self._log("read address=%03x prev-data=%s",
-                      dev_address, "{:0{}b}".format(self.device.word_width, isconf.data))
+                      dev_address, "{:0{}b}".format(isconf.data, self.device.word_width))
             words.append(isconf.data)
 
         return words
@@ -356,7 +356,7 @@ class XC95xxXLInterface:
             isdata = self.DR_ISDATA.from_bitarray(isdata_bits)
             if isdata.valid:
                 self._log("read autoinc %d data=%s",
-                          index, "{:0{}b}".format(self.device.word_width, isdata.data))
+                          index, "{:0{}b}".format(isdata.data, self.device.word_width))
                 words.append(isdata.data)
                 index += 1
             else:
@@ -406,7 +406,7 @@ class XC95xxXLInterface:
         for offset, word in enumerate(words):
             dev_address = bitstream_to_device_address(address + offset)
             self._log("program address=%03x data=%s",
-                      dev_address, "{:0{}b}".format(self.device.word_width, word))
+                      dev_address, "{:0{}b}".format(word, self.device.word_width))
             strobe = (offset % BLOCK_WORDS == BLOCK_WORDS - 1)
             isconf = self.DR_ISCONFIGURATION(valid=1, strobe=strobe, address=dev_address,
                                              data=word)
@@ -434,7 +434,7 @@ class XC95xxXLInterface:
 
         for offset, word in enumerate(words):
             self._log("program autoinc data=%s",
-                      "{:{}b}".format(self.device.word_width, word))
+                      "{:0{}b}".format(word, self.device.word_width))
             strobe = (offset % BLOCK_WORDS == BLOCK_WORDS - 1)
             isdata = self.DR_ISDATA(valid=1, strobe=strobe, data=word)
             await self.lower.write_dr(isdata.to_bitarray())
