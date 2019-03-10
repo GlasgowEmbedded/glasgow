@@ -637,7 +637,8 @@ class YamahaOPLWebInterface:
             web.post("/vgm", self.serve_vgm),
         ])
 
-        runner = web.AppRunner(app)
+        runner = web.AppRunner(app,
+            access_log_format='%a(%{X-Forwarded-For}i) "%r" %s "%{Referer}i" "%{User-Agent}i"')
         await runner.setup()
         site = web.TCPSite(runner, "localhost", 8080)
         await site.start()
