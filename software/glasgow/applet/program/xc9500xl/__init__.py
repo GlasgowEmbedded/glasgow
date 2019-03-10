@@ -472,8 +472,12 @@ class ProgramXC9500XLApplet(JTAGProbeApplet, name="program-xc9500xl"):
 
     It is recommended to use TCK frequency between 100 and 250 kHz for programming.
 
-    The "program word failed" messages during programming do not necessarily mean a failed
-    programming attempt or a bad device. Always verify the programmed bitstream.
+    Some CPLDs in the wild have been observed to return failures during programming, possibly
+    because they are taken from the rejects bin or recycled, see [1]. The "program word failed"
+    messages during programming do not necessarily mean a failed device; if the bitstream verifies
+    afterwards, it is likely to operate correctly.
+
+    [1]: http://tech.mattmillman.com/making-use-of-recycled-xilinx-xc9500-cplds/
 
     Supported devices are:
 {devices}
