@@ -220,7 +220,8 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
             self.logger.info("pull-L: %s", self._bits_to_str(pull_down_bits))
 
         if len(self.bits) > 4:
-            trst_bits = self.bits
+            # Try possible TRST# pins from most to least likely.
+            trst_bits = pull_down_bits + high_z_bits + pull_up_bits
         else:
             trst_bits = set()
 
