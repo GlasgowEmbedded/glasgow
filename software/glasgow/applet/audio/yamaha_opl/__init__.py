@@ -114,11 +114,9 @@ from ....protocol.vgm import *
 from ... import *
 
 
-class YamahaOPLBus(Module):
+class YamahaCPUBus(Module):
     def __init__(self, pads, master_cyc):
-        self.stb_m  = Signal()
-        self.stb_sy = Signal()
-        self.stb_sh = Signal()
+        self.stb_m = Signal()
 
         self.a  = Signal(2)
 
@@ -130,13 +128,39 @@ class YamahaOPLBus(Module):
         self.rd = Signal()
         self.wr = Signal()
 
-        self.sh = Signal()
-        self.mo = Signal()
-
         ###
 
         self.submodules.clkgen = ClockGen(master_cyc)
         self.comb += self.stb_m.eq(self.clkgen.stb_r)
+
+        self.comb += [
+            pads.clk_m_t.oe.eq(1),
+            pads.clk_m_t.o.eq(self.clkgen.clk),
+            pads.a_t.oe.eq(1),
+            pads.a_t.o.eq(self.a),
+            pads.d_t.oe.eq(self.oe),
+            pads.d_t.o.eq(Cat((self.do))),
+            self.di.eq(Cat((pads.d_t.i))),
+            # handle (self.rd & (self.wr | self.oe)) == 1 safely
+            pads.rd_t.oe.eq(1),
+            pads.rd_t.o.eq(~(self.rd & ~self.wr & ~self.oe)),
+            pads.wr_t.oe.eq(1),
+            pads.wr_t.o.eq(~(self.wr & ~self.rd)),
+        ]
+        if hasattr(pads, "cs_t"):
+            self.comb += [
+                pads.cs_t.oe.eq(1),
+                pads.cs_t.o.eq(~self.cs),
+            ]
+
+
+class YamahaDACBus(Module):
+    def __init__(self, pads):
+        self.stb_sy = Signal()
+        self.stb_sh = Signal()
+
+        self.sh = Signal()
+        self.mo = Signal()
 
         clk_sy_s = Signal()
         clk_sy_r = Signal()
@@ -150,26 +174,6 @@ class YamahaOPLBus(Module):
             sh_r.eq(self.sh),
             self.stb_sh.eq(sh_r & ~self.sh)
         ]
-
-        self.comb += [
-            pads.clk_m_t.oe.eq(1),
-            pads.clk_m_t.o.eq(self.clkgen.clk),
-            pads.a_t.oe.eq(1),
-            pads.a_t.o.eq(self.a),
-            # handle (self.rd & (self.wr | self.oe)) == 1 safely
-            pads.rd_t.oe.eq(1),
-            pads.rd_t.o.eq(~(self.rd & ~self.wr & ~self.oe)),
-            pads.wr_t.oe.eq(1),
-            pads.wr_t.o.eq(~(self.wr & ~self.rd)),
-            pads.d_t.oe.eq(self.oe),
-            pads.d_t.o.eq(Cat((self.do))),
-            self.di.eq(Cat((pads.d_t.i))),
-        ]
-        if hasattr(pads, "cs_t"):
-            self.comb += [
-                pads.cs_t.oe.eq(1),
-                pads.cs_t.o.eq(~self.cs),
-            ]
 
         self.specials += [
             MultiReg(pads.clk_sy_t.i, clk_sy_s),
@@ -189,7 +193,8 @@ class YamahaOPLSubtarget(Module):
     def __init__(self, pads, in_fifo, out_fifo,
                  master_cyc, read_pulse_cyc, write_pulse_cyc,
                  latch_clocks, sample_clocks):
-        self.submodules.bus = bus = YamahaOPLBus(pads, master_cyc)
+        self.submodules.cpu_bus = cpu_bus = YamahaCPUBus(pads, master_cyc)
+        self.submodules.dac_bus = dac_bus = YamahaDACBus(pads)
 
         # Control
 
@@ -202,7 +207,7 @@ class YamahaOPLSubtarget(Module):
         # to explicitly satisfy setup/hold timings.
         self.submodules.control_fsm = FSM()
         self.control_fsm.act("IDLE",
-            NextValue(bus.oe, 1),
+            NextValue(cpu_bus.oe, 1),
             If(out_fifo.readable,
                 out_fifo.re.eq(1),
                 Case(out_fifo.dout & OP_MASK, {
@@ -210,7 +215,7 @@ class YamahaOPLSubtarget(Module):
                         NextValue(enabled, out_fifo.dout & ~OP_MASK),
                     ],
                     OP_WRITE:  [
-                        NextValue(bus.a, out_fifo.dout & ~OP_MASK),
+                        NextValue(cpu_bus.a, out_fifo.dout & ~OP_MASK),
                         NextState("WRITE-DATA")
                     ],
                     # OP_READ: NextState("READ"),
@@ -223,18 +228,18 @@ class YamahaOPLSubtarget(Module):
         self.control_fsm.act("WRITE-DATA",
             If(out_fifo.readable,
                 out_fifo.re.eq(1),
-                NextValue(bus.do, out_fifo.dout),
-                NextValue(bus.cs, 1),
-                NextValue(bus.wr, 1),
+                NextValue(cpu_bus.do, out_fifo.dout),
+                NextValue(cpu_bus.cs, 1),
+                NextValue(cpu_bus.wr, 1),
                 NextValue(pulse_timer, write_pulse_cyc - 1),
                 NextState("WRITE-PULSE")
             )
         )
         self.control_fsm.act("WRITE-PULSE",
             If(pulse_timer == 0,
-                NextValue(bus.cs, 0),
-                NextValue(bus.wr, 0),
-                If(bus.a == 0b0,
+                NextValue(cpu_bus.cs, 0),
+                NextValue(cpu_bus.wr, 0),
+                If(cpu_bus.a == 0b0,
                     NextValue(wait_timer, latch_clocks - 1)
                 ).Else(
                     NextValue(wait_timer, latch_clocks + sample_clocks - 1)
@@ -262,7 +267,7 @@ class YamahaOPLSubtarget(Module):
             If(wait_timer == 0,
                 NextState("IDLE")
             ).Else(
-                If(bus.stb_m,
+                If(cpu_bus.stb_m,
                     NextValue(wait_timer, wait_timer - 1)
                 )
             )
@@ -284,13 +289,13 @@ class YamahaOPLSubtarget(Module):
 
         data_r = Signal(16)
         data_l = Signal(16)
-        self.sync += If(bus.stb_sy, data_r.eq(Cat(data_r[1:], bus.mo)))
+        self.sync += If(dac_bus.stb_sy, data_r.eq(Cat(data_r[1:], dac_bus.mo)))
         self.comb += xfer_i.raw_bits().eq(data_l)
 
         self.submodules.data_fsm = FSM()
         self.data_fsm.act("WAIT-SH",
             NextValue(in_fifo.flush, ~enabled),
-            If(bus.stb_sh & enabled,
+            If(dac_bus.stb_sh & enabled,
                 NextState("SAMPLE")
             )
         )
