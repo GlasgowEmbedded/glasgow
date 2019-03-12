@@ -150,6 +150,7 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
     def build_pin_tristate(self, pin_num, oe, o, i):
         port, bit, req = self._pins[pin_num]
         pin_parts = req(bit)
+
         self.specials += \
             Instance("SB_IO",
                 p_PIN_TYPE=C(0b101001, 6), # PIN_OUTPUT_TRISTATE|PIN_INPUT
@@ -160,6 +161,10 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
             )
         if hasattr(pin_parts, "oe"):
             self.comb += pin_parts.oe.eq(oe)
+
+        # This makes the bitstream ID depend on physical pin location, as .pcf is currently
+        # not taken into account when generating bitstream ID.
+        pin_parts.io.attr.add(("glasgow.pin", "{}{}".format(port, bit)))
 
     def _throttle_fifo(self, fifo):
         self.submodules += fifo
