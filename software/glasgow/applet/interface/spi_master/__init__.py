@@ -279,13 +279,14 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
     __pins = ("sck", "ss", "mosi", "miso")
 
     @classmethod
-    def add_build_arguments(cls, parser, access):
+    def add_build_arguments(cls, parser, access, omit_pins=False):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_argument(parser, "sck", required=True)
-        access.add_pin_argument(parser, "ss")
-        access.add_pin_argument(parser, "mosi")
-        access.add_pin_argument(parser, "miso")
+        if not omit_pins:
+            access.add_pin_argument(parser, "sck", required=True)
+            access.add_pin_argument(parser, "ss")
+            access.add_pin_argument(parser, "mosi")
+            access.add_pin_argument(parser, "miso")
 
         parser.add_argument(
             "-b", "--bit-rate", metavar="FREQ", type=int, default=100,
