@@ -94,6 +94,7 @@
 #
 #   * YM3812 stops working between 15 MHz (good) and 30 MHz (bad).
 
+from abc import ABCMeta, abstractmethod
 import os.path
 import logging
 import argparse
@@ -189,10 +190,10 @@ OP_WAIT   = 0x30
 OP_MASK   = 0xf0
 
 
-class YamahaOPLSubtarget(Module):
+class YamahaOPxSubtarget(Module):
     def __init__(self, pads, in_fifo, out_fifo,
                  master_cyc, read_pulse_cyc, write_pulse_cyc,
-                 latch_clocks, sample_clocks):
+                 address_clocks, data_clocks):
         self.submodules.cpu_bus = cpu_bus = YamahaCPUBus(pads, master_cyc)
         self.submodules.dac_bus = dac_bus = YamahaDACBus(pads)
 
@@ -239,10 +240,10 @@ class YamahaOPLSubtarget(Module):
             If(pulse_timer == 0,
                 NextValue(cpu_bus.cs, 0),
                 NextValue(cpu_bus.wr, 0),
-                If(cpu_bus.a == 0b0,
-                    NextValue(wait_timer, latch_clocks - 1)
+                If(cpu_bus.a[0] == 0b0,
+                    NextValue(wait_timer, address_clocks - 1)
                 ).Else(
-                    NextValue(wait_timer, latch_clocks + sample_clocks - 1)
+                    NextValue(wait_timer, data_clocks - 1)
                 ),
                 NextState("WAIT-LOOP")
             ).Else(
@@ -319,14 +320,13 @@ class YamahaOPLSubtarget(Module):
         )
 
 
-class YamahaOPLInterface:
-    def __init__(self, interface, logger, latch_clocks, sample_clocks, instant_writes=True):
+class YamahaOPxInterface(metaclass=ABCMeta):
+    chips = []
+
+    def __init__(self, interface, logger, instant_writes=True):
         self.lower   = interface
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
-
-        self.latch_clocks  = latch_clocks
-        self.sample_clocks = sample_clocks
 
         # Adjust delays such that earlier writes borrow from later delays. Useful for VGM files,
         # where writes are unphysically assumed to take no time.
@@ -336,38 +336,45 @@ class YamahaOPLInterface:
         self._feature_level  = 1
         self._feature_warned = False
 
+    @abstractmethod
+    def get_vgm_clock_rate(self, vgm_reader):
+        pass
+
+    address_clocks = None
+    data_clocks    = None
+    sample_clocks  = None
+
     @property
     def write_clocks(self):
-        return 2 * self.latch_clocks + self.sample_clocks
+        return self.address_clocks + self.data_clocks
 
     def _log(self, message, *args, level=None):
-        self._logger.log(self._level if level is None else level, "OPL*: " + message, *args)
+        self._logger.log(self._level if level is None else level, "OPx: " + message, *args)
+
+    _registers = []
 
     async def reset(self):
         self._log("reset")
         await self.lower.reset()
-        # Reset the synthesizer in software; some OPL chips appear to have broken ~IC reset,
-        # and in any case this saves a pin. VGM files often do not reset the chip appropriately,
-        # nor do they always terminate cleanly, so this is necessary to get a reproducible result.
+        # Reset the synthesizer in software; some of them appear to have broken reset via ~IC pin,
+        # and in any case this frees up one Glasgow pin, which we are short on. VGM files often
+        # do not reset the chip appropriately, nor do they always terminate cleanly, so this is
+        # necessary to get a reproducible result.
         old_instant_writes, self._instant_writes = self._instant_writes, False
         await self._reset_registers()
         self._instant_writes = old_instant_writes
 
+    async def _use_highest_level(self):
+        pass
+
+    async def _use_lowest_level(self):
+        pass
+
     async def _reset_registers(self):
-        # Put YM3812 in OPL2 mode.
-        await self.write_register(0x01, 0x20, check_feature=False)
-        # Zero all defined OPL2 registers except TEST.
-        for addr in [
-            0x02, 0x03, 0x04, 0x08,
-            *range(0x20, 0x36), *range(0x40, 0x56), *range(0x60, 0x76), *range(0x80, 0x96),
-            *range(0xA0, 0xA9), *range(0xB0, 0xB9),
-            0xBD,
-            *range(0xC0, 0xC9), *range(0xE0, 0xF6)
-        ]:
+        await self._use_highest_level()
+        for addr in self._registers:
             await self.write_register(addr, 0x00, check_feature=False)
-        # Put YM3812 back in OPL mode.
-        await self.write_register(0x01, 0x00, check_feature=False)
-        # Reset feature level. We're interested in any new violations.
+        await self._use_lowest_level()
         self._feature_level  = 1
         self._feature_warned = False
 
@@ -398,12 +405,10 @@ class YamahaOPLInterface:
         return False
 
     async def _check_enable_features(self, address, data):
-        # YM3812 specific
-        if address == 0x01 and data & 0x20:
-            self._enable_level(2)
-        if address in range(0xe0, 0xf7):
-            if self._check_level(address, 2):
-                await self.write_register(0x01, 0x20)
+        if address not in self._registers:
+            self._log("client uses undefined feature [%#04x]",
+                      address,
+                      level=logging.WARN)
 
     async def write_register(self, address, data, check_feature=True):
         if check_feature:
@@ -416,7 +421,9 @@ class YamahaOPLInterface:
         else:
             self._log("write [%#04x]=%#04x",
                       address, data)
-        await self.lower.write([OP_WRITE|0, address, OP_WRITE|1, data])
+        addr_high = (address >> 8) << 1
+        addr_low  = address & 0xff
+        await self.lower.write([OP_WRITE|addr_high|0, addr_low, OP_WRITE|1, data])
 
     async def wait_clocks(self, count):
         if self._instant_writes:
@@ -443,28 +450,76 @@ class YamahaOPLInterface:
         return await self.lower.read(count * 2, hint=hint * 2)
 
 
+class YamahaOPLInterface(YamahaOPxInterface):
+    chips = ["YM3526 (OPL)"]
+
+    def get_vgm_clock_rate(self, vgm_reader):
+        return vgm_reader.ym3526_clk
+
+    address_clocks = 12
+    data_clocks    = 84
+    sample_clocks  = 72
+
+    _registers = [
+        0x02, 0x03, 0x04, 0x08, *range(0x20, 0x36), *range(0x40, 0x56), *range(0x60, 0x76),
+        *range(0x80, 0x96), *range(0xA0, 0xA9), *range(0xB0, 0xB9), 0xBD, *range(0xC0, 0xC9)
+    ]
+
+    async def _check_enable_features(self, address, data):
+        if address == 0x01 and data == 0x00:
+            pass
+        else:
+            await super()._check_enable_features(address, data)
+
+
+class YamahaOPL2Interface(YamahaOPLInterface):
+    chips = YamahaOPLInterface.chips + ["YM3812 (OPL2)"]
+
+    def get_vgm_clock_rate(self, vgm_reader):
+        return vgm_reader.ym3812_clk or YamahaOPLInterface.get_vgm_clock_rate(self, vgm_reader)
+
+    _registers = YamahaOPLInterface._registers + [
+        *range(0xE0, 0xF6)
+    ]
+
+    async def _use_highest_level(self):
+        await self.write_register(0x01, 0x20, check_feature=False)
+
+    async def _use_lowest_level(self):
+        await self.write_register(0x01, 0x00, check_feature=False)
+
+    async def _check_enable_features(self, address, data):
+        if address == 0x01 and data & 0x20:
+            self._enable_level(2)
+        elif address in range(0xE0, 0xF6):
+            if self._check_level(address, 2):
+                await self.write_register(0x01, 0x20)
+        else:
+            await super()._check_enable_features(address, data)
+
+
 class YamahaVGMStreamPlayer(VGMStreamPlayer):
-    def __init__(self, reader, opl_iface, clock_rate):
+    def __init__(self, reader, opx_iface, clock_rate):
         self._reader     = reader
-        self._opl_iface  = opl_iface
+        self._opx_iface  = opx_iface
 
         self.clock_rate  = clock_rate
-        self.sample_time = opl_iface.sample_clocks / self.clock_rate
+        self.sample_time = opx_iface.sample_clocks / self.clock_rate
 
     async def play(self, disable=True):
         try:
-            await self._opl_iface.enable()
+            await self._opx_iface.enable()
             await self._reader.parse_data(self)
         finally:
             if disable:
-                await self._opl_iface.disable()
+                await self._opx_iface.disable()
 
     async def record(self, queue, chunk_count=8192, concurrent=10):
         total_count = int(self._reader.total_seconds / self.sample_time)
         done_count  = 0
 
         async def queue_samples(count):
-            samples = await self._opl_iface.read_samples(count)
+            samples = await self._opx_iface.read_samples(count)
             await queue.put(samples)
 
         tasks = set()
@@ -482,24 +537,26 @@ class YamahaVGMStreamPlayer(VGMStreamPlayer):
         await queue.put(b"")
 
     async def ym3526_write(self, address, data):
-        await self._opl_iface.write_register(address, data)
+        await self._opx_iface.write_register(address, data)
 
     async def ym3812_write(self, address, data):
-        await self._opl_iface.write_register(address, data)
+        await self._opx_iface.write_register(address, data)
 
     async def wait_seconds(self, delay):
-        await self._opl_iface.wait_clocks(int(delay * self.clock_rate))
+        await self._opx_iface.wait_clocks(int(delay * self.clock_rate))
 
 
-class YamahaOPLWebInterface:
-    def __init__(self, logger, opl_iface):
+class YamahaOPxWebInterface:
+    def __init__(self, logger, opx_iface):
         self._logger    = logger
-        self._opl_iface = opl_iface
+        self._opx_iface = opx_iface
         self._lock      = asyncio.Lock()
 
     async def serve_index(self, request):
         with open(os.path.join(os.path.dirname(__file__), "index.html")) as f:
-            return web.Response(text=f.read(), content_type="text/html")
+            index_html = f.read()
+            index_html = index_html.replace("{{chips}}", ", ".join(self._opx_iface.chips))
+            return web.Response(text=index_html, content_type="text/html")
 
     def _make_resampler(self, actual, preferred):
         try:
@@ -557,18 +614,18 @@ class YamahaOPLWebInterface:
             self._logger.info("web: %s: VGM has commands for %s",
                               digest, ", ".join(vgm_reader.chips()))
             if len(vgm_reader.chips()) != 1:
-                raise ValueError("VGM file contains commands for more than one chip")
+                raise ValueError("VGM file does not contain commands for exactly one chip")
 
-            clock_rate = vgm_reader.ym3526_clk or vgm_reader.ym3812_clk
+            clock_rate = self._opx_iface.get_vgm_clock_rate(vgm_reader)
             if clock_rate == 0:
-                raise ValueError("VGM file does not contain commands for YM3526 or YM3812")
+                raise ValueError("VGM file does not contain commands for any supported chip")
             if clock_rate & 0xc0000000:
                 raise ValueError("VGM file uses unsupported chip configuration")
 
             self._logger.info("web: %s: VGM is looped for %.2f/%.2f s",
                               digest, vgm_reader.loop_seconds, vgm_reader.total_seconds)
 
-            vgm_player = YamahaVGMStreamPlayer(vgm_reader, self._opl_iface, clock_rate)
+            vgm_player = YamahaVGMStreamPlayer(vgm_reader, self._opx_iface, clock_rate)
         except ValueError as e:
             self._logger.warning("web: %s: broken upload: %s",
                                  digest, str(e))
@@ -584,7 +641,7 @@ class YamahaOPLWebInterface:
             self._logger.info("web: %s: start streaming",
                               digest)
 
-            await self._opl_iface.reset()
+            await self._opx_iface.reset()
 
             input_queue    = asyncio.Queue()
             resample_queue = asyncio.Queue()
@@ -595,6 +652,7 @@ class YamahaOPLWebInterface:
             try:
                 response = web.StreamResponse()
                 response.content_type = "text/plain"
+                response.headers["X-Chip"] = vgm_reader.chips()[0]
                 response.headers["X-Sample-Rate"] = str(output_rate)
                 total_samples = int(vgm_reader.total_seconds * output_rate)
                 response.headers["X-Total-Samples"] = str(total_samples)
@@ -670,8 +728,10 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
     logger = logging.getLogger(__name__)
     help = "drive and record Yamaha OPL* FM synthesizers"
     description = """
-    Send commands and record digital output from Yamaha OPL* series FM synthesizers. Currently,
-    only OPL2 is supported, but this applet is easy to extend to other similar chips.
+    Send commands and record digital output from Yamaha OPL* series FM synthesizers. The supported
+    chips are:
+        * YM3526 (OPL)
+        * YM3812 (OPL2)
 
     The ~CS input should always be grounded, since there is only one chip on the bus in the first
     place.
@@ -681,7 +741,7 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
     point sample format and ordinary 16-bit PCM.)
 
     The written samples can be played with the knowledge of the sample rate, which is derived from
-    the OPL frequency specified in the input file. E.g. using SoX:
+    the master clock frequency specified in the input file. E.g. using SoX:
 
         $ play -r 49715 output.u16
 
@@ -707,12 +767,22 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
         access.add_pin_argument(parser, "sh", default=True)
         access.add_pin_argument(parser, "mo", default=True)
 
+        parser.add_argument(
+            "-d", "--device", metavar="DEVICE", choices=["OPL", "OPL2"], required=True,
+            help="Synthesizer family")
+
+    @staticmethod
+    def _device_iface_cls(args):
+        if args.device == "OPL":
+            return YamahaOPLInterface
+        if args.device == "OPL2":
+            return YamahaOPL2Interface
+
     def build(self, target, args):
-        self.latch_clocks  = 12
-        self.sample_clocks = 72
+        device_iface_cls = self._device_iface_cls(args)
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        subtarget = iface.add_subtarget(YamahaOPLSubtarget(
+        subtarget = iface.add_subtarget(YamahaOPxSubtarget(
             pads=iface.get_pads(args, pins=self.__pins, pin_sets=self.__pin_sets),
             # These FIFO depths are somewhat dependent on the (current, bad) arbiter in Glasgow,
             # but they work for now. With a better arbiter they should barely matter.
@@ -723,16 +793,18 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
             master_cyc=self.derive_clock(input_hz=target.sys_clk_freq, output_hz=15e6),
             read_pulse_cyc=int(target.sys_clk_freq * 200e-9),
             write_pulse_cyc=int(target.sys_clk_freq * 100e-9),
-            latch_clocks=self.latch_clocks,
-            sample_clocks=self.sample_clocks,
+            address_clocks=device_iface_cls.address_clocks,
+            data_clocks=device_iface_cls.data_clocks,
         ))
         return subtarget
 
     async def run(self, device, args):
+        device_iface_cls = self._device_iface_cls(args)
+
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        opl_iface = YamahaOPLInterface(iface, self.logger, self.latch_clocks, self.sample_clocks)
-        await opl_iface.reset()
-        return opl_iface
+        opx_iface = device_iface_cls(iface, self.logger)
+        await opx_iface.reset()
+        return opx_iface
 
     @classmethod
     def add_interact_arguments(cls, parser):
@@ -740,7 +812,7 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
         p_convert = p_operation.add_parser(
-            "convert", help="convert VGM to PCM using OPL hardware")
+            "convert", help="convert VGM to PCM using Yamaha hardware")
         p_convert.add_argument(
             "vgm_file", metavar="VGM-FILE", type=argparse.FileType("rb"),
             help="read commands from VGM-FILE (one of: .vgm .vgm.gz .vgz)")
@@ -749,19 +821,23 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
             help="write samples to PCM-FILE")
 
         p_web = p_operation.add_parser(
-            "web", help="expose OPL hardware via a web interface")
+            "web", help="expose Yamaha hardware via a web interface")
 
-    async def interact(self, device, args, opl_iface):
+    async def interact(self, device, args, opx_iface):
         if args.operation == "convert":
             vgm_reader = VGMStreamReader.from_file(args.vgm_file)
             self.logger.info("VGM file contains commands for %s", ", ".join(vgm_reader.chips()))
-            if vgm_reader.ym3812_clk == 0:
-                raise GlasgowAppletError("VGM file does not contain commands for YM3812")
-            if len(vgm_reader.chips()) > 1:
-                self.logger.warning("VGM file contains commands for %s, which will be ignored"
-                                    .format(", ".join(vgm_reader.chips())))
+            if len(vgm_reader.chips()) != 1:
+                raise GlasgowAppletError("VGM file does not contain commands for exactly one chip")
 
-            vgm_player = YamahaVGMStreamPlayer(vgm_reader, opl_iface, vgm_reader.ym3812_clk)
+            clock_rate = opx_iface.get_vgm_clock_rate(vgm_reader)
+            if clock_rate == 0:
+                raise GlasgowAppletError("VGM file does not contain commands for any "
+                                         "supported chip")
+            if clock_rate & 0xc0000000:
+                raise GlasgowAppletError("VGM file uses unsupported chip configuration")
+
+            vgm_player = YamahaVGMStreamPlayer(vgm_reader, opx_iface, clock_rate)
             self.logger.info("recording at sample rate %d Hz", 1 / vgm_player.sample_time)
 
             async def write_pcm(input_queue):
@@ -782,7 +858,7 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
                 await fut
 
         if args.operation == "web":
-            web_iface = YamahaOPLWebInterface(self.logger, opl_iface)
+            web_iface = YamahaOPxWebInterface(self.logger, opx_iface)
             await web_iface.serve()
 
 # -------------------------------------------------------------------------------------------------

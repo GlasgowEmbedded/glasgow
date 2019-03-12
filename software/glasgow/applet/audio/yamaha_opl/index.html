@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <head>
-  <title>Yamaha OPL* Web Gateway</title>
+  <title>Yamaha OP* Web Gateway</title>
 </head>
 <body style="width:50em">
-  <h1>Yamaha OPL* Web Gateway</h1>
-  <p>This webpage lets you submit commands to a real Yamaha YM3812 synthesizer and listen to the output. The synthesizer is a <b>shared resource</b> (and isn't very fast, although it does not have to run in real time), and everyone who submits a file is in the same queue, so you might have to wait until it's your turn.</p>
-  <p>Supported chips: <a href="https://vgmrips.net/packs/chip/ym3526">YM3526</a>, <a href="https://vgmrips.net/packs/chip/ym3812">YM3812</a>.</p>
-  <p>Play a VGM/VGZ file: <input type="file" id="file" accept=".vgm,.vgz"> <input type="button" id="play" value="Play"> <input type="button" id="replay" value="Replay" disabled> <input type="checkbox" id="loop"> <label for="loop">Loop</label></p>
-  <p>Status: <span id="netStatus">idle</span>, <span id="playStatus">stopped</span></p>
+  <h1>Yamaha OP* Web Gateway</h1>
+  <p>This webpage lets you submit commands to a real Yamaha synthesizer and listen to the output. The synthesizer is a <b>shared resource</b> (and isn't very fast, although it does not have to run in real time), and everyone who submits a file is in the same queue, so you might have to wait until it's your turn.</p>
+  <p>Supported chips: {{chips}}.</p>
+  <p>Play a <a href="https://vgmrips.net/packs/chips">VGM/VGZ file</a>: <input type="file" id="file" accept=".vgm,.vgz"> <input type="button" id="play" value="Play"> <input type="button" id="replay" value="Replay" disabled> <input type="checkbox" id="loop"> <label for="loop">Loop</label></p>
+  <p>Status: <span id="chipStatus">no chip</span>, <span id="netStatus">idle</span>, <span id="playStatus">stopped</span>.</p>
   <p id="errorPane" style="color:red; display:none">Error: <span id="error"></span></p>
 
   <!--
@@ -149,6 +149,7 @@
     var fileInput = document.getElementById("file");
     var netStatusSpan = document.getElementById("netStatus");
     var playStatusSpan = document.getElementById("playStatus");
+    var chipStatusSpan = document.getElementById("chipStatus");
     var errorPane = document.getElementById("errorPane");
     var errorSpan = document.getElementById("error");
     playButton.onclick = function(event) {
@@ -204,6 +205,7 @@
           if(totalSamples == 0) {
             totalSamples = parseInt(xhr.getResponseHeader("X-Total-Samples"));
             player.loopSkipTo = parseInt(xhr.getResponseHeader("X-Loop-Skip-To"));
+            chipStatusSpan.innerText = "chip " + xhr.getResponseHeader("X-Chip");
           }
 
           var CHUNK_SIZE = 4096;
