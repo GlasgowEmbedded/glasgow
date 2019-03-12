@@ -234,10 +234,10 @@ def get_argparser():
     add_applet_arg(g_flash_bitstream, mode="build")
 
     def revision(arg):
-        if re.match(r"^A0|B0|C0$", string):
+        if re.match(r"^A0|B0|C0$", arg):
             return arg
         else:
-            raise argparse.ArgumentTypeError("{} is not a valid revision letter".format(arg))
+            raise argparse.ArgumentTypeError("{} is not a valid revision".format(arg))
 
     def serial(arg):
         if re.match(r"^\d{8}T\d{6}Z$", arg):
