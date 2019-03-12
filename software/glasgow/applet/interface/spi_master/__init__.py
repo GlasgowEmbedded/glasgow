@@ -120,7 +120,10 @@ class SPIMasterSubtarget(Module):
         )
         self.fsm.act("COUNT-CHECK",
             If(count == 0,
-                NextState("RECV-COMMAND")
+                NextState("RECV-COMMAND"),
+                If((cmd & BIT_HOLD_SS) != 0,
+                    NextValue(self.bus.ss, ss_active),
+                ),
             ).Else(
                 NextValue(self.bus.ss, ss_active),
                 NextState("RECV-DATA")
