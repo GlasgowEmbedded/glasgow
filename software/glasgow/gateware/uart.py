@@ -2,7 +2,7 @@ from migen import *
 from migen.genlib.cdc import MultiReg
 
 
-__all__ = ['UART', 'uart_bit_cyc']
+__all__ = ["UART"]
 
 
 class UARTBus(Module):
@@ -36,40 +36,6 @@ class UARTBus(Module):
             ]
 
 
-def uart_bit_cyc(clk_freq, baud_rate, max_deviation=50000):
-    """
-    Calculate bit time from clock frequency and baud rate.
-
-    :param clk_freq:
-        Input clock frequency, in Hz.
-    :type clk_freq: int or float
-    :param baud_rate:
-        Baud rate, in bits per second.
-    :type baud_rate: int or float
-    :param max_deviation:
-        Maximum deviation of actual baud rate from ``baud_rate``, in parts per million.
-    :type max_deviation: int or float
-
-    :returns: (int, int or float) -- bit time as a multiple of clock period, and actual baud rate
-    as calculated based on bit time.
-    :raises: ValueError -- if the baud rate is too high for the specified clock frequency,
-    or if actual baud rate deviates from requested baud rate by more than a specified amount.
-    """
-
-    bit_cyc = round(clk_freq // baud_rate)
-    if bit_cyc <= 0:
-        raise ValueError("baud rate {} is too high for input clock frequency {}"
-                         .format(baud_rate, clk_freq))
-
-    actual_baud_rate = round(clk_freq // bit_cyc)
-    deviation = round(1000000 * (actual_baud_rate - baud_rate) // baud_rate)
-    if deviation > max_deviation:
-        raise ValueError("baud rate {} deviation from {} ({} ppm) is higher than {} ppm"
-                         .format(actual_baud_rate, baud_rate, deviation, max_deviation))
-
-    return bit_cyc + 1, actual_baud_rate
-
-
 class UART(Module):
     """
     Asynchronous serial receiver-transmitter.
@@ -77,8 +43,7 @@ class UART(Module):
     Any number of data bits, any parity, and 1 stop bit are supported.
 
     :param bit_cyc:
-        Bit time expressed as a multiple of system clock periods. Use :func:`uart_bit_cyc`
-        to calculate bit time from system clock frequency and baud rate.
+        Bit time expressed as a multiple of system clock periods.
     :type bit_cyc: int
     :param data_bits:
         Data bit count.
@@ -128,8 +93,6 @@ class UART(Module):
         self.submodules.bus = bus = UARTBus(pads)
 
         ###
-
-        bit_cyc = int(bit_cyc)
 
         def calc_parity(sig, kind):
             if kind in ("zero", "none"):

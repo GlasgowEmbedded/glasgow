@@ -1,6 +1,8 @@
 import re
 import argparse
 
+from ..gateware.clockgen import *
+
 
 __all__ = ["GlasgowAppletError", "GlasgowApplet", "GlasgowAppletTool"]
 
@@ -29,6 +31,15 @@ class GlasgowApplet:
     @classmethod
     def add_build_arguments(cls, parser, access):
         access.add_build_arguments(parser)
+
+    def derive_clock(self, *args, clock_name=None, **kwargs):
+        try:
+            return ClockGen.derive(*args, **kwargs, logger=self.logger, clock_name=None)
+        except ValueError as e:
+            if clock_name is None:
+                raise GlasgowAppletError(e)
+            else:
+                raise GlasgowAppletError("clock {}: {}".format(clock_name, e))
 
     def build(self, target):
         raise NotImplemented

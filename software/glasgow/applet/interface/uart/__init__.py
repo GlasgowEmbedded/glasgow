@@ -59,19 +59,13 @@ class UARTApplet(GlasgowApplet, name="uart"):
                  " (default: %(default)s)")
 
     def build(self, target, args):
-        try:
-            bit_cyc, actual_baud = uart_bit_cyc(target.sys_clk_freq, args.baud, args.tolerance)
-            self.logger.debug("requested baud rate %d, actual %d",
-                              args.baud, actual_baud)
-        except ValueError as e:
-            raise GlasgowAppletError(e)
-
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(UARTSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
-            bit_cyc=bit_cyc,
+            bit_cyc=self.derive_clock(input_hz=target.sys_clk_freq, output_hz=args.baud,
+                                      min_cyc=2, max_deviation_ppm=args.tolerance),
             parity=args.parity,
         ))
 
