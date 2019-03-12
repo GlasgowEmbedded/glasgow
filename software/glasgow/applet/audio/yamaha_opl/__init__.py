@@ -69,6 +69,14 @@
 # takes slightly more than one YM3812 sample clock (which is slightly less than one VGM sample
 # clock). This means that two YM3812 writes followed by a 1 sample delay in VGM "invalidate"
 # the delay, by borrowing time from it.
+#
+# Overclocking
+# ------------
+#
+# It's useful to overclock the synthesizer to get results faster than realtime. Since it's fully
+# synchronous digital logic, that doesn't generally affect the output until it breaks.
+#
+#   * YM3812 stops working between 15 MHz (good) and 30 MHz (bad).
 
 import os.path
 import logging
@@ -85,6 +93,7 @@ from migen import *
 from migen.genlib.cdc import MultiReg
 
 from ....gateware.pads import *
+from ....gateware.clockgen import *
 from ....protocol.vgm import *
 from ... import *
 
@@ -110,26 +119,8 @@ class YamahaOPLBus(Module):
 
         ###
 
-        half_master_cyc = int(master_cyc // 2)
-
-        cyc_m   = Signal(max=half_master_cyc)
-        self.sync += [
-            If(cyc_m == 0,
-                cyc_m.eq(half_master_cyc - 1),
-            ).Else(
-                cyc_m.eq(cyc_m - 1)
-            )
-        ]
-
-        clk_m_s = Signal()
-        clk_m_r = Signal()
-        self.sync += [
-            If(cyc_m == 0,
-                clk_m_s.eq(~clk_m_s)
-            ),
-            clk_m_r.eq(clk_m_s),
-            self.stb_m.eq(~clk_m_r & clk_m_s)
-        ]
+        self.submodules.clkgen = ClockGen(master_cyc)
+        self.comb += self.stb_m.eq(self.clkgen.stb_r)
 
         clk_sy_s = Signal()
         clk_sy_r = Signal()
@@ -146,7 +137,7 @@ class YamahaOPLBus(Module):
 
         self.comb += [
             pads.clk_m_t.oe.eq(1),
-            pads.clk_m_t.o.eq(clk_m_s),
+            pads.clk_m_t.o.eq(self.clkgen.clk),
             pads.d_t.oe.eq(self.oe),
             pads.d_t.o.eq(Cat((self.do))),
             self.di.eq(Cat((pads.d_t.i))),
@@ -702,9 +693,8 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
             out_fifo=iface.get_out_fifo(depth=512),
             in_fifo=iface.get_in_fifo(depth=8192, auto_flush=False),
             # It's useful to run the synthesizer at a frequency significantly higher than real-time
-            # to reduce the time spent waiting. The choice of 7.5 MHz is somewhat arbitrary but
-            # it works well for both the divider in the applet and the synthesizer.
-            master_cyc=target.sys_clk_freq / 7.5e6,
+            # to reduce the time spent waiting.
+            master_cyc=self.derive_clock(input_hz=target.sys_clk_freq, output_hz=15e6),
             read_pulse_cyc=int(target.sys_clk_freq * 200e-9),
             write_pulse_cyc=int(target.sys_clk_freq * 100e-9),
             latch_clocks=self.latch_clocks,
