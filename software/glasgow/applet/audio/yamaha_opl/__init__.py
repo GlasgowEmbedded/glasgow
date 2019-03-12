@@ -18,6 +18,10 @@
 #    which differs from series to series and from address to data.
 #     - OPLL/OPL(?)/OPL2(?): address 12 cycles, data 84 cycles. (only documented for OPLL)
 #     - OPL3: address 32 cycles, data 32 cycles. (documented)
+#  * The timing diagrams are sometimes absurd. YMF278 datasheet figure 1-5 implies that the data
+#    bus is stable for precisely tRDS (which is, incidentally, not defined anywhere) before
+#    the ~RD rising edge, which would imply time travel. YM3812 datasheet figure A-3 is actually
+#    physically possible.
 #
 # Bitstream format
 # ----------------
@@ -51,6 +55,14 @@
 # enable all available advanced features, zero out the registers, and then disable them back for
 # compatibility with OPL clients that expect the compatibility mode to be on.
 #
+# Bus cycles
+# ----------
+#
+# The CPU bus interface is asynchronous to master or DAC clock, but is heavily registered (see
+# the next section). Writes are referenced to the ~WR rising edge, and require chip-specific
+# wait states. Reads are referenced to ~RD falling edge, and always read exactly one register,
+# although there might be undocumented registers elsewhere.
+#
 # Register latency
 # ----------------
 #
@@ -61,6 +73,10 @@
 # an intermediate area, and wait until the right register travels to the physical write port.
 # On YM3812, the latch latency is 12 cycles and the sample takes 72 clocks, therefore each
 # address/data write cycle takes 12+12+72 clocks.
+#
+# On some chips (e.g OPL4) the register that can be read has a busy bit, which seems to be always
+# the LSB. On many others (e.g. OPL3) there is no busy bit. Whether the busy bit is available
+# on any given silicon seems pretty arbitrary.
 #
 # VGM timeline
 # ------------
@@ -104,7 +120,7 @@ class YamahaOPLBus(Module):
         self.stb_sy = Signal()
         self.stb_sh = Signal()
 
-        self.a  = Signal(1)
+        self.a  = Signal(2)
 
         self.oe = Signal(reset=1)
         self.di = Signal(8)
@@ -138,19 +154,22 @@ class YamahaOPLBus(Module):
         self.comb += [
             pads.clk_m_t.oe.eq(1),
             pads.clk_m_t.o.eq(self.clkgen.clk),
-            pads.d_t.oe.eq(self.oe),
-            pads.d_t.o.eq(Cat((self.do))),
-            self.di.eq(Cat((pads.d_t.i))),
             pads.a_t.oe.eq(1),
             pads.a_t.o.eq(self.a),
-            pads.cs_t.oe.eq(1),
-            pads.cs_t.o.eq(~self.cs),
             # handle (self.rd & (self.wr | self.oe)) == 1 safely
             pads.rd_t.oe.eq(1),
             pads.rd_t.o.eq(~(self.rd & ~self.wr & ~self.oe)),
             pads.wr_t.oe.eq(1),
             pads.wr_t.o.eq(~(self.wr & ~self.rd)),
+            pads.d_t.oe.eq(self.oe),
+            pads.d_t.o.eq(Cat((self.do))),
+            self.di.eq(Cat((pads.d_t.i))),
         ]
+        if hasattr(pads, "cs_t"):
+            self.comb += [
+                pads.cs_t.oe.eq(1),
+                pads.cs_t.o.eq(~self.cs),
+            ]
 
         self.specials += [
             MultiReg(pads.clk_sy_t.i, clk_sy_s),
@@ -649,6 +668,9 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
     Send commands and record digital output from Yamaha OPL* series FM synthesizers. Currently,
     only OPL2 is supported, but this applet is easy to extend to other similar chips.
 
+    The ~CS input should always be grounded, since there is only one chip on the bus in the first
+    place.
+
     The digital output is losslessly converted to 16-bit unsigned PCM samples. (The Yamaha DACs
     only have 16 bit of dynamic range, and there is a direct mapping between the on-wire floating
     point sample format and ordinary 16-bit PCM.)
@@ -664,7 +686,7 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
     """
 
     __pin_sets = ("d", "a")
-    __pins = ("clk_m", "cs", "rd", "wr",
+    __pins = ("clk_m", "rd", "wr",
               "clk_sy", "sh", "mo")
 
     @classmethod
@@ -673,8 +695,7 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
 
         access.add_pin_set_argument(parser, "d", width=8, default=True)
         access.add_pin_argument(parser, "clk_m", default=True)
-        access.add_pin_set_argument(parser, "a", width=1, default=True)
-        access.add_pin_argument(parser, "cs", default=True)
+        access.add_pin_set_argument(parser, "a", width=2, default=True)
         access.add_pin_argument(parser, "rd", default=True)
         access.add_pin_argument(parser, "wr", default=True)
         access.add_pin_argument(parser, "clk_sy", default=True)
