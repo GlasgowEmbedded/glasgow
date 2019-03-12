@@ -302,10 +302,10 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
             "--ss-active", metavar="LEVEL", type=int, choices=[0, 1], default=0,
             help="set active chip select level to LEVEL (default: %(default)s")
 
-    def build(self, target, args):
+    def build(self, target, args, pins=__pins):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         return iface.add_subtarget(SPIMasterSubtarget(
-            pads=iface.get_pads(args, pins=self.__pins),
+            pads=iface.get_pads(args, pins=pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
             period_cyc=math.ceil(target.sys_clk_freq / (args.bit_rate * 1000)),
