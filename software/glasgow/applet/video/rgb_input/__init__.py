@@ -41,7 +41,11 @@ class VideoRGBInputSubtarget(Module):
         self.sync += \
             If(stb, pixel.eq(Cat(rx, gx, bx)))
 
-        frame = Signal(5, reset_less=True)
+        frame = Signal(5)
+        f_stb = Signal()
+        self.sync += \
+            If(f_stb, frame.eq(frame + 1))
+
         ovf_r = Signal()
         row   = Signal(max=rows)
         col   = Signal(max=columns)
@@ -51,7 +55,7 @@ class VideoRGBInputSubtarget(Module):
                 If(row == 0,
                     ovf_r.eq(ovf),
                     ovf_c.eq(1),
-                    NextValue(frame, frame + 1),
+                    f_stb.eq(1),
                     NextState("SKIP-FIRST-PIXEL")
                 ).Elif(row == rows,
                     NextValue(row, 0),
@@ -152,7 +156,7 @@ class VideoRGBInputApplet(GlasgowApplet, name="video-rgb-input"):
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
 
-        for _ in range(200):
+        for _ in range(10):
             sync = 0
             while not (sync & 0x80):
                 sync = (await iface.read(1))[0]
