@@ -34,7 +34,7 @@ class GlasgowApplet:
 
     def derive_clock(self, *args, clock_name=None, **kwargs):
         try:
-            return ClockGen.derive(*args, **kwargs, logger=self.logger, clock_name=None)
+            return ClockGen.derive(*args, **kwargs, logger=self.logger, clock_name=clock_name)
         except ValueError as e:
             if clock_name is None:
                 raise GlasgowAppletError(e)
