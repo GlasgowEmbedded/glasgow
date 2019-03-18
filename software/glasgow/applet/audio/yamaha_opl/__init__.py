@@ -45,16 +45,6 @@
 # is as follows, in a Verilog-like syntax:
 #     assign V = {S, {{7{~S}}, M, 7'b0000000}[E+:15]};
 #
-# Compatibility modes
-# -------------------
-#
-# Yamaha chips that have compatibility features implement them in a somewhat broken way. When
-# the compatibility feature is disabled (e.g. bit 5 of 0x01 TEST for YM3812), its registers are
-# masked off. However, the actual feature is still (partially) enabled and it will result in
-# broken playback if this is not accounted for. Therefore, for example, the reset sequence has to
-# enable all available advanced features, zero out the registers, and then disable them back for
-# compatibility with OPL clients that expect the compatibility mode to be on.
-#
 # Bus cycles
 # ----------
 #
@@ -62,6 +52,20 @@
 # the next section). Writes are referenced to the ~WR rising edge, and require chip-specific
 # wait states. Reads are referenced to ~RD falling edge, and always read exactly one register,
 # although there might be undocumented registers elsewhere.
+#
+# On some chips (e.g OPL4) the register that can be read has a busy bit, which seems to be always
+# the LSB. On many others (e.g. OPL3) there is no busy bit. Whether the busy bit is available
+# on any given silicon seems pretty arbitrary.
+#
+# Register compatibility
+# ----------------------
+#
+# Yamaha chips that have compatibility features implement them in a somewhat broken way. When
+# the compatibility feature is disabled (e.g. bit 5 of 0x01 TEST for YM3812), its registers are
+# masked off. However, the actual feature is still (partially) enabled and it will result in
+# broken playback if this is not accounted for. Therefore, for example, the reset sequence has to
+# enable all available advanced features, zero out the registers, and then disable them back for
+# compatibility with OPL clients that expect the compatibility mode to be on.
 #
 # Register latency
 # ----------------
@@ -74,9 +78,18 @@
 # On YM3812, the latch latency is 12 cycles and the sample takes 72 clocks, therefore each
 # address/data write cycle takes 12+12+72 clocks.
 #
-# On some chips (e.g OPL4) the register that can be read has a busy bit, which seems to be always
-# the LSB. On many others (e.g. OPL3) there is no busy bit. Whether the busy bit is available
-# on any given silicon seems pretty arbitrary.
+# Timing compatibility
+# --------------------
+#
+# When OPL3, functions in the OPL3 mode (NEW=1), the address and data latency are the declared
+# values, i.e. 32 and 32 master clock cycles. However, in OPL/OPL2 mode, OPL3 uses completely
+# different timings. It is not clear what they are, but 32*4/32*4 is not enough (and lead to missed
+# writes), whereas 36*4/36*4 seems to work fine. This is never mentioned in any documentation.
+#
+# Although it is not mentioned anywhere, it is generally understood that OPL3 in compatibility
+# mode (NEW=0) is attempting to emulate two independent OPL2's present on the first release
+# of Sound Blaster PRO, which could be the cause of the bizarre timings. See the following link:
+# https://www.msx.org/forum/msx-talk/software/vgmplay-msx?page=29
 #
 # VGM timeline
 # ------------
@@ -92,9 +105,30 @@
 # It's useful to overclock the synthesizer to get results faster than realtime. Since it's fully
 # synchronous digital logic, that doesn't generally affect the output until it breaks.
 #
-#   * YM3812 stops working between 15 MHz (good) and 30 MHz (bad).
+#   * YM3812 stops working between 10 MHz (good) and 30 MHz (bad).
+#
+# Test cases
+# ----------
+#
+# Good test cases that stress the various timings and interfaces are:
+#   * (YM3526) https://vgmrips.net/packs/pack/chelnov-atomic-runner-karnov track 03
+#     Good general-purpose OPL test.
+#   * (YM3812) https://vgmrips.net/packs/pack/ultima-vi-the-false-prohpet-ibm-pc-xt-at track 01
+#     This track makes missing notes (due to timing mismatches) extremely noticeable.
+#   * (YM3812) https://vgmrips.net/packs/pack/lemmings-dos
+#     This pack does very few commands at a time and doesn't have software vibrato, so if commands
+#     go missing, notes go out of tune.
+#   * (YM3812) https://vgmrips.net/packs/pack/zero-wing-toaplan-1 track 02
+#     Good general-purpose OPL2 test, exhibits serious glitches if the OPL2 isn't reset correctly
+#     or if the LSI TEST register handling is broken.
+#   * (YM3812) https://vgmrips.net/packs/pack/vimana-toaplan-1 track 02
+#     This is an OPL2 track but the music is written for OPL and in fact the VGM file disables
+#     WAVE SELECT as one of the first commands. Implementation bugs tend to silence drums,
+#     which is easily noticeable but only if you listen to the reference first.
+#   * (YMF262) https://vgmrips.net/packs/pack/touhou-eiyashou-imperishable-night-ibm-pc-at track 18
+#     Good general-purpose OPL3 test.
 
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod, abstractproperty
 import os.path
 import logging
 import argparse
@@ -167,7 +201,7 @@ class YamahaDACBus(Module):
         clk_sy_r = Signal()
         self.sync += [
             clk_sy_r.eq(clk_sy_s),
-            self.stb_sy.eq(~clk_sy_r & clk_sy_s)
+            self.stb_sy.eq(clk_sy_r & ~clk_sy_s)
         ]
 
         sh_r = Signal()
@@ -191,7 +225,7 @@ OP_MASK   = 0xf0
 
 
 class YamahaOPxSubtarget(Module):
-    def __init__(self, pads, in_fifo, out_fifo,
+    def __init__(self, pads, in_fifo, out_fifo, format,
                  master_cyc, read_pulse_cyc, write_pulse_cyc,
                  address_clocks, data_clocks):
         self.submodules.cpu_bus = cpu_bus = YamahaCPUBus(pads, master_cyc)
@@ -283,20 +317,29 @@ class YamahaOPxSubtarget(Module):
             ("e", 3)
         ])
         xfer_o = Signal(16)
-        self.comb += [
+        if format == "F-3Z-9M-1S-3E":
             # FIXME: this is uglier than necessary because of Migen bugs. Rewrite nicer in nMigen.
-            xfer_o.eq(Cat((Cat(xfer_i.m, Replicate(~xfer_i.s, 7)) << xfer_i.e)[1:16], xfer_i.s))
-        ]
+            self.comb += xfer_o.eq(Cat((Cat(xfer_i.m, Replicate(~xfer_i.s, 7)) << xfer_i.e)[1:16],
+                                       xfer_i.s))
+        elif format == "U-16":
+            self.comb += xfer_o.eq(xfer_i.raw_bits())
+        else:
+            assert False
 
-        data_r = Signal(16)
-        data_l = Signal(16)
+        data_r = Signal(17)
+        data_l = Signal(17)
         self.sync += If(dac_bus.stb_sy, data_r.eq(Cat(data_r[1:], dac_bus.mo)))
-        self.comb += xfer_i.raw_bits().eq(data_l)
+        self.comb += xfer_i.raw_bits().eq(data_l[0:])
 
         self.submodules.data_fsm = FSM()
         self.data_fsm.act("WAIT-SH",
             NextValue(in_fifo.flush, ~enabled),
             If(dac_bus.stb_sh & enabled,
+                NextState("WAIT-SY")
+            )
+        )
+        self.data_fsm.act("WAIT-SY",
+            If(dac_bus.stb_sy,
                 NextState("SAMPLE")
             )
         )
@@ -345,9 +388,12 @@ class YamahaOPxInterface(metaclass=ABCMeta):
     def get_vgm_clock_rate(self, vgm_reader):
         pass
 
-    address_clocks = None
-    data_clocks    = None
-    sample_clocks  = None
+    max_master_hz  = abstractproperty()
+    sample_format  = abstractproperty()
+
+    address_clocks = abstractproperty()
+    data_clocks    = abstractproperty()
+    sample_clocks  = abstractproperty()
 
     @property
     def write_clocks(self):
@@ -413,8 +459,8 @@ class YamahaOPxInterface(metaclass=ABCMeta):
 
     async def _check_enable_features(self, address, data):
         if address not in self._registers:
-            self._log("client uses undefined feature [%#04x]",
-                      address,
+            self._log("client uses undefined feature [%#04x]=%#04x",
+                      address, data,
                       level=logging.WARN)
 
     async def write_register(self, address, data, check_feature=True):
@@ -464,10 +510,13 @@ class YamahaOPxInterface(metaclass=ABCMeta):
 
 
 class YamahaOPLInterface(YamahaOPxInterface):
-    chips = ["YM3526 (OPL)"]
+    chips = ["YM3526/OPL"]
 
     def get_vgm_clock_rate(self, vgm_reader):
-        return vgm_reader.ym3526_clk
+        return vgm_reader.ym3526_clk, 1
+
+    max_master_hz  = 4.0e6 # 2.0/3.58/4.0
+    sample_format  = "F-3Z-9M-1S-3E"
 
     address_clocks = 12
     data_clocks    = 84
@@ -486,10 +535,13 @@ class YamahaOPLInterface(YamahaOPxInterface):
 
 
 class YamahaOPL2Interface(YamahaOPLInterface):
-    chips = YamahaOPLInterface.chips + ["YM3812 (OPL2)"]
+    chips = YamahaOPLInterface.chips + ["YM3812/OPL2"]
 
     def get_vgm_clock_rate(self, vgm_reader):
-        return vgm_reader.ym3812_clk or YamahaOPLInterface.get_vgm_clock_rate(self, vgm_reader)
+        if vgm_reader.ym3812_clk:
+            return vgm_reader.ym3812_clk, 1
+        else:
+            return YamahaOPLInterface.get_vgm_clock_rate(self, vgm_reader)
 
     _registers = YamahaOPLInterface._registers + [
         *range(0xE0, 0xF6)
@@ -502,11 +554,60 @@ class YamahaOPL2Interface(YamahaOPLInterface):
         await self.write_register(0x01, 0x00, check_feature=False)
 
     async def _check_enable_features(self, address, data):
-        if address == 0x01 and data & 0x20:
-            self._enable_level(2)
+        if address == 0x01 and data in (0x00, 0x20):
+            if data & 0x20:
+                self._enable_level(2)
         elif address in range(0xE0, 0xF6):
             if self._check_level(address, 2):
                 await self.write_register(0x01, 0x20)
+        else:
+            await super()._check_enable_features(address, data)
+
+
+class YamahaOPL3Interface(YamahaOPL2Interface):
+    chips = [chip + " (no CSM)" for chip in YamahaOPL2Interface.chips] + ["YMF262/OPL3"]
+
+    def get_vgm_clock_rate(self, vgm_reader):
+        if vgm_reader.ymf262_clk:
+            return vgm_reader.ymf262_clk, 1
+        else:
+            ym3812_clk, _ = YamahaOPL2Interface.get_vgm_clock_rate(self, vgm_reader)
+            return ym3812_clk, 4
+
+    max_master_hz  = 16.0e6 # 10.0/14.32/16.0
+    sample_format  = "U-16"
+
+    # The datasheet says use 32 master clock cycle latency. That's a lie, there's a /4 pre-divisor.
+    # So you'd think 32 * 4 master clock cycles would work. But 32 is also a lie, that doesn't
+    # result in robust playback. It appears that 36 is the real latency number.
+    address_clocks = 36 * 4
+    data_clocks    = 36 * 4
+    sample_clocks  = 72 * 4
+
+    _registers = YamahaOPL2Interface._registers + [
+        0x104, *range(0x120, 0x136), *range(0x140, 0x156), *range(0x160, 0x176),
+        *range(0x180, 0x196), *range(0x1A0, 0x1A9), *range(0x1B0, 0x1B9), *range(0x1C0, 0x1C9),
+        *range(0x1E0, 0x1F6)
+    ]
+
+    async def _use_highest_level(self):
+        await super()._use_highest_level()
+        await self.write_register(0x105, 0x01, check_feature=False)
+
+    async def _use_lowest_level(self):
+        await self.write_register(0x105, 0x00, check_feature=False)
+        await super()._use_lowest_level()
+
+    async def _check_enable_features(self, address, data):
+        if address == 0x08 and data & 0x80:
+            self._log("client uses deprecated and removed feature [0x08]|0x80",
+                      level=logging.WARN)
+        elif address == 0x105 and data in (0x00, 0x01):
+            if data & 0x01:
+                self._enable_level(3)
+        elif address in range(0x100, 0x200) and address in self._registers:
+            if self._check_level(address, 3):
+                await self.write_register(0x105, 0x01)
         else:
             await super()._check_enable_features(address, data)
 
@@ -543,6 +644,9 @@ class YamahaVGMStreamPlayer(VGMStreamPlayer):
     async def ym3812_write(self, address, data):
         await self._opx_iface.write_register(address, data)
 
+    async def ymf262_write(self, address, data):
+        await self._opx_iface.write_register(address, data)
+
     async def wait_seconds(self, delay):
         await self._opx_iface.wait_clocks(int(delay * self.clock_rate))
 
@@ -556,7 +660,8 @@ class YamahaOPxWebInterface:
     async def serve_index(self, request):
         with open(os.path.join(os.path.dirname(__file__), "index.html")) as f:
             index_html = f.read()
-            index_html = index_html.replace("{{chips}}", ", ".join(self._opx_iface.chips))
+            index_html = index_html.replace("{{chip}}", self._opx_iface.chips[-1])
+            index_html = index_html.replace("{{compat}}", ", ".join(self._opx_iface.chips))
             return web.Response(text=index_html, content_type="text/html")
 
     def _make_resampler(self, actual, preferred):
@@ -619,14 +724,18 @@ class YamahaOPxWebInterface:
 
             self._logger.info("web: %s: VGM has commands for %s",
                               digest, ", ".join(vgm_reader.chips()))
-            if len(vgm_reader.chips()) != 1:
-                raise ValueError("VGM file does not contain commands for exactly one chip")
 
-            clock_rate = self._opx_iface.get_vgm_clock_rate(vgm_reader)
+            clock_rate, clock_prescaler = self._opx_iface.get_vgm_clock_rate(vgm_reader)
             if clock_rate == 0:
-                raise ValueError("VGM file does not contain commands for any supported chip")
+                raise ValueError("VGM file contains commands for {}, which is not a supported chip"
+                                 .format(", ".join(vgm_reader.chips())))
             if clock_rate & 0xc0000000:
                 raise ValueError("VGM file uses unsupported chip configuration")
+            if len(vgm_reader.chips()) != 1:
+                raise ValueError("VGM file contains commands for {}, but only playback of exactly "
+                                 "one chip is supported"
+                                 .format(", ".join(vgm_reader.chips())))
+            clock_rate *= clock_prescaler
             self._opx_iface.flush_period = clock_rate / 50 # each 20 ms
 
             self._logger.info("web: %s: VGM is looped for %.2f/%.2f s",
@@ -743,13 +852,14 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
     chips are:
         * YM3526 (OPL)
         * YM3812 (OPL2)
+        * YMF262 (OPL3)
 
     The ~CS input should always be grounded, since there is only one chip on the bus in the first
     place.
 
     The digital output is losslessly converted to 16-bit unsigned PCM samples. (The Yamaha DACs
-    only have 16 bit of dynamic range, and there is a direct mapping between the on-wire floating
-    point sample format and ordinary 16-bit PCM.)
+    only have 16 bit of dynamic range, and there is a direct mapping between the on-wire format
+    and ordinary 16-bit PCM.)
 
     The written samples can be played with the knowledge of the sample rate, which is derived from
     the master clock frequency specified in the input file. E.g. using SoX:
@@ -761,6 +871,7 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
     has additional Python dependencies:
         * numpy (mandatory)
         * samplerate (optional, required for best possible quality)
+        * aiohttp_remotes (optional, required for improved logging)
     """
 
     __pin_sets = ("d", "a")
@@ -781,8 +892,11 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
         access.add_pin_argument(parser, "mo", default=True)
 
         parser.add_argument(
-            "-d", "--device", metavar="DEVICE", choices=["OPL", "OPL2"], required=True,
-            help="Synthesizer family")
+            "-d", "--device", metavar="DEVICE", choices=["OPL", "OPL2", "OPL3"], required=True,
+            help="synthesizer family")
+        parser.add_argument(
+            "-o", "--overclock", metavar="FACTOR", type=float, default=1.0,
+            help="overclock device by FACTOR to improve throughput")
 
     @staticmethod
     def _device_iface_cls(args):
@@ -790,6 +904,9 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
             return YamahaOPLInterface
         if args.device == "OPL2":
             return YamahaOPL2Interface
+        if args.device == "OPL3":
+            return YamahaOPL3Interface
+        assert False
 
     def build(self, target, args):
         device_iface_cls = self._device_iface_cls(args)
@@ -801,9 +918,10 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
             # but they work for now. With a better crossbar they should barely matter.
             out_fifo=iface.get_out_fifo(depth=512),
             in_fifo=iface.get_in_fifo(depth=8192, auto_flush=False),
-            # It's useful to run the synthesizer at a frequency significantly higher than real-time
-            # to reduce the time spent waiting.
-            master_cyc=self.derive_clock(input_hz=target.sys_clk_freq, output_hz=8e6),
+            format=device_iface_cls.sample_format,
+            master_cyc=self.derive_clock(
+                input_hz=target.sys_clk_freq,
+                output_hz=device_iface_cls.max_master_hz * args.overclock),
             read_pulse_cyc=int(target.sys_clk_freq * 200e-9),
             write_pulse_cyc=int(target.sys_clk_freq * 100e-9),
             address_clocks=device_iface_cls.address_clocks,
@@ -843,12 +961,13 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
             if len(vgm_reader.chips()) != 1:
                 raise GlasgowAppletError("VGM file does not contain commands for exactly one chip")
 
-            clock_rate = opx_iface.get_vgm_clock_rate(vgm_reader)
+            clock_rate, clock_prescaler = opx_iface.get_vgm_clock_rate(vgm_reader)
             if clock_rate == 0:
-                raise GlasgowAppletError("VGM file does not contain commands for any "
-                                         "supported chip")
+                raise GlasgowAppletError("VGM file does not contain commands for any supported "
+                                         "chip")
             if clock_rate & 0xc0000000:
                 raise GlasgowAppletError("VGM file uses unsupported chip configuration")
+            clock_rate *= clock_prescaler
             self._opx_iface.flush_period = clock_rate / 50 # each 20 ms
 
             vgm_player = YamahaVGMStreamPlayer(vgm_reader, opx_iface, clock_rate)
