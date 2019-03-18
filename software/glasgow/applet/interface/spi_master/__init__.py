@@ -5,6 +5,7 @@ import math
 from migen import *
 from migen.genlib.cdc import *
 
+from ....gateware.clockgen import *
 from ... import *
 
 
@@ -69,16 +70,14 @@ class SPIMasterSubtarget(Module):
 
         ###
 
-        half_cyc = period_cyc // 2
-        timer    = Signal(max=max(half_cyc, delay_cyc))
+        self.submodules.clkgen = ResetInserter()(ClockGen(period_cyc))
 
-        cmd   = Signal(8)
-        count = Signal(16)
-        bitno = Signal(max=8, reset=7)
         oreg  = Signal(8)
         ireg  = Signal(8)
-
-        self.comb += self.bus.mosi.eq(oreg[oreg.nbits - 1])
+        self.comb += [
+            self.bus.sck.eq(self.clkgen.clk),
+            self.bus.mosi.eq(oreg[oreg.nbits - 1]),
+        ]
         self.sync += [
             If(self.bus.setup,
                 oreg[1:].eq(oreg)
@@ -86,6 +85,11 @@ class SPIMasterSubtarget(Module):
                 ireg.eq(Cat(self.bus.miso, ireg))
             )
         ]
+
+        cmd   = Signal(8)
+        count = Signal(16)
+        bitno = Signal(max=8 + 1)
+        timer = Signal(max=delay_cyc)
 
         self.submodules.fsm = FSM(reset_state="RECV-COMMAND")
         self.fsm.act("RECV-COMMAND",
@@ -138,22 +142,17 @@ class SPIMasterSubtarget(Module):
             ),
             If((cmd[:4] == CMD_READ) | out_fifo.readable,
                 NextValue(count, count - 1),
-                NextValue(timer, half_cyc - 1),
+                NextValue(bitno, 8),
                 NextState("TRANSFER")
             )
         )
+        self.comb += self.clkgen.reset.eq(~self.fsm.ongoing("TRANSFER")),
         self.fsm.act("TRANSFER",
-            If(timer == 0,
-                NextValue(timer, half_cyc - 1),
-                NextValue(self.bus.sck, ~self.bus.sck),
-                If((self.bus.sck == (not sck_idle)),
-                    NextValue(bitno, bitno - 1),
-                    If(bitno == 0,
-                        NextState("SEND-DATA")
-                    )
-                )
-            ).Else(
-                NextValue(timer, timer - 1)
+            If(self.clkgen.stb_f,
+                If(bitno == 0,
+                    NextState("SEND-DATA")
+                ),
+                NextValue(bitno, bitno - 1)
             )
         )
         self.fsm.act("SEND-DATA",
@@ -311,8 +310,15 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
             pads=iface.get_pads(args, pins=pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
-            period_cyc=math.ceil(target.sys_clk_freq / (args.bit_rate * 1000)),
-            delay_cyc=math.ceil(target.sys_clk_freq / 1e6),
+            period_cyc=self.derive_clock(input_hz=target.sys_clk_freq,
+                                         output_hz=args.bit_rate * 1000,
+                                         clock_name="master",
+                                         # 2 cyc MultiReg delay from SCK to MISO requires a 4 cyc
+                                         # period with current implementation of SERDES
+                                         min_cyc=4),
+            delay_cyc=self.derive_clock(input_hz=target.sys_clk_freq,
+                                        output_hz=1e6,
+                                        clock_name="delay"),
             sck_idle=args.sck_idle,
             sck_edge=args.sck_edge,
             ss_active=args.ss_active,
