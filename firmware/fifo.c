@@ -16,15 +16,16 @@ void fifo_init() {
 
   // Configure strobes and flags.
   // All flags are configured as RDY; this means ~EF for OUT endpoints
-  // and ~FF for for IN endpoints.
+  // and ~FF for for IN endpoints. The actual flag is set as ~PF to allow
+  // for more flexibility in exact timings.
   // SLRD and SLWR *must* be configured as active low; otherwise, glitches
   // on these lines during reset cause spurious data in FIFOs.
   SYNCDELAY;
   FIFOPINPOLAR = 0;
   SYNCDELAY;
-  PINFLAGSAB = 0b10011000; // FLAGA = EP2 ~EF, FLAGB = EP4 ~EF
+  PINFLAGSAB = 0b01010100; // FLAGA = EP2 ~PF, FLAGB = EP4 ~PF
   SYNCDELAY;
-  PINFLAGSCD = 0b11111110; // FLAGC = EP6 ~FF, FLAGD = EP8 ~FF
+  PINFLAGSCD = 0b01110110; // FLAGC = EP6 ~PF, FLAGD = EP8 ~PF
   SYNCDELAY;
   PORTACFG |= _FLAGD; // PA7 is FLAGD
 
@@ -39,14 +40,19 @@ void fifo_init() {
   EP8FIFOCFG &= ~_WORDWIDE;
 }
 
+#define OUT_THRESHOLD 1U
+#define IN_THRESHOLD  510U
+
 void fifo_configure(bool two_ep) {
-  uint8_t ep26buf, ep48valid;
+  uint8_t ep26buf, ep48valid, ep26pkts;
   if(two_ep) {
-    ep26buf   = 0;      // quad buffered
-    ep48valid = 0;      // invalid
+    ep26buf   = 0;         // quad buffered
+    ep48valid = 0;         // invalid
+    ep26pkts  = 0b011000;  // 512B ×3
   } else {
-    ep26buf   = _BUF1;  // double buffered
-    ep48valid = _VALID; // valid
+    ep26buf   = _BUF1;     // double buffered
+    ep48valid = _VALID;    // valid
+    ep26pkts  = 0b001000;  // 512B ×1
   }
 
   // Disable all FIFOs.
@@ -56,26 +62,42 @@ void fifo_configure(bool two_ep) {
   // Configure EP2.
   SYNCDELAY;
   EP2CFG = _VALID|_TYPE1|ep26buf; // OUT BULK 512B
+  SYNCDELAY;
+  EP2FIFOPFH = _DECIS|(OUT_THRESHOLD >> 8);
+  SYNCDELAY;
+  EP2FIFOPFL = OUT_THRESHOLD & 0xff;
 
   // Configure EP4.
   SYNCDELAY;
   EP4CFG = ep48valid|_TYPE1; // OUT BULK 512B
+  SYNCDELAY;
+  EP4FIFOPFH = _DECIS|(OUT_THRESHOLD >> 8);
+  SYNCDELAY;
+  EP4FIFOPFL = OUT_THRESHOLD & 0xff;
 
   // Configure EP6.
   SYNCDELAY;
-  EP6CFG = _VALID|_DIR|_TYPE1|ep26buf; // IN BULK 512B
+  EP6CFG = _VALID|_DIR|_TYPE1|ep26buf; // IN BULK 512B ×2/×4
   SYNCDELAY;
   EP6AUTOINLENH = 512 >> 8;
   SYNCDELAY;
-  EP6AUTOINLENL = 0;
+  EP6AUTOINLENL = 512 & 0xff;
+  SYNCDELAY;
+  EP6FIFOPFH = ep26pkts|(IN_THRESHOLD >> 8);
+  SYNCDELAY;
+  EP6FIFOPFL = IN_THRESHOLD & 0xff;
 
   // Configure EP8.
   SYNCDELAY;
-  EP8CFG = ep48valid|_DIR|_TYPE1; // IN BULK 512B
+  EP8CFG = ep48valid|_DIR|_TYPE1; // IN BULK 512B ×2
   SYNCDELAY;
   EP8AUTOINLENH = 512 >> 8;
   SYNCDELAY;
-  EP8AUTOINLENL = 0;
+  EP8AUTOINLENL = 512 & 0xff;
+  SYNCDELAY;
+  EP8FIFOPFH = 0b001000|(IN_THRESHOLD >> 8);
+  SYNCDELAY;
+  EP8FIFOPFL = IN_THRESHOLD & 0xff;
 
   // Reset and configure endpoints.
   fifo_reset(two_ep, two_ep ? 0x1 : 0x3);
@@ -114,7 +136,7 @@ void fifo_reset(bool two_ep, uint8_t interfaces) {
     SYNCDELAY;
     FIFORESET |= 6;
     SYNCDELAY;
-    EP6FIFOCFG = _AUTOIN|_ZEROLENIN|_INFM1;
+    EP6FIFOCFG = _AUTOIN|_ZEROLENIN;
   }
 
   if(interfaces & (1 << 1)) {
@@ -136,6 +158,6 @@ void fifo_reset(bool two_ep, uint8_t interfaces) {
     SYNCDELAY;
     FIFORESET |= 8;
     SYNCDELAY;
-    EP8FIFOCFG = _AUTOIN|_ZEROLENIN|_INFM1;
+    EP8FIFOCFG = _AUTOIN|_ZEROLENIN;
   }
 }
