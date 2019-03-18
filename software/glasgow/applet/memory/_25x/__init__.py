@@ -7,6 +7,7 @@ import struct
 import logging
 import argparse
 
+from ....support.logging import dump_hex
 from ....database.jedec import *
 from ....protocol.sfdp import *
 from ...interface.spi_master import SPIMasterApplet
@@ -36,13 +37,13 @@ class Memory25xInterface:
     async def _command(self, cmd, arg=[], dummy=0, ret=0, hold_ss=False):
         arg = bytes(arg)
 
-        self._log("cmd=%02X arg=<%s> dummy=%d ret=%d", cmd, arg.hex(), dummy, ret)
+        self._log("cmd=%02X arg=<%s> dummy=%d ret=%d", cmd, dump_hex(arg), dummy, ret)
 
         await self.lower.write(bytearray([cmd, *arg, *[0 for _ in range(dummy)]]),
                                hold_ss=(ret > 0))
         result = await self.lower.read(ret)
 
-        self._log("result=<%s>", result.hex())
+        self._log("result=<%s>", dump_hex(result))
 
         return result
 
