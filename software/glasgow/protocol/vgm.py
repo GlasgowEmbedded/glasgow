@@ -16,6 +16,9 @@ class VGMStreamPlayer:
     async def ym3812_write(self, address, data):
         raise NotImplementedError("VGMStream.ym3812_write not implemented")
 
+    async def ymf262_write(self, address, data):
+        raise NotImplementedError("VGMStream.ymf262_write not implemented")
+
     async def wait_seconds(self, delay):
         raise NotImplementedError("VGMStream.wait_seconds not implemented")
 
@@ -158,6 +161,9 @@ class VGMStreamReader:
                 await player.ym3812_write(*self._read("BB"))
             elif command == 0x5B:
                 await player.ym3526_write(*self._read("BB"))
+            elif command in (0x5E, 0x5F):
+                address, data = self._read("BB")
+                await player.ymf262_write(address|((command & 1) << 8), data)
             elif command == 0x61:
                 samples = self._read0("<H")
                 await player.wait_seconds(samples / SAMPLE_RATE)
