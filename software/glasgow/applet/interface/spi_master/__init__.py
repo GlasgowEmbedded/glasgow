@@ -5,6 +5,7 @@ import math
 from migen import *
 from migen.genlib.cdc import *
 
+from ....support.logging import *
 from ....gateware.clockgen import *
 from ... import *
 
@@ -216,14 +217,14 @@ class SPIMasterInterface:
         assert len(data) <= 0xffff
         data = bytes(data)
 
-        self._log("xfer-out=<%s>", data.hex())
+        self._log("xfer-out=<%s>", dump_hex(data))
 
         cmd = CMD_XFER | (BIT_HOLD_SS if hold_ss else 0)
         await self.lower.write(struct.pack(">BH", cmd, len(data)))
         await self.lower.write(data)
         data = await self.lower.read(len(data))
 
-        self._log("xfer-in=<%s>", data.hex())
+        self._log("xfer-in=<%s>", dump_hex(data))
 
         return data
 
@@ -234,7 +235,7 @@ class SPIMasterInterface:
         await self.lower.write(struct.pack(">BH", cmd, count))
         data = await self.lower.read(count)
 
-        self._log("read-in=<%s>", data.hex())
+        self._log("read-in=<%s>", dump_hex(data))
 
         return data
 
@@ -242,7 +243,7 @@ class SPIMasterInterface:
         assert len(data) <= 0xffff
         data = bytes(data)
 
-        self._log("write-out=<%s>", data.hex())
+        self._log("write-out=<%s>", dump_hex(data))
 
         cmd = CMD_WRITE | (BIT_HOLD_SS if hold_ss else 0)
         await self.lower.write(struct.pack(">BH", cmd, len(data)))
