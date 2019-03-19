@@ -64,7 +64,7 @@ class GlasgowHardwareTarget(Module):
             pass
 
         self.submodules.crg = _CRG(self.platform)
-        self.platform.add_period_constraint(self.crg.cd_sys.clk, 1e9 / self.sys_clk_freq)
+        self.platform.add_period_constraint(self.crg.cd_por.clk, 1e9 / self.sys_clk_freq)
 
         self.submodules.i2c_pads  = Pads(self.platform.request("i2c"))
         self.submodules.i2c_slave = I2CSlave(self.i2c_pads)
