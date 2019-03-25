@@ -7,6 +7,7 @@
   <p>This webpage lets you submit commands to a real Yamaha synthesizer and listen to the output. The synthesizer is a <b>shared resource</b> (and isn't very fast, although it does not have to run in real time), and everyone who submits a file is in the same queue, so you might have to wait until it's your turn.</p>
   <p>Supported chips: {{chips}}.</p>
   <p>Play a <a href="https://vgmrips.net/packs/chips">VGM/VGZ file</a>: <input type="file" id="file" accept=".vgm,.vgz"> <input type="button" id="play" value="Play"> <input type="button" id="replay" value="Replay" disabled> <input type="checkbox" id="loop"> <label for="loop">Loop</label></p>
+  <p>Export PCM: <input type="button" id="exportFull" value="Export full"> <input type="button" id="exportLoop" value="Export loop"></p>
   <p>Status: <span id="chipStatus">no chip</span>, <span id="netStatus">idle</span>, <span id="playStatus">stopped</span>.</p>
   <p id="errorPane" style="color:red; display:none">Error: <span id="error"></span></p>
 
@@ -27,6 +28,7 @@
 
       this._context = new (window.AudioContext || window.webkitAudioContext);
       this._buffers = [];
+      this._buffersRaw = [];
 
       this._queueStart = 0;
       this._queueEnd = 0;
@@ -43,10 +45,32 @@
                                                      dataView.byteLength / 2, sampleRate);
         var f32Buffer = audioBuffer.getChannelData(0);
         for(var i = 0; i < f32Buffer.length; i++)
-          f32Buffer[i] = (dataView.getUint16(i * 2, /*littleEndian=*/true) - 32768) / 32768;
+          f32Buffer[i] = dataView.getInt16(i * 2, /*littleEndian=*/true) / 32768;
 
         this._buffers.push(audioBuffer);
+        this._buffersRaw.push(dataView.buffer);
         this._updateStatus();
+      }
+
+      this.getAllSamples = function() {
+        return this._buffersRaw;
+      }
+
+      this.getLoopSamples = function() {
+        var buffers = [];
+        var skipTo = this.loopSkipTo * 2;
+        var sourcePos = 0;
+        for(var i = 0; i < this._buffersRaw.length; i++) {
+          if(skipTo >= sourcePos + this._buffersRaw[i].byteLength) {
+            // skip
+          } else if(skipTo >= sourcePos) {
+            buffers.push(this._buffersRaw[i].slice(skipTo - sourcePos));
+          } else {
+            buffers.push(this._buffersRaw[i]);
+          }
+          sourcePos += this._buffersRaw[i].byteLength;
+        }
+        return buffers;
       }
 
       this.scheduleAtLeast = function(atLeast) {
@@ -143,8 +167,85 @@
       }
     }
 
+    function makeWAVFile(fileName, numOfChannels, sampleRate, bytesPerSample, sampleBuffers) {
+      var totalSampleBytes = 0;
+      for(var i = 0; i < sampleBuffers.length; i++)
+        totalSampleBytes += sampleBuffers[i].byteLength;
+
+      var id_length            = 8,
+          fmt_subchunk_length  = id_length + 16,
+          data_subchunk_length = id_length + totalSampleBytes,
+          RIFF_header_length   = id_length + 4,
+          RIFF_chunk_length    = RIFF_header_length + fmt_subchunk_length + data_subchunk_length;
+
+      var header = new ArrayBuffer(RIFF_header_length + fmt_subchunk_length + id_length);
+      var headerView = new DataView(header, 0, header.length);
+
+      // "RIFF" chunk
+      // ChunkID
+      headerView.setUint32(0, /*"RIFF"*/0x52494646,
+                              /*littleEndian=*/false);
+      // ChunkSize
+      headerView.setUint32(4, RIFF_chunk_length - id_length,
+                              /*littleEndian=*/true);
+      // Format
+      headerView.setUint32(8, /*"WAVE"*/0x57415645,
+                              /*littleEndian=*/false);
+
+      // "fmt " subchunk
+      // Subchunk1ID
+      headerView.setUint32(12, /*"fmt "*/0x666d7420,
+                              /*littleEndian=*/false);
+      // Subchunk1Size
+      headerView.setUint32(16, fmt_subchunk_length - id_length,
+                              /*littleEndian=*/true);
+      // AudioFormat
+      headerView.setUint16(20, /*PCM*/1,
+                              /*littleEndian=*/true);
+      // NumChannels
+      headerView.setUint16(22, numOfChannels,
+                              /*littleEndian=*/true);
+      // SampleRate
+      headerView.setUint32(24, sampleRate,
+                              /*littleEndian=*/true);
+      // ByteRate
+      headerView.setUint32(28, sampleRate * numOfChannels * bytesPerSample,
+                              /*littleEndian=*/true);
+      // BlockAlign
+      headerView.setUint16(32, numOfChannels * bytesPerSample,
+                              /*littleEndian=*/true);
+      // BitsPerSample
+      headerView.setUint16(34, bytesPerSample * 8,
+                              /*littleEndian=*/true);
+
+      // "data" subchunk
+      // Subchunk1ID
+      headerView.setUint32(36, /*"data"*/0x64617461,
+                              /*littleEndian=*/false);
+      // Subchunk1Size
+      headerView.setUint32(40, totalSampleBytes,
+                              /*littleEndian=*/true);
+
+      return new File([header].concat(sampleBuffers), fileName, {type: "audio/wav"});
+    }
+
+    function downloadFile(file) {
+      if(window.fileUrl)
+        URL.revokeObjectURL(window.fileUrl);
+      window.fileUrl = URL.createObjectURL(file);
+
+      var a = window.document.createElement('a');
+      a.href = window.fileUrl;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
     var playButton = document.getElementById("play");
     var replayButton = document.getElementById("replay");
+    var exportFullButton = document.getElementById("exportFull");
+    var exportLoopButton = document.getElementById("exportLoop");
     var loopCheckbox = document.getElementById("loop");
     var fileInput = document.getElementById("file");
     var netStatusSpan = document.getElementById("netStatus");
@@ -155,6 +256,8 @@
     playButton.onclick = function(event) {
       playButton.disabled = true;
       replayButton.disabled = true;
+      exportFullButton.disabled = true;
+      exportLoopButton.disabled = true;
 
       var player = new PCMPlayer();
       window.player = player;
@@ -189,6 +292,7 @@
       var xhr = new XMLHttpRequest();
       xhr.open("POST", "vgm", /*async=*/true);
       xhr.setRequestHeader("X-Preferred-Sample-Rate", player.preferredSampleRate());
+      var sampleRate = 0;
       var seenBytes = 0;
       var totalSamples = 0;
       var seenSamples = 0;
@@ -203,6 +307,7 @@
           errorPane.style.display = "none";
 
           if(totalSamples == 0) {
+            sampleRate = parseInt(xhr.getResponseHeader("X-Sample-Rate"));
             totalSamples = parseInt(xhr.getResponseHeader("X-Total-Samples"));
             player.loopSkipTo = parseInt(xhr.getResponseHeader("X-Loop-Skip-To"));
             chipStatusSpan.innerText = "chip " + xhr.getResponseHeader("X-Chip");
@@ -217,7 +322,7 @@
               viewLength = bytes.buffer.byteLength;
             var view = new DataView(bytes.buffer, 0, viewLength);
             seenSamples += view.byteLength / 2;
-            player.addSamples(view, parseInt(xhr.getResponseHeader("X-Sample-Rate")));
+            player.addSamples(view, sampleRate);
             if(!player._playing)
               player.scheduleAtLeast(BUFFER_AT_LEAST);
             seenBytes += CHUNK_SIZE;
@@ -225,6 +330,9 @@
 
           if(xhr.readyState == 4) {
             player.complete = true;
+            exportFullButton.disabled = false;
+            if(player.loopSkipTo > 0)
+              exportLoopButton.disabled = false;
           }
         }
 
@@ -239,6 +347,18 @@
       }
       netStatusSpan.innerText = "waiting";
       xhr.send(fileInput.files[0]);
+
+      exportFullButton.onclick = function(event) {
+        var fileName = fileInput.files[0].name.replace(/\.vg[mz]$/i, "") + ".wav";
+        downloadFile(makeWAVFile(fileName, /*numOfChannels=*/1, sampleRate, /*bytesPerSample=*/2,
+                                 player.getAllSamples()));
+      }
+
+      exportLoopButton.onclick = function(event) {
+        var fileName = fileInput.files[0].name.replace(/\.vg[mz]$/i, "") + " (loop).wav";
+        downloadFile(makeWAVFile(fileName, /*numOfChannels=*/1, sampleRate, /*bytesPerSample=*/2,
+                                 player.getLoopSamples()));
+      }
     };
   </script>
   <script type="text/javascript">

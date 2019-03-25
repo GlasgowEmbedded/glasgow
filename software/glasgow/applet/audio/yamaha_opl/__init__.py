@@ -559,16 +559,21 @@ class YamahaOPxWebInterface:
             return web.Response(text=index_html, content_type="text/html")
 
     def _make_resampler(self, actual, preferred):
+        import numpy
+
         try:
-            import numpy
             import samplerate
         except ImportError as e:
             self._logger.warning("samplerate not installed; expect glitches during playback")
             async def resample(input_queue, output_queue):
                 while True:
-                    data = await input_queue.get()
-                    await output_queue.put(data)
-                    if not data:
+                    input_data = await input_queue.get()
+                    input_array = numpy.frombuffer(input_data, dtype="<u2")
+                    output_array = (output_array - 32768).astype(numpy.int16)
+                    if input_data:
+                        await output_queue.put(output_array.tobytes())
+                    if not input_data:
+                        await output_queue.put(b"")
                         break
             return resample, actual
 
@@ -578,7 +583,7 @@ class YamahaOPxWebInterface:
             input_array = (input_array.astype(numpy.float32) - 32768) / 32768
             output_array = resampler.process(
                 input_array, ratio=preferred / actual, end_of_input=end)
-            output_array = (output_array * 32768 + 32768).astype(numpy.uint16)
+            output_array = (output_array * 32768).astype(numpy.int16)
             return output_array.tobytes()
         async def resample(input_queue, output_queue):
             while True:
@@ -746,8 +751,10 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
         $ play -r 49715 output.u16
 
     For the web interface, the browser dictates the sample rate. Streaming at the sample rate other
-    than the one requested by the browser is possible, but degrades quality. To stream with
-    the best possible quality, install the samplerate library.
+    than the one requested by the browser is possible, but degrades quality. This interface also
+    has additional Python dependencies:
+        * numpy (mandatory)
+        * samplerate (optional, required for best possible quality)
     """
 
     __pin_sets = ("d", "a")
