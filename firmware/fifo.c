@@ -41,7 +41,7 @@ void fifo_init() {
 }
 
 #define OUT_THRESHOLD 1U
-#define IN_THRESHOLD  509U
+#define IN_THRESHOLD  510U
 
 void fifo_configure(bool two_ep) {
   uint8_t ep26buf, ep48valid, ep26pkts;

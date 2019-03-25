@@ -105,6 +105,7 @@ class _FIFOWithFlush(Module, _FIFOInterface):
 
 class _RegisteredTristate(Module):
     def __init__(self, io):
+
         self.oe = Signal()
         self.o  = Signal.like(io)
         self.i  = Signal.like(io)
@@ -113,18 +114,6 @@ class _RegisteredTristate(Module):
             return signal[bit] if signal.nbits > 0 else signal
 
         for bit in range(io.nbits):
-            # The FX2 output valid window starts well after (5.4 ns past) the iCE40 input
-            # capture window for the rising edge. However, the input capture for
-            # the falling edge is just right.
-            #
-            # We carefully use DDR input and fabric registers to capture the FX2 output in
-            # the valid window and prolong its validity to 1 IFCLK cycle. The output is
-            # not DDR and is handled the straightforward way.
-            #
-            # See https://github.com/GlasgowEmbedded/Glasgow/issues/89 for details.
-
-            bit_r = Signal()
-            self.sync += get_bit(self.i, bit).eq(bit_r)
             self.specials += \
                 Instance("SB_IO",
                     # PIN_INPUT_REGISTERED|PIN_OUTPUT_REGISTERED_ENABLE_REGISTERED
@@ -134,7 +123,11 @@ class _RegisteredTristate(Module):
                     i_INPUT_CLK=ClockSignal(),
                     i_OUTPUT_CLK=ClockSignal(),
                     i_D_OUT_0=get_bit(self.o, bit),
-                    o_D_IN_1=bit_r,
+                    # The FX2 output valid window starts well after (5.4 ns past) the iCE40 input
+                    # capture window for the rising edge. However, the input capture for
+                    # the falling edge is just right.
+                    # See https://github.com/GlasgowEmbedded/Glasgow/issues/89 for details.
+                    o_D_IN_1=get_bit(self.i, bit),
                 )
 
 
@@ -236,7 +229,6 @@ class FX2Arbiter(Module):
             If(addr[1],
                 NextState("SETUP-IN")
             ).Else(
-                slrd.eq(1),
                 NextState("SETUP-OUT")
             )
         )
