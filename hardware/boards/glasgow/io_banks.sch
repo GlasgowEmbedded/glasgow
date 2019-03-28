@@ -7,7 +7,7 @@ encoding utf-8
 Sheet 2 4
 Title "I/O Banks"
 Date ""
-Rev "C0"
+Rev "C1"
 Comp "whitequark research"
 Comment1 "Glasgow debug tool"
 Comment2 ""

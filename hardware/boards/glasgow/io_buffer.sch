@@ -7,7 +7,7 @@ encoding utf-8
 Sheet 3 4
 Title "I/O Buffer"
 Date ""
-Rev "C0"
+Rev "C1"
 Comp "whitequark research"
 Comment1 "Glasgow Debug Tool"
 Comment2 "Calculations by @awygle"
