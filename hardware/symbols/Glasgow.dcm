@@ -6,4 +6,10 @@ K I2C Cryprography Authentication
 F http://ww1.microchip.com/downloads/en/DeviceDoc/20005927A.pdf
 $ENDCMP
 #
+$CMP PCA6408APW
+D 8 Bit Port/Expander, I2C SMBUS, Interrupt output, TSSOP-16, SOIC-20
+K SMBUS I2C Expander
+F http://www.ti.com/lit/ds/symlink/tca9534.pdf
+$ENDCMP
+#
 #End Doc Library
