@@ -7,9 +7,9 @@ F http://ww1.microchip.com/downloads/en/DeviceDoc/20005927A.pdf
 $ENDCMP
 #
 $CMP PCA6408APW
-D 8 Bit Port/Expander, I2C SMBUS, Interrupt output, TSSOP-16, SOIC-20
-K SMBUS I2C Expander
-F http://www.ti.com/lit/ds/symlink/tca9534.pdf
+D 8 Bit Port/Expander, I2C SMBUS, Interrupt output, Level Shifting, TSSOP-16
+K SMBUS I2C Expander Level Shifter
+F https://www.nxp.com/docs/en/data-sheet/PCA6408A.pdf
 $ENDCMP
 #
 #End Doc Library
