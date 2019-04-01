@@ -32,8 +32,6 @@ Wire Wire Line
 	8600 3000 8550 3000
 Wire Wire Line
 	8600 3100 8550 3100
-Wire Wire Line
-	8600 3200 8550 3200
 $Comp
 L power:GND #PWR0103
 U 1 1 5AF8878D
@@ -49,8 +47,6 @@ F 3 "" H 8600 3250 50  0001 C CNN
 	1    8600 3250
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	8600 3250 8600 3200
 Connection ~ 8600 2500
 Wire Wire Line
 	8600 2500 8600 2400
@@ -72,9 +68,6 @@ Wire Wire Line
 Connection ~ 8600 3100
 Wire Wire Line
 	8600 3100 8600 3000
-Connection ~ 8600 3200
-Wire Wire Line
-	8600 3200 8600 3100
 Wire Wire Line
 	8000 2200 8000 2300
 Wire Wire Line
@@ -2351,4 +2344,7 @@ Wire Wire Line
 Connection ~ 9250 2600
 Wire Wire Line
 	9700 2900 9700 2600
+Wire Wire Line
+	8600 3100 8600 3250
+NoConn ~ 8550 3200
 $EndSCHEMATC

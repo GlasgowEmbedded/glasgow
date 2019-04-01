@@ -2762,12 +2762,12 @@ Wire Wire Line
 Connection ~ 1350 3700
 Wire Wire Line
 	8850 3350 9150 3350
+Text Label 8850 3350 0    50   ~ 0
+CLKREF
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
 	4700 2150 4700 6250
 Wire Bus Line
 	7850 2550 7850 6250
-Text Label 8850 3350 0    50   ~ 0
-CLKREF
 $EndSCHEMATC
