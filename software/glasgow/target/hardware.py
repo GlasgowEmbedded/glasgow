@@ -12,7 +12,7 @@ from ..gateware.i2c import I2CSlave
 from ..gateware.registers import I2CRegisters
 from ..gateware.fx2 import FX2Arbiter
 from ..gateware.platform.lattice import special_overrides
-from ..platform import GlasgowPlatformRevAB, GlasgowPlatformRevC
+from ..platform import GlasgowPlatformRevAB, GlasgowPlatformRevC0
 from .analyzer import GlasgowAnalyzer
 
 
@@ -52,8 +52,8 @@ class GlasgowHardwareTarget(Module):
     def __init__(self, revision, multiplexer_cls=None, with_analyzer=False):
         if revision in ("A0", "B0"):
             self.platform = GlasgowPlatformRevAB()
-        elif revision in ("C0",):
-            self.platform = GlasgowPlatformRevC()
+        elif revision == "C0":
+            self.platform = GlasgowPlatformRevC0()
         else:
             raise ValueError("Unknown revision")
 

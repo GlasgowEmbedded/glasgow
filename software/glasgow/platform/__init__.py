@@ -1,2 +1,2 @@
-from .rev_ab import GlasgowPlatformRevAB
-from .rev_c import GlasgowPlatformRevC
+from .rev_ab import *
+from .rev_c0 import *
