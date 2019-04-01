@@ -52,6 +52,9 @@ _io = [
 
     ("sync", 0, Pins("A11")),
 
+    ("aux", 0, Pins("A10")),
+    ("aux", 1, Pins("C9")),
+
     # On revC0, these balls are shared with B6 and B7, respectively.
     # Since the default pin state is a weak pullup, we need to tristate them explicitly.
     ("unused", 0, Pins("A6 B5")),
