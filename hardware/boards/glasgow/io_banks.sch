@@ -1322,7 +1322,6 @@ Text Label 1800 5450 0    50   ~ 0
 QA1
 Text Label 1800 5650 0    50   ~ 0
 QA0
-NoConn ~ 1800 5150
 Text Label 1800 4350 0    50   ~ 0
 DA0
 Text Label 1800 4050 0    50   ~ 0
@@ -1475,7 +1474,7 @@ U 1 1 5CA4F297
 P 2650 2400
 F 0 "U32" H 2850 2850 50  0000 L CNN
 F 1 "SN74LVC1T45DRL" H 2850 2750 50  0000 L CNN
-F 2 "Package_TO_SOT_SMD:SOT-563" H 2650 1950 50  0001 C CNN
+F 2 "Glasgow:SOT-563" H 2650 1950 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 1750 1750 50  0001 C CNN
 	1    2650 2400
 	1    0    0    -1  
@@ -1581,6 +1580,12 @@ Wire Wire Line
 	2550 1750 2550 1700
 Wire Wire Line
 	2550 1750 2750 1750
+Text HLabel 1850 5800 3    50   Input ~ 0
+CLKREF
+Wire Wire Line
+	1800 5150 1850 5150
+Wire Wire Line
+	1850 5150 1850 5800
 Wire Bus Line
 	2400 4950 2400 5800
 Wire Bus Line
