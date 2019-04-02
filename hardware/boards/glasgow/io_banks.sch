@@ -1341,26 +1341,26 @@ DA7
 $Comp
 L Connector_Generic:Conn_01x03 J10
 U 1 1 5C072C23
-P 2500 3550
-F 0 "J10" H 2580 3542 50  0000 L CNN
-F 1 "Conn_01x03" H 2600 3650 50  0000 L CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 2500 3550 50  0001 C CNN
-F 3 "~" H 2500 3550 50  0001 C CNN
-	1    2500 3550
+P 2950 3550
+F 0 "J10" H 3030 3542 50  0000 L CNN
+F 1 "Conn_01x03" H 3050 3650 50  0000 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 2950 3550 50  0001 C CNN
+F 3 "~" H 2950 3550 50  0001 C CNN
+	1    2950 3550
 	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR?
 U 1 1 5C0F528A
-P 2150 3450
+P 2650 3300
 AR Path="/5C0F528A" Ref="#PWR?"  Part="1" 
 AR Path="/5C7B59B0/5C0F528A" Ref="#PWR0117"  Part="1" 
-F 0 "#PWR0117" H 2150 3200 50  0001 C CNN
-F 1 "GND" V 2150 3250 50  0000 C CNN
-F 2 "" H 2150 3450 50  0001 C CNN
-F 3 "" H 2150 3450 50  0001 C CNN
-	1    2150 3450
-	0    1    1    0   
+F 0 "#PWR0117" H 2650 3050 50  0001 C CNN
+F 1 "GND" H 2650 3150 50  0000 C CNN
+F 2 "" H 2650 3300 50  0001 C CNN
+F 3 "" H 2650 3300 50  0001 C CNN
+	1    2650 3300
+	1    0    0    -1  
 $EndComp
 $Comp
 L Connector_Generic:Conn_01x02 J?
@@ -1394,7 +1394,7 @@ Wire Wire Line
 	3650 2500 3600 2500
 Wire Wire Line
 	3600 2500 3600 2550
-Text Label 3250 2400 0    50   ~ 0
+Text Label 3450 2400 0    50   ~ 0
 ~SYNC
 $Comp
 L Device:R R?
@@ -1480,13 +1480,11 @@ F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 1750 1750 50  0001 C CN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	3050 2400 3650 2400
+	3050 2400 3100 2400
 Wire Wire Line
 	1800 3550 2300 3550
 Wire Wire Line
 	1800 3650 2300 3650
-Wire Wire Line
-	2150 3450 2300 3450
 Wire Wire Line
 	2250 2600 2200 2600
 $Comp
@@ -1586,6 +1584,61 @@ Wire Wire Line
 	1800 5150 1850 5150
 Wire Wire Line
 	1850 5150 1850 5800
+$Comp
+L Device:R R?
+U 1 1 5CBF4EC8
+P 3250 2400
+AR Path="/5CBF4EC8" Ref="R?"  Part="1" 
+AR Path="/5C7B59B0/5CBF4EC8" Ref="R38"  Part="1" 
+F 0 "R38" V 3150 2500 50  0000 R CNN
+F 1 "47" V 3050 2500 50  0000 R CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 3180 2400 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-AC_51_RoHS_L_6-1152827.pdf" H 3250 2400 50  0001 C CNN
+F 4 "Yageo" H -7100 -150 50  0001 C CNN "Mfg"
+F 5 "AC0603FR-07130RL" H -7100 -150 50  0001 C CNN "MPN"
+	1    3250 2400
+	0    1    -1   0   
+$EndComp
+Wire Wire Line
+	3400 2400 3650 2400
+$Comp
+L Device:R R?
+U 1 1 5CBF658E
+P 2450 3550
+AR Path="/5CBF658E" Ref="R?"  Part="1" 
+AR Path="/5C7B59B0/5CBF658E" Ref="R39"  Part="1" 
+F 0 "R39" V 2550 3650 50  0000 R CNN
+F 1 "47" V 2650 3650 50  0000 R CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 2380 3550 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-AC_51_RoHS_L_6-1152827.pdf" H 2450 3550 50  0001 C CNN
+F 4 "Yageo" H -7900 1000 50  0001 C CNN "Mfg"
+F 5 "AC0603FR-07130RL" H -7900 1000 50  0001 C CNN "MPN"
+	1    2450 3550
+	0    1    -1   0   
+$EndComp
+$Comp
+L Device:R R?
+U 1 1 5CBF65F8
+P 2450 3650
+AR Path="/5CBF65F8" Ref="R?"  Part="1" 
+AR Path="/5C7B59B0/5CBF65F8" Ref="R43"  Part="1" 
+F 0 "R43" V 2350 3750 50  0000 R CNN
+F 1 "47" V 2250 3750 50  0000 R CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 2380 3650 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-AC_51_RoHS_L_6-1152827.pdf" H 2450 3650 50  0001 C CNN
+F 4 "Yageo" H -7900 1100 50  0001 C CNN "Mfg"
+F 5 "AC0603FR-07130RL" H -7900 1100 50  0001 C CNN "MPN"
+	1    2450 3650
+	0    1    -1   0   
+$EndComp
+Wire Wire Line
+	2600 3650 2750 3650
+Wire Wire Line
+	2600 3550 2750 3550
+Wire Wire Line
+	2650 3300 2750 3300
+Wire Wire Line
+	2750 3300 2750 3450
 Wire Bus Line
 	2400 4950 2400 5800
 Wire Bus Line

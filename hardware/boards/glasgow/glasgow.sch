@@ -2764,6 +2764,116 @@ Wire Wire Line
 	8850 3350 9150 3350
 Text Label 8850 3350 0    50   ~ 0
 CLKREF
+$Comp
+L Connector:TestPoint TP8
+U 1 1 5CA9B5FE
+P 1350 2450
+F 0 "TP8" V 1350 2700 50  0000 L CNN
+F 1 "SDA" V 1454 2524 50  0001 C CNN
+F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 1550 2450 50  0001 C CNN
+F 3 "~" H 1550 2450 50  0001 C CNN
+	1    1350 2450
+	0    1    1    0   
+$EndComp
+$Comp
+L Connector:TestPoint TP9
+U 1 1 5CA9CCBA
+P 1350 2550
+F 0 "TP9" V 1350 2800 50  0000 L CNN
+F 1 "SDA" V 1454 2624 50  0001 C CNN
+F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 1550 2550 50  0001 C CNN
+F 3 "~" H 1550 2550 50  0001 C CNN
+	1    1350 2550
+	0    1    1    0   
+$EndComp
+$Comp
+L Connector:TestPoint TP10
+U 1 1 5CA9CD70
+P 1350 2650
+F 0 "TP10" V 1350 2900 50  0000 L CNN
+F 1 "SDA" V 1454 2724 50  0001 C CNN
+F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 1550 2650 50  0001 C CNN
+F 3 "~" H 1550 2650 50  0001 C CNN
+	1    1350 2650
+	0    1    1    0   
+$EndComp
+$Comp
+L Connector:TestPoint TP11
+U 1 1 5CA9CE28
+P 1350 2750
+F 0 "TP11" V 1350 3000 50  0000 L CNN
+F 1 "SDA" V 1454 2824 50  0001 C CNN
+F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 1550 2750 50  0001 C CNN
+F 3 "~" H 1550 2750 50  0001 C CNN
+	1    1350 2750
+	0    1    1    0   
+$EndComp
+$Comp
+L Connector:TestPoint TP12
+U 1 1 5CA9D135
+P 1350 2850
+F 0 "TP12" V 1350 3100 50  0000 L CNN
+F 1 "SDA" V 1454 2924 50  0001 C CNN
+F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 1550 2850 50  0001 C CNN
+F 3 "~" H 1550 2850 50  0001 C CNN
+	1    1350 2850
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	1350 2650 1150 2650
+Wire Wire Line
+	1350 2750 1150 2750
+Text Label 1150 2650 0    50   ~ 0
+SDA
+Text Label 1150 2750 0    50   ~ 0
+SCL
+$Comp
+L power:GND #PWR0139
+U 1 1 5CB373CD
+P 1350 2850
+F 0 "#PWR0139" H 1350 2600 50  0001 C CNN
+F 1 "GND" H 1355 2677 50  0000 C CNN
+F 2 "" H 1350 2850 50  0001 C CNN
+F 3 "" H 1350 2850 50  0001 C CNN
+	1    1350 2850
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+5V #PWR0134
+U 1 1 5CB37530
+P 1350 2450
+F 0 "#PWR0134" H 1350 2300 50  0001 C CNN
+F 1 "+5V" H 1200 2500 50  0000 C CNN
+F 2 "" H 1350 2450 50  0001 C CNN
+F 3 "" H 1350 2450 50  0001 C CNN
+	1    1350 2450
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3.3V #PWR041
+U 1 1 5CB375E7
+P 1050 2450
+F 0 "#PWR041" H 1050 2300 50  0001 C CNN
+F 1 "+3.3V" H 750 2500 50  0000 L CNN
+F 2 "" H 1050 2450 50  0001 C CNN
+F 3 "" H 1050 2450 50  0001 C CNN
+	1    1050 2450
+	1    0    0    -1  
+$EndComp
+Wire Notes Line
+	600  2300 1900 2300
+Wire Notes Line
+	1900 2300 1900 3100
+Wire Notes Line
+	1900 3100 600  3100
+Wire Notes Line
+	600  3100 600  2300
+Text Notes 600  3100 0    50   ~ 0
+Rear testpoints
+Wire Wire Line
+	1050 2450 1050 2550
+Wire Wire Line
+	1050 2550 1350 2550
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
