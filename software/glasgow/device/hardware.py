@@ -475,19 +475,21 @@ class GlasgowHardwareDevice:
         else:
             raise GlasgowDeviceError("FPGA is not configured")
 
-    async def read_register(self, addr):
-        """Read byte FPGA register at ``addr``."""
+    async def read_register(self, addr, width=1):
+        """Read ``width``-byte FPGA register at ``addr``."""
         try:
-            value, = await self.control_read(usb1.REQUEST_TYPE_VENDOR, REQ_REGISTER, addr, 0, 1)
-            logger.trace("register %d read: 0x%02x", addr, value)
+            value = await self.control_read(usb1.REQUEST_TYPE_VENDOR, REQ_REGISTER, addr, 0, width)
+            value = int.from_bytes(value, byteorder="little")
+            logger.trace("register %d read: %#04x", addr, value)
             return value
         except usb1.USBErrorPipe:
             await self._register_error(addr)
 
-    async def write_register(self, addr, value):
-        """Write ``value`` to byte FPGA register at ``addr``."""
+    async def write_register(self, addr, value, width=1):
+        """Write ``value`` to ``width``-byte FPGA register at ``addr``."""
         try:
-            logger.trace("register %d write: 0x%02x", addr, value)
-            await self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_REGISTER, addr, 0, [value])
+            logger.trace("register %d write: %#04x", addr, value)
+            value = value.to_bytes(width, byteorder="big")
+            await self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_REGISTER, addr, 0, value)
         except usb1.USBErrorPipe:
             await self._register_error(addr)
