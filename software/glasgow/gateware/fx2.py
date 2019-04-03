@@ -36,15 +36,22 @@ class _DummyFIFO(Module, _FIFOInterface):
     def __init__(self, width):
         super().__init__(width, 0)
 
-        self.submodules.fifo = _FIFOInterface(width, 0)
-
 
 class _FIFOWithOverflow(Module, _FIFOInterface):
+    """
+    A FIFO with an overflow buffer in front of it. Useful when the FIFO is fed from a pipeline
+    that reacts to the ``writable`` flag with a latency, and writes must not be lost.
+    """
     def __init__(self, fifo, overflow_depth=2):
         _FIFOInterface.__init__(self, fifo.width, fifo.depth)
 
+        if fifo.depth > 0:
+            overflow = SyncFIFO(fifo.width, overflow_depth)
+        else:
+            overflow = _DummyFIFO(fifo.width)
+
         self.submodules.fifo     = fifo
-        self.submodules.overflow = overflow = SyncFIFO(fifo.width, overflow_depth)
+        self.submodules.overflow = overflow
 
         self.dout     = fifo.dout
         self.re       = fifo.re
@@ -71,6 +78,11 @@ class _FIFOWithOverflow(Module, _FIFOInterface):
 
 
 class _FIFOWithFlush(Module, _FIFOInterface):
+    """
+    A FIFO with a sideband flag indicating whether the FIFO has enough data to read from it yet.
+    Useful when the data read from the FIFO is packetized, but there is no particular framing
+    available to optimize the packet boundaries.
+    """
     def __init__(self, fifo, asynchronous=False, auto_flush=True):
         _FIFOInterface.__init__(self, fifo.width, fifo.depth)
 
@@ -116,7 +128,7 @@ class _RegisteredTristate(Module):
         for bit in range(io.nbits):
             self.specials += \
                 Instance("SB_IO",
-                    # PIN_INPUT_REGISTERED|PIN_OUTPUT_REGISTERED_ENABLE_REGISTERED
+                    # PIN_INPUT_DDR|PIN_OUTPUT_REGISTERED_ENABLE_REGISTERED
                     p_PIN_TYPE=C(0b110100, 6),
                     io_PACKAGE_PIN=get_bit(io, bit),
                     i_OUTPUT_ENABLE=self.oe,
@@ -179,7 +191,6 @@ class FX2Arbiter(Module):
                        [fifo.readable | fifo.queued for fifo in self. in_fifos]) &
                    flag),
             self.out_fifos[addr[0]].din.eq(bus.fd_t.i),
-            self.in_fifos[addr[0]].flushed.eq(pend),
             bus.fd_t.o.eq(self.in_fifos[addr[0]].dout),
             bus.fd_t.oe.eq(fdoe),
             bus.sloe_t.oe.eq(1),
@@ -190,6 +201,22 @@ class FX2Arbiter(Module):
             bus.slwr_t.o.eq(~slwr),
             bus.pktend_t.oe.eq(1),
             bus.pktend_t.o.eq(~pend),
+        ]
+
+        # Derive the control signals for the FPGA-side FIFOs from the FX2 bus control signals.
+        # This is done independently from the main FSM because registers in the FX2 output path
+        # add latency, complicating logic.
+        slrd_r = Signal()
+        self.sync += [
+            slrd_r.eq(slrd),
+        ]
+        self.comb += [
+            If(addr[1],
+                self.in_fifos [addr[0]].re.eq(slwr),
+                self.in_fifos [addr[0]].flushed.eq(pend),
+            ).Else(
+                self.out_fifos[addr[0]].we.eq(slrd_r & flag.part(addr, 1)),
+            )
         ]
 
         # Calculate the address of the next ready FIFO in a round robin process.
@@ -227,17 +254,18 @@ class FX2Arbiter(Module):
         )
         self.fsm.act("SETUP",
             If(addr[1],
-                NextState("SETUP-IN")
+                NextState("IN-SETUP")
             ).Else(
-                NextState("SETUP-OUT")
+                NextState("OUT-SETUP")
             )
         )
-        self.fsm.act("SETUP-IN",
-            NextState("XFER-IN")
+
+        # IN endpoint handling
+        self.fsm.act("IN-SETUP",
+            NextState("IN-XFER")
         )
-        self.fsm.act("XFER-IN",
+        self.fsm.act("IN-XFER",
             If(flag.part(addr, 1) & self.in_fifos[addr[0]].readable,
-                self.in_fifos[addr[0]].re.eq(1),
                 slwr.eq(1)
             ).Elif(~flag.part(addr, 1) & ~self.in_fifos[addr[0]].readable,
                 # The ~FULL flag went down, and it goes down one sample earlier than the actual
@@ -249,11 +277,11 @@ class FX2Arbiter(Module):
                 # and commit a packet one byte shorter than the complete FIFO.
                 #
                 # This shouldn't cause any problems.
-                NextState("PKTEND-IN")
+                NextState("IN-PKTEND")
             ).Elif(flag.part(addr, 1) & self.in_fifos[addr[0]].queued,
                 # The FX2-side FIFO is not full yet, but the flush flag is asserted.
                 # Commit the short packet.
-                NextState("PKTEND-IN")
+                NextState("IN-PKTEND")
             ).Else(
                 # Either the FPGA-side FIFO is empty, or the FX2-side FIFO is full, or the flush
                 # flag is not asserted.
@@ -261,20 +289,21 @@ class FX2Arbiter(Module):
                 NextState("NEXT")
             )
         )
-        self.fsm.act("PKTEND-IN",
+        self.fsm.act("IN-PKTEND",
             # See datasheet "Slave FIFO Synchronous Packet End Strobe Parameters" for
             # an explanation of why this is asserted one cycle after the last SLWR pulse.
             pend.eq(1),
             NextState("NEXT")
         )
-        self.fsm.act("SETUP-OUT",
+
+        # OUT endpoint handling
+        self.fsm.act("OUT-SETUP",
             slrd.eq(1),
-            NextState("XFER-OUT")
+            NextState("OUT-XFER")
         )
-        self.fsm.act("XFER-OUT",
-            self.out_fifos[addr[0]].we.eq(flag.part(addr, 1)),
-            If(rdy.part(addr, 1),
-                slrd.eq(self.out_fifos[addr[0]].fifo.writable),
+        self.fsm.act("OUT-XFER",
+            If(flag.part(addr, 1) & self.out_fifos[addr[0]].fifo.writable,
+                slrd.eq(1),
             ).Else(
                 NextState("NEXT")
             )
