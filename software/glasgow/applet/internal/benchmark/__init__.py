@@ -32,6 +32,8 @@ class BenchmarkSubtarget(Module):
                 If(in_fifo.writable & out_fifo.readable,
                     in_fifo.we.eq(1),
                     out_fifo.re.eq(1)
+                ).Else(
+                    in_fifo.flush.eq(1)
                 )
             )
         )
@@ -150,7 +152,7 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
                 begin  = time.time()
                 write_fut = asyncio.ensure_future(iface.write(golden))
                 read_fut  = asyncio.ensure_future(iface.read(len(golden)))
-                await asyncio.wait([write_fut, read_fut], return_when=asyncio.ALL_COMPLETED)
+                await asyncio.wait([write_fut, read_fut], return_when=asyncio.FIRST_EXCEPTION)
                 actual = read_fut.result()
                 end    = time.time()
 
