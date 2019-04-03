@@ -381,10 +381,12 @@ class YamahaOPxInterface(metaclass=ABCMeta):
     async def enable(self):
         self._log("enable")
         await self.lower.write([OP_ENABLE|1])
+        # Wait until the commands start arriving before flushing the enable command.
 
     async def disable(self):
         self._log("disable")
         await self.lower.write([OP_ENABLE|0])
+        await self.lower.flush()
 
     def _enable_level(self, feature_level):
         if self._feature_level < feature_level:
@@ -507,13 +509,12 @@ class YamahaVGMStreamPlayer(VGMStreamPlayer):
         self.clock_rate  = clock_rate
         self.sample_time = opx_iface.sample_clocks / self.clock_rate
 
-    async def play(self, disable=True):
+    async def play(self):
         try:
             await self._opx_iface.enable()
             await self._reader.parse_data(self)
         finally:
-            if disable:
-                await self._opx_iface.disable()
+            await self._opx_iface.disable()
 
     async def record(self, queue, chunk_count=8192):
         total_count = int(self._reader.total_seconds / self.sample_time)
@@ -642,7 +643,7 @@ class YamahaOPxWebInterface:
             resample_queue = asyncio.Queue()
             resample_fut = asyncio.ensure_future(resample(input_queue, resample_queue))
             record_fut   = asyncio.ensure_future(vgm_player.record(input_queue))
-            play_fut     = asyncio.ensure_future(vgm_player.play(disable=False))
+            play_fut     = asyncio.ensure_future(vgm_player.play())
 
             try:
                 response = web.StreamResponse()
@@ -845,7 +846,7 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
                     args.pcm_file.write(input_chunk)
 
             input_queue = asyncio.Queue()
-            play_fut   = asyncio.ensure_future(vgm_player.play(disable=False))
+            play_fut   = asyncio.ensure_future(vgm_player.play())
             record_fut = asyncio.ensure_future(vgm_player.record(input_queue))
             write_fut  = asyncio.ensure_future(write_pcm(input_queue))
             done, pending = await asyncio.wait([play_fut, record_fut, write_fut],
