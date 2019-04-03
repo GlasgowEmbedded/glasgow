@@ -330,8 +330,8 @@ class I2CSlave(Module):
             ).Elif(bus.sample,
                 If(shreg_i[0],
                     self.start.eq(1),
-                    NextState("READ-SHIFT"),
-                    NextValue(shreg_o, self.data_o)
+                    NextValue(shreg_o, self.data_o),
+                    NextState("READ-SHIFT")
                 )
             )
         )
@@ -387,6 +387,7 @@ class I2CSlave(Module):
                 NextState("START")
             ).Elif(bus.sample,
                 If(~bus.sda_i,
+                    NextValue(shreg_o, self.data_o),
                     NextState("READ-SHIFT")
                 ).Else(
                     NextState("IDLE")
@@ -651,6 +652,7 @@ class I2CSlaveTestbench(I2CTestbench):
         yield from self.half_period()
         yield self.scl_o.eq(1)
         yield from self.half_period()
+        yield self.sda_o.eq(1)
 
     def write_octet(self, octet):
         for bit in range(8)[::-1]:
@@ -850,6 +852,17 @@ class I2CSlaveTestCase(I2CTestCase):
         yield from self.assertCondition(tb, lambda: (yield tb.dut.stop))
         yield
         yield from self.assertState(tb, "IDLE")
+
+    @simulation_test
+    def test_read_ack_read(self, tb):
+        yield tb.dut.data_o.eq(0b10100101)
+        yield from self.start_addr(tb, read=True)
+        self.assertEqual((yield from tb.read_octet()), 0b10100101)
+        yield tb.dut.data_o.eq(0b00110011)
+        yield from tb.write_bit(0)
+        self.assertEqual((yield from tb.read_octet()), 0b00110011)
+        yield from tb.write_bit(0)
+        yield from self.assertState(tb, "READ-SHIFT")
 
 
 class _DummyPads(Module):
