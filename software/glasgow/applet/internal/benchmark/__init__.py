@@ -107,7 +107,7 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
     @classmethod
     def add_run_arguments(cls, parser, access):
         parser.add_argument(
-            "-c", "--count", metavar="COUNT", type=int, default=1 << 21,
+            "-c", "--count", metavar="COUNT", type=int, default=1 << 22,
             help="transfer COUNT pseudorandom values (default: %(default)s)")
 
         parser.add_argument(
@@ -131,6 +131,7 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
                 begin  = time.time()
                 actual = await iface.read(len(golden))
                 end    = time.time()
+                length = len(golden)
 
                 error = (actual != golden)
 
@@ -142,6 +143,7 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
                 await iface.write(golden)
                 await iface.flush()
                 end    = time.time()
+                length = len(golden)
 
                 error = bool(await device.read_register(self.__addr_error))
 
@@ -155,14 +157,17 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
                 await asyncio.wait([write_fut, read_fut], return_when=asyncio.FIRST_EXCEPTION)
                 actual = read_fut.result()
                 end    = time.time()
+                length = len(golden) * 2
 
                 error = (actual != golden)
 
             if error:
                 self.logger.error("mode %s failed!", mode)
             else:
-                self.logger.info("mode %s: %.3f MiB/s",
-                                 mode, (len(golden) / (end - begin)) / (1 << 20))
+                self.logger.info("mode %s: %.2f MiB/s (%.2f Mb/s)",
+                                 mode,
+                                 (length / (end - begin)) / (1 << 20),
+                                 (length / (end - begin)) / (1 << 17))
 
 # -------------------------------------------------------------------------------------------------
 
