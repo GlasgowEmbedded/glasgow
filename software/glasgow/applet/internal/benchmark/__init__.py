@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import struct
+import array
 import time
 from migen import *
 
@@ -102,13 +103,17 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
             out_fifo=iface.get_out_fifo(),
         ))
 
-        self.__sequence = list(subtarget.lfsr.generate())
+        sequence = array.array("H")
+        sequence.extend(subtarget.lfsr.generate())
+        if struct.pack("H", 0x1234) != struct.pack("<H", 0x1234):
+            sequence.byteswap()
+        self._sequence = sequence.tobytes()
 
     @classmethod
     def add_run_arguments(cls, parser, access):
         parser.add_argument(
-            "-c", "--count", metavar="COUNT", type=int, default=1 << 22,
-            help="transfer COUNT pseudorandom values (default: %(default)s)")
+            "-c", "--count", metavar="COUNT", type=int, default=1 << 23,
+            help="transfer COUNT bytes (default: %(default)s)")
 
         parser.add_argument(
             dest="modes", metavar="MODE", type=str, nargs="*", choices=[[]] + cls.__all_modes,
@@ -117,8 +122,9 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
 
-        golden = bytearray().join([struct.pack("<H", self.__sequence[n % len(self.__sequence)])
-                                   for n in range(args.count)])
+        golden = bytearray()
+        while len(golden) < args.count:
+            golden += self._sequence[:args.count - len(golden)]
 
         for mode in args.modes or self.__all_modes:
             self.logger.info("running benchmark mode %s for %.3f MiB",
