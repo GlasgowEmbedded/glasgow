@@ -1,12 +1,21 @@
 from collections import deque
 
 
+__all__ = ["ChunkedFIFO"]
+
+
 class ChunkedFIFO:
     """
     A first-in first-out byte buffer that uses discontiguous storage to operate without copying.
     """
     def __init__(self):
         self._queue  = deque()
+        self._chunk  = None
+        self._offset = 0
+
+    def clear(self):
+        """Remove all data from the buffer."""
+        self._queue.clear()
         self._chunk  = None
         self._offset = 0
 
@@ -36,7 +45,10 @@ class ChunkedFIFO:
             return memoryview(b"")
 
         if self._chunk is None:
-            self._chunk = self._queue.popleft()
+            if not self._queue:
+                return memoryview(b"")
+
+            self._chunk  = self._queue.popleft()
             self._offset = 0
 
         if max_length is None:

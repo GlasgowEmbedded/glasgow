@@ -1,8 +1,10 @@
-import usb1
 import math
+import usb1
+import asyncio
 
 from ...support.logging import *
 from ...support.chunked_fifo import *
+from ...support.task_queue import *
 from .. import AccessDemultiplexer, AccessDemultiplexerInterface
 
 
@@ -28,7 +30,33 @@ from .. import AccessDemultiplexer, AccessDemultiplexerInterface
 #
 # To deal with this, use requests of at most 1024 EP buffer sizes (512 KiB with the FX2) as
 # an arbitrary cutoff, and hope for the best.
-_max_buffers_per_io = 1024
+_max_packets_per_ep = 1024
+
+# USB has the limitation that all transactions are host-initiated. Therefore, if we do not queue
+# reads for the IN endpoints quickly enough, the HC will not even poll the device, and the buffer
+# will quickly overflow (provided it is being filled with data). To address this, we issue many
+# pipelined reads, to compensate for the non-realtime nature of Python and the host OS.
+#
+# This, however, has an inherent tradeoff. If we submit small reads (down to a single EP buffer
+# size), we get the data back as early as possible, but the CPU load is much higher, and we have
+# to submit many more buffers to tolerate the same amount of scheduling latency. If we submit large
+# reads, it's much easier to service the device quickly enough, but the maximum latency of reads
+# rises.
+#
+# The relationship between buffer size and latency is quite complex. If only one 512-byte buffer
+# is available but a 10240-byte read is requested, the read will finish almost immediately with
+# those 512 bytes. On the other hand, if 20 512-byte buffers are available and the HC can read one
+# each time it sends an IN token, they will all be read before the read finishes; if we request
+# a read of dozens of megabytes, this can take seconds.
+#
+# To try and balance these effects, we choose a medium buffer size that should work well with most
+# applications. It's possible that this will need to become customizable later, but for now
+# a single fixed value works.
+_packets_per_xfer = 16
+
+# Queue as many transfers as we can, but no more than 10, as the returns beyond that point
+# are diminishing.
+_xfers_per_queue = min(10, _max_packets_per_ep // _packets_per_xfer)
 
 
 class DirectDemultiplexer(AccessDemultiplexer):
@@ -125,83 +153,152 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         assert self._endpoint_in != None and self._endpoint_out != None
 
         self._interface  = self.device.usb.claimInterface(self._pipe_num)
-        self._buffer_in  = ChunkedFIFO()
-        self._buffer_out = ChunkedFIFO()
+        self._in_tasks   = TaskQueue()
+        self._in_buffer  = ChunkedFIFO()
+        self._out_tasks  = TaskQueue()
+        self._out_buffer = ChunkedFIFO()
 
     async def reset(self):
+        if self._in_tasks or self._out_tasks:
+            self.logger.trace("cancelling transactions")
+            self._in_tasks .cancel()
+            self._out_tasks.cancel()
+
         self.logger.trace("asserting reset")
         await self.device.write_register(self._addr_reset, 1)
+
         self.logger.trace("synchronizing FIFOs")
         self.device.usb.setInterfaceAltSetting(self._pipe_num, 1)
-        self._buffer_in  = ChunkedFIFO()
-        self._buffer_out = ChunkedFIFO()
+        self._in_buffer .clear()
+        self._out_buffer.clear()
+
+        # Pipeline reads before deasserting reset, so that if the applet immediately starts
+        # streaming data, there are no overflows. (This is perhaps not the best way to implement
+        # an applet, but we can support it easily enough, and it avoids surprise overflows.)
+        self.logger.trace("pipelining reads")
+        for _ in range(_xfers_per_queue):
+            self._in_tasks.submit(self._in_task())
+        # Give the IN tasks a chance to submit their transfers before deasserting reset.
+        await asyncio.sleep(0)
+
         self.logger.trace("deasserting reset")
         await self.device.write_register(self._addr_reset, 0)
 
-    async def _read_packet(self, hint=0):
-        buffers = min(_max_buffers_per_io, max(1, math.ceil(hint / self._endpoint_in)))
-        packet  = await self.device.bulk_read(self._endpoint_in, self._in_packet_size * buffers)
-        self._buffer_in.write(packet)
+    async def _in_task(self):
+        size = self._in_packet_size * _packets_per_xfer
+        data = await self.device.bulk_read(self._endpoint_in, size)
+        self._in_buffer.write(data)
 
-    async def read(self, length=None, hint=0):
-        # Always try to allocate at least as many USB buffers as the amount of data we know we're
-        # going to read from the FIFO. The real value is capped to avoid hitting platform-specific
-        # limits for USB I/O size (see above).
-        if length is not None:
-            hint = max(hint, length)
+        self._in_tasks.submit(self._in_task())
 
-        if len(self._buffer_out) > 0:
+    async def read(self, length=None):
+        if len(self._out_buffer) > 0:
             # Flush the buffer, so that everything written before the read reaches the device.
             await self.flush()
 
-        if length is None and len(self._buffer_in) > 0:
+        if length is None and len(self._in_buffer) > 0:
             # Just return whatever is in the buffer.
-            length = len(self._buffer_in)
+            length = len(self._in_buffer)
         elif length is None:
             # Return whatever is received in the next transfer, even if it's nothing.
-            await self._read_packet(hint)
-            length = len(self._buffer_in)
+            # (Gateware doesn't normally submit zero-length packets, so, unless that changes
+            # or customized gateware is used, we'll always get some data here.)
+            await self._in_tasks.wait_one()
+            length = len(self._in_buffer)
         else:
             # Return exactly the requested length.
-            while len(self._buffer_in) < length:
-                self.logger.trace("FIFO: need %d bytes", length - len(self._buffer_in))
-                await self._read_packet(hint)
+            while len(self._in_buffer) < length:
+                self.logger.trace("FIFO: need %d bytes", length - len(self._in_buffer))
+                await self._in_tasks.wait_one()
 
-        result = self._buffer_in.read(length)
+        result = self._in_buffer.read(length)
         if len(result) < length:
             result = bytearray(result)
             while len(result) < length:
-                result += self._buffer_in.read(length - len(result))
+                result += self._in_buffer.read(length - len(result))
             # Always return a memoryview object, to avoid hard to detect edge cases downstream.
             result = memoryview(result)
 
         self.logger.trace("FIFO: read <%s>", dump_hex(result))
         return result
 
-    async def _write_packet(self):
-        # Fast path: read as much contiguous data as possible, but not too much, as there might
-        # be a platform-specific limit for USB I/O size (see above).
-        packet = self._buffer_out.read(self._out_packet_size * _max_buffers_per_io)
+    def _out_slice(self):
+        # Fast path: read as much contiguous data as possible, up to our transfer size.
+        size = self._out_packet_size * _packets_per_xfer
+        data = self._out_buffer.read(size)
 
-        if len(packet) < self._out_packet_size and self._buffer_out:
-            # Slow path: USB is annoyingly high latency with small packets, so if we only got a few
+        if len(data) < size and len(self._out_buffer) >= self._out_packet_size:
+            # Slow path: USB is very inefficient with small packets, so if we only got a few
             # bytes from the FIFO, and there is much more in it, spend CPU time to aggregate that
-            # into at least one EP buffer sized packet, as this is likely to result in overall
-            # reduction of runtime.
-            packet = bytearray(packet)
-            while len(packet) < self._out_packet_size and self._buffer_out:
-                packet += self._buffer_out.read(self._out_packet_size)
+            # into a larger transfer, as this is likely to result in overall speedup.
+            data  = bytearray(data)
+            # Make sure the resulting transfer is a multiple of packet size.
+            data += self._out_buffer.read(self._out_packet_size -
+                                          len(data) % self._out_packet_size)
+            # If we have more data in the buffer still, pad the transfer further, still keeping it
+            # a multiple of packet size.
+            while len(data) < size and len(self._out_buffer) >= self._out_packet_size:
+                data += self._out_buffer.read(self._out_packet_size)
 
-        await self.device.bulk_write(self._endpoint_out, packet)
+        return data
+
+    async def _out_task(self, data):
+        assert len(data) > 0
+        await self.device.bulk_write(self._endpoint_out, data)
+
+        # See the comment in `write` below for an explanation of the following code.
+        if len(self._out_buffer) >= self._out_packet_size * _packets_per_xfer:
+            self._out_tasks.submit(self._out_task(self._out_slice()))
 
     async def write(self, data):
-        self.logger.trace("FIFO: write <%s>", dump_hex(data))
-        self._buffer_out.write(data)
+        # Eagerly check if any of our previous queued writes errored out.
+        await self._out_tasks.poll()
 
-        if len(self._buffer_out) > self._out_packet_size:
-            await self._write_packet()
+        self.logger.trace("FIFO: write <%s>", dump_hex(data))
+        self._out_buffer.write(data)
+
+        # The write scheduling algorithm attempts to satisfy several partially conflicting goals:
+        #  * We want to schedule writes as early as possible, because this reduces buffer bloat and
+        #    can dramatically improve responsiveness of the system.
+        #  * We want to schedule writes that are as large as possible, up to _packets_per_xfer,
+        #    because this reduces CPU utilization and improves latency.
+        #  * We never want to automatically schedule writes smaller than _out_packet_size,
+        #    because they occupy a whole microframe anyway.
+        #
+        # We use an approach that performs well when fed with a steady sequence of very large
+        # FIFO chunks, yet scales down to packet-size and byte-size FIFO chunks as well.
+        #  * We only submit a write automatically once the buffer level crosses the threshold of
+        #    `_out_packet_size * _packets_per_xfer`. In this case, _slice_packet always returns
+        #    `_out_packet_size * n` bytes, where n is between 1 and _packet_per_xfer.
+        #  * We submit enough writes that there is at least one write for each transfer worth
+        #    of data in the buffer, up to _xfers_per_queue outstanding writes.
+        #  * We submit another write once one finishes, if the buffer level is still above
+        #    the threshold, even if no more explicit write calls are performed.
+        #
+        # This provides predictable write behavior; only _packets_per_xfer packet writes are
+        # automatically submitted, and only the minimum necessary number of tasks are scheduled on
+        # calls to `write`.
+        while len(self._out_buffer) >= self._out_packet_size * _packets_per_xfer and \
+                len(self._out_tasks) < _xfers_per_queue:
+            self._out_tasks.submit(self._out_task(self._out_slice()))
 
     async def flush(self):
         self.logger.trace("FIFO: flush")
-        while self._buffer_out:
-            await self._write_packet()
+
+        # First, we ensure we can submit one more task. (There can be more tasks than
+        # _xfers_per_queue because a task may spawn another one just before it terminates.)
+        while len(self._out_tasks) >= _xfers_per_queue:
+            await self._out_tasks.wait_one()
+
+        # At this point, the buffer can contain at most _packets_per_xfer packets worth
+        # of data, as anything beyond that crosses the threshold of automatic submission.
+        # So, we can simply submit the rest of data, which by definition fits into a single
+        # transfer.
+        assert len(self._out_buffer) <= self._out_packet_size * _packets_per_xfer
+        if self._out_buffer:
+            data = bytearray()
+            while self._out_buffer:
+                data += self._out_buffer.read()
+            self._out_tasks.submit(self._out_task(data))
+
+        await self._out_tasks.wait_all()

@@ -589,19 +589,19 @@ class ShugartFloppyInterface:
                   self._sys_clk_freq / cycles * 60)
         return cycles
 
-    async def _read_packet(self, hint):
-        data     = await self.lower.read(254, hint)
-        trailer, = await self.lower.read(1, hint)
+    async def _read_packet(self):
+        data     = await self.lower.read(254)
+        trailer, = await self.lower.read(1)
         if trailer != TLR_ERROR:
             return data[:trailer]
 
-    async def read_track_raw(self, hint, redundancy=1):
+    async def read_track_raw(self, redundancy=1):
         self._log("read track raw")
         index = 0
         data  = bytearray()
         await self.lower.write([CMD_READ_RAW, redundancy])
         while True:
-            packet = await self._read_packet(hint * redundancy)
+            packet = await self._read_packet()
             if packet is None:
                 raise GlasgowAppletError("FIFO overflow while reading track")
 
@@ -881,21 +881,20 @@ class MemoryFloppyApplet(GlasgowApplet, name="memory-floppy"):
     async def interact(self, device, args, floppy_iface):
         self.logger.info("starting up the drive")
         await floppy_iface.start()
-        cycles = await floppy_iface.measure_track()
+        await floppy_iface.measure_track()
 
         try:
             if args.operation == "read-raw":
                 for track in range(args.first, args.last + 1):
                     await floppy_iface.seek_track(track)
-                    data = await floppy_iface.read_track_raw(hint=cycles // 8,
-                                                             redundancy=args.redundancy)
+                    data = await floppy_iface.read_track_raw(redundancy=args.redundancy)
                     args.file.write(struct.pack(">BBL", track & 1, track >> 1, len(data)))
                     args.file.write(data)
                     args.file.flush()
 
             if args.operation == "read-track":
                 await floppy_iface.seek_track(args.track)
-                bytestream = await floppy_iface.read_track_raw(hint=cycles // 8)
+                bytestream = await floppy_iface.read_track_raw()
                 mfm        = SoftwareMFMDecoder(self.logger)
                 datastream = mfm.demodulate(mfm.lock(itertools.cycle(mfm.bits(bytestream))))
                 for comma, data in itertools.islice(datastream, 10):
@@ -907,7 +906,7 @@ class MemoryFloppyApplet(GlasgowApplet, name="memory-floppy"):
 
             if args.operation == "test-pll":
                 await floppy_iface.seek_track(args.track)
-                bytestream = await floppy_iface.read_track_raw(hint=cycles // 8)
+                bytestream = await floppy_iface.read_track_raw()
                 mfm        = SoftwareMFMDecoder(self.logger)
                 bitstream  = list(mfm.bits(bytestream)) * 2
 

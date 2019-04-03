@@ -22,7 +22,7 @@ class SimulationDemultiplexerInterface(AccessDemultiplexerInterface):
         pass
 
     @asyncio.coroutine
-    def read(self, length=None, hint=0):
+    def read(self, length=None):
         data = []
         if length is None:
             while (yield self._in_fifo.readable):

@@ -444,10 +444,11 @@ class YamahaOPxInterface(metaclass=ABCMeta):
             await self.lower.write([OP_WAIT, *struct.pack(">H", 65535)])
             count -= 65535
         await self.lower.write([OP_WAIT, *struct.pack(">H", count)])
+        await self.lower.flush()
 
-    async def read_samples(self, count, hint=0):
+    async def read_samples(self, count):
         self._log("read %d samples", count)
-        return await self.lower.read(count * 2, hint=hint * 2)
+        return await self.lower.read(count * 2)
 
 
 class YamahaOPLInterface(YamahaOPxInterface):
@@ -514,25 +515,14 @@ class YamahaVGMStreamPlayer(VGMStreamPlayer):
             if disable:
                 await self._opx_iface.disable()
 
-    async def record(self, queue, chunk_count=8192, concurrent=10):
+    async def record(self, queue, chunk_count=8192):
         total_count = int(self._reader.total_seconds / self.sample_time)
         done_count  = 0
-
-        async def queue_samples(count):
-            samples = await self._opx_iface.read_samples(count)
+        while done_count < total_count:
+            chunk_count = min(chunk_count, total_count - done_count)
+            samples = await self._opx_iface.read_samples(chunk_count)
             await queue.put(samples)
-
-        tasks = set()
-        while tasks or done_count == 0:
-            if tasks:
-                done, tasks = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-                for task in done:
-                    await task
-
-            while done_count < total_count and len(tasks) < concurrent:
-                chunk_count = min(chunk_count, total_count - done_count)
-                tasks.add(asyncio.ensure_future(queue_samples(chunk_count)))
-                done_count += chunk_count
+            done_count += chunk_count
 
         await queue.put(b"")
 
