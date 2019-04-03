@@ -336,6 +336,11 @@ class YamahaOPxInterface(metaclass=ABCMeta):
         self._feature_level  = 1
         self._feature_warned = False
 
+        # To ensure a steady supply of commands and avoid starving the playback coroutine,
+        # flush each `flush_period` clocks.
+        self._clock_counter = 0
+        self.flush_period   = 0
+
     @abstractmethod
     def get_vgm_clock_rate(self, vgm_reader):
         pass
@@ -428,6 +433,8 @@ class YamahaOPxInterface(metaclass=ABCMeta):
         await self.lower.write([OP_WRITE|addr_high|0, addr_low, OP_WRITE|1, data])
 
     async def wait_clocks(self, count):
+        self._clock_counter += count
+
         if self._instant_writes:
             old_phase_accum = self._phase_accum
             self._phase_accum -= count
@@ -446,7 +453,10 @@ class YamahaOPxInterface(metaclass=ABCMeta):
             await self.lower.write([OP_WAIT, *struct.pack(">H", 65535)])
             count -= 65535
         await self.lower.write([OP_WAIT, *struct.pack(">H", count)])
-        await self.lower.flush()
+
+        if self._clock_counter >= self.flush_period:
+            self._clock_counter = 0
+            await self.lower.flush()
 
     async def read_samples(self, count):
         self._log("read %d samples", count)
@@ -617,6 +627,7 @@ class YamahaOPxWebInterface:
                 raise ValueError("VGM file does not contain commands for any supported chip")
             if clock_rate & 0xc0000000:
                 raise ValueError("VGM file uses unsupported chip configuration")
+            self._opx_iface.flush_period = clock_rate / 50 # each 20 ms
 
             self._logger.info("web: %s: VGM is looped for %.2f/%.2f s",
                               digest, vgm_reader.loop_seconds, vgm_reader.total_seconds)
@@ -834,6 +845,7 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
                                          "supported chip")
             if clock_rate & 0xc0000000:
                 raise GlasgowAppletError("VGM file uses unsupported chip configuration")
+            self._opx_iface.flush_period = clock_rate / 50 # each 20 ms
 
             vgm_player = YamahaVGMStreamPlayer(vgm_reader, opx_iface, clock_rate)
             self.logger.info("recording at sample rate %d Hz", 1 / vgm_player.sample_time)
@@ -851,7 +863,6 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
             write_fut  = asyncio.ensure_future(write_pcm(input_queue))
             done, pending = await asyncio.wait([play_fut, record_fut, write_fut],
                                                return_when=asyncio.FIRST_EXCEPTION)
-            print(done, pending)
             for fut in done:
                 await fut
 
