@@ -732,9 +732,13 @@ class YamahaOPxWebInterface:
 
 
 class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
+    preview = True
     logger = logging.getLogger(__name__)
     help = "drive and record Yamaha OPL* FM synthesizers"
     description = """
+    WARNING: Since commit e59730fb this applet has a serious problem with buffer overruns.
+    It will need to be reworked.
+
     Send commands and record digital output from Yamaha OPL* series FM synthesizers. The supported
     chips are:
         * YM3526 (OPL)
