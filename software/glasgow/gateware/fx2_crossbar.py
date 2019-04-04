@@ -29,7 +29,7 @@ from migen.genlib.fifo import _FIFOInterface, AsyncFIFO, SyncFIFO, SyncFIFOBuffe
 from migen.genlib.resetsync import AsyncResetSynchronizer
 
 
-__all__ = ["FX2Arbiter"]
+__all__ = ["FX2Crossbar"]
 
 
 class _DummyFIFO(Module, _FIFOInterface):
@@ -154,13 +154,13 @@ class _FX2Bus(Module):
         self.submodules.pktend_t  = _RegisteredTristate(pads.pktend)
 
 
-class FX2Arbiter(Module):
+class FX2Crossbar(Module):
     """
     FX2 FIFO bus master.
 
     Shuttles data between FX2 and FIFOs in bursts.
 
-    The arbiter supports up to four FIFOs organized as ``OUT, OUT, IN, IN``.
+    The crossbar supports up to four FIFOs organized as ``OUT, OUT, IN, IN``.
     FIFOs that are never requested are not implemented and behave as if they
     are never readable or writable.
     """
@@ -309,7 +309,7 @@ class FX2Arbiter(Module):
             )
         )
 
-    def _make_fifo(self, arbiter_side, logic_side, cd_logic, reset, depth, wrapper):
+    def _make_fifo(self, crossbar_side, logic_side, cd_logic, reset, depth, wrapper):
         if cd_logic is None:
             fifo = wrapper(SyncFIFOBuffered(8, depth))
 
@@ -320,8 +320,8 @@ class FX2Arbiter(Module):
             assert isinstance(cd_logic, ClockDomain)
 
             fifo = wrapper(ClockDomainsRenamer({
-                arbiter_side: "arbiter",
-                logic_side:   "logic",
+                crossbar_side: "crossbar",
+                logic_side:    "logic",
             })(AsyncFIFO(8, depth)))
 
             # Note that for the reset to get asserted AND deasserted, the logic clock domain must
@@ -336,14 +336,14 @@ class FX2Arbiter(Module):
             # This can lead to all sorts of framing issues, and is rather unfortunate, but at
             # the moment I do not know of a way to fix this, since Migen does not support
             # asynchronous resets.
-            fifo.clock_domains.cd_arbiter = ClockDomain(reset_less=reset is None)
-            fifo.clock_domains.cd_logic   = ClockDomain(reset_less=reset is None)
+            fifo.clock_domains.cd_crossbar = ClockDomain(reset_less=reset is None)
+            fifo.clock_domains.cd_logic    = ClockDomain(reset_less=reset is None)
             fifo.comb += [
-                fifo.cd_arbiter.clk.eq(ClockSignal()),
+                fifo.cd_crossbar.clk.eq(ClockSignal()),
                 fifo.cd_logic.clk.eq(cd_logic.clk),
             ]
             if reset is not None:
-                fifo.comb += fifo.cd_arbiter.rst.eq(reset)
+                fifo.comb += fifo.cd_crossbar.rst.eq(reset)
                 fifo.specials += AsyncResetSynchronizer(fifo.cd_logic, reset)
 
         self.submodules += fifo
@@ -353,7 +353,7 @@ class FX2Arbiter(Module):
         assert 0 <= n < 2
         assert isinstance(self.out_fifos[n].fifo, _DummyFIFO)
 
-        fifo = self._make_fifo(arbiter_side="write",
+        fifo = self._make_fifo(crossbar_side="write",
                                logic_side="read",
                                cd_logic=clock_domain,
                                reset=reset,
@@ -366,7 +366,7 @@ class FX2Arbiter(Module):
         assert 0 <= n < 2
         assert isinstance(self.in_fifos[n].fifo, _DummyFIFO)
 
-        fifo = self._make_fifo(arbiter_side="read",
+        fifo = self._make_fifo(crossbar_side="read",
                                logic_side="write",
                                cd_logic=clock_domain,
                                reset=reset,

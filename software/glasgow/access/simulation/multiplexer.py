@@ -2,7 +2,7 @@ from migen import *
 from migen.genlib.fifo import _FIFOInterface, AsyncFIFO, SyncFIFOBuffered
 
 from .. import AccessMultiplexer, AccessMultiplexerInterface
-from ...gateware.fx2 import _FIFOWithFlush
+from ...gateware.fx2_crossbar import _FIFOWithFlush
 
 
 class SimulationMultiplexer(AccessMultiplexer):
@@ -30,15 +30,15 @@ class SimulationMultiplexerInterface(AccessMultiplexerInterface):
     def build_pin_tristate(self, pin, oe, o, i):
         pass
 
-    def _make_fifo(self, arbiter_side, logic_side, cd_logic, depth, wrapper=lambda x: x):
+    def _make_fifo(self, crossbar_side, logic_side, cd_logic, depth, wrapper=lambda x: x):
         if cd_logic is None:
             fifo = wrapper(SyncFIFOBuffered(8, depth))
         else:
             assert isinstance(cd_logic, ClockDomain)
 
             fifo = wrapper(ClockDomainsRenamer({
-                arbiter_side: "sys",
-                logic_side:   "logic",
+                crossbar_side: "sys",
+                logic_side:    "logic",
             })(AsyncFIFO(8, depth)))
 
             fifo.clock_domains.cd_logic = ClockDomain()
@@ -52,7 +52,7 @@ class SimulationMultiplexerInterface(AccessMultiplexerInterface):
         assert self.in_fifo is None
 
         self.submodules.in_fifo = self._make_fifo(
-            arbiter_side="read", logic_side="write", cd_logic=clock_domain, depth=depth,
+            crossbar_side="read", logic_side="write", cd_logic=clock_domain, depth=depth,
             wrapper=lambda x: _FIFOWithFlush(x, asynchronous=clock_domain is not None,
                                              auto_flush=auto_flush))
         return self.in_fifo
@@ -61,7 +61,7 @@ class SimulationMultiplexerInterface(AccessMultiplexerInterface):
         assert self.out_fifo is None
 
         self.submodules.out_fifo = self._make_fifo(
-            arbiter_side="write", logic_side="read", cd_logic=clock_domain, depth=depth)
+            crossbar_side="write", logic_side="read", cd_logic=clock_domain, depth=depth)
         return self.out_fifo
 
     def get_inout_fifo(self, **kwargs):

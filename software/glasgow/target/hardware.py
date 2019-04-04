@@ -10,7 +10,7 @@ import migen.build.generic_platform
 from ..gateware.pads import Pads
 from ..gateware.i2c import I2CSlave
 from ..gateware.registers import I2CRegisters
-from ..gateware.fx2 import FX2Arbiter
+from ..gateware.fx2_crossbar import FX2Crossbar
 from ..gateware.platform.lattice import special_overrides
 from ..platform import GlasgowPlatformRevAB, GlasgowPlatformRevC0
 from .analyzer import GlasgowAnalyzer
@@ -71,7 +71,7 @@ class GlasgowHardwareTarget(Module):
         self.submodules.registers = I2CRegisters(self.i2c_slave)
         self.comb += self.i2c_slave.address.eq(0b0001000)
 
-        self.submodules.fx2_arbiter = FX2Arbiter(self.platform.request("fx2"))
+        self.submodules.fx2_crossbar = FX2Crossbar(self.platform.request("fx2"))
 
         self.ports = {
             "A": (8, lambda n: self.platform.request("port_a", n)),
@@ -81,7 +81,7 @@ class GlasgowHardwareTarget(Module):
         if multiplexer_cls:
             pipes = "PQ"
             self.submodules.multiplexer = multiplexer_cls(ports=self.ports, pipes="PQ",
-                registers=self.registers, fx2_arbiter=self.fx2_arbiter)
+                registers=self.registers, fx2_crossbar=self.fx2_crossbar)
         else:
             self.multiplexer = None
 

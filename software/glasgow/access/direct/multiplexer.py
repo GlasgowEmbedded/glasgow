@@ -68,14 +68,14 @@ class _FIFOWritePort(Module):
 
 
 class DirectMultiplexer(AccessMultiplexer):
-    def __init__(self, ports, pipes, registers, fx2_arbiter):
+    def __init__(self, ports, pipes, registers, fx2_crossbar):
         self._ports         = ports
         self._claimed_ports = set()
         self._pipes         = pipes
         self._claimed_pipes = 0
         self._analyzer      = None
         self._registers     = registers
-        self._fx2_arbiter   = fx2_arbiter
+        self._fx2_crossbar  = fx2_crossbar
 
     def set_analyzer(self, analyzer):
         assert self._analyzer is None
@@ -123,22 +123,22 @@ class DirectMultiplexer(AccessMultiplexer):
                                 self._pipes[pipe_num])
 
         iface = DirectMultiplexerInterface(applet, analyzer, self._registers,
-            self._fx2_arbiter, pipe_num, pins, throttle)
+            self._fx2_crossbar, pipe_num, pins, throttle)
         self.submodules += iface
         return iface
 
 
 class DirectMultiplexerInterface(AccessMultiplexerInterface):
-    def __init__(self, applet, analyzer, registers, fx2_arbiter, pipe_num, pins,
+    def __init__(self, applet, analyzer, registers, fx2_crossbar, pipe_num, pins,
                  throttle):
         assert throttle in ("full", "fifo", "none")
 
         super().__init__(applet, analyzer)
-        self._registers   = registers
-        self._fx2_arbiter = fx2_arbiter
-        self._pipe_num    = pipe_num
-        self._pins        = pins
-        self._throttle    = throttle
+        self._registers    = registers
+        self._fx2_crossbar = fx2_crossbar
+        self._pipe_num     = pipe_num
+        self._pins         = pins
+        self._throttle     = throttle
 
         self.reset, self._addr_reset = self._registers.add_rw(1, reset=1)
         self.logger.debug("adding reset register at address %#04x", self._addr_reset)
@@ -175,13 +175,13 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
         return fifo
 
     def get_in_fifo(self, **kwargs):
-        fifo = self._fx2_arbiter.get_in_fifo(self._pipe_num, **kwargs, reset=self.reset)
+        fifo = self._fx2_crossbar.get_in_fifo(self._pipe_num, **kwargs, reset=self.reset)
         if self.analyzer:
             self.analyzer.add_in_fifo_event(self.applet, fifo)
         return self._throttle_fifo(_FIFOWritePort(fifo))
 
     def get_out_fifo(self, **kwargs):
-        fifo = self._fx2_arbiter.get_out_fifo(self._pipe_num, **kwargs, reset=self.reset)
+        fifo = self._fx2_crossbar.get_out_fifo(self._pipe_num, **kwargs, reset=self.reset)
         if self.analyzer:
             self.analyzer.add_out_fifo_event(self.applet, fifo)
         return self._throttle_fifo(_FIFOReadPort(fifo))

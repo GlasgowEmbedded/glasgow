@@ -797,8 +797,8 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(YamahaOPxSubtarget(
             pads=iface.get_pads(args, pins=self.__pins, pin_sets=self.__pin_sets),
-            # These FIFO depths are somewhat dependent on the (current, bad) arbiter in Glasgow,
-            # but they work for now. With a better arbiter they should barely matter.
+            # These FIFO depths are somewhat dependent on the (current, bad) crossbar in Glasgow,
+            # but they work for now. With a better crossbar they should barely matter.
             out_fifo=iface.get_out_fifo(depth=512),
             in_fifo=iface.get_in_fifo(depth=8192, auto_flush=False),
             # It's useful to run the synthesizer at a frequency significantly higher than real-time
