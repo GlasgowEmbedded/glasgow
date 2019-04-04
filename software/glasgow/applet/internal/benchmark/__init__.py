@@ -15,7 +15,7 @@ MODE_LOOPBACK = 3
 
 
 class BenchmarkSubtarget(Module):
-    def __init__(self, mode, error, in_fifo, out_fifo):
+    def __init__(self, mode, error, count, in_fifo, out_fifo):
         self.submodules.lfsr = CEInserter()(
             LinearFeedbackShiftRegister(degree=16, taps=(16, 15, 13, 4))
         )
@@ -24,24 +24,20 @@ class BenchmarkSubtarget(Module):
 
         self.submodules.fsm = FSM(reset_state="MODE")
         self.fsm.act("MODE",
+            NextValue(count, 0),
             If(mode == MODE_SOURCE,
                 NextState("SOURCE-1")
             ).Elif(mode == MODE_SINK,
                 NextState("SINK-1")
             ).Elif(mode == MODE_LOOPBACK,
-                in_fifo.din.eq(out_fifo.dout),
-                If(in_fifo.writable & out_fifo.readable,
-                    in_fifo.we.eq(1),
-                    out_fifo.re.eq(1)
-                ).Else(
-                    in_fifo.flush.eq(1)
-                )
+                NextState("LOOPBACK")
             )
         )
         self.fsm.act("SOURCE-1",
             If(in_fifo.writable,
                 in_fifo.din.eq(self.lfsr.value[0:8]),
                 in_fifo.we.eq(1),
+                NextValue(count, count + 1),
                 NextState("SOURCE-2")
             )
         )
@@ -50,6 +46,7 @@ class BenchmarkSubtarget(Module):
                 in_fifo.din.eq(self.lfsr.value[8:16]),
                 in_fifo.we.eq(1),
                 self.lfsr.ce.eq(1),
+                NextValue(count, count + 1),
                 NextState("SOURCE-1")
             )
         )
@@ -59,6 +56,7 @@ class BenchmarkSubtarget(Module):
                     NextValue(error, 1)
                 ),
                 out_fifo.re.eq(1),
+                NextValue(count, count + 1),
                 NextState("SINK-2")
             )
         )
@@ -69,7 +67,18 @@ class BenchmarkSubtarget(Module):
                 ),
                 out_fifo.re.eq(1),
                 self.lfsr.ce.eq(1),
+                NextValue(count, count + 1),
                 NextState("SINK-1")
+            )
+        )
+        self.fsm.act("LOOPBACK",
+            in_fifo.din.eq(out_fifo.dout),
+            If(in_fifo.writable & out_fifo.readable,
+                in_fifo.we.eq(1),
+                out_fifo.re.eq(1),
+                NextValue(count, count + 1),
+            ).Else(
+                in_fifo.flush.eq(1)
             )
         )
 
@@ -93,12 +102,13 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
     __all_modes = ["source", "sink", "loopback"]
 
     def build(self, target, args):
-        self.mux_interface = iface = target.multiplexer.claim_interface(self, args, throttle="none")
+        self.mux_interface = iface = \
+            target.multiplexer.claim_interface(self, args, throttle="none")
         mode,  self.__addr_mode  = target.registers.add_rw(2)
         error, self.__addr_error = target.registers.add_ro(1)
+        count, self.__addr_count = target.registers.add_rw(32)
         subtarget = iface.add_subtarget(BenchmarkSubtarget(
-            mode=mode,
-            error=error,
+            mode=mode, error=error, count=count,
             in_fifo=iface.get_in_fifo(auto_flush=False),
             out_fifo=iface.get_out_fifo(),
         ))
@@ -126,6 +136,14 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
         while len(golden) < args.count:
             golden += self._sequence[:args.count - len(golden)]
 
+        # These requests are essentially free, as the data and control requests are independent,
+        # both on the FX2 and on the USB bus.
+        async def counter():
+            while True:
+                await asyncio.sleep(0.1)
+                count = await device.read_register(self.__addr_count, width=4)
+                self.logger.debug("transferred %#x/%#x", count, args.count)
+
         for mode in args.modes or self.__all_modes:
             self.logger.info("running benchmark mode %s for %.3f MiB",
                              mode, len(golden) / (1 << 20))
@@ -134,41 +152,51 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
                 await device.write_register(self.__addr_mode, MODE_SOURCE)
                 await iface.reset()
 
+                counter_fut = asyncio.ensure_future(counter())
                 begin  = time.time()
                 actual = await iface.read(len(golden))
                 end    = time.time()
                 length = len(golden)
+                counter_fut.cancel()
 
                 error = (actual != golden)
+                count = None
 
             if mode == "sink":
                 await device.write_register(self.__addr_mode, MODE_SINK)
                 await iface.reset()
 
+                counter_fut = asyncio.ensure_future(counter())
                 begin  = time.time()
                 await iface.write(golden)
                 await iface.flush()
                 end    = time.time()
                 length = len(golden)
+                counter_fut.cancel()
 
                 error = bool(await device.read_register(self.__addr_error))
+                count = await device.read_register(self.__addr_count, width=4)
 
             if mode == "loopback":
                 await device.write_register(self.__addr_mode, MODE_LOOPBACK)
                 await iface.reset()
+                counter_fut = asyncio.ensure_future(counter())
 
                 begin  = time.time()
-                write_fut = asyncio.ensure_future(iface.write(golden))
-                read_fut  = asyncio.ensure_future(iface.read(len(golden)))
-                await asyncio.wait([write_fut, read_fut], return_when=asyncio.FIRST_EXCEPTION)
-                actual = read_fut.result()
+                await iface.write(golden)
+                actual = await iface.read(len(golden))
                 end    = time.time()
                 length = len(golden) * 2
+                counter_fut.cancel()
 
                 error = (actual != golden)
+                count = None
 
             if error:
-                self.logger.error("mode %s failed!", mode)
+                if count is None:
+                    self.logger.error("mode %s failed!", mode)
+                else:
+                    self.logger.error("mode %s failed at %#x!", mode, count)
             else:
                 self.logger.info("mode %s: %.2f MiB/s (%.2f Mb/s)",
                                  mode,
