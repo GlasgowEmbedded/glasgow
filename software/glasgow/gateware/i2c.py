@@ -370,12 +370,11 @@ class I2CSlave(Module):
             ).Elif(bus.start,
                 NextState("START")
             ).Elif(bus.setup,
-                NextValue(bitno, bitno + 1),
                 NextValue(bus.sda_o, shreg_o[7]),
-                NextValue(shreg_o, shreg_o << 1),
             ).Elif(bus.sample,
-                If(bitno == 0,
-                    NextValue(bus.sda_o, 1),
+                NextValue(shreg_o, shreg_o << 1),
+                NextValue(bitno, bitno + 1),
+                If(bitno == 7,
                     NextState("READ-ACK")
                 )
             )
@@ -385,6 +384,8 @@ class I2CSlave(Module):
                 NextState("IDLE")
             ).Elif(bus.start,
                 NextState("START")
+            ).Elif(bus.setup,
+                NextValue(bus.sda_o, 1),
             ).Elif(bus.sample,
                 If(~bus.sda_i,
                     NextValue(shreg_o, self.data_o),
@@ -826,9 +827,9 @@ class I2CSlaveTestCase(I2CTestCase):
 
     @simulation_test
     def test_read_ack(self, tb):
-        yield tb.dut.data_o.eq(0b10100101)
+        yield tb.dut.data_o.eq(0b10101010)
         yield from self.start_addr(tb, read=True)
-        self.assertEqual((yield from tb.read_octet()), 0b10100101)
+        self.assertEqual((yield from tb.read_octet()), 0b10101010)
         yield from tb.write_bit(0)
         yield from self.assertState(tb, "READ-SHIFT")
 
