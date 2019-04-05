@@ -68,7 +68,7 @@ class MemoryONFISubtarget(Module):
 
         self.submodules.fsm = FSM(reset_state="RECV-COMMAND")
         self.fsm.act("RECV-COMMAND",
-            NextValue(bus.doe, 0),
+            in_fifo.flush.eq(1),
             If(out_fifo.readable,
                 out_fifo.re.eq(1),
                 NextValue(command, out_fifo.dout),
@@ -79,7 +79,8 @@ class MemoryONFISubtarget(Module):
                 ).Elif((out_fifo.dout == CMD_WAIT),
                     NextState("ONFI-SETUP")
                 )
-            )
+            ),
+            NextValue(bus.doe, 0)
         )
         self.fsm.act("RECV-CONTROL",
             If(out_fifo.readable,
@@ -348,7 +349,7 @@ class MemoryONFIApplet(GlasgowApplet, name="memory-onfi"):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(MemoryONFISubtarget(
             pads=iface.get_pads(args, pin_sets=self.pin_sets, pins=self.pins),
-            in_fifo=iface.get_in_fifo(),
+            in_fifo=iface.get_in_fifo(auto_flush=False),
             out_fifo=iface.get_out_fifo(),
         ))
 
