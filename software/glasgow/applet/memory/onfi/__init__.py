@@ -6,6 +6,7 @@ from migen import *
 from migen.genlib.cdc import MultiReg
 
 from ....support.pyrepl import *
+from ....support.logging import *
 from ....database.jedec import *
 from ... import *
 
@@ -220,14 +221,14 @@ class ONFIInterface:
     async def _do_write(self, command, address=[], wait=False, data=[]):
         data = bytes(data)
         await self._do(command, address, wait)
-        self._log("write data=<%s>", data.hex())
+        self._log("write data=<%s>", dump_hex(data))
         await self._write(data)
 
     async def _do_read(self, command, address=[], wait=False, length=0):
         await self._do(command, address, wait)
         await self._read(length)
         data = await self.lower.read(length)
-        self._log("read data=<%s>", data.hex())
+        self._log("read data=<%s>", dump_hex(data))
         return data
 
     async def reset(self):
@@ -286,7 +287,7 @@ class ONFIInterface:
 
         for (column, data) in chunks:
             data = bytes(data)
-            self._log("column=%#06x data=<%s>", column, data.hex())
+            self._log("column=%#06x data=<%s>", column, dump_hex(data))
             await self._do_write(command=0x85, address=[
                 (column >>  0) & 0xff,
                 (column >>  8) & 0xff,
