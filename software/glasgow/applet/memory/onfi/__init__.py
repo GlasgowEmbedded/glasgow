@@ -1,3 +1,80 @@
+# Memory organization
+# -------------------
+#
+# The NAND flash architecture is highly parallel to improve throughput, and is built around
+# limitations of the storage medium. This results in a somewhat confusing set of terms used to
+# refer to various subdivisions of the memory array. The following is a short introduction that
+# should clear things up.
+#
+# To recap, NAND memory is programmed in smaller multi-byte units and erased in larger multi-byte
+# units. The programming operation can only change a bit from 1 to 0, and the erase operation can
+# only change a bit from 0 to 1.
+#
+# The basic unit of a NAND memory is a page. A page is the smallest unit that can be independently
+# programmed. A page consists of a power-of-two sized data area, and an arbitrarily sized spare
+# area, e.g. 4096 and 224 bytes correspondingly. The spare area is used to store ECC data, block
+# erase counters, and any other necessary auxiliary data.
+#
+# Pages are grouped into blocks; a block is the smallest unit that can be independently erased.
+# A block consists of a power-of-two number of pages, which is a multiple of 32 on ONFI compliant
+# memories.
+#
+# Blocks are grouped into LUNs (short for "logical unit"); a LUN is a single physical die, with
+# its own command decoder, page cache(s), drive circuits, etc.
+#
+# LUNs are grouped into targets; a target is one or more dice that share all of their electrical
+# connections, including the data bus and the CE# pin. Bus contention is avoided because each LUN
+# will only drive the bus when it detects its own address. It is usually possible to issue
+# operations to multiple LUNs at once as well, though it is not trivial to get the right commands
+# and data to the right LUN.
+#
+# Targets are grouped into packages; a package is one or more dice encapsulated into the same piece
+# of epoxy with electrical connections. A package has a separate CE# pin or pad for each target,
+# and may have more than one data bus, depending on the pinout.
+#
+# The memory can be addressed in terms of rows and columns. A column is an index pointing to
+# an individual byte within the page. It can point into both the data and spare area, which
+# logically appear consecutive, and are read as one contiguous block. (There is usually no
+# physical distinction between data and spare areas.)
+#
+# A row is an index pointing to an individual page, and by extension a block containing that page.
+# The row address bits can be separated, from least to most significant, into page index, block
+# index, and LUN index. Some devices have structure beyond just being a linear array of blocks and
+# pages, and so some row address bits will gain additional significance.
+#
+# There are no gaps between rows. That is, all pages inside a target may be addressed by
+# incrementing a row counter starting from zero. In particular, unless multi-LUN operations are
+# used, a target may consist of any number of LUNs yet respond to exact same commands.
+#
+# Besides uniquely addressing a page, a row may be used to address a single block, e.g. for
+# the Block Erase command. In this case the low order bits that select a page within a block
+# are ignored.
+#
+# Subpages
+# --------
+#
+# Although, naively, it may appear that a page may be programmed arbitrarily many times, changing
+# more and more bits from 1 to 0, this is not actually permitted by device manufacturers. Indeed,
+# in the case where page programming is possible more than once (typically only on SLC memories),
+# the page is divided into several subpages, and each subpage can in turn be programmed only once,
+# sometimes with restrictions on order of programming of individual subpages.
+#
+# Planes
+# ------
+#
+# The simplest memory die has a cache that fits a single page, and can program or erase only one
+# page or block at a time. Naively, increasing programming speed would require increasing page size
+# (which makes fragmentation worse), or using more than one die (which makes packaging more
+# expensive). A middle ground between these is to add a second page cache, and allow programming
+# more than one page, or erasing more than one block, at a time. This is called "multiple planes".
+#
+# In a device with multiple planes, blocks are grouped into planes through interleaving. For
+# example, in a device with two planes, odd blocks belong to plane 0, and even blocks belong to
+# plane 1. When issuing multi-plane operations, there is an additional constraint that in all
+# of the selected planes, the page index must be the same. For example, in a device with two
+# planes, a multi-plane operation may affect any even and any odd block, and if the operation
+# is page-oriented, the offset into the block must be the same for both.
+
 import argparse
 import logging
 import asyncio
@@ -12,13 +89,14 @@ from ....protocol.onfi import *
 from ... import *
 
 
-CMD_CONTROL = 0x01
+CMD_SELECT  = 0x01
+CMD_CONTROL = 0x02
 BIT_CE      = 0x01
 BIT_CLE     = 0x02
 BIT_ALE     = 0x04
-CMD_WRITE   = 0x02
-CMD_READ    = 0x03
-CMD_WAIT    = 0x04
+CMD_WRITE   = 0x03
+CMD_READ    = 0x04
+CMD_WAIT    = 0x05
 
 
 class MemoryONFIBus(Module):
@@ -26,7 +104,7 @@ class MemoryONFIBus(Module):
         self.doe = Signal()
         self.do  = Signal.like(pads.io_t.o)
         self.di  = Signal.like(pads.io_t.i)
-        self.ce  = Signal()
+        self.ce  = Signal.like(pads.ce_t.o)
         self.cle = Signal()
         self.ale = Signal()
         self.re  = Signal()
@@ -62,6 +140,7 @@ class MemoryONFISubtarget(Module):
         ###
 
         command = Signal(8)
+        select  = Signal(max=4)
         control = Signal(3)
         length  = Signal(16)
 
@@ -74,7 +153,9 @@ class MemoryONFISubtarget(Module):
             If(out_fifo.readable,
                 out_fifo.re.eq(1),
                 NextValue(command, out_fifo.dout),
-                If(out_fifo.dout == CMD_CONTROL,
+                If(out_fifo.dout == CMD_SELECT,
+                    NextState("RECV-SELECT")
+                ).Elif(out_fifo.dout == CMD_CONTROL,
                     NextState("RECV-CONTROL")
                 ).Elif((out_fifo.dout == CMD_READ) | (out_fifo.dout == CMD_WRITE),
                     NextState("RECV-LENGTH-1")
@@ -83,6 +164,13 @@ class MemoryONFISubtarget(Module):
                 )
             ),
             NextValue(bus.doe, 0)
+        )
+        self.fsm.act("RECV-SELECT",
+            If(out_fifo.readable,
+                out_fifo.re.eq(1),
+                NextValue(select, out_fifo.dout),
+                NextState("RECV-COMMAND")
+            )
         )
         self.fsm.act("RECV-CONTROL",
             If(out_fifo.readable,
@@ -111,7 +199,7 @@ class MemoryONFISubtarget(Module):
             ).Else(
                 NextValue(timer, wait_cyc),
                 If(command == CMD_CONTROL,
-                    NextValue(bus.ce, (control & BIT_CE) != 0),
+                    NextValue(bus.ce, Mux(control & BIT_CE, 1 << select, 0)),
                     NextValue(bus.cle, (control & BIT_CLE) != 0),
                     NextValue(bus.ale, (control & BIT_ALE) != 0),
                     NextState("RECV-COMMAND")
@@ -189,6 +277,11 @@ class ONFIInterface:
 
     def _log(self, message, *args):
         self._logger.log(self._level, "ONFI: " + message, *args)
+
+    async def select(self, chip):
+        assert chip in range(0, 4)
+        self._log("select chip=%d", chip)
+        await self.lower.write(struct.pack("<BB", CMD_SELECT, chip))
 
     async def _control(self, bits):
         await self.lower.write(struct.pack("<BB", CMD_CONTROL, bits))
@@ -320,8 +413,9 @@ class MemoryONFIApplet(GlasgowApplet, name="memory-onfi"):
     follows the ONFI 1.0 specification, but tolerates the very common non-ONFI-compliant memories
     by gracefully degrading autodetection of memory functionality.
 
-    Only the asynchronous NAND interface is supported. An external pullup is necessary on
-    the R/B# pin.
+    Only the asynchronous NAND interface is supported. All R/B# pins should be tied together,
+    and externally pulled up. All CE# pins must be either connected or pulled high to avoid
+    bus contention; for unidentified devices, this means all 4 CE# pins available on the package.
 
     The NAND Flash command set is not standardized in practice. This applet uses the following
     commands when identifying the memory:
@@ -341,8 +435,8 @@ class MemoryONFIApplet(GlasgowApplet, name="memory-onfi"):
         * Cmd 0x60 Addr Row1..3 Cmd 0xD0: Erase (all devices)
         * Cmd 0x80 Addr Col1..2,Row1..3 [Cmd 0x85 Col1..2]+ Cmd 0x10: Page Program (all devices)
     """
-    pin_sets = ("io",)
-    pins = ("ce", "cle", "ale", "re", "we", "r_b")
+    pin_sets = ("io", "ce")
+    pins = ("cle", "ale", "re", "we", "r_b")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
@@ -350,6 +444,7 @@ class MemoryONFIApplet(GlasgowApplet, name="memory-onfi"):
         access.add_pin_set_argument(parser, "io", 8, default=True)
         for pin in cls.pins:
             access.add_pin_argument(parser, pin, default=True)
+        access.add_pin_set_argument(parser, "ce", range(1, 5), default=2)
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
@@ -359,9 +454,25 @@ class MemoryONFIApplet(GlasgowApplet, name="memory-onfi"):
             out_fifo=iface.get_out_fifo(),
         ))
 
+    @classmethod
+    def add_run_arguments(cls, parser, access):
+        super().add_run_arguments(parser, access)
+
+        parser.add_argument(
+            "-c", "--chip", metavar="CHIP", type=int, default=1,
+            help="select chip connected to CE# signal CHIP (one of: 1..4, default: 1)")
+
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        return ONFIInterface(iface, self.logger)
+        onfi_iface = ONFIInterface(iface, self.logger)
+
+        available_ce = range(1, 1 + len(args.pin_set_ce))
+        if args.chip not in available_ce:
+            raise GlasgowAppletError("cannot select chip {}; available select signals are {}"
+                .format(args.chip, ", ".join("CE{}#".format(n) for n in available_ce)))
+        await onfi_iface.select(args.chip - 1)
+
+        return onfi_iface
 
     @classmethod
     def add_interact_arguments(cls, parser):
