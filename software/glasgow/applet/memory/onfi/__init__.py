@@ -464,6 +464,12 @@ class MemoryONFIApplet(GlasgowApplet, name="memory-onfi"):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
         onfi_iface = ONFIInterface(iface, self.logger)
 
+        # Reset every target, to make sure all of them are in a defined state and aren't driving
+        # the shared data bus.
+        for chip in range(len(args.pin_set_ce)):
+            await onfi_iface.select(chip)
+            await onfi_iface.reset()
+
         available_ce = range(1, 1 + len(args.pin_set_ce))
         if args.chip not in available_ce:
             raise GlasgowAppletError("cannot select chip {}; available select signals are {}"
@@ -552,7 +558,7 @@ class MemoryONFIApplet(GlasgowApplet, name="memory-onfi"):
         # First four bytes of Read ID are often used as-is in data recovery software,
         # so print these for convenience as well.
         signature = await onfi_iface.read_signature()
-        self.logger.info("ID signature %s",
+        self.logger.info("ID signature: %s",
                          " ".join("{:02x}".format(byte) for byte in signature))
 
         onfi_param = None
