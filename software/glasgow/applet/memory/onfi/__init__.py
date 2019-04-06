@@ -398,10 +398,10 @@ class MemoryONFIApplet(GlasgowApplet, name="memory-onfi"):
             help="read COUNT pages")
         p_read.add_argument(
             "data_file", metavar="DATA-FILE", type=argparse.FileType("wb"),
-            help="write bytes from data area to DATA-FILE")
+            help="write bytes from data and possibly spare area to DATA-FILE")
         p_read.add_argument(
-            "spare_file", metavar="SPARE-FILE", type=argparse.FileType("wb"),
-            help="write bytes from spare area to SPARE-FILE")
+            "spare_file", metavar="SPARE-FILE", type=argparse.FileType("wb"), nargs="?",
+            help="write bytes from spare area to SPARE-FILE instead of DATA-FILE")
 
         p_program = p_operation.add_parser(
             "program", help="program data and spare contents for a page range")
@@ -603,10 +603,14 @@ class MemoryONFIApplet(GlasgowApplet, name="memory-onfi"):
                 self.logger.info("reading page (row) %d", row)
                 chunk = await onfi_iface.read(column=0, row=row, length=page_size + spare_size)
 
-                args.data_file.write(chunk[:page_size])
-                args.data_file.flush()
-                args.spare_file.write(chunk[-spare_size:])
-                args.spare_file.flush()
+                if args.spare_file:
+                    args.data_file.write(chunk[:page_size])
+                    args.data_file.flush()
+                    args.spare_file.write(chunk[-spare_size:])
+                    args.spare_file.flush()
+                else:
+                    args.data_file.write(chunk)
+                    args.data_file.flush()
 
                 row   += 1
                 count -= 1
