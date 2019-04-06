@@ -308,6 +308,7 @@ class ONFIInterface:
 
 
 class MemoryONFIApplet(GlasgowApplet, name="memory-onfi"):
+    preview = True
     logger = logging.getLogger(__name__)
     help = "read and write ONFI-like NAND Flash memories"
     description = """
