@@ -64,7 +64,7 @@ class MemoryONFISubtarget(Module):
         control = Signal(3)
         length  = Signal(16)
 
-        wait_cyc = 2 # revB needs at least two wait states for reliable reads
+        wait_cyc = 3 # currently required for reliable reads
         timer    = Signal(max=wait_cyc + 2, reset=wait_cyc)
 
         self.submodules.fsm = FSM(reset_state="RECV-COMMAND")
