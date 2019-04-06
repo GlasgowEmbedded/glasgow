@@ -33,14 +33,14 @@ class _Bitfield:
                              % (action, expected_width, value.bit_length(), value))
 
     @classmethod
-    def _define_fields(cls, size_bits, fields):
-        total_width = sum(width for name, width in fields)
-        if total_width != size_bits:
-            raise TypeError("declared total width is %d bits, but sum of field widths is %d bits"
-                            % (total_width, size_bits))
+    def _define_fields(cls, declared_bits, fields):
+        total_bits = sum(width for name, width in fields)
+        if total_bits != declared_bits:
+            raise TypeError("declared width is %d bits, but sum of field widths is %d bits"
+                            % (declared_bits, total_bits))
 
-        cls._size_bits = size_bits
-        cls._size_bytes = (size_bits + 7) // 8
+        cls._size_bits = declared_bits
+        cls._size_bytes = (declared_bits + 7) // 8
         cls._named_fields = []
         cls._widths = OrderedDict()
 
