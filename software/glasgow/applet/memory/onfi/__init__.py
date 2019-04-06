@@ -450,7 +450,7 @@ class MemoryONFIApplet(GlasgowApplet, name="memory-onfi"):
         if await onfi_iface.read_onfi_signature() == b"ONFI":
             parameter_page = await onfi_iface.read_parameter_page()
             try:
-                onfi_param = ONFIParameters(parameter_page[512:])
+                onfi_param = ONFIParameters(parameter_page)
             except ONFIParameterError as e:
                 self.logger.warning("invalid ONFI parameter page: %s", str(e))
         else:
