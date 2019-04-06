@@ -734,11 +734,16 @@ class MemoryONFIApplet(GlasgowApplet, name="memory-onfi"):
             row   = args.start_page
             count = args.count
             while count > 0:
-                data  = args.data_file.read(page_size)
-                spare = args.spare_file.read(spare_size)
+                if args.spare_file:
+                    data   = args.data_file.read(page_size)
+                    spare  = args.spare_file.read(spare_size)
+                    chunks = [(0, data), (page_size, spare)]
+                else:
+                    chunk  = args.data_file.read(page_size + spare_size)
+                    chunks = [(0, chunk)]
 
                 self.logger.info("programming page (row) %d", row)
-                if not await onfi_iface.program(row=row, chunks=[(0, data), (page_size, spare)]):
+                if not await onfi_iface.program(row=row, chunks=chunks):
                     self.logger.error("failed to program page (row) %d", row)
 
                 row   += 1
