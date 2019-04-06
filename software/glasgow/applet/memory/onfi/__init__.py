@@ -8,6 +8,7 @@ from migen.genlib.cdc import MultiReg
 from ....support.pyrepl import *
 from ....support.logging import *
 from ....database.jedec import *
+from ....protocol.onfi import *
 from ... import *
 
 
@@ -256,9 +257,9 @@ class ONFIInterface:
     async def is_write_protected(self):
         return (await self.read_status() & BIT_STATUS_WRITE_PROT) == 0
 
-    async def read_parameter_page(self):
-        self._log("read parameter page")
-        return await self._do_read(command=0xEC, address=[0x00], wait=True, length=512)
+    async def read_parameter_page(self, copies=3):
+        self._log("read parameter page copies=%d", copies)
+        return await self._do_read(command=0xEC, address=[0x00], wait=True, length=copies * 256)
 
     async def read_unique_id(self):
         self._log("read unique ID")
@@ -381,6 +382,9 @@ class MemoryONFIApplet(GlasgowApplet, name="memory-onfi"):
         # TODO(py3.7): add required=True
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
+        p_identify = p_operation.add_parser(
+            "identify", help="identify device using ONFI parameter page")
+
         p_read = p_operation.add_parser(
             "read", help="read data and spare contents for a page range")
         p_read.add_argument(
@@ -433,26 +437,150 @@ class MemoryONFIApplet(GlasgowApplet, name="memory-onfi"):
         self.logger.info("JEDEC manufacturer %#04x (%s) device %#04x",
                          manufacturer_id, manufacturer_name, device_id)
 
-        page_size  = args.page_size
-        spare_size = args.spare_size
-        block_size = args.block_size
+        onfi_param = None
         if await onfi_iface.read_signature() == b"ONFI":
             parameter_page = await onfi_iface.read_parameter_page()
-            if parameter_page[0:4] == b"ONFI":
-                # I don't actually have any *actually valid* ONFI flashes yet,
-                # so this isn't implemented or tested. Sigh. Cursed.
-                pass
-            else:
-                self.logger.warning("ONFI signature present, but parameter page missing")
+            try:
+                onfi_param = ONFIParameters(parameter_page[512:])
+            except ONFIParameterError as e:
+                self.logger.warning("invalid ONFI parameter page: %s", str(e))
         else:
             self.logger.warning("ONFI signature not present")
 
-        if None in (args.page_size, args.block_size, args.spare_size):
-            self.logger.error("your cursed device doesn't support ONFI properly")
-            self.logger.error("in the future, avoid angering witches")
-            self.logger.error("meanwhile, configure the Flash array parameters explicitly via "
-                              "--page-size, --spare-size and --block-size")
+        if args.operation == "identify" and onfi_param is None:
+            self.logger.error("cannot identify non-ONFI device")
             return
+        elif args.operation == "identify":
+            self.logger.info("ONFI revision %d.%d%s",
+                *onfi_param.revision,
+                "+" if onfi_param.revisions.unknown else "")
+
+            blocks = {}
+
+            onfi_jedec_manufacturer_name = \
+                jedec_mfg_name_from_bytes([onfi_param.jedec_manufacturer_id]) or "unknown"
+            blocks["ONFI manufacturer information"] = {
+                "JEDEC ID":     "{:#04x} ({})"
+                    .format(onfi_param.jedec_manufacturer_id, onfi_jedec_manufacturer_name),
+                "manufacturer": onfi_param.manufacturer,
+                "model":        onfi_param.model,
+                "date code":
+                    "(not specified)" if onfi_param.date_code is None else
+                    "year %02d, week %02d".format(onfi_param.date_code.year,
+                                                  onfi_param.date_code.week)
+            }
+
+            blocks["Features"] = {
+                "data bus width":
+                    "16-bit" if onfi_param.features._16_bit_data_bus else "8-bit",
+                "multi-LUN operations":
+                    "yes" if onfi_param.features.multiple_lun_ops else "no",
+                "block programming order":
+                    "random" if onfi_param.features.non_seq_page_program else "sequential",
+                "interleaved operations":
+                    "yes" if onfi_param.features.interleaved_ops else "no",
+                "odd-to-even copyback":
+                    "yes" if onfi_param.features.odd_to_even_copyback else "no",
+            }
+
+            blocks["Optional commands"] = {
+                "Page Cache Program":
+                    "yes" if onfi_param.opt_commands.page_cache_program else "no",
+                "Read Cache (Enhanced/End)":
+                    "yes" if onfi_param.opt_commands.read_cache else "no",
+                "Get/Set Features":
+                    "yes" if onfi_param.opt_commands.get_set_features else "no",
+                "Read Status Enhanced":
+                    "yes" if onfi_param.opt_commands.read_status_enhanced else "no",
+                "Copyback Program/Read":
+                    "yes" if onfi_param.opt_commands.copyback else "no",
+                "Read Unique ID":
+                    "yes" if onfi_param.opt_commands.read_unique_id else "no",
+            }
+
+            blocks["Memory organization"] = {
+                "page size":          "{} + {} bytes"
+                    .format(onfi_param.bytes_per_page, onfi_param.bytes_per_spare),
+                "partial page size":  "{} + {} bytes"
+                    .format(onfi_param.bytes_per_partial_page, onfi_param.bytes_per_partial_spare),
+                "block size":         "{} pages"
+                    .format(onfi_param.pages_per_block),
+                "LUN size":           "{} blocks; {} pages"
+                    .format(onfi_param.blocks_per_lun,
+                            onfi_param.blocks_per_lun * onfi_param.pages_per_block),
+                "target size":        "{} LUNs; {} blocks; {} pages"
+                    .format(onfi_param.luns_per_target,
+                            onfi_param.luns_per_target * onfi_param.blocks_per_lun,
+                            onfi_param.luns_per_target * onfi_param.blocks_per_lun
+                                                       * onfi_param.pages_per_block),
+                "address cycles":     "{} row, {} column"
+                    .format(onfi_param.address_cycles.row, onfi_param.address_cycles.column),
+                "bits per cell":      "{}"
+                    .format(onfi_param.bits_per_cell),
+                "bad blocks per LUN": "{} (maximum)"
+                    .format(onfi_param.max_bad_blocks_per_lun),
+                "block endurance":    "{} cycles (maximum)"
+                    .format(onfi_param.block_endurance),
+                "guaranteed blocks":  "{} (at target beginning)"
+                    .format(onfi_param.guaranteed_valid_blocks),
+                "guaranteed block endurance": "{} cycles"
+                    .format(onfi_param.guaranteed_valid_block_endurance),
+                "programs per page":  "{} (maximum)"
+                    .format(onfi_param.programs_per_page),
+                # Partial programming constraints not displayed.
+                "ECC correctability": "{} bits (maximum, per 512 bytes)"
+                    .format(onfi_param.ecc_correctability_bits),
+                # Interleaved operations not displayed.
+            }
+
+            blocks["Electrical parameters"] = {
+                "I/O pin capacitance": "{} pF"
+                    .format(onfi_param.io_pin_capacitance),
+                "timing modes":
+                    ", ".join(str(mode) for mode in onfi_param.timing_modes),
+                "program cache timing modes":
+                    ", ".join(str(mode) for mode in onfi_param.program_cache_timing_modes) or
+                    "(not supported)",
+                "page program time":   "{} us (maximum)"
+                    .format(onfi_param.max_page_program_time),
+                "block erase time":    "{} us (maximum)"
+                    .format(onfi_param.max_block_erase_time),
+                "page read time":      "{} us (maximum)"
+                    .format(onfi_param.max_page_read_time),
+                "change column setup time": "{} us (minimum)"
+                    .format(onfi_param.min_change_column_setup_time),
+            }
+
+            for block, params in blocks.items():
+                self.logger.info("%s:", block)
+                for name, value in params.items():
+                    self.logger.info("%27s: %s", name, value)
+
+            return
+
+        if onfi_param is not None:
+            if (args.page_size is not None or
+                    args.block_size is not None or
+                    args.spare_size is not None):
+                self.logger.warning("explicitly specified geometry is ignored in favor of "
+                                    "ONFI parameters")
+
+            page_size  = onfi_param.bytes_per_page
+            spare_size = onfi_param.bytes_per_spare
+            block_size = onfi_param.pages_per_block
+        else:
+            if (args.page_size is None or
+                    args.block_size is None or
+                    args.spare_size is None):
+                self.logger.error("your cursed device doesn't support ONFI properly")
+                self.logger.error("in the future, avoid angering witches")
+                self.logger.error("meanwhile, configure the Flash array parameters explicitly via "
+                                  "--page-size, --spare-size and --block-size")
+                return
+
+            page_size  = args.page_size
+            spare_size = args.spare_size
+            block_size = args.block_size
 
         if args.operation in ("program", "erase"):
             if await onfi_iface.is_write_protected():
