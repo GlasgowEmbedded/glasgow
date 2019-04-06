@@ -242,12 +242,15 @@ class ONFIInterface:
         self._log("read ID addr=%#04x", address)
         return await self._do_read(command=0x90, address=[address], length=length)
 
-    async def read_signature(self):
-        return await self._read_id(address=0x20, length=4)
-
     async def read_jedec_id(self):
         manufacturer_id, device_id = await self._read_id(address=0x00, length=2)
         return manufacturer_id, device_id
+
+    async def read_signature(self):
+        return await self._read_id(address=0x00, length=4)
+
+    async def read_onfi_signature(self):
+        return await self._read_id(address=0x20, length=4)
 
     async def read_status(self):
         self._log("read status")
@@ -437,8 +440,14 @@ class MemoryONFIApplet(GlasgowApplet, name="memory-onfi"):
         self.logger.info("JEDEC manufacturer %#04x (%s) device %#04x",
                          manufacturer_id, manufacturer_name, device_id)
 
+        # First four bytes of Read ID are often used as-is in data recovery software,
+        # so print these for convenience as well.
+        signature = await onfi_iface.read_signature()
+        self.logger.info("ID signature %s",
+                         " ".join("{:02x}".format(byte) for byte in signature))
+
         onfi_param = None
-        if await onfi_iface.read_signature() == b"ONFI":
+        if await onfi_iface.read_onfi_signature() == b"ONFI":
             parameter_page = await onfi_iface.read_parameter_page()
             try:
                 onfi_param = ONFIParameters(parameter_page[512:])
