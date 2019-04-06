@@ -327,9 +327,7 @@ class ONFIInterface:
 
     async def reset(self):
         self._log("reset")
-        await self._do(command=0xff)
-        await self.lower.flush()
-        await asyncio.sleep(0.001) # tRST=1000us
+        await self._do(command=0xff, wait=True)
 
     async def _read_id(self, address, length):
         self._log("read ID addr=%#04x", address)
