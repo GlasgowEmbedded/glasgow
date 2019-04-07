@@ -12145,7 +12145,7 @@
   (gr_text 1V2 (at 68.95 112.4 90) (layer F.SilkS) (tstamp 5CB08FA6)
     (effects (font (size 0.8 0.8) (thickness 0.16)) (justify right))
   )
-  (gr_text "LVDS Bank" (at 72.5 72.4) (layer F.SilkS)
+  (gr_text LVDS (at 72.5 72.4) (layer F.SilkS)
     (effects (font (size 1.2 1.2) (thickness 0.15)))
   )
   (gr_text AUX (at 102.7 95.5 90) (layer F.SilkS)
