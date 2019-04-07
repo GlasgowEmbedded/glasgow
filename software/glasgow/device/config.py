@@ -86,7 +86,7 @@ class GlasgowConfig:
         revision, serial, bitstream_size, bitstream_id, \
             voltage_limit[0], voltage_limit[1] = \
             struct.unpack_from(cls._encoding, data, 0)
-        return cls(self.decode_revision(revision),
+        return cls(cls.decode_revision(revision),
                    serial.decode("ascii"),
                    bitstream_size,
                    bitstream_id,
