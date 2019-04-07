@@ -274,13 +274,49 @@ class _RegisteredTristate(Module):
 
 class _FX2Bus(Module):
     def __init__(self, pads):
-        self.submodules.fifoadr_t = _RegisteredTristate(pads.fifoadr)
-        self.submodules.flag_t    = _RegisteredTristate(pads.flag)
-        self.submodules.fd_t      = _RegisteredTristate(pads.fd)
-        self.submodules.sloe_t    = _RegisteredTristate(pads.sloe)
-        self.submodules.slrd_t    = _RegisteredTristate(pads.slrd)
-        self.submodules.slwr_t    = _RegisteredTristate(pads.slwr)
-        self.submodules.pktend_t  = _RegisteredTristate(pads.pktend)
+        self.flag = Signal(4)
+        self.addr = Signal(2)
+        self.data = TSTriple(8)
+        self.sloe = Signal()
+        self.slrd = Signal()
+        self.slwr = Signal()
+        self.pend = Signal()
+
+        self.addr_p = Signal.like(self.addr)
+        self.slrd_p = Signal.like(self.slrd)
+
+        ###
+
+        self.submodules._fifoadr_t = _RegisteredTristate(pads.fifoadr)
+        self.submodules._flag_t    = _RegisteredTristate(pads.flag)
+        self.submodules._fd_t      = _RegisteredTristate(pads.fd)
+        self.submodules._sloe_t    = _RegisteredTristate(pads.sloe)
+        self.submodules._slrd_t    = _RegisteredTristate(pads.slrd)
+        self.submodules._slwr_t    = _RegisteredTristate(pads.slwr)
+        self.submodules._pktend_t  = _RegisteredTristate(pads.pktend)
+
+        self.comb += [
+            self.flag.eq(self._flag_t.i),
+            self._fifoadr_t.oe.eq(1),
+            self._fifoadr_t.o.eq(self.addr),
+            self._fd_t.oe.eq(self.data.oe),
+            self._fd_t.o.eq(self.data.o),
+            self.data.i.eq(self._fd_t.i),
+            self._sloe_t.oe.eq(1),
+            self._sloe_t.o.eq(~self.sloe),
+            self._slrd_t.oe.eq(1),
+            self._slrd_t.o.eq(~self.slrd),
+            self._slwr_t.oe.eq(1),
+            self._slwr_t.o.eq(~self.slwr),
+            self._pktend_t.oe.eq(1),
+            self._pktend_t.o.eq(~self.pend),
+        ]
+
+        # Delay the FX2 bus control signals, taking into account the roundtrip latency.
+        self.sync += [
+            self.addr_p.eq(self.addr),
+            self.slrd_p.eq(self.slrd),
+        ]
 
 
 class FX2Crossbar(Module):
@@ -301,92 +337,67 @@ class FX2Crossbar(Module):
         self. in_fifos = Array([_INFIFO(_DummyFIFO(width=8))
                                 for _ in range(2)])
 
-    def do_finalize(self):
-        bus  = self.bus
-        flag = Signal(4)
-        addr = Signal(2)
-        fdoe = Signal()
-        sloe = Signal()
-        slrd = Signal()
-        slwr = Signal()
-        pend = Signal()
-        rdy  = Signal(4)
-        self.comb += [
-            bus.fifoadr_t.oe.eq(1),
-            bus.fifoadr_t.o.eq(addr),
-            flag.eq(bus.flag_t.i),
-            rdy.eq(Cat([fifo.fifo.writable          for fifo in self.out_fifos] +
-                       [fifo.readable | fifo.queued for fifo in self. in_fifos]) &
-                   flag),
-            bus.fd_t.oe.eq(fdoe),
-            bus.sloe_t.oe.eq(1),
-            bus.sloe_t.o.eq(~sloe),
-            bus.slrd_t.oe.eq(1),
-            bus.slrd_t.o.eq(~slrd),
-            bus.slwr_t.oe.eq(1),
-            bus.slwr_t.o.eq(~slwr),
-            bus.pktend_t.oe.eq(1),
-            bus.pktend_t.o.eq(~pend),
-        ]
-
-        # Delay the FX2 bus control signals, taking into account the roundtrip latency.
-        slrd_r = Signal.like(slrd)
-        addr_r = Signal.like(addr)
-        self.sync += [
-            slrd_r.eq(slrd),
-            addr_r.eq(addr),
-        ]
-
-        sel_flag     = flag.part(addr, 1)
-        sel_in_fifo  = self.in_fifos [addr  [0]]
-        sel_out_fifo = self.out_fifos[addr_r[0]]
-
-        self.comb += [
-            bus.fd_t.o.eq(sel_in_fifo.dout),
-            sel_out_fifo.din.eq(bus.fd_t.i),
-            If(addr[1],
-                sel_in_fifo.re.eq(slwr),
-                sel_in_fifo.flushed.eq(pend),
-            ).Else(
-                sel_out_fifo.we.eq(slrd_r & sel_flag),
-            )
-        ]
-
+    @staticmethod
+    def _round_robin(addr, rdy):
         # Calculate the address of the next ready FIFO in a round robin process.
-        naddr = Signal(2)
-        naddr_c = {}
+        cases = {}
         for addr_v in range(2**addr.nbits):
             for rdy_v in range(2**rdy.nbits):
                 for offset in range(2**addr.nbits):
-                    naddr_v = (addr_v + offset) % 2**addr.nbits
-                    if rdy_v & (1 << naddr_v):
+                    addr_n = (addr_v + offset) % 2**addr.nbits
+                    if rdy_v & (1 << addr_n):
                         break
                 else:
-                    naddr_v = (addr_v + 1) % 2**addr.nbits
-                naddr_c[rdy_v|(addr_v<<rdy.nbits)] = naddr.eq(naddr_v)
-        self.comb += Case(Cat(rdy, addr), naddr_c)
+                    addr_n = (addr_v + 1) % 2**addr.nbits
+                cases[rdy_v|(addr_v<<rdy.nbits)] = NextValue(addr, addr_n)
+        return Case(Cat(rdy, addr), cases)
 
-        self.submodules.fsm = FSM(reset_state="NEXT")
-        # SLOE to FIFODATA setup: 1 cycle
-        # FIFOADR to FIFODATA setup: 2 cycles
-        self.fsm.act("NEXT",
-            NextValue(sloe, 0),
-            NextValue(fdoe, 0),
-            NextValue(addr, naddr),
+    def do_finalize(self):
+        bus = self.bus
+        rdy = Signal(4)
+        self.comb += [
+            rdy.eq(Cat([fifo.fifo.writable          for fifo in self.out_fifos] +
+                       [fifo.readable | fifo.queued for fifo in self. in_fifos]) &
+                   bus.flag),
+        ]
+
+        sel_flag     = bus.flag.part(bus.addr, 1)
+        sel_in_fifo  = self.in_fifos [bus.addr  [0]]
+        sel_out_fifo = self.out_fifos[bus.addr_p[0]]
+
+        self.comb += [
+            bus.data.o.eq(sel_in_fifo.dout),
+            sel_out_fifo.din.eq(bus.data.i),
+            If(bus.addr[1],
+                sel_in_fifo.re.eq(bus.slwr),
+                sel_in_fifo.flushed.eq(bus.pend),
+            ).Else(
+                sel_out_fifo.we.eq(bus.slrd_p & sel_flag),
+            )
+        ]
+
+        # The FX2 requires the following setup latencies in worst case:
+        #   * FIFOADR to FIFODATA: 2 cycles
+        #   * SLOE    to FIFODATA: 1 cycle
+        self.submodules.fsm = FSM()
+        self.fsm.act("SWITCH",
+            NextValue(bus.sloe, 0),
+            NextValue(bus.data.oe, 0),
+            self._round_robin(bus.addr, rdy),
             If(rdy,
                 NextState("DRIVE")
             )
         )
         self.fsm.act("DRIVE",
-            If(addr[1],
-                NextValue(fdoe, 1),
+            If(bus.addr[1],
+                NextValue(bus.data.oe, 1),
             ).Else(
-                NextValue(sloe, 1),
+                NextValue(bus.sloe, 1),
             ),
             NextState("SETUP")
         )
         self.fsm.act("SETUP",
-            If(addr[1],
+            If(bus.addr[1],
                 NextState("IN-XFER")
             ).Else(
                 NextState("OUT-XFER")
@@ -394,7 +405,7 @@ class FX2Crossbar(Module):
         )
         self.fsm.act("IN-XFER",
             If(sel_flag & sel_in_fifo.readable,
-                slwr.eq(1)
+                bus.slwr.eq(1)
             ).Elif(~sel_flag & ~sel_in_fifo.readable,
                 # The ~FULL flag went down, and it goes down one sample earlier than the actual
                 # FULL condition. So we have one more byte free. However, the FPGA-side FIFO
@@ -414,20 +425,20 @@ class FX2Crossbar(Module):
                 # Either the FPGA-side FIFO is empty, or the FX2-side FIFO is full, or the flush
                 # flag is not asserted.
                 # FX2 automatically commits a full FIFO, so we don't need to do anything here.
-                NextState("NEXT")
+                NextState("SWITCH")
             )
         )
         self.fsm.act("IN-PKTEND",
             # See datasheet "Slave FIFO Synchronous Packet End Strobe Parameters" for
             # an explanation of why this is asserted one cycle after the last SLWR pulse.
-            pend.eq(1),
-            NextState("NEXT")
+            bus.pend.eq(1),
+            NextState("SWITCH")
         )
         self.fsm.act("OUT-XFER",
             If(sel_flag & sel_out_fifo.fifo.writable,
-                slrd.eq(1),
+                bus.slrd.eq(1),
             ).Else(
-                NextState("NEXT")
+                NextState("SWITCH")
             )
         )
 
