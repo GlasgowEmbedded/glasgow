@@ -305,7 +305,6 @@ class FX2Crossbar(Module):
         bus  = self.bus
         flag = Signal(4)
         addr = Signal(2)
-        data = TSTriple(8)
         fdoe = Signal()
         sloe = Signal()
         slrd = Signal()
@@ -319,8 +318,6 @@ class FX2Crossbar(Module):
             rdy.eq(Cat([fifo.fifo.writable          for fifo in self.out_fifos] +
                        [fifo.readable | fifo.queued for fifo in self. in_fifos]) &
                    flag),
-            self.out_fifos[addr[0]].din.eq(bus.fd_t.i),
-            bus.fd_t.o.eq(self.in_fifos[addr[0]].dout),
             bus.fd_t.oe.eq(fdoe),
             bus.sloe_t.oe.eq(1),
             bus.sloe_t.o.eq(~sloe),
@@ -332,19 +329,26 @@ class FX2Crossbar(Module):
             bus.pktend_t.o.eq(~pend),
         ]
 
-        # Derive the control signals for the FPGA-side FIFOs from the FX2 bus control signals.
-        # This is done independently from the main FSM because registers in the FX2 output path
-        # add latency, complicating logic.
-        slrd_r = Signal()
+        # Delay the FX2 bus control signals, taking into account the roundtrip latency.
+        slrd_r = Signal.like(slrd)
+        addr_r = Signal.like(addr)
         self.sync += [
             slrd_r.eq(slrd),
+            addr_r.eq(addr),
         ]
+
+        sel_flag     = flag.part(addr, 1)
+        sel_in_fifo  = self.in_fifos [addr  [0]]
+        sel_out_fifo = self.out_fifos[addr_r[0]]
+
         self.comb += [
+            bus.fd_t.o.eq(sel_in_fifo.dout),
+            sel_out_fifo.din.eq(bus.fd_t.i),
             If(addr[1],
-                self.in_fifos [addr[0]].re.eq(slwr),
-                self.in_fifos [addr[0]].flushed.eq(pend),
+                sel_in_fifo.re.eq(slwr),
+                sel_in_fifo.flushed.eq(pend),
             ).Else(
-                self.out_fifos[addr[0]].we.eq(slrd_r & flag.part(addr, 1)),
+                sel_out_fifo.we.eq(slrd_r & sel_flag),
             )
         ]
 
@@ -383,20 +387,15 @@ class FX2Crossbar(Module):
         )
         self.fsm.act("SETUP",
             If(addr[1],
-                NextState("IN-SETUP")
+                NextState("IN-XFER")
             ).Else(
-                NextState("OUT-SETUP")
+                NextState("OUT-XFER")
             )
         )
-
-        # IN endpoint handling
-        self.fsm.act("IN-SETUP",
-            NextState("IN-XFER")
-        )
         self.fsm.act("IN-XFER",
-            If(flag.part(addr, 1) & self.in_fifos[addr[0]].readable,
+            If(sel_flag & sel_in_fifo.readable,
                 slwr.eq(1)
-            ).Elif(~flag.part(addr, 1) & ~self.in_fifos[addr[0]].readable,
+            ).Elif(~sel_flag & ~sel_in_fifo.readable,
                 # The ~FULL flag went down, and it goes down one sample earlier than the actual
                 # FULL condition. So we have one more byte free. However, the FPGA-side FIFO
                 # became empty simultaneously.
@@ -407,7 +406,7 @@ class FX2Crossbar(Module):
                 #
                 # This shouldn't cause any problems.
                 NextState("IN-PKTEND")
-            ).Elif(flag.part(addr, 1) & self.in_fifos[addr[0]].queued,
+            ).Elif(sel_flag & sel_in_fifo.queued,
                 # The FX2-side FIFO is not full yet, but the flush flag is asserted.
                 # Commit the short packet.
                 NextState("IN-PKTEND")
@@ -424,14 +423,8 @@ class FX2Crossbar(Module):
             pend.eq(1),
             NextState("NEXT")
         )
-
-        # OUT endpoint handling
-        self.fsm.act("OUT-SETUP",
-            slrd.eq(1),
-            NextState("OUT-XFER")
-        )
         self.fsm.act("OUT-XFER",
-            If(flag.part(addr, 1) & self.out_fifos[addr[0]].fifo.writable,
+            If(sel_flag & sel_out_fifo.fifo.writable,
                 slrd.eq(1),
             ).Else(
                 NextState("NEXT")
