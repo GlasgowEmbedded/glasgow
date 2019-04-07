@@ -107,7 +107,7 @@
 # the FX2 and USB protocol into account. If we consider the host controller and OS as well, it
 # becomes apparent that it is necessary to send maximum length packets.
 #
-# To understand the reason for this, consider that an application has to proivde the OS with
+# To understand the reason for this, consider that an application has to provide the OS with
 # a buffer to fill with data read from the USB device. This buffer has to be a multiple of
 # the maximum packet size; if more data is returned, the extra data is discarded and an error
 # is indicated. However, what happens if less data is returned? In that case, the OS returns
@@ -158,14 +158,18 @@ __all__ = ["FX2Crossbar"]
 
 
 class _DummyFIFO(Module, _FIFOInterface):
+    """
+    Placeholder for an FPGA-side FIFO that is not implemented, and is never readable or writable.
+    """
     def __init__(self, width):
         super().__init__(width, 0)
 
 
-class _FIFOWithOverflow(Module, _FIFOInterface):
+class _OUTFIFO(Module, _FIFOInterface):
     """
-    A FIFO with an overflow buffer in front of it. Useful when the FIFO is fed from a pipeline
-    that reacts to the ``writable`` flag with a latency, and writes must not be lost.
+    A FIFO with an overflow buffer in front of it. This FIFO may be fed from a pipeline that
+    reacts to the ``writable`` flag with a latency up to the overflow buffer depth, and writes
+    will not be lost.
     """
     def __init__(self, fifo, overflow_depth=2):
         _FIFOInterface.__init__(self, fifo.width, fifo.depth)
@@ -202,11 +206,11 @@ class _FIFOWithOverflow(Module, _FIFOInterface):
         ]
 
 
-class _FIFOWithFlush(Module, _FIFOInterface):
+class _INFIFO(Module, _FIFOInterface):
     """
     A FIFO with a sideband flag indicating whether the FIFO has enough data to read from it yet.
-    Useful when the data read from the FIFO is packetized, but there is no particular framing
-    available to optimize the packet boundaries.
+    This FIFO may be used for packetizing the data read from the FIFO when there is no particular
+    framing available to optimize the packet boundaries.
     """
     def __init__(self, fifo, asynchronous=False, auto_flush=True):
         _FIFOInterface.__init__(self, fifo.width, fifo.depth)
@@ -292,9 +296,9 @@ class FX2Crossbar(Module):
     def __init__(self, pads):
         self.submodules.bus = _FX2Bus(pads)
 
-        self.out_fifos = Array([_FIFOWithOverflow(_DummyFIFO(width=8))
+        self.out_fifos = Array([_OUTFIFO(_DummyFIFO(width=8))
                                 for _ in range(2)])
-        self. in_fifos = Array([_FIFOWithFlush(_DummyFIFO(width=8))
+        self. in_fifos = Array([_INFIFO(_DummyFIFO(width=8))
                                 for _ in range(2)])
 
     def do_finalize(self):
@@ -483,7 +487,7 @@ class FX2Crossbar(Module):
                                cd_logic=clock_domain,
                                reset=reset,
                                depth=depth,
-                               wrapper=lambda x: _FIFOWithOverflow(x))
+                               wrapper=lambda x: _OUTFIFO(x))
         self.out_fifos[n] = fifo
         return fifo
 
@@ -496,7 +500,7 @@ class FX2Crossbar(Module):
                                cd_logic=clock_domain,
                                reset=reset,
                                depth=depth,
-                               wrapper=lambda x: _FIFOWithFlush(x,
+                               wrapper=lambda x: _INFIFO(x,
                                     asynchronous=clock_domain is not None,
                                     auto_flush=auto_flush))
         self.in_fifos[n] = fifo

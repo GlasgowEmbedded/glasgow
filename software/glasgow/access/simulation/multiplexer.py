@@ -2,7 +2,6 @@ from migen import *
 from migen.genlib.fifo import _FIFOInterface, AsyncFIFO, SyncFIFOBuffered
 
 from .. import AccessMultiplexer, AccessMultiplexerInterface
-from ...gateware.fx2_crossbar import _FIFOWithFlush
 
 
 class SimulationMultiplexer(AccessMultiplexer):
@@ -52,9 +51,8 @@ class SimulationMultiplexerInterface(AccessMultiplexerInterface):
         assert self.in_fifo is None
 
         self.submodules.in_fifo = self._make_fifo(
-            crossbar_side="read", logic_side="write", cd_logic=clock_domain, depth=depth,
-            wrapper=lambda x: _FIFOWithFlush(x, asynchronous=clock_domain is not None,
-                                             auto_flush=auto_flush))
+            crossbar_side="read", logic_side="write", cd_logic=clock_domain, depth=depth)
+        self.in_fifo.flush = Signal(reset=auto_flush)
         return self.in_fifo
 
     def get_out_fifo(self, depth=512, clock_domain=None):
