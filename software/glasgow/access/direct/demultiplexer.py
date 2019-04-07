@@ -60,9 +60,16 @@ _xfers_per_queue = min(16, _max_packets_per_ep // _packets_per_xfer)
 
 
 class DirectDemultiplexer(AccessDemultiplexer):
-    def __init__(self, device):
+    def __init__(self, device, pipe_count):
         super().__init__(device)
         self._claimed = set()
+
+        for config in device.usb.getDevice().iterConfigurations():
+            if config.getNumInterfaces() == pipe_count:
+                device.usb.setConfiguration(config.getConfigurationValue())
+                break
+        else:
+            assert False
 
     async def claim_interface(self, applet, mux_interface, args, pull_low=set(), pull_high=set()):
         assert mux_interface._pipe_num not in self._claimed

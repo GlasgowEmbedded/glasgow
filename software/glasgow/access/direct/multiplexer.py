@@ -81,6 +81,10 @@ class DirectMultiplexer(AccessMultiplexer):
         assert self._analyzer is None
         self._analyzer = analyzer
 
+    @property
+    def pipe_count(self):
+        return self._claimed_pipes
+
     def claim_interface(self, applet, args, with_analyzer=True, throttle="fifo"):
         if self._claimed_pipes == len(self._pipes):
             applet.logger.error("cannot claim pipe: out of pipes")

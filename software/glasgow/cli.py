@@ -422,7 +422,7 @@ async def _main():
         if args.action == "run":
             if args.applet:
                 target, applet = _applet(device.revision, args)
-                device.demultiplexer = DirectDemultiplexer(device)
+                device.demultiplexer = DirectDemultiplexer(device, target.multiplexer.pipe_count)
 
                 await device.download_target(target, rebuild=args.rebuild,
                                              toolchain_opts=_toolchain_opts(args))
