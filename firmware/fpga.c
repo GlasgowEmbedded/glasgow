@@ -102,7 +102,16 @@ __endasm;
   OEB &= ~((1<<PINB_SCK)|(1<<PINB_SS_N)|(1<<PINB_SI));
 
   // Enable clock and FIFO bus.
-  IFCONFIG |= _IFCLKOE|_IFCFG0|_IFCFG1;
+  switch(glasgow_config.revision) {
+    case GLASGOW_REV_A:
+    case GLASGOW_REV_B:
+      IFCONFIG |= _IFCLKOE|_IFCFG0|_IFCFG1;
+      break;
+
+    case GLASGOW_REV_C0:
+      IFCONFIG |= _IFCLKOE|_3048MHZ|_IFCFG0|_IFCFG1;
+      break;
+  }
 }
 
 bool fpga_is_ready() {

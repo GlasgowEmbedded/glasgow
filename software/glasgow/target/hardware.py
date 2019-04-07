@@ -47,13 +47,13 @@ class _CRG(Module):
 
 
 class GlasgowHardwareTarget(Module):
-    sys_clk_freq = 30e6
-
     def __init__(self, revision, multiplexer_cls=None, with_analyzer=False):
         if revision in ("A0", "B0"):
             self.platform = GlasgowPlatformRevAB()
+            self.sys_clk_freq = 30e6
         elif revision == "C0":
             self.platform = GlasgowPlatformRevC0()
+            self.sys_clk_freq = 48e6
         else:
             raise ValueError("Unknown revision")
 
