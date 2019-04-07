@@ -1364,36 +1364,32 @@ $EndComp
 $Comp
 L Connector_Generic:Conn_01x02 J?
 U 1 1 5C961091
-P 3850 2500
+P 4500 2500
 AR Path="/5C961091" Ref="J?"  Part="1" 
 AR Path="/5C7B59B0/5C961091" Ref="J4"  Part="1" 
-F 0 "J4" H 3850 2300 50  0000 C CNN
-F 1 "Conn_01x02" H 3930 2401 50  0001 L CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Horizontal" H 3850 2500 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/418/NG_CD_640455_Y3-1255934.pdf" H 3850 2500 50  0001 C CNN
-F 4 "Molex" H -6750 -350 50  0001 C CNN "Mfg"
-F 5 "22-05-3021" H -6750 -350 50  0001 C CNN "MPN"
-	1    3850 2500
+F 0 "J4" H 4500 2300 50  0000 C CNN
+F 1 "Conn_01x02" H 4580 2401 50  0001 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Horizontal" H 4500 2500 50  0001 C CNN
+F 3 "https://www.mouser.hk/datasheet/2/418/NG_CD_640455_Y3-1255934.pdf" H 4500 2500 50  0001 C CNN
+F 4 "Molex" H -6100 -350 50  0001 C CNN "Mfg"
+F 5 "22-05-3021" H -6100 -350 50  0001 C CNN "MPN"
+	1    4500 2500
 	1    0    0    1   
 $EndComp
 $Comp
 L power:GND #PWR?
 U 1 1 5C961098
-P 3600 2550
+P 4300 2700
 AR Path="/5C961098" Ref="#PWR?"  Part="1" 
 AR Path="/5C7B59B0/5C961098" Ref="#PWR042"  Part="1" 
-F 0 "#PWR042" H 3600 2300 50  0001 C CNN
-F 1 "GND" H 3605 2377 50  0000 C CNN
-F 2 "" H 3600 2550 50  0001 C CNN
-F 3 "" H 3600 2550 50  0001 C CNN
-	1    3600 2550
+F 0 "#PWR042" H 4300 2450 50  0001 C CNN
+F 1 "GND" H 4305 2527 50  0000 C CNN
+F 2 "" H 4300 2700 50  0001 C CNN
+F 3 "" H 4300 2700 50  0001 C CNN
+	1    4300 2700
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	3650 2500 3600 2500
-Wire Wire Line
-	3600 2500 3600 2550
-Text Label 3450 2400 0    50   ~ 0
+Text Label 3700 2400 0    50   ~ 0
 ~SYNC
 $Comp
 L Device:R R?
@@ -1638,6 +1634,39 @@ Wire Wire Line
 	2650 3300 2750 3300
 Wire Wire Line
 	2750 3300 2750 3450
+$Comp
+L power:PWR_FLAG #FLG0101
+U 1 1 5CFF6FB6
+P 8550 2450
+F 0 "#FLG0101" H 8550 2525 50  0001 C CNN
+F 1 "PWR_FLAG" H 8550 2624 50  0000 C CNN
+F 2 "" H 8550 2450 50  0001 C CNN
+F 3 "~" H 8550 2450 50  0001 C CNN
+	1    8550 2450
+	1    0    0    -1  
+$EndComp
+Connection ~ 8550 2450
+Wire Wire Line
+	8550 2450 8850 2450
+$Comp
+L Device:D_Zener D11
+U 1 1 5D1DFDD1
+P 3650 2550
+F 0 "D11" V 3604 2629 50  0000 L CNN
+F 1 "ESD9X5.0ST5G" V 3695 2629 50  0000 L CNN
+F 2 "Diode_SMD:D_0402_1005Metric" H 3650 2550 50  0001 C CNN
+F 3 "https://www.onsemi.com/pub/Collateral/ESD9X3.3ST5G-D.PDF" H 3650 2550 50  0001 C CNN
+	1    3650 2550
+	0    1    1    0   
+$EndComp
+Connection ~ 3650 2400
+Wire Wire Line
+	4300 2500 4300 2700
+Connection ~ 4300 2700
+Wire Wire Line
+	3650 2400 4300 2400
+Wire Wire Line
+	3650 2700 4300 2700
 Wire Bus Line
 	2400 4950 2400 5800
 Wire Bus Line
@@ -1656,18 +1685,4 @@ Wire Bus Line
 	5500 3750 5500 5800
 Wire Bus Line
 	9050 3200 9050 5800
-$Comp
-L power:PWR_FLAG #FLG0101
-U 1 1 5CFF6FB6
-P 8550 2450
-F 0 "#FLG0101" H 8550 2525 50  0001 C CNN
-F 1 "PWR_FLAG" H 8550 2624 50  0000 C CNN
-F 2 "" H 8550 2450 50  0001 C CNN
-F 3 "~" H 8550 2450 50  0001 C CNN
-	1    8550 2450
-	1    0    0    -1  
-$EndComp
-Connection ~ 8550 2450
-Wire Wire Line
-	8550 2450 8850 2450
 $EndSCHEMATC
