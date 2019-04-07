@@ -312,6 +312,13 @@ class _FX2Bus(Module):
         self.addr_p = Signal.like(self.addr)
         self.slrd_p = Signal.like(self.slrd)
 
+        # When an operation is pipelined that may or may not change flags, it is useful to
+        # invalidate--artificially negate--the corresponding flag until the operation completes.
+        # The nrdy signals are delayed by _FX2Bus in the same way as other pipelined signals,
+        # and an output bit is active while any corresponding bit in the pipeline is still active.
+        self.nrdy_i = Signal.like(self.flag)
+        self.nrdy_o = Signal.like(self.flag)
+
         ###
 
         self.submodules._fifoadr_t = _RegisteredTristate(pads.fifoadr)
@@ -342,11 +349,14 @@ class _FX2Bus(Module):
         # Delay the FX2 bus control signals, taking into account the roundtrip latency.
         addr_r = Signal.like(self.addr)
         slrd_r = Signal.like(self.slrd)
+        nrdy_r = Signal.like(self.flag)
         self.sync += [
             addr_r.eq(self.addr),
-            slrd_r.eq(self.slrd),
             self.addr_p.eq(addr_r),
+            slrd_r.eq(self.slrd),
             self.slrd_p.eq(slrd_r),
+            nrdy_r.eq(self.nrdy_i),
+            self.nrdy_o.eq(nrdy_r | self.nrdy_i),
         ]
 
 
@@ -390,7 +400,8 @@ class FX2Crossbar(Module):
         self.comb += [
             rdy.eq(Cat([fifo.inner.writable          for fifo in self.out_fifos] +
                        [fifo.readable | fifo.pending for fifo in self. in_fifos]) &
-                   bus.flag),
+                   bus.flag &
+                   ~bus.nrdy_o),
         ]
 
         sel_flag     = bus.flag.part(bus.addr, 1)
@@ -402,6 +413,7 @@ class FX2Crossbar(Module):
             If(bus.addr[1],
                 sel_in_fifo.re.eq(bus.slwr),
                 sel_in_fifo.flushed.eq(bus.pend),
+                bus.nrdy_i.eq(Cat(C(0b00, 2), bus.slwr << bus.addr[0])),
             ).Else(
                 sel_out_fifo.we.eq(bus.slrd_p & sel_flag),
             )
@@ -436,21 +448,13 @@ class FX2Crossbar(Module):
         )
         self.fsm.act("IN-XFER",
             If(~sel_in_fifo.complete & sel_in_fifo.readable,
-                bus.slwr.eq(1)
+                bus.slwr.eq(1),
             ).Elif(sel_in_fifo.complete | sel_in_fifo.pending,
                 bus.pend.eq(1),
-                # Due to pipelining there is 1 cycle of latency between FIFO buffer being scheduled
-                # for transmission (which may cause FIFO to become full) and FLAGx going low.
-                NextState("IN-WAIT-1")
+                NextState("SWITCH")
             ).Else(
                 NextState("SWITCH")
             )
-        )
-        self.fsm.act("IN-WAIT-1",
-            NextState("IN-WAIT-2")
-        )
-        self.fsm.act("IN-WAIT-2",
-            NextState("SWITCH")
         )
         self.fsm.act("OUT-XFER",
             If(sel_flag & sel_out_fifo.inner.writable,
