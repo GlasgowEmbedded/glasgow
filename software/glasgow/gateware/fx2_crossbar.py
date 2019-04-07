@@ -157,47 +157,36 @@ from migen.genlib.resetsync import AsyncResetSynchronizer
 __all__ = ["FX2Crossbar"]
 
 
-class _DummyFIFO(Module, _FIFOInterface):
-    """
-    Placeholder for an FPGA-side FIFO that is not implemented, and is never readable or writable.
-    """
-    def __init__(self, width):
-        super().__init__(width, 0)
-
-
 class _OUTFIFO(Module, _FIFOInterface):
     """
     A FIFO with an overflow buffer in front of it. This FIFO may be fed from a pipeline that
     reacts to the ``writable`` flag with a latency up to the overflow buffer depth, and writes
     will not be lost.
     """
-    def __init__(self, fifo, overflow_depth=2):
-        _FIFOInterface.__init__(self, fifo.width, fifo.depth)
+    def __init__(self, inner, overflow_depth=2):
+        super().__init__(inner.width, inner.depth)
 
-        if fifo.depth > 0:
-            overflow = SyncFIFO(fifo.width, overflow_depth)
-        else:
-            overflow = _DummyFIFO(fifo.width)
+        self.submodules.inner = inner
 
-        self.submodules.fifo     = fifo
-        self.submodules.overflow = overflow
-
-        self.dout     = fifo.dout
-        self.re       = fifo.re
-        self.readable = fifo.readable
+        self.dout     = inner.dout
+        self.re       = inner.re
+        self.readable = inner.readable
 
         ###
 
+        overflow = SyncFIFO(inner.width, overflow_depth)
+        self.submodules += overflow
+
         self.comb += [
             If(overflow.readable,
-                fifo.din.eq(overflow.dout),
-                fifo.we.eq(1),
-                overflow.re.eq(fifo.writable)
+                inner.din.eq(overflow.dout),
+                inner.we.eq(1),
+                overflow.re.eq(inner.writable)
             ),
-            If(fifo.writable & ~overflow.readable,
-                fifo.din.eq(self.din),
-                fifo.we.eq(self.we),
-                self.writable.eq(fifo.writable)
+            If(inner.writable & ~overflow.readable,
+                inner.din.eq(self.din),
+                inner.we.eq(self.we),
+                self.writable.eq(inner.writable)
             ).Else(
                 overflow.din.eq(self.din),
                 overflow.we.eq(self.we),
@@ -206,42 +195,79 @@ class _OUTFIFO(Module, _FIFOInterface):
         ]
 
 
+class _UnimplementedOUTFIFO(Module, _FIFOInterface):
+    def __init__(self, width):
+        super().__init__(width, 0)
+
+        self.submodules.inner = _FIFOInterface(width, 0)
+
+
 class _INFIFO(Module, _FIFOInterface):
     """
     A FIFO with a sideband flag indicating whether the FIFO has enough data to read from it yet.
     This FIFO may be used for packetizing the data read from the FIFO when there is no particular
     framing available to optimize the packet boundaries.
     """
-    def __init__(self, fifo, asynchronous=False, auto_flush=True):
-        _FIFOInterface.__init__(self, fifo.width, fifo.depth)
+    def __init__(self, inner, packet_size=512, asynchronous=False, auto_flush=True):
+        super().__init__(inner.width, inner.depth)
 
-        self.submodules.fifo = fifo
+        self.submodules.inner = inner
 
-        self.dout     = fifo.dout
-        self.re       = fifo.re
-        self.readable = fifo.readable
-        self.din      = fifo.din
-        self.we       = fifo.we
-        self.writable = fifo.writable
+        self.dout     = inner.dout
+        self.re       = inner.re
+        self.readable = inner.readable
+        self.din      = inner.din
+        self.we       = inner.we
+        self.writable = inner.writable
 
-        self.flush    = Signal(reset=auto_flush)
+        self.flush = Signal(reset=auto_flush)
         if asynchronous:
-            self._flush_s  = Signal()
-            self.specials += MultiReg(self.flush, self._flush_s, reset=auto_flush)
+            _flush_s = Signal()
+            self.specials += MultiReg(self.flush, self.flush_s, reset=auto_flush)
         else:
-            self._flush_s  = self.flush
+            _flush_s = self.flush
 
-        self.flushed  = Signal()
-        self.queued   = Signal()
-        self._pending = Signal()
+        # This is a model of the IN FIFO buffer in the FX2. Keep in mind that it is legal
+        # to assert PKTEND together with SLWR, and in that case PKTEND takes priority.
+        # This model is placed in the _INFIFO so that it is reset together with the FIFO itself,
+        # which happens on Set Configuration and Set Interface requests.
+        self.queued   = Signal(max=1 + packet_size)
+        self.complete = Signal() # one FX2 FIFO buffer full
+        self.pending  = Signal() # PKTEND requested
+        self.flushed  = Signal() # PKTEND asserted
+
+        _pending = Signal()
         self.sync += [
             If(self.flushed,
-                self._pending.eq(0)
+                self.queued.eq(0),
+                # If we sent a maximum-size packet, we still need a ZLP afterwards.
+                If(self.queued < packet_size,
+                    _pending.eq(0)
+                )
             ).Elif(self.readable & self.re,
-                self._pending.eq(1)
-            ),
-            self.queued.eq(self._flush_s & self._pending)
+                self.queued.eq(self.queued + 1),
+                _pending.eq(1)
+            )
         ]
+        self.comb += [
+            self.complete.eq(self.queued >= packet_size),
+            self.pending.eq(_pending & _flush_s),
+        ]
+
+
+class _UnimplementedINFIFO(Module, _FIFOInterface):
+    def __init__(self, width, packet_size=512):
+        super().__init__(width, 0)
+
+        self.submodules.inner = _FIFOInterface(width, 0)
+
+        self.flush    = Signal()
+        self.flush_s  = Signal()
+
+        self.queued   = Signal(max=1 + packet_size)
+        self.complete = Signal()
+        self.pending  = Signal()
+        self.flushed  = Signal()
 
 
 class _RegisteredTristate(Module):
@@ -332,9 +358,9 @@ class FX2Crossbar(Module):
     def __init__(self, pads):
         self.submodules.bus = _FX2Bus(pads)
 
-        self.out_fifos = Array([_OUTFIFO(_DummyFIFO(width=8))
+        self.out_fifos = Array([_UnimplementedOUTFIFO(width=8)
                                 for _ in range(2)])
-        self. in_fifos = Array([_INFIFO(_DummyFIFO(width=8))
+        self. in_fifos = Array([_UnimplementedINFIFO(width=8)
                                 for _ in range(2)])
 
     @staticmethod
@@ -356,8 +382,8 @@ class FX2Crossbar(Module):
         bus = self.bus
         rdy = Signal(4)
         self.comb += [
-            rdy.eq(Cat([fifo.fifo.writable          for fifo in self.out_fifos] +
-                       [fifo.readable | fifo.queued for fifo in self. in_fifos]) &
+            rdy.eq(Cat([fifo.inner.writable          for fifo in self.out_fifos] +
+                       [fifo.readable | fifo.pending for fifo in self. in_fifos]) &
                    bus.flag),
         ]
 
@@ -404,38 +430,22 @@ class FX2Crossbar(Module):
             )
         )
         self.fsm.act("IN-XFER",
-            If(sel_flag & sel_in_fifo.readable,
+            If(~sel_in_fifo.complete & sel_in_fifo.readable,
                 bus.slwr.eq(1)
-            ).Elif(~sel_flag & ~sel_in_fifo.readable,
-                # The ~FULL flag went down, and it goes down one sample earlier than the actual
-                # FULL condition. So we have one more byte free. However, the FPGA-side FIFO
-                # became empty simultaneously.
-                #
-                # If we schedule the next FIFO right now, the ~FULL flag will never come back down,
-                # so disregard the fact that the FIFO is streaming just for this corner case,
-                # and commit a packet one byte shorter than the complete FIFO.
-                #
-                # This shouldn't cause any problems.
-                NextState("IN-PKTEND")
-            ).Elif(sel_flag & sel_in_fifo.queued,
-                # The FX2-side FIFO is not full yet, but the flush flag is asserted.
-                # Commit the short packet.
-                NextState("IN-PKTEND")
+            ).Elif(sel_in_fifo.complete | sel_in_fifo.pending,
+                bus.pend.eq(1),
+                NextState("IN-WAIT")
             ).Else(
-                # Either the FPGA-side FIFO is empty, or the FX2-side FIFO is full, or the flush
-                # flag is not asserted.
-                # FX2 automatically commits a full FIFO, so we don't need to do anything here.
                 NextState("SWITCH")
             )
         )
-        self.fsm.act("IN-PKTEND",
-            # See datasheet "Slave FIFO Synchronous Packet End Strobe Parameters" for
-            # an explanation of why this is asserted one cycle after the last SLWR pulse.
-            bus.pend.eq(1),
+        self.fsm.act("IN-WAIT",
+            # Due to pipelining there is 1 cycle of latency between FIFO buffer being scheduled
+            # for transmission (which may cause FIFO to become full) and FLAGx going low.
             NextState("SWITCH")
         )
         self.fsm.act("OUT-XFER",
-            If(sel_flag & sel_out_fifo.fifo.writable,
+            If(sel_flag & sel_out_fifo.inner.writable,
                 bus.slrd.eq(1),
             ).Else(
                 NextState("SWITCH")
@@ -484,27 +494,27 @@ class FX2Crossbar(Module):
 
     def get_out_fifo(self, n, depth=512, clock_domain=None, reset=None):
         assert 0 <= n < 2
-        assert isinstance(self.out_fifos[n].fifo, _DummyFIFO)
+        assert isinstance(self.out_fifos[n], _UnimplementedOUTFIFO)
 
         fifo = self._make_fifo(crossbar_side="write",
                                logic_side="read",
                                cd_logic=clock_domain,
                                reset=reset,
                                depth=depth,
-                               wrapper=lambda x: _OUTFIFO(x))
+                               wrapper=lambda fifo: _OUTFIFO(fifo))
         self.out_fifos[n] = fifo
         return fifo
 
     def get_in_fifo(self, n, depth=512, auto_flush=True, clock_domain=None, reset=None):
         assert 0 <= n < 2
-        assert isinstance(self.in_fifos[n].fifo, _DummyFIFO)
+        assert isinstance(self.in_fifos[n], _UnimplementedINFIFO)
 
         fifo = self._make_fifo(crossbar_side="read",
                                logic_side="write",
                                cd_logic=clock_domain,
                                reset=reset,
                                depth=depth,
-                               wrapper=lambda x: _INFIFO(x,
+                               wrapper=lambda fifo: _INFIFO(fifo,
                                     asynchronous=clock_domain is not None,
                                     auto_flush=auto_flush))
         self.in_fifos[n] = fifo
