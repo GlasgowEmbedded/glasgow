@@ -1045,7 +1045,6 @@ Text Label 6900 3950 0    50   ~ 0
 VIOB
 Text Label 3450 3950 2    50   ~ 0
 VIOA
-NoConn ~ 3450 3950
 Wire Wire Line
 	3200 3950 3450 3950
 Wire Wire Line
@@ -1129,7 +1128,7 @@ F 3 "" H 8850 2800 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	8250 2450 8850 2450
+	8250 2450 8550 2450
 Connection ~ 2400 5800
 Connection ~ 5850 5800
 Entry Wire Line
@@ -1657,4 +1656,18 @@ Wire Bus Line
 	5500 3750 5500 5800
 Wire Bus Line
 	9050 3200 9050 5800
+$Comp
+L power:PWR_FLAG #FLG0101
+U 1 1 5CFF6FB6
+P 8550 2450
+F 0 "#FLG0101" H 8550 2525 50  0001 C CNN
+F 1 "PWR_FLAG" H 8550 2624 50  0000 C CNN
+F 2 "" H 8550 2450 50  0001 C CNN
+F 3 "~" H 8550 2450 50  0001 C CNN
+	1    8550 2450
+	1    0    0    -1  
+$EndComp
+Connection ~ 8550 2450
+Wire Wire Line
+	8550 2450 8850 2450
 $EndSCHEMATC
