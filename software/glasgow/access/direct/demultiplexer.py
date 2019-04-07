@@ -213,11 +213,14 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
 
         result = self._in_buffer.read(length)
         if len(result) < length:
-            result = bytearray(result)
-            while len(result) < length:
-                result += self._in_buffer.read(length - len(result))
+            chunks  = [result]
+            length -= len(result)
+            while length > 0:
+                chunk = self._in_buffer.read(length)
+                chunks.append(chunk)
+                length -= len(chunk)
             # Always return a memoryview object, to avoid hard to detect edge cases downstream.
-            result = memoryview(result)
+            result = memoryview(b"".join(chunks))
 
         self.logger.trace("FIFO: read <%s>", dump_hex(result))
         return result
