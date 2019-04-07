@@ -12,18 +12,21 @@ class ChunkedFIFO:
         self._queue  = deque()
         self._chunk  = None
         self._offset = 0
+        self._length = 0
 
     def clear(self):
         """Remove all data from the buffer."""
         self._queue.clear()
         self._chunk  = None
         self._offset = 0
+        self._length = 0
 
     def write(self, data):
         """Enqueue ``data``."""
         if not data:
             return
 
+        self._length += len(data)
         try:
             self._queue.append(memoryview(data))
         except TypeError:
@@ -39,7 +42,9 @@ class ChunkedFIFO:
         """
         if max_length is None and self._chunk is None:
             # Fast path.
-            return self._queue.popleft()
+            chunk = self._queue.popleft()
+            self._length -= len(chunk)
+            return chunk
 
         if max_length == 0:
             return memoryview(b"")
@@ -49,6 +54,7 @@ class ChunkedFIFO:
                 return memoryview(b"")
 
             self._chunk  = self._queue.popleft()
+            self._length -= len(self._chunk)
             self._offset = 0
 
         if max_length is None:
@@ -67,7 +73,7 @@ class ChunkedFIFO:
         return bool(self._queue) or self._chunk is not None
 
     def __len__(self):
-        length = sum(len(chunk) for chunk in self._queue)
+        length = self._length
         if self._chunk is not None:
             length += len(self._chunk) - self._offset
         return length
