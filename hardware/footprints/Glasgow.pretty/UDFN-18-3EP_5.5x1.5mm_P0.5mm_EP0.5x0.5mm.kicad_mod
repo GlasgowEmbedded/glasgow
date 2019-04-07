@@ -1,4 +1,4 @@
-(module UDFN-18-3EP_5.5x1.5mm_P0.5mm_EP0.5x0.5mm (layer F.Cu) (tedit 5CA9B55B)
+(module UDFN-18-3EP_5.5x1.5mm_P0.5mm_EP0.5x0.5mm (layer F.Cu) (tedit 5CAA1CA9)
   (fp_text reference REF** (at 0 -2) (layer F.SilkS)
     (effects (font (size 1 1) (thickness 0.15)))
   )
@@ -58,4 +58,9 @@
          (xy -0.25 0.25) (xy -0.25 -0.1) (xy -0.1 -0.25) (xy 0.1 -0.25) (xy 0.25 -0.1)
          (xy 0.25 0.25)) (width 0))
     ))
+  (model ../../packages3D/UDFN-18-3EP_5.5x1.5mm_P0.5mm_EP0.5x0.5mm.wrl
+    (at (xyz 0 0 0))
+    (scale (xyz 1 1 1))
+    (rotate (xyz 0 0 0))
+  )
 )
