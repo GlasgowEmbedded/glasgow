@@ -47,12 +47,6 @@
 # and the crossbar switches to another FIFO pair, the tail end of the read strobe would cause
 # a spurious read.
 #
-# NOTE
-# ----
-#
-# Everything below describes a correct implementation, but the actual code here is not yet that
-# implementation. Keep this in mind.
-#
 # Handling pipelining
 # -------------------
 #
@@ -163,7 +157,7 @@ class _OUTFIFO(Module, _FIFOInterface):
     reacts to the ``writable`` flag with a latency up to the overflow buffer depth, and writes
     will not be lost.
     """
-    def __init__(self, inner, overflow_depth=2):
+    def __init__(self, inner, overflow_depth):
         super().__init__(inner.width, inner.depth)
 
         self.submodules.inner = inner
@@ -281,21 +275,28 @@ class _RegisteredTristate(Module):
             return signal[bit] if signal.nbits > 0 else signal
 
         for bit in range(io.nbits):
+            # The FX2 output valid window starts well after (5.4 ns past) the iCE40 input
+            # capture window for the rising edge. However, the input capture for
+            # the falling edge is just right.
+            #
+            # We carefully use DDR input and fabric registers to capture the FX2 output in
+            # the valid window and prolong its validity to 1 IFCLK cycle. The output is
+            # not DDR and is handled the straightforward way.
+            #
+            # See https://github.com/GlasgowEmbedded/Glasgow/issues/89 for details.
+            d_in_1 = Signal()
             self.specials += \
                 Instance("SB_IO",
                     # PIN_INPUT_DDR|PIN_OUTPUT_REGISTERED_ENABLE_REGISTERED
                     p_PIN_TYPE=C(0b110100, 6),
                     io_PACKAGE_PIN=get_bit(io, bit),
-                    i_OUTPUT_ENABLE=self.oe,
                     i_INPUT_CLK=ClockSignal(),
                     i_OUTPUT_CLK=ClockSignal(),
+                    i_OUTPUT_ENABLE=self.oe,
                     i_D_OUT_0=get_bit(self.o, bit),
-                    # The FX2 output valid window starts well after (5.4 ns past) the iCE40 input
-                    # capture window for the rising edge. However, the input capture for
-                    # the falling edge is just right.
-                    # See https://github.com/GlasgowEmbedded/Glasgow/issues/89 for details.
-                    o_D_IN_1=get_bit(self.i, bit),
+                    o_D_IN_1=d_in_1,
                 )
+            self.sync += get_bit(self.i, bit).eq(d_in_1)
 
 
 class _FX2Bus(Module):
@@ -339,9 +340,13 @@ class _FX2Bus(Module):
         ]
 
         # Delay the FX2 bus control signals, taking into account the roundtrip latency.
+        addr_r = Signal.like(self.addr)
+        slrd_r = Signal.like(self.slrd)
         self.sync += [
-            self.addr_p.eq(self.addr),
-            self.slrd_p.eq(self.slrd),
+            addr_r.eq(self.addr),
+            slrd_r.eq(self.slrd),
+            self.addr_p.eq(addr_r),
+            self.slrd_p.eq(slrd_r),
         ]
 
 
@@ -380,6 +385,7 @@ class FX2Crossbar(Module):
 
     def do_finalize(self):
         bus = self.bus
+
         rdy = Signal(4)
         self.comb += [
             rdy.eq(Cat([fifo.inner.writable          for fifo in self.out_fifos] +
@@ -390,7 +396,6 @@ class FX2Crossbar(Module):
         sel_flag     = bus.flag.part(bus.addr, 1)
         sel_in_fifo  = self.in_fifos [bus.addr  [0]]
         sel_out_fifo = self.out_fifos[bus.addr_p[0]]
-
         self.comb += [
             bus.data.o.eq(sel_in_fifo.dout),
             sel_out_fifo.din.eq(bus.data.i),
@@ -434,14 +439,17 @@ class FX2Crossbar(Module):
                 bus.slwr.eq(1)
             ).Elif(sel_in_fifo.complete | sel_in_fifo.pending,
                 bus.pend.eq(1),
-                NextState("IN-WAIT")
+                # Due to pipelining there is 1 cycle of latency between FIFO buffer being scheduled
+                # for transmission (which may cause FIFO to become full) and FLAGx going low.
+                NextState("IN-WAIT-1")
             ).Else(
                 NextState("SWITCH")
             )
         )
-        self.fsm.act("IN-WAIT",
-            # Due to pipelining there is 1 cycle of latency between FIFO buffer being scheduled
-            # for transmission (which may cause FIFO to become full) and FLAGx going low.
+        self.fsm.act("IN-WAIT-1",
+            NextState("IN-WAIT-2")
+        )
+        self.fsm.act("IN-WAIT-2",
             NextState("SWITCH")
         )
         self.fsm.act("OUT-XFER",
@@ -501,7 +509,8 @@ class FX2Crossbar(Module):
                                cd_logic=clock_domain,
                                reset=reset,
                                depth=depth,
-                               wrapper=lambda fifo: _OUTFIFO(fifo))
+                               wrapper=lambda fifo: _OUTFIFO(fifo,
+                                    overflow_depth=3))
         self.out_fifos[n] = fifo
         return fifo
 
