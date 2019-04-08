@@ -1684,6 +1684,19 @@ F 5 "AC0603FR-07130RL" H -6700 -400 50  0001 C CNN "MPN"
 $EndComp
 Wire Wire Line
 	3650 2300 3650 2400
+$Comp
+L power:+3.3V #PWR?
+U 1 1 5CB44D27
+P 3650 2000
+AR Path="/5CB44D27" Ref="#PWR?"  Part="1" 
+AR Path="/5C7B59B0/5CB44D27" Ref="#PWR010"  Part="1" 
+F 0 "#PWR010" H 3650 1850 50  0001 C CNN
+F 1 "+3.3V" H 3665 2173 50  0000 C CNN
+F 2 "" H 3650 2000 50  0001 C CNN
+F 3 "" H 3650 2000 50  0001 C CNN
+	1    3650 2000
+	-1   0    0    -1  
+$EndComp
 Wire Bus Line
 	2400 4950 2400 5800
 Wire Bus Line
@@ -1702,17 +1715,6 @@ Wire Bus Line
 	5500 3750 5500 5800
 Wire Bus Line
 	9050 3200 9050 5800
-$Comp
-L power:+3.3V #PWR?
-U 1 1 5CB44D27
-P 3650 2000
-AR Path="/5CB44D27" Ref="#PWR?"  Part="1" 
-AR Path="/5C7B59B0/5CB44D27" Ref="#PWR010"  Part="1" 
-F 0 "#PWR010" H 3650 1850 50  0001 C CNN
-F 1 "+3.3V" H 3665 2173 50  0000 C CNN
-F 2 "" H 3650 2000 50  0001 C CNN
-F 3 "" H 3650 2000 50  0001 C CNN
-	1    3650 2000
-	-1   0    0    -1  
-$EndComp
+Text Notes 9450 2950 0    50   ~ 0
+Suggested mating connector:\nAmphenol 20021321-00040T4LF
 $EndSCHEMATC
