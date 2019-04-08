@@ -1667,6 +1667,23 @@ Wire Wire Line
 	3650 2400 4300 2400
 Wire Wire Line
 	3650 2700 4300 2700
+$Comp
+L Device:R R?
+U 1 1 5CB2B53C
+P 3650 2150
+AR Path="/5CB2B53C" Ref="R?"  Part="1" 
+AR Path="/5C7B59B0/5CB2B53C" Ref="R44"  Part="1" 
+F 0 "R44" V 3550 2150 50  0000 C CNN
+F 1 "10k" V 3650 2200 50  0000 R CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 3580 2150 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-AC_51_RoHS_L_6-1152827.pdf" H 3650 2150 50  0001 C CNN
+F 4 "Yageo" H -6700 -400 50  0001 C CNN "Mfg"
+F 5 "AC0603FR-07130RL" H -6700 -400 50  0001 C CNN "MPN"
+	1    3650 2150
+	1    0    0    1   
+$EndComp
+Wire Wire Line
+	3650 2300 3650 2400
 Wire Bus Line
 	2400 4950 2400 5800
 Wire Bus Line
@@ -1685,4 +1702,17 @@ Wire Bus Line
 	5500 3750 5500 5800
 Wire Bus Line
 	9050 3200 9050 5800
+$Comp
+L power:+3.3V #PWR?
+U 1 1 5CB44D27
+P 3650 2000
+AR Path="/5CB44D27" Ref="#PWR?"  Part="1" 
+AR Path="/5C7B59B0/5CB44D27" Ref="#PWR010"  Part="1" 
+F 0 "#PWR010" H 3650 1850 50  0001 C CNN
+F 1 "+3.3V" H 3665 2173 50  0000 C CNN
+F 2 "" H 3650 2000 50  0001 C CNN
+F 3 "" H 3650 2000 50  0001 C CNN
+	1    3650 2000
+	-1   0    0    -1  
+$EndComp
 $EndSCHEMATC
