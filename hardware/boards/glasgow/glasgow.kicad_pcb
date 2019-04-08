@@ -6631,7 +6631,7 @@
     (tags "Surface mounted pin header SMD 2x22 1.27mm double row")
     (path /5C7B59B0/5C9E342D)
     (attr smd)
-    (fp_text reference J5 (at 0 -15.03 90) (layer F.SilkS)
+    (fp_text reference J5 (at -1.8 -15.03 90) (layer F.SilkS)
       (effects (font (size 0.8 0.8) (thickness 0.15)))
     )
     (fp_text value Conn_02x22_Odd_Even (at -3.9 -0.1 180) (layer F.Fab)
