@@ -54,7 +54,6 @@ class ChunkedFIFO:
                 return memoryview(b"")
 
             self._chunk  = self._queue.popleft()
-            self._length -= len(self._chunk)
             self._offset = 0
 
         if max_length is None:
@@ -67,16 +66,14 @@ class ChunkedFIFO:
         else:
             self._offset += len(result)
 
+        self._length -= len(result)
         return result
 
     def __bool__(self):
         return bool(self._queue) or self._chunk is not None
 
     def __len__(self):
-        length = self._length
-        if self._chunk is not None:
-            length += len(self._chunk) - self._offset
-        return length
+        return self._length
 
 # -------------------------------------------------------------------------------------------------
 
