@@ -2,32 +2,43 @@ import logging
 import argparse
 from migen import *
 
-from ....gateware.pads import *
+from ....gateware.clockgen import *
 from ... import *
 
 
 class SigmaDeltaDACChannel(Module):
     def __init__(self, output, bits):
-        self.level = Signal(bits)
-        self.latch = Signal(bits)
-        self.stb   = Signal()
+        self.stb    = Signal()
+
+        self.level  = Signal(bits)
+        self.update = Signal()
 
         ###
 
-        self.accum = Signal(bits)
-        self.sync += Cat(self.accum, output).eq(self.accum + self.latch)
-
-        self.sync += If(self.stb, self.latch.eq(self.level))
+        accum   = Signal(bits)
+        level_r = Signal(bits)
+        self.sync += [
+            If(self.stb,
+                Cat(accum, output).eq(accum + level_r)
+            ),
+            If(self.update,
+                level_r.eq(self.level)
+            )
+        ]
 
 
 class AudioDACSubtarget(Module):
-    def __init__(self, pads, out_fifo, sample_cyc, width):
+    def __init__(self, pads, out_fifo, pulse_cyc, sample_cyc, width):
         assert width in (1, 2)
-
-        timer = Signal(max=sample_cyc)
 
         channels = [SigmaDeltaDACChannel(output, bits=width * 8) for output in pads.o_t.o]
         self.submodules += channels
+
+        self.submodules.clkgen = ClockGen(pulse_cyc)
+        for channel in channels:
+            self.comb += channel.stb.eq(self.clkgen.stb_r)
+
+        timer = Signal(max=sample_cyc)
 
         self.submodules.fsm = FSM()
         self.fsm.act("STANDBY",
@@ -80,7 +91,7 @@ class AudioDACSubtarget(Module):
                     )
                 )
         self.fsm.act("LATCH",
-            [channel.stb.eq(1) for channel in channels],
+            [channel.update.eq(1) for channel in channels],
             NextState("WAIT")
         )
 
@@ -114,17 +125,26 @@ class AudioDACApplet(GlasgowApplet, name="audio-dac"):
         access.add_pin_set_argument(parser, "o", width=range(1, 17), default=1)
 
         parser.add_argument(
-            "-r", "--sample-rate", metavar="FREQ", type=int, default=8000,
-            help="set sample rate to FREQ Hz (default: %(default)d)")
+            "-f", "--frequency", metavar="FREQ", type=int,
+            help="set modulation frequency to FREQ MHz (default: maximum)")
+        parser.add_argument(
+            "-r", "--sample-rate", metavar="RATE", type=int, default=8000,
+            help="set sample rate to RATE Hz (default: %(default)d)")
         parser.add_argument(
             "-w", "--width", metavar="WIDTH", type=int, default=1,
             help="set sample width to WIDTH bytes (default: %(default)d)")
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
+        if args.frequency is None:
+            pulse_cyc = 0
+        else:
+            pulse_cyc = self.derive_clock(input_hz=target.sys_clk_freq,
+                                          output_hz=args.frequency * 1e6)
         subtarget = iface.add_subtarget(AudioDACSubtarget(
             pads=iface.get_pads(args, pin_sets=self.__pin_sets),
             out_fifo=iface.get_out_fifo(),
+            pulse_cyc=pulse_cyc,
             sample_cyc=int(target.sys_clk_freq // args.sample_rate),
             width=args.width,
         ))
