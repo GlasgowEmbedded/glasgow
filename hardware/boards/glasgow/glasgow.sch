@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:glasgow-cache
-EELAYER 29 0
+EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -2492,9 +2492,9 @@ Wire Wire Line
 Wire Wire Line
 	1050 3500 1350 3500
 Wire Wire Line
-	1300 4550 2300 4550
+	1300 4550 1600 4550
 Wire Wire Line
-	1300 4650 2200 4650
+	1300 4650 1600 4650
 Wire Wire Line
 	4950 6750 4950 6850
 Wire Wire Line
@@ -2953,10 +2953,64 @@ F 5 "RC0603FR-132K2L" H 650 -250 50  0001 C CNN "MPN"
 	1    2550 4700
 	1    0    0    1   
 $EndComp
+$Comp
+L Connector:TestPoint TP15
+U 1 1 5CAEDE5C
+P 1600 4550
+F 0 "TP15" H 1650 4600 50  0000 L CNN
+F 1 "USBDP" V 1704 4624 50  0001 C CNN
+F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 1800 4550 50  0001 C CNN
+F 3 "~" H 1800 4550 50  0001 C CNN
+	1    1600 4550
+	1    0    0    -1  
+$EndComp
+Connection ~ 1600 4550
+Wire Wire Line
+	1600 4550 2300 4550
+$Comp
+L Connector:TestPoint TP16
+U 1 1 5CAEE18C
+P 1600 4650
+F 0 "TP16" H 1550 4700 50  0000 R CNN
+F 1 "USBDM" V 1704 4724 50  0001 C CNN
+F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 1800 4650 50  0001 C CNN
+F 3 "~" H 1800 4650 50  0001 C CNN
+	1    1600 4650
+	-1   0    0    1   
+$EndComp
+Connection ~ 1600 4650
+Wire Wire Line
+	1600 4650 2200 4650
+$Comp
+L Connector:TestPoint TP13
+U 1 1 5CAF0599
+P 1350 4350
+F 0 "TP13" V 1450 4350 50  0000 L CNN
+F 1 "VBUS" V 1454 4424 50  0001 C CNN
+F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 1550 4350 50  0001 C CNN
+F 3 "~" H 1550 4350 50  0001 C CNN
+	1    1350 4350
+	0    1    1    0   
+$EndComp
+Connection ~ 1350 4350
+$Comp
+L Connector:TestPoint TP14
+U 1 1 5CAF1844
+P 1350 4950
+F 0 "TP14" V 1250 5100 50  0000 R CNN
+F 1 "USBGND" V 1454 5024 50  0001 C CNN
+F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 1550 4950 50  0001 C CNN
+F 3 "~" H 1550 4950 50  0001 C CNN
+	1    1350 4950
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	1350 4950 1000 4950
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
 	4700 2150 4700 6250
 Wire Bus Line
 	7850 2550 7850 6250
+Connection ~ 1000 4950
 $EndSCHEMATC
