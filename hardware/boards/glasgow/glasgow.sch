@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:glasgow-cache
-EELAYER 26 0
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -1881,14 +1881,12 @@ Text Label 5350 2950 2    50   ~ 0
 ENVA
 Text Notes 7850 1950 2    50   ~ 0
 FPGA reset asserted\non tristate
-Text Notes 3400 6400 0    50   ~ 0
+Text Notes 3850 6400 0    50   ~ 0
 Imax @ 3V3 = 5 mA
-Text Notes 5100 6400 0    50   ~ 0
+Text Notes 5550 6400 0    50   ~ 0
 Imax @ 3V3 = 3 mA
 Text Notes 3650 1850 0    50   ~ 0
 Imax(USB) @ 3V3 = 80 mA\nImax @ 3V3 = 209 mA
-Text Notes 8000 2100 0    50   ~ 0
-Imax @ 3V3 = 38 mA (A+B)\nImax @ 5V = 150 mA (A+B)
 $Comp
 L Connector:TestPoint TP4
 U 1 1 5AE223CE
@@ -2086,8 +2084,8 @@ $Comp
 L FPGA_Lattice:ICE40HX8K-BG121 U30
 U 5 1 5BD3E8C6
 P 7050 5400
-F 0 "U30" H 6800 4800 50  0000 L CNN
-F 1 "ICE40HX8K-BG121" H 6800 4700 50  0000 L CNN
+F 0 "U30" H 6850 4800 50  0000 L CNN
+F 1 "ICE40HX8K-BG121" H 6850 4700 50  0000 L CNN
 F 2 "Package_BGA:BGA-121_9.0x9.0mm_Layout11x11_P0.8mm_Ball0.4mm_Pad0.35mm_NSMD" H 7050 3950 50  0001 C CNN
 F 3 "http://www.latticesemi.com/Products/FPGAandCPLD/iCE40" H 6200 6400 50  0001 C CNN
 	5    7050 5400
@@ -2114,7 +2112,7 @@ L power:GND #PWR0101
 U 1 1 5BDEF4D8
 P 7350 6100
 F 0 "#PWR0101" H 7350 5850 50  0001 C CNN
-F 1 "GND" H 7355 5927 50  0000 C CNN
+F 1 "GND" H 7200 6050 50  0000 C CNN
 F 2 "" H 7350 6100 50  0001 C CNN
 F 3 "" H 7350 6100 50  0001 C CNN
 	1    7350 6100
@@ -3006,11 +3004,11 @@ F 3 "~" H 1550 4950 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	1350 4950 1000 4950
+Connection ~ 1000 4950
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
 	4700 2150 4700 6250
 Wire Bus Line
 	7850 2550 7850 6250
-Connection ~ 1000 4950
 $EndSCHEMATC

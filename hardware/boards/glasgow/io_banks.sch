@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:glasgow-cache
-EELAYER 26 0
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -753,8 +753,6 @@ Text Label 2500 5450 0    50   ~ 0
 DA6
 Text Label 2500 5550 0    50   ~ 0
 DA7
-Wire Bus Line
-	2400 5800 3450 5800
 Entry Wire Line
 	8950 3100 9050 3200
 Entry Wire Line
@@ -948,8 +946,6 @@ Entry Wire Line
 	5950 5450 5850 5550
 Entry Wire Line
 	5950 5550 5850 5650
-Wire Bus Line
-	5850 5800 6950 5800
 Wire Wire Line
 	6700 4850 6850 4850
 Wire Wire Line
@@ -1129,8 +1125,6 @@ F 3 "" H 8850 2800 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	8250 2450 8550 2450
-Connection ~ 2400 5800
-Connection ~ 5850 5800
 Entry Wire Line
 	5400 3650 5500 3750
 Entry Wire Line
@@ -1269,10 +1263,6 @@ Wire Wire Line
 	5250 5050 5350 5050
 Wire Wire Line
 	5250 5150 5350 5150
-Wire Bus Line
-	5500 5800 5850 5800
-Wire Bus Line
-	2050 5800 2400 5800
 Text Label 5250 5650 0    50   ~ 0
 QB0
 Text Label 5250 5550 0    50   ~ 0
@@ -1489,7 +1479,7 @@ P 2650 2800
 AR Path="/5CBEC27E" Ref="#PWR?"  Part="1" 
 AR Path="/5C7B59B0/5CBEC27E" Ref="#PWR0130"  Part="1" 
 F 0 "#PWR0130" H 2650 2550 50  0001 C CNN
-F 1 "GND" H 2650 2600 50  0000 C CNN
+F 1 "GND" H 2800 2750 50  0000 C CNN
 F 2 "" H 2650 2800 50  0001 C CNN
 F 3 "" H 2650 2800 50  0001 C CNN
 	1    2650 2800
@@ -1674,7 +1664,7 @@ P 3650 2150
 AR Path="/5CB2B53C" Ref="R?"  Part="1" 
 AR Path="/5C7B59B0/5CB2B53C" Ref="R44"  Part="1" 
 F 0 "R44" V 3550 2150 50  0000 C CNN
-F 1 "10k" V 3650 2200 50  0000 R CNN
+F 1 "10k" V 3650 2150 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 3580 2150 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-AC_51_RoHS_L_6-1152827.pdf" H 3650 2150 50  0001 C CNN
 F 4 "Yageo" H -6700 -400 50  0001 C CNN "Mfg"
@@ -1697,6 +1687,20 @@ F 3 "" H 3650 2000 50  0001 C CNN
 	1    3650 2000
 	-1   0    0    -1  
 $EndComp
+Text Notes 9350 2950 0    50   ~ 0
+The iCE40 LVDS buffers require external\ntermination, which is expected to be provided\non a specially designed daughterboard.\n\nSuggested mating connector:\nAmphenol 20021321-00040T4LF
+Text Notes 900  6500 0    50   ~ 0
+There's no particular reason balls B5 and A6 are connected to\nQA4 and QA6; they simply cannot be routed out anywhere.\nThis connection has no design function but could be used to\ne.g. characterise IOB propagation delay.
+Text Notes 2250 3250 0    50   ~ 0
+Auxiliary connector that may be used for experimenting\nwith addons. There is no guarantee that this connector\nwill be kept in future revisions.
+Wire Notes Line
+	900  4750 750  4750
+Wire Notes Line
+	750  4750 750  6250
+Wire Notes Line
+	750  6250 850  6250
+Wire Notes Line
+	750  4950 900  4950
 Wire Bus Line
 	2400 4950 2400 5800
 Wire Bus Line
@@ -1715,6 +1719,10 @@ Wire Bus Line
 	5500 3750 5500 5800
 Wire Bus Line
 	9050 3200 9050 5800
-Text Notes 9450 2950 0    50   ~ 0
-Suggested mating connector:\nAmphenol 20021321-00040T4LF
+Text Notes 3850 2200 0    50   ~ 0
+Synchronization input/output accomodates multiple I/O standards: Vil=0.8V, Vih=2.0V.\n * Nominally, ~SYNC~ is open-drain and 3.3V, with weak internal pull-up.\n * Nevertheless, ~SYNC~ can be connected to 5V circuits directly.\n * ~SYNC~ may also be driven as push-pull to increase bandwidth.\n   Care must be taken to avoid contention. Nevertheless, two Glasgows \n   contending on ~SYNC~ will not exceed absolute maximum ratings.\n   A 47 ohm series resistor is recommended for other drivers.
+Wire Bus Line
+	5500 5800 6950 5800
+Wire Bus Line
+	2050 5800 3450 5800
 $EndSCHEMATC
