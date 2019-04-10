@@ -106,10 +106,10 @@ class ProgramICE40SRAMApplet(SPIMasterApplet, name="program-ice40-sram"):
                 done = await ice40_iface.get_done()
                 if done:
                     break
-                if done:
-                    self.logger.info("FPGA successfully configured")
-                else:
-                    self.logger.warning("FPGA failed to configure after releasing reset")
+            if done:
+                self.logger.info("FPGA successfully configured")
+            else:
+                self.logger.warning("FPGA failed to configure after releasing reset")
 
 
 # -------------------------------------------------------------------------------------------------
