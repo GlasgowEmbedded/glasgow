@@ -593,6 +593,7 @@ class ShugartFloppyInterface:
         data     = await self.lower.read(254)
         trailer, = await self.lower.read(1)
         if trailer != TLR_ERROR:
+            await asyncio.sleep(0)
             return data[:trailer]
 
     async def read_track_raw(self, redundancy=1):
