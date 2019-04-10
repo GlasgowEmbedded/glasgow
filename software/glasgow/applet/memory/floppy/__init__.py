@@ -743,7 +743,10 @@ class SoftwareMFMDecoder:
         bits   = []
         while True:
             while len(shreg) < 64:
-                shreg += next(chipstream)
+                try:
+                    shreg += next(chipstream)
+                except StopIteration:
+                    return
 
             synced_now = False
             for sync_offset in (0, 1):
