@@ -1330,25 +1330,25 @@ DA7
 $Comp
 L Connector_Generic:Conn_01x03 J10
 U 1 1 5C072C23
-P 2950 3550
-F 0 "J10" H 3030 3542 50  0000 L CNN
-F 1 "Conn_01x03" H 3050 3650 50  0000 L CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 2950 3550 50  0001 C CNN
-F 3 "~" H 2950 3550 50  0001 C CNN
-	1    2950 3550
+P 3450 3550
+F 0 "J10" H 3550 3450 50  0000 L CNN
+F 1 "Conn_01x03" H 3450 3350 50  0000 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 3450 3550 50  0001 C CNN
+F 3 "~" H 3450 3550 50  0001 C CNN
+	1    3450 3550
 	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR?
 U 1 1 5C0F528A
-P 2650 3300
+P 3150 3200
 AR Path="/5C0F528A" Ref="#PWR?"  Part="1" 
 AR Path="/5C7B59B0/5C0F528A" Ref="#PWR0117"  Part="1" 
-F 0 "#PWR0117" H 2650 3050 50  0001 C CNN
-F 1 "GND" H 2650 3150 50  0000 C CNN
-F 2 "" H 2650 3300 50  0001 C CNN
-F 3 "" H 2650 3300 50  0001 C CNN
-	1    2650 3300
+F 0 "#PWR0117" H 3150 2950 50  0001 C CNN
+F 1 "GND" H 3150 3050 50  0000 C CNN
+F 2 "" H 3150 3200 50  0001 C CNN
+F 3 "" H 3150 3200 50  0001 C CNN
+	1    3150 3200
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -1617,13 +1617,9 @@ F 5 "AC0603FR-07130RL" H -7900 1100 50  0001 C CNN "MPN"
 	0    1    -1   0   
 $EndComp
 Wire Wire Line
-	2600 3650 2750 3650
+	2600 3650 3000 3650
 Wire Wire Line
-	2600 3550 2750 3550
-Wire Wire Line
-	2650 3300 2750 3300
-Wire Wire Line
-	2750 3300 2750 3450
+	2600 3550 2700 3550
 $Comp
 L power:PWR_FLAG #FLG0101
 U 1 1 5CFF6FB6
@@ -1691,8 +1687,6 @@ Text Notes 9350 2950 0    50   ~ 0
 The iCE40 LVDS buffers require external\ntermination, which is expected to be provided\non a specially designed daughterboard.\n\nSuggested mating connector:\nAmphenol 20021321-00040T4LF
 Text Notes 900  7150 0    50   ~ 0
 Balls B6 and B7 correspond to GBIN0/1, whose I/O buffers are shared\nwith one of the PLLs. When the PLL is used, it replaces the input buffer,\nand so the pin input is no longer directly available. Because of this quirk\nof the iCE40 architecture, two common goals are in direct conflict:\n * If an applet is clocked externally, this clock should ideally be provided\n   on a GBINx pin. (This is recommended but not strictly necessary as it is\n   generally OK for a clock to traverse a small amount of iCE40 fabric.)\n * If an applet is using the PLL co-located with the GBIN0 pin and clocking\n   it internally, the GBIN0 pin input buffer is lost, and GBIN1 pin input buffer\n   may be lost as well depending on the chosen PLL configuration.\nTo resolve this conflict, the I/O pins mapped to GBIN0/1 are mapped to\na different pin (balls B5 and A6) as well, giving gateware maximum flexibility.
-Text Notes 2250 3250 0    50   ~ 0
-Auxiliary connector that may be used for experimenting\nwith addons. There is no guarantee that this connector\nwill be kept in future revisions.
 Wire Notes Line
 	900  4750 750  4750
 Wire Notes Line
@@ -1707,6 +1701,51 @@ Wire Bus Line
 	5500 5800 6950 5800
 Wire Bus Line
 	2050 5800 3450 5800
+$Comp
+L Device:D_Zener D12
+U 1 1 5CB8809B
+P 2700 3350
+F 0 "D12" V 2600 3250 50  0000 L CNN
+F 1 "ESD5Z5.0T1G" H 2550 3450 50  0000 L CNN
+F 2 "Diode_SMD:D_SOD-523" H 2700 3350 50  0001 C CNN
+F 3 "https://www.onsemi.com/pub/Collateral/ESD5Z2.5T1-D.PDF" H 2700 3350 50  0001 C CNN
+	1    2700 3350
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Zener D13
+U 1 1 5CB88F58
+P 3000 3350
+F 0 "D13" V 2900 3250 50  0000 L CNN
+F 1 "ESD5Z5.0T1G" H 2850 3450 50  0000 L CNN
+F 2 "Diode_SMD:D_SOD-523" H 3000 3350 50  0001 C CNN
+F 3 "https://www.onsemi.com/pub/Collateral/ESD5Z2.5T1-D.PDF" H 3000 3350 50  0001 C CNN
+	1    3000 3350
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	3250 3150 3150 3150
+Wire Wire Line
+	3150 3150 3150 3200
+Wire Wire Line
+	3250 3150 3250 3450
+Wire Wire Line
+	3150 3150 3000 3150
+Wire Wire Line
+	3000 3150 3000 3200
+Connection ~ 3150 3150
+Wire Wire Line
+	3000 3150 2700 3150
+Wire Wire Line
+	2700 3150 2700 3200
+Connection ~ 3000 3150
+Wire Wire Line
+	2700 3500 2700 3550
+Connection ~ 2700 3550
+Wire Wire Line
+	2700 3550 3250 3550
+Wire Wire Line
+	3000 3500 3000 3650
 Wire Bus Line
 	2400 4950 2400 5800
 Wire Bus Line
@@ -1725,4 +1764,9 @@ Wire Bus Line
 	5500 3750 5500 5800
 Wire Bus Line
 	9050 3200 9050 5800
+Connection ~ 3000 3650
+Wire Wire Line
+	3000 3650 3250 3650
+Text Notes 3300 3350 0    50   ~ 0
+Auxiliary connector that \nmay be used for exper-\nimenting with addons. \nThere is no guarantee \nthat this connector will\nbe kept in future revisions.
 $EndSCHEMATC
