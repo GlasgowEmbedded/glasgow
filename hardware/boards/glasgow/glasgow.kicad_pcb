@@ -2,10 +2,10 @@
 
   (general
     (thickness 1.6)
-    (drawings 271)
-    (tracks 5182)
+    (drawings 272)
+    (tracks 5184)
     (zones 0)
-    (modules 226)
+    (modules 227)
     (nets 246)
   )
 
@@ -26,7 +26,7 @@
     (44 Edge.Cuts user hide)
     (45 Margin user hide)
     (46 B.CrtYd user hide)
-    (47 F.CrtYd user)
+    (47 F.CrtYd user hide)
     (48 B.Fab user hide)
     (49 F.Fab user hide)
   )
@@ -607,6 +607,27 @@
     (add_net /IO_Banks/VIO_AUX)
     (add_net /VUSB)
     (add_net GND)
+  )
+
+  (module TestPoint:TestPoint_Pad_D1.0mm (layer B.Cu) (tedit 5A0F774F) (tstamp 5CB34414)
+    (at 69.6 109.9)
+    (descr "SMD pad as test Point, diameter 1.0mm")
+    (tags "test point SMD pad")
+    (path /5CC2ABF8)
+    (attr virtual)
+    (fp_text reference TP17 (at 0 1.448) (layer B.SilkS) hide
+      (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
+    )
+    (fp_text value 1V2 (at 0 -1.55) (layer B.Fab)
+      (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
+    )
+    (fp_circle (center 0 0) (end 0 -0.7) (layer B.SilkS) (width 0.12))
+    (fp_circle (center 0 0) (end 1 0) (layer B.CrtYd) (width 0.05))
+    (fp_text user %R (at 0 1.45) (layer B.Fab)
+      (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
+    )
+    (pad 1 smd circle (at 0 0) (size 1 1) (layers B.Cu B.Mask)
+      (net 36 +1V2))
   )
 
   (module Glasgow:nono_hana locked (layer B.Cu) (tedit 5C05440D) (tstamp 5C07534E)
@@ -3623,7 +3644,7 @@
     (fp_text reference TP8 (at 0 1.448) (layer B.SilkS) hide
       (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
     )
-    (fp_text value SDA (at 0 -1.55) (layer B.Fab) hide
+    (fp_text value 5V (at 0 -1.55) (layer B.Fab) hide
       (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
     )
     (fp_circle (center 0 0) (end 0 -0.7) (layer B.SilkS) (width 0.12))
@@ -3644,7 +3665,7 @@
     (fp_text reference TP9 (at 0 1.448) (layer B.SilkS) hide
       (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
     )
-    (fp_text value SDA (at 0 -1.55) (layer B.Fab) hide
+    (fp_text value 3V3 (at 0 -1.55) (layer B.Fab) hide
       (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
     )
     (fp_circle (center 0 0) (end 0 -0.7) (layer B.SilkS) (width 0.12))
@@ -3686,7 +3707,7 @@
     (fp_text reference TP11 (at 0 1.448) (layer B.SilkS) hide
       (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
     )
-    (fp_text value SDA (at 0 -1.55) (layer B.Fab) hide
+    (fp_text value SCL (at 0 -1.55) (layer B.Fab) hide
       (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
     )
     (fp_circle (center 0 0) (end 0 -0.7) (layer B.SilkS) (width 0.12))
@@ -3707,7 +3728,7 @@
     (fp_text reference TP12 (at 0 1.448) (layer B.SilkS) hide
       (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
     )
-    (fp_text value SDA (at 0 -1.55) (layer B.Fab) hide
+    (fp_text value GND (at 0 -1.55) (layer B.Fab) hide
       (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
     )
     (fp_circle (center 0 0) (end 0 -0.7) (layer B.SilkS) (width 0.12))
@@ -12207,6 +12228,9 @@
     )
   )
 
+  (gr_text 1V2 (at 71.3 108.4) (layer B.SilkS) (tstamp 5CB35192)
+    (effects (font (size 1.2 1.2) (thickness 0.16)) (justify left mirror))
+  )
   (gr_text GND (at 56.2 97.3) (layer B.SilkS) (tstamp 5CBB2FF3)
     (effects (font (size 1 1) (thickness 0.16)) (justify right mirror))
   )
@@ -13948,6 +13972,8 @@
   (segment (start 75.8 102.9) (end 77.3 101.4) (width 0.75) (layer In2.Cu) (net 36))
   (segment (start 70.05 111.7) (end 71.9 109.85) (width 0.75) (layer In2.Cu) (net 36))
   (segment (start 71.9 109.85) (end 71.9 104.7) (width 0.75) (layer In2.Cu) (net 36))
+  (segment (start 70.05 110.35) (end 69.6 109.9) (width 0.45) (layer B.Cu) (net 36))
+  (segment (start 70.05 111.7) (end 70.05 110.35) (width 0.45) (layer B.Cu) (net 36))
   (segment (start 62.135 112.15) (end 61.8 112.15) (width 0.15) (layer F.Cu) (net 37))
   (segment (start 62.85 112.15) (end 61.8 112.15) (width 0.15) (layer F.Cu) (net 37))
   (segment (start 63.7 110.785) (end 63.7 111.3) (width 0.15) (layer F.Cu) (net 37))
