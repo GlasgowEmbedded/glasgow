@@ -1512,7 +1512,7 @@ F 3 "" H 1950 2950 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	1800 2400 2250 2400
+	1800 2400 1900 2400
 Wire Wire Line
 	1800 2400 1800 3450
 Wire Wire Line
@@ -1746,6 +1746,11 @@ Wire Wire Line
 	2700 3550 3250 3550
 Wire Wire Line
 	3000 3500 3000 3650
+Connection ~ 3000 3650
+Wire Wire Line
+	3000 3650 3250 3650
+Text Notes 3300 3350 0    50   ~ 0
+Auxiliary connector that \nmay be used for exper-\nimenting with addons. \nThere is no guarantee \nthat this connector will\nbe kept in future revisions.
 Wire Bus Line
 	2400 4950 2400 5800
 Wire Bus Line
@@ -1764,9 +1769,21 @@ Wire Bus Line
 	5500 3750 5500 5800
 Wire Bus Line
 	9050 3200 9050 5800
-Connection ~ 3000 3650
+$Comp
+L Device:R R?
+U 1 1 5CB5DA66
+P 2050 2400
+AR Path="/5CB5DA66" Ref="R?"  Part="1" 
+AR Path="/5C7B59B0/5CB5DA66" Ref="R45"  Part="1" 
+F 0 "R45" V 1950 2400 50  0000 C CNN
+F 1 "33" V 2050 2450 50  0000 R CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 1980 2400 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-AC_51_RoHS_L_6-1152827.pdf" H 2050 2400 50  0001 C CNN
+F 4 "Yageo" H -8300 -150 50  0001 C CNN "Mfg"
+F 5 "AC0603FR-07130RL" H -8300 -150 50  0001 C CNN "MPN"
+	1    2050 2400
+	0    1    -1   0   
+$EndComp
 Wire Wire Line
-	3000 3650 3250 3650
-Text Notes 3300 3350 0    50   ~ 0
-Auxiliary connector that \nmay be used for exper-\nimenting with addons. \nThere is no guarantee \nthat this connector will\nbe kept in future revisions.
+	2200 2400 2250 2400
 $EndSCHEMATC
