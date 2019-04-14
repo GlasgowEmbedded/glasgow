@@ -10,10 +10,8 @@ from ... import *
 
 
 class UARTSubtarget(Module):
-    def __init__(self, pads, out_fifo, in_fifo, bit_cyc, parity):
-        self.submodules.uart = UART(pads, bit_cyc=bit_cyc, parity=parity)
-
-        ###
+    def __init__(self, pads, out_fifo, in_fifo, max_bit_cyc, parity):
+        self.submodules.uart = UART(pads, bit_cyc=max_bit_cyc, parity=parity)
 
         self.comb += [
             in_fifo.din.eq(self.uart.rx_data),
@@ -47,29 +45,43 @@ class UARTApplet(GlasgowApplet, name="uart"):
             access.add_pin_argument(parser, pin, default=True)
 
         parser.add_argument(
-            "-b", "--baud", metavar="RATE", type=int, default=115200,
-            help="set baud rate to RATE bits per second (default: %(default)s)")
-        parser.add_argument(
             "--parity", metavar="PARITY", choices=("none", "zero", "one", "odd", "even"),
             default="none",
             help="send and receive parity bit as PARITY (default: %(default)s)")
+        parser.add_argument(
+            "-b", "--baud", metavar="RATE", type=int, default=115200,
+            help="set baud rate to RATE bits per second (default: %(default)s)")
         parser.add_argument(
             "--tolerance", metavar="PPM", type=int, default=50000,
             help="verify that actual baud rate is within PPM parts per million of specified"
                  " (default: %(default)s)")
 
     def build(self, target, args):
+        # We support any baud rates, even absurd ones like 60 baud, if you want, but the applet
+        # will have to be rebuilt for anything slower than 9600. This is why the baud rate is
+        # a build argument, even though the applet will never be rebuilt as long as you stay
+        # above 9600.
+        max_bit_cyc = self.derive_clock(
+            input_hz=target.sys_clk_freq, output_hz=min(9600, args.baud))
+
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        iface.add_subtarget(UARTSubtarget(
+        subtarget = iface.add_subtarget(UARTSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
-            bit_cyc=self.derive_clock(input_hz=target.sys_clk_freq, output_hz=args.baud,
-                                      min_cyc=2, max_deviation_ppm=args.tolerance),
+            max_bit_cyc=max_bit_cyc,
             parity=args.parity,
         ))
 
+        self.__sys_clk_freq = target.sys_clk_freq
+        bit_cyc, self.__addr_bit_cyc = target.registers.add_rw(32)
+        subtarget.comb += subtarget.uart.bit_cyc.eq(bit_cyc)
+
     async def run(self, device, args):
+        bit_cyc = self.derive_clock(
+            input_hz=self.__sys_clk_freq, output_hz=args.baud,
+            min_cyc=2, max_deviation_ppm=args.tolerance)
+        await device.write_register(self.__addr_bit_cyc, bit_cyc, width=4)
         return await device.demultiplexer.claim_interface(self, self.mux_interface, args)
 
     @classmethod
