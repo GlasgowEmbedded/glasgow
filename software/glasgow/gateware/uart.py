@@ -40,17 +40,24 @@ class UART(Module):
     """
     Asynchronous serial receiver-transmitter.
 
-    Any number of data bits, any parity, and 1 stop bit are supported.
+    Any number of data bits, any parity, and 1 stop bit are supported. Baud rate may be changed
+    at runtime.
 
-    :param bit_cyc:
-        Bit time expressed as a multiple of system clock periods.
     :type bit_cyc: int
+    :param bit_cyc:
+        Initial value for bit time, expressed as a multiple of system clock periods.
+    :type data_bits: int
     :param data_bits:
         Data bit count.
-    :type data_bits: int
+    :type parity: str
     :param parity:
         Parity, one of ``"none"`` (default), ``"zero"``, ``"one"``, ``"even"``, ``"odd"``.
-    :type parity: str
+    :type max_bit_cyc: int
+    :param max_bit_cyc:
+        Maximum possible value for ``bit_cyc`` that can be configured at runtime.
+
+    :attr bit_cyc:
+        Register with the current value for bit time, minus one.
 
     :attr rx_data:
         Received data. Valid when ``rx_rdy`` is active.
@@ -77,7 +84,11 @@ class UART(Module):
         Transmit acknowledgement. If active when ``tx_rdy`` is active, ``tx_rdy`` is reset,
         ``tx_data`` is sampled, and the transmit state machine starts transmitting a frame.
     """
-    def __init__(self, pads, bit_cyc, data_bits=8, parity="none"):
+    def __init__(self, pads, bit_cyc, data_bits=8, parity="none", max_bit_cyc=None):
+        if max_bit_cyc is None:
+            max_bit_cyc = bit_cyc
+        self.bit_cyc = Signal(reset=bit_cyc, max=max_bit_cyc + 1)
+
         self.rx_data = Signal(data_bits)
         self.rx_rdy  = Signal()
         self.rx_ack  = Signal()
@@ -110,7 +121,8 @@ class UART(Module):
                     assert False
 
         if bus.has_rx:
-            rx_timer = Signal(max=bit_cyc)
+            rx_start = Signal()
+            rx_timer = Signal(max=max_bit_cyc)
             rx_stb   = Signal()
             rx_shreg = Signal(data_bits)
             rx_bitno = Signal(max=rx_shreg.nbits)
@@ -118,8 +130,10 @@ class UART(Module):
             self.comb += self.rx_err.eq(self.rx_ferr | self.rx_ovf | self.rx_perr)
 
             self.sync += [
-                If(rx_timer == 0,
-                    rx_timer.eq(bit_cyc - 1)
+                If(rx_start,
+                    rx_timer.eq(self.bit_cyc >> 1),
+                ).Elif(rx_timer == 0,
+                    rx_timer.eq(self.bit_cyc - 1)
                 ).Else(
                     rx_timer.eq(rx_timer - 1)
                 )
@@ -130,7 +144,7 @@ class UART(Module):
             self.rx_fsm.act("IDLE",
                 NextValue(self.rx_rdy, 0),
                 If(~bus.rx_i,
-                    NextValue(rx_timer, bit_cyc // 2),
+                    rx_start.eq(1),
                     NextState("START")
                 )
             )
@@ -186,15 +200,16 @@ class UART(Module):
         ###
 
         if bus.has_tx:
-            tx_timer  = Signal(max=bit_cyc)
+            tx_start  = Signal()
+            tx_timer  = Signal(max=max_bit_cyc)
             tx_stb    = Signal()
             tx_shreg  = Signal(data_bits)
             tx_bitno  = Signal(max=tx_shreg.nbits)
             tx_parity = Signal()
 
             self.sync += [
-                If(tx_timer == 0,
-                    tx_timer.eq(bit_cyc - 1)
+                If(tx_start | (tx_timer == 0),
+                    tx_timer.eq(self.bit_cyc - 1)
                 ).Else(
                     tx_timer.eq(tx_timer - 1)
                 )
@@ -205,11 +220,11 @@ class UART(Module):
             self.tx_fsm.act("IDLE",
                 self.tx_rdy.eq(1),
                 If(self.tx_ack,
+                    tx_start.eq(1),
                     NextValue(tx_shreg, self.tx_data),
                     If(parity != "none",
                         NextValue(tx_parity, calc_parity(self.tx_data, parity))
                     ),
-                    NextValue(tx_timer, bit_cyc - 1),
                     NextValue(bus.tx_o, 0),
                     NextState("START")
                 ).Else(
