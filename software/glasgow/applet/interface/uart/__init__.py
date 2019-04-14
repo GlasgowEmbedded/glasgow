@@ -9,10 +9,72 @@ from ....gateware.uart import *
 from ... import *
 
 
+class UARTAutoBaud(Module):
+    """
+    Automatic UART baud rate determination.
+
+    Unlike the algorithm usually called "autobaud" that only works on the initial "A" letter
+    (as in "AT command"), the algorithm implemented here does not require any particular alphabet
+    to be used for transfers, only that an instance of ...010... or ...101... appears sufficiently
+    often in the bitstream. (E.g. if the only transmitted byte is ``11110000``, the autobaud
+    algorithm will not correctly lock onto this sequence. In fact, it would determine the baud rate
+    that is 5× slower than the actual one.)
+
+    This algorithm works by training on a fixed-length sequence of pulses, choosing the length
+    of the shortest one as the bit time. After the sequence ends, it retrains again from scratch,
+    discarding the previous estimate.
+
+    Such an algorithm can be left running unattended and with no configuration, and only be
+    consulted when frame errors are detected.
+    """
+    def __init__(self, uart, auto_cyc, seq_size=32):
+        # Edge detector
+        rx_i = uart.bus.rx_i
+        rx_r = Signal()
+        edge = Signal()
+
+        self.sync += rx_r.eq(rx_i)
+        self.comb += edge.eq(rx_i != rx_r)
+
+        # Training state machine
+        seq_count = Signal(max=seq_size)
+        cyc_count = Signal.like(uart.bit_cyc)
+        cyc_latch = Signal.like(uart.bit_cyc)
+
+        self.submodules.fsm = FSM()
+        self.fsm.act("RESET",
+            If(seq_count == seq_size - 1,
+                NextValue(auto_cyc,  cyc_latch),
+                NextValue(cyc_latch, ~0),
+                NextValue(seq_count, 0),
+            ).Else(
+                NextValue(seq_count, seq_count + 1),
+            ),
+            NextValue(cyc_count, 1),
+            NextState("COUNT")
+        )
+        self.fsm.act("COUNT",
+            NextValue(cyc_count, cyc_count + 1),
+            If(cyc_count == cyc_latch,
+                # This branch also handles overflow of cyc_count.
+                NextState("SKIP")
+            ).Elif(edge,
+                NextValue(cyc_latch, cyc_count + 1),
+                NextState("RESET")
+            )
+        )
+        self.fsm.act("SKIP",
+            If(edge,
+                NextState("RESET")
+            )
+        )
+
+
 class UARTSubtarget(Module):
     def __init__(self, pads, out_fifo, in_fifo, max_bit_cyc, parity,
-                 bit_cyc, rx_errors):
+                 bit_cyc, rx_errors, auto_cyc):
         self.submodules.uart = uart = UART(pads, bit_cyc=max_bit_cyc, parity=parity)
+        self.submodules.auto_baud = UARTAutoBaud(uart, auto_cyc)
 
         self.comb += uart.bit_cyc.eq(bit_cyc)
 
@@ -73,7 +135,8 @@ class UARTApplet(GlasgowApplet, name="uart"):
             input_hz=target.sys_clk_freq, output_hz=min(9600, args.baud))
 
         self.__sys_clk_freq = target.sys_clk_freq
-        bit_cyc,   self.__addr_bit_cyc = target.registers.add_rw(32)
+        bit_cyc,   self.__addr_bit_cyc   = target.registers.add_rw(32)
+        auto_cyc,  self.__addr_auto_cyc  = target.registers.add_ro(32)
         rx_errors, self.__addr_rx_errors = target.registers.add_ro(16)
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
@@ -85,9 +148,18 @@ class UARTApplet(GlasgowApplet, name="uart"):
             parity=args.parity,
             bit_cyc=bit_cyc,
             rx_errors=rx_errors,
+            auto_cyc=auto_cyc,
         ))
 
         subtarget.comb += subtarget.uart.bit_cyc.eq(bit_cyc)
+
+    @classmethod
+    def add_run_arguments(cls, parser, access):
+        super().add_run_arguments(parser, access)
+
+        parser.add_argument(
+            "-a", "--auto-baud", default=False, action="store_true",
+            help="automatically estimate baud rate in response to RX errors")
 
     async def run(self, device, args):
         bit_cyc = self.derive_clock(
@@ -110,19 +182,28 @@ class UARTApplet(GlasgowApplet, name="uart"):
         p_pty = p_operation.add_parser(
             "pty", help="connect UART to a pseudo-terminal device file")
 
-    async def _monitor_errors(self, device):
-        cur_count = 0
+    async def _monitor_errors(self, device, auto_baud):
+        cur_errors = 0
         while True:
             await asyncio.sleep(1)
 
-            new_count = await device.read_register(self.__addr_rx_errors, width=2)
-            delta = new_count - cur_count
-            if new_count < cur_count:
+            new_errors = await device.read_register(self.__addr_rx_errors, width=2)
+            delta = new_errors - cur_errors
+            if new_errors < cur_errors:
                 delta += 1 << 16
-            cur_count = new_count
+            cur_errors = new_errors
 
             if delta > 0:
                 self.logger.warning("%d frame or parity errors detected", delta)
+
+            if delta > 0 and auto_baud:
+                auto_cyc = await device.read_register(self.__addr_auto_cyc, width=4)
+                if auto_cyc > 2:
+                    self.logger.info("switching to %d baud", self.__sys_clk_freq // (auto_cyc + 1))
+                    await device.write_register(self.__addr_bit_cyc, auto_cyc, width=4)
+
+                    # Ignore any errors between counter last readout and baud rate switch.
+                    cur_errors = await device.read_register(self.__addr_rx_errors, width=2)
 
     async def _forward(self, in_fileno, out_fileno, uart, quit_sequence=False, stream=False):
         quit = 0
@@ -199,7 +280,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
         await self._forward(master, master, uart)
 
     async def interact(self, device, args, uart):
-        asyncio.create_task(self._monitor_errors(device))
+        asyncio.create_task(self._monitor_errors(device, args.auto_baud))
 
         if args.operation == "tty":
             await self._interact_tty(uart, args.stream)
