@@ -146,7 +146,7 @@ class ClockGen(Module):
                 duty = 50
             else:
                 duty = (cyc // 2) / cyc * 100
-            logger.debug("%s in=%.3f req=%.3f out=%.3f kHz error=%d ppm duty=%.1f%%",
+            logger.debug("%s in=%.3f req=%.3f out=%.3f [kHz] error=%d [ppm] duty=%.1f%%",
                          clock, input_hz / 1000, output_hz / 1000, actual_output_hz / 1000,
                          deviation_ppm, duty)
 
