@@ -10,19 +10,27 @@ from ... import *
 
 
 class UARTSubtarget(Module):
-    def __init__(self, pads, out_fifo, in_fifo, max_bit_cyc, parity):
-        self.submodules.uart = UART(pads, bit_cyc=max_bit_cyc, parity=parity)
+    def __init__(self, pads, out_fifo, in_fifo, max_bit_cyc, parity,
+                 bit_cyc, rx_errors):
+        self.submodules.uart = uart = UART(pads, bit_cyc=max_bit_cyc, parity=parity)
+
+        self.comb += uart.bit_cyc.eq(bit_cyc)
 
         self.comb += [
-            in_fifo.din.eq(self.uart.rx_data),
-            in_fifo.we.eq(self.uart.rx_rdy),
-            self.uart.rx_ack.eq(in_fifo.writable)
+            in_fifo.din.eq(uart.rx_data),
+            in_fifo.we.eq(uart.rx_rdy),
+            uart.rx_ack.eq(in_fifo.writable)
+        ]
+        self.sync += [
+            If(uart.rx_ferr | uart.rx_perr,
+                rx_errors.eq(rx_errors + 1),
+            )
         ]
 
         self.comb += [
-            self.uart.tx_data.eq(out_fifo.dout),
-            out_fifo.re.eq(self.uart.tx_rdy),
-            self.uart.tx_ack.eq(out_fifo.readable),
+            uart.tx_data.eq(out_fifo.dout),
+            out_fifo.re.eq(uart.tx_rdy),
+            uart.tx_ack.eq(out_fifo.readable),
         ]
 
 
@@ -64,6 +72,10 @@ class UARTApplet(GlasgowApplet, name="uart"):
         max_bit_cyc = self.derive_clock(
             input_hz=target.sys_clk_freq, output_hz=min(9600, args.baud))
 
+        self.__sys_clk_freq = target.sys_clk_freq
+        bit_cyc,   self.__addr_bit_cyc = target.registers.add_rw(32)
+        rx_errors, self.__addr_rx_errors = target.registers.add_ro(16)
+
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(UARTSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
@@ -71,10 +83,10 @@ class UARTApplet(GlasgowApplet, name="uart"):
             in_fifo=iface.get_in_fifo(),
             max_bit_cyc=max_bit_cyc,
             parity=args.parity,
+            bit_cyc=bit_cyc,
+            rx_errors=rx_errors,
         ))
 
-        self.__sys_clk_freq = target.sys_clk_freq
-        bit_cyc, self.__addr_bit_cyc = target.registers.add_rw(32)
         subtarget.comb += subtarget.uart.bit_cyc.eq(bit_cyc)
 
     async def run(self, device, args):
@@ -97,6 +109,20 @@ class UARTApplet(GlasgowApplet, name="uart"):
 
         p_pty = p_operation.add_parser(
             "pty", help="connect UART to a pseudo-terminal device file")
+
+    async def _monitor_errors(self, device):
+        cur_count = 0
+        while True:
+            await asyncio.sleep(1)
+
+            new_count = await device.read_register(self.__addr_rx_errors, width=2)
+            delta = new_count - cur_count
+            if new_count < cur_count:
+                delta += 1 << 16
+            cur_count = new_count
+
+            if delta > 0:
+                self.logger.warning("%d frame or parity errors detected", delta)
 
     async def _forward(self, in_fileno, out_fileno, uart, quit_sequence=False, stream=False):
         quit = 0
@@ -173,6 +199,8 @@ class UARTApplet(GlasgowApplet, name="uart"):
         await self._forward(master, master, uart)
 
     async def interact(self, device, args, uart):
+        asyncio.create_task(self._monitor_errors(device))
+
         if args.operation == "tty":
             await self._interact_tty(uart, args.stream)
         if args.operation == "pty":

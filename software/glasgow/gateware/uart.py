@@ -68,6 +68,8 @@ class UART(Module):
         and the receive state machine becomes ready for another frame.
     :attr rx_ferr:
         Receive frame error flag. Active for one cycle when a frame error is detected.
+    :attr rx_perr:
+        Receive parity error flag. Active for one cycle when a parity error is detected.
     :attr rx_ovf:
         Receive overflow flag. Active for one cycle when a new frame is started while ``rx_rdy``
         is still active. Afterwards, the receive state machine is reset and starts receiving
@@ -93,8 +95,8 @@ class UART(Module):
         self.rx_rdy  = Signal()
         self.rx_ack  = Signal()
         self.rx_ferr = Signal()
-        self.rx_ovf  = Signal()
         self.rx_perr = Signal()
+        self.rx_ovf  = Signal()
         self.rx_err  = Signal()
 
         self.tx_data = Signal(data_bits)
