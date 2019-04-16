@@ -808,7 +808,7 @@ ENDDEF
 #
 # Graphic_Logo_Open_Hardware_Large
 #
-DEF ~Graphic_Logo_Open_Hardware_Large #LOGO 0 40 Y Y 1 F N
+DEF Graphic_Logo_Open_Hardware_Large #LOGO 0 40 Y Y 1 F N
 F0 "#LOGO" 0 500 50 H I C CNN
 F1 "Graphic_Logo_Open_Hardware_Large" 0 -400 50 H I C CNN
 F2 "" 0 0 50 H I C CNN
