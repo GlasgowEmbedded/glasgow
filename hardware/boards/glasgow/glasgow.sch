@@ -24,6 +24,7 @@ F 2 "Package_DFN_QFN:Cypress_QFN-56-1EP_8x8mm_P0.5mm_EP6.22x6.22mm_ThermalVias" 
 F 3 "http://www.cypress.com/file/138911/download" H 3550 4050 50  0001 C CNN
 F 4 "Cypress" H 650 -250 50  0001 C CNN "Mfg"
 F 5 "CY7C68013A-56LTXC" H 650 -250 50  0001 C CNN "MPN"
+F 6 "ic-cy7c68013a-56ltx" H 3550 3850 50  0001 C CNN "1b2-bom-key"
 	1    3550 3850
 	1    0    0    -1  
 $EndComp
@@ -37,6 +38,7 @@ F 2 "Connector_USB:USB_Micro-B_Molex_47346-0001" H 1150 4500 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/276/0473460001_IO_CONNECTORS-229243.pdf" H 1150 4500 50  0001 C CNN
 F 4 "Molex" H -50 400 50  0001 C CNN "Mfg"
 F 5 "47346-0001" H -50 400 50  0001 C CNN "MPN"
+F 6 "conn-smd-usb-micro-b" H 1000 4550 50  0001 C CNN "1b2-bom-key"
 	1    1000 4550
 	1    0    0    -1  
 $EndComp
@@ -111,6 +113,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 2238 2300 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 2200 2450 50  0001 C CNN
 F 4 "Yageo" H 650 -250 50  0001 C CNN "Mfg"
 F 5 "CC0603JRNPO8BN180" H 650 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-18p" H 2200 2450 50  0001 C CNN "1b2-bom-key"
 	1    2200 2450
 	0    1    1    0   
 $EndComp
@@ -205,6 +208,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 1030 5450 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 1100 5450 50  0001 C CNN
 F 4 "Yageo" H -50 400 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-131ML" H -50 400 50  0001 C CNN "MPN"
+F 6 "res-0402-1m" H 1100 5450 50  0001 C CNN "1b2-bom-key"
 	1    1100 5450
 	1    0    0    -1  
 $EndComp
@@ -250,6 +254,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 1438 1000 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 1400 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H -450 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -450 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 1400 1150 50  0001 C CNN "1b2-bom-key"
 	1    1400 1150
 	1    0    0    -1  
 $EndComp
@@ -311,6 +316,7 @@ F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 1038 1000 50  
 F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 1000 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H -450 -250 50  0001 C CNN "Mfg"
 F 5 "LMK107BJ475KAHT" H -450 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0603-4u7" H 1000 1150 50  0001 C CNN "1b2-bom-key"
 	1    1000 1150
 	1    0    0    -1  
 $EndComp
@@ -334,6 +340,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 1738 1000 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 1700 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H -450 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -450 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 1700 1150 50  0001 C CNN "1b2-bom-key"
 	1    1700 1150
 	1    0    0    -1  
 $EndComp
@@ -347,6 +354,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 2038 1000 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 2000 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H -450 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -450 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 2000 1150 50  0001 C CNN "1b2-bom-key"
 	1    2000 1150
 	1    0    0    -1  
 $EndComp
@@ -360,6 +368,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 2338 1000 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 2300 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H -450 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -450 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 2300 1150 50  0001 C CNN "1b2-bom-key"
 	1    2300 1150
 	1    0    0    -1  
 $EndComp
@@ -373,6 +382,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 2638 1000 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 2600 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H -450 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -450 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 2600 1150 50  0001 C CNN "1b2-bom-key"
 	1    2600 1150
 	1    0    0    -1  
 $EndComp
@@ -386,6 +396,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 2938 1000 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 2900 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H -450 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -450 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 2900 1150 50  0001 C CNN "1b2-bom-key"
 	1    2900 1150
 	1    0    0    -1  
 $EndComp
@@ -399,6 +410,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 3238 1000 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 3200 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H -450 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -450 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 3200 1150 50  0001 C CNN "1b2-bom-key"
 	1    3200 1150
 	1    0    0    -1  
 $EndComp
@@ -412,6 +424,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 788 5300 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 750 5450 50  0001 C CNN
 F 4 "Taiyo Yuden" H -50 400 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -50 400 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 750 5450 50  0001 C CNN "1b2-bom-key"
 	1    750  5450
 	1    0    0    -1  
 $EndComp
@@ -451,6 +464,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 2238 2800 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 2200 2950 50  0001 C CNN
 F 4 "Yageo" H 650 -250 50  0001 C CNN "Mfg"
 F 5 "CC0603JRNPO8BN180" H 650 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-18p" H 2200 2950 50  0001 C CNN "1b2-bom-key"
 	1    2200 2950
 	0    1    1    0   
 $EndComp
@@ -468,6 +482,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 2580 4700 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 2650 4700 50  0001 C CNN
 F 4 "Yageo" H 650 -250 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-132K2L" H 650 -250 50  0001 C CNN "MPN"
+F 6 "res-0402-2k2" H 2650 4700 50  0001 C CNN "1b2-bom-key"
 	1    2650 4700
 	-1   0    0    1   
 $EndComp
@@ -481,6 +496,7 @@ F 2 "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" H 4200 7250 50  0001 C CNN
 F 3 "https://www.onsemi.com/pub/Collateral/CAT24M01-D.PDF" H 4200 7000 50  0001 C CNN
 F 4 "ON Semiconductor" H 350 0   50  0001 C CNN "Mfg"
 F 5 "CAT24M01WI-GT3" H 350 0   50  0001 C CNN "MPN"
+F 6 "ic-soic8-cat24m01w" H 4200 7000 50  0001 C CNN "1b2-bom-key"
 	1    4200 7000
 	1    0    0    -1  
 $EndComp
@@ -494,6 +510,7 @@ F 2 "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" H 5900 7000 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/308/CAT24C256-D-769998.pdf" H 5900 7000 50  0001 C CNN
 F 4 "ON Semiconductor" H 0   0   50  0001 C CNN "Mfg"
 F 5 "CAT24C256WI-GT3" H 0   0   50  0001 C CNN "MPN"
+F 6 "ic-soic8-cat24c256w" H 5900 7000 50  0001 C CNN "1b2-bom-key"
 	1    5900 7000
 	1    0    0    -1  
 $EndComp
@@ -607,6 +624,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 3488 6850 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 3450 7000 50  0001 C CNN
 F 4 "Taiyo Yuden" H 350 0   50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 350 0   50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 3450 7000 50  0001 C CNN "1b2-bom-key"
 	1    3450 7000
 	1    0    0    -1  
 $EndComp
@@ -642,6 +660,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 4988 6850 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 4950 7000 50  0001 C CNN
 F 4 "Taiyo Yuden" H -200 0   50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -200 0   50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 4950 7000 50  0001 C CNN "1b2-bom-key"
 	1    4950 7000
 	1    0    0    -1  
 $EndComp
@@ -757,6 +776,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 3538 1000 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 3500 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H -450 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -450 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 3500 1150 50  0001 C CNN "1b2-bom-key"
 	1    3500 1150
 	1    0    0    -1  
 $EndComp
@@ -927,6 +947,7 @@ F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 5188 1000 50  
 F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 5150 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H 450 -250 50  0001 C CNN "Mfg"
 F 5 "LMK107BJ475KAHT" H 450 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0603-4u7" H 5150 1150 50  0001 C CNN "1b2-bom-key"
 	1    5150 1150
 	1    0    0    -1  
 $EndComp
@@ -940,6 +961,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 5588 1000 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 5550 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H 450 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 450 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 5550 1150 50  0001 C CNN "1b2-bom-key"
 	1    5550 1150
 	1    0    0    -1  
 $EndComp
@@ -953,6 +975,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 5938 1000 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 5900 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H 450 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 450 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 5900 1150 50  0001 C CNN "1b2-bom-key"
 	1    5900 1150
 	1    0    0    -1  
 $EndComp
@@ -966,6 +989,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 6288 1000 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 6250 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H 100 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 100 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 6250 1150 50  0001 C CNN "1b2-bom-key"
 	1    6250 1150
 	1    0    0    -1  
 $EndComp
@@ -979,6 +1003,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 7738 1000 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 7700 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H 1050 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 1050 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 7700 1150 50  0001 C CNN "1b2-bom-key"
 	1    7700 1150
 	1    0    0    -1  
 $EndComp
@@ -992,6 +1017,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 8088 1000 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 8050 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H 1050 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 1050 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 8050 1150 50  0001 C CNN "1b2-bom-key"
 	1    8050 1150
 	1    0    0    -1  
 $EndComp
@@ -1100,6 +1126,7 @@ F 2 "Package_SO:MSOP-8-1EP_3x3mm_P0.65mm_EP2.54x2.8mm_ThermalVias" H 10750 5500 
 F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/mic5355_6.pdf" H 9450 6100 50  0001 C CNN
 F 4 "Microchip" H -450 0   50  0001 C CNN "Mfg"
 F 5 "MIC5355-S4YMME" H -450 0   50  0001 C CNN "MPN"
+F 6 "ic-msop8-mic5355-s4ymme" H 9450 5750 50  0001 C CNN "1b2-bom-key"
 	1    9450 5750
 	1    0    0    -1  
 $EndComp
@@ -1113,6 +1140,7 @@ F 2 "Package_TO_SOT_SMD:SOT-23-6" H 10100 4150 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/lm3880.pdf" H 9450 4400 50  0001 C CNN
 F 4 "Texas Instruments" H 1750 -1350 50  0001 C CNN "Mfg"
 F 5 "LM3880MFX-1AF/NOPB" H 1750 -1350 50  0001 C CNN "MPN"
+F 6 "ic-sot23-6-lm3880mf-1af" H 9450 4400 50  0001 C CNN "1b2-bom-key"
 	1    9450 4400
 	1    0    0    -1  
 $EndComp
@@ -1214,6 +1242,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 8430 5750 50  0001 C CNN
 F 3 "" H 8500 5750 50  0001 C CNN
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
 F 5 "RC0603FR-10100KL" H -450 0   50  0001 C CNN "MPN"
+F 6 "res-0402-100k" H 8500 5750 50  0001 C CNN "1b2-bom-key"
 	1    8500 5750
 	0    1    1    0   
 $EndComp
@@ -1265,6 +1294,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 8430 5850 50  0001 C CNN
 F 3 "" H 8500 5850 50  0001 C CNN
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
 F 5 "RC0603FR-10100KL" H -450 0   50  0001 C CNN "MPN"
+F 6 "res-0402-100k" H 8500 5850 50  0001 C CNN "1b2-bom-key"
 	1    8500 5850
 	0    1    -1   0   
 $EndComp
@@ -1322,6 +1352,7 @@ F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 9038 5900 50  
 F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 9000 6050 50  0001 C CNN
 F 4 "Taiyo Yuden" H -450 0   50  0001 C CNN "Mfg"
 F 5 "LMK107BJ475KAHT" H -450 0   50  0001 C CNN "MPN"
+F 6 "cap-cer-0603-4u7" H 9000 6050 50  0001 C CNN "1b2-bom-key"
 	1    9000 6050
 	1    0    0    -1  
 $EndComp
@@ -1335,6 +1366,7 @@ F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 9988 5900 50  
 F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 9950 6050 50  0001 C CNN
 F 4 "Taiyo Yuden" H -450 0   50  0001 C CNN "Mfg"
 F 5 "LMK107BJ475KAHT" H -450 0   50  0001 C CNN "MPN"
+F 6 "cap-cer-0603-4u7" H 9950 6050 50  0001 C CNN "1b2-bom-key"
 	1    9950 6050
 	1    0    0    -1  
 $EndComp
@@ -1348,6 +1380,7 @@ F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 10388 5900 50 
 F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 10350 6050 50  0001 C CNN
 F 4 "Taiyo Yuden" H -450 0   50  0001 C CNN "Mfg"
 F 5 "LMK107BJ475KAHT" H -450 0   50  0001 C CNN "MPN"
+F 6 "cap-cer-0603-4u7" H 10350 6050 50  0001 C CNN "1b2-bom-key"
 	1    10350 6050
 	1    0    0    -1  
 $EndComp
@@ -1361,6 +1394,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 2730 3350 50  0001 C CNN
 F 3 "" H 2800 3350 50  0001 C CNN
 F 4 "Yageo" H 650 -250 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-10100KL" H 650 -250 50  0001 C CNN "MPN"
+F 6 "res-0402-100k" H 2800 3350 50  0001 C CNN "1b2-bom-key"
 	1    2800 3350
 	1    0    0    1   
 $EndComp
@@ -1392,6 +1426,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 8680 4600 50  0001 C CNN
 F 3 "" H 8750 4600 50  0001 C CNN
 F 4 "Yageo" H 1750 -1350 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-10100KL" H 1750 -1350 50  0001 C CNN "MPN"
+F 6 "res-0402-100k" H 8750 4600 50  0001 C CNN "1b2-bom-key"
 	1    8750 4600
 	1    0    0    1   
 $EndComp
@@ -1405,6 +1440,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 8680 4200 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 8750 4200 50  0001 C CNN
 F 4 "Yageo" H 1750 -1350 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-10220KL" H 1750 -1350 50  0001 C CNN "MPN"
+F 6 "res-0402-220k" H 8750 4200 50  0001 C CNN "1b2-bom-key"
 	1    8750 4200
 	1    0    0    1   
 $EndComp
@@ -1459,6 +1495,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 7530 1750 50  0001 C CNN
 F 3 "" H 7600 1750 50  0001 C CNN
 F 4 "Yageo" H 3200 -1800 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-10100KL" H 3200 -1800 50  0001 C CNN "MPN"
+F 6 "res-0402-100k" H 7600 1750 50  0001 C CNN "1b2-bom-key"
 	1    7600 1750
 	0    -1   1    0   
 $EndComp
@@ -1564,6 +1601,7 @@ F 2 "LED_SMD:LED_0603_1608Metric_Pad0.82x1.00mm_HandSolder" H 9800 900 50  0001 
 F 3 "https://www.mouser.com/datasheet/2/445/150060GS75000-368921.pdf" H 9800 900 50  0001 C CNN
 F 4 "Wurth Electronics" H -450 0   50  0001 C CNN "Mfg"
 F 5 "150060GS75000" H -450 0   50  0001 C CNN "MPN"
+F 6 "led-0603-grn" H 9800 900 50  0001 C CNN "1b2-bom-key"
 	1    9800 900 
 	-1   0    0    1   
 $EndComp
@@ -1590,6 +1628,7 @@ F 2 "LED_SMD:LED_0603_1608Metric_Pad0.82x1.00mm_HandSolder" H 9800 1100 50  0001
 F 3 "https://www.mouser.com/datasheet/2/445/150060GS75000-368921.pdf" H 9800 1100 50  0001 C CNN
 F 4 "Wurth Electronics" H -450 0   50  0001 C CNN "Mfg"
 F 5 "150060GS75000" H -450 0   50  0001 C CNN "MPN"
+F 6 "led-0603-grn" H 9800 1100 50  0001 C CNN "1b2-bom-key"
 	1    9800 1100
 	-1   0    0    1   
 $EndComp
@@ -1603,6 +1642,7 @@ F 2 "LED_SMD:LED_0603_1608Metric_Pad0.82x1.00mm_HandSolder" H 9800 1300 50  0001
 F 3 "https://www.mouser.com/datasheet/2/445/150060GS75000-368921.pdf" H 9800 1300 50  0001 C CNN
 F 4 "Wurth Electronics" H -450 0   50  0001 C CNN "Mfg"
 F 5 "150060GS75000" H -450 0   50  0001 C CNN "MPN"
+F 6 "led-0603-grn" H 9800 1300 50  0001 C CNN "1b2-bom-key"
 	1    9800 1300
 	-1   0    0    1   
 $EndComp
@@ -1616,6 +1656,7 @@ F 2 "LED_SMD:LED_0603_1608Metric_Pad0.82x1.00mm_HandSolder" H 9800 1500 50  0001
 F 3 "https://www.mouser.com/datasheet/2/445/150060YS75000-368983.pdf" H 9800 1500 50  0001 C CNN
 F 4 "Wurth Electronics" H -450 0   50  0001 C CNN "Mfg"
 F 5 "150060YS75000" H -450 0   50  0001 C CNN "MPN"
+F 6 "led-0603-yel" H 9800 1500 50  0001 C CNN "1b2-bom-key"
 	1    9800 1500
 	-1   0    0    1   
 $EndComp
@@ -1629,6 +1670,7 @@ F 2 "LED_SMD:LED_0603_1608Metric_Pad0.82x1.00mm_HandSolder" H 9800 1700 50  0001
 F 3 "https://www.mouser.com/datasheet/2/445/150060RS75000-368563.pdf" H 9800 1700 50  0001 C CNN
 F 4 "Wurth Electronics" H -450 0   50  0001 C CNN "Mfg"
 F 5 "150060RS75000" H -450 0   50  0001 C CNN "MPN"
+F 6 "led-0603-red" H 9800 1700 50  0001 C CNN "1b2-bom-key"
 	1    9800 1700
 	-1   0    0    1   
 $EndComp
@@ -1674,6 +1716,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 900 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 900 50  0001 C CNN
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
 F 5 "RC0603FR-132K2L" H -450 0   50  0001 C CNN "MPN"
+F 6 "res-0402-20k" H 9450 900 50  0001 C CNN "1b2-bom-key"
 	1    9450 900 
 	0    -1   1    0   
 $EndComp
@@ -1709,6 +1752,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1500 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 1500 50  0001 C CNN
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
 F 5 "RC0603FR-13390RL" H -450 0   50  0001 C CNN "MPN"
+F 6 "res-0402-2k2" H 9450 1500 50  0001 C CNN "1b2-bom-key"
 	1    9450 1500
 	0    -1   1    0   
 $EndComp
@@ -1736,6 +1780,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1700 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 1700 50  0001 C CNN
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
 F 5 "RC0603FR-07604RL" H -450 0   50  0001 C CNN "MPN"
+F 6 "res-0402-10k" H 9450 1700 50  0001 C CNN "1b2-bom-key"
 	1    9450 1700
 	0    -1   1    0   
 $EndComp
@@ -1749,6 +1794,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1100 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 1100 50  0001 C CNN
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
 F 5 "RC0603FR-132K2L" H -450 0   50  0001 C CNN "MPN"
+F 6 "res-0402-20k" H 9450 1100 50  0001 C CNN "1b2-bom-key"
 	1    9450 1100
 	0    -1   1    0   
 $EndComp
@@ -1762,6 +1808,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1300 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 1300 50  0001 C CNN
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
 F 5 "RC0603FR-132K2L" H -450 0   50  0001 C CNN "MPN"
+F 6 "res-0402-20k" H 9450 1300 50  0001 C CNN "1b2-bom-key"
 	1    9450 1300
 	0    -1   1    0   
 $EndComp
@@ -1779,6 +1826,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 4980 4450 50  0001 C CNN
 F 3 "" H 5050 4450 50  0001 C CNN
 F 4 "Yageo" H 650 -850 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-10100KL" H 650 -850 50  0001 C CNN "MPN"
+F 6 "res-0402-100k" H 5050 4450 50  0001 C CNN "1b2-bom-key"
 	1    5050 4450
 	0    -1   -1   0   
 $EndComp
@@ -1841,6 +1889,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 4980 3600 50  0001 C CNN
 F 3 "" H 5050 3600 50  0001 C CNN
 F 4 "Yageo" H 650 -450 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-10100KL" H 650 -450 50  0001 C CNN "MPN"
+F 6 "res-0402-100k" H 5050 3600 50  0001 C CNN "1b2-bom-key"
 	1    5050 3600
 	0    -1   1    0   
 $EndComp
@@ -1856,6 +1905,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 4980 3100 50  0001 C CNN
 F 3 "" H 5050 3100 50  0001 C CNN
 F 4 "Yageo" H 650 -100 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-10100KL" H 650 -100 50  0001 C CNN "MPN"
+F 6 "res-0402-100k" H 5050 3100 50  0001 C CNN "1b2-bom-key"
 	1    5050 3100
 	0    -1   1    0   
 $EndComp
@@ -1950,6 +2000,7 @@ F 2 "Crystals:Crystal_SMD_3225-4pin_3.2x2.5mm" H 2450 2700 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/741/LFXTAL058124Reel-940455.pdf" H 2450 2700 50  0001 C CNN
 F 4 "IQD" H 650 -250 50  0001 C CNN "Mfg"
 F 5 "LFXTAL058124REEL" H 650 -250 50  0001 C CNN "MPN"
+F 6 "xtal-lfxtal-24mhz" H 2450 2700 50  0001 C CNN "1b2-bom-key"
 	1    2450 2700
 	0    -1   -1   0   
 $EndComp
@@ -2046,6 +2097,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 1088 3550 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 1050 3700 50  0001 C CNN
 F 4 "Taiyo Yuden" H -2050 -3300 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -2050 -3300 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 1050 3700 50  0001 C CNN "1b2-bom-key"
 	1    1050 3700
 	1    0    0    -1  
 $EndComp
@@ -2077,6 +2129,7 @@ F 0 "U30" H 7500 1900 50  0000 R CNN
 F 1 "ICE40HX8K-BG121" H 7500 1800 50  0000 R CNN
 F 2 "Package_BGA:BGA-121_9.0x9.0mm_Layout11x11_P0.8mm_Ball0.4mm_Pad0.35mm_NSMD" H 6800 1700 50  0001 C CNN
 F 3 "http://www.latticesemi.com/Products/FPGAandCPLD/iCE40" H 5950 4150 50  0001 C CNN
+F 4 "ic-ice40hx8k-bg121" H 6800 3150 50  0001 C CNN "1b2-bom-key"
 	3    6800 3150
 	-1   0    0    -1  
 $EndComp
@@ -2088,6 +2141,7 @@ F 0 "U30" H 6850 4800 50  0000 L CNN
 F 1 "ICE40HX8K-BG121" H 6850 4700 50  0000 L CNN
 F 2 "Package_BGA:BGA-121_9.0x9.0mm_Layout11x11_P0.8mm_Ball0.4mm_Pad0.35mm_NSMD" H 7050 3950 50  0001 C CNN
 F 3 "http://www.latticesemi.com/Products/FPGAandCPLD/iCE40" H 6200 6400 50  0001 C CNN
+F 4 "ic-ice40hx8k-bg121" H 7050 5400 50  0001 C CNN "1b2-bom-key"
 	5    7050 5400
 	-1   0    0    -1  
 $EndComp
@@ -2150,6 +2204,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 8438 1000 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 8400 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H 1400 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 1400 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 8400 1150 50  0001 C CNN "1b2-bom-key"
 	1    8400 1150
 	1    0    0    -1  
 $EndComp
@@ -2163,6 +2218,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 6438 5100 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 6400 5250 50  0001 C CNN
 F 4 "Taiyo Yuden" H -1200 3700 50  0001 C CNN "Mfg"
 F 5 "LMK107BJ475KAHT" H -1200 3700 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 6400 5250 50  0001 C CNN "1b2-bom-key"
 	1    6400 5250
 	-1   0    0    -1  
 $EndComp
@@ -2176,6 +2232,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 6438 5500 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 6400 5650 50  0001 C CNN
 F 4 "Taiyo Yuden" H -1200 4100 50  0001 C CNN "Mfg"
 F 5 "LMK107BJ475KAHT" H -1200 4100 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 6400 5650 50  0001 C CNN "1b2-bom-key"
 	1    6400 5650
 	-1   0    0    -1  
 $EndComp
@@ -2189,6 +2246,7 @@ F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 6038 5500 50  
 F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 6000 5650 50  0001 C CNN
 F 4 "Taiyo Yuden" H -1600 4100 50  0001 C CNN "Mfg"
 F 5 "LMK107BJ475KAHT" H -1600 4100 50  0001 C CNN "MPN"
+F 6 "cap-cer-0603-4u7" H 6000 5650 50  0001 C CNN "1b2-bom-key"
 	1    6000 5650
 	-1   0    0    -1  
 $EndComp
@@ -2202,6 +2260,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 5430 5100 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 5500 5100 50  0001 C CNN
 F 4 "Yageo" H -2100 3950 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-07100RL" H -2100 3950 50  0001 C CNN "MPN"
+F 6 "res-0402-100" H 5500 5100 50  0001 C CNN "1b2-bom-key"
 	1    5500 5100
 	0    1    1    0   
 $EndComp
@@ -2215,6 +2274,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 5430 5500 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 5500 5500 50  0001 C CNN
 F 4 "Yageo" H -2100 4350 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-07100RL" H -2100 4350 50  0001 C CNN "MPN"
+F 6 "res-0402-100" H 5500 5500 50  0001 C CNN "1b2-bom-key"
 	1    5500 5500
 	0    1    1    0   
 $EndComp
@@ -2252,6 +2312,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 7388 1000 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 7350 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H 700 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 700 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 7350 1150 50  0001 C CNN "1b2-bom-key"
 	1    7350 1150
 	1    0    0    -1  
 $EndComp
@@ -2299,6 +2360,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 6638 1000 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 6600 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H 450 -250 50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H 450 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 6600 1150 50  0001 C CNN "1b2-bom-key"
 	1    6600 1150
 	1    0    0    -1  
 $EndComp
@@ -2477,6 +2539,7 @@ F 2 "Package_TO_SOT_SMD:SOT-23-6" H 1750 3950 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/tpd3s014.pdf" H 1550 3850 50  0001 C CNN
 F 4 "TPD3S014DBVR" H 250 0   50  0001 C CNN "MPN"
 F 5 "Texas Instruments" H 250 0   50  0001 C CNN "Mfg"
+F 6 "ic-sot23-6-tpd3s014" H 1750 3600 50  0001 C CNN "1b2-bom-key"
 	1    1750 3600
 	1    0    0    -1  
 $EndComp
@@ -2511,6 +2574,7 @@ F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 7038 1000 50  
 F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 7000 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H 5550 -250 50  0001 C CNN "Mfg"
 F 5 "LMK107BJ475KAHT" H 5550 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0603-4u7" H 7000 1150 50  0001 C CNN "1b2-bom-key"
 	1    7000 1150
 	1    0    0    -1  
 $EndComp
@@ -2580,6 +2644,7 @@ F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 6038 5100 50  
 F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 6000 5250 50  0001 C CNN
 F 4 "Taiyo Yuden" H -1600 3700 50  0001 C CNN "Mfg"
 F 5 "LMK107BJ475KAHT" H -1600 3700 50  0001 C CNN "MPN"
+F 6 "cap-cer-0603-4u7" H 6000 5250 50  0001 C CNN "1b2-bom-key"
 	1    6000 5250
 	-1   0    0    -1  
 $EndComp
@@ -2615,6 +2680,7 @@ F 0 "U34" H 2450 7250 50  0000 R CNN
 F 1 "ATECC508A" H 3050 7250 50  0000 R CNN
 F 2 "Package_DFN_QFN:WDFN-8-1EP_3x2mm_P0.5mm_EP1.3x1.4mm" H 2600 7000 50  0001 C CNN
 F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/20005927A.pdf" H 2600 7000 50  0001 C CNN
+F 4 "ic-wdfn8-atecc508a" H 2600 7000 50  0001 C CNN "1b2-bom-key"
 	1    2600 7000
 	1    0    0    -1  
 $EndComp
@@ -2662,6 +2728,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 1988 6850 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 1950 7000 50  0001 C CNN
 F 4 "Taiyo Yuden" H -1150 0   50  0001 C CNN "Mfg"
 F 5 "TMK107BJ154KA-T" H -1150 0   50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 1950 7000 50  0001 C CNN "1b2-bom-key"
 	1    1950 7000
 	1    0    0    -1  
 $EndComp
@@ -2703,6 +2770,7 @@ F 0 "FB1" H 1200 4150 50  0000 R CNN
 F 1 "Ferrite_Bead" H 1200 4250 50  0000 R CNN
 F 2 "Inductor_SMD:L_0402_1005Metric" V 1280 4050 50  0001 C CNN
 F 3 "~" H 1350 4050 50  0001 C CNN
+F 4 "ferrite-0402-600" H 1350 4050 50  0001 C CNN "1b2-bom-key"
 	1    1350 4050
 	-1   0    0    1   
 $EndComp
@@ -2948,6 +3016,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 2480 4700 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 2550 4700 50  0001 C CNN
 F 4 "Yageo" H 650 -250 50  0001 C CNN "Mfg"
 F 5 "RC0603FR-132K2L" H 650 -250 50  0001 C CNN "MPN"
+F 6 "res-0402-2k2" H 2550 4700 50  0001 C CNN "1b2-bom-key"
 	1    2550 4700
 	1    0    0    1   
 $EndComp
@@ -3020,12 +3089,6 @@ Wire Wire Line
 	950  2550 1350 2550
 Wire Wire Line
 	950  2500 950  2550
-Wire Bus Line
-	4700 6250 7850 6250
-Wire Bus Line
-	7850 2550 7850 6250
-Wire Bus Line
-	4700 2150 4700 6250
 $Comp
 L Connector:TestPoint TP17
 U 1 1 5CC2ABF8
@@ -3037,4 +3100,10 @@ F 3 "~" H 1550 2550 50  0001 C CNN
 	1    1350 2550
 	0    1    1    0   
 $EndComp
+Wire Bus Line
+	4700 6250 7850 6250
+Wire Bus Line
+	7850 2550 7850 6250
+Wire Bus Line
+	4700 2150 4700 6250
 $EndSCHEMATC
