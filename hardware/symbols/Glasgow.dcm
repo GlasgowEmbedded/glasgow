@@ -6,7 +6,7 @@ K I2C Cryprography Authentication
 F http://ww1.microchip.com/downloads/en/DeviceDoc/20005927A.pdf
 $ENDCMP
 #
-$CMP MG2048
+$CMP MG2040
 D Low Capacitance ESD Protection for High Speed Video Interface
 K ESD Protection diodes transient suppressor
 F https://www.onsemi.com/pub/Collateral/MG2040-D.PDF

@@ -110,9 +110,9 @@ P 2200 2450
 F 0 "C11" V 2050 2450 50  0000 C CNN
 F 1 "18p" V 2350 2450 50  0000 C CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 2238 2300 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 2200 2450 50  0001 C CNN
+F 3 "https://www.mouser.hk/datasheet/2/447/UPY-GP_NP0_16V-to-50V_16-1109089.pdf" H 2200 2450 50  0001 C CNN
 F 4 "Yageo" H 650 -250 50  0001 C CNN "Mfg"
-F 5 "CC0603JRNPO8BN180" H 650 -250 50  0001 C CNN "MPN"
+F 5 "CC0402JRNPO8BN180" H 650 -250 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-18p" H 2200 2450 50  0001 C CNN "1b2-bom-key"
 	1    2200 2450
 	0    1    1    0   
@@ -207,7 +207,7 @@ F 1 "1M" V 1100 5450 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 1030 5450 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 1100 5450 50  0001 C CNN
 F 4 "Yageo" H -50 400 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-131ML" H -50 400 50  0001 C CNN "MPN"
+F 5 "RC0402FR-131ML" H -50 400 50  0001 C CNN "MPN"
 F 6 "res-0402-1m" H 1100 5450 50  0001 C CNN "1b2-bom-key"
 	1    1100 5450
 	1    0    0    -1  
@@ -251,9 +251,9 @@ P 1400 1150
 F 0 "C2" H 1515 1196 50  0000 L CNN
 F 1 "u1" H 1515 1105 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 1438 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 1400 1150 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 1400 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H -450 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H -450 -250 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H -450 -250 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 1400 1150 50  0001 C CNN "1b2-bom-key"
 	1    1400 1150
 	1    0    0    -1  
@@ -337,9 +337,9 @@ P 1700 1150
 F 0 "C3" H 1815 1196 50  0000 L CNN
 F 1 "u1" H 1815 1105 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 1738 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 1700 1150 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 1700 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H -450 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H -450 -250 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H -450 -250 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 1700 1150 50  0001 C CNN "1b2-bom-key"
 	1    1700 1150
 	1    0    0    -1  
@@ -351,9 +351,9 @@ P 2000 1150
 F 0 "C4" H 2115 1196 50  0000 L CNN
 F 1 "u1" H 2115 1105 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 2038 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 2000 1150 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 2000 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H -450 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H -450 -250 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H -450 -250 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 2000 1150 50  0001 C CNN "1b2-bom-key"
 	1    2000 1150
 	1    0    0    -1  
@@ -365,9 +365,9 @@ P 2300 1150
 F 0 "C5" H 2415 1196 50  0000 L CNN
 F 1 "u1" H 2415 1105 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 2338 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 2300 1150 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 2300 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H -450 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H -450 -250 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H -450 -250 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 2300 1150 50  0001 C CNN "1b2-bom-key"
 	1    2300 1150
 	1    0    0    -1  
@@ -379,9 +379,9 @@ P 2600 1150
 F 0 "C6" H 2715 1196 50  0000 L CNN
 F 1 "u1" H 2715 1105 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 2638 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 2600 1150 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 2600 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H -450 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H -450 -250 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H -450 -250 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 2600 1150 50  0001 C CNN "1b2-bom-key"
 	1    2600 1150
 	1    0    0    -1  
@@ -393,9 +393,9 @@ P 2900 1150
 F 0 "C7" H 3015 1196 50  0000 L CNN
 F 1 "u1" H 3015 1105 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 2938 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 2900 1150 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 2900 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H -450 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H -450 -250 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H -450 -250 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 2900 1150 50  0001 C CNN "1b2-bom-key"
 	1    2900 1150
 	1    0    0    -1  
@@ -407,9 +407,9 @@ P 3200 1150
 F 0 "C9" H 3315 1196 50  0000 L CNN
 F 1 "u1" H 3315 1105 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 3238 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 3200 1150 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 3200 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H -450 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H -450 -250 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H -450 -250 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 3200 1150 50  0001 C CNN "1b2-bom-key"
 	1    3200 1150
 	1    0    0    -1  
@@ -421,9 +421,9 @@ P 750 5450
 F 0 "C13" H 865 5496 50  0000 L CNN
 F 1 "u1" H 865 5405 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 788 5300 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 750 5450 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 750 5450 50  0001 C CNN
 F 4 "Taiyo Yuden" H -50 400 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H -50 400 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H -50 400 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 750 5450 50  0001 C CNN "1b2-bom-key"
 	1    750  5450
 	1    0    0    -1  
@@ -461,9 +461,9 @@ P 2200 2950
 F 0 "C12" V 2050 2950 50  0000 C CNN
 F 1 "18p" V 2350 2950 50  0000 C CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 2238 2800 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 2200 2950 50  0001 C CNN
+F 3 "https://www.mouser.hk/datasheet/2/447/UPY-GP_NP0_16V-to-50V_16-1109089.pdf" H 2200 2950 50  0001 C CNN
 F 4 "Yageo" H 650 -250 50  0001 C CNN "Mfg"
-F 5 "CC0603JRNPO8BN180" H 650 -250 50  0001 C CNN "MPN"
+F 5 "CC0402JRNPO8BN180" H 650 -250 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-18p" H 2200 2950 50  0001 C CNN "1b2-bom-key"
 	1    2200 2950
 	0    1    1    0   
@@ -481,7 +481,7 @@ F 1 "2k2" V 2650 4700 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 2580 4700 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 2650 4700 50  0001 C CNN
 F 4 "Yageo" H 650 -250 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-132K2L" H 650 -250 50  0001 C CNN "MPN"
+F 5 "RC0402FR-132K2L" H 650 -250 50  0001 C CNN "MPN"
 F 6 "res-0402-2k2" H 2650 4700 50  0001 C CNN "1b2-bom-key"
 	1    2650 4700
 	-1   0    0    1   
@@ -621,9 +621,9 @@ P 3450 7000
 F 0 "C15" H 3565 7046 50  0000 L CNN
 F 1 "u1" H 3565 6955 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 3488 6850 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 3450 7000 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 3450 7000 50  0001 C CNN
 F 4 "Taiyo Yuden" H 350 0   50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H 350 0   50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H 350 0   50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 3450 7000 50  0001 C CNN "1b2-bom-key"
 	1    3450 7000
 	1    0    0    -1  
@@ -657,9 +657,9 @@ P 4950 7000
 F 0 "C17" H 5065 7046 50  0000 L CNN
 F 1 "u1" H 5065 6955 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 4988 6850 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 4950 7000 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 4950 7000 50  0001 C CNN
 F 4 "Taiyo Yuden" H -200 0   50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H -200 0   50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H -200 0   50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 4950 7000 50  0001 C CNN "1b2-bom-key"
 	1    4950 7000
 	1    0    0    -1  
@@ -773,9 +773,9 @@ P 3500 1150
 F 0 "C10" H 3615 1196 50  0000 L CNN
 F 1 "u1" H 3615 1105 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 3538 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 3500 1150 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 3500 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H -450 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H -450 -250 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H -450 -250 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 3500 1150 50  0001 C CNN "1b2-bom-key"
 	1    3500 1150
 	1    0    0    -1  
@@ -958,9 +958,9 @@ P 5550 1150
 F 0 "C20" H 5665 1196 50  0000 L CNN
 F 1 "u1" H 5665 1105 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 5588 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 5550 1150 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 5550 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H 450 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H 450 -250 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H 450 -250 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 5550 1150 50  0001 C CNN "1b2-bom-key"
 	1    5550 1150
 	1    0    0    -1  
@@ -972,9 +972,9 @@ P 5900 1150
 F 0 "C21" H 6015 1196 50  0000 L CNN
 F 1 "u1" H 6015 1105 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 5938 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 5900 1150 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 5900 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H 450 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H 450 -250 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H 450 -250 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 5900 1150 50  0001 C CNN "1b2-bom-key"
 	1    5900 1150
 	1    0    0    -1  
@@ -986,9 +986,9 @@ P 6250 1150
 F 0 "C23" H 6365 1196 50  0000 L CNN
 F 1 "u1" H 6365 1105 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 6288 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 6250 1150 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 6250 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H 100 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H 100 -250 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H 100 -250 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 6250 1150 50  0001 C CNN "1b2-bom-key"
 	1    6250 1150
 	1    0    0    -1  
@@ -1000,9 +1000,9 @@ P 7700 1150
 F 0 "C24" H 7815 1196 50  0000 L CNN
 F 1 "u1" H 7815 1105 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 7738 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 7700 1150 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 7700 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H 1050 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H 1050 -250 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H 1050 -250 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 7700 1150 50  0001 C CNN "1b2-bom-key"
 	1    7700 1150
 	1    0    0    -1  
@@ -1014,9 +1014,9 @@ P 8050 1150
 F 0 "C25" H 8165 1196 50  0000 L CNN
 F 1 "u1" H 8165 1105 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 8088 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 8050 1150 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 8050 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H 1050 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H 1050 -250 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H 1050 -250 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 8050 1150 50  0001 C CNN "1b2-bom-key"
 	1    8050 1150
 	1    0    0    -1  
@@ -1239,9 +1239,9 @@ P 8500 5750
 F 0 "R7" V 8400 5800 50  0000 R CNN
 F 1 "100k" V 8500 5850 50  0000 R CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 8430 5750 50  0001 C CNN
-F 3 "" H 8500 5750 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 8500 5750 50  0001 C CNN
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
-F 5 "RC0603FR-10100KL" H -450 0   50  0001 C CNN "MPN"
+F 5 "RC0402FR-13100KL" H -450 0   50  0001 C CNN "MPN"
 F 6 "res-0402-100k" H 8500 5750 50  0001 C CNN "1b2-bom-key"
 	1    8500 5750
 	0    1    1    0   
@@ -1291,9 +1291,9 @@ P 8500 5850
 F 0 "R8" V 8400 5900 50  0000 R CNN
 F 1 "100k" V 8500 5950 50  0000 R CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 8430 5850 50  0001 C CNN
-F 3 "" H 8500 5850 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 8500 5850 50  0001 C CNN
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
-F 5 "RC0603FR-10100KL" H -450 0   50  0001 C CNN "MPN"
+F 5 "RC0402FR-13100KL" H -450 0   50  0001 C CNN "MPN"
 F 6 "res-0402-100k" H 8500 5850 50  0001 C CNN "1b2-bom-key"
 	1    8500 5850
 	0    1    -1   0   
@@ -1391,9 +1391,9 @@ P 2800 3350
 F 0 "R4" H 2730 3304 50  0000 R CNN
 F 1 "100k" V 2800 3350 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 2730 3350 50  0001 C CNN
-F 3 "" H 2800 3350 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 2800 3350 50  0001 C CNN
 F 4 "Yageo" H 650 -250 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-10100KL" H 650 -250 50  0001 C CNN "MPN"
+F 5 "RC0402FR-13100KL" H 650 -250 50  0001 C CNN "MPN"
 F 6 "res-0402-100k" H 2800 3350 50  0001 C CNN "1b2-bom-key"
 	1    2800 3350
 	1    0    0    1   
@@ -1423,9 +1423,9 @@ P 8750 4600
 F 0 "R6" H 8700 4600 50  0000 R CNN
 F 1 "100k" V 8750 4600 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 8680 4600 50  0001 C CNN
-F 3 "" H 8750 4600 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 8750 4600 50  0001 C CNN
 F 4 "Yageo" H 1750 -1350 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-10100KL" H 1750 -1350 50  0001 C CNN "MPN"
+F 5 "RC0402FR-13100KL" H 1750 -1350 50  0001 C CNN "MPN"
 F 6 "res-0402-100k" H 8750 4600 50  0001 C CNN "1b2-bom-key"
 	1    8750 4600
 	1    0    0    1   
@@ -1439,7 +1439,7 @@ F 1 "220k" V 8750 4200 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 8680 4200 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 8750 4200 50  0001 C CNN
 F 4 "Yageo" H 1750 -1350 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-10220KL" H 1750 -1350 50  0001 C CNN "MPN"
+F 5 "RC0402FR-13220KL" H 1750 -1350 50  0001 C CNN "MPN"
 F 6 "res-0402-220k" H 8750 4200 50  0001 C CNN "1b2-bom-key"
 	1    8750 4200
 	1    0    0    1   
@@ -1492,9 +1492,9 @@ P 7600 1750
 F 0 "R9" V 7500 1750 50  0000 C CNN
 F 1 "100k" V 7600 1750 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 7530 1750 50  0001 C CNN
-F 3 "" H 7600 1750 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 7600 1750 50  0001 C CNN
 F 4 "Yageo" H 3200 -1800 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-10100KL" H 3200 -1800 50  0001 C CNN "MPN"
+F 5 "RC0402FR-13100KL" H 3200 -1800 50  0001 C CNN "MPN"
 F 6 "res-0402-100k" H 7600 1750 50  0001 C CNN "1b2-bom-key"
 	1    7600 1750
 	0    -1   1    0   
@@ -1715,7 +1715,7 @@ F 1 "20k" V 9450 900 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 900 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 900 50  0001 C CNN
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
-F 5 "RC0603FR-132K2L" H -450 0   50  0001 C CNN "MPN"
+F 5 "RC0402FR-1320KL" H -450 0   50  0001 C CNN "MPN"
 F 6 "res-0402-20k" H 9450 900 50  0001 C CNN "1b2-bom-key"
 	1    9450 900 
 	0    -1   1    0   
@@ -1751,7 +1751,7 @@ F 1 "2k2" V 9450 1500 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1500 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 1500 50  0001 C CNN
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
-F 5 "RC0603FR-13390RL" H -450 0   50  0001 C CNN "MPN"
+F 5 "RC0402FR-132k2L" H -450 0   50  0001 C CNN "MPN"
 F 6 "res-0402-2k2" H 9450 1500 50  0001 C CNN "1b2-bom-key"
 	1    9450 1500
 	0    -1   1    0   
@@ -1779,7 +1779,7 @@ F 1 "10k" V 9450 1700 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1700 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 1700 50  0001 C CNN
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
-F 5 "RC0603FR-07604RL" H -450 0   50  0001 C CNN "MPN"
+F 5 "RC0402FR-1310KL" H -450 0   50  0001 C CNN "MPN"
 F 6 "res-0402-10k" H 9450 1700 50  0001 C CNN "1b2-bom-key"
 	1    9450 1700
 	0    -1   1    0   
@@ -1793,7 +1793,7 @@ F 1 "20k" V 9450 1100 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1100 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 1100 50  0001 C CNN
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
-F 5 "RC0603FR-132K2L" H -450 0   50  0001 C CNN "MPN"
+F 5 "RC0402FR-1320KL" H -450 0   50  0001 C CNN "MPN"
 F 6 "res-0402-20k" H 9450 1100 50  0001 C CNN "1b2-bom-key"
 	1    9450 1100
 	0    -1   1    0   
@@ -1807,7 +1807,7 @@ F 1 "20k" V 9450 1300 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1300 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 1300 50  0001 C CNN
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
-F 5 "RC0603FR-132K2L" H -450 0   50  0001 C CNN "MPN"
+F 5 "RC0402FR-1320KL" H -450 0   50  0001 C CNN "MPN"
 F 6 "res-0402-20k" H 9450 1300 50  0001 C CNN "1b2-bom-key"
 	1    9450 1300
 	0    -1   1    0   
@@ -1823,9 +1823,9 @@ P 5050 4450
 F 0 "R17" V 4950 4450 50  0000 C CNN
 F 1 "100k" V 5050 4450 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 4980 4450 50  0001 C CNN
-F 3 "" H 5050 4450 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 5050 4450 50  0001 C CNN
 F 4 "Yageo" H 650 -850 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-10100KL" H 650 -850 50  0001 C CNN "MPN"
+F 5 "RC0402FR-13100KL" H 650 -850 50  0001 C CNN "MPN"
 F 6 "res-0402-100k" H 5050 4450 50  0001 C CNN "1b2-bom-key"
 	1    5050 4450
 	0    -1   -1   0   
@@ -1886,9 +1886,9 @@ P 5050 3600
 F 0 "R19" V 4950 3600 50  0000 C CNN
 F 1 "100k" V 5050 3700 50  0000 R CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 4980 3600 50  0001 C CNN
-F 3 "" H 5050 3600 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 5050 3600 50  0001 C CNN
 F 4 "Yageo" H 650 -450 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-10100KL" H 650 -450 50  0001 C CNN "MPN"
+F 5 "RC0402FR-13100KL" H 650 -450 50  0001 C CNN "MPN"
 F 6 "res-0402-100k" H 5050 3600 50  0001 C CNN "1b2-bom-key"
 	1    5050 3600
 	0    -1   1    0   
@@ -1902,9 +1902,9 @@ P 5050 3100
 F 0 "R18" V 4950 3100 50  0000 C CNN
 F 1 "100k" V 5050 3200 50  0000 R CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 4980 3100 50  0001 C CNN
-F 3 "" H 5050 3100 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 5050 3100 50  0001 C CNN
 F 4 "Yageo" H 650 -100 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-10100KL" H 650 -100 50  0001 C CNN "MPN"
+F 5 "RC0402FR-13100KL" H 650 -100 50  0001 C CNN "MPN"
 F 6 "res-0402-100k" H 5050 3100 50  0001 C CNN "1b2-bom-key"
 	1    5050 3100
 	0    -1   1    0   
@@ -2094,9 +2094,9 @@ P 1050 3700
 F 0 "C8" H 1165 3746 50  0000 L CNN
 F 1 "u1" H 1165 3655 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 1088 3550 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 1050 3700 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 1050 3700 50  0001 C CNN
 F 4 "Taiyo Yuden" H -2050 -3300 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H -2050 -3300 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H -2050 -3300 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 1050 3700 50  0001 C CNN "1b2-bom-key"
 	1    1050 3700
 	1    0    0    -1  
@@ -2201,9 +2201,9 @@ P 8400 1150
 F 0 "C77" H 8515 1196 50  0000 L CNN
 F 1 "u1" H 8515 1105 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 8438 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 8400 1150 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 8400 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H 1400 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H 1400 -250 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H 1400 -250 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 8400 1150 50  0001 C CNN "1b2-bom-key"
 	1    8400 1150
 	1    0    0    -1  
@@ -2215,9 +2215,9 @@ P 6400 5250
 F 0 "C78" H 6515 5296 50  0000 L CNN
 F 1 "u1" H 6515 5205 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 6438 5100 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 6400 5250 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 6400 5250 50  0001 C CNN
 F 4 "Taiyo Yuden" H -1200 3700 50  0001 C CNN "Mfg"
-F 5 "LMK107BJ475KAHT" H -1200 3700 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H -1200 3700 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 6400 5250 50  0001 C CNN "1b2-bom-key"
 	1    6400 5250
 	-1   0    0    -1  
@@ -2229,9 +2229,9 @@ P 6400 5650
 F 0 "C79" H 6515 5696 50  0000 L CNN
 F 1 "u1" H 6515 5605 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 6438 5500 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 6400 5650 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 6400 5650 50  0001 C CNN
 F 4 "Taiyo Yuden" H -1200 4100 50  0001 C CNN "Mfg"
-F 5 "LMK107BJ475KAHT" H -1200 4100 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H -1200 4100 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 6400 5650 50  0001 C CNN "1b2-bom-key"
 	1    6400 5650
 	-1   0    0    -1  
@@ -2259,7 +2259,7 @@ F 1 "100" V 5500 5100 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 5430 5100 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 5500 5100 50  0001 C CNN
 F 4 "Yageo" H -2100 3950 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-07100RL" H -2100 3950 50  0001 C CNN "MPN"
+F 5 "RC0402FR-13100RL" H -2100 3950 50  0001 C CNN "MPN"
 F 6 "res-0402-100" H 5500 5100 50  0001 C CNN "1b2-bom-key"
 	1    5500 5100
 	0    1    1    0   
@@ -2273,7 +2273,7 @@ F 1 "100" V 5500 5500 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 5430 5500 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 5500 5500 50  0001 C CNN
 F 4 "Yageo" H -2100 4350 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-07100RL" H -2100 4350 50  0001 C CNN "MPN"
+F 5 "RC0402FR-13100RL" H -2100 4350 50  0001 C CNN "MPN"
 F 6 "res-0402-100" H 5500 5500 50  0001 C CNN "1b2-bom-key"
 	1    5500 5500
 	0    1    1    0   
@@ -2309,9 +2309,9 @@ P 7350 1150
 F 0 "C18" H 7465 1196 50  0000 L CNN
 F 1 "u1" H 7465 1105 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 7388 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 7350 1150 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 7350 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H 700 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H 700 -250 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H 700 -250 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 7350 1150 50  0001 C CNN "1b2-bom-key"
 	1    7350 1150
 	1    0    0    -1  
@@ -2357,9 +2357,9 @@ P 6600 1150
 F 0 "C81" H 6715 1196 50  0000 L CNN
 F 1 "u1" H 6715 1105 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 6638 1000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 6600 1150 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 6600 1150 50  0001 C CNN
 F 4 "Taiyo Yuden" H 450 -250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H 450 -250 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H 450 -250 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 6600 1150 50  0001 C CNN "1b2-bom-key"
 	1    6600 1150
 	1    0    0    -1  
@@ -2659,7 +2659,7 @@ F 1 "DNP" H 5370 6755 50  0000 L CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 5230 6800 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 5300 6800 50  0001 C CNN
 F 4 "Yageo" H 4150 1750 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-131ML" H 4150 1750 50  0001 C CNN "MPN"
+F 5 "RC0402FR-131ML" H 4150 1750 50  0001 C CNN "MPN"
 	1    5300 6800
 	-1   0    0    1   
 $EndComp
@@ -2680,7 +2680,9 @@ F 0 "U34" H 2450 7250 50  0000 R CNN
 F 1 "ATECC508A" H 3050 7250 50  0000 R CNN
 F 2 "Package_DFN_QFN:WDFN-8-1EP_3x2mm_P0.5mm_EP1.3x1.4mm" H 2600 7000 50  0001 C CNN
 F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/20005927A.pdf" H 2600 7000 50  0001 C CNN
-F 4 "ic-wdfn8-atecc508a" H 2600 7000 50  0001 C CNN "1b2-bom-key"
+F 4 "Microchip" H 2600 7000 50  0001 C CNN "Mfg"
+F 5 "ATECC508A" H 2600 7000 50  0001 C CNN "MPN"
+F 6 "ic-wdfn8-atecc508a" H 2600 7000 50  0001 C CNN "1b2-bom-key"
 	1    2600 7000
 	1    0    0    -1  
 $EndComp
@@ -2725,9 +2727,9 @@ P 1950 7000
 F 0 "C16" H 2065 7046 50  0000 L CNN
 F 1 "u1" H 2065 6955 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 1988 6850 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 1950 7000 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 1950 7000 50  0001 C CNN
 F 4 "Taiyo Yuden" H -1150 0   50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H -1150 0   50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H -1150 0   50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 1950 7000 50  0001 C CNN "1b2-bom-key"
 	1    1950 7000
 	1    0    0    -1  
@@ -2769,8 +2771,10 @@ P 1350 4050
 F 0 "FB1" H 1200 4150 50  0000 R CNN
 F 1 "Ferrite_Bead" H 1200 4250 50  0000 R CNN
 F 2 "Inductor_SMD:L_0402_1005Metric" V 1280 4050 50  0001 C CNN
-F 3 "~" H 1350 4050 50  0001 C CNN
-F 4 "ferrite-0402-600" H 1350 4050 50  0001 C CNN "1b2-bom-key"
+F 3 "https://www.mouser.com/datasheet/2/281/c51e-794816.pdf" H 1350 4050 50  0001 C CNN
+F 4 "Murata Electronics" H 1350 4050 50  0001 C CNN "Mfg"
+F 5 "BLM15PX601SZ1D" H 1350 4050 50  0001 C CNN "MPN"
+F 6 "ferrite-0402-600" H 1350 4050 50  0001 C CNN "1b2-bom-key"
 	1    1350 4050
 	-1   0    0    1   
 $EndComp
@@ -3015,7 +3019,7 @@ F 1 "2k2" V 2550 4700 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 2480 4700 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 2550 4700 50  0001 C CNN
 F 4 "Yageo" H 650 -250 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-132K2L" H 650 -250 50  0001 C CNN "MPN"
+F 5 "RC0402FR-132K2L" H 650 -250 50  0001 C CNN "MPN"
 F 6 "res-0402-2k2" H 2550 4700 50  0001 C CNN "1b2-bom-key"
 	1    2550 4700
 	1    0    0    1   

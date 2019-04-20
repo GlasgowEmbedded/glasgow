@@ -482,9 +482,9 @@ AR Path="/5C7B59B0/5C9E3491" Ref="D6"  Part="1"
 F 0 "D6" H 9500 1050 50  0000 C CNN
 F 1 "BLU" H 9350 1050 50  0000 C CNN
 F 2 "LED_SMD:LED_0603_1608Metric_Pad0.82x1.00mm_HandSolder" H 9800 1050 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/445/150060GS75000-368921.pdf" H 9800 1050 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/445/150060BS75000-368917.pdf" H 9800 1050 50  0001 C CNN
 F 4 "Wurth Electronics" H -450 150 50  0001 C CNN "Mfg"
-F 5 "150060GS75000" H -450 150 50  0001 C CNN "MPN"
+F 5 "150060BS75000" H -450 150 50  0001 C CNN "MPN"
 F 6 "led-0603-blu" H 9800 1050 50  0001 C CNN "1b2-bom-key"
 	1    9800 1050
 	-1   0    0    1   
@@ -500,9 +500,9 @@ AR Path="/5C7B59B0/5C9E349B" Ref="D7"  Part="1"
 F 0 "D7" H 9500 1250 50  0000 C CNN
 F 1 "PNK" H 9350 1250 50  0000 C CNN
 F 2 "LED_SMD:LED_0603_1608Metric_Pad0.82x1.00mm_HandSolder" H 9800 1250 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/445/150060GS75000-368921.pdf" H 9800 1250 50  0001 C CNN
-F 4 "Wurth Electronics" H -450 150 50  0001 C CNN "Mfg"
-F 5 "150060GS75000" H -450 150 50  0001 C CNN "MPN"
+F 3 "https://lcsc.com/product-detail/Light-Emitting-Diodes-LED_OptoSupply-OSK40603C1E_C268294.html" H 9800 1250 50  0001 C CNN
+F 4 "Optosupply" H -450 150 50  0001 C CNN "Mfg"
+F 5 "OSK40603C1E" H -450 150 50  0001 C CNN "MPN"
 F 6 "led-0603-pnk" H 9800 1250 50  0001 C CNN "1b2-bom-key"
 	1    9800 1250
 	-1   0    0    1   
@@ -516,9 +516,9 @@ AR Path="/5C7B59B0/5C9E34A4" Ref="D8"  Part="1"
 F 0 "D8" H 9500 1450 50  0000 C CNN
 F 1 "WHT" H 9350 1450 50  0000 C CNN
 F 2 "LED_SMD:LED_0603_1608Metric_Pad0.82x1.00mm_HandSolder" H 9800 1450 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/445/150060GS75000-368921.pdf" H 9800 1450 50  0001 C CNN
-F 4 "Wurth Electronics" H -450 150 50  0001 C CNN "Mfg"
-F 5 "150060GS75000" H -450 150 50  0001 C CNN "MPN"
+F 3 "https://www.mouser.com/datasheet/2/348/sml-e1-e-1139169.pdf" H 9800 1450 50  0001 C CNN
+F 4 "ROHM Semiconductor" H -450 150 50  0001 C CNN "Mfg"
+F 5 "SMLEN3WBC8W1" H -450 150 50  0001 C CNN "MPN"
 F 6 "led-0603-wht" H 9800 1450 50  0001 C CNN "1b2-bom-key"
 	1    9800 1450
 	-1   0    0    1   
@@ -532,9 +532,9 @@ AR Path="/5C7B59B0/5C9E34AD" Ref="D9"  Part="1"
 F 0 "D9" H 9500 1650 50  0000 C CNN
 F 1 "PNK" H 9350 1650 50  0000 C CNN
 F 2 "LED_SMD:LED_0603_1608Metric_Pad0.82x1.00mm_HandSolder" H 9800 1650 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/445/150060YS75000-368983.pdf" H 9800 1650 50  0001 C CNN
-F 4 "Wurth Electronics" H -450 150 50  0001 C CNN "Mfg"
-F 5 "150060YS75000" H -450 150 50  0001 C CNN "MPN"
+F 3 "https://lcsc.com/product-detail/Light-Emitting-Diodes-LED_OptoSupply-OSK40603C1E_C268294.html" H 9800 1650 50  0001 C CNN
+F 4 "Optosupply" H -450 150 50  0001 C CNN "Mfg"
+F 5 "OSK40603C1E" H -450 150 50  0001 C CNN "MPN"
 F 6 "led-0603-pnk" H 9800 1650 50  0001 C CNN "1b2-bom-key"
 	1    9800 1650
 	-1   0    0    1   
@@ -592,7 +592,7 @@ F 1 "4k7" V 9450 1050 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1050 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 1050 50  0001 C CNN
 F 4 "Yageo" H -450 150 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-132K2L" H -450 150 50  0001 C CNN "MPN"
+F 5 "RC0402FR-134K7L" H -450 150 50  0001 C CNN "MPN"
 F 6 "res-0402-4k7" H 9450 1050 50  0001 C CNN "1b2-bom-key"
 	1    9450 1050
 	0    -1   1    0   
@@ -610,7 +610,7 @@ F 1 "10k" V 9450 1650 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1650 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 1650 50  0001 C CNN
 F 4 "Yageo" H -450 150 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-13390RL" H -450 150 50  0001 C CNN "MPN"
+F 5 "RC0402FR-1310KL" H -450 150 50  0001 C CNN "MPN"
 F 6 "res-0402-10k" H 9450 1650 50  0001 C CNN "1b2-bom-key"
 	1    9450 1650
 	0    -1   1    0   
@@ -634,7 +634,7 @@ F 1 "4k7" V 9450 1850 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1850 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 1850 50  0001 C CNN
 F 4 "Yageo" H -450 150 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-07604RL" H -450 150 50  0001 C CNN "MPN"
+F 5 "RC0402FR-134K7L" H -450 150 50  0001 C CNN "MPN"
 F 6 "res-0402-4k7" H 9450 1850 50  0001 C CNN "1b2-bom-key"
 	1    9450 1850
 	0    -1   1    0   
@@ -650,7 +650,7 @@ F 1 "10k" V 9450 1250 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1250 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 1250 50  0001 C CNN
 F 4 "Yageo" H -450 150 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-132K2L" H -450 150 50  0001 C CNN "MPN"
+F 5 "RC0402FR-1310KL" H -450 150 50  0001 C CNN "MPN"
 F 6 "res-0402-10k" H 9450 1250 50  0001 C CNN "1b2-bom-key"
 	1    9450 1250
 	0    -1   1    0   
@@ -666,7 +666,7 @@ F 1 "6k8" V 9450 1450 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1450 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_9-1314892.pdf" H 9450 1450 50  0001 C CNN
 F 4 "Yageo" H -450 150 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-132K2L" H -450 150 50  0001 C CNN "MPN"
+F 5 "RC0402FR-136K8L" H -450 150 50  0001 C CNN "MPN"
 F 6 "res-0402-6k8" H 9450 1450 50  0001 C CNN "1b2-bom-key"
 	1    9450 1450
 	0    -1   1    0   
@@ -1117,7 +1117,7 @@ F 1 "u1" H 8965 2605 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 8888 2500 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 8850 2650 50  0001 C CNN
 F 4 "Taiyo Yuden" H 2200 1250 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H 2200 1250 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H 2200 1250 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 8850 2650 50  0001 C CNN "1b2-bom-key"
 	1    8850 2650
 	1    0    0    -1  
@@ -1406,9 +1406,9 @@ AR Path="/5C7B59B0/5C9610A4" Ref="R10"  Part="1"
 F 0 "R10" H 1900 2750 50  0000 R CNN
 F 1 "1k" V 1950 2800 50  0000 R CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 1880 2750 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-AC_51_RoHS_L_6-1152827.pdf" H 1950 2750 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 1950 2750 50  0001 C CNN
 F 4 "Yageo" H -8400 200 50  0001 C CNN "Mfg"
-F 5 "AC0603FR-07130RL" H -8400 200 50  0001 C CNN "MPN"
+F 5 "RC0402FR-131KL" H -8400 200 50  0001 C CNN "MPN"
 F 6 "res-0402-1k" H 1950 2750 50  0001 C CNN "1b2-bom-key"
 	1    1950 2750
 	-1   0    0    -1  
@@ -1479,7 +1479,9 @@ F 0 "U32" H 2850 2850 50  0000 L CNN
 F 1 "SN74LVC1T45DRL" H 2850 2750 50  0000 L CNN
 F 2 "Glasgow:SOT-563" H 2650 1950 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 1750 1750 50  0001 C CNN
-F 4 "ic-sot563-sn74lvc1t45drl" H 2650 2400 50  0001 C CNN "1b2-bom-key"
+F 4 "Texas Instruments" H 2650 2400 50  0001 C CNN "Mfg"
+F 5 "SN74LVC1T45DRL" H 2650 2400 50  0001 C CNN "MPN"
+F 6 "ic-sot563-sn74lvc1t45drl" H 2650 2400 50  0001 C CNN "1b2-bom-key"
 	1    2650 2400
 	1    0    0    -1  
 $EndComp
@@ -1554,7 +1556,7 @@ F 1 "u1" H 2215 1855 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 2138 1750 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/396/mlcc02_e-1307760.pdf" H 2100 1900 50  0001 C CNN
 F 4 "Taiyo Yuden" H -4550 500 50  0001 C CNN "Mfg"
-F 5 "TMK107BJ154KA-T" H -4550 500 50  0001 C CNN "MPN"
+F 5 "TMK105BJ104KV-F" H -4550 500 50  0001 C CNN "MPN"
 F 6 "cap-cer-0402-100n" H 2100 1900 50  0001 C CNN "1b2-bom-key"
 	1    2100 1900
 	1    0    0    -1  
@@ -1598,9 +1600,9 @@ AR Path="/5C7B59B0/5CBF4EC8" Ref="R38"  Part="1"
 F 0 "R38" V 3150 2400 50  0000 C CNN
 F 1 "47" V 3250 2450 50  0000 R CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 3180 2400 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-AC_51_RoHS_L_6-1152827.pdf" H 3250 2400 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 3250 2400 50  0001 C CNN
 F 4 "Yageo" H -7100 -150 50  0001 C CNN "Mfg"
-F 5 "AC0603FR-07130RL" H -7100 -150 50  0001 C CNN "MPN"
+F 5 "RC0402FR-1347RL" H -7100 -150 50  0001 C CNN "MPN"
 F 6 "res-0402-47" H 3250 2400 50  0001 C CNN "1b2-bom-key"
 	1    3250 2400
 	0    1    -1   0   
@@ -1616,9 +1618,9 @@ AR Path="/5C7B59B0/5CBF658E" Ref="R39"  Part="1"
 F 0 "R39" V 2550 3550 50  0000 C CNN
 F 1 "47" V 2450 3600 50  0000 R CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 2380 3550 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-AC_51_RoHS_L_6-1152827.pdf" H 2450 3550 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 2450 3550 50  0001 C CNN
 F 4 "Yageo" H -7900 1000 50  0001 C CNN "Mfg"
-F 5 "AC0603FR-07130RL" H -7900 1000 50  0001 C CNN "MPN"
+F 5 "RC0402FR-1347RL" H -7900 1000 50  0001 C CNN "MPN"
 F 6 "res-0402-47" H 2450 3550 50  0001 C CNN "1b2-bom-key"
 	1    2450 3550
 	0    1    -1   0   
@@ -1632,9 +1634,9 @@ AR Path="/5C7B59B0/5CBF65F8" Ref="R43"  Part="1"
 F 0 "R43" V 2350 3650 50  0000 C CNN
 F 1 "47" V 2450 3700 50  0000 R CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 2380 3650 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-AC_51_RoHS_L_6-1152827.pdf" H 2450 3650 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 2450 3650 50  0001 C CNN
 F 4 "Yageo" H -7900 1100 50  0001 C CNN "Mfg"
-F 5 "AC0603FR-07130RL" H -7900 1100 50  0001 C CNN "MPN"
+F 5 "RC0402FR-1347RL" H -7900 1100 50  0001 C CNN "MPN"
 F 6 "res-0402-47" H 2450 3650 50  0001 C CNN "1b2-bom-key"
 	1    2450 3650
 	0    1    -1   0   
@@ -1665,7 +1667,9 @@ F 0 "D11" V 3604 2629 50  0000 L CNN
 F 1 "ESD5Z5.0T1G" V 3695 2629 50  0000 L CNN
 F 2 "Diode_SMD:D_SOD-523" H 3650 2550 50  0001 C CNN
 F 3 "https://www.onsemi.com/pub/Collateral/ESD5Z2.5T1-D.PDF" H 3650 2550 50  0001 C CNN
-F 4 "esd-diode-sod523-esd5z5_0t1g" H 3650 2550 50  0001 C CNN "1b2-bom-key"
+F 4 "On Semiconductor" H 3650 2550 50  0001 C CNN "Mfg"
+F 5 "ESD5Z5.0T1G" H 3650 2550 50  0001 C CNN "MPN"
+F 6 "esd-diode-sod523-esd5z5_0t1g" H 3650 2550 50  0001 C CNN "1b2-bom-key"
 	1    3650 2550
 	0    1    1    0   
 $EndComp
@@ -1686,9 +1690,9 @@ AR Path="/5C7B59B0/5CB2B53C" Ref="R44"  Part="1"
 F 0 "R44" V 3550 2150 50  0000 C CNN
 F 1 "10k" V 3650 2150 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 3580 2150 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-AC_51_RoHS_L_6-1152827.pdf" H 3650 2150 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 3650 2150 50  0001 C CNN
 F 4 "Yageo" H -6700 -400 50  0001 C CNN "Mfg"
-F 5 "AC0603FR-07130RL" H -6700 -400 50  0001 C CNN "MPN"
+F 5 "RC0402FR-1310KL" H -6700 -400 50  0001 C CNN "MPN"
 F 6 "res-0402-10k" H 3650 2150 50  0001 C CNN "1b2-bom-key"
 	1    3650 2150
 	1    0    0    1   
@@ -1734,7 +1738,9 @@ F 0 "D12" V 2600 3250 50  0000 L CNN
 F 1 "ESD5Z5.0T1G" H 2550 3450 50  0000 L CNN
 F 2 "Diode_SMD:D_SOD-523" H 2700 3350 50  0001 C CNN
 F 3 "https://www.onsemi.com/pub/Collateral/ESD5Z2.5T1-D.PDF" H 2700 3350 50  0001 C CNN
-F 4 "esd-diode-sod523-esd5z5_0t1g" H 2700 3350 50  0001 C CNN "1b2-bom-key"
+F 4 "ON Semiconductor" H 2700 3350 50  0001 C CNN "Mfg"
+F 5 "ESD5Z5.0T1G" H 2700 3350 50 0001 C CNN "MPN
+F 6 "esd-diode-sod523-esd5z5_0t1g" H 2700 3350 50  0001 C CNN "1b2-bom-key"
 	1    2700 3350
 	0    -1   -1   0   
 $EndComp
@@ -1746,7 +1752,9 @@ F 0 "D13" V 2900 3250 50  0000 L CNN
 F 1 "ESD5Z5.0T1G" H 2850 3450 50  0000 L CNN
 F 2 "Diode_SMD:D_SOD-523" H 3000 3350 50  0001 C CNN
 F 3 "https://www.onsemi.com/pub/Collateral/ESD5Z2.5T1-D.PDF" H 3000 3350 50  0001 C CNN
-F 4 "esd-diode-sod523-esd5z5_0t1g" H 3000 3350 50  0001 C CNN "1b2-bom-key"
+F 4 "ON Semiconductor" H 3000 3350 50  0001 C CNN "Mfg"
+F 5 "ESD5Z5.0T1G" H 3000 3350 50 0001 C CNN "MPN
+F 6 "esd-diode-sod523-esd5z5_0t1g" H 3000 3350 50  0001 C CNN "1b2-bom-key"
 	1    3000 3350
 	0    -1   -1   0   
 $EndComp
@@ -1805,9 +1813,9 @@ AR Path="/5C7B59B0/5CB5DA66" Ref="R45"  Part="1"
 F 0 "R45" V 1950 2400 50  0000 C CNN
 F 1 "33" V 2050 2450 50  0000 R CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 1980 2400 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-AC_51_RoHS_L_6-1152827.pdf" H 2050 2400 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 2050 2400 50  0001 C CNN
 F 4 "Yageo" H -8300 -150 50  0001 C CNN "Mfg"
-F 5 "AC0603FR-07130RL" H -8300 -150 50  0001 C CNN "MPN"
+F 5 "RC0402FR-1333RL" H -8300 -150 50  0001 C CNN "MPN"
 F 6 "res-0402-33" H 2050 2400 50  0001 C CNN "1b2-bom-key"
 	1    2050 2400
 	0    1    -1   0   
