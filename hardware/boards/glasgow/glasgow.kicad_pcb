@@ -2,7 +2,7 @@
 
   (general
     (thickness 1.6)
-    (drawings 272)
+    (drawings 276)
     (tracks 5188)
     (zones 0)
     (modules 227)
@@ -21,7 +21,7 @@
     (37 F.SilkS user hide)
     (38 B.Mask user hide)
     (39 F.Mask user hide)
-    (40 Dwgs.User user hide)
+    (40 Dwgs.User user)
     (41 Cmts.User user hide)
     (44 Edge.Cuts user hide)
     (45 Margin user hide)
@@ -12296,6 +12296,12 @@
       (net 3 GND))
   )
 
+  (gr_line (start 58.5 67.75) (end 57.75 65) (layer Dwgs.User) (width 0.15))
+  (gr_line (start 58.5 67.75) (end 59.25 65) (layer Dwgs.User) (width 0.15))
+  (gr_line (start 58.5 67.75) (end 58.5 56.5) (layer Dwgs.User) (width 0.15))
+  (gr_text "Caution:\nCheck washer & screw size for \nconflicts with LVDS connector" (at 49.75 53.5) (layer Dwgs.User)
+    (effects (font (size 1 1) (thickness 0.15)) (justify left))
+  )
   (gr_text 1V2 (at 71.3 108.4) (layer B.SilkS) (tstamp 5CB35192)
     (effects (font (size 1.2 1.2) (thickness 0.16)) (justify left mirror))
   )
