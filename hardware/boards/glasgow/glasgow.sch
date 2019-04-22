@@ -693,7 +693,7 @@ U 1 1 5AD602A3
 P 900 7050
 F 0 "MK1" H 850 7250 50  0000 L CNN
 F 1 "Mounting_Hole_PAD" H 1000 7010 50  0001 L CNN
-F 2 "MountingHole:MountingHole_3.2mm_M3_Pad" H 900 7050 50  0001 C CNN
+F 2 "Glasgow:MountingHole_3.5mm_Pad_Via_CrtYd" H 900 7050 50  0001 C CNN
 F 3 "" H 900 7050 50  0001 C CNN
 	1    900  7050
 	1    0    0    -1  
@@ -704,7 +704,7 @@ U 1 1 5AD64D62
 P 1100 7050
 F 0 "MK2" H 1050 7250 50  0000 L CNN
 F 1 "Mounting_Hole_PAD" H 1200 7010 50  0001 L CNN
-F 2 "MountingHole:MountingHole_3.2mm_M3_Pad" H 1100 7050 50  0001 C CNN
+F 2 "Glasgow:MountingHole_3.5mm_Pad_Via_CrtYd" H 1100 7050 50  0001 C CNN
 F 3 "" H 1100 7050 50  0001 C CNN
 	1    1100 7050
 	1    0    0    -1  
@@ -715,7 +715,7 @@ U 1 1 5AD64DAE
 P 1300 7050
 F 0 "MK3" H 1250 7250 50  0000 L CNN
 F 1 "Mounting_Hole_PAD" H 1400 7010 50  0001 L CNN
-F 2 "MountingHole:MountingHole_3.2mm_M3_Pad" H 1300 7050 50  0001 C CNN
+F 2 "Glasgow:MountingHole_3.5mm_Pad_Via_CrtYd" H 1300 7050 50  0001 C CNN
 F 3 "" H 1300 7050 50  0001 C CNN
 	1    1300 7050
 	1    0    0    -1  
@@ -726,7 +726,7 @@ U 1 1 5AD64E04
 P 1500 7050
 F 0 "MK4" H 1450 7250 50  0000 L CNN
 F 1 "Mounting_Hole_PAD" H 1600 7010 50  0001 L CNN
-F 2 "MountingHole:MountingHole_3.2mm_M3_Pad" H 1500 7050 50  0001 C CNN
+F 2 "Glasgow:MountingHole_3.5mm_Pad_Via_CrtYd" H 1500 7050 50  0001 C CNN
 F 3 "" H 1500 7050 50  0001 C CNN
 	1    1500 7050
 	1    0    0    -1  
