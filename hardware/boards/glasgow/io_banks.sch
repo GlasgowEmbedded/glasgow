@@ -481,7 +481,7 @@ AR Path="/5C9E3491" Ref="D?"  Part="1"
 AR Path="/5C7B59B0/5C9E3491" Ref="D6"  Part="1" 
 F 0 "D6" H 9500 1050 50  0000 C CNN
 F 1 "BLU" H 9350 1050 50  0000 C CNN
-F 2 "LED_SMD:LED_0603_1608Metric_Pad0.82x1.00mm_HandSolder" H 9800 1050 50  0001 C CNN
+F 2 "LED_SMD:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 9800 1050 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/445/150060BS75000-368917.pdf" H 9800 1050 50  0001 C CNN
 F 4 "Wurth Electronics" H -450 150 50  0001 C CNN "Mfg"
 F 5 "150060BS75000" H -450 150 50  0001 C CNN "MPN"
@@ -499,7 +499,7 @@ AR Path="/5C9E349B" Ref="D?"  Part="1"
 AR Path="/5C7B59B0/5C9E349B" Ref="D7"  Part="1" 
 F 0 "D7" H 9500 1250 50  0000 C CNN
 F 1 "PNK" H 9350 1250 50  0000 C CNN
-F 2 "LED_SMD:LED_0603_1608Metric_Pad0.82x1.00mm_HandSolder" H 9800 1250 50  0001 C CNN
+F 2 "LED_SMD:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 9800 1250 50  0001 C CNN
 F 3 "https://lcsc.com/product-detail/Light-Emitting-Diodes-LED_OptoSupply-OSK40603C1E_C268294.html" H 9800 1250 50  0001 C CNN
 F 4 "Optosupply" H -450 150 50  0001 C CNN "Mfg"
 F 5 "OSK40603C1E" H -450 150 50  0001 C CNN "MPN"
@@ -515,7 +515,7 @@ AR Path="/5C9E34A4" Ref="D?"  Part="1"
 AR Path="/5C7B59B0/5C9E34A4" Ref="D8"  Part="1" 
 F 0 "D8" H 9500 1450 50  0000 C CNN
 F 1 "WHT" H 9350 1450 50  0000 C CNN
-F 2 "LED_SMD:LED_0603_1608Metric_Pad0.82x1.00mm_HandSolder" H 9800 1450 50  0001 C CNN
+F 2 "LED_SMD:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 9800 1450 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/348/sml-e1-e-1139169.pdf" H 9800 1450 50  0001 C CNN
 F 4 "ROHM Semiconductor" H -450 150 50  0001 C CNN "Mfg"
 F 5 "SMLEN3WBC8W1" H -450 150 50  0001 C CNN "MPN"
@@ -531,7 +531,7 @@ AR Path="/5C9E34AD" Ref="D?"  Part="1"
 AR Path="/5C7B59B0/5C9E34AD" Ref="D9"  Part="1" 
 F 0 "D9" H 9500 1650 50  0000 C CNN
 F 1 "PNK" H 9350 1650 50  0000 C CNN
-F 2 "LED_SMD:LED_0603_1608Metric_Pad0.82x1.00mm_HandSolder" H 9800 1650 50  0001 C CNN
+F 2 "LED_SMD:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 9800 1650 50  0001 C CNN
 F 3 "https://lcsc.com/product-detail/Light-Emitting-Diodes-LED_OptoSupply-OSK40603C1E_C268294.html" H 9800 1650 50  0001 C CNN
 F 4 "Optosupply" H -450 150 50  0001 C CNN "Mfg"
 F 5 "OSK40603C1E" H -450 150 50  0001 C CNN "MPN"
@@ -547,7 +547,7 @@ AR Path="/5C9E34B6" Ref="D?"  Part="1"
 AR Path="/5C7B59B0/5C9E34B6" Ref="D10"  Part="1" 
 F 0 "D10" H 9500 1850 50  0000 C CNN
 F 1 "BLU" H 9350 1850 50  0000 C CNN
-F 2 "LED_SMD:LED_0603_1608Metric_Pad0.82x1.00mm_HandSolder" H 9800 1850 50  0001 C CNN
+F 2 "LED_SMD:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 9800 1850 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/445/150060RS75000-368563.pdf" H 9800 1850 50  0001 C CNN
 F 4 "Wurth Electronics" H -450 150 50  0001 C CNN "Mfg"
 F 5 "150060RS75000" H -450 150 50  0001 C CNN "MPN"
@@ -1739,8 +1739,7 @@ F 1 "ESD5Z5.0T1G" H 2550 3450 50  0000 L CNN
 F 2 "Diode_SMD:D_SOD-523" H 2700 3350 50  0001 C CNN
 F 3 "https://www.onsemi.com/pub/Collateral/ESD5Z2.5T1-D.PDF" H 2700 3350 50  0001 C CNN
 F 4 "ON Semiconductor" H 2700 3350 50  0001 C CNN "Mfg"
-F 5 "ESD5Z5.0T1G" H 2700 3350 50 0001 C CNN "MPN
-F 6 "esd-diode-sod523-esd5z5_0t1g" H 2700 3350 50  0001 C CNN "1b2-bom-key"
+F 5 "ESD5Z5.0T1G" H 2700 3350 50  0001 C CNN "MPN"
 	1    2700 3350
 	0    -1   -1   0   
 $EndComp
@@ -1753,8 +1752,7 @@ F 1 "ESD5Z5.0T1G" H 2850 3450 50  0000 L CNN
 F 2 "Diode_SMD:D_SOD-523" H 3000 3350 50  0001 C CNN
 F 3 "https://www.onsemi.com/pub/Collateral/ESD5Z2.5T1-D.PDF" H 3000 3350 50  0001 C CNN
 F 4 "ON Semiconductor" H 3000 3350 50  0001 C CNN "Mfg"
-F 5 "ESD5Z5.0T1G" H 3000 3350 50 0001 C CNN "MPN
-F 6 "esd-diode-sod523-esd5z5_0t1g" H 3000 3350 50  0001 C CNN "1b2-bom-key"
+F 5 "ESD5Z5.0T1G" H 3000 3350 50  0001 C CNN "MPN"
 	1    3000 3350
 	0    -1   -1   0   
 $EndComp
@@ -1786,24 +1784,6 @@ Wire Wire Line
 	3000 3650 3250 3650
 Text Notes 3300 3350 0    50   ~ 0
 Auxiliary connector that \nmay be used for exper-\nimenting with addons. \nThere is no guarantee \nthat this connector will\nbe kept in future revisions.
-Wire Bus Line
-	2400 4950 2400 5800
-Wire Bus Line
-	3450 4950 3450 5800
-Wire Bus Line
-	6950 4950 6950 5800
-Wire Bus Line
-	5850 4950 5850 5800
-Wire Bus Line
-	10650 3700 10650 5800
-Wire Bus Line
-	9400 3500 9400 5800
-Wire Bus Line
-	2050 3850 2050 5800
-Wire Bus Line
-	5500 3750 5500 5800
-Wire Bus Line
-	9050 3200 9050 5800
 $Comp
 L Device:R R?
 U 1 1 5CB5DA66
@@ -1822,4 +1802,22 @@ F 6 "res-0402-33" H 2050 2400 50  0001 C CNN "1b2-bom-key"
 $EndComp
 Wire Wire Line
 	2200 2400 2250 2400
+Wire Bus Line
+	2400 4950 2400 5800
+Wire Bus Line
+	3450 4950 3450 5800
+Wire Bus Line
+	6950 4950 6950 5800
+Wire Bus Line
+	5850 4950 5850 5800
+Wire Bus Line
+	10650 3700 10650 5800
+Wire Bus Line
+	9400 3500 9400 5800
+Wire Bus Line
+	2050 3850 2050 5800
+Wire Bus Line
+	5500 3750 5500 5800
+Wire Bus Line
+	9050 3200 9050 5800
 $EndSCHEMATC
