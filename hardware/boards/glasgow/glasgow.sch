@@ -3189,13 +3189,13 @@ Wire Wire Line
 	9850 4750 9850 4800
 Wire Wire Line
 	9700 5800 9850 5800
+Connection ~ 9850 5800
+Wire Wire Line
+	9850 5800 9850 5900
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
 	7850 2550 7850 6250
 Wire Bus Line
 	4700 2150 4700 6250
-Connection ~ 9850 5800
-Wire Wire Line
-	9850 5800 9850 5900
 $EndSCHEMATC
