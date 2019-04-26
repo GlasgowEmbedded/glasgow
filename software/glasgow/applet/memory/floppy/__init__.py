@@ -313,8 +313,8 @@ class ShugartFloppyBus(Module):
     def __init__(self, pins):
         self.redwc  = Signal()
         self.index  = Signal()
-        self.drvs   = Signal()
-        self.mote   = Signal()
+        self.drvs   = Signal(2)
+        self.mote   = Signal(2)
         self.dir    = Signal()
         self.step   = Signal()
         self.wdata  = Signal()
@@ -332,10 +332,14 @@ class ShugartFloppyBus(Module):
         self.comb += [
             pins.redwc_t.oe.eq(1),
             pins.redwc_t.o.eq(~self.redwc),
-            pins.drvs_t.oe.eq(1),
-            pins.drvs_t.o.eq(~self.drvs),
-            pins.mote_t.oe.eq(1),
-            pins.mote_t.o.eq(~self.mote),
+            pins.motea_t.oe.eq(1),
+            pins.motea_t.o.eq(~self.mote[0]),
+            pins.drvsb_t.oe.eq(1),
+            pins.drvsb_t.o.eq(~self.drvs[1]),
+            pins.drvsa_t.oe.eq(1),
+            pins.drvsa_t.o.eq(~self.drvs[0]),
+            pins.moteb_t.oe.eq(1),
+            pins.moteb_t.o.eq(~self.mote[1]),
             pins.dir_t.oe.eq(1),
             pins.dir_t.o.eq(~self.dir),
             pins.step_t.oe.eq(1),
@@ -418,8 +422,8 @@ class ShugartFloppySubtarget(Module):
                     NextState("READ-COMMAND")
                 )
             ).Elif(cmd == CMD_START,
-                NextValue(bus.drvs, 1),
-                NextValue(bus.mote, 1),
+                NextValue(bus.drvs, 0b11),
+                NextValue(bus.mote, 0b11),
                 NextValue(timer, spin_up_cyc - 1),
                 NextState("READ-COMMAND")
             ).Elif(cmd == CMD_STOP,
@@ -803,31 +807,25 @@ class MemoryFloppyApplet(GlasgowApplet, name="memory-floppy"):
     used in common IBM/PC 5.25" and 3.5" floppy drives, as well as Amiga, various synthesizers,
     and so on.
 
-    The connections should be made as follows (note that all odd numbered pins, i.e. entire
-    key-side pin row, are all assigned to GND):
+    NOTE: Writes are not currently supported.
 
-        * Output signals, with an external buffer that can sink at least 32 mA:
-          REDWC=2 DRVS=12 MOTE=16 DIR=18 STEP=20 WDATA=22 WGATE=24 SIDE1=32
-        * Input signals:
-          INDEX=8 TRK00=26 WPT=28 RDATA=30 DSKCHG=34
+    The default applet pinout uses a sequential assignment of every pin except REDWC. This allows
+    splitting the FDC ribbon cable such that two 20-pin IDC connectors may be crimped onto it
+    for easy connection as follows:
 
-    Or alternatively, from the perspective of the floppy drive connector, from pin 2 to pin 34,
-    and assuming ports A and B are used:
+        * Conductors 1-7 are unused (cut off the cable);
+        * Conductors 8-23 are crimped to connect to pins 3-18 of connector A;
+        * Conductors 24-34 are crimped to connect to pins 3-14 of connector B.
 
-        * REDWC=A0  NC        NC        INDEX=B0  NC        DRVSB=A1  NC        MOTEB=A2
-          DIR=A3    STEP=A4   WDATA=A5  WGATE=A6  TRK00=B1  WPT=B2    RDATA=B3  SIDE1=A7
-          DSKCHG=B4
-
-    Note that all input signals require pull-ups, since the floppy drive outputs are open-drain.
-
-    This applet supports reading raw (modulated), and raw (MFM-demodulated, in software)
-    track data.
+    If desired, conductors 2-3 may be crimped to connect to pins 15-16 of connector B to connect
+    the REDWC pin as well.
     """
-    # The TTL logic is not compatible with revA/B level shifters.
+    # The TTL logic is not compatible with revA/B level shifters, and would require external
+    # buffering.
     required_revision = "C0"
 
-    __pins = ("redwc", "drvs", "mote", "dir", "step", "wdata", "wgate", "side1", # out
-              "index", "trk00", "wpt", "rdata", "dskchg") # in
+    __pins = ("index", "motea", "drvsb", "drvsa", "moteb", "dir", "step", "wdata", "wgate",
+              "trk00", "wpt", "rdata", "side1", "dskchg", "redwc")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
@@ -846,8 +844,20 @@ class MemoryFloppyApplet(GlasgowApplet, name="memory-floppy"):
             sys_freq=target.sys_clk_freq,
         ))
 
+    @classmethod
+    def add_run_arguments(cls, parser, access):
+        super().add_run_arguments(parser, access)
+
+        parser.add_argument(
+            "--pulls", default=False, action="store_true",
+            help="enable internal bus termination")
+
     async def run(self, device, args):
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
+        pulls = set()
+        if args.pulls:
+            pulls = {args.pin_index, args.pin_trk00, args.pin_wpt, args.pin_rdata, args.pin_dskchg}
+        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
+                                                           pull_high=pulls)
         return ShugartFloppyInterface(iface, self.logger, self._sys_clk_freq)
 
     @classmethod
