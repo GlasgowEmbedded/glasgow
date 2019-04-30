@@ -4,7 +4,7 @@ EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 3 4
+Sheet 4 4
 Title "I/O Buffer"
 Date ""
 Rev "C1"
@@ -2593,12 +2593,12 @@ AR Path="/5AFBDC9E/5CD0C19C" Ref="R?"  Part="1"
 AR Path="/5C7B59B0/5C9E337E/5CD0C19C" Ref="R49"  Part="1" 
 AR Path="/5C7B59B0/5C9E338E/5CD0C19C" Ref="R48"  Part="1" 
 F 0 "R49" V 10550 5500 50  0000 R CNN
-F 1 "1" V 10450 5450 50  0000 C CNN
+F 1 "0.68" V 10450 5450 50  0000 C CNN
 F 2 "Resistor_SMD:R_0603_1608Metric" V 10380 5450 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 10450 5450 50  0001 C CNN
-F 4 "Yageo" H 4300 500 50  0001 C CNN "Mfg"
-F 5 "RC0603FR-071RL" H 4300 500 50  0001 C CNN "MPN"
-F 6 "res-0603-1" H 10450 5450 50  0001 C CNN "1b2-bom-key"
+F 3 "https://www.mouser.com/datasheet/2/54/RL-764981.pdf" H 10450 5450 50  0001 C CNN
+F 4 "Bourns" H 4300 500 50  0001 C CNN "Mfg"
+F 5 "CRL0603-JW-R680ELF" H 4300 500 50  0001 C CNN "MPN"
+F 6 "res-0603-0.68" H 10450 5450 50  0001 C CNN "1b2-bom-key"
 	1    10450 5450
 	0    -1   -1   0   
 $EndComp
