@@ -3210,8 +3210,8 @@ U 1 1 5CCE6160
 P 8200 5050
 F 0 "C87" H 8318 5096 50  0000 L CNN
 F 1 "150u" H 8318 5005 50  0000 L CNN
-F 2 "Capacitor_SMD:CP_Elec_5x5.8" H 8238 4900 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/420/4505194654d9b1acd39c1e-1280667.pdf" H 8200 5050 50  0001 C CNN
+F 2 "Capacitor_SMD:CP_Elec_5x3.9" H 8238 4900 50  0001 C CNN
+F 3 "https://www.chemi-con.co.jp/cgi-bin/CAT_DB/SEARCH/cat_db_al.cgi?e=e&j=p&pdfname=pxf" H 8200 5050 50  0001 C CNN
 F 4 "APXF6R3ARA151ME40G" H 8200 5050 50  0001 C CNN "MPN"
 F 5 "United Chemi-Con" H 8200 5050 50  0001 C CNN "Mfg"
 	1    8200 5050

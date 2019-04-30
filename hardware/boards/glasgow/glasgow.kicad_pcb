@@ -614,9 +614,9 @@
     (add_net GND)
   )
 
-  (module Capacitor_SMD:CP_Elec_5x5.8 (layer F.Cu) (tedit 5B3026A2) (tstamp 5CC8FB34)
+  (module Capacitor_SMD:CP_Elec_5x3.9 (layer F.Cu) (tedit 5A841F9D) (tstamp 5CC8FB34)
     (at 70 104)
-    (descr "SMT capacitor, aluminium electrolytic, 5x5.8, Panasonic ")
+    (descr "SMT capacitor, aluminium electrolytic, 5x3.9, Nichicon ")
     (tags "Capacitor Electrolytic")
     (path /5CCE6160)
     (attr smd)
@@ -666,7 +666,7 @@
       (net 3 GND))
     (pad 1 smd rect (at -2.2 0) (size 3 1.6) (layers F.Cu F.Paste F.Mask)
       (net 5 +5V))
-    (model ${KISYS3DMOD}/Capacitor_SMD.3dshapes/CP_Elec_5x5.8.wrl
+    (model ${KISYS3DMOD}/Capacitor_SMD.3dshapes/CP_Elec_5x3.9.wrl
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
