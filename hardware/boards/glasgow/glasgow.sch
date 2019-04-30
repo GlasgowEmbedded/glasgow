@@ -2020,8 +2020,6 @@ F 3 "" H 1750 3900 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	2150 3500 2200 3500
-Wire Wire Line
-	2150 3600 2300 3600
 $Comp
 L Device:C C8
 U 1 1 5B5BFF50
@@ -2052,8 +2050,6 @@ Wire Wire Line
 Wire Wire Line
 	2300 4150 2850 4150
 Connection ~ 2300 4150
-Wire Wire Line
-	2300 3600 2300 4150
 Wire Wire Line
 	5150 1400 5150 1350
 $Comp
@@ -2478,10 +2474,6 @@ F 6 "ic-sot23-6-tpd3s014" H 1750 3600 50  0001 C CNN "1b2-bom-key"
 	1    1750 3600
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	2150 3700 2200 3700
-Wire Wire Line
-	2200 3700 2200 4250
 Connection ~ 2200 4250
 Wire Wire Line
 	1300 4350 1350 4350
@@ -3227,10 +3219,18 @@ F 5 "United Chemi-Con" H 8200 5050 50  0001 C CNN "Mfg"
 $EndComp
 Text Notes 8350 5400 0    50   ~ 0
 5V bulk decoupling\n100µF required to\nwithstand Vio short
+Wire Wire Line
+	2150 3600 2200 3600
+Wire Wire Line
+	2200 3600 2200 4250
+Wire Wire Line
+	2150 3700 2300 3700
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
 	7850 2550 7850 6250
 Wire Bus Line
 	4700 2150 4700 6250
+Wire Wire Line
+	2300 3700 2300 4150
 $EndSCHEMATC
