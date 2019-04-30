@@ -539,19 +539,19 @@ Wire Wire Line
 $Comp
 L Device:R R22
 U 1 1 5B083B9F
-P 10500 4400
+P 10550 4400
 AR Path="/5AF7D604/5B083B9F" Ref="R22"  Part="1" 
 AR Path="/5AFBDC9E/5B083B9F" Ref="R27"  Part="1" 
 AR Path="/5C7B59B0/5C9E337E/5B083B9F" Ref="R33"  Part="1" 
 AR Path="/5C7B59B0/5C9E338E/5B083B9F" Ref="R27"  Part="1" 
-F 0 "R33" V 10600 4400 50  0000 C CNN
-F 1 "49k9" V 10500 4400 50  0000 C CNN
-F 2 "Resistor_SMD:R_0402_1005Metric" V 10430 4400 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 10500 4400 50  0001 C CNN
-F 4 "Yageo" H 6350 -450 50  0001 C CNN "Mfg"
-F 5 "RC0402FR-1349K9L" H 6350 -450 50  0001 C CNN "MPN"
-F 6 "res-0402-49k9" H 10500 4400 50  0001 C CNN "1b2-bom-key"
-	1    10500 4400
+F 0 "R33" V 10650 4400 50  0000 C CNN
+F 1 "49k9" V 10550 4400 50  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 10480 4400 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 10550 4400 50  0001 C CNN
+F 4 "Yageo" H 6400 -450 50  0001 C CNN "Mfg"
+F 5 "RC0402FR-1349K9L" H 6400 -450 50  0001 C CNN "MPN"
+F 6 "res-0402-49k9" H 10550 4400 50  0001 C CNN "1b2-bom-key"
+	1    10550 4400
 	0    -1   -1   0   
 $EndComp
 $Comp
@@ -591,8 +591,6 @@ F 6 "res-0402-10k" H 8900 2800 50  0001 C CNN "1b2-bom-key"
 $EndComp
 Text Notes 9050 1150 0    50   ~ 0
 Csamp = 20 pF\nBits = 8\nCext = (2**(Bits+1)-1)*Csamp = 10.2 nF (min)\nGamma = ln(2**(Bits+1)) = 6.24\nFreq = 1 ksps\nRsource = 1/(Gamma*Cext*Freq) = 15.7 kohm (max)\nRdiv = 2*Rsource = 31.4 kohm (max)
-Wire Wire Line
-	10200 4400 10350 4400
 $Comp
 L Device:C C38
 U 1 1 5AD9C9D7
@@ -2620,7 +2618,7 @@ Wire Wire Line
 Wire Wire Line
 	11150 5850 11150 4400
 Wire Wire Line
-	10650 4400 11150 4400
+	10700 4400 11150 4400
 Wire Wire Line
 	10850 6100 10300 6100
 $Comp
@@ -2660,4 +2658,27 @@ Connection ~ 10300 5450
 Wire Wire Line
 	10600 5250 10600 5450
 Connection ~ 10600 5450
+$Comp
+L Connector:TestPoint TP?
+U 1 1 5D2659D6
+P 10350 4600
+AR Path="/5D2659D6" Ref="TP?"  Part="1" 
+AR Path="/5C7B59B0/5C9E337E/5D2659D6" Ref="TP19"  Part="1" 
+AR Path="/5C7B59B0/5C9E338E/5D2659D6" Ref="TP18"  Part="1" 
+F 0 "TP19" V 10250 4750 50  0000 C CNN
+F 1 "VDAC" V 10454 4674 50  0001 C CNN
+F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 10550 4600 50  0001 C CNN
+F 3 "~" H 10550 4600 50  0001 C CNN
+	1    10350 4600
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	10200 4400 10300 4400
+Wire Wire Line
+	10350 4600 10300 4600
+Wire Wire Line
+	10300 4600 10300 4400
+Connection ~ 10300 4400
+Wire Wire Line
+	10300 4400 10400 4400
 $EndSCHEMATC
