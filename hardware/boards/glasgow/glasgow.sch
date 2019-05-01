@@ -3217,7 +3217,7 @@ F 2 "Capacitor_SMD:CP_Elec_5x3.9" H 8238 4900 50  0001 C CNN
 F 3 "https://www.chemi-con.co.jp/cgi-bin/CAT_DB/SEARCH/cat_db_al.cgi?e=e&j=p&pdfname=pxf" H 8200 5050 50  0001 C CNN
 F 4 "APXF6R3ARA151ME40G" H 8200 5050 50  0001 C CNN "MPN"
 F 5 "United Chemi-Con" H 8200 5050 50  0001 C CNN "Mfg"
-F 6 "cap-elec-5x3_9-150u" H 8200 5050 50  0001 C CNN "1b2-bom-key"
+F 6 "cap-poly-5x3_9-150u" H 8200 5050 50  0001 C CNN "1b2-bom-key"
 	1    8200 5050
 	1    0    0    -1  
 $EndComp
