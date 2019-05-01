@@ -148,7 +148,7 @@ class SFDPJEDECFlashParametersTable(SFDPTable):
                 raise ValueError("table too small")
 
             # First, parse SFDP table bitfields
-            words = struct.unpack("4s" * 9, parameter)
+            words = struct.unpack("4s" * 9, parameter[0:4*9])
             word0 = _JEDEC_Flash_Param_0.from_bytes(words[0])
             word1 = _JEDEC_Flash_Param_1.from_bytes(words[1])
             word2 = _JEDEC_Flash_Param_2.from_bytes(words[2])
