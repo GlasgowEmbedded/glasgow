@@ -1,44 +1,36 @@
-# Glasgow = Bus Pirate + Bus Blaster + Logic Sniffer
+# Glasgow Debug Tool
 
-**Want one? [Subscribe here](https://mailchi.mp/44980ff6f0ab/glasgow-announcements)**
+**Want one? [Subscribe here](https://mailchi.mp/44980ff6f0ab/glasgow-announcements).**
 
-**Let's chat! [Our IRC channel is #glasgow at freenode.net](https://webchat.freenode.net/?channels=glasgow)**.
+**Let's chat! [Our IRC channel is #glasgow at freenode.net](https://webchat.freenode.net/?channels=glasgow).**
 
-**Important note: if you are looking to assemble boards yourself, do NOT pick revA or revB unless you have a COMPLETE understanding of pitfalls associated with the FXMA level shifter.**
+**Important note: if you are looking to assemble boards yourself, wait until revC1 is finalized.**
 
-**Important note: if you are looking to assemble boards yourself, consider that revC0 has a serious issue related to configurable pull resistors, see [revC1 ECNs](https://github.com/GlasgowEmbedded/Glasgow/wiki/ECNs#revc1).**
+## What is Glasgow?
 
-The project is in an early stage. The description below is a 1-year-old design overview provided for reference. Some details have changed in the meantime, some things aren't yet implemented; once we have hardware that can be mass-produced I'll put more effort into coherent documentation--promise!
+Glasgow is a tool for exploring digital interfaces, aimed at embedded developers, reverse engineers, digital archivists, electronics hobbyists, and everyone else who wants to communicate to a wide selection of digital devices with high reliability and minimum hassle. It can be attached to most devices without additional active or passive components, and includes extensive protection from unexpected conditions and operator error.
 
-## Overview
+The Glasgow hardware can support many digital interfaces because it uses reconfigurable logic. Instead of only offering a small selection of standard hardware supported interfaces, it uses an FPGA to adapt on the fly to the task at hand without compromising on performance or reliability, even for unusual, custom or obsolete interfaces.
 
-Glasgow is a 50 MHz 1V8/2V5/3V3/3V6/5V0 bus multitool,
-think [Bus Pirate](http://dangerousprototypes.com/docs/Bus_Pirate) + [Bus Blaster](http://dangerousprototypes.com/docs/Bus_Blaster) + [Logic Sniffer](http://dangerousprototypes.com/docs/Open_Bench_Logic_Sniffer)
-all in one reconfigurable package.
+The Glasgow software is a set of building blocks designed to eliminate incidental complexity. Each interface is packaged into a self-contained *applet* that can be used directly from the command line, or reused as a part of a more complex system. Using Glasgow does not require any programming knowledge, although it becomes much more powerful if you know a bit of Python.
 
-You have 16 pins; put any of {JTAG,SWD,SPI,I2C,USART,…} on any of them, or even use your own protocol core on the FPGA!
+## What hardware does Glasgow use?
 
-The 16 pins are split among two fully independent ESD protected I/O banks with a DAC+LDO to set the I/O standard and/or power the target,
-an ADC to sense the target voltage, an alert function to detect faults, and an intrinsic 100 mA current limit for added safety.
+The Glasgow hardware evolves over time, with each major milestone called a "revision". Although all revisions are, and will always be supported with the same software, they vary significantly in their capabilities, and the chosen revision will limit the possible tasks.
 
-The PC interface has peak throughput of ~360 Mbps (bulk endpoints), so you can sample 16 channels at 22.5 Msps, 8 channels at 45 Msps, 4 channels at 90 Msps, and so on.
-You can also download stuff via JTAG -really fast-; instead of bus turnarounds, just use a custom JTAG core.
+Glasgow boards use a version in the `revXN` format, where `X` is a revision letter (increased on major design changes) and `N` is a stepping number (increased on any layout or component changes). For example, `revC0` is the first stepping of revision C.
 
-The somewhat low sampling rate is compensated (for synchronous interfaces) by the fact that the FPGA is able to sample at a defined phase with respect to the interface clock;
-so while normally you would need 200 Msps for a bus running at 50 MHz, with Glasgow mere 50 Msps are enough.
+### revA/revB
 
-if you want one, once the hardware is proven I'll be selling these at an estimated $70 plus shipping.
+Revisions A and B have not been produced in significant amounts, contain major design issues, and are therefore mostly of historical interest. Nevertheless, everyone who has one of the revA/revB boards can keep using them—forever.
 
-in case you're wondering, this is basically a scaled down version of [azonenberg's](https://github.com/azonenberg) [STARSHIPRAIDER](https://github.com/azonenberg/starshipraider),
-which does 32 channels at 500 MHz, has a 10 GbE host interface, and costs around $1K in BOM+PCB.
-I didn't set out to do that but it turns out this design space is really narrow.
+### revC
 
-This project is a collaboration with [awygle](https://github.com/awygle), who has given invaluable advice on overall design, made all the symbols and footprints and is upstreaming them in KiCAD (the goal is using 100% upstream libraries).
+![Overview of the Glasgow PCB](hardware/boards/glasgow/3drender-readme.png)
 
-~I think this is about as far as you can go while using only FOSS tool chains for firmware/gateware;
-if I ever make a sequel for this board it'll be after [oe1cxw](https://github.com/cliffordwolf) finishes Series 7 bitstream reverse-engineering :)~ Glasgow revE will use an ECP5-5G FPGA, but this is a few years away.
+Revision C is the revision being actively worked on. It provides 16 I/O pins with a maximum frequency of approx. 100 MHz\*, independent direction control and independent programmable pull-up/pull-down resistors. The I/O pins are grouped into two I/O ports that can use any voltage from 1.8 V to 5 V, sense and monitor I/O voltage of the device under test, as well as provide up to 150 mA of power. The board uses USB 2 for power, configuration, and communication, achieving up to 336 Mbps (42 MB/s) of sustained combined throughput.
 
-(This README file transcribed from this twitter thread: https://twitter.com/whitequark/status/985040607864176640)
+<sub>\* Maximum frequency achievable in practice depends on many factors and will vary greatly with specific interface and applet design. 24 MHz non-DDR can be achieved for most interfaces with minimal effort.</sub>
 
 ## Contributors
 
