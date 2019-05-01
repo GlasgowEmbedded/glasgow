@@ -12917,7 +12917,7 @@
   (gr_line (start 101.4 89.1) (end 101.4 101.9) (layer B.Fab) (width 0.2))
   (gr_line (start 104.3 89.1) (end 101.4 89.1) (layer B.Fab) (width 0.2))
   (gr_line (start 101.4 101.9) (end 104.3 101.9) (layer B.Fab) (width 0.2))
-  (gr_text "Glasgow\nrevC?" (at 74.1 84.9) (layer F.SilkS) (tstamp 5C18905F)
+  (gr_text "Glasgow\nrevC1" (at 74.1 84.9) (layer F.SilkS) (tstamp 5C18905F)
     (effects (font (size 1.5 1.5) (thickness 0.15)) (justify left))
   )
   (gr_line (start 56.5 100.3) (end 56.9 100.3) (layer F.SilkS) (width 0.15))
