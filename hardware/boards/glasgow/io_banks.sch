@@ -1350,6 +1350,7 @@ F 1 "Conn_01x03" H 3450 3350 50  0000 L CNN
 F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 3450 3550 50  0001 C CNN
 F 3 "~" H 3450 3550 50  0001 C CNN
 F 4 "conn-th-01in-3-1-hdr" H 3450 3550 50  0001 C CNN "1b2-bom-key"
+F 5 "DNP" H 3550 3550 50  0000 L CNN "DNP"
 	1    3450 3550
 	1    0    0    -1  
 $EndComp
@@ -1488,9 +1489,9 @@ $EndComp
 Wire Wire Line
 	3050 2400 3100 2400
 Wire Wire Line
-	1800 3550 2300 3550
+	1800 3550 2250 3550
 Wire Wire Line
-	1800 3650 2300 3650
+	1800 3650 2250 3650
 Wire Wire Line
 	2250 2600 2200 2600
 $Comp
@@ -1609,42 +1610,10 @@ F 6 "res-0402-47" H 3250 2400 50  0001 C CNN "1b2-bom-key"
 $EndComp
 Wire Wire Line
 	3400 2400 3650 2400
-$Comp
-L Device:R R?
-U 1 1 5CBF658E
-P 2450 3550
-AR Path="/5CBF658E" Ref="R?"  Part="1" 
-AR Path="/5C7B59B0/5CBF658E" Ref="R39"  Part="1" 
-F 0 "R39" V 2550 3550 50  0000 C CNN
-F 1 "47" V 2450 3600 50  0000 R CNN
-F 2 "Resistor_SMD:R_0402_1005Metric" V 2380 3550 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 2450 3550 50  0001 C CNN
-F 4 "Yageo" H -7900 1000 50  0001 C CNN "Mfg"
-F 5 "RC0402FR-1347RL" H -7900 1000 50  0001 C CNN "MPN"
-F 6 "res-0402-47" H 2450 3550 50  0001 C CNN "1b2-bom-key"
-	1    2450 3550
-	0    1    -1   0   
-$EndComp
-$Comp
-L Device:R R?
-U 1 1 5CBF65F8
-P 2450 3650
-AR Path="/5CBF65F8" Ref="R?"  Part="1" 
-AR Path="/5C7B59B0/5CBF65F8" Ref="R43"  Part="1" 
-F 0 "R43" V 2350 3650 50  0000 C CNN
-F 1 "47" V 2450 3700 50  0000 R CNN
-F 2 "Resistor_SMD:R_0402_1005Metric" V 2380 3650 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 2450 3650 50  0001 C CNN
-F 4 "Yageo" H -7900 1100 50  0001 C CNN "Mfg"
-F 5 "RC0402FR-1347RL" H -7900 1100 50  0001 C CNN "MPN"
-F 6 "res-0402-47" H 2450 3650 50  0001 C CNN "1b2-bom-key"
-	1    2450 3650
-	0    1    -1   0   
-$EndComp
 Wire Wire Line
-	2600 3650 3000 3650
+	2550 3650 3000 3650
 Wire Wire Line
-	2600 3550 2700 3550
+	2550 3550 2700 3550
 $Comp
 L power:PWR_FLAG #FLG0101
 U 1 1 5CFF6FB6
@@ -1741,6 +1710,7 @@ F 3 "https://www.onsemi.com/pub/Collateral/ESD5Z2.5T1-D.PDF" H 2700 3350 50  000
 F 4 "ON Semiconductor" H 2700 3350 50  0001 C CNN "Mfg"
 F 5 "ESD5Z5.0T1G" H 2700 3350 50  0001 C CNN "MPN"
 F 6 "esd-diode-sod523-esd5z5_0t1g" H 0   0   50  0001 C CNN "1b2-bom-key"
+F 7 "DNP" H 2630 3510 50  0000 C CNN "DNP"
 	1    2700 3350
 	0    -1   -1   0   
 $EndComp
@@ -1755,6 +1725,7 @@ F 3 "https://www.onsemi.com/pub/Collateral/ESD5Z2.5T1-D.PDF" H 3000 3350 50  000
 F 4 "ON Semiconductor" H 3000 3350 50  0001 C CNN "Mfg"
 F 5 "ESD5Z5.0T1G" H 3000 3350 50  0001 C CNN "MPN"
 F 6 "esd-diode-sod523-esd5z5_0t1g" V 3000 3350 50  0001 C CNN "1b2-bom-key"
+F 7 "DNP" H 2850 3510 50  0000 L CNN "DNP"
 	1    3000 3350
 	0    -1   -1   0   
 $EndComp
@@ -1804,6 +1775,38 @@ F 6 "res-0402-33" H 2050 2400 50  0001 C CNN "1b2-bom-key"
 $EndComp
 Wire Wire Line
 	2200 2400 2250 2400
+$Comp
+L Device:R R?
+U 1 1 5CBF65F8
+P 2400 3650
+AR Path="/5CBF65F8" Ref="R?"  Part="1" 
+AR Path="/5C7B59B0/5CBF65F8" Ref="R43"  Part="1" 
+F 0 "R43" V 2300 3650 50  0000 C CNN
+F 1 "47" V 2400 3700 50  0000 R CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 2330 3650 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 2400 3650 50  0001 C CNN
+F 4 "Yageo" H -7950 1100 50  0001 C CNN "Mfg"
+F 5 "RC0402FR-1347RL" H -7950 1100 50  0001 C CNN "MPN"
+F 6 "res-0402-47" H 2400 3650 50  0001 C CNN "1b2-bom-key"
+	1    2400 3650
+	0    1    -1   0   
+$EndComp
+$Comp
+L Device:R R?
+U 1 1 5CBF658E
+P 2400 3550
+AR Path="/5CBF658E" Ref="R?"  Part="1" 
+AR Path="/5C7B59B0/5CBF658E" Ref="R39"  Part="1" 
+F 0 "R39" V 2500 3550 50  0000 C CNN
+F 1 "47" V 2400 3600 50  0000 R CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 2330 3550 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 2400 3550 50  0001 C CNN
+F 4 "Yageo" H -7950 1000 50  0001 C CNN "Mfg"
+F 5 "RC0402FR-1347RL" H -7950 1000 50  0001 C CNN "MPN"
+F 6 "res-0402-47" H 2400 3550 50  0001 C CNN "1b2-bom-key"
+	1    2400 3550
+	0    1    -1   0   
+$EndComp
 Wire Bus Line
 	2400 4950 2400 5800
 Wire Bus Line

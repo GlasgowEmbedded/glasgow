@@ -1938,6 +1938,7 @@ F 1 "Conn_01x08" V 8376 3696 50  0000 C CNN
 F 2 "Connector_PinSocket_1.27mm:PinSocket_1x08_P1.27mm_Vertical" H 8250 3750 50  0001 C CNN
 F 3 "~" H 8250 3750 50  0001 C CNN
 F 4 "conn-th-005in-8-1-rec" H 8250 3750 50  0001 C CNN "1b2-bom-key"
+F 5 "DNP" V 8375 3300 50  0000 L CNN "DNP"
 	1    8250 3750
 	1    0    0    -1  
 $EndComp
@@ -1976,6 +1977,7 @@ F 1 "Conn_01x08" V 8375 4775 50  0000 L CNN
 F 2 "Connector_PinSocket_1.27mm:PinSocket_1x08_P1.27mm_Vertical" H 8250 5050 50  0001 C CNN
 F 3 "~" H 8250 5050 50  0001 C CNN
 F 4 "conn-th-005in-8-1-rec" H 8250 5050 50  0001 C CNN "1b2-bom-key"
+F 5 "DNP" V 8375 4600 50  0000 L CNN "DNP"
 	1    8250 5050
 	1    0    0    -1  
 $EndComp
@@ -2643,9 +2645,10 @@ AR Path="/5AFBDC9E/5CC70BFC" Ref="R?"  Part="1"
 AR Path="/5C7B59B0/5C9E337E/5CC70BFC" Ref="R51"  Part="1" 
 AR Path="/5C7B59B0/5C9E338E/5CC70BFC" Ref="R50"  Part="1" 
 F 0 "R51" V 10550 5300 50  0000 R CNN
-F 1 "DNP" V 10450 5250 50  0000 C CNN
+F 1 "DNP" V 10450 5250 50  0001 C CNN
 F 2 "Resistor_SMD:R_0603_1608Metric" V 10380 5250 50  0001 C CNN
 F 3 "" H 10450 5250 50  0001 C CNN
+F 4 "DNP" V 10450 5250 50  0000 C CNN "DNP"
 	1    10450 5250
 	0    -1   -1   0   
 $EndComp
