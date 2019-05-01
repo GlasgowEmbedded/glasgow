@@ -4,7 +4,7 @@
 
 **Let's chat! [Our IRC channel is #glasgow at freenode.net](https://webchat.freenode.net/?channels=glasgow).**
 
-**Important note: if you are looking to assemble boards yourself, wait until revC1 is finalized.**
+**Important note: if you are looking to assemble boards yourself, use only revC1.**
 
 ## What is Glasgow?
 
@@ -52,7 +52,7 @@ Revisions A and B have not been produced in significant amounts, contain major d
 
 ![Overview of the Glasgow PCB](hardware/boards/glasgow/3drender-readme.png)
 
-Revision C is the revision being actively worked on. It provides 16 I/O pins with a maximum frequency of approx. 100 MHz\*, independent direction control and independent programmable pull-up/pull-down resistors. The I/O pins are grouped into two I/O ports that can use any voltage from 1.8 V to 5 V, sense and monitor I/O voltage of the device under test, as well as provide up to 150 mA of power. The board uses USB 2 for power, configuration, and communication, achieving up to 336 Mbps (42 MB/s) of sustained combined throughput.
+Revision C is the latest revision and is being prepared for mass production. It provides 16 I/O pins with a maximum frequency of approx. 100 MHz\*, independent direction control and independent programmable pull-up/pull-down resistors. The I/O pins are grouped into two I/O ports that can use any voltage from 1.8 V to 5 V, sense and monitor I/O voltage of the device under test, as well as provide up to 150 mA of power. The board uses USB 2 for power, configuration, and communication, achieving up to 336 Mbps (42 MB/s) of sustained combined throughput.
 
 <sub>\* Maximum frequency achievable in practice depends on many factors and will vary greatly with specific interface and applet design. 24 MHz non-DDR can be achieved for most interfaces with minimal effort.</sub>
 
