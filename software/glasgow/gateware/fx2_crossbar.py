@@ -217,7 +217,7 @@ class _INFIFO(Module, _FIFOInterface):
         self.flush = Signal(reset=auto_flush)
         if asynchronous:
             _flush_s = Signal()
-            self.specials += MultiReg(self.flush, self.flush_s, reset=auto_flush)
+            self.specials += MultiReg(self.flush, _flush_s, reset=auto_flush)
         else:
             _flush_s = self.flush
 
