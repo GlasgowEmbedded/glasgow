@@ -14,6 +14,30 @@ The Glasgow hardware can support many digital interfaces because it uses reconfi
 
 The Glasgow software is a set of building blocks designed to eliminate incidental complexity. Each interface is packaged into a self-contained *applet* that can be used directly from the command line, or reused as a part of a more complex system. Using Glasgow does not require any programming knowledge, although it becomes much more powerful if you know a bit of Python.
 
+## What can I do with Glasgow?
+
+Some of the tasks Glasgow can do well are:
+
+  * communicate via UART,
+    * automatically determine and follow the baud rate of device under test,
+  * initiate transactions via SPI or I²C,
+  * read and write 24-series EEPROMs,
+  * read and write 25-series Flash memories,
+    * determine memory parameters via SFDP,
+  * read and write ONFI-compatible Flash memories,
+    * determine memory parameters via ONFI parameter page,
+  * program and verify AVR microcontrollers with SPI interface,
+  * automatically determine unknown JTAG pinout,
+  * play back JTAG SVF files,
+  * debug ARC processors via JTAG,
+  * debug some MIPS processors via EJTAG,
+  * program and verify XC9500XL CPLDs via JTAG,
+  * synthesize sound using a Yamaha OPL chip and play it in real time on a webpage,
+  * read raw modulated data from 5.25"/3.5" floppy drives,
+  * ... and more!
+
+Everything above can be done with only a Glasgow revC board, some wires, and depending on the device under test, external power.
+
 ## What hardware does Glasgow use?
 
 The Glasgow hardware evolves over time, with each major milestone called a "revision". Although all revisions are, and will always be supported with the same software, they vary significantly in their capabilities, and the chosen revision will limit the possible tasks.
