@@ -2598,7 +2598,7 @@ F 2 "Resistor_SMD:R_0603_1608Metric" V 10380 5450 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/54/RL-764981.pdf" H 10450 5450 50  0001 C CNN
 F 4 "Bourns" H 4300 500 50  0001 C CNN "Mfg"
 F 5 "CRL0603-JW-R680ELF" H 4300 500 50  0001 C CNN "MPN"
-F 6 "res-0603-0.68" H 10450 5450 50  0001 C CNN "1b2-bom-key"
+F 6 "res-0603-0_68" H 10450 5450 50  0001 C CNN "1b2-bom-key"
 	1    10450 5450
 	0    -1   -1   0   
 $EndComp

@@ -3038,6 +3038,7 @@ F 0 "U8" H 9800 5092 50  0000 C CNN
 F 1 "TLV73312PQDRVRQ1" H 9800 5001 50  0000 C CNN
 F 2 "Glasgow:DFN-6-1EP_2x2mm_P0.65mm_EP1x1.6mm_ThermalVias" H 9800 5075 50  0001 C CIN
 F 3 "http://www.ti.com/lit/ds/symlink/tlv733p-q1.pdf" H 9800 4800 50  0001 C CNN
+F 4 "ic-dfn6-tlv73312pqrdvrq1" H 9800 4750 50  0001 C CNN "1b2-bom-key"
 	1    9800 4750
 	1    0    0    -1  
 $EndComp
@@ -3049,6 +3050,7 @@ F 0 "U36" H 9800 6142 50  0000 C CNN
 F 1 "TLV75533PDRVR" H 9800 6051 50  0000 C CNN
 F 2 "Glasgow:DFN-6-1EP_2x2mm_P0.65mm_EP1x1.6mm_ThermalVias" H 9800 6125 50  0001 C CIN
 F 3 "http://www.ti.com/lit/ds/symlink/tlv755p.pdf" H 9800 5850 50  0001 C CNN
+F 4 "ic-dfn6-tlv75533pdrvr" H 9800 5800 50  0001 C CNN "1b2-bom-key"
 	1    9800 5800
 	1    0    0    -1  
 $EndComp
@@ -3215,6 +3217,7 @@ F 2 "Capacitor_SMD:CP_Elec_5x3.9" H 8238 4900 50  0001 C CNN
 F 3 "https://www.chemi-con.co.jp/cgi-bin/CAT_DB/SEARCH/cat_db_al.cgi?e=e&j=p&pdfname=pxf" H 8200 5050 50  0001 C CNN
 F 4 "APXF6R3ARA151ME40G" H 8200 5050 50  0001 C CNN "MPN"
 F 5 "United Chemi-Con" H 8200 5050 50  0001 C CNN "Mfg"
+F 6 "cap-elec-5x3_9-150u" H 8200 5050 50  0001 C CNN "1b2-bom-key"
 	1    8200 5050
 	1    0    0    -1  
 $EndComp
