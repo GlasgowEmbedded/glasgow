@@ -56,6 +56,16 @@ Revision C is the revision being actively worked on. It provides 16 I/O pins wit
 
 <sub>\* Maximum frequency achievable in practice depends on many factors and will vary greatly with specific interface and applet design. 24 MHz non-DDR can be achieved for most interfaces with minimal effort.</sub>
 
+## What software does Glasgow use?
+
+Glasgow is written entirely in Python 3. The interface logic that runs on the FPGA is described using [Migen](https://m-labs.hk/migen/), which is a Python-based domain specific language. The supporting code that runs on the host PC is written in Python with [asyncio](https://docs.python.org/3/library/asyncio.html). This way, the logic on the FPGA can be assembled on demand for any requested configuration, keeping it as fast and compact as possible.
+
+Glasgow would not be possible without the [open-source iCE40 FPGA toolchain](http://www.clifford.at/icestorm/), which is not only very reliable but also extremely fast. It is so fast that FPGA bitstreams are not cached (beyond not rebuilding the bitstream already on the device), as it only takes a few seconds to build one from scratch for something like an UART. When developing a new applet it is rarely necessary to wait for the toolchain.
+
+Implementing reliable, high-performance USB communication is not trivial—packetization, buffering, and USB quirks add up. Glasgow abstracts away USB: on the FPGA, the applet gateware writes to or reads from a FIFO, and on the host, applet software writes to or reads from a socket-like interface. Idiomatic Python code can communicate at maximum USB 2 bulk bandwidth on a modern PC without additional effort. Moreover, when a future Glasgow revision will use Ethernet in addition to USB, no changes to applet code will be required.
+
+Debugging new applets can be hard, especially if bidirectional buses are involved. Glasgow provides a built-in cycle-accurate logic analyzer that can relate the I/O pin level and direction changes to commands and responses received and sent by the applet. The logic analyzer compresses waveforms and can pause the applet if its buffer is about to overflow.
+
 ## Contributors
 
   * [@whitequark](https://github.com/whitequark) came up with the design, coordinates the project and implements most of gateware and software;
@@ -67,6 +77,6 @@ Revision C is the revision being actively worked on. It provides 16 I/O pins wit
 
 ## License
 
-_Glasgow_ is distributed under the terms of both 0-clause BSD license as well as Apache 2.0 license.
+Glasgow is distributed under the terms of both 0-clause BSD license as well as Apache 2.0 license.
 
 See [LICENSE-0BSD](LICENSE-0BSD.txt) and [LICENSE-Apache-2.0.txt](LICENSE-Apache-2.0.txt) for details.
