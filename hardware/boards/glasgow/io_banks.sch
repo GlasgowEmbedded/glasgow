@@ -1375,7 +1375,7 @@ AR Path="/5C961091" Ref="J?"  Part="1"
 AR Path="/5C7B59B0/5C961091" Ref="J4"  Part="1" 
 F 0 "J4" H 4500 2300 50  0000 C CNN
 F 1 "Conn_01x02" H 4580 2401 50  0001 L CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Horizontal" H 4500 2500 50  0001 C CNN
+F 2 "Glasgow:Molex_KK-254_1x02_P2.54mm_Horizontal" H 4500 2500 50  0001 C CNN
 F 3 "https://www.mouser.hk/datasheet/2/418/NG_CD_640455_Y3-1255934.pdf" H 4500 2500 50  0001 C CNN
 F 4 "Molex" H -6100 -350 50  0001 C CNN "Mfg"
 F 5 "22-05-3021" H -6100 -350 50  0001 C CNN "MPN"
