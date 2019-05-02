@@ -3996,7 +3996,7 @@
     (fp_text reference TP17 (at 0 1.448) (layer B.SilkS) hide
       (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
     )
-    (fp_text value 1V2 (at 0 -1.55) (layer B.Fab)
+    (fp_text value 1V2 (at 0 -1.55) (layer B.Fab) hide
       (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
     )
     (fp_circle (center 0 0) (end 0 -0.7) (layer B.SilkS) (width 0.12))
