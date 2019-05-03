@@ -315,7 +315,6 @@ class PDIG1DisplayInterface(PDIDisplayInterface):
 
 
 class DisplayPDIApplet(GlasgowApplet, name="display-pdi"):
-    preview = True
     logger = logging.getLogger(__name__)
     help = "display images on Pervasive Display Inc EPD panels"
     description = """
