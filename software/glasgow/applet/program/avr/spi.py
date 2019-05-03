@@ -35,7 +35,7 @@ class ProgramAVRInterface:
         self._log("programming enable")
 
         await self.lower.lower.device.write_register(self._addr_dut_reset, 1)
-        time.sleep(0.020)
+        await self.lower.delay_ms(20)
 
         _, _, echo, _ = await self._command(0b1010_1100, 0b0101_0011, 0, 0)
         if echo == 0b0101_0011:
@@ -45,8 +45,9 @@ class ProgramAVRInterface:
 
     async def programming_disable(self):
         self._log("programming disable")
+        await self.lower.sync()
         await self.lower.lower.device.write_register(self._addr_dut_reset, 0)
-        time.sleep(0.020)
+        await self.lower.delay_ms(20)
 
     async def is_busy(self):
         self._log("poll ready/busy flag")
