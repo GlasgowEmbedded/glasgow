@@ -149,11 +149,12 @@ class SPIMasterSubtarget(Module):
         )
         self.comb += self.clkgen.reset.eq(~self.fsm.ongoing("TRANSFER")),
         self.fsm.act("TRANSFER",
-            If(self.clkgen.stb_f,
+            If(self.clkgen.stb_r,
+                NextValue(bitno, bitno - 1)
+            ).Elif(self.clkgen.stb_f,
                 If(bitno == 0,
                     NextState("SEND-DATA")
                 ),
-                NextValue(bitno, bitno - 1)
             )
         )
         self.fsm.act("SEND-DATA",
