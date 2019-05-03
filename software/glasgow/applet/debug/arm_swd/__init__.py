@@ -357,6 +357,8 @@ class DebugARMSWDApplet(GlasgowApplet, name="debug-arm-swd"):
     description = """
     Debug ARM Cortex microcontrollers via SWD.
     """
+    # SWD I/O isn't compatible with A0 level shifters.
+    required_revision = "C0"
 
     __pins = ("clk", "io")
 
