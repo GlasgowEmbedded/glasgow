@@ -15,7 +15,7 @@ from .memory.floppy import MemoryFloppyApplet
 
 from .debug.arc import DebugARCApplet
 from .debug.mips import DebugMIPSApplet
-from .debug.arm_swd import DebugARMSWDApplet
+from .debug.arm.swd import DebugARMSWDApplet
 
 from .program.avr.spi import ProgramAVRSPIApplet
 from .program.ice40_flash import ProgramICE40FlashApplet
