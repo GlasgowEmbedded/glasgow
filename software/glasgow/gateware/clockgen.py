@@ -71,20 +71,22 @@ class ClockGen(Module):
             # General case.
             # Implementation: counter.
             counter = Signal(max=cyc)
+            clk_r   = Signal()
             self.sync += [
                 counter.eq(counter - 1),
                 If(counter == 0,
                     counter.eq(cyc - 1),
                 ),
-                If(self.stb_r,
+                If(counter == cyc // 2,
                     self.clk.eq(1),
-                ).Elif(self.stb_f,
+                ).Elif(counter == 0,
                     self.clk.eq(0),
                 ),
+                clk_r.eq(self.clk),
             ]
             self.comb += [
-                self.stb_r.eq(counter == cyc // 2),
-                self.stb_f.eq(counter == 0),
+                self.stb_r.eq(~clk_r &  self.clk),
+                self.stb_f.eq( clk_r & ~self.clk),
             ]
 
     @staticmethod
