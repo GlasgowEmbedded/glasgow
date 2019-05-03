@@ -34,9 +34,6 @@ class SWDBus(Module):
             pads.io_t.oe.eq(oe),
             pads.io_t.o.eq(o),
             i.eq(pads.io_t.i),
-
-            pads.tmp_t.oe.eq(1),
-            pads.tmp_t.o.eq(oe),
         ]
 
         half_cyc = period_cyc // 2
@@ -361,7 +358,7 @@ class DebugARMSWDApplet(GlasgowApplet, name="debug-arm-swd"):
     Debug ARM Cortex microcontrollers via SWD.
     """
 
-    __pins = ("clk", "io", "tmp")
+    __pins = ("clk", "io")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
