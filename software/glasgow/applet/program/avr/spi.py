@@ -8,7 +8,7 @@ import collections
 from migen import *
 from fx2.format import autodetect, input_data, output_data
 
-from ....database.atmel.avr import *
+from ....database.microchip.avr import *
 from ...interface.spi_master import SPIMasterSubtarget, SPIMasterInterface
 from ... import *
 from . import AVRError
