@@ -881,7 +881,7 @@ class MemoryFloppyApplet(GlasgowApplet, name="memory-floppy"):
                 for track in range(args.first, args.last + 1):
                     await floppy_iface.seek_track(track)
                     data = await floppy_iface.read_track_raw(redundancy=args.redundancy)
-                    args.file.write(struct.pack(">BBL", track & 1, track >> 1, len(data)))
+                    args.file.write(struct.pack(">LBB", len(data), track >> 1, track & 1))
                     args.file.write(data)
                     args.file.flush()
 
@@ -980,9 +980,9 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
 
     def iter_tracks(self, file):
         while True:
-            header = file.read(struct.calcsize(">BBL"))
+            header = file.read(struct.calcsize(">LBB"))
             if header == b"": break
-            head, track, size = struct.unpack(">BBL", header)
+            size, track, head = struct.unpack(">LBB", header)
             yield track, head, file.read(size)
 
     def iter_mfm_sectors(self, symbstream, verbose=False):
@@ -1062,9 +1062,9 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
 
     async def run(self, args):
         if args.operation == "index":
-            for head, track, bytestream in self.iter_tracks(args.file):
-                self.logger.info("track %d head %d: %d samples captured",
-                                 head, track, len(bytestream) * 8)
+            for track, head, bytestream in self.iter_tracks(args.file):
+                self.logger.info("track %d head %d: %d edges captured",
+                                 track, head, len(bytestream))
                 if args.no_decode:
                     continue
 
@@ -1080,9 +1080,9 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
 
             try:
                 curr_lba = 0
-                for head, track, bytestream in self.iter_tracks(args.raw_file):
+                for track, head, bytestream in self.iter_tracks(args.raw_file):
                     self.logger.info("processing track %d head %d",
-                                     head, track)
+                                     track, head)
 
                     mfm        = SoftwareMFMDecoder(self.logger)
                     symbstream = mfm.demodulate(mfm.lock(mfm.bits(bytestream)))
