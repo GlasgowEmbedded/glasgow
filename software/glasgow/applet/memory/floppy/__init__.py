@@ -601,6 +601,15 @@ class SoftwareMFMDecoder:
     def _log(self, message, *args):
         self._logger.log(logging.DEBUG, "soft-MFM: " + message, *args)
 
+    def edges(self, bytestream):
+        edge_len = 0
+        for byte in bytestream:
+            edge_len += byte
+            if byte == 0xfd:
+                continue
+            yield edge_len
+            edge_len = 0
+
     def bits(self, bytestream):
         prev_byte = 0
         for curr_byte in bytestream:
@@ -952,6 +961,18 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
         # TODO(py3.7): add required=True
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
+        p_histogram = p_operation.add_parser(
+            "histogram", help="plot distribution of transition periods")
+        p_histogram.add_argument(
+            "file", metavar="RAW-FILE", type=argparse.FileType("rb"),
+            help="read raw disk image from RAW-FILE")
+        p_histogram.add_argument(
+            "tracks", metavar="TRACK", type=int, nargs="*", default=[0, 1, 9, 29, 39],
+            help="plot data for head 0 of each TRACK (deafult: %(default)s)")
+        p_histogram.add_argument(
+            "--range", metavar="MAX", type=int, default=300,
+            help="consider only edges in [0, MAX] range")
+
         p_index = p_operation.add_parser(
             "index", help="discover and verify raw disk image contents and MFM sectors")
         p_index.add_argument(
@@ -983,6 +1004,8 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             header = file.read(struct.calcsize(">LBB"))
             if header == b"": break
             size, track, head = struct.unpack(">LBB", header)
+            self.logger.info("track %d head %d: %d edges captured",
+                             track, head, size)
             yield track, head, file.read(size)
 
     def iter_mfm_sectors(self, symbstream, verbose=False):
@@ -1061,10 +1084,38 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
                 state = "IDLE"
 
     async def run(self, args):
+        if args.operation == "histogram":
+            import numpy as np
+            import matplotlib.pyplot as plt
+
+            timebase = 48e-9 * 1e6
+            data = []
+            for track, head, bytestream in self.iter_tracks(args.file):
+                if head != 0 or track not in args.tracks:
+                    continue
+
+                mfm = SoftwareMFMDecoder(self.logger)
+                data.append(np.array(list(mfm.edges(bytestream))) * timebase)
+
+            fig, ax = plt.subplots()
+            fig.suptitle("Domain size histogram for {}".format(args.file.name))
+            ax.hist(data,
+                bins     = [x * timebase for x in range(args.range)],
+                range    = [0, args.range * timebase],
+                label    = ["track {}".format(track) for track in args.tracks],
+                alpha    = 0.5,
+                histtype = "step")
+            ax.set_xlabel("domain size (µs)")
+            ax.set_ylabel("count")
+            ax.set_yscale("log")
+            ax.set_ylim(1)
+            ax.grid()
+            ax.legend()
+
+            plt.show()
+
         if args.operation == "index":
             for track, head, bytestream in self.iter_tracks(args.file):
-                self.logger.info("track %d head %d: %d edges captured",
-                                 track, head, len(bytestream))
                 if args.no_decode:
                     continue
 
