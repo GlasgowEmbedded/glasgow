@@ -863,7 +863,7 @@ class MemoryFloppyApplet(GlasgowApplet, name="memory-floppy"):
             help="read from track FIRST")
         p_read_raw.add_argument(
             "last", metavar="LAST", type=int,
-            help="read until track LAST (inclusive; 161 for most 3.5\" disks)")
+            help="read until track LAST (inclusive; 159 for most 3.5\" disks)")
 
         p_read_track = p_operation.add_parser(
             "read-track", help="read and MFM-decode track data")
@@ -967,8 +967,8 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             "file", metavar="RAW-FILE", type=argparse.FileType("rb"),
             help="read raw disk image from RAW-FILE")
         p_histogram.add_argument(
-            "tracks", metavar="TRACK", type=int, nargs="*", default=[0, 1, 9, 29, 39],
-            help="plot data for head 0 of each TRACK (deafult: %(default)s)")
+            "tracks", metavar="TRACK", type=int, nargs="*", default=[0, 1, 10, 30, 50, 70],
+            help="plot data for each TRACK read by one head (deafult: %(default)s)")
         p_histogram.add_argument(
             "--head", metavar="HEAD", type=int, choices=(0, 1), default=0,
             help="consider only head HEAD (one of: %(choices)s)")
