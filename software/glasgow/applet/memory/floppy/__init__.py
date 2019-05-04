@@ -372,13 +372,19 @@ CMD_TRK   = 0x04
 CMD_MEAS  = 0x05
 CMD_READ_RAW = 0x06
 
-TLR_DATA  = 0x00
-TLR_ERROR = 0xff
-
 
 class ShugartFloppySubtarget(Module):
     def __init__(self, pins, out_fifo, in_fifo, sys_freq):
         self.submodules.bus = bus = ShugartFloppyBus(pins)
+
+        # The pulse width is generated entirely within the drive electronics, so run RDATA through
+        # an edge detector even when performing raw reads.
+        rdata_r = Signal()
+        rdata_e = Signal()
+        self.sync += [
+            rdata_r.eq(bus.rdata),
+            rdata_e.eq(~rdata_r & bus.rdata),
+        ]
 
         spin_up_cyc  = math.ceil(250e-3 * sys_freq) # motor spin up
         setup_cyc    = math.ceil(1e-6   * sys_freq) # pulse setup time
@@ -397,39 +403,34 @@ class ShugartFloppySubtarget(Module):
         cur_rot = Signal(max=16)
         tgt_rot = Signal.like(cur_rot)
 
-        shreg   = Signal(8)
-        bitno   = Signal(max=8)
-        trailer = Signal(max=254)
-        pkt_len = Signal(max=254)
-
-        self.submodules.fsm = FSM(reset_state="READ-COMMAND")
-        self.fsm.act("READ-COMMAND",
+        self.submodules.fsm = FSM(reset_state="RECV-COMMAND")
+        self.fsm.act("RECV-COMMAND",
             in_fifo.flush.eq(1),
             If(timer == 0,
                 If(out_fifo.readable,
                     out_fifo.re.eq(1),
                     NextValue(cmd, out_fifo.dout),
-                    NextState("COMMAND")
+                    NextState("PARSE-COMMAND")
                 )
             ).Else(
                 NextValue(timer, timer - 1)
             )
         )
-        self.fsm.act("COMMAND",
+        self.fsm.act("PARSE-COMMAND",
             If(cmd == CMD_SYNC,
                 If(in_fifo.writable,
                     in_fifo.we.eq(1),
-                    NextState("READ-COMMAND")
+                    NextState("RECV-COMMAND")
                 )
             ).Elif(cmd == CMD_START,
                 NextValue(bus.drvs, 0b11),
                 NextValue(bus.mote, 0b11),
                 NextValue(timer, spin_up_cyc - 1),
-                NextState("READ-COMMAND")
+                NextState("RECV-COMMAND")
             ).Elif(cmd == CMD_STOP,
                 NextValue(bus.drvs, 0),
                 NextValue(bus.mote, 0),
-                NextState("READ-COMMAND")
+                NextState("RECV-COMMAND")
             ).Elif(cmd == CMD_TRK0,
                 NextValue(bus.dir, 0), # DIR->STEP S/H=1/24us
                 NextValue(timer, setup_cyc - 1),
@@ -457,21 +458,19 @@ class ShugartFloppySubtarget(Module):
                 )
             )
         )
+
+        # === Track positioning
         self.fsm.act("TRACK-STEP",
             If(timer == 0,
                 If((cmd == CMD_TRK0) & bus.trk00,
                     NextValue(cur_trk, 0),
                     NextValue(timer, settle_cyc - 1),
-                    NextState("READ-COMMAND")
+                    NextState("RECV-COMMAND")
                 ).Elif((cmd == CMD_TRK) & (cur_trk == tgt_trk),
                     NextValue(timer, settle_cyc - 1),
-                    NextState("READ-COMMAND")
+                    NextState("RECV-COMMAND")
                 ).Else(
-                    If(bus.dir,
-                        NextValue(cur_trk, cur_trk + 1)
-                    ).Else(
-                        NextValue(cur_trk, cur_trk - 1)
-                    ),
+                    NextValue(cur_trk, Mux(bus.dir, cur_trk + 1, cur_trk - 1)),
                     NextValue(bus.step, 1),
                     NextValue(timer, trk_step_cyc - 1),
                     NextState("TRACK-HOLD")
@@ -489,70 +488,57 @@ class ShugartFloppySubtarget(Module):
                 NextValue(timer, timer - 1)
             )
         )
+
+        # === Speed measurement
         self.fsm.act("MEASURE",
             If(bus.index_e,
-                NextState("WRITE-MEASURE-0")
+                NextState("MEASURE-SEND-0")
             ).Else(
                 NextValue(trk_len, trk_len + 1),
             )
         )
         for n in range(3):
-            self.fsm.act("WRITE-MEASURE-%d" % n,
+            self.fsm.act("MEASURE-SEND-%d" % n,
                 If(in_fifo.writable,
                     in_fifo.we.eq(1),
                     in_fifo.din.eq(trk_len[8 * n:]),
-                    NextState("WRITE-MEASURE-%d" % (n + 1) if n < 2 else "READ-COMMAND")
+                    NextState("MEASURE-SEND-%d" % (n + 1) if n < 2 else "RECV-COMMAND")
                 )
             )
+
+        # === Raw data reads
+        rdata_cyc = Signal(8)
+        rdata_ovf = Signal()
+
         self.fsm.act("READ-RAW-SYNC",
             If(bus.index_e,
-                NextValue(shreg, bus.rdata),
-                NextValue(bitno, 1),
-                NextValue(pkt_len, 0),
-                NextState("READ-RAW")
+                NextValue(rdata_ovf, 0),
+                NextState("READ-RAW-SEND-DATA")
             )
         )
-        self.fsm.act("READ-RAW",
-            If((cur_rot == tgt_rot) & bus.index_e,
-                NextValue(trailer, TLR_DATA + pkt_len),
-                NextState("WRITE-TRAILER")
-            ).Else(
-                If(bus.index_e,
+        self.fsm.act("READ-RAW-SEND-DATA",
+            If(bus.index_e,
+                If(cur_rot == tgt_rot,
+                    NextState("READ-RAW-SEND-TRAILER")
+                ).Else(
                     NextValue(cur_rot, cur_rot + 1)
-                ),
-                NextValue(shreg, Cat(bus.rdata, shreg)),
-                NextValue(bitno, bitno + 1),
-                If(bitno == 7,
-                    If(pkt_len == 254,
-                        NextValue(trailer, TLR_ERROR),
-                        NextState("WRITE-TRAILER")
-                    ).Else(
-                        in_fifo.we.eq(1),
-                        in_fifo.din.eq(shreg),
-                        NextValue(pkt_len, pkt_len + 1),
-                    )
-                ).Elif(pkt_len == 254,
-                    in_fifo.we.eq(1),
-                    in_fifo.din.eq(TLR_DATA + pkt_len),
-                    NextValue(pkt_len, 0)
-                ),
-                If(in_fifo.we & ~in_fifo.writable,
-                    NextValue(trailer, TLR_ERROR),
-                    NextValue(pkt_len, pkt_len),
-                    NextState("WRITE-TRAILER")
                 )
+            ),
+            NextValue(rdata_cyc, Mux(rdata_e, 0, rdata_cyc + 1)),
+            If(rdata_e | (rdata_cyc == 0xfd),
+                in_fifo.din.eq(rdata_cyc),
+                in_fifo.we.eq(1),
+            ),
+            If(in_fifo.we & ~in_fifo.writable,
+                NextValue(rdata_ovf, 1),
+                NextState("READ-RAW-SEND-TRAILER")
             )
         )
-        self.fsm.act("WRITE-TRAILER",
+        self.fsm.act("READ-RAW-SEND-TRAILER",
             If(in_fifo.writable,
                 in_fifo.we.eq(1),
-                If(pkt_len != 254,
-                    in_fifo.din.eq(0xaa),
-                    NextValue(pkt_len, pkt_len + 1),
-                ).Else(
-                    in_fifo.din.eq(trailer),
-                    NextState("READ-COMMAND")
-                )
+                in_fifo.din.eq(0xfe | rdata_ovf),
+                NextState("RECV-COMMAND")
             )
         )
 
@@ -596,27 +582,19 @@ class ShugartFloppyInterface:
                   self._sys_clk_freq / cycles * 60)
         return cycles
 
-    async def _read_packet(self):
-        data     = await self.lower.read(254)
-        trailer, = await self.lower.read(1)
-        if trailer != TLR_ERROR:
-            await asyncio.sleep(0)
-            return data[:trailer]
-
     async def read_track_raw(self, redundancy=1):
         self._log("read track raw")
-        index = 0
-        data  = bytearray()
+        data  = []
         await self.lower.write([CMD_READ_RAW, redundancy])
         while True:
-            packet = await self._read_packet()
-            if packet is None:
+            packet = await self.lower.read()
+            if packet[-1] == 0xff:
                 raise GlasgowAppletError("FIFO overflow while reading track")
-
-            data  += packet
-            index += 1
-            if len(packet) < 254:
-                return data
+            elif packet[-1] == 0xfe:
+                data.append(packet[:-1])
+                return b"".join(data)
+            else:
+                data.append(packet)
 
 
 class SoftwareMFMDecoder:
@@ -629,10 +607,13 @@ class SoftwareMFMDecoder:
         self._logger.log(logging.DEBUG, "soft-MFM: " + message, *args)
 
     def bits(self, bytestream):
-        curr_bit = 0
-        for byte in bytestream:
-            for bit in range(7, -1, -1):
-                yield (byte >> bit) & 1
+        prev_byte = 0
+        for curr_byte in bytestream:
+            if prev_byte != 0xfd:
+                yield 1
+            for _ in range(curr_byte):
+                yield 0
+            prev_byte = curr_byte
 
     @staticmethod
     def cycle(bitstream):
