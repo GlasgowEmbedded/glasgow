@@ -326,6 +326,7 @@ class ShugartFloppyBus(Module):
         self.dskchg = Signal()
 
         self.index_e = Signal()
+        self.rdata_e = Signal()
 
         ###
 
@@ -363,6 +364,10 @@ class ShugartFloppyBus(Module):
         self.sync += index_r.eq(self.index)
         self.comb += self.index_e.eq(index_r & ~self.index)
 
+        rdata_r = Signal()
+        self.sync += rdata_r.eq(self.rdata)
+        self.comb += self.rdata_e.eq(~rdata_r & self.rdata)
+
 
 CMD_SYNC  = 0x00
 CMD_START = 0x01
@@ -376,15 +381,6 @@ CMD_READ_RAW = 0x06
 class ShugartFloppySubtarget(Module):
     def __init__(self, pins, out_fifo, in_fifo, sys_freq):
         self.submodules.bus = bus = ShugartFloppyBus(pins)
-
-        # The pulse width is generated entirely within the drive electronics, so run RDATA through
-        # an edge detector even when performing raw reads.
-        rdata_r = Signal()
-        rdata_e = Signal()
-        self.sync += [
-            rdata_r.eq(bus.rdata),
-            rdata_e.eq(~rdata_r & bus.rdata),
-        ]
 
         spin_up_cyc  = math.ceil(250e-3 * sys_freq) # motor spin up
         setup_cyc    = math.ceil(1e-6   * sys_freq) # pulse setup time
@@ -518,21 +514,20 @@ class ShugartFloppySubtarget(Module):
         )
         self.fsm.act("READ-RAW-SEND-DATA",
             If(bus.index_e,
+                NextValue(cur_rot, cur_rot + 1),
                 If(cur_rot == tgt_rot,
                     NextState("READ-RAW-SEND-TRAILER")
-                ).Else(
-                    NextValue(cur_rot, cur_rot + 1)
-                )
+                ),
             ),
-            NextValue(rdata_cyc, Mux(rdata_e, 0, rdata_cyc + 1)),
-            If(rdata_e | (rdata_cyc == 0xfd),
+            NextValue(rdata_cyc, Mux(bus.rdata_e, 0, rdata_cyc + 1)),
+            If(bus.rdata_e | (rdata_cyc == 0xfd),
                 in_fifo.din.eq(rdata_cyc),
                 in_fifo.we.eq(1),
+                If(~in_fifo.writable,
+                    NextValue(rdata_ovf, 1),
+                    NextState("READ-RAW-SEND-TRAILER")
+                )
             ),
-            If(in_fifo.we & ~in_fifo.writable,
-                NextValue(rdata_ovf, 1),
-                NextState("READ-RAW-SEND-TRAILER")
-            )
         )
         self.fsm.act("READ-RAW-SEND-TRAILER",
             If(in_fifo.writable,
