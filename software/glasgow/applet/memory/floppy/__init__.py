@@ -970,7 +970,10 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             "tracks", metavar="TRACK", type=int, nargs="*", default=[0, 1, 9, 29, 39],
             help="plot data for head 0 of each TRACK (deafult: %(default)s)")
         p_histogram.add_argument(
-            "--range", metavar="MAX", type=int, default=300,
+            "--head", metavar="HEAD", type=int, choices=(0, 1), default=0,
+            help="consider only head HEAD (one of: %(choices)s)")
+        p_histogram.add_argument(
+            "--range", metavar="MAX", type=int, default=600,
             help="consider only edges in [0, MAX] range")
 
         p_index = p_operation.add_parser(
@@ -1091,17 +1094,17 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             timebase = 48e-9 * 1e6
             data = []
             for track, head, bytestream in self.iter_tracks(args.file):
-                if head != 0 or track not in args.tracks:
+                if head != args.head or track not in args.tracks:
                     continue
 
                 mfm = SoftwareMFMDecoder(self.logger)
                 data.append(np.array(list(mfm.edges(bytestream))) * timebase)
 
             fig, ax = plt.subplots()
-            fig.suptitle("Domain size histogram for {}".format(args.file.name))
+            fig.suptitle("Domain size histogram for {} (head {})"
+                         .format(args.file.name, args.head))
             ax.hist(data,
                 bins     = [x * timebase for x in range(args.range)],
-                range    = [0, args.range * timebase],
                 label    = ["track {}".format(track) for track in args.tracks],
                 alpha    = 0.5,
                 histtype = "step")
