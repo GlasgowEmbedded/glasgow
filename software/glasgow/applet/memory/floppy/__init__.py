@@ -604,11 +604,11 @@ class SoftwareMFMDecoder:
     def edges(self, bytestream):
         edge_len = 0
         for byte in bytestream:
-            edge_len += byte
+            edge_len += 1 + byte
             if byte == 0xfd:
                 continue
             yield edge_len
-            edge_len = 0
+            edge_len  = 0
 
     def bits(self, bytestream):
         prev_byte = 0
@@ -619,10 +619,55 @@ class SoftwareMFMDecoder:
                 yield 0
             prev_byte = curr_byte
 
-    @staticmethod
-    def cycle(bitstream):
-        yield from bitstream()
-        yield from bitstream()
+    def domains(self, bitstream):
+        polarity = 1
+        for edge in bitstream:
+            if edge:
+                polarity *= -1
+            yield polarity
+
+    def locknew(self, bitstream):
+        state      = "COARSE"
+        nco_period = -1
+        nco_phase  = 0
+        nco_clock  = 0
+        nco_error  = 0
+        nco_adjust = 0
+        est_needed = 15
+        est_count  = 0
+
+        for edge in bitstream:
+            if state == "COARSE":
+                if edge:
+                    if nco_phase > 0 and (nco_phase >> 1) < (nco_period & 0xffff):
+                        nco_period = nco_phase >> 1
+                    if est_count == est_needed:
+                        self._log("pll coarse period=%d", nco_period)
+                        state      = "FINE"
+                    est_count += 1
+                    nco_phase  = 0
+                else:
+                    nco_phase += 1
+
+                yield (nco_phase, nco_period, 0)
+
+            elif state == "FINE":
+                nco_clock = (nco_phase < nco_period >> 1)
+                if nco_phase >= nco_period:
+                    nco_phase   = 0
+                else:
+                    nco_phase  += 1 - nco_adjust
+                    nco_period += nco_adjust
+                    nco_adjust  = 0
+
+                if edge:
+                    if nco_clock:
+                        nco_adjust = -1
+                    else:
+                        nco_adjust =  1
+                    nco_error = nco_phase - (nco_period >> 1)
+
+                yield (nco_phase, nco_period, nco_error)
 
     def lock(self, bitstream):
         cur_bit   = 0
@@ -871,15 +916,6 @@ class MemoryFloppyApplet(GlasgowApplet, name="memory-floppy"):
             "track", metavar="TRACK", type=int,
             help="read track TRACK")
 
-        p_test_pll = p_operation.add_parser(
-            "test-pll", help="test software delay-locked loop for robustness")
-        p_test_pll.add_argument(
-            "count", metavar="COUNT", type=int,
-            help="lock PLL on random bit offset COUNT times")
-        p_test_pll.add_argument(
-            "track", metavar="TRACK", type=int,
-            help="read track TRACK")
-
     async def interact(self, device, args, floppy_iface):
         self.logger.info("starting up the drive")
         await floppy_iface.start()
@@ -906,33 +942,6 @@ class MemoryFloppyApplet(GlasgowApplet, name="memory-floppy"):
                         print("%02X" % data, end=" ")
                 print()
 
-            if args.operation == "test-pll":
-                await floppy_iface.seek_track(args.track)
-                bytestream = await floppy_iface.read_track_raw()
-                mfm        = SoftwareMFMDecoder(self.logger)
-                bitstream  = list(mfm.bits(bytestream)) * 2
-
-                lock_times = []
-                bit_times  = []
-                try:
-                    for _ in range(args.count):
-                        start = random.randint(0, len(bitstream) // 2)
-                        next(mfm.lock(bitstream[start:]))
-                        lock_times.append(mfm._lock_time)
-                        bit_times.append(mfm._bit_time)
-                        print(".", end="", flush=True)
-                except Exception as e:
-                    self.logger.warning("failed to lock (%s)", type(e))
-                else:
-                    print()
-                    self.logger.info("locks=%d ttl=%d(%d-%d)us bit=%d(%d-%d)clk",
-                                     args.count,
-                                     sum(lock_times) // len(lock_times) // 30000,
-                                     min(lock_times) // 30000,
-                                     max(lock_times) // 30000,
-                                     sum(bit_times) // len(bit_times),
-                                     min(bit_times),
-                                     max(bit_times))
         finally:
             await floppy_iface.stop()
 
@@ -973,8 +982,26 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             "--head", metavar="HEAD", type=int, choices=(0, 1), default=0,
             help="consider only head HEAD (one of: %(choices)s)")
         p_histogram.add_argument(
-            "--range", metavar="MAX", type=int, default=600,
-            help="consider only edges in [0, MAX] range")
+            "--range", metavar="MAX", type=int, default=8,
+            help="consider only edges in [0, MAX] range, in microseconds")
+
+        p_train = p_operation.add_parser(
+            "train", help="train PLL and collect statistics")
+        p_train.add_argument(
+            "--ui", metavar="PERIOD", type=float, required=True,
+            help="set UI length to PERIOD, in microseconds")
+        p_train.add_argument(
+            "file", metavar="RAW-FILE", type=argparse.FileType("rb"),
+            help="read raw disk image from RAW-FILE")
+        p_train.add_argument(
+            "track", metavar="TRACK", type=int,
+            help="use track number TRACK")
+        p_train.add_argument(
+            "offset", metavar="OFFSET", type=int, nargs="?",
+            help="skip first OFFSET data edges (default: don't skip)")
+        p_train.add_argument(
+            "limit", metavar="LIMIT", type=int, nargs="?",
+            help="only consider first LIMIT data edges (default: consider all)")
 
         p_index = p_operation.add_parser(
             "index", help="discover and verify raw disk image contents and MFM sectors")
@@ -1087,11 +1114,12 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
                 state = "IDLE"
 
     async def run(self, args):
+        timebase = 1e6 / 48e6
+
         if args.operation == "histogram":
             import numpy as np
             import matplotlib.pyplot as plt
 
-            timebase = 48e-9 * 1e6
             data = []
             for track, head, bytestream in self.iter_tracks(args.file):
                 if head != args.head or track not in args.tracks:
@@ -1104,18 +1132,71 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             fig.suptitle("Domain size histogram for {} (head {})"
                          .format(args.file.name, args.head))
             ax.hist(data,
-                bins     = [x * timebase for x in range(args.range)],
+                bins     = [x * timebase for x in range(600)],
                 label    = ["track {}".format(track) for track in args.tracks],
                 alpha    = 0.5,
                 histtype = "step")
             ax.set_xlabel("domain size (µs)")
             ax.set_ylabel("count")
             ax.set_yscale("log")
-            ax.set_ylim(1)
+            ax.set_xlim(0, args.range)
             ax.grid()
             ax.legend()
 
             plt.show()
+
+        if args.operation == "train":
+            import numpy as np
+            import matplotlib.pyplot as plt
+
+            for track, head, bytestream in self.iter_tracks(args.file):
+                if (track << 1) | head != args.track:
+                    continue
+
+                if args.offset is not None or args.limit is not None:
+                    bytestream = bytestream[args.offset:args.offset + args.limit]
+                mfm = SoftwareMFMDecoder(self.logger)
+
+                bits    = list(mfm.bits(bytestream))
+                edges   = list(mfm.edges(bytestream))
+                domains = list(mfm.domains(bits))
+                plldata = list(mfm.locknew(bits))
+
+                ui_cycles = args.ui / timebase
+
+                ui_time = 0
+                ui_times, ui_lengths = [], []
+                for edge in edges:
+                    ui_times.append(ui_time * timebase)
+                    ui_lengths.append(edge / ui_cycles)
+                    ui_time += edge
+
+                fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True)
+                times = np.arange(0, len(bits)) * timebase
+
+                ax1.plot(times, np.array([x[1] / ui_cycles for x in plldata]),
+                         color="green", label="NCO period", linewidth=1)
+                ax1.axhline(y=ui_cycles * timebase,
+                            color="gray")
+                ax1.set_ylabel("UI")
+                ax1.legend(loc="upper right")
+
+                ax2.plot(times, np.array([x[2] / ui_cycles for x in plldata]),
+                         label="phase error", linewidth=1)
+                ax2.set_ylim(-0.5, 0.5)
+                ax2.set_yticks([-0.5 + 0.2 * x for x in range(6)])
+                ax2.set_ylabel("UI")
+                ax2.legend(loc="upper right")
+
+                ax3.plot(ui_times, ui_lengths, "+",
+                         color="red", label="edge-to-edge time", linewidth=1)
+                ax3.set_xlabel("us")
+                ax3.set_ylim(1, 6)
+                ax3.set_yticks(range(1, 7))
+                ax3.set_ylabel("UI")
+                ax3.legend(loc="upper right")
+
+                plt.show()
 
         if args.operation == "index":
             for track, head, bytestream in self.iter_tracks(args.file):
