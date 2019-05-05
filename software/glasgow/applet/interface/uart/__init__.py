@@ -4,6 +4,7 @@ import logging
 import asyncio
 from migen import *
 
+from ....support.endpoint import *
 from ....gateware.pads import *
 from ....gateware.uart import *
 from ... import *
@@ -202,6 +203,10 @@ class UARTApplet(GlasgowApplet, name="uart"):
         p_pty = p_operation.add_parser(
             "pty", help="connect UART to a pseudo-terminal device file")
 
+        p_socket = p_operation.add_parser(
+            "socket", help="connect UART to a socket")
+        ServerEndpoint.add_argument(p_socket, "endpoint")
+
     async def _monitor_errors(self, device):
         cur_bit_cyc = await device.read_register(self.__addr_bit_cyc, width=4)
         cur_errors  = 0
@@ -296,6 +301,28 @@ class UARTApplet(GlasgowApplet, name="uart"):
 
         await self._forward(master, master, uart)
 
+    async def _interact_socket(self, uart, endpoint):
+        endpoint = await ServerEndpoint("socket", self.logger, endpoint)
+        async def forward_out():
+            while True:
+                try:
+                    data = await asyncio.shield(endpoint.recv())
+                    await uart.write(data)
+                    await uart.flush()
+                except asyncio.CancelledError:
+                    pass
+        async def forward_in():
+            while True:
+                try:
+                    data = await uart.read()
+                    await endpoint.send(data)
+                except asyncio.CancelledError:
+                    pass
+        forward_out_fut = asyncio.ensure_future(forward_out())
+        forward_in_fut  = asyncio.ensure_future(forward_in())
+        await asyncio.wait([forward_out_fut, forward_in_fut],
+                           return_when=asyncio.FIRST_EXCEPTION)
+
     async def interact(self, device, args, uart):
         asyncio.create_task(self._monitor_errors(device))
 
@@ -303,6 +330,8 @@ class UARTApplet(GlasgowApplet, name="uart"):
             await self._interact_tty(uart, args.stream)
         if args.operation == "pty":
             await self._interact_pty(uart)
+        if args.operation == "socket":
+            await self._interact_socket(uart, args.endpoint)
 
 # -------------------------------------------------------------------------------------------------
 
