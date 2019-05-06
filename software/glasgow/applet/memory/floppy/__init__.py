@@ -683,9 +683,12 @@ class MemoryFloppyApplet(GlasgowApplet, name="memory-floppy"):
         try:
             if args.operation == "read-raw":
                 for track in range(args.first, args.last + 1):
+                    cylinder, head = track >> 1, track & 1
+                    self.logger.info("reading C/H %d/%d", cylinder, head)
+
                     await floppy_iface.seek_track(track)
                     data = await floppy_iface.read_track_raw(redundancy=args.redundancy)
-                    args.file.write(struct.pack(">LBB", len(data), track >> 1, track & 1))
+                    args.file.write(struct.pack(">LBB", len(data), cylinder, head))
                     args.file.write(data)
                     args.file.flush()
 
@@ -759,7 +762,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
         for cylinder, head, bytestream in self.iter_tracks(args.file):
             if head != args.head or cylinder not in args.cylinders:
                 continue
-            self.logger.info("processing cylinder %d head %d",
+            self.logger.info("processing C/H %d/%d",
                              cylinder, head)
 
             mfm = SoftwareMFMDecoder(self.logger)
@@ -809,7 +812,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
         for cylinder, head, bytestream in self.iter_tracks(args.file):
             if (cylinder << 1) | head != args.track:
                 continue
-            self.logger.info("processing cylinder %d head %d",
+            self.logger.info("processing C/H %d/%d",
                              cylinder, head)
 
             if args.offset is not None or args.limit is not None:
@@ -870,7 +873,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
 
     def _run_index(self, args):
         for cylinder, head, bytestream in self.iter_tracks(args.file):
-            self.logger.info("cylinder %d head %d: %d edges captured",
+            self.logger.info("indexing C/H %d/%d: %d edges captured",
                              cylinder, head, len(bytestream))
             if args.no_decode:
                 continue
@@ -905,8 +908,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
         try:
             curr_lba = 0
             for cylinder, head, bytestream in self.iter_tracks(args.raw_file):
-                self.logger.info("processing cylinder %d head %d",
-                                 cylinder, head)
+                self.logger.info("processing C/H %d/%d", cylinder, head)
 
                 mfm        = SoftwareMFMDecoder(self.logger)
                 symbstream = mfm.demodulate(mfm.lock(mfm.bits(bytestream)))
