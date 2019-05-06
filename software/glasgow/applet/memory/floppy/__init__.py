@@ -834,13 +834,17 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
                 ui_time += edge
 
             fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True)
+            fig.suptitle("PLL debug output for {}, track {}, range {}+{}"
+                         .format(args.file.name, args.track, args.offset or 0, len(bytestream)))
             times = np.arange(0, len(bits)) * self._timebase
 
             ax1.plot(times, np.array([x[1] / ui_cycles for x in plldata]),
                      color="green", label="NCO period", linewidth=1)
             ax1.axhline(y=ui_cycles * self._timebase,
                         color="gray")
+            ax1.set_ylim(0)
             ax1.set_ylabel("UI")
+            ax1.grid()
             ax1.legend(loc="upper right")
 
             ax2.plot(times, np.array([x[2] / ui_cycles for x in plldata]),
@@ -848,6 +852,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             ax2.set_ylim(-0.5, 0.5)
             ax2.set_yticks([-0.5 + 0.2 * x for x in range(6)])
             ax2.set_ylabel("UI")
+            ax2.grid()
             ax2.legend(loc="upper right")
 
             ax3.plot(ui_times, ui_lengths, "+",
@@ -856,6 +861,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             ax3.set_ylim(1, 6)
             ax3.set_yticks(range(1, 7))
             ax3.set_ylabel("UI")
+            ax3.grid()
             ax3.legend(loc="upper right")
 
             plt.show()
