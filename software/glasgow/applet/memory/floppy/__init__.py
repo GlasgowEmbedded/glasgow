@@ -751,7 +751,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             "--head", metavar="HEAD", type=int, choices=(0, 1), default=0,
             help="consider only head HEAD (one of: %(choices)s)")
         p_histogram.add_argument(
-            "--range", metavar="MAX", type=int, default=8,
+            "--range", metavar="MAX", type=int, default=10,
             help="consider only edges in [0, MAX] range, in microseconds")
 
     def _run_histogram(self, args):
