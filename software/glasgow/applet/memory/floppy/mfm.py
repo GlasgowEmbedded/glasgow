@@ -38,55 +38,45 @@ class SoftwareMFMDecoder:
                 polarity *= -1
             yield polarity
 
-    def lock(self, bitstream, nco_frac_bits=2, debug=False):
-        state      = "COARSE"
-        nco_period = -1
+    def lock(self, bitstream, debug=False, nco_frac_bits=4, nco_init_period=0,
+             nco_min_period=16, nco_max_period=128, pll_kp_exp=6):
+        nco_period = nco_init_period << nco_frac_bits
         nco_phase  = 0
         nco_step   = 1 << nco_frac_bits
         nco_clock  = 0
-        nco_error  = 0
-        nco_adjust = 0
-        est_needed = 15
-        est_count  = 0
-        last_bit   = 0
+        pll_error  = 0
+        pll_feedbk = 0
+        bit_curr   = 0
 
         for has_edge in bitstream:
-            if state == "COARSE":
-                if has_edge:
-                    if nco_phase > 0 and (nco_period == -1 or nco_phase >> 1 < nco_period):
-                        nco_period = nco_phase >> 1
-                    if est_count == est_needed:
-                        self._log("pll coarse period=%d", nco_period)
-                        state      = "FINE"
-                    est_count += 1
-                    nco_phase  = 0
-                else:
-                    nco_phase += nco_step
+            if nco_period <  nco_min_period << nco_frac_bits:
+                nco_period = nco_min_period << nco_frac_bits
+            if nco_period >= nco_max_period << nco_frac_bits:
+                nco_period = nco_max_period << nco_frac_bits
 
-            elif state == "FINE":
-                if has_edge:
-                    last_bit    = 1
-                    nco_error   = nco_phase - (nco_period >> 1)
-                    if nco_clock:
-                        nco_adjust = -1
-                    else:
-                        nco_adjust =  1
-
-                nco_clock = (nco_phase < nco_period >> 1)
-                if nco_phase >= nco_period:
-                    if not debug:
-                        yield [last_bit]
-                    nco_phase   = 0
-                    last_bit    = 0
+            if has_edge:
+                bit_curr    = 1
+                pll_error   = nco_phase - (nco_period >> 1)
+                pll_p_term  = (abs(pll_error) + (1 << (pll_kp_exp - 1))) >> pll_kp_exp
+                if pll_error < 0:
+                    pll_feedbk = +1 * max(1, pll_p_term)
                 else:
-                    nco_phase  += nco_step - nco_adjust
-                    nco_period += nco_adjust
-                    nco_adjust  = 0
+                    pll_feedbk = -1 * max(1, pll_p_term)
+
+            if nco_phase >= nco_period:
+                nco_phase   = 0
+                if not debug:
+                    yield bit_curr
+                bit_curr    = 0
+            else:
+                nco_phase  += nco_step + pll_feedbk
+                nco_period -= pll_feedbk
+                pll_feedbk  = 0
 
             if debug:
                 yield (nco_phase  / nco_step,
                        nco_period / nco_step,
-                       nco_error  / nco_step)
+                       pll_error  / nco_step)
 
     def demodulate(self, chipstream):
         shreg  = []
@@ -97,7 +87,7 @@ class SoftwareMFMDecoder:
         while True:
             while len(shreg) < 64:
                 try:
-                    shreg += next(chipstream)
+                    shreg.append(next(chipstream))
                 except StopIteration:
                     return
 
