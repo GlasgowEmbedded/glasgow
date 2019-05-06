@@ -64,6 +64,14 @@ class SoftwareMFMDecoder:
                     nco_phase += nco_step
 
             elif state == "FINE":
+                if has_edge:
+                    last_bit    = 1
+                    nco_error   = nco_phase - (nco_period >> 1)
+                    if nco_clock:
+                        nco_adjust = -1
+                    else:
+                        nco_adjust =  1
+
                 nco_clock = (nco_phase < nco_period >> 1)
                 if nco_phase >= nco_period:
                     if not debug:
@@ -74,14 +82,6 @@ class SoftwareMFMDecoder:
                     nco_phase  += nco_step - nco_adjust
                     nco_period += nco_adjust
                     nco_adjust  = 0
-
-                if has_edge:
-                    last_bit    = 1
-                    if nco_clock:
-                        nco_adjust = -1
-                    else:
-                        nco_adjust =  1
-                    nco_error   = nco_phase - (nco_period >> 1)
 
             if debug:
                 yield (nco_phase  / nco_step,
