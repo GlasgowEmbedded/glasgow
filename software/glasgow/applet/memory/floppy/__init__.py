@@ -910,12 +910,6 @@ class MemoryFloppyApplet(GlasgowApplet, name="memory-floppy"):
             "last", metavar="LAST", type=int,
             help="read until track LAST (inclusive; 159 for most 3.5\" disks)")
 
-        p_read_track = p_operation.add_parser(
-            "read-track", help="read and MFM-decode track data")
-        p_read_track.add_argument(
-            "track", metavar="TRACK", type=int,
-            help="read track TRACK")
-
     async def interact(self, device, args, floppy_iface):
         self.logger.info("starting up the drive")
         await floppy_iface.start()
@@ -929,18 +923,6 @@ class MemoryFloppyApplet(GlasgowApplet, name="memory-floppy"):
                     args.file.write(struct.pack(">LBB", len(data), track >> 1, track & 1))
                     args.file.write(data)
                     args.file.flush()
-
-            if args.operation == "read-track":
-                await floppy_iface.seek_track(args.track)
-                bytestream = await floppy_iface.read_track_raw()
-                mfm        = SoftwareMFMDecoder(self.logger)
-                datastream = mfm.demodulate(mfm.lock(itertools.cycle(mfm.bits(bytestream))))
-                for comma, data in itertools.islice(datastream, 10):
-                    if comma:
-                        print("K.%02X" % data, end=" ")
-                    else:
-                        print("%02X" % data, end=" ")
-                print()
 
         finally:
             await floppy_iface.stop()
