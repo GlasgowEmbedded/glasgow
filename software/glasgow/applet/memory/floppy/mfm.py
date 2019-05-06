@@ -38,8 +38,9 @@ class SoftwareMFMDecoder:
                 polarity *= -1
             yield polarity
 
-    def lock(self, bitstream, debug=False, nco_frac_bits=4, nco_init_period=0,
-             nco_min_period=16, nco_max_period=128, pll_kp_exp=6):
+    def lock(self, bitstream, *, debug=False,
+             nco_init_period=0, nco_min_period=16, nco_max_period=128,
+             nco_frac_bits=6, pll_kp_exp=5, pll_gph_exp=1):
         nco_period = nco_init_period << nco_frac_bits
         nco_phase  = 0
         nco_step   = 1 << nco_frac_bits
@@ -57,11 +58,12 @@ class SoftwareMFMDecoder:
             if has_edge:
                 bit_curr    = 1
                 pll_error   = nco_phase - (nco_period >> 1)
-                pll_p_term  = (abs(pll_error) + (1 << (pll_kp_exp - 1))) >> pll_kp_exp
+                pll_p_term  = abs(pll_error) >> pll_kp_exp
+                pll_gain    = max(1 << pll_gph_exp, pll_p_term)
                 if pll_error < 0:
-                    pll_feedbk = +1 * max(1, pll_p_term)
+                    pll_feedbk = +1 * pll_gain
                 else:
-                    pll_feedbk = -1 * max(1, pll_p_term)
+                    pll_feedbk = -1 * pll_gain
 
             if nco_phase >= nco_period:
                 nco_phase   = 0
@@ -70,7 +72,7 @@ class SoftwareMFMDecoder:
                 bit_curr    = 0
             else:
                 nco_phase  += nco_step + pll_feedbk
-                nco_period -= pll_feedbk
+                nco_period -= pll_feedbk >> pll_gph_exp
                 pll_feedbk  = 0
 
             if debug:
