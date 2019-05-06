@@ -307,6 +307,7 @@ from migen.genlib.cdc import MultiReg
 
 from ....gateware.pads import *
 from ... import *
+from .mfm import *
 
 
 class ShugartFloppyBus(Module):
@@ -592,143 +593,6 @@ class ShugartFloppyInterface:
                 data.append(packet)
 
 
-class SoftwareMFMDecoder:
-    def __init__(self, logger):
-        self._logger    = logger
-        self._lock_time = 0
-        self._bit_time  = 0
-
-    def _log(self, message, *args):
-        self._logger.log(logging.DEBUG, "soft-MFM: " + message, *args)
-
-    def edges(self, bytestream):
-        edge_len = 0
-        for byte in bytestream:
-            edge_len += 1 + byte
-            if byte == 0xfd:
-                continue
-            yield edge_len
-            edge_len  = 0
-
-    def bits(self, bytestream):
-        prev_byte = 0
-        for curr_byte in bytestream:
-            if prev_byte != 0xfd:
-                yield 1
-            for _ in range(curr_byte):
-                yield 0
-            prev_byte = curr_byte
-
-    def domains(self, bitstream):
-        polarity = 1
-        for has_edge in bitstream:
-            if has_edge:
-                polarity *= -1
-            yield polarity
-
-    def lock(self, bitstream, debug=False):
-        state      = "COARSE"
-        nco_period = -1
-        nco_phase  = 0
-        nco_clock  = 0
-        nco_error  = 0
-        nco_adjust = 0
-        est_needed = 15
-        est_count  = 0
-        last_bit   = 0
-
-        for has_edge in bitstream:
-            if state == "COARSE":
-                if has_edge:
-                    if nco_phase > 0 and (nco_phase >> 1) < (nco_period & 0xffff):
-                        nco_period = nco_phase >> 1
-                    if est_count == est_needed:
-                        self._log("pll coarse period=%d", nco_period)
-                        state      = "FINE"
-                    est_count += 1
-                    nco_phase  = 0
-                else:
-                    nco_phase += 1
-
-            elif state == "FINE":
-                nco_clock = (nco_phase < nco_period >> 1)
-                if nco_phase >= nco_period:
-                    if not debug:
-                        yield [last_bit]
-                    nco_phase   = 0
-                    last_bit    = 0
-                else:
-                    nco_phase  += 1 - nco_adjust
-                    nco_period += nco_adjust
-                    nco_adjust  = 0
-
-                if has_edge:
-                    last_bit    = 1
-                    if nco_clock:
-                        nco_adjust = -1
-                    else:
-                        nco_adjust =  1
-                    nco_error   = nco_phase - (nco_period >> 1)
-
-            if debug:
-                yield (nco_phase, nco_period, nco_error)
-
-    def demodulate(self, chipstream):
-        shreg  = []
-        offset = 0
-        synced = False
-        prev   = 0
-        bits   = []
-        while True:
-            while len(shreg) < 64:
-                try:
-                    shreg += next(chipstream)
-                except StopIteration:
-                    return
-
-            synced_now = False
-            for sync_offset in (0, 1):
-                if shreg[sync_offset:sync_offset + 16] == [0,1,0,0,0,1,0,0,1,0,0,0,1,0,0,1]:
-                    if not synced or sync_offset != 0:
-                        self._log("sync=K.A1 chip-off=%d", offset + sync_offset)
-                    offset += sync_offset + 16
-                    shreg   = shreg[sync_offset + 16:]
-                    synced  = True
-                    prev    = 1
-                    bits    = []
-                    yield (1, 0xA1)
-                    synced_now = True
-                if synced_now: break
-
-            if synced_now:
-                continue
-            elif not synced and len(shreg) >= 1:
-                offset += 1
-                shreg   = shreg[1:]
-
-            if synced and len(shreg) >= 2:
-                if shreg[0:2] == [0,1]:
-                    curr = 1
-                elif prev == 1 and shreg[0:2] == [0,0]:
-                    curr = 0
-                elif prev == 0 and shreg[0:2] == [1,0]:
-                    curr = 0
-                else:
-                    synced = False
-                    self._log("desync chip-off=%d bitno=%d prev=%d cell=%d%d",
-                              offset, len(bits), prev, *shreg[0:2])
-
-                if synced:
-                    offset += 2
-                    shreg   = shreg[2:]
-                    prev    = curr
-
-                    bits.append(curr)
-                    if len(bits) == 8:
-                        yield (0, sum(bit << (7 - n) for n, bit in enumerate(bits)))
-                        bits = []
-
-
 class MemoryFloppyApplet(GlasgowApplet, name="memory-floppy"):
     preview = True
     logger = logging.getLogger(__name__)
@@ -848,11 +712,30 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
     ("Deleted" sectors are not currently recognized.)
     """
 
+    _timebase = 1e6 / 48e6
+
     @classmethod
     def add_arguments(cls, parser):
         # TODO(py3.7): add required=True
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
+        cls._add_histogram_arguments(p_operation)
+        cls._add_train_arguments(p_operation)
+        cls._add_index_arguments(p_operation)
+        cls._add_raw2img_arguments(p_operation)
+
+    async def run(self, args):
+        if args.operation == "histogram":
+            self._run_histogram(args)
+        if args.operation == "train":
+            self._run_train(args)
+        if args.operation == "index":
+            self._run_index(args)
+        if args.operation == "raw2img":
+            self._run_raw2img(args)
+
+    @classmethod
+    def _add_histogram_arguments(self, p_operation):
         p_histogram = p_operation.add_parser(
             "histogram", help="plot distribution of transition periods")
         p_histogram.add_argument(
@@ -868,6 +751,39 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             "--range", metavar="MAX", type=int, default=8,
             help="consider only edges in [0, MAX] range, in microseconds")
 
+    def _run_histogram(self, args):
+        import numpy as np
+        import matplotlib.pyplot as plt
+
+        data = []
+        for cylinder, head, bytestream in self.iter_tracks(args.file):
+            if head != args.head or cylinder not in args.cylinders:
+                continue
+            self.logger.info("processing cylinder %d head %d",
+                             cylinder, head)
+
+            mfm = SoftwareMFMDecoder(self.logger)
+            data.append(np.array(list(mfm.edges(bytestream))) * self._timebase)
+
+        fig, ax = plt.subplots()
+        fig.suptitle("Domain size histogram for {} (head {})"
+                     .format(args.file.name, args.head))
+        ax.hist(data,
+            bins     = [x * self._timebase for x in range(600)],
+            label    = ["cylinder {}".format(cylinder) for cylinder in args.cylinders],
+            alpha    = 0.5,
+            histtype = "step")
+        ax.set_xlabel("domain size (µs)")
+        ax.set_ylabel("count")
+        ax.set_yscale("log")
+        ax.set_xlim(0, args.range)
+        ax.grid()
+        ax.legend()
+
+        plt.show()
+
+    @classmethod
+    def _add_train_arguments(self, p_operation):
         p_train = p_operation.add_parser(
             "train", help="train PLL and collect statistics")
         p_train.add_argument(
@@ -886,6 +802,63 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             "limit", metavar="LIMIT", type=int, nargs="?",
             help="only consider first LIMIT data edges (default: consider all)")
 
+    def _run_train(self, args):
+        import numpy as np
+        import matplotlib.pyplot as plt
+
+        for cylinder, head, bytestream in self.iter_tracks(args.file):
+            if (cylinder << 1) | head != args.track:
+                continue
+            self.logger.info("processing cylinder %d head %d",
+                             cylinder, head)
+
+            if args.offset is not None or args.limit is not None:
+                bytestream = bytestream[args.offset:args.offset + args.limit]
+            mfm = SoftwareMFMDecoder(self.logger)
+
+            bits    = list(mfm.bits(bytestream))
+            edges   = list(mfm.edges(bytestream))
+            domains = list(mfm.domains(bits))
+            plldata = list(mfm.lock(bits, debug=True))
+
+            ui_cycles = args.ui / self._timebase
+
+            ui_time = 0
+            ui_times, ui_lengths = [], []
+            for edge in edges:
+                ui_times.append(ui_time * self._timebase)
+                ui_lengths.append(edge / ui_cycles)
+                ui_time += edge
+
+            fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True)
+            times = np.arange(0, len(bits)) * self._timebase
+
+            ax1.plot(times, np.array([x[1] / ui_cycles for x in plldata]),
+                     color="green", label="NCO period", linewidth=1)
+            ax1.axhline(y=ui_cycles * self._timebase,
+                        color="gray")
+            ax1.set_ylabel("UI")
+            ax1.legend(loc="upper right")
+
+            ax2.plot(times, np.array([x[2] / ui_cycles for x in plldata]),
+                     label="phase error", linewidth=1)
+            ax2.set_ylim(-0.5, 0.5)
+            ax2.set_yticks([-0.5 + 0.2 * x for x in range(6)])
+            ax2.set_ylabel("UI")
+            ax2.legend(loc="upper right")
+
+            ax3.plot(ui_times, ui_lengths, "+",
+                     color="red", label="edge-to-edge time", linewidth=1)
+            ax3.set_xlabel("us")
+            ax3.set_ylim(1, 6)
+            ax3.set_yticks(range(1, 7))
+            ax3.set_ylabel("UI")
+            ax3.legend(loc="upper right")
+
+            plt.show()
+
+    @classmethod
+    def _add_index_arguments(self, p_operation):
         p_index = p_operation.add_parser(
             "index", help="discover and verify raw disk image contents and MFM sectors")
         p_index.add_argument(
@@ -895,6 +868,20 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             "file", metavar="RAW-FILE", type=argparse.FileType("rb"),
             help="read raw disk image from RAW-FILE")
 
+    def _run_index(self, args):
+        for cylinder, head, bytestream in self.iter_tracks(args.file):
+            self.logger.info("cylinder %d head %d: %d edges captured",
+                             cylinder, head, len(bytestream))
+            if args.no_decode:
+                continue
+
+            mfm        = SoftwareMFMDecoder(self.logger)
+            symbstream = mfm.demodulate(mfm.lock(mfm.bits(bytestream)))
+            for _ in self.iter_mfm_sectors(symbstream, verbose=True):
+                pass
+
+    @classmethod
+    def _add_raw2img_arguments(self, p_operation):
         p_raw2img = p_operation.add_parser(
             "raw2img", help="extract raw disk images into linear disk images")
         p_raw2img.add_argument(
@@ -910,7 +897,70 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             "linear_file", metavar="LINEAR-FILE", type=argparse.FileType("wb"),
             help="write linear disk image to LINEAR-FILE")
 
-    crc_mfm = staticmethod(crcmod.mkCrcFun(0x11021, initCrc=0xffff, rev=False))
+    def _run_raw2img(self, args):
+        image    = bytearray()
+        next_lba = 0
+        missing  = 0
+
+        try:
+            curr_lba = 0
+            for cylinder, head, bytestream in self.iter_tracks(args.raw_file):
+                self.logger.info("processing cylinder %d head %d",
+                                 cylinder, head)
+
+                mfm        = SoftwareMFMDecoder(self.logger)
+                symbstream = mfm.demodulate(mfm.lock(mfm.bits(bytestream)))
+
+                sectors    = {}
+                seen       = set()
+                for (cyl, hd, sec), data in self.iter_mfm_sectors(symbstream):
+                    if sec not in range(1, 1 + args.sectors_per_track):
+                        self.logger.error("sector at C/H/S %d/%d/%d overflows track geometry "
+                                          "(%d sectors per track)",
+                                          cyl, hd, sec, args.sectors_per_track)
+                        continue
+
+                    if sec in seen:
+                        # Due to read redundancy, seeing this is not an error in general,
+                        # though this could be a sign of a strange invalid track. We do not
+                        # currently aim to handle these cases, so just ignore them.
+                        self.logger.debug("duplicate sector at C/H/S %d/%d/%d",
+                                          cyl, hd, sec)
+                        continue
+                    else:
+                        seen.add(sec)
+
+                    lba = ((cyl << 1) + hd) * args.sectors_per_track + (sec - 1)
+                    self.logger.info("  mapping C/H/S %d/%d/%d to LBA %d",
+                                     cyl, hd, sec, lba)
+
+                    if len(data) != args.sector_size:
+                        self.logger.error("sector at LBA %d has size %d (%d expected)",
+                                          lba, len(data), args.sector_size)
+                    elif lba in sectors:
+                        self.logger.error("duplicate sector at LBA %d",
+                                          lba)
+                    else:
+                        sectors[lba] = data
+
+                    if len(seen) == args.sectors_per_track:
+                        self.logger.debug("found all sectors on this track")
+                        break
+
+                last_lba = curr_lba + args.sectors_per_track
+                while curr_lba < last_lba:
+                    if curr_lba in sectors:
+                        args.linear_file.seek(curr_lba * args.sector_size)
+                        args.linear_file.write(sectors[curr_lba])
+                    else:
+                        missing  += 1
+                        args.linear_file.seek(curr_lba * args.sector_size)
+                        args.linear_file.write(b"\xFA\x11" * (args.sector_size // 2))
+                        self.logger.error("sector at LBA %d missing",
+                                          curr_lba)
+                    curr_lba += 1
+        finally:
+            self.logger.info("%d/%d sectors missing", missing, last_lba)
 
     def iter_tracks(self, file):
         while True:
@@ -918,6 +968,8 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             if header == b"": break
             size, cylinder, head = struct.unpack(">LBB", header)
             yield cylinder, head, file.read(size)
+
+    crc_mfm = staticmethod(crcmod.mkCrcFun(0x11021, initCrc=0xffff, rev=False))
 
     def iter_mfm_sectors(self, symbstream, verbose=False):
         state   = "IDLE"
@@ -993,172 +1045,6 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
 
             if count == 0:
                 state = "IDLE"
-
-    async def run(self, args):
-        timebase = 1e6 / 48e6
-
-        if args.operation == "histogram":
-            import numpy as np
-            import matplotlib.pyplot as plt
-
-            data = []
-            for cylinder, head, bytestream in self.iter_tracks(args.file):
-                if head != args.head or cylinder not in args.cylinders:
-                    continue
-                self.logger.info("processing cylinder %d head %d",
-                                 cylinder, head)
-
-                mfm = SoftwareMFMDecoder(self.logger)
-                data.append(np.array(list(mfm.edges(bytestream))) * timebase)
-
-            fig, ax = plt.subplots()
-            fig.suptitle("Domain size histogram for {} (head {})"
-                         .format(args.file.name, args.head))
-            ax.hist(data,
-                bins     = [x * timebase for x in range(600)],
-                label    = ["cylinder {}".format(cylinder) for cylinder in args.cylinders],
-                alpha    = 0.5,
-                histtype = "step")
-            ax.set_xlabel("domain size (µs)")
-            ax.set_ylabel("count")
-            ax.set_yscale("log")
-            ax.set_xlim(0, args.range)
-            ax.grid()
-            ax.legend()
-
-            plt.show()
-
-        if args.operation == "train":
-            import numpy as np
-            import matplotlib.pyplot as plt
-
-            for cylinder, head, bytestream in self.iter_tracks(args.file):
-                if (cylinder << 1) | head != args.track:
-                    continue
-                self.logger.info("processing cylinder %d head %d",
-                                 cylinder, head)
-
-                if args.offset is not None or args.limit is not None:
-                    bytestream = bytestream[args.offset:args.offset + args.limit]
-                mfm = SoftwareMFMDecoder(self.logger)
-
-                bits    = list(mfm.bits(bytestream))
-                edges   = list(mfm.edges(bytestream))
-                domains = list(mfm.domains(bits))
-                plldata = list(mfm.lock(bits, debug=True))
-
-                ui_cycles = args.ui / timebase
-
-                ui_time = 0
-                ui_times, ui_lengths = [], []
-                for edge in edges:
-                    ui_times.append(ui_time * timebase)
-                    ui_lengths.append(edge / ui_cycles)
-                    ui_time += edge
-
-                fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True)
-                times = np.arange(0, len(bits)) * timebase
-
-                ax1.plot(times, np.array([x[1] / ui_cycles for x in plldata]),
-                         color="green", label="NCO period", linewidth=1)
-                ax1.axhline(y=ui_cycles * timebase,
-                            color="gray")
-                ax1.set_ylabel("UI")
-                ax1.legend(loc="upper right")
-
-                ax2.plot(times, np.array([x[2] / ui_cycles for x in plldata]),
-                         label="phase error", linewidth=1)
-                ax2.set_ylim(-0.5, 0.5)
-                ax2.set_yticks([-0.5 + 0.2 * x for x in range(6)])
-                ax2.set_ylabel("UI")
-                ax2.legend(loc="upper right")
-
-                ax3.plot(ui_times, ui_lengths, "+",
-                         color="red", label="edge-to-edge time", linewidth=1)
-                ax3.set_xlabel("us")
-                ax3.set_ylim(1, 6)
-                ax3.set_yticks(range(1, 7))
-                ax3.set_ylabel("UI")
-                ax3.legend(loc="upper right")
-
-                plt.show()
-
-        if args.operation == "index":
-            for cylinder, head, bytestream in self.iter_tracks(args.file):
-                self.logger.info("cylinder %d head %d: %d edges captured",
-                                 cylinder, head, len(bytestream))
-                if args.no_decode:
-                    continue
-
-                mfm        = SoftwareMFMDecoder(self.logger)
-                symbstream = mfm.demodulate(mfm.lock(mfm.bits(bytestream)))
-                for _ in self.iter_mfm_sectors(symbstream, verbose=True):
-                    pass
-
-        if args.operation == "raw2img":
-            image    = bytearray()
-            next_lba = 0
-            missing  = 0
-
-            try:
-                curr_lba = 0
-                for cylinder, head, bytestream in self.iter_tracks(args.raw_file):
-                    self.logger.info("processing cylinder %d head %d",
-                                     cylinder, head)
-
-                    mfm        = SoftwareMFMDecoder(self.logger)
-                    symbstream = mfm.demodulate(mfm.lock(mfm.bits(bytestream)))
-
-                    sectors    = {}
-                    seen       = set()
-                    for (cyl, hd, sec), data in self.iter_mfm_sectors(symbstream):
-                        if sec not in range(1, 1 + args.sectors_per_track):
-                            self.logger.error("sector at C/H/S %d/%d/%d overflows track geometry "
-                                              "(%d sectors per track)",
-                                              cyl, hd, sec, args.sectors_per_track)
-                            continue
-
-                        if sec in seen:
-                            # Due to read redundancy, seeing this is not an error in general,
-                            # though this could be a sign of a strange invalid track. We do not
-                            # currently aim to handle these cases, so just ignore them.
-                            self.logger.debug("duplicate sector at C/H/S %d/%d/%d",
-                                              cyl, hd, sec)
-                            continue
-                        else:
-                            seen.add(sec)
-
-                        lba = ((cyl << 1) + hd) * args.sectors_per_track + (sec - 1)
-                        self.logger.info("  mapping C/H/S %d/%d/%d to LBA %d",
-                                         cyl, hd, sec, lba)
-
-                        if len(data) != args.sector_size:
-                            self.logger.error("sector at LBA %d has size %d (%d expected)",
-                                              lba, len(data), args.sector_size)
-                        elif lba in sectors:
-                            self.logger.error("duplicate sector at LBA %d",
-                                              lba)
-                        else:
-                            sectors[lba] = data
-
-                        if len(seen) == args.sectors_per_track:
-                            self.logger.debug("found all sectors on this track")
-                            break
-
-                    last_lba = curr_lba + args.sectors_per_track
-                    while curr_lba < last_lba:
-                        if curr_lba in sectors:
-                            args.linear_file.seek(curr_lba * args.sector_size)
-                            args.linear_file.write(sectors[curr_lba])
-                        else:
-                            missing  += 1
-                            args.linear_file.seek(curr_lba * args.sector_size)
-                            args.linear_file.write(b"\xFA\x11" * (args.sector_size // 2))
-                            self.logger.error("sector at LBA %d missing",
-                                              curr_lba)
-                        curr_lba += 1
-            finally:
-                self.logger.info("%d/%d sectors missing", missing, last_lba)
 
 # -------------------------------------------------------------------------------------------------
 
