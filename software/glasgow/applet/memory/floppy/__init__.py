@@ -621,12 +621,12 @@ class SoftwareMFMDecoder:
 
     def domains(self, bitstream):
         polarity = 1
-        for edge in bitstream:
-            if edge:
+        for has_edge in bitstream:
+            if has_edge:
                 polarity *= -1
             yield polarity
 
-    def locknew(self, bitstream):
+    def lock(self, bitstream, debug=False):
         state      = "COARSE"
         nco_period = -1
         nco_phase  = 0
@@ -635,10 +635,11 @@ class SoftwareMFMDecoder:
         nco_adjust = 0
         est_needed = 15
         est_count  = 0
+        last_bit   = 0
 
-        for edge in bitstream:
+        for has_edge in bitstream:
             if state == "COARSE":
-                if edge:
+                if has_edge:
                     if nco_phase > 0 and (nco_phase >> 1) < (nco_period & 0xffff):
                         nco_period = nco_phase >> 1
                     if est_count == est_needed:
@@ -649,128 +650,28 @@ class SoftwareMFMDecoder:
                 else:
                     nco_phase += 1
 
-                yield (nco_phase, nco_period, 0)
-
             elif state == "FINE":
                 nco_clock = (nco_phase < nco_period >> 1)
                 if nco_phase >= nco_period:
+                    if not debug:
+                        yield [last_bit]
                     nco_phase   = 0
+                    last_bit    = 0
                 else:
                     nco_phase  += 1 - nco_adjust
                     nco_period += nco_adjust
                     nco_adjust  = 0
 
-                if edge:
+                if has_edge:
+                    last_bit    = 1
                     if nco_clock:
                         nco_adjust = -1
                     else:
                         nco_adjust =  1
-                    nco_error = nco_phase - (nco_period >> 1)
+                    nco_error   = nco_phase - (nco_period >> 1)
 
+            if debug:
                 yield (nco_phase, nco_period, nco_error)
-
-    def lock(self, bitstream):
-        cur_bit   = 0
-        bit_tol   = 12
-        bit_min   = 16
-        bit_time  = bit_min
-        state     = "START"
-        cell      = 0
-        window    = 0
-        window_no = 0
-        in_phase  = 0
-        locked    = False
-        for offset, new_bit in enumerate(bitstream):
-            edge    = cur_bit and not new_bit
-            cur_bit = new_bit
-
-            # |clk-------------|clk-------------|clk-------------|...
-            # /¯¯¯\________WWWWWWWWW________WWWWWWWWW_____________...
-            # 0000000000111111111122222222223333333333444444444455
-            # 0123456789012345678901234567890123456789012345678901...
-            # ^ START      ^ WINDOW-NEG     ^ WINDOW-NEG
-            #                  ^ WINDOW-EXA     ^ WINDOW-EXA
-            #                   ^ WINDOW-POS     ^ WINDOW-POS
-            #                      ^ CONTINUE       ^ CONTINUE    ...
-
-            if state == "START":
-                if edge:
-                    in_phase   = 0
-                    bit_time   = bit_min
-                    self._log("pll loss leader bit-off=%d", offset)
-                elif window == bit_time - bit_tol:
-                    window     = 0
-                    window_no  = 1
-                    state      = "WINDOW-NEG"
-            elif state == "WINDOW-NEG":
-                if edge:
-                    if (not locked and window_no in (2, 3) or
-                            locked and window_no in (2, 3, 4)):
-                        in_phase += 1
-                    else:
-                        in_phase  = 0
-                        if locked:
-                            self._log("pll loss +win=%d bit-off=%d", window_no, offset)
-                    if bit_time > bit_min:
-                        bit_time  -= 1
-                elif window == bit_tol:
-                    state      = "WINDOW-EXA"
-            elif state == "WINDOW-EXA":
-                if edge:
-                    if (not locked and window_no in (2, 3) or
-                            locked and window_no in (2, 3, 4)):
-                        in_phase += 1
-                    else:
-                        in_phase  = 0
-                        if locked:
-                            self._log("pll loss =win=%d bit-off=%d", window_no, offset)
-                elif window == bit_tol + 1:
-                    state      = "WINDOW-POS"
-            elif state == "WINDOW-POS":
-                if edge:
-                    if (not locked and window_no in (2, 3) or
-                            locked and window_no in (2, 3, 4)):
-                        in_phase += 1
-                    else:
-                        in_phase  = 0
-                        if locked:
-                            self._log("pll loss -win=%d bit-off=%d", window_no, offset)
-                    bit_time  += 1
-                elif window == bit_tol + 1 + bit_tol:
-                    if locked: yield [0]
-                    state      = "CONTINUE"
-            elif state == "CONTINUE":
-                if edge:
-                    in_phase   = 0
-                    bit_time  += 1
-                    if locked:
-                        self._log("pll loss gap bit-off=%d", offset)
-                elif window == bit_time:
-                    window     = 0
-                    window_no += 1
-                    state      = "WINDOW-NEG"
-
-            if edge:
-                if locked: yield [1]
-                state   = "START"
-                window  = 0
-            else:
-                window += 1
-
-            # self._log("pll edge=%d cell=%3d win=%3d state=%10s bit=%3d inФ=%d",
-            #           edge, cell, window, state, bit_time, in_phase)
-            # if edge:
-            #     cell  = 0
-            # else:
-            #     cell += 1
-
-            if not locked and in_phase == 64:
-                locked = True
-                self._bit_time  = bit_time
-                self._lock_time = offset
-                self._log("pll locked bit-off=%d bit=%d", offset, bit_time)
-            elif locked and in_phase == 0:
-                locked = False
 
     def demodulate(self, chipstream):
         shreg  = []
@@ -1144,7 +1045,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
                 bits    = list(mfm.bits(bytestream))
                 edges   = list(mfm.edges(bytestream))
                 domains = list(mfm.domains(bits))
-                plldata = list(mfm.locknew(bits))
+                plldata = list(mfm.lock(bits, debug=True))
 
                 ui_cycles = args.ui / timebase
 
