@@ -976,8 +976,8 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             "file", metavar="RAW-FILE", type=argparse.FileType("rb"),
             help="read raw disk image from RAW-FILE")
         p_histogram.add_argument(
-            "tracks", metavar="TRACK", type=int, nargs="*", default=[0, 1, 10, 30, 50, 70],
-            help="plot data for each TRACK read by one head (deafult: %(default)s)")
+            "cylinders", metavar="CYLINDER", type=int, nargs="*", default=[0, 1, 10, 30, 50, 70],
+            help="plot data for each CYLINDER read by one head (deafult: %(default)s)")
         p_histogram.add_argument(
             "--head", metavar="HEAD", type=int, choices=(0, 1), default=0,
             help="consider only head HEAD (one of: %(choices)s)")
@@ -1033,10 +1033,8 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
         while True:
             header = file.read(struct.calcsize(">LBB"))
             if header == b"": break
-            size, track, head = struct.unpack(">LBB", header)
-            self.logger.info("track %d head %d: %d edges captured",
-                             track, head, size)
-            yield track, head, file.read(size)
+            size, cylinder, head = struct.unpack(">LBB", header)
+            yield cylinder, head, file.read(size)
 
     def iter_mfm_sectors(self, symbstream, verbose=False):
         state   = "IDLE"
@@ -1121,9 +1119,11 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             import matplotlib.pyplot as plt
 
             data = []
-            for track, head, bytestream in self.iter_tracks(args.file):
-                if head != args.head or track not in args.tracks:
+            for cylinder, head, bytestream in self.iter_tracks(args.file):
+                if head != args.head or cylinder not in args.cylinders:
                     continue
+                self.logger.info("processing cylinder %d head %d",
+                                 cylinder, head)
 
                 mfm = SoftwareMFMDecoder(self.logger)
                 data.append(np.array(list(mfm.edges(bytestream))) * timebase)
@@ -1133,7 +1133,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
                          .format(args.file.name, args.head))
             ax.hist(data,
                 bins     = [x * timebase for x in range(600)],
-                label    = ["track {}".format(track) for track in args.tracks],
+                label    = ["cylinder {}".format(cylinder) for cylinder in args.cylinders],
                 alpha    = 0.5,
                 histtype = "step")
             ax.set_xlabel("domain size (µs)")
@@ -1149,9 +1149,11 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             import numpy as np
             import matplotlib.pyplot as plt
 
-            for track, head, bytestream in self.iter_tracks(args.file):
-                if (track << 1) | head != args.track:
+            for cylinder, head, bytestream in self.iter_tracks(args.file):
+                if (cylinder << 1) | head != args.track:
                     continue
+                self.logger.info("processing cylinder %d head %d",
+                                 cylinder, head)
 
                 if args.offset is not None or args.limit is not None:
                     bytestream = bytestream[args.offset:args.offset + args.limit]
@@ -1199,7 +1201,9 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
                 plt.show()
 
         if args.operation == "index":
-            for track, head, bytestream in self.iter_tracks(args.file):
+            for cylinder, head, bytestream in self.iter_tracks(args.file):
+                self.logger.info("cylinder %d head %d: %d edges captured",
+                                 cylinder, head, len(bytestream))
                 if args.no_decode:
                     continue
 
@@ -1215,9 +1219,9 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
 
             try:
                 curr_lba = 0
-                for track, head, bytestream in self.iter_tracks(args.raw_file):
-                    self.logger.info("processing track %d head %d",
-                                     track, head)
+                for cylinder, head, bytestream in self.iter_tracks(args.raw_file):
+                    self.logger.info("processing cylinder %d head %d",
+                                     cylinder, head)
 
                     mfm        = SoftwareMFMDecoder(self.logger)
                     symbstream = mfm.demodulate(mfm.lock(mfm.bits(bytestream)))
