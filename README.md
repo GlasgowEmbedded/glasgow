@@ -58,7 +58,7 @@ Revision C is the latest revision and is being prepared for mass production. It 
 
 ## What software does Glasgow use?
 
-Glasgow is written entirely in Python 3. The interface logic that runs on the FPGA is described using [Migen](https://m-labs.hk/migen/), which is a Python-based domain specific language. The supporting code that runs on the host PC is written in Python with [asyncio](https://docs.python.org/3/library/asyncio.html). This way, the logic on the FPGA can be assembled on demand for any requested configuration, keeping it as fast and compact as possible.
+Glasgow is written entirely in Python 3. The interface logic that runs on the FPGA is described using [Migen](https://m-labs.hk/migen/), which is a Python-based domain specific language. The supporting code that runs on the host PC is written in Python with [asyncio](https://docs.python.org/3/library/asyncio.html). This way, the logic on the FPGA can be assembled on demand for any requested configuration, keeping it as fast and compact as possible, and code can be shared between gateware and software, removing the need to add error-prone "glue" boilerplate.
 
 Glasgow would not be possible without the [open-source iCE40 FPGA toolchain](http://www.clifford.at/icestorm/), which is not only very reliable but also extremely fast. It is so fast that FPGA bitstreams are not cached (beyond not rebuilding the bitstream already on the device), as it only takes a few seconds to build one from scratch for something like an UART. When developing a new applet it is rarely necessary to wait for the toolchain.
 
