@@ -748,8 +748,8 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             "cylinders", metavar="CYLINDER", type=int, nargs="*", default=[0, 1, 10, 30, 50, 70],
             help="plot data for each CYLINDER read by one head (deafult: %(default)s)")
         p_histogram.add_argument(
-            "--head", metavar="HEAD", type=int, choices=(0, 1), default=0,
-            help="consider only head HEAD (one of: %(choices)s)")
+            "--head", metavar="HEAD", type=int, action="append",
+            help="consider only head HEAD (one of: %(choices)s, default: all)")
         p_histogram.add_argument(
             "--range", metavar="MAX", type=int, default=10,
             help="consider only edges in [0, MAX] range, in microseconds")
@@ -759,21 +759,24 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
         import matplotlib.pyplot as plt
 
         data = []
+        labels = []
         for cylinder, head, bytestream in self.iter_tracks(args.file):
-            if head != args.head or cylinder not in args.cylinders:
+            if cylinder not in args.cylinders or args.head is not None and head not in args.head:
                 continue
             self.logger.info("processing C/H %d/%d",
                              cylinder, head)
 
             mfm = SoftwareMFMDecoder(self.logger)
             data.append(np.array(list(mfm.edges(bytestream))) * self._timebase)
+            labels.append("cylinder {}, head {}".format(cylinder, head))
 
         fig, ax = plt.subplots()
-        fig.suptitle("Domain size histogram for {} (head {})"
-                     .format(args.file.name, args.head))
+        fig.suptitle("Domain size histogram for {} (heads: {})"
+                     .format(args.file.name,
+                             ", ".join(str(h) for h in args.head) if args.head else "all"))
         ax.hist(data,
             bins     = [x * self._timebase for x in range(600)],
-            label    = ["cylinder {}".format(cylinder) for cylinder in args.cylinders],
+            label    = labels,
             alpha    = 0.5,
             histtype = "step")
         ax.set_xlabel("domain size (µs)")
