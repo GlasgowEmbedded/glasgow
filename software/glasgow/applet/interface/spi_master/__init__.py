@@ -297,14 +297,14 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
             help="set SPI bit rate to FREQ kHz (default: %(default)s)")
         parser.add_argument(
             "--sck-idle", metavar="LEVEL", type=int, choices=[0, 1], default=0,
-            help="set idle clock level to LEVEL (default: %(default)s")
+            help="set idle clock level to LEVEL (default: %(default)s)")
         parser.add_argument(
             "--sck-edge", metavar="EDGE", type=str, choices=["r", "rising", "f", "falling"],
             default="rising",
-            help="latch data at clock edge EDGE (default: %(default)s")
+            help="latch data at clock edge EDGE (default: %(default)s)")
         parser.add_argument(
             "--ss-active", metavar="LEVEL", type=int, choices=[0, 1], default=0,
-            help="set active chip select level to LEVEL (default: %(default)s")
+            help="set active chip select level to LEVEL (default: %(default)s)")
 
     def build(self, target, args, pins=__pins):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
