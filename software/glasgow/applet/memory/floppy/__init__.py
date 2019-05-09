@@ -1,5 +1,7 @@
 # Ref: INTEL 82077AA CHMOS SINGLE-CHIP FLOPPY DISK CONTROLLER
 # Accession: G00032
+# Ref: SAMSUNG OEM MANUAL SFD-321B 3.5inch DUAL DENSITY MICRO FLOPPY DISK DRIVE SPECIFICATIONS
+# Accession: G00033
 
 # Acknowledgements: thanks to William D. Jones (@cr1901), Eric Smith (@brouhaha) for explaining
 # to me (whitequark) how floppy drives work.
