@@ -38,6 +38,12 @@ Some of the tasks Glasgow can do well are:
 
 Everything above can be done with only a Glasgow revC board, some wires, and depending on the device under test, external power.
 
+## How does using Glasgow look like?
+
+Watch a typical command-line workflow in this screencast:
+
+[![asciicast](https://asciinema.org/a/i9edqaUBVLLw7mRZCpdxe91Fu.svg)](https://asciinema.org/a/i9edqaUBVLLw7mRZCpdxe91Fu)
+
 ## What hardware does Glasgow use?
 
 The Glasgow hardware evolves over time, with each major milestone called a "revision". Although all revisions are, and will always be supported with the same software, they vary significantly in their capabilities, and the chosen revision will limit the possible tasks.
