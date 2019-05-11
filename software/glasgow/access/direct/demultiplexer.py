@@ -66,7 +66,12 @@ class DirectDemultiplexer(AccessDemultiplexer):
 
         for config in device.usb.getDevice().iterConfigurations():
             if config.getNumInterfaces() == pipe_count:
-                device.usb.setConfiguration(config.getConfigurationValue())
+                try:
+                    device.usb.setConfiguration(config.getConfigurationValue())
+                except usb1.USBErrorInvalidParam:
+                    # Neither WinUSB, nor libusbK, nor libusb0 allow selecting any configuration
+                    # that is not the 1st one. This is a limitation of the KMDF USB target.
+                    pass
                 break
         else:
             assert False
