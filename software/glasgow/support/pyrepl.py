@@ -1,7 +1,10 @@
 import os
 import code
 import asyncio
-import readline
+try:
+    import readline
+except ModuleNotFoundError:
+    readline = None
 
 
 __all__ = ["AsyncInteractiveConsole"]
@@ -11,23 +14,23 @@ class _FutureResult(Exception):
     pass
 
 
-import readline
-
 class AsyncInteractiveConsole(code.InteractiveConsole):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._histfile = os.path.expanduser("~/.glasgow-history")
-        try:
-            readline.read_history_file(self._histfile)
-        except FileNotFoundError:
-            pass
+        if readline is not None:
+            self._histfile = os.path.expanduser("~/.glasgow-history")
+            try:
+                readline.read_history_file(self._histfile)
+            except FileNotFoundError:
+                pass
 
         self._fut = None
 
     def save_history(self):
-        readline.set_history_length(1000)
-        readline.write_history_file(self._histfile)
+        if readline is not None:
+            readline.set_history_length(1000)
+            readline.write_history_file(self._histfile)
 
     def runcode(self, code):
         try:
