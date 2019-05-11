@@ -72,7 +72,42 @@ Implementing reliable, high-performance USB communication is not trivial—packe
 
 Debugging new applets can be hard, especially if bidirectional buses are involved. Glasgow provides a built-in cycle-accurate logic analyzer that can relate the I/O pin level and direction changes to commands and responses received and sent by the applet. The logic analyzer compresses waveforms and can pause the applet if its buffer is about to overflow.
 
-## Contributors
+## How do I use Glasgow?
+
+### ... with Linux?
+
+You will need Python 3.6 (or a newer version, in which case replace `3.6` with that version below) and sdcc. On a Debian or Ubuntu system these can be installed with:
+
+    apt-get install python3.6 sdcc
+
+Obtain the source code:
+
+    git clone https://github.com/GlasgowEmbedded/Glasgow
+    cd Glasgow
+
+Configure your system to allow unprivileged access (for anyone in the `plugdev` group) to the Glasgow hardware:
+
+    sudo cp config/99-glasgow.rules /etc/udev/rules.d
+
+Install the dependencies and the binaries for the current user:
+
+    cd software
+    python3.6 setup.py develop --user
+
+The binaries are placed in `$HOME/.local/bin`, so be sure to add that directory to the `PATH` environment variable; after this, you can run `glasgow` from a terminal. Instead of adjusting `PATH` it is also possible to use `python3.6 -m glasgow.cli`.
+
+To update the source code, do:
+
+    cd Glasgow
+    git pull
+    cd software
+    python3.6 setup.py build_ext
+
+### ... with Windows?
+
+Although first-class Windows support is an important goal and Glasgow already works on Windows, the installation process is not yet ready.
+
+## Who made Glasgow?
 
   * [@whitequark](https://github.com/whitequark) came up with the design, coordinates the project and implements most of gateware and software;
   * [@awygle](https://github.com/awygle) designed the power/analog port circuitry and helped with layout of revB;
