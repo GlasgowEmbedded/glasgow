@@ -63,7 +63,7 @@
 # this requires resetting the FPGA-side FIFO contents anyway, so it already has to be coordinated
 # via some out-of-band mechanism.
 #
-# For OUT FIFOs, the solution is to use an overflow buffer--a very small additional FIFO in front
+# For OUT FIFOs, the solution is to use an skid buffer--a very small additional FIFO in front
 # of the normal large FPGA-side FIFO to absorb any writes that may happen after the strobe was
 # deasserted. (A naive approach would be to compare the FPGA-side FIFO level to get an "almost
 # full" marker, but this does not work if that FIFO is used to bridge clock domains, and in any
@@ -153,11 +153,11 @@ __all__ = ["FX2Crossbar"]
 
 class _OUTFIFO(Module, _FIFOInterface):
     """
-    A FIFO with an overflow buffer in front of it. This FIFO may be fed from a pipeline that
-    reacts to the ``writable`` flag with a latency up to the overflow buffer depth, and writes
+    A FIFO with a skid buffer in front of it. This FIFO may be fed from a pipeline that
+    reacts to the ``writable`` flag with a latency up to the skid buffer depth, and writes
     will not be lost.
     """
-    def __init__(self, inner, overflow_depth):
+    def __init__(self, inner, skid_depth):
         super().__init__(inner.width, inner.depth)
 
         self.submodules.inner = inner
@@ -168,23 +168,23 @@ class _OUTFIFO(Module, _FIFOInterface):
 
         ###
 
-        overflow = SyncFIFO(inner.width, overflow_depth)
-        self.submodules += overflow
+        skid = SyncFIFO(inner.width, skid_depth)
+        self.submodules += skid
 
         self.comb += [
-            If(overflow.readable,
-                inner.din.eq(overflow.dout),
+            If(skid.readable,
+                inner.din.eq(skid.dout),
                 inner.we.eq(1),
-                overflow.re.eq(inner.writable)
+                skid.re.eq(inner.writable)
             ),
-            If(inner.writable & ~overflow.readable,
+            If(inner.writable & ~skid.readable,
                 inner.din.eq(self.din),
                 inner.we.eq(self.we),
                 self.writable.eq(inner.writable)
             ).Else(
-                overflow.din.eq(self.din),
-                overflow.we.eq(self.we),
-                self.writable.eq(overflow.writable)
+                skid.din.eq(self.din),
+                skid.we.eq(self.we),
+                self.writable.eq(skid.writable)
             )
         ]
 
@@ -514,7 +514,7 @@ class FX2Crossbar(Module):
                                reset=reset,
                                depth=depth,
                                wrapper=lambda fifo: _OUTFIFO(fifo,
-                                    overflow_depth=3))
+                                    skid_depth=3))
         self.out_fifos[n] = fifo
         return fifo
 
