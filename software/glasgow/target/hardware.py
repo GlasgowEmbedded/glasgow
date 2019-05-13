@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 class _CRG(Module):
     def __init__(self, platform):
-        self.clock_domains.cd_sys = ClockDomain()
+        self.clock_domains.cd_sys = ClockDomain("sys")
         self.specials += [
             Instance("SB_GB_IO",
                 p_PIN_TYPE=C(0b000001, 6),
@@ -33,7 +33,7 @@ class _CRG(Module):
             ),
         ]
 
-        self.clock_domains.cd_por = ClockDomain(reset_less=True)
+        self.clock_domains.cd_por = ClockDomain("por", reset_less=True)
         reset_delay = Signal(max=2047, reset=2047)
         self.comb += [
             self.cd_por.clk.eq(self.cd_sys.clk),
