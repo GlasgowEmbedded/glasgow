@@ -85,7 +85,8 @@ class GlasgowHardwareDevice:
             self._write_ram(address, data)
         self._cpu_reset(False)
 
-    def __init__(self, firmware_file=None, vendor_id=VID_QIHW, product_id=PID_GLASGOW):
+    def __init__(self, firmware_file=None, vendor_id=VID_QIHW, product_id=PID_GLASGOW,
+                 _revision_override=None):
         self.usb_context = usb1.USBContext()
         self.usb_poller = _PollerThread(self.usb_context)
         self.usb_poller.start()
@@ -93,7 +94,10 @@ class GlasgowHardwareDevice:
         self._open_device(vendor_id, product_id)
 
         device_id = self.usb.getDevice().getbcdDevice()
-        self.revision = GlasgowConfig.decode_revision(device_id & 0xFF)
+        if _revision_override is None:
+            self.revision = GlasgowConfig.decode_revision(device_id & 0xFF)
+        else:
+            self.revision = _revision_override
 
         if device_id & 0xFF00 in (0x0000, 0xA000):
             logger.debug("found rev%s device without firmware", self.revision)

@@ -377,7 +377,8 @@ async def _main():
         if args.action in ("build", "test", "tool"):
             pass
         elif args.action == "factory":
-            device = GlasgowHardwareDevice(firmware_file, VID_CYPRESS, PID_FX2)
+            device = GlasgowHardwareDevice(firmware_file, VID_CYPRESS, PID_FX2,
+                                           _revision_override=args.rev)
         else:
             device = GlasgowHardwareDevice(firmware_file)
 
