@@ -12,7 +12,7 @@ from ..gateware.i2c import I2CSlave
 from ..gateware.registers import I2CRegisters
 from ..gateware.fx2_crossbar import FX2Crossbar
 from ..gateware.platform.lattice import special_overrides
-from ..platform import GlasgowPlatformRevAB, GlasgowPlatformRevC0
+from ..platform import *
 from .analyzer import GlasgowAnalyzer
 
 
@@ -51,8 +51,11 @@ class GlasgowHardwareTarget(Module):
         if revision in ("A0", "B0"):
             self.platform = GlasgowPlatformRevAB()
             self.sys_clk_freq = 30e6
-        elif revision == "C0":
+        elif revision in "C0":
             self.platform = GlasgowPlatformRevC0()
+            self.sys_clk_freq = 48e6
+        elif revision in "C1":
+            self.platform = GlasgowPlatformRevC1()
             self.sys_clk_freq = 48e6
         else:
             raise ValueError("Unknown revision")

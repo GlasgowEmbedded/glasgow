@@ -52,7 +52,7 @@ _io = [
     ("port_b", 6, Subsignal("io", Pins("F11")), Subsignal("oe", Pins("J10"))),
     ("port_b", 7, Subsignal("io", Pins("F10")), Subsignal("oe", Pins("K11"))),
 
-    ("port_s", 0, Pins("A11")),
+    ("port_s", 0, Subsignal("io", Pins("A11")), Subsignal("oe", Pins("B4"))),
 
     ("aux", 0, Pins("A10")),
     ("aux", 1, Pins("C9")),

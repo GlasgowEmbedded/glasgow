@@ -45,7 +45,7 @@ _io = [
     ("port_b", 7, Subsignal("io", Pins("21"))),
 
     # On revA, this pin is open-drain only.
-    ("sync", 0, Pins("41")),
+    ("port_s", 0, Pins("41")),
 ]
 
 _connectors = [
