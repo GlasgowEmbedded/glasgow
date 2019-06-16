@@ -4,7 +4,7 @@ from migen.build.lattice import LatticePlatform
 from .programmer import GlasgowProgrammer
 
 
-__all__ = ["GlasgowPlatformRevC0"]
+__all__ = ["GlasgowPlatformRevC1"]
 
 
 _io = [
@@ -66,7 +66,7 @@ _connectors = [
 ]
 
 
-class GlasgowPlatformRevC0(LatticePlatform):
+class GlasgowPlatformRevC1(LatticePlatform):
     default_clk_name = "clk_if"
     default_clk_period = 1e9 / 48e6
 
