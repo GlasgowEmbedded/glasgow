@@ -234,7 +234,7 @@ def get_argparser():
     add_applet_arg(g_flash_bitstream, mode="build")
 
     def revision(arg):
-        revisions = ["A0", "B0", "C0"]
+        revisions = ["A0", "B0", "C0", "C1"]
         if arg in revisions:
             return arg
         else:
@@ -279,7 +279,7 @@ def get_argparser():
         "--force", default=False, action="store_true",
         help="reinitialize the device, even if it is already programmed")
     p_factory.add_argument(
-        "--rev", metavar="REVISION", type=revision,
+        "--rev", metavar="REVISION", type=revision, required=True,
         help="board revision")
     p_factory.add_argument(
         "--serial", metavar="SERIAL", type=str,
