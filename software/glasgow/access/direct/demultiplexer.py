@@ -106,7 +106,7 @@ class DirectDemultiplexer(AccessDemultiplexer):
                     # they have been touched by the user, and we've warned about that above.
                     pass
 
-            else:
+            elif hasattr(args, "port_spec"):
                 await self.device.set_pulls(args.port_spec, pull_low, pull_high)
                 if pull_low or pull_high:
                     applet.logger.info("port(s) %s pull resistors configured",
