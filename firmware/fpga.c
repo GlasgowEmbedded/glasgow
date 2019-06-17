@@ -17,6 +17,7 @@ void fpga_reset() {
       break;
 
     case GLASGOW_REV_C0:
+    case GLASGOW_REV_C1:
       OEA |=  (1<<PINA_CRESET_N_REVC);
       IOA &= ~(1<<PINA_CRESET_N_REVC);
       break;
@@ -37,6 +38,7 @@ void fpga_reset() {
       break;
 
     case GLASGOW_REV_C0:
+    case GLASGOW_REV_C1:
       IOA |=  (1<<PINA_CRESET_N_REVC);
       break;
   }
@@ -109,6 +111,7 @@ __endasm;
       break;
 
     case GLASGOW_REV_C0:
+    case GLASGOW_REV_C1:
       IFCONFIG |= _IFCLKOE|_3048MHZ|_IFCFG0|_IFCFG1;
       break;
   }
