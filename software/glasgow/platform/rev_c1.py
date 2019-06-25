@@ -1,78 +1,97 @@
-from migen.build.generic_platform import *
-from migen.build.lattice import LatticePlatform
+from nmigen.build import *
 
-from .programmer import GlasgowProgrammer
+from .ice40 import *
 
 
 __all__ = ["GlasgowPlatformRevC1"]
 
 
-_io = [
-    ("clk_fx", 0, Pins("L5")),
-    ("clk_if", 0, Pins("K6")),
+class GlasgowPlatformRevC1(GlasgowPlatformICE40):
+    device      = "iCE40HX8K"
+    package     = "BG121"
+    default_clk = "clk_if"
+    resources   = [
+        Resource("clk_fx", 0, Pins("L5", dir="i"),
+                 Clock(48e6), Attrs(GLOBAL="1", IO_STANDARD="SB_LVCMOS33")),
+        Resource("clk_if", 0, Pins("K6", dir="i"),
+                 Clock(48e6), Attrs(GLOBAL="1", IO_STANDARD="SB_LVCMOS33")),
 
-    ("fx2", 0,
-        Subsignal("sloe",    Pins("L3")),
-        Subsignal("slrd",    Pins("J5")),
-        Subsignal("slwr",    Pins("J4")),
-        Subsignal("pktend",  Pins("L1")),
-        Subsignal("fifoadr", Pins("K3 L2")),
-        Subsignal("flag",    Pins("L7 K5 L4 J3")),
-        Subsignal("fd",      Pins("H7 J7 J9 K10 L10 K9 L8 K7")),
-    ),
+        Resource("fx2", 0,
+            Subsignal("sloe",    Pins("L3", dir="o")),
+            Subsignal("slrd",    Pins("J5", dir="o")),
+            Subsignal("slwr",    Pins("J4", dir="o")),
+            Subsignal("pktend",  Pins("L1", dir="o")),
+            Subsignal("fifoadr", Pins("K3 L2", dir="o")),
+            Subsignal("flag",    Pins("L7 K5 L4 J3", dir="i")),
+            Subsignal("fd",      Pins("H7 J7 J9 K10 L10 K9 L8 K7", dir="io")),
+            Attrs(IO_STANDARD="SB_LVCMOS33")
+        ),
 
-    ("i2c", 0,
-        Subsignal("scl", Pins("H9")),
-        Subsignal("sda", Pins("J8")),
-    ),
+        Resource("i2c", 0,
+            Subsignal("scl", Pins("H9", dir="io")),
+            Subsignal("sda", Pins("J8", dir="io")),
+            Attrs(IO_STANDARD="SB_LVCMOS33")
+        ),
 
-    ("alert_n", 0, Pins("K4")),
+        Resource("alert", 0, PinsN("K4", dir="oe"), Attrs(IO_STANDARD="SB_LVCMOS33")),
 
-    ("user_led", 0, Pins("G9")),
-    ("user_led", 1, Pins("G8")),
-    ("user_led", 2, Pins("E9")),
-    ("user_led", 3, Pins("D9")),
-    ("user_led", 4, Pins("E8")),
+        Resource("user_led", 0, Pins("G9", dir="o"), Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("user_led", 1, Pins("G8", dir="o"), Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("user_led", 2, Pins("E9", dir="o"), Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("user_led", 3, Pins("D9", dir="o"), Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("user_led", 4, Pins("E8", dir="o"), Attrs(IO_STANDARD="SB_LVCMOS33")),
 
-    ("port_a", 0, Subsignal("io", Pins("A1")),  Subsignal("oe", Pins("C7"))),
-    ("port_a", 1, Subsignal("io", Pins("A2")),  Subsignal("oe", Pins("C8"))),
-    ("port_a", 2, Subsignal("io", Pins("B3")),  Subsignal("oe", Pins("D7"))),
-    ("port_a", 3, Subsignal("io", Pins("A3")),  Subsignal("oe", Pins("A7"))),
-    ("port_a", 4, Subsignal("io", Pins("B6")),  Subsignal("oe", Pins("B8"))),
-    ("port_a", 5, Subsignal("io", Pins("A4")),  Subsignal("oe", Pins("A8"))),
-    ("port_a", 6, Subsignal("io", Pins("B7")),  Subsignal("oe", Pins("B9"))),
-    ("port_a", 7, Subsignal("io", Pins("A5")),  Subsignal("oe", Pins("A9"))),
+        Resource("port_a", 0, Subsignal("io", Pins("A1")),  Subsignal("oe", Pins("C7",  dir="o")),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("port_a", 1, Subsignal("io", Pins("A2")),  Subsignal("oe", Pins("C8",  dir="o")),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("port_a", 2, Subsignal("io", Pins("B3")),  Subsignal("oe", Pins("D7",  dir="o")),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("port_a", 3, Subsignal("io", Pins("A3")),  Subsignal("oe", Pins("A7",  dir="o")),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("port_a", 4, Subsignal("io", Pins("B6")),  Subsignal("oe", Pins("B8",  dir="o")),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("port_a", 5, Subsignal("io", Pins("A4")),  Subsignal("oe", Pins("A8",  dir="o")),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("port_a", 6, Subsignal("io", Pins("B7")),  Subsignal("oe", Pins("B9",  dir="o")),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("port_a", 7, Subsignal("io", Pins("A5")),  Subsignal("oe", Pins("A9",  dir="o")),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
 
-    ("port_b", 0, Subsignal("io", Pins("B11")), Subsignal("oe", Pins("F9"))),
-    ("port_b", 1, Subsignal("io", Pins("C11")), Subsignal("oe", Pins("G11"))),
-    ("port_b", 2, Subsignal("io", Pins("D10")), Subsignal("oe", Pins("G10"))),
-    ("port_b", 3, Subsignal("io", Pins("D11")), Subsignal("oe", Pins("H11"))),
-    ("port_b", 4, Subsignal("io", Pins("E10")), Subsignal("oe", Pins("H10"))),
-    ("port_b", 5, Subsignal("io", Pins("E11")), Subsignal("oe", Pins("J11"))),
-    ("port_b", 6, Subsignal("io", Pins("F11")), Subsignal("oe", Pins("J10"))),
-    ("port_b", 7, Subsignal("io", Pins("F10")), Subsignal("oe", Pins("K11"))),
+        Resource("port_b", 0, Subsignal("io", Pins("B11")), Subsignal("oe", Pins("F9",  dir="o")),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("port_b", 1, Subsignal("io", Pins("C11")), Subsignal("oe", Pins("G11", dir="o")),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("port_b", 2, Subsignal("io", Pins("D10")), Subsignal("oe", Pins("G10", dir="o")),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("port_b", 3, Subsignal("io", Pins("D11")), Subsignal("oe", Pins("H11", dir="o")),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("port_b", 4, Subsignal("io", Pins("E10")), Subsignal("oe", Pins("H10", dir="o")),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("port_b", 5, Subsignal("io", Pins("E11")), Subsignal("oe", Pins("J11", dir="o")),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("port_b", 6, Subsignal("io", Pins("F11")), Subsignal("oe", Pins("J10", dir="o")),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("port_b", 7, Subsignal("io", Pins("F10")), Subsignal("oe", Pins("K11", dir="o")),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
 
-    ("port_s", 0, Subsignal("io", Pins("A11")), Subsignal("oe", Pins("B4"))),
+        Resource("port_s", 0, Subsignal("io", Pins("A11")), Subsignal("oe", Pins("B4",  dir="o")),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
 
-    ("aux", 0, Pins("A10")),
-    ("aux", 1, Pins("C9")),
+        Resource("aux", 0, Pins("A10"),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("aux", 1, Pins("C9"),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
 
-    # On revC0, these balls are shared with B6 and B7, respectively.
-    # Since the default pin state is a weak pullup, we need to tristate them explicitly.
-    ("unused", 0, Pins("A6 B5")),
-]
+        # On revC, these balls are shared with B6 and B7, respectively.
+        # Since the default pin state is a weak pullup, we need to tristate them explicitly.
+        Resource("unused", 0, Pins("A6 B5", dir="oe"),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
+    ]
+    connectors  = [
+    ]
 
-_connectors = [
-]
 
-
-class GlasgowPlatformRevC1(LatticePlatform):
-    default_clk_name = "clk_if"
-    default_clk_period = 1e9 / 48e6
-
-    def __init__(self):
-        LatticePlatform.__init__(self, "ice40-hx8k-bg121", _io, _connectors,
-                                 toolchain="icestorm")
-
-    def create_programmer(self):
-        return GlasgowProgrammer()
+if __name__ == "__main__":
+    from nmigen_boards._blinky import build_and_program
+    build_and_program(GlasgowPlatformRevC1)

@@ -104,7 +104,7 @@ from ..target.simulation import *
 from ..target.hardware import *
 from ..device.simulation import *
 from ..device.hardware import *
-from ..platform import GlasgowPlatformRevAB
+from ..platform.all import GlasgowPlatformRevAB
 
 
 __all__ += ["GlasgowAppletTestCase", "synthesis_test", "applet_simulation_test",

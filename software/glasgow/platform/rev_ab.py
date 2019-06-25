@@ -1,64 +1,58 @@
-from migen.build.generic_platform import *
-from migen.build.lattice import LatticePlatform
+from nmigen.build import *
 
-from .programmer import GlasgowProgrammer
+from .ice40 import *
 
 
 __all__ = ["GlasgowPlatformRevAB"]
 
 
-_io = [
-    ("clk_fx", 0, Pins("44")),
-    ("clk_if", 0, Pins("20")),
+class GlasgowPlatformRevAB(GlasgowPlatformICE40):
+    device      = "iCE40UP5K"
+    package     = "SG48"
+    default_clk = "clk_if"
+    resources   = [
+        Resource("clk_fx", 0, Pins("44", dir="i"),
+                 Clock(48e6), Attrs(GLOBAL="1", IO_STANDARD="SB_LVCMOS33")),
+        Resource("clk_if", 0, Pins("20", dir="i"),
+                 Clock(30e6), Attrs(GLOBAL="1", IO_STANDARD="SB_LVCMOS33")),
 
-    ("fx2", 0,
-        Subsignal("sloe",    Pins("6")),
-        Subsignal("slrd",    Pins("47")),
-        Subsignal("slwr",    Pins("46")),
-        Subsignal("pktend",  Pins("2")),
-        Subsignal("fifoadr", Pins("4 3")),
-        Subsignal("flag",    Pins("11 10 9 48")),
-        Subsignal("fd",      Pins("19 18 17 16 15 14 13 12")),
-    ),
+        Resource("fx2", 0,
+            Subsignal("sloe",    Pins("6", dir="o")),
+            Subsignal("slrd",    Pins("47", dir="o")),
+            Subsignal("slwr",    Pins("46", dir="o")),
+            Subsignal("pktend",  Pins("2", dir="o")),
+            Subsignal("fifoadr", Pins("4 3", dir="o")),
+            Subsignal("flag",    Pins("11 10 9 48", dir="i")),
+            Subsignal("fd",      Pins("19 18 17 16 15 14 13 12", dir="io")),
+            Attrs(IO_STANDARD="SB_LVCMOS33")
+        ),
 
-    ("i2c", 0,
-        Subsignal("scl", Pins("39")),
-        Subsignal("sda", Pins("40")),
-    ),
+        Resource("i2c", 0,
+            Subsignal("scl", Pins("39", dir="io")),
+            Subsignal("sda", Pins("40", dir="io")),
+            Attrs(IO_STANDARD="SB_LVCMOS33")
+        ),
 
-    ("port_a", 0, Subsignal("io", Pins("45"))),
-    ("port_a", 1, Subsignal("io", Pins("43"))),
-    ("port_a", 2, Subsignal("io", Pins("42"))),
-    ("port_a", 3, Subsignal("io", Pins("38"))),
-    ("port_a", 4, Subsignal("io", Pins("37"))),
-    ("port_a", 5, Subsignal("io", Pins("36"))),
-    ("port_a", 6, Subsignal("io", Pins("35"))),
-    ("port_a", 7, Subsignal("io", Pins("34"))),
+        Resource("port_a", 0, Subsignal("io", Pins("45"))),
+        Resource("port_a", 1, Subsignal("io", Pins("43"))),
+        Resource("port_a", 2, Subsignal("io", Pins("42"))),
+        Resource("port_a", 3, Subsignal("io", Pins("38"))),
+        Resource("port_a", 4, Subsignal("io", Pins("37"))),
+        Resource("port_a", 5, Subsignal("io", Pins("36"))),
+        Resource("port_a", 6, Subsignal("io", Pins("35"))),
+        Resource("port_a", 7, Subsignal("io", Pins("34"))),
 
-    ("port_b", 0, Subsignal("io", Pins("32"))),
-    ("port_b", 1, Subsignal("io", Pins("31"))),
-    ("port_b", 2, Subsignal("io", Pins("28"))),
-    ("port_b", 3, Subsignal("io", Pins("27"))),
-    ("port_b", 4, Subsignal("io", Pins("26"))),
-    ("port_b", 5, Subsignal("io", Pins("25"))),
-    ("port_b", 6, Subsignal("io", Pins("23"))),
-    ("port_b", 7, Subsignal("io", Pins("21"))),
+        Resource("port_b", 0, Subsignal("io", Pins("32"))),
+        Resource("port_b", 1, Subsignal("io", Pins("31"))),
+        Resource("port_b", 2, Subsignal("io", Pins("28"))),
+        Resource("port_b", 3, Subsignal("io", Pins("27"))),
+        Resource("port_b", 4, Subsignal("io", Pins("26"))),
+        Resource("port_b", 5, Subsignal("io", Pins("25"))),
+        Resource("port_b", 6, Subsignal("io", Pins("23"))),
+        Resource("port_b", 7, Subsignal("io", Pins("21"))),
 
-    # On revA, this pin is open-drain only.
-    ("port_s", 0, Pins("41")),
-]
-
-_connectors = [
-]
-
-
-class GlasgowPlatformRevAB(LatticePlatform):
-    default_clk_name = "clk_if"
-    default_clk_period = 1e9 / 30e6
-
-    def __init__(self):
-        LatticePlatform.__init__(self, "ice40-up5k-sg48", _io, _connectors,
-                                 toolchain="icestorm")
-
-    def create_programmer(self):
-        return GlasgowProgrammer()
+        # On revA/B, this pin is open-drain only.
+        Resource("port_s", 0, Pins("41")),
+    ]
+    connectors  = [
+    ]

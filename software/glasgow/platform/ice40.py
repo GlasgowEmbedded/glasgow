@@ -1,17 +1,21 @@
-from nmigen.compat import *
+import asyncio
+from nmigen import *
+from nmigen.vendor.lattice_ice40 import *
 
-from .. import GatewareBuildError
-from ..pll import PLL
-
-
-class LatticeiCE40PLL:
-    @staticmethod
-    def lower(dr):
-        return LatticeiCE40PLLImpl(dr, simple_feedback=True)
+from ..device.hardware import *
+from ..gateware import GatewareBuildError
 
 
-class LatticeiCE40PLLImpl(Module):
-    def __init__(self, pll, simple_feedback):
+__all__ = ["GlasgowPlatformICE40"]
+
+
+class GlasgowPlatformICE40(LatticeICE40Platform):
+    def toolchain_program(self, products, name):
+        bitstream = products.get("{}.bin".format(name))
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(GlasgowHardwareDevice().download_bitstream(bitstream))
+
+    def get_pll(self, pll, simple_feedback=True):
         if not 10e6 <= pll.f_in <= 133e6:
             pll.logger.error("PLL: f_in (%.3f MHz) must be between 10 and 133 MHz",
                              pll.f_in / 1e6)
@@ -90,21 +94,15 @@ class LatticeiCE40PLLImpl(Module):
         pll.logger.trace("iCE40 PLL: feedback_path=%s divr=%d divf=%d divq=%d filter_range=%d",
                          feedback_path, divr, divf, divq, filter_range)
 
-        self.specials += \
-            Instance("SB_PLL40_CORE",
-                p_FEEDBACK_PATH=feedback_path,
-                p_PLLOUT_SELECT="GENCLK",
-                p_DIVR=divr,
-                p_DIVF=divf,
-                p_DIVQ=divq,
-                p_FILTER_RANGE=filter_range,
-                i_REFERENCECLK=ClockSignal(pll.idomain),
-                o_PLLOUTCORE=ClockSignal(pll.odomain),
-                i_RESETB=~ResetSignal(pll.idomain),
-                i_BYPASS=0,
-            )
-
-
-special_overrides = {
-    PLL: LatticeiCE40PLL
-}
+        return Instance("SB_PLL40_CORE",
+            p_FEEDBACK_PATH=feedback_path,
+            p_PLLOUT_SELECT="GENCLK",
+            p_DIVR=divr,
+            p_DIVF=divf,
+            p_DIVQ=divq,
+            p_FILTER_RANGE=filter_range,
+            i_REFERENCECLK=ClockSignal(pll.idomain),
+            o_PLLOUTCORE=ClockSignal(pll.odomain),
+            i_RESETB=~ResetSignal(pll.idomain),
+            i_BYPASS=Const(0),
+        )

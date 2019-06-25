@@ -10,8 +10,7 @@ from ..gateware.pads import Pads
 from ..gateware.i2c import I2CSlave
 from ..gateware.registers import I2CRegisters
 from ..gateware.fx2_crossbar import FX2Crossbar
-from ..gateware.platform.lattice import special_overrides
-from ..platform import *
+from ..platform.all import *
 from .analyzer import GlasgowAnalyzer
 
 
