@@ -470,7 +470,8 @@ class GlasgowHardwareDevice:
                 struct.pack("BB", port_enable, port_value))
             # Check if we've succeeded
             if await self._status() & ST_ERROR:
-                raise GlasgowDeviceError("cannot set I/O port(s) {} pull resistors to low={} high={}"
+                raise GlasgowDeviceError("cannot set I/O port(s) {} pull resistors to "
+                                         "low={} high={}"
                                          .format(spec or "(none)", low or "{}", high or "{}"))
 
     async def _register_error(self, addr):

@@ -103,7 +103,7 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
 
     def build(self, target, args):
         self.mux_interface = iface = \
-            target.multiplexer.claim_interface(self, args, throttle="none")
+            target.multiplexer.claim_interface(self, args=None, throttle="none")
         mode,  self.__addr_mode  = target.registers.add_rw(2)
         error, self.__addr_error = target.registers.add_ro(1)
         count, self.__addr_count = target.registers.add_rw(32)
@@ -130,7 +130,7 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
             help="run benchmark mode MODE (default: {})".format(" ".join(cls.__all_modes)))
 
     async def run(self, device, args):
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
+        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args=None)
 
         golden = bytearray()
         while len(golden) < args.count:
