@@ -4,7 +4,7 @@ EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 1 1
+Sheet 1 2
 Title "Glasgow Test Jig"
 Date ""
 Rev ""
@@ -1252,4 +1252,25 @@ Text Label 9450 3800 2    50   ~ 0
 LED_3V3
 Text Label 9400 5650 2    50   ~ 0
 LED_5V
+$Sheet
+S 4250 6150 1200 1350
+U 5D1F5493
+F0 "port-connection" 50
+F1 "port-connection.sch" 50
+F2 "SCL" B R 5450 6300 50 
+F3 "SDA" B R 5450 6450 50 
+F4 "LED_RUN" O R 5450 6700 50 
+F5 "LED_PASS" O R 5450 6850 50 
+F6 "LED_FAIL" O R 5450 7000 50 
+F7 "SWITCH_AUX" I R 5450 7250 50 
+F8 "SWITCH_START" I R 5450 7400 50 
+$EndSheet
+Wire Wire Line
+	5450 6300 5750 6300
+Wire Wire Line
+	5450 6450 5750 6450
+Text Label 5600 6300 0    50   ~ 0
+SCL
+Text Label 5600 6450 0    50   ~ 0
+SDA
 $EndSCHEMATC
