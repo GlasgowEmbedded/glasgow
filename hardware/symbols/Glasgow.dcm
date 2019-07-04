@@ -198,4 +198,10 @@ K 1 A LDO Regulator Fixed Positive
 F http://www.ti.com/lit/ds/symlink/tlv757p.pdf
 $ENDCMP
 #
+$CMP TPS3700
+D Window voltage detector with internal reference for over and undervoltage monitoring
+K protection overvoltage unvervoltage monitor
+F http://www.ti.com/lit/ds/symlink/tps3700.pdf
+$ENDCMP
+#
 #End Doc Library
