@@ -1,0 +1,571 @@
+EESchema Schematic File Version 4
+LIBS:test-jig-cache
+EELAYER 29 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 3 3
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+Text Notes 850  1100 0    157  ~ 0
+Separate pcb for the LEDs for better visibility\nUse GNDA and 3.3VA to not connect any nets with the main pcb
+$Comp
+L Device:LED D?
+U 1 1 5D2DA011
+P 5300 2650
+F 0 "D?" H 5293 2395 50  0000 C CNN
+F 1 "green" H 5293 2486 50  0000 C CNN
+F 2 "" H 5300 2650 50  0001 C CNN
+F 3 "~" H 5300 2650 50  0001 C CNN
+	1    5300 2650
+	-1   0    0    1   
+$EndComp
+$Comp
+L power:+3.3VA #PWR?
+U 1 1 5D2DB5E9
+P 4450 2350
+F 0 "#PWR?" H 4450 2200 50  0001 C CNN
+F 1 "+3.3VA" H 4465 2523 50  0000 C CNN
+F 2 "" H 4450 2350 50  0001 C CNN
+F 3 "" H 4450 2350 50  0001 C CNN
+	1    4450 2350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R?
+U 1 1 5D2DBA07
+P 4850 2650
+F 0 "R?" V 4643 2650 50  0000 C CNN
+F 1 "2k2" V 4734 2650 50  0000 C CNN
+F 2 "" V 4780 2650 50  0001 C CNN
+F 3 "~" H 4850 2650 50  0001 C CNN
+	1    4850 2650
+	0    1    1    0   
+$EndComp
+$Comp
+L power:GNDA #PWR?
+U 1 1 5D2DBC88
+P 5550 2800
+F 0 "#PWR?" H 5550 2550 50  0001 C CNN
+F 1 "GNDA" H 5555 2627 50  0000 C CNN
+F 2 "" H 5550 2800 50  0001 C CNN
+F 3 "" H 5550 2800 50  0001 C CNN
+	1    5550 2800
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4450 2350 4450 2650
+Wire Wire Line
+	4450 2650 4700 2650
+Wire Wire Line
+	5000 2650 5150 2650
+Wire Wire Line
+	5450 2650 5550 2650
+Wire Wire Line
+	5550 2650 5550 2800
+Text Notes 5550 2500 0    50   ~ 0
+Jig power
+Wire Wire Line
+	2050 5000 2050 5450
+Text Label 2150 5300 1    50   ~ 0
+LED_5V
+Text Label 2050 5300 1    50   ~ 0
+LED_3V3
+Text Label 2050 4450 1    50   ~ 0
+LED_1V2
+$Comp
+L power:+3.3VA #PWR?
+U 1 1 5D2D6A47
+P 2450 4300
+F 0 "#PWR?" H 2450 4150 50  0001 C CNN
+F 1 "+3.3VA" H 2465 4473 50  0000 C CNN
+F 2 "" H 2450 4300 50  0001 C CNN
+F 3 "" H 2450 4300 50  0001 C CNN
+	1    2450 4300
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GNDA #PWR?
+U 1 1 5D2D645E
+P 2450 5200
+F 0 "#PWR?" H 2450 4950 50  0001 C CNN
+F 1 "GNDA" H 2455 5027 50  0000 C CNN
+F 2 "" H 2450 5200 50  0001 C CNN
+F 3 "" H 2450 5200 50  0001 C CNN
+	1    2450 5200
+	1    0    0    -1  
+$EndComp
+Text Notes 1900 5050 1    50   ~ 0
+Ribbon cable\nto main pcb
+Wire Wire Line
+	2450 5100 2450 5200
+Wire Wire Line
+	2450 5100 2450 5000
+Connection ~ 2450 5100
+Wire Wire Line
+	2350 5100 2450 5100
+Wire Wire Line
+	2350 5000 2350 5100
+Wire Wire Line
+	2450 4450 2450 4500
+Connection ~ 2450 4450
+Wire Wire Line
+	2350 4450 2450 4450
+Wire Wire Line
+	2350 4500 2350 4450
+Wire Wire Line
+	2450 4300 2450 4450
+Text Label 2250 5350 1    50   ~ 0
+LED_PASS
+Text Label 2250 4450 1    50   ~ 0
+LED_FAIL
+Text Label 2150 4450 1    50   ~ 0
+LED_RUN
+Wire Wire Line
+	2250 5000 2250 5400
+Wire Wire Line
+	2250 4500 2250 4150
+Wire Wire Line
+	2150 4500 2150 4150
+$Comp
+L Connector_Generic:Conn_02x05_Odd_Even J?
+U 1 1 5D2D5562
+P 2250 4800
+AR Path="/5D2D5562" Ref="J?"  Part="1" 
+AR Path="/5D29701F/5D2D5562" Ref="J?"  Part="1" 
+F 0 "J?" V 2300 4512 50  0000 R CNN
+F 1 "Conn_02x05_Odd_Even" V 2255 4512 50  0001 R CNN
+F 2 "" H 2250 4800 50  0001 C CNN
+F 3 "~" H 2250 4800 50  0001 C CNN
+	1    2250 4800
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:LED D?
+U 1 1 5D2E2982
+P 5300 3550
+F 0 "D?" H 5293 3295 50  0000 C CNN
+F 1 "red" H 5293 3386 50  0000 C CNN
+F 2 "" H 5300 3550 50  0001 C CNN
+F 3 "~" H 5300 3550 50  0001 C CNN
+	1    5300 3550
+	-1   0    0    1   
+$EndComp
+$Comp
+L Device:LED D?
+U 1 1 5D2E3538
+P 3650 3550
+F 0 "D?" H 3643 3295 50  0000 C CNN
+F 1 "green" H 3643 3386 50  0000 C CNN
+F 2 "" H 3650 3550 50  0001 C CNN
+F 3 "~" H 3650 3550 50  0001 C CNN
+	1    3650 3550
+	-1   0    0    1   
+$EndComp
+$Comp
+L Device:R R?
+U 1 1 5D2E3CFF
+P 4100 3550
+F 0 "R?" V 3893 3550 50  0000 C CNN
+F 1 "2k2" V 3984 3550 50  0000 C CNN
+F 2 "" V 4030 3550 50  0001 C CNN
+F 3 "~" H 4100 3550 50  0001 C CNN
+	1    4100 3550
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R?
+U 1 1 5D2E4301
+P 4850 3550
+F 0 "R?" V 4643 3550 50  0000 C CNN
+F 1 "2k2" V 4734 3550 50  0000 C CNN
+F 2 "" V 4780 3550 50  0001 C CNN
+F 3 "~" H 4850 3550 50  0001 C CNN
+	1    4850 3550
+	0    1    1    0   
+$EndComp
+$Comp
+L power:GNDA #PWR?
+U 1 1 5D2E4E1B
+P 5600 3650
+F 0 "#PWR?" H 5600 3400 50  0001 C CNN
+F 1 "GNDA" H 5605 3477 50  0000 C CNN
+F 2 "" H 5600 3650 50  0001 C CNN
+F 3 "" H 5600 3650 50  0001 C CNN
+	1    5600 3650
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3.3VA #PWR?
+U 1 1 5D2E5174
+P 3350 3450
+F 0 "#PWR?" H 3350 3300 50  0001 C CNN
+F 1 "+3.3VA" H 3365 3623 50  0000 C CNN
+F 2 "" H 3350 3450 50  0001 C CNN
+F 3 "" H 3350 3450 50  0001 C CNN
+	1    3350 3450
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3350 3450 3350 3550
+Wire Wire Line
+	3350 3550 3500 3550
+Wire Wire Line
+	5600 3550 5600 3650
+Wire Wire Line
+	5450 3550 5600 3550
+Wire Wire Line
+	3800 3550 3950 3550
+Wire Wire Line
+	4250 3550 4500 3550
+Wire Wire Line
+	5000 3550 5150 3550
+Wire Wire Line
+	2050 3100 4500 3100
+Wire Wire Line
+	4500 3100 4500 3550
+Connection ~ 4500 3550
+Wire Wire Line
+	4500 3550 4700 3550
+Text Notes 5650 3400 0    50   ~ 0
+1V2 rail
+Text Notes 3550 3750 0    50   ~ 0
+pass
+Text Notes 5250 3750 0    50   ~ 0
+fail
+$Comp
+L Device:LED D?
+U 1 1 5D2ED0DC
+P 5300 4250
+F 0 "D?" H 5293 3995 50  0000 C CNN
+F 1 "red" H 5293 4086 50  0000 C CNN
+F 2 "" H 5300 4250 50  0001 C CNN
+F 3 "~" H 5300 4250 50  0001 C CNN
+	1    5300 4250
+	-1   0    0    1   
+$EndComp
+$Comp
+L Device:LED D?
+U 1 1 5D2ED0E6
+P 3650 4250
+F 0 "D?" H 3643 3995 50  0000 C CNN
+F 1 "green" H 3643 4086 50  0000 C CNN
+F 2 "" H 3650 4250 50  0001 C CNN
+F 3 "~" H 3650 4250 50  0001 C CNN
+	1    3650 4250
+	-1   0    0    1   
+$EndComp
+$Comp
+L Device:R R?
+U 1 1 5D2ED0F0
+P 4100 4250
+F 0 "R?" V 3893 4250 50  0000 C CNN
+F 1 "2k2" V 3984 4250 50  0000 C CNN
+F 2 "" V 4030 4250 50  0001 C CNN
+F 3 "~" H 4100 4250 50  0001 C CNN
+	1    4100 4250
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R?
+U 1 1 5D2ED0FA
+P 4850 4250
+F 0 "R?" V 4643 4250 50  0000 C CNN
+F 1 "2k2" V 4734 4250 50  0000 C CNN
+F 2 "" V 4780 4250 50  0001 C CNN
+F 3 "~" H 4850 4250 50  0001 C CNN
+	1    4850 4250
+	0    1    1    0   
+$EndComp
+$Comp
+L power:GNDA #PWR?
+U 1 1 5D2ED104
+P 5600 4350
+F 0 "#PWR?" H 5600 4100 50  0001 C CNN
+F 1 "GNDA" H 5605 4177 50  0000 C CNN
+F 2 "" H 5600 4350 50  0001 C CNN
+F 3 "" H 5600 4350 50  0001 C CNN
+	1    5600 4350
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3.3VA #PWR?
+U 1 1 5D2ED10E
+P 3350 4150
+F 0 "#PWR?" H 3350 4000 50  0001 C CNN
+F 1 "+3.3VA" H 3365 4323 50  0000 C CNN
+F 2 "" H 3350 4150 50  0001 C CNN
+F 3 "" H 3350 4150 50  0001 C CNN
+	1    3350 4150
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3350 4150 3350 4250
+Wire Wire Line
+	3350 4250 3500 4250
+Wire Wire Line
+	5600 4250 5600 4350
+Wire Wire Line
+	5450 4250 5600 4250
+Wire Wire Line
+	3800 4250 3950 4250
+Wire Wire Line
+	4250 4250 4500 4250
+Wire Wire Line
+	5000 4250 5150 4250
+Wire Wire Line
+	4500 3800 4500 4250
+Connection ~ 4500 4250
+Wire Wire Line
+	4500 4250 4700 4250
+Text Notes 5650 4100 0    50   ~ 0
+3V3 rail
+Text Notes 3550 4450 0    50   ~ 0
+pass
+Text Notes 5250 4450 0    50   ~ 0
+fail
+Wire Wire Line
+	2050 3100 2050 4500
+$Comp
+L Device:LED D?
+U 1 1 5D2F33F7
+P 5300 5000
+F 0 "D?" H 5293 4745 50  0000 C CNN
+F 1 "red" H 5293 4836 50  0000 C CNN
+F 2 "" H 5300 5000 50  0001 C CNN
+F 3 "~" H 5300 5000 50  0001 C CNN
+	1    5300 5000
+	-1   0    0    1   
+$EndComp
+$Comp
+L Device:LED D?
+U 1 1 5D2F3401
+P 3650 5000
+F 0 "D?" H 3643 4745 50  0000 C CNN
+F 1 "green" H 3643 4836 50  0000 C CNN
+F 2 "" H 3650 5000 50  0001 C CNN
+F 3 "~" H 3650 5000 50  0001 C CNN
+	1    3650 5000
+	-1   0    0    1   
+$EndComp
+$Comp
+L Device:R R?
+U 1 1 5D2F340B
+P 4100 5000
+F 0 "R?" V 3893 5000 50  0000 C CNN
+F 1 "2k2" V 3984 5000 50  0000 C CNN
+F 2 "" V 4030 5000 50  0001 C CNN
+F 3 "~" H 4100 5000 50  0001 C CNN
+	1    4100 5000
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R?
+U 1 1 5D2F3415
+P 4850 5000
+F 0 "R?" V 4643 5000 50  0000 C CNN
+F 1 "2k2" V 4734 5000 50  0000 C CNN
+F 2 "" V 4780 5000 50  0001 C CNN
+F 3 "~" H 4850 5000 50  0001 C CNN
+	1    4850 5000
+	0    1    1    0   
+$EndComp
+$Comp
+L power:GNDA #PWR?
+U 1 1 5D2F341F
+P 5600 5100
+F 0 "#PWR?" H 5600 4850 50  0001 C CNN
+F 1 "GNDA" H 5605 4927 50  0000 C CNN
+F 2 "" H 5600 5100 50  0001 C CNN
+F 3 "" H 5600 5100 50  0001 C CNN
+	1    5600 5100
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3.3VA #PWR?
+U 1 1 5D2F3429
+P 3350 4900
+F 0 "#PWR?" H 3350 4750 50  0001 C CNN
+F 1 "+3.3VA" H 3365 5073 50  0000 C CNN
+F 2 "" H 3350 4900 50  0001 C CNN
+F 3 "" H 3350 4900 50  0001 C CNN
+	1    3350 4900
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3350 4900 3350 5000
+Wire Wire Line
+	3350 5000 3500 5000
+Wire Wire Line
+	5600 5000 5600 5100
+Wire Wire Line
+	5450 5000 5600 5000
+Wire Wire Line
+	3800 5000 3950 5000
+Wire Wire Line
+	4250 5000 4500 5000
+Wire Wire Line
+	5000 5000 5150 5000
+Connection ~ 4500 5000
+Wire Wire Line
+	4500 5000 4700 5000
+Text Notes 5650 4850 0    50   ~ 0
+5V rail
+Text Notes 3550 5200 0    50   ~ 0
+pass
+Text Notes 5250 5200 0    50   ~ 0
+fail
+Wire Wire Line
+	2050 5450 1500 5450
+Wire Wire Line
+	1500 5450 1500 3800
+Wire Wire Line
+	1500 3800 4500 3800
+Wire Wire Line
+	2150 5700 4500 5700
+Wire Wire Line
+	4500 5700 4500 5000
+Wire Wire Line
+	2150 5000 2150 5700
+$Comp
+L Device:C C?
+U 1 1 5D2FCA51
+P 2800 4750
+F 0 "C?" H 2915 4796 50  0000 L CNN
+F 1 "100nF" H 2915 4705 50  0000 L CNN
+F 2 "" H 2838 4600 50  0001 C CNN
+F 3 "~" H 2800 4750 50  0001 C CNN
+	1    2800 4750
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2450 4450 2800 4450
+Wire Wire Line
+	2800 4450 2800 4600
+Wire Wire Line
+	2450 5100 2800 5100
+Wire Wire Line
+	2800 5100 2800 4900
+$Comp
+L Device:LED D?
+U 1 1 5D3007CC
+P 8300 3800
+F 0 "D?" H 8293 3545 50  0000 C CNN
+F 1 "yellow" H 8293 3636 50  0000 C CNN
+F 2 "" H 8300 3800 50  0001 C CNN
+F 3 "~" H 8300 3800 50  0001 C CNN
+	1    8300 3800
+	-1   0    0    1   
+$EndComp
+$Comp
+L Device:LED D?
+U 1 1 5D300F42
+P 8300 4250
+F 0 "D?" H 8293 3995 50  0000 C CNN
+F 1 "green" H 8293 4086 50  0000 C CNN
+F 2 "" H 8300 4250 50  0001 C CNN
+F 3 "~" H 8300 4250 50  0001 C CNN
+	1    8300 4250
+	-1   0    0    1   
+$EndComp
+$Comp
+L Device:LED D?
+U 1 1 5D3015D6
+P 8300 4700
+F 0 "D?" H 8293 4445 50  0000 C CNN
+F 1 "red" H 8293 4536 50  0000 C CNN
+F 2 "" H 8300 4700 50  0001 C CNN
+F 3 "~" H 8300 4700 50  0001 C CNN
+	1    8300 4700
+	-1   0    0    1   
+$EndComp
+$Comp
+L power:GNDA #PWR?
+U 1 1 5D301917
+P 8600 4950
+F 0 "#PWR?" H 8600 4700 50  0001 C CNN
+F 1 "GNDA" H 8605 4777 50  0000 C CNN
+F 2 "" H 8600 4950 50  0001 C CNN
+F 3 "" H 8600 4950 50  0001 C CNN
+	1    8600 4950
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8450 3800 8600 3800
+Wire Wire Line
+	8600 3800 8600 4250
+Wire Wire Line
+	8450 4250 8600 4250
+Connection ~ 8600 4250
+Wire Wire Line
+	8600 4250 8600 4700
+Wire Wire Line
+	8450 4700 8600 4700
+Connection ~ 8600 4700
+Wire Wire Line
+	8600 4700 8600 4950
+$Comp
+L Device:R R?
+U 1 1 5D304A8F
+P 7850 3800
+F 0 "R?" V 7643 3800 50  0000 C CNN
+F 1 "2k2" V 7734 3800 50  0000 C CNN
+F 2 "" V 7780 3800 50  0001 C CNN
+F 3 "~" H 7850 3800 50  0001 C CNN
+	1    7850 3800
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R?
+U 1 1 5D304C7B
+P 7850 4250
+F 0 "R?" V 7643 4250 50  0000 C CNN
+F 1 "2k2" V 7734 4250 50  0000 C CNN
+F 2 "" V 7780 4250 50  0001 C CNN
+F 3 "~" H 7850 4250 50  0001 C CNN
+	1    7850 4250
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R?
+U 1 1 5D304F45
+P 7850 4700
+F 0 "R?" V 7643 4700 50  0000 C CNN
+F 1 "2k2" V 7734 4700 50  0000 C CNN
+F 2 "" V 7780 4700 50  0001 C CNN
+F 3 "~" H 7850 4700 50  0001 C CNN
+	1    7850 4700
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	8000 3800 8150 3800
+Wire Wire Line
+	8000 4250 8150 4250
+Wire Wire Line
+	8000 4700 8150 4700
+Wire Wire Line
+	7700 3800 6950 3800
+Wire Wire Line
+	7700 4250 6950 4250
+Wire Wire Line
+	7700 4700 6950 4700
+Text Label 7000 3800 0    50   ~ 0
+LED_RUN
+Text Label 7000 4250 0    50   ~ 0
+LED_PASS
+Text Label 7000 4700 0    50   ~ 0
+LED_FAIL
+Text Notes 8700 3750 0    50   ~ 0
+Test running
+Text Notes 8700 4200 0    50   ~ 0
+Board passed
+Text Notes 8700 4600 0    50   ~ 0
+Board failed
+$EndSCHEMATC

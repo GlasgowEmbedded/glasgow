@@ -4,7 +4,7 @@ EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 1 2
+Sheet 1 3
 Title "Glasgow Test Jig"
 Date ""
 Rev ""
@@ -1241,11 +1241,7 @@ Wire Wire Line
 	10450 900  10450 950 
 Connection ~ 10050 900 
 Wire Wire Line
-	8800 1850 9550 1850
-Wire Wire Line
 	8800 3800 9550 3800
-Wire Wire Line
-	8750 5650 9600 5650
 Text Label 9400 1850 2    50   ~ 0
 LED_1V2
 Text Label 9450 3800 2    50   ~ 0
@@ -1273,4 +1269,111 @@ Text Label 5600 6300 0    50   ~ 0
 SCL
 Text Label 5600 6450 0    50   ~ 0
 SDA
+$Comp
+L Connector_Generic:Conn_02x05_Odd_Even J?
+U 1 1 5D2077B6
+P 10500 3750
+F 0 "J?" V 10550 3462 50  0000 R CNN
+F 1 "Conn_02x05_Odd_Even" V 10505 3462 50  0001 R CNN
+F 2 "" H 10500 3750 50  0001 C CNN
+F 3 "~" H 10500 3750 50  0001 C CNN
+	1    10500 3750
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	10300 1850 10300 3450
+Wire Wire Line
+	8800 1850 10300 1850
+Wire Wire Line
+	9550 3800 9550 4200
+Wire Wire Line
+	9550 4200 10300 4200
+Wire Wire Line
+	10300 4200 10300 3950
+Text Label 5500 6700 0    50   ~ 0
+LED_RUN
+Text Label 5500 6850 0    50   ~ 0
+LED_PASS
+Text Label 5500 7000 0    50   ~ 0
+LED_FAIL
+Wire Wire Line
+	10400 3450 10400 3100
+Wire Wire Line
+	10500 3450 10500 3100
+Wire Wire Line
+	10500 3950 10500 4350
+Text Label 10400 3400 1    50   ~ 0
+LED_RUN
+Text Label 10500 3400 1    50   ~ 0
+LED_FAIL
+Text Label 10500 4300 1    50   ~ 0
+LED_PASS
+$Comp
+L power:+3.3V #PWR?
+U 1 1 5D25EE8D
+P 10700 3250
+F 0 "#PWR?" H 10700 3100 50  0001 C CNN
+F 1 "+3.3V" H 10715 3423 50  0000 C CNN
+F 2 "" H 10700 3250 50  0001 C CNN
+F 3 "" H 10700 3250 50  0001 C CNN
+	1    10700 3250
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	10700 3250 10700 3400
+Wire Wire Line
+	10600 3450 10600 3400
+Wire Wire Line
+	10600 3400 10700 3400
+Connection ~ 10700 3400
+Wire Wire Line
+	10700 3400 10700 3450
+$Comp
+L power:GND #PWR?
+U 1 1 5D26E781
+P 10700 4150
+F 0 "#PWR?" H 10700 3900 50  0001 C CNN
+F 1 "GND" H 10705 3977 50  0000 C CNN
+F 2 "" H 10700 4150 50  0001 C CNN
+F 3 "" H 10700 4150 50  0001 C CNN
+	1    10700 4150
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	10600 3950 10600 4050
+Wire Wire Line
+	10600 4050 10700 4050
+Connection ~ 10700 4050
+Wire Wire Line
+	10700 4050 10700 3950
+Wire Wire Line
+	10700 4050 10700 4150
+Text Notes 11050 3950 1    50   ~ 0
+Ribbon cable\nto LED-board
+Wire Wire Line
+	10400 3950 10400 4400
+Wire Wire Line
+	10400 4400 9650 4400
+Wire Wire Line
+	9650 4400 9650 5650
+Wire Wire Line
+	9650 5650 8750 5650
+$Sheet
+S 10000 4800 950  950 
+U 5D29701F
+F0 "led-board" 50
+F1 "led-board.sch" 50
+$EndSheet
+Text Notes 8800 2100 0    50   ~ 0
+high: fail\nlow: pass
+Text Notes 8800 4000 0    50   ~ 0
+high: fail\nlow: pass
+Text Notes 8750 5850 0    50   ~ 0
+high: fail\nlow: pass
+Wire Wire Line
+	5450 6700 5900 6700
+Wire Wire Line
+	5450 6850 5900 6850
+Wire Wire Line
+	5450 7000 5900 7000
 $EndSCHEMATC
