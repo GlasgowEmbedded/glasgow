@@ -4,15 +4,15 @@ EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 2 3
+Sheet 3 3
 Title ""
 Date ""
 Rev ""
 Comp ""
-Comment1 ""
+Comment1 "License 0BSD or Apache 2.0"
 Comment2 ""
 Comment3 ""
-Comment4 ""
+Comment4 "Test Jig for Glasgow revC1"
 $EndDescr
 Wire Wire Line
 	2450 3500 5300 3500
@@ -340,17 +340,6 @@ Wire Wire Line
 Wire Wire Line
 	6800 2650 6800 2700
 $Comp
-L Connector_Generic:Conn_01x04 J?
-U 1 1 5D2ABD6F
-P 1100 5650
-F 0 "J?" H 1018 5317 50  0000 C CNN
-F 1 "Conn_01x04" H 1018 5316 50  0001 C CNN
-F 2 "" H 1100 5650 50  0001 C CNN
-F 3 "~" H 1100 5650 50  0001 C CNN
-	1    1100 5650
-	-1   0    0    1   
-$EndComp
-$Comp
 L 4xxx:4066 U?
 U 1 1 5D2AEBED
 P 1950 6350
@@ -399,37 +388,27 @@ Wire Wire Line
 	3700 6350 3700 3950
 Connection ~ 3700 3950
 Wire Wire Line
-	2800 5450 1300 5450
-Wire Wire Line
 	2250 5900 2250 5550
 Wire Wire Line
-	2250 5550 1300 5550
-Wire Wire Line
 	1650 6350 1650 5650
-Wire Wire Line
-	1650 5650 1300 5650
 $Comp
 L power:GND #PWR?
 U 1 1 5D2CC5A8
-P 1350 5900
-F 0 "#PWR?" H 1350 5650 50  0001 C CNN
-F 1 "GND" H 1355 5727 50  0000 C CNN
-F 2 "" H 1350 5900 50  0001 C CNN
-F 3 "" H 1350 5900 50  0001 C CNN
-	1    1350 5900
+P 1150 6050
+F 0 "#PWR?" H 1150 5800 50  0001 C CNN
+F 1 "GND" H 1155 5877 50  0000 C CNN
+F 2 "" H 1150 6050 50  0001 C CNN
+F 3 "" H 1150 6050 50  0001 C CNN
+	1    1150 6050
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	1300 5750 1350 5750
-Wire Wire Line
-	1350 5750 1350 5900
-Text Notes 1000 5950 1    50   ~ 0
-Sync/Aux pogopins
-Text Label 1350 5450 0    50   ~ 0
+Text Notes 750  6050 1    50   ~ 0
+Sync/Aux pogopins\nand Buttons
+Text Label 1100 5450 0    50   ~ 0
 TP_Sync
-Text Label 1350 5550 0    50   ~ 0
+Text Label 1100 5550 0    50   ~ 0
 TP_Aux_A10
-Text Label 1350 5650 0    50   ~ 0
+Text Label 1100 5650 0    50   ~ 0
 TP_Aux_C9
 Wire Wire Line
 	3100 5150 3850 5150
@@ -959,7 +938,7 @@ L Device:R R?
 U 1 1 5D47FC1E
 P 8950 5800
 F 0 "R?" H 8880 5754 50  0000 R CNN
-F 1 "4k7" H 8880 5845 50  0000 R CNN
+F 1 "2k2" H 8880 5845 50  0000 R CNN
 F 2 "" V 8880 5800 50  0001 C CNN
 F 3 "~" H 8950 5800 50  0001 C CNN
 	1    8950 5800
@@ -970,7 +949,7 @@ L Device:R R?
 U 1 1 5D480655
 P 8700 5800
 F 0 "R?" H 8630 5754 50  0000 R CNN
-F 1 "4k7" H 8630 5845 50  0000 R CNN
+F 1 "2k2" H 8630 5845 50  0000 R CNN
 F 2 "" V 8630 5800 50  0001 C CNN
 F 3 "~" H 8700 5800 50  0001 C CNN
 	1    8700 5800
@@ -1001,14 +980,6 @@ Wire Wire Line
 Connection ~ 8700 5600
 Wire Wire Line
 	8700 5600 8700 5650
-Wire Wire Line
-	8950 6300 8550 6300
-Wire Wire Line
-	8700 6100 8550 6100
-Text HLabel 8550 6300 0    50   Input ~ 0
-SWITCH_AUX
-Text HLabel 8550 6100 0    50   Input ~ 0
-SWITCH_START
 Text Notes 10000 6100 0    50   ~ 0
 Addr: 0100100\n(solderbridges shorted)
 $Comp
@@ -1175,4 +1146,67 @@ Wire Wire Line
 	2850 7100 2850 7050
 Wire Wire Line
 	2700 7100 2850 7100
+$Comp
+L Connector_Generic:Conn_01x06 J?
+U 1 1 5D21B24B
+P 850 5750
+F 0 "J?" H 768 5317 50  0000 C CNN
+F 1 "Conn_01x06" H 768 5316 50  0001 C CNN
+F 2 "" H 850 5750 50  0001 C CNN
+F 3 "~" H 850 5750 50  0001 C CNN
+	1    850  5750
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	1050 5950 1150 5950
+Wire Wire Line
+	1150 5950 1150 6050
+Wire Wire Line
+	1050 5450 2800 5450
+Wire Wire Line
+	1050 5550 2250 5550
+Wire Wire Line
+	1050 5650 1650 5650
+Wire Wire Line
+	1050 5750 1550 5750
+Wire Wire Line
+	1050 5850 1550 5850
+Text Label 1100 5750 0    50   ~ 0
+Switch_Start
+Text Label 1100 5850 0    50   ~ 0
+Switch_Aux
+$Comp
+L Device:R R?
+U 1 1 5D280669
+P 8350 6100
+F 0 "R?" V 8143 6100 50  0000 C CNN
+F 1 "100" V 8234 6100 50  0000 C CNN
+F 2 "" V 8280 6100 50  0001 C CNN
+F 3 "~" H 8350 6100 50  0001 C CNN
+	1    8350 6100
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R?
+U 1 1 5D280E36
+P 8350 6300
+F 0 "R?" V 8143 6300 50  0000 C CNN
+F 1 "100" V 8234 6300 50  0000 C CNN
+F 2 "" V 8280 6300 50  0001 C CNN
+F 3 "~" H 8350 6300 50  0001 C CNN
+	1    8350 6300
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	8500 6100 8700 6100
+Wire Wire Line
+	8500 6300 8950 6300
+Wire Wire Line
+	8200 6100 7600 6100
+Wire Wire Line
+	8200 6300 7600 6300
+Text Label 7650 6100 0    50   ~ 0
+Switch_Start
+Text Label 7650 6300 0    50   ~ 0
+Switch_Aux
 $EndSCHEMATC
