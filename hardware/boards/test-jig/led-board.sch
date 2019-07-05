@@ -4,15 +4,15 @@ EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 3 3
+Sheet 2 3
 Title ""
 Date ""
 Rev ""
 Comp ""
-Comment1 ""
+Comment1 "License 0BSD or Apache 2.0"
 Comment2 ""
 Comment3 ""
-Comment4 ""
+Comment4 "Test Jig for Glasgow revC1"
 $EndDescr
 Text Notes 850  1100 0    157  ~ 0
 Separate pcb for the LEDs for better visibility\nUse GNDA and 3.3VA to not connect any nets with the main pcb
