@@ -146,8 +146,8 @@ $Comp
 L Regulator_Linear:AP2127K-3.3 U7
 U 1 1 5D207966
 P 2800 6400
-F 0 "U7" H 2800 6742 50  0000 C CNN
-F 1 "AP2127K-3.3" H 2800 6651 50  0000 C CNN
+F 0 "U7" H 3100 6200 50  0000 C CNN
+F 1 "AP2127K-3.3" H 3100 6100 50  0000 C CNN
 F 2 "Package_TO_SOT_SMD:SOT-23-5" H 2800 6725 50  0001 C CNN
 F 3 "https://www.diodes.com/assets/Datasheets/AP2127.pdf" H 2800 6500 50  0001 C CNN
 	1    2800 6400
@@ -1520,7 +1520,7 @@ Connection ~ 6750 2450
 Wire Wire Line
 	6750 2450 6750 2500
 Text Notes 6350 2400 1    50   ~ 0
-Pass-Window (nominal):\n1.175V > X > 1.225V
+Pass-Window (nominal):\n1.175V < X < 1.225V
 $Comp
 L Device:R R10
 U 1 1 5D2E261F
@@ -1733,9 +1733,9 @@ Connection ~ 6450 3050
 Wire Wire Line
 	6450 3050 6750 3050
 Text Notes 6350 4250 1    50   ~ 0
-Pass-Window (nominal):\n3.234V > X > 3.366V
+Pass-Window (nominal):\n3.234V < X < 3.366V
 Text Notes 6350 6050 1    50   ~ 0
-Pass-Window (nominal):\n4.75V > X > 5.25V
+Pass-Window (nominal):\n4.75V < X < 5.25V
 Text Label 5500 7300 0    50   ~ 0
 LED_FAIL
 $Sheet
@@ -1930,4 +1930,6 @@ F 3 "~" H 10850 6850 50  0001 C CNN
 	1    10850 6850
 	1    0    0    -1  
 $EndComp
+Text Notes 2350 6100 0    50   ~ 0
+Common SOT23-5 LDO\nfixed 3V3, with enable\n\ncurrent drawn < 30mA
 $EndSCHEMATC
