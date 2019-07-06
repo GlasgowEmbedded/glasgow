@@ -11,7 +11,7 @@ Rev ""
 Comp ""
 Comment1 "License 0BSD or Apache 2.0"
 Comment2 ""
-Comment3 ""
+Comment3 "by Electronic Eel"
 Comment4 "Test Jig for Glasgow revC1"
 $EndDescr
 Text Notes 850  1100 0    157  ~ 0
@@ -596,4 +596,91 @@ $EndComp
 Wire Wire Line
 	2900 5100 2800 5100
 Connection ~ 2800 5100
+$Comp
+L Mechanical:MountingHole_Pad H?
+U 1 1 5D2D86D9
+P 2550 6650
+AR Path="/5D2D86D9" Ref="H?"  Part="1" 
+AR Path="/5D29701F/5D2D86D9" Ref="H5"  Part="1" 
+F 0 "H5" H 2650 6653 50  0000 L CNN
+F 1 "MountingHole_Pad" H 2650 6608 50  0001 L CNN
+F 2 "" H 2550 6650 50  0001 C CNN
+F 3 "~" H 2550 6650 50  0001 C CNN
+	1    2550 6650
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole_Pad H?
+U 1 1 5D2D86DF
+P 2850 6650
+AR Path="/5D2D86DF" Ref="H?"  Part="1" 
+AR Path="/5D29701F/5D2D86DF" Ref="H6"  Part="1" 
+F 0 "H6" H 2950 6653 50  0000 L CNN
+F 1 "MountingHole_Pad" H 2950 6608 50  0001 L CNN
+F 2 "" H 2850 6650 50  0001 C CNN
+F 3 "~" H 2850 6650 50  0001 C CNN
+	1    2850 6650
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole_Pad H?
+U 1 1 5D2D86E5
+P 3150 6650
+AR Path="/5D2D86E5" Ref="H?"  Part="1" 
+AR Path="/5D29701F/5D2D86E5" Ref="H7"  Part="1" 
+F 0 "H7" H 3250 6653 50  0000 L CNN
+F 1 "MountingHole_Pad" H 3250 6608 50  0001 L CNN
+F 2 "" H 3150 6650 50  0001 C CNN
+F 3 "~" H 3150 6650 50  0001 C CNN
+	1    3150 6650
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole_Pad H?
+U 1 1 5D2D86EB
+P 3450 6650
+AR Path="/5D2D86EB" Ref="H?"  Part="1" 
+AR Path="/5D29701F/5D2D86EB" Ref="H8"  Part="1" 
+F 0 "H8" H 3550 6653 50  0000 L CNN
+F 1 "MountingHole_Pad" H 3550 6608 50  0001 L CNN
+F 2 "" H 3450 6650 50  0001 C CNN
+F 3 "~" H 3450 6650 50  0001 C CNN
+	1    3450 6650
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2550 6750 2850 6750
+Connection ~ 2550 6750
+Wire Wire Line
+	2850 6750 3150 6750
+Connection ~ 2850 6750
+Wire Wire Line
+	3150 6750 3450 6750
+Connection ~ 3150 6750
+Text Notes 2850 6950 0    50   ~ 0
+Mounting holes
+$Comp
+L power:GNDA #PWR074
+U 1 1 5D2DA549
+P 2550 6850
+F 0 "#PWR074" H 2550 6600 50  0001 C CNN
+F 1 "GNDA" H 2555 6677 50  0000 C CNN
+F 2 "" H 2550 6850 50  0001 C CNN
+F 3 "" H 2550 6850 50  0001 C CNN
+	1    2550 6850
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2550 6750 2550 6850
+$Comp
+L Graphic:Logo_Open_Hardware_Small #LOGO2
+U 1 1 5D2E9FD2
+P 10900 6850
+F 0 "#LOGO2" H 10900 7125 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Small" H 10900 6625 50  0001 C CNN
+F 2 "" H 10900 6850 50  0001 C CNN
+F 3 "~" H 10900 6850 50  0001 C CNN
+	1    10900 6850
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC

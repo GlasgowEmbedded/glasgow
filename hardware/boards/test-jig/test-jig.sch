@@ -11,7 +11,7 @@ Rev ""
 Comp ""
 Comment1 "License 0BSD or Apache 2.0"
 Comment2 ""
-Comment3 ""
+Comment3 "by Electronic Eel"
 Comment4 "Test Jig for Glasgow revC1"
 $EndDescr
 $Comp
@@ -31,7 +31,7 @@ L Device:C C9
 U 1 1 5D1E70D8
 P 900 4950
 F 0 "C9" H 1015 4996 50  0000 L CNN
-F 1 "10nF" H 1015 4905 50  0000 L CNN
+F 1 "100nF" H 1015 4905 50  0000 L CNN
 F 2 "" H 938 4800 50  0001 C CNN
 F 3 "~" H 900 4950 50  0001 C CNN
 	1    900  4950
@@ -169,7 +169,7 @@ L Device:C C12
 U 1 1 5D2099C2
 P 2050 6650
 F 0 "C12" H 2165 6696 50  0000 L CNN
-F 1 "1µF" H 2165 6605 50  0000 L CNN
+F 1 "4.7µF" H 2165 6605 50  0000 L CNN
 F 2 "" H 2088 6500 50  0001 C CNN
 F 3 "~" H 2050 6650 50  0001 C CNN
 	1    2050 6650
@@ -410,7 +410,7 @@ L Device:R R13
 U 1 1 5D268A57
 P 4700 3500
 F 0 "R13" H 4770 3546 50  0000 L CNN
-F 1 "10K" H 4770 3455 50  0000 L CNN
+F 1 "4k7" H 4770 3455 50  0000 L CNN
 F 2 "" V 4630 3500 50  0001 C CNN
 F 3 "~" H 4700 3500 50  0001 C CNN
 	1    4700 3500
@@ -1573,7 +1573,7 @@ Wire Wire Line
 Wire Wire Line
 	3700 2550 5900 2550
 Wire Wire Line
-	6100 3050 6100 2550
+	6300 3050 6300 2550
 Wire Wire Line
 	6750 4400 6450 4400
 Connection ~ 6750 4400
@@ -1638,7 +1638,7 @@ Wire Wire Line
 	5900 2650 5900 2550
 Connection ~ 5900 2550
 Wire Wire Line
-	5900 2550 6100 2550
+	5900 2550 6300 2550
 $Comp
 L Device:C C10
 U 1 1 5D35798D
@@ -1728,7 +1728,7 @@ Connection ~ 6750 6250
 Wire Wire Line
 	6750 6250 6750 6200
 Wire Wire Line
-	6100 3050 6450 3050
+	6300 3050 6450 3050
 Connection ~ 6450 3050
 Wire Wire Line
 	6450 3050 6750 3050
@@ -1808,13 +1808,13 @@ Wire Wire Line
 Wire Wire Line
 	1000 6750 1000 6800
 Text Notes 650  7250 0    50   ~ 0
-Supply OVP\n& reverse protection
+Supply OVP &\nreverse protection
 $Comp
 L power:GND #PWR038
 U 1 1 5D20DAD8
 P 8500 6400
 F 0 "#PWR038" H 8500 6150 50  0001 C CNN
-F 1 "GND" H 8505 6227 50  0000 C CNN
+F 1 "GND" H 8650 6300 50  0000 C CNN
 F 2 "" H 8500 6400 50  0001 C CNN
 F 3 "" H 8500 6400 50  0001 C CNN
 	1    8500 6400
@@ -1851,4 +1851,83 @@ Wire Wire Line
 Connection ~ 1550 3300
 Wire Wire Line
 	1550 3300 1550 3350
+$Comp
+L Mechanical:MountingHole_Pad H1
+U 1 1 5D2756D4
+P 1700 7350
+F 0 "H1" H 1800 7353 50  0000 L CNN
+F 1 "MountingHole_Pad" H 1800 7308 50  0001 L CNN
+F 2 "" H 1700 7350 50  0001 C CNN
+F 3 "~" H 1700 7350 50  0001 C CNN
+	1    1700 7350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole_Pad H2
+U 1 1 5D275CE4
+P 2000 7350
+F 0 "H2" H 2100 7353 50  0000 L CNN
+F 1 "MountingHole_Pad" H 2100 7308 50  0001 L CNN
+F 2 "" H 2000 7350 50  0001 C CNN
+F 3 "~" H 2000 7350 50  0001 C CNN
+	1    2000 7350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole_Pad H3
+U 1 1 5D27657B
+P 2300 7350
+F 0 "H3" H 2400 7353 50  0000 L CNN
+F 1 "MountingHole_Pad" H 2400 7308 50  0001 L CNN
+F 2 "" H 2300 7350 50  0001 C CNN
+F 3 "~" H 2300 7350 50  0001 C CNN
+	1    2300 7350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole_Pad H4
+U 1 1 5D276D9B
+P 2600 7350
+F 0 "H4" H 2700 7353 50  0000 L CNN
+F 1 "MountingHole_Pad" H 2700 7308 50  0001 L CNN
+F 2 "" H 2600 7350 50  0001 C CNN
+F 3 "~" H 2600 7350 50  0001 C CNN
+	1    2600 7350
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR073
+U 1 1 5D2772C8
+P 1700 7500
+F 0 "#PWR073" H 1700 7250 50  0001 C CNN
+F 1 "GND" H 1705 7327 50  0000 C CNN
+F 2 "" H 1700 7500 50  0001 C CNN
+F 3 "" H 1700 7500 50  0001 C CNN
+	1    1700 7500
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1700 7450 1700 7500
+Wire Wire Line
+	1700 7450 2000 7450
+Connection ~ 1700 7450
+Wire Wire Line
+	2000 7450 2300 7450
+Connection ~ 2000 7450
+Wire Wire Line
+	2300 7450 2600 7450
+Connection ~ 2300 7450
+Text Notes 2000 7650 0    50   ~ 0
+Mounting holes
+$Comp
+L Graphic:Logo_Open_Hardware_Small #LOGO1
+U 1 1 5D2E2B4B
+P 10850 6850
+F 0 "#LOGO1" H 10850 7125 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Small" H 10850 6625 50  0001 C CNN
+F 2 "" H 10850 6850 50  0001 C CNN
+F 3 "~" H 10850 6850 50  0001 C CNN
+	1    10850 6850
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
