@@ -98,28 +98,6 @@ F 3 "http://www.ti.com/lit/ds/symlink/sn74hc4066.pdf" H 4050 4850 50  0001 C CNN
 	1    4050 4850
 	1    0    0    -1  
 $EndComp
-$Comp
-L Connector_Generic:Conn_01x10 J8
-U 1 1 5D1F795A
-P 7700 3400
-F 0 "J8" H 7618 2767 50  0000 C CNN
-F 1 "Conn_01x10" H 7618 2766 50  0001 C CNN
-F 2 "" H 7700 3400 50  0001 C CNN
-F 3 "~" H 7700 3400 50  0001 C CNN
-	1    7700 3400
-	1    0    0    1   
-$EndComp
-$Comp
-L Connector_Generic:Conn_01x10 J7
-U 1 1 5D1F5DA5
-P 2250 3400
-F 0 "J7" H 2168 2767 50  0000 C CNN
-F 1 "Conn_01x10" H 2168 2766 50  0001 C CNN
-F 2 "" H 2250 3400 50  0001 C CNN
-F 3 "~" H 2250 3400 50  0001 C CNN
-	1    2250 3400
-	-1   0    0    1   
-$EndComp
 Wire Wire Line
 	4900 2600 6450 2600
 $Comp
@@ -179,17 +157,13 @@ Wire Wire Line
 Wire Wire Line
 	3600 3300 2450 3300
 Wire Wire Line
-	3500 2150 3500 3200
-Wire Wire Line
-	3500 3200 2450 3200
+	3500 2150 3500 3100
 Wire Wire Line
 	3500 2150 4800 2150
 Wire Wire Line
 	5300 1700 3400 1700
 Wire Wire Line
-	3400 1700 3400 3100
-Wire Wire Line
-	3400 3100 2450 3100
+	3400 1700 3400 3000
 Wire Wire Line
 	4350 3050 6350 3050
 Wire Wire Line
@@ -201,17 +175,13 @@ Wire Wire Line
 Wire Wire Line
 	6450 3300 7500 3300
 Wire Wire Line
-	6550 2150 6550 3200
-Wire Wire Line
-	6550 3200 7500 3200
+	6550 2150 6550 3100
 Wire Wire Line
 	5400 2150 6550 2150
 Wire Wire Line
 	5900 1700 6650 1700
 Wire Wire Line
-	6650 1700 6650 3100
-Wire Wire Line
-	6650 3100 7500 3100
+	6650 1700 6650 3000
 Wire Wire Line
 	5600 1400 5600 1300
 Wire Wire Line
@@ -253,9 +223,9 @@ Wire Wire Line
 Connection ~ 6150 4550
 Text Label 9150 4800 2    50   ~ 0
 ~Port_conn_ctrl
-Text Notes 2150 3700 1    50   ~ 0
+Text Notes 1900 3500 1    50   ~ 0
 Port A pogopins
-Text Notes 7900 3650 1    50   ~ 0
+Text Notes 8100 3550 1    50   ~ 0
 Port B pogopins
 Text Label 2550 3800 0    50   ~ 0
 TP_A0
@@ -269,35 +239,35 @@ Text Label 2550 3400 0    50   ~ 0
 TP_A4
 Text Label 2550 3300 0    50   ~ 0
 TP_A5
-Text Label 2550 3200 0    50   ~ 0
-TP_A6
 Text Label 2550 3100 0    50   ~ 0
-TP_A7
+TP_A6
 Text Label 2550 3000 0    50   ~ 0
-TP_A_Vio
+TP_A7
 Text Label 2550 2900 0    50   ~ 0
+TP_A_Vio
+Text Label 2550 2800 0    50   ~ 0
 TP_A_Vsns
 $Comp
 L Jumper:SolderJumper_2_Bridged JP6
 U 1 1 5D28AF47
-P 3200 2850
-F 0 "JP6" V 3200 2918 50  0000 L CNN
-F 1 "SolderJumper_2_Bridged" V 3245 2918 50  0001 L CNN
-F 2 "" H 3200 2850 50  0001 C CNN
-F 3 "~" H 3200 2850 50  0001 C CNN
-	1    3200 2850
+P 3200 2750
+F 0 "JP6" V 3200 2818 50  0000 L CNN
+F 1 "SolderJumper_2_Bridged" V 3245 2818 50  0001 L CNN
+F 2 "" H 3200 2750 50  0001 C CNN
+F 3 "~" H 3200 2750 50  0001 C CNN
+	1    3200 2750
 	0    1    1    0   
 $EndComp
 Wire Wire Line
-	2450 3000 3200 3000
+	2450 2900 3200 2900
 Wire Wire Line
-	2450 2900 3050 2900
+	2450 2800 3050 2800
 Wire Wire Line
-	3050 2900 3050 2600
+	3050 2800 3050 2500
 Wire Wire Line
-	3050 2600 3200 2600
+	3050 2500 3200 2500
 Wire Wire Line
-	3200 2600 3200 2700
+	3200 2500 3200 2600
 Text Label 7100 3800 0    50   ~ 0
 TP_B0
 Text Label 7100 3700 0    50   ~ 0
@@ -310,35 +280,35 @@ Text Label 7100 3400 0    50   ~ 0
 TP_B4
 Text Label 7100 3300 0    50   ~ 0
 TP_B5
-Text Label 7100 3200 0    50   ~ 0
-TP_B6
 Text Label 7100 3100 0    50   ~ 0
-TP_B7
+TP_B6
 Text Label 7100 3000 0    50   ~ 0
-TP_B_Vio
+TP_B7
 Text Label 7100 2900 0    50   ~ 0
+TP_B_Vio
+Text Label 7100 2800 0    50   ~ 0
 TP_B_Vsns
 $Comp
 L Jumper:SolderJumper_2_Bridged JP7
 U 1 1 5D29A6A2
-P 6800 2850
-F 0 "JP7" V 6800 2918 50  0000 L CNN
-F 1 "SolderJumper_2_Bridged" V 6845 2918 50  0001 L CNN
-F 2 "" H 6800 2850 50  0001 C CNN
-F 3 "~" H 6800 2850 50  0001 C CNN
-	1    6800 2850
+P 6800 2750
+F 0 "JP7" V 6800 2818 50  0000 L CNN
+F 1 "SolderJumper_2_Bridged" V 6845 2818 50  0001 L CNN
+F 2 "" H 6800 2750 50  0001 C CNN
+F 3 "~" H 6800 2750 50  0001 C CNN
+	1    6800 2750
 	0    1    1    0   
 $EndComp
 Wire Wire Line
-	6800 3000 7500 3000
+	6800 2900 7500 2900
 Wire Wire Line
-	7500 2900 7050 2900
+	7500 2800 7050 2800
 Wire Wire Line
-	7050 2900 7050 2650
+	7050 2800 7050 2550
 Wire Wire Line
-	7050 2650 6800 2650
+	7050 2550 6800 2550
 Wire Wire Line
-	6800 2650 6800 2700
+	6800 2550 6800 2600
 $Comp
 L 4xxx:4066 U11
 U 1 1 5D2AEBED
@@ -1234,4 +1204,118 @@ F 3 "~" H 10900 6850 50  0001 C CNN
 $EndComp
 Text Label 1100 5750 0    50   ~ 0
 JIG_GPIO0
+$Comp
+L Connector_Generic:Conn_01x06 J10
+U 1 1 5D277179
+P 2250 3600
+F 0 "J10" H 2400 3550 50  0000 C CNN
+F 1 "Conn_01x06" H 2168 3166 50  0001 C CNN
+F 2 "" H 2250 3600 50  0001 C CNN
+F 3 "~" H 2250 3600 50  0001 C CNN
+	1    2250 3600
+	-1   0    0    1   
+$EndComp
+$Comp
+L Connector_Generic:Conn_01x06 J7
+U 1 1 5D2781F0
+P 2250 2900
+F 0 "J7" H 2400 2900 50  0000 C CNN
+F 1 "Conn_01x06" H 2168 2466 50  0001 C CNN
+F 2 "" H 2250 2900 50  0001 C CNN
+F 3 "~" H 2250 2900 50  0001 C CNN
+	1    2250 2900
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	2450 3000 3400 3000
+Wire Wire Line
+	2450 3100 3500 3100
+$Comp
+L power:GND #PWR022
+U 1 1 5D2A2CCA
+P 2600 2400
+F 0 "#PWR022" H 2600 2150 50  0001 C CNN
+F 1 "GND" H 2605 2227 50  0000 C CNN
+F 2 "" H 2600 2400 50  0001 C CNN
+F 3 "" H 2600 2400 50  0001 C CNN
+	1    2600 2400
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2450 2600 2450 2350
+Wire Wire Line
+	2450 2350 2600 2350
+Wire Wire Line
+	2600 2350 2600 2400
+$Comp
+L Connector:TestPoint TP16
+U 1 1 5D2B0DC4
+P 2750 2650
+F 0 "TP16" H 2808 2722 50  0000 L CNN
+F 1 "TestPoint" H 2808 2677 50  0001 L CNN
+F 2 "" H 2950 2650 50  0001 C CNN
+F 3 "~" H 2950 2650 50  0001 C CNN
+	1    2750 2650
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2750 2650 2750 2700
+Wire Wire Line
+	2750 2700 2450 2700
+$Comp
+L Connector_Generic:Conn_01x06 J11
+U 1 1 5D2C9BD0
+P 7700 3600
+F 0 "J11" H 7850 3550 50  0000 C CNN
+F 1 "Conn_01x06" H 7780 3501 50  0001 L CNN
+F 2 "" H 7700 3600 50  0001 C CNN
+F 3 "~" H 7700 3600 50  0001 C CNN
+	1    7700 3600
+	1    0    0    1   
+$EndComp
+$Comp
+L Connector_Generic:Conn_01x06 J8
+U 1 1 5D2CAC52
+P 7700 2900
+F 0 "J8" H 7850 2900 50  0000 C CNN
+F 1 "Conn_01x06" H 7780 2801 50  0001 L CNN
+F 2 "" H 7700 2900 50  0001 C CNN
+F 3 "~" H 7700 2900 50  0001 C CNN
+	1    7700 2900
+	1    0    0    1   
+$EndComp
+Wire Wire Line
+	7500 3000 6650 3000
+Wire Wire Line
+	7500 3100 6550 3100
+$Comp
+L power:GND #PWR013
+U 1 1 5D2F0F65
+P 7350 2300
+F 0 "#PWR013" H 7350 2050 50  0001 C CNN
+F 1 "GND" H 7355 2127 50  0000 C CNN
+F 2 "" H 7350 2300 50  0001 C CNN
+F 3 "" H 7350 2300 50  0001 C CNN
+	1    7350 2300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector:TestPoint TP17
+U 1 1 5D2FA9A2
+P 7150 2650
+F 0 "TP17" H 7208 2722 50  0000 L CNN
+F 1 "TestPoint" H 7208 2677 50  0001 L CNN
+F 2 "" H 7350 2650 50  0001 C CNN
+F 3 "~" H 7350 2650 50  0001 C CNN
+	1    7150 2650
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7500 2700 7150 2700
+Wire Wire Line
+	7150 2700 7150 2650
+Wire Wire Line
+	7500 2300 7350 2300
+Wire Wire Line
+	7500 2300 7500 2600
 $EndSCHEMATC
