@@ -1900,5 +1900,5 @@ Wire Wire Line
 	1700 4900 1700 4850
 Connection ~ 1950 4700
 Text Notes 2150 4950 0    50   ~ 0
-The test jig and DUT are unpowered\nwhile plugging in the DUT. This switch\nenables power. When the software sees\na the DUT show up on USB, it autostarts\nthe test cycle
+The test jig and DUT are unpowered\nwhile plugging in the DUT. This switch\nenables power. When the software sees\na DUT show up on USB, it autostarts\nthe test cycle
 $EndSCHEMATC
