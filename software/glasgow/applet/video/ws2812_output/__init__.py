@@ -33,7 +33,7 @@ class VideoWS2812OutputSubtarget(Module):
         assert t_period / sys_clk_freq < 7000e-9
         t_zero = int(1 + sys_clk_freq * 100e-9)
         assert t_zero < sys_clk_freq * 500e-9
-        t_reset = int(1 + sys_clk_freq * 1000e-6)
+        t_reset = int(1 + sys_clk_freq * 300e-6)
 
         self.submodules.output = output = VideoWS2812Output(pads)
 
