@@ -27,14 +27,14 @@ class VideoWS2812OutputSubtarget(Module):
         # 0 bits should be 100 - 500 ns
         # 1 bits should be > 750ns and < (period - 200ns)
         # reset should be >300µs
-        
+
         t_one = int(1 + sys_clk_freq * 750e-9)
         t_period = int(max(1 + sys_clk_freq * 1250e-9, 1 + t_one + sys_clk_freq * 200e-9))
         assert t_period / sys_clk_freq < 7000e-9
         t_zero = int(1 + sys_clk_freq * 100e-9)
         assert t_zero < sys_clk_freq * 500e-9
         t_reset = int(1 + sys_clk_freq * 1000e-6)
-        
+
         self.submodules.output = output = VideoWS2812Output(pads)
 
         self.cyc_ctr = Signal(max=t_reset+1)
@@ -44,7 +44,7 @@ class VideoWS2812OutputSubtarget(Module):
         self.r = Signal(8)
         self.g = Signal(8)
         self.word = Signal(24 * len(pads))
-        
+
         self.submodules.fsm = ResetInserter()(FSM(reset_state="LOAD-R"))
         self.fsm.act("LOAD-R",
             output.out.eq(0),
@@ -155,7 +155,7 @@ class VideoWS2812OutputApplet(GlasgowApplet, name="video-ws2812-output"):
             try:
                 data = await asyncio.shield(endpoint.recv())
                 await leds.write(data)
-                await leds.flush()
+                await leds.flush(wait=False)
             except asyncio.CancelledError:
                 pass
 
