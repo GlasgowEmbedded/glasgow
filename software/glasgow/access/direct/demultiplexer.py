@@ -76,11 +76,12 @@ class DirectDemultiplexer(AccessDemultiplexer):
         else:
             assert False
 
-    async def claim_interface(self, applet, mux_interface, args, pull_low=set(), pull_high=set()):
+    async def claim_interface(self, applet, mux_interface, args, pull_low=set(), pull_high=set(),
+                              **kwargs):
         assert mux_interface._pipe_num not in self._claimed
         self._claimed.add(mux_interface._pipe_num)
 
-        iface = DirectDemultiplexerInterface(self.device, applet, mux_interface)
+        iface = DirectDemultiplexerInterface(self.device, applet, mux_interface, **kwargs)
         self._interfaces.append(iface)
 
         if hasattr(args, "mirror_voltage") and args.mirror_voltage:
@@ -136,8 +137,12 @@ class DirectDemultiplexer(AccessDemultiplexer):
 
 
 class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
-    def __init__(self, device, applet, mux_interface):
+    def __init__(self, device, applet, mux_interface, read_buffer_size=None, write_buffer_size=None):
         super().__init__(device, applet)
+
+        self._write_buffer_size = write_buffer_size
+        self._read_buffer_size  = read_buffer_size
+        self._in_pushback = asyncio.Condition()
 
         self._pipe_num   = mux_interface._pipe_num
         self._addr_reset = mux_interface._addr_reset
@@ -197,6 +202,12 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         await self.device.write_register(self._addr_reset, 0)
 
     async def _in_task(self):
+        if self._read_buffer_size is not None:
+            async with self._in_pushback:
+                while len(self._in_buffer) > self._read_buffer_size:
+                    self.logger.trace("FIFO: read pushback")
+                    await self._in_pushback.wait()
+
         size = self._in_packet_size * _packets_per_xfer
         data = await self.device.bulk_read(self._endpoint_in, size)
         self._in_buffer.write(data)
@@ -223,12 +234,16 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
                 self.logger.trace("FIFO: need %d bytes", length - len(self._in_buffer))
                 await self._in_tasks.wait_one()
 
-        result = self._in_buffer.read(length)
+        async with self._in_pushback:
+            result = self._in_buffer.read(length)
+            self._in_pushback.notify_all()
         if len(result) < length:
             chunks  = [result]
             length -= len(result)
             while length > 0:
-                chunk = self._in_buffer.read(length)
+                async with self._in_pushback:
+                    chunk = self._in_buffer.read(length)
+                    self._in_pushback.notify_all()
                 chunks.append(chunk)
                 length -= len(chunk)
             # Always return a memoryview object, to avoid hard to detect edge cases downstream.
@@ -268,6 +283,11 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
     async def write(self, data):
         # Eagerly check if any of our previous queued writes errored out.
         await self._out_tasks.poll()
+
+        if self._write_buffer_size is not None:
+            self.logger.trace("FIFO: write pushback")
+            while len(self._out_buffer) > self._write_buffer_size:
+                await self._out_tasks.wait_one()
 
         self.logger.trace("FIFO: write <%s>", dump_hex(data))
         self._out_buffer.write(data)
