@@ -133,6 +133,9 @@ class VideoWS2812OutputApplet(GlasgowApplet, name="video-ws2812-output"):
         parser.add_argument(
             "-c", "--count", metavar="N", type=int, required=True,
             help="set the number of LEDs per string")
+        parser.add_argument(
+            "-b", "--buffer", metavar="N", type=int, default=16,
+            help="set the number of frames to buffer internally (buffered twice)")
         ServerEndpoint.add_argument(parser, "endpoint")
 
     def build(self, target, args):
@@ -147,13 +150,20 @@ class VideoWS2812OutputApplet(GlasgowApplet, name="video-ws2812-output"):
         return subtarget
 
     async def run(self, device, args):
-        return await device.demultiplexer.claim_interface(self, self.mux_interface, args)
+        buffer_size = len(args.pin_set_out) * args.count * 3 * args.buffer
+        return await device.demultiplexer.claim_interface(self, self.mux_interface, args, write_buffer_size=buffer_size)
 
     async def interact(self, device, args, leds):
-        endpoint = await ServerEndpoint("socket", self.logger, args.endpoint)
+        frame_size = len(args.pin_set_out) * args.count * 3
+        buffer_size = frame_size * args.buffer
+        endpoint = await ServerEndpoint("socket", self.logger, args.endpoint, queue_size=buffer_size)
         while True:
             try:
-                data = await asyncio.shield(endpoint.recv())
+                data = await asyncio.shield(endpoint.recv(buffer_size))
+                partial = len(data) % frame_size
+                while partial:
+                    data += await asyncio.shield(endpoint.recv(frame_size - partial))
+                    partial = len(data) % frame_size
                 await leds.write(data)
                 await leds.flush(wait=False)
             except asyncio.CancelledError:
