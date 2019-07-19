@@ -297,7 +297,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
                 len(self._out_tasks) < _xfers_per_queue:
             self._out_tasks.submit(self._out_task(self._out_slice()))
 
-    async def flush(self):
+    async def flush(self, wait=True):
         self.logger.trace("FIFO: flush")
 
         # First, we ensure we can submit one more task. (There can be more tasks than
@@ -316,4 +316,6 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
                 data += self._out_buffer.read()
             self._out_tasks.submit(self._out_task(data))
 
-        await self._out_tasks.wait_all()
+        if wait:
+            self.logger.trace("FIFO: wait for flush")
+            await self._out_tasks.wait_all()
