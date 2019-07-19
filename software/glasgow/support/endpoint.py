@@ -36,7 +36,7 @@ class ServerEndpoint(aobject, asyncio.Protocol):
             name, metavar=metavar, type=endpoint, nargs=nargs, default=default,
             help=help)
 
-    async def __init__(self, name, logger, sock_addr):
+    async def __init__(self, name, logger, sock_addr, queue_size=None):
         assert isinstance(sock_addr, tuple)
 
         self.name    = name
@@ -61,10 +61,14 @@ class ServerEndpoint(aobject, asyncio.Protocol):
         self._send_epoch = 0
         self._recv_epoch = 1
         self._queue      = deque()
+        self._queued     = 0
+        self._queue_size = queue_size
         self._future     = None
 
         self._buffer = None
         self._pos    = 0
+
+        self._read_paused = False
 
     def _log(self, level, message, *args):
         self._logger.log(level, self.name + ": " + message, *args)
@@ -97,8 +101,23 @@ class ServerEndpoint(aobject, asyncio.Protocol):
         self._check_future()
 
     def data_received(self, data):
+        self._log(logging.TRACE, "endpoint received %d bytes", len(data))
         self._queue.append(data)
+        self._queued += len(data)
+        self._check_pushback()
         self._check_future()
+
+    def _check_pushback(self):
+        if self._queue_size is None:
+            return
+        elif not self._read_paused and self._queued >= self._queue_size:
+            self._log(logging.TRACE, "queue full, pausing reads")
+            self._transport.pause_reading()
+            self._read_paused = True
+        elif self._read_paused and self._queued < self._queue_size: 
+            self._log(logging.TRACE, "queue not full, resuming reads")
+            self._transport.resume_reading()
+            self._read_paused = False
 
     def _check_future(self):
         if self._queue and self._future is not None:
@@ -131,6 +150,8 @@ class ServerEndpoint(aobject, asyncio.Protocol):
 
             chunk = self._buffer[:length - len(data)]
             self._buffer = self._buffer[len(chunk):]
+            self._queued -= len(chunk)
+            self._check_pushback()
             data += chunk
 
         self._log(logging.TRACE, "recv <%s>", data.hex())
@@ -148,11 +169,15 @@ class ServerEndpoint(aobject, asyncio.Protocol):
                 index = self._buffer.index(separator)
                 chunk = self._buffer[:index]
                 self._buffer = self._buffer[index + 1:]
+                self._queued -= len(chunk)
+                self._check_pushback()
                 data += chunk
                 break
 
             except ValueError:
                 data += self._buffer
+                self._queued -= len(self._buffer)
+                self._check_pushback()
                 self._buffer = None
 
         self._log(logging.TRACE, "recv <%s%s>", data.hex(), separator.hex())
