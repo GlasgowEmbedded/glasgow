@@ -308,9 +308,9 @@ L Connector_Generic:Conn_01x06 J1
 U 1 1 5D24DFD8
 P 3800 1350
 F 0 "J1" V 3718 962 50  0000 R CNN
-F 1 "Conn_01x06" V 3673 962 50  0001 R CNN
-F 2 "" H 3800 1350 50  0001 C CNN
-F 3 "~" H 3800 1350 50  0001 C CNN
+F 1 "AST04106" V 3673 962 50  0001 R CNN
+F 2 "Glasgow:TerminalBlock_MetzConnect_AST04106_1x06_Lever_Clamp_45Degree" H 3800 1350 50  0001 C CNN
+F 3 "https://www.metz-connect.com/en/system/files/productfiles/Data_sheet_AST041.PDF" H 3800 1350 50  0001 C CNN
 	1    3800 1350
 	0    -1   -1   0   
 $EndComp
@@ -1715,9 +1715,9 @@ L Connector_Generic:Conn_01x06 J5
 U 1 1 5D30337D
 P 2250 4050
 F 0 "J5" H 2350 4300 50  0000 L CNN
-F 1 "Conn_01x06" H 2330 3951 50  0001 L CNN
-F 2 "" H 2250 4050 50  0001 C CNN
-F 3 "~" H 2250 4050 50  0001 C CNN
+F 1 "AST04106" H 2330 3951 50  0001 L CNN
+F 2 "Glasgow:TerminalBlock_MetzConnect_AST04106_1x06_Lever_Clamp_45Degree" H 2250 4050 50  0001 C CNN
+F 3 "https://www.metz-connect.com/en/system/files/productfiles/Data_sheet_AST041.PDF" H 2250 4050 50  0001 C CNN
 	1    2250 4050
 	1    0    0    -1  
 $EndComp
