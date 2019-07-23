@@ -109,8 +109,8 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
             return ((await device.read_register(self.addr_i_a) << 0) |
                     (await device.read_register(self.addr_i_b) << 8))
 
-        async def reset_pins(level=0):
-            await set_o(0xffff if level else 0x0000)
+        async def reset_pins(bits):
+            await set_o(bits)
             await set_oe(0xffff)
             await set_oe(0x0000)
 
@@ -147,7 +147,7 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                 use_pull = (mode == "pins-pull")
 
                 for bits in (0x0000, 0xffff):
-                    await reset_pins()
+                    await reset_pins(bits)
                     i, desc = await check_pins(bits, bits, use_pull=use_pull)
                     self.logger.debug("%s: %s", mode, desc)
                     if bits == 0x0000:
@@ -157,7 +157,7 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
 
                 shorted = []
                 for bit in range(0, 16):
-                    await reset_pins()
+                    await reset_pins(bits=0x0000)
                     i, desc = await check_pins(1 << bit, 1 << bit, use_pull=use_pull)
                     self.logger.debug("%s: %s", mode, desc)
 
