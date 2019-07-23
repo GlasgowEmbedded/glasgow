@@ -288,7 +288,7 @@ class SensorBMP280Applet(I2CMasterApplet, name="sensor-bmp280"):
 
         if args.continuous:
             while True:
-                print("T={:.2f} °C p={:.1f} Pa h={:f} m"
+                print("T={:.2f} °C; p={:.1f} Pa; h={:f} m"
                       .format(await bmp280.get_temperature(),
                               await bmp280.get_pressure(),
                               await bmp280.get_altitude(p0=args.sea_level_pressure)))
