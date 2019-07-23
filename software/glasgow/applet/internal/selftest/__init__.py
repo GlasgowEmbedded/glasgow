@@ -112,6 +112,7 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
         async def reset_pins(bits):
             await set_o(bits)
             await set_oe(0xffff)
+            await asyncio.sleep(0.001)
             await set_oe(0x0000)
 
         async def check_pins(oe, o, use_pull):
@@ -151,9 +152,9 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                     i, desc = await check_pins(bits, bits, use_pull=use_pull)
                     self.logger.debug("%s: %s", mode, desc)
                     if bits == 0x0000:
-                        stuck_high = decode_pins(i)
+                        fail_high = decode_pins(i)
                     if bits == 0xffff:
-                        stuck_low  = decode_pins(~i)
+                        fail_low  = decode_pins(~i)
 
                 shorted = []
                 for bit in range(0, 16):
@@ -162,17 +163,17 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                     self.logger.debug("%s: %s", mode, desc)
 
                     if i != 1 << bit:
-                        pins = decode_pins(i) - stuck_high
+                        pins = decode_pins(i) - fail_high
                         if len(pins) > 1 and pins not in shorted:
                             shorted.append(pins)
                         passed = False
 
-                if stuck_high:
-                    report.append((mode, "stuck high: {}".format(" ".join(sorted(stuck_high)))))
-                if stuck_low:
-                    report.append((mode, "stuck low: {}".format(" ".join(sorted(stuck_low)))))
+                if fail_high:
+                    report.append((mode, "fail high: {}".format(" ".join(sorted(fail_high)))))
+                if fail_low:
+                    report.append((mode, "fail low: {}".format(" ".join(sorted(fail_low)))))
                 for pins in shorted:
-                    report.append((mode, "short: {}".format(" ".join(sorted(pins)))))
+                    report.append((mode, "fail short: {}".format(" ".join(sorted(pins)))))
 
                 await device.set_voltage("AB", 0)
                 await device._iobuf_enable(True)
