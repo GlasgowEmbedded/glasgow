@@ -55,6 +55,8 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
           (no requirements)
         * pins-ext: detect shorts and opens on traces between FPGA and I/O connector
           (all pins on all I/O connectors must be floating)
+        * pins-pull: detects faults in pull resistor circuits
+          (all pins on all I/O connectors must be floating)
         * pins-loop: detect faults anywhere in the I/O ciruits
           (pins A0:A7 must be connected to B7:B0)
         * voltage: detect ADC, DAC or LDO faults
@@ -63,7 +65,7 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
           (no requirements)
     """
 
-    __all_modes = ["pins-int", "pins-ext", "pins-loop", "voltage", "loopback"]
+    __all_modes = ["pins-int", "pins-ext", "pins-pull", "pins-loop", "voltage", "loopback"]
     __default_modes = ["pins-int", "loopback"]
 
     def build(self, target, args):
@@ -98,6 +100,11 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
             await device.write_register(self.addr_o_a,  (bits >> 0) & 0xff)
             await device.write_register(self.addr_o_b,  (bits >> 8) & 0xff)
 
+        async def set_pull(bits_o, bits_oe):
+            pull_low  = {x for x in range(16) if bits_oe & (1 << x) and not bits_o & (1 << x)}
+            pull_high = {x for x in range(16) if bits_oe & (1 << x) and     bits_o & (1 << x)}
+            await device.set_pulls("AB", pull_low, pull_high)
+
         async def get_i():
             return ((await device.read_register(self.addr_i_a) << 0) |
                     (await device.read_register(self.addr_i_b) << 8))
@@ -107,9 +114,12 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
             await set_oe(0xffff)
             await set_oe(0x0000)
 
-        async def check_pins(oe, o):
-            await set_o(o)
-            await set_oe(oe)
+        async def check_pins(oe, o, use_pull):
+            if use_pull:
+                await set_pull(o, oe)
+            else:
+                await set_o(o)
+                await set_oe(oe)
             i = await get_i()
             desc = "oe={:016b} o={:016b} i={:016b}".format(oe, o, i)
             return i, desc
@@ -127,23 +137,28 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
         for mode in args.modes or self.__default_modes:
             self.logger.info("running self-test mode %s", mode)
 
-            if mode in ("pins-int", "pins-ext"):
+            if mode in ("pins-int", "pins-ext", "pins-pull"):
                 if mode == "pins-int":
                     await device.set_voltage("AB", 0)
                     await device._iobuf_enable(False)
-                elif mode == "pins-ext":
+                elif mode in ("pins-ext", "pins-pull"):
                     await device.set_voltage("AB", 3.3)
                     await device._iobuf_enable(True)
+                use_pull = (mode == "pins-pull")
 
-                await reset_pins(0)
-                stuck_high = decode_pins(await get_i())
-                await reset_pins(1)
-                stuck_low  = decode_pins(~await get_i())
+                for bits in (0x0000, 0xffff):
+                    await reset_pins()
+                    i, desc = await check_pins(bits, bits, use_pull=use_pull)
+                    self.logger.debug("%s: %s", mode, desc)
+                    if bits == 0x0000:
+                        stuck_high = decode_pins(i)
+                    if bits == 0xffff:
+                        stuck_low  = decode_pins(~i)
 
                 shorted = []
                 for bit in range(0, 16):
                     await reset_pins()
-                    i, desc = await check_pins(1 << bit, 1 << bit)
+                    i, desc = await check_pins(1 << bit, 1 << bit, use_pull=use_pull)
                     self.logger.debug("%s: %s", mode, desc)
 
                     if i != 1 << bit:
@@ -153,11 +168,11 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                         passed = False
 
                 if stuck_high:
-                    report.append((mode, "stuck high: {}".format(" ".join(stuck_high))))
+                    report.append((mode, "stuck high: {}".format(" ".join(sorted(stuck_high)))))
                 if stuck_low:
-                    report.append((mode, "stuck low: {}".format(" ".join(stuck_low))))
+                    report.append((mode, "stuck low: {}".format(" ".join(sorted(stuck_low)))))
                 for pins in shorted:
-                    report.append((mode, "short: {}".format(" ".join(pins))))
+                    report.append((mode, "short: {}".format(" ".join(sorted(pins)))))
 
                 await device.set_voltage("AB", 0)
                 await device._iobuf_enable(True)
