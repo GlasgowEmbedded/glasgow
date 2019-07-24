@@ -98,6 +98,7 @@ class I2CMasterSubtarget(Module):
             If(in_fifo.writable,
                 in_fifo.we.eq(1),
                 in_fifo.din.eq(count),
+                NextValue(count, 0),
                 NextState("IDLE")
             )
         )
