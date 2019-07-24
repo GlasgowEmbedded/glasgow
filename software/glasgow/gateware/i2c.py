@@ -63,6 +63,10 @@ class I2CMaster(Module):
     :param period_cyc:
         Bus clock period, as a multiple of system clock period.
     :type period_cyc: int
+    :param clk_stretch:
+        If true, SCL will be monitored for devices stretching the clock. Otherwise,
+        only interally generated SCL is considered.
+    :type clk_stretch: bool
 
     :attr busy:
         Busy flag. Low if the master state machine is idle, high otherwise.

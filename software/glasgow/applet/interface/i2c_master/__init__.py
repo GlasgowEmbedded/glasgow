@@ -183,7 +183,7 @@ class I2CMasterInterface:
 
         return unacked == 0
 
-    async def read(self, addr, size, stop=False, start=True):
+    async def read(self, addr, size, stop=False):
         if stop:
             self._logger.log(self._level, "I2C: start addr=%s read=%d stop",
                              bin(addr), size)
