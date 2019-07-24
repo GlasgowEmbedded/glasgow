@@ -2061,6 +2061,8 @@ F 1 "ICE40HX8K-BG121" H 7500 1800 50  0000 R CNN
 F 2 "Package_BGA:BGA-121_9.0x9.0mm_Layout11x11_P0.8mm_Ball0.4mm_Pad0.35mm_NSMD" H 6800 1700 50  0001 C CNN
 F 3 "http://www.latticesemi.com/Products/FPGAandCPLD/iCE40" H 5950 4150 50  0001 C CNN
 F 4 "ic-ice40hx8k-bg121" H 6800 3150 50  0001 C CNN "1b2-bom-key"
+F 5 "ICE40HX8K-BG121" H 6800 3150 50  0001 C CNN "MPN"
+F 6 "Lattice Semiconductor Corporation" H 6800 3150 50  0001 C CNN "Mfg"
 	3    6800 3150
 	-1   0    0    -1  
 $EndComp
@@ -2073,6 +2075,8 @@ F 1 "ICE40HX8K-BG121" H 6850 4700 50  0000 L CNN
 F 2 "Package_BGA:BGA-121_9.0x9.0mm_Layout11x11_P0.8mm_Ball0.4mm_Pad0.35mm_NSMD" H 7050 3950 50  0001 C CNN
 F 3 "http://www.latticesemi.com/Products/FPGAandCPLD/iCE40" H 6200 6400 50  0001 C CNN
 F 4 "ic-ice40hx8k-bg121" H 7050 5400 50  0001 C CNN "1b2-bom-key"
+F 5 "ICE40HX8K-BG121" H 7050 5400 50  0001 C CNN "MPN"
+F 6 "Lattice Semiconductor Corporation" H 7050 5400 50  0001 C CNN "Mfg"
 	5    7050 5400
 	-1   0    0    -1  
 $EndComp
@@ -2607,7 +2611,7 @@ F 1 "ATECC508A" H 3050 7250 50  0000 R CNN
 F 2 "Package_DFN_QFN:WDFN-8-1EP_3x2mm_P0.5mm_EP1.3x1.4mm" H 2600 7000 50  0001 C CNN
 F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/20005927A.pdf" H 2600 7000 50  0001 C CNN
 F 4 "Microchip" H 2600 7000 50  0001 C CNN "Mfg"
-F 5 "ATECC508A" H 2600 7000 50  0001 C CNN "MPN"
+F 5 "ATECC508A-MAHDA-T" H 2600 7000 50  0001 C CNN "MPN"
 F 6 "ic-wdfn8-atecc508a" H 2600 7000 50  0001 C CNN "1b2-bom-key"
 	1    2600 7000
 	1    0    0    -1  
@@ -3039,6 +3043,8 @@ F 1 "TLV73312PQDRVRQ1" H 9800 5001 50  0000 C CNN
 F 2 "Glasgow:DFN-6-1EP_2x2mm_P0.65mm_EP1x1.6mm_ThermalVias" H 9800 5075 50  0001 C CIN
 F 3 "http://www.ti.com/lit/ds/symlink/tlv733p-q1.pdf" H 9800 4800 50  0001 C CNN
 F 4 "ic-dfn6-tlv73312pqrdvrq1" H 9800 4750 50  0001 C CNN "1b2-bom-key"
+F 5 "TLV73312PQDRVRQ1" H 9800 4750 50  0001 C CNN "MPN"
+F 6 "Texas Instruments" H 9800 4750 50  0001 C CNN "Mfg"
 	1    9800 4750
 	1    0    0    -1  
 $EndComp
@@ -3051,6 +3057,8 @@ F 1 "TLV75533PDRVR" H 9800 6051 50  0000 C CNN
 F 2 "Glasgow:DFN-6-1EP_2x2mm_P0.65mm_EP1x1.6mm_ThermalVias" H 9800 6125 50  0001 C CIN
 F 3 "http://www.ti.com/lit/ds/symlink/tlv755p.pdf" H 9800 5850 50  0001 C CNN
 F 4 "ic-dfn6-tlv75533pdrvr" H 9800 5800 50  0001 C CNN "1b2-bom-key"
+F 5 "TLV75533PDRVR" H 9800 5800 50  0001 C CNN "MPN"
+F 6 "Texas Instruments" H 9800 5800 50  0001 C CNN "Mfg"
 	1    9800 5800
 	1    0    0    -1  
 $EndComp
