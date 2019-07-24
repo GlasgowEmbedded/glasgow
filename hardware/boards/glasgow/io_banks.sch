@@ -152,6 +152,8 @@ F 1 "ICE40HX8K-BG121" H 4400 3100 50  0000 L CNN
 F 2 "Package_BGA:BGA-121_9.0x9.0mm_Layout11x11_P0.8mm_Ball0.4mm_Pad0.35mm_NSMD" H 4750 3000 50  0001 C CNN
 F 3 "http://www.latticesemi.com/Products/FPGAandCPLD/iCE40" H 3900 5450 50  0001 C CNN
 F 4 "ic-ice40hx8k-bg121" H 4750 4450 50  0001 C CNN "1b2-bom-key"
+F 5 "ICE40HX8K-BG121" H 4750 4450 50  0001 C CNN "MPN"
+F 6 "Lattice Semiconductor Corporation" H 4750 4450 50  0001 C CNN "Mfg"
 	2    4750 4450
 	-1   0    0    -1  
 $EndComp
@@ -166,6 +168,8 @@ F 1 "ICE40HX8K-BG121" H 7900 2600 50  0000 L CNN
 F 2 "Package_BGA:BGA-121_9.0x9.0mm_Layout11x11_P0.8mm_Ball0.4mm_Pad0.35mm_NSMD" H 8250 2750 50  0001 C CNN
 F 3 "http://www.latticesemi.com/Products/FPGAandCPLD/iCE40" H 7400 5200 50  0001 C CNN
 F 4 "ic-ice40hx8k-bg121" H 8250 4200 50  0001 C CNN "1b2-bom-key"
+F 5 "ICE40HX8K-BG121" H 8250 4200 50  0001 C CNN "MPN"
+F 6 "Lattice Semiconductor Corporation" H 8250 4200 50  0001 C CNN "Mfg"
 	4    8250 4200
 	-1   0    0    -1  
 $EndComp
@@ -301,6 +305,8 @@ F 1 "Conn_02x22_Odd_Even" H 10050 5426 50  0000 C CNN
 F 2 "Connector_PinHeader_1.27mm:PinHeader_2x22_P1.27mm_Vertical_SMD" H 10000 4300 50  0001 C CNN
 F 3 "~" H 10000 4300 50  0001 C CNN
 F 4 "conn-smd-005in-22-2-hdr" H 10000 4300 50  0001 C CNN "1b2-bom-key"
+F 5 "FTS-122-01-L-DV" H 10000 4300 50  0001 C CNN "MPN"
+F 6 "Samtec Inc." H 10000 4300 50  0001 C CNN "Mfg"
 	1    10000 4300
 	1    0    0    -1  
 $EndComp
@@ -1425,6 +1431,8 @@ F 1 "ICE40HX8K-BG121" H 950 2700 50  0000 L CNN
 F 2 "Package_BGA:BGA-121_9.0x9.0mm_Layout11x11_P0.8mm_Ball0.4mm_Pad0.35mm_NSMD" H 1300 2800 50  0001 C CNN
 F 3 "http://www.latticesemi.com/Products/FPGAandCPLD/iCE40" H 450 5250 50  0001 C CNN
 F 4 "ic-ice40hx8k-bg121" H 1300 4250 50  0001 C CNN "1b2-bom-key"
+F 5 "ICE40HX8K-BG121" H 1300 4250 50  0001 C CNN "MPN"
+F 6 "Lattice Semiconductor Corporation" H 1300 4250 50  0001 C CNN "Mfg"
 	1    1300 4250
 	-1   0    0    -1  
 $EndComp
