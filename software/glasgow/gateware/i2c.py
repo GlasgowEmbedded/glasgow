@@ -137,12 +137,12 @@ class I2CMaster(Module):
                    *exprs
                 )
             )
-        def high(pin_i, pin_o, state, next_state, *exprs):
+        def high(pin_i, pin_o, state, next_state, *exprs, stretch):
             self.fsm.act(state,
                 If(stb,
                     NextValue(pin_o, 1)
                 ).Elif(pin_o == 1,
-                    If(~clk_stretch | (pin_i == 1),
+                    If((not stretch) | (pin_i == 1),
                         NextState(next_state),
                         *exprs
                     )
@@ -151,11 +151,11 @@ class I2CMaster(Module):
         def scl_l(state, next_state, *exprs):
             low(bus.scl_i, bus.scl_o, state, next_state, *exprs)
         def scl_h(state, next_state, *exprs):
-            high(bus.scl_i, bus.scl_o, state, next_state, *exprs)
+            high(bus.scl_i, bus.scl_o, state, next_state, *exprs, stretch=clk_stretch)
         def sda_l(state, next_state, *exprs):
             low(bus.sda_i, bus.sda_o, state, next_state, *exprs)
         def sda_h(state, next_state, *exprs):
-            high(bus.sda_i, bus.sda_o, state, next_state, *exprs)
+            high(bus.sda_i, bus.sda_o, state, next_state, *exprs, stretch=False)
 
         self.fsm.act("IDLE",
             NextValue(self.busy, 1),
@@ -523,12 +523,16 @@ class I2CMasterTestCase(I2CTestCase):
     def write(self, tb, data, bits, ack):
         yield from tb.write(data)
         for bit in bits:
+            yield
+            yield
             yield from self.assertState(tb, "WRITE-SCL-L")
             yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 0)
             yield from self.assertState(tb, "WRITE-SCL-H")
             yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 1)
             self.assertEqual((yield tb.sda_i), bit)
             yield
+        yield
+        yield
         yield from self.assertState(tb, "WRITE-ACK-SCL-L")
         yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 0)
         yield tb.sda_o.eq(not ack)
@@ -570,6 +574,8 @@ class I2CMasterTestCase(I2CTestCase):
     def read(self, tb, data, bits, ack):
         yield from tb.read(ack)
         for bit in bits:
+            yield
+            yield
             yield from self.assertState(tb, "READ-SCL-L")
             yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 0)
             yield tb.sda_o.eq(bit)
@@ -577,6 +583,8 @@ class I2CMasterTestCase(I2CTestCase):
             yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 1)
             yield
         yield tb.sda_o.eq(1)
+        yield
+        yield
         yield from self.assertState(tb, "READ-ACK-SCL-L")
         yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 0)
         yield from self.assertState(tb, "READ-ACK-SCL-H")
