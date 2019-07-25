@@ -116,7 +116,7 @@ class I2CMaster(Module):
         self.sync += [
             If((timer == 0) | ~self.busy,
                 timer.eq(period_cyc // 2)
-            ).Else(
+            ).Elif((not clk_stretch) | (bus.scl_o == bus.scl_i),
                 timer.eq(timer - 1)
             )
         ]
@@ -543,6 +543,8 @@ class I2CMasterTestCase(I2CTestCase):
         yield from self.tb.half_period()
         yield
         yield
+        yield
+        yield
         self.assertEqual((yield tb.dut.busy), 0)
         self.assertEqual((yield tb.dut.ack_o), ack)
 
@@ -592,6 +594,8 @@ class I2CMasterTestCase(I2CTestCase):
         self.assertEqual((yield tb.sda_i), not ack)
         self.assertEqual((yield tb.dut.busy), 1)
         yield from self.tb.half_period()
+        yield
+        yield
         yield
         yield
         self.assertEqual((yield tb.dut.busy), 0)
