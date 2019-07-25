@@ -148,6 +148,13 @@ class I2CMaster(Module):
                     )
                 )
             )
+        def stb_x(state, next_state, *exprs):
+            self.fsm.act(state,
+                If(stb,
+                    NextState(next_state),
+                    *exprs
+                )
+            )
         def scl_l(state, next_state, *exprs):
             low(bus.scl_i, bus.scl_o, state, next_state, *exprs)
         def scl_h(state, next_state, *exprs):
@@ -177,10 +184,10 @@ class I2CMaster(Module):
                 )
             ).Elif(self.write,
                 NextValue(w_shreg, self.data_i),
-                NextState("WRITE-SCL-L")
+                NextState("WRITE-DATA-SCL-L")
             ).Elif(self.read,
                 NextValue(r_ack, self.ack_i),
-                NextState("READ-SCL-L")
+                NextState("READ-DATA-SCL-L")
             ).Else(
                 NextValue(self.busy, 0)
             )
@@ -195,46 +202,52 @@ class I2CMaster(Module):
         sda_l("STOP-SDA-L",  "STOP-SCL-H")
         scl_h("STOP-SCL-H",  "STOP-SDA-H")
         sda_h("STOP-SDA-H",  "IDLE")
-        # write
-        scl_l("WRITE-SCL-L", "WRITE-SCL-H",
-            NextValue(bus.sda_o, w_shreg[7]),
-            NextValue(w_shreg, Cat(0, w_shreg[0:7])),
+        # write data
+        scl_l("WRITE-DATA-SCL-L", "WRITE-DATA-SDA-X")
+        stb_x("WRITE-DATA-SDA-X", "WRITE-DATA-SCL-H",
+            NextValue(bus.sda_o, w_shreg[7])
         )
-        scl_h("WRITE-SCL-H", "WRITE-SCL-L",
+        scl_h("WRITE-DATA-SCL-H", "WRITE-DATA-SDA-N",
+            NextValue(w_shreg, Cat(C(0, 1), w_shreg[0:7]))
+        )
+        stb_x("WRITE-DATA-SDA-N", "WRITE-DATA-SCL-L",
             NextValue(bitno, bitno + 1),
             If(bitno == 7,
                 NextState("WRITE-ACK-SCL-L")
             )
         )
-        scl_l("WRITE-ACK-SCL-L", "WRITE-ACK-SCL-H",
+        # write ack
+        scl_l("WRITE-ACK-SCL-L", "WRITE-ACK-SDA-H")
+        stb_x("WRITE-ACK-SDA-H", "WRITE-ACK-SCL-H",
             NextValue(bus.sda_o, 1)
         )
-        scl_h("WRITE-ACK-SCL-H", "HOLD",
+        scl_h("WRITE-ACK-SCL-H", "WRITE-ACK-SDA-N",
             NextValue(self.ack_o, ~bus.sda_i)
         )
-        # read
-        scl_l("READ-SCL-L",  "READ-SCL-H",
+        stb_x("WRITE-ACK-SDA-N", "IDLE")
+        # read data
+        scl_l("READ-DATA-SCL-L", "READ-DATA-SDA-H")
+        stb_x("READ-DATA-SDA-H", "READ-DATA-SCL-H",
             NextValue(bus.sda_o, 1)
         )
-        scl_h("READ-SCL-H",  "READ-SCL-L",
-            NextValue(r_shreg, Cat(bus.sda_i, r_shreg[0:7])),
+        scl_h("READ-DATA-SCL-H", "READ-DATA-SDA-N",
+            NextValue(r_shreg, Cat(bus.sda_i, r_shreg[0:7]))
+        )
+        stb_x("READ-DATA-SDA-N", "READ-DATA-SCL-L",
             NextValue(bitno, bitno + 1),
             If(bitno == 7,
                 NextState("READ-ACK-SCL-L")
             )
         )
-        scl_l("READ-ACK-SCL-L", "READ-ACK-SCL-H",
-            NextValue(bus.sda_o, ~r_ack)
+        # read ack
+        scl_l("READ-ACK-SCL-L", "READ-ACK-SDA-X")
+        stb_x("READ-ACK-SDA-X", "READ-ACK-SCL-H",
+            NextValue(bus.sda_o, ~r_ack),
         )
-        scl_h("READ-ACK-SCL-H", "HOLD",
+        scl_h("READ-ACK-SCL-H", "READ-ACK-SDA-N",
             NextValue(self.data_o, r_shreg)
         )
-        # hold
-        self.fsm.act("HOLD",
-            If(stb,
-                NextState("IDLE")
-            )
-        )
+        stb_x("READ-ACK-SDA-N", "IDLE")
 
 
 class I2CSlave(Module):
@@ -522,21 +535,22 @@ class I2CMasterTestCase(I2CTestCase):
 
     def write(self, tb, data, bits, ack):
         yield from tb.write(data)
-        for bit in bits:
+        for n, bit in enumerate(bits):
             yield
             yield
-            yield from self.assertState(tb, "WRITE-SCL-L")
+            yield from self.assertState(tb, "WRITE-DATA-SCL-L" if n == 0 else "WRITE-DATA-SDA-N")
             yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 0)
-            yield from self.assertState(tb, "WRITE-SCL-H")
+            yield from self.assertState(tb, "WRITE-DATA-SDA-X")
             yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 1)
             self.assertEqual((yield tb.sda_i), bit)
             yield
+        yield from self.tb.half_period()
         yield
         yield
         yield from self.assertState(tb, "WRITE-ACK-SCL-L")
         yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 0)
         yield tb.sda_o.eq(not ack)
-        yield from self.assertState(tb, "WRITE-ACK-SCL-H")
+        yield from self.assertState(tb, "WRITE-ACK-SDA-H")
         yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 1)
         yield tb.sda_o.eq(1)
         self.assertEqual((yield tb.dut.busy), 1)
@@ -575,21 +589,22 @@ class I2CMasterTestCase(I2CTestCase):
 
     def read(self, tb, data, bits, ack):
         yield from tb.read(ack)
-        for bit in bits:
+        for n, bit in enumerate(bits):
             yield
             yield
-            yield from self.assertState(tb, "READ-SCL-L")
+            yield from self.assertState(tb, "READ-DATA-SCL-L" if n == 0 else "READ-DATA-SDA-N")
             yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 0)
             yield tb.sda_o.eq(bit)
-            yield from self.assertState(tb, "READ-SCL-H")
+            yield from self.assertState(tb, "READ-DATA-SDA-H")
             yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 1)
             yield
         yield tb.sda_o.eq(1)
+        yield from tb.half_period()
         yield
         yield
         yield from self.assertState(tb, "READ-ACK-SCL-L")
         yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 0)
-        yield from self.assertState(tb, "READ-ACK-SCL-H")
+        yield from self.assertState(tb, "READ-ACK-SDA-X")
         yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 1)
         self.assertEqual((yield tb.sda_i), not ack)
         self.assertEqual((yield tb.dut.busy), 1)
