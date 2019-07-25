@@ -129,20 +129,20 @@ class I2CMaster(Module):
 
         self.submodules.fsm = FSM(reset_state="IDLE")
 
-        def low(pin_i, pin_o, state, next_state, *exprs):
+        def scl_l(state, next_state, *exprs):
             self.fsm.act(state,
                 If(stb,
-                   NextValue(pin_o, 0),
+                   NextValue(bus.scl_o, 0),
                    NextState(next_state),
                    *exprs
                 )
             )
-        def high(pin_i, pin_o, state, next_state, *exprs, stretch):
+        def scl_h(state, next_state, *exprs):
             self.fsm.act(state,
                 If(stb,
-                    NextValue(pin_o, 1)
-                ).Elif(pin_o == 1,
-                    If((not stretch) | (pin_i == 1),
+                    NextValue(bus.scl_o, 1)
+                ).Elif(bus.scl_o == 1,
+                    If((not clk_stretch) | (bus.scl_i == 1),
                         NextState(next_state),
                         *exprs
                     )
@@ -155,14 +155,6 @@ class I2CMaster(Module):
                     *exprs
                 )
             )
-        def scl_l(state, next_state, *exprs):
-            low(bus.scl_i, bus.scl_o, state, next_state, *exprs)
-        def scl_h(state, next_state, *exprs):
-            high(bus.scl_i, bus.scl_o, state, next_state, *exprs, stretch=clk_stretch)
-        def sda_l(state, next_state, *exprs):
-            low(bus.sda_i, bus.sda_o, state, next_state, *exprs)
-        def sda_h(state, next_state, *exprs):
-            high(bus.sda_i, bus.sda_o, state, next_state, *exprs, stretch=False)
 
         self.fsm.act("IDLE",
             NextValue(self.busy, 1),
@@ -194,14 +186,22 @@ class I2CMaster(Module):
         )
         # start
         scl_l("START-SCL-L", "START-SDA-H")
-        sda_h("START-SDA-H", "START-SCL-H")
+        stb_x("START-SDA-H", "START-SCL-H",
+            NextValue(bus.sda_o, 1)
+        )
         scl_h("START-SCL-H", "START-SDA-L")
-        sda_l("START-SDA-L", "IDLE")
+        stb_x("START-SDA-L", "IDLE",
+            NextValue(bus.sda_o, 0)
+        )
         # stop
         scl_l("STOP-SCL-L",  "STOP-SDA-L")
-        sda_l("STOP-SDA-L",  "STOP-SCL-H")
+        stb_x("STOP-SDA-L",  "STOP-SCL-H",
+            NextValue(bus.sda_o, 0)
+        )
         scl_h("STOP-SCL-H",  "STOP-SDA-H")
-        sda_h("STOP-SDA-H",  "IDLE")
+        stb_x("STOP-SDA-H",  "IDLE",
+            NextValue(bus.sda_o, 1)
+        )
         # write data
         scl_l("WRITE-DATA-SCL-L", "WRITE-DATA-SDA-X")
         stb_x("WRITE-DATA-SDA-X", "WRITE-DATA-SCL-H",
