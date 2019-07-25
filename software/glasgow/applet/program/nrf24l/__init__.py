@@ -259,59 +259,61 @@ class ProgramNRF24LApplet(GlasgowApplet, name="program-nrf24l"):
             if args.operation == "program":
                 await check_read_protected()
 
-                chunks = input_data(args.file, fmt="ihex")
-                index  = 0
-                for memory_area in memory_map:
-                    if index >= len(chunks):
-                        break
-
-                    skip = False
-                    chunk_mem_addr, chunk_data = chunks[index]
-                    if chunk_mem_addr >= memory_area.mem_addr + memory_area.size:
-                        continue
+                area_index   = 0
+                memory_area  = memory_map[area_index]
+                erased_pages = set()
+                for chunk_mem_addr, chunk_data in sorted(input_data(args.file, fmt="ihex"),
+                                                         key=lambda c: c[0]):
                     if len(chunk_data) == 0:
-                        skip = True
+                        continue
                     if chunk_mem_addr < memory_area.mem_addr:
                         raise ProgramNRF24LError("data outside of memory map at {:#06x}"
                                                  .format(chunk_mem_addr))
+                    while chunk_mem_addr >= memory_area.mem_addr + memory_area.size:
+                        area_index += 1
+                        if area_index >= len(memory_area):
+                            raise ProgramNRF24LError("data outside of memory map at {:#06x}"
+                                                     .format(chunk_mem_addr))
+                        memory_area = memory_map[area_index]
                     if chunk_mem_addr + len(chunk_data) > memory_area.mem_addr + memory_area.size:
                         raise ProgramNRF24LError("data outside of memory map at {:#06x}"
                                                  .format(memory_area.mem_addr + memory_area.size))
                     if memory_area.spi_addr & 0x10000 and not args.info_page:
                         self.logger.warn("data provided for info page, but info page programming "
                                          "is not enabled")
-                        skip = True
+                        continue
 
-                    if not skip:
-                        chunk_spi_addr = (chunk_mem_addr
-                                          - memory_area.mem_addr
-                                          + memory_area.spi_addr) & 0xffff
-                        if memory_area.spi_addr & 0x10000:
-                            level = logging.WARN
-                            await nrf24l_iface.write_status(FSR_BIT_INFEN)
-                        else:
-                            level = logging.INFO
-                            await nrf24l_iface.write_status(0)
+                    chunk_spi_addr = (chunk_mem_addr
+                                      - memory_area.mem_addr
+                                      + memory_area.spi_addr) & 0xffff
+                    if memory_area.spi_addr & 0x10000:
+                        level = logging.WARN
+                        await nrf24l_iface.write_status(FSR_BIT_INFEN)
+                    else:
+                        level = logging.INFO
+                        await nrf24l_iface.write_status(0)
 
+                    overwrite_pages = set(range(
+                        (chunk_spi_addr // page_size),
+                        (chunk_spi_addr + len(chunk_data) + page_size - 1) // page_size))
+                    need_erase_pages = overwrite_pages - erased_pages
+                    if need_erase_pages:
                         self.logger.log(level, "erasing %s memory at %#06x+%#06x",
                                         memory_area.name, chunk_mem_addr, len(chunk_data))
-                        for page in range(
-                                (chunk_spi_addr // page_size),
-                                (chunk_spi_addr + len(chunk_data) + page_size - 1) // page_size):
+                        for page in need_erase_pages:
                             await nrf24l_iface.write_enable()
                             await nrf24l_iface.erase_page(page)
                             await nrf24l_iface.wait_status()
+                        erased_pages.update(need_erase_pages)
 
-                        self.logger.log(level, "programming %s memory at %#06x+%#06x",
-                                        memory_area.name, chunk_mem_addr, len(chunk_data))
-                        while len(chunk_data) > 0:
-                            await nrf24l_iface.write_enable()
-                            await nrf24l_iface.program(chunk_spi_addr, chunk_data[:page_size])
-                            await nrf24l_iface.wait_status()
-                            chunk_data  = chunk_data[page_size:]
-                            chunk_spi_addr += page_size
-
-                    index += 1
+                    self.logger.log(level, "programming %s memory at %#06x+%#06x",
+                                    memory_area.name, chunk_mem_addr, len(chunk_data))
+                    while len(chunk_data) > 0:
+                        await nrf24l_iface.write_enable()
+                        await nrf24l_iface.program(chunk_spi_addr, chunk_data[:page_size])
+                        await nrf24l_iface.wait_status()
+                        chunk_data  = chunk_data[page_size:]
+                        chunk_spi_addr += page_size
 
             if args.operation == "erase":
                 if args.info_page:
