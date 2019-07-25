@@ -345,7 +345,7 @@ class DisplayPDIApplet(GlasgowApplet, name="display-pdi"):
         subtarget = iface.add_subtarget(SPIMasterSubtarget(
             pads=iface.get_pads(args, pins=self.__pins + self.__pins_g1),
             out_fifo=iface.get_out_fifo(),
-            in_fifo=iface.get_in_fifo(),
+            in_fifo=iface.get_in_fifo(auto_flush=False),
             period_cyc=math.ceil(target.sys_clk_freq / 5e6),
             delay_cyc=math.ceil(target.sys_clk_freq / 1e6),
             sck_idle=0,
