@@ -115,7 +115,7 @@ class I2CMaster(Module):
 
         self.sync += [
             If((timer == 0) | ~self.busy,
-                timer.eq(period_cyc // 2)
+                timer.eq(period_cyc // 4)
             ).Elif((not clk_stretch) | (bus.scl_o == bus.scl_i),
                 timer.eq(timer - 1)
             )
