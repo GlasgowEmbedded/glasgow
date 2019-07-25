@@ -34,7 +34,7 @@ class Memory25xInterface:
     def _log(self, message, *args):
         self._logger.log(self._level, "25x: " + message, *args)
 
-    async def _command(self, cmd, arg=[], dummy=0, ret=0, hold_ss=False):
+    async def _command(self, cmd, arg=[], dummy=0, ret=0):
         arg = bytes(arg)
 
         self._log("cmd=%02X arg=<%s> dummy=%d ret=%d", cmd, dump_hex(arg), dummy, ret)

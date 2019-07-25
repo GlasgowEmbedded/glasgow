@@ -111,7 +111,6 @@ class ProgramICE40SRAMApplet(SPIMasterApplet, name="program-ice40-sram"):
             else:
                 self.logger.warning("FPGA failed to configure after releasing reset")
 
-
 # -------------------------------------------------------------------------------------------------
 
 class ProgramICE40SRAMAppletTestCase(GlasgowAppletTestCase, applet=ProgramICE40SRAMApplet):
