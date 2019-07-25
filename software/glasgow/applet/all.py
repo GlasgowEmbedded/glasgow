@@ -21,6 +21,7 @@ from .program.avr.spi import ProgramAVRSPIApplet
 from .program.ice40_flash import ProgramICE40FlashApplet
 from .program.ice40_sram import ProgramICE40SRAMApplet
 from .program.mec16xx import ProgramMEC16xxApplet
+from .program.nrf24l import ProgramNRF24LApplet
 from .program.xc9500xl import ProgramXC9500XLApplet
 
 from .control.tps6598x import ControlTPS6598xApplet
