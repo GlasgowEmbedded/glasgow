@@ -413,7 +413,7 @@ class FX2Crossbar(Module):
             If(bus.addr[1],
                 sel_in_fifo.re.eq(bus.slwr),
                 sel_in_fifo.flushed.eq(bus.pend),
-                bus.nrdy_i.eq(Cat(C(0b00, 2), bus.slwr << bus.addr[0])),
+                bus.nrdy_i.eq(Cat(C(0b00, 2), (bus.slwr | bus.pend) << bus.addr[0])),
             ).Else(
                 sel_out_fifo.we.eq(bus.slrd_p & sel_flag),
             )
