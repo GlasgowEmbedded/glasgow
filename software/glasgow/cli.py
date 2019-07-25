@@ -72,7 +72,7 @@ def create_argparser():
         help="decrease logging verbosity")
     parser.add_argument(
         "-F", "--filter-log", metavar="FILTER", type=str, action="append",
-        help="enable maximum verbosity for log messages starting with 'FILTER: '")
+        help="raise TRACE log messages to DEBUG if they begin with 'FILTER: '")
 
     return parser
 
