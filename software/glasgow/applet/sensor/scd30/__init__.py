@@ -262,7 +262,7 @@ class SensorSCD30Applet(I2CMasterApplet, name="sensor-scd30"):
         if args.operation == "measure":
             while True:
                 while not await scd30.is_data_ready():
-                    await asyncio.sleep(0.5)
+                    await asyncio.sleep(0.37)
 
                 sample = await scd30.read_measurement()
                 print("CO₂={:.0f} ppm; T={:.2f} °C; RH={:.0f} %"
