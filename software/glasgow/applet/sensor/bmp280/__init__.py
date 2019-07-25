@@ -250,7 +250,7 @@ class SensorBMP280Applet(I2CMasterApplet, name="sensor-bmp280"):
             help="I2C address of the sensor (one of: 0x76 0x77, default: %(default)#02x)")
 
     async def run(self, device, args):
-        i2c_iface = await super().run(device, args)
+        i2c_iface = await self.run_lower(SensorBMP280Applet, device, args)
         bmp280_iface = BMP280I2CInterface(i2c_iface, self.logger, args.i2c_address)
         return BMP280Interface(bmp280_iface, self.logger)
 
