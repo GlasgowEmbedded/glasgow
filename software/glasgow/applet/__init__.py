@@ -42,7 +42,7 @@ class GlasgowApplet:
                 raise GlasgowAppletError("clock {}: {}".format(clock_name, e))
 
     def build(self, target):
-        raise NotImplemented
+        raise NotImplementedError
 
     @classmethod
     def add_run_arguments(cls, parser, access):
@@ -52,7 +52,7 @@ class GlasgowApplet:
         return await super(cls, self).run(device, args)
 
     async def run(self, device, args):
-        raise NotImplemented
+        raise NotImplementedError
 
     @classmethod
     def add_interact_arguments(cls, parser):
