@@ -71,6 +71,9 @@ def create_argparser():
         "-q", "--quiet", default=0, action="count",
         help="decrease logging verbosity")
     parser.add_argument(
+        "-L", "--log-file", metavar="FILE", type=argparse.FileType("w"),
+        help="save log messages at highest verbosity to FILE")
+    parser.add_argument(
         "-F", "--filter-log", metavar="FILTER", type=str, action="append",
         help="raise TRACE log messages to DEBUG if they begin with 'FILTER: '")
 
@@ -307,7 +310,7 @@ def _applet(revision, args):
     return target, applet
 
 
-class ANSIColorFormatter(logging.Formatter):
+class TerminalFormatter(logging.Formatter):
     LOG_COLORS = {
         "TRACE"   : "\033[37m",
         "DEBUG"   : "\033[36m",
@@ -329,7 +332,7 @@ class ANSIColorFormatter(logging.Formatter):
 class SubjectFilter:
     def __init__(self, level, subjects):
         self.level    = level
-        self.subjects = subjects
+        self.subjects = subjects or ()
 
     def filter(self, record):
         levelno = record.levelno
@@ -340,22 +343,31 @@ class SubjectFilter:
 
 
 def create_logger(args):
-    formatter_args = {"fmt": "{levelname[0]:s}: {name:s}: {message:s}", "style": "{"}
-    handler = logging.StreamHandler()
-    if sys.stderr.isatty() and sys.platform != 'win32':
-        handler.setFormatter(ANSIColorFormatter(**formatter_args))
-    else:
-        handler.setFormatter(logging.Formatter(**formatter_args))
-
     root_logger = logging.getLogger()
-    root_logger.addHandler(handler)
+
+    term_formatter_args = {"style": "{",
+        "fmt": "{levelname[0]:s}: {name:s}: {message:s}"}
+    term_handler = logging.StreamHandler()
+    if sys.stderr.isatty() and sys.platform != 'win32':
+        term_handler.setFormatter(TerminalFormatter(**term_formatter_args))
+    else:
+        term_handler.setFormatter(logging.Formatter(**term_formatter_args))
+    root_logger.addHandler(term_handler)
+
+    file_formatter_args = {"style": "{",
+        "fmt": "[{asctime:s}] {levelname:s}: {name:s}: {message:s}"}
+    file_handler = None
+    if args.log_file:
+        file_handler = logging.StreamHandler(args.log_file)
+        file_handler.setFormatter(logging.Formatter(**file_formatter_args))
+        root_logger.addHandler(file_handler)
 
     level = logging.INFO + args.quiet * 10 - args.verbose * 10
     if level < 0:
         dump_hex.limit = 0
 
-    if args.filter_log:
-        handler.addFilter(SubjectFilter(level, args.filter_log))
+    if args.log_file or args.filter_log:
+        term_handler.addFilter(SubjectFilter(level, args.filter_log))
         root_logger.setLevel(logging.TRACE)
     else:
         # By setting the log level on the root logger, we avoid creating LogRecords in the first
