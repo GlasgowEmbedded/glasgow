@@ -516,6 +516,8 @@ async def _main():
 
             async def run_applet():
                 logger.info("running handler for applet %r", args.applet)
+                if applet.preview:
+                    logger.warn("applet %r is PREVIEW QUALITY and may CORRUPT DATA", args.applet)
                 try:
                     iface = await applet.run(device, args)
                     await applet.interact(device, args, iface)
