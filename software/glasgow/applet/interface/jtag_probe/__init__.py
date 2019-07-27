@@ -502,10 +502,14 @@ class JTAGInterface:
         return await self._scan_xr("dr", max_length)
 
     async def scan_ir_length(self, max_length):
-        return len(await self.scan_ir(max_length))
+        data = await self.scan_ir(max_length)
+        if data is None: return
+        return len(data)
 
     async def scan_dr_length(self, max_length, zero_ok=False):
-        length = len(await self.scan_dr(max_length))
+        data = await self.scan_dr(max_length)
+        if data is None: return
+        length = len(data)
         assert zero_ok or length > 0
         return length
 
