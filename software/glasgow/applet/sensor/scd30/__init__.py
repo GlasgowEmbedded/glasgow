@@ -41,6 +41,9 @@ class SCD30I2CInterface:
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
+    def _log(self, message, *args):
+        self._logger.log(self._level, "SCD30: " + message, *args)
+
     _crc = staticmethod(crcmod.mkCrcFun(0x131, initCrc=0xff, rev=False))
 
     async def _read_raw(self, addr, length=0):
@@ -51,8 +54,7 @@ class SCD30I2CInterface:
         crc_data = await self._lower.read(self.i2c_addr, length // 2 * 3, stop=True)
         if crc_data is None:
             raise SCD30Error("SCD30 did not acknowledge data read")
-        self._logger.log(self._level, "SCD30: addr=%#06x data=<%s>",
-                         addr, dump_hex(crc_data))
+        self._log("addr=%#06x data=<%s>", addr, dump_hex(crc_data))
         data = bytearray()
         for index, (chunk, crc) in enumerate(struct.iter_unpack(">2sB", crc_data)):
             if self._crc(chunk) != crc:
@@ -66,8 +68,7 @@ class SCD30I2CInterface:
         for chunk, in struct.iter_unpack(">2s", data):
             crc_data += chunk
             crc_data.append(self._crc(chunk))
-        self._logger.log(self._level, "SCD30: cmd=%#06x args=<%s>",
-                         cmd, dump_hex(crc_data))
+        self._log("cmd=%#06x args=<%s>", cmd, dump_hex(crc_data))
         acked = await self._lower.write(self.i2c_addr, struct.pack(">H", cmd) + crc_data,
                                         stop=True)
         if acked is False:
@@ -80,88 +81,86 @@ class SCD30I2CInterface:
         await self._write_raw(cmd, struct.pack(format, *args))
 
     async def soft_reset(self):
-        self._logger.log(self._level, "SCD30: soft reset")
+        self._log("soft reset")
         await self._write(CMD_SOFT_RESET)
 
     async def firmware_version(self):
         major, minor = await self._read(CMD_FIRMWARE_VER, ">BB")
-        self._logger.log(self._level, "SCD30: firmware major=%d minor=%d", major, minor)
+        self._log("firmware major=%d minor=%d", major, minor)
         return major, minor
 
     async def is_data_ready(self):
         ready, = await self._read(CMD_DATA_READY, ">H")
-        self._logger.log(self._level, "SCD30: data ready=%d", ready)
+        self._log("data ready=%d", ready)
         return bool(ready)
 
     async def start_measurement(self, pressure_mbar=None):
         assert pressure_mbar is None or pressure_mbar in range(700, 1200)
         if pressure_mbar is None:
-            self._logger.log(self._level, "SCD30: start measurement")
+            self._log("start measurement")
         else:
-            self._logger.log(self._level, "SCD30: start measurement pressure=%d [mbar]",
+            self._log("start measurement pressure=%d [mbar]",
                              pressure_mbar)
         await self._write(CMD_START_MEASURE, ">H", pressure_mbar or 0)
 
     async def stop_measurement(self):
-        self._logger.log(self._level, "SCD30: stop measurement")
+        self._log("stop measurement")
         await self._write(CMD_STOP_MEASURE)
 
     async def read_measurement(self):
         co2_ppm, temp_degC, rh_pct = \
             await self._read(CMD_READ_MEASURE, ">fff")
-        self._logger.log(self._level, "SCD30: measured CO₂=%.2f [ppm] T=%.2f [°C] RH=%.2f [%%]",
-                         co2_ppm, temp_degC, rh_pct)
+        self._log("measured CO₂=%.2f [ppm] T=%.2f [°C] RH=%.2f [%%]", co2_ppm, temp_degC, rh_pct)
         return SCD30Measurement(co2_ppm, temp_degC, rh_pct)
 
     async def get_measurement_interval(self):
         interval_s, = await self._read(CMD_INTERVAL, ">H")
-        self._logger.log(self._level, "SCD30: measurement interval get=%d [s]", interval_s)
+        self._log("measurement interval get=%d [s]", interval_s)
         return interval_s
 
     async def set_measurement_interval(self, interval_s):
         assert 2 <= interval_s <= 1800
-        self._logger.log(self._level, "SCD30: measurement interval set=%d [s]", interval_s)
+        self._log("measurement interval set=%d [s]", interval_s)
         await self._write(CMD_INTERVAL, ">H", interval_s)
 
     async def get_auto_self_calibration(self):
         enabled, = await self._read(CMD_AUTO_SELF_CAL, ">H")
-        self._logger.log(self._level, "SCD30: auto calibration status=%d", enabled)
+        self._log("auto calibration status=%d", enabled)
         return bool(enabled)
 
     async def set_auto_self_calibration(self, enabled):
-        self._logger.log(self._level, "SCD30: auto calibration %s",
-                         "enable" if enabled else "disable")
+        self._log("auto calibration %s", "enable" if enabled else "disable")
         await self._write(CMD_AUTO_SELF_CAL, ">H", bool(enabled))
 
     async def get_forced_calibration(self):
         co2_ppm, = await self._read(CMD_FORCE_RECAL, ">H")
-        self._logger.log(self._level, "SCD30: forced calibration get=%d [ppm]", co2_ppm)
+        self._log("forced calibration get=%d [ppm]", co2_ppm)
         return co2_ppm
 
     async def set_forced_calibration(self, co2_ppm):
         assert 400 <= co2_ppm <= 2000
-        self._logger.log(self._level, "SCD30: forced calibration set=%d [ppm]", co2_ppm)
+        self._log("forced calibration set=%d [ppm]", co2_ppm)
         await self._write(CMD_FORCE_RECAL, ">H", co2_ppm)
 
     async def get_temperature_offset(self):
         temp_degC_100ths, = await self._read(CMD_TEMP_OFFSET, ">H")
         temp_degC = temp_degC_100ths / 100
-        self._logger.log(self._level, "SCD30: temperature offset get=%.2f [°C]", temp_degC)
+        self._log("temperature offset get=%.2f [°C]", temp_degC)
         return temp_degC
 
     async def set_temperature_offset(self, temp_degC):
         assert 0.0 <= temp_degC
-        self._logger.log(self._level, "SCD30: temperature offset set=%.2f [°C]", temp_degC)
+        self._log("temperature offset set=%.2f [°C]", temp_degC)
         temp_degC_100ths = int(temp_degC * 100)
         await self._write(CMD_TEMP_OFFSET, ">H", temp_degC_100ths)
 
     async def get_altitude_compensation(self):
         altitude_m, = await self._read(CMD_ALTITUDE_COMP, ">H")
-        self._logger.log(self._level, "SCD30: altitude compensation get=%d [m]", altitude_m)
+        self._log("altitude compensation get=%d [m]", altitude_m)
         return altitude_m
 
     async def set_altitude_compensation(self, altitude_m):
-        self._logger.log(self._level, "SCD30: altitude compensation set=%d [m]", altitude_m)
+        self._log("altitude compensation set=%d [m]", altitude_m)
         await self._write(CMD_ALTITUDE_COMP, ">H", altitude_m)
 
 
