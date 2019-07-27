@@ -31,6 +31,18 @@ class GlasgowAnalyzer(Module):
         # return "{}-{}".format(applet.name, event)
         return event
 
+    def add_generic_event(self, applet, name, signal):
+        event_source = self.event_analyzer.add_event_source(
+            name=self._name(applet, name), kind="change", width=signal.nbits)
+        signal_r = Signal.like(signal)
+        event_source.sync += [
+            signal_r.eq(signal),
+        ]
+        event_source.comb += [
+            event_source.data.eq(signal),
+            event_source.trigger.eq(signal != signal_r),
+        ]
+
     def add_in_fifo_event(self, applet, fifo):
         event_source = self.event_analyzer.add_event_source(
             name=self._name(applet, "fifo-in"), kind="strobe", width=8)
