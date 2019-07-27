@@ -130,7 +130,6 @@ class ProgramNRF24LInterface:
 
 
 class ProgramNRF24LApplet(GlasgowApplet, name="program-nrf24l"):
-    preview = True
     logger = logging.getLogger(__name__)
     help = "program nRF24LE1 RF microcontrollers"
     description = """
