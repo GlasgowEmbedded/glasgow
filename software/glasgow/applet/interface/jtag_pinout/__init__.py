@@ -4,6 +4,7 @@
 import logging
 import asyncio
 import random
+import struct
 from functools import reduce
 from migen import *
 from migen.genlib.cdc import MultiReg
@@ -33,6 +34,7 @@ class JTAGPinoutSubtarget(Module):
 
         timer = Signal(max=period_cyc)
         cmd   = Signal(8)
+        data  = Signal(16)
 
         self.submodules.fsm = FSM(reset_state="RECV-COMMAND")
         self.fsm.act("RECV-COMMAND",
@@ -43,26 +45,37 @@ class JTAGPinoutSubtarget(Module):
                     NextValue(timer, period_cyc - 1),
                     NextState("WAIT")
                 ).Elif(out_fifo.dout == CMD_I,
-                    NextState("INPUT")
+                    NextState("SAMPLE")
                 ).Else(
-                    NextState("RECV-DATA")
+                    NextState("RECV-DATA-1")
                 )
             )
         )
-        self.fsm.act("RECV-DATA",
+        self.fsm.act("RECV-DATA-1",
             If(out_fifo.readable,
                 out_fifo.re.eq(1),
-                If(cmd == CMD_OE,
-                    NextValue(jtag_oe, out_fifo.dout)
-                ).Elif(cmd == CMD_O,
-                    NextValue(jtag_o,  out_fifo.dout)
-                ).Elif(cmd == CMD_L,
-                    NextValue(jtag_o, ~out_fifo.dout & jtag_o)
-                ).Elif(cmd == CMD_H,
-                    NextValue(jtag_o,  out_fifo.dout | jtag_o)
-                ),
-                NextState("RECV-COMMAND")
+                NextValue(data[0:8], out_fifo.dout),
+                NextState("RECV-DATA-2")
             )
+        )
+        self.fsm.act("RECV-DATA-2",
+            If(out_fifo.readable,
+                out_fifo.re.eq(1),
+                NextValue(data[8:16], out_fifo.dout),
+                NextState("DRIVE")
+            )
+        )
+        self.fsm.act("DRIVE",
+            If(cmd == CMD_OE,
+                NextValue(jtag_oe, data)
+            ).Elif(cmd == CMD_O,
+                NextValue(jtag_o,  data)
+            ).Elif(cmd == CMD_L,
+                NextValue(jtag_o, ~data & jtag_o)
+            ).Elif(cmd == CMD_H,
+                NextValue(jtag_o,  data | jtag_o)
+            ),
+            NextState("RECV-COMMAND")
         )
         self.fsm.act("WAIT",
             If(timer == 0,
@@ -71,13 +84,73 @@ class JTAGPinoutSubtarget(Module):
                 NextValue(timer, timer - 1)
             )
         )
-        self.fsm.act("INPUT",
+        self.fsm.act("SAMPLE",
+            NextValue(data, jtag_i),
+            NextState("SEND-DATA-1")
+        )
+        self.fsm.act("SEND-DATA-1",
             If(in_fifo.writable,
                 in_fifo.we.eq(1),
-                in_fifo.din.eq(jtag_i),
+                in_fifo.din.eq(data[0:8]),
+                NextState("SEND-DATA-2")
+            )
+        )
+        self.fsm.act("SEND-DATA-2",
+            If(in_fifo.writable,
+                in_fifo.we.eq(1),
+                in_fifo.din.eq(data[8:16]),
                 NextState("RECV-COMMAND")
             )
         )
+
+
+class JTAGPinoutInterface:
+    def __init__(self, interface, logger):
+        self._lower  = interface
+        self._logger = logger
+        self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+
+    def _log(self, message, *args):
+        self._logger.log(self._level, "JTAG: " + message, *args)
+
+    async def _cmd(self, cmd):
+        await self._lower.write([cmd])
+
+    async def _arg(self, arg):
+        await self._lower.write(struct.pack("<H", arg))
+
+    async def _ret(self):
+        return struct.unpack("<H", await self._lower.read(2))[0]
+
+    async def wait(self):
+        self._log("wait")
+        await self._cmd(CMD_W)
+
+    async def set_oe(self, word):
+        self._log("set oe=%s", "{:016b}".format(word))
+        await self._cmd(CMD_OE)
+        await self._arg(word)
+
+    async def set_o(self, word):
+        self._log("set o= %s", "{:016b}".format(word))
+        await self._cmd(CMD_O)
+        await self._arg(word)
+
+    async def set_o_1(self, word):
+        self._log("set h= %s", "{:016b}".format(word))
+        await self._cmd(CMD_H)
+        await self._arg(word)
+
+    async def set_o_0(self, word):
+        self._log("set l= %s", "{:016b}".format(word))
+        await self._cmd(CMD_L)
+        await self._arg(word)
+
+    async def get_i(self):
+        await self._cmd(CMD_I)
+        word = await self._ret()
+        self._log("get i= %s", "{:016b}".format(word))
+        return word
 
 
 class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
@@ -91,7 +164,7 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_set_argument(parser, "jtag", width=range(4, 9), required=True)
+        access.add_pin_set_argument(parser, "jtag", width=range(4, 17), required=True)
 
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=10,
@@ -113,115 +186,127 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
                       for bit, pin in enumerate(args.pin_set_jtag)}
 
     async def run(self, device, args):
-        return await device.demultiplexer.claim_interface(self, self.mux_interface, args)
+        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
+        return JTAGPinoutInterface(iface, self.logger)
 
-    def _word_to_bits(self, bits):
-        pins = []
-        for bit in self.bits:
-            if bits & (1 << bit):
-                pins.append(bit)
-        return pins
+    @staticmethod
+    def _to_word(bits):
+        return reduce(lambda x, y: x|y, (1 << bit for bit in bits), 0)
 
-    def _bits_to_str(self, pins):
-        return ", ".join(self.names[pin] for pin in pins)
+    @staticmethod
+    def _from_word(word):
+        return set(bit for bit in range(word.bit_length()) if word & (1 << bit))
 
     async def _detect_pulls(self, iface):
-        for o in (0x00, 0xff):
-            await iface.write([
-                CMD_O,  o,
-                CMD_OE, 0xff,
-                CMD_W,
-                CMD_OE, 0x00,
-                CMD_W,
-                CMD_I,
-            ])
-        after_low, after_high = await iface.read(2)
+        each = self._to_word(self.bits)
+        none = self._to_word(set())
 
-        high_z_pins    = self._word_to_bits(~after_low &  after_high)
-        pull_up_pins   = self._word_to_bits( after_low &  after_high)
-        pull_down_pins = self._word_to_bits(~after_low & ~after_high)
-        return high_z_pins, pull_up_pins, pull_down_pins
+        results = []
+        for bits in (each, none):
+            await iface.set_o (bits)
+            await iface.set_oe(each)
+            await iface.wait()
+            await iface.set_oe(none)
+            await iface.wait()
+            results.append(await iface.get_i())
+        after_low, after_high = results
 
-    @staticmethod
-    def _x_tck(tck):       return [CMD_L, tck, CMD_W,        CMD_H, tck, CMD_W]
+        high_z_bits    = self._from_word(~after_low &  after_high)
+        pull_up_bits   = self._from_word( after_low &  after_high)
+        pull_down_bits = self._from_word(~after_low & ~after_high & each)
+        return high_z_bits, pull_up_bits, pull_down_bits
 
-    @staticmethod
-    def _x_tck_i_tdo(tck): return [CMD_L, tck, CMD_W, CMD_I, CMD_H, tck, CMD_W]
+    async def _strobe_tck(self, iface, tck):
+        await iface.set_o_0(tck)
+        await iface.wait()
+        await iface.set_o_1(tck)
+        await iface.wait()
 
-    async def _enter_shift_ir(self, iface, tck, tms, tdi, trst):
-        pulse = self._x_tck(tck)
-        await iface.write([
-            CMD_O,  tck|tms|tdi|trst,
-            CMD_OE, tck|tms|tdi|trst,
-            CMD_W,
-            # Pulse TRST
-            CMD_L, trst, CMD_W,
-            CMD_H, trst, CMD_W,
-            # Enter Test-Logic-Reset
-            CMD_H, tms, *pulse * 5,
-            # Enter Run-Test/Idle
-            CMD_L, tms, *pulse,
-            # Enter Shift-IR
-            CMD_H, tms, *pulse,
-            CMD_H, tms, *pulse,
-            CMD_L, tms, *pulse,
-            CMD_L, tms, *pulse,
-        ])
+    async def _strobe_tck_input(self, iface, tck):
+        await iface.set_o_0(tck)
+        await iface.wait()
+        word = await iface.get_i()
+        await iface.set_o_1(tck)
+        await iface.wait()
+        return word
 
-    async def _detect_tdo(self, iface, tck, tms, trst=0):
+    async def _enter_shift_ir(self, iface, *, tck, tms, tdi, trst=0):
+        await iface.set_o (tck|tms|tdi|trst)
+        await iface.set_oe(tck|tms|tdi|trst)
+        await iface.wait()
+        # Pulse TRST
+        await iface.set_o_0(trst); await iface.wait()
+        await iface.set_o_1(trst); await iface.wait()
+        # Enter Test-Logic-Reset
+        await iface.set_o_1(tms)
+        for _ in range(5):
+            await self._strobe_tck(iface, tck)
+        # Enter Run-Test/Idle
+        await iface.set_o_0(tms)
+        await self._strobe_tck(iface, tck)
+        # Enter Shift-IR
+        await iface.set_o_1(tms); await self._strobe_tck(iface, tck)
+        await iface.set_o_1(tms); await self._strobe_tck(iface, tck)
+        await iface.set_o_0(tms); await self._strobe_tck(iface, tck)
+        await iface.set_o_0(tms); await self._strobe_tck(iface, tck)
+
+    async def _detect_tdo(self, iface, *, tck, tms, trst=0):
         await self._enter_shift_ir(iface, tck=tck, tms=tms, tdi=0, trst=trst)
 
-        pulse = self._x_tck_i_tdo(tck)
-        await iface.write([
-            # Shift IR
-            *pulse * 2,
-            # Release the bus
-            CMD_OE, 0,
-        ])
+        # Shift IR
+        ir_0 = await self._strobe_tck_input(iface, tck)
+        ir_1 = await self._strobe_tck_input(iface, tck)
+        # Release the bus
+        await iface.set_oe(0)
 
-        ir_0, ir_1, *_ = await iface.read(2)
-        tdo_pins = self._word_to_bits(ir_0 & ~ir_1)
-        return set(tdo_pins)
+        tdo_bits = self._from_word(ir_0 & ~ir_1)
+        return set(tdo_bits)
 
-    async def _detect_tdi(self, iface, tck, tms, tdi, tdo, trst=0):
+    async def _detect_tdi(self, iface, *, tck, tms, tdi, tdo, trst=0):
         await self._enter_shift_ir(iface, tck=tck, tms=tms, tdi=tdi, trst=trst)
 
         pat_bits   = 32
         flush_bits = 64
         pattern    = random.getrandbits(pat_bits)
+        result     = []
 
-        pulse = self._x_tck_i_tdo(tck)
-        await iface.write([
-            # Shift IR
-            *sum(([CMD_H if pattern & (1 << bit) else CMD_L, tdi, *pulse]
-                  for bit in range(pat_bits)), []),
-            CMD_H, tdi, *pulse * flush_bits,
-            # Release the bus
-            CMD_OE, 0,
-        ])
+        # Shift IR
+        for bit in range(pat_bits):
+            if pattern & (1 << bit):
+                await iface.set_o_1(tdi)
+            else:
+                await iface.set_o_0(tdi)
+            result.append(await self._strobe_tck_input(iface, tck))
+        await iface.set_o_1(tdi)
+        for bit in range(flush_bits):
+            result.append(await self._strobe_tck_input(iface, tck))
+        # Release the bus
+        await iface.set_oe(0)
 
-        result = await iface.read(pat_bits + flush_bits)
         ir_lens = []
         for ir_len in range(flush_bits):
             corr_result = [result[ir_len + bit] if pattern & (1 << bit) else ~result[ir_len + bit]
                            for bit in range(pat_bits)]
-            if reduce(lambda x, y: x & y, corr_result) & tdo:
+            if reduce(lambda x, y: x&y, corr_result) & tdo:
                 ir_lens.append(ir_len)
         return ir_lens
 
     async def interact(self, device, args, iface):
+        def bits_to_str(pins):
+            return ", ".join(self.names[pin] for pin in pins)
+
         self.logger.info("detecting pull resistors")
         high_z_bits, pull_up_bits, pull_down_bits = await self._detect_pulls(iface)
         if high_z_bits:
-            self.logger.info("high-Z: %s", self._bits_to_str(high_z_bits))
+            self.logger.info("high-Z: %s", bits_to_str(high_z_bits))
         if pull_up_bits:
-            self.logger.info("pull-H: %s", self._bits_to_str(pull_up_bits))
+            self.logger.info("pull-H: %s", bits_to_str(pull_up_bits))
         if pull_down_bits:
-            self.logger.info("pull-L: %s", self._bits_to_str(pull_down_bits))
+            self.logger.info("pull-L: %s", bits_to_str(pull_down_bits))
 
         if len(self.bits) > 4:
             # Try possible TRST# pins from most to least likely.
-            trst_bits = pull_down_bits + high_z_bits + pull_up_bits
+            trst_bits = set.union(pull_down_bits, high_z_bits, pull_up_bits)
         else:
             trst_bits = set()
 
@@ -239,13 +324,13 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
             for bit_tck in data_bits:
                 for bit_tms in data_bits - {bit_tck}:
                     self.logger.debug("trying TCK=%s TMS=%s",
-                                      self.names[bit_tck], self.names[bit_tms])
-                    tdo_bits = await self._detect_tdo(iface, 1 << bit_tck, 1 << bit_tms,
-                                                      0 if bit_trst is None else 1 << bit_trst)
+                        self.names[bit_tck], self.names[bit_tms])
+                    tdo_bits = await self._detect_tdo(iface,
+                        tck=1 << bit_tck, tms=1 << bit_tms,
+                        trst=0 if bit_trst is None else 1 << bit_trst)
                     for bit_tdo in tdo_bits - {bit_tck, bit_tms}:
                         self.logger.info("shifted 10 out of IR with TCK=%s TMS=%s TDO=%s",
-                                         self.names[bit_tck], self.names[bit_tms],
-                                         self.names[bit_tdo])
+                            self.names[bit_tck], self.names[bit_tms], self.names[bit_tdo])
                         tck_tms_tdo.append((bit_tck, bit_tms, bit_tdo))
 
             if not tck_tms_tdo:
@@ -255,16 +340,16 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
             for (bit_tck, bit_tms, bit_tdo) in tck_tms_tdo:
                 for bit_tdi in data_bits - {bit_tck, bit_tms, bit_tdo}:
                     self.logger.debug("trying TCK=%s TMS=%s TDI=%s TDO=%s",
-                                      self.names[bit_tck], self.names[bit_tms],
-                                      self.names[bit_tdi], self.names[bit_tdo])
-                    ir_lens = await self._detect_tdi(iface, 1 << bit_tck, 1 << bit_tms,
-                                                     1 << bit_tdi, 1 << bit_tdo,
-                                                     0 if bit_trst is None else 1 << bit_trst)
+                        self.names[bit_tck], self.names[bit_tms],
+                        self.names[bit_tdi], self.names[bit_tdo])
+                    ir_lens = await self._detect_tdi(iface,
+                        tck=1 << bit_tck, tms=1 << bit_tms, tdi=1 << bit_tdi, tdo=1 << bit_tdo,
+                        trst=0 if bit_trst is None else 1 << bit_trst)
                     for ir_len in ir_lens:
                         self.logger.info("shifted %d-bit IR with TCK=%s TMS=%s TDI=%s TDO=%s",
-                                         ir_len,
-                                         self.names[bit_tck], self.names[bit_tms],
-                                         self.names[bit_tdi], self.names[bit_tdo])
+                            ir_len,
+                            self.names[bit_tck], self.names[bit_tms],
+                            self.names[bit_tdi], self.names[bit_tdo])
                         results.append((bit_tck, bit_tms, bit_tdi, bit_tdo, bit_trst))
                     else:
                         continue
