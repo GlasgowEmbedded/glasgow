@@ -17,8 +17,7 @@ class ProgramICE40SRAMInterface:
         self._addr_dut_done  = addr_dut_done
 
     async def set_reset(self, reset):
-        if self._addr_dut_reset is not None:
-            await self._device.write_register(self._addr_dut_reset, int(reset))
+        await self._device.write_register(self._addr_dut_reset, int(reset))
 
     async def get_done(self):
         if self._addr_dut_reset is not None:
@@ -64,15 +63,12 @@ class ProgramICE40SRAMApplet(SPIMasterApplet, name="program-ice40-sram"):
     def build(self, target, args):
         subtarget = super().build(target, args, pins=("sck", "ss", "mosi"))
 
-        if args.pin_reset is not None:
-            reset_t = self.mux_interface.get_pin(args.pin_reset)
-            dut_reset, self.__addr_dut_reset = target.registers.add_rw(1)
-            subtarget.comb += [
-                reset_t.o.eq(0),
-                reset_t.oe.eq(dut_reset),
-            ]
-        else:
-            self.__addr_dut_reset = None
+        reset_t = self.mux_interface.get_pin(args.pin_reset)
+        dut_reset, self.__addr_dut_reset = target.registers.add_rw(1)
+        subtarget.comb += [
+            reset_t.o.eq(0),
+            reset_t.oe.eq(dut_reset),
+        ]
 
         if args.pin_done is not None:
             done_t = self.mux_interface.get_pin(args.pin_done)
