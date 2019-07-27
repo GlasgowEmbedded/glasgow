@@ -962,7 +962,7 @@ U 1 1 5D327B15
 P 8550 1850
 F 0 "U2" H 8525 2117 50  0000 C CNN
 F 1 "74LVC2G14" H 8525 2026 50  0000 C CNN
-F 2 "Package_TO_SOT_SMD:SOT-23-6_Handsoldering" H 8550 1850 50  0001 C CNN
+F 2 "Package_TO_SOT_SMD:SOT-363_SC-70-6_Handsoldering" H 8550 1850 50  0001 C CNN
 F 3 "http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf" H 8550 1850 50  0001 C CNN
 	1    8550 1850
 	1    0    0    -1  
@@ -973,7 +973,7 @@ U 2 1 5D32BC1F
 P 8550 3800
 F 0 "U2" H 8525 4067 50  0000 C CNN
 F 1 "74LVC2G14" H 8525 3976 50  0000 C CNN
-F 2 "Package_TO_SOT_SMD:SOT-23-6_Handsoldering" H 8550 3800 50  0001 C CNN
+F 2 "Package_TO_SOT_SMD:SOT-363_SC-70-6_Handsoldering" H 8550 3800 50  0001 C CNN
 F 3 "http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf" H 8550 3800 50  0001 C CNN
 	2    8550 3800
 	1    0    0    -1  
@@ -984,7 +984,7 @@ U 1 1 5D32E560
 P 8500 5650
 F 0 "U6" H 8475 5917 50  0000 C CNN
 F 1 "74LVC2G14" H 8475 5826 50  0000 C CNN
-F 2 "Package_TO_SOT_SMD:SOT-23-6_Handsoldering" H 8500 5650 50  0001 C CNN
+F 2 "Package_TO_SOT_SMD:SOT-363_SC-70-6_Handsoldering" H 8500 5650 50  0001 C CNN
 F 3 "http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf" H 8500 5650 50  0001 C CNN
 	1    8500 5650
 	1    0    0    -1  
@@ -1004,7 +1004,7 @@ U 2 1 5D356D73
 P 8500 6250
 F 0 "U6" H 8900 6300 50  0000 C CNN
 F 1 "74LVC2G14" H 9050 6200 50  0000 C CNN
-F 2 "Package_TO_SOT_SMD:SOT-23-6_Handsoldering" H 8500 6250 50  0001 C CNN
+F 2 "Package_TO_SOT_SMD:SOT-363_SC-70-6_Handsoldering" H 8500 6250 50  0001 C CNN
 F 3 "http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf" H 8500 6250 50  0001 C CNN
 	2    8500 6250
 	1    0    0    -1  
