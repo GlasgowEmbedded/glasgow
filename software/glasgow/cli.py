@@ -181,7 +181,7 @@ def get_argparser():
 
     p_voltage_limit = subparsers.add_parser(
         "voltage-limit", formatter_class=TextHelpFormatter,
-        help="limit I/O port voltage as a safety precaution")
+        help="limit I/O port voltage as a safety mechanism")
     add_ports_arg(p_voltage_limit)
     add_voltage_arg(p_voltage_limit,
         help="maximum allowed I/O port voltage")
