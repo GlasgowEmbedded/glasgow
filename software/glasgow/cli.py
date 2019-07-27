@@ -195,19 +195,21 @@ def get_argparser():
         "run", formatter_class=TextHelpFormatter,
         help="load an applet bitstream and run applet code")
     add_toolchain_args(p_run)
-
     p_run.add_argument(
         "--rebuild", default=False, action="store_true",
         help="rebuild bitstream even if an identical one is already loaded")
     p_run.add_argument(
         "--trace", metavar="FILENAME", type=argparse.FileType("wt"), default=None,
         help="trace applet I/O to FILENAME")
+    add_applet_arg(p_run, mode="run")
 
-    g_run_bitstream = p_run.add_mutually_exclusive_group(required=True)
-    g_run_bitstream.add_argument(
-        "--bitstream", metavar="FILENAME", type=argparse.FileType("rb"),
+    p_run_prebuilt = subparsers.add_parser(
+        "run-prebuilt", formatter_class=TextHelpFormatter,
+        help="(advanced) load a prebuilt applet bitstream and run applet code")
+    p_run_prebuilt.add_argument(
+        "bitstream", metavar="FILENAME", type=argparse.FileType("rb"),
         help="read bitstream from the specified file")
-    add_applet_arg(g_run_bitstream, mode="run")
+    add_applet_arg(p_run_prebuilt, mode="run")
 
     p_tool = subparsers.add_parser(
         "tool", formatter_class=TextHelpFormatter,
@@ -432,15 +434,20 @@ async def _main():
                 print("{}\t{:.2}\t{:.2}"
                       .format(port, vio, vlimit))
 
-        if args.action == "run":
+        if args.action in ("run", "run-prebuilt"):
             if args.applet:
                 target, applet = _applet(device.revision, args)
                 device.demultiplexer = DirectDemultiplexer(device, target.multiplexer.pipe_count)
 
-                await device.download_target(target, rebuild=args.rebuild,
-                                             toolchain_opts=_toolchain_opts(args))
+                if args.action == "run":
+                    await device.download_target(target, rebuild=args.rebuild,
+                                                 toolchain_opts=_toolchain_opts(args))
+                if args.action == "run-prebuilt":
+                    logger.warn("downloading prebuilt bitstream from %s", args.bitstream.name)
+                    await device.download_bitstream(args.bitstream.read())
 
-                if args.trace:
+                do_trace = hasattr(args, "trace") and args.trace
+                if do_trace:
                     logger.info("starting applet analyzer")
                     await device.write_register(target.analyzer.addr_done, 0)
                     analyzer_iface = await device.demultiplexer.claim_interface(
@@ -451,7 +458,7 @@ async def _main():
                                 % target.get_bitstream_id().hex())
 
                 async def run_analyzer():
-                    if not args.trace:
+                    if not do_trace:
                         return
 
                     signals = {}
@@ -516,7 +523,7 @@ async def _main():
                     except GlasgowAppletError as e:
                         applet.logger.error(str(e))
                     finally:
-                        if args.trace:
+                        if do_trace:
                             await device.write_register(target.analyzer.addr_done, 1)
 
                 done, pending = await asyncio.wait([run_analyzer(), run_applet()],
