@@ -220,6 +220,13 @@ class ProgramAVRSPIApplet(GlasgowApplet, name="program-avr-spi"):
     While programming is disabled, the SPI bus is tristated, so the applet can be used for
     in-circuit programming.
 
+    The standard AVR ICSP connector layout is as follows:
+
+    ::
+        MISO @ * VCC
+         SCK * * MOSI
+        RST# * * GND
+
     Supported devices are:
 {devices}
     """.format(
