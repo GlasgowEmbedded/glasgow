@@ -45,7 +45,7 @@ class ProgramAVRInterface:
 
     async def programming_disable(self):
         self._log("programming disable")
-        await self.lower.sync()
+        await self.lower.synchronize()
         await self.lower.lower.device.write_register(self._addr_dut_reset, 0)
         await self.lower.delay_ms(20)
 
@@ -60,7 +60,7 @@ class ProgramAVRInterface:
         for address in range(3):
             _, _, _, sig_byte = await self._command(0b0011_0000, 0b0000_0000, address & 0b11, 0)
             signature.append(sig_byte)
-        return signature
+        return tuple(signature)
 
     async def read_fuse(self, address):
         self._log("read fuse address %#04x", address)
