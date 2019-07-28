@@ -273,6 +273,9 @@ class ProgramAVRSPIApplet(GlasgowApplet, name="program-avr-spi"):
 
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
+        p_identify = p_operation.add_parser(
+            "identify", help="identify connected device")
+
         p_read = p_operation.add_parser(
             "read", help="read device memories")
         p_read.add_argument(
@@ -337,7 +340,7 @@ class ProgramAVRSPIApplet(GlasgowApplet, name="program-avr-spi"):
             "{:02x} {:02x} {:02x}".format(*signature),
             "unknown" if device is None else device.name)
 
-        if args.operation is not None and device is None:
+        if args.operation not in (None, "identify") and device is None:
             raise GlasgowAppletError("cannot operate on unknown device")
 
         if args.operation == "read":
