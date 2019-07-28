@@ -37,6 +37,8 @@ class TextHelpFormatter(argparse.HelpFormatter):
     def _fill_text(self, text, width, indent):
         def filler(match):
             text = match[0]
+            if text.startswith("::"):
+                return text[2:]
 
             list_match = re.match(r"(\s*)\*", text)
             if list_match:
