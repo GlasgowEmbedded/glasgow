@@ -26,7 +26,7 @@ from .. import AccessDemultiplexer, AccessDemultiplexerInterface
 # In other words, there is be a platform-specific limit for USB I/O size, which is not
 # discoverable via libusb, and hitting which does not result in a sensible error returned
 # from libusb (it returns LIBUSB_ERROR_IO even though USBDEVFS_SUBMITURB ioctl correctly
-# returns -ENOMEM, so it is not even possible to be optimistic and back off after hitting it.
+# returns -ENOMEM), so it is not even possible to be optimistic and back off after hitting it.
 #
 # To deal with this, use requests of at most 1024 EP buffer sizes (512 KiB with the FX2) as
 # an arbitrary cutoff, and hope for the best.
