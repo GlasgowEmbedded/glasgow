@@ -82,7 +82,6 @@ import struct
 from migen import *
 from migen.genlib.cdc import MultiReg
 
-from ....support.pyrepl import *
 from ....support.logging import *
 from ....database.jedec import *
 from ....protocol.onfi import *
@@ -542,9 +541,6 @@ class MemoryONFIApplet(GlasgowApplet, name="memory-onfi"):
             "count", metavar="COUNT", type=count, nargs="?", default=1,
             help="erase blocks containing the next COUNT pages")
 
-        p_operation.add_parser(
-            "repl", help="drop into Python shell; use `onfi_iface` to communicate")
-
     async def interact(self, device, args, onfi_iface):
         manufacturer_id, device_id = await onfi_iface.read_jedec_id()
         if manufacturer_id in (0x00, 0xff):
@@ -759,9 +755,6 @@ class MemoryONFIApplet(GlasgowApplet, name="memory-onfi"):
 
                 row   += block_size
                 count -= block_size
-
-        if args.operation == "repl":
-            await AsyncInteractiveConsole(locals={"onfi_iface":onfi_iface}).interact()
 
 # -------------------------------------------------------------------------------------------------
 

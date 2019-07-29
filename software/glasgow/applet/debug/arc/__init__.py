@@ -19,7 +19,6 @@
 import logging
 import argparse
 
-from ....support.pyrepl import *
 from ....arch.jtag import *
 from ....arch.arc import *
 from ....database.arc import *
@@ -140,13 +139,6 @@ class DebugARCApplet(JTAGProbeApplet, name="debug-arc"):
 
         return ARCDebugInterface(tap_iface, self.logger)
 
-    @classmethod
-    def add_interact_arguments(cls, parser):
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
-
-        p_repl = p_operation.add_parser(
-            "repl", help="drop into Python shell; use `arc_iface` to communicate")
-
     async def interact(self, device, args, arc_iface):
         idcode, device = await arc_iface.identify()
         if device is None:
@@ -154,6 +146,3 @@ class DebugARCApplet(JTAGProbeApplet, name="debug-arc"):
                                      % idcode.to_int())
         self.logger.info("IDCODE=%08x device=%s rev=%d",
                          idcode.to_int(), device.name, idcode.version)
-
-        if args.operation == "repl":
-            await AsyncInteractiveConsole(locals={"arc_iface":arc_iface}).interact()

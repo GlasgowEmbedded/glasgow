@@ -658,6 +658,7 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
     description = """
     Identify, test and debug integrated circuits and board assemblies via IEEE 1149.1 JTAG.
     """
+    has_custom_repl = True
 
     __pins = ("tck", "tms", "tdi", "tdo", "trst")
 
@@ -734,11 +735,13 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
             "tap_indexes", metavar="INDEX", type=int, nargs="+",
             help="enumerate IR values for TAP #INDEX")
 
+        # This one is identical to run-repl, and is just for consistency when using the subcommands
+        # tap-repl and jtag-repl alternately.
         p_jtag_repl = p_operation.add_parser(
-            "jtag-repl", help="drop into Python shell; use `jtag_iface` to communicate")
+            "jtag-repl", help="drop into Python REPL")
 
         p_tap_repl = p_operation.add_parser(
-            "tap-repl", help="drop into Python shell; use `tap_iface` to communicate")
+            "tap-repl", help="select a TAP and drop into Python REPL")
         p_tap_repl.add_argument(
             "tap_index", metavar="INDEX", type=int, default=0, nargs="?",
             help="select TAP #INDEX for communication (default: %(default)s)")
@@ -819,7 +822,7 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
                     self.logger.log(level, "  IR=%s DR[%s]", ir_value.to01(), dr_length)
 
         if args.operation == "jtag-repl":
-            await AsyncInteractiveConsole(locals={"jtag_iface":jtag_iface}).interact()
+            await AsyncInteractiveConsole(locals={"iface":jtag_iface}).interact()
 
         if args.operation == "tap-repl":
             tap_iface = await jtag_iface.select_tap(args.tap_index,
@@ -828,7 +831,7 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
                 self.logger.error("cannot select TAP #%d" % args.tap_index)
                 return
 
-            await AsyncInteractiveConsole(locals={"tap_iface":tap_iface}).interact()
+            await AsyncInteractiveConsole(locals={"iface":tap_iface}).interact()
 
 # -------------------------------------------------------------------------------------------------
 

@@ -10,7 +10,6 @@ import argparse
 import struct
 
 from ....support.aobject import *
-from ....support.pyrepl import *
 from ....arch.arc import *
 from ....arch.arc.mec16xx import *
 from ...debug.arc import DebugARCApplet
@@ -190,9 +189,6 @@ class ProgramMEC16xxApplet(DebugARCApplet, name="program-mec16xx"):
             "file", metavar="FILE", type=argparse.FileType("rb"),
             help="read EC firmware from FILE")
 
-        p_repl = p_operation.add_parser(
-            "repl", help="drop into Python shell; use `mec_iface` to communicate")
-
     async def interact(self, device, args, mec_iface):
         if args.operation == "read":
             await mec_iface.enable_flash_access(enabled=True)
@@ -215,6 +211,3 @@ class ProgramMEC16xxApplet(DebugARCApplet, name="program-mec16xx"):
 
         if args.operation == "emergency-erase":
             await mec_iface.emergency_flash_erase()
-
-        if args.operation == "repl":
-            await AsyncInteractiveConsole(locals={"mec_iface":mec_iface}).interact()

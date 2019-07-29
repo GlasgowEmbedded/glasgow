@@ -134,19 +134,20 @@ def get_argparser():
                     "tests", metavar="TEST", nargs="*",
                     help="test cases to run")
 
-            if mode in ("build", "run"):
+            if mode in ("build", "run", "run-repl"):
                 access_args = DirectArguments(applet_name=applet_name,
                                               default_port="AB",
                                               pin_count=16)
-                if mode == "run":
+                if mode in ("run", "run-repl"):
                     g_applet_build = p_applet.add_argument_group("build arguments")
                     applet.add_build_arguments(g_applet_build, access_args)
                     g_applet_run = p_applet.add_argument_group("run arguments")
                     applet.add_run_arguments(g_applet_run, access_args)
-                    # FIXME: this makes it impossiblt to add subparsers in applets
-                    # g_applet_interact = p_applet.add_argument_group("interact arguments")
-                    # applet.add_interact_arguments(g_applet_interact)
-                    applet.add_interact_arguments(p_applet)
+                    if mode != "run-repl":
+                        # FIXME: this makes it impossible to add subparsers in applets
+                        # g_applet_interact = p_applet.add_argument_group("interact arguments")
+                        # applet.add_interact_arguments(g_applet_interact)
+                        applet.add_interact_arguments(p_applet)
                 if mode == "build":
                     applet.add_build_arguments(p_applet, access_args)
 
@@ -193,17 +194,26 @@ def get_argparser():
             "--synthesis-opts", metavar="OPTIONS", type=str, default="",
             help="(advanced) pass OPTIONS to FPGA synthesis toolchain")
 
+    def add_run_args(parser):
+        add_toolchain_args(parser)
+        parser.add_argument(
+            "--rebuild", default=False, action="store_true",
+            help="rebuild bitstream even if an identical one is already loaded")
+        parser.add_argument(
+            "--trace", metavar="FILENAME", type=argparse.FileType("wt"), default=None,
+            help="trace applet I/O to FILENAME")
+
     p_run = subparsers.add_parser(
         "run", formatter_class=TextHelpFormatter,
-        help="load an applet bitstream and run applet code")
-    add_toolchain_args(p_run)
-    p_run.add_argument(
-        "--rebuild", default=False, action="store_true",
-        help="rebuild bitstream even if an identical one is already loaded")
-    p_run.add_argument(
-        "--trace", metavar="FILENAME", type=argparse.FileType("wt"), default=None,
-        help="trace applet I/O to FILENAME")
+        help="run an applet and interact through its command-line interface")
+    add_run_args(p_run)
     add_applet_arg(p_run, mode="run")
+
+    p_run_repl = subparsers.add_parser(
+        "run-repl", formatter_class=TextHelpFormatter,
+        help="run an applet and open a REPL to use its low-level interface")
+    add_run_args(p_run_repl)
+    add_applet_arg(p_run_repl, mode="run-repl")
 
     p_run_prebuilt = subparsers.add_parser(
         "run-prebuilt", formatter_class=TextHelpFormatter,
@@ -436,11 +446,11 @@ async def _main():
                 print("{}\t{:.2}\t{:.2}"
                       .format(port, vio, vlimit))
 
-        if args.action in ("run", "run-prebuilt"):
+        if args.action in ("run", "run-repl", "run-prebuilt"):
             target, applet = _applet(device.revision, args)
             device.demultiplexer = DirectDemultiplexer(device, target.multiplexer.pipe_count)
 
-            if args.action == "run":
+            if args.action in ("run", "run-repl"):
                 await device.download_target(target, rebuild=args.rebuild,
                                              toolchain_opts=_toolchain_opts(args))
             if args.action == "run-prebuilt":
@@ -522,7 +532,14 @@ async def _main():
                     logger.warn("applet %r is PREVIEW QUALITY and may CORRUPT DATA", args.applet)
                 try:
                     iface = await applet.run(device, args)
-                    await applet.interact(device, args, iface)
+                    if args.action == "run":
+                        await applet.interact(device, args, iface)
+                    if args.action == "run-repl":
+                        if applet.has_custom_repl:
+                            logger.warn("applet provides customized REPL(s); consider using `run "
+                                        "{} ...-repl` subcommands".format(applet.name))
+                        logger.info("dropping to REPL; use 'help(iface)' to see available APIs")
+                        await AsyncInteractiveConsole(locals={"iface":iface}).interact()
                 except GlasgowAppletError as e:
                     applet.logger.error(str(e))
                 finally:

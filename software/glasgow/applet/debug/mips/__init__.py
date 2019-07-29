@@ -827,6 +827,7 @@ class DebugMIPSApplet(JTAGProbeApplet, name="debug-mips"):
     Other configurations might or might not work. In particular, it certainly does not currently
     work on little-endian CPUs. Sorry about that.
     """
+    has_custom_repl = True
 
     @classmethod
     def add_run_arguments(cls, parser, access):
@@ -860,7 +861,7 @@ class DebugMIPSApplet(JTAGProbeApplet, name="debug-mips"):
         ServerEndpoint.add_argument(p_gdb, "gdb_endpoint", default="tcp::1234")
 
         p_repl = p_operation.add_parser(
-            "repl", help="drop into Python shell; use `ejtag_iface` to communicate")
+            "repl", help="drop into Python REPL and detach before exit")
 
     async def interact(self, device, args, ejtag_iface):
         if args.operation == "dump-state":
@@ -884,7 +885,7 @@ class DebugMIPSApplet(JTAGProbeApplet, name="debug-mips"):
                     await ejtag_iface.target_detach()
 
         if args.operation == "repl":
-            await AsyncInteractiveConsole(locals={"ejtag_iface":ejtag_iface}).interact()
+            await AsyncInteractiveConsole(locals={"iface":ejtag_iface}).interact()
 
             # Same as above.
             if ejtag_iface.target_attached():

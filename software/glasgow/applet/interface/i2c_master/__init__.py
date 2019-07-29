@@ -3,7 +3,6 @@ import logging
 import math
 from migen import *
 
-from ....support.pyrepl import *
 from ....gateware.pads import *
 from ....gateware.i2c import I2CMaster
 from ... import *
@@ -331,9 +330,6 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
                         manufacturer, part_ident, revision = device_id
                         self.logger.info("device %s ID: manufacturer %s, part %s, revision %s",
                             bin(addr), bin(manufacturer), bin(part_ident), bin(revision))
-
-        if args.operation == "repl":
-            await AsyncInteractiveConsole(locals={"i2c_iface":i2c_iface}).interact()
 
 # -------------------------------------------------------------------------------------------------
 

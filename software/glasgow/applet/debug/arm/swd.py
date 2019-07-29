@@ -9,7 +9,6 @@ import math
 from migen import *
 
 from ....gateware.pads import *
-from ....support.pyrepl import *
 from ... import *
 
 
@@ -385,9 +384,6 @@ class DebugARMSWDApplet(GlasgowApplet, name="debug-arm-swd"):
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
         return SWDInterface(iface, self.logger)
-
-    async def interact(self, device, args, swd_iface):
-        await AsyncInteractiveConsole(locals={"swd_iface": swd_iface}).interact()
 
 # -------------------------------------------------------------------------------------------------
 

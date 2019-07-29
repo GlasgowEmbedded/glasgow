@@ -27,6 +27,7 @@ class GlasgowApplet:
     help = "applet help missing"
     description = "applet description missing"
     required_revision = "A0"
+    has_custom_repl = False
 
     @classmethod
     def add_build_arguments(cls, parser, access):
