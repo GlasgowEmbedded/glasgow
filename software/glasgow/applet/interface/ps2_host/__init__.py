@@ -18,9 +18,11 @@
 #
 # The Intel 8042 controller fixes, or rather works around, this problem by completely encapsulating
 # the handling of PS/2. In fact many (if not most) PS/2 commands that are sent to i8042 result in
-# no PS/2 traffic at all, which lead mice developers to a quite horrifying response: any advanced
-# settings are conveyed to the mouse and back by abusing the sensitivity adjustment commands as
-# a communication channel; keyboards use similar hacks.
+# no PS/2 traffic at all, with their response being either synthesized on the fly on the i8042, or,
+# even worse, them being an in-band commands to i8042 itself. This lead mice developers to a quite
+# horrifying response: any advanced settings are conveyed to the mouse and back by abusing
+# the sensitivity adjustment commands as 2-bit at a time a communication channel; keyboards use
+# similar hacks.
 #
 # In this applet, we solve this problem by treating the PS/2 device rather harshly: it is only
 # allowed to speak when we permit it to, i.e. all communication is host-initiated. (This is quite
@@ -30,7 +32,6 @@
 # the clock. As a result, the command responses that are longer than expected are cut short (but
 # the higher layer cannot process them anyway), and unsolicited packets are dropped when they are
 # not actively polled by a higher layer. In exchange, the communication is always deterministic.
-# FIXME: check that command responses are not resent if interrupted in the middle
 
 import logging
 import operator
@@ -276,29 +277,37 @@ class PS2HostInterface:
     def _log(self, message, *args):
         self._logger.log(self._level, "PS/2: " + message, *args)
 
-    async def _cmd(self, cmd, ret=0):
+    async def send_command(self, cmd, ret=0):
         assert ret < 0x7f
         assert not self._streaming
-        await self._lower.write([0x80|ret, cmd])
-        if ret > 0:
-            ack, *result, error = await self._lower.read(1 + ret + 1)
-            result = bytes(result)
-            self._log("cmd=%02x %s ret=<%s>",
-                      cmd, "ack" if ack else "nak", result.hex())
+        await self._lower.write([0x80|(ret + 1), cmd])
+        line_ack, cmd_ack, *result, error = await self._lower.read(1 + 1 + ret + 1)
+        result = bytes(result)
+        if line_ack:
+            self._log("cmd=%02x ack=%#02x ret=<%s>", cmd, cmd_ack, result.hex())
         else:
-            ack, = await self._lower.read(1)
-            result = None
-            error  = 0
-            self._log("cmd=%02x %s",
-                      cmd, "ack" if ack else "nak")
-        if not ack:
-            raise PS2HostError("peripheral did not acknowledge command {:#04x}".format(cmd))
+            self._log("cmd=%02x nak", cmd)
+            raise PS2HostError("peripheral did not acknowledge command {:#04x}"
+                               .format(cmd))
         if error > 0:
             raise PS2HostError("parity error in byte {} in response to command {:#04x}"
                                .format(error - 1, cmd))
+        if cmd_ack == 0xfa:
+            pass # ACK
+        elif cmd_ack in (0xfe, 0xfc):
+            # Response FE means resend according to the protocol, but really it means that
+            # the peripheral did not like our command. Parity errors are rare, so resending
+            # the command is probably a waste of time and we'll just get FC in response
+            # the second time anyway; and after getting FC (unlike FE) we are technically required
+            # to reset the device and try again, which the downstream code probably doesn't want
+            # in the first place. In practice treating FE and FC the same seems to be the best
+            # option.
+            raise PS2HostError("peripheral did not accept command {:#04x}".format(cmd_ack))
+        else:
+            raise PS2HostError("peripheral returned unknown response {:#04x}".format(cmd_ack))
         return result
 
-    async def _get(self, ret):
+    async def recv_packet(self, ret):
         assert ret < 0x7f
         assert not self._streaming
         await self._lower.write([ret])
@@ -318,7 +327,6 @@ class PS2HostInterface:
 
 
 class PS2HostApplet(GlasgowApplet, name="ps2-host"):
-    preview = True
     logger = logging.getLogger(__name__)
     help = "communicate with IBM PS/2 peripherals"
     description = """
@@ -370,7 +378,7 @@ class PS2HostApplet(GlasgowApplet, name="ps2-host"):
 
     async def interact(self, device, args, iface):
         for init_byte in args.init:
-            await iface._cmd(init_byte, 1)
+            await iface.send_command(init_byte, 1)
         async def print_byte(byte):
             print("{:02x}".format(byte), end=" ", flush=True)
         await iface.stream(print_byte)
