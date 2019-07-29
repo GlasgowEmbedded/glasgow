@@ -100,11 +100,13 @@ class Memory24xApplet(I2CMasterApplet, name="memory-24x"):
     Conversely, specifying a larger page size, when applicable, will significantly improve write
     performance.
 
-    # Pinout
+    The pinout of a typical 24-series IC is as follows (the A2:0 pins may be N/C in large devices):
 
-    The pinout of a typical 24-series IC is as follows:
-
-        * 8-pin: A0=1  A1=2  A2=3 SDA=5 SCL=6  WP=7 VCC=8 GND=4
+    ::
+          A0 @ * VCC
+          A1 * * WP#
+          A2 * * SCL
+         GND * * SDA
     """.format(page_size=default_page_size)
 
     @classmethod

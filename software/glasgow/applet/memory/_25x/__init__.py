@@ -226,8 +226,16 @@ class Memory25xApplet(SPIMasterApplet, name="memory-25x"):
 
     The pinout of a typical 25-series IC is as follows:
 
-        * 8-pin:  SS#=1  MISO=2  MOSI=5  SCK=6  HOLD#=7  VCC=8  GND=4
-        * 16-pin: SS#=7  MISO=8  MOSI=15 SCK=16 HOLD#=1  VCC=2  GND=10
+    ::
+            16-pin             8-pin
+        HOLD# @ * SCK       SS# @ * VCC
+          VCC * * MOSI     MISO * * HOLD#
+          N/C * * N/C       WP# * * SCK
+          N/C * * N/C       GND * * MOSI
+          N/C * * N/C
+          N/C * * N/C
+          SS# * * GND
+         MISO * * WP#
     """
 
     @classmethod
