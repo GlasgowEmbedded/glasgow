@@ -49,7 +49,7 @@ class AsyncInteractiveConsole(code.InteractiveConsole):
     async def interact(self):
         while True:
             try:
-                super().interact(banner="")
+                super().interact(banner="", exitmsg="")
                 break
             except _FutureResult:
                 self.resetbuffer()
