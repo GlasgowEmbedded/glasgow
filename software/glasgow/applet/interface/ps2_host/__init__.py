@@ -374,12 +374,12 @@ class PS2HostApplet(GlasgowApplet, name="ps2-host"):
         def hex_bytes(arg):
             return bytes.fromhex(arg)
         parser.add_argument(
-            "init", metavar="INIT", type=hex_bytes,
+            "init", metavar="INIT", type=hex_bytes, nargs="?", default=b"",
             help="send each byte from INIT as an initialization command")
 
     async def interact(self, device, args, iface):
         for init_byte in args.init:
-            await iface.send_command(init_byte, 1)
+            await iface.send_command(init_byte)
         async def print_byte(byte):
             print("{:02x}".format(byte), end=" ", flush=True)
         await iface.stream(print_byte)
