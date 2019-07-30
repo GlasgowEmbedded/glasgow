@@ -169,7 +169,7 @@ class SensorMousePS2Interface:
             assert False
         offset_x = data_x | (-((control & REP_X_SIGN) != 0) << 8)
         offset_y = data_y | (-((control & REP_Y_SIGN) != 0) << 8)
-        return SensorMousePS2Report(
+        report = SensorMousePS2Report(
             left=bool(control & REP_LEFT_BUTTON),
             right=bool(control & REP_RIGHT_BUTTON),
             middle=bool(control & REP_MIDDLE_BUTTON),
@@ -181,6 +181,11 @@ class SensorMousePS2Interface:
             overflow_x=bool(control & REP_X_OVERFLOW),
             overflow_y=bool(control & REP_Y_OVERFLOW),
         )
+        self._log("report l=%d m=%d r=%d 4=%d 5=%d x=%+d y=%+d z=%+d ox=%d oy=%d",
+                  report.left, report.middle, report.right, report.button_4, report.button_5,
+                  report.offset_x, report.offset_y, report.offset_z,
+                  report.overflow_x, report.overflow_y)
+        return report
 
     async def request_report(self, ident=None):
         if ident is None:
