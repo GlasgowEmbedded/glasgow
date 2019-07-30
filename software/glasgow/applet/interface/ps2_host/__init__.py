@@ -217,7 +217,7 @@ class PS2HostSubtarget(Module):
             # possible command response, so it's never a race.)
             in_fifo.we.eq(1),
             in_fifo.din.eq(ctrl.i_ack),
-            If(count == 0,
+            If((count == 0) | ~ctrl.i_ack,
                 NextState("INHIBIT")
             ).Else(
                 NextState("READ-WAIT")
@@ -281,30 +281,31 @@ class PS2HostInterface:
         assert ret < 0x7f
         assert not self._streaming
         await self._lower.write([0x80|(ret + 1), cmd])
-        line_ack, cmd_ack, *result, error = await self._lower.read(1 + 1 + ret + 1)
-        result = bytes(result)
-        if line_ack:
-            self._log("cmd=%02x ack=%#02x ret=<%s>", cmd, cmd_ack, result.hex())
-        else:
+        line_ack, = await self._lower.read(1)
+        if not line_ack:
             self._log("cmd=%02x nak", cmd)
             raise PS2HostError("peripheral did not acknowledge command {:#04x}"
                                .format(cmd))
+        cmd_ack, *result, error = await self._lower.read(1 + ret + 1)
+        result = bytes(result)
+        self._log("cmd=%02x ack=%#02x ret=<%s>", cmd, cmd_ack, result.hex())
         if error > 0:
             raise PS2HostError("parity error in byte {} in response to command {:#04x}"
                                .format(error - 1, cmd))
-        if cmd_ack == 0xfa:
-            pass # ACK
-        elif cmd_ack in (0xfe, 0xfc):
+        if cmd_ack == 0xfa: # ACK
+            pass
+        elif cmd_ack in (0xfe, 0xfc, 0xfd): # NAK
             # Response FE means resend according to the protocol, but really it means that
             # the peripheral did not like our command. Parity errors are rare, so resending
             # the command is probably a waste of time and we'll just get FC in response
-            # the second time anyway; and after getting FC (unlike FE) we are technically required
-            # to reset the device and try again, which the downstream code probably doesn't want
-            # in the first place. In practice treating FE and FC the same seems to be the best
-            # option.
-            raise PS2HostError("peripheral did not accept command {:#04x}".format(cmd_ack))
+            # the second time anyway; and after getting FC (unlike FE) we are required to reset
+            # the device and try again, which the downstream code probably doesn't want in
+            # the first place. (Some devices will reset themselves after sending FC.)
+            #
+            # In practice treating FE and FC the same seems to be the best option.
+            raise PS2HostError("peripheral did not accept command {:#04x}".format(cmd))
         else:
-            raise PS2HostError("peripheral returned unknown response {:#04x}".format(cmd_ack))
+            raise PS2HostError("peripheral returned unknown response {:#04x}".format(cmd))
         return result
 
     async def recv_packet(self, ret):
