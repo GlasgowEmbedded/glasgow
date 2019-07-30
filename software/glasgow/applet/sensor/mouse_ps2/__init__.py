@@ -9,6 +9,11 @@
 # PS/2 mouse command set originate from, but it is likely one of these early devices. As a result,
 # the commands here are referenced from a datasheet from an arbitrarily chosen mouse controller.
 #
+# It should be noted that many of the PS/2 mouse commands (FF, FE, F6, F5, F4, F2, EE, EC) are
+# essentially identical to the respective keyboard commands. The command F3 has different semantics
+# (the interpretation of the data byte is changed), but is similar in spirit: F3 in mice changes
+# sample rate, whereas F3 in keyboards changes typematic repeat rate and delay.
+#
 # See also the note on the i8042 controller in the ps2-host applet.
 
 from collections import namedtuple
@@ -20,6 +25,7 @@ from ...interface.ps2_host import PS2HostApplet
 
 
 CMD_RESET               = 0xff
+CMD_RESEND              = 0xfe
 CMD_SET_DEFAULTS        = 0xf6
 CMD_DISABLE_REPORTING   = 0xf5 # default
 CMD_ENABLE_REPORTING    = 0xf4

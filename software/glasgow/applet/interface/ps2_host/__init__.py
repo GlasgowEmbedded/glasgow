@@ -24,6 +24,13 @@
 # the sensitivity adjustment commands as 2-bit at a time a communication channel; keyboards use
 # similar hacks.
 #
+# Observing the assignment of keyboard and mouse commands in PS/2, it might be deduced that in-band
+# i8042 controller commands were assigned from 00 upwards, that keyboard commands were assigned
+# from FF downwards, and the auxiliary device (mouse, etc) commands were assigned the same numbers
+# as keyboard commands when there was an equivalent one, or from EB downwards, lowest assigned
+# keyboard command being EC (Reset Wrap Mode). See the respective keyboard and mouse applets for
+# details on the command set.
+#
 # In this applet, we solve this problem by treating the PS/2 device rather harshly: it is only
 # allowed to speak when we permit it to, i.e. all communication is host-initiated. (This is quite
 # awkward when combined with the clock being device-generated...) Each time the host initiates
