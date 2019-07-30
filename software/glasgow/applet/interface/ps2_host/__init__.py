@@ -68,8 +68,8 @@ def _prepare_frame(frame, data):
 
 class PS2Bus(Module):
     def __init__(self, pads):
-        self.sample  = Signal()
-        self.setup   = Signal()
+        self.falling = Signal()
+        self.rising  = Signal()
         self.clock_i = Signal(reset=1)
         self.clock_o = Signal(reset=1)
         self.data_i  = Signal(reset=1)
@@ -93,8 +93,8 @@ class PS2Bus(Module):
         self.sync += [
             clock_s.eq(self.clock_i),
             clock_r.eq(clock_s),
-            self.sample.eq( clock_r & ~clock_s),
-            self.setup .eq(~clock_r &  clock_s),
+            self.falling.eq( clock_r & ~clock_s),
+            self.rising .eq(~clock_r &  clock_s),
         ]
 
 
@@ -116,12 +116,13 @@ class PS2HostController(Module):
         bitno = self.bitno = Signal(max=12)
         setup = Signal()
         shift = Signal()
+        input = Signal()
         self.sync += [
             If(setup,
                 bus.data_o.eq(frame.raw_bits()[0])
             ),
             If(shift,
-                frame.raw_bits().eq(Cat(frame.raw_bits()[1:], bus.data_i)),
+                frame.raw_bits().eq(Cat(frame.raw_bits()[1:], input)),
                 bitno.eq(bitno + 1),
             )
         ]
@@ -133,8 +134,8 @@ class PS2HostController(Module):
                 NextValue(bus.clock_o, 1),
                 NextValue(bitno, 0),
                 If(self.i_valid,
-                    # The initial bus conditions are like half of a start bit.
-                    NextValue(bus.data_o, 0),
+                    setup.eq(1),
+                    shift.eq(1),
                     NextState("SEND-BIT")
                 ).Else(
                     NextState("RECV-BIT")
@@ -146,9 +147,10 @@ class PS2HostController(Module):
             )
         )
         self.fsm.act("SEND-BIT",
-            setup.eq(bus.setup),
-            shift.eq(bus.sample),
-            If(bitno == 11,
+            input.eq(1),
+            setup.eq(bus.falling),
+            shift.eq(bus.rising),
+            If(bitno == 12,
                 self.stb.eq(1),
                 NextValue(bitno, 0),
                 # Device acknowledgement ("line control" bit)
@@ -160,7 +162,8 @@ class PS2HostController(Module):
             )
         )
         self.fsm.act("RECV-BIT",
-            shift.eq(bus.sample),
+            input.eq(bus.data_i),
+            shift.eq(bus.falling),
             If(bitno == 11,
                 self.stb.eq(1),
                 NextValue(bitno, 0),
