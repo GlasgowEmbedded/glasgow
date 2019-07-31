@@ -1,5 +1,24 @@
 # Ref: IBM PS/2 Hardware Technical Reference ­- Keyboard and Auxiliary Device Controller
 # Accession: G00031
+
+# PS/2 Physical Layer
+# -------------------
+#
+# The physical layer as described in IBM PS/2 Hardware Technical Reference is reminiscent of
+# half-duplex SPI, but this comparison is misleading. In fact, tracing the communication of PS/2
+# devices, one can notice that sample/setup points appear to be shifted 90° in phase compared to
+# the clock, i.e. they are not edge triggered. This is similar to how an I²C master should be
+# implemented (but often isn't). The IBM reference uses the word "sampling" when describing
+# the protocol, as well as many min/max timing intervals, and one might conjecture that the way
+# this originally worked is by the peripheral checking the clock/data lines at a regular interval,
+# and advancing its internal FSM depending on the values on those lines. It appears that the data
+# line is sampled somewhere during clock low, and set up somewhere during clock high.
+#
+# In this applet, we implement PS/2 as edge-triggered to avoid introducing arbitrary delays, but
+# this is somewhat dirty (although seems to work well).
+#
+# PS/2 Protocol Framing
+# ---------------------
 #
 # It is often asserted in materials about the PS/2 protocol with varying degrees of confidence
 # that the protocol is byte-oriented. This is, essentially, false. The protocol is packet-oriented,
@@ -24,13 +43,6 @@
 # the sensitivity adjustment commands as 2-bit at a time a communication channel; keyboards use
 # similar hacks.
 #
-# Observing the assignment of keyboard and mouse commands in PS/2, it might be deduced that in-band
-# i8042 controller commands were assigned from 00 upwards, that keyboard commands were assigned
-# from FF downwards, and the auxiliary device (mouse, etc) commands were assigned the same numbers
-# as keyboard commands when there was an equivalent one, or from EB downwards, lowest assigned
-# keyboard command being EC (Reset Wrap Mode). See the respective keyboard and mouse applets for
-# details on the command set.
-#
 # In this applet, we solve this problem by treating the PS/2 device rather harshly: it is only
 # allowed to speak when we permit it to, i.e. all communication is host-initiated. (This is quite
 # awkward when combined with the clock being device-generated...) Each time the host initiates
@@ -39,6 +51,16 @@
 # the clock. As a result, the command responses that are longer than expected are cut short (but
 # the higher layer cannot process them anyway), and unsolicited packets are dropped when they are
 # not actively polled by a higher layer. In exchange, the communication is always deterministic.
+#
+# PS/2 Command Assignment
+# -----------------------
+#
+# Observing the assignment of keyboard and mouse commands in PS/2, it might be deduced that in-band
+# i8042 controller commands were assigned from 00 upwards, that keyboard commands were assigned
+# from FF downwards, and the auxiliary device (mouse, etc) commands were assigned the same numbers
+# as keyboard commands when there was an equivalent one, or from EB downwards, lowest assigned
+# keyboard command being EC (Reset Wrap Mode). See the respective keyboard and mouse applets for
+# details on the command set.
 
 import logging
 import operator
