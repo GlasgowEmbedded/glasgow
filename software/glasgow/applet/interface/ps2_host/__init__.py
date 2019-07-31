@@ -1,5 +1,7 @@
 # Ref: IBM PS/2 Hardware Technical Reference ­- Keyboard and Auxiliary Device Controller
 # Accession: G00031
+# Ref: IBM PS/2 Hardware Technical Reference ­- Keyboards (101- and 102-Key)
+# Accession: G00037
 
 # PS/2 Physical Layer
 # -------------------
@@ -8,14 +10,9 @@
 # half-duplex SPI, but this comparison is misleading. In fact, tracing the communication of PS/2
 # devices, one can notice that sample/setup points appear to be shifted 90° in phase compared to
 # the clock, i.e. they are not edge triggered. This is similar to how an I²C master should be
-# implemented (but often isn't). The IBM reference uses the word "sampling" when describing
-# the protocol, as well as many min/max timing intervals, and one might conjecture that the way
-# this originally worked is by the peripheral checking the clock/data lines at a regular interval,
-# and advancing its internal FSM depending on the values on those lines. It appears that the data
-# line is sampled somewhere during clock low, and set up somewhere during clock high.
-#
-# In this applet, we implement PS/2 as edge-triggered to avoid introducing arbitrary delays, but
-# this is somewhat dirty (although seems to work well).
+# implemented (but often isn't). The IBM keyboard reference describes that "Data is valid before
+# the trailing edge and beyond the leading edge of the clock pulse", so the host may sample at
+# either edge or anywhere during the low half-period of the clock.
 #
 # PS/2 Protocol Framing
 # ---------------------
