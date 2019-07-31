@@ -9,10 +9,13 @@
 # PS/2 mouse command set originate from, but it is likely one of these early devices. As a result,
 # the commands here are referenced from a datasheet from an arbitrarily chosen mouse controller.
 #
-# It should be noted that many of the PS/2 mouse commands (FF, FE, F6, F5, F4, F2, EE, EC) are
-# essentially identical to the respective keyboard commands. The command F3 has different semantics
+# It should be noted that many of the PS/2 mouse commands (FF, FE, F6, F5, F4, F2) are essentially
+# identical to the respective keyboard commands. The command F3 has different semantics
 # (the interpretation of the data byte is changed), but is similar in spirit: F3 in mice changes
-# sample rate, whereas F3 in keyboards changes typematic repeat rate and delay.
+# sample rate, whereas F3 in keyboards changes typematic repeat rate and delay. The command EE
+# has different semantics (the data is echoed until the command EC is received), but is similar in
+# spirit: EE in mice returns the input bytes until EC is received, whereas EE in keyboards returns
+# the input byte once.
 #
 # See also the note on the i8042 controller in the ps2-host applet.
 
