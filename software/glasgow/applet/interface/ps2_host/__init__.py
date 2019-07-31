@@ -317,11 +317,11 @@ class PS2HostInterface:
                                .format(cmd))
         cmd_ack, *result, error = await self._lower.read(1 + ret + 1)
         result = bytes(result)
-        self._log("cmd=%02x ack=%#02x ret=<%s>", cmd, cmd_ack, result.hex())
+        self._log("cmd=%02x ack=%02x ret=<%s>", cmd, cmd_ack, result.hex())
         if error > 0:
             raise PS2HostError("parity error in byte {} in response to command {:#04x}"
                                .format(error - 1, cmd))
-        if cmd_ack == 0xfa: # ACK
+        if cmd_ack in (0xfa, 0xee): # ACK
             pass
         elif cmd_ack in (0xfe, 0xfc, 0xfd): # NAK
             # Response FE means resend according to the protocol, but really it means that
