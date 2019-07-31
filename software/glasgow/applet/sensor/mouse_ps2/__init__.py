@@ -321,7 +321,7 @@ class SensorMousePS2Applet(PS2HostApplet, name="sensor-mouse-ps2"):
                 uinput.BTN_5,
                 uinput.REL_X,
                 uinput.REL_Y,
-                uinput.REL_Z,
+                uinput.REL_WHEEL,
             ])
 
             async for report in mouse_iface.stream_reports(ident):
@@ -332,5 +332,5 @@ class SensorMousePS2Applet(PS2HostApplet, name="sensor-mouse-ps2"):
                 device.emit(uinput.BTN_5,      report.button_5, syn=False)
                 device.emit(uinput.REL_X,      report.offset_x * args.invert_x, syn=False)
                 device.emit(uinput.REL_Y,      report.offset_y * args.invert_y, syn=False)
-                device.emit(uinput.REL_Z,      report.offset_z, syn=False)
+                device.emit(uinput.REL_WHEEL, -report.offset_z, syn=False)
                 device.syn()
