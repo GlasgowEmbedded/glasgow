@@ -418,13 +418,27 @@ class JTAGInterface:
         await self.enter_run_test_idle()
         await self.pulse_tck(count)
 
-    async def write_ir(self, data):
+    async def exchange_ir(self, data):
+        self._current_ir = data = bitarray(data, endian="little")
+        self._log_h("exchange ir")
+        await self.enter_shift_ir()
+        data = await self.shift_tdio(data)
+        await self.enter_update_ir()
+        return data
+
+    async def read_ir(self, count):
+        self._current_ir = bitarray("1", endian="little") * count
+        await self.enter_shift_ir()
+        data = await self.shift_tdo(count)
+        await self.enter_update_ir()
+        self._log_h("read ir=<%s>", data.to01())
+        return data
+
+    async def write_ir(self, data, elide=True):
         if data == self._current_ir:
             self._log_h("write ir (elided)")
             return
-        else:
-            self._current_ir = bitarray(data, endian="little")
-
+        self._current_ir = data = bitarray(data, endian="little")
         self._log_h("write ir=<%s>", data.to01())
         await self.enter_shift_ir()
         await self.shift_tdi(data)
@@ -452,6 +466,7 @@ class JTAGInterface:
         return data
 
     async def write_dr(self, data):
+        data = bitarray(data, endian="little")
         self._log_h("write dr=<%s>", data.to01())
         await self.enter_shift_dr()
         await self.shift_tdi(data)
@@ -598,14 +613,15 @@ class JTAGInterface:
             suffix = bypass * (total_length - offset - length)
             return prefix, suffix
 
-        return TAPInterface(self,
+        return TAPInterface(self, ir_length,
             *affix(ir_offset, ir_length, total_ir_length),
             *affix(dr_offset, dr_length, total_dr_length))
 
 
 class TAPInterface:
-    def __init__(self, lower, ir_prefix, ir_suffix, dr_prefix, dr_suffix):
+    def __init__(self, lower, ir_length, ir_prefix, ir_suffix, dr_prefix, dr_suffix):
         self.lower = lower
+        self.ir_length    = ir_length
         self._ir_prefix   = ir_prefix
         self._ir_suffix   = ir_suffix
         self._ir_overhead = len(ir_prefix) + len(ir_suffix)
@@ -619,8 +635,25 @@ class TAPInterface:
     async def run_test_idle(self, count):
         await self.lower.run_test_idle(count)
 
+    async def exchange_ir(self, data):
+        data = bitarray(data, endian="little")
+        assert len(data) == self.ir_length
+        data = await self.lower.exchange_ir(self._ir_prefix + data + self._ir_suffix)
+        if self._ir_suffix:
+            return data[len(self._ir_prefix):-len(self._ir_suffix)]
+        else:
+            return data[len(self._ir_prefix):]
+
+    async def read_ir(self):
+        data = await self.lower.read_ir(self._ir_overhead + self.ir_length)
+        if self._ir_suffix:
+            return data[len(self._ir_prefix):-len(self._ir_suffix)]
+        else:
+            return data[len(self._ir_prefix):]
+
     async def write_ir(self, data):
         data = bitarray(data, endian="little")
+        assert len(data) == self.ir_length
         await self.lower.write_ir(self._ir_prefix + data + self._ir_suffix)
 
     async def exchange_dr(self, data):
