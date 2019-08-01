@@ -101,6 +101,8 @@ BIT_TRST_O     =       0b10
 BIT_DATA_OUT   =     0b0001
 BIT_DATA_IN    =     0b0010
 BIT_LAST       =     0b0100
+# CMD_SHIFT_TMS
+BIT_TDI        =     0b1000
 
 
 class JTAGProbeDriver(Module):
@@ -170,7 +172,7 @@ class JTAGProbeDriver(Module):
             NextValue(adapter.stb, 1),
             If((cmd & CMD_MASK) == CMD_SHIFT_TMS,
                 NextValue(adapter.tms, shreg_o[0]),
-                NextValue(adapter.tdi, 0),
+                NextValue(adapter.tdi, (cmd & BIT_TDI) != 0),
             ).Else(
                 NextValue(adapter.tms, 0),
                 If(cmd & BIT_LAST,
@@ -245,11 +247,11 @@ class JTAGInterface:
             await self.lower.write(struct.pack("<B",
                 CMD_SET_TRST|(BIT_TRST_O if active else 0)))
 
-    async def shift_tms(self, tms_bits):
+    async def shift_tms(self, tms_bits, tdi=False):
         tms_bits = bitarray(tms_bits, endian="little")
         self._log_l("shift tms=<%s>", tms_bits.to01())
         await self.lower.write(struct.pack("<BH",
-            CMD_SHIFT_TMS|BIT_DATA_OUT, len(tms_bits)))
+            CMD_SHIFT_TMS|BIT_DATA_OUT|(BIT_TDI if tdi else 0), len(tms_bits)))
         await self.lower.write(tms_bits.tobytes())
 
     def _shift_last(self, last):
