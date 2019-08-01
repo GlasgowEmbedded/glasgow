@@ -1,9 +1,10 @@
 import struct
 import logging
 import argparse
-from bitarray import bitarray
 
 from ....arch.jtag import *
+from ....support.bits import *
+from ....support.logging import *
 from ....protocol.jtag_svf import *
 from ... import *
 from ..jtag_probe import JTAGProbeApplet
@@ -14,7 +15,7 @@ class SVFError(GlasgowAppletError):
 
 
 class SVFOperation:
-    def __init__(self, tdi, smask, tdo, mask):
+    def __init__(self, tdi=bits(), smask=bits(), tdo=None, mask=bits()):
         self.tdi   = tdi
         self.smask = smask
         self.tdo   = tdo
@@ -47,10 +48,10 @@ class SVFInterface(SVFEventHandler):
         self._endir  = "IDLE"
         self._enddr  = "IDLE"
 
-        self._hir    = SVFOperation(bitarray(), bitarray(), None, bitarray())
-        self._tir    = SVFOperation(bitarray(), bitarray(), None, bitarray())
-        self._hdr    = SVFOperation(bitarray(), bitarray(), None, bitarray())
-        self._tdr    = SVFOperation(bitarray(), bitarray(), None, bitarray())
+        self._hir    = SVFOperation()
+        self._tir    = SVFOperation()
+        self._hdr    = SVFOperation()
+        self._tdr    = SVFOperation()
 
     def _log(self, message, *args):
         self._logger.log(self._level, "SVF: " + message, *args)
@@ -118,7 +119,7 @@ class SVFInterface(SVFEventHandler):
             tdo = await self.lower.shift_tdio(op.tdi)
             if tdo & op.mask != op.tdo & op.mask:
                 raise SVFError("SIR command failed: TDO <%s> & <%s> != <%s>"
-                                         % (tdo.to01(), op.mask.to01(), op.tdo.to01()))
+                               % (dump_bin(tdo), dump_bin(op.mask), dump_bin(op.tdo)))
         await self._enter_state(self._endir)
 
     async def svf_sdr(self, tdi, smask, tdo, mask):
@@ -130,7 +131,7 @@ class SVFInterface(SVFEventHandler):
             tdo = await self.lower.shift_tdio(op.tdi)
             if tdo & op.mask != op.tdo & op.mask:
                 raise SVFError("SDR command failed: TDO <%s> & <%s> != <%s>"
-                               % (tdo.to01(), op.mask.to01(), op.tdo.to01()))
+                               % (dump_bin(tdo), dump_bin(op.mask), dump_bin(op.tdo)))
         await self._enter_state(self._enddr)
 
     async def svf_runtest(self, run_state, run_count, run_clock, min_time, max_time, end_state):

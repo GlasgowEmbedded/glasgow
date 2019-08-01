@@ -3,8 +3,8 @@
 # Accession: G0007
 
 from collections import defaultdict
-from bitarray import bitarray
 
+from ...support.bits import *
 from ...support.bitstruct import *
 
 
@@ -30,16 +30,16 @@ __all__ = [
 
 # IR values
 
-IR_IMPCODE    = bitarray("11000", endian="little")
-IR_ADDRESS    = bitarray("00010", endian="little")
-IR_DATA       = bitarray("10010", endian="little")
-IR_CONTROL    = bitarray("01010", endian="little")
-IR_ALL        = bitarray("11010", endian="little")
-IR_EJTAGBOOT  = bitarray("00110", endian="little")
-IR_NORMALBOOT = bitarray("10110", endian="little")
-IR_FASTDATA   = bitarray("01110", endian="little")
-IR_PCSAMPLE   = bitarray("00101", endian="little")
-IR_FDC        = bitarray("11101", endian="little")
+IR_IMPCODE    = bits("00011")
+IR_ADDRESS    = bits("01000")
+IR_DATA       = bits("01001")
+IR_CONTROL    = bits("01010")
+IR_ALL        = bits("01011")
+IR_EJTAGBOOT  = bits("01100")
+IR_NORMALBOOT = bits("01101")
+IR_FASTDATA   = bits("01110")
+IR_PCSAMPLE   = bits("10100")
+IR_FDC        = bits("10111")
 
 
 # IMPCODE DR layout

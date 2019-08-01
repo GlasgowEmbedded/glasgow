@@ -1,8 +1,6 @@
 # Ref: IEEE Std 1149.1-2001
 # Accession: G00018
 
-from bitarray import bitarray
-
 from ..support.bitstruct import *
 
 

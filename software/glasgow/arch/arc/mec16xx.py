@@ -2,8 +2,6 @@
 # Document Number: DS00002339A
 # Accession: G00005
 
-from bitarray import bitarray
-
 from ...support.bitstruct import *
 
 

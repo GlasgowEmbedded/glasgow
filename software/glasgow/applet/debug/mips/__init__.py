@@ -5,10 +5,10 @@
 import struct
 import logging
 import asyncio
-from bitarray import bitarray
 
 from ....support.aobject import *
 from ....support.endpoint import *
+from ....support.bits import *
 from ....support.pyrepl import *
 from ....arch.mips import *
 from ....protocol.gdb_remote import *
@@ -54,7 +54,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
     async def _read_impcode(self):
         await self.lower.write_ir(IR_IMPCODE)
         impcode_bits = await self.lower.read_dr(32)
-        self._impcode = DR_IMPCODE.from_bitarray(impcode_bits)
+        self._impcode = DR_IMPCODE.from_bits(impcode_bits)
         self._log("read IMPCODE %s", self._impcode.bits_repr())
 
     async def _exchange_control(self, **fields):
@@ -67,11 +67,11 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         control.PrAcc = 1
         for field, value in fields.items():
             setattr(control, field, value)
-        control_bits = control.to_bitarray()
+        control_bits = control.to_bits()
         await self.lower.write_ir(IR_CONTROL)
 
         control_bits = await self.lower.exchange_dr(control_bits)
-        new_control = DR_CONTROL.from_bitarray(control_bits)
+        new_control = DR_CONTROL.from_bits(control_bits)
         self._log("read CONTROL %s", new_control.bits_repr(omit_zero=True))
 
         if new_control.Rocc and control.Rocc:
@@ -96,38 +96,29 @@ class EJTAGDebugInterface(aobject, GDBRemote):
     async def _read_address(self):
         await self.lower.write_ir(IR_ADDRESS)
         address_bits = await self.lower.read_dr(self._address_length)
-        address_bits.extend(address_bits[-1:] * (64 - self._address_length))
-        address, = struct.unpack("<q", address_bits.tobytes())
-        address &= self._mask
+        address_bits = address_bits + address_bits[-1:] * (64 - self._address_length)
+        address = int(address_bits) & self._mask
         self._log("read ADDRESS %#0.*x", self._prec, address)
         return address
 
     async def _write_address(self, address):
         # See _read_address. NB: ADDRESS is only writable in EJTAG v1.x/2.0 with DMAAcc.
         self._log("write ADDRESS %#0.*x", self._prec, address)
-        address_bits = bitarray(endian="little")
-        address_bits.frombytes(struct.pack("<Q", address))
+        address_bits = bits(address, self._address_length)
         await self.lower.write_ir(IR_ADDRESS)
-        await self.lower.write_dr(address_bits[:self._address_length])
+        await self.lower.write_dr(address_bits)
 
     async def _read_data(self):
         await self.lower.write_ir(IR_DATA)
         data_bits = await self.lower.read_dr(self.bits)
-        if self.bits == 32:
-            data, = struct.unpack("<L", data_bits.tobytes())
-        elif self.bits == 64:
-            data, = struct.unpack("<Q", data_bits.tobytes())
+        data = int(data_bits)
         self._log("read DATA %#0.*x", self._prec, data)
         return data
 
     async def _write_data(self, data):
         self._log("write DATA %#0.*x", self._prec, data)
         await self.lower.write_ir(IR_DATA)
-        data_bits = bitarray(endian="little")
-        if self.bits == 32:
-            data_bits.frombytes(struct.pack("<L", data))
-        elif self.bits == 64:
-            data_bits.frombytes(struct.pack("<Q", data))
+        data_bits = bits(data, self.bits)
         await self.lower.write_dr(data_bits)
 
     # DMAAcc memory read/write

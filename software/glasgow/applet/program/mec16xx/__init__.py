@@ -52,13 +52,13 @@ class MEC16xxInterface(aobject):
 
         await tap_iface.write_ir(IR_RESET_TEST)
         dr_reset_test = DR_RESET_TEST(POR_EN=1)
-        await tap_iface.write_dr(dr_reset_test.to_bitarray())
+        await tap_iface.write_dr(dr_reset_test.to_bits())
         dr_reset_test.VTR_POR = 1
-        await tap_iface.write_dr(dr_reset_test.to_bitarray())
+        await tap_iface.write_dr(dr_reset_test.to_bits())
         dr_reset_test.ME = 1
-        await tap_iface.write_dr(dr_reset_test.to_bitarray())
+        await tap_iface.write_dr(dr_reset_test.to_bits())
         dr_reset_test.VTR_POR = 0
-        await tap_iface.write_dr(dr_reset_test.to_bitarray())
+        await tap_iface.write_dr(dr_reset_test.to_bits())
 
     async def enable_flash_access(self, enabled):
         # Enable access to Reg_Ctl bit.

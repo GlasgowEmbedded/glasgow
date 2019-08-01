@@ -5,20 +5,15 @@
 
 import re
 from abc import ABCMeta, abstractmethod
-from bitarray import bitarray
+
+from ..support.bits import *
 
 
 __all__ = ["SVFParser", "SVFEventHandler"]
 
 
-def _hex_to_bitarray(input_nibbles):
-    byte_len = (len(input_nibbles) + 1) // 2
-    input_bytes = bytes.fromhex(input_nibbles.rjust(byte_len * 2, "0"))
-    bits = bitarray(endian="little")
-    bits.frombytes(input_bytes)
-    bits.reverse()
-    bits.bytereverse()
-    return bits
+def _hex_to_bits(input_nibbles):
+    return bits(int(input_nibbles, 16))
 
 
 _commands = (
@@ -55,7 +50,7 @@ class SVFLexer:
         * Keyword (``HIR``, ``SIR``, ``TIO``, ..., ``;``), returned as Python ``str``;
         * Integer (``8``, ``16``, ...), returned as Python ``int``;
         * Real (``1E0``, ``1E+0``, ``1E-0``, ...), returned as Python ``float``;
-        * Bit array (``(0)``, ``(1234)``, ``(F00F)``, ...), returned as Python ``bitarray``;
+        * Bit array (``(0)``, ``(1234)``, ``(F00F)``, ...), returned as Python ``bits``;
         * Literal (``(HLUDXZHHLL)``, ``(IN FOO)``, ...), returned as Python ``tuple(str,)``;
         * End of file, returned as Python ``None``.
 
@@ -81,7 +76,7 @@ class SVFLexer:
         (r"(\d+(?:\.\d+)?(?:E[+-]?\d+)?)",
          lambda m: float(m[1])),
         (r"\(\s*([0-9A-F\s]+)\s*\)",
-         lambda m: _hex_to_bitarray(re.sub(r"\s+", "", m[1]))),
+         lambda m: _hex_to_bits(re.sub(r"\s+", "", m[1]))),
         (r"\(\s*(.+?)\s*\)",
          lambda m: (m[1],)),
         (r"\Z",
@@ -192,7 +187,7 @@ class SVFParser:
             actual = "integer"
         elif isinstance(self._token, float):
             actual = "real"
-        elif isinstance(self._token, bitarray):
+        elif isinstance(self._token, bits):
             actual = "scan data"
         elif isinstance(self._token, tuple):
             actual = "(%s)" % (*self._token,)
@@ -229,7 +224,7 @@ class SVFParser:
                 expected = "real"
             elif kind == (int, float):
                 expected = "number"
-            elif kind == bitarray:
+            elif kind == bits:
                 expected = "scan data"
             elif kind == tuple:
                 expected = "data"
@@ -256,18 +251,13 @@ class SVFParser:
             self._parse_unexpected("stable TAP state", _tap_stable_states)
 
     def _parse_scan_data(self, length):
-        value = self._parse_value(bitarray)
-        if value[length:].count(1) != 0:
-            residue = value[length:]
-            residue.reverse()
+        value = self._parse_value(bits)
+        if int(value[length:]) != 0:
             self._parse_error("scan data length %d exceeds command length %d"
-                              % (length + residue.index(1), length))
+                              % (len(value), length))
 
         if length > len(value):
-            padding = bitarray(length - len(value), endian="little")
-            padding.setall(0)
-            value.extend(padding)
-            return value
+            return value + bits(0, length - len(value))
         else:
             return value[:length]
 
@@ -322,11 +312,9 @@ class SVFParser:
             length = self._parse_value(int)
 
             if self._param_mask[command] is None or len(self._param_mask[command]) != length:
-                self._param_mask[command] = bitarray(length, endian="little")
-                self._param_mask[command].setall(1)
+                self._param_mask[command] = bits((1,)) * length
             if self._param_smask[command] is None or len(self._param_smask[command]) != length:
-                self._param_smask[command] = bitarray(length, endian="little")
-                self._param_smask[command].setall(1)
+                self._param_smask[command] = bits((1,)) * length
 
             param_tdi   = self._param_tdi[command]
             param_tdo   = None
@@ -357,7 +345,7 @@ class SVFParser:
             self._parse_keyword(";")
 
             if param_tdi is None and length == 0:
-                param_tdi = bitarray("", endian="little")
+                param_tdi = bits()
             elif param_tdi is None:
                 self._parse_error("initial value for parameter TDI required")
             if len(param_tdi) != length:
@@ -367,8 +355,7 @@ class SVFParser:
             if param_tdo is None:
                 # Make it a bit easier for downstream; set MASK (but not remembered MASK)
                 # to "all don't care" if there's no TDO specified.
-                param_mask = bitarray(param_mask)
-                param_mask.setall(0)
+                param_mask = bits(0, len(param_mask))
 
             if command == "HIR":
                 result = self._handler.svf_hir(tdi=param_tdi, smask=param_smask,
@@ -565,20 +552,20 @@ class SVFLexerTestCase(unittest.TestCase):
         self.assertLexes("1.1E6",   [1.1e6])
         self.assertLexes("1.1",     [1.1])
 
-    def test_bitarray(self):
-        self.assertLexes("(0)",        [bitarray("00000000")])
-        self.assertLexes("(1)",        [bitarray("10000000")])
-        self.assertLexes("(F)",        [bitarray("11110000")])
-        self.assertLexes("(f)",        [bitarray("11110000")])
-        self.assertLexes("(0F)",       [bitarray("11110000")])
-        self.assertLexes("(A\n5)",     [bitarray("10100101")]) # Test literals split over two lines
-        self.assertLexes("(A\n\t5)",   [bitarray("10100101")]) # With potential whitespace
-        self.assertLexes("(A\n  5)",   [bitarray("10100101")])
-        self.assertLexes("(A\r\n5)",   [bitarray("10100101")]) # Support both LF & LFCR
-        self.assertLexes("(A\r\n\t5)", [bitarray("10100101")])
-        self.assertLexes("(A\r\n  5)", [bitarray("10100101")])
-        self.assertLexes("(FF)",       [bitarray("11111111")])
-        self.assertLexes("(1AA)",      [bitarray("0101010110000000")])
+    def test_bits(self):
+        self.assertLexes("(0)",        [bits("")])
+        self.assertLexes("(1)",        [bits("1")])
+        self.assertLexes("(F)",        [bits("1111")])
+        self.assertLexes("(f)",        [bits("1111")])
+        self.assertLexes("(0F)",       [bits("1111")])
+        self.assertLexes("(A\n5)",     [bits("10100101")]) # Test literals split over two lines
+        self.assertLexes("(A\n\t5)",   [bits("10100101")]) # With potential whitespace
+        self.assertLexes("(A\n  5)",   [bits("10100101")])
+        self.assertLexes("(A\r\n5)",   [bits("10100101")]) # Support both LF & LFCR
+        self.assertLexes("(A\r\n\t5)", [bits("10100101")])
+        self.assertLexes("(A\r\n  5)", [bits("10100101")])
+        self.assertLexes("(FF)",       [bits("11111111")])
+        self.assertLexes("(1AA)",      [bits("110101010")])
 
     def test_literal(self):
         self.assertLexes("(HHZZL)",     [("HHZZL",)])
@@ -681,89 +668,89 @@ class SVFParserTestCase(unittest.TestCase):
         ]:
             self.assertParses("{c} 0;".format(c=command), [
                 (event, {
-                    "tdi":   bitarray(""),
-                    "smask": bitarray(""),
+                    "tdi":   bits(""),
+                    "smask": bits(""),
                     "tdo":   None,
-                    "mask":  bitarray(""),
+                    "mask":  bits(""),
                 }),
             ])
             self.assertParses("{c} 8 TDI(a);".format(c=command), [
                 (event, {
-                    "tdi":   bitarray("01010000"),
-                    "smask": bitarray("11111111"),
+                    "tdi":   bits("00001010"),
+                    "smask": bits("11111111"),
                     "tdo":   None,
-                    "mask":  bitarray("00000000"),
+                    "mask":  bits("00000000"),
                 }),
             ])
             self.assertParses("{c} 6 TDI(0a);".format(c=command), [
                 (event, {
-                    "tdi":   bitarray("010100"),
-                    "smask": bitarray("111111"),
+                    "tdi":   bits("001010"),
+                    "smask": bits("111111"),
                     "tdo":   None,
-                    "mask":  bitarray("000000"),
+                    "mask":  bits("000000"),
                 }),
             ])
             self.assertParses("{c} 8 TDI(a); {c} 8;".format(c=command), [
                 (event, {
-                    "tdi":   bitarray("01010000"),
-                    "smask": bitarray("11111111"),
+                    "tdi":   bits("00001010"),
+                    "smask": bits("11111111"),
                     "tdo":   None,
-                    "mask":  bitarray("00000000"),
+                    "mask":  bits("00000000"),
                 }),
                 (event, {
-                    "tdi":   bitarray("01010000"),
-                    "smask": bitarray("11111111"),
+                    "tdi":   bits("00001010"),
+                    "smask": bits("11111111"),
                     "tdo":   None,
-                    "mask":  bitarray("00000000"),
+                    "mask":  bits("00000000"),
                 }),
             ])
             self.assertParses("{c} 8 TDI(a) SMASK(3); {c} 8; {c} 12 TDI(b);"
                               .format(c=command), [
                 (event, {
-                    "tdi":   bitarray("01010000"),
-                    "smask": bitarray("11000000"),
+                    "tdi":   bits("00001010"),
+                    "smask": bits("00000011"),
                     "tdo":   None,
-                    "mask":  bitarray("00000000"),
+                    "mask":  bits("00000000"),
                 }),
                 (event, {
-                    "tdi":   bitarray("01010000"),
-                    "smask": bitarray("11000000"),
+                    "tdi":   bits("00001010"),
+                    "smask": bits("00000011"),
                     "tdo":   None,
-                    "mask":  bitarray("00000000"),
+                    "mask":  bits("00000000"),
                 }),
                 (event, {
-                    "tdi":   bitarray("110100000000"),
-                    "smask": bitarray("111111111111"),
+                    "tdi":   bits("000000001011"),
+                    "smask": bits("111111111111"),
                     "tdo":   None,
-                    "mask":  bitarray("000000000000"),
+                    "mask":  bits("000000000000"),
                 }),
             ])
             self.assertParses("{c} 8 TDI(0) TDO(a) MASK(3); {c} 8; "
                               "{c} 8 TDO(1); {c} 12 TDI(0) TDO(b);"
                               .format(c=command), [
                 (event, {
-                    "tdi":   bitarray("00000000"),
-                    "smask": bitarray("11111111"),
-                    "tdo":   bitarray("01010000"),
-                    "mask":  bitarray("11000000"),
+                    "tdi":   bits("00000000"),
+                    "smask": bits("11111111"),
+                    "tdo":   bits("00001010"),
+                    "mask":  bits("00000011"),
                 }),
                 (event, {
-                    "tdi":   bitarray("00000000"),
-                    "smask": bitarray("11111111"),
+                    "tdi":   bits("00000000"),
+                    "smask": bits("11111111"),
                     "tdo":   None,
-                    "mask":  bitarray("00000000"),
+                    "mask":  bits("00000000"),
                 }),
                 (event, {
-                    "tdi":   bitarray("00000000"),
-                    "smask": bitarray("11111111"),
-                    "tdo":   bitarray("10000000"),
-                    "mask":  bitarray("11000000"),
+                    "tdi":   bits("00000000"),
+                    "smask": bits("11111111"),
+                    "tdo":   bits("00000001"),
+                    "mask":  bits("00000011"),
                 }),
                 (event, {
-                    "tdi":   bitarray("000000000000"),
-                    "smask": bitarray("111111111111"),
-                    "tdo":   bitarray("110100000000"),
-                    "mask":  bitarray("111111111111"),
+                    "tdi":   bits("000000000000"),
+                    "smask": bits("111111111111"),
+                    "tdo":   bits("000000001011"),
+                    "mask":  bits("111111111111"),
                 }),
             ])
 

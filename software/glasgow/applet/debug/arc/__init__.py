@@ -42,7 +42,7 @@ class ARCDebugInterface:
     async def identify(self):
         await self.lower.write_ir(IR_IDCODE)
         idcode_bits = await self.lower.read_dr(32)
-        idcode = DR_IDCODE.from_bitarray(idcode_bits)
+        idcode = DR_IDCODE.from_bits(idcode_bits)
         self._log("read IDCODE mfg_id=%03x arc_type=%02x arc_number=%03x",
                   idcode.mfg_id, idcode.part_id & 0b111111, idcode.part_id >> 6)
         device = devices[idcode.mfg_id, idcode.part_id & 0b111111]
@@ -53,7 +53,7 @@ class ARCDebugInterface:
         status = DR_STATUS()
         while not status.RD:
             status_bits = await self.lower.read_dr(4)
-            status = DR_STATUS.from_bitarray(status_bits)
+            status = DR_STATUS.from_bits(status_bits)
             self._log("status %s", status.bits_repr())
             if status.FL:
                 raise ARCDebugError("transaction failed: %s" % status.bits_repr())
@@ -71,14 +71,14 @@ class ARCDebugInterface:
         self._log("read %s address=%08x", space, address)
         dr_address = DR_ADDRESS(Address=address)
         await self.lower.write_ir(IR_ADDRESS)
-        await self.lower.write_dr(dr_address.to_bitarray())
+        await self.lower.write_dr(dr_address.to_bits())
         await self.lower.write_ir(IR_TXN_COMMAND)
         await self.lower.write_dr(dr_txn_command)
         await self.lower.run_test_idle(1)
         await self._wait_txn()
         await self.lower.write_ir(IR_DATA)
         dr_data_bits = await self.lower.read_dr(32)
-        dr_data = DR_DATA.from_bitarray(dr_data_bits)
+        dr_data = DR_DATA.from_bits(dr_data_bits)
         self._log("read data=%08x", dr_data.Data)
         return dr_data.Data
 
@@ -95,10 +95,10 @@ class ARCDebugInterface:
         self._log("write %s address=%08x data=%08x", space, address, data)
         dr_address = DR_ADDRESS(Address=address)
         await self.lower.write_ir(IR_ADDRESS)
-        await self.lower.write_dr(dr_address.to_bitarray())
+        await self.lower.write_dr(dr_address.to_bits())
         await self.lower.write_ir(IR_DATA)
         dr_data = DR_DATA(Data=data)
-        await self.lower.write_dr(dr_data.to_bitarray())
+        await self.lower.write_dr(dr_data.to_bits())
         await self.lower.write_ir(IR_TXN_COMMAND)
         await self.lower.write_dr(dr_txn_command)
         await self.lower.run_test_idle(1)

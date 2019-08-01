@@ -2,8 +2,7 @@
 # Document Number: 5117-014
 # Accession: G00004
 
-from bitarray import bitarray
-
+from ...support.bits import *
 from ...support.bitstruct import *
 
 
@@ -21,13 +20,13 @@ __all__ = [
 
 # IR values
 
-IR_RESET_TEST   = bitarray("0100", endian="little") # DR[32]
-IR_STATUS       = bitarray("0001", endian="little") # DR[4]
-IR_TXN_COMMAND  = bitarray("1001", endian="little") # DR[4]
-IR_ADDRESS      = bitarray("0101", endian="little") # DR[32]
-IR_DATA         = bitarray("1101", endian="little") # DR[32]
-IR_IDCODE       = bitarray("0011", endian="little") # DR[32]
-IR_BYPASS       = bitarray("1111", endian="little") # DR[1]
+IR_RESET_TEST   = bits("0010") # DR[32]
+IR_STATUS       = bits("1000") # DR[4]
+IR_TXN_COMMAND  = bits("1001") # DR[4]
+IR_ADDRESS      = bits("1010") # DR[32]
+IR_DATA         = bits("1011") # DR[32]
+IR_IDCODE       = bits("1100") # DR[32]
+IR_BYPASS       = bits("1111") # DR[1]
 
 # DR values
 
@@ -38,12 +37,12 @@ DR_STATUS = bitstruct("DR_STATUS", 4, [
     ("PC_SEL",  1),
 ])
 
-DR_TXN_COMMAND_WRITE_MEMORY = bitarray("0000", endian="little")
-DR_TXN_COMMAND_WRITE_CORE   = bitarray("1000", endian="little")
-DR_TXN_COMMAND_WRITE_AUX    = bitarray("0100", endian="little")
-DR_TXN_COMMAND_READ_MEMORY  = bitarray("0010", endian="little")
-DR_TXN_COMMAND_READ_CORE    = bitarray("1010", endian="little")
-DR_TXN_COMMAND_READ_AUX     = bitarray("0110", endian="little")
+DR_TXN_COMMAND_WRITE_MEMORY = bits("0000")
+DR_TXN_COMMAND_WRITE_CORE   = bits("0001")
+DR_TXN_COMMAND_WRITE_AUX    = bits("0010")
+DR_TXN_COMMAND_READ_MEMORY  = bits("0100")
+DR_TXN_COMMAND_READ_CORE    = bits("0101")
+DR_TXN_COMMAND_READ_AUX     = bits("0110")
 
 DR_ADDRESS = bitstruct("DR_ADDRESS", 32, [
     ("Address", 32),

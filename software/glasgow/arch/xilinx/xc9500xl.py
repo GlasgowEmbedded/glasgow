@@ -2,8 +2,7 @@
 # Accession: G00015
 # Ref: reverse engineering by whitequark
 
-from bitarray import bitarray
-
+from ...support.bits import *
 from ...support.bitstruct import *
 
 
@@ -17,24 +16,24 @@ __all__ = [
 ]
 
 
-IR_EXTEST   = bitarray("00000000", endian="little") # BOUNDARY[..]
-IR_SAMPLE   = bitarray("10000000", endian="little") # BOUNDARY[..]
-IR_INTEST   = bitarray("01000000", endian="little") # BOUNDARY[..]
-IR_FBLANK   = bitarray("10100111", endian="little") # ISADDRESS[18]
-IR_ISPEN    = bitarray("00010111", endian="little") # ISPENABLE[6]
-IR_ISPENC   = bitarray("10010111", endian="little") # ISPENABLE[6]
-IR_FPGM     = bitarray("01010111", endian="little") # ISCONFIGURATION[18+w]
-IR_FPGMI    = bitarray("11010111", endian="little") # ISDATA[2+w]
-IR_FERASE   = bitarray("00110111", endian="little") # ISADDRESS[18]
-IR_FBULK    = bitarray("10110111", endian="little") # ISADDRESS[18]
-IR_FVFY     = bitarray("01110111", endian="little") # ISCONFIGURATION[18+w]
-IR_FVFYI    = bitarray("11110111", endian="little") # ISDATA[2+w]
-IR_ISPEX    = bitarray("00001111", endian="little") # BYPASS[1]
-IR_CLAMP    = bitarray("01011111", endian="little") # BYPASS[1]
-IR_HIGHZ    = bitarray("00111111", endian="little") # BYPASS[1]
-IR_USERCODE = bitarray("10111111", endian="little") # USERCODE[32]
-IR_IDCODE   = bitarray("01111111", endian="little") # IDCODE[32]
-IR_BYPASS   = bitarray("11111111", endian="little") # BYPASS[1]
+IR_EXTEST   = bits("00000000") # BOUNDARY[..]
+IR_SAMPLE   = bits("00000001") # BOUNDARY[..]
+IR_INTEST   = bits("00000010") # BOUNDARY[..]
+IR_FBLANK   = bits("11100101") # ISADDRESS[18]
+IR_ISPEN    = bits("11101000") # ISPENABLE[6]
+IR_ISPENC   = bits("11101001") # ISPENABLE[6]
+IR_FPGM     = bits("11101010") # ISCONFIGURATION[18+w]
+IR_FPGMI    = bits("11101011") # ISDATA[2+w]
+IR_FERASE   = bits("11101100") # ISADDRESS[18]
+IR_FBULK    = bits("11101101") # ISADDRESS[18]
+IR_FVFY     = bits("11101110") # ISCONFIGURATION[18+w]
+IR_FVFYI    = bits("11101111") # ISDATA[2+w]
+IR_ISPEX    = bits("11110000") # BYPASS[1]
+IR_CLAMP    = bits("11111010") # BYPASS[1]
+IR_HIGHZ    = bits("11111100") # BYPASS[1]
+IR_USERCODE = bits("11111101") # USERCODE[32]
+IR_IDCODE   = bits("11111110") # IDCODE[32]
+IR_BYPASS   = bits("11111111") # BYPASS[1]
 
 
 def DR_ISDATA(width):

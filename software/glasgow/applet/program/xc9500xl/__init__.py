@@ -218,10 +218,10 @@ import struct
 import logging
 import argparse
 import re
-from bitarray import bitarray
 
 from ....arch.jtag import *
 from ....arch.xilinx.xc9500xl import *
+from ....support.logging import *
 from ....database.xilinx.xc9500xl import *
 from ...interface.jtag_probe import JTAGProbeApplet
 from ....protocol.jesd3 import *
@@ -280,7 +280,7 @@ class XC9500XLInterface:
     async def identify(self):
         await self.lower.write_ir(IR_IDCODE)
         idcode_bits = await self.lower.read_dr(32)
-        idcode = DR_IDCODE.from_bitarray(idcode_bits)
+        idcode = DR_IDCODE.from_bits(idcode_bits)
         self._log("read IDCODE mfg_id=%03x part_id=%04x",
                   idcode.mfg_id, idcode.part_id)
         device = devices_by_idcode[idcode.mfg_id, idcode.part_id]
@@ -293,8 +293,8 @@ class XC9500XLInterface:
     async def read_usercode(self):
         await self.lower.write_ir(IR_USERCODE)
         usercode_bits = await self.lower.read_dr(32)
-        self._log("read USERCODE %s", usercode_bits.to01())
-        return bytes(usercode_bits.tobytes()[::-1])
+        self._log("read USERCODE %s", dump_bin(usercode_bits))
+        return bytes(usercode_bits)[::-1]
 
 
 class XC95xxXLInterface:
@@ -328,7 +328,7 @@ class XC95xxXLInterface:
         dev_address = bitstream_to_device_address(address)
         self._log("read address=%03x", dev_address)
         isconf = self.DR_ISCONFIGURATION(valid=1, strobe=1, address=dev_address)
-        await self.lower.write_dr(isconf.to_bitarray())
+        await self.lower.write_dr(isconf.to_bits())
 
         words = []
         for offset in range(count):
@@ -336,8 +336,8 @@ class XC95xxXLInterface:
 
             dev_address = bitstream_to_device_address(address + offset + 1)
             isconf = self.DR_ISCONFIGURATION(valid=1, strobe=1, address=dev_address)
-            isconf_bits = await self.lower.exchange_dr(isconf.to_bitarray())
-            isconf = self.DR_ISCONFIGURATION.from_bitarray(isconf_bits)
+            isconf_bits = await self.lower.exchange_dr(isconf.to_bits())
+            isconf = self.DR_ISCONFIGURATION.from_bits(isconf_bits)
             self._log("read address=%03x prev-data=%s",
                       dev_address, "{:0{}b}".format(isconf.data, self.device.word_width))
             words.append(isconf.data)
@@ -353,7 +353,7 @@ class XC95xxXLInterface:
             await self.lower.run_test_idle(1)
 
             isdata_bits = await self.lower.read_dr(self.DR_ISDATA.bit_length())
-            isdata = self.DR_ISDATA.from_bitarray(isdata_bits)
+            isdata = self.DR_ISDATA.from_bits(isdata_bits)
             if isdata.valid:
                 self._log("read autoinc %d data=%s",
                           index, "{:0{}b}".format(isdata.data, self.device.word_width))
@@ -378,12 +378,12 @@ class XC95xxXLInterface:
         self._log("bulk erase")
         await self.lower.write_ir(IR_FBULK)
         isaddr = DR_ISADDRESS(valid=1, strobe=1, address=0xffff)
-        await self.lower.write_dr(isaddr.to_bitarray())
+        await self.lower.write_dr(isaddr.to_bits())
 
         await self.lower.run_test_idle(200_000)
 
         isaddr_bits = await self.lower.read_dr(DR_ISADDRESS.bit_length())
-        isaddr = DR_ISADDRESS.from_bitarray(isaddr_bits)
+        isaddr = DR_ISADDRESS.from_bits(isaddr_bits)
         if not (isaddr.valid and not isaddr.strobe):
             raise XC9500XLError("bulk erase failed %s" % isaddr.bits_repr())
 
@@ -391,12 +391,12 @@ class XC95xxXLInterface:
         self._log("override erase")
         await self.lower.write_ir(IR_FERASE)
         isaddr = DR_ISADDRESS(valid=1, strobe=1, address=0xaa55)
-        await self.lower.write_dr(isaddr.to_bitarray())
+        await self.lower.write_dr(isaddr.to_bits())
 
         await self.lower.run_test_idle(200_000)
 
         isaddr_bits = await self.lower.read_dr(DR_ISADDRESS.bit_length())
-        isaddr = DR_ISADDRESS.from_bitarray(isaddr_bits)
+        isaddr = DR_ISADDRESS.from_bits(isaddr_bits)
         if not (isaddr.valid and not isaddr.strobe):
             raise XC9500XLError("override erase failed %s" % isaddr.bits_repr())
 
@@ -410,7 +410,7 @@ class XC95xxXLInterface:
             strobe = (offset % BLOCK_WORDS == BLOCK_WORDS - 1)
             isconf = self.DR_ISCONFIGURATION(valid=1, strobe=strobe, address=dev_address,
                                              data=word)
-            await self.lower.write_dr(isconf.to_bitarray())
+            await self.lower.write_dr(isconf.to_bits())
 
             if not strobe:
                 await self.lower.run_test_idle(1)
@@ -418,8 +418,8 @@ class XC95xxXLInterface:
                 await self.lower.run_test_idle(20_000)
 
                 isconf = self.DR_ISCONFIGURATION(address=dev_address)
-                isconf_bits = await self.lower.exchange_dr(isconf.to_bitarray())
-                isconf = self.DR_ISCONFIGURATION.from_bitarray(isconf_bits)
+                isconf_bits = await self.lower.exchange_dr(isconf.to_bits())
+                isconf = self.DR_ISCONFIGURATION.from_bits(isconf_bits)
                 if not (isconf.valid and not isconf.strobe):
                     self._logger.warn("program failed address=%03x %s",
                                       offset, isconf.bits_repr())
@@ -427,7 +427,7 @@ class XC95xxXLInterface:
         if not words:
             dev_address = bitstream_to_device_address(address)
             isconf = self.DR_ISCONFIGURATION(valid=1, address=dev_address)
-            await self.lower.write_dr(isconf.to_bitarray())
+            await self.lower.write_dr(isconf.to_bits())
 
     async def _fpgmi(self, words):
         await self.lower.write_ir(IR_FPGMI)
@@ -437,7 +437,7 @@ class XC95xxXLInterface:
                       "{:0{}b}".format(word, self.device.word_width))
             strobe = (offset % BLOCK_WORDS == BLOCK_WORDS - 1)
             isdata = self.DR_ISDATA(valid=1, strobe=strobe, data=word)
-            await self.lower.write_dr(isdata.to_bitarray())
+            await self.lower.write_dr(isdata.to_bits())
 
             if not strobe:
                 await self.lower.run_test_idle(1)
@@ -445,8 +445,8 @@ class XC95xxXLInterface:
                 await self.lower.run_test_idle(20_000)
 
                 isdata = self.DR_ISDATA()
-                isdata_bits = await self.lower.exchange_dr(isdata.to_bitarray())
-                isdata = self.DR_ISDATA.from_bitarray(isdata_bits)
+                isdata_bits = await self.lower.exchange_dr(isdata.to_bits())
+                isdata = self.DR_ISDATA.from_bits(isdata_bits)
                 if not (isdata.valid and not isdata.strobe):
                     self._logger.warn("program autoinc word %03x failed %s",
                                       offset, isdata.bits_repr())
