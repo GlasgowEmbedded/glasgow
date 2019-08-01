@@ -5,10 +5,10 @@ from collections import OrderedDict
 from bitarray import bitarray
 
 
-__all__ = ["Bitfield"]
+__all__ = ["bitstruct"]
 
 
-class _Bitfield:
+class _bitstruct:
     @staticmethod
     def _check_bytes(action, expected_length, value):
         if len(value) != expected_length:
@@ -169,10 +169,10 @@ class _Bitfield:
         return self._bits[:] != other._bits[:]
 
 
-def Bitfield(name, size_bits, fields):
+def bitstruct(name, size_bits, fields):
     mod = sys._getframe(1).f_globals["__name__"] # see namedtuple()
 
-    cls = types.new_class(name, (_Bitfield,))
+    cls = types.new_class(name, (_bitstruct,))
     cls.__module__ = mod
     cls._define_fields(size_bits, fields)
 
@@ -180,9 +180,9 @@ def Bitfield(name, size_bits, fields):
 
 # -------------------------------------------------------------------------------------------------
 
-class BitfieldTestCase(unittest.TestCase):
+class BitstructTestCase(unittest.TestCase):
     def test_definition(self):
-        bf = Bitfield("bf", 10, [("a", 3), ("b", 5), (None, 2)])
+        bf = bitstruct("bf", 10, [("a", 3), ("b", 5), (None, 2)])
         self.assertEqual(bf.__name__, "bf")
         self.assertEqual(bf.__module__, __name__)
         x = bf(1, 2)
@@ -193,9 +193,9 @@ class BitfieldTestCase(unittest.TestCase):
 
     def test_misuse(self):
         with self.assertRaises(TypeError):
-            Bitfield("bf", 10, [("a", 3), ("b", 5)])
+            bitstruct("bf", 10, [("a", 3), ("b", 5)])
 
-        bf = Bitfield("bf", 10, [("a", 3), ("b", 5), (None, 2)])
+        bf = bitstruct("bf", 10, [("a", 3), ("b", 5), (None, 2)])
 
         with self.assertRaises(TypeError):
             bf(1, 2, b=3)
@@ -231,51 +231,51 @@ class BitfieldTestCase(unittest.TestCase):
             bf.from_int(1<<10)
 
     def test_kwargs(self):
-        bf = Bitfield("bf", 8, [("a", 3), ("b", 5)])
+        bf = bitstruct("bf", 8, [("a", 3), ("b", 5)])
         x = bf(a=1, b=2)
         self.assertEqual(x.a, 1)
         self.assertEqual(x.b, 2)
 
     def test_large(self):
-        bf = Bitfield("bf", 72, [(None, 8), ("a", 64)])
+        bf = bitstruct("bf", 72, [(None, 8), ("a", 64)])
         val = (3 << 62) + 1
         x = bf(val)
         self.assertEqual(x.to_int(), val << 8)
 
     def test_huge(self):
-        bf = Bitfield("bf", 2080, [("e", 32), ("m", 2048)])
+        bf = bitstruct("bf", 2080, [("e", 32), ("m", 2048)])
         x = bf(65537, (30<<2048) // 31)
         self.assertEqual(x.e, 65537)
         self.assertEqual(x.m, (30<<2048) // 31)
 
     def test_reserved(self):
-        bf = Bitfield("bf", 64, [(None, 1), ("a", 1), (None, 62)])
+        bf = bitstruct("bf", 64, [(None, 1), ("a", 1), (None, 62)])
         x = bf(1)
         self.assertEqual(repr(x), "<%s.bf a=1>" % __name__)
 
     def test_bytes(self):
-        bf = Bitfield("bf", 8, [("a", 3), ("b", 5)])
+        bf = bitstruct("bf", 8, [("a", 3), ("b", 5)])
         x = bf(1, 2)
         self.assertIsInstance(x.to_bytes(), bytes)
         self.assertEqual(x.to_bytes(), b"\x11")
         self.assertEqual(bf.from_bytes(x.to_bytes()), x)
 
     def test_bytearray(self):
-        bf = Bitfield("bf", 8, [("a", 3), ("b", 5)])
+        bf = bitstruct("bf", 8, [("a", 3), ("b", 5)])
         x = bf(1, 2)
         self.assertIsInstance(x.to_bytearray(), bytearray)
         self.assertEqual(x.to_bytearray(), bytearray(b"\x11"))
         self.assertEqual(bf.from_bytearray(x.to_bytearray()), x)
 
     def test_int(self):
-        bf = Bitfield("bf", 8, [("a", 3), ("b", 5)])
+        bf = bitstruct("bf", 8, [("a", 3), ("b", 5)])
         x = bf(1, 2)
         self.assertIsInstance(x.to_int(), int)
         self.assertEqual(x.to_int(), 17)
         self.assertEqual(bf.from_int(x.to_int()), x)
 
     def test_bitaray(self):
-        bf = Bitfield("bf", 10, [("a", 3), ("b", 7)])
+        bf = bitstruct("bf", 10, [("a", 3), ("b", 7)])
         x = bf(1, 2)
         self.assertIsInstance(x.to_bitarray(), bitarray)
         self.assertEqual(x.to_bitarray().endian(), "little")
@@ -283,12 +283,12 @@ class BitfieldTestCase(unittest.TestCase):
         self.assertEqual(bf.from_bitarray(x.to_bitarray()), x)
 
     def test_repr(self):
-        bf = Bitfield("bf", 8, [("a", 3), ("b", 5)])
+        bf = bitstruct("bf", 8, [("a", 3), ("b", 5)])
         x = bf(1, 2)
         self.assertEqual(repr(x), "<%s.bf a=001 b=00010>" % __name__)
 
     def test_copy(self):
-        bf = Bitfield("bf", 8, [("a", 3), ("b", 5)])
+        bf = bitstruct("bf", 8, [("a", 3), ("b", 5)])
         x1 = bf(1, 2)
         x2 = x1.copy()
         self.assertFalse(x1 is x2)

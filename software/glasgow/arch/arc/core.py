@@ -3,7 +3,7 @@
 # Ref: linux/arch/arc/include/asm/arcregs.h
 # Accession: G00017
 
-from ...support.bits import *
+from ...support.bitstruct import *
 
 
 __all__ = [
@@ -27,7 +27,7 @@ AUX_STATUS32_P0_addr         = 0x0b
 AUX_AUX_USER_SP_addr         = 0x0d
 AUX_INT_VECTOR_BASE_addr     = 0x25
 
-AUX_STATUS32 = Bitfield("AUX_STATUS32", 32, [
+AUX_STATUS32 = bitstruct("AUX_STATUS32", 32, [
     ("H",   1),
     ("E1",  1),
     ("E2",  1),

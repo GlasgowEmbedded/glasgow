@@ -4,7 +4,7 @@
 
 from bitarray import bitarray
 
-from ...support.bits import *
+from ...support.bitstruct import *
 
 
 __all__ = [
@@ -31,7 +31,7 @@ IR_BYPASS       = bitarray("1111", endian="little") # DR[1]
 
 # DR values
 
-DR_STATUS = Bitfield("DR_STATUS", 4, [
+DR_STATUS = bitstruct("DR_STATUS", 4, [
     ("ST",      1),
     ("FL",      1),
     ("RD",      1),
@@ -45,10 +45,10 @@ DR_TXN_COMMAND_READ_MEMORY  = bitarray("0010", endian="little")
 DR_TXN_COMMAND_READ_CORE    = bitarray("1010", endian="little")
 DR_TXN_COMMAND_READ_AUX     = bitarray("0110", endian="little")
 
-DR_ADDRESS = Bitfield("DR_ADDRESS", 32, [
+DR_ADDRESS = bitstruct("DR_ADDRESS", 32, [
     ("Address", 32),
 ])
 
-DR_DATA = Bitfield("DR_DATA", 32, [
+DR_DATA = bitstruct("DR_DATA", 32, [
     ("Data",    32),
 ])

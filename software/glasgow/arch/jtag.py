@@ -3,7 +3,7 @@
 
 from bitarray import bitarray
 
-from ..support.bits import *
+from ..support.bitstruct import *
 
 
 __all__ = [
@@ -12,7 +12,7 @@ __all__ = [
 ]
 
 
-DR_IDCODE = Bitfield("DR_IDCODE", 32, [
+DR_IDCODE = bitstruct("DR_IDCODE", 32, [
     ("present",  1),
     ("mfg_id",  11),
     ("part_id", 16),

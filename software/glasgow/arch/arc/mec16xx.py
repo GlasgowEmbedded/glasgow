@@ -4,7 +4,7 @@
 
 from bitarray import bitarray
 
-from ...support.bits import *
+from ...support.bitstruct import *
 
 
 __all__ = [
@@ -18,7 +18,7 @@ __all__ = [
     "Flash_Config",
 ]
 
-DR_RESET_TEST = Bitfield("DR_RESET_TEST", 32, [
+DR_RESET_TEST = bitstruct("DR_RESET_TEST", 32, [
     # Probably ME. It seems to work for me, but none of SMSC documents ever coherently point
     # to a single DR with the ME bit *or* specify the location of the ME bit. Cursed.
     ("ME",      1),
@@ -41,7 +41,7 @@ Flash_Status_addr   = Flash_base_addr + 0x10c
 Flash_Config_addr   = Flash_base_addr + 0x110
 Flash_Init_addr     = Flash_base_addr + 0x114
 
-Flash_Command = Bitfield("Flash_Command", 32, [
+Flash_Command = bitstruct("Flash_Command", 32, [
     ("Flash_Mode",  2),
     ("Burst",       1),
     ("EC_Int",      1),
@@ -55,7 +55,7 @@ Flash_Mode_Read     = 1
 Flash_Mode_Program  = 2
 Flash_Mode_Erase    = 3
 
-Flash_Status = Bitfield("Flash_Status", 32, [
+Flash_Status = bitstruct("Flash_Status", 32, [
     ("Busy",            1),
     ("Data_Full",       1),
     ("Address_Full",    1),
@@ -70,7 +70,7 @@ Flash_Status = Bitfield("Flash_Status", 32, [
     (None,             21),
 ])
 
-Flash_Config = Bitfield("Flash_Config", 32, [
+Flash_Config = bitstruct("Flash_Config", 32, [
     ("Reg_Ctl_En",      1),
     ("Host_Ctl",        1),
     ("Boot_Lock",       1),

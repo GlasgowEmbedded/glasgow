@@ -4,7 +4,7 @@
 import struct
 import crcmod
 
-from ..support.bits import *
+from ..support.bitstruct import *
 
 
 __all__ = ["ONFIParameters", "ONFIParameterError"]
@@ -17,14 +17,14 @@ class ONFIParameterError(Exception):
 _crc_onfi = crcmod.mkCrcFun(0x18005, initCrc=0x4f4e, rev=False)
 
 
-_ONFI_Revision = Bitfield("ONFI_Revision", 16, [
+_ONFI_Revision = bitstruct("ONFI_Revision", 16, [
     (None,                      1),
     ("rev_1_0",                 1),
     ("unknown",                 14)
 ])
 
 
-_ONFI_Features = Bitfield("ONFI_Features", 16, [
+_ONFI_Features = bitstruct("ONFI_Features", 16, [
     ("_16_bit_data_bus",        1),
     ("multiple_lun_ops",        1),
     ("non_seq_page_program",    1),
@@ -34,7 +34,7 @@ _ONFI_Features = Bitfield("ONFI_Features", 16, [
 ])
 
 
-_ONFI_Optional_Commands = Bitfield("ONFI_Optional_Commands", 16, [
+_ONFI_Optional_Commands = bitstruct("ONFI_Optional_Commands", 16, [
     ("page_cache_program",      1),
     ("read_cache",              1),
     ("get_set_features",        1),
@@ -45,25 +45,25 @@ _ONFI_Optional_Commands = Bitfield("ONFI_Optional_Commands", 16, [
 ])
 
 
-_ONFI_Date_Code = Bitfield("ONFI_Date_Code", 16, [
+_ONFI_Date_Code = bitstruct("ONFI_Date_Code", 16, [
     ("year",                    8),
     ("week",                    8),
 ])
 
 
-_ONFI_Address_Cycles = Bitfield("ONFI_Address_Cycles", 8, [
+_ONFI_Address_Cycles = bitstruct("ONFI_Address_Cycles", 8, [
     ("row",                     4),
     ("column",                  4),
 ])
 
 
-_ONFI_Block_Endurance = Bitfield("ONFI_Block_Endurance", 16, [
+_ONFI_Block_Endurance = bitstruct("ONFI_Block_Endurance", 16, [
     ("value",                   8),
     ("multiplier",              8),
 ])
 
 
-_ONFI_Partial_Programming_Attributes = Bitfield("ONFI_Partial_Programming_Attributes", 8, [
+_ONFI_Partial_Programming_Attributes = bitstruct("ONFI_Partial_Programming_Attributes", 8, [
     ("has_constraints",         1),
     (None,                      3),
     ("layout_is_data_spare",    1),
@@ -71,13 +71,13 @@ _ONFI_Partial_Programming_Attributes = Bitfield("ONFI_Partial_Programming_Attrib
 ])
 
 
-_ONFI_Interleaved_Address_Bits = Bitfield("ONFI_Interleaved_Address_Bits", 8, [
+_ONFI_Interleaved_Address_Bits = bitstruct("ONFI_Interleaved_Address_Bits", 8, [
     ("count",                   4),
     (None,                      4)
 ])
 
 
-_ONFI_Interleaved_Operation_Attributes = Bitfield("ONFI_Interleaved_Operation_Attributes", 8, [
+_ONFI_Interleaved_Operation_Attributes = bitstruct("ONFI_Interleaved_Operation_Attributes", 8, [
     ("overlapped_supported",    1),
     ("no_address_restrictions", 1),
     ("program_cache_supported", 1),

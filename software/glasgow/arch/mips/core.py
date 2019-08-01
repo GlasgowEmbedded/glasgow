@@ -4,7 +4,7 @@
 
 from collections import defaultdict
 
-from ...support.bits import *
+from ...support.bitstruct import *
 
 
 __all__ = [
@@ -47,7 +47,7 @@ CP0_DESAVE_addr   = (31, 0)
 
 # CP0 Config layout
 
-CP0_Config = Bitfield("CP0_Config", 32, [
+CP0_Config = bitstruct("CP0_Config", 32, [
     ("K0",         3),
     (None,         4),
     ("MT",         3),
@@ -93,7 +93,7 @@ CP0_Config_BE_values = {
 
 # CP0 Config1 layout
 
-CP0_Config1 = Bitfield("CP0_Config1", 32, [
+CP0_Config1 = bitstruct("CP0_Config1", 32, [
     ("FP",         1),
     ("EP",         1),
     ("CA",         1),
@@ -113,7 +113,7 @@ CP0_Config1 = Bitfield("CP0_Config1", 32, [
 
 # CP0 Debug layout
 
-CP0_Debug = Bitfield("CP0_Debug", 32, [
+CP0_Debug = bitstruct("CP0_Debug", 32, [
     ("DSS",        1),
     ("DBp",        1),
     ("DDBL",       1),
@@ -144,7 +144,7 @@ CP0_Debug = Bitfield("CP0_Debug", 32, [
 
 # CP0 Debug2 layout
 
-CP0_Debug2 = Bitfield("CP0_Debug2", 32, [
+CP0_Debug2 = bitstruct("CP0_Debug2", 32, [
     ("PaCo",       1),
     ("Tup",        1),
     ("DQ",         1),

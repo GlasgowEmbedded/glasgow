@@ -4,7 +4,7 @@
 
 from bitarray import bitarray
 
-from ...support.bits import *
+from ...support.bitstruct import *
 
 
 __all__ = [
@@ -38,20 +38,20 @@ IR_BYPASS   = bitarray("11111111", endian="little") # BYPASS[1]
 
 
 def DR_ISDATA(width):
-    return Bitfield("DR_ISDATA", 2 + width, [
+    return bitstruct("DR_ISDATA", 2 + width, [
         ("valid",    1),
         ("strobe",   1),
         ("data", width),
     ])
 
-DR_ISADDRESS = Bitfield("DR_ISADDRESS", 18, [
+DR_ISADDRESS = bitstruct("DR_ISADDRESS", 18, [
     ("valid",    1),
     ("strobe",   1),
     ("address", 16),
 ])
 
 def DR_ISCONFIGURATION(width):
-    return Bitfield("DR_ISCONFIGURATION", 18 + width, [
+    return bitstruct("DR_ISCONFIGURATION", 18 + width, [
         ("valid",    1),
         ("strobe",   1),
         ("data", width),
