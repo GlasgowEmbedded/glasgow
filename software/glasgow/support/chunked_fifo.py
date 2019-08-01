@@ -23,14 +23,15 @@ class ChunkedFIFO:
 
     def write(self, data):
         """Enqueue ``data``."""
+        try:
+            data = memoryview(data)
+        except TypeError:
+            data = memoryview(bytes(data))
+
         if not data:
             return
-
         self._length += len(data)
-        try:
-            self._queue.append(memoryview(data))
-        except TypeError:
-            self._queue.append(memoryview(bytes(data)))
+        self._queue.append(data)
 
     def read(self, max_length=None):
         """
@@ -78,6 +79,7 @@ class ChunkedFIFO:
 # -------------------------------------------------------------------------------------------------
 
 import unittest
+from .bits import bits
 
 
 class ChunkedFIFOTestCase(unittest.TestCase):
@@ -145,3 +147,8 @@ class ChunkedFIFOTestCase(unittest.TestCase):
         self.assertEqual(len(self.fifo), 5)
         self.fifo.read(3)
         self.assertEqual(len(self.fifo), 2)
+
+    def test_write_bits(self):
+        self.fifo.write(bits("1010"))
+        self.assertEqual(len(self.fifo), 1)
+        self.assertEqual(self.fifo.read(1), b"\x0a")
