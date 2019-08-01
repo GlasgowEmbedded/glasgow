@@ -221,7 +221,7 @@ class JTAGProbeSubtarget(Module):
 
 
 class JTAGInterface:
-    def __init__(self, interface, logger):
+    def __init__(self, interface, logger, __name__=__name__):
         self.lower   = interface
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
@@ -728,7 +728,7 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
 
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=100,
-            help="set clock period to FREQ kHz (default: %(default)s)")
+            help="set clock frequency to FREQ kHz (default: %(default)s)")
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)

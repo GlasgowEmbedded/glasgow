@@ -8,6 +8,7 @@ from .interface.jtag_pinout import JTAGPinoutApplet
 from .interface.jtag_probe import JTAGProbeApplet
 from .interface.jtag_svf import JTAGSVFApplet
 from .interface.ps2_host import PS2HostApplet
+from .interface.sbw_probe import SpyBiWireProbeApplet
 
 from .memory._24x import Memory24xApplet
 from .memory._25x import Memory25xApplet
