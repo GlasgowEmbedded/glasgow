@@ -85,10 +85,8 @@ class SpyBiWireProbeAdapter(Module):
             )
         )
         self.fsm.act("TMS-SETUP",
-            If(timer == 0,
-                NextValue(bus.sbwtd_o, self.tms),
-                NextState("TMS-HOLD")
-            )
+            NextValue(bus.sbwtd_o, self.tms),
+            NextState("TMS-HOLD")
         )
         self.fsm.act("TMS-HOLD",
             If(timer == 0,
