@@ -80,11 +80,11 @@ class SVFInterface(SVFEventHandler):
         if mode == "ABSENT":
             pass # ignore; the standard doesn't seem to specify what to do?
         elif mode == "Z":
-            await self.lower.set_trst(state=None)
+            await self.lower.set_trst(active=None)
         elif mode == "ON":
-            await self.lower.set_trst(state=True)
+            await self.lower.set_trst(active=True)
         elif mode == "OFF":
-            await self.lower.set_trst(state=False)
+            await self.lower.set_trst(active=False)
         else:
             assert False
 

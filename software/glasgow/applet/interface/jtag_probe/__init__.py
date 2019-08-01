@@ -22,7 +22,7 @@ class JTAGProbeBus(Module):
         self.tdo = Signal(reset=1)
         self.tdi = Signal(reset=1)
         self.trst_z = Signal(reset=0)
-        self.trst   = Signal(reset=1)
+        self.trst_o = Signal(reset=1)
 
         ###
 
@@ -44,74 +44,90 @@ class JTAGProbeBus(Module):
             ]
 
 
+# Other kinds of adapters are possible, e.g. cJTAG or Spy-Bi-Wire. Applets providing other adapters
+# would reuse the interface of JTAGProbeAdapter.
+class JTAGProbeAdapter(Module):
+    def __init__(self, bus, period_cyc):
+        self.stb = Signal()
+        self.rdy = Signal()
+
+        self.tms = Signal()
+        self.tdo = Signal()
+        self.tdi = Signal()
+        self.trst_z = bus.trst_z
+        self.trst_o = bus.trst_o
+
+        ###
+
+        half_cyc = int(period_cyc // 2)
+        timer    = Signal(max=half_cyc)
+
+        self.submodules.fsm = FSM()
+        self.fsm.act("TCK-H",
+            bus.tck.eq(1),
+            If(timer != 0,
+                NextValue(timer, timer - 1)
+            ).Else(
+                If(self.stb,
+                    NextValue(timer, half_cyc - 1),
+                    NextValue(bus.tms, self.tms),
+                    NextValue(bus.tdi, self.tdi),
+                    NextState("TCK-L")
+                ).Else(
+                    self.rdy.eq(1)
+                )
+            )
+        )
+        self.fsm.act("TCK-L",
+            bus.tck.eq(0),
+            If(timer != 0,
+                NextValue(timer, timer - 1)
+            ).Else(
+                NextValue(timer, half_cyc - 1),
+                NextValue(self.tdo, bus.tdo),
+                NextState("TCK-H")
+            )
+        )
+
+
 CMD_MASK       = 0b11110000
-CMD_RESET      = 0b00000000
-CMD_TRST       = 0b00010000
-CMD_SHIFT_TMS  = 0b00100000
-CMD_SHIFT_TDIO = 0b00110000
+CMD_SET_TRST   = 0b00000000
+CMD_SHIFT_TMS  = 0b00010000
+CMD_SHIFT_TDIO = 0b00100000
+# CMD_SET_TRST
+BIT_TRST_Z     =       0b01
+BIT_TRST_O     =       0b10
+# CMD_SHIFT_{TMS,TDIO}
 BIT_DATA_OUT   =     0b0001
 BIT_DATA_IN    =     0b0010
 BIT_LAST       =     0b0100
 
 
-class JTAGProbeSubtarget(Module):
-    def __init__(self, pads, out_fifo, in_fifo, period_cyc):
-        self.submodules.bus = bus = JTAGProbeBus(pads)
-
-        ###
-
-        half_cyc  = int(period_cyc // 2)
-        timer     = Signal(max=half_cyc)
-        timer_rdy = Signal()
-        timer_stb = Signal()
-        self.comb += timer_rdy.eq(timer == 0)
-        self.sync += [
-            If(~timer_rdy,
-                timer.eq(timer - 1)
-            ).Elif(timer_stb,
-                timer.eq(half_cyc - 1)
-            )
-        ]
-
+class JTAGProbeDriver(Module):
+    def __init__(self, adapter, out_fifo, in_fifo):
         cmd     = Signal(8)
         count   = Signal(16)
-        bit     = Signal(3)
+        bitno   = Signal(3)
         align   = Signal(3)
         shreg_o = Signal(8)
         shreg_i = Signal(8)
 
-        self.submodules.fsm = FSM(reset_state="RECV-COMMAND")
+        self.submodules.fsm = FSM()
         self.fsm.act("RECV-COMMAND",
-            If(timer_rdy & out_fifo.readable,
+            If(out_fifo.readable,
                 out_fifo.re.eq(1),
                 NextValue(cmd, out_fifo.dout),
                 NextState("COMMAND")
             )
         )
         self.fsm.act("COMMAND",
-            If((cmd & CMD_MASK) == CMD_RESET,
-                timer_stb.eq(1),
-                NextValue(bus.trst_z, 0),
-                NextValue(bus.trst,   1),
-                NextState("TEST-RESET")
-            ).Elif((cmd & CMD_MASK) == CMD_TRST,
-                NextValue(bus.trst_z, cmd[0]),
-                NextValue(bus.trst,   cmd[1]),
+            If((cmd & CMD_MASK) == CMD_SET_TRST,
+                NextValue(adapter.trst_z, (cmd & BIT_TRST_Z) != 0),
+                NextValue(adapter.trst_o, (cmd & BIT_TRST_O) != 0),
                 NextState("RECV-COMMAND")
             ).Elif(((cmd & CMD_MASK) == CMD_SHIFT_TMS) |
                    ((cmd & CMD_MASK) == CMD_SHIFT_TDIO),
                 NextState("RECV-COUNT-1")
-            ).Else(
-                NextState("RECV-COMMAND")
-            )
-        )
-        self.fsm.act("TEST-RESET",
-            If(timer_rdy,
-                NextValue(bus.trst, 0),
-                # IEEE 1149.1 3.6.1 (d): "To ensure deterministic operation of the test logic,
-                # TMS should be held at 1 while the signal applied at TRST* changes from 0 to 1."
-                NextValue(bus.tms,  1),
-                NextState("RECV-COMMAND")
             )
         )
         self.fsm.act("RECV-COUNT-1",
@@ -133,10 +149,10 @@ class JTAGProbeSubtarget(Module):
                 NextState("RECV-COMMAND")
             ).Else(
                 If(count > 8,
-                    NextValue(bit, 0)
+                    NextValue(bitno, 0)
                 ).Else(
-                    NextValue(align, 8 - count),
-                    NextValue(bit, 8 - count)
+                    NextValue(align, 8 - count[:3]),
+                    NextValue(bitno, 8 - count[:3])
                 ),
                 If(cmd & BIT_DATA_OUT,
                     If(out_fifo.readable,
@@ -151,31 +167,27 @@ class JTAGProbeSubtarget(Module):
             )
         )
         self.fsm.act("SHIFT-SETUP",
-            If(timer_rdy,
-                timer_stb.eq(1),
-                If((cmd & CMD_MASK) == CMD_SHIFT_TMS,
-                    NextValue(bus.tms, shreg_o[0]),
-                    NextValue(bus.tdi, 0),
-                ).Else(
-                    NextValue(bus.tms, 0),
-                    If(cmd & BIT_LAST,
-                        NextValue(bus.tms, count == 1)
-                    ),
-                    NextValue(bus.tdi, shreg_o[0]),
+            NextValue(adapter.stb, 1),
+            If((cmd & CMD_MASK) == CMD_SHIFT_TMS,
+                NextValue(adapter.tms, shreg_o[0]),
+                NextValue(adapter.tdi, 0),
+            ).Else(
+                NextValue(adapter.tms, 0),
+                If(cmd & BIT_LAST,
+                    NextValue(adapter.tms, count == 1)
                 ),
-                NextValue(bus.tck, 0),
-                NextValue(shreg_o, Cat(shreg_o[1:], 1)),
-                NextValue(count, count - 1),
-                NextValue(bit, bit + 1),
-                NextState("SHIFT-HOLD")
-            )
+                NextValue(adapter.tdi, shreg_o[0]),
+            ),
+            NextValue(shreg_o, Cat(shreg_o[1:], 1)),
+            NextValue(count, count - 1),
+            NextValue(bitno, bitno + 1),
+            NextState("SHIFT-CAPTURE")
         )
-        self.fsm.act("SHIFT-HOLD",
-            If(timer_rdy,
-                timer_stb.eq(1),
-                NextValue(bus.tck, 1),
-                NextValue(shreg_i, Cat(shreg_i[1:], bus.tdo)),
-                If(bit == 0,
+        self.fsm.act("SHIFT-CAPTURE",
+            NextValue(adapter.stb, 0),
+            If(adapter.rdy,
+                NextValue(shreg_i, Cat(shreg_i[1:], adapter.tdo)),
+                If(bitno == 0,
                     NextState("SEND-BITS")
                 ).Else(
                     NextState("SHIFT-SETUP")
@@ -199,6 +211,13 @@ class JTAGProbeSubtarget(Module):
         )
 
 
+class JTAGProbeSubtarget(Module):
+    def __init__(self, pads, out_fifo, in_fifo, period_cyc):
+        self.submodules.bus     = JTAGProbeBus(pads)
+        self.submodules.adapter = JTAGProbeAdapter(self.bus, period_cyc)
+        self.submodules.driver  = JTAGProbeDriver(self.adapter, out_fifo, in_fifo)
+
+
 class JTAGInterface:
     def __init__(self, interface, logger):
         self.lower   = interface
@@ -216,22 +235,15 @@ class JTAGInterface:
 
     # Low-level operations
 
-    async def set_trst(self, state):
-        if state is None:
+    async def set_trst(self, active):
+        if active is None:
             self._log_l("set trst=z")
             await self.lower.write(struct.pack("<B",
-                CMD_TRST|0b01))
+                CMD_SET_TRST|BIT_TRST_Z))
         else:
-            state = state & 1
-            self._log_l("set trst=%d", state)
+            self._log_l("set trst=%d", active)
             await self.lower.write(struct.pack("<B",
-                CMD_TRST|(state << 1)))
-
-    async def pulse_trst(self):
-        self._log_l("pulse trst")
-        await self.lower.write(struct.pack("<B",
-            CMD_RESET))
-        self._current_ir = None
+                CMD_SET_TRST|(BIT_TRST_O if active else 0)))
 
     async def shift_tms(self, tms_bits):
         tms_bits = bitarray(tms_bits, endian="little")
@@ -406,6 +418,15 @@ class JTAGInterface:
         self._state = "Update-DR"
 
     # High-level register manipulation
+
+    async def pulse_trst(self):
+        self._log_h("pulse trst")
+        await self.set_trst(True)
+        # IEEE 1149.1 3.6.1 (d): "To ensure deterministic operation of the test logic, TMS should
+        # be held at 1 while the signal applied at TRST* changes from [active] to [inactive]."
+        await self.shift_tms("1")
+        await self.set_trst(False)
+        self._current_ir = None
 
     async def test_reset(self):
         self._log_h("test reset")
