@@ -1,6 +1,5 @@
 import sys
 import types
-import unittest
 from collections import OrderedDict
 from bitarray import bitarray
 
@@ -179,6 +178,9 @@ def bitstruct(name, size_bits, fields):
     return cls
 
 # -------------------------------------------------------------------------------------------------
+
+import unittest
+
 
 class BitstructTestCase(unittest.TestCase):
     def test_definition(self):
