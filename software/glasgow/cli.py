@@ -378,7 +378,8 @@ def create_logger(args):
 
     level = logging.INFO + args.quiet * 10 - args.verbose * 10
     if level < 0:
-        dump_hex.limit = 0
+        dump_hex.limit = None
+        dump_bin.limit = None
 
     if args.log_file or args.filter_log:
         term_handler.addFilter(SubjectFilter(level, args.filter_log))
