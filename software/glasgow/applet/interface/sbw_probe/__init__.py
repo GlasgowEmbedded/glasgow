@@ -31,21 +31,32 @@ class SpyBiWireProbeBus(Module):
         ]
 
 
+BIT_AUX_TCLK_LEVEL  = 0b001
+BIT_AUX_TCLK_LATCH  = 0b010
+BIT_AUX_TCLK_TOGGLE = 0b100
+
+
 class SpyBiWireProbeAdapter(Module):
     def __init__(self, bus, period_cyc):
         self.stb = Signal()
         self.rdy = Signal()
 
-        self.tms = Signal()
-        self.tdi = Signal()
-        self.tdo = Signal()
-        self.trst_z = Signal()
-        self.trst_o = Signal()
+        self.tms  = Signal()
+        self.tdi  = Signal()
+        self.tdo  = Signal()
+        self.tclk = Signal()
+
+        self.tclk_level  = Signal()
+        self.tclk_latch  = Signal()
+        self.tclk_toggle = Signal()
+        self.aux_i = Cat(self.tclk)
+        self.aux_o = Cat(self.tclk_level, self.tclk_latch, self.tclk_toggle)
 
         ###
 
-        half_cyc = int(period_cyc // 2)
-        timer    = Signal(max=half_cyc)
+        half_cyc  = int(period_cyc // 2)
+        quart_cyc = int(period_cyc // 4)
+        timer     = Signal(max=half_cyc)
         self.sync += [
             If(self.rdy | (timer == 0),
                 timer.eq(half_cyc - 1)
@@ -55,7 +66,9 @@ class SpyBiWireProbeAdapter(Module):
         ]
 
         self.submodules.fsm = FSM()
-        # Case 1a: SBW entry sequence
+        # This logic follows "JTAG Access Entry Sequences (for Devices That Support SBW)",
+        # Case 1a: SBW entry sequence in section 2.3.1.1.
+        #
         # Note that because SBW does not have any way to re-synchronize its time slots, the only
         # way to restore lost SBW synchronization is to reset the entire applet for >100 us, which
         # will reset the DUT and restart the SBW entry sequence.
@@ -95,13 +108,33 @@ class SpyBiWireProbeAdapter(Module):
             )
         )
         self.fsm.act("TDI-SETUP",
+            If(timer == quart_cyc,
+                # This logic follows "Synchronization of TDI and TCLK During Run-Test/Idle" in
+                # section 2.2.3.5.1.
+                If(self.tclk_latch | self.tclk_toggle,
+                    NextValue(bus.sbwtd_o, self.tclk)
+                ),
+                If(self.tclk_latch,
+                    NextValue(self.tclk, self.tclk_level)
+                ).Elif(self.tclk_toggle,
+                    NextValue(self.tclk, ~self.tclk)
+                )
+            ),
             If(timer == 0,
                 NextValue(bus.sbwtck,  1),
-                NextValue(bus.sbwtd_o, self.tdi),
+                If(~(self.tclk_latch | self.tclk_toggle),
+                    NextValue(bus.sbwtd_o, self.tdi)
+                ),
                 NextState("TDI-HOLD")
             )
         )
         self.fsm.act("TDI-HOLD",
+            If(timer == quart_cyc,
+                # Same as above.
+                If(self.tclk_latch | self.tclk_toggle,
+                    NextValue(bus.sbwtd_o, self.tclk)
+                )
+            ),
             If(timer == 0,
                 NextValue(bus.sbwtck,  0),
                 NextState("TDO-TURNAROUND")
@@ -137,6 +170,25 @@ class SpyBiWireProbeSubtarget(Module):
         self.submodules.driver  = JTAGProbeDriver(self.adapter, out_fifo, in_fifo)
 
 
+class SpyBiWireProbeInterface(JTAGProbeInterface):
+    def _log_s(self, message, *args):
+        self._logger.log(self._level, "SBW: " + message, *args)
+
+    async def set_tclk(self, active):
+        self._log_s("set tclk=%d", active)
+        await self.enter_run_test_idle()
+        await self.set_aux(BIT_AUX_TCLK_LATCH|(BIT_AUX_TCLK_LEVEL if active else 0))
+        await self.pulse_tck(1)
+        await self.set_aux(0)
+
+    async def pulse_tclk(self, count):
+        self._log_s("pulse tclk count=%d", count)
+        await self.enter_run_test_idle()
+        await self.set_aux(BIT_AUX_TCLK_TOGGLE)
+        await self.pulse_tck(count)
+        await self.set_aux(0)
+
+
 class SpyBiWireProbeApplet(GlasgowApplet, name="sbw-probe"):
     logger = logging.getLogger(__name__)
     help = "probe microcontrollers via TI Spy-Bi-Wire"
@@ -170,11 +222,11 @@ class SpyBiWireProbeApplet(GlasgowApplet, name="sbw-probe"):
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        return JTAGProbeInterface(iface, self.logger, __name__=__name__)
+        return SpyBiWireProbeInterface(iface, self.logger, __name__=__name__)
 
-    async def interact(self, device, args, jtag_iface):
-        await jtag_iface.test_reset()
-        version_bits = await jtag_iface.read_ir(8)
+    async def interact(self, device, args, sbw_iface):
+        await sbw_iface.test_reset()
+        version_bits = await sbw_iface.read_ir(8)
         version = int(version_bits.reversed())
         if version == 0xff:
             self.logger.error("no target detected; connection problem?")

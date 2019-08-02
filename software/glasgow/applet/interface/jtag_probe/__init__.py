@@ -63,6 +63,10 @@ class JTAGProbeBus(Module):
             ]
 
 
+BIT_AUX_TRST_Z  = 0b01
+BIT_AUX_TRST_O  = 0b10
+
+
 class JTAGProbeAdapter(Module):
     def __init__(self, bus, period_cyc):
         self.stb = Signal()
@@ -110,17 +114,14 @@ class JTAGProbeAdapter(Module):
 CMD_MASK       = 0b11110000
 CMD_SHIFT_TMS  = 0b00000000
 CMD_SHIFT_TDIO = 0b00010000
-CMD_GET_AUX    = 0b00100000
-CMD_SET_AUX    = 0b00110000
+CMD_GET_AUX    = 0b10000000
+CMD_SET_AUX    = 0b10010000
 # CMD_SHIFT_{TMS,TDIO}
 BIT_DATA_OUT   =     0b0001
 BIT_DATA_IN    =     0b0010
 BIT_LAST       =     0b0100
 # CMD_SHIFT_TMS
 BIT_TDI        =     0b1000
-# CMD_SET_AUX
-BIT_TRST_Z     =       0b01
-BIT_TRST_O     =       0b10
 
 
 class JTAGProbeDriver(Module):
@@ -302,10 +303,10 @@ class JTAGProbeInterface:
             raise JTAGProbeError("cannot set TRST#: adapter does not provide TRST#")
         if active is None:
             self._log_l("set trst=z")
-            await self.set_aux(BIT_TRST_Z)
+            await self.set_aux(BIT_AUX_TRST_Z)
         else:
             self._log_l("set trst=%d", active)
-            await self.set_aux(BIT_TRST_O if active else 0)
+            await self.set_aux(BIT_AUX_TRST_O if active else 0)
 
     async def shift_tms(self, tms_bits, tdi=False):
         tms_bits = bits(tms_bits)
