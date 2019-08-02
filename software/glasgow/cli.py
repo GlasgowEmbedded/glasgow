@@ -533,7 +533,7 @@ async def _main():
                     logger.warn("applet %r is PREVIEW QUALITY and may CORRUPT DATA", args.applet)
                 try:
                     iface = await applet.run(device, args)
-                    if args.action == "run":
+                    if args.action in ("run", "run-prebuilt"):
                         await applet.interact(device, args, iface)
                     if args.action == "run-repl":
                         if applet.has_custom_repl:
