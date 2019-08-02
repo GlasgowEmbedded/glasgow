@@ -174,7 +174,8 @@ class SpyBiWireProbeApplet(GlasgowApplet, name="sbw-probe"):
 
     async def interact(self, device, args, jtag_iface):
         await jtag_iface.test_reset()
-        version = int(await jtag_iface.read_ir(8))
+        version_bits = await jtag_iface.read_ir(8)
+        version = int(version_bits.reversed())
         if version == 0xff:
             self.logger.error("no target detected; connection problem?")
         else:
