@@ -275,17 +275,34 @@ class JTAGProbeInterface:
                 self._log_l("state Shift-DR → Exit1-DR")
                 self._state = "Exit1-DR"
 
+    @staticmethod
+    def _chunk_count(count, last, chunk_size=0xffff):
+        while count > chunk_size:
+            yield chunk_size, False
+            count -= chunk_size
+        yield count, last
+
+    @staticmethod
+    def _chunk_bits(bits, last, chunk_size=0xffff):
+        offset = 0
+        while len(bits) - offset > chunk_size:
+            yield bits[offset:offset + chunk_size], False
+            offset += chunk_size
+        yield bits[offset:], last
+
     async def shift_tdio(self, tdi_bits, last=True):
         assert self._state in ("Shift-IR", "Shift-DR")
         tdi_bits = bits(tdi_bits)
+        tdo_bits = bits()
         self._log_l("shift tdio-i=<%s>", dump_bin(tdi_bits))
-        await self.lower.write(struct.pack("<BH",
-            CMD_SHIFT_TDIO|BIT_DATA_IN|BIT_DATA_OUT|(BIT_LAST if last else 0),
-            len(tdi_bits)))
-        tdi_bytes = bytes(tdi_bits)
-        await self.lower.write(tdi_bytes)
-        tdo_bytes = await self.lower.read(len(tdi_bytes))
-        tdo_bits  = bits(tdo_bytes, len(tdi_bits))
+        for tdi_bits, last in self._chunk_bits(tdi_bits, last):
+            await self.lower.write(struct.pack("<BH",
+                CMD_SHIFT_TDIO|BIT_DATA_IN|BIT_DATA_OUT|(BIT_LAST if last else 0),
+                len(tdi_bits)))
+            tdi_bytes = bytes(tdi_bits)
+            await self.lower.write(tdi_bytes)
+            tdo_bytes = await self.lower.read(len(tdi_bytes))
+            tdo_bits += bits(tdo_bytes, len(tdi_bits))
         self._log_l("shift tdio-o=<%s>", dump_bin(tdo_bits))
         self._shift_last(last)
         return tdo_bits
@@ -294,19 +311,23 @@ class JTAGProbeInterface:
         assert self._state in ("Shift-IR", "Shift-DR")
         tdi_bits = bits(tdi_bits)
         self._log_l("shift tdi=<%s>", dump_bin(tdi_bits))
-        await self.lower.write(struct.pack("<BH",
-            CMD_SHIFT_TDIO|BIT_DATA_OUT|(BIT_LAST if last else 0),
-            len(tdi_bits)))
-        await self.lower.write(tdi_bits)
+        for tdi_bits, last in self._chunk_bits(tdi_bits, last):
+            await self.lower.write(struct.pack("<BH",
+                CMD_SHIFT_TDIO|BIT_DATA_OUT|(BIT_LAST if last else 0),
+                len(tdi_bits)))
+            tdi_bytes = bytes(tdi_bits)
+            await self.lower.write(tdi_bytes)
         self._shift_last(last)
 
     async def shift_tdo(self, count, last=True):
         assert self._state in ("Shift-IR", "Shift-DR")
-        await self.lower.write(struct.pack("<BH",
-            CMD_SHIFT_TDIO|BIT_DATA_IN|(BIT_LAST if last else 0),
-            count))
-        tdo_bytes = await self.lower.read((count + 7) // 8)
-        tdo_bits  = bits(tdo_bytes, count)
+        tdo_bits = bits()
+        for count, last in self._chunk_count(count, last):
+            await self.lower.write(struct.pack("<BH",
+                CMD_SHIFT_TDIO|BIT_DATA_IN|(BIT_LAST if last else 0),
+                count))
+            tdo_bytes = await self.lower.read((count + 7) // 8)
+            tdo_bits += bits(tdo_bytes, count)
         self._log_l("shift tdo=<%s>", dump_bin(tdo_bits))
         self._shift_last(last)
         return tdo_bits
@@ -314,12 +335,9 @@ class JTAGProbeInterface:
     async def pulse_tck(self, count):
         assert self._state in ("Run-Test/Idle", "Pause-IR", "Pause-DR")
         self._log_l("pulse tck count=%d", count)
-        while count > 0xffff:
+        for count, last in self._chunk_count(count, last=True):
             await self.lower.write(struct.pack("<BH",
-                CMD_SHIFT_TDIO, 0xffff))
-            count -= 0xffff
-        await self.lower.write(struct.pack("<BH",
-            CMD_SHIFT_TDIO, count))
+                CMD_SHIFT_TDIO, count))
 
     # State machine transitions
 
