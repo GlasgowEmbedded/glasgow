@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:test-jig-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -1207,24 +1207,24 @@ JIG_GPIO0
 $Comp
 L Connector_Generic:Conn_01x06 J10
 U 1 1 5D277179
-P 2250 3600
-F 0 "J10" H 2400 3550 50  0000 C CNN
-F 1 "AST04106" H 2168 3166 50  0001 C CNN
-F 2 "Glasgow:TerminalBlock_MetzConnect_AST04106_1x06_Lever_Clamp_45Degree" H 2250 3600 50  0001 C CNN
-F 3 "https://www.metz-connect.com/en/system/files/productfiles/Data_sheet_AST041.PDF" H 2250 3600 50  0001 C CNN
-	1    2250 3600
-	-1   0    0    1   
+P 2250 3500
+F 0 "J10" H 2400 3450 50  0000 C CNN
+F 1 "AST04106" H 2168 3066 50  0001 C CNN
+F 2 "Glasgow:TerminalBlock_MetzConnect_AST04106_1x06_Lever_Clamp_45Degree" H 2250 3500 50  0001 C CNN
+F 3 "https://www.metz-connect.com/en/system/files/productfiles/Data_sheet_AST041.PDF" H 2250 3500 50  0001 C CNN
+	1    2250 3500
+	-1   0    0    -1  
 $EndComp
 $Comp
 L Connector_Generic:Conn_01x06 J7
 U 1 1 5D2781F0
-P 2250 2900
-F 0 "J7" H 2400 2900 50  0000 C CNN
-F 1 "AST04106" H 2168 2466 50  0001 C CNN
-F 2 "Glasgow:TerminalBlock_MetzConnect_AST04106_1x06_Lever_Clamp_45Degree" H 2250 2900 50  0001 C CNN
-F 3 "https://www.metz-connect.com/en/system/files/productfiles/Data_sheet_AST041.PDF" H 2250 2900 50  0001 C CNN
-	1    2250 2900
-	-1   0    0    1   
+P 2250 2800
+F 0 "J7" H 2400 2800 50  0000 C CNN
+F 1 "AST04106" H 2168 2366 50  0001 C CNN
+F 2 "Glasgow:TerminalBlock_MetzConnect_AST04106_1x06_Lever_Clamp_45Degree" H 2250 2800 50  0001 C CNN
+F 3 "https://www.metz-connect.com/en/system/files/productfiles/Data_sheet_AST041.PDF" H 2250 2800 50  0001 C CNN
+	1    2250 2800
+	-1   0    0    -1  
 $EndComp
 Wire Wire Line
 	2450 3000 3400 3000
@@ -1265,24 +1265,24 @@ Wire Wire Line
 $Comp
 L Connector_Generic:Conn_01x06 J11
 U 1 1 5D2C9BD0
-P 7700 3600
-F 0 "J11" H 7850 3550 50  0000 C CNN
-F 1 "AST04106" H 7780 3501 50  0001 L CNN
-F 2 "Glasgow:TerminalBlock_MetzConnect_AST04106_1x06_Lever_Clamp_45Degree" H 7700 3600 50  0001 C CNN
-F 3 "https://www.metz-connect.com/en/system/files/productfiles/Data_sheet_AST041.PDF" H 7700 3600 50  0001 C CNN
-	1    7700 3600
-	1    0    0    1   
+P 7700 3500
+F 0 "J11" H 7850 3450 50  0000 C CNN
+F 1 "AST04106" H 7780 3401 50  0001 L CNN
+F 2 "Glasgow:TerminalBlock_MetzConnect_AST04106_1x06_Lever_Clamp_45Degree" H 7700 3500 50  0001 C CNN
+F 3 "https://www.metz-connect.com/en/system/files/productfiles/Data_sheet_AST041.PDF" H 7700 3500 50  0001 C CNN
+	1    7700 3500
+	1    0    0    -1  
 $EndComp
 $Comp
 L Connector_Generic:Conn_01x06 J8
 U 1 1 5D2CAC52
-P 7700 2900
-F 0 "J8" H 7850 2900 50  0000 C CNN
-F 1 "AST04106" H 7780 2801 50  0001 L CNN
-F 2 "Glasgow:TerminalBlock_MetzConnect_AST04106_1x06_Lever_Clamp_45Degree" H 7700 2900 50  0001 C CNN
-F 3 "https://www.metz-connect.com/en/system/files/productfiles/Data_sheet_AST041.PDF" H 7700 2900 50  0001 C CNN
-	1    7700 2900
-	1    0    0    1   
+P 7700 2800
+F 0 "J8" H 7850 2800 50  0000 C CNN
+F 1 "AST04106" H 7780 2701 50  0001 L CNN
+F 2 "Glasgow:TerminalBlock_MetzConnect_AST04106_1x06_Lever_Clamp_45Degree" H 7700 2800 50  0001 C CNN
+F 3 "https://www.metz-connect.com/en/system/files/productfiles/Data_sheet_AST041.PDF" H 7700 2800 50  0001 C CNN
+	1    7700 2800
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	7500 3000 6650 3000
