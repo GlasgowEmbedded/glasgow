@@ -60,7 +60,8 @@ DR_CNTRL_SIG_124 = bitstruct("DR_CNTRL_SIG_124", 16, [
 
 DR_CNTRL_SIG_56 = bitstruct("DR_CNTRL_SIG_56", 16, [
     ("R_W",             1),
-    (None,              2),
+    ("HALT",            1), # semi-documented in RELEASE_LBYTE1 semantics
+    ("INTREQ",          1), # as previous
     ("WAIT",            1),
     ("BYTE",            1),
     (None,              2),

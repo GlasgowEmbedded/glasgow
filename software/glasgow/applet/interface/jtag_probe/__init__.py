@@ -196,7 +196,7 @@ class JTAGProbeDriver(Module):
                         NextState("SHIFT-SETUP")
                     )
                 ).Else(
-                    NextValue(shreg_o, 0b11111111),
+                    NextValue(shreg_o, Replicate((cmd & BIT_TDI) == 0, 8)),
                     NextState("SHIFT-SETUP")
                 )
             )
@@ -205,7 +205,7 @@ class JTAGProbeDriver(Module):
             NextValue(adapter.stb, 1),
             If((cmd & CMD_MASK) == CMD_SHIFT_TMS,
                 NextValue(adapter.tms, shreg_o[0]),
-                NextValue(adapter.tdi, (cmd & BIT_TDI) != 0),
+                NextValue(adapter.tdi, (cmd & BIT_TDI) == 0),
             ).Else(
                 NextValue(adapter.tms, 0),
                 If(cmd & BIT_LAST,
@@ -213,7 +213,7 @@ class JTAGProbeDriver(Module):
                 ),
                 NextValue(adapter.tdi, shreg_o[0]),
             ),
-            NextValue(shreg_o, Cat(shreg_o[1:], 1)),
+            NextValue(shreg_o, Cat(shreg_o[1:], (cmd & BIT_TDI) == 0)),
             NextValue(count, count - 1),
             NextValue(bitno, bitno + 1),
             NextState("SHIFT-CAPTURE")
@@ -381,12 +381,12 @@ class JTAGProbeInterface:
         self._shift_last(last)
         return tdo_bits
 
-    async def pulse_tck(self, count):
+    async def pulse_tck(self, count, idle_tdi=False):
         assert self._state in ("Run-Test/Idle", "Pause-IR", "Pause-DR")
         self._log_l("pulse tck count=%d", count)
         for count, last in self._chunk_count(count, last=True):
             await self.lower.write(struct.pack("<BH",
-                CMD_SHIFT_TDIO, count))
+                CMD_SHIFT_TDIO|(BIT_TDI if idle_tdi else 0), count))
 
     # State machine transitions
 
