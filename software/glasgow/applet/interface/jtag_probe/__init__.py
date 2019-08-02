@@ -312,7 +312,7 @@ class JTAGProbeInterface:
         return tdo_bits
 
     async def pulse_tck(self, count):
-        assert self._state in ("Run-Test/Idle", "Shift-IR", "Shift-DR", "Pause-IR", "Pause-DR")
+        assert self._state in ("Run-Test/Idle", "Pause-IR", "Pause-DR")
         self._log_l("pulse tck count=%d", count)
         while count > 0xffff:
             await self.lower.write(struct.pack("<BH",
