@@ -499,13 +499,10 @@ class ProgramXC9500XLApplet(JTAGProbeApplet, name="program-xc9500xl"):
             help="select TAP #INDEX for communication (default: %(default)s)")
 
     async def run(self, device, args):
-        jtag_iface = await super().run(device, args)
-        await jtag_iface.pulse_trst()
-
+        jtag_iface = await self.run_lower(ProgramXC9500XLApplet, device, args)
         tap_iface = await jtag_iface.select_tap(args.tap_index)
         if not tap_iface:
             raise GlasgowAppletError("cannot select TAP #%d" % args.tap_index)
-
         return XC9500XLInterface(tap_iface, self.logger, args.frequency * 1000)
 
     @classmethod

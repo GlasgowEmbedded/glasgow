@@ -184,9 +184,7 @@ class JTAGSVFApplet(JTAGProbeApplet, name="jtag-svf"):
     """
 
     async def run(self, device, args):
-        jtag_iface = await super().run(device, args)
-        await jtag_iface.pulse_trst()
-
+        jtag_iface = await self.run_lower(JTAGSVFApplet, device, args)
         return SVFInterface(jtag_iface, self.logger, args.frequency * 1000)
 
     @classmethod

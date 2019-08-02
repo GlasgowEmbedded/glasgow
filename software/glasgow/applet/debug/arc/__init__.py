@@ -132,11 +132,10 @@ class DebugARCApplet(JTAGProbeApplet, name="debug-arc"):
             help="select TAP #INDEX for communication (default: %(default)s)")
 
     async def run(self, device, args):
-        jtag_iface = await super().run(device, args)
+        jtag_iface = await self.run_lower(DebugARCApplet, device, args)
         tap_iface = await jtag_iface.select_tap(args.tap_index)
         if not tap_iface:
             raise GlasgowAppletError("cannot select TAP #%d" % args.tap_index)
-
         return ARCDebugInterface(tap_iface, self.logger)
 
     async def interact(self, device, args, arc_iface):

@@ -49,8 +49,8 @@ class GlasgowApplet:
     def add_run_arguments(cls, parser, access):
         access.add_run_arguments(parser)
 
-    async def run_lower(self, cls, device, args):
-        return await super(cls, self).run(device, args)
+    async def run_lower(self, cls, device, args, **kwargs):
+        return await super(cls, self).run(device, args, **kwargs)
 
     async def run(self, device, args):
         raise NotImplementedError

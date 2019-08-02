@@ -1,6 +1,24 @@
 # Ref: IEEE Std 1149.1-2001
 # Accession: G00018
 
+# Transport layers
+# ----------------
+#
+# The industry has defined a number of custom JTAG transport layers, such as cJTAG, Spy-Bi-Wire,
+# and so on. As long as these comprise a straightforward serialization of the four JTAG signals,
+# it is possible to reuse most of this applet by defining a TransportLayerProbeAdapter, with
+# the same interface as JTAGProbeAdapter.
+#
+# Sideband signals
+# ----------------
+#
+# Devices using JTAG for programming and debugging (as opposed to boundary scan) often define
+# a number of sideband input or output signals, such as a reset signal or a program success signal.
+# The probe driver allows setting or retrieving the state of up to 8 auxiliary signals provided
+# by the probe adapter, synchronized to the normal JTAG command stream.
+#
+# By convention, aux[0:1] are {TRST#.Z, TRST#.O} if the probe adapter provides TRST#.
+
 import struct
 import logging
 import asyncio
@@ -41,12 +59,10 @@ class JTAGProbeBus(Module):
         if hasattr(pads, "trst_t"):
             self.sync += [
                 pads.trst_t.oe.eq(~self.trst_z),
-                pads.trst_t.o.eq(~self.trst)
+                pads.trst_t.o.eq(~self.trst_o)
             ]
 
 
-# Other kinds of adapters are possible, e.g. cJTAG or Spy-Bi-Wire. Applets providing other adapters
-# would reuse the interface of JTAGProbeAdapter.
 class JTAGProbeAdapter(Module):
     def __init__(self, bus, period_cyc):
         self.stb = Signal()
@@ -55,8 +71,8 @@ class JTAGProbeAdapter(Module):
         self.tms = Signal()
         self.tdo = Signal()
         self.tdi = Signal()
-        self.trst_z = bus.trst_z
-        self.trst_o = bus.trst_o
+        self.aux_i = C(0)
+        self.aux_o = Cat(bus.trst_z, bus.trst_o)
 
         ###
 
@@ -92,18 +108,19 @@ class JTAGProbeAdapter(Module):
 
 
 CMD_MASK       = 0b11110000
-CMD_SET_TRST   = 0b00000000
-CMD_SHIFT_TMS  = 0b00010000
-CMD_SHIFT_TDIO = 0b00100000
-# CMD_SET_TRST
-BIT_TRST_Z     =       0b01
-BIT_TRST_O     =       0b10
+CMD_SHIFT_TMS  = 0b00000000
+CMD_SHIFT_TDIO = 0b00010000
+CMD_GET_AUX    = 0b00100000
+CMD_SET_AUX    = 0b00110000
 # CMD_SHIFT_{TMS,TDIO}
 BIT_DATA_OUT   =     0b0001
 BIT_DATA_IN    =     0b0010
 BIT_LAST       =     0b0100
 # CMD_SHIFT_TMS
 BIT_TDI        =     0b1000
+# CMD_SET_AUX
+BIT_TRST_Z     =       0b01
+BIT_TRST_O     =       0b10
 
 
 class JTAGProbeDriver(Module):
@@ -124,13 +141,27 @@ class JTAGProbeDriver(Module):
             )
         )
         self.fsm.act("COMMAND",
-            If((cmd & CMD_MASK) == CMD_SET_TRST,
-                NextValue(adapter.trst_z, (cmd & BIT_TRST_Z) != 0),
-                NextValue(adapter.trst_o, (cmd & BIT_TRST_O) != 0),
-                NextState("RECV-COMMAND")
-            ).Elif(((cmd & CMD_MASK) == CMD_SHIFT_TMS) |
+            If(((cmd & CMD_MASK) == CMD_SHIFT_TMS) |
                    ((cmd & CMD_MASK) == CMD_SHIFT_TDIO),
                 NextState("RECV-COUNT-1")
+            ).Elif((cmd & CMD_MASK) == CMD_GET_AUX,
+                NextState("SEND-AUX")
+            ).Elif((cmd & CMD_MASK) == CMD_SET_AUX,
+                NextState("RECV-AUX")
+            )
+        )
+        self.fsm.act("SEND-AUX",
+            If(in_fifo.writable,
+                in_fifo.we.eq(1),
+                in_fifo.din.eq(adapter.aux_i),
+                NextState("RECV-COMMAND")
+            )
+        )
+        self.fsm.act("RECV-AUX",
+            If(out_fifo.readable,
+                out_fifo.re.eq(1),
+                NextValue(adapter.aux_o, out_fifo.dout),
+                NextState("RECV-COMMAND")
             )
         )
         self.fsm.act("RECV-COUNT-1",
@@ -233,11 +264,12 @@ class JTAGProbeStateTransitionError(JTAGProbeError):
 
 
 class JTAGProbeInterface:
-    def __init__(self, interface, logger, __name__=__name__):
+    def __init__(self, interface, logger, has_trst=False, __name__=__name__):
         self.lower   = interface
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
+        self.has_trst    = has_trst
         self._state      = "Unknown"
         self._current_ir = None
 
@@ -249,15 +281,31 @@ class JTAGProbeInterface:
 
     # Low-level operations
 
+    async def flush(self):
+        self._log_l("flush")
+        await self.lower.flush()
+
+    async def set_aux(self, value):
+        self._log_l("set aux=%s", format(value, "08b"))
+        await self.lower.write(struct.pack("<BB",
+            CMD_SET_AUX, value))
+
+    async def get_aux(self):
+        await self.lower.write(struct.pack("<B",
+            CMD_GET_AUX))
+        value, = await self.lower.read(1)
+        self._log_l("get aux=%s", format(value, "08b"))
+        return value
+
     async def set_trst(self, active):
+        if not self.has_trst:
+            raise JTAGProbeError("cannot set TRST#: adapter does not provide TRST#")
         if active is None:
             self._log_l("set trst=z")
-            await self.lower.write(struct.pack("<B",
-                CMD_SET_TRST|BIT_TRST_Z))
+            await self.set_aux(BIT_TRST_Z)
         else:
             self._log_l("set trst=%d", active)
-            await self.lower.write(struct.pack("<B",
-                CMD_SET_TRST|(BIT_TRST_O if active else 0)))
+            await self.set_aux(BIT_TRST_O if active else 0)
 
     async def shift_tms(self, tms_bits, tdi=False):
         tms_bits = bits(tms_bits)
@@ -762,12 +810,14 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
             period_cyc=target.sys_clk_freq // (args.frequency * 1000),
         ))
 
-    async def run(self, device, args, reset=True):
+    async def run(self, device, args, reset=False):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        jtag_iface = JTAGProbeInterface(iface, self.logger)
+        jtag_iface = JTAGProbeInterface(iface, self.logger, has_trst=args.pin_trst is not None)
         if reset:
-            # If we have a defined TRST#, enable the driver and reset the TAPs to a good state.
-            await jtag_iface.pulse_trst()
+            if jtag_iface.has_trst:
+                await jtag_iface.pulse_trst()
+            else:
+                await jtag_iface.test_reset()
         return jtag_iface
 
     @classmethod
