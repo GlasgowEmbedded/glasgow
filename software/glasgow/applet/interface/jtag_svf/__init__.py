@@ -1,3 +1,8 @@
+# Ref: https://www.asset-intertech.com/eresources/svf-serial-vector-format-specification-jtag-boundary-scan
+# Accession: G00022
+# Ref: http://www.jtagtest.com/pdf/svf_specification.pdf
+# Accession: G00023
+
 import struct
 import logging
 import argparse
@@ -7,7 +12,7 @@ from ....support.bits import *
 from ....support.logging import *
 from ....protocol.jtag_svf import *
 from ... import *
-from ..jtag_probe import JTAGProbeApplet
+from ..jtag_probe import JTAGProbeApplet, JTAGProbeStateTransitionError
 
 
 class SVFError(GlasgowAppletError):
@@ -53,23 +58,33 @@ class SVFInterface(SVFEventHandler):
         self._hdr    = SVFOperation()
         self._tdr    = SVFOperation()
 
-    def _log(self, message, *args):
-        self._logger.log(self._level, "SVF: " + message, *args)
+    def _log(self, message, *args, level=None):
+        self._logger.log(self._level if level is None else level, "SVF: " + message, *args)
 
     async def _enter_state(self, state, path=[]):
         if path:
             raise SVFError("explicitly providing TAP state path is not supported")
 
-        if state == "RESET":
-            await self.lower.enter_test_logic_reset(force=False)
-        elif state == "IDLE":
-            await self.lower.enter_run_test_idle()
-        elif state == "IRPAUSE":
-            await self.lower.enter_pause_ir()
-        elif state == "DRPAUSE":
-            await self.lower.enter_pause_dr()
-        else:
-            assert False
+        try:
+            if state == "RESET":
+                await self.lower.enter_test_logic_reset(force=False)
+            elif state == "IDLE":
+                await self.lower.enter_run_test_idle()
+            elif state == "IRPAUSE":
+                await self.lower.enter_pause_ir()
+            elif state == "DRPAUSE":
+                await self.lower.enter_pause_dr()
+            else:
+                assert False
+        except JTAGProbeStateTransitionError as error:
+            # The SVF specification doesn't mention whether, at entry, the DUT is assumed to be
+            # in a known state or not, and it looks like some SVF generators assume it is, indeed,
+            # reset; accept that, but warn.
+            if error.old_state == "Unknown":
+                self._log("test vector did not reset DUT explicitly, resetting",
+                          level=logging.WARN)
+                await self.lower.enter_test_logic_reset()
+                await self._enter_state(state, path)
 
     async def svf_frequency(self, frequency):
         if frequency is not None and frequency < self._frequency:
