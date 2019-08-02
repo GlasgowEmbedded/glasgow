@@ -8,7 +8,7 @@ from migen.genlib.cdc import MultiReg
 
 from ....gateware.pads import *
 from ... import *
-from ..jtag_probe import JTAGProbeDriver, JTAGInterface
+from ..jtag_probe import JTAGProbeDriver, JTAGProbeInterface
 
 
 class SpyBiWireProbeBus(Module):
@@ -170,7 +170,7 @@ class SpyBiWireProbeApplet(GlasgowApplet, name="sbw-probe"):
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        return JTAGInterface(iface, self.logger, __name__=__name__)
+        return JTAGProbeInterface(iface, self.logger, __name__=__name__)
 
     async def interact(self, device, args, jtag_iface):
         await jtag_iface.test_reset()

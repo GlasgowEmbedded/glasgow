@@ -221,7 +221,18 @@ class JTAGProbeSubtarget(Module):
         self.submodules.driver  = JTAGProbeDriver(self.adapter, out_fifo, in_fifo)
 
 
-class JTAGInterface:
+class JTAGProbeError(GlasgowAppletError):
+    pass
+
+
+class JTAGProbeStateTransitionError(JTAGProbeError):
+    def __init__(self, message, old_state, new_state):
+        super().__init__(message.format(old_state, new_state))
+        self.old_state = old_state
+        self.new_state = new_state
+
+
+class JTAGProbeInterface:
     def __init__(self, interface, logger, __name__=__name__):
         self.lower   = interface
         self._logger = logger
@@ -312,6 +323,10 @@ class JTAGInterface:
 
     # State machine transitions
 
+    def _state_error(self, new_state):
+        raise JTAGProbeStateTransitionError("cannot transition from state {} to {}",
+                                            self._state, new_state)
+
     async def enter_test_logic_reset(self, force=True):
         if force:
             self._log_l("state * → Test-Logic-Reset")
@@ -336,7 +351,7 @@ class JTAGInterface:
         elif self._state in ("Update-IR", "Update-DR"):
             await self.shift_tms((0,))
         else:
-            assert False
+            self._state_error("Run-Test/Idle")
         self._state = "Run-Test/Idle"
 
     async def enter_shift_ir(self):
@@ -352,7 +367,7 @@ class JTAGInterface:
         elif self._state in ("Pause-IR"):
             await self.shift_tms((1,0))
         else:
-            assert False
+            self._state_error("Shift-IR")
         self._state = "Shift-IR"
 
     async def enter_pause_ir(self):
@@ -362,7 +377,7 @@ class JTAGInterface:
         if self._state == "Exit1-IR":
             await self.shift_tms((0,))
         else:
-            assert False
+            self._state_error("Pause-IR")
         self._state = "Pause-IR"
 
     async def enter_update_ir(self):
@@ -374,7 +389,7 @@ class JTAGInterface:
         elif self._state == "Exit1-IR":
             await self.shift_tms((1,))
         else:
-            assert False
+            self._state_error("Update-IR")
         self._state = "Update-IR"
 
     async def enter_shift_dr(self):
@@ -390,7 +405,7 @@ class JTAGInterface:
         elif self._state in ("Pause-DR"):
             await self.shift_tms((1,0))
         else:
-            assert False
+            self._state_error("Shift-DR")
         self._state = "Shift-DR"
 
     async def enter_pause_dr(self):
@@ -400,7 +415,7 @@ class JTAGInterface:
         if self._state == "Exit1-DR":
             await self.shift_tms((0,))
         else:
-            assert False
+            self._state_error("Pause-DR")
         self._state = "Pause-DR"
 
     async def enter_update_dr(self):
@@ -412,7 +427,7 @@ class JTAGInterface:
         elif self._state == "Exit1-DR":
             await self.shift_tms((1,))
         else:
-            assert False
+            self._state_error("Update-DR")
         self._state = "Update-DR"
 
     # High-level register manipulation
@@ -731,7 +746,7 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
 
     async def run(self, device, args, reset=True):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        jtag_iface = JTAGInterface(iface, self.logger)
+        jtag_iface = JTAGProbeInterface(iface, self.logger)
         if reset:
             # If we have a defined TRST#, enable the driver and reset the TAPs to a good state.
             await jtag_iface.pulse_trst()
