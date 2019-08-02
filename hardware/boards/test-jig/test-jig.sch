@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:test-jig-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -246,7 +246,7 @@ Wire Wire Line
 Wire Wire Line
 	1950 3850 1950 3700
 Text Notes 2350 4000 0    50   ~ 0
-1-4: USB to DUT
+3-6: USB to DUT
 $Comp
 L Sensor:INA260 U4
 U 1 1 5D246081
@@ -1713,13 +1713,13 @@ $EndSheet
 $Comp
 L Connector_Generic:Conn_01x06 J5
 U 1 1 5D30337D
-P 2250 4050
-F 0 "J5" H 2350 4300 50  0000 L CNN
-F 1 "AST04106" H 2330 3951 50  0001 L CNN
-F 2 "Glasgow:TerminalBlock_MetzConnect_AST04106_1x06_Lever_Clamp_45Degree" H 2250 4050 50  0001 C CNN
-F 3 "https://www.metz-connect.com/en/system/files/productfiles/Data_sheet_AST041.PDF" H 2250 4050 50  0001 C CNN
-	1    2250 4050
-	1    0    0    -1  
+P 2250 4150
+F 0 "J5" H 2350 4400 50  0000 L CNN
+F 1 "AST04106" H 2330 4051 50  0001 L CNN
+F 2 "Glasgow:TerminalBlock_MetzConnect_AST04106_1x06_Lever_Clamp_45Degree" H 2250 4150 50  0001 C CNN
+F 3 "https://www.metz-connect.com/en/system/files/productfiles/Data_sheet_AST041.PDF" H 2250 4150 50  0001 C CNN
+	1    2250 4150
+	1    0    0    1   
 $EndComp
 $Comp
 L Device:D_Zener_ALT D1
@@ -1880,7 +1880,7 @@ Wire Wire Line
 Wire Wire Line
 	1800 3750 1800 4250
 Text Notes 2350 4350 0    50   ~ 0
-5+6: Power/Start\nswitch
+1+2: Power/Start\nswitch
 $Comp
 L power:PWR_FLAG #FLG01
 U 1 1 5D27F1C1
