@@ -1,4 +1,4 @@
-(module TerminalBlock_MetzConnect_AST04106_1x06_Lever_Clamp_45Degree (layer F.Cu) (tedit 5D3622A4)
+(module TerminalBlock_MetzConnect_AST04106_1x06_Lever_Clamp_45Degree (layer F.Cu) (tedit 5D44A188)
   (descr "spring clamp terminal block, THT, 6 pads, 2.5mm pitch, latching lever, 45 Degree cable entry angle, see https://www.metz-connect.com/en/system/files/productfiles/Data_sheet_AST041.PDF")
   (tags "THT spring clamp terminal block lever Metz Connect AST041 AST04106 2.5mm pitch 45 Degree")
   (fp_text reference REF** (at 6.9 -11.7) (layer F.SilkS)
@@ -44,4 +44,9 @@
   (pad 4 thru_hole circle (at 7.5 0) (size 2 2) (drill 1.1) (layers *.Cu *.Mask))
   (pad 6 thru_hole circle (at 12.5 0) (size 2 2) (drill 1.1) (layers *.Cu *.Mask))
   (pad 6 thru_hole circle (at 12.5 -5) (size 2 2) (drill 1.1) (layers *.Cu *.Mask))
+  (model ${KIPRJMOD}/../../packages3D/st04106ddnn.stp
+    (offset (xyz -51.6 -2.79 0))
+    (scale (xyz 1 1 1))
+    (rotate (xyz 180 0 0))
+  )
 )
