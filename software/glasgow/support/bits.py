@@ -174,6 +174,14 @@ class bits:
         other = self.__class__(other)
         return self ^ other
 
+    def reversed(self):
+        value = 0
+        for bit in range(self._len_):
+            value <<= 1
+            if (self._int_ >> bit) & 1:
+                value |= 1
+        return self.__class__(value, self._len_)
+
 # -------------------------------------------------------------------------------------------------
 
 import unittest
@@ -330,3 +338,6 @@ class BitsTestCase(unittest.TestCase):
         self.assertBits(bits("1010") ^ bits("1100"), 4, 0b0110)
         self.assertBits(bits("1010") ^ "1100", 4, 0b0110)
         self.assertBits((0,1,0,1) ^ bits("1100"), 4, 0b0110)
+
+    def test_reversed(self):
+        self.assertBits(bits("1010").reversed(), 4, 0b0101)
