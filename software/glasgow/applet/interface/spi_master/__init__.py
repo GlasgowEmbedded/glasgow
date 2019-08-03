@@ -216,45 +216,63 @@ class SPIMasterInterface:
         self._log("reset")
         await self.lower.reset()
 
+    @staticmethod
+    def _chunk_count(count, hold_ss, chunk_size=0xffff):
+        while count > chunk_size:
+            yield chunk_size, True
+            count -= chunk_size
+        yield count, hold_ss
+
+    @staticmethod
+    def _chunk_bytes(bytes, hold_ss, chunk_size=0xffff):
+        offset = 0
+        while len(bytes) - offset > chunk_size:
+            yield bytes[offset:offset + chunk_size], True
+            offset += chunk_size
+        yield bytes[offset:], hold_ss
+
     async def transfer(self, data, hold_ss=False):
-        assert len(data) <= 0xffff
-        data = bytes(data)
-
-        self._log("xfer-out=<%s>", dump_hex(data))
-
-        cmd = CMD_SHIFT|BIT_DATA_IN|BIT_DATA_OUT|(BIT_HOLD_SS if hold_ss else 0)
-        await self.lower.write(struct.pack("<BH", cmd, len(data)))
-        await self.lower.write(data)
-        data = await self.lower.read(len(data))
-
-        self._log("xfer-in=<%s>", dump_hex(data))
-
-        return data
+        try:
+            out_data = memoryview(data)
+        except TypeError:
+            out_data = memoryview(bytes(data))
+        self._log("xfer-out=<%s>", dump_hex(out_data))
+        in_data = []
+        for out_data, hold_ss in self._chunk_bytes(out_data, hold_ss):
+            await self.lower.write(struct.pack("<BH",
+                CMD_SHIFT|BIT_DATA_IN|BIT_DATA_OUT|(BIT_HOLD_SS if hold_ss else 0),
+                len(out_data)))
+            await self.lower.write(out_data)
+            in_data.append(await self.lower.read(len(out_data)))
+        in_data = b"".join(in_data)
+        self._log("xfer-in=<%s>", dump_hex(in_data))
+        return in_data
 
     async def read(self, count, hold_ss=False):
-        assert count <= 0xffff
-
-        cmd = CMD_SHIFT|BIT_DATA_IN|(BIT_HOLD_SS if hold_ss else 0)
-        await self.lower.write(struct.pack("<BH", cmd, count))
-        data = await self.lower.read(count)
-
-        self._log("read-in=<%s>", dump_hex(data))
-
-        return data
+        in_data = []
+        for count, hold_ss in self._chunk_count(count, hold_ss):
+            await self.lower.write(struct.pack("<BH",
+                CMD_SHIFT|BIT_DATA_IN|(BIT_HOLD_SS if hold_ss else 0),
+                count))
+            in_data.append(await self.lower.read(count))
+        in_data = b"".join(in_data)
+        self._log("read-in=<%s>", dump_hex(in_data))
+        return in_data
 
     async def write(self, data, hold_ss=False):
-        assert len(data) <= 0xffff
-        data = bytes(data)
-
-        self._log("write-out=<%s>", dump_hex(data))
-
-        cmd = CMD_SHIFT|BIT_DATA_OUT|(BIT_HOLD_SS if hold_ss else 0)
-        await self.lower.write(struct.pack("<BH", cmd, len(data)))
-        await self.lower.write(data)
+        try:
+            out_data = memoryview(data)
+        except TypeError:
+            out_data = memoryview(bytes(data))
+        self._log("write-out=<%s>", dump_hex(out_data))
+        for out_data, hold_ss in self._chunk_bytes(out_data, hold_ss):
+            await self.lower.write(struct.pack("<BH",
+                CMD_SHIFT|BIT_DATA_OUT|(BIT_HOLD_SS if hold_ss else 0),
+                len(out_data)))
+            await self.lower.write(out_data)
 
     async def delay_us(self, delay):
         self._log("delay=%d us", delay)
-
         while delay > 0xffff:
             await self.lower.write(struct.pack("<BH", CMD_DELAY, 0xffff))
             delay -= 0xffff
@@ -265,7 +283,6 @@ class SPIMasterInterface:
 
     async def synchronize(self):
         self._log("sync")
-
         await self.lower.write([CMD_SYNC])
         await self.lower.read(1)
 
@@ -275,8 +292,6 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
     help = "initiate SPI transactions"
     description = """
     Initiate transactions on the SPI bus.
-
-    Maximum transaction length is 65535 bytes.
     """
 
     __pins = ("sck", "ss", "mosi", "miso")

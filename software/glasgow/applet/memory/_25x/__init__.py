@@ -77,7 +77,7 @@ class Memory25xInterface:
     async def _read_command(self, address, length, chunk_size, cmd, dummy=0,
                             callback=lambda done, total, status: None):
         if chunk_size is None:
-            chunk_size = 0xffff
+            chunk_size = 0x10000 # for progress indication
 
         data = bytearray()
         while length > len(data):
