@@ -44,24 +44,26 @@ class SPIMasterBus(Module):
         self.latch = Signal()
         if sck_edge in ("r", "rising"):
             self.comb += [
-                self.setup.eq(sck_r & ~self.sck),
-                self.latch.eq(~sck_r & self.sck),
+                self.setup.eq( sck_r & ~self.sck),
+                self.latch.eq(~sck_r &  self.sck),
             ]
         elif sck_edge in ("f", "falling"):
             self.comb += [
-                self.setup.eq(~sck_r & self.sck),
-                self.latch.eq(sck_r & ~self.sck),
+                self.setup.eq(~sck_r &  self.sck),
+                self.latch.eq( sck_r & ~self.sck),
             ]
         else:
             assert False
 
 
-CMD_XFER    = 0x00
-CMD_READ    = 0x01
-CMD_WRITE   = 0x02
-CMD_DELAY   = 0x03
-CMD_SYNC    = 0x04
-BIT_HOLD_SS = 0x80
+CMD_MASK     = 0b11110000
+CMD_SHIFT    = 0b00000000
+CMD_DELAY    = 0b00010000
+CMD_SYNC     = 0b00100000
+# CMD_SHIFT
+BIT_DATA_OUT =     0b0001
+BIT_DATA_IN  =     0b0010
+BIT_HOLD_SS  =     0b0100
 
 
 class SPIMasterSubtarget(Module):
@@ -73,24 +75,33 @@ class SPIMasterSubtarget(Module):
 
         self.submodules.clkgen = ResetInserter()(ClockGen(period_cyc))
 
-        oreg  = Signal(8)
-        ireg  = Signal(8)
+        timer    = Signal(max=delay_cyc)
+        timer_en = Signal()
+        self.sync += [
+            If(timer != 0,
+                timer.eq(timer - 1)
+            ).Elif(timer_en,
+                timer.eq(delay_cyc - 1)
+            )
+        ]
+
+        shreg_o = Signal(8)
+        shreg_i = Signal(8)
         self.comb += [
             self.bus.sck.eq(self.clkgen.clk),
-            self.bus.mosi.eq(oreg[oreg.nbits - 1]),
+            self.bus.mosi.eq(shreg_o[-1]),
         ]
         self.sync += [
             If(self.bus.setup,
-                oreg[1:].eq(oreg)
+                shreg_o.eq(Cat(C(0, 1), shreg_o))
             ).Elif(self.bus.latch,
-                ireg.eq(Cat(self.bus.miso, ireg))
+                shreg_i.eq(Cat(self.bus.miso, shreg_i))
             )
         ]
 
         cmd   = Signal(8)
         count = Signal(16)
         bitno = Signal(max=8 + 1)
-        timer = Signal(max=delay_cyc)
 
         self.submodules.fsm = FSM(reset_state="RECV-COMMAND")
         self.fsm.act("RECV-COMMAND",
@@ -98,30 +109,47 @@ class SPIMasterSubtarget(Module):
             If(out_fifo.readable,
                 out_fifo.re.eq(1),
                 NextValue(cmd, out_fifo.dout),
-                If(out_fifo.dout == CMD_SYNC,
+                If((out_fifo.dout & CMD_MASK) == CMD_SYNC,
                     NextState("SYNC")
                 ).Else(
-                    NextState("RECV-COUNT-MSB")
+                    NextState("RECV-COUNT-1")
                 )
             )
         )
-        self.fsm.act("RECV-COUNT-MSB",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(count[8:16], out_fifo.dout),
-                NextState("RECV-COUNT-LSB")
+        self.fsm.act("SYNC",
+            If(in_fifo.writable,
+                in_fifo.we.eq(1),
+                in_fifo.din.eq(0),
+                NextState("RECV-COMMAND")
             )
         )
-        self.fsm.act("RECV-COUNT-LSB",
-             If(out_fifo.readable,
+        self.fsm.act("RECV-COUNT-1",
+            If(out_fifo.readable,
                 out_fifo.re.eq(1),
                 NextValue(count[0:8], out_fifo.dout),
-                If(cmd == CMD_DELAY,
+                NextState("RECV-COUNT-2")
+            )
+        )
+        self.fsm.act("RECV-COUNT-2",
+             If(out_fifo.readable,
+                out_fifo.re.eq(1),
+                NextValue(count[8:16], out_fifo.dout),
+                If((cmd & CMD_MASK) == CMD_DELAY,
                     NextState("DELAY")
                 ).Else(
                     NextState("COUNT-CHECK")
                 )
              )
+        )
+        self.fsm.act("DELAY",
+            If(timer == 0,
+                If(count == 0,
+                    NextState("RECV-COMMAND")
+                ).Else(
+                    NextValue(count, count - 1),
+                    timer_en.eq(1)
+                )
+            )
         )
         self.fsm.act("COUNT-CHECK",
             If(count == 0,
@@ -135,13 +163,13 @@ class SPIMasterSubtarget(Module):
             )
         )
         self.fsm.act("RECV-DATA",
-            If(cmd[:4] != CMD_READ,
+            If((cmd & BIT_DATA_OUT) != 0,
                 out_fifo.re.eq(1),
-                NextValue(oreg, out_fifo.dout),
+                NextValue(shreg_o, out_fifo.dout),
             ).Else(
-                NextValue(oreg, 0)
+                NextValue(shreg_o, 0)
             ),
-            If((cmd[:4] == CMD_READ) | out_fifo.readable,
+            If(((cmd & BIT_DATA_IN) != 0) | out_fifo.readable,
                 NextValue(count, count - 1),
                 NextValue(bitno, 8),
                 NextState("TRANSFER")
@@ -158,45 +186,19 @@ class SPIMasterSubtarget(Module):
             )
         )
         self.fsm.act("SEND-DATA",
-            If(cmd[:4] != CMD_WRITE,
-                in_fifo.din.eq(ireg),
+            If((cmd & BIT_DATA_IN) != 0,
+                in_fifo.din.eq(shreg_i),
                 in_fifo.we.eq(1),
             ),
-            If((cmd[:4] == CMD_WRITE) | in_fifo.writable,
+            If(((cmd & BIT_DATA_OUT) != 0) | in_fifo.writable,
                 If(count == 0,
                     If((cmd & BIT_HOLD_SS) == 0,
                         NextValue(self.bus.ss, not ss_active),
                     ),
-                    NextState("WAIT")
+                    NextState("RECV-COMMAND")
                 ).Else(
                     NextState("RECV-DATA")
                 )
-            )
-        )
-        self.fsm.act("WAIT",
-            If(timer == 0,
-                NextState("RECV-COMMAND")
-            ).Else(
-                NextValue(timer, timer - 1)
-            )
-        )
-        self.fsm.act("DELAY",
-            If(timer == 0,
-                If(count == 0,
-                    NextState("RECV-COMMAND")
-                ).Else(
-                    NextValue(count, count - 1),
-                    NextValue(timer, delay_cyc),
-                )
-            ).Else(
-                NextValue(timer, timer - 1)
-            )
-        )
-        self.fsm.act("SYNC",
-            If(in_fifo.writable,
-                in_fifo.we.eq(1),
-                in_fifo.din.eq(0),
-                NextState("RECV-COMMAND")
             )
         )
 
@@ -220,8 +222,8 @@ class SPIMasterInterface:
 
         self._log("xfer-out=<%s>", dump_hex(data))
 
-        cmd = CMD_XFER | (BIT_HOLD_SS if hold_ss else 0)
-        await self.lower.write(struct.pack(">BH", cmd, len(data)))
+        cmd = CMD_SHIFT|BIT_DATA_IN|BIT_DATA_OUT|(BIT_HOLD_SS if hold_ss else 0)
+        await self.lower.write(struct.pack("<BH", cmd, len(data)))
         await self.lower.write(data)
         data = await self.lower.read(len(data))
 
@@ -232,8 +234,8 @@ class SPIMasterInterface:
     async def read(self, count, hold_ss=False):
         assert count <= 0xffff
 
-        cmd = CMD_READ | (BIT_HOLD_SS if hold_ss else 0)
-        await self.lower.write(struct.pack(">BH", cmd, count))
+        cmd = CMD_SHIFT|BIT_DATA_IN|(BIT_HOLD_SS if hold_ss else 0)
+        await self.lower.write(struct.pack("<BH", cmd, count))
         data = await self.lower.read(count)
 
         self._log("read-in=<%s>", dump_hex(data))
@@ -246,20 +248,17 @@ class SPIMasterInterface:
 
         self._log("write-out=<%s>", dump_hex(data))
 
-        cmd = CMD_WRITE | (BIT_HOLD_SS if hold_ss else 0)
-        await self.lower.write(struct.pack(">BH", cmd, len(data)))
+        cmd = CMD_SHIFT|BIT_DATA_OUT|(BIT_HOLD_SS if hold_ss else 0)
+        await self.lower.write(struct.pack("<BH", cmd, len(data)))
         await self.lower.write(data)
 
     async def delay_us(self, delay):
-        if delay == 0:
-            return
-
         self._log("delay=%d us", delay)
 
         while delay > 0xffff:
-            await self.lower.write(struct.pack(">BH", CMD_DELAY, 0xffff))
+            await self.lower.write(struct.pack("<BH", CMD_DELAY, 0xffff))
             delay -= 0xffff
-        await self.lower.write(struct.pack(">BH", CMD_DELAY, delay))
+        await self.lower.write(struct.pack("<BH", CMD_DELAY, delay))
 
     async def delay_ms(self, delay):
         await self.delay_us(delay * 1000)
