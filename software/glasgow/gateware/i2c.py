@@ -14,8 +14,8 @@ class I2CBus(Module):
     Decodes bus conditions (start, stop, sample and setup) and provides synchronization.
     """
     def __init__(self, pads):
-        self.scl_t = pads.scl_t
-        self.sda_t = pads.sda_t
+        self.scl_t = pads.scl_t if hasattr(pads, "scl_t") else pads.scl
+        self.sda_t = pads.sda_t if hasattr(pads, "sda_t") else pads.sda
 
         self.scl_i = Signal()
         self.scl_o = Signal(reset=1)
