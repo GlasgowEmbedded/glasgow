@@ -216,7 +216,7 @@ class SpyBiWireProbeApplet(GlasgowApplet, name="sbw-probe"):
         iface.add_subtarget(SpyBiWireProbeSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
-            in_fifo=iface.get_in_fifo(),
+            in_fifo=iface.get_in_fifo(auto_flush=False),
             period_cyc=target.sys_clk_freq // (args.frequency * 1000),
         ))
 

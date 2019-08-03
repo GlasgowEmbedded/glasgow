@@ -135,6 +135,7 @@ class JTAGProbeDriver(Module):
 
         self.submodules.fsm = FSM()
         self.fsm.act("RECV-COMMAND",
+            in_fifo.flush.eq(1),
             If(out_fifo.readable,
                 out_fifo.re.eq(1),
                 NextValue(cmd, out_fifo.dout),
@@ -807,7 +808,7 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
         iface.add_subtarget(JTAGProbeSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
-            in_fifo=iface.get_in_fifo(),
+            in_fifo=iface.get_in_fifo(auto_flush=False),
             period_cyc=target.sys_clk_freq // (args.frequency * 1000),
         ))
 
