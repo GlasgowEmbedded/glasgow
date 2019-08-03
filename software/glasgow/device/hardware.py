@@ -320,14 +320,12 @@ class GlasgowHardwareDevice:
         except usb1.USBErrorPipe:
             raise GlasgowDeviceError("FPGA configuration failed")
 
-    async def download_target(self, target, rebuild=False, toolchain_opts={}):
-        bitstream_id = target.get_bitstream_id()
-        if await self.bitstream_id() == bitstream_id and not rebuild:
-            logger.info("device already has bitstream ID %s", bitstream_id.hex())
+    async def download_target(self, plan, rebuild=False):
+        if await self.bitstream_id() == plan.bitstream_id and not rebuild:
+            logger.info("device already has bitstream ID %s", plan.bitstream_id.hex())
         else:
-            logger.info("building bitstream ID %s", bitstream_id.hex())
-            bitstream = target.get_bitstream(**toolchain_opts)
-            await self.download_bitstream(bitstream, bitstream_id)
+            logger.info("building bitstream ID %s", plan.bitstream_id.hex())
+            await self.download_bitstream(plan.execute(), plan.bitstream_id)
 
     async def _iobuf_enable(self, on):
         await self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_IOBUF_ENABLE, on, 0, [])
