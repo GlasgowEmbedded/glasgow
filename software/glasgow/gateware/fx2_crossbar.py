@@ -161,15 +161,13 @@ class _OUTFIFO(Module, _FIFOInterface):
         super().__init__(inner.width, inner.depth)
 
         self.submodules.inner = inner
+        self.submodules.skid  = skid  = SyncFIFO(inner.width, skid_depth)
 
         self.dout     = inner.dout
         self.re       = inner.re
         self.readable = inner.readable
 
         ###
-
-        skid = SyncFIFO(inner.width, skid_depth)
-        self.submodules += skid
 
         self.comb += [
             If(skid.readable,
@@ -264,41 +262,6 @@ class _UnimplementedINFIFO(Module, _FIFOInterface):
         self.flushed  = Signal()
 
 
-class _RegisteredTristate(Module):
-    def __init__(self, io):
-
-        self.oe = Signal()
-        self.o  = Signal.like(io)
-        self.i  = Signal.like(io)
-
-        def get_bit(signal, bit):
-            return signal[bit] if signal.nbits > 0 else signal
-
-        for bit in range(io.nbits):
-            # The FX2 output valid window starts well after (5.4 ns past) the iCE40 input
-            # capture window for the rising edge. However, the input capture for
-            # the falling edge is just right.
-            #
-            # We carefully use DDR input and fabric registers to capture the FX2 output in
-            # the valid window and prolong its validity to 1 IFCLK cycle. The output is
-            # not DDR and is handled the straightforward way.
-            #
-            # See https://github.com/GlasgowEmbedded/Glasgow/issues/89 for details.
-            d_in_1 = Signal()
-            self.specials += \
-                Instance("SB_IO",
-                    # PIN_INPUT_DDR|PIN_OUTPUT_REGISTERED_ENABLE_REGISTERED
-                    p_PIN_TYPE=C(0b110100, 6),
-                    io_PACKAGE_PIN=get_bit(io, bit),
-                    i_INPUT_CLK=ClockSignal(),
-                    i_OUTPUT_CLK=ClockSignal(),
-                    i_OUTPUT_ENABLE=self.oe,
-                    i_D_OUT_0=get_bit(self.o, bit),
-                    o_D_IN_1=d_in_1,
-                )
-            self.sync += get_bit(self.i, bit).eq(d_in_1)
-
-
 class _FX2Bus(Module):
     def __init__(self, pads):
         self.flag = Signal(4)
@@ -321,29 +284,35 @@ class _FX2Bus(Module):
 
         ###
 
-        self.submodules._fifoadr_t = _RegisteredTristate(pads.fifoadr)
-        self.submodules._flag_t    = _RegisteredTristate(pads.flag)
-        self.submodules._fd_t      = _RegisteredTristate(pads.fd)
-        self.submodules._sloe_t    = _RegisteredTristate(pads.sloe)
-        self.submodules._slrd_t    = _RegisteredTristate(pads.slrd)
-        self.submodules._slwr_t    = _RegisteredTristate(pads.slwr)
-        self.submodules._pktend_t  = _RegisteredTristate(pads.pktend)
-
+        # The FX2 output valid window starts well after (5.4 ns past) the iCE40 input capture
+        # window for the rising edge. However, the input capture for the falling edge is
+        # just right.
+        #
+        # For input pins, we use DDR input to capture the FX2 output in the valid window, that is
+        # on negedge of system clock. The output pins are SDR, although for bidirectional pins SDR
+        # is emulated by using same data on both edges. (nMigen does not allow different gearbox
+        # ratio between input and output buffers.)
+        #
+        # See https://github.com/GlasgowEmbedded/Glasgow/issues/89 for details.
         self.comb += [
-            self.flag.eq(self._flag_t.i),
-            self._fifoadr_t.oe.eq(1),
-            self._fifoadr_t.o.eq(self.addr),
-            self._fd_t.oe.eq(self.data.oe),
-            self._fd_t.o.eq(self.data.o),
-            self.data.i.eq(self._fd_t.i),
-            self._sloe_t.oe.eq(1),
-            self._sloe_t.o.eq(~self.sloe),
-            self._slrd_t.oe.eq(1),
-            self._slrd_t.o.eq(~self.slrd),
-            self._slwr_t.oe.eq(1),
-            self._slwr_t.o.eq(~self.slwr),
-            self._pktend_t.oe.eq(1),
-            self._pktend_t.o.eq(~self.pend),
+            pads.flag.i_clk.eq(ClockSignal()),
+            self.flag.eq(pads.flag.i1),
+            pads.fifoadr.o_clk.eq(ClockSignal()),
+            pads.fifoadr.o.eq(self.addr),
+            pads.fd.o_clk.eq(ClockSignal()),
+            pads.fd.oe.eq(self.data.oe),
+            pads.fd.o0.eq(self.data.o),
+            pads.fd.o1.eq(self.data.o),
+            pads.fd.i_clk.eq(ClockSignal()),
+            self.data.i.eq(pads.fd.i1),
+            pads.sloe.o_clk.eq(ClockSignal()),
+            pads.sloe.o.eq(~self.sloe),
+            pads.slrd.o_clk.eq(ClockSignal()),
+            pads.slrd.o.eq(~self.slrd),
+            pads.slwr.o_clk.eq(ClockSignal()),
+            pads.slwr.o.eq(~self.slwr),
+            pads.pktend.o_clk.eq(ClockSignal()),
+            pads.pktend.o.eq(~self.pend),
         ]
 
         # Delay the FX2 bus control signals, taking into account the roundtrip latency.
@@ -501,7 +470,6 @@ class FX2Crossbar(Module):
                 fifo.comb += fifo.cd_crossbar.rst.eq(reset)
                 fifo.specials += AsyncResetSynchronizer(fifo.cd_logic, reset)
 
-        self.submodules += fifo
         return fifo
 
     def get_out_fifo(self, n, depth=512, clock_domain=None, reset=None):
@@ -515,6 +483,7 @@ class FX2Crossbar(Module):
                                depth=depth,
                                wrapper=lambda fifo: _OUTFIFO(fifo,
                                     skid_depth=3))
+        setattr(self.submodules, f"out_fifo_{n}", fifo)
         self.out_fifos[n] = fifo
         return fifo
 
@@ -530,5 +499,6 @@ class FX2Crossbar(Module):
                                wrapper=lambda fifo: _INFIFO(fifo,
                                     asynchronous=clock_domain is not None,
                                     auto_flush=auto_flush))
+        setattr(self.submodules, f"in_fifo_{n}", fifo)
         self.in_fifos[n] = fifo
         return fifo
