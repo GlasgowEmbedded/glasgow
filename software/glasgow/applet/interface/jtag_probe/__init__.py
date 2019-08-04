@@ -382,6 +382,14 @@ class JTAGProbeInterface:
         self._shift_last(last)
         return tdo_bits
 
+    async def shift_dummy(self, count, last=True):
+        assert self._state in ("Shift-IR", "Shift-DR")
+        self._log_l("shift dummy count=%d", count)
+        for count, last in self._chunk_count(count, last):
+            await self.lower.write(struct.pack("<BH",
+                CMD_SHIFT_TDIO|(BIT_LAST if last else 0), count))
+        self._shift_last(last)
+
     async def pulse_tck(self, count):
         assert self._state in ("Run-Test/Idle", "Pause-IR", "Pause-DR")
         self._log_l("pulse tck count=%d", count)
