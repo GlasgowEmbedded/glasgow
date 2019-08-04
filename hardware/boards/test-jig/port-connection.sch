@@ -712,7 +712,7 @@ F 1 "BSS138" H 7156 5645 50  0000 L CNN
 F 2 "Package_TO_SOT_SMD:SOT-23" H 7150 5525 50  0001 L CIN
 F 3 "https://www.fairchildsemi.com/datasheets/BS/BSS138.pdf" H 6950 5600 50  0001 L CNN
 	1    6950 5600
-	-1   0    0    1   
+	-1   0    0    -1  
 $EndComp
 $Comp
 L Device:R R39
@@ -815,11 +815,11 @@ Wire Wire Line
 	10750 3700 10750 3800
 Wire Wire Line
 	10750 4100 10750 4200
-Text HLabel 9000 5000 0    50   Output ~ 0
-LED_RUN
-Text HLabel 9000 5100 0    50   Output ~ 0
-LED_PASS
 Text HLabel 9000 5200 0    50   Output ~ 0
+LED_RUN
+Text HLabel 9000 5000 0    50   Output ~ 0
+LED_PASS
+Text HLabel 9000 5100 0    50   Output ~ 0
 LED_FAIL
 Wire Wire Line
 	9000 5000 9250 5000
