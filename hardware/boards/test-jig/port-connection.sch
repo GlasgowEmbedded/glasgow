@@ -253,7 +253,7 @@ U 1 1 5D28AF47
 P 3200 2750
 F 0 "JP6" V 3200 2818 50  0000 L CNN
 F 1 "SolderJumper_2_Bridged" V 3245 2818 50  0001 L CNN
-F 2 "Jumper:SolderJumper-2_P1.3mm_Open_TrianglePad1.0x1.5mm" H 3200 2750 50  0001 C CNN
+F 2 "Glasgow:Solderbridge-small-2pad" H 3200 2750 50  0001 C CNN
 F 3 "~" H 3200 2750 50  0001 C CNN
 	1    3200 2750
 	0    1    1    0   
@@ -294,7 +294,7 @@ U 1 1 5D29A6A2
 P 6800 2750
 F 0 "JP7" V 6800 2818 50  0000 L CNN
 F 1 "SolderJumper_2_Bridged" V 6845 2818 50  0001 L CNN
-F 2 "Jumper:SolderJumper-2_P1.3mm_Open_TrianglePad1.0x1.5mm" H 6800 2750 50  0001 C CNN
+F 2 "Glasgow:Solderbridge-small-2pad" H 6800 2750 50  0001 C CNN
 F 3 "~" H 6800 2750 50  0001 C CNN
 	1    6800 2750
 	0    1    1    0   
@@ -419,28 +419,6 @@ F 2 "Package_SO:TSSOP-16_4.4x5mm_P0.65mm" H 10600 4550 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/tca9534.pdf" H 9750 5000 50  0001 C CNN
 	1    9650 5100
 	-1   0    0    -1  
-$EndComp
-$Comp
-L power:+3.3V #PWR063
-U 1 1 5D32B258
-P 10900 5750
-F 0 "#PWR063" H 10900 5600 50  0001 C CNN
-F 1 "+3.3V" H 11050 5750 50  0000 C CNN
-F 2 "" H 10900 5750 50  0001 C CNN
-F 3 "" H 10900 5750 50  0001 C CNN
-	1    10900 5750
-	1    0    0    -1  
-$EndComp
-$Comp
-L power:GND #PWR060
-U 1 1 5D32E85F
-P 10900 5250
-F 0 "#PWR060" H 10900 5000 50  0001 C CNN
-F 1 "GND" H 11050 5250 50  0000 C CNN
-F 2 "" H 10900 5250 50  0001 C CNN
-F 3 "" H 10900 5250 50  0001 C CNN
-	1    10900 5250
-	1    0    0    -1  
 $EndComp
 NoConn ~ 10050 5000
 Text HLabel 10300 4800 2    50   BiDi ~ 0
@@ -855,7 +833,7 @@ U 1 1 5D472EEF
 P 8350 5250
 F 0 "TP9" H 8408 5322 50  0000 L CNN
 F 1 "TestPoint" H 8408 5277 50  0001 L CNN
-F 2 "TestPoint:TestPoint_Loop_D1.80mm_Drill1.0mm_Beaded" H 8550 5250 50  0001 C CNN
+F 2 "TestPoint:TestPoint_THTPad_D1.5mm_Drill0.7mm" H 8550 5250 50  0001 C CNN
 F 3 "~" H 8550 5250 50  0001 C CNN
 	1    8350 5250
 	1    0    0    -1  
@@ -922,58 +900,15 @@ Wire Wire Line
 Connection ~ 8700 5600
 Wire Wire Line
 	8700 5600 8700 5650
-Text Notes 10000 6100 0    50   ~ 0
-Addr: 0100100\n(solderbridges shorted)
-$Comp
-L Connector:TestPoint TP10
-U 1 1 5D2E4869
-P 10250 5250
-F 0 "TP10" H 10308 5322 50  0000 L CNN
-F 1 "TestPoint" H 10308 5277 50  0001 L CNN
-F 2 "TestPoint:TestPoint_Loop_D1.80mm_Drill1.0mm_Beaded" H 10450 5250 50  0001 C CNN
-F 3 "~" H 10450 5250 50  0001 C CNN
-	1    10250 5250
-	1    0    0    -1  
-$EndComp
-$Comp
-L Connector:TestPoint TP11
-U 1 1 5D2E4F19
-P 10250 5500
-F 0 "TP11" H 10308 5572 50  0000 L CNN
-F 1 "TestPoint" H 10308 5527 50  0001 L CNN
-F 2 "TestPoint:TestPoint_Loop_D1.80mm_Drill1.0mm_Beaded" H 10450 5500 50  0001 C CNN
-F 3 "~" H 10450 5500 50  0001 C CNN
-	1    10250 5500
-	1    0    0    -1  
-$EndComp
-$Comp
-L Connector:TestPoint TP13
-U 1 1 5D2E517E
-P 10250 5750
-F 0 "TP13" H 10308 5822 50  0000 L CNN
-F 1 "TestPoint" H 10308 5777 50  0001 L CNN
-F 2 "TestPoint:TestPoint_Loop_D1.80mm_Drill1.0mm_Beaded" H 10450 5750 50  0001 C CNN
-F 3 "~" H 10450 5750 50  0001 C CNN
-	1    10250 5750
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	10050 5400 10150 5400
-Wire Wire Line
-	10150 5400 10150 5500
-Wire Wire Line
-	10150 5500 10250 5500
-Wire Wire Line
-	10050 5500 10050 5750
-Wire Wire Line
-	10050 5750 10250 5750
+Text Notes 9700 6350 0    50   ~ 0
+Addr: 0100100\n(solderbridges as shown)
 $Comp
 L Jumper:SolderJumper_2_Bridged JP8
 U 1 1 5D2FA0E3
 P 10650 5250
-F 0 "JP8" H 10650 5363 50  0000 C CNN
+F 0 "JP8" H 10800 5300 50  0000 C CNN
 F 1 "SolderJumper_2_Bridged" H 10650 5364 50  0001 C CNN
-F 2 "Jumper:SolderJumper-2_P1.3mm_Open_TrianglePad1.0x1.5mm" H 10650 5250 50  0001 C CNN
+F 2 "Glasgow:Solderbridge-small-2pad" H 10650 5250 50  0001 C CNN
 F 3 "~" H 10650 5250 50  0001 C CNN
 	1    10650 5250
 	1    0    0    -1  
@@ -981,62 +916,45 @@ $EndComp
 $Comp
 L Jumper:SolderJumper_2_Bridged JP9
 U 1 1 5D2FA8DF
-P 10650 5500
-F 0 "JP9" H 10650 5613 50  0000 C CNN
-F 1 "SolderJumper_2_Bridged" H 10650 5614 50  0001 C CNN
-F 2 "Jumper:SolderJumper-2_P1.3mm_Open_TrianglePad1.0x1.5mm" H 10650 5500 50  0001 C CNN
-F 3 "~" H 10650 5500 50  0001 C CNN
-	1    10650 5500
+P 10650 5600
+F 0 "JP9" H 10800 5650 50  0000 C CNN
+F 1 "SolderJumper_2_Bridged" H 10650 5714 50  0001 C CNN
+F 2 "Glasgow:Solderbridge-small-2pad" H 10650 5600 50  0001 C CNN
+F 3 "~" H 10650 5600 50  0001 C CNN
+	1    10650 5600
 	1    0    0    -1  
 $EndComp
 $Comp
 L Jumper:SolderJumper_2_Bridged JP10
 U 1 1 5D2FAF3D
-P 10650 5750
-F 0 "JP10" H 10650 5863 50  0000 C CNN
-F 1 "SolderJumper_2_Bridged" H 10650 5864 50  0001 C CNN
-F 2 "Jumper:SolderJumper-2_P1.3mm_Open_TrianglePad1.0x1.5mm" H 10650 5750 50  0001 C CNN
-F 3 "~" H 10650 5750 50  0001 C CNN
-	1    10650 5750
+P 10650 5850
+F 0 "JP10" H 10800 5900 50  0000 C CNN
+F 1 "SolderJumper_2_Bridged" H 10650 5964 50  0001 C CNN
+F 2 "Glasgow:Solderbridge-small-2pad" H 10650 5850 50  0001 C CNN
+F 3 "~" H 10650 5850 50  0001 C CNN
+	1    10650 5850
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	10250 5250 10050 5250
-Wire Wire Line
 	10050 5250 10050 5300
-Wire Wire Line
-	10500 5250 10250 5250
-Connection ~ 10250 5250
-Wire Wire Line
-	10250 5500 10500 5500
-Connection ~ 10250 5500
-Wire Wire Line
-	10250 5750 10500 5750
-Connection ~ 10250 5750
-Wire Wire Line
-	10900 5750 10800 5750
-Wire Wire Line
-	10800 5250 10900 5250
 $Comp
 L power:GND #PWR061
 U 1 1 5D339925
-P 10900 5500
-F 0 "#PWR061" H 10900 5250 50  0001 C CNN
-F 1 "GND" H 11050 5500 50  0000 C CNN
-F 2 "" H 10900 5500 50  0001 C CNN
-F 3 "" H 10900 5500 50  0001 C CNN
-	1    10900 5500
+P 10950 6300
+F 0 "#PWR061" H 10950 6050 50  0001 C CNN
+F 1 "GND" H 11100 6300 50  0000 C CNN
+F 2 "" H 10950 6300 50  0001 C CNN
+F 3 "" H 10950 6300 50  0001 C CNN
+	1    10950 6300
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	10800 5500 10900 5500
 $Comp
 L Connector:TestPoint TP8
 U 1 1 5D35EFA5
 P 7950 4800
 F 0 "TP8" H 8008 4872 50  0000 L CNN
 F 1 "TestPoint" H 8008 4827 50  0001 L CNN
-F 2 "TestPoint:TestPoint_Loop_D1.80mm_Drill1.0mm_Beaded" H 8150 4800 50  0001 C CNN
+F 2 "TestPoint:TestPoint_THTPad_D1.5mm_Drill0.7mm" H 8150 4800 50  0001 C CNN
 F 3 "~" H 8150 4800 50  0001 C CNN
 	1    7950 4800
 	1    0    0    -1  
@@ -1048,7 +966,7 @@ U 1 1 5D364B2C
 P 7850 5600
 F 0 "TP12" H 7908 5672 50  0000 L CNN
 F 1 "TestPoint" H 7908 5627 50  0001 L CNN
-F 2 "TestPoint:TestPoint_Loop_D1.80mm_Drill1.0mm_Beaded" H 8050 5600 50  0001 C CNN
+F 2 "TestPoint:TestPoint_THTPad_D1.5mm_Drill0.7mm" H 8050 5600 50  0001 C CNN
 F 3 "~" H 8050 5600 50  0001 C CNN
 	1    7850 5600
 	1    0    0    -1  
@@ -1062,7 +980,7 @@ U 1 1 5D37558A
 P 1900 7050
 F 0 "TP14" H 1958 7122 50  0000 L CNN
 F 1 "TestPoint" H 1958 7077 50  0001 L CNN
-F 2 "TestPoint:TestPoint_Loop_D1.80mm_Drill1.0mm_Beaded" H 2100 7050 50  0001 C CNN
+F 2 "TestPoint:TestPoint_THTPad_D1.5mm_Drill0.7mm" H 2100 7050 50  0001 C CNN
 F 3 "~" H 2100 7050 50  0001 C CNN
 	1    1900 7050
 	1    0    0    -1  
@@ -1073,7 +991,7 @@ U 1 1 5D375AB8
 P 2850 7050
 F 0 "TP15" H 2908 7122 50  0000 L CNN
 F 1 "TestPoint" H 2908 7077 50  0001 L CNN
-F 2 "TestPoint:TestPoint_Loop_D1.80mm_Drill1.0mm_Beaded" H 3050 7050 50  0001 C CNN
+F 2 "TestPoint:TestPoint_THTPad_D1.5mm_Drill0.7mm" H 3050 7050 50  0001 C CNN
 F 3 "~" H 3050 7050 50  0001 C CNN
 	1    2850 7050
 	1    0    0    -1  
@@ -1253,7 +1171,7 @@ U 1 1 5D2B0DC4
 P 2750 2650
 F 0 "TP16" H 2808 2722 50  0000 L CNN
 F 1 "TestPoint" H 2808 2677 50  0001 L CNN
-F 2 "TestPoint:TestPoint_Loop_D1.80mm_Drill1.0mm_Beaded" H 2950 2650 50  0001 C CNN
+F 2 "TestPoint:TestPoint_THTPad_D1.5mm_Drill0.7mm" H 2950 2650 50  0001 C CNN
 F 3 "~" H 2950 2650 50  0001 C CNN
 	1    2750 2650
 	1    0    0    -1  
@@ -1305,7 +1223,7 @@ U 1 1 5D2FA9A2
 P 7150 2650
 F 0 "TP17" H 7208 2722 50  0000 L CNN
 F 1 "TestPoint" H 7208 2677 50  0001 L CNN
-F 2 "TestPoint:TestPoint_Loop_D1.80mm_Drill1.0mm_Beaded" H 7350 2650 50  0001 C CNN
+F 2 "TestPoint:TestPoint_THTPad_D1.5mm_Drill0.7mm" H 7350 2650 50  0001 C CNN
 F 3 "~" H 7350 2650 50  0001 C CNN
 	1    7150 2650
 	1    0    0    -1  
@@ -1318,4 +1236,109 @@ Wire Wire Line
 	7500 2300 7350 2300
 Wire Wire Line
 	7500 2300 7500 2600
+Wire Wire Line
+	10050 5250 10400 5250
+$Comp
+L Jumper:SolderJumper_2_Open JP12
+U 1 1 5D524B4F
+P 10650 5050
+F 0 "JP12" H 10800 5100 50  0000 C CNN
+F 1 "SolderJumper_2_Open" H 10650 5164 50  0001 C CNN
+F 2 "Glasgow:Solderbridge-small-2pad" H 10650 5050 50  0001 C CNN
+F 3 "~" H 10650 5050 50  0001 C CNN
+	1    10650 5050
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3.3V #PWR0103
+U 1 1 5D527678
+P 11100 4850
+F 0 "#PWR0103" H 11100 4700 50  0001 C CNN
+F 1 "+3.3V" H 11100 5000 50  0000 C CNN
+F 2 "" H 11100 4850 50  0001 C CNN
+F 3 "" H 11100 4850 50  0001 C CNN
+	1    11100 4850
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	10800 5050 11100 5050
+Wire Wire Line
+	11100 5050 11100 4850
+Wire Wire Line
+	10500 5050 10400 5050
+Wire Wire Line
+	10400 5050 10400 5250
+Connection ~ 10400 5250
+Wire Wire Line
+	10400 5250 10500 5250
+Wire Wire Line
+	10950 5250 10950 5600
+Wire Wire Line
+	10800 5250 10950 5250
+Connection ~ 11100 5050
+$Comp
+L Jumper:SolderJumper_2_Open JP13
+U 1 1 5D5759C0
+P 10650 5450
+F 0 "JP13" H 10800 5500 50  0000 C CNN
+F 1 "SolderJumper_2_Open" H 10650 5564 50  0001 C CNN
+F 2 "Glasgow:Solderbridge-small-2pad" H 10650 5450 50  0001 C CNN
+F 3 "~" H 10650 5450 50  0001 C CNN
+	1    10650 5450
+	1    0    0    -1  
+$EndComp
+$Comp
+L Jumper:SolderJumper_2_Open JP14
+U 1 1 5D576FC7
+P 10650 6000
+F 0 "JP14" H 10800 6050 50  0000 C CNN
+F 1 "SolderJumper_2_Open" H 10650 6114 50  0001 C CNN
+F 2 "Glasgow:Solderbridge-small-2pad" H 10650 6000 50  0001 C CNN
+F 3 "~" H 10650 6000 50  0001 C CNN
+	1    10650 6000
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	10050 5400 10150 5400
+Wire Wire Line
+	10500 5450 10400 5450
+Wire Wire Line
+	10150 5450 10150 5400
+Wire Wire Line
+	10400 5450 10400 5600
+Wire Wire Line
+	10400 5600 10500 5600
+Connection ~ 10400 5450
+Wire Wire Line
+	10400 5450 10150 5450
+Wire Wire Line
+	10050 5500 10050 6000
+Wire Wire Line
+	10050 6000 10400 6000
+Wire Wire Line
+	10500 5850 10400 5850
+Wire Wire Line
+	10400 5850 10400 6000
+Connection ~ 10400 6000
+Wire Wire Line
+	10400 6000 10500 6000
+Wire Wire Line
+	10800 5450 11100 5450
+Connection ~ 11100 5450
+Wire Wire Line
+	11100 5450 11100 5050
+Wire Wire Line
+	10800 5850 11100 5850
+Wire Wire Line
+	11100 5450 11100 5850
+Wire Wire Line
+	10800 6000 10950 6000
+Connection ~ 10950 6000
+Wire Wire Line
+	10950 6000 10950 6300
+Wire Wire Line
+	10800 5600 10950 5600
+Connection ~ 10950 5600
+Wire Wire Line
+	10950 5600 10950 6000
 $EndSCHEMATC
