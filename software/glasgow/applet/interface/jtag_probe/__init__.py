@@ -544,8 +544,8 @@ class JTAGProbeInterface:
         self._log_h("read ir=<%s>", dump_bin(data))
         return data
 
-    async def write_ir(self, data, elide=True):
-        if data == self._current_ir:
+    async def write_ir(self, data, *, elide=True):
+        if data == self._current_ir and elide:
             self._log_h("write ir (elided)")
             return
         self._current_ir = data = bits(data)
@@ -755,10 +755,10 @@ class TAPInterface:
         else:
             return data[len(self._ir_prefix):]
 
-    async def write_ir(self, data):
+    async def write_ir(self, data, *, elide=True):
         data = bits(data)
         assert len(data) == self.ir_length
-        await self.lower.write_ir(self._ir_prefix + data + self._ir_suffix)
+        await self.lower.write_ir(self._ir_prefix + data + self._ir_suffix, elide=elide)
 
     async def exchange_dr(self, data):
         data = bits(data)
