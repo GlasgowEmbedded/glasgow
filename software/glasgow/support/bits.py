@@ -21,9 +21,9 @@ class bits:
     @classmethod
     def from_int(cls, value, length=None):
         value = operator.index(value)
-        if value < 0:
-            raise ValueError("invalid negative input for bits(): '{}'".format(value))
         if length is None:
+            if value < 0:
+                raise ValueError("invalid negative input for bits(): '{}'".format(value))
             length = value.bit_length()
         else:
             length = operator.index(length)
@@ -37,7 +37,12 @@ class bits:
     def from_str(cls, value):
         value  = re.sub(r"[\s_]", "", value)
         if value:
-            length = len(value) - 1 if value[0] in "+-" else len(value)
+            if value[0] == "-":
+                raise ValueError("invalid negative input for bits(): '{}'".format(value))
+            elif value[0] == "+":
+                length = len(value) - 1
+            else:
+                length = len(value)
             return cls.from_int(int(value, 2), length)
         else:
             return cls.from_int(0)
@@ -201,6 +206,7 @@ class BitsTestCase(unittest.TestCase):
         self.assertBits(bits.from_int(2), 2, 0b10)
         self.assertBits(bits.from_int(2, 5), 5, 0b00010)
         self.assertBits(bits.from_int(0b110, 2), 2, 0b10)
+        self.assertBits(bits.from_int(-1, 16), 16, 0xffff)
 
     def test_from_int_wrong(self):
         with self.assertRaisesRegex(ValueError,
