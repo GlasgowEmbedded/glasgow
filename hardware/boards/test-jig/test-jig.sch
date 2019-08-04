@@ -356,8 +356,8 @@ F 3 "" H 5450 4600 50  0001 C CNN
 	1    5450 4600
 	1    0    0    -1  
 $EndComp
-Text Notes 4400 4750 0    50   ~ 0
-Addr: 1000000\n(solderbridges shorted)
+Text Notes 4200 5000 0    50   ~ 0
+Addr: 1000000\n(solderbridges as shown)
 Wire Wire Line
 	4600 3900 4900 3900
 Wire Wire Line
@@ -394,7 +394,7 @@ U 1 1 5D26B158
 P 4900 3800
 F 0 "TP3" H 4958 3872 50  0000 L CNN
 F 1 "TestPoint" H 4958 3827 50  0001 L CNN
-F 2 "TestPoint:TestPoint_Loop_D1.80mm_Drill1.0mm_Beaded" H 5100 3800 50  0001 C CNN
+F 2 "TestPoint:TestPoint_THTPad_D1.5mm_Drill0.7mm" H 5100 3800 50  0001 C CNN
 F 3 "~" H 5100 3800 50  0001 C CNN
 	1    4900 3800
 	1    0    0    -1  
@@ -408,7 +408,7 @@ U 1 1 5D26E1F6
 P 3150 3150
 F 0 "TP1" H 3200 3400 50  0000 R CNN
 F 1 "TestPoint" H 3092 3177 50  0001 R CNN
-F 2 "TestPoint:TestPoint_Loop_D1.80mm_Drill1.0mm_Beaded" H 3350 3150 50  0001 C CNN
+F 2 "TestPoint:TestPoint_THTPad_D1.5mm_Drill0.7mm" H 3350 3150 50  0001 C CNN
 F 3 "~" H 3350 3150 50  0001 C CNN
 	1    3150 3150
 	-1   0    0    -1  
@@ -419,7 +419,7 @@ U 1 1 5D26F850
 P 3300 2750
 F 0 "JP1" V 3300 2818 50  0000 L CNN
 F 1 "SolderJumper_2_Bridged" V 3345 2818 50  0001 L CNN
-F 2 "Jumper:SolderJumper-2_P1.3mm_Open_TrianglePad1.0x1.5mm" H 3300 2750 50  0001 C CNN
+F 2 "Glasgow:Solderbridge-small-2pad" H 3300 2750 50  0001 C CNN
 F 3 "~" H 3300 2750 50  0001 C CNN
 	1    3300 2750
 	0    1    1    0   
@@ -441,7 +441,7 @@ U 1 1 5D2856B4
 P 3500 3500
 F 0 "TP2" H 3450 3750 50  0000 L CNN
 F 1 "TestPoint" H 3558 3527 50  0001 L CNN
-F 2 "TestPoint:TestPoint_Loop_D1.80mm_Drill1.0mm_Beaded" H 3700 3500 50  0001 C CNN
+F 2 "TestPoint:TestPoint_THTPad_D1.5mm_Drill0.7mm" H 3700 3500 50  0001 C CNN
 F 3 "~" H 3700 3500 50  0001 C CNN
 	1    3500 3500
 	1    0    0    -1  
@@ -523,40 +523,40 @@ local I2C\npullup
 $Comp
 L Device:C C8
 U 1 1 5D2A9E49
-P 5300 3600
-F 0 "C8" H 5415 3646 50  0000 L CNN
-F 1 "100nF" H 5415 3555 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 5338 3450 50  0001 C CNN
-F 3 "~" H 5300 3600 50  0001 C CNN
-	1    5300 3600
+P 5300 3300
+F 0 "C8" H 5415 3346 50  0000 L CNN
+F 1 "100nF" H 5415 3255 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 5338 3150 50  0001 C CNN
+F 3 "~" H 5300 3300 50  0001 C CNN
+	1    5300 3300
 	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR027
 U 1 1 5D2AA416
-P 5300 3850
-F 0 "#PWR027" H 5300 3600 50  0001 C CNN
-F 1 "GND" H 5305 3677 50  0000 C CNN
-F 2 "" H 5300 3850 50  0001 C CNN
-F 3 "" H 5300 3850 50  0001 C CNN
-	1    5300 3850
+P 5300 3550
+F 0 "#PWR027" H 5300 3300 50  0001 C CNN
+F 1 "GND" H 5305 3377 50  0000 C CNN
+F 2 "" H 5300 3550 50  0001 C CNN
+F 3 "" H 5300 3550 50  0001 C CNN
+	1    5300 3550
 	1    0    0    -1  
 $EndComp
 $Comp
 L power:+3.3V #PWR025
 U 1 1 5D2AAD98
-P 5300 3350
-F 0 "#PWR025" H 5300 3200 50  0001 C CNN
-F 1 "+3.3V" H 5315 3523 50  0000 C CNN
-F 2 "" H 5300 3350 50  0001 C CNN
-F 3 "" H 5300 3350 50  0001 C CNN
-	1    5300 3350
+P 5300 3050
+F 0 "#PWR025" H 5300 2900 50  0001 C CNN
+F 1 "+3.3V" H 5315 3223 50  0000 C CNN
+F 2 "" H 5300 3050 50  0001 C CNN
+F 3 "" H 5300 3050 50  0001 C CNN
+	1    5300 3050
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	5300 3450 5300 3350
+	5300 3150 5300 3050
 Wire Wire Line
-	5300 3750 5300 3850
+	5300 3450 5300 3550
 $Comp
 L Glasgow:TPS3700 U1
 U 1 1 5D2C1BCA
@@ -1271,45 +1271,19 @@ Wire Wire Line
 	5450 7150 5900 7150
 Wire Wire Line
 	5450 7300 5900 7300
-$Comp
-L Connector:TestPoint TP4
-U 1 1 5D21F2B2
-P 4850 4250
-F 0 "TP4" H 4908 4322 50  0000 L CNN
-F 1 "TestPoint" H 4908 4277 50  0001 L CNN
-F 2 "TestPoint:TestPoint_Loop_D1.80mm_Drill1.0mm_Beaded" H 5050 4250 50  0001 C CNN
-F 3 "~" H 5050 4250 50  0001 C CNN
-	1    4850 4250
-	1    0    0    -1  
-$EndComp
-$Comp
-L Connector:TestPoint TP5
-U 1 1 5D21F6CD
-P 4850 4500
-F 0 "TP5" H 4908 4572 50  0000 L CNN
-F 1 "TestPoint" H 4908 4527 50  0001 L CNN
-F 2 "TestPoint:TestPoint_Loop_D1.80mm_Drill1.0mm_Beaded" H 5050 4500 50  0001 C CNN
-F 3 "~" H 5050 4500 50  0001 C CNN
-	1    4850 4500
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	4600 4100 4750 4100
 Wire Wire Line
 	4750 4100 4750 4250
 Wire Wire Line
-	4750 4250 4850 4250
-Wire Wire Line
 	4600 4200 4600 4500
-Wire Wire Line
-	4600 4500 4850 4500
 $Comp
 L Jumper:SolderJumper_2_Bridged JP4
 U 1 1 5D232FBA
 P 5200 4250
 F 0 "JP4" H 5200 4363 50  0000 C CNN
 F 1 "SolderJumper_2_Bridged" H 5200 4364 50  0001 C CNN
-F 2 "Jumper:SolderJumper-2_P1.3mm_Open_TrianglePad1.0x1.5mm" H 5200 4250 50  0001 C CNN
+F 2 "Glasgow:Solderbridge-small-2pad" H 5200 4250 50  0001 C CNN
 F 3 "~" H 5200 4250 50  0001 C CNN
 	1    5200 4250
 	1    0    0    -1  
@@ -1320,17 +1294,11 @@ U 1 1 5D233915
 P 5200 4500
 F 0 "JP5" H 5200 4613 50  0000 C CNN
 F 1 "SolderJumper_2_Bridged" H 5200 4614 50  0001 C CNN
-F 2 "Jumper:SolderJumper-2_P1.3mm_Open_TrianglePad1.0x1.5mm" H 5200 4500 50  0001 C CNN
+F 2 "Glasgow:Solderbridge-small-2pad" H 5200 4500 50  0001 C CNN
 F 3 "~" H 5200 4500 50  0001 C CNN
 	1    5200 4500
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	4850 4250 5050 4250
-Connection ~ 4850 4250
-Wire Wire Line
-	4850 4500 5050 4500
-Connection ~ 4850 4500
 Wire Wire Line
 	5350 4500 5450 4500
 Wire Wire Line
@@ -1397,7 +1365,7 @@ U 1 1 5D3B432A
 P 3750 6300
 F 0 "TP7" H 3808 6372 50  0000 L CNN
 F 1 "TestPoint" H 3808 6327 50  0001 L CNN
-F 2 "TestPoint:TestPoint_Loop_D1.80mm_Drill1.0mm_Beaded" H 3950 6300 50  0001 C CNN
+F 2 "TestPoint:TestPoint_THTPad_D1.5mm_Drill0.7mm" H 3950 6300 50  0001 C CNN
 F 3 "~" H 3950 6300 50  0001 C CNN
 	1    3750 6300
 	1    0    0    -1  
@@ -1408,7 +1376,7 @@ U 1 1 5D3B4715
 P 1800 6300
 F 0 "TP6" H 1858 6372 50  0000 L CNN
 F 1 "TestPoint" H 1858 6327 50  0001 L CNN
-F 2 "TestPoint:TestPoint_Loop_D1.80mm_Drill1.0mm_Beaded" H 2000 6300 50  0001 C CNN
+F 2 "TestPoint:TestPoint_THTPad_D1.5mm_Drill0.7mm" H 2000 6300 50  0001 C CNN
 F 3 "~" H 2000 6300 50  0001 C CNN
 	1    1800 6300
 	1    0    0    -1  
@@ -1901,4 +1869,72 @@ Wire Wire Line
 Connection ~ 1950 4700
 Text Notes 2150 4950 0    50   ~ 0
 The test jig and DUT are unpowered\nwhile plugging in the DUT. This switch\nenables power. When the software sees\na DUT show up on USB, it autostarts\nthe test cycle
+Wire Wire Line
+	4750 4250 5000 4250
+Wire Wire Line
+	4600 4500 4850 4500
+$Comp
+L Jumper:SolderJumper_2_Open JP3
+U 1 1 5D4A272A
+P 5300 4000
+F 0 "JP3" H 5300 4113 50  0000 C CNN
+F 1 "SolderJumper_2_Open" H 5300 4114 50  0001 C CNN
+F 2 "Glasgow:Solderbridge-small-2pad" H 5300 4000 50  0001 C CNN
+F 3 "~" H 5300 4000 50  0001 C CNN
+	1    5300 4000
+	1    0    0    -1  
+$EndComp
+$Comp
+L Jumper:SolderJumper_2_Open JP11
+U 1 1 5D4A3588
+P 5050 4750
+F 0 "JP11" H 5050 4863 50  0000 C CNN
+F 1 "SolderJumper_2_Open" H 5050 4864 50  0001 C CNN
+F 2 "Glasgow:Solderbridge-small-2pad" H 5050 4750 50  0001 C CNN
+F 3 "~" H 5050 4750 50  0001 C CNN
+	1    5050 4750
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3.3V #PWR0101
+U 1 1 5D4ABA9D
+P 5550 3950
+F 0 "#PWR0101" H 5550 3800 50  0001 C CNN
+F 1 "+3.3V" H 5565 4123 50  0000 C CNN
+F 2 "" H 5550 3950 50  0001 C CNN
+F 3 "" H 5550 3950 50  0001 C CNN
+	1    5550 3950
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3.3V #PWR0102
+U 1 1 5D4ACAFD
+P 5300 4750
+F 0 "#PWR0102" H 5300 4600 50  0001 C CNN
+F 1 "+3.3V" H 5200 4650 50  0000 C CNN
+F 2 "" H 5300 4750 50  0001 C CNN
+F 3 "" H 5300 4750 50  0001 C CNN
+	1    5300 4750
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5200 4750 5300 4750
+Wire Wire Line
+	4900 4750 4850 4750
+Wire Wire Line
+	4850 4750 4850 4500
+Connection ~ 4850 4500
+Wire Wire Line
+	4850 4500 5050 4500
+Wire Wire Line
+	5150 4000 5000 4000
+Wire Wire Line
+	5000 4000 5000 4250
+Connection ~ 5000 4250
+Wire Wire Line
+	5000 4250 5050 4250
+Wire Wire Line
+	5450 4000 5550 4000
+Wire Wire Line
+	5550 4000 5550 3950
 $EndSCHEMATC
