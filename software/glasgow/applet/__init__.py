@@ -11,12 +11,20 @@ class GlasgowAppletError(Exception):
     """An exception raised when an applet encounters an error."""
 
 
-class GlasgowApplet:
+class _GlasgowAppletMeta(type):
+    def __new__(metacls, clsname, bases, namespace, **kwargs):
+        # Any class that overrides interact() no longer has its superclass' custom REPL, so be
+        # helpful and reset that attribute.
+        if "has_custom_repl" not in namespace and "interact" in namespace:
+            namespace["has_custom_repl"] = False
+
+        return type.__new__(metacls, clsname, bases, namespace, **kwargs)
+
+
+class GlasgowApplet(metaclass=_GlasgowAppletMeta):
     all_applets = {}
 
-    def __init_subclass__(cls, name, **kwargs):
-        super().__init_subclass__(**kwargs)
-
+    def __init_subclass__(cls, name):
         if name in cls.all_applets:
             raise ValueError("Applet {!r} already exists".format(name))
 
