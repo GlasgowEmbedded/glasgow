@@ -279,7 +279,7 @@ class XC9500XLInterface:
         self._logger.log(self._level, "XC9500XL: " + message, *args)
 
     async def identify(self):
-        await self.lower.write_ir(IR_IDCODE)
+        await self.lower.test_reset()
         idcode_bits = await self.lower.read_dr(32)
         idcode = DR_IDCODE.from_bits(idcode_bits)
         self._log("read IDCODE mfg_id=%03x part_id=%04x",
