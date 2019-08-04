@@ -90,7 +90,7 @@ class SVFInterface(SVFEventHandler):
         if frequency is not None and frequency < self._frequency:
             raise SVFError("FREQUENCY command requires a lower frequency (%.3f kHz) "
                            "than the applet is configured for (%.3f kHz)"
-                           % (frequency / 1e3, args.frequency / 1e3))
+                           % (frequency / 1e3, self._frequency / 1e3))
 
     async def svf_trst(self, mode):
         if mode == "ABSENT":
