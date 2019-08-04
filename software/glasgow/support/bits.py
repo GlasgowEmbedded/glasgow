@@ -97,7 +97,7 @@ class bits:
     __int__ = to_int
 
     def to_str(self):
-        if self._int_:
+        if self._len_:
             return format(self._int_, "0{}b".format(self._len_))
         return ""
 
@@ -282,6 +282,7 @@ class BitsTestCase(unittest.TestCase):
 
     def test_str(self):
         self.assertEqual(str(bits("")), "")
+        self.assertEqual(str(bits("0000")), "0000")
         self.assertEqual(str(bits("1010")), "1010")
         self.assertEqual(str(bits("01010")), "01010")
 
