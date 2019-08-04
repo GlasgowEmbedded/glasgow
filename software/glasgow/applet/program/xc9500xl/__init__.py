@@ -282,7 +282,7 @@ class XC9500XLInterface:
         await self.lower.test_reset()
         idcode_bits = await self.lower.read_dr(32)
         idcode = DR_IDCODE.from_bits(idcode_bits)
-        self._log("read IDCODE mfg_id=%03x part_id=%04x",
+        self._log("read idcode mfg-id=%03x part-id=%04x",
                   idcode.mfg_id, idcode.part_id)
         device = devices_by_idcode[idcode.mfg_id, idcode.part_id]
         if device is None:
@@ -294,7 +294,7 @@ class XC9500XLInterface:
     async def read_usercode(self):
         await self.lower.write_ir(IR_USERCODE)
         usercode_bits = await self.lower.read_dr(32)
-        self._log("read USERCODE %s", dump_bin(usercode_bits))
+        self._log("read usercode <%s>", dump_bin(usercode_bits))
         return bytes(usercode_bits)[::-1]
 
 
@@ -532,23 +532,23 @@ class ProgramXC9500XLApplet(JTAGProbeApplet, name="program-xc9500xl"):
             help="override write-protection")
 
     async def interact(self, device, args, xc9500_iface):
-        idcode, device, xc95xx_iface = await xc9500_iface.identify()
-        if device is None:
-            raise GlasgowAppletError("cannot operate on unknown device IDCODE=%08x"
+        idcode, xc9500_device, xc95xx_iface = await xc9500_iface.identify()
+        if xc9500_device is None:
+            raise GlasgowAppletError("cannot operate on unknown device with IDCODE=%#10x"
                                      % idcode.to_int())
-        self.logger.info("IDCODE=%08x device=%s rev=%d",
-                         idcode.to_int(), device.name, idcode.version)
+        self.logger.info("found %s rev=%d",
+                         idcode.to_int(), xc9500_device.name, idcode.version)
 
         usercode = await xc9500_iface.read_usercode()
         self.logger.info("USERCODE=%s (%s)",
                          usercode.hex(),
                          re.sub(rb"[^\x20-\x7e]", b"?", usercode).decode("ascii"))
 
-        bytes_per_word = (device.word_width + 7) // 8
+        bytes_per_word = (xc9500_device.word_width + 7) // 8
         try:
             if args.operation == "read-bit":
                 await xc95xx_iface.programming_enable()
-                for word in await xc95xx_iface.read(0, device.bitstream_words,
+                for word in await xc95xx_iface.read(0, xc9500_device.bitstream_words,
                                                     fast=not args.slow):
                     args.bit_file.write(word.to_bytes(bytes_per_word, "little"))
 
@@ -559,9 +559,9 @@ class ProgramXC9500XLApplet(JTAGProbeApplet, name="program-xc9500xl"):
                     if data == b"": break
                     words.append(int.from_bytes(data, "little"))
 
-                if len(words) != device.bitstream_words:
+                if len(words) != xc9500_device.bitstream_words:
                     raise GlasgowAppletError("incorrect .bit file size (%d words) for device %s"
-                                             % (len(words), device.name))
+                                             % (len(words), xc9500_device.name))
 
             if args.operation == "program-bit":
                 await xc95xx_iface.programming_enable()
@@ -570,7 +570,7 @@ class ProgramXC9500XLApplet(JTAGProbeApplet, name="program-xc9500xl"):
 
             if args.operation == "verify-bit":
                 await xc95xx_iface.programming_enable()
-                device_words = await xc95xx_iface.read(0, device.bitstream_words,
+                device_words = await xc95xx_iface.read(0, xc9500_device.bitstream_words,
                                                        fast=not args.slow)
                 for offset, (device_word, gold_word) in enumerate(zip(device_words, words)):
                     if device_word != gold_word:
