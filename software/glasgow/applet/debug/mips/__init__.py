@@ -822,17 +822,10 @@ class DebugMIPSApplet(JTAGProbeApplet, name="debug-mips"):
 
     @classmethod
     def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
-
-        parser.add_argument(
-            "--tap-index", metavar="INDEX", type=int, default=0,
-            help="select TAP #INDEX for communication (default: %(default)s)")
+        super().add_run_tap_arguments(parser, access)
 
     async def run(self, device, args):
-        jtag_iface = await self.run_lower(DebugMIPSApplet, device, args)
-        tap_iface = await jtag_iface.select_tap(args.tap_index)
-        if not tap_iface:
-            raise GlasgowAppletError("cannot select TAP #%d" % args.tap_index)
+        tap_iface = await self.run_tap(DebugMIPSApplet, device, args)
         return await EJTAGDebugInterface(tap_iface, self.logger)
 
     @classmethod

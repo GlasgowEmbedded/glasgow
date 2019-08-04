@@ -823,6 +823,21 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
         return jtag_iface
 
     @classmethod
+    def add_run_tap_arguments(cls, parser, access):
+        super().add_run_arguments(parser, access)
+
+        parser.add_argument(
+            "--tap-index", metavar="INDEX", type=int, default=0,
+            help="select TAP #INDEX for communication (default: %(default)s)")
+
+    async def run_tap(self, cls, device, args):
+        jtag_iface = await self.run_lower(cls, device, args)
+        tap_iface = await jtag_iface.select_tap(args.tap_index)
+        if not tap_iface:
+            raise JTAGProbeError("cannot select TAP #%d" % args.tap_index)
+        return tap_iface
+
+    @classmethod
     def add_interact_arguments(cls, parser):
         parser.add_argument(
             "--max-ir-length", metavar="LENGTH", type=int, default=128,

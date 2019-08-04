@@ -1,4 +1,5 @@
-# Ref: XAPP069 Using the XC9500/XL/XV JTAG Boundary Scan Interface
+# Ref: Using the XC9500/XL/XV JTAG Boundary Scan Interface
+# Document Number: XAPP069
 # Accession: G00014
 # Ref: XC9572XL BSDL files
 # Accession: G00015
@@ -492,17 +493,10 @@ class ProgramXC9500XLApplet(JTAGProbeApplet, name="program-xc9500xl"):
 
     @classmethod
     def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
-
-        parser.add_argument(
-            "--tap-index", metavar="INDEX", type=int, default=0,
-            help="select TAP #INDEX for communication (default: %(default)s)")
+        super().add_run_tap_arguments(parser, access)
 
     async def run(self, device, args):
-        jtag_iface = await self.run_lower(ProgramXC9500XLApplet, device, args)
-        tap_iface = await jtag_iface.select_tap(args.tap_index)
-        if not tap_iface:
-            raise GlasgowAppletError("cannot select TAP #%d" % args.tap_index)
+        tap_iface = await self.run_tap(ProgramXC9500XLApplet, device, args)
         return XC9500XLInterface(tap_iface, self.logger, args.frequency * 1000)
 
     @classmethod
