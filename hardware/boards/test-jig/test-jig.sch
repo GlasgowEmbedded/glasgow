@@ -958,24 +958,24 @@ Wire Wire Line
 Connection ~ 3600 2000
 $Comp
 L 74xGxx:74LVC2G14 U2
-U 1 1 5D327B15
+U 2 1 5D327B15
 P 8550 1850
 F 0 "U2" H 8525 2117 50  0000 C CNN
 F 1 "74LVC2G14" H 8525 2026 50  0000 C CNN
 F 2 "Package_TO_SOT_SMD:SOT-363_SC-70-6_Handsoldering" H 8550 1850 50  0001 C CNN
 F 3 "http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf" H 8550 1850 50  0001 C CNN
-	1    8550 1850
+	2    8550 1850
 	1    0    0    -1  
 $EndComp
 $Comp
 L 74xGxx:74LVC2G14 U2
-U 2 1 5D32BC1F
+U 1 1 5D32BC1F
 P 8550 3800
 F 0 "U2" H 8525 4067 50  0000 C CNN
 F 1 "74LVC2G14" H 8525 3976 50  0000 C CNN
 F 2 "Package_TO_SOT_SMD:SOT-363_SC-70-6_Handsoldering" H 8550 3800 50  0001 C CNN
 F 3 "http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf" H 8550 3800 50  0001 C CNN
-	2    8550 3800
+	1    8550 3800
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -1261,8 +1261,6 @@ F1 "led-board.sch" 50
 $EndSheet
 Text Notes 8800 2100 0    50   ~ 0
 high: fail\nlow: pass
-Text Notes 8800 4000 0    50   ~ 0
-high: fail\nlow: pass
 Text Notes 8750 5850 0    50   ~ 0
 high: fail\nlow: pass
 Wire Wire Line
@@ -1308,17 +1306,6 @@ Wire Wire Line
 Wire Wire Line
 	5450 4250 5450 4500
 Connection ~ 5450 4500
-$Comp
-L Connector_Generic:Conn_01x04 J2
-U 1 1 5D26FDD8
-P 1900 1750
-F 0 "J2" H 1850 1350 50  0000 C CNN
-F 1 "DNP" H 1818 1416 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical" H 1900 1750 50  0001 C CNN
-F 3 "~" H 1900 1750 50  0001 C CNN
-	1    1900 1750
-	-1   0    0    1   
-$EndComp
 $Comp
 L power:+3.3V #PWR03
 U 1 1 5D275B78
@@ -1937,4 +1924,30 @@ Wire Wire Line
 	5450 4000 5550 4000
 Wire Wire Line
 	5550 4000 5550 3950
+Text Notes 8800 4000 0    50   ~ 0
+high: fail\nlow: pass
+$Comp
+L Connector_Generic:Conn_01x05 J2
+U 1 1 5D5A5356
+P 1900 1650
+F 0 "J2" H 1818 1317 50  0000 C CNN
+F 1 "DNP" H 1818 1316 50  0001 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical" H 1900 1650 50  0001 C CNN
+F 3 "~" H 1900 1650 50  0001 C CNN
+	1    1900 1650
+	-1   0    0    1   
+$EndComp
+$Comp
+L power:VBUS #PWR0104
+U 1 1 5D5A6290
+P 2100 1050
+F 0 "#PWR0104" H 2100 900 50  0001 C CNN
+F 1 "VBUS" H 2115 1223 50  0000 C CNN
+F 2 "" H 2100 1050 50  0001 C CNN
+F 3 "" H 2100 1050 50  0001 C CNN
+	1    2100 1050
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2100 1450 2100 1050
 $EndSCHEMATC
