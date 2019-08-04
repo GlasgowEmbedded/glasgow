@@ -312,9 +312,9 @@ class SVFParser:
             length = self._parse_value(int)
 
             if self._param_mask[command] is None or len(self._param_mask[command]) != length:
-                self._param_mask[command] = bits((1,)) * length
+                self._param_mask[command] = bits(-1, length)
             if self._param_smask[command] is None or len(self._param_smask[command]) != length:
-                self._param_smask[command] = bits((1,)) * length
+                self._param_smask[command] = bits(-1, length)
 
             param_tdi   = self._param_tdi[command]
             param_tdo   = None
