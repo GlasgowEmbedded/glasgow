@@ -2,6 +2,11 @@
 # Document Number: UG380
 # Accession: G00039
 
+# Note: when polling INIT_B and DONE status, the IR shifted in should not be BYPASS to avoid race
+# conditions. Shifting BYPASS in would activate the normal configuration logic, which can cause
+# failure to program or even a corrupted bitstream (if a bitstream is loaded from memory on top
+# of the one loaded from JTAG).
+
 import logging
 import argparse
 from bitarray import bitarray
@@ -70,7 +75,9 @@ class XC6SJTAGInterface:
         self._log("start")
         await self.lower.write_ir(IR_JSTART)
         await self.lower.run_test_idle(16)
-        await self._poll("configuration start", lambda status: status.DONE,
+        # Poll ISC_DONE, which corresponds to EOS, not DONE, which can be activated anywhere
+        # during the configuration depending on the bitstream.
+        await self._poll("configuration start", lambda status: status.ISC_DONE,
                          ir=IR_JSTART)
 
 

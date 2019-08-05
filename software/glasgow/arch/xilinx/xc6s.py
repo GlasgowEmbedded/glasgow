@@ -8,7 +8,8 @@
 # Selecting the IR opcode JPROGRAM is equivalent to asserting the PROGRAM_B pin, and observing
 # the captured IR values is equivalent to sampling INIT_B and DONE pins, with the exception that
 # the physical pins can be configured as open-drain, but TAP always observes logical levels inside
-# the chip's configuration logic.
+# the chip's configuration logic. Based on black box RE, the ISC_DONE bit corresponds to EOS output
+# of the STARTUP primitive.
 #
 # Similarly, selecting the IR opcode CFG_IN is equivalent to driving the serial DIN pin, which is
 # why the data provided on TDI is a series of 8-bit words MSB first, unlike the JTAG convention.
