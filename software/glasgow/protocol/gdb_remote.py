@@ -123,6 +123,7 @@ class GDBRemote(metaclass=ABCMeta):
                 if command == b"QStartNoAckMode":
                     no_ack_mode = True
                     response = b"OK"
+                    command_failed = False
                 else:
                     try:
                         response = await self._gdb_process(command, lambda: endpoint.recv_wait())
