@@ -2,7 +2,16 @@
 # Document Number: UG380
 # Accession: G00039
 
-# Note: selecting the JPROGRAM is equivalent to asserting the PROGRAM_B pin.
+# The configuration flow is unfortunately not well documented by Xilinx. For a successful flow,
+# it is crucial to understand the nature of the JTAG TAP in relation to normal configuration pins.
+#
+# Selecting the IR opcode JPROGRAM is equivalent to asserting the PROGRAM_B pin, and observing
+# the captured IR values is equivalent to sampling INIT_B and DONE pins, with the exception that
+# the physical pins can be configured as open-drain, but TAP always observes logical levels inside
+# the chip's configuration logic.
+#
+# Similarly, selecting the IR opcode CFG_IN is equivalent to driving the serial DIN pin, which is
+# why the data provided on TDI is a series of 8-bit words MSB first, unlike the JTAG convention.
 
 from ...support.bits import *
 from ...support.bitstruct import *
@@ -51,6 +60,6 @@ IR_CAPTURE = bitstruct("IR_CAPTURE", 6, [
     (None,          2),
     ("ISC_DONE",    1),
     ("ISC_ENABLED", 1),
-    ("INIT_B",      1),
+    ("INIT_B",      1), # documented as INIT(1)
     ("DONE",        1),
 ])
