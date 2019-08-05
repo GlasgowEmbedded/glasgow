@@ -34,16 +34,16 @@ class XC6SJTAGInterface:
         self._log("read idcode mfg-id=%03x part-id=%04x", idcode.mfg_id, idcode.part_id)
         return idcode, devices_by_idcode[idcode.mfg_id, idcode.part_id]
 
-    async def _status(self):
-        status = IR_CAPTURE.from_bits(await self.lower.read_ir())
+    async def _status(self, ir=IR_BYPASS):
+        status = IR_CAPTURE.from_bits(await self.lower.exchange_ir(ir))
         self._log("status %s", status.bits_repr())
         return status
 
-    async def _poll(self, action, check, limit=16):
-        status = await self._status()
+    async def _poll(self, action, check, ir=IR_BYPASS, limit=16):
+        status = await self._status(ir)
         count  = 1
         while not check(status):
-            status = await self._status()
+            status = await self._status(ir)
             count += 1
             if count >= limit:
                 raise GlasgowAppletError("{} failed: {}".format(action, status.bits_repr()))
@@ -51,7 +51,8 @@ class XC6SJTAGInterface:
     async def reconfigure(self):
         self._log("reconfigure")
         await self.lower.write_ir(IR_JPROGRAM)
-        await self._poll("configuration reset", lambda status: status.INIT_B)
+        await self._poll("configuration reset", lambda status: status.INIT_B,
+                         ir=IR_CFG_IN)
 
     async def load_bitstream(self, bitstream, *, byte_reverse=True):
         if byte_reverse:

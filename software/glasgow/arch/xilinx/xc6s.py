@@ -12,6 +12,12 @@
 #
 # Similarly, selecting the IR opcode CFG_IN is equivalent to driving the serial DIN pin, which is
 # why the data provided on TDI is a series of 8-bit words MSB first, unlike the JTAG convention.
+#
+# Deasserting JPROGRAM by shifting a different opcode (such as BYPASS) is inherently racy, because
+# deasserting PROGRAM_B normally starts configuration from external memory. However, JTAG has
+# higher priority, and shifting in CFG_IN, CFG_OUT, JSTART or JSHUTDOWN override the normal process
+# of configuring from an external source. Because of this, while polling the status of INIT_B in
+# the captured IR, it is necessary to shift in one of those opcodes.
 
 from ...support.bits import *
 from ...support.bitstruct import *
