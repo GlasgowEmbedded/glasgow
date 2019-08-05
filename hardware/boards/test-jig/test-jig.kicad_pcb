@@ -10,6 +10,13 @@
   )
 
   (page A4)
+  (title_block
+    (title "Glasgow Test Jig")
+    (comment 1 "License 0BSD or Apache 2.0")
+    (comment 3 "by Electronic Eel")
+    (comment 4 "Test Jig for Glasgow revC1")
+  )
+
   (layers
     (0 F.Cu signal)
     (31 B.Cu signal)
