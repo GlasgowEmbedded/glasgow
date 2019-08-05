@@ -70,7 +70,8 @@ class XC6SJTAGInterface:
         self._log("start")
         await self.lower.write_ir(IR_JSTART)
         await self.lower.run_test_idle(16)
-        await self._poll("configuration start", lambda status: status.DONE)
+        await self._poll("configuration start", lambda status: status.DONE,
+                         ir=IR_JSTART)
 
 
 class ProgramXC6SApplet(JTAGProbeApplet, name="program-xc6s"):
