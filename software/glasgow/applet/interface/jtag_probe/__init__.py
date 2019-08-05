@@ -41,7 +41,7 @@ class JTAGProbeBus(Module):
         self.tdo = Signal(reset=1)
         self.tdi = Signal(reset=1)
         self.trst_z = Signal(reset=0)
-        self.trst_o = Signal(reset=1)
+        self.trst_o = Signal(reset=0)
 
         ###
 
