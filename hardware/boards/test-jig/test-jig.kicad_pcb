@@ -5886,7 +5886,7 @@
   (gr_arc (start 247 90) (end 251.5 90) (angle -90) (layer Edge.Cuts) (width 0.05))
   (gr_arc (start 210 90) (end 210 85.5) (angle -90) (layer Edge.Cuts) (width 0.05))
   (gr_text "Jig power" (at 215 101) (layer F.SilkS) (tstamp 5D488B86)
-    (effects (font (size 1.5 1.4) (thickness 0.3)) (justify left))
+    (effects (font (size 1.8 1.4) (thickness 0.3)) (justify left))
   )
   (gr_text Fail (at 238 97.5) (layer F.SilkS) (tstamp 5D488B36)
     (effects (font (size 1.8 1.4) (thickness 0.3)) (justify left))
