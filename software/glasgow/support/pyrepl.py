@@ -25,6 +25,7 @@ class AsyncInteractiveConsole(code.InteractiveConsole):
             except FileNotFoundError:
                 pass
 
+        self.locals["__name__"] = __name__.split(".")[0]
         self._fut = None
 
     def save_history(self):
