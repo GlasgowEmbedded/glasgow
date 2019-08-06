@@ -76,9 +76,9 @@ Debugging new applets can be hard, especially if bidirectional buses are involve
 
 ### ... with Linux?
 
-You will need Python 3.6 (or a newer version, in which case replace `3.6` with that version below) and sdcc. On a Debian or Ubuntu system these can be installed with:
+You will need Python 3.7 (or a newer version, in which case replace `3.7` with that version below) and sdcc. On a Debian or Ubuntu system these can be installed with:
 
-    apt-get install python3.6 sdcc
+    apt-get install python3.7 sdcc
 
 Obtain the source code:
 
@@ -92,16 +92,16 @@ Configure your system to allow unprivileged access (for anyone in the `plugdev` 
 Install the dependencies and the binaries for the current user:
 
     cd software
-    python3.6 setup.py develop --user
+    python3.7 setup.py develop --user
 
-The binaries are placed in `$HOME/.local/bin`, so be sure to add that directory to the `PATH` environment variable; after this, you can run `glasgow` from a terminal. Instead of adjusting `PATH` it is also possible to use `python3.6 -m glasgow.cli`.
+The binaries are placed in `$HOME/.local/bin`, so be sure to add that directory to the `PATH` environment variable; after this, you can run `glasgow` from a terminal. Instead of adjusting `PATH` it is also possible to use `python3.7 -m glasgow.cli`.
 
 To update the source code, do:
 
     cd Glasgow
     git pull
     cd software
-    python3.6 setup.py build_ext
+    python3.7 setup.py build_ext
 
 ### ... with Windows?
 
