@@ -38,20 +38,31 @@ class DirectArguments(AccessArguments):
             "--keep-voltage", action="store_true", default=False,
             help="do not change I/O port voltage")
 
-    def _pin_number(self, arg):
+    def _mandatory_pin_number(self, arg):
         if not re.match(r"^[0-9]+$", arg):
             self._arg_error("{} is not a valid pin number", arg)
         return int(arg)
+
+    def _optional_pin_number(self, arg):
+        if arg == "-":
+            return None
+        return self._mandatory_pin_number(arg)
 
     def _add_pin_argument(self, parser, name, default, required):
         help = "bind the applet I/O line {!r} to pin NUM".format(name)
         if default is not None:
             help += " (default: %(default)s)"
 
+        if required:
+            type = self._mandatory_pin_number
+            if default is not None:
+                required = False
+        else:
+            type = self._optional_pin_number
+
         opt_name = "--pin-" + name.lower().replace("_", "-")
         parser.add_argument(
-            opt_name, metavar="NUM", type=self._pin_number, default=default, required=required,
-            help=help)
+            opt_name, metavar="NUM", type=type, default=default, required=required, help=help)
 
     def _pin_set(self, width, arg):
         if re.match(r"^[0-9]+:[0-9]+$", arg):
