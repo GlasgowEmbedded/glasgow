@@ -307,8 +307,8 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
             access.add_pin_argument(parser, "miso")
 
         parser.add_argument(
-            "-b", "--bit-rate", metavar="FREQ", type=int, default=100,
-            help="set SPI bit rate to FREQ kHz (default: %(default)s)")
+            "-f", "--frequency", metavar="FREQ", type=int, default=100,
+            help="set SPI clock frequency to FREQ kHz (default: %(default)s)")
         parser.add_argument(
             "--sck-idle", metavar="LEVEL", type=int, choices=[0, 1], default=0,
             help="set idle clock level to LEVEL (default: %(default)s)")
