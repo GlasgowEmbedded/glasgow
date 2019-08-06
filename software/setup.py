@@ -21,7 +21,7 @@ if sys.version_info[:3] < (3, 7):
 class GlasgowBuildExt(build_ext):
     def run(self):
         try:
-            libfx2_dir = path.join("..", "vendor", "libfx2", "firmware")
+            libfx2_dir = path.join("..", "vendor", "libfx2", "firmware", "library")
             spawn(["make", "-C", path.join(libfx2_dir)], dry_run=self.dry_run)
 
             firmware_dir = path.join("..", "firmware")
