@@ -1,6 +1,7 @@
 import os
 import code
 import asyncio
+import builtins
 try:
     import readline
 except ModuleNotFoundError:
@@ -26,7 +27,7 @@ class AsyncInteractiveConsole(code.InteractiveConsole):
                 pass
 
         self.locals["__name__"] = __name__.split(".")[0]
-        self._fut = None
+        self._future = None
 
     def save_history(self):
         if readline is not None:
@@ -36,15 +37,14 @@ class AsyncInteractiveConsole(code.InteractiveConsole):
     def runcode(self, code):
         try:
             exec(code, self.locals)
-            builtins = self.locals["__builtins__"]
-            if "_" in builtins:
-                if asyncio.iscoroutine(builtins["_"]):
-                    self._fut = builtins["_"] = asyncio.ensure_future(builtins["_"])
+            if hasattr(builtins, "_"):
+                if asyncio.iscoroutine(builtins._):
+                    self._future = asyncio.ensure_future(builtins._)
         except SystemExit:
             raise
         except:
             self.showtraceback()
-        if self._fut:
+        if self._future:
             raise _FutureResult
 
     async def interact(self):
@@ -55,13 +55,14 @@ class AsyncInteractiveConsole(code.InteractiveConsole):
             except _FutureResult:
                 self.resetbuffer()
                 try:
-                    if not self._fut.done():
-                        result = await self._fut
+                    if not self._future.done():
+                        result = await self._future
                     else:
-                        result = self._fut.result()
+                        result = self._future.result()
+                    builtins._ = result
                     if result is not None:
                         print(repr(result))
                 except Exception as e:
                     self.showtraceback()
-                self._fut = None
+                self._future = None
         self.save_history()
