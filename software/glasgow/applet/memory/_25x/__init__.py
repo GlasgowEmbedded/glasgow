@@ -236,13 +236,21 @@ class Memory25xApplet(SPIMasterApplet, name="memory-25x"):
           N/C * * N/C
           SS# * * GND
          MISO * * WP#
+
+    The default pin assignment follows the pinouts above in the clockwise direction, making it easy
+    to connect the memory with probes or, alternatively, crimp an IDC cable wired to a SOIC clip.
     """
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        super().add_build_arguments(parser, access)
+        super().add_build_arguments(parser, access, omit_pins=True)
 
-        access.add_pin_argument(parser, "hold")
+        access.add_pin_argument(parser, "ss",   default=True, required=True)
+        access.add_pin_argument(parser, "miso", default=True, required=True)
+        access.add_pin_argument(parser, "wp",   default=True)
+        access.add_pin_argument(parser, "mosi", default=True, required=True)
+        access.add_pin_argument(parser, "sck",  default=True, required=True)
+        access.add_pin_argument(parser, "hold", default=True)
 
     def build(self, target, args):
         subtarget = super().build(target, args)
