@@ -245,8 +245,8 @@ class ProgramAVRSPIApplet(GlasgowApplet, name="program-avr-spi"):
         access.add_pin_argument(parser, "mosi",  default=True)
 
         parser.add_argument(
-            "-b", "--bit-rate", metavar="FREQ", type=int, default=100,
-            help="set SPI bit rate to FREQ kHz (default: %(default)s)")
+            "-f", "--frequency", metavar="FREQ", type=int, default=100,
+            help="set SPI frequency to FREQ kHz (default: %(default)s)")
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
@@ -254,7 +254,7 @@ class ProgramAVRSPIApplet(GlasgowApplet, name="program-avr-spi"):
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
-            period_cyc=math.ceil(target.sys_clk_freq / (args.bit_rate * 1000)),
+            period_cyc=math.ceil(target.sys_clk_freq / (args.frequency * 1000)),
             delay_cyc=math.ceil(target.sys_clk_freq / 1e6),
             sck_idle=0,
             sck_edge="rising",

@@ -327,7 +327,7 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
             period_cyc=self.derive_clock(input_hz=target.sys_clk_freq,
-                                         output_hz=args.bit_rate * 1000,
+                                         output_hz=args.frequency * 1000,
                                          clock_name="master",
                                          # 2 cyc MultiReg delay from SCK to MISO requires a 4 cyc
                                          # period with current implementation of SERDES
@@ -373,7 +373,7 @@ class SPIMasterAppletTestCase(GlasgowAppletTestCase, applet=SPIMasterApplet):
     @applet_simulation_test("setup_loopback",
                             ["--pin-sck",  "0", "--pin-ss", "1",
                              "--pin-mosi", "2", "--pin-miso",   "3",
-                             "--bit-rate", "5000"])
+                             "--frequency", "5000"])
     @asyncio.coroutine
     def test_loopback(self):
         mux_iface = self.applet.mux_interface

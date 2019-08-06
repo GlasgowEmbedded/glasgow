@@ -151,8 +151,8 @@ class ProgramNRF24LApplet(GlasgowApplet, name="program-nrf24l"):
         access.add_pin_argument(parser, "reset", default=True)
 
         parser.add_argument(
-            "-b", "--bit-rate", metavar="FREQ", type=int, default=1000,
-            help="set SPI bit rate to FREQ kHz (default: %(default)s)")
+            "-f", "--frequency", metavar="FREQ", type=int, default=1000,
+            help="set SPI frequency to FREQ kHz (default: %(default)s)")
 
     def build(self, target, args):
         dut_prog,  self.__addr_dut_prog  = target.registers.add_rw(1)
@@ -165,7 +165,7 @@ class ProgramNRF24LApplet(GlasgowApplet, name="program-nrf24l"):
             pads=pads,
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=True),
-            period_cyc=math.ceil(target.sys_clk_freq / (args.bit_rate * 1000)),
+            period_cyc=math.ceil(target.sys_clk_freq / (args.frequency * 1000)),
             delay_cyc=math.ceil(target.sys_clk_freq / 1e6),
             sck_idle=0,
             sck_edge="rising",
