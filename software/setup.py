@@ -14,8 +14,8 @@ from distutils.errors import DistutilsExecError
 import versioneer
 
 
-if sys.version_info[:3] < (3, 7):
-    raise SystemExit("Glasgow requires Python 3.7+")
+if sys.version_info[:3] < (3, 6):
+    raise SystemExit("Glasgow requires Python 3.6+")
 
 
 class GlasgowBuildExt(build_ext):

@@ -9,7 +9,6 @@
 
 import logging
 import argparse
-from contextlib import asynccontextmanager
 from bitarray import bitarray
 from migen import *
 
