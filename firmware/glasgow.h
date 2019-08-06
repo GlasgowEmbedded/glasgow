@@ -63,7 +63,7 @@ enum {
 #define BITSTREAM_ID_SIZE 16
 
 __xdata __at(0x4000 - CONF_SIZE) struct glasgow_config {
-  char      revision;
+  uint8_t   revision;
   char      serial[16];
   uint32_t  bitstream_size;
   char      bitstream_id[BITSTREAM_ID_SIZE];
