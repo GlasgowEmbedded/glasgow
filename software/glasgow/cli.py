@@ -182,6 +182,10 @@ def get_argparser():
         "--no-alert", dest="set_alert", default=True, action="store_false",
         help="do not raise an alert if Vsense is out of range of Vio")
 
+    p_safe = subparsers.add_parser(
+        "safe", formatter_class=TextHelpFormatter,
+        help="turn off all I/O port voltage regulators and drivers")
+
     p_voltage_limit = subparsers.add_parser(
         "voltage-limit", formatter_class=TextHelpFormatter,
         help="limit I/O port voltage as a safety mechanism")
@@ -435,6 +439,12 @@ async def _main():
                     notice += " (ALERT)"
                 print("{}\t{:.2}\t{:.2}\t{:.3}\t{:.2}-{:.2}\t{}"
                       .format(port, vio, vlimit, vsense, alert[0], alert[1], notice))
+
+        if args.action == "safe":
+            await device.reset_alert("AB")
+            await device.set_voltage("AB", 0.0)
+            await device.poll_alert() # clear any remaining alerts
+            logger.info("all ports safe")
 
         if args.action == "voltage-limit":
             if args.voltage is not None:
