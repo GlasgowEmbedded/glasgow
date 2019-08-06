@@ -9,6 +9,7 @@
 
 import logging
 import argparse
+from contextlib import asynccontextmanager
 from bitarray import bitarray
 from migen import *
 
@@ -44,20 +45,18 @@ class XC6SJTAGInterface:
         self._log("status %s", status.bits_repr())
         return status
 
-    async def _poll(self, action, check, ir=IR_BYPASS, limit=16):
+    async def _poll(self, ir, limit):
         status = await self._status(ir)
-        count  = 1
-        while not check(status):
-            status = await self._status(ir)
-            count += 1
-            if count >= limit:
-                raise GlasgowAppletError("{} failed: {}".format(action, status.bits_repr()))
+        for attempt in range(limit):
+            yield (await self._status(ir))
 
     async def reconfigure(self):
         self._log("reconfigure")
         await self.lower.write_ir(IR_JPROGRAM)
-        await self._poll("configuration reset", lambda status: status.INIT_B,
-                         ir=IR_CFG_IN)
+        async for status in self._poll(IR_CFG_IN, limit=16):
+            if status.INIT_B:
+                return
+        raise GlasgowAppletError("configuration reset failed: {}".format(status.bits_repr()))
 
     async def load_bitstream(self, bitstream, *, byte_reverse=True):
         if byte_reverse:
@@ -73,12 +72,13 @@ class XC6SJTAGInterface:
 
     async def start(self):
         self._log("start")
-        await self.lower.write_ir(IR_JSTART)
-        await self.lower.run_test_idle(16)
         # Poll ISC_DONE, which corresponds to EOS, not DONE, which can be activated anywhere
         # during the configuration depending on the bitstream.
-        await self._poll("configuration start", lambda status: status.ISC_DONE,
-                         ir=IR_JSTART)
+        async for status in self._poll(IR_JSTART, limit=4):
+            await self.lower.run_test_idle(16)
+            if status.ISC_DONE:
+                return
+        raise GlasgowAppletError("configuration start failed: {}".format(status.bits_repr()))
 
 
 class ProgramXC6SApplet(JTAGProbeApplet, name="program-xc6s"):
@@ -111,6 +111,7 @@ class ProgramXC6SApplet(JTAGProbeApplet, name="program-xc6s"):
         self.logger.info("found %s rev=%d", xc6s_device.name, idcode.version)
 
         if args.bit_file:
+            self.logger.info("configuring from %r", args.bit_file.name)
             await xc6s_iface.reconfigure()
             await xc6s_iface.load_bitstream(args.bit_file.read())
             await xc6s_iface.start()
