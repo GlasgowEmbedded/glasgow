@@ -594,21 +594,16 @@ class JTAGProbeInterface:
             await self.enter_shift_dr()
 
         try:
-            # Fill the entire register chain with ones.
-            data = await self.shift_tdio((1,) * max_length, last=False)
-
-            length = 0
-            while length < max_length:
-                out = await self.shift_tdio((0,), last=False)
-                if out[0] == 0:
-                    break
-                length += 1
+            data_1 = await self.shift_tdio((1,) * max_length, last=False)
+            data_0 = await self.shift_tdio((0,) * max_length, last=False)
+            for length in range(max_length):
+                if data_0[length] == 0:
+                    self._log_h("scan %s length=%d data=<%s>",
+                                xr, length, dump_bin(data_1[:length]))
+                    return data_1[:length]
             else:
                 self._log_h("overlong %s", xr)
                 return
-
-            self._log_h("scan %s length=%d data=<%s>", xr, length, dump_bin(data[:length]))
-            return data[:length]
 
         finally:
             if xr == "ir":
@@ -616,7 +611,7 @@ class JTAGProbeInterface:
                 await self.shift_tdi((1,) * length, last=True)
             if xr == "dr":
                 # Restore the old contents, just in case this matters.
-                await self.shift_tdi(data[:length], last=True)
+                await self.shift_tdi(data_1[:length], last=True)
 
             await self.enter_run_test_idle()
 
