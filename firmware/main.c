@@ -127,7 +127,12 @@ usb_configuration_c usb_config_1_pipe = {
   }
 };
 
+// check for "earlier than 3.5", but version macros shipped in 3.6
+#if !defined(__SDCC_VERSION_MAJOR)
+__code const struct usb_configuration *__code const usb_configs[] = {
+#else
 usb_configuration_set_c usb_configs[] = {
+#endif
   &usb_config_2_pipes,
   &usb_config_1_pipe,
 };
