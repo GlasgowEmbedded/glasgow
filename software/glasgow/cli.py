@@ -198,8 +198,14 @@ def get_argparser():
             "--synthesis-opts", metavar="OPTIONS", type=str, default="",
             help="(advanced) pass OPTIONS to FPGA synthesis toolchain")
 
-    def add_run_args(parser):
+    def add_build_args(parser):
         add_toolchain_args(parser)
+        parser.add_argument(
+            "--override-required-revision", default=False, action="store_true",
+            help="(advanced) override applet revision requirement")
+
+    def add_run_args(parser):
+        add_build_args(parser)
         parser.add_argument(
             "--rebuild", default=False, action="store_true",
             help="rebuild bitstream even if an identical one is already loaded")
@@ -235,7 +241,7 @@ def get_argparser():
     p_flash = subparsers.add_parser(
         "flash", formatter_class=TextHelpFormatter,
         help="program FX2 firmware or applet bitstream into EEPROM")
-    add_toolchain_args(p_flash)
+    add_build_args(p_flash)
 
     g_flash_firmware = p_flash.add_mutually_exclusive_group()
     g_flash_firmware.add_argument(
@@ -271,7 +277,7 @@ def get_argparser():
     p_build = subparsers.add_parser(
         "build", formatter_class=TextHelpFormatter,
         help="(advanced) build applet logic and save it as a file")
-    add_toolchain_args(p_build)
+    add_build_args(p_build)
 
     p_build.add_argument(
         "--rev", metavar="REVISION", type=revision, required=True,
@@ -317,9 +323,13 @@ def _applet(revision, args):
                                    with_analyzer=hasattr(args, "trace") and args.trace)
     applet = GlasgowApplet.all_applets[args.applet]()
     try:
+        message = ("applet requires device rev{}+, rev{} found"
+                   .format(applet.required_revision, revision))
         if revision < applet.required_revision:
-            raise GlasgowAppletError("applet requires device rev{}+, rev{} found"
-                                     .format(applet.required_revision, revision))
+            if args.override_required_revision:
+                applet.logger.warn(message)
+            else:
+                raise GlasgowAppletError(message)
         applet.build(target, args)
     except GlasgowAppletError as e:
         applet.logger.error(e)
