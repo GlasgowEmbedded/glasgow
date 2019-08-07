@@ -1,19 +1,27 @@
 import logging
+import asyncio
 import argparse
 from migen import *
 
+from ....support.endpoint import *
 from ....gateware.clockgen import *
 from ... import *
 
 
 class SigmaDeltaDACChannel(Module):
-    def __init__(self, output, bits):
+    def __init__(self, output, bits, signed):
         self.stb    = Signal()
 
         self.level  = Signal(bits)
         self.update = Signal()
 
         ###
+
+        level_u = Signal(bits)
+        if signed:
+            self.comb += level_u.eq(self.level - (1 << (bits - 1)))
+        else:
+            self.comb += level_u.eq(self.level)
 
         accum   = Signal(bits)
         level_r = Signal(bits)
@@ -22,16 +30,17 @@ class SigmaDeltaDACChannel(Module):
                 Cat(accum, output).eq(accum + level_r)
             ),
             If(self.update,
-                level_r.eq(self.level)
+                level_r.eq(level_u)
             )
         ]
 
 
 class AudioDACSubtarget(Module):
-    def __init__(self, pads, out_fifo, pulse_cyc, sample_cyc, width):
+    def __init__(self, pads, out_fifo, pulse_cyc, sample_cyc, width, signed):
         assert width in (1, 2)
 
-        channels = [SigmaDeltaDACChannel(output, bits=width * 8) for output in pads.o_t.o]
+        channels = [SigmaDeltaDACChannel(output, bits=width * 8, signed=signed)
+                    for output in pads.o_t.o]
         self.submodules += channels
 
         self.submodules.clkgen = ClockGen(pulse_cyc)
@@ -103,8 +112,8 @@ class AudioDACApplet(GlasgowApplet, name="audio-dac"):
     Play sound using a 1-bit sigma-delta DAC, i.e. pulse density modulation.
 
     Currently, the supported sample formats are:
-        * 1..16 channel unsigned 8-bit,
-        * 1..16 channel unsigned 16-bit little endian.
+        * 1..16 channel signed/unsigned 8-bit,
+        * 1..16 channel signed/unsigned 16-bit little endian.
 
     Other formats may be converted to it using:
 
@@ -113,7 +122,16 @@ class AudioDACApplet(GlasgowApplet, name="audio-dac"):
     For example, to play an ogg file:
 
         $ sox samples.ogg -c 2 -r 48000 samples.u16
-        $ glasgow run audio-dac --pins-o 0,1 -r 48000 -w 2 samples.u16
+        $ glasgow run audio-dac --pins-o 0,1 -r 48000 -w 2 -u play samples.u16
+
+    To use the DAC as a PulseAudio sink, add the following line to default.pa:
+
+        load-module module-simple-protocol-tcp source=0 record=true rate=48000 channels=2 \
+            format=s16le port=12345
+
+    Then run:
+
+        $ glasgow run audio-dac --pins-o 0,1 -r 48000 -w 2 -s connect localhost:12345
     """
 
     __pin_sets = ("o",)
@@ -133,6 +151,13 @@ class AudioDACApplet(GlasgowApplet, name="audio-dac"):
         parser.add_argument(
             "-w", "--width", metavar="WIDTH", type=int, default=1,
             help="set sample width to WIDTH bytes (default: %(default)d)")
+        g_signed = parser.add_mutually_exclusive_group(required=True)
+        g_signed.add_argument(
+            "-s", "--signed", dest="signed", default=False, action="store_true",
+            help="interpret samples as signed")
+        g_signed.add_argument(
+            "-u", "--unsigned", dest="signed", action="store_false",
+            help="interpret samples as unsigned")
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
@@ -147,6 +172,7 @@ class AudioDACApplet(GlasgowApplet, name="audio-dac"):
             pulse_cyc=pulse_cyc,
             sample_cyc=int(target.sys_clk_freq // args.sample_rate),
             width=args.width,
+            signed=args.signed,
         ))
         return subtarget
 
@@ -155,19 +181,42 @@ class AudioDACApplet(GlasgowApplet, name="audio-dac"):
 
     @classmethod
     def add_interact_arguments(cls, parser):
-        parser.add_argument(
+        # TODO(py3.7): add required=True
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+
+        p_play = p_operation.add_parser(
+            "play", help="play PCM file")
+        p_play.add_argument(
             "file", metavar="FILE", type=argparse.FileType("rb"),
             help="read PCM data from FILE")
-        parser.add_argument(
+        p_play.add_argument(
             "-l", "--loop", default=False, action="store_true",
             help="loop the input samples")
 
+        p_connect = p_operation.add_parser(
+            "connect", help="connect to a PCM source")
+        ServerEndpoint.add_argument(p_connect, "pcm_endpoint")
+
     async def interact(self, device, args, pcm_iface):
-        pcm_data = args.file.read()
-        while True:
-            await pcm_iface.write(pcm_data)
-            if not args.loop:
-                break
+        if args.operation == "play":
+            pcm_data = args.file.read()
+            while True:
+                await pcm_iface.write(pcm_data)
+                if not args.loop:
+                    break
+
+        if args.operation == "connect":
+            proto, *proto_args = args.pcm_endpoint
+            if proto == "tcp":
+                reader, _ = await asyncio.open_connection(*proto_args)
+            elif proto == "unix":
+                reader, _ = await asyncio.open_unix_connection(*proto_args)
+            else:
+                assert False
+            while True:
+                data = await reader.read(512)
+                await pcm_iface.write(data)
+                await pcm_iface.flush(wait=False)
 
 # -------------------------------------------------------------------------------------------------
 

@@ -7,7 +7,7 @@ from collections import deque
 from .aobject import *
 
 
-__all__ = ["ServerEndpoint"]
+__all__ = ["ServerEndpoint", "ClientEndpoint"]
 
 
 def endpoint(spec):
@@ -114,7 +114,7 @@ class ServerEndpoint(aobject, asyncio.Protocol):
             self._log(logging.TRACE, "queue full, pausing reads")
             self._transport.pause_reading()
             self._read_paused = True
-        elif self._read_paused and self._queued < self._queue_size: 
+        elif self._read_paused and self._queued < self._queue_size:
             self._log(logging.TRACE, "queue not full, resuming reads")
             self._transport.resume_reading()
             self._read_paused = False
@@ -201,6 +201,24 @@ class ServerEndpoint(aobject, asyncio.Protocol):
     async def close(self):
         if self._transport:
             self._transport.close()
+
+
+class ClientEndpoint(aobject, asyncio.Protocol):
+    @classmethod
+    def add_argument(cls, parser, name, default=None):
+        metavar = name.upper().replace("_", "-")
+        help    = "connect to %s, either unix:PATH or tcp:HOST:PORT" % metavar
+        if default is None:
+            nargs = None
+        else:
+            nargs = "?"
+            help += " (default: %(default)s)"
+
+        parser.add_argument(
+            name, metavar=metavar, type=endpoint, nargs=nargs, default=default,
+            help=help)
+
+    # FIXME: finish this
 
 # -------------------------------------------------------------------------------------------------
 
