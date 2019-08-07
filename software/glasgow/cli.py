@@ -32,7 +32,8 @@ logger = logging.getLogger(__name__)
 
 class TextHelpFormatter(argparse.HelpFormatter):
     def __init__(self, prog):
-        super().__init__(prog, width=120)
+        columns, rows = os.get_terminal_size(0)
+        super().__init__(prog, width=columns, max_help_position=28)
 
     def _fill_text(self, text, width, indent):
         def filler(match):
