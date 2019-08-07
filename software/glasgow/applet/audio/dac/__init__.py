@@ -164,13 +164,18 @@ class AudioDACApplet(GlasgowApplet, name="audio-dac"):
         if args.frequency is None:
             pulse_cyc = 0
         else:
-            pulse_cyc = self.derive_clock(input_hz=target.sys_clk_freq,
-                                          output_hz=args.frequency * 1e6)
+            pulse_cyc = self.derive_clock(clock_name="modulation",
+                input_hz=target.sys_clk_freq, output_hz=args.frequency * 1e6)
+        sample_cyc = self.derive_clock(clock_name="sampling",
+            input_hz=target.sys_clk_freq, output_hz=args.sample_rate,
+            # Drift of sampling clock is extremely bad, so ensure it only happens insofar as
+            # the oscillator on the board is imprecise, and with no additional error.
+            max_deviation_ppm=0)
         subtarget = iface.add_subtarget(AudioDACSubtarget(
             pads=iface.get_pads(args, pin_sets=self.__pin_sets),
             out_fifo=iface.get_out_fifo(),
             pulse_cyc=pulse_cyc,
-            sample_cyc=int(target.sys_clk_freq // args.sample_rate),
+            sample_cyc=sample_cyc,
             width=args.width,
             signed=args.signed,
         ))
