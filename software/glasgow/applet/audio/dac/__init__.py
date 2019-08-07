@@ -177,7 +177,8 @@ class AudioDACApplet(GlasgowApplet, name="audio-dac"):
         return subtarget
 
     async def run(self, device, args):
-        return await device.demultiplexer.claim_interface(self, self.mux_interface, args)
+        return await device.demultiplexer.claim_interface(self, self.mux_interface, args,
+            write_buffer_size=2048)
 
     @classmethod
     def add_interact_arguments(cls, parser):
