@@ -17,7 +17,7 @@ class Registers(Module):
         self.regs_w = Array()
 
     def _add_reg(self, *args, **kwargs):
-        reg  = Signal(*args, **kwargs)
+        reg  = Signal(*args, **kwargs, src_loc_at=2)
         addr = self.reg_count
         self.reg_count += 1
         return reg, addr
