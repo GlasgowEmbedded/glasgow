@@ -652,7 +652,12 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         return "big"
 
     def target_triple(self):
-        return "mipsel-unknown-none"
+        if self.target_endianness() == "big":
+            return "mips-unknown-none"
+        elif self.target_endianness() == "little":
+            return "mipsel-unknown-none"
+        else:
+            assert False
 
     def target_register_names(self):
         reg_names  = ["${}".format(reg) for reg in range(32)]
