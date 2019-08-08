@@ -131,7 +131,7 @@ class AudioDACApplet(GlasgowApplet, name="audio-dac"):
 
     Then run:
 
-        $ glasgow run audio-dac --pins-o 0,1 -r 48000 -w 2 -s connect localhost:12345
+        $ glasgow run audio-dac --pins-o 0,1 -r 48000 -w 2 -s connect tcp::12345
     """
 
     __pin_sets = ("o",)
