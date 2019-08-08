@@ -92,6 +92,7 @@ class GDBRemote(metaclass=ABCMeta):
 
     async def gdb_run(self, endpoint):
         self.__non_stop = False
+        self.__error_strings = False
 
         try:
             no_ack_mode = False
@@ -132,16 +133,19 @@ class GDBRemote(metaclass=ABCMeta):
                         self.gdb_log(logging.ERROR, "command '%s' caused an unrecoverable "
                                                     "error: %s",
                                      command_asc, str(e))
-                        response = b"E99;%s" % str(e).encode("ascii")
+                        response = (99, str(e))
                         command_failed = True
 
-                if response[0:1] == b"E":
+                if isinstance(response, tuple):
                     if not command_failed:
                         self.gdb_log(logging.WARNING, "command '%s' caused an error: %s",
                                      command_asc, response[4:].decode("ascii"))
 
-                    # Strip error strings if not supported by the debugger.
-                    response = response[0:3]
+                    if self.__error_strings:
+                        error_num, error_msg = response
+                        response = b"E{:02d};{}".format(error_num, error_msg.encode("ascii"))
+                    else:
+                        response = b"E{:02d}".format(error_num)
 
                 while True:
                     response_asc = response.decode("ascii", errors="replace")
@@ -172,6 +176,11 @@ class GDBRemote(metaclass=ABCMeta):
             pass
 
     async def _gdb_process(self, command, make_recv_fut):
+        # (lldb) "Send me human-readable error messages."
+        if command == b"QEnableErrorStrings":
+            self.__error_strings = True
+            return b"OK"
+
         # (lldb) "What are the properties of machine the target is running on?"
         if command == b"qHostInfo":
             info = [
@@ -247,7 +256,7 @@ class GDBRemote(metaclass=ABCMeta):
                 value  = await self.target_get_register(number)
                 return b"%.*x" % (self.target_word_size() * 2, value)
             else:
-                return b"E00;unrecognized register"
+                return (0, "unrecognized register")
 
         # "Set all registers of the target."
         if command.startswith(b"G"):
@@ -265,7 +274,7 @@ class GDBRemote(metaclass=ABCMeta):
                 await self.target_set_register(number, value)
                 return b"OK"
             else:
-                return b"E00;unrecognized register"
+                return (0, "unrecognized register")
 
         # "Read specified memory range of the target."
         if command.startswith(b"m"):
@@ -280,32 +289,36 @@ class GDBRemote(metaclass=ABCMeta):
             await self.target_write_memory(address, bytes.fromhex(data.decode("ascii")))
             return b"OK"
 
+        # "Set software breakpoint."
         if command.startswith(b"Z0"):
             address, _kind = map(lambda x: int(x, 16), command[3:].split(b","))
             if await self.target_set_software_breakpt(address):
                 return b"OK"
             else:
-                return b"E00;cannot set software breakpoint"
+                return (0, "cannot set software breakpoint")
 
+        # "Clear software breakpoint."
         if command.startswith(b"z0"):
             address, _kind = map(lambda x: int(x, 16), command[3:].split(b","))
             if await self.target_clear_software_breakpt(address):
                 return b"OK"
             else:
-                return b"E00;hardware breakpoint not set"
+                return (0, "software breakpoint not set")
 
+        # "Set hardware breakpoint."
         if command.startswith(b"Z1"):
             address, _kind = map(lambda x: int(x, 16), command[3:].split(b","))
             if await self.target_set_instr_breakpt(address):
                 return b"OK"
             else:
-                return b"E00;out of hardware breakpoints"
+                return (0, "out of hardware breakpoints")
 
+        # "Clear hardware breakpoint."
         if command.startswith(b"z1"):
             address, _kind = map(lambda x: int(x, 16), command[3:].split(b","))
             if await self.target_clear_instr_breakpt(address):
                 return b"OK"
             else:
-                return b"E00;hardware breakpoint not set"
+                return (0, "hardware breakpoint not set")
 
         return b""
