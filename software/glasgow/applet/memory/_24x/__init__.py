@@ -29,6 +29,9 @@ class Memory24xInterface:
     async def read(self, addr, length):
         i2c_addr, addr_bytes = self._carry_addr(addr)
 
+        # Note that even if this is a 1-byte address EEPROM and we write 2 bytes here, we will not
+        # overwrite the contents, since the actual write is only initiated on stop, not repeated
+        # start condition.
         self._log("i2c-addr=%#04x addr=%#06x", i2c_addr, addr)
         result = await self.lower.write(i2c_addr, addr_bytes)
         if result is False:
