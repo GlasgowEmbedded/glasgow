@@ -106,7 +106,7 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
             target.multiplexer.claim_interface(self, args=None, throttle="none")
         mode,  self.__addr_mode  = target.registers.add_rw(2)
         error, self.__addr_error = target.registers.add_ro(1)
-        count, self.__addr_count = target.registers.add_rw(32)
+        count, self.__addr_count = target.registers.add_ro(32)
         subtarget = iface.add_subtarget(BenchmarkSubtarget(
             mode=mode, error=error, count=count,
             in_fifo=iface.get_in_fifo(auto_flush=False),
