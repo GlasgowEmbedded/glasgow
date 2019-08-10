@@ -2,6 +2,7 @@
 # Accession: G00040
 # Ref: nRF24L01+ Preliminary Product Specification
 # Accession: G00041
+# Ref: https://travisgoodspeed.blogspot.com/2011/02/promiscuity-is-nrf24l01s-duty.html
 
 import enum
 
@@ -94,6 +95,7 @@ REG_EN_RXADDR   = bitstruct("REG_EN_RXADDR", 8, [
 ])
 
 class SETUP_AW(enum.IntEnum):
+    _2_BYTES    = 0b00 # undocumented
     _3_BYTES    = 0b01
     _4_BYTES    = 0b10
     _5_BYTES    = 0b11
