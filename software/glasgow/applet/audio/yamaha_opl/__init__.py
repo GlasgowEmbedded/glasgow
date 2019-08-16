@@ -803,7 +803,7 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
             in_fifo=iface.get_in_fifo(depth=8192, auto_flush=False),
             # It's useful to run the synthesizer at a frequency significantly higher than real-time
             # to reduce the time spent waiting.
-            master_cyc=self.derive_clock(input_hz=target.sys_clk_freq, output_hz=15e6),
+            master_cyc=self.derive_clock(input_hz=target.sys_clk_freq, output_hz=8e6),
             read_pulse_cyc=int(target.sys_clk_freq * 200e-9),
             write_pulse_cyc=int(target.sys_clk_freq * 100e-9),
             address_clocks=device_iface_cls.address_clocks,
