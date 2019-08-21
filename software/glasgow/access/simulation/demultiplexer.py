@@ -18,6 +18,10 @@ class SimulationDemultiplexerInterface(AccessDemultiplexerInterface):
         self._out_fifo = mux_interface.out_fifo
 
     @asyncio.coroutine
+    def cancel(self):
+        pass
+
+    @asyncio.coroutine
     def reset(self):
         pass
 

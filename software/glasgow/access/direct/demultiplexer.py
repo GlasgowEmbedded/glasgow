@@ -175,11 +175,14 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         self._out_tasks  = TaskQueue()
         self._out_buffer = ChunkedFIFO()
 
-    async def reset(self):
+    async def cancel(self):
         if self._in_tasks or self._out_tasks:
             self.logger.trace("cancelling transactions")
             self._in_tasks .cancel()
             self._out_tasks.cancel()
+
+    async def reset(self):
+        await self.cancel()
 
         self.logger.trace("asserting reset")
         await self.device.write_register(self._addr_reset, 1)
