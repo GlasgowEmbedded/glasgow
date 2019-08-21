@@ -99,7 +99,7 @@ class PadsTestCase(unittest.TestCase):
 
     def assertHasTristate(self, frag, sig):
         for tristate in frag._tristates:
-            if tristate.io is sig:
+            if tristate.target is sig:
                 return
         self.fail("No tristate for {!r} in {!r}".format(sig, frag))
 
