@@ -1,10 +1,10 @@
-from nmigen.compat import *
+from nmigen import *
 
 
 __all__ = ["LinearFeedbackShiftRegister"]
 
 
-class LinearFeedbackShiftRegister(Module):
+class LinearFeedbackShiftRegister(Elaboratable):
     """
     A linear feedback shift register. Useful for generating long pseudorandom sequences with
     a minimal amount of logic.
@@ -31,12 +31,13 @@ class LinearFeedbackShiftRegister(Module):
 
         self.value  = Signal(degree, reset=reset)
 
-        ###
-
+    def elaborate(self, platform):
+        m = Module()
         feedback = 0
         for tap in self.taps:
             feedback ^= (self.value >> (tap - 1)) & 1
-        self.sync += self.value.eq((self.value << 1) | feedback)
+        m.d.sync += self.value.eq((self.value << 1) | feedback)
+        return m
 
     def generate(self):
         """Generate every distinct value the LFSR will take."""
@@ -58,9 +59,12 @@ import unittest
 from . import simulation_test
 
 
-class LFSRTestbench(Module):
+class LFSRTestbench(Elaboratable):
     def __init__(self, **kwargs):
-        self.submodules.dut = LinearFeedbackShiftRegister(**kwargs)
+        self.dut = LinearFeedbackShiftRegister(**kwargs)
+
+    def elaborate(self, platform):
+        return self.dut
 
 
 class LFSRTestCase(unittest.TestCase):
