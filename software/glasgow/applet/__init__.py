@@ -219,7 +219,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
         parsed_args = parser.parse_args(args)
         self.applet.build(target, parsed_args)
 
-        target.get_bitstream(debug=True)
+        target.build_plan().execute()
 
     def _prepare_applet_args(self, args, access_args, interact=False):
         parser = argparse.ArgumentParser()
