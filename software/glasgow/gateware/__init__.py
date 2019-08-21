@@ -1,6 +1,8 @@
 import functools
 import os
-from nmigen.compat import run_simulation
+from nmigen import Elaboratable
+from nmigen.back.pysim import Simulator
+from nmigen.compat import Module as CompatModule, run_simulation as compat_run_simulation
 
 
 __all__ = ["GatewareBuildError", "simulation_test"]
@@ -20,7 +22,13 @@ def simulation_test(case=None, **kwargs):
                 if hasattr(self, "simulationSetUp"):
                     yield from self.simulationSetUp(self.tb)
                 yield from case(self, self.tb)
-            run_simulation(self.tb, setup_wrapper(), vcd_name="test.vcd")
+            if isinstance(self.tb, CompatModule):
+                compat_run_simulation(self.tb, setup_wrapper(), vcd_name="test.vcd")
+            if isinstance(self.tb, Elaboratable):
+                with Simulator(self.tb, vcd_file=open("test.vcd", "w")) as sim:
+                    sim.add_clock(1e-8)
+                    sim.add_sync_process(setup_wrapper())
+                    sim.run()
         return wrapper
 
     if case is None:
