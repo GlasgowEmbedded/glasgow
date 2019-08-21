@@ -565,6 +565,8 @@ async def _main():
                 except GlasgowAppletError as e:
                     applet.logger.error(str(e))
                 finally:
+                    await device.demultiplexer.flush()
+                    await device.demultiplexer.cancel()
                     if do_trace:
                         await device.write_register(target.analyzer.addr_done, 1)
 
@@ -572,9 +574,6 @@ async def _main():
                                                return_when=asyncio.FIRST_EXCEPTION)
             for task in done:
                 await task
-
-            # Work around bugs in python-libusb1 that cause segfaults on interpreter shutdown.
-            await device.demultiplexer.flush()
 
         if args.action == "tool":
             tool = GlasgowApplet.all_applets[args.applet].tool_cls()
