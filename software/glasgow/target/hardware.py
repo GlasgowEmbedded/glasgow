@@ -116,16 +116,17 @@ class GlasgowBuildPlan:
     def archive(self, filename):
         self.lower.archive(filename)
 
-    def execute(self, build_dir=None):
+    def execute(self, build_dir=None, *, debug=False):
         if build_dir is None:
             build_dir = tempfile.mkdtemp(prefix="glasgow_")
         try:
             products  = self.lower.execute_local(build_dir)
             bitstream = products.get("top.bin")
-            shutil.rmtree(build_dir)
         except:
-            logger.info("keeping build tree as %s", build_dir)
+            if debug:
+                logger.info("keeping build tree as %s", build_dir)
             raise
-        # finally:
-        #     shutil.rmtree(build_dir)
+        finally:
+            if not debug:
+                shutil.rmtree(build_dir)
         return bitstream
