@@ -84,12 +84,6 @@ class GlasgowHardwareTarget(Module):
 
             super().finalize(*args, **kwargs)
 
-    def get_fragment(self):
-        # TODO: shouldn't this be done in migen?
-        if self.get_fragment_called:
-            return self._fragment
-        return super().get_fragment()
-
     def build_plan(self, **kwargs):
         return GlasgowBuildPlan(self.platform.prepare(self, **kwargs))
 
