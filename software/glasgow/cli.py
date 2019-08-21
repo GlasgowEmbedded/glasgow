@@ -230,8 +230,8 @@ def get_argparser():
         "run-prebuilt", formatter_class=TextHelpFormatter,
         help="(advanced) load a prebuilt applet bitstream and run applet code")
     p_run_prebuilt.add_argument(
-        "bitstream", metavar="FILENAME", type=argparse.FileType("rb"),
-        help="read bitstream from the specified file")
+        "-f", "--filename", dest="bitstream", metavar="FILENAME", type=argparse.FileType("rb"),
+        help="read bitstream from the specified file (default: <applet-name.bin>)")
     add_applet_arg(p_run_prebuilt, mode="run")
 
     p_tool = subparsers.add_parser(
@@ -476,8 +476,10 @@ async def _main():
                 await device.download_target(target, rebuild=args.rebuild,
                                              toolchain_opts=_toolchain_opts(args))
             if args.action == "run-prebuilt":
-                logger.warn("downloading prebuilt bitstream from %s", args.bitstream.name)
-                await device.download_bitstream(args.bitstream.read())
+                bitstream_file = args.bitstream or open("{}.bin".format(args.applet), "rb")
+                with bitstream_file:
+                    logger.warn("downloading prebuilt bitstream from %r", bitstream_file.name)
+                    await device.download_bitstream(bitstream_file.read())
 
             do_trace = hasattr(args, "trace") and args.trace
             if do_trace:
