@@ -100,11 +100,7 @@ class GlasgowBuildPlan:
     @property
     def bitstream_id(self):
         if self._digest is None:
-            m = hashlib.sha256()
-            m.update(self.lower.script.encode("utf-8"))
-            for filename in sorted(self.lower.files):
-                m.update(self.lower.files[filename].encode("utf-8"))
-            self._digest = m.digest()[:16]
+            self._digest = self.lower.digest()[:16]
         return self._digest
 
     def archive(self, filename):
