@@ -18,7 +18,7 @@ J3 J2 ,2,"Conn_02x10_Odd_Even","Connector_IDC:IDC-Header_2x10_P2.54mm_Vertical",
 J4 ,1,"Conn_01x02","Glasgow:Molex_KK-254_1x02_P2.54mm_Horizontal","https://www.mouser.hk/datasheet/2/418/NG_CD_640455_Y3-1255934.pdf","conn-th-01in-2-1-hdr-ra","22-05-3021","Molex",""
 J5 ,1,"Conn_02x22_Odd_Even","Connector_PinHeader_1.27mm:PinHeader_2x22_P1.27mm_Vertical_SMD","~","conn-smd-005in-22-2-hdr","","",""
 J6 J7 J8 J9 ,4,"Conn_01x08","Connector_PinSocket_1.27mm:PinSocket_1x08_P1.27mm_Vertical","~","conn-th-005in-8-1-rec","","","DNP"
-MK1 MK2 MK3 MK4 ,4,"Mounting_Hole_PAD","Glasgow:MountingHole_3.5mm_Pad_Via_CrtYd",""
+MK1 MK2 MK3 MK4 ,4,"Mounting_Hole_PAD","Glasgow:MountingHole_3.5mm_Pad_Via_CrtYd","", "", "", "", "DNP"
 R10 R41 R42 ,3,"1k","Resistor_SMD:R_0402_1005Metric","https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf","res-0402-1k","RC0402FR-131KL","Yageo",""
 R11 R23 ,2,"4k7","Resistor_SMD:R_0402_1005Metric","https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf","res-0402-4k7","RC0402FR-134K7L","Yageo",""
 R12 R13 R14 R46 R47 ,5,"20k","Resistor_SMD:R_0402_1005Metric","https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf","res-0402-20k","RC0402FR-1320KL","Yageo",""
