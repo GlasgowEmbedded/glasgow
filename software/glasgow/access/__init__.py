@@ -139,7 +139,7 @@ class AccessDemultiplexerInterface(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    async def read(self, length=None):
+    async def read(self, length=None, *, flush=True):
         pass
 
     async def read_str(self, *args, encoding="utf-8", **kwargs):
