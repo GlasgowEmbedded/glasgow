@@ -610,6 +610,10 @@ class YamahaVGMStreamPlayer(VGMStreamPlayer):
             await self._opx_iface.enable()
             await self._reader.parse_data(self)
         finally:
+            # Various parts of our stack are not completely synchronized to each other, resulting
+            # in small mismatches in calculated and produced sample counts. Pad the trailing end
+            # of the VGM file with some additional silence to make sure recording ends.
+            await self._opx_iface.wait_clocks(self.clock_rate)
             await self._opx_iface.disable()
 
     async def record(self, queue, chunk_count=8192):
