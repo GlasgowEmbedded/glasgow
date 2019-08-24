@@ -495,9 +495,6 @@ async def _main():
                             % plan.bitstream_id.hex())
 
             async def run_analyzer():
-                if not do_trace:
-                    return
-
                 signals = {}
                 strobes = set()
                 for field_name, field_trigger, field_width in trace_decoder.events():
@@ -576,16 +573,21 @@ async def _main():
                     if do_trace:
                         await device.write_register(target.analyzer.addr_done, 1)
 
-            analyzer_task = asyncio.ensure_future(run_analyzer())
-            applet_task   = asyncio.ensure_future(run_applet())
-
-            async def wait_for_sigint():
+            async def wait_for_sigint(task):
                 await wait_for_signal(signal.SIGINT)
-                logger.debug("Ctrl+C pressed, terminating applet")
-                applet_task.cancel()
+                logger.debug("Ctrl+C pressed, terminating")
+                task.cancel()
 
-            done, pending = await asyncio.wait([analyzer_task, applet_task, wait_for_sigint()],
-                                               return_when=asyncio.FIRST_EXCEPTION)
+            if do_trace:
+                analyzer_task = asyncio.ensure_future(run_analyzer())
+            applet_task = asyncio.ensure_future(run_applet())
+            sigint_task = asyncio.ensure_future(wait_for_sigint(applet_task))
+
+            if do_trace:
+                tasks = [analyzer_task, applet_task, sigint_task]
+            else:
+                tasks = [applet_task, sigint_task]
+            done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
             for task in pending:
                 task.cancel()
             for task in done:
