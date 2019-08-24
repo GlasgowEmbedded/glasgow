@@ -5,6 +5,7 @@ import argparse
 import textwrap
 import re
 import asyncio
+import signal
 import unittest
 from vcd import VCDWriter
 from datetime import datetime
@@ -13,6 +14,9 @@ from fx2 import FX2Config
 from fx2.format import input_data, diff_data
 
 from ._version import get_versions
+from .support.logging import *
+from .support.asignal import *
+from .support.pyrepl import *
 from .device import GlasgowDeviceError
 from .device.config import GlasgowConfig
 from .target.hardware import GlasgowHardwareTarget
@@ -22,8 +26,6 @@ from .device.hardware import VID_QIHW, PID_GLASGOW, GlasgowHardwareDevice
 from .access.direct import *
 from .applet import *
 from .applet import all
-from .support.logging import *
-from .support.pyrepl import *
 
 
 logger = logging.getLogger(__name__)
@@ -566,14 +568,26 @@ async def _main():
                         await AsyncInteractiveConsole(locals={"iface":iface}).interact()
                 except GlasgowAppletError as e:
                     applet.logger.error(str(e))
+                except asyncio.CancelledError:
+                    pass # terminate gracefully
                 finally:
                     await device.demultiplexer.flush()
                     await device.demultiplexer.cancel()
                     if do_trace:
                         await device.write_register(target.analyzer.addr_done, 1)
 
-            done, pending = await asyncio.wait([run_analyzer(), run_applet()],
+            analyzer_task = asyncio.ensure_future(run_analyzer())
+            applet_task   = asyncio.ensure_future(run_applet())
+
+            async def wait_for_sigint():
+                await wait_for_signal(signal.SIGINT)
+                logger.debug("Ctrl+C pressed, terminating applet")
+                applet_task.cancel()
+
+            done, pending = await asyncio.wait([analyzer_task, applet_task, wait_for_sigint()],
                                                return_when=asyncio.FIRST_EXCEPTION)
+            for task in pending:
+                task.cancel()
             for task in done:
                 await task
 
@@ -760,6 +774,7 @@ async def _main():
 
 def main():
     loop = asyncio.get_event_loop()
+    register_wakeup_fd(loop)
     exit(loop.run_until_complete(_main()))
 
 
