@@ -36,7 +36,7 @@
 #  | 0  | 0  | 0  | M0 | M1 | M2 | M3 | M4 | M5 | M6 | M7 | M8 | S  | E0 | E1 | E2 |
 #  +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
 #
-# Each sample defines a 9-bit M(antissa), 1-bit S(ign) and 3-bit E(exponent). The legal values
+# Each sample defines a 9-bit M(antissa), 1-bit S(ign) and 3-bit E(xponent). The legal values
 # for the exponent are 1..7. The sample format does not appear to follow any intrinsic structure
 # and seems to have been chosen for the simplicity of DAC implementation alone. Therefore, no
 # attempt is made here to describe the sample format in abstract terms.
@@ -375,11 +375,6 @@ class YamahaOPxInterface(metaclass=ABCMeta):
         self._feature_level  = 1
         self._feature_warned = False
 
-        # To ensure a steady supply of commands and avoid starving the playback coroutine,
-        # flush each `flush_period` clocks.
-        self._clock_counter = 0
-        self.flush_period   = 0
-
     @abstractmethod
     def get_vgm_clock_rate(self, vgm_reader):
         pass
@@ -475,8 +470,6 @@ class YamahaOPxInterface(metaclass=ABCMeta):
         await self.lower.write([OP_WRITE|addr_high|0, addr_low, OP_WRITE|1, data])
 
     async def wait_clocks(self, count):
-        self._clock_counter += count
-
         if self._instant_writes:
             old_phase_accum = self._phase_accum
             self._phase_accum -= count
@@ -496,13 +489,9 @@ class YamahaOPxInterface(metaclass=ABCMeta):
             count -= 65535
         await self.lower.write([OP_WAIT, *struct.pack(">H", count)])
 
-        if self._clock_counter >= self.flush_period:
-            self._clock_counter = 0
-            await self.lower.flush()
-
     async def read_samples(self, count):
         self._log("read %d samples", count)
-        return await self.lower.read(count * 2)
+        return await self.lower.read(count * 2, flush=False)
 
 
 class YamahaOPLInterface(YamahaOPxInterface):
@@ -732,7 +721,6 @@ class YamahaOPxWebInterface:
                                  "one chip is supported"
                                  .format(", ".join(vgm_reader.chips())))
             clock_rate *= clock_prescaler
-            self._opx_iface.flush_period = clock_rate / 50 # each 20 ms
 
             self._logger.info("web: %s: VGM is looped for %.2f/%.2f s",
                               digest, vgm_reader.loop_seconds, vgm_reader.total_seconds)
@@ -781,6 +769,9 @@ class YamahaOPxWebInterface:
                 TRANSPORT_SIZE = 3072
                 output_buffer = bytearray()
                 while True:
+                    if play_fut.done() and play_fut.exception():
+                        break
+
                     if not resample_fut.done() or not resample_queue.empty():
                         while len(output_buffer) < TRANSPORT_SIZE:
                             output_chunk   = await resample_queue.get()
@@ -910,10 +901,8 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(YamahaOPxSubtarget(
             pads=iface.get_pads(args, pins=self.__pins, pin_sets=self.__pin_sets),
-            # These FIFO depths are somewhat dependent on the (current, bad) crossbar in Glasgow,
-            # but they work for now. With a better crossbar they should barely matter.
-            out_fifo=iface.get_out_fifo(depth=512),
-            in_fifo=iface.get_in_fifo(depth=8192, auto_flush=False),
+            out_fifo=iface.get_out_fifo(),
+            in_fifo=iface.get_in_fifo(auto_flush=False),
             format=device_iface_cls.sample_format,
             master_cyc=self.derive_clock(
                 input_hz=target.sys_clk_freq,
@@ -928,7 +917,8 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
     async def run(self, device, args):
         device_iface_cls = self._device_iface_cls(args)
 
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
+        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
+            write_buffer_size=128)
         opx_iface = device_iface_cls(iface, self.logger)
         await opx_iface.reset()
         return opx_iface
@@ -964,7 +954,6 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
             if clock_rate & 0xc0000000:
                 raise GlasgowAppletError("VGM file uses unsupported chip configuration")
             clock_rate *= clock_prescaler
-            self._opx_iface.flush_period = clock_rate / 50 # each 20 ms
 
             vgm_player = YamahaVGMStreamPlayer(vgm_reader, opx_iface, clock_rate)
             self.logger.info("recording at sample rate %d Hz", 1 / vgm_player.sample_time)
