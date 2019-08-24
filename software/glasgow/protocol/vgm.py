@@ -1,6 +1,7 @@
 import io
 import gzip
 import struct
+from fractions import Fraction
 
 
 __all__ = ["VGMStreamPlayer", "VGMStreamReader"]
@@ -53,10 +54,10 @@ class VGMStreamReader:
         self.ym2413_clk    = self._read0("<L")
         self.gd3_offset    = self._offset() + self._read0("<L")
         self.total_samples = self._read0("<L")
-        self.total_seconds = self.total_samples / SAMPLE_RATE
+        self.total_seconds = Fraction(self.total_samples, SAMPLE_RATE)
         self.loop_offset   = self._offset() + self._read0("<L")
         self.loop_samples  = self._read0("<L")
-        self.loop_seconds  = self.loop_samples / SAMPLE_RATE
+        self.loop_seconds  = Fraction(self.loop_samples, SAMPLE_RATE)
         # if self._version >= 0x1_01:
         self.rate          = self._read0("<L")
         # if self._version >= 0x1_10:
@@ -166,17 +167,17 @@ class VGMStreamReader:
                 await player.ymf262_write(address|((command & 1) << 8), data)
             elif command == 0x61:
                 samples = self._read0("<H")
-                await player.wait_seconds(samples / SAMPLE_RATE)
+                await player.wait_seconds(Fraction(samples, SAMPLE_RATE))
             elif command == 0x62:
                 samples = 735
-                await player.wait_seconds(samples / SAMPLE_RATE)
+                await player.wait_seconds(Fraction(samples, SAMPLE_RATE))
             elif command == 0x63:
                 samples = 882
-                await player.wait_seconds(samples / SAMPLE_RATE)
+                await player.wait_seconds(Fraction(samples, SAMPLE_RATE))
             elif command == 0x66:
                 break
             elif command in range(0x70, 0x80):
                 samples = (command & 0xf) + 1
-                await player.wait_seconds(samples / SAMPLE_RATE)
+                await player.wait_seconds(Fraction(samples, SAMPLE_RATE))
             else:
                 raise NotImplementedError("Unknown VGM command {:#04x}".format(command))
