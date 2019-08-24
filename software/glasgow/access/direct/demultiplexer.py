@@ -293,10 +293,10 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
             # write buffer size, then wait until the inflight requests arrive before continuing.
             while self._out_inflight >= self._write_buffer_size:
                 self.logger.trace("FIFO: write pushback")
-                await self._out_tasks.wait_one() # wait_one() calls poll()
-        else:
-            # Eagerly check if any of our previous queued writes errored out.
-            await self._out_tasks.poll()
+                await self._out_tasks.wait_one()
+
+        # Eagerly check if any of our previous queued writes errored out.
+        await self._out_tasks.poll()
 
         self.logger.trace("FIFO: write <%s>", dump_hex(data))
         self._out_buffer.write(data)
