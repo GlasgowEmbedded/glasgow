@@ -310,56 +310,52 @@ class YamahaOPxSubtarget(Module):
 
         # Audio
 
-        xfer_i = Record([
-            ("z", 3),
-            ("m", 9),
-            ("s", 1),
-            ("e", 3)
-        ])
         xfer_o = Signal(16)
         if format == "F-3Z-9M-1S-3E":
+            xfer_i = Record([("z", 3), ("m", 9), ("s", 1), ("e", 3),])
             # FIXME: this is uglier than necessary because of Migen bugs. Rewrite nicer in nMigen.
             self.comb += xfer_o.eq(Cat((Cat(xfer_i.m, Replicate(~xfer_i.s, 7)) << xfer_i.e)[1:16],
                                        xfer_i.s))
         elif format == "U-16":
-            self.comb += xfer_o.eq(xfer_i.raw_bits())
+            xfer_i = Record([("d", 16)])
+            self.comb += xfer_o.eq(xfer_i.d)
         else:
             assert False
 
-        data_r = Signal(17)
-        data_l = Signal(17)
+        data_r = Signal(16)
         self.sync += If(dac_bus.stb_sy, data_r.eq(Cat(data_r[1:], dac_bus.mo)))
-        self.comb += xfer_i.raw_bits().eq(data_l[0:])
 
         self.submodules.data_fsm = FSM()
         self.data_fsm.act("WAIT-SH",
             NextValue(in_fifo.flush, ~enabled),
             If(dac_bus.stb_sh & enabled,
-                NextState("WAIT-SY")
-            )
-        )
-        self.data_fsm.act("WAIT-SY",
-            If(dac_bus.stb_sy,
                 NextState("SAMPLE")
             )
         )
         self.data_fsm.act("SAMPLE",
-            NextValue(data_l, data_r),
+            NextValue(xfer_i.raw_bits(), data_r),
             NextState("SEND-L-BYTE")
         )
         self.data_fsm.act("SEND-L-BYTE",
             in_fifo.din.eq(xfer_o[0:8]),
-            in_fifo.we.eq(1),
             If(in_fifo.writable,
+                in_fifo.we.eq(1),
                 NextState("SEND-H-BYTE")
+            ).Elif(dac_bus.stb_sh,
+                NextState("OVERFLOW")
             )
         )
         self.data_fsm.act("SEND-H-BYTE",
             in_fifo.din.eq(xfer_o[8:16]),
-            in_fifo.we.eq(1),
             If(in_fifo.writable,
+                in_fifo.we.eq(1),
                 NextState("WAIT-SH")
+            ).Elif(dac_bus.stb_sh,
+                NextState("OVERFLOW")
             )
+        )
+        self.data_fsm.act("OVERFLOW",
+            NextState("OVERFLOW")
         )
 
 
