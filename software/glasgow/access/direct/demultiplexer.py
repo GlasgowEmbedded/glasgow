@@ -177,7 +177,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
 
     async def cancel(self):
         if self._in_tasks or self._out_tasks:
-            self.logger.trace("cancelling transactions")
+            self.logger.trace("FIFO: cancelling operations")
             self._in_tasks .cancel()
             self._out_tasks.cancel()
 
@@ -187,7 +187,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         self.logger.trace("asserting reset")
         await self.device.write_register(self._addr_reset, 1)
 
-        self.logger.trace("synchronizing FIFOs")
+        self.logger.trace("FIFO: synchronizing buffers")
         self.device.usb.setInterfaceAltSetting(self._pipe_num, 1)
         self._in_buffer .clear()
         self._out_buffer.clear()
@@ -195,7 +195,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         # Pipeline reads before deasserting reset, so that if the applet immediately starts
         # streaming data, there are no overflows. (This is perhaps not the best way to implement
         # an applet, but we can support it easily enough, and it avoids surprise overflows.)
-        self.logger.trace("pipelining reads")
+        self.logger.trace("FIFO: pipelining reads")
         for _ in range(_xfers_per_queue):
             self._in_tasks.submit(self._in_task())
         # Give the IN tasks a chance to submit their transfers before deasserting reset.
