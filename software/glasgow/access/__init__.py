@@ -157,5 +157,5 @@ class AccessDemultiplexerInterface(metaclass=ABCMeta):
         await self.write(data.encode(encoding), *args, **kwargs)
 
     @abstractmethod
-    async def flush(self):
+    async def flush(self, wait=True):
         pass

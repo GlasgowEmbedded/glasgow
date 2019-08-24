@@ -288,8 +288,8 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         await self._out_tasks.poll()
 
         if self._write_buffer_size is not None:
-            self.logger.trace("FIFO: write pushback")
             while len(self._out_buffer) > self._write_buffer_size:
+                self.logger.trace("FIFO: write pushback")
                 await self._out_tasks.wait_one()
 
         self.logger.trace("FIFO: write <%s>", dump_hex(data))
