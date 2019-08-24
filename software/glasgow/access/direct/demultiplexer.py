@@ -260,18 +260,13 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         size = self._out_packet_size * _packets_per_xfer
         data = self._out_buffer.read(size)
 
-        if len(data) < size and len(self._out_buffer) >= self._out_packet_size:
+        if len(data) < self._out_packet_size:
             # Slow path: USB is very inefficient with small packets, so if we only got a few
-            # bytes from the FIFO, and there is much more in it, spend CPU time to aggregate that
+            # bytes from the FIFO, and there is more in it, spend CPU time to aggregate that
             # into a larger transfer, as this is likely to result in overall speedup.
-            data  = bytearray(data)
-            # Make sure the resulting transfer is a multiple of packet size.
-            data += self._out_buffer.read(self._out_packet_size -
-                                          len(data) % self._out_packet_size)
-            # If we have more data in the buffer still, pad the transfer further, still keeping it
-            # a multiple of packet size.
-            while len(data) < size and len(self._out_buffer) >= self._out_packet_size:
-                data += self._out_buffer.read(self._out_packet_size)
+            data = bytearray(data)
+            while len(data) < self._out_packet_size and self._out_buffer:
+                data += self._out_buffer.read(self._out_packet_size - len(data))
 
         return data
 
