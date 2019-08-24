@@ -137,12 +137,14 @@ class DirectDemultiplexer(AccessDemultiplexer):
 
 
 class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
-    def __init__(self, device, applet, mux_interface, read_buffer_size=None, write_buffer_size=None):
+    def __init__(self, device, applet, mux_interface,
+                 read_buffer_size=None, write_buffer_size=None):
         super().__init__(device, applet)
 
         self._write_buffer_size = write_buffer_size
         self._read_buffer_size  = read_buffer_size
-        self._in_pushback = asyncio.Condition()
+        self._in_pushback  = asyncio.Condition()
+        self._out_inflight = 0
 
         self._pipe_num   = mux_interface._pipe_num
         self._addr_reset = mux_interface._addr_reset
@@ -268,24 +270,33 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
             while len(data) < self._out_packet_size and self._out_buffer:
                 data += self._out_buffer.read(self._out_packet_size - len(data))
 
+        self._out_inflight += len(data)
         return data
+
+    @property
+    def _out_threshold(self):
+        return min(self._write_buffer_size, self._out_packet_size * _packets_per_xfer)
 
     async def _out_task(self, data):
         assert len(data) > 0
+
         await self.device.bulk_write(self._endpoint_out, data)
+        self._out_inflight -= len(data)
 
         # See the comment in `write` below for an explanation of the following code.
-        if len(self._out_buffer) >= self._out_packet_size * _packets_per_xfer:
+        if len(self._out_buffer) >= self._out_threshold:
             self._out_tasks.submit(self._out_task(self._out_slice()))
 
     async def write(self, data):
-        # Eagerly check if any of our previous queued writes errored out.
-        await self._out_tasks.poll()
-
         if self._write_buffer_size is not None:
-            while len(self._out_buffer) > self._write_buffer_size:
+            # If write buffer is bounded, and we have more inflight requests than the configured
+            # write buffer size, then wait until the inflight requests arrive before continuing.
+            while self._out_inflight >= self._write_buffer_size:
                 self.logger.trace("FIFO: write pushback")
-                await self._out_tasks.wait_one()
+                await self._out_tasks.wait_one() # wait_one() calls poll()
+        else:
+            # Eagerly check if any of our previous queued writes errored out.
+            await self._out_tasks.poll()
 
         self.logger.trace("FIFO: write <%s>", dump_hex(data))
         self._out_buffer.write(data)
@@ -311,8 +322,8 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         # This provides predictable write behavior; only _packets_per_xfer packet writes are
         # automatically submitted, and only the minimum necessary number of tasks are scheduled on
         # calls to `write`.
-        while len(self._out_buffer) >= self._out_packet_size * _packets_per_xfer and \
-                len(self._out_tasks) < _xfers_per_queue:
+        while len(self._out_tasks) < _xfers_per_queue and \
+                    len(self._out_buffer) >= self._out_threshold:
             self._out_tasks.submit(self._out_task(self._out_slice()))
 
     async def flush(self, wait=True):
@@ -332,6 +343,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
             data = bytearray()
             while self._out_buffer:
                 data += self._out_buffer.read()
+            self._out_inflight += len(data)
             self._out_tasks.submit(self._out_task(data))
 
         if wait:
