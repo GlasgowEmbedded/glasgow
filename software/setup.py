@@ -52,7 +52,6 @@ setup(
     #long_description="""TODO""",
     license="0-clause BSD License",
     install_requires=[
-        "versioneer",
         "nmigen",
         "fx2>=0.6",
         "libusb1>=1.6.6",
