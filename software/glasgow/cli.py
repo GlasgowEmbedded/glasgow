@@ -9,7 +9,7 @@ import unittest
 from vcd import VCDWriter
 from datetime import datetime
 
-from fx2 import VID_CYPRESS, PID_FX2, FX2Config
+from fx2 import FX2Config
 from fx2.format import input_data, diff_data
 
 from ._version import get_versions
@@ -156,6 +156,24 @@ def get_argparser():
 
     parser = create_argparser()
 
+    def revision(arg):
+        revisions = ["A0", "B0", "C0", "C1"]
+        if arg in revisions:
+            return arg
+        else:
+            raise argparse.ArgumentTypeError("{} is not a valid revision (should be one of: {})"
+                                             .format(arg, ", ".join(revisions)))
+
+    def serial(arg):
+        if re.match(r"^[A-C][0-9]-\d{8}T\d{6}Z$", arg):
+            return arg
+        else:
+            raise argparse.ArgumentTypeError("{} is not a valid serial number".format(arg))
+
+    parser.add_argument(
+        "--serial", metavar="SERIAL", type=serial,
+        help="use device with serial number SERIAL")
+
     subparsers = parser.add_subparsers(dest="action", metavar="COMMAND")
     subparsers.required = True
 
@@ -254,20 +272,6 @@ def get_argparser():
         help="remove any bitstream present")
     add_applet_arg(g_flash_bitstream, mode="build")
 
-    def revision(arg):
-        revisions = ["A0", "B0", "C0", "C1"]
-        if arg in revisions:
-            return arg
-        else:
-            raise argparse.ArgumentTypeError("{} is not a valid revision (should be one of: {})"
-                                             .format(arg, ", ".join(revisions)))
-
-    def serial(arg):
-        if re.match(r"^\d{8}T\d{6}Z$", arg):
-            return arg
-        else:
-            raise argparse.ArgumentTypeError("{} is not a valid serial number".format(arg))
-
     p_build = subparsers.add_parser(
         "build", formatter_class=TextHelpFormatter,
         help="(advanced) build applet logic and save it as a file")
@@ -293,6 +297,12 @@ def get_argparser():
         help="(advanced) test applet logic without target hardware")
     add_applet_arg(p_test, mode="test", required=True)
 
+    def factory_serial(arg):
+        if re.match(r"^\d{8}T\d{6}Z$", arg):
+            return arg
+        else:
+            raise argparse.ArgumentTypeError("{} is not a valid serial number".format(arg))
+
     p_factory = subparsers.add_parser(
         "factory", formatter_class=TextHelpFormatter,
         help="(advanced) initial device programming")
@@ -300,10 +310,10 @@ def get_argparser():
         "--force", default=False, action="store_true",
         help="reinitialize the device, even if it is already programmed")
     p_factory.add_argument(
-        "--rev", metavar="REVISION", type=revision, required=True,
+        "--rev", metavar="REVISION", dest="factory_rev", type=revision, required=True,
         help="board revision")
     p_factory.add_argument(
-        "--serial", metavar="SERIAL", type=str,
+        "--serial", metavar="SERIAL", dest="factory_serial", type=factory_serial,
         default=datetime.now().strftime("%Y%m%dT%H%M%SZ"),
         help="serial number in ISO 8601 format (if not specified: %(default)s)")
 
@@ -404,14 +414,15 @@ async def _main():
     create_logger(args)
 
     try:
-        firmware_file = os.path.join(os.path.dirname(__file__), "glasgow.ihex")
+        # TODO(py3.7): use importlib.resources
+        firmware_filename = os.path.join(os.path.dirname(__file__), "glasgow.ihex")
         if args.action in ("build", "test", "tool"):
             pass
         elif args.action == "factory":
-            device = GlasgowHardwareDevice(firmware_file, VID_CYPRESS, PID_FX2,
-                                           _revision_override=args.rev)
+            device = GlasgowHardwareDevice(args.serial, firmware_filename,
+                                           _factory_rev=args.factory_rev)
         else:
-            device = GlasgowHardwareDevice(firmware_file)
+            device = GlasgowHardwareDevice(args.serial, firmware_filename)
 
         if args.action == "voltage":
             if args.voltage is not None:
@@ -719,7 +730,7 @@ async def _main():
             fx2_config = FX2Config(vendor_id=VID_QIHW, product_id=PID_GLASGOW,
                                    device_id=GlasgowConfig.encode_revision(args.rev),
                                    i2c_400khz=True)
-            glasgow_config = GlasgowConfig(args.rev, args.serial)
+            glasgow_config = GlasgowConfig(args.factory_rev, args.factory_serial)
             fx2_config.append(0x4000 - GlasgowConfig.size, glasgow_config.encode())
 
             image = fx2_config.encode()

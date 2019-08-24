@@ -5,7 +5,7 @@ import logging
 import usb1
 import asyncio
 import threading
-from fx2 import REQ_RAM, REG_CPUCS
+from fx2 import VID_CYPRESS, PID_FX2, REQ_RAM, REG_CPUCS
 from fx2.format import input_data
 
 from ..support.logging import *
@@ -54,74 +54,87 @@ class _PollerThread(threading.Thread):
 
 
 class GlasgowHardwareDevice:
-    def _open_device(self, vendor_id, product_id):
-        try:
-            self.usb = self.usb_context.openByVendorIDAndProductID(vendor_id, product_id)
-        except usb1.USBErrorAccess:
-            raise GlasgowDeviceError("cannot access device {:04x}:{:04x}"
-                                     .format(vendor_id, product_id))
-        if self.usb is None:
-            raise GlasgowDeviceError("device {:04x}:{:04x} not found"
-                                     .format(vendor_id, product_id))
-
-        try:
-            self.usb.setAutoDetachKernelDriver(True)
-        except usb1.USBErrorNotSupported:
-            pass
-
-    def _write_ram(self, addr, data):
-        while len(data) > 0:
-            chunk_length = min(len(data), 4096)
-            self.usb.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, addr, 0, data[:chunk_length])
-            addr += chunk_length
-            data = data[chunk_length:]
-
-    def _cpu_reset(self, is_reset):
-        self._write_ram(REG_CPUCS, [1 if is_reset else 0])
-
-    def _download_firmware(self, chunks):
-        self._cpu_reset(True)
-        for address, data in chunks:
-            self._write_ram(address, data)
-        self._cpu_reset(False)
-
-    def __init__(self, firmware_file=None, vendor_id=VID_QIHW, product_id=PID_GLASGOW,
-                 _revision_override=None):
+    def __init__(self, serial=None, firmware_filename=None, *, _factory_rev=None):
         self.usb_context = usb1.USBContext()
         self.usb_poller = _PollerThread(self.usb_context)
         self.usb_poller.start()
 
-        self._open_device(vendor_id, product_id)
+        firmware = None
+        handles  = {}
+        discover = True
+        while discover:
+            discover = False
 
-        device_id = self.usb.getDevice().getbcdDevice()
-        if _revision_override is None:
-            self.revision = GlasgowConfig.decode_revision(device_id & 0xFF)
+            for device in self.usb_context.getDeviceIterator():
+                vendor_id  = device.getVendorID()
+                product_id = device.getProductID()
+                device_id  = device.getbcdDevice()
+                if _factory_rev is None:
+                    if (vendor_id, product_id) != (VID_QIHW, PID_GLASGOW):
+                        continue
+                    revision = GlasgowConfig.decode_revision(device_id & 0xFF)
+                else:
+                    if (vendor_id, product_id) != (VID_CYPRESS, PID_FX2):
+                        continue
+                    revision = _factory_rev
+
+                if device_id & 0xFF00 in (0x0000, 0xA000):
+                    if firmware_filename is None:
+                        logger.warn("found device without firmware, but no firmware is provided")
+                        continue
+                    elif firmware is None:
+                        logger.debug("loading firmware from %s", firmware_filename)
+                        with open(firmware_filename, "rb") as f:
+                            firmware = input_data(f, fmt="ihex")
+
+                    logger.debug("loading firmware to rev%s device", revision)
+                    handle = device.open()
+                    handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [1])
+                    for address, data in firmware:
+                        while len(data) > 0:
+                            handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM,
+                                                  address, 0, data[:4096])
+                            data = data[4096:]
+                            address += 4096
+                    handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [0])
+                    handle.close()
+
+                    # And rediscover the device after it reenumerates.
+                    discover = True
+                else:
+                    handle = device.open()
+                    device_serial = handle.getASCIIStringDescriptor(
+                        device.getSerialNumberDescriptor())
+                    if device_serial in handles:
+                        continue
+
+                    logger.debug("found rev%s device with serial %s", revision, device_serial)
+                    handles[device_serial] = (revision, handle)
+
+            if discover:
+                # Give every device we loaded firmware onto a bit of time to reenumerate.
+                time.sleep(1.0)
+
+        if len(handles) == 0:
+            raise GlasgowDeviceError("device not found")
+        if serial is None:
+            if len(handles) > 1:
+                raise GlasgowDeviceError("found {} devices (serial numbers {}), but a serial "
+                                         "number is not specified"
+                                         .format(len(handles), ", ".join(handles.keys())))
         else:
-            self.revision = _revision_override
+            if serial not in handles:
+                raise GlasgowDeviceError("device with serial number {} not found"
+                                         .format(serial))
 
-        if device_id & 0xFF00 in (0x0000, 0xA000):
-            logger.debug("found rev%s device without firmware", self.revision)
-
-            if firmware_file is None:
-                raise GlasgowDeviceError("firmware is not uploaded")
-
-            logger.debug("loading firmware from %s", firmware_file)
-            with open(firmware_file, "rb") as f:
-                self._download_firmware(input_data(f, fmt="ihex"))
-
-            # let the device re-enumerate and re-acquire it
-            time.sleep(1)
-            self._open_device(VID_QIHW, PID_GLASGOW)
-
-            # still not the right firmware?
-            if self.usb.getDevice().getbcdDevice() & 0xFF00 in (0x0000, 0xA000):
-                raise GlasgowDeviceError("firmware upload failed")
-
-        # https://github.com/vpelletier/python-libusb1/issues/39
-        # serial = self.usb.getDevice().getSerialNumber()
-        serial = self.usb.getASCIIStringDescriptor(
-            self.usb.getDevice().device_descriptor.iSerialNumber)
-        logger.debug("found rev%s device with serial %s", self.revision, serial)
+        if serial is None:
+            self.revision, self.usb = next(iter(handles.values()))
+        else:
+            self.revision, self.usb = handles[serial]
+        try:
+            self.usb.setAutoDetachKernelDriver(True)
+        except usb1.USBErrorNotSupported:
+            pass
 
     async def _do_transfer(self, is_read, setup):
         transfer = self.usb.getTransfer()
