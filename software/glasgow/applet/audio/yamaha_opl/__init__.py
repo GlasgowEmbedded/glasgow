@@ -664,7 +664,7 @@ class YamahaOPxWebInterface:
                 while True:
                     input_data = await input_queue.get()
                     input_array = numpy.frombuffer(input_data, dtype="<u2")
-                    output_array = (output_array - 32768).astype(numpy.int16)
+                    output_array = (input_array - 32768).astype(numpy.int16)
                     if input_data:
                         await output_queue.put(output_array.tobytes())
                     if not input_data:
