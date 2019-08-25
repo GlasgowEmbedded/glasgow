@@ -39,7 +39,7 @@ class SCD30I2CInterface:
     i2c_addr = 0x61
 
     def __init__(self, interface, logger):
-        self._lower  = interface
+        self.lower   = interface
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
@@ -50,10 +50,10 @@ class SCD30I2CInterface:
 
     async def _read_raw(self, addr, length=0):
         assert length % 2 == 0
-        acked = await self._lower.write(self.i2c_addr, struct.pack(">H", addr), stop=True)
+        acked = await self.lower.write(self.i2c_addr, struct.pack(">H", addr), stop=True)
         if acked is False:
             raise SCD30Error("SCD30 did not acknowledge address write")
-        crc_data = await self._lower.read(self.i2c_addr, length // 2 * 3, stop=True)
+        crc_data = await self.lower.read(self.i2c_addr, length // 2 * 3, stop=True)
         if crc_data is None:
             raise SCD30Error("SCD30 did not acknowledge data read")
         self._log("addr=%#06x data=<%s>", addr, dump_hex(crc_data))
@@ -71,7 +71,7 @@ class SCD30I2CInterface:
             crc_data += chunk
             crc_data.append(self._crc(chunk))
         self._log("cmd=%#06x args=<%s>", cmd, dump_hex(crc_data))
-        acked = await self._lower.write(self.i2c_addr, struct.pack(">H", cmd) + crc_data,
+        acked = await self.lower.write(self.i2c_addr, struct.pack(">H", cmd) + crc_data,
                                         stop=True)
         if acked is False:
             raise SCD30Error("SCD30 did not acknowledge command write")
@@ -285,21 +285,28 @@ class SensorSCD30Applet(I2CMasterApplet, name="sensor-scd30"):
                     break
 
         if args.operation == "influxdb":
+            meas_interval = await scd30.get_measurement_interval()
+            async def measure():
+                while not await scd30.is_data_ready():
+                    await asyncio.sleep(meas_interval / 2)
+                return await scd30.read_measurement()
+
             influxdb_url  = yarl.URL(args.endpoint) \
                 .with_path("/write").with_query({"db": args.database})
-            poll_interval = await scd30.get_measurement_interval() / 2
-
             async with aiohttp.ClientSession() as session:
                 while True:
                     try:
-                        while not await scd30.is_data_ready():
-                            await asyncio.sleep(poll_interval)
-                        sample = await scd30.read_measurement()
+                        sample = await asyncio.wait_for(measure(), meas_interval * 2)
                         influxdb_data = (f"{args.series} error=false,co2={sample.co2_ppm},"
                                          f"t={sample.temp_degC},rh={sample.rh_pct}")
                     except SCD30Error as error:
-                        await asyncio.sleep(poll_interval)
+                        await asyncio.sleep(meas_interval)
                         self.logger.warn("measurement error: %s", error)
+                        await scd30.lower.reset()
+                        influxdb_data = (f"{args.series} error=true")
+                    except asyncio.TimeoutError:
+                        self.logger.warn("timeout")
+                        await scd30.lower.reset()
                         influxdb_data = (f"{args.series} error=true")
 
                     async with session.post(influxdb_url, data=influxdb_data) as resp:
