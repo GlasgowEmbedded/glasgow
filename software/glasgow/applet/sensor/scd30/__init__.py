@@ -5,6 +5,8 @@ from collections import namedtuple
 import argparse
 import logging
 import asyncio
+import aiohttp
+import yarl
 import struct
 import crcmod
 
@@ -225,6 +227,18 @@ class SensorSCD30Applet(I2CMasterApplet, name="sensor-scd30"):
             "-c", "--continuous", dest="continuous", action="store_true",
             help="measure continuously")
 
+        p_influxdb = p_operation.add_parser(
+            "influxdb", help="log measured values to InfluxDB")
+        p_influxdb.add_argument(
+            "endpoint", metavar="ENDPOINT", type=str,
+            help="InfluxDB endpoint base URL (e.g.: http://localhost:8086)")
+        p_influxdb.add_argument(
+            "database", metavar="DATABASE", type=str,
+            help="InfluxDB database (e.g.: glasgow)")
+        p_influxdb.add_argument(
+            "series", metavar="SERIES", type=str,
+            help="InfluxDB series (e.g.: environment,location=home)")
+
     async def interact(self, device, args, scd30):
         major, minor = await scd30.firmware_version()
         self.logger.info("SCD30 firmware v%d.%d", major, minor)
@@ -269,3 +283,26 @@ class SensorSCD30Applet(I2CMasterApplet, name="sensor-scd30"):
 
                 if not args.continuous:
                     break
+
+        if args.operation == "influxdb":
+            influxdb_url  = yarl.URL(args.endpoint) \
+                .with_path("/write").with_query({"db": args.database})
+            poll_interval = await scd30.get_measurement_interval() / 2
+
+            async with aiohttp.ClientSession() as session:
+                while True:
+                    try:
+                        while not await scd30.is_data_ready():
+                            await asyncio.sleep(poll_interval)
+                        sample = await scd30.read_measurement()
+                        influxdb_data = (f"{args.series} error=false,co2={sample.co2_ppm},"
+                                         f"t={sample.temp_degC},rh={sample.rh_pct}")
+                    except SCD30Error as error:
+                        await asyncio.sleep(poll_interval)
+                        self.logger.warn("measurement error: %s", error)
+                        influxdb_data = (f"{args.series} error=true")
+
+                    async with session.post(influxdb_url, data=influxdb_data) as resp:
+                        if resp.status not in range(200, 300):
+                            self.logger.warn("InfluxDB write status=%d body=%s",
+                                             resp.status, (await resp.text()).strip())
