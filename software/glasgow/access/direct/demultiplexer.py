@@ -275,7 +275,11 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
 
     @property
     def _out_threshold(self):
-        return min(self._write_buffer_size, self._out_packet_size * _packets_per_xfer)
+        out_xfer_size = self._out_packet_size * _packets_per_xfer
+        if self._write_buffer_size is None:
+            return out_xfer_size
+        else:
+            return min(self._write_buffer_size, out_xfer_size)
 
     async def _out_task(self, data):
         assert len(data) > 0
