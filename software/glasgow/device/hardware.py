@@ -45,11 +45,11 @@ IO_BUF_B         = 1<<1
 class _PollerThread(threading.Thread):
     def __init__(self, context):
         super().__init__()
-        self.daemon  = True
+        self.done    = False
         self.context = context
 
     def run(self):
-        while True:
+        while not self.done:
             self.context.handleEvents()
 
 
@@ -135,6 +135,11 @@ class GlasgowHardwareDevice:
             self.usb.setAutoDetachKernelDriver(True)
         except usb1.USBErrorNotSupported:
             pass
+
+    def close(self):
+        self.usb_poller.done = True
+        self.usb.close()
+        self.usb_context.close()
 
     async def _do_transfer(self, is_read, setup):
         # libusb transfer cancellation is asynchronous, and moreover, it is necessary to wait for

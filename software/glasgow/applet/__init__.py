@@ -354,7 +354,7 @@ def applet_hardware_test(setup="run_hardware_applet", args=[]):
 
             finally:
                 if mode == "record":
-                    self.device.usb.close()
+                    self.device.close()
 
         return wrapper
 

@@ -415,6 +415,7 @@ async def _main():
     args = get_argparser().parse_args()
     create_logger(args)
 
+    device = None
     try:
         # TODO(py3.7): use importlib.resources
         firmware_filename = os.path.join(os.path.dirname(__file__), "glasgow.ihex")
@@ -770,6 +771,10 @@ async def _main():
     except GatewareBuildError as e:
         applet.logger.error(e)
         return 1
+
+    finally:
+        if device is not None:
+            device.close()
 
     return 0
 
