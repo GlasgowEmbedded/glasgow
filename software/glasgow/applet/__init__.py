@@ -283,7 +283,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
 
 def synthesis_test(case):
     synthesis_available = (shutil.which("yosys") is not None and
-                           shutil.which("arachne-pnr") is not None)
+                           shutil.which("nextpnr-ice40") is not None)
 
     return unittest.skipUnless(synthesis_available, "synthesis not available")(case)
 
