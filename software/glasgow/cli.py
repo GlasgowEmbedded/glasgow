@@ -574,15 +574,14 @@ async def _main():
                     if do_trace:
                         await device.write_register(target.analyzer.addr_done, 1)
 
-            async def wait_for_sigint(task):
+            async def wait_for_sigint():
                 await wait_for_signal(signal.SIGINT)
                 logger.debug("Ctrl+C pressed, terminating")
-                task.cancel()
 
             if do_trace:
                 analyzer_task = asyncio.ensure_future(run_analyzer())
             applet_task = asyncio.ensure_future(run_applet())
-            sigint_task = asyncio.ensure_future(wait_for_sigint(applet_task))
+            sigint_task = asyncio.ensure_future(wait_for_sigint())
 
             if do_trace:
                 tasks = [analyzer_task, applet_task, sigint_task]
@@ -591,8 +590,11 @@ async def _main():
             done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
             for task in pending:
                 task.cancel()
-            for task in done:
-                await task
+            for task in tasks:
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
 
         if args.action == "tool":
             tool = GlasgowApplet.all_applets[args.applet].tool_cls()
