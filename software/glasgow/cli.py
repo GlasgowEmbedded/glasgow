@@ -103,8 +103,8 @@ def get_argparser():
         return subparsers
 
     def add_applet_arg(parser, mode, required=False):
+        # TODO(py3.7): add required=True
         subparsers = add_subparsers(parser, dest="applet", metavar="APPLET")
-        subparsers.required = required
 
         for applet_name, applet in GlasgowApplet.all_applets.items():
             if mode == "test" and not hasattr(applet, "test_cls"):
@@ -292,12 +292,12 @@ def get_argparser():
     p_build.add_argument(
         "-f", "--filename", metavar="FILENAME", type=str,
         help="file to save artifact to (default: <applet-name>.{zip,il,bin})")
-    add_applet_arg(p_build, mode="build", required=True)
+    add_applet_arg(p_build, mode="build")
 
     p_test = subparsers.add_parser(
         "test", formatter_class=TextHelpFormatter,
         help="(advanced) test applet logic without target hardware")
-    add_applet_arg(p_test, mode="test", required=True)
+    add_applet_arg(p_test, mode="test")
 
     def factory_serial(arg):
         if re.match(r"^\d{8}T\d{6}Z$", arg):
