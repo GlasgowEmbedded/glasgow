@@ -152,6 +152,8 @@ class GlasgowHardwareDevice:
         setup(transfer)
 
         def usb_callback(transfer):
+            if self.usb_poller.done:
+                return # shutting down
             if transfer.isSubmitted():
                 return # transfer not completed
 
