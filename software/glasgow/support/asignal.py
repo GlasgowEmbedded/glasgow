@@ -17,10 +17,12 @@ def register_wakeup_fd(loop):
     loop.add_reader(read_fd, chain_wakeup_fd)
 
 
-def wait_for_signal(signum):
-    future = asyncio.Future()
+def wait_for_signal(signum, loop=None):
+    if loop is None:
+        loop = asyncio.get_event_loop()
+    future = asyncio.Future(loop=loop)
     def handler(signum, frame):
-        future.set_result(None)
+        loop.call_soon_threadsafe(lambda: future.set_result(None))
         signal.signal(signum, old_handler)
     old_handler = signal.signal(signum, handler)
     return future
