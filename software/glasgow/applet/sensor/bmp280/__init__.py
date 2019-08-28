@@ -4,6 +4,7 @@
 import logging
 import asyncio
 
+from ....support.data_logger import DataLogger
 from ... import *
 from ...interface.i2c_master import I2CMasterApplet
 
@@ -32,18 +33,22 @@ BIT_IM_UPDATE   = 0b00000001
 BIT_MEAS        = 0b00001000
 
 REG_CTRL_MEAS   = 0xF4 # 8-bit
+MASK_OSRS       = 0b111111_00
+MASK_OSRS_P     = 0b111_00000
 BIT_OSRS_P_S    = 0b000_00000
 BIT_OSRS_P_1    = 0b001_00000
 BIT_OSRS_P_2    = 0b010_00000
 BIT_OSRS_P_4    = 0b011_00000
 BIT_OSRS_P_8    = 0b100_00000
 BIT_OSRS_P_16   = 0b101_00000
+MASK_OSRS_T     =    0b111_00
 BIT_OSRS_T_S    =    0b000_00
 BIT_OSRS_T_1    =    0b001_00
 BIT_OSRS_T_2    =    0b010_00
 BIT_OSRS_T_4    =    0b011_00
 BIT_OSRS_T_8    =    0b100_00
 BIT_OSRS_T_16   =    0b101_00
+MASK_MODE       =        0b11
 BIT_MODE_SLEEP  =        0b00
 BIT_MODE_FORCE  =        0b01
 BIT_MODE_NORMAL =        0b11
@@ -64,8 +69,14 @@ bit_osrs_temp = {
     16: BIT_OSRS_T_16,
 }
 
+bit_mode = {
+    "sleep":  BIT_MODE_SLEEP,
+    "force":  BIT_MODE_FORCE,
+    "normal": BIT_MODE_NORMAL,
+}
+
 REG_CONFIG    = 0xF5 # 8-bit
-BIT_T_SB      = 0b111_00000
+MASK_T_SB     = 0b111_00000
 BIT_T_SB_0_5  = 0b000_00000
 BIT_T_SB_62_5 = 0b001_00000
 BIT_T_SB_125  = 0b010_00000
@@ -74,12 +85,23 @@ BIT_T_SB_500  = 0b100_00000
 BIT_T_SB_1000 = 0b101_00000
 BIT_T_SB_2000 = 0b110_00000
 BIT_T_SB_4000 = 0b111_00000
-BIT_IIR       =   0b111_000
+MASK_IIR      =   0b111_000
 BIT_IIR_OFF   =   0b000_000
 BIT_IIR_2     =   0b001_000
 BIT_IIR_4     =   0b010_000
 BIT_IIR_8     =   0b011_000
 BIT_IIR_16    =   0b100_000
+
+bit_t_sb = {
+    0.0005: BIT_T_SB_0_5,
+    0.0625: BIT_T_SB_62_5,
+    0.125:  BIT_T_SB_125,
+    0.250:  BIT_T_SB_250,
+    0.500:  BIT_T_SB_500,
+    1.000:  BIT_T_SB_1000,
+    2.000:  BIT_T_SB_2000,
+    4.000:  BIT_T_SB_4000,
+}
 
 bit_iir = {
     0:  BIT_IIR_OFF,
@@ -162,19 +184,25 @@ class BMP280Interface:
 
     async def set_iir_coefficient(self, coeff):
         config = await self._read_reg8(REG_CONFIG)
-        config = (config & ~BIT_IIR) | bit_iir[coeff]
+        config = (config & ~MASK_IIR) | bit_iir[coeff]
         await self._write_reg8(REG_CONFIG, config)
 
-    async def measure(self, ovs_t=2, ovs_p=16, one_shot=True):
-        if one_shot:
-            mode = BIT_MODE_FORCE
-        else:
-            mode = BIT_MODE_NORMAL
-        await self._write_reg8(REG_CTRL_MEAS,
-            bit_osrs_temp[ovs_t] |
-            bit_osrs_press[ovs_p]   |
-            mode)
-        await asyncio.sleep(0.050) # worst case
+    async def set_standby_time(self, t_sb):
+        config = await self._read_reg8(REG_CONFIG)
+        config = (config & ~MASK_T_SB) | bit_t_sb[t_sb]
+        await self._write_reg8(REG_CONFIG, config)
+
+    async def set_oversample(self, ovs_t=2, ovs_p=16):
+        config = await self._read_reg8(REG_CTRL_MEAS)
+        config = (config & ~MASK_OSRS) | bit_osrs_temp[ovs_t] | bit_osrs_press[ovs_p]
+        await self._write_reg8(REG_CTRL_MEAS, config)
+
+    async def set_mode(self, mode):
+        config = await self._read_reg8(REG_CTRL_MEAS)
+        config = (config & ~MASK_MODE) | bit_mode[mode]
+        await self._write_reg8(REG_CTRL_MEAS, config)
+        if mode == "force":
+            await asyncio.sleep(0.050) # worst case
 
     async def _get_temp_fine(self):
         await self._read_cal()
@@ -270,30 +298,64 @@ class SensorBMP280Applet(I2CMasterApplet, name="sensor-bmp280"):
             help="use IIR filter with coefficient COEFF (default: %(default)d)")
 
         parser.add_argument(
-            "-p", "--sea-level-pressure", type=float, metavar="P", default=101325,
-            help="calculate absolute altitude using sea level pressure P Pa"
-            " (default: %(default)f)")
-
+            "-a", "--altitude", default=False, action="store_true", dest="report_altitude",
+            help="report calculated altitude")
         parser.add_argument(
-            "-c", "--continuous", action="store_true",
-            help="measure and output pressure and temperature continuously")
+            "--sea-level-pressure", type=float, metavar="PRESSURE", default=101325,
+            help="use PRESSURE Pa as sea level pressure (default: %(default)f)")
+
+        # TODO(py3.7): add required=True
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+
+        p_measure = p_operation.add_parser(
+            "measure", help="read measured values")
+
+        p_log = p_operation.add_parser(
+            "log", help="log measured values")
+        p_log.add_argument(
+            "-i", "--interval", metavar="TIME", type=float, choices=bit_t_sb.keys(), required=True,
+            help="sample each TIME seconds")
+        DataLogger.add_subparsers(p_log)
 
     async def interact(self, device, args, bmp280):
         await bmp280.identify()
 
+        await bmp280.set_mode("sleep")
         await bmp280.set_iir_coefficient(args.iir_filter)
-        await bmp280.measure(ovs_p=args.oversample_pressure,
-                             ovs_t=args.oversample_temperature,
-                             one_shot=not args.continuous)
+        await bmp280.set_oversample(ovs_p=args.oversample_pressure,
+                                    ovs_t=args.oversample_temperature)
 
-        if args.continuous:
+        if args.operation == "measure":
+            await bmp280.set_mode("force")
+
+            temp_degC = await bmp280.get_temperature()
+            press_Pa  = await bmp280.get_pressure()
+            print("temperature : {:.0f} °C".format(temp_degC))
+            print("pressure    : {:.0f} Pa".format(press_Pa))
+            if args.report_altitude:
+                altitude_m = await bmp280.get_altitude(p0=args.sea_level_pressure)
+                print("altitude    : {:.0f} m".format(altitude_m))
+
+        if args.operation == "log":
+            await bmp280.set_mode("normal")
+
+            field_names = dict(t="T(°C)", p="p(Pa)")
+            if args.report_altitude:
+                field_names.update(h="h(m)")
+            data_logger = await DataLogger(self.logger, args, field_names=field_names)
             while True:
-                print("T={:.2f} °C; p={:.1f} Pa; h={:f} m"
-                      .format(await bmp280.get_temperature(),
-                              await bmp280.get_pressure(),
-                              await bmp280.get_altitude(p0=args.sea_level_pressure)))
-                await asyncio.sleep(1)
-        else:
-            self.logger.info("T=%.2f °C", await bmp280.get_temperature())
-            self.logger.info("p=%.1f Pa", await bmp280.get_pressure())
-            self.logger.info("h=%f m",    await bmp280.get_altitude(p0=args.sea_level_pressure))
+                async def report():
+                    fields = dict(t=await bmp280.get_temperature(),
+                                  p=await bmp280.get_pressure())
+                    if args.report_altitude:
+                        fields.update(h=await bmp280.get_altitude(p0=args.sea_level_pressure))
+                    await data_logger.report_data(fields)
+                try:
+                    await asyncio.wait_for(report(), args.interval * 2)
+                except BMP280Error as error:
+                    await data_logger.report_error(str(error), exception=error)
+                    await bmp280.lower.reset()
+                except asyncio.TimeoutError as error:
+                    await data_logger.report_error("timeout", exception=error)
+                    await bmp280.lower.reset()
+                await asyncio.sleep(args.interval)

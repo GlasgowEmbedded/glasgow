@@ -190,6 +190,7 @@ class SensorSCD30Applet(I2CMasterApplet, name="sensor-scd30"):
                 return value
             return arg
 
+        # TODO(py3.7): add required=True
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
         p_calibrate = p_operation.add_parser(
@@ -272,11 +273,8 @@ class SensorSCD30Applet(I2CMasterApplet, name="sensor-scd30"):
             print("relative humidity : {:.0f} %".format(sample.rh_pct))
 
         if args.operation == "log":
-            data_logger = await DataLogger(self.logger, args, field_names={
-                "co2": "CO₂(ppm)",
-                "t":   "T(°C)",
-                "rh":  "RH(%)",
-            })
+            field_names = dict(co2="CO₂(ppm)", t="T(°C)", rh="RH(%)")
+            data_logger = await DataLogger(self.logger, args, field_names=field_names)
             meas_interval = await scd30.get_measurement_interval()
             while True:
                 async def report():
@@ -284,11 +282,8 @@ class SensorSCD30Applet(I2CMasterApplet, name="sensor-scd30"):
                         await asyncio.sleep(meas_interval / 2)
 
                     sample = await scd30.read_measurement()
-                    await data_logger.report_data(fields={
-                        "co2": sample.co2_ppm,
-                        "t":   sample.temp_degC,
-                        "rh":  sample.rh_pct,
-                    })
+                    fields = dict(co2=sample.co2_ppm, t=sample.temp_degC, rh=sample.rh_pct)
+                    await data_logger.report_data(fields)
                 try:
                     await asyncio.wait_for(report(), meas_interval * 3)
                 except SCD30Error as error:
