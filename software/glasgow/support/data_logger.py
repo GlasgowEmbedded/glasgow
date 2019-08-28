@@ -163,7 +163,7 @@ class InfluxDBDataLogger(DataLogger, name="influxdb"):
             key, value = arg.split("=", 1)
             return key, value
         parser.add_argument(
-            "-t", "--tag", metavar="TAG=VALUE", dest="tags", type=tag, nargs="*",
+            "-t", "--tag", metavar="TAG=VALUE", dest="tags", type=tag, action="append",
             help="attach TAG=VALUE to all data points")
         parser.add_argument(
             "-p", "--precision", metavar="PRECISION", choices=["ns", "us", "ms", "s", "m", "h"],
@@ -194,6 +194,7 @@ class InfluxDBDataLogger(DataLogger, name="influxdb"):
             data_parts.append(str(self._timestamp(self.precision, timestamp)))
         data = " ".join(data_parts)
         try:
+            self.logger.debug("InfluxDB: write data=<%s>", data)
             async with self.session.post(self.url, data=data) as response:
                 if response.status not in range(200, 300):
                     self.logger.error("InfluxDB: write status=%d body=%s",
