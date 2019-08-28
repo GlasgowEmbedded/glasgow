@@ -216,7 +216,10 @@ class GlasgowAppletTestCase(unittest.TestCase):
         parser = argparse.ArgumentParser()
         self.applet.add_build_arguments(parser, access_args)
 
-        parsed_args = parser.parse_args(args)
+        try:
+            parsed_args = parser.parse_args(args)
+        except SystemExit:
+            raise AssertionError("argument parsing failed") from None
         self.applet.build(target, parsed_args)
 
         target.build_plan().execute()
