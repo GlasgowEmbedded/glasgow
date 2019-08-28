@@ -5,6 +5,7 @@ from os import path
 from setuptools import setup, find_packages
 from setuptools.command.build_ext import build_ext
 from setuptools.command.bdist_egg import bdist_egg
+from setuptools.command.sdist import sdist
 
 from distutils import log
 from distutils.spawn import spawn
@@ -43,6 +44,13 @@ class GlasgowBdistEgg(bdist_egg):
         bdist_egg.run(self)
 
 
+class GlasgowSdist(sdist):
+    def run(self):
+        # Make sure the included ihex files are up to date.
+        self.run_command("build_ext")
+        sdist.run(self)
+
+
 setup(
     name="glasgow",
     version=versioneer.get_version(),
@@ -79,6 +87,7 @@ setup(
     cmdclass={
         "build_ext": GlasgowBuildExt,
         "bdist_egg": GlasgowBdistEgg,
+        "sdist": GlasgowSdist,
         **versioneer.get_cmdclass()
     },
     project_urls={
