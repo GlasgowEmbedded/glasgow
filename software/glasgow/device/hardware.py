@@ -128,17 +128,17 @@ class GlasgowHardwareDevice:
                                          .format(serial))
 
         if serial is None:
-            self.revision, self.usb = next(iter(handles.values()))
+            self.revision, self.usb_handle = next(iter(handles.values()))
         else:
-            self.revision, self.usb = handles[serial]
+            self.revision, self.usb_handle = handles[serial]
         try:
-            self.usb.setAutoDetachKernelDriver(True)
+            self.usb_handle.setAutoDetachKernelDriver(True)
         except usb1.USBErrorNotSupported:
             pass
 
     def close(self):
         self.usb_poller.done = True
-        self.usb.close()
+        self.usb_handle.close()
         self.usb_context.close()
 
     async def _do_transfer(self, is_read, setup):
@@ -148,7 +148,7 @@ class GlasgowHardwareDevice:
         cancel_future = asyncio.Future()
         result_future = asyncio.Future()
 
-        transfer = self.usb.getTransfer()
+        transfer = self.usb_handle.getTransfer()
         setup(transfer)
 
         def usb_callback(transfer):

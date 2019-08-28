@@ -64,10 +64,10 @@ class DirectDemultiplexer(AccessDemultiplexer):
         super().__init__(device)
         self._claimed = set()
 
-        for config in device.usb.getDevice().iterConfigurations():
+        for config in device.usb_handle.getDevice().iterConfigurations():
             if config.getNumInterfaces() == pipe_count:
                 try:
-                    device.usb.setConfiguration(config.getConfigurationValue())
+                    device.usb_handle.setConfiguration(config.getConfigurationValue())
                 except usb1.USBErrorInvalidParam:
                     # Neither WinUSB, nor libusbK, nor libusb0 allow selecting any configuration
                     # that is not the 1st one. This is a limitation of the KMDF USB target.
@@ -149,8 +149,8 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         self._pipe_num   = mux_interface._pipe_num
         self._addr_reset = mux_interface._addr_reset
 
-        config_num = self.device.usb.getConfiguration()
-        for config in self.device.usb.getDevice().iterConfigurations():
+        config_num = self.device.usb_handle.getConfiguration()
+        for config in self.device.usb_handle.getDevice().iterConfigurations():
             if config.getConfigurationValue() == config_num:
                 break
 
@@ -171,7 +171,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
                 self._out_packet_size = packet_size
         assert self._endpoint_in != None and self._endpoint_out != None
 
-        self._interface  = self.device.usb.claimInterface(self._pipe_num)
+        self._interface  = self.device.usb_handle.claimInterface(self._pipe_num)
         self._in_tasks   = TaskQueue()
         self._in_buffer  = ChunkedFIFO()
         self._out_tasks  = TaskQueue()
@@ -193,7 +193,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
         await self.device.write_register(self._addr_reset, 1)
 
         self.logger.trace("FIFO: synchronizing buffers")
-        self.device.usb.setInterfaceAltSetting(self._pipe_num, 1)
+        self.device.usb_handle.setInterfaceAltSetting(self._pipe_num, 1)
         self._in_buffer .clear()
         self._out_buffer.clear()
 
