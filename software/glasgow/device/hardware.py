@@ -159,6 +159,18 @@ class GlasgowHardwareDevice:
 
             status = transfer.getStatus()
             if status == usb1.TRANSFER_CANCELLED:
+                usb_transfer_type = transfer.getType()
+                if usb_transfer_type == usb1.TRANSFER_TYPE_CONTROL:
+                    transfer_type = "CONTROL"
+                if usb_transfer_type == usb1.TRANSFER_TYPE_BULK:
+                    transfer_type = "BULK"
+                endpoint = transfer.getEndpoint()
+                if endpoint & usb1.ENDPOINT_DIR_MASK == usb1.ENDPOINT_IN:
+                    endpoint_dir = "IN"
+                if endpoint & usb1.ENDPOINT_DIR_MASK == usb1.ENDPOINT_OUT:
+                    endpoint_dir = "OUT"
+                logger.trace("USB: %s EP%d %s (cancelled)",
+                             transfer_type, endpoint & 0x7f, endpoint_dir)
                 cancel_future.set_result(None)
             elif result_future.cancelled():
                 pass
