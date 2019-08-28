@@ -182,6 +182,9 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
             self.logger.trace("FIFO: cancelling operations")
             self._in_tasks .cancel()
             self._out_tasks.cancel()
+            # libusb cancellation is asynchronous, so wait until it's actually done.
+            await self._in_tasks .wait_all()
+            await self._out_tasks.wait_all()
 
     async def reset(self):
         await self.cancel()

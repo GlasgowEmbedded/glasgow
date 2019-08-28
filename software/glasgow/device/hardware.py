@@ -137,47 +137,49 @@ class GlasgowHardwareDevice:
             pass
 
     async def _do_transfer(self, is_read, setup):
+        # libusb transfer cancellation is asynchronous, and moreover, it is necessary to wait for
+        # all transfers to finish cancelling before closing the event loop. To do this, use
+        # separate futures for result and cancel.
+        cancel_future = asyncio.Future()
+        result_future = asyncio.Future()
+
         transfer = self.usb.getTransfer()
-        future = asyncio.Future()
         setup(transfer)
 
         def usb_callback(transfer):
             if transfer.isSubmitted():
                 return # transfer not completed
-            if future.cancelled():
-                return # future cancelled
 
             status = transfer.getStatus()
-            if status == usb1.TRANSFER_COMPLETED:
+            if status == usb1.TRANSFER_CANCELLED:
+                cancel_future.set_result(None)
+            elif result_future.cancelled():
+                pass
+            elif status == usb1.TRANSFER_COMPLETED:
                 if is_read:
-                    future.set_result(transfer.getBuffer()[:transfer.getActualLength()])
+                    result_future.set_result(transfer.getBuffer()[:transfer.getActualLength()])
                 else:
-                    future.set_result(None)
-            elif status == usb1.TRANSFER_CANCELLED:
-                future.cancel()
+                    result_future.set_result(None)
             elif status == usb1.TRANSFER_STALL:
-                future.set_exception(usb1.USBErrorPipe())
+                result_future.set_exception(usb1.USBErrorPipe())
             elif status == usb1.TRANSFER_NO_DEVICE:
-                future.set_exception(GlasgowDeviceError("device lost"))
+                result_future.set_exception(GlasgowDeviceError("device lost"))
             else:
-                future.set_exception(GlasgowDeviceError("transfer error: {}".format(status)))
+                result_future.set_exception(GlasgowDeviceError("transfer error: {}"
+                                                               .format(status)))
 
         loop = asyncio.get_event_loop()
         transfer.setCallback(lambda transfer: loop.call_soon_threadsafe(usb_callback, transfer))
         transfer.submit()
-
-        def done_callback(future):
-            if future.cancelled():
-                # It's tempting to protect the call to `cancel` with `if transfer.isSubmitted():`,
-                # but this creates a possible race condition, since libusb is multithreaded.
-                # Instead, ignore the error raised on submitted transfers.
-                try:
-                    transfer.cancel()
-                except usb1.USBErrorNotFound:
-                    pass
-        future.add_done_callback(done_callback)
-
-        return await future
+        try:
+            return await result_future
+        except asyncio.CancelledError:
+            try:
+                transfer.cancel()
+                await cancel_future
+            except usb1.USBErrorNotFound:
+                pass # already finished, one way or another
+            raise
 
     async def control_read(self, request_type, request, value, index, length):
         logger.trace("USB: CONTROL IN type=%#04x request=%#04x "
