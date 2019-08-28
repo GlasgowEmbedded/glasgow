@@ -11,6 +11,7 @@ import struct
 import crcmod
 
 from ....support.logging import dump_hex
+from ....support.data_logger import DataLogger
 from ...interface.i2c_master import I2CMasterApplet
 from ... import *
 
@@ -223,28 +224,10 @@ class SensorSCD30Applet(I2CMasterApplet, name="sensor-scd30"):
 
         p_measure = p_operation.add_parser(
             "measure", help="read measured values")
-        p_measure.add_argument(
-            "-c", "--continuous", dest="continuous", action="store_true",
-            help="measure continuously")
 
-        p_influxdb = p_operation.add_parser(
-            "influxdb", help="log measured values to InfluxDB")
-        p_influxdb.add_argument(
-            "endpoint", metavar="ENDPOINT", type=str,
-            help="InfluxDB endpoint base URL (e.g.: http://localhost:8086)")
-        p_influxdb.add_argument(
-            "database", metavar="DATABASE", type=str,
-            help="InfluxDB database (e.g.: sensors)")
-        p_influxdb.add_argument(
-            "measurement", metavar="SERIES", type=str,
-            help="InfluxDB measurement (e.g.: environment)")
-        def tag(arg):
-            if "=" not in arg:
-                raise argparse.ArgumentTypeError("{} is not a valid tag".format(arg))
-            return arg
-        p_influxdb.add_argument(
-            "-t", "--tag", metavar="TAG=VALUE", dest="tags", type=tag, nargs="+",
-            help="InfluxDB tag (e.g. location=home)")
+        p_log = p_operation.add_parser(
+            "log", help="log measured values")
+        DataLogger.add_subparsers(p_log)
 
     async def interact(self, device, args, scd30):
         major, minor = await scd30.firmware_version()
@@ -280,46 +263,38 @@ class SensorSCD30Applet(I2CMasterApplet, name="sensor-scd30"):
             await scd30.stop_measurement()
 
         if args.operation == "measure":
-            while True:
-                while not await scd30.is_data_ready():
-                    await asyncio.sleep(0.37)
+            while not await scd30.is_data_ready():
+                await asyncio.sleep(1.0)
 
-                sample = await scd30.read_measurement()
-                print("CO₂={:.0f} ppm; T={:.2f} °C; RH={:.0f} %"
-                      .format(sample.co2_ppm, sample.temp_degC, sample.rh_pct))
+            sample = await scd30.read_measurement()
+            print("CO₂ concentration : {:.0f} ppm".format(sample.co2_ppm))
+            print("temperature       : {:.2f} °C".format(sample.temp_degC))
+            print("relative humidity : {:.0f} %".format(sample.rh_pct))
 
-                if not args.continuous:
-                    break
-
-        if args.operation == "influxdb":
+        if args.operation == "log":
+            data_logger = await DataLogger(self.logger, args, field_names={
+                "co2": "CO₂(ppm)",
+                "t":   "T(°C)",
+                "rh":  "RH(%)",
+            })
             meas_interval = await scd30.get_measurement_interval()
-            async def measure():
-                while not await scd30.is_data_ready():
-                    await asyncio.sleep(meas_interval / 2)
-                return await scd30.read_measurement()
+            while True:
+                async def report():
+                    while not await scd30.is_data_ready():
+                        await asyncio.sleep(meas_interval / 2)
 
-            influxdb_url = yarl.URL(args.endpoint) \
-                .with_path("/write").with_query({"db": args.database})
-            influxdb_series = f"{args.measurement},{','.join(args.tags)},sensor=scd30"
-            async with aiohttp.ClientSession() as session:
-                while True:
-                    try:
-                        sample = await asyncio.wait_for(measure(), meas_interval * 2)
-                        influxdb_data = (f"{influxdb_series} error=false,"
-                                         f"co2={sample.co2_ppm},"
-                                         f"t={sample.temp_degC},"
-                                         f"rh={sample.rh_pct}")
-                    except SCD30Error as error:
-                        await asyncio.sleep(meas_interval)
-                        self.logger.warn("measurement error: %s", error)
-                        await scd30.lower.reset()
-                        influxdb_data = (f"{influxdb_series} error=true")
-                    except asyncio.TimeoutError:
-                        self.logger.warn("timeout")
-                        await scd30.lower.reset()
-                        influxdb_data = (f"{influxdb_series} error=true")
-
-                    async with session.post(influxdb_url, data=influxdb_data) as resp:
-                        if resp.status not in range(200, 300):
-                            self.logger.warn("InfluxDB write status=%d body=%s",
-                                             resp.status, (await resp.text()).strip())
+                    sample = await scd30.read_measurement()
+                    await data_logger.report_data(fields={
+                        "co2": sample.co2_ppm,
+                        "t":   sample.temp_degC,
+                        "rh":  sample.rh_pct,
+                    })
+                try:
+                    await asyncio.wait_for(report(), meas_interval * 3)
+                except SCD30Error as error:
+                    await data_logger.report_error(str(error), exception=error)
+                    await scd30.lower.reset()
+                    await asyncio.sleep(meas_interval)
+                except asyncio.TimeoutError as error:
+                    await data_logger.report_error("timeout", exception=error)
+                    await scd30.lower.reset()
