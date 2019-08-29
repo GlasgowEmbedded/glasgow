@@ -1,44 +1,40 @@
 import logging
 import asyncio
 from nmigen.compat import *
+from nmigen.build.plat import ResourceError
 
 from ... import *
 
 
 class SelfTestSubtarget(Module):
     def __init__(self, applet, target):
-        t_a  = [TSTriple() for _ in range(8)]
-        t_b  = [TSTriple() for _ in range(8)]
-        io_a = [target.platform.request("port_a", n) for n in range(8)]
-        io_b = [target.platform.request("port_b", n) for n in range(8)]
+        pins_a = [target.platform.request("port_a", n) for n in range(8)]
+        pins_b = [target.platform.request("port_b", n) for n in range(8)]
         try:
             user_leds = [target.platform.request("user_led", n) for n in range(5)]
-        except build.generic_platform.ConstraintError:
-            user_leds = None
+        except ResourceError:
+            user_leds = []
 
-        self.specials += [t.get_tristate(io_a[i].io) for i, t in enumerate(t_a)]
-        self.specials += [t.get_tristate(io_b[i].io) for i, t in enumerate(t_b)]
-        self.comb     += [io_a[i].oe.eq(t.oe) for i, t in enumerate(t_a) if hasattr(io_a[i], "oe")]
-        self.comb     += [io_b[i].oe.eq(t.oe) for i, t in enumerate(t_b) if hasattr(io_b[i], "oe")]
-        if user_leds is not None:
-            self.comb     += [user_leds[i].eq(1) for i in range(5)]
+        self.comb += [pin.oe.eq(pin.io.oe) for pin in pins_a if hasattr(pin, "oe")]
+        self.comb += [pin.oe.eq(pin.io.oe) for pin in pins_b if hasattr(pin, "oe")]
+        self.comb += [user_led.eq(1) for user_led in user_leds]
 
         reg_oe_a, applet.addr_oe_a = target.registers.add_rw(8)
         reg_o_a,  applet.addr_o_a  = target.registers.add_rw(8)
         reg_i_a,  applet.addr_i_a  = target.registers.add_ro(8)
         self.comb += [
-            Cat(t.oe for t in t_a).eq(reg_oe_a),
-            Cat(t.o for t in t_a).eq(reg_o_a),
-            reg_i_a.eq(Cat(t.i for t in t_a))
+            Cat(pin.io.oe for pin in pins_a).eq(reg_oe_a),
+            Cat(pin.io.o for pin in pins_a).eq(reg_o_a),
+            reg_i_a.eq(Cat(pin.io.i for pin in pins_a))
         ]
 
         reg_oe_b, applet.addr_oe_b = target.registers.add_rw(8)
         reg_o_b,  applet.addr_o_b  = target.registers.add_rw(8)
         reg_i_b,  applet.addr_i_b  = target.registers.add_ro(8)
         self.comb += [
-            Cat(t.oe for t in t_b).eq(reg_oe_b),
-            Cat(t.o for t in t_b).eq(reg_o_b),
-            reg_i_b.eq(Cat(t.i for t in t_b))
+            Cat(pin.io.oe for pin in pins_b).eq(reg_oe_b),
+            Cat(pin.io.o for pin in pins_b).eq(reg_o_b),
+            reg_i_b.eq(Cat(pin.io.i for pin in pins_b))
         ]
 
 
