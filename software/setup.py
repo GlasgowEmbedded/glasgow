@@ -56,7 +56,7 @@ setup(
     version=versioneer.get_version(),
     author="whitequark",
     author_email="whitequark@whitequark.org",
-    #description="TODO",
+    description="Software for Glasgow, a digital interface multitool",
     #long_description="""TODO""",
     license="0-clause BSD License",
     install_requires=[
