@@ -61,7 +61,7 @@ setup(
     license="0-clause BSD License",
     install_requires=[
         "nmigen",
-        "fx2>=0.6",
+        "fx2>=0.7",
         "libusb1>=1.6.6",
         "aiohttp",
         "pyvcd",
