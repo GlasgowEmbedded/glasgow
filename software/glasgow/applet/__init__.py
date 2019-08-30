@@ -89,7 +89,6 @@ class GlasgowAppletTool:
 # -------------------------------------------------------------------------------------------------
 
 import os
-import shutil
 import unittest
 import functools
 import asyncio
@@ -285,9 +284,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
 
 
 def synthesis_test(case):
-    synthesis_available = (shutil.which("yosys") is not None and
-                           shutil.which("nextpnr-ice40") is not None)
-
+    synthesis_available = GlasgowPlatformRevAB().has_required_tools()
     return unittest.skipUnless(synthesis_available, "synthesis not available")(case)
 
 
