@@ -3,6 +3,7 @@ import asyncio
 import struct
 import array
 import time
+import statistics
 from nmigen.compat import *
 
 from ....gateware.lfsr import *
@@ -97,9 +98,13 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
         * loopback: host emits an endless stream of data via one FIFOs, device mirrors it all back,
           host validates
           (simulates an SPI protocol subtarget)
+        * latency: host sends one packet, device sends it back, time until the packet is received back
+          on the host is measured
+          (simulates cases where a transaction with the DUT relies on feedback from the host;
+          also useful for comparing different usb stacks or usb data paths like hubs or network bridges)
     """
 
-    __all_modes = ["source", "sink", "loopback"]
+    __all_modes = ["source", "sink", "loopback", "latency"]
 
     def build(self, target, args):
         self.mux_interface = iface = \
@@ -192,13 +197,44 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
                 error = (actual != golden)
                 count = None
 
+            if mode == "latency":
+                packetmax = golden[:512]
+                count = 0
+                error = False
+                roundtriptime = []
+
+                await device.write_register(self.__addr_mode, MODE_LOOPBACK)
+                await iface.reset()
+                counter_fut = asyncio.ensure_future(counter())
+
+                while count < args.count:
+                    begin = time.perf_counter()
+                    await iface.write(packetmax)
+                    actual = await iface.read(len(packetmax))
+                    end = time.perf_counter()
+
+                    # calculate roundtrip time in µs
+                    roundtriptime.append((end - begin) * 1000000)
+                    if actual != packetmax:
+                        error = True
+                        break
+                    count += len(packetmax) * 2
+
+                counter_fut.cancel()
+
             if error:
                 if count is None:
                     self.logger.error("mode %s failed!", mode)
                 else:
                     self.logger.error("mode %s failed at %#x!", mode, count)
             else:
-                self.logger.info("mode %s: %.2f MiB/s (%.2f Mb/s)",
+                if mode == "latency":
+                    self.logger.info("mode %s: %.2f µs stddev: %.2f µs",
+                                 mode,
+                                 statistics.mean(roundtriptime),
+                                 statistics.pstdev(roundtriptime))
+                else:
+                    self.logger.info("mode %s: %.2f MiB/s (%.2f Mb/s)",
                                  mode,
                                  (length / (end - begin)) / (1 << 20),
                                  (length / (end - begin)) / (1 << 17))
