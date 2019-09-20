@@ -70,6 +70,7 @@ setup(
     license="0-clause BSD License",
     setup_requires=["setuptools_scm"],
     install_requires=[
+        "setuptools",
         "nmigen",
         "fx2>=0.7",
         "libusb1>=1.6.6",
