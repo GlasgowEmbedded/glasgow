@@ -13,7 +13,7 @@ from datetime import datetime
 from fx2 import FX2Config
 from fx2.format import input_data, diff_data
 
-from ._version import get_versions
+from . import __version__
 from .support.logging import *
 from .support.asignal import *
 from .support.pyrepl import *
@@ -63,7 +63,7 @@ def create_argparser():
 
     version = "Glasgow version {version} (Python {python_version})" \
         .format(python_version=".".join(str(n) for n in sys.version_info[:3]),
-                **get_versions())
+                version=__version__)
 
     parser.add_argument(
         "-V", "--version", action="version", version=version,
