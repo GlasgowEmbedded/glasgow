@@ -12,8 +12,6 @@ from distutils.spawn import spawn
 from distutils.dir_util import mkpath
 from distutils.errors import DistutilsExecError
 
-import versioneer
-
 
 if sys.version_info[:3] < (3, 6):
     raise SystemExit("Glasgow requires Python 3.6+")
@@ -51,14 +49,26 @@ class GlasgowSdist(sdist):
         sdist.run(self)
 
 
+def scm_version():
+    def local_scheme(version):
+        return version.format_choice("+{node}", "+{node}.dirty")
+    return {
+        "root": "..",
+        "relative_to": __file__,
+        "version_scheme": "guess-next-dev",
+        "local_scheme": local_scheme
+    }
+
+
 setup(
     name="glasgow",
-    version=versioneer.get_version(),
+    use_scm_version=scm_version(),
     author="whitequark",
     author_email="whitequark@whitequark.org",
     description="Software for Glasgow, a digital interface multitool",
     #long_description="""TODO""",
     license="0-clause BSD License",
+    setup_requires=["setuptools_scm"],
     install_requires=[
         "nmigen",
         "fx2>=0.7",
@@ -88,7 +98,6 @@ setup(
         "build_ext": GlasgowBuildExt,
         "bdist_egg": GlasgowBdistEgg,
         "sdist": GlasgowSdist,
-        **versioneer.get_cmdclass()
     },
     project_urls={
         #"Documentation": "https://glasgow.readthedocs.io/",

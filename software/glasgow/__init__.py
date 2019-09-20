@@ -1,6 +1,8 @@
-from ._version import get_versions
-__version__ = get_versions()['version']
-del get_versions
+import pkg_resources
+try:
+    __version__ = pkg_resources.get_distribution(__name__).version
+except pkg_resources.DistributionNotFound:
+    pass
 
 import logging
 
