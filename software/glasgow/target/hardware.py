@@ -85,7 +85,12 @@ class GlasgowHardwareTarget(Module):
             super().finalize(*args, **kwargs)
 
     def build_plan(self, **kwargs):
-        return GlasgowBuildPlan(self.platform.prepare(self, **kwargs))
+        overrides = {
+            "synth_opts": ["-abc9"],
+            "nextpnr_opts": ["--placer", "heap"],
+        }
+        overrides.update(kwargs)
+        return GlasgowBuildPlan(self.platform.prepare(self, **overrides))
 
 
 class GlasgowBuildPlan:
