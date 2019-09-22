@@ -229,10 +229,11 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
                     self.logger.error("mode %s failed at %#x!", mode, count)
             else:
                 if mode == "latency":
-                    self.logger.info("mode %s: %.2f µs stddev: %.2f µs",
+                    self.logger.info("mode %s: mean: %.2f µs stddev: %.2f µs worst: %.2f µs",
                                  mode,
                                  statistics.mean(roundtriptime),
-                                 statistics.pstdev(roundtriptime))
+                                 statistics.pstdev(roundtriptime),
+                                 max(roundtriptime))
                 else:
                     self.logger.info("mode %s: %.2f MiB/s (%.2f Mb/s)",
                                  mode,
