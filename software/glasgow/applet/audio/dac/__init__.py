@@ -229,4 +229,4 @@ class AudioDACApplet(GlasgowApplet, name="audio-dac"):
 class AudioDACAppletTestCase(GlasgowAppletTestCase, applet=AudioDACApplet):
     @synthesis_test
     def test_build(self):
-        self.assertBuilds()
+        self.assertBuilds(args=["--unsigned"])
