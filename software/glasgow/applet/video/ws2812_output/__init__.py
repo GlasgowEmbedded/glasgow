@@ -133,10 +133,6 @@ class VideoWS2812OutputApplet(GlasgowApplet, name="video-ws2812-output"):
         parser.add_argument(
             "-c", "--count", metavar="N", type=int, required=True,
             help="set the number of LEDs per string")
-        parser.add_argument(
-            "-b", "--buffer", metavar="N", type=int, default=16,
-            help="set the number of frames to buffer internally (buffered twice)")
-        ServerEndpoint.add_argument(parser, "endpoint")
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
@@ -149,9 +145,21 @@ class VideoWS2812OutputApplet(GlasgowApplet, name="video-ws2812-output"):
 
         return subtarget
 
+    @classmethod
+    def add_run_arguments(cls, parser, access):
+        super().add_run_arguments(parser, access)
+
+        parser.add_argument(
+            "-b", "--buffer", metavar="N", type=int, default=16,
+            help="set the number of frames to buffer internally (buffered twice)")
+
     async def run(self, device, args):
         buffer_size = len(args.pin_set_out) * args.count * 3 * args.buffer
         return await device.demultiplexer.claim_interface(self, self.mux_interface, args, write_buffer_size=buffer_size)
+
+    @classmethod
+    def add_interact_arguments(cls, parser):
+        ServerEndpoint.add_argument(parser, "endpoint")
 
     async def interact(self, device, args, leds):
         frame_size = len(args.pin_set_out) * args.count * 3
@@ -174,4 +182,4 @@ class VideoWS2812OutputApplet(GlasgowApplet, name="video-ws2812-output"):
 class VideoWS2812OutputAppletTestCase(GlasgowAppletTestCase, applet=VideoWS2812OutputApplet):
     @synthesis_test
     def test_build(self):
-        self.assertBuilds(args=["--port", "A"])
+        self.assertBuilds(args=["--pins-out", "0:3", "-c", "1024"])
