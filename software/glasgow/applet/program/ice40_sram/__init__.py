@@ -112,4 +112,6 @@ class ProgramICE40SRAMApplet(SPIMasterApplet, name="program-ice40-sram"):
 class ProgramICE40SRAMAppletTestCase(GlasgowAppletTestCase, applet=ProgramICE40SRAMApplet):
     @synthesis_test
     def test_build(self):
-        self.assertBuilds()
+        self.assertBuilds(args=["--pin-reset", "0", "--pin-done", "1",
+                                "--pin-sck",   "2", "--pin-ss",   "3",
+                                "--pin-mosi",  "4"])
