@@ -12,8 +12,11 @@ __all__ = ["GlasgowPlatformICE40"]
 class GlasgowPlatformICE40(LatticeICE40Platform):
     def toolchain_program(self, products, name):
         bitstream = products.get("{}.bin".format(name))
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(GlasgowHardwareDevice().download_bitstream(bitstream))
+        async def do_program():
+            device = GlasgowHardwareDevice()
+            await device.download_bitstream(bitstream)
+            device.close()
+        asyncio.get_event_loop().run_until_complete(do_program())
 
     def get_pll(self, pll, simple_feedback=True):
         if not 10e6 <= pll.f_in <= 133e6:
