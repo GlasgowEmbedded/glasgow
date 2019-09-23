@@ -35,11 +35,11 @@ class GlasgowPlatformRevC0(GlasgowPlatformICE40):
 
         Resource("alert", 0, PinsN("K4", dir="oe"), Attrs(IO_STANDARD="SB_LVCMOS33")),
 
-        Resource("user_led", 0, Pins("G9", dir="o"), Attrs(IO_STANDARD="SB_LVCMOS33")),
-        Resource("user_led", 1, Pins("G8", dir="o"), Attrs(IO_STANDARD="SB_LVCMOS33")),
-        Resource("user_led", 2, Pins("E9", dir="o"), Attrs(IO_STANDARD="SB_LVCMOS33")),
-        Resource("user_led", 3, Pins("D9", dir="o"), Attrs(IO_STANDARD="SB_LVCMOS33")),
-        Resource("user_led", 4, Pins("E8", dir="o"), Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("led", 0, Pins("G9", dir="o"), Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("led", 1, Pins("G8", dir="o"), Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("led", 2, Pins("E9", dir="o"), Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("led", 3, Pins("D9", dir="o"), Attrs(IO_STANDARD="SB_LVCMOS33")),
+        Resource("led", 4, Pins("E8", dir="o"), Attrs(IO_STANDARD="SB_LVCMOS33")),
 
         Resource("port_a", 0, Subsignal("io", Pins("A1")),  Subsignal("oe", Pins("C7",  dir="o")),
                  Attrs(IO_STANDARD="SB_LVCMOS33")),
@@ -93,5 +93,5 @@ class GlasgowPlatformRevC0(GlasgowPlatformICE40):
 
 
 if __name__ == "__main__":
-    from nmigen_boards._blinky import build_and_program
-    build_and_program(GlasgowPlatformRevC0)
+    from nmigen_boards.test.blinky import *
+    GlasgowPlatformRevC0().build(Blinky(), do_program=True)
