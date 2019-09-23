@@ -96,7 +96,7 @@ class ProgramICE40SRAMApplet(SPIMasterApplet, name="program-ice40-sram"):
         bitstream = args.bitstream.read()
         await ice40_iface.program(bitstream)
 
-        if (args.pin_done is not None) and (args.pin_reset is not None):
+        if args.pin_done is not None:
             for _ in range(200):    # Wait up to 2s
                 await asyncio.sleep(0.010)  # Poll every 10 ms
                 done = await ice40_iface.get_done()
