@@ -84,6 +84,7 @@ Obtain the source code:
 
     git clone https://github.com/GlasgowEmbedded/Glasgow
     cd Glasgow
+    git submodule update --init vendor/libfx2
 
 Configure your system to allow unprivileged access (for anyone in the `plugdev` group) to the Glasgow hardware:
 
