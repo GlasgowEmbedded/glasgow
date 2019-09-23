@@ -81,7 +81,7 @@ You will need git, build tools, sdcc, Python 3.7 (or a newer version, in which c
     apt-get install --no-install-recommends git build-essential sdcc \
       python3.7 python3-setuptools python3-libusb1 python3-aiohttp python3-bitarray python3-crcmod
 
-You will also need Yosys 0.9 (or a newer version), and nextpnr-ice40 from the master branch. Follow the setup instructions for [Yosys](https://github.com/yosysHQ/yosys/#setup) and [nextpnr](https://github.com/YosysHQ/nextpnr/#nextpnr-ice40).
+You will also need Yosys and nextpnr-ice40, both from the master branch. Follow the setup instructions for [Yosys](https://github.com/yosysHQ/yosys/#setup) and [nextpnr](https://github.com/YosysHQ/nextpnr/#nextpnr-ice40).
 
 Obtain the source code:
 
