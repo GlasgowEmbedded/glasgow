@@ -170,7 +170,7 @@ class VGAOutputApplet(GlasgowApplet, name="video-vga-output"):
             sys_clk_freq=target.sys_clk_freq,
             pix_clk_freq=args.pix_clk_freq * 1e6,
         ))
-        target.platform.add_period_constraint(subtarget.cd_pix.clk, 1e3 / args.pix_clk_freq)
+        target.platform.add_clock_constraint(subtarget.cd_pix.clk, args.pix_clk_freq * 1e6)
 
         if test_pattern:
             subtarget.comb += \
