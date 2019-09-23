@@ -76,9 +76,10 @@ Debugging new applets can be hard, especially if bidirectional buses are involve
 
 ### ... with Linux?
 
-You will need Python 3.7 (or a newer version, in which case replace `3.7` with that version below) and sdcc. On a Debian or Ubuntu system these can be installed with:
+You will need git, build tools, sdcc, Python 3.7 (or a newer version, in which case replace `3.7` with that version below). On a Debian or Ubuntu system these can be installed with:
 
-    apt-get install python3.7 sdcc
+    apt-get install --no-install-recommends git build-essential sdcc \
+      python3.7 python3-setuptools python3-libusb1 python3-aiohttp python3-bitarray python3-crcmod
 
 Obtain the source code:
 

@@ -68,11 +68,13 @@ setup(
     description="Software for Glasgow, a digital interface multitool",
     #long_description="""TODO""",
     license="0-clause BSD License",
-    setup_requires=["setuptools_scm"],
-    install_requires=[
+    setup_requires=[
         "setuptools",
+        "setuptools_scm"
+    ],
+    install_requires=[
         "nmigen",
-        "fx2>=0.7",
+        "fx2>=0.8",
         "libusb1>=1.6.6",
         "aiohttp",
         "pyvcd",
