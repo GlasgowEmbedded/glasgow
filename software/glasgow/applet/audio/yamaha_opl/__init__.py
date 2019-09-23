@@ -982,5 +982,9 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
 
 class AudioYamahaOPLAppletTestCase(GlasgowAppletTestCase, applet=AudioYamahaOPLApplet):
     @synthesis_test
-    def test_build(self):
-        self.assertBuilds()
+    def test_build_opl2(self):
+        self.assertBuilds(args=["--device", "OPL2"])
+
+    @synthesis_test
+    def test_build_opl3(self):
+        self.assertBuilds(args=["--device", "OPL3"])
