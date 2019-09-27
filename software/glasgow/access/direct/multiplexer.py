@@ -1,10 +1,10 @@
 import logging
-from nmigen.compat import *
+from nmigen import *
 
 from .. import AccessMultiplexer, AccessMultiplexerInterface
 
 
-class _FIFOReadPort(Module):
+class _FIFOReadPort(Elaboratable):
     """
     FIFO read port wrapper with control enable and data enable signals.
 
@@ -12,30 +12,42 @@ class _FIFOReadPort(Module):
 
     Attributes
     ----------
-    _ce : Signal
+    _ctrl_en : Signal
         Control enable. Deasserting control enable prevents any reads from the FIFO
         from happening, but does not change the readable flag.
-    _de : Signal
+    _data_en : Signal
         Data enable. Deasserting data enable prevents any reads and also deasserts
         the readable flag.
     """
     def __init__(self, fifo):
+        self._fifo = fifo
         self.width = fifo.width
         self.depth = fifo.depth
 
-        self._ce = Signal(reset=1)
-        self._de = Signal(reset=1)
+        self._ctrl_en = Signal(reset=1)
+        self._data_en = Signal(reset=1)
 
-        self.re       = Signal()
-        self.readable = Signal()
-        self.dout     = fifo.dout
-        self.comb += [
-            fifo.re.eq(self._ce & self.readable & self.re),
-            self.readable.eq(self._de & fifo.readable)
+        self.r_en   = Signal()
+        self.r_rdy  = Signal()
+        self.r_data = fifo.r_data
+
+        # TODO(nmigen): rename these
+        self.re       = self.r_en
+        self.readable = self.r_rdy
+        self.dout     = self.r_data
+
+    def elaborate(self, platform):
+        fifo = self._fifo
+
+        m = Module()
+        m.d.comb += [
+            fifo.r_en .eq(self._ctrl_en & self.r_rdy & self.r_en),
+            self.r_rdy.eq(self._data_en & fifo.r_rdy)
         ]
+        return m
 
 
-class _FIFOWritePort(Module):
+class _FIFOWritePort(Elaboratable):
     """
     FIFO write port wrapper with control enable and data enable signals.
 
@@ -43,28 +55,40 @@ class _FIFOWritePort(Module):
 
     Attributes
     ----------
-    _ce : Signal
+    _ctrl_en : Signal
         Control enable. Deasserting control enable prevents any writes to the FIFO
         from happening, but does not change the writable flag.
-    _de : Signal
+    _data_en : Signal
         Data enable. Deasserting data enable prevents any writes and also deasserts
         the writable flag.
     """
     def __init__(self, fifo):
+        self._fifo = fifo
         self.width = fifo.width
         self.depth = fifo.depth
 
-        self._ce = Signal(reset=1)
-        self._de = Signal(reset=1)
+        self._ctrl_en = Signal(reset=1)
+        self._data_en = Signal(reset=1)
 
-        self.we       = Signal()
-        self.writable = Signal()
-        self.din      = fifo.din
-        self.flush    = fifo.flush
-        self.comb += [
-            fifo.we.eq(self._ce & self.writable & self.we),
-            self.writable.eq(self._de & fifo.writable)
+        self.w_en   = Signal()
+        self.w_rdy  = Signal()
+        self.w_data = fifo.w_data
+        self.flush  = fifo.flush
+
+        # TODO(nmigen): rename these
+        self.we       = self.w_en
+        self.writable = self.w_rdy
+        self.din      = self.w_data
+
+    def elaborate(self, platform):
+        fifo = self._fifo
+
+        m = Module()
+        m.d.comb += [
+            fifo.w_en .eq(self._ctrl_en & self.w_rdy & self.w_en),
+            self.w_rdy.eq(self._data_en & fifo.w_rdy)
         ]
+        return m
 
 
 class DirectMultiplexer(AccessMultiplexer):
@@ -163,11 +187,12 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
             self.comb += pin_parts.oe.o.eq(oe)
 
     def _throttle_fifo(self, fifo):
-        self.submodules += fifo
         if self._throttle == "full":
-            fifo.comb += fifo._ce.eq(~self.analyzer.throttle)
+            fifo.comb += fifo._ctrl_en.eq(~self.analyzer.throttle)
         elif self._throttle == "fifo":
-            fifo.comb += fifo._de.eq(~self.analyzer.throttle)
+            fifo.comb += fifo._data_en.eq(~self.analyzer.throttle)
+
+        self.submodules += fifo
         return fifo
 
     def get_in_fifo(self, **kwargs):
@@ -185,7 +210,7 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
     def add_subtarget(self, subtarget):
         if self._throttle == "full":
             # When in the "full" throttling mode, once the throttle signal is asserted while
-            # the applet asserts `re` or `we`, the applet will cause spurious reads or writes;
+            # the applet asserts `r_en` or `w_en`, the applet will cause spurious reads or writes;
             # this happens because the FIFO is not in the control enable domain of the applet.
             #
             # (This is deliberate; throttling often happens because the analyzer CY7C FIFO is
@@ -193,11 +218,12 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
             #
             # Thus, in `_throttle_fifo` above, we add the read (for OUT FIFOs) or write
             # (for IN FIFOs) ports into the applet control enable domain.
-            subtarget = CEInserter()(subtarget)
-            subtarget.comb += subtarget.ce.eq(~self.analyzer.throttle)
+            subtarget = EnableInserter(~self.analyzer.throttle)(subtarget)
 
-        subtarget = ResetInserter()(subtarget)
-        subtarget.comb += subtarget.reset.eq(self.reset)
+        # Reset the subtarget simultaneously with the USB-side and FPGA-side FIFOs. This ensures
+        # that when the demultiplexer interface is reset, the gateware and the host software are
+        # synchronized with each other.
+        subtarget = ResetInserter(self.reset)(subtarget)
 
         self.submodules += subtarget
         return subtarget
