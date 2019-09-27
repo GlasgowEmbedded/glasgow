@@ -11,13 +11,13 @@ class SelfTestSubtarget(Module):
         pins_a = [target.platform.request("port_a", n) for n in range(8)]
         pins_b = [target.platform.request("port_b", n) for n in range(8)]
         try:
-            user_leds = [target.platform.request("user_led", n) for n in range(5)]
+            leds = [target.platform.request("led", n) for n in range(5)]
         except ResourceError:
-            user_leds = []
+            leds = []
 
         self.comb += [pin.oe.eq(pin.io.oe) for pin in pins_a if hasattr(pin, "oe")]
         self.comb += [pin.oe.eq(pin.io.oe) for pin in pins_b if hasattr(pin, "oe")]
-        self.comb += [user_led.eq(1) for user_led in user_leds]
+        self.comb += [led.eq(1) for led in leds]
 
         reg_oe_a, applet.addr_oe_a = target.registers.add_rw(8)
         reg_o_a,  applet.addr_o_a  = target.registers.add_rw(8)
