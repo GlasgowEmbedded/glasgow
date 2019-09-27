@@ -4,84 +4,82 @@ import struct
 import array
 import time
 import statistics
-from nmigen.compat import *
+import enum
+from nmigen import *
 
 from ....gateware.lfsr import *
 from ... import *
 
 
-MODE_SOURCE   = 1
-MODE_SINK     = 2
-MODE_LOOPBACK = 3
+class Mode(enum.Enum):
+    SOURCE   = 1
+    SINK     = 2
+    LOOPBACK = 3
 
 
-class BenchmarkSubtarget(Module):
-    def __init__(self, mode, error, count, in_fifo, out_fifo):
-        self.submodules.lfsr = CEInserter()(
-            LinearFeedbackShiftRegister(degree=16, taps=(16, 15, 13, 4))
-        )
+class BenchmarkSubtarget(Elaboratable):
+    def __init__(self, reg_mode, reg_error, reg_count, in_fifo, out_fifo):
+        self.reg_mode  = reg_mode
+        self.reg_error = reg_error
+        self.reg_count = reg_count
 
-        ###
+        self.in_fifo  = in_fifo
+        self.out_fifo = out_fifo
 
-        self.submodules.fsm = FSM(reset_state="MODE")
-        self.fsm.act("MODE",
-            NextValue(count, 0),
-            If(mode == MODE_SOURCE,
-                NextState("SOURCE-1")
-            ).Elif(mode == MODE_SINK,
-                NextState("SINK-1")
-            ).Elif(mode == MODE_LOOPBACK,
-                NextState("LOOPBACK")
-            )
-        )
-        self.fsm.act("SOURCE-1",
-            If(in_fifo.writable,
-                in_fifo.din.eq(self.lfsr.value[0:8]),
-                in_fifo.we.eq(1),
-                NextValue(count, count + 1),
-                NextState("SOURCE-2")
-            )
-        )
-        self.fsm.act("SOURCE-2",
-            If(in_fifo.writable,
-                in_fifo.din.eq(self.lfsr.value[8:16]),
-                in_fifo.we.eq(1),
-                self.lfsr.ce.eq(1),
-                NextValue(count, count + 1),
-                NextState("SOURCE-1")
-            )
-        )
-        self.fsm.act("SINK-1",
-            If(out_fifo.readable,
-                If(out_fifo.dout != self.lfsr.value[0:8],
-                    NextValue(error, 1)
-                ),
-                out_fifo.re.eq(1),
-                NextValue(count, count + 1),
-                NextState("SINK-2")
-            )
-        )
-        self.fsm.act("SINK-2",
-            If(out_fifo.readable,
-                If(out_fifo.dout != self.lfsr.value[8:16],
-                    NextValue(error, 1)
-                ),
-                out_fifo.re.eq(1),
-                self.lfsr.ce.eq(1),
-                NextValue(count, count + 1),
-                NextState("SINK-1")
-            )
-        )
-        self.fsm.act("LOOPBACK",
-            in_fifo.din.eq(out_fifo.dout),
-            If(in_fifo.writable & out_fifo.readable,
-                in_fifo.we.eq(1),
-                out_fifo.re.eq(1),
-                NextValue(count, count + 1),
-            ).Else(
-                in_fifo.flush.eq(1)
-            )
-        )
+        self.lfsr = LinearFeedbackShiftRegister(degree=16, taps=(16, 15, 13, 4))
+
+    def elaborate(self, platform):
+        m = Module()
+
+        lfsr_en   = Signal()
+        lfsr_word = Signal(8)
+        m.submodules.lfsr = lfsr = EnableInserter(lfsr_en)(self.lfsr)
+        m.d.comb += lfsr_word.eq(self.lfsr.value.word_select(self.reg_count & 1, width=8))
+
+        with m.FSM():
+            with m.State("MODE"):
+                m.d.sync += self.reg_count.eq(0)
+                with m.Switch(self.reg_mode):
+                    with m.Case(Mode.SOURCE):
+                        m.next = "SOURCE"
+                    with m.Case(Mode.SINK):
+                        m.next = "SINK"
+                    with m.Case(Mode.LOOPBACK):
+                        m.next = "LOOPBACK"
+
+            with m.State("SOURCE"):
+                with m.If(self.in_fifo.w_rdy):
+                    m.d.comb += [
+                        self.in_fifo.w_data.eq(lfsr_word),
+                        self.in_fifo.w_en.eq(1),
+                        lfsr_en.eq(self.reg_count & 1),
+                    ]
+                    m.d.sync += self.reg_count.eq(self.reg_count + 1)
+
+            with m.State("SINK"):
+                with m.If(self.out_fifo.r_rdy):
+                    with m.If(self.out_fifo.dout != lfsr_word):
+                        m.d.sync += self.reg_error.eq(1)
+                    m.d.comb += [
+                        self.out_fifo.r_en.eq(1),
+                        lfsr_en.eq(self.reg_count & 1),
+                    ]
+                    m.d.sync += self.reg_count.eq(self.reg_count + 1)
+
+            with m.State("LOOPBACK"):
+                m.d.comb += self.in_fifo.din.eq(self.out_fifo.dout)
+                with m.If(self.in_fifo.w_rdy & self.out_fifo.r_rdy):
+                    m.d.comb += [
+                        self.in_fifo.w_en.eq(1),
+                        self.out_fifo.r_en.eq(1),
+                    ]
+                    m.d.sync += self.reg_count.eq(self.reg_count + 1)
+                with m.Else():
+                    m.d.comb += [
+                        self.in_fifo.flush.eq(1),
+                    ]
+
+        return m
 
 
 class BenchmarkApplet(GlasgowApplet, name="benchmark"):
@@ -113,7 +111,7 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
         error, self.__addr_error = target.registers.add_ro(1)
         count, self.__addr_count = target.registers.add_ro(32)
         subtarget = iface.add_subtarget(BenchmarkSubtarget(
-            mode=mode, error=error, count=count,
+            reg_mode=mode, reg_error=error, reg_count=count,
             in_fifo=iface.get_in_fifo(auto_flush=False),
             out_fifo=iface.get_out_fifo(),
         ))
@@ -154,7 +152,7 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
                              mode, len(golden) / (1 << 20))
 
             if mode == "source":
-                await device.write_register(self.__addr_mode, MODE_SOURCE)
+                await device.write_register(self.__addr_mode, Mode.SOURCE.value)
                 await iface.reset()
 
                 counter_fut = asyncio.ensure_future(counter())
@@ -168,7 +166,7 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
                 count = None
 
             if mode == "sink":
-                await device.write_register(self.__addr_mode, MODE_SINK)
+                await device.write_register(self.__addr_mode, Mode.SINK.value)
                 await iface.reset()
 
                 counter_fut = asyncio.ensure_future(counter())
@@ -183,7 +181,7 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
                 count = await device.read_register(self.__addr_count, width=4)
 
             if mode == "loopback":
-                await device.write_register(self.__addr_mode, MODE_LOOPBACK)
+                await device.write_register(self.__addr_mode, Mode.LOOPBACK.value)
                 await iface.reset()
                 counter_fut = asyncio.ensure_future(counter())
 
@@ -203,7 +201,7 @@ class BenchmarkApplet(GlasgowApplet, name="benchmark"):
                 error = False
                 roundtriptime = []
 
-                await device.write_register(self.__addr_mode, MODE_LOOPBACK)
+                await device.write_register(self.__addr_mode, Mode.LOOPBACK.value)
                 await iface.reset()
                 counter_fut = asyncio.ensure_future(counter())
 
