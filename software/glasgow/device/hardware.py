@@ -55,9 +55,7 @@ class _PollerThread(threading.Thread):
 
 class GlasgowHardwareDevice:
     def __init__(self, serial=None, firmware_filename=None, *, _factory_rev=None):
-        self.usb_context = usb1.USBContext()
-        self.usb_poller = _PollerThread(self.usb_context)
-        self.usb_poller.start()
+        usb_context = usb1.USBContext()
 
         firmware = None
         handles  = {}
@@ -65,7 +63,7 @@ class GlasgowHardwareDevice:
         while discover:
             discover = False
 
-            for device in self.usb_context.getDeviceIterator():
+            for device in usb_context.getDeviceIterator():
                 vendor_id  = device.getVendorID()
                 product_id = device.getProductID()
                 device_id  = device.getbcdDevice()
@@ -127,6 +125,9 @@ class GlasgowHardwareDevice:
                 raise GlasgowDeviceError("device with serial number {} not found"
                                          .format(serial))
 
+        self.usb_context = usb_context
+        self.usb_poller = _PollerThread(self.usb_context)
+        self.usb_poller.start()
         if serial is None:
             self.revision, self.usb_handle = next(iter(handles.values()))
         else:
