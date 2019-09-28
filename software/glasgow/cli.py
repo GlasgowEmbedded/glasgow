@@ -345,7 +345,7 @@ def _applet(revision, args):
 
 
 class TerminalFormatter(logging.Formatter):
-    LOG_COLORS = {
+    DEFAULT_COLORS = {
         "TRACE"   : "\033[0m",
         "DEBUG"   : "\033[36m",
         "INFO"    : "\033[1m",
@@ -354,8 +354,16 @@ class TerminalFormatter(logging.Formatter):
         "CRITICAL": "\033[1;41m",
     }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.colors = dict(self.DEFAULT_COLORS)
+        for color_override in os.getenv("GLASGOW_COLORS", "").split(":"):
+            if color_override:
+                level, color = color_override.split("=", 2)
+                self.colors[level] = "\033[{}m".format(color)
+
     def format(self, record):
-        color = self.LOG_COLORS.get(record.levelname, "")
+        color = self.colors.get(record.levelname, "")
         # glasgow.applet.foo → g.applet.foo
         record.name = record.name.replace("glasgow.", "g.")
         # applet.memory._25x → applet.memory.25x
