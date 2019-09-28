@@ -155,7 +155,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
                 break
 
         interfaces = list(config.iterInterfaces())
-        assert self._pipe_num <= len(interfaces)
+        assert self._pipe_num < len(interfaces)
         interface = interfaces[self._pipe_num]
 
         settings = list(interface.iterSettings())
