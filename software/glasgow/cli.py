@@ -346,9 +346,9 @@ def _applet(revision, args):
 
 class TerminalFormatter(logging.Formatter):
     LOG_COLORS = {
-        "TRACE"   : "\033[0m",
+        "TRACE"   : "\033[37m",
         "DEBUG"   : "\033[36m",
-        "INFO"    : "\033[1m",
+        "INFO"    : "\033[1;37m",
         "WARNING" : "\033[1;33m",
         "ERROR"   : "\033[1;31m",
         "CRITICAL": "\033[1;41m",
