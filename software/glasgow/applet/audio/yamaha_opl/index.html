@@ -16,8 +16,6 @@
   <!--
     Yes, I know this code is shit. I hate Web. I hate audio. I especially hate web audio.
     Pull requests welcome.
-
-    And yes, I do transfer raw PCM samples over the network encoded as base64. Deal with it.
   -->
   <script type="text/javascript">
     var BUFFER_AT_LEAST = 30;
@@ -333,8 +331,8 @@
         errored = true;
       }
       socket.onclose = function(event) {
-        playButton.disabled = false;
         if(errored || event.code != 1000) {
+          playButton.disabled = false;
           errorPane.style.display = "";
           errorSpan.innerText = event.reason || "WebSocket connection failed";
           netStatusSpan.innerText = "error";
