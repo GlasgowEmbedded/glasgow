@@ -626,7 +626,7 @@ class YamahaVGMStreamPlayer(VGMStreamPlayer):
             await self._opx_iface.wait_clocks(self.clock_rate)
             await self._opx_iface.disable()
 
-    async def record(self, queue, chunk_count=2048):
+    async def record(self, queue, chunk_count=16384):
         total_count = int(self._reader.total_seconds / self.sample_time)
         done_count  = 0
         while done_count < total_count:
