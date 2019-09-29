@@ -310,6 +310,9 @@ class YamahaOPxSubtarget(Module):
 
         # Audio
 
+        data_r = Signal(16)
+        self.sync += If(dac_bus.stb_sy, data_r.eq(Cat(data_r[1:], dac_bus.mo)))
+
         xfer_o = Signal(16)
         if format == "F-3Z-9M-1S-3E":
             xfer_i = Record([("z", 3), ("m", 9), ("s", 1), ("e", 3),])
@@ -322,8 +325,9 @@ class YamahaOPxSubtarget(Module):
         else:
             assert False
 
-        data_r = Signal(16)
-        self.sync += If(dac_bus.stb_sy, data_r.eq(Cat(data_r[1:], dac_bus.mo)))
+        xfrm_o = Signal(16)
+        xfrm_i = Signal(16)
+        self.comb += xfrm_o.eq(xfrm_i + 0x8000)
 
         self.submodules.data_fsm = FSM()
         self.data_fsm.act("WAIT-SH",
@@ -334,10 +338,14 @@ class YamahaOPxSubtarget(Module):
         )
         self.data_fsm.act("SAMPLE",
             NextValue(xfer_i.raw_bits(), data_r),
+            NextState("TRANSFORM")
+        )
+        self.data_fsm.act("TRANSFORM",
+            NextValue(xfrm_i, xfer_o),
             NextState("SEND-L-BYTE")
         )
         self.data_fsm.act("SEND-L-BYTE",
-            in_fifo.din.eq(xfer_o[0:8]),
+            in_fifo.din.eq(xfrm_o[0:8]),
             If(in_fifo.writable,
                 in_fifo.we.eq(1),
                 NextState("SEND-H-BYTE")
@@ -346,7 +354,7 @@ class YamahaOPxSubtarget(Module):
             )
         )
         self.data_fsm.act("SEND-H-BYTE",
-            in_fifo.din.eq(xfer_o[8:16]),
+            in_fifo.din.eq(xfrm_o[8:16]),
             If(in_fifo.writable,
                 in_fifo.we.eq(1),
                 NextState("WAIT-SH")
@@ -665,19 +673,15 @@ class YamahaOPxWebInterface:
             async def resample(input_queue, output_queue):
                 while True:
                     input_data = await input_queue.get()
-                    input_array = numpy.frombuffer(input_data, dtype="<u2")
-                    output_array = (input_array - 32768).astype(numpy.int16)
-                    if input_data:
-                        await output_queue.put(output_array.tobytes())
+                    await output_queue.put(input_data)
                     if not input_data:
-                        await output_queue.put(b"")
                         break
             return resample, actual
 
         resampler = samplerate.Resampler()
         def resample_worker(input_data, end):
-            input_array = numpy.frombuffer(input_data, dtype="<u2")
-            input_array = (input_array.astype(numpy.float32) - 32768) / 32768
+            input_array = numpy.frombuffer(input_data, dtype="<i2")
+            input_array = input_array.astype(numpy.float32) / 32768
             output_array = resampler.process(
                 input_array, ratio=preferred / actual, end_of_input=end)
             output_array = (output_array * 32768).astype(numpy.int16)
@@ -849,7 +853,7 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
     The ~CS input should always be grounded, since there is only one chip on the bus in the first
     place.
 
-    The digital output is losslessly converted to 16-bit unsigned PCM samples. (The Yamaha DACs
+    The digital output is losslessly converted to 16-bit signed PCM samples. (The Yamaha DACs
     only have 16 bit of dynamic range, and there is a direct mapping between the on-wire format
     and ordinary 16-bit PCM.)
 
