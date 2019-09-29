@@ -31,6 +31,7 @@ from .program.xc6s import ProgramXC6SApplet
 from .program.xc9500xl import ProgramXC9500XLApplet
 
 from .control.tps6598x import ControlTPS6598xApplet
+from .control.gpio.pca953x import ControlGPIOPCA953xApplet
 
 from .sensor.bmp280 import SensorBMP280Applet
 from .sensor.mouse_ps2 import SensorMousePS2Applet
