@@ -624,7 +624,7 @@ class YamahaVGMStreamPlayer(VGMStreamPlayer):
             await self._opx_iface.wait_clocks(self.clock_rate)
             await self._opx_iface.disable()
 
-    async def record(self, queue, chunk_count=8192):
+    async def record(self, queue, chunk_count=2048):
         total_count = int(self._reader.total_seconds / self.sample_time)
         done_count  = 0
         while done_count < total_count:
@@ -699,7 +699,12 @@ class YamahaOPxWebInterface:
         return resample, preferred
 
     async def serve_vgm(self, request):
-        vgm_data = await request.read()
+        sock = web.WebSocketResponse()
+        await sock.prepare(request)
+
+        headers  = await sock.receive_json()
+        vgm_data = await sock.receive_bytes()
+
         digest = hashlib.sha256(vgm_data).hexdigest()[:16]
         self._logger.info("web: %s: submitted by %s",
                           digest, request.remote)
@@ -742,15 +747,20 @@ class YamahaOPxWebInterface:
             return web.Response(status=400, text=str(e), content_type="text/plain")
 
         input_rate = 1 / vgm_player.sample_time
-        preferred_rate = int(request.headers["X-Preferred-Sample-Rate"])
+        preferred_rate = int(headers["Preferred-Sample-Rate"])
         resample, output_rate = self._make_resampler(input_rate, preferred_rate)
         self._logger.info("web: %s: sample rate: input %d, preferred %d, output %d",
                           digest, input_rate, preferred_rate, output_rate)
 
         async with self._lock:
-            voltage = float(request.headers["X-Voltage"])
-            self._logger.info("setting voltage to %.2f V", voltage)
-            await self._set_voltage(voltage)
+            try:
+                voltage = float(headers["Voltage"])
+                self._logger.info("setting voltage to %.2f V", voltage)
+                await self._set_voltage(voltage)
+
+            except Exception as error:
+                await sock.close(code=2000, message=str(error))
+                return sock
 
             self._logger.info("web: %s: start streaming", digest)
 
@@ -763,48 +773,32 @@ class YamahaOPxWebInterface:
             play_fut     = asyncio.ensure_future(vgm_player.play())
 
             try:
-                response = web.StreamResponse()
-                response.content_type = "text/plain"
-                response.headers["X-Chip"] = vgm_reader.chips()[0]
-                response.headers["X-Sample-Rate"] = str(output_rate)
                 total_samples = int(vgm_reader.total_seconds * output_rate)
-                response.headers["X-Total-Samples"] = str(total_samples)
                 if vgm_reader.loop_samples in (0, vgm_reader.total_samples):
                     # Either 0 or the entire VGM here means we'll loop the complete track.
                     loop_skip_to = 0
                 else:
-                    loop_skip_to = int((vgm_reader.total_seconds - vgm_reader.loop_seconds)
-                                       * output_rate)
-                response.headers["X-Loop-Skip-To"] = str(loop_skip_to)
-                response.enable_chunked_encoding()
-                await response.prepare(request)
+                    loop_skip_to = int((vgm_reader.total_seconds -
+                                        vgm_reader.loop_seconds) * output_rate)
+                await sock.send_json({
+                    "Chip": vgm_reader.chips()[0],
+                    "Sample-Rate": output_rate,
+                    "Total-Samples": total_samples,
+                    "Loop-Skip-To": loop_skip_to,
+                })
 
-                TRANSPORT_SIZE = 3072
-                output_buffer = bytearray()
                 while True:
                     if play_fut.done() and play_fut.exception():
                         break
-
-                    if not resample_fut.done() or not resample_queue.empty():
-                        while len(output_buffer) < TRANSPORT_SIZE:
-                            output_chunk   = await resample_queue.get()
-                            output_buffer += output_chunk
-                            if not output_chunk:
-                                break
-
-                    transport_chunk = output_buffer[:TRANSPORT_SIZE]
-                    while len(transport_chunk) < TRANSPORT_SIZE:
-                        # Pad last transport chunk with silence
-                        transport_chunk += struct.pack("<H", 32768)
-                    output_buffer   = output_buffer[TRANSPORT_SIZE:]
-                    await response.write(base64.b64encode(transport_chunk))
-                    if resample_fut.done() and not output_buffer:
+                    elif resample_fut.done():
                         break
+                    else:
+                        await sock.send_bytes(await resample_queue.get())
 
                 for fut in [play_fut, record_fut, resample_fut]:
                     await fut
 
-                await response.write_eof()
+                await sock.close()
                 self._logger.info("web: %s: done streaming",
                                   digest)
 
@@ -817,13 +811,13 @@ class YamahaOPxWebInterface:
                         fut.cancel()
                 raise
 
-            return response
+            return sock
 
     async def serve(self, endpoint):
         app = web.Application()
         app.add_routes([
-            web.get ("/", self.serve_index),
-            web.post("/vgm", self.serve_vgm),
+            web.get("/",    self.serve_index),
+            web.get("/vgm", self.serve_vgm),
         ])
 
         try:
