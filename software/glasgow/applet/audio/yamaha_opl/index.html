@@ -291,7 +291,7 @@
         player.loop = loopCheckbox.checked;
       }
 
-      var socketUrl = new URL("/vgm", window.location.href);
+      var socketUrl = new URL("vgm", window.location.href);
       socketUrl.protocol = socketUrl.protocol.replace("http", "ws");
       var socket = new WebSocket(socketUrl);
       socket.binaryType = "arraybuffer";
