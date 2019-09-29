@@ -7,6 +7,7 @@
   <p>This webpage lets you submit commands to a real Yamaha synthesizer and listen to the output. The synthesizer is a <b>shared resource</b> (and isn't very fast, although it does not have to run in real time), and everyone who submits a file is in the same queue, so you might have to wait until it's your turn.</p>
   <p>Connected synthesizer: {{chip}}.</p>
   <p>Playback support for: {{compat}}.</p>
+  <p><b>Glitching</b>: undervolt to <input type="number" min="1.65" max="5.50" value="5.00" step="0.01" id="voltage"></p>
   <p>Play a <a href="https://vgmrips.net/packs/chips">VGM/VGZ file</a>: <input type="file" id="file" accept=".vgm,.vgz"> <input type="button" id="play" value="Play"> <input type="button" id="replay" value="Replay" disabled> <input type="checkbox" id="loop"> <label for="loop">Loop</label></p>
   <p>Export PCM: <input type="button" id="exportFull" value="Export full"> <input type="button" id="exportLoop" value="Export loop"></p>
   <p>Status: <span id="chipStatus">no chip</span>, <span id="netStatus">idle</span>, <span id="playStatus">stopped</span>.</p>
@@ -243,6 +244,7 @@
       document.body.removeChild(a);
     }
 
+    var voltageSpinner = document.getElementById("voltage");
     var playButton = document.getElementById("play");
     var replayButton = document.getElementById("replay");
     var exportFullButton = document.getElementById("exportFull");
@@ -294,6 +296,7 @@
       var xhr = new XMLHttpRequest();
       xhr.open("POST", "vgm", /*async=*/true);
       xhr.setRequestHeader("X-Preferred-Sample-Rate", player.preferredSampleRate());
+      xhr.setRequestHeader("X-Voltage", voltage.value);
       var sampleRate = 0;
       var seenBytes = 0;
       var totalSamples = 0;

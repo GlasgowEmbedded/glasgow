@@ -641,10 +641,12 @@ class YamahaVGMStreamPlayer(VGMStreamPlayer):
 
 
 class YamahaOPxWebInterface:
-    def __init__(self, logger, opx_iface):
+    def __init__(self, logger, opx_iface, set_voltage):
         self._logger    = logger
         self._opx_iface = opx_iface
         self._lock      = asyncio.Lock()
+
+        self._set_voltage = set_voltage
 
     async def serve_index(self, request):
         with open(os.path.join(os.path.dirname(__file__), "index.html")) as f:
@@ -742,8 +744,11 @@ class YamahaOPxWebInterface:
                           digest, input_rate, preferred_rate, output_rate)
 
         async with self._lock:
-            self._logger.info("web: %s: start streaming",
-                              digest)
+            voltage = float(request.headers["X-Voltage"])
+            self._logger.info("setting voltage to %.2f V", voltage)
+            await self._set_voltage(voltage)
+
+            self._logger.info("web: %s: start streaming", digest)
 
             await self._opx_iface.reset()
 
@@ -975,7 +980,9 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
                 await fut
 
         if args.operation == "web":
-            web_iface = YamahaOPxWebInterface(self.logger, opx_iface)
+            async def set_voltage(voltage):
+                await device.set_voltage(args.port_spec, voltage)
+            web_iface = YamahaOPxWebInterface(self.logger, opx_iface, set_voltage=set_voltage)
             await web_iface.serve()
 
 # -------------------------------------------------------------------------------------------------
