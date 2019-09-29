@@ -589,6 +589,8 @@ class YamahaOPL3Interface(YamahaOPL2Interface):
 
     async def _use_lowest_level(self):
         await self.write_register(0x105, 0x00, check_feature=False)
+        for address in range(0xC0, 0xC9):
+            await self.write_register(address, 0x30, check_feature=False)
         await super()._use_lowest_level()
 
     async def _check_enable_features(self, address, data):
