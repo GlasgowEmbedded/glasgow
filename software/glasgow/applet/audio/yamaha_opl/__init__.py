@@ -815,7 +815,7 @@ class YamahaOPxWebInterface:
 
             return response
 
-    async def serve(self):
+    async def serve(self, endpoint):
         app = web.Application()
         app.add_routes([
             web.get ("/", self.serve_index),
@@ -831,7 +831,7 @@ class YamahaOPxWebInterface:
         runner = web.AppRunner(app,
             access_log_format='%a(%{X-Forwarded-For}i) "%r" %s "%{Referer}i" "%{User-Agent}i"')
         await runner.setup()
-        site = web.TCPSite(runner, "localhost", 8080)
+        site = web.TCPSite(runner, *endpoint.split(":", 2))
         await site.start()
         await asyncio.Future()
 
@@ -944,6 +944,9 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
 
         p_web = p_operation.add_parser(
             "web", help="expose Yamaha hardware via a web interface")
+        p_web.add_argument(
+            "endpoint", metavar="ENDPOINT", type=str, default="localhost:8080",
+            help="listen for requests on ENDPOINT (default: %(default)s)")
 
     async def interact(self, device, args, opx_iface):
         if args.operation == "convert":
@@ -983,7 +986,7 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
             async def set_voltage(voltage):
                 await device.set_voltage(args.port_spec, voltage)
             web_iface = YamahaOPxWebInterface(self.logger, opx_iface, set_voltage=set_voltage)
-            await web_iface.serve()
+            await web_iface.serve(args.endpoint)
 
 # -------------------------------------------------------------------------------------------------
 
