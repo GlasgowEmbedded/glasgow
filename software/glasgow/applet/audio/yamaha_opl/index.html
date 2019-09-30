@@ -5,12 +5,13 @@
 <body style="width:50em">
   <h1>Yamaha OP* Web Gateway</h1>
   <p>This webpage lets you submit commands to a real Yamaha synthesizer and listen to the output. The synthesizer is a <b>shared resource</b> (and isn't very fast, although it does not have to run in real time), and everyone who submits a file is in the same queue, so you might have to wait until it's your turn.</p>
+  <p>The exported PCM is a lossless conversion from the DAC bitstream output of the synthesier. It is resampled for streaming via WebAudio. WebAudio playback occasionally results in clicks, stutter, etc., which are not present in exported files.</p>
   <p>Connected synthesizer: {{chip}}.</p>
   <p>Playback support for: {{compat}}.</p>
   <p><b>Glitching</b>: undervolt to <input type="number" min="1.65" max="5.50" value="5.00" step="0.01" id="voltage"></p>
   <p>Play a <a href="https://vgmrips.net/packs/chips">VGM/VGZ file</a>: <input type="file" id="file" accept=".vgm,.vgz"> <input type="button" id="play" value="Play"> <input type="button" id="replay" value="Replay" disabled> <input type="checkbox" id="loop"> <label for="loop">Loop</label></p>
   <p>Export PCM: <input type="button" id="exportFull" value="Export full" disabled> <input type="button" id="exportLoop" value="Export loop" disabled></p>
-  <p>Status: <span id="chipStatus">no chip</span>, <span id="netStatus">idle</span>, <span id="playStatus">stopped</span>.</p>
+  <p>Status: <span id="chipStatus">no chip</span>, <span id="pcmStatus">no format</span>, <span id="netStatus">idle</span>, <span id="playStatus">stopped</span>.</p>
   <p id="errorPane" style="color:red; display:none">Error: <span id="error"></span></p>
 
   <!--
@@ -18,7 +19,7 @@
     Pull requests welcome.
   -->
   <script type="text/javascript">
-    var BUFFER_AT_LEAST = 8;
+    var BUFFER_AT_LEAST = 16;
 
     function PCMPlayer() {
       this.sampleRate = undefined;
@@ -50,27 +51,34 @@
         firstIndex = (usefulIndex == 0) ? usefulIndex : usefulIndex - 1;
         lastIndex = (usefulIndex == this._buffersF32NE.length - 1) ? usefulIndex : usefulIndex + 1;
 
-        var sourceLength = 0;
-        for(var bufferIndex = firstIndex; bufferIndex <= lastIndex; bufferIndex++)
-          sourceLength += this._buffersF32NE[bufferIndex].length;
-        var sourceArray = new Float32Array(sourceLength);
-        var insertSample = 0, startSample, endSample;
-        for(var bufferIndex = firstIndex; bufferIndex <= lastIndex; bufferIndex++) {
-          var buffer = this._buffersF32NE[bufferIndex];
-          if(bufferIndex == usefulIndex)
-            startSample = insertSample;
-          for(var bufferSample = 0; bufferSample < buffer.length; bufferSample++)
-            sourceArray[insertSample++] = buffer[bufferSample];
-          if(bufferIndex == usefulIndex)
-            endSample = insertSample;
+        var sourceArrays = [];
+        for(var channelIndex = 0; channelIndex < this.channelCount; channelIndex++) {
+          var sourceLength = 0;
+          for(var bufferIndex = firstIndex; bufferIndex <= lastIndex; bufferIndex++)
+            sourceLength += this._buffersF32NE[bufferIndex][channelIndex].length;
+          var sourceArray = new Float32Array(sourceLength);
+          var insertSample = 0, startSample, endSample;
+          for(var bufferIndex = firstIndex; bufferIndex <= lastIndex; bufferIndex++) {
+            var buffer = this._buffersF32NE[bufferIndex][channelIndex];
+            if(bufferIndex == usefulIndex)
+              startSample = insertSample;
+            for(var bufferSample = 0; bufferSample < buffer.length; bufferSample++)
+              sourceArray[insertSample++] = buffer[bufferSample];
+            if(bufferIndex == usefulIndex)
+              endSample = insertSample;
+          }
+          sourceArrays.push(sourceArray);
         }
 
         var ratio = 1 / this.sampleRate * this._context.sampleRate;
         var destinationLength = sourceLength * ratio;
-        var offlineContext = new OfflineAudioContext(1, destinationLength,
+        var offlineContext = new OfflineAudioContext(this.channelCount, destinationLength,
                                                      this._context.sampleRate);
-        var sourceBuffer = offlineContext.createBuffer(1, sourceLength, this.sampleRate);
-        sourceBuffer.copyToChannel(sourceArray, 0);
+        var sourceBuffer = offlineContext.createBuffer(this.channelCount, sourceLength,
+                                                       this.sampleRate);
+        for(var channelIndex = 0; channelIndex < sourceArrays.length; channelIndex++) {
+          sourceBuffer.copyToChannel(sourceArrays[channelIndex], channelIndex);
+        }
         var source = offlineContext.createBufferSource();
         source.buffer = sourceBuffer;
         source.connect(offlineContext.destination);
@@ -102,11 +110,17 @@
         this._buffersS16LE.push(bufferS16LE);
 
         var bufferS16LEView = new DataView(bufferS16LE);
-        var bufferF32NE = new Float32Array(bufferS16LE.byteLength / Int16Array.BYTES_PER_ELEMENT);
-        for(var index = 0; index < bufferF32NE.length; index++) {
-          var sampleS16 = bufferS16LEView.getInt16(index * Int16Array.BYTES_PER_ELEMENT,
-                                                   /*littleEndian=*/true);
-          bufferF32NE[index] = sampleS16 / 32768;
+        var bufferF32NE = [];
+        for(var channelIndex = 0; channelIndex < this.channelCount; channelIndex++) {
+          var sampleStride = this.channelCount * Int16Array.BYTES_PER_ELEMENT;
+          var sampleOffset = channelIndex * Int16Array.BYTES_PER_ELEMENT;
+          var bufferF32NEPart = new Float32Array(bufferS16LE.byteLength / sampleStride);
+          for(var sampleIndex = 0; sampleIndex < bufferF32NEPart.length; sampleIndex++) {
+            var sampleS16 = bufferS16LEView.getInt16(sampleOffset + sampleIndex * sampleStride,
+                                                     /*littleEndian=*/true);
+            bufferF32NEPart[sampleIndex] = sampleS16 / 32768;
+          }
+          bufferF32NE.push(bufferF32NEPart);
         }
         this._buffersF32NE.push(bufferF32NE);
         console.log("added buffer", this._buffersF32NE.length);
@@ -121,7 +135,7 @@
 
       this.getLoopSamplesS16LE = function() {
         var buffers = [];
-        var skipTo = this.loopSkipTo * Int16Array.BYTES_PER_ELEMENT;
+        var skipTo = this.loopSkipTo * this.channelCount * Int16Array.BYTES_PER_ELEMENT;
         var sourcePos = 0;
         for(var index = 0; index < this._buffersS16LE.length; index++) {
           if(skipTo >= sourcePos + this._buffersS16LE[index].byteLength) {
@@ -312,9 +326,10 @@
     var exportLoopButton = document.getElementById("exportLoop");
     var loopCheckbox = document.getElementById("loop");
     var fileInput = document.getElementById("file");
+    var chipStatusSpan = document.getElementById("chipStatus");
+    var pcmStatusSpan = document.getElementById("pcmStatus");
     var netStatusSpan = document.getElementById("netStatus");
     var playStatusSpan = document.getElementById("playStatus");
-    var chipStatusSpan = document.getElementById("chipStatus");
     var errorPane = document.getElementById("errorPane");
     var errorSpan = document.getElementById("error");
     playButton.onclick = function(event) {
@@ -375,12 +390,15 @@
         if(totalSamples == 0) {
           var response = JSON.parse(event.data);
           player.sampleRate = response["Sample-Rate"];
+          player.channelCount = response["Channel-Count"];
           totalSamples = response["Total-Samples"];
           player.loopSkipTo = response["Loop-Skip-To"];
           chipStatusSpan.innerText = "chip " + response["Chip"];
+          pcmStatusSpan.innerText = Math.floor(player.sampleRate) + " Hz, " +
+            player.channelCount + " channels";
         } else {
           var buffer = new Int16Array(event.data).buffer;
-          doneSamples += buffer.byteLength / 2;
+          doneSamples += buffer.byteLength / (player.channelCount * Int16Array.BYTES_PER_ELEMENT);
           player.addSamplesS16LE(buffer, doneSamples == totalSamples);
           if(!player._playing)
             player.scheduleAtLeast(BUFFER_AT_LEAST);
@@ -408,13 +426,13 @@
 
       exportFullButton.onclick = function(event) {
         var fileName = fileInput.files[0].name.replace(/\.vg[mz]$/i, "") + ".wav";
-        downloadFile(makeWAVFile(fileName, /*numOfChannels=*/1, player.sampleRate,
-                                 /*bytesPerSample=*/2, player.getAllSamplesS16LE()));
+        downloadFile(makeWAVFile(fileName, /*numOfChannels=*/player.channelCount,
+          player.sampleRate, /*bytesPerSample=*/2, player.getAllSamplesS16LE()));
       }
       exportLoopButton.onclick = function(event) {
         var fileName = fileInput.files[0].name.replace(/\.vg[mz]$/i, "") + " (loop).wav";
-        downloadFile(makeWAVFile(fileName, /*numOfChannels=*/1, player.sampleRate,
-                                 /*bytesPerSample=*/2, player.getLoopSamplesS16LE()));
+        downloadFile(makeWAVFile(fileName, /*numOfChannels=*/player.channelCount,
+          player.sampleRate, /*bytesPerSample=*/2, player.getLoopSamplesS16LE()));
       }
     };
   </script>

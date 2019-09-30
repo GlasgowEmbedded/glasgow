@@ -229,7 +229,7 @@ OP_MASK   = 0xf0
 
 
 class YamahaOPxSubtarget(Module):
-    def __init__(self, pads, in_fifo, out_fifo, format,
+    def __init__(self, pads, in_fifo, out_fifo, sample_decoder_cls, channel_count,
                  master_cyc, read_pulse_cyc, write_pulse_cyc,
                  address_clocks, data_clocks):
         self.submodules.cpu_bus = cpu_bus = YamahaCPUBus(pads, master_cyc)
@@ -314,26 +314,18 @@ class YamahaOPxSubtarget(Module):
 
         # Audio
 
-        data_r = Signal(16)
-        self.sync += If(dac_bus.stb_sy, data_r.eq(Cat(data_r[1:], dac_bus.mo)))
+        self.submodules.decoder = decoder = sample_decoder_cls()
 
-        xfer_o = Signal(16)
-        if format == "F-3Z-9M-1S-3E":
-            xfer_i = Record([("z", 3), ("m", 9), ("s", 1), ("e", 3),])
-            # FIXME: this is uglier than necessary because of Migen bugs. Rewrite nicer in nMigen.
-            self.comb += xfer_o.eq(Cat((Cat(xfer_i.m, Replicate(~xfer_i.s, 7)) << xfer_i.e)[1:16],
-                                       xfer_i.s))
-        elif format == "U-16":
-            xfer_i = Record([("d", 16)])
-            self.comb += xfer_o.eq(xfer_i.d)
-        else:
-            assert False
-
-        xfrm_o = Signal(16)
-        xfrm_i = Signal(16)
-        self.comb += xfrm_o.eq(xfrm_i + 0x8000)
+        shreg  = Signal(len(decoder.i.raw_bits()) * channel_count)
+        sample = Signal.like(shreg)
+        self.sync += [
+            If(dac_bus.stb_sy,
+                shreg.eq(Cat(shreg[1:], dac_bus.mo))
+            )
+        ]
 
         self.submodules.data_fsm = FSM()
+        channel = Signal(1)
         self.data_fsm.act("WAIT-SH",
             NextValue(in_fifo.flush, ~enabled),
             If(dac_bus.stb_sh & enabled,
@@ -341,27 +333,29 @@ class YamahaOPxSubtarget(Module):
             )
         )
         self.data_fsm.act("SAMPLE",
-            NextValue(xfer_i.raw_bits(), data_r),
-            NextState("TRANSFORM")
+            NextValue(sample, shreg),
+            NextValue(channel, 0),
+            NextState("SEND-CHANNEL")
         )
-        self.data_fsm.act("TRANSFORM",
-            NextValue(xfrm_i, xfer_o),
-            NextState("SEND-L-BYTE")
+        self.data_fsm.act("SEND-CHANNEL",
+            NextValue(decoder.i.raw_bits(),
+                      sample.word_select(channel, len(decoder.i.raw_bits()))),
+            NextState("SEND-BYTE")
         )
-        self.data_fsm.act("SEND-L-BYTE",
-            in_fifo.din.eq(xfrm_o[0:8]),
+        byteno = Signal(1)
+        self.data_fsm.act("SEND-BYTE",
+            in_fifo.din.eq(decoder.o.word_select(byteno, 8)),
             If(in_fifo.writable,
                 in_fifo.we.eq(1),
-                NextState("SEND-H-BYTE")
-            ).Elif(dac_bus.stb_sh,
-                NextState("OVERFLOW")
-            )
-        )
-        self.data_fsm.act("SEND-H-BYTE",
-            in_fifo.din.eq(xfrm_o[8:16]),
-            If(in_fifo.writable,
-                in_fifo.we.eq(1),
-                NextState("WAIT-SH")
+                NextValue(byteno, byteno + 1),
+                If(byteno == 1,
+                    NextValue(channel, channel + 1),
+                    If(channel == channel_count - 1,
+                        NextState("WAIT-SH")
+                    ).Else(
+                        NextState("SEND-CHANNEL")
+                    )
+                )
             ).Elif(dac_bus.stb_sh,
                 NextState("OVERFLOW")
             )
@@ -392,7 +386,8 @@ class YamahaOPxInterface(metaclass=ABCMeta):
         pass
 
     max_master_hz  = abstractproperty()
-    sample_format  = abstractproperty()
+    sample_decoder = abstractproperty()
+    channel_count  = 1
 
     address_clocks = abstractproperty()
     data_clocks    = abstractproperty()
@@ -503,7 +498,17 @@ class YamahaOPxInterface(metaclass=ABCMeta):
 
     async def read_samples(self, count):
         self._log("read %d samples", count)
-        return await self.lower.read(count * 2, flush=False)
+        return await self.lower.read(count * self.channel_count * 2, flush=False)
+
+
+class YamahaOPLSampleDecoder(Module):
+    def __init__(self):
+        self.i = Record([("z", 3), ("m", 9), ("s", 1), ("e", 3)])
+        self.o = Signal(16)
+
+        self.comb += [
+            self.o.eq(Cat((Cat(self.i.m, Replicate(~self.i.s, 7)) << self.i.e)[1:16], ~self.i.s))
+        ]
 
 
 class YamahaOPLInterface(YamahaOPxInterface):
@@ -513,7 +518,8 @@ class YamahaOPLInterface(YamahaOPxInterface):
         return vgm_reader.ym3526_clk, 1
 
     max_master_hz  = 4.0e6 # 2.0/3.58/4.0
-    sample_format  = "F-3Z-9M-1S-3E"
+    sample_decoder = YamahaOPLSampleDecoder
+    channel_count  = 1
 
     address_clocks = 12
     data_clocks    = 84
@@ -561,6 +567,17 @@ class YamahaOPL2Interface(YamahaOPLInterface):
             await super()._check_enable_features(address, data)
 
 
+class YamahaOPL3SampleDecoder(Module):
+    def __init__(self):
+        # There are 2 dummy clocks between each sample. The DAC doesn't rely on it (it uses two
+        # phases for two channels per DAC, and a clever arrangement to provide four channels
+        # without requiring four phases), but we want to save pins and so we do.
+        self.i = Record([("z", 2), ("d", 16)])
+        self.o = Signal(16)
+
+        self.comb += self.o.eq(self.i.d + 0x8000)
+
+
 class YamahaOPL3Interface(YamahaOPL2Interface):
     chips = [chip + " (no CSM)" for chip in YamahaOPL2Interface.chips] + ["YMF262/OPL3"]
 
@@ -572,7 +589,8 @@ class YamahaOPL3Interface(YamahaOPL2Interface):
             return ym3812_clk, 4
 
     max_master_hz  = 16.0e6 # 10.0/14.32/16.0
-    sample_format  = "U-16"
+    sample_decoder = YamahaOPL3SampleDecoder
+    channel_count  = 2 # OPL3 has 4 channels, but we support only 2
 
     # The datasheet says use 32 master clock cycle latency. That's a lie, there's a /4 pre-divisor.
     # So you'd think 32 * 4 master clock cycles would work. But 32 is also a lie, that doesn't
@@ -736,8 +754,8 @@ class YamahaOPxWebInterface:
             await self._opx_iface.reset()
 
             sample_queue = asyncio.Queue()
-            record_fut   = asyncio.ensure_future(vgm_player.record(sample_queue))
-            play_fut     = asyncio.ensure_future(vgm_player.play())
+            record_fut = asyncio.ensure_future(vgm_player.record(sample_queue))
+            play_fut   = asyncio.ensure_future(vgm_player.play())
 
             try:
                 total_samples = int(vgm_reader.total_seconds * sample_rate)
@@ -749,6 +767,7 @@ class YamahaOPxWebInterface:
                                        * sample_rate)
                 await sock.send_json({
                     "Chip": vgm_reader.chips()[0],
+                    "Channel-Count": self._opx_iface.channel_count,
                     "Sample-Rate": sample_rate,
                     "Total-Samples": total_samples,
                     "Loop-Skip-To": loop_skip_to,
@@ -867,7 +886,8 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
             pads=iface.get_pads(args, pins=self.__pins, pin_sets=self.__pin_sets),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
-            format=device_iface_cls.sample_format,
+            sample_decoder_cls=device_iface_cls.sample_decoder,
+            channel_count=device_iface_cls.channel_count,
             master_cyc=self.derive_clock(
                 input_hz=target.sys_clk_freq,
                 output_hz=device_iface_cls.max_master_hz * args.overclock),
@@ -923,19 +943,20 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
             clock_rate *= clock_prescaler
 
             vgm_player = YamahaVGMStreamPlayer(vgm_reader, opx_iface, clock_rate)
-            self.logger.info("recording at sample rate %d Hz", 1 / vgm_player.sample_time)
+            self.logger.info("recording %d channels at sample rate %d Hz",
+                             opx_iface.channel_count, 1 / vgm_player.sample_time)
 
-            async def write_pcm(input_queue):
+            async def write_pcm(sample_queue):
                 while True:
-                    input_chunk = await input_queue.get()
-                    if not input_chunk:
+                    samples = await sample_queue.get()
+                    if not samples:
                         break
-                    args.pcm_file.write(input_chunk)
+                    args.pcm_file.write(samples)
 
-            input_queue = asyncio.Queue()
+            sample_queue = asyncio.Queue()
             play_fut   = asyncio.ensure_future(vgm_player.play())
-            record_fut = asyncio.ensure_future(vgm_player.record(input_queue))
-            write_fut  = asyncio.ensure_future(write_pcm(input_queue))
+            record_fut = asyncio.ensure_future(vgm_player.record(sample_queue))
+            write_fut  = asyncio.ensure_future(write_pcm(sample_queue))
             done, pending = await asyncio.wait([play_fut, record_fut, write_fut],
                                                return_when=asyncio.FIRST_EXCEPTION)
             for fut in done:
