@@ -139,11 +139,9 @@ import os.path
 import logging
 import argparse
 import struct
-import array
 import asyncio
 import aiohttp.web as web
 import hashlib
-import base64
 import gzip
 import io
 from nmigen.compat import *
@@ -671,41 +669,6 @@ class YamahaOPxWebInterface:
             index_html = index_html.replace("{{compat}}", ", ".join(self._opx_iface.chips))
             return web.Response(text=index_html, content_type="text/html")
 
-    def _make_resampler(self, actual, preferred):
-        import numpy
-
-        try:
-            import samplerate
-        except ImportError as e:
-            self._logger.warning("samplerate not installed; expect glitches during playback")
-            async def resample(input_queue, output_queue):
-                while True:
-                    input_data = await input_queue.get()
-                    await output_queue.put(input_data)
-                    if not input_data:
-                        break
-            return resample, actual
-
-        resampler = samplerate.Resampler()
-        def resample_worker(input_data, end):
-            input_array = numpy.frombuffer(input_data, dtype="<i2")
-            input_array = input_array.astype(numpy.float32) / 32768
-            output_array = resampler.process(
-                input_array, ratio=preferred / actual, end_of_input=end)
-            output_array = (output_array * 32768).astype(numpy.int16)
-            return output_array.tobytes()
-        async def resample(input_queue, output_queue):
-            while True:
-                input_data  = await input_queue.get()
-                output_data = await asyncio.get_running_loop().run_in_executor(None,
-                    resample_worker, input_data, not input_data)
-                if output_data:
-                    await output_queue.put(output_data)
-                if not input_data:
-                    await output_queue.put(b"")
-                    break
-        return resample, preferred
-
     async def serve_vgm(self, request):
         sock = web.WebSocketResponse()
         await sock.prepare(request)
@@ -752,13 +715,11 @@ class YamahaOPxWebInterface:
         except ValueError as e:
             self._logger.warning("web: %s: broken upload: %s",
                                  digest, str(e))
-            return web.Response(status=400, text=str(e), content_type="text/plain")
+            await sock.close(code=1001, message=str(e))
+            return sock
 
-        input_rate = 1 / vgm_player.sample_time
-        preferred_rate = int(headers["Preferred-Sample-Rate"])
-        resample, output_rate = self._make_resampler(input_rate, preferred_rate)
-        self._logger.info("web: %s: sample rate: input %d, preferred %d, output %d",
-                          digest, input_rate, preferred_rate, output_rate)
+        sample_rate = 1 / vgm_player.sample_time
+        self._logger.info("web: %s: sample rate %d", digest, sample_rate)
 
         async with self._lock:
             try:
@@ -774,23 +735,21 @@ class YamahaOPxWebInterface:
 
             await self._opx_iface.reset()
 
-            input_queue    = asyncio.Queue()
-            resample_queue = asyncio.Queue()
-            resample_fut = asyncio.ensure_future(resample(input_queue, resample_queue))
-            record_fut   = asyncio.ensure_future(vgm_player.record(input_queue))
+            sample_queue = asyncio.Queue()
+            record_fut   = asyncio.ensure_future(vgm_player.record(sample_queue))
             play_fut     = asyncio.ensure_future(vgm_player.play())
 
             try:
-                total_samples = int(vgm_reader.total_seconds * output_rate)
+                total_samples = int(vgm_reader.total_seconds * sample_rate)
                 if vgm_reader.loop_samples in (0, vgm_reader.total_samples):
                     # Either 0 or the entire VGM here means we'll loop the complete track.
                     loop_skip_to = 0
                 else:
-                    loop_skip_to = int((vgm_reader.total_seconds -
-                                        vgm_reader.loop_seconds) * output_rate)
+                    loop_skip_to = int((vgm_reader.total_seconds - vgm_reader.loop_seconds)
+                                       * sample_rate)
                 await sock.send_json({
                     "Chip": vgm_reader.chips()[0],
-                    "Sample-Rate": output_rate,
+                    "Sample-Rate": sample_rate,
                     "Total-Samples": total_samples,
                     "Loop-Skip-To": loop_skip_to,
                 })
@@ -798,23 +757,24 @@ class YamahaOPxWebInterface:
                 while True:
                     if play_fut.done() and play_fut.exception():
                         break
-                    elif resample_fut.done():
-                        break
-                    else:
-                        await sock.send_bytes(await resample_queue.get())
 
-                for fut in [play_fut, record_fut, resample_fut]:
+                    samples = await sample_queue.get()
+                    if not samples:
+                        break
+                    await sock.send_bytes(samples)
+
+                for fut in [play_fut, record_fut]:
                     await fut
 
-                await sock.close()
                 self._logger.info("web: %s: done streaming",
                                   digest)
+                await sock.close()
 
             except asyncio.CancelledError:
                 self._logger.info("web: %s: cancel streaming",
                                   digest)
 
-                for fut in [play_fut, record_fut, resample_fut]:
+                for fut in [play_fut, record_fut]:
                     if not fut.done():
                         fut.cancel()
                 raise
@@ -863,13 +823,6 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
     the master clock frequency specified in the input file. E.g. using SoX:
 
         $ play -r 49715 output.u16
-
-    For the web interface, the browser dictates the sample rate. Streaming at the sample rate other
-    than the one requested by the browser is possible, but degrades quality. This interface also
-    has additional Python dependencies:
-        * numpy (mandatory)
-        * samplerate (optional, required for best possible quality)
-        * aiohttp_remotes (optional, required for improved logging)
     """
 
     __pin_sets = ("d", "a")

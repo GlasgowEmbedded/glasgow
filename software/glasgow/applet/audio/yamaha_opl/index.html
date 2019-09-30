@@ -21,14 +21,18 @@
     var BUFFER_AT_LEAST = 8;
 
     function PCMPlayer() {
+      this.sampleRate = undefined;
+
       this.complete = false;
 
       this.loop = false;
       this.loopSkipTo = 0;
 
       this._context = new (window.AudioContext || window.webkitAudioContext);
+      this._buffersS16LE = [];
+      this._buffersF32NE = [];
+      this._bufferToResample = 0;
       this._buffers = [];
-      this._buffersRaw = [];
 
       this._queueStart = 0;
       this._queueEnd = 0;
@@ -36,39 +40,98 @@
 
       this._timestamp = this._context.currentTime;
 
-      this.preferredSampleRate = function() {
-        return this._context.sampleRate;
+      // WebAudio API is designed by idiots and does not provide any way to keep resampler state
+      // between buffers, so we have to approximate it ourselves, by sandwiching the samples we're
+      // interested in between their preceding and following samples, and then cutting them out
+      // after the resampler finishes.
+      this._resampleAndAddSamples = function(last) {
+        var firstIndex, usefulIndex, lastIndex;
+        usefulIndex = this._bufferToResample++;
+        firstIndex = (usefulIndex == 0) ? usefulIndex : usefulIndex - 1;
+        lastIndex = (usefulIndex == this._buffersF32NE.length - 1) ? usefulIndex : usefulIndex + 1;
+
+        var sourceLength = 0;
+        for(var bufferIndex = firstIndex; bufferIndex <= lastIndex; bufferIndex++)
+          sourceLength += this._buffersF32NE[bufferIndex].length;
+        var sourceArray = new Float32Array(sourceLength);
+        var insertSample = 0, startSample, endSample;
+        for(var bufferIndex = firstIndex; bufferIndex <= lastIndex; bufferIndex++) {
+          var buffer = this._buffersF32NE[bufferIndex];
+          if(bufferIndex == usefulIndex)
+            startSample = insertSample;
+          for(var bufferSample = 0; bufferSample < buffer.length; bufferSample++)
+            sourceArray[insertSample++] = buffer[bufferSample];
+          if(bufferIndex == usefulIndex)
+            endSample = insertSample;
+        }
+
+        var ratio = 1 / this.sampleRate * this._context.sampleRate;
+        var destinationLength = sourceLength * ratio;
+        var offlineContext = new OfflineAudioContext(1, destinationLength,
+                                                     this._context.sampleRate);
+        var sourceBuffer = offlineContext.createBuffer(1, sourceLength, this.sampleRate);
+        sourceBuffer.copyToChannel(sourceArray, 0);
+        var source = offlineContext.createBufferSource();
+        source.buffer = sourceBuffer;
+        source.connect(offlineContext.destination);
+        source.start(0);
+        var player = this;
+        offlineContext.oncomplete = function(event) {
+          var resampledSourceBuffer = event.renderedBuffer;
+          var cutStart = startSample * ratio;
+          var cutEnd = endSample * ratio;
+          var destinationBuffer = player._context.createBuffer(
+            resampledSourceBuffer.numberOfChannels, cutEnd - cutStart, player._context.sampleRate);
+          for(var channel = 0; channel < resampledSourceBuffer.numberOfChannels; channel++) {
+            var resampledData = resampledSourceBuffer.getChannelData(channel)
+              .slice(cutStart, cutEnd);
+            destinationBuffer.copyToChannel(resampledData, channel);
+          }
+          player._buffers[usefulIndex] = destinationBuffer;
+          console.log("resampled buffer", usefulIndex);
+
+          player._updateStatus();
+          if(last && usefulIndex < player._buffersF32NE.length - 1)
+            player._resampleAndAddSamples(last);
+        }
+        console.log("resampling buffer", usefulIndex);
+        offlineContext.startRendering();
       }
 
-      this.addSamples = function(dataView, sampleRate) {
-        var audioBuffer = this._context.createBuffer(/*numOfChannels=*/1,
-                                                     dataView.byteLength / 2, sampleRate);
-        var f32Buffer = audioBuffer.getChannelData(0);
-        for(var i = 0; i < f32Buffer.length; i++)
-          f32Buffer[i] = dataView.getInt16(i * 2, /*littleEndian=*/true) / 32768;
+      this.addSamplesS16LE = function(bufferS16LE, last) {
+        this._buffersS16LE.push(bufferS16LE);
 
-        this._buffers.push(audioBuffer);
-        this._buffersRaw.push(dataView.buffer);
-        this._updateStatus();
+        var bufferS16LEView = new DataView(bufferS16LE);
+        var bufferF32NE = new Float32Array(bufferS16LE.byteLength / Int16Array.BYTES_PER_ELEMENT);
+        for(var index = 0; index < bufferF32NE.length; index++) {
+          var sampleS16 = bufferS16LEView.getInt16(index * Int16Array.BYTES_PER_ELEMENT,
+                                                   /*littleEndian=*/true);
+          bufferF32NE[index] = sampleS16 / 32768;
+        }
+        this._buffersF32NE.push(bufferF32NE);
+        console.log("added buffer", this._buffersF32NE.length);
+
+        if(this._buffersF32NE.length >= 3)
+          this._resampleAndAddSamples(last);
       }
 
-      this.getAllSamples = function() {
-        return this._buffersRaw;
+      this.getAllSamplesS16LE = function() {
+        return this._buffersS16LE;
       }
 
-      this.getLoopSamples = function() {
+      this.getLoopSamplesS16LE = function() {
         var buffers = [];
-        var skipTo = this.loopSkipTo * 2;
+        var skipTo = this.loopSkipTo * Int16Array.BYTES_PER_ELEMENT;
         var sourcePos = 0;
-        for(var i = 0; i < this._buffersRaw.length; i++) {
-          if(skipTo >= sourcePos + this._buffersRaw[i].byteLength) {
+        for(var index = 0; index < this._buffersS16LE.length; index++) {
+          if(skipTo >= sourcePos + this._buffersS16LE[index].byteLength) {
             // skip
           } else if(skipTo >= sourcePos) {
-            buffers.push(this._buffersRaw[i].slice(skipTo - sourcePos));
+            buffers.push(this._buffersS16LE[index].slice(skipTo - sourcePos));
           } else {
-            buffers.push(this._buffersRaw[i]);
+            buffers.push(this._buffersS16LE[index]);
           }
-          sourcePos += this._buffersRaw[i].byteLength;
+          sourcePos += this._buffersS16LE[index].byteLength;
         }
         return buffers;
       }
@@ -94,7 +157,7 @@
           if(this.complete && this.loop) {
             console.log("looping");
             this._queueEnd = 0;
-            skipTo = this.loopSkipTo;
+            skipTo = this.loopSkipTo / this.sampleRate * this._context.sampleRate;
           } else return;
         }
 
@@ -300,27 +363,25 @@
       socket.onopen = function(event) {
         errored = false;
         socket.send(JSON.stringify({
-          "Preferred-Sample-Rate": player.preferredSampleRate(),
           "Voltage": voltage.value,
         }));
         socket.send(fileInput.files[0]);
         netStatusSpan.innerText = "waiting";
       }
-      var sampleRate = 0;
       var totalSamples = 0;
       var doneSamples = 0;
       socket.onmessage = function(event) {
         errorPane.style.display = "none";
         if(totalSamples == 0) {
           var response = JSON.parse(event.data);
-          sampleRate = response["Sample-Rate"];
+          player.sampleRate = response["Sample-Rate"];
           totalSamples = response["Total-Samples"];
           player.loopSkipTo = response["Loop-Skip-To"];
           chipStatusSpan.innerText = "chip " + response["Chip"];
         } else {
-          var view = new DataView(new Uint8Array(event.data).buffer);
-          doneSamples += view.byteLength / 2;
-          player.addSamples(view, sampleRate);
+          var buffer = new Int16Array(event.data).buffer;
+          doneSamples += buffer.byteLength / 2;
+          player.addSamplesS16LE(buffer, doneSamples == totalSamples);
           if(!player._playing)
             player.scheduleAtLeast(BUFFER_AT_LEAST);
           netStatusSpan.innerText = "streaming " + Math.floor(doneSamples / totalSamples * 100) +
@@ -341,20 +402,19 @@
           exportFullButton.disabled = false;
           if(player.loopSkipTo > 0)
             exportLoopButton.disabled = false;
-          netStatusSpan.innerText = "done " + Math.floor(doneSamples / totalSamples * 100) +
-            "% (" + doneSamples + "/" + totalSamples + " samples)";
+          netStatusSpan.innerText = "done (" + totalSamples + " samples)";
         }
       }
 
       exportFullButton.onclick = function(event) {
         var fileName = fileInput.files[0].name.replace(/\.vg[mz]$/i, "") + ".wav";
-        downloadFile(makeWAVFile(fileName, /*numOfChannels=*/1, sampleRate, /*bytesPerSample=*/2,
-                                 player.getAllSamples()));
+        downloadFile(makeWAVFile(fileName, /*numOfChannels=*/1, player.sampleRate,
+                                 /*bytesPerSample=*/2, player.getAllSamplesS16LE()));
       }
       exportLoopButton.onclick = function(event) {
         var fileName = fileInput.files[0].name.replace(/\.vg[mz]$/i, "") + " (loop).wav";
-        downloadFile(makeWAVFile(fileName, /*numOfChannels=*/1, sampleRate, /*bytesPerSample=*/2,
-                                 player.getLoopSamples()));
+        downloadFile(makeWAVFile(fileName, /*numOfChannels=*/1, player.sampleRate,
+                                 /*bytesPerSample=*/2, player.getLoopSamplesS16LE()));
       }
     };
   </script>
