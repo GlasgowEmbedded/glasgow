@@ -823,7 +823,7 @@ class YamahaOPxWebInterface:
                     if play_fut.done() and play_fut.exception():
                         break
 
-                    samples = await sample_queue.get()
+                    samples = await asyncio.wait_for(sample_queue.get(), timeout=1.0)
                     if not samples:
                         break
                     await sock.send_bytes(samples)
@@ -834,6 +834,15 @@ class YamahaOPxWebInterface:
                 self._logger.info("web: %s: done streaming",
                                   digest)
                 await sock.close()
+
+            except asyncio.TimeoutError:
+                self._logger.info("web: %s: timeout streaming",
+                                  digest)
+                await sock.close(code=1002, message="Streaming timeout (glitched too hard?)")
+
+                for fut in [play_fut, record_fut]:
+                    if not fut.done():
+                        fut.cancel()
 
             except asyncio.CancelledError:
                 self._logger.info("web: %s: cancel streaming",
