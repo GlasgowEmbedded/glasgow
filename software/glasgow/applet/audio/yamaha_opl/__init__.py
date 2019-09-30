@@ -752,6 +752,9 @@ class YamahaOPxWebInterface:
             self._logger.info("web: %s: start streaming", digest)
 
             await self._opx_iface.reset()
+            # Soft reset does not clear all the state immediately, so wait a bit to make sure
+            # all notes decay, etc.
+            await vgm_player.wait_seconds(1)
 
             sample_queue = asyncio.Queue()
             record_fut = asyncio.ensure_future(vgm_player.record(sample_queue))
