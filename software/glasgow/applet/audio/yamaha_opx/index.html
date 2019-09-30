@@ -5,7 +5,7 @@
 <body style="width:50em">
   <h1>Yamaha OP* Web Gateway</h1>
   <p>This webpage lets you submit commands to a real Yamaha synthesizer and listen to the output. The synthesizer is a <b>shared resource</b> (and isn't very fast, although it does not have to run in real time), and everyone who submits a file is in the same queue, so you might have to wait until it's your turn.</p>
-  <p>The exported PCM is a lossless conversion from the DAC bitstream output of the synthesier. It is resampled for streaming via WebAudio. WebAudio playback occasionally results in clicks, stutter, etc., which are not present in exported files.</p>
+  <p>The exported PCM is a lossless conversion from the DAC bitstream output of the synthesizer. It is resampled for streaming via WebAudio. WebAudio playback occasionally results in clicks, stutter, etc., which are not present in exported files.</p>
   <p>Connected synthesizer: {{chip}}.</p>
   <p>Playback support for: {{compat}}.</p>
   <p><b>Glitching</b>: undervolt to <input type="number" min="1.65" max="5.50" value="5.00" step="0.01" id="voltage"></p>
@@ -19,7 +19,7 @@
     Pull requests welcome.
   -->
   <script type="text/javascript">
-    var BUFFER_AT_LEAST = 16;
+    var BUFFER_AT_LEAST = 8;
 
     function PCMPlayer() {
       this.sampleRate = undefined;

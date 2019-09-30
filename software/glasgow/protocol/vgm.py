@@ -11,6 +11,9 @@ SAMPLE_RATE = 44100
 
 
 class VGMStreamPlayer:
+    async def ym2151_write(self, address, data):
+        raise NotImplementedError("VGMStream.ym2151_write not implemented")
+
     async def ym3526_write(self, address, data):
         raise NotImplementedError("VGMStream.ym3526_write not implemented")
 
@@ -158,7 +161,9 @@ class VGMStreamReader:
     async def parse_data(self, player):
         while True:
             command = self._read0("B")
-            if command == 0x5A:
+            if command == 0x54:
+                await player.ym2151_write(*self._read("BB"))
+            elif command == 0x5A:
                 await player.ym3812_write(*self._read("BB"))
             elif command == 0x5B:
                 await player.ym3526_write(*self._read("BB"))

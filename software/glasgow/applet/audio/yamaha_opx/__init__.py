@@ -629,6 +629,45 @@ class YamahaOPL3Interface(YamahaOPL2Interface):
             await super()._check_enable_features(address, data)
 
 
+class YamahaOPMInterface(YamahaOPxInterface):
+    chips = ["YM2151/OPM"]
+
+    def get_vgm_clock_rate(self, vgm_reader):
+        return vgm_reader.ym2151_clk, 1
+
+    max_master_hz  = 4.0e6 # 2.0/3.58/4.0
+    sample_decoder = YamahaOPLSampleDecoder
+    channel_count  = 2
+
+    address_clocks = 12
+    data_clocks    = 68
+    sample_clocks  = 64
+
+    _registers = [
+        0x08, 0x0F, 0x10, 0x11, 0x12, 0x14, 0x18, 0x19, 0x1B,
+        *range(0x20, 0x28), *range(0x28, 0x30), *range(0x30, 0x38), *range(0x38, 0x40),
+        *range(0x40, 0x60), *range(0x60, 0x80), *range(0x80, 0xA0), *range(0xA0, 0xC0),
+        *range(0xC0, 0xE0), *range(0xE0, 0x100)
+    ]
+
+    async def _check_enable_features(self, address, data):
+        if address == 0x01 and data in (0x00, 0x02):
+            pass # LFO reset
+        else:
+            await super()._check_enable_features(address, data)
+
+    async def reset(self):
+        await super().reset()
+        await self.write_register(0x01, 0x02) # LFO reset
+        await self.write_register(0x01, 0x00)
+        await self.write_register(0x14, 0x30) # flag reset
+        await self.write_register(0x14, 0x00)
+        for address in range(0x60, 0x80):
+            await self.write_register(address, 0x7F) # lowest TL
+        for address in range(0x20, 0x28):
+            await self.write_register(address, 0xC0) # RL enable
+
+
 class YamahaVGMStreamPlayer(VGMStreamPlayer):
     def __init__(self, reader, opx_iface, clock_rate):
         self._reader     = reader
@@ -640,6 +679,7 @@ class YamahaVGMStreamPlayer(VGMStreamPlayer):
     async def play(self):
         try:
             await self._opx_iface.enable()
+            await self.wait_seconds(1.0)
             await self._reader.parse_data(self)
         finally:
             # Various parts of our stack are not completely synchronized to each other, resulting
@@ -658,6 +698,9 @@ class YamahaVGMStreamPlayer(VGMStreamPlayer):
             done_count += chunk_count
 
         await queue.put(b"")
+
+    async def ym2151_write(self, address, data):
+        await self._opx_iface.write_register(address, data)
 
     async def ym3526_write(self, address, data):
         await self._opx_iface.write_register(address, data)
@@ -742,7 +785,7 @@ class YamahaOPxWebInterface:
         async with self._lock:
             try:
                 voltage = float(headers["Voltage"])
-                self._logger.info("setting voltage to %.2f V", voltage)
+                self._logger.info("web: %s: setting voltage to %.2f V", digest, voltage)
                 await self._set_voltage(voltage)
 
             except Exception as error:
@@ -824,15 +867,16 @@ class YamahaOPxWebInterface:
         await asyncio.Future()
 
 
-class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
+class AudioYamahaOPxApplet(GlasgowApplet, name="audio-yamaha-opx"):
     logger = logging.getLogger(__name__)
-    help = "drive and record Yamaha OPL* FM synthesizers"
+    help = "drive and record Yamaha OP* FM synthesizers"
     description = """
-    Send commands and record digital output from Yamaha OPL* series FM synthesizers. The supported
-    chips are:
+    Send commands and record digital output from Yamaha OP* series FM synthesizers.
+    The supported chips are:
         * YM3526 (OPL)
         * YM3812 (OPL2)
         * YMF262 (OPL3)
+        * YM2151 (OPM)
 
     The ~CS input should always be grounded, since there is only one chip on the bus in the first
     place.
@@ -848,24 +892,25 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
     """
 
     __pin_sets = ("d", "a")
-    __pins = ("clk_m", "rd", "wr",
-              "clk_sy", "sh", "mo")
+    __pins = ("wr", "rd", "clk_m",
+              "sh", "mo", "clk_sy")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
         access.add_pin_set_argument(parser, "d", width=8, default=True)
-        access.add_pin_argument(parser, "clk_m", default=True)
         access.add_pin_set_argument(parser, "a", width=2, default=True)
-        access.add_pin_argument(parser, "rd", default=True)
         access.add_pin_argument(parser, "wr", default=True)
-        access.add_pin_argument(parser, "clk_sy", default=True)
+        access.add_pin_argument(parser, "rd", default=True)
+        access.add_pin_argument(parser, "clk_m", default=True)
         access.add_pin_argument(parser, "sh", default=True)
         access.add_pin_argument(parser, "mo", default=True)
+        access.add_pin_argument(parser, "clk_sy", default=True)
 
         parser.add_argument(
-            "-d", "--device", metavar="DEVICE", choices=["OPL", "OPL2", "OPL3"], required=True,
+            "-d", "--device", metavar="DEVICE", choices=["OPL", "OPL2", "OPL3", "OPM"],
+            required=True,
             help="synthesizer family")
         parser.add_argument(
             "-o", "--overclock", metavar="FACTOR", type=float, default=1.0,
@@ -879,6 +924,8 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
             return YamahaOPL2Interface
         if args.device == "OPL3":
             return YamahaOPL3Interface
+        if args.device == "OPM":
+            return YamahaOPMInterface
         assert False
 
     def build(self, target, args):
@@ -973,7 +1020,7 @@ class AudioYamahaOPLApplet(GlasgowApplet, name="audio-yamaha-opl"):
 
 # -------------------------------------------------------------------------------------------------
 
-class AudioYamahaOPLAppletTestCase(GlasgowAppletTestCase, applet=AudioYamahaOPLApplet):
+class AudioYamahaOPxAppletTestCase(GlasgowAppletTestCase, applet=AudioYamahaOPxApplet):
     @synthesis_test
     def test_build_opl2(self):
         self.assertBuilds(args=["--device", "OPL2"])
@@ -981,3 +1028,7 @@ class AudioYamahaOPLAppletTestCase(GlasgowAppletTestCase, applet=AudioYamahaOPLA
     @synthesis_test
     def test_build_opl3(self):
         self.assertBuilds(args=["--device", "OPL3"])
+
+    @synthesis_test
+    def test_build_opm(self):
+        self.assertBuilds(args=["--device", "OPM"])

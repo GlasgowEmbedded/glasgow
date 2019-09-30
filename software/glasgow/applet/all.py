@@ -37,7 +37,7 @@ from .display.hd44780 import DisplayHD44780Applet
 from .display.pdi import DisplayPDIApplet
 
 from .audio.dac import AudioDACApplet
-from .audio.yamaha_opl import AudioYamahaOPLApplet
+from .audio.yamaha_opx import AudioYamahaOPxApplet
 
 from .video.rgb_input import VideoRGBInputApplet
 from .video.vga_output import VGAOutputApplet
