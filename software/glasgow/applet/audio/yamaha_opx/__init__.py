@@ -501,7 +501,7 @@ class YamahaOPxInterface(metaclass=ABCMeta):
         return await self.lower.read(count * self.channel_count * 2, flush=False)
 
 
-class YamahaOPLSampleDecoder(Module):
+class YM301xSampleDecoder(Module):
     def __init__(self):
         self.i = Record([("z", 3), ("m", 9), ("s", 1), ("e", 3)])
         self.o = Signal(16)
@@ -518,7 +518,7 @@ class YamahaOPLInterface(YamahaOPxInterface):
         return vgm_reader.ym3526_clk, 1
 
     max_master_hz  = 4.0e6 # 2.0/3.58/4.0
-    sample_decoder = YamahaOPLSampleDecoder
+    sample_decoder = YM301xSampleDecoder
     channel_count  = 1
 
     address_clocks = 12
@@ -567,7 +567,7 @@ class YamahaOPL2Interface(YamahaOPLInterface):
             await super()._check_enable_features(address, data)
 
 
-class YamahaOPL3SampleDecoder(Module):
+class YAC512SampleDecoder(Module):
     def __init__(self):
         # There are 2 dummy clocks between each sample. The DAC doesn't rely on it (it uses two
         # phases for two channels per DAC, and a clever arrangement to provide four channels
@@ -589,7 +589,7 @@ class YamahaOPL3Interface(YamahaOPL2Interface):
             return ym3812_clk, 4
 
     max_master_hz  = 16.0e6 # 10.0/14.32/16.0
-    sample_decoder = YamahaOPL3SampleDecoder
+    sample_decoder = YAC512SampleDecoder
     channel_count  = 2 # OPL3 has 4 channels, but we support only 2
 
     # The datasheet says use 32 master clock cycle latency. That's a lie, there's a /4 pre-divisor.
@@ -636,7 +636,7 @@ class YamahaOPMInterface(YamahaOPxInterface):
         return vgm_reader.ym2151_clk, 1
 
     max_master_hz  = 4.0e6 # 2.0/3.58/4.0
-    sample_decoder = YamahaOPLSampleDecoder
+    sample_decoder = YM301xSampleDecoder
     channel_count  = 2
 
     address_clocks = 12
