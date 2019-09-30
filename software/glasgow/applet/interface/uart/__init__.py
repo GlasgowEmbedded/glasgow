@@ -197,9 +197,6 @@ class UARTApplet(GlasgowApplet, name="uart"):
         p_tty = p_operation.add_parser(
             "tty", help="connect UART to stdin/stdout")
         p_tty.add_argument(
-            "--cr", action="store_true", default=False,
-            help="send carriage return as CR, not LF")
-        p_tty.add_argument(
             "-s", "--stream", action="store_true", default=False,
             help="continue reading from I/O port even after an end-of-file condition on stdin")
 
@@ -273,7 +270,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
             if fut is not None and not fut.done():
                 fut.cancel()
 
-    async def _interact_tty(self, uart, stream, cr):
+    async def _interact_tty(self, uart, stream):
         in_fileno  = sys.stdin.fileno()
         out_fileno = sys.stdout.fileno()
 
@@ -283,8 +280,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
             old_stdin_attrs = termios.tcgetattr(sys.stdin)
             [iflag, oflag, cflag, lflag, ispeed, ospeed, cc] = old_stdin_attrs
             lflag &= ~(termios.ECHO | termios.ICANON | termios.ISIG)
-            if cr:
-                iflag &= ~termios.ICRNL
+            iflag &= ~termios.ICRNL
             cc[termios.VMIN] = 1
             new_stdin_attrs = [iflag, oflag, cflag, lflag, ispeed, ospeed, cc]
             termios.tcsetattr(in_fileno, termios.TCSADRAIN, new_stdin_attrs)
@@ -333,7 +329,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
         asyncio.ensure_future(self._monitor_errors(device))
 
         if args.operation == "tty":
-            await self._interact_tty(uart, args.stream, args.cr)
+            await self._interact_tty(uart, args.stream)
         if args.operation == "pty":
             await self._interact_pty(uart)
         if args.operation == "socket":
