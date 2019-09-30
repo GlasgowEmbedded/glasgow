@@ -64,8 +64,13 @@
 # the compatibility feature is disabled (e.g. bit 5 of 0x01 TEST for YM3812), its registers are
 # masked off. However, the actual feature is still (partially) enabled and it will result in
 # broken playback if this is not accounted for. Therefore, for example, the reset sequence has to
-# enable all available advanced features, zero out the registers, and then disable them back for
-# compatibility with OPL clients that expect the compatibility mode to be on.
+# enable all available advanced features, reset the registers controlling advanced features, and
+# then disable them back for compatibility with OPL clients that expect the compatibility mode
+# to be on.
+#
+# Note that not all registers should always be reset to zero. For example, on OPL3, CHA/CHB should
+# be reset to 1 with A1=L, or OPL2 compatibility breaks, manifesting as missing percussion. This
+# is not documented, and cannot be verified on hardware because these registers cannot be read.
 #
 # Register latency
 # ----------------
@@ -106,6 +111,7 @@
 # synchronous digital logic, that doesn't generally affect the output until it breaks.
 #
 #   * YM3812 stops working between 10 MHz (good) and 30 MHz (bad).
+#   * YMF262 stops working between 24 MHz (good) and 48 MHz (bad).
 #
 # Test cases
 # ----------
