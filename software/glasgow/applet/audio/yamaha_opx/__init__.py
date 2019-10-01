@@ -751,8 +751,10 @@ class YamahaOPxWebInterface:
                         return sock
 
                     if ("Content-Length" not in client_resp.headers or
-                            int(client_resp.headers["Content-Length"]) > 131072):
-                        await sock.close(code=2999, message="File too large")
+                            int(client_resp.headers["Content-Length"]) > (1<<20)):
+                        await sock.close(code=2999, message=
+                            "File too large ({} bytes) to be fetched"
+                            .format(client_resp.headers["Content-Length"]))
                         return sock
 
                     vgm_data = await client_resp.read()
