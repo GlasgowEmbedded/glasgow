@@ -6,11 +6,11 @@
   <h1>Yamaha OP* Web Gateway</h1>
   <p>This webpage lets you submit commands to a real Yamaha synthesizer and listen to the output. The synthesizer is a <b>shared resource</b> (and isn't very fast, although it does not have to run in real time), and everyone who submits a file is in the same queue, so you might have to wait until it's your turn.</p>
   <p>The exported PCM is a lossless conversion from the DAC bitstream output of the synthesizer. It is resampled for streaming via WebAudio. WebAudio playback occasionally results in clicks, stutter, etc., which are not present in exported files.</p>
-  <p>Connected synthesizer: {{chip}}.</p>
-  <p>Playback support for: {{compat}}.</p>
+  <p>Connected synthesizer: {{chip}}. Playback support for: {{compat}}.</p>
   <p><b>Glitching</b>: undervolt to <input type="number" min="1.65" max="5.50" value="5.00" step="0.01" id="voltage"></p>
-  <p>Play a <a href="https://vgmrips.net/packs/chips">VGM/VGZ file</a>: <input type="file" id="file" accept=".vgm,.vgz"> <input type="button" id="play" value="Play"> <input type="button" id="replay" value="Replay" disabled> <input type="checkbox" id="loop"> <label for="loop">Loop</label></p>
-  <p>Export PCM: <input type="button" id="exportFull" value="Export full" disabled> <input type="button" id="exportLoop" value="Export loop" disabled></p>
+  <p>Upload a <a href="https://vgmrips.net/packs/chips">VGM/VGZ file</a>: <input type="file" id="vgmFile" accept=".vgm,.vgz"></p>
+  <p>... or provide an URL for it: <input type="url" id="vgmUrl" size="50"></p>
+  <p>Control: <input type="button" id="play" value="Play"> <input type="button" id="replay" value="Replay" disabled> <input type="checkbox" id="loop"> <label for="loop">Loop</label> <input type="button" id="exportFull" value="Export full" disabled> <input type="button" id="exportLoop" value="Export loop" disabled></p>
   <p>Status: <span id="chipStatus">no chip</span>, <span id="pcmStatus">no format</span>, <span id="netStatus">idle</span>, <span id="playStatus">stopped</span>.</p>
   <p id="errorPane" style="color:red; display:none">Error: <span id="error"></span></p>
 
@@ -325,14 +325,28 @@
     var exportFullButton = document.getElementById("exportFull");
     var exportLoopButton = document.getElementById("exportLoop");
     var loopCheckbox = document.getElementById("loop");
-    var fileInput = document.getElementById("file");
+    var fileInput = document.getElementById("vgmFile");
+    var urlInput = document.getElementById("vgmUrl");
     var chipStatusSpan = document.getElementById("chipStatus");
     var pcmStatusSpan = document.getElementById("pcmStatus");
     var netStatusSpan = document.getElementById("netStatus");
     var playStatusSpan = document.getElementById("playStatus");
     var errorPane = document.getElementById("errorPane");
     var errorSpan = document.getElementById("error");
+    var fileName;
     playButton.onclick = function(event) {
+      if(!((fileInput.files.length > 0) ^ (urlInput.value.length > 0))) {
+        alert("Provide exactly one of VGM file or VGM file URL!");
+        return;
+      }
+      if(fileInput.files.length > 0) {
+        fileName = fileInput.files[0].name;
+        fileData = fileInput.files[0];
+      } else if (urlInput.value.length > 0) {
+        fileName = decodeURIComponent(new URL(urlInput.value).pathname).split("/").pop();
+        fileData = urlInput.value;
+      }
+
       playButton.disabled = true;
       replayButton.disabled = true;
       exportFullButton.disabled = true;
@@ -376,11 +390,10 @@
       netStatusSpan.innerText = "connecting";
       var errored = false;
       socket.onopen = function(event) {
-        errored = false;
         socket.send(JSON.stringify({
           "Voltage": voltage.value,
         }));
-        socket.send(fileInput.files[0]);
+        socket.send(fileData);
         netStatusSpan.innerText = "waiting";
       }
       var totalSamples = 0;
@@ -424,14 +437,15 @@
         }
       }
 
+      function makeWAVFileName(suffix) {
+        return fileName.replace(/\.vg[mz]$/i, "") + suffix + ".wav";
+      }
       exportFullButton.onclick = function(event) {
-        var fileName = fileInput.files[0].name.replace(/\.vg[mz]$/i, "") + ".wav";
-        downloadFile(makeWAVFile(fileName, /*numOfChannels=*/player.channelCount,
+        downloadFile(makeWAVFile(makeWAVFileName(""), /*numOfChannels=*/player.channelCount,
           player.sampleRate, /*bytesPerSample=*/2, player.getAllSamplesS16LE()));
       }
       exportLoopButton.onclick = function(event) {
-        var fileName = fileInput.files[0].name.replace(/\.vg[mz]$/i, "") + " (loop).wav";
-        downloadFile(makeWAVFile(fileName, /*numOfChannels=*/player.channelCount,
+        downloadFile(makeWAVFile(makeWAVFileName(" (loop"), /*numOfChannels=*/player.channelCount,
           player.sampleRate, /*bytesPerSample=*/2, player.getLoopSamplesS16LE()));
       }
     };

@@ -140,7 +140,7 @@ import logging
 import argparse
 import struct
 import asyncio
-import aiohttp.web as web
+import aiohttp, aiohttp.web
 import hashlib
 import gzip
 import io
@@ -728,14 +728,34 @@ class YamahaOPxWebInterface:
             index_html = f.read()
             index_html = index_html.replace("{{chip}}", self._opx_iface.chips[-1])
             index_html = index_html.replace("{{compat}}", ", ".join(self._opx_iface.chips))
-            return web.Response(text=index_html, content_type="text/html")
+            return aiohttp.web.Response(text=index_html, content_type="text/html")
 
     async def serve_vgm(self, request):
-        sock = web.WebSocketResponse()
+        sock = aiohttp.web.WebSocketResponse()
         await sock.prepare(request)
 
-        headers  = await sock.receive_json()
-        vgm_data = await sock.receive_bytes()
+        headers = await sock.receive_json()
+        vgm_msg = await sock.receive()
+
+        if isinstance(vgm_msg.data, bytes):
+            vgm_data = vgm_msg.data
+        else:
+            self._logger.info("web: URL %s submitted by %s",
+                              vgm_msg.data, request.remote)
+
+            async with aiohttp.ClientSession() as client_sess:
+                async with client_sess.get(vgm_msg.data) as client_resp:
+                    if client_resp.status != 200:
+                        await sock.close(code=2000 + client_resp.status,
+                                         message=client_resp.reason)
+                        return sock
+
+                    if ("Content-Length" not in client_resp.headers or
+                            int(client_resp.headers["Content-Length"]) > 131072):
+                        await sock.close(code=2999, message="File too large")
+                        return sock
+
+                    vgm_data = await client_resp.read()
 
         digest = hashlib.sha256(vgm_data).hexdigest()[:16]
         self._logger.info("web: %s: submitted by %s",
@@ -856,10 +876,10 @@ class YamahaOPxWebInterface:
             return sock
 
     async def serve(self, endpoint):
-        app = web.Application()
+        app = aiohttp.web.Application()
         app.add_routes([
-            web.get("/",    self.serve_index),
-            web.get("/vgm", self.serve_vgm),
+            aiohttp.web.get("/",    self.serve_index),
+            aiohttp.web.get("/vgm", self.serve_vgm),
         ])
 
         try:
@@ -868,10 +888,10 @@ class YamahaOPxWebInterface:
         except ImportError:
             self._logger.warning("aiohttp_remotes not installed; X-Forwarded-For will not be used")
 
-        runner = web.AppRunner(app,
+        runner = aiohttp.web.AppRunner(app,
             access_log_format='%a(%{X-Forwarded-For}i) "%r" %s "%{Referer}i" "%{User-Agent}i"')
         await runner.setup()
-        site = web.TCPSite(runner, *endpoint.split(":", 2))
+        site = aiohttp.web.TCPSite(runner, *endpoint.split(":", 2))
         await site.start()
         await asyncio.Future()
 
