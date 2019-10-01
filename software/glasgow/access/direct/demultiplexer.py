@@ -287,8 +287,10 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
     async def _out_task(self, data):
         assert len(data) > 0
 
-        await self.device.bulk_write(self._endpoint_out, data)
-        self._out_inflight -= len(data)
+        try:
+            await self.device.bulk_write(self._endpoint_out, data)
+        finally:
+            self._out_inflight -= len(data)
 
         # See the comment in `write` below for an explanation of the following code.
         if len(self._out_buffer) >= self._out_threshold:
