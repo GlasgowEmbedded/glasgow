@@ -424,6 +424,15 @@ void handle_pending_usb_setup() {
           arg_chip  = I2C_ADDR_ICE_MEM + 1;
           page_size = 8;
           break;
+        case 3:
+          // The HX8K bitstream is slightly (less than 4 KB) larger than the capacity of ICE_MEM,
+          // so we stuff the very tail end of the bitstream back into FX2_MEM. It's necessary to
+          // make sure the writes don't wrap, or we can overwrite the configuration info.
+          if(arg_addr <= 0x1000 && arg_len <= 0x1000 && (arg_addr + arg_len) <= 0x1000) {
+            arg_chip  = I2C_ADDR_FX2_MEM;
+            page_size = 6; // 64 bytes
+            arg_addr += 0x7000;
+          }
       }
     }
     pending_setup = false;
@@ -834,17 +843,29 @@ int main() {
       if(length < chunk_len)
         chunk_len = length;
 
-      if(!eeprom_read(chip, addr, (uint8_t *)&scratch, chunk_len, /*double_byte=*/true))
+      if(!eeprom_read(chip, addr, (uint8_t *)&scratch, chunk_len, /*double_byte=*/true)) {
+        latch_status_bit(ST_ERROR);
         break;
+      }
       fpga_load((__xdata uint8_t *)scratch, chunk_len);
 
       length -= chunk_len;
       addr   += chunk_len;
-      if(addr == 0)
-        chip += 1; // address wraparound
+      if(addr == 0) {
+        // Advance to the next logical chip in case of address wraparound.
+        chip += 1;
+        if(chip == I2C_ADDR_ICE_MEM + 2) {
+          // See explanation in USB_REQ_EEPROM.
+          chip  = I2C_ADDR_FX2_MEM;
+          addr += 0x7000;
+        }
+      }
     }
-    if(length == 0)
+    if(length == 0) {
       fpga_start();
+      if(!fpga_is_ready())
+        latch_status_bit(ST_ERROR);
+    }
 
     led_act_set(false);
   }
