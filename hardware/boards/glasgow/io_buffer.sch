@@ -1,6 +1,5 @@
-EESchema Schematic File Version 4
-LIBS:glasgow-cache
-EELAYER 29 0
+EESchema Schematic File Version 5
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -13,6 +12,11 @@ Comment1 "Glasgow Debug Tool"
 Comment2 "Calculations by @awygle"
 Comment3 ""
 Comment4 ""
+Comment5 ""
+Comment6 ""
+Comment7 ""
+Comment8 ""
+Comment9 ""
 $EndDescr
 Wire Wire Line
 	2050 1650 2100 1650

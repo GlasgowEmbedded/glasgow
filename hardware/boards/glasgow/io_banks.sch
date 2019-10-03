@@ -1,6 +1,5 @@
-EESchema Schematic File Version 4
-LIBS:glasgow-cache
-EELAYER 29 0
+EESchema Schematic File Version 5
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -13,6 +12,11 @@ Comment1 "Glasgow debug tool"
 Comment2 ""
 Comment3 ""
 Comment4 ""
+Comment5 ""
+Comment6 ""
+Comment7 ""
+Comment8 ""
+Comment9 ""
 $EndDescr
 $Sheet
 S 6100 3850 600  1800

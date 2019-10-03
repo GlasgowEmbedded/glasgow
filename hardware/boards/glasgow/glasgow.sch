@@ -1,6 +1,5 @@
-EESchema Schematic File Version 4
-LIBS:glasgow-cache
-EELAYER 29 0
+EESchema Schematic File Version 5
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -13,6 +12,11 @@ Comment1 "Glasgow Debug Tool"
 Comment2 ""
 Comment3 ""
 Comment4 ""
+Comment5 ""
+Comment6 ""
+Comment7 ""
+Comment8 ""
+Comment9 ""
 $EndDescr
 $Comp
 L MCU_Cypress:CY7C68013A-56LTX U1
@@ -3239,6 +3243,10 @@ Wire Wire Line
 	2150 3700 2300 3700
 Wire Wire Line
 	2300 3700 2300 4150
+Wire Notes Line
+	5300 7050 5300 7650
+Text Notes 4550 7750 0    50   ~ 0
+Plug in the device while shorting R40 if it stops enumerating
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
