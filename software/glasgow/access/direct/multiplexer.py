@@ -188,9 +188,9 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
 
     def _throttle_fifo(self, fifo):
         if self._throttle == "full":
-            fifo.comb += fifo._ctrl_en.eq(~self.analyzer.throttle)
+            self.comb += fifo._ctrl_en.eq(~self.analyzer.throttle)
         elif self._throttle == "fifo":
-            fifo.comb += fifo._data_en.eq(~self.analyzer.throttle)
+            self.comb += fifo._data_en.eq(~self.analyzer.throttle)
 
         self.submodules += fifo
         return fifo
