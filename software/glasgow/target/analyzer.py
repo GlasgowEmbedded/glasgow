@@ -67,7 +67,7 @@ class GlasgowAnalyzer(Module):
             return
 
         reg_reset = Signal()
-        self.sync += reg_reset.eq(self.event_analyzer.reset)
+        self.sync += reg_reset.eq(self.mux_interface.reset)
 
         pin_oes = []
         pin_ios = []
