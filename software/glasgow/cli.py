@@ -576,6 +576,8 @@ async def _main():
                     applet.logger.error(str(e))
                 except asyncio.CancelledError:
                     pass # terminate gracefully
+                finally:
+                    await device.demultiplexer.flush()
 
             async def wait_for_sigint():
                 await wait_for_signal(signal.SIGINT)
@@ -601,7 +603,6 @@ async def _main():
                 await device.write_register(target.analyzer.addr_done, 1)
                 await analyzer_task
 
-            await device.demultiplexer.flush()
             await device.demultiplexer.cancel()
 
         if args.action == "tool":
