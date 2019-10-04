@@ -288,35 +288,42 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
         # TODO(py3.7): add required=True
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
-        def add_scan_id_argument(parser):
-            parser.add_argument(
-                "--device-id", action="store_true", default=False,
-                help="read device ID from devices responding to scan")
+        p_scan = p_operation.add_parser(
+            "scan", help="scan all possible I2C addresses")
 
-        p_scan_read = p_operation.add_parser(
-            "scan-read", help="scan all possible I2C read addresses")
-        add_scan_id_argument(p_scan_read)
+        p_scan.add_argument(
+            "--read", "-r", action="store_true", default=False,
+            help="scan read addresses")
 
-        p_scan_write = p_operation.add_parser(
-            "scan-write", help="scan all possible I2C write addresses")
-        add_scan_id_argument(p_scan_write)
+        p_scan.add_argument(
+            "--write", "-w", action="store_true", default=False,
+            help="scan write addresses")
+
+        p_scan.add_argument(
+            "--device-id", "-i", action="store_true", default=False,
+            help="read device ID from devices responding to scan")
 
         p_repl = p_operation.add_parser(
             "repl", help="drop into Python shell; use `i2c_iface` to communicate")
 
     async def interact(self, device, args, i2c_iface):
-        if args.operation in ("scan-read", "scan-write"):
+        if args.operation == "scan":
+            # readwrite is the default option
+            if not args.read and not args.write:
+                args.read = True
+                args.write = True
+            
             # Don't scan reserved I2C addresses.
             for addr in range(0b0001_000, 0b1111_000):
                 responded = False
-                if args.operation == "scan-read":
+                if args.read:
                     # We need to read at least one byte in order to transmit a NAK bit
                     # so that the addressed device releases SDA.
                     if await i2c_iface.read(addr, 1, stop=True) is not None:
                         self.logger.info("scan found read address %s",
                                          "{:#09b}".format(addr))
                         responded = True
-                if args.operation == "scan-write":
+                if args.write:
                     if await i2c_iface.write(addr, [], stop=True) is True:
                         self.logger.info("scan found write address %s",
                                          "{:#09b}".format(addr))
