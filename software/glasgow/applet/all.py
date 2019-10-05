@@ -32,6 +32,7 @@ from .control.tps6598x import ControlTPS6598xApplet
 from .sensor.bmp280 import SensorBMP280Applet
 from .sensor.mouse_ps2 import SensorMousePS2Applet
 from .sensor.scd30 import SensorSCD30Applet
+from .sensor.ina260 import SensorINA260Applet
 
 from .display.hd44780 import DisplayHD44780Applet
 from .display.pdi import DisplayPDIApplet
