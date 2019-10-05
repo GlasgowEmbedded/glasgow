@@ -233,6 +233,25 @@ class I2CMasterInterface:
         revision     = device_id[2] & 0x7
         return (manufacturer, part_ident, revision)
 
+    async def scan(self, addresses=range(0b0001_000, 0b1111_000), *, read=True, write=True):
+        # default address range: don't scan reserved I2C addresses
+        found = set()
+        for addr in addresses:
+            if read:
+                # We need to read at least one byte in order to transmit a NAK bit
+                # so that the addressed device releases SDA.
+                if await self.read(addr, 1, stop=True) is not None:
+                    self._logger.log(self._level, "I2C scan: found read address %s",
+                                        "{:#09b}".format(addr))
+                    found.add(addr)
+                    continue
+            if write:
+                if await self.write(addr, [], stop=True) is True:
+                    self._logger.log(self._level, "I2C scan: found write address %s",
+                                        "{:#09b}".format(addr))
+                    found.add(addr)
+        return found
+
 
 class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
     logger = logging.getLogger(__name__)
@@ -312,24 +331,13 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
             if not args.read and not args.write:
                 args.read = True
                 args.write = True
-            
-            # Don't scan reserved I2C addresses.
-            for addr in range(0b0001_000, 0b1111_000):
-                responded = False
-                if args.read:
-                    # We need to read at least one byte in order to transmit a NAK bit
-                    # so that the addressed device releases SDA.
-                    if await i2c_iface.read(addr, 1, stop=True) is not None:
-                        self.logger.info("scan found read address %s",
-                                         "{:#09b}".format(addr))
-                        responded = True
-                if args.write:
-                    if await i2c_iface.write(addr, [], stop=True) is True:
-                        self.logger.info("scan found write address %s",
-                                         "{:#09b}".format(addr))
-                        responded = True
 
-                if responded and args.device_id:
+            found_addrs = await i2c_iface.scan(read=args.read, write=args.write)
+            
+            for addr in found_addrs:
+                self.logger.info("scan found address %s",
+                                    "{:#09b}".format(addr))
+                if args.device_id:
                     device_id = await i2c_iface.device_id(addr)
                     if device_id is None:
                         self.logger.warning("device %s did not acknowledge Device ID", bin(addr))
