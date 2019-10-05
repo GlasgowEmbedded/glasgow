@@ -87,8 +87,8 @@ You will also need Yosys and nextpnr-ice40, both from the master branch. Follow 
 
 Obtain the source code:
 
-    git clone https://github.com/GlasgowEmbedded/Glasgow
-    cd Glasgow
+    git clone https://github.com/GlasgowEmbedded/glasgow
+    cd glasgow
     git submodule update --init vendor/libfx2
 
 Configure your system to allow unprivileged access (for anyone in the `plugdev` group) to the Glasgow hardware:
@@ -104,7 +104,7 @@ The binaries are placed in `$HOME/.local/bin`, so be sure to add that directory 
 
 To update the source code, do:
 
-    cd Glasgow
+    cd glasgow
     git pull
     cd software
     python3.7 setup.py build_ext
