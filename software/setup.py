@@ -13,10 +13,6 @@ from distutils.dir_util import mkpath
 from distutils.errors import DistutilsExecError
 
 
-if sys.version_info[:3] < (3, 6):
-    raise SystemExit("Glasgow requires Python 3.6+")
-
-
 class GlasgowBuildExt(build_ext):
     def run(self):
         try:
@@ -68,6 +64,7 @@ setup(
     description="Software for Glasgow, a digital interface multitool",
     #long_description="""TODO""",
     license="0-clause BSD License",
+    python_requires="~=3.6",
     setup_requires=[
         "setuptools",
         "setuptools_scm"
