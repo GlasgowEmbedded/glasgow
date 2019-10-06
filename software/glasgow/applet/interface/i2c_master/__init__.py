@@ -237,17 +237,20 @@ class I2CMasterInterface:
         # default address range: don't scan reserved I2C addresses
         found = set()
         for addr in addresses:
+            # Do write scanning before read scanning to reduce the likeliness of possible
+            # side effects due to really reading 1 byte in the read scan
+            if write:
+                if await self.write(addr, [], stop=True) is True:
+                    self._logger.log(self._level, "I2C scan: found write address %s",
+                                        "{:#09b}".format(addr))
+                    found.add(addr)
+                    # After a successful write detection no read scan is done anymore
+                    continue
             if read:
                 # We need to read at least one byte in order to transmit a NAK bit
                 # so that the addressed device releases SDA.
                 if await self.read(addr, 1, stop=True) is not None:
                     self._logger.log(self._level, "I2C scan: found read address %s",
-                                        "{:#09b}".format(addr))
-                    found.add(addr)
-                    continue
-            if write:
-                if await self.write(addr, [], stop=True) is True:
-                    self._logger.log(self._level, "I2C scan: found write address %s",
                                         "{:#09b}".format(addr))
                     found.add(addr)
         return found
