@@ -8,6 +8,7 @@ from ....support.data_logger import DataLogger
 from ... import *
 from ...interface.i2c_master import I2CMasterApplet
 
+
 REG_CONFIG      = 0x00 # 16-bit rw
 REG_CURRENT     = 0x01 # 16-bit signed ro
 REG_VOLTAGE     = 0x02 # 16-bit unsigned ro
@@ -24,8 +25,10 @@ VOLTS_FACTOR = 0.00125
 AMPERE_FACTOR = 0.00125
 WATTS_FACTOR = 0.01
 
+
 class INA260Error(GlasgowAppletError):
     pass
+
 
 class INA260I2CInterface:
     def __init__(self, interface, logger, i2c_address):
@@ -85,6 +88,7 @@ class INA260I2CInterface:
         watts = raw * WATTS_FACTOR
         self._logger.log(self._level, "INA260: power raw=%d watts=%f", raw, watts)
         return watts
+
 
 class SensorINA260Applet(I2CMasterApplet, name="sensor-ina260"):
     logger = logging.getLogger(__name__)
