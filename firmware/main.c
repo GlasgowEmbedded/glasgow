@@ -142,8 +142,8 @@ usb_ascii_string_c usb_strings[] = {
   [1] = "Glasgow Debug Tool",
   [2] = "XX-XXXXXXXXXXXXXXXX",
   // Configurations
-  [3] = "Pipe Q at {2x512B EP2OUT/EP6IN}, R at {2x512B EP4OUT/EP8IN}",
-  [4] = "Pipe Q at {4x512B EP2OUT/EP6IN}",
+  [3] = "Pipe P at {2x512B EP2OUT/EP6IN}, Q at {2x512B EP4OUT/EP8IN}",
+  [4] = "Pipe P at {4x512B EP2OUT/EP6IN}",
   // Interfaces
   [5] = "Disabled",
   [6] = "Double-buffered 512B",
