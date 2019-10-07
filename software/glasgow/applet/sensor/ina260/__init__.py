@@ -18,12 +18,12 @@ REG_ALERT_LIMIT = 0x07 # 16-bit rw
 REG_VENDOR_ID   = 0xFE # 16-bit ro
 REG_PRODUCT_ID  = 0xFF # 16-bit ro
 
-REG_VALUE_VENDOR_ID = 0x5449
+REG_VALUE_VENDOR_ID  = 0x5449
 REG_VALUE_PRODUCT_ID = 0x2270
 
-VOLTS_FACTOR = 0.00125
+VOLTS_FACTOR  = 0.00125
 AMPERE_FACTOR = 0.00125
-WATTS_FACTOR = 0.01
+WATTS_FACTOR  = 0.01
 
 
 class INA260Error(GlasgowAppletError):
@@ -34,8 +34,8 @@ class INA260I2CInterface:
     def __init__(self, interface, logger, i2c_address):
         self.lower     = interface
         self._i2c_addr = i2c_address
-        self._logger  = logger
-        self._level   = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+        self._logger   = logger
+        self._level    = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
     async def _read_reg16u(self, reg):
         await self.lower.write(self._i2c_addr, [reg])
@@ -94,8 +94,9 @@ class SensorINA260Applet(I2CMasterApplet, name="sensor-ina260"):
     logger = logging.getLogger(__name__)
     help = "measure voltage, current and power with TI INA260 sensors"
     description = """
-        Measure voltage, current and power with TI INA260 sensors.
-        Currently only supports reading out results, not to change configuration and alerts.
+    Measure voltage, current and power with TI INA260 sensors.
+
+    Only readout is supported. Configuration cannot be changed, and alerts cannot be enabled.
     """
 
     @classmethod
@@ -132,7 +133,7 @@ class SensorINA260Applet(I2CMasterApplet, name="sensor-ina260"):
 
         if args.operation == "measure":
             volts = await ina260.get_voltage()
-            amps = await ina260.get_current()
+            amps  = await ina260.get_current()
             watts = await ina260.get_power()
             print("bus voltage : {:7.03f} V".format(volts))
             print("current     : {:+7.03f} A".format(amps))
