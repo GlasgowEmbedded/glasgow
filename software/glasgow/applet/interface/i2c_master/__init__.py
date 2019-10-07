@@ -330,14 +330,13 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
 
     async def interact(self, device, args, i2c_iface):
         if args.operation == "scan":
-            # readwrite is the default option
+            # read/write is the default option
             if not args.read and not args.write:
-                args.read = True
+                args.read  = True
                 args.write = True
 
             found_addrs = await i2c_iface.scan(read=args.read, write=args.write)
-            
-            for addr in found_addrs:
+            for addr in sorted(found_addrs):
                 self.logger.info("scan found address %s",
                                     "{:#09b}".format(addr))
                 if args.device_id:
