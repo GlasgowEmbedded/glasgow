@@ -737,9 +737,9 @@ class YamahaOPxWebInterface:
         headers = await sock.receive_json()
         vgm_msg = await sock.receive()
 
-        if isinstance(vgm_msg.data, bytes):
+        if vgm_msg.type == aiohttp.WSMsgType.BINARY:
             vgm_data = vgm_msg.data
-        else:
+        elif vgm_msg.type == aiohttp.WSMsgType.TEXT:
             self._logger.info("web: URL %s submitted by %s",
                               vgm_msg.data, request.remote)
 
@@ -758,6 +758,10 @@ class YamahaOPxWebInterface:
                         return sock
 
                     vgm_data = await client_resp.read()
+        else:
+            assert vgm_msg.type == aiohttp.WSMsgType.ERROR
+            self._logger.warning("web: broken upload: %s", vgm_msg.data)
+            return sock
 
         digest = hashlib.sha256(vgm_data).hexdigest()[:16]
         self._logger.info("web: %s: submitted by %s",
