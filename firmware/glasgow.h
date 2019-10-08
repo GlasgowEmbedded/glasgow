@@ -3,8 +3,11 @@
 
 #include <stdbool.h>
 
-#define VID_QIHW              0x20b7
-#define PID_GLASGOW           0x9db1
+#define VID_CYPRESS   0x04b4
+#define PID_FX2       0x8613
+
+#define VID_QIHW      0x20b7
+#define PID_GLASGOW   0x9db1
 
 enum {
   // Board revisions

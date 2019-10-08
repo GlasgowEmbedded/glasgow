@@ -756,7 +756,7 @@ async def _main():
                     return 1
 
             fx2_config = FX2Config(vendor_id=VID_QIHW, product_id=PID_GLASGOW,
-                                   device_id=GlasgowConfig.encode_revision(args.rev),
+                                   device_id=GlasgowConfig.encode_revision(args.factory_rev),
                                    i2c_400khz=True)
             glasgow_config = GlasgowConfig(args.factory_rev, args.factory_serial)
             fx2_config.append(0x4000 - GlasgowConfig.size, glasgow_config.encode())

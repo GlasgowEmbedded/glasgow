@@ -258,6 +258,10 @@ static void descriptors_init() {
   desc_serial[1] = '0' + (glasgow_config.revision & 0xF);
   xmemcpy(&desc_serial[3], (__xdata void *)glasgow_config.serial,
           sizeof(glasgow_config.serial));
+  if(glasgow_config.revision == GLASGOW_REV_NA) {
+    desc_device->idVendor  = VID_CYPRESS;
+    desc_device->idProduct = PID_FX2;
+  }
 }
 
 enum {
