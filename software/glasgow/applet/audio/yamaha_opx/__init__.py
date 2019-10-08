@@ -1012,6 +1012,28 @@ class AudioYamahaOPxApplet(GlasgowApplet, name="audio-yamaha-opx"):
             "endpoint", metavar="ENDPOINT", type=str, default="localhost:8080",
             help="listen for requests on ENDPOINT (default: %(default)s)")
 
+        p_run = p_operation.add_parser(
+            "run", help="run a Python script driving the synthesizer and record PCM",
+            description="""
+        Use the following template for a script:
+
+        ::
+            samples = 49715
+
+            async def main(iface):
+                await iface.enable()
+                await iface.write_register(...)
+                await iface.wait_clocks(iface.sample_clocks * samples)
+                await iface.disable()
+
+        """)
+        p_run.add_argument(
+            "script_file", metavar="SCRIPT-FILE", type=argparse.FileType("rb"),
+            help="run Python script SCRIPT-FILE")
+        p_run.add_argument(
+            "pcm_file", metavar="PCM-FILE", type=argparse.FileType("wb"),
+            help="write samples to PCM-FILE")
+
     async def interact(self, device, args, opx_iface):
         if args.operation == "convert":
             vgm_reader = VGMStreamReader.from_file(args.vgm_file)
@@ -1052,6 +1074,24 @@ class AudioYamahaOPxApplet(GlasgowApplet, name="audio-yamaha-opx"):
                 await device.set_voltage(args.port_spec, voltage)
             web_iface = YamahaOPxWebInterface(self.logger, opx_iface, set_voltage=set_voltage)
             await web_iface.serve(args.endpoint)
+
+        if args.operation == "run":
+            context = dict()
+            exec(compile(args.script_file.read(), args.script_file.name, mode="exec"), context)
+            if not isinstance(context.get("samples", None), int):
+                raise GlasgowAppletError("Script should set 'samples' to an int")
+            if not hasattr(context.get("main"), "__call__"):
+                raise GlasgowAppletError("Script should define a function 'main'")
+
+            self.logger.info("recording %d channels", opx_iface.channel_count)
+            await opx_iface._use_highest_level()
+            record_fut = asyncio.ensure_future(opx_iface.read_samples(context["samples"]))
+            play_fut   = asyncio.ensure_future(context["main"](opx_iface))
+            done, pending = await asyncio.wait([play_fut, record_fut],
+                                               return_when=asyncio.FIRST_EXCEPTION)
+            for fut in done:
+                await fut
+            args.pcm_file.write(record_fut.result())
 
 # -------------------------------------------------------------------------------------------------
 
