@@ -410,7 +410,11 @@ class YamahaOPxInterface(metaclass=ABCMeta):
         # do not reset the chip appropriately, nor do they always terminate cleanly, so this is
         # necessary to get a reproducible result.
         old_instant_writes, self._instant_writes = self._instant_writes, False
+        await self._use_highest_level()
         await self._reset_registers()
+        await self._use_lowest_level()
+        self._feature_level  = 1
+        self._feature_warned = False
         self._instant_writes = old_instant_writes
 
     async def _use_highest_level(self):
@@ -420,12 +424,8 @@ class YamahaOPxInterface(metaclass=ABCMeta):
         pass
 
     async def _reset_registers(self):
-        await self._use_highest_level()
         for addr in self._registers:
             await self.write_register(addr, 0x00, check_feature=False)
-        await self._use_lowest_level()
-        self._feature_level  = 1
-        self._feature_warned = False
 
     async def enable(self):
         self._log("enable")
@@ -628,6 +628,13 @@ class YamahaOPL3Interface(YamahaOPL2Interface):
         else:
             await super()._check_enable_features(address, data)
 
+    async def _reset_registers(self):
+        await super()._reset_registers()
+        for address in range(0x0C0, 0x0C8):
+            await self.write_register(address, 0x30) # RL enable
+        for address in range(0x1C0, 0x1C8):
+            await self.write_register(address, 0x30) # RL enable
+
 
 class YamahaOPMInterface(YamahaOPxInterface):
     chips = ["YM2151/OPM"]
@@ -656,8 +663,8 @@ class YamahaOPMInterface(YamahaOPxInterface):
         else:
             await super()._check_enable_features(address, data)
 
-    async def reset(self):
-        await super().reset()
+    async def _reset_registers(self):
+        await super()._reset_registers()
         await self.write_register(0x01, 0x02) # LFO reset
         await self.write_register(0x01, 0x00)
         await self.write_register(0x14, 0x30) # flag reset
