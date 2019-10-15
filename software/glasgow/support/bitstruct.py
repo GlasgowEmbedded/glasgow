@@ -10,6 +10,8 @@ __all__ = ["bitstruct"]
 
 
 class _bitstruct:
+    __slots__ = ()
+
     @staticmethod
     def _check_bits_(action, expected_width, value):
         assert isinstance(value, bits)
@@ -34,50 +36,52 @@ class _bitstruct:
             raise ValueError("%s requires %d bytes, got %d bytes (%s)"
                              % (action, expected_length, len(value), value.hex()))
 
-    @classmethod
+    @staticmethod
     def _define_fields_(cls, declared_bits, fields):
         total_bits = sum(width for name, width in fields)
         if total_bits != declared_bits:
             raise TypeError("declared width is %d bits, but sum of field widths is %d bits"
                             % (declared_bits, total_bits))
 
-        cls._size_bits_    = declared_bits
-        cls._size_bytes_   = (declared_bits + 7) // 8
-        cls._named_fields_ = []
-        cls._layout_       = OrderedDict()
+        cls["_size_bits_"]    = declared_bits
+        cls["_size_bytes_"]   = (declared_bits + 7) // 8
+        cls["_named_fields_"] = []
+        cls["_layout_"]       = OrderedDict()
 
         offset = 0
         for name, width in fields:
             if name is None:
-                name = "_padding_%d" % offset
+                name = "padding_%d" % offset
             else:
-                cls._named_fields_.append(name)
-            cls._layout_[name] = (offset, width)
+                cls["_named_fields_"].append(name)
+            cls["_layout_"][name] = (offset, width)
             offset += width
 
+        cls["__slots__"] = tuple("_{}".format(field) for field in cls["_layout_"])
+
         code = textwrap.dedent(f"""
-        def __init__(self, {", ".join(f"{field}=0" for field in cls._named_fields_)}):
+        def __init__(self, {", ".join(f"{field}=0" for field in cls["_named_fields_"])}):
             {"; ".join(f"self.{field} = 0"
-                       for field in cls._layout_ if field not in cls._named_fields_)}
+                       for field in cls["_layout_"] if field not in cls["_named_fields_"])}
             {"; ".join(f"self.{field} = {field}"
-                       for field in cls._layout_ if field in cls._named_fields_)}
+                       for field in cls["_layout_"] if field in cls["_named_fields_"])}
 
         @classmethod
         def from_bits(cls, value):
             cls._check_bits_("initialization", cls._size_bits_, value)
             self = object.__new__(cls)
             {"; ".join(f"self._{field} = int(value[{offset}:{offset+width}])"
-                       for field, (offset, width) in cls._layout_.items())}
+                       for field, (offset, width) in cls["_layout_"].items())}
             return self
 
         def to_bits(self):
             value = 0
             {"; ".join(f"value |= self._{field} << {offset}"
-                       for field, (offset, width) in cls._layout_.items())}
+                       for field, (offset, width) in cls["_layout_"].items())}
             return bits(value, self._size_bits_)
         """)
 
-        for field, (offset, width) in cls._layout_.items():
+        for field, (offset, width) in cls["_layout_"].items():
             code += textwrap.dedent(f"""
             @property
             def {field}(self):
@@ -95,7 +99,7 @@ class _bitstruct:
         methods = {}
         exec(code, globals(), methods)
         for name, method in methods.items():
-            setattr(cls, name, method)
+            cls[name] = method
 
     @classmethod
     def from_bytes(cls, value):
@@ -156,9 +160,9 @@ class _bitstruct:
 def bitstruct(name, size_bits, fields):
     mod = sys._getframe(1).f_globals["__name__"] # see namedtuple()
 
-    cls = types.new_class(name, (_bitstruct,))
+    cls = types.new_class(name, (_bitstruct,),
+        exec_body=lambda ns: _bitstruct._define_fields_(ns, size_bits, fields))
     cls.__module__ = mod
-    cls._define_fields_(size_bits, fields)
 
     return cls
 
@@ -275,3 +279,11 @@ class BitstructTestCase(unittest.TestCase):
         x2 = x1.copy()
         self.assertFalse(x1 is x2)
         self.assertEqual(x1, x2)
+
+    def test_slots(self):
+        bs = bitstruct("bs", 8, [("a", 8)])
+        x  = bs()
+        with self.assertRaises(AttributeError):
+            x.b
+        with self.assertRaises(AttributeError):
+            x.b = 1
