@@ -76,13 +76,13 @@ class JTAGOpenOCDApplet(GlasgowApplet, name="jtag-openocd"):
 
     ::
         glasgow run jtag-openocd tcp:localhost:2222
-        openocd -c -c 'interface remote_bitbang; remote_bitbang_port 2222'
+        openocd -c 'interface remote_bitbang; remote_bitbang_port 2222'
 
     Usage with Unix domain sockets:
 
     ::
         glasgow run jtag-openocd unix:/tmp/jtag.sock
-        openocd -c -c 'interface remote_bitbang; remote_bitbang_host /tmp/jtag.sock'
+        openocd -c 'interface remote_bitbang; remote_bitbang_host /tmp/jtag.sock'
     """
 
     __pins = ("tck", "tms", "tdi", "tdo", "trst")
