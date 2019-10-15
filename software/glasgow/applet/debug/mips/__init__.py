@@ -58,15 +58,16 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         self._log("read IMPCODE %s", self._impcode.bits_repr())
 
     async def _exchange_control(self, **fields):
-        field_desc = " ".join("{}={:b}".format(field, value)
-                              for field, value in fields.items())
-        self._log("write CONTROL %s", field_desc)
-
         control = self._control.copy()
-        control.Rocc  = 1
-        control.PrAcc = 1
+        if self._impcode.EJTAGver > 0:
+            # Some (but not all) EJTAG 1.x/2.0 cores implement Rocc handshaking. We ignore it,
+            # since there's no easy way to tell which one it is (on some Lexra cores, Rocc appears
+            # to be R/W, which breaks the handshaking mechanism.)
+            control.Rocc = 1
         for field, value in fields.items():
             setattr(control, field, value)
+
+        self._log("write CONTROL %s", control.bits_repr(omit_zero=True))
         control_bits = control.to_bits()
         await self.lower.write_ir(IR_CONTROL)
 
@@ -74,7 +75,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         new_control = DR_CONTROL.from_bits(control_bits)
         self._log("read CONTROL %s", new_control.bits_repr(omit_zero=True))
 
-        if new_control.Rocc and control.Rocc:
+        if self._impcode.EJTAGver > 0 and control.Rocc and new_control.Rocc:
             raise EJTAGError("target has been unexpectedly reset")
 
         return new_control
