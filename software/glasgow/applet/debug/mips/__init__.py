@@ -92,6 +92,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         await self.lower.write_ir(IR_ADDRESS)
         self._address_length = await self.lower.scan_dr_length(max_length=64)
         assert self._address_length is not None
+        self._log("scan ADDRESS length=%d", self._address_length)
 
     async def _read_address(self):
         await self.lower.write_ir(IR_ADDRESS)
