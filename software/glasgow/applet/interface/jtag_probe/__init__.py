@@ -804,7 +804,7 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
 
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=100,
-            help="set clock frequency to FREQ kHz (default: %(default)s)")
+            help="set TCK frequency to FREQ kHz (default: %(default)s)")
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
