@@ -40,16 +40,14 @@ class JTAGOpenOCDSubtarget(Elaboratable):
         with m.Else():
             with m.If(out_fifo.r_rdy):
                 with m.Switch(out_fifo.r_data):
+                    m.d.comb += out_fifo.r_en.eq(1)
                     # remote_bitbang_write(int tck, int tms, int tdi)
                     with m.Case(*b"01234567"):
-                        m.d.comb += out_fifo.r_en.eq(1)
                         m.d.sync += Cat(bus.tdi, bus.tms, bus.tck).eq(out_fifo.r_data[:3])
                     # remote_bitbang_reset(int trst, int srst)
                     with m.Case(*b"rs"):
-                        m.d.comb += out_fifo.r_en.eq(1)
                         m.d.sync += Cat(bus.trst_o).eq(0b0)
                     with m.Case(*b"tu"):
-                        m.d.comb += out_fifo.r_en.eq(1)
                         m.d.sync += Cat(bus.trst_o).eq(0b1)
                     # remote_bitbang_sample(void)
                     with m.Case(*b"R"):
@@ -58,8 +56,12 @@ class JTAGOpenOCDSubtarget(Elaboratable):
                         m.d.comb += in_fifo.w_data.eq(b"0"[0] | Cat(bus.tdo))
                     # remote_bitbang_blink(int on)
                     with m.Case(*b"Bb"):
-                        m.d.comb += out_fifo.r_en.eq(1)
                         m.d.sync += blink.eq(~out_fifo.r_data[5])
+                    # remote_bitbang_quit(void)
+                    with m.Case(*b"Q"):
+                        pass
+                    with m.Default():
+                        m.d.comb += out_fifo.r_en.eq(0)
                 with m.If(out_fifo.r_en):
                     m.d.sync += timer.eq(self.period_cyc - 1)
 
