@@ -127,6 +127,8 @@ class EJTAGDebugInterface(aobject, GDBRemote):
 
     async def _dmaacc_read(self, address, size):
         self._log("DMAAcc: read address=%#0.*x size=%d", self._prec, address, size)
+        # Make sure DMAAcc is set, or ADDRESS DR is not writable.
+        await self._exchange_control(DMAAcc=1)
         await self._write_address(address)
         await self._exchange_control(DMAAcc=1, DRWn=1, Dsz=size, DStrt=1)
         for _ in range(3):
@@ -145,6 +147,8 @@ class EJTAGDebugInterface(aobject, GDBRemote):
     async def _dma_accwrite(self, address, size, data):
         self._log("DMAAcc: write address=%#0.*x size=%d data=%#0.*x",
                   self._prec, address, size, self._prec, data)
+        # Make sure DMAAcc is set, or ADDRESS DR is not writable.
+        await self._exchange_control(DMAAcc=1)
         await self._write_address(address)
         await self._write_data(data)
         await self._exchange_control(DMAAcc=1, DRWn=0, Dsz=size, DStrt=1)
