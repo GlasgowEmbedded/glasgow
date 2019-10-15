@@ -144,7 +144,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         await self._exchange_control(DMAAcc=0)
         return data
 
-    async def _dma_accwrite(self, address, size, data):
+    async def _dmaacc_write(self, address, size, data):
         self._log("DMAAcc: write address=%#0.*x size=%d data=%#0.*x",
                   self._prec, address, size, self._prec, data)
         # Make sure DMAAcc is set, or ADDRESS DR is not writable.
@@ -215,7 +215,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
             # to clear it via DMAAcc because PrAcc requires debug mode to already work.
             dcr  = await self._dmaacc_read(DRSEG_DCR_addr, 2)
             dcr &= ~(1<<2)
-            await self._dma_accwrite(DRSEG_DCR_addr, 2, dcr)
+            await self._dmaacc_write(DRSEG_DCR_addr, 2, dcr)
 
         await self._enable_probe()
         self._change_state("Running")
