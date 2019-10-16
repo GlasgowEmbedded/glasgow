@@ -13,7 +13,7 @@ class GlasgowPlatformICE40(LatticeICE40Platform):
     @property
     def file_templates(self):
         # Do not require yosys to be present for toolchain_prepare() to finish.
-        file_templates = super().file_templates
+        file_templates = dict(super().file_templates)
         del file_templates["{{name}}.debug.v"]
         return file_templates
 
