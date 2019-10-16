@@ -185,8 +185,8 @@ class GlasgowHardwareDevice:
             elif status == usb1.TRANSFER_NO_DEVICE:
                 result_future.set_exception(GlasgowDeviceError("device lost"))
             else:
-                result_future.set_exception(GlasgowDeviceError("transfer error: {}"
-                                                               .format(status)))
+                result_future.set_exception(GlasgowDeviceError(
+                    "transfer error: {}".format(usb1.libusb1.libusb_transfer_status(status))))
 
         loop = asyncio.get_event_loop()
         transfer.setCallback(lambda transfer: loop.call_soon_threadsafe(usb_callback, transfer))
