@@ -10,6 +10,13 @@ __all__ = ["GlasgowPlatformICE40"]
 
 
 class GlasgowPlatformICE40(LatticeICE40Platform):
+    @property
+    def file_templates(self):
+        # Do not require yosys to be present for toolchain_prepare() to finish.
+        file_templates = super().file_templates
+        del file_templates["{{name}}.debug.v"]
+        return file_templates
+
     def toolchain_program(self, products, name):
         bitstream = products.get("{}.bin".format(name))
         async def do_program():
