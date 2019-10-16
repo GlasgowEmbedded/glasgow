@@ -593,17 +593,17 @@ async def _main():
             done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
             for task in pending:
                 task.cancel()
-            for task in tasks:
-                try:
-                    await task
-                except asyncio.CancelledError:
-                    pass
+            await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
 
             if do_trace:
                 await device.write_register(target.analyzer.addr_done, 1)
                 await analyzer_task
 
             await device.demultiplexer.cancel()
+
+            for task in tasks:
+                if not task.cancelled():
+                    task.result()
 
         if args.action == "tool":
             tool = GlasgowApplet.all_applets[args.applet].tool_cls()
