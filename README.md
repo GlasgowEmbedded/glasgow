@@ -32,7 +32,7 @@ Some of the tasks Glasgow can do well are:
   * debug ARC processors via JTAG,
   * debug some MIPS processors via EJTAG,
   * program and verify XC9500XL CPLDs via JTAG,
-  * synthesize sound using a Yamaha OPL chip and play it in real time on a webpage,
+  * synthesize sound using a Yamaha OPLx/OPM chip and play it in real time on a webpage,
   * read raw modulated data from 5.25"/3.5" floppy drives,
   * ... and more!
 
