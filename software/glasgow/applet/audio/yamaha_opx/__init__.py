@@ -631,9 +631,9 @@ class YamahaOPL3Interface(YamahaOPL2Interface):
     async def _reset_registers(self):
         await super()._reset_registers()
         for address in range(0x0C0, 0x0C8):
-            await self.write_register(address, 0x30) # RL enable
+            await self.write_register(address, 0x30, check_feature=False) # RL enable
         for address in range(0x1C0, 0x1C8):
-            await self.write_register(address, 0x30) # RL enable
+            await self.write_register(address, 0x30, check_feature=False) # RL enable
 
 
 class YamahaOPMInterface(YamahaOPxInterface):
