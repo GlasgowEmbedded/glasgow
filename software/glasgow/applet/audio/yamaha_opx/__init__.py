@@ -368,7 +368,7 @@ class YamahaOPxSubtarget(Module):
 class YamahaOPxInterface(metaclass=ABCMeta):
     chips = []
 
-    def __init__(self, interface, logger, instant_writes=True):
+    def __init__(self, interface, logger, *, instant_writes=True, filter=None):
         self.lower   = interface
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
@@ -377,6 +377,8 @@ class YamahaOPxInterface(metaclass=ABCMeta):
         # where writes are unphysically assumed to take no time.
         self._instant_writes = instant_writes
         self._phase_accum    = 0
+
+        self.filter = filter
 
         self._feature_level  = 1
         self._feature_warned = False
@@ -405,6 +407,8 @@ class YamahaOPxInterface(metaclass=ABCMeta):
     async def reset(self):
         self._log("reset")
         await self.lower.reset()
+        # Don't run reset commands through the filter.
+        old_filter, self.filter = self.filter, None
         # Reset the synthesizer in software; some of them appear to have broken reset via ~IC pin,
         # and in any case this frees up one Glasgow pin, which we are short on. VGM files often
         # do not reset the chip appropriately, nor do they always terminate cleanly, so this is
@@ -416,6 +420,9 @@ class YamahaOPxInterface(metaclass=ABCMeta):
         self._feature_level  = 1
         self._feature_warned = False
         self._instant_writes = old_instant_writes
+        self.filter = old_filter
+        if self.filter is not None:
+            self.filter.reset()
 
     async def _use_highest_level(self):
         pass
@@ -462,6 +469,15 @@ class YamahaOPxInterface(metaclass=ABCMeta):
                       level=logging.WARN)
 
     async def write_register(self, address, data, check_feature=True):
+        if self.filter is not None:
+            filtered = await self.filter.write_register(address, data)
+            if filtered is None:
+                self._log("filter write [%#04x]=%#04x⇒remove", address, data)
+                return
+            elif (address, data) != filtered:
+                self._log("filter write [%#04x]=%#04x⇒[%#04x]=%#04x", address, data, *filtered)
+                address, data = filtered
+
         if check_feature:
             await self._check_enable_features(address, data)
         if self._instant_writes:
@@ -477,6 +493,15 @@ class YamahaOPxInterface(metaclass=ABCMeta):
         await self.lower.write([OP_WRITE|addr_high|0, addr_low, OP_WRITE|1, data])
 
     async def wait_clocks(self, count):
+        if self.filter is not None:
+            filtered = await self.filter.wait_clocks(count)
+            if filtered is None:
+                self._log("filter wait %d⇒remove clocks")
+                return
+            elif count != filtered:
+                self._log("filter wait %d⇒%d clocks")
+                count = filtered
+
         if self._instant_writes:
             old_phase_accum = self._phase_accum
             self._phase_accum -= count
@@ -499,6 +524,26 @@ class YamahaOPxInterface(metaclass=ABCMeta):
     async def read_samples(self, count):
         self._log("read %d samples", count)
         return await self.lower.read(count * self.channel_count * 2, flush=False)
+
+
+class YamahaOPxCommandFilter:
+    def __init__(self):
+        self.offset_clocks = 0
+        self.sample_rate   = 0
+
+    @property
+    def offset_seconds(self):
+        return self.offset_clocks / self.sample_rate
+
+    def reset(self):
+        self.offset_clocks = 0
+
+    async def write_register(self, address, data):
+        return address, data
+
+    async def wait_clocks(self, count):
+        self.offset_clocks += count
+        return count
 
 
 class YM301xSampleDecoder(Module):
@@ -828,6 +873,8 @@ class YamahaOPxWebInterface:
             self._logger.info("web: %s: start streaming", digest)
 
             await self._opx_iface.reset()
+            if self._opx_iface.filter is not None:
+                self._opx_iface.filter.sample_rate = sample_rate * self._opx_iface.sample_clocks
             # Soft reset does not clear all the state immediately, so wait a bit to make sure
             # all notes decay, etc.
             await vgm_player.wait_seconds(1)
@@ -931,6 +978,28 @@ class AudioYamahaOPxApplet(GlasgowApplet, name="audio-yamaha-opx"):
     the master clock frequency specified in the input file. E.g. using SoX:
 
         $ play -r 49715 output.u16
+
+    # Scripting
+
+    Commands for the synthesizer can be generated procedurally with a Python script, using
+    the `run` subcommand and a file such as the following:
+
+    ::
+        samples = 49715
+        async def main(iface):
+            await iface.enable()
+            await iface.write_register(...)
+            await iface.wait_clocks(iface.sample_clocks * samples)
+            await iface.disable()
+
+    Commands submitted to the synthesizer can be preprocessed with a Python script, e.g.
+    for glitching, using the --filter option and a file such as the following:
+
+    ::
+        class CommandFilter(YamahaOPxCommandFilter):
+            async def write_register(self, address, data):
+                ...
+                return (address, data)
     """
 
     __pin_sets = ("d", "a")
@@ -990,12 +1059,32 @@ class AudioYamahaOPxApplet(GlasgowApplet, name="audio-yamaha-opx"):
         ))
         return subtarget
 
+    @classmethod
+    def add_run_arguments(cls, parser, access):
+        super().add_run_arguments(parser, access)
+
+        parser.add_argument(
+            "--filter-script", dest="filter_script_file", metavar="FILTER-SCRIPT-FILE",
+            type=argparse.FileType("rb"),
+            help="filter commands via Python script FILTER-SCRIPT-FILE")
+
     async def run(self, device, args):
         device_iface_cls = self._device_iface_cls(args)
 
+        if args.filter_script_file is None:
+            filter = None
+        else:
+            filter_context = dict(YamahaOPxCommandFilter=YamahaOPxCommandFilter)
+            exec(compile(args.filter_script_file.read(), args.filter_script_file.name,
+                         mode="exec"), filter_context)
+            filter_cls = filter_context.get("CommandFilter", None)
+            if not filter_cls:
+                raise GlasgowAppletError("Script should define a class 'CommandFilter'")
+            filter = filter_cls()
+
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
             write_buffer_size=128)
-        opx_iface = device_iface_cls(iface, self.logger)
+        opx_iface = device_iface_cls(iface, self.logger, filter=filter)
         await opx_iface.reset()
         return opx_iface
 
@@ -1020,20 +1109,7 @@ class AudioYamahaOPxApplet(GlasgowApplet, name="audio-yamaha-opx"):
             help="listen for requests on ENDPOINT (default: %(default)s)")
 
         p_run = p_operation.add_parser(
-            "run", help="run a Python script driving the synthesizer and record PCM",
-            description="""
-        Use the following template for a script:
-
-        ::
-            samples = 49715
-
-            async def main(iface):
-                await iface.enable()
-                await iface.write_register(...)
-                await iface.wait_clocks(iface.sample_clocks * samples)
-                await iface.disable()
-
-        """)
+            "run", help="run a Python script driving the synthesizer and record PCM")
         p_run.add_argument(
             "script_file", metavar="SCRIPT-FILE", type=argparse.FileType("rb"),
             help="run Python script SCRIPT-FILE")
@@ -1057,8 +1133,10 @@ class AudioYamahaOPxApplet(GlasgowApplet, name="audio-yamaha-opx"):
             clock_rate *= clock_prescaler
 
             vgm_player = YamahaVGMStreamPlayer(vgm_reader, opx_iface, clock_rate)
+            sample_rate = 1 / vgm_player.sample_time
+            opx_iface.filter.sample_rate = sample_rate * self._opx_iface.sample_clocks
             self.logger.info("recording %d channels at sample rate %d Hz",
-                             opx_iface.channel_count, 1 / vgm_player.sample_time)
+                             opx_iface.channel_count, sample_rate)
 
             async def write_pcm(sample_queue):
                 while True:
