@@ -1,4 +1,4 @@
-(kicad_pcb (version 20171130) (host pcbnew 5.1.0)
+(kicad_pcb (version 20171130) (host pcbnew 5.1.4)
 
   (general
     (thickness 1.6)
@@ -3270,7 +3270,7 @@
     )
   )
 
-  (module Glasgow:DFN-6-1EP_2x2mm_P0.65mm_EP1x1.6mm_ThermalVias (layer F.Cu) (tedit 5CC07AFF) (tstamp 5CC9A407)
+  (module Glasgow:DFN-6-1EP_2x2mm_P0.65mm_EP1x1.6mm_ThermalVias (layer F.Cu) (tedit 5CC07AFF) (tstamp 5DB9EE6C)
     (at 65.9 109.9 180)
     (descr "6-Lead Plastic Dual Flat, No Lead Package (MA) - 2x2x0.9 mm Body [DFN] (see Microchip Packaging Specification 00000049BS.pdf)")
     (tags "DFN 0.65")
@@ -3280,7 +3280,7 @@
     (fp_text reference U36 (at 0 1.7 180) (layer F.SilkS)
       (effects (font (size 0.8 0.8) (thickness 0.15)))
     )
-    (fp_text value TLV75533PDRVR (at -4.7 1.7 180) (layer F.Fab)
+    (fp_text value TLV73312PQDRVRQ1 (at -5.7 1.8 180) (layer F.Fab)
       (effects (font (size 1 1) (thickness 0.15)))
     )
     (fp_text user %R (at 0 0 180) (layer F.Fab)
@@ -3338,7 +3338,7 @@
     (fp_text reference U8 (at 0 1.7 180) (layer F.SilkS)
       (effects (font (size 0.8 0.8) (thickness 0.15)))
     )
-    (fp_text value TLV73312PQDRVRQ1 (at -6.2 1.7 180) (layer F.Fab)
+    (fp_text value TLV75533PDRVR (at -4.2 1.8 180) (layer F.Fab)
       (effects (font (size 1 1) (thickness 0.15)))
     )
     (fp_text user %R (at 0 0 180) (layer F.Fab)
