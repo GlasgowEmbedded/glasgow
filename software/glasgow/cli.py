@@ -187,7 +187,7 @@ def get_argparser():
     def add_voltage_arg(parser, help):
         parser.add_argument(
             "voltage", metavar="VOLTS", type=float, nargs="?", default=None,
-            help="%s (range: 1.8-5.0)".format(help))
+            help="{} (range: 1.8-5.0)".format(help))
 
     p_voltage = subparsers.add_parser(
         "voltage", formatter_class=TextHelpFormatter,
