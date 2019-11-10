@@ -169,7 +169,7 @@ class YamahaCPUBus(Module):
 
         ###
 
-        self.submodules.clkgen = ClockGen(master_cyc)
+        self.submodules.clkgen = CEInserter()(ClockGen(master_cyc))
         self.comb += self.stb_m.eq(self.clkgen.stb_r)
 
         self.comb += [
@@ -245,6 +245,7 @@ class YamahaOPxSubtarget(Module):
         # The code below assumes that the FSM clock is under ~50 MHz, which frees us from the need
         # to explicitly satisfy setup/hold timings.
         self.submodules.control_fsm = FSM()
+        self.comb += self.cpu_bus.clkgen.ce.eq(out_fifo.readable)
         self.control_fsm.act("IDLE",
             NextValue(cpu_bus.oe, 1),
             If(out_fifo.readable,
