@@ -164,13 +164,25 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
     @classmethod
     def add_interact_arguments(cls, parser):
         def channel(value):
-            return int(value, 10)
+            value = int(value, 10)
+            if value not in range(126):
+                raise argparse.ArgumentTypeError(
+                    "invalid channel: {} (choose from 0..125)".format(value))
+            return value
         def address(value):
             return bytes.fromhex(value)
         def length(value):
-            return int(value, 10)
+            value = int(value, 10)
+            if value not in range(33):
+                raise argparse.ArgumentTypeError(
+                    "invalid length: {} (choose from 0..32)".format(value))
+            return value
         def payload(value):
-            return bytes.fromhex(value)
+            payload = bytes.fromhex(value)
+            if len(payload) not in range(33):
+                raise argparse.ArgumentTypeError(
+                    "invalid payload length: {} (must be between 0..32)".format(len(value)))
+            return payload
 
         parser.add_argument(
             "-c", "--channel", metavar="RF-CHANNEL", type=channel, required=True,
@@ -202,7 +214,7 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
             "transmit", help="transmit a packet")
         p_transmit.add_argument(
             "address", metavar="ADDRESS", type=address,
-            help="transmit packet with address ADDRESS")
+            help="transmit packet with hex address ADDRESS")
         p_transmit.add_argument(
             "payload", metavar="DATA", type=payload,
             help="transmit DATA as packet payload")
@@ -223,9 +235,9 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
             "receive", help="receive a packet")
         p_receive.add_argument(
             "address", metavar="ADDRESS", type=address,
-            help="receive packet with address ADDRESS")
+            help="receive packet with hex address ADDRESS")
         p_receive.add_argument(
-            "-l", "--length", metavar="LENGTH", type=int,
+            "-l", "--length", metavar="LENGTH", type=length,
             help="receive packet with length LENGTH (mutually exclusive with --dynamic-length)")
 
     async def interact(self, device, args, nrf24l01_iface):
