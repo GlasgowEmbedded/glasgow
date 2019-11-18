@@ -1,5 +1,5 @@
 # Reference: https://infocenter.nordicsemi.com/pdf/nRF24L01P_PS_v1.0.pdf
-# Accession: ???
+# Accession: G00044
 
 import math
 import asyncio
