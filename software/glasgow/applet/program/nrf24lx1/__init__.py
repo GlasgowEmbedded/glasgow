@@ -16,7 +16,7 @@ from ...interface.spi_master import SPIMasterSubtarget, SPIMasterInterface
 from ... import *
 
 
-class ProgramNRF24LError(GlasgowAppletError):
+class ProgramNRF24Lx1Error(GlasgowAppletError):
     pass
 
 
@@ -38,7 +38,7 @@ FSR_BIT_INFEN   = 0b00001000
 FSR_BIT_RDISMB  = 0b00000100
 
 
-class ProgramNRF24LInterface:
+class ProgramNRF24Lx1Interface:
     def __init__(self, interface, logger, device, addr_dut_prog, addr_dut_reset):
         self.lower   = interface
         self._logger = logger
@@ -48,7 +48,7 @@ class ProgramNRF24LInterface:
         self._addr_dut_reset = addr_dut_reset
 
     def _log(self, message, *args):
-        self._logger.log(self._level, "NRF24L: " + message, *args)
+        self._logger.log(self._level, "nRF24LX1: " + message, *args)
 
     async def _reset(self):
         await self._device.write_register(self._addr_dut_reset, 1)
@@ -129,7 +129,7 @@ class ProgramNRF24LInterface:
         await self._command(0x86)
 
 
-class ProgramNRF24LApplet(GlasgowApplet, name="program-nrf24l"):
+class ProgramNRF24Lx1Applet(GlasgowApplet, name="program-nrf24lx1"):
     logger = logging.getLogger(__name__)
     help = "program nRF24LE1 RF microcontrollers"
     description = """
@@ -184,9 +184,9 @@ class ProgramNRF24LApplet(GlasgowApplet, name="program-nrf24l"):
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
         spi_iface = SPIMasterInterface(iface, self.logger)
-        nrf24l_iface = ProgramNRF24LInterface(spi_iface, self.logger, device,
-                                              self.__addr_dut_prog, self.__addr_dut_reset)
-        return nrf24l_iface
+        nrf24lx1_iface = ProgramNRF24Lx1Interface(spi_iface, self.logger, device,
+                                                  self.__addr_dut_prog, self.__addr_dut_reset)
+        return nrf24lx1_iface
 
     @classmethod
     def add_interact_arguments(cls, parser):
@@ -220,25 +220,25 @@ class ProgramNRF24LApplet(GlasgowApplet, name="program-nrf24l"):
         p_enable_debug = p_operation.add_parser(
             "enable-debug", help="enable MCU hardare debugging features")
 
-    async def interact(self, device, args, nrf24l_iface):
+    async def interact(self, device, args, nrf24lx1_iface):
         memory_map = _nrf24le1_map
         page_size  = 512
 
         try:
-            await nrf24l_iface.reset_program()
+            await nrf24lx1_iface.reset_program()
 
             async def check_info_page(address):
-                old_status = await nrf24l_iface.read_status()
+                old_status = await nrf24lx1_iface.read_status()
                 try:
-                    await nrf24l_iface.write_status(FSR_BIT_INFEN)
-                    fuse, = await nrf24l_iface.read(address, 1)
+                    await nrf24lx1_iface.write_status(FSR_BIT_INFEN)
+                    fuse, = await nrf24lx1_iface.read(address, 1)
                     return fuse != 0xff
                 finally:
-                    await nrf24l_iface.write_status(old_status)
+                    await nrf24lx1_iface.write_status(old_status)
 
             async def check_read_protected():
                 if await check_info_page(0x23):
-                    raise ProgramNRF24LError("MCU is read protected; run `erase --info-page`")
+                    raise ProgramNRF24Lx1Error("MCU is read protected; run `erase --info-page`")
 
             if args.operation == "read":
                 await check_read_protected()
@@ -247,11 +247,11 @@ class ProgramNRF24LApplet(GlasgowApplet, name="program-nrf24l"):
                 for memory_area in memory_map:
                     self.logger.info("reading %s memory", memory_area.name)
                     if memory_area.spi_addr & 0x10000:
-                        await nrf24l_iface.write_status(FSR_BIT_INFEN)
+                        await nrf24lx1_iface.write_status(FSR_BIT_INFEN)
                     else:
-                        await nrf24l_iface.write_status(0)
-                    area_data = await nrf24l_iface.read(memory_area.spi_addr & 0xffff,
-                                                        memory_area.size)
+                        await nrf24lx1_iface.write_status(0)
+                    area_data = await nrf24lx1_iface.read(memory_area.spi_addr & 0xffff,
+                                                          memory_area.size)
                     chunks.append((memory_area.mem_addr, area_data))
                 output_data(args.file, chunks, fmt="ihex")
 
@@ -266,16 +266,16 @@ class ProgramNRF24LApplet(GlasgowApplet, name="program-nrf24l"):
                     if len(chunk_data) == 0:
                         continue
                     if chunk_mem_addr < memory_area.mem_addr:
-                        raise ProgramNRF24LError("data outside of memory map at {:#06x}"
+                        raise ProgramNRF24Lx1Error("data outside of memory map at {:#06x}"
                                                  .format(chunk_mem_addr))
                     while chunk_mem_addr >= memory_area.mem_addr + memory_area.size:
                         area_index += 1
                         if area_index >= len(memory_area):
-                            raise ProgramNRF24LError("data outside of memory map at {:#06x}"
+                            raise ProgramNRF24Lx1Error("data outside of memory map at {:#06x}"
                                                      .format(chunk_mem_addr))
                         memory_area = memory_map[area_index]
                     if chunk_mem_addr + len(chunk_data) > memory_area.mem_addr + memory_area.size:
-                        raise ProgramNRF24LError("data outside of memory map at {:#06x}"
+                        raise ProgramNRF24Lx1Error("data outside of memory map at {:#06x}"
                                                  .format(memory_area.mem_addr + memory_area.size))
                     if memory_area.spi_addr & 0x10000 and not args.info_page:
                         self.logger.warn("data provided for info page, but info page programming "
@@ -287,10 +287,10 @@ class ProgramNRF24LApplet(GlasgowApplet, name="program-nrf24l"):
                                       + memory_area.spi_addr) & 0xffff
                     if memory_area.spi_addr & 0x10000:
                         level = logging.WARN
-                        await nrf24l_iface.write_status(FSR_BIT_INFEN)
+                        await nrf24lx1_iface.write_status(FSR_BIT_INFEN)
                     else:
                         level = logging.INFO
-                        await nrf24l_iface.write_status(0)
+                        await nrf24lx1_iface.write_status(0)
 
                     overwrite_pages = set(range(
                         (chunk_spi_addr // page_size),
@@ -300,43 +300,43 @@ class ProgramNRF24LApplet(GlasgowApplet, name="program-nrf24l"):
                         self.logger.log(level, "erasing %s memory at %#06x+%#06x",
                                         memory_area.name, chunk_mem_addr, len(chunk_data))
                         for page in need_erase_pages:
-                            await nrf24l_iface.write_enable()
-                            await nrf24l_iface.erase_page(page)
-                            await nrf24l_iface.wait_status()
+                            await nrf24lx1_iface.write_enable()
+                            await nrf24lx1_iface.erase_page(page)
+                            await nrf24lx1_iface.wait_status()
                         erased_pages.update(need_erase_pages)
 
                     self.logger.log(level, "programming %s memory at %#06x+%#06x",
                                     memory_area.name, chunk_mem_addr, len(chunk_data))
                     while len(chunk_data) > 0:
-                        await nrf24l_iface.write_enable()
-                        await nrf24l_iface.program(chunk_spi_addr, chunk_data[:page_size])
-                        await nrf24l_iface.wait_status()
+                        await nrf24lx1_iface.write_enable()
+                        await nrf24lx1_iface.program(chunk_spi_addr, chunk_data[:page_size])
+                        await nrf24lx1_iface.wait_status()
                         chunk_data  = chunk_data[page_size:]
                         chunk_spi_addr += page_size
 
             if args.operation == "erase":
                 if args.info_page:
-                    await nrf24l_iface.write_status(FSR_BIT_INFEN)
-                    info_page = await nrf24l_iface.read(0x0000, 0x0100)
+                    await nrf24lx1_iface.write_status(FSR_BIT_INFEN)
+                    info_page = await nrf24lx1_iface.read(0x0000, 0x0100)
                     self.logger.warn("backing up info page to %s", args.info_page)
                     if os.path.isfile(args.info_page):
-                        raise ProgramNRF24LError("info page backup file already exists")
+                        raise ProgramNRF24Lx1Error("info page backup file already exists")
                     with open(args.info_page, "wb") as f:
                         output_data(f, [(0x10000, info_page)])
                     self.logger.warn("erasing code and data memory, and info page")
                 else:
                     await check_read_protected()
-                    await nrf24l_iface.write_status(0)
+                    await nrf24lx1_iface.write_status(0)
                     self.logger.info("erasing code and data memory")
                 try:
-                    await nrf24l_iface.write_enable()
-                    await nrf24l_iface.erase_all()
-                    await nrf24l_iface.wait_status()
+                    await nrf24lx1_iface.write_enable()
+                    await nrf24lx1_iface.erase_all()
+                    await nrf24lx1_iface.wait_status()
                     if args.info_page:
                         self.logger.info("restoring info page DSYS area")
-                        await nrf24l_iface.write_enable()
-                        await nrf24l_iface.program(0, info_page[:32]) # DSYS only
-                        await nrf24l_iface.wait_status()
+                        await nrf24lx1_iface.write_enable()
+                        await nrf24lx1_iface.program(0, info_page[:32]) # DSYS only
+                        await nrf24lx1_iface.wait_status()
                 except:
                     if args.info_page:
                         self.logger.error("IMPORTANT: programming failed; restore DSYS manually "
@@ -346,28 +346,28 @@ class ProgramNRF24LApplet(GlasgowApplet, name="program-nrf24l"):
 
             if args.operation == "protect-read":
                 if await check_info_page(0x23):
-                    raise ProgramNRF24LError("memory read protection is already enabled")
+                    raise ProgramNRF24Lx1Error("memory read protection is already enabled")
 
                 self.logger.warn("protecting code and data memory from reads")
-                await nrf24l_iface.write_enable()
-                await nrf24l_iface.disable_read()
-                await nrf24l_iface.wait_status()
+                await nrf24lx1_iface.write_enable()
+                await nrf24lx1_iface.disable_read()
+                await nrf24lx1_iface.wait_status()
 
             if args.operation == "enable-debug":
                 if await check_info_page(0x24):
-                    raise ProgramNRF24LError("hardware debugging features already enabled")
+                    raise ProgramNRF24Lx1Error("hardware debugging features already enabled")
 
                 self.logger.info("enabling hardware debugging features")
-                await nrf24l_iface.write_enable()
-                await nrf24l_iface.enable_debug()
-                await nrf24l_iface.wait_status()
+                await nrf24lx1_iface.write_enable()
+                await nrf24lx1_iface.enable_debug()
+                await nrf24lx1_iface.wait_status()
 
         finally:
-            await nrf24l_iface.reset_application()
+            await nrf24lx1_iface.reset_application()
 
 # -------------------------------------------------------------------------------------------------
 
-class ProgramNRF24LAppletTestCase(GlasgowAppletTestCase, applet=ProgramNRF24LApplet):
+class ProgramNRF24Lx1AppletTestCase(GlasgowAppletTestCase, applet=ProgramNRF24Lx1Applet):
     @synthesis_test
     def test_build(self):
         self.assertBuilds()
