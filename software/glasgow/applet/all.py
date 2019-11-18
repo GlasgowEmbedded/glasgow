@@ -45,3 +45,5 @@ from .video.rgb_input import VideoRGBInputApplet
 from .video.vga_output import VGAOutputApplet
 from .video.vga_terminal import VGATerminalApplet
 from .video.ws2812_output import VideoWS2812OutputApplet
+
+from .radio.nrf24l01 import RadioNRF24L01Applet

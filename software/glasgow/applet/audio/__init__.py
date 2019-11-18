@@ -3,5 +3,5 @@ The ``audio`` taxon groups applets implementing audio interfaces, that is, inter
 transfers of 1d arrays of samples of pressure wave properties.
 
 Examples: I²S, sigma-delta audio frequency DAC.
-Counterexamples: software-defined radio DAC (use taxon ``stream``).
+Counterexamples: software-defined radio DAC (use taxon ``radio``).
 """
