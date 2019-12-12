@@ -34,7 +34,7 @@ class JESD3Lexer:
         (r"QP", r"([0-9]+)"),
         (r"QV", r"([0-9]+)"),
         (r"F",  r"([01])"),
-        (r"L",  r"([0-9]+)[ \r\n]+([01 ]+)"),
+        (r"L",  r"([0-9]+)[ \r\n]+([01 \r\n]+)"),
         (r"C",  r"([0-9A-F]{4})"),
         (r"EH", r"([0-9A-F]+)"),
         (r"E",  r"([01]+)"),
@@ -190,7 +190,7 @@ class JESD3Parser:
         if self.fuse is None:
             self._parse_error("fuse list specified before fuse count")
         index  = int(index, 10)
-        values = bitarray(values.replace(" ", ""), endian="little")
+        values = bitarray(re.sub(r"[ \r\n]", "", values), endian="little")
         if index + len(values) > len(self.fuse):
             self._parse_error("fuse list specifies range [%d:%d] beyond last fuse %d"
                               % (index, index + len(values), len(self.fuse)))
