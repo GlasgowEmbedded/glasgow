@@ -276,6 +276,8 @@ class JESD3Parser:
     def _on_end(self, checksum):
         """End marker and checksum"""
         expected_checksum = int(checksum, 16)
+        if expected_checksum == 0x0000:
+            return
         actual_checksum   = self._lexer.checksum & 0xffff
         if expected_checksum != actual_checksum:
             self._parse_error("transmission checksum mismatch: expected %04X, actual %04X"
@@ -290,7 +292,7 @@ class JESD3Parser:
 if __name__ == "__main__":
     import sys
     with open(sys.argv[1], "r") as f:
-        parser = JESD3Parser(f.read(), quirk_no_design_spec=True)
+        parser = JESD3Parser(f.read(), quirk_no_design_spec=False)
         parser.parse()
         for i in range(0, len(parser.fuse) + 63, 64):
             print("%08x: %s" % (i, parser.fuse[i:i + 64].to01()))
