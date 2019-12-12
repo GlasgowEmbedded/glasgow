@@ -55,7 +55,7 @@ class JESD3Lexer:
     _stx_quirk_re = re.compile(r"\x02()[ \r\n]*", re.A|re.S)
     _etx_re       = re.compile(r"\x03([0-9A-F]{4})", re.A|re.S)
     _ident_re     = re.compile(r"|".join(ident for ident, args in _fields), re.A|re.S)
-    _field_res    = {ident: re.compile(ident + args + r"\*[ \r\n]*", re.A|re.S)
+    _field_res    = {ident: re.compile(ident + args + r"[ \r\n]*\*[ \r\n]*", re.A|re.S)
                      for ident, args in _fields}
 
     def __init__(self, buffer, quirk_no_design_spec=False):
