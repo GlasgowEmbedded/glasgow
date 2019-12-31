@@ -161,6 +161,9 @@ class BMP280Interface:
         self._logger.log(self._level, "BMP280: reg=%#04x raw=%#06x read=%d", reg, raw, value)
         return value
 
+    async def reset(self):
+        await self._write_reg8(REG_RESET, BIT_RESET)
+
     async def identify(self):
         id = await self._read_reg8(REG_ID)
         if id != BIT_ID:
@@ -318,6 +321,7 @@ class SensorBMP280Applet(I2CMasterApplet, name="sensor-bmp280"):
         DataLogger.add_subparsers(p_log)
 
     async def interact(self, device, args, bmp280):
+        await bmp280.reset()
         await bmp280.identify()
 
         await bmp280.set_mode("sleep")
