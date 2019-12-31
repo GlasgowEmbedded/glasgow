@@ -162,6 +162,7 @@ class BMP280Interface:
         return value
 
     async def reset(self):
+        await self._iface.reset()
         await self._write_reg8(REG_RESET, BIT_RESET)
 
     async def identify(self):
@@ -247,6 +248,9 @@ class BMP280I2CInterface:
     def __init__(self, interface, logger, i2c_address):
         self.lower     = interface
         self._i2c_addr = i2c_address
+
+    async def reset(self):
+        await self.lower.reset()
 
     async def read(self, addr, size):
         await self.lower.write(self._i2c_addr, [addr])
@@ -358,8 +362,8 @@ class SensorBMP280Applet(I2CMasterApplet, name="sensor-bmp280"):
                     await asyncio.wait_for(report(), args.interval * 2)
                 except BMP280Error as error:
                     await data_logger.report_error(str(error), exception=error)
-                    await bmp280.lower.reset()
+                    await bmp280.reset()
                 except asyncio.TimeoutError as error:
                     await data_logger.report_error("timeout", exception=error)
-                    await bmp280.lower.reset()
+                    await bmp280.reset()
                 await asyncio.sleep(args.interval)
