@@ -57,7 +57,7 @@ class _bitstruct:
             cls["_layout_"][name] = (offset, width)
             offset += width
 
-        cls["__slots__"] = tuple("_{}".format(field) for field in cls["_layout_"])
+        cls["__slots__"] = tuple("_f_{}".format(field) for field in cls["_layout_"])
 
         code = textwrap.dedent(f"""
         def __init__(self, {", ".join(f"{field}=0" for field in cls["_named_fields_"])}):
@@ -70,13 +70,13 @@ class _bitstruct:
         def from_bits(cls, value):
             cls._check_bits_("initialization", cls._size_bits_, value)
             self = object.__new__(cls)
-            {"; ".join(f"self._{field} = int(value[{offset}:{offset+width}])"
+            {"; ".join(f"self._f_{field} = int(value[{offset}:{offset+width}])"
                        for field, (offset, width) in cls["_layout_"].items())}
             return self
 
         def to_bits(self):
             value = 0
-            {"; ".join(f"value |= self._{field} << {offset}"
+            {"; ".join(f"value |= self._f_{field} << {offset}"
                        for field, (offset, width) in cls["_layout_"].items())}
             return bits(value, self._size_bits_)
         """)
@@ -85,7 +85,7 @@ class _bitstruct:
             code += textwrap.dedent(f"""
             @property
             def {field}(self):
-                return self._{field}
+                return self._f_{field}
 
             @{field}.setter
             def {field}(self, value):
@@ -93,7 +93,7 @@ class _bitstruct:
                     self._check_bits_("field assignment", {width}, value)
                 else:
                     self._check_int_("field assignment", {width}, value)
-                self._{field} = int(value)
+                self._f_{field} = int(value)
             """)
 
         methods = {}
