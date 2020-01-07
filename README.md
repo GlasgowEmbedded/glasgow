@@ -102,6 +102,11 @@ Install the dependencies and the binaries for the current user:
 
 The binaries are placed in `$HOME/.local/bin`, so be sure to add that directory to the `PATH` environment variable; after this, you can run `glasgow` from a terminal. Instead of adjusting `PATH` it is also possible to use `python3.7 -m glasgow.cli`.
 
+
+When you connect your board for the first time after assembly you have to flash it initially, run the following command.
+
+    glasgow factory --rev {A0|B0|C0|C1}
+
 To update the source code, do:
 
     cd glasgow
