@@ -27,24 +27,35 @@ class Memory24xInterface:
             return (i2c_addr, [addr & 0xff])
 
     async def read(self, addr, length):
-        i2c_addr, addr_bytes = self._carry_addr(addr)
+        chunks = []
 
-        # Note that even if this is a 1-byte address EEPROM and we write 2 bytes here, we will not
-        # overwrite the contents, since the actual write is only initiated on stop, not repeated
-        # start condition.
-        self._log("i2c-addr=%#04x addr=%#06x", i2c_addr, addr)
-        result = await self.lower.write(i2c_addr, addr_bytes)
-        if result is False:
-            self._log("unacked")
-            return None
+        while length > 0:
+            i2c_addr, addr_bytes = self._carry_addr(addr)
 
-        self._log("read=%d", length)
-        data = await self.lower.read(i2c_addr, length, stop=True)
-        if data is None:
-            self._log("unacked")
-        else:
-            self._log("data=<%s>", data.hex())
-        return data
+            # Our lower layer can't do reads of 64K and higher, so use 32K chunks.
+            chunk_size = min(length, 0x8000)
+
+            # Note that even if this is a 1-byte address EEPROM and we write 2 bytes here,
+            # we will not overwrite the contents, since the actual write is only initiated
+            # on stop, not repeated start condition.
+            self._log("i2c-addr=%#04x addr=%#06x", i2c_addr, addr)
+            result = await self.lower.write(i2c_addr, addr_bytes)
+            if result is False:
+                self._log("unacked")
+                return None
+
+            self._log("read=%d", chunk_size)
+            chunk = await self.lower.read(i2c_addr, chunk_size, stop=True)
+            if chunk is None:
+                self._log("unacked")
+            else:
+                self._log("chunk=<%s>", chunk.hex())
+                chunks.append(chunk)
+
+            length -= chunk_size
+            addr   += chunk_size
+
+        return b"".join(chunks)
 
     async def write(self, addr, data):
         while len(data) > 0:

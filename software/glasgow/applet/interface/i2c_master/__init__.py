@@ -141,6 +141,7 @@ class I2CMasterInterface:
         await self.lower.write([CMD_STOP])
 
     async def _cmd_count(self, count):
+        assert count < 0xffff
         msb = (count >> 8) & 0xff
         lsb = (count >> 0) & 0xff
         await self.lower.write([CMD_COUNT, msb, lsb])
