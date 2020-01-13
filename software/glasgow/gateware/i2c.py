@@ -289,6 +289,7 @@ class I2CTarget(Module):
     """
     def __init__(self, pads):
         self.address = Signal(7)
+        self.busy    = Signal() # clock stretching request (experimental, undocumented)
         self.start   = Signal()
         self.stop    = Signal()
         self.restart = Signal()
@@ -334,6 +335,7 @@ class I2CTarget(Module):
                 NextValue(bitno, bitno + 1),
                 If(bitno == 7,
                     If(shreg_i[1:] == self.address,
+                        self.start.eq(1),
                         NextValue(bus.sda_o, 0),
                         NextState("ADDR-ACK")
                     ).Else(
@@ -344,20 +346,20 @@ class I2CTarget(Module):
         )
         self.fsm.act("ADDR-ACK",
             If(bus.stop,
+                self.stop.eq(1),
                 NextState("IDLE")
             ).Elif(bus.start,
+                self.restart.eq(1),
                 NextState("START")
             ).Elif(bus.setup,
                 If(~shreg_i[0],
-                    self.start.eq(1),
                     NextValue(bus.sda_o, 1),
                     NextState("WRITE-SHIFT")
                 )
             ).Elif(bus.sample,
                 If(shreg_i[0],
-                    self.start.eq(1),
                     NextValue(shreg_o, self.data_o),
-                    NextState("READ-SHIFT")
+                    NextState("READ-STRETCH")
                 )
             )
         )
@@ -386,14 +388,38 @@ class I2CTarget(Module):
             ).Elif(bus.start,
                 self.restart.eq(1),
                 NextState("START")
-            ).Elif(~bus.scl_i & self.ack_o,
-                NextValue(bus.sda_o, 0)
             ).Elif(bus.setup,
                 NextValue(bus.sda_o, 1),
                 NextState("WRITE-SHIFT")
+            ).Elif(~bus.scl_i,
+                NextValue(bus.scl_o, ~self.busy),
+                If(self.ack_o,
+                    NextValue(bus.sda_o, 0)
+                )
             )
         )
-        self.comb += self.read.eq(self.fsm.before_entering("READ-SHIFT"))
+        self.comb += self.read.eq(self.fsm.before_entering("READ-STRETCH"))
+        self.fsm.act("READ-STRETCH",
+            If(self.busy,
+                NextValue(shreg_o, self.data_o)
+            ),
+            If(bus.stop,
+                self.stop.eq(1),
+                NextState("IDLE")
+            ).Elif(bus.start,
+                NextState("START")
+            ).Elif(self.busy,
+                If(~bus.scl_i,
+                    NextValue(bus.scl_o, 0)
+                )
+            ).Else(
+                If(~bus.scl_i,
+                    NextValue(bus.sda_o, shreg_o[7])
+                ),
+                NextValue(bus.scl_o, 1),
+                NextState("READ-SHIFT")
+            )
+        )
         self.fsm.act("READ-SHIFT",
             If(bus.stop,
                 self.stop.eq(1),
@@ -423,7 +449,7 @@ class I2CTarget(Module):
             ).Elif(bus.sample,
                 If(~bus.sda_i,
                     NextValue(shreg_o, self.data_o),
-                    NextState("READ-SHIFT")
+                    NextState("READ-STRETCH")
                 ).Else(
                     self.stop.eq(1),
                     NextState("IDLE")
@@ -759,23 +785,27 @@ class I2CTargetTestCase(I2CTestCase):
         yield from tb.start()
         yield from tb.write_octet(0b01010001)
         yield tb.scl_o.eq(0)
-        yield from tb.half_period()
+        yield from self.assertCondition(tb, lambda: (yield tb.dut.start))
+        yield
         yield from self.assertState(tb, "ADDR-ACK")
         self.assertEqual((yield tb.sda_i), 0)
         yield tb.scl_o.eq(1)
-        yield from self.assertCondition(tb, lambda: (yield tb.dut.start))
-        yield
+        yield from tb.half_period()
         yield from self.assertState(tb, "READ-SHIFT")
 
     @simulation_test
     def test_addr_w_ack(self, tb):
         yield from tb.start()
         yield from tb.write_octet(0b01010000)
-        self.assertEqual((yield from tb.read_bit()), 0)
-        yield from self.assertState(tb, "ADDR-ACK")
         yield tb.scl_o.eq(0)
         yield from self.assertCondition(tb, lambda: (yield tb.dut.start))
         yield
+        yield from self.assertState(tb, "ADDR-ACK")
+        self.assertEqual((yield tb.sda_i), 0)
+        yield tb.scl_o.eq(1)
+        yield from tb.half_period()
+        yield tb.scl_o.eq(0)
+        yield from tb.half_period()
         yield from self.assertState(tb, "WRITE-SHIFT")
 
     def start_addr(self, tb, read):
