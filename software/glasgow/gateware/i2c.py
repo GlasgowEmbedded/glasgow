@@ -298,7 +298,6 @@ class I2CTarget(Module):
         shreg_o = Signal(8)
 
         self.submodules.fsm = FSM(reset_state="IDLE")
-        self.comb += self.stop.eq(self.fsm.after_entering("IDLE"))
         self.fsm.act("IDLE",
             If(bus.start,
                 NextState("START"),
@@ -354,6 +353,7 @@ class I2CTarget(Module):
         )
         self.fsm.act("WRITE-SHIFT",
             If(bus.stop,
+                self.stop.eq(1),
                 NextState("IDLE")
             ).Elif(bus.start,
                 NextState("START")
@@ -370,6 +370,7 @@ class I2CTarget(Module):
         self.comb += self.write.eq(self.fsm.after_entering("WRITE-ACK"))
         self.fsm.act("WRITE-ACK",
             If(bus.stop,
+                self.stop.eq(1),
                 NextState("IDLE")
             ).Elif(bus.start,
                 NextState("START")
@@ -383,6 +384,7 @@ class I2CTarget(Module):
         self.comb += self.read.eq(self.fsm.before_entering("READ-SHIFT"))
         self.fsm.act("READ-SHIFT",
             If(bus.stop,
+                self.stop.eq(1),
                 NextState("IDLE")
             ).Elif(bus.start,
                 NextState("START")
@@ -398,6 +400,7 @@ class I2CTarget(Module):
         )
         self.fsm.act("READ-ACK",
             If(bus.stop,
+                self.stop.eq(1),
                 NextState("IDLE")
             ).Elif(bus.start,
                 NextState("START")
@@ -408,6 +411,7 @@ class I2CTarget(Module):
                     NextValue(shreg_o, self.data_o),
                     NextState("READ-SHIFT")
                 ).Else(
+                    self.stop.eq(1),
                     NextState("IDLE")
                 )
             )
