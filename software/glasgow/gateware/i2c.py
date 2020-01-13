@@ -257,6 +257,12 @@ class I2CTarget(Module):
     Clock stretching is not supported.
     Builtin responses (identification, general call, etc.) are not provided.
 
+    Note that the start, stop, and restart strobes are transaction delimiters rather than direct
+    indicators of bus conditions. A transaction always starts with a start strobe and ends with
+    either a stop or a restart strobe. That is, a restart strobe, similarly to a stop strobe, may
+    be only followed by another start strobe (or no strobe at all if the device is not addressed
+    again).
+
     :attr address:
         The 7-bit address the target will respond to.
     :attr start:
@@ -264,6 +270,9 @@ class I2CTarget(Module):
     :attr stop:
         Stop stobe. Active for one cycle immediately after a stop condition that terminates
         a transaction that addressed this device.
+    :attr restart:
+        Repeated start strobe. Active for one cycle immediately after a repeated start condition
+        that terminates a transaction that addressed this device.
     :attr write:
         Write strobe. Active for one cycle immediately after receiving a data octet.
     :attr data_i:
@@ -282,6 +291,7 @@ class I2CTarget(Module):
         self.address = Signal(7)
         self.start   = Signal()
         self.stop    = Signal()
+        self.restart = Signal()
         self.write   = Signal()
         self.data_i  = Signal(8)
         self.ack_o   = Signal()
@@ -356,6 +366,7 @@ class I2CTarget(Module):
                 self.stop.eq(1),
                 NextState("IDLE")
             ).Elif(bus.start,
+                self.restart.eq(1),
                 NextState("START")
             ).Elif(bus.sample,
                 NextValue(shreg_i, (shreg_i << 1) | bus.sda_i),
@@ -373,6 +384,7 @@ class I2CTarget(Module):
                 self.stop.eq(1),
                 NextState("IDLE")
             ).Elif(bus.start,
+                self.restart.eq(1),
                 NextState("START")
             ).Elif(~bus.scl_i & self.ack_o,
                 NextValue(bus.sda_o, 0)
@@ -387,6 +399,7 @@ class I2CTarget(Module):
                 self.stop.eq(1),
                 NextState("IDLE")
             ).Elif(bus.start,
+                self.restart.eq(1),
                 NextState("START")
             ).Elif(bus.setup,
                 NextValue(bus.sda_o, shreg_o[7]),
@@ -403,6 +416,7 @@ class I2CTarget(Module):
                 self.stop.eq(1),
                 NextState("IDLE")
             ).Elif(bus.start,
+                self.restart.eq(1),
                 NextState("START")
             ).Elif(bus.setup,
                 NextValue(bus.sda_o, 1),
