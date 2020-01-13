@@ -4,6 +4,7 @@ from .internal.benchmark import BenchmarkApplet
 from .interface.uart import UARTApplet
 from .interface.spi_master import SPIMasterApplet
 from .interface.i2c_initiator import I2CInitiatorApplet
+from .interface.i2c_target import I2CTargetApplet
 from .interface.jtag_pinout import JTAGPinoutApplet
 from .interface.jtag_probe import JTAGProbeApplet
 from .interface.jtag_openocd import JTAGOpenOCDApplet
