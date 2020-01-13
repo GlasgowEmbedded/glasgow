@@ -12,7 +12,7 @@ import crcmod
 
 from ....support.logging import dump_hex
 from ....support.data_logger import DataLogger
-from ...interface.i2c_master import I2CMasterApplet
+from ...interface.i2c_initiator import I2CInitiatorApplet
 from ... import *
 
 
@@ -167,7 +167,7 @@ class SCD30I2CInterface:
         await self._write(CMD_ALTITUDE_COMP, ">H", altitude_m)
 
 
-class SensorSCD30Applet(I2CMasterApplet, name="sensor-scd30"):
+class SensorSCD30Applet(I2CInitiatorApplet, name="sensor-scd30"):
     logger = logging.getLogger(__name__)
     help = "measure CO₂, humidity, and temperature with Sensirion SCD30 sensors"
     description = """

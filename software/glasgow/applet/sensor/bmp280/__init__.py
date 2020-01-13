@@ -6,7 +6,7 @@ import asyncio
 
 from ....support.data_logger import DataLogger
 from ... import *
-from ...interface.i2c_master import I2CMasterApplet
+from ...interface.i2c_initiator import I2CInitiatorApplet
 
 
 REG_CAL_T1      = 0x88 # 16-bit unsigned
@@ -267,7 +267,7 @@ class BMP280I2CInterface:
                               .format(self._i2c_addr))
 
 
-class SensorBMP280Applet(I2CMasterApplet, name="sensor-bmp280"):
+class SensorBMP280Applet(I2CInitiatorApplet, name="sensor-bmp280"):
     logger = logging.getLogger(__name__)
     help = "measure temperature and pressure with Bosch BMP280 sensors"
     description = """

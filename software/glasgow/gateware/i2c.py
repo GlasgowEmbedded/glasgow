@@ -4,7 +4,7 @@ from nmigen.compat import *
 from nmigen.compat.genlib.cdc import MultiReg
 
 
-__all__ = ['I2CSlave']
+__all__ = ["I2CInitiator", "I2CTarget"]
 
 
 class I2CBus(Module):
@@ -53,9 +53,9 @@ class I2CBus(Module):
         ]
 
 
-class I2CMaster(Module):
+class I2CInitiator(Module):
     """
-    Simple I2C master.
+    Simple I2C transaction initiator.
 
     Generates start and stop conditions, and transmits and receives octets.
     Clock stretching is supported.
@@ -69,7 +69,7 @@ class I2CMaster(Module):
     :type clk_stretch: bool
 
     :attr busy:
-        Busy flag. Low if the master state machine is idle, high otherwise.
+        Busy flag. Low if the state machine is idle, high otherwise.
     :attr start:
         Start strobe. When ``busy`` is low, asserting ``start`` for one cycle generates
         a start or repeated start condition on the bus. Ignored when ``busy`` is high.
@@ -250,15 +250,15 @@ class I2CMaster(Module):
         stb_x("READ-ACK-SDA-N", "IDLE")
 
 
-class I2CSlave(Module):
+class I2CTarget(Module):
     """
-    Simple I2C slave.
+    Simple I2C target.
 
     Clock stretching is not supported.
     Builtin responses (identification, general call, etc.) are not provided.
 
     :attr address:
-        The 7-bit address the slave will respond to.
+        The 7-bit address the target will respond to.
     :attr start:
         Start strobe. Active for one cycle immediately after acknowledging address.
     :attr stop:
@@ -267,7 +267,7 @@ class I2CSlave(Module):
     :attr write:
         Write strobe. Active for one cycle immediately after receiving a data octet.
     :attr data_i:
-        Data octet received from the master. Valid when ``write`` is high.
+        Data octet received from the initiator. Valid when ``write`` is high.
     :attr ack_o:
         Acknowledge strobe. If active for at least one cycle during the acknowledge bit
         setup period (one half-period after write strobe is asserted), acknowledge is asserted.
@@ -275,7 +275,7 @@ class I2CSlave(Module):
     :attr read:
         Read strobe. Active for one cycle immediately before latching ``data_o``.
     :attr data_o:
-        Data octet to be transmitted to the master. Latched immedately after receiving
+        Data octet to be transmitted to the initiator. Latched immedately after receiving
         a read command.
     """
     def __init__(self, pads):
@@ -465,11 +465,11 @@ class I2CTestCase(unittest.TestCase):
         self.assertTrue((yield from self.tb.wait_for(fn)))
 
 
-class I2CMasterTestbench(I2CTestbench):
+class I2CInitiatorTestbench(I2CTestbench):
     def __init__(self):
         super().__init__()
 
-        self.submodules.dut = I2CMaster(pads=self, period_cyc=self.period_cyc)
+        self.submodules.dut = I2CInitiator(pads=self, period_cyc=self.period_cyc)
         self.wait_cyc = self.period_cyc * 3
 
     def strobe(self, signal):
@@ -493,9 +493,9 @@ class I2CMasterTestbench(I2CTestbench):
         yield from self.strobe(self.dut.write)
 
 
-class I2CMasterTestCase(I2CTestCase):
+class I2CInitiatorTestCase(I2CTestCase):
     def setUp(self):
-        self.tb = I2CMasterTestbench()
+        self.tb = I2CInitiatorTestbench()
 
     @simulation_test
     def test_start(self, tb):
@@ -641,11 +641,11 @@ class I2CMasterTestCase(I2CTestCase):
         self.assertEqual((yield tb.scl_i), 1)
 
 
-class I2CSlaveTestbench(I2CTestbench):
+class I2CTargetTestbench(I2CTestbench):
     def __init__(self):
         super().__init__()
 
-        self.submodules.dut = I2CSlave(pads=self)
+        self.submodules.dut = I2CTarget(pads=self)
         self.wait_cyc = self.period_cyc // 4
 
     def start(self):
@@ -704,9 +704,9 @@ class I2CSlaveTestbench(I2CTestbench):
         return octet
 
 
-class I2CSlaveTestCase(I2CTestCase):
+class I2CTargetTestCase(I2CTestCase):
     def setUp(self):
-        self.tb = I2CSlaveTestbench()
+        self.tb = I2CTargetTestbench()
 
     def simulationSetUp(self, tb):
         yield tb.dut.address.eq(0b0101000)

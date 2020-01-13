@@ -4,7 +4,7 @@ import math
 from nmigen.compat import *
 
 from ....gateware.pads import *
-from ....gateware.i2c import I2CMaster
+from ....gateware.i2c import I2CInitiator
 from ... import *
 
 
@@ -15,9 +15,9 @@ CMD_WRITE = 0x04
 CMD_READ  = 0x05
 
 
-class I2CMasterSubtarget(Module):
+class I2CInitiatorSubtarget(Module):
     def __init__(self, pads, out_fifo, in_fifo, period_cyc):
-        self.submodules.i2c_master = I2CMaster(pads, period_cyc)
+        self.submodules.i2c_initiator = I2CInitiator(pads, period_cyc)
 
         ###
 
@@ -26,7 +26,7 @@ class I2CMasterSubtarget(Module):
 
         self.submodules.fsm = FSM(reset_state="IDLE")
         self.fsm.act("IDLE",
-            If(~self.i2c_master.busy & out_fifo.readable,
+            If(~self.i2c_initiator.busy & out_fifo.readable,
                 out_fifo.re.eq(1),
                 NextValue(cmd, out_fifo.dout),
                 NextState("COMMAND")
@@ -34,10 +34,10 @@ class I2CMasterSubtarget(Module):
         )
         self.fsm.act("COMMAND",
             If(cmd == CMD_START,
-                self.i2c_master.start.eq(1),
+                self.i2c_initiator.start.eq(1),
                 NextState("IDLE")
             ).Elif(cmd == CMD_STOP,
-                self.i2c_master.stop.eq(1),
+                self.i2c_initiator.stop.eq(1),
                 NextState("IDLE")
             ).Elif(cmd == CMD_COUNT,
                 NextState("COUNT-MSB")
@@ -74,22 +74,22 @@ class I2CMasterSubtarget(Module):
         self.fsm.act("WRITE-FIRST",
             If(out_fifo.readable,
                 out_fifo.re.eq(1),
-                self.i2c_master.data_i.eq(out_fifo.dout),
-                self.i2c_master.write.eq(1),
+                self.i2c_initiator.data_i.eq(out_fifo.dout),
+                self.i2c_initiator.write.eq(1),
                 NextState("WRITE")
             )
         )
         self.fsm.act("WRITE",
-            If(~self.i2c_master.busy,
-                If(self.i2c_master.ack_o,
+            If(~self.i2c_initiator.busy,
+                If(self.i2c_initiator.ack_o,
                     NextValue(count, count - 1)
                 ),
-                If((count == 1) | ~self.i2c_master.ack_o,
+                If((count == 1) | ~self.i2c_initiator.ack_o,
                     NextState("REPORT")
                 ).Elif(out_fifo.readable,
                     out_fifo.re.eq(1),
-                    self.i2c_master.data_i.eq(out_fifo.dout),
-                    self.i2c_master.write.eq(1),
+                    self.i2c_initiator.data_i.eq(out_fifo.dout),
+                    self.i2c_initiator.write.eq(1),
                 )
             )
         )
@@ -102,21 +102,21 @@ class I2CMasterSubtarget(Module):
             )
         )
         self.fsm.act("READ-FIRST",
-            self.i2c_master.ack_i.eq(~(count == 1)),
-            self.i2c_master.read.eq(1),
+            self.i2c_initiator.ack_i.eq(~(count == 1)),
+            self.i2c_initiator.read.eq(1),
             NextValue(count, count - 1),
             NextState("READ")
         )
         self.fsm.act("READ",
-            If(~self.i2c_master.busy,
+            If(~self.i2c_initiator.busy,
                 If(in_fifo.writable,
                     in_fifo.we.eq(1),
-                    in_fifo.din.eq(self.i2c_master.data_o),
+                    in_fifo.din.eq(self.i2c_initiator.data_o),
                     If(count == 0,
                         NextState("IDLE")
                     ).Else(
-                        self.i2c_master.ack_i.eq(~(count == 1)),
-                        self.i2c_master.read.eq(1),
+                        self.i2c_initiator.ack_i.eq(~(count == 1)),
+                        self.i2c_initiator.read.eq(1),
                         NextValue(count, count - 1)
                     )
                 )
@@ -124,7 +124,7 @@ class I2CMasterSubtarget(Module):
         )
 
 
-class I2CMasterInterface:
+class I2CInitiatorInterface:
     def __init__(self, interface, logger):
         self.lower   = interface
         self._logger = logger
@@ -257,7 +257,7 @@ class I2CMasterInterface:
         return found
 
 
-class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
+class I2CInitiatorApplet(GlasgowApplet, name="i2c-initiator"):
     logger = logging.getLogger(__name__)
     help = "initiate I2C transactions"
     description = """
@@ -282,7 +282,7 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        iface.add_subtarget(I2CMasterSubtarget(
+        iface.add_subtarget(I2CInitiatorSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
@@ -303,7 +303,7 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
             pulls = {args.pin_scl, args.pin_sda}
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
                                                            pull_high=pulls)
-        i2c_iface = I2CMasterInterface(iface, self.logger)
+        i2c_iface = I2CInitiatorInterface(iface, self.logger)
         return i2c_iface
 
     @classmethod
@@ -351,7 +351,7 @@ class I2CMasterApplet(GlasgowApplet, name="i2c-master"):
 
 # -------------------------------------------------------------------------------------------------
 
-class I2CMasterAppletTestCase(GlasgowAppletTestCase, applet=I2CMasterApplet):
+class I2CInitiatorAppletTestCase(GlasgowAppletTestCase, applet=I2CInitiatorApplet):
     @synthesis_test
     def test_build(self):
         self.assertBuilds()

@@ -8,7 +8,7 @@ from nmigen.compat import *
 from nmigen.build import ResourceError
 
 from ..gateware.pads import Pads
-from ..gateware.i2c import I2CSlave
+from ..gateware.i2c import I2CTarget
 from ..gateware.registers import I2CRegisters
 from ..gateware.fx2_crossbar import FX2Crossbar
 from ..platform.all import *
@@ -40,9 +40,9 @@ class GlasgowHardwareTarget(Module):
         except ResourceError:
             pass
 
-        self.submodules.i2c_slave = I2CSlave(self.platform.request("i2c"))
-        self.submodules.registers = I2CRegisters(self.i2c_slave)
-        self.comb += self.i2c_slave.address.eq(0b0001000)
+        self.submodules.i2c_target = I2CTarget(self.platform.request("i2c"))
+        self.submodules.registers = I2CRegisters(self.i2c_target)
+        self.comb += self.i2c_target.address.eq(0b0001000)
 
         self.submodules.fx2_crossbar = FX2Crossbar(self.platform.request("fx2", xdr={
             "sloe": 1, "slrd": 1, "slwr": 1, "pktend": 1, "fifoadr": 1, "flag": 2, "fd": 2

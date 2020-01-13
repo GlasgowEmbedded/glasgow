@@ -42,9 +42,9 @@ class I2CRegisters(Registers):
     Note that for multibyte registers, the register data is read in little endian, but written
     in big endian. This replaces a huge multiplexer with a shift register, but is a bit cursed.
     """
-    def __init__(self, i2c_slave):
+    def __init__(self, i2c_target):
         super().__init__()
-        self.i2c_slave = i2c_slave
+        self.i2c_target = i2c_target
 
     def do_finalize(self):
         if self.reg_count == 0:
@@ -54,32 +54,32 @@ class I2CRegisters(Registers):
         reg_addr   = Signal(max=max(self.reg_count, 2))
         reg_data   = Signal(max(s.nbits for s in self.regs_r))
         self.comb += [
-            self.i2c_slave.data_o.eq(reg_data),
-            If(self.i2c_slave.write,
+            self.i2c_target.data_o.eq(reg_data),
+            If(self.i2c_target.write,
                 If(latch_addr,
-                    If(self.i2c_slave.data_i < self.reg_count,
-                        self.i2c_slave.ack_o.eq(1)
+                    If(self.i2c_target.data_i < self.reg_count,
+                        self.i2c_target.ack_o.eq(1)
                     )
                 ).Elif(~latch_addr,
-                    self.i2c_slave.ack_o.eq(1),
+                    self.i2c_target.ack_o.eq(1),
                 )
             )
         ]
         self.sync += [
-            If(self.i2c_slave.start,
+            If(self.i2c_target.start,
                 latch_addr.eq(1)
             ),
-            If(self.i2c_slave.write,
+            If(self.i2c_target.write,
                 latch_addr.eq(0),
                 If(latch_addr,
-                    reg_addr.eq(self.i2c_slave.data_i),
-                    reg_data.eq(self.regs_r[self.i2c_slave.data_i]),
+                    reg_addr.eq(self.i2c_target.data_i),
+                    reg_data.eq(self.regs_r[self.i2c_target.data_i]),
                 ).Else(
-                    reg_data.eq(Cat(self.i2c_slave.data_i, reg_data)),
-                    self.regs_w[reg_addr].eq(Cat(self.i2c_slave.data_i, reg_data)),
+                    reg_data.eq(Cat(self.i2c_target.data_i, reg_data)),
+                    self.regs_w[reg_addr].eq(Cat(self.i2c_target.data_i, reg_data)),
                 )
             ),
-            If(self.i2c_slave.read,
+            If(self.i2c_target.read,
                 reg_data.eq(reg_data >> 8),
             )
         ]
@@ -89,12 +89,12 @@ class I2CRegisters(Registers):
 import unittest
 
 from . import simulation_test
-from .i2c import I2CSlaveTestbench
+from .i2c import I2CTargetTestbench
 
 
 class I2CRegistersTestbench(Module):
     def __init__(self):
-        self.submodules.i2c = I2CSlaveTestbench()
+        self.submodules.i2c = I2CTargetTestbench()
         self.submodules.dut = I2CRegisters(self.i2c.dut)
         self.reg_dummy, self.addr_dummy = self.dut.add_rw(8)
         self.reg_rw_8,  self.addr_rw_8  = self.dut.add_rw(8)

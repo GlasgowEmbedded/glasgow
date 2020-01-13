@@ -6,7 +6,7 @@ import asyncio
 
 from ....support.data_logger import DataLogger
 from ... import *
-from ...interface.i2c_master import I2CMasterApplet
+from ...interface.i2c_initiator import I2CInitiatorApplet
 
 
 REG_CONFIG      = 0x00 # 16-bit rw
@@ -90,7 +90,7 @@ class INA260I2CInterface:
         return watts
 
 
-class SensorINA260Applet(I2CMasterApplet, name="sensor-ina260"):
+class SensorINA260Applet(I2CInitiatorApplet, name="sensor-ina260"):
     logger = logging.getLogger(__name__)
     help = "measure voltage, current and power with TI INA260 sensors"
     description = """
