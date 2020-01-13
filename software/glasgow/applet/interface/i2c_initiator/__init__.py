@@ -3,6 +3,7 @@ import logging
 import math
 from nmigen.compat import *
 
+from ....support.pyrepl import *
 from ....gateware.pads import *
 from ....gateware.i2c import I2CInitiator
 from ... import *
@@ -259,9 +260,9 @@ class I2CInitiatorInterface:
 
 class I2CInitiatorApplet(GlasgowApplet, name="i2c-initiator"):
     logger = logging.getLogger(__name__)
-    help = "initiate I2C transactions"
+    help = "initiate I²C transactions"
     description = """
-    Initiate transactions on the I2C bus.
+    Initiate transactions on the I²C bus.
 
     Maximum transaction length is 65535 bytes.
     """
@@ -327,7 +328,7 @@ class I2CInitiatorApplet(GlasgowApplet, name="i2c-initiator"):
             help="read device ID from devices responding to scan")
 
         p_repl = p_operation.add_parser(
-            "repl", help="drop into Python shell; use `i2c_iface` to communicate")
+            "repl", help="drop into Python shell; use `iface` to communicate")
 
     async def interact(self, device, args, i2c_iface):
         if args.operation == "scan":
@@ -348,6 +349,9 @@ class I2CInitiatorApplet(GlasgowApplet, name="i2c-initiator"):
                         manufacturer, part_ident, revision = device_id
                         self.logger.info("device %s ID: manufacturer %s, part %s, revision %s",
                             bin(addr), bin(manufacturer), bin(part_ident), bin(revision))
+
+        if args.operation == "repl":
+            await AsyncInteractiveConsole(locals={"iface":i2c_iface}).interact()
 
 # -------------------------------------------------------------------------------------------------
 
