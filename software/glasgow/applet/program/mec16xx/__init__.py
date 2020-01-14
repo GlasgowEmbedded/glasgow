@@ -157,7 +157,7 @@ class MEC16xxInterface(aobject):
 
 class ProgramMEC16xxApplet(DebugARCApplet, name="program-mec16xx"):
     logger = logging.getLogger(__name__)
-    help = "flash Microchip MEC16xx embedded controller via JTAG"
+    help = "program Microchip MEC16xx embedded controller via JTAG"
     description = """
     Read and write Microchip MEC16xx/MEC16xxi embedded controller integrated Flash
     via the JTAG interface.
