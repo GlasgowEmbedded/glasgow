@@ -13,7 +13,7 @@
 # MCU families, which is why it is intentionally minimal in terms of features. For example, not all
 # MCUs have synchronous serial (Mode 1), and not all MCUs have a BUSY pin (M16C does, R8C doesn't).
 #
-# No partial erase functionality is provided because it requires knowing the erase block map.
+# No partial reprogram functionality is provided because it requires knowing the erase block map.
 # In the future, a database may be used to provide these.
 
 import logging
@@ -269,7 +269,6 @@ class ProgramM16CInterface:
             (address >> 16) & 0xFF,
         ])
         await self.lower.write(data)
-
         try:
             srd1, srd2 = await self._bootloader_poll_status(1.0)
             assert (srd1 & ST_READY) != 0
@@ -278,10 +277,26 @@ class ProgramM16CInterface:
         except asyncio.TimeoutError:
             raise M16CBootloaderError("page program timeout")
 
+    async def erase_block(self, address):
+        assert address % PAGE_SIZE == 0
+        self._log("command erase-block block=%04x", (address >> 8) & 0xFFFF)
+        await self.lower.write([Command.CLEAR_STATUS, Command.ERASE_BLOCK])
+        await self.lower.write([
+            (address >> 8)  & 0xFF,
+            (address >> 16) & 0xFF,
+        ])
+        await self.lower.write([Command.ERASE_KEY])
+        try:
+            srd1, srd2 = await self._bootloader_poll_status(1.0)
+            assert (srd1 & ST_READY) != 0
+            if (srd1 & ST_ERASE_FAIL) != 0:
+                raise M16CBootloaderError("cannot erase block {:06x}".format(address))
+        except asyncio.TimeoutError:
+            raise M16CBootloaderError("block erase timeout")
+
     async def erase_all(self):
         self._log("command erase-all")
         await self.lower.write([Command.CLEAR_STATUS, Command.ERASE_ALL, Command.ERASE_KEY])
-
         try:
             srd1, srd2 = await self._bootloader_poll_status(10.0)
             assert (srd1 & ST_READY) != 0
@@ -404,6 +419,12 @@ class ProgramM16CApplet(GlasgowApplet, name="program-m16c"):
         p_erase = p_operation.add_parser(
             "erase", help="erase entire Flash memory array")
 
+        p_erase_block = p_operation.add_parser(
+            "erase-block", help="erase a single block of Flash memory array")
+        p_erase_block.add_argument(
+            "address", metavar="ADDRESS", type=page_address,
+            help="erase block at address ADDRESS, which must be page-aligned")
+
     async def interact(self, device, args, iface):
         try:
             await device.write_register(
@@ -454,6 +475,10 @@ class ProgramM16CApplet(GlasgowApplet, name="program-m16c"):
             if args.operation == "erase":
                 self.logger.info("erasing array")
                 await iface.erase_all()
+
+            if args.operation == "erase-block":
+                self.logger.info("erasing block %0.*x", 5, args.address)
+                await iface.erase_block(args.address)
 
         finally:
             await iface.reset_application()
