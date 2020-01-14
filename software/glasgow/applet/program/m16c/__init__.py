@@ -1,9 +1,20 @@
 # Ref: Easy R8C/M16C/M32C/R32C Flash Programming (DJ Delorie)
 # Accession: G00045
+# Ref: M16C/80 Group Explanation of boot loader
+# Accession: G00046
+# Ref: R8C/Tiny Series R8C/10, 11, 12, 13 Groups Serial Protocol Specification
+# Accession: G00047
 
-# The serial ROM bootloader appears to lack any way to report an error. If it doesn't like
-# the command for some reason, it will simply not respond. This necessitates using timeouts
-# to detect possible error conditions, e.g. unsupported baud rates.
+# The autobaud sequence is described in G00047; that document describes R8C, but it applies to M16C
+# as well. The rest of the commands are described in G00046 for M16C, though they are very similar
+# to the commands described in G00047 for R8C.
+#
+# The code below is written with the intent that some day it will be reused across multiple Renesas
+# MCU families, which is why it is intentionally minimal in terms of features. For example, not all
+# MCUs have synchronous serial (Mode 1), and not all MCUs have a BUSY pin (M16C does, R8C doesn't).
+#
+# No partial erase functionality is provided because it requires knowing the erase block map.
+# In the future, a database may be used to provide these.
 
 import logging
 import argparse
@@ -45,10 +56,10 @@ class Command(enum.IntEnum):
     ERASE_KEY    = 0xD0
 
 
-KEY_MASK    = 0b0000_11_00
-KEY_MISSING = 0b0000_00_00
-KEY_WRONG   = 0b0000_01_00
-KEY_CORRECT = 0b0000_11_00
+ID_MASK         = 0b0000_11_00
+ID_MISSING      = 0b0000_00_00
+ID_WRONG        = 0b0000_01_00
+ID_CORRECT      = 0b0000_11_00
 
 ST_READY        = 0b1000_0000
 ST_ERASE_FAIL   = 0b0010_0000
@@ -135,24 +146,19 @@ class ProgramM16CInterface:
         await asyncio.sleep(0.150) # make sure it's out of reset
 
     async def _sync_autobaud(self):
-        # Bootloader auto-baud sequence described by DJ Delorie. This sequence does not appear
-        # to be described in any Renesas documents I could find.
         self._log("sync autobaud")
         for _ in range(16):
             await self.lower.write(b"\x00")
             await self.lower.flush()
             await asyncio.sleep(0.040) # >20 ms delay
-
-        # Verify that we got the correct baud, and reject any noise that may have been RXd before.
-        async def verify():
-            self._log("verify autobaud")
-            await self.lower.write([BAUD_RATES[9600]])
+        await self.lower.write([BAUD_RATES[9600]])
+        async def response():
             while True:
                 new_baud, = await self.lower.read(1)
                 if new_baud == BAUD_RATES[9600]:
                     return
         try:
-            await asyncio.wait_for(verify(), timeout=self.timeout)
+            await asyncio.wait_for(response(), timeout=self.timeout)
         except asyncio.TimeoutError:
             raise M16CBootloaderError("cannot synchronize with ROM bootloader")
 
@@ -211,14 +217,14 @@ class ProgramM16CInterface:
 
     async def is_bootloader_locked(self):
         srd1, srd2 = await self._bootloader_read_status()
-        if (srd2 & KEY_MASK) in (KEY_MISSING, KEY_WRONG):
+        if (srd2 & ID_MASK) in (ID_MISSING, ID_WRONG):
             return True
-        if (srd2 & KEY_MASK) == KEY_CORRECT:
+        if (srd2 & ID_MASK) == ID_CORRECT:
             return False
         assert False
 
     async def unlock_bootloader(self, key, address):
-        assert isinstance(key, (bytes, bytearray)) and len(key) == 7
+        assert isinstance(key, (bytes, bytearray)) and len(key) <= 7
         self._log("command unlock key=<%s>", key.hex())
         await self.lower.write([Command.UNLOCK])
         await self.lower.write([
@@ -230,9 +236,9 @@ class ProgramM16CInterface:
         await self.lower.write(key)
 
         srd1, srd2 = await self._bootloader_read_status()
-        if (srd2 & KEY_MASK) == KEY_CORRECT:
+        if (srd2 & ID_MASK) == ID_CORRECT:
             return True
-        if (srd2 & KEY_MASK) == KEY_WRONG:
+        if (srd2 & ID_MASK) == ID_WRONG:
             return False
         assert False
 
@@ -352,13 +358,13 @@ class ProgramM16CApplet(GlasgowApplet, name="program-m16c"):
                 key = bytes.fromhex(arg)
             except ValueError:
                 raise argparse.ArgumentTypeError("{} is not a hexadecimal string".format(arg))
-            if len(key) != 7:
+            if len(key) > 7:
                 raise argparse.ArgumentTypeError("{} is not a valid bootloader key".format(arg))
             return key
 
         parser.add_argument(
-            "-k", "--key", metavar="HEX-KEY", type=unlock_key, nargs="+",
-            help="unlock bootloader with key HEX-KEY (default: 00000000000000, FFFFFFFFFFFFFF)")
+            "-k", "--key", metavar="HEX-ID", type=unlock_key, action="append",
+            help="unlock bootloader with key(s) HEX-ID (default: 00000000000000, FFFFFFFFFFFFFF)")
 
         def page_address(arg):
             address = int(arg, 0)
@@ -436,12 +442,14 @@ class ProgramM16CApplet(GlasgowApplet, name="program-m16c"):
                                               .format(len(firmware)))
 
                 for offset in range(0, len(firmware), PAGE_SIZE):
-                    address = args.address + offset
-                    self.logger.info("programming page %0.*x", 5, address)
+                    address   = args.address + offset
                     page_data = firmware[offset:offset + PAGE_SIZE]
+
+                    self.logger.info("programming page %0.*x", 5, address)
                     await iface.program_page(address, page_data)
                     if await iface.read_page(address) != page_data:
-                        raise M16CBootloaderError("verifying page %0.*x failed", 5, address)
+                        raise M16CBootloaderError("verifying page {:0{}x} failed"
+                                                  .format(address, 5))
 
             if args.operation == "erase":
                 self.logger.info("erasing array")
