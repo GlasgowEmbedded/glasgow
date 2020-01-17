@@ -1135,7 +1135,8 @@ class AudioYamahaOPxApplet(GlasgowApplet, name="audio-yamaha-opx"):
 
             vgm_player = YamahaVGMStreamPlayer(vgm_reader, opx_iface, clock_rate)
             sample_rate = 1 / vgm_player.sample_time
-            opx_iface.filter.sample_rate = sample_rate * self._opx_iface.sample_clocks
+            if opx_iface.filter:
+                opx_iface.filter.sample_rate = sample_rate * opx_iface.sample_clocks
             self.logger.info("recording %d channels at sample rate %d Hz",
                              opx_iface.channel_count, sample_rate)
 
