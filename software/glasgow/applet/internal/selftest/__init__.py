@@ -180,8 +180,8 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                 broken = []
                 for bit in range(0, 8):
                     for o in (1 << bit, 1 << (15 - bit)):
-                        await reset_pins()
-                        i, desc = await check_pins(o, o)
+                        await reset_pins(bits=0x0000)
+                        i, desc = await check_pins(o, o, use_pull=False)
                         self.logger.debug("%s: %s", mode, desc)
 
                         e = (1 << bit) | (1 << (15 - bit))
