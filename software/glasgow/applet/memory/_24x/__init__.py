@@ -127,8 +127,11 @@ class Memory24xApplet(I2CInitiatorApplet, name="memory-24x"):
     def add_run_arguments(cls, parser, access):
         super().add_run_arguments(parser, access)
 
+        def address(arg):
+            return int(arg, 0)
+
         parser.add_argument(
-            "-A", "--i2c-address", type=int, metavar="I2C-ADDR", default=0b1010000,
+            "-A", "--i2c-address", type=address, metavar="I2C-ADDR", default=0b1010000,
             help="I²C address of the memory; typically 0b1010(A2)(A1)(A0) "
                  "(default: 0b1010000)")
         parser.add_argument(
