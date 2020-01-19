@@ -978,7 +978,7 @@ class AudioYamahaOPxApplet(GlasgowApplet, name="audio-yamaha-opx"):
     The written samples can be played with the knowledge of the sample rate, which is derived from
     the master clock frequency specified in the input file. E.g. using SoX:
 
-        $ play -r 49715 output.u16
+        $ play -r 49715 output.s16
 
     # Scripting
 
