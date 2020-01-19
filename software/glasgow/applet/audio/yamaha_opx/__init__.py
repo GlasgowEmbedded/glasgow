@@ -904,7 +904,7 @@ class YamahaOPxWebInterface:
                     if play_fut.done() and play_fut.exception():
                         break
 
-                    samples = await asyncio.wait_for(sample_queue.get(), timeout=1.0)
+                    samples = await asyncio.wait_for(sample_queue.get(), timeout=5.0)
                     if not samples:
                         break
                     await sock.send_bytes(samples)
