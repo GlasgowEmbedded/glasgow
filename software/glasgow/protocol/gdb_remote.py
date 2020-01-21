@@ -141,11 +141,11 @@ class GDBRemote(metaclass=ABCMeta):
                         self.gdb_log(logging.WARNING, "command '%s' caused an error: %s",
                                      command_asc, response[4:].decode("ascii"))
 
+                    error_num, error_msg = response
                     if self.__error_strings:
-                        error_num, error_msg = response
-                        response = b"E{:02d};{}".format(error_num, error_msg.encode("ascii"))
+                        response = "E{:02d};{}".format(error_num, error_msg).encode("ascii")
                     else:
-                        response = b"E{:02d}".format(error_num)
+                        response = "E{:02d}".format(error_num).encode("ascii")
 
                 while True:
                     response_asc = response.decode("ascii", errors="replace")
