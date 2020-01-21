@@ -59,6 +59,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
 
     async def _exchange_control(self, **fields):
         control = self._control.copy()
+        control.PrAcc = 1
         if self._impcode.EJTAGver > 0:
             # Some (but not all) EJTAG 1.x/2.0 cores implement Rocc handshaking. We ignore it,
             # since there's no easy way to tell which one it is (on some Lexra cores, Rocc appears
