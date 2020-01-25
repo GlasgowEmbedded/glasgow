@@ -110,6 +110,9 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
     transaction handling) with one pipe, as well as ShockBurst (old packet framing). It does not
     support multiple pipes or acknowledgement payloads.
 
+    Note that in the CLI, the addresses are most significant byte first (the same as on-air order,
+    and reversed with regards to register access order.)
+
     The pinout of a common 8-pin nRF24L01+ module is as follows (live bug view):
 
     ::
@@ -176,7 +179,9 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
                     "invalid channel: {} (choose from 0..125)".format(value))
             return value
         def address(value):
-            return bytes.fromhex(value)
+            # In our API, byte 0 is LSB (which matches the order of writes to registers).
+            # But in our CLI, byte 0 is MSB (which matches the on-air format).
+            return bytes(reversed(bytes.fromhex(value)))
         def length(value):
             value = int(value, 10)
             if value not in range(33):
