@@ -248,6 +248,9 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
         p_receive.add_argument(
             "-l", "--length", metavar="LENGTH", type=length,
             help="receive packet with length LENGTH (mutually exclusive with --dynamic-length)")
+        p_receive.add_argument(
+            "-R", "--repeat", default=False, action="store_true",
+            help="keep receiving packets until interrupted")
 
     async def interact(self, device, args, nrf24l01_iface):
         if args.crc_width == 0 and not args.compat_framing:
@@ -386,27 +389,32 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
             await nrf24l01_iface.write_register(ADDR_CONFIG,
                 REG_CONFIG(PRIM_RX=1, PWR_UP=1, CRCO=crco, EN_CRC=en_crc).to_int())
 
-            await nrf24l01_iface.write_register(ADDR_STATUS,
-                REG_STATUS(RX_DR=1).to_int())
             await nrf24l01_iface.enable()
             try:
                 while True:
-                    status = REG_STATUS.from_int(
-                        await nrf24l01_iface.read_register(ADDR_STATUS))
-                    if status.RX_DR:
-                        assert status.RX_P_NO == 0
+                    await nrf24l01_iface.write_register(ADDR_STATUS,
+                        REG_STATUS(RX_DR=1).to_int())
+                    while True:
+                        status = REG_STATUS.from_int(
+                            await nrf24l01_iface.read_register(ADDR_STATUS))
+                        if status.RX_DR:
+                            assert status.RX_P_NO == 0
+                            break
+                        await asyncio.sleep(0.010)
+
+                    if en_dpl:
+                        length = await nrf24l01_iface.read_rx_payload_length()
+                    else:
+                        length = args.length
+                    payload = await nrf24l01_iface.read_rx_payload(length)
+                    await nrf24l01_iface.flush_rx()
+
+                    self.logger.info("packet received: %s", dump_hex(payload))
+
+                    if not args.repeat:
                         break
-                    await asyncio.sleep(0.010)
             finally:
                 await nrf24l01_iface.disable()
-
-            if en_dpl:
-                length = await nrf24l01_iface.read_rx_payload_length()
-            else:
-                length = args.length
-            payload = await nrf24l01_iface.read_rx_payload(length)
-
-            self.logger.info("packet received: %s", dump_hex(payload))
 
 # -------------------------------------------------------------------------------------------------
 
