@@ -28,7 +28,13 @@ class RadioNRF24L01Interface:
     def _log(self, message, *args):
         self._logger.log(self._level, "nRF24L01: " + message, *args)
 
+    async def sync(self):
+        self._log("sync")
+        await self.lower.write([OP_NOP])
+        await self.lower.read(1)
+
     async def enable(self):
+        await self.sync()
         self._log("enable rf")
         await self._device.write_register(self._addr_dut_ce, 1)
 
