@@ -296,6 +296,9 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
         en_dpl = args.dynamic_length
         en_dyn_ack = hasattr(args, "no_ack") and args.no_ack
 
+        await nrf24l01_iface.write_register(ADDR_CONFIG,
+            REG_CONFIG(PWR_UP=0).to_int())
+
         feature = REG_FEATURE(EN_DPL=en_dpl, EN_DYN_ACK=en_dyn_ack).to_int()
         await nrf24l01_iface.write_register(ADDR_FEATURE, feature)
         if (await nrf24l01_iface.read_register(ADDR_FEATURE)) != feature:
@@ -329,8 +332,6 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
             if en_dpl:
                 await nrf24l01_iface.write_register(ADDR_DYNPD,
                     REG_DYNPD(DPL_P0=1).to_int())
-            await nrf24l01_iface.write_register(ADDR_CONFIG,
-                REG_CONFIG(PRIM_RX=0, PWR_UP=1, CRCO=crco, EN_CRC=en_crc).to_int())
 
             while True:
                 fifo_status = REG_FIFO_STATUS.from_int(
@@ -338,6 +339,8 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
                 if fifo_status.TX_EMPTY:
                     break
                 await nrf24l01_iface.flush_tx()
+            await nrf24l01_iface.write_register(ADDR_CONFIG,
+                REG_CONFIG(PRIM_RX=0, PWR_UP=1, CRCO=crco, EN_CRC=en_crc).to_int())
 
             await nrf24l01_iface.write_tx_payload(args.payload,
                 ack=not args.compat_framing and not args.no_ack)
@@ -391,6 +394,13 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
                     raise RadioNRF24L01Error(
                         "One of --dynamic-length or --length must be specified")
                 await nrf24l01_iface.write_register(ADDR_RX_PW_Pn(0), args.length)
+
+            while True:
+                fifo_status = REG_FIFO_STATUS.from_int(
+                    await nrf24l01_iface.read_register(ADDR_FIFO_STATUS))
+                if fifo_status.RX_EMPTY:
+                    break
+                await nrf24l01_iface.flush_rx()
             await nrf24l01_iface.write_register(ADDR_CONFIG,
                 REG_CONFIG(PRIM_RX=1, PWR_UP=1, CRCO=crco, EN_CRC=en_crc).to_int())
 
