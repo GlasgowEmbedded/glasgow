@@ -106,9 +106,9 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
     Transmit and receive packets using the nRF24L01/nRF24L01+ RF PHY.
 
     This applet allows configuring all channel and packet parameters, and provides basic transmit
-    and receive workflow with one pipe and automatic transaction handling (Enhanced ShockBurst).
-    It does not support multiple pipes, acknowledgement payloads, or disabling transaction
-    handling (ShockBurst mode).
+    and receive workflow. It supports Enhanced ShockBurst (new packet framing with automatic
+    transaction handling) with one pipe, as well as ShockBurst (old packet framing). It does not
+    support multiple pipes or acknowledgement payloads.
 
     The pinout of a common 8-pin nRF24L01+ module is as follows (live bug view):
 
@@ -207,8 +207,11 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
             help="set address width to WIDTH bytes (one of: 2 3 4 5)")
         parser.add_argument(
             "-C", "--crc-width", metavar="WIDTH", type=int, required=True,
-            choices=(1, 2),
-            help="set CRC width to WIDTH bytes (one of: 1 2)")
+            choices=(0, 1, 2),
+            help="set CRC width to WIDTH bytes (one of: 0 1 2)")
+        parser.add_argument(
+            "-L", "--compat-framing", default=False, action="store_true",
+            help="disable automatic transaction handling, for pre-L01 compatibility")
         parser.add_argument(
             "-d", "--dynamic-length", default=False, action="store_true",
             help="enable dynamic payload length (L01+ only)")
@@ -247,6 +250,11 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
             help="receive packet with length LENGTH (mutually exclusive with --dynamic-length)")
 
     async def interact(self, device, args, nrf24l01_iface):
+        if args.crc_width == 0 and not args.compat_framing:
+            raise RadioNRF24L01Error("Automatic transaction handling requires CRC to be enabled")
+        if args.dynamic_length and args.compat_framing:
+            raise RadioNRF24L01Error("Dynamic length requires automatic transaction handling")
+
         self.logger.info("using channel %d (%d MHz) at %d dBm and %d kbps",
             args.channel, 2400 + args.channel, args.power, args.bandwidth)
         rf_ch = args.channel
@@ -271,9 +279,12 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
             5: AW._5_BYTES,
         }[args.address_width]
         crco = {
+            0: CRCO._1_BYTE,
             1: CRCO._1_BYTE,
             2: CRCO._2_BYTES,
         }[args.crc_width]
+        en_crc = args.crc_width > 0
+        en_aa  = not args.compat_framing
         en_dpl = args.dynamic_length
         en_dyn_ack = hasattr(args, "no_ack") and args.no_ack
 
@@ -290,23 +301,28 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
             REG_SETUP_AW(AW=aw).to_int())
 
         if args.operation == "transmit":
-            await nrf24l01_iface.write_register(ADDR_CONFIG,
-                REG_CONFIG(PRIM_RX=0, PWR_UP=1, CRCO=crco, EN_CRC=1).to_int())
-
             if len(args.address) != args.address_width:
                 raise RadioNRF24L01Error("Length of address does not match address width")
             await nrf24l01_iface.write_register_wide(ADDR_TX_ADDR, args.address)
-            await nrf24l01_iface.write_register(ADDR_EN_AA,
-                REG_EN_AA(ENAA_P0=1).to_int())
-            await nrf24l01_iface.write_register(ADDR_EN_RXADDR,
-                REG_EN_RXADDR(ERX_P0=1).to_int())
-            await nrf24l01_iface.write_register_wide(ADDR_RX_ADDR_Pn(0), args.address)
+            if en_aa:
+                await nrf24l01_iface.write_register(ADDR_EN_AA,
+                    REG_EN_AA(ENAA_P0=1).to_int())
+                await nrf24l01_iface.write_register(ADDR_SETUP_RETR,
+                    REG_SETUP_RETR(ARD=args.transmit_timeout // 250 - 1,
+                                   ARC=args.retransmit_count).to_int())
+                await nrf24l01_iface.write_register(ADDR_EN_RXADDR,
+                    REG_EN_RXADDR(ERX_P0=1).to_int())
+                await nrf24l01_iface.write_register_wide(ADDR_RX_ADDR_Pn(0), args.address)
+            else:
+                await nrf24l01_iface.write_register(ADDR_EN_AA,
+                    REG_EN_AA().to_int()) # disable on all pipes to release EN_CRC
+                await nrf24l01_iface.write_register(ADDR_SETUP_RETR,
+                    REG_SETUP_RETR().to_int())
             if en_dpl:
                 await nrf24l01_iface.write_register(ADDR_DYNPD,
                     REG_DYNPD(DPL_P0=1).to_int())
-            await nrf24l01_iface.write_register(ADDR_SETUP_RETR,
-                REG_SETUP_RETR(ARD=args.transmit_timeout // 250 - 1,
-                               ARC=args.retransmit_count).to_int())
+            await nrf24l01_iface.write_register(ADDR_CONFIG,
+                REG_CONFIG(PRIM_RX=0, PWR_UP=1, CRCO=crco, EN_CRC=en_crc).to_int())
 
             while True:
                 fifo_status = REG_FIFO_STATUS.from_int(
@@ -315,7 +331,8 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
                     break
                 await nrf24l01_iface.flush_tx()
 
-            await nrf24l01_iface.write_tx_payload(args.payload, ack=not args.no_ack)
+            await nrf24l01_iface.write_tx_payload(args.payload,
+                ack=not args.compat_framing and not args.no_ack)
 
             await nrf24l01_iface.write_register(ADDR_STATUS,
                 REG_STATUS(TX_DS=1, MAX_RT=1).to_int())
@@ -331,7 +348,7 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
                 await nrf24l01_iface.disable()
 
             if status.TX_DS:
-                if args.no_ack:
+                if args.no_ack or args.compat_framing:
                     self.logger.info("packet sent")
                 else:
                     self.logger.info("packet acknowledged")
@@ -344,13 +361,14 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
                     self.logger.error("packet lost")
 
         if args.operation == "receive":
-            await nrf24l01_iface.write_register(ADDR_CONFIG,
-                REG_CONFIG(PRIM_RX=1, PWR_UP=1, CRCO=crco, EN_CRC=1).to_int())
-
             if len(args.address) != args.address_width:
                 raise RadioNRF24L01Error("Length of address does not match address width")
-            await nrf24l01_iface.write_register(ADDR_EN_AA,
-                REG_EN_AA(ENAA_P0=1).to_int())
+            if en_aa:
+                await nrf24l01_iface.write_register(ADDR_EN_AA,
+                    REG_EN_AA(ENAA_P0=1).to_int())
+            else:
+                await nrf24l01_iface.write_register(ADDR_EN_AA,
+                    REG_EN_AA().to_int()) # disable on all pipes to release EN_CRC
             await nrf24l01_iface.write_register(ADDR_EN_RXADDR,
                 REG_EN_RXADDR(ERX_P0=1).to_int())
             await nrf24l01_iface.write_register_wide(ADDR_RX_ADDR_Pn(0), args.address)
@@ -365,6 +383,8 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
                     raise RadioNRF24L01Error(
                         "One of --dynamic-length or --length must be specified")
                 await nrf24l01_iface.write_register(ADDR_RX_PW_Pn(0), args.length)
+            await nrf24l01_iface.write_register(ADDR_CONFIG,
+                REG_CONFIG(PRIM_RX=1, PWR_UP=1, CRCO=crco, EN_CRC=en_crc).to_int())
 
             await nrf24l01_iface.write_register(ADDR_STATUS,
                 REG_STATUS(RX_DR=1).to_int())
