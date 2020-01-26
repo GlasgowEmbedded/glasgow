@@ -4,6 +4,7 @@ import asyncio
 import builtins
 try:
     import readline
+    import rlcompleter
 except ModuleNotFoundError:
     readline = None
 
@@ -25,6 +26,10 @@ class AsyncInteractiveConsole(code.InteractiveConsole):
                 readline.read_history_file(self._histfile)
             except FileNotFoundError:
                 pass
+
+            completer = rlcompleter.Completer(self.locals)
+            readline.parse_and_bind("tab: complete")
+            readline.set_completer(completer.complete)
 
         self.locals["__name__"] = __name__.split(".")[0]
         self._future = None
