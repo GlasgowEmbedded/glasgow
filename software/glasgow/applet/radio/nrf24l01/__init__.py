@@ -8,6 +8,8 @@ import argparse
 from nmigen.compat import *
 
 from ....support.logging import *
+from ....support.bits import *
+from ....arch.nrf24l import crc_nrf24l
 from ....arch.nrf24l.rf import *
 from ...interface.spi_master import SPIMasterSubtarget, SPIMasterInterface
 from ... import *
@@ -146,12 +148,17 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
     Transmit and receive packets using the nRF24L01/nRF24L01+ RF PHY.
 
     This applet allows configuring all channel and packet parameters, and provides basic transmit
-    and receive workflow. It supports Enhanced ShockBurst (new packet framing with automatic
-    transaction handling) with one pipe, as well as ShockBurst (old packet framing). It does not
-    support multiple pipes or acknowledgement payloads.
+    and receive workflow, as well as monitor mode. It supports Enhanced ShockBurst (new packet
+    framing with automatic transaction handling) with one pipe, as well as ShockBurst (old packet
+    framing). It does not support multiple pipes or acknowledgement payloads.
 
     Note that in the CLI, the addresses are most significant byte first (the same as on-air order,
     and reversed with regards to register access order.)
+
+    The `monitor` subcommand is functionally identical to the `receive` subcommand, except that
+    it will never attempt to acknowledge packets; this way, it is possible to watch a transaction
+    started by a node with a known address without disturbing either party. It is not natively
+    supported by nRF24L01(+), and is emulated in an imperfect way.
 
     The pinout of a common 8-pin nRF24L01+ module is as follows (live bug view):
 
@@ -265,7 +272,7 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
         p_transmit = p_operation.add_parser(
-            "transmit", help="transmit a packet")
+            "transmit", help="transmit packets")
         p_transmit.add_argument(
             "address", metavar="ADDRESS", type=address,
             help="transmit packet with hex address ADDRESS")
@@ -285,17 +292,25 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
             "-N", "--no-ack", default=False, action="store_true",
             help="do not request acknowledgement (L01+ only)")
 
+        def add_rx_arguments(parser):
+            parser.add_argument(
+                "address", metavar="ADDRESS", type=address,
+                help="receive packet with hex address ADDRESS")
+            parser.add_argument(
+                "-l", "--length", metavar="LENGTH", type=length,
+                help="receive packet with length LENGTH "
+                     "(mutually exclusive with --dynamic-length)")
+            parser.add_argument(
+                "-R", "--repeat", default=False, action="store_true",
+                help="keep receiving packets until interrupted")
+
         p_receive = p_operation.add_parser(
-            "receive", help="receive a packet")
-        p_receive.add_argument(
-            "address", metavar="ADDRESS", type=address,
-            help="receive packet with hex address ADDRESS")
-        p_receive.add_argument(
-            "-l", "--length", metavar="LENGTH", type=length,
-            help="receive packet with length LENGTH (mutually exclusive with --dynamic-length)")
-        p_receive.add_argument(
-            "-R", "--repeat", default=False, action="store_true",
-            help="keep receiving packets until interrupted")
+            "receive", help="receive packets")
+        add_rx_arguments(p_receive)
+
+        p_monitor = p_operation.add_parser(
+            "monitor", help="monitor packets")
+        add_rx_arguments(p_monitor)
 
     async def interact(self, device, args, nrf24l01_iface):
         if args.crc_width == 0 and not args.compat_framing:
@@ -401,9 +416,19 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
                 await nrf24l01_iface.write_register(ADDR_STATUS,
                     REG_STATUS(MAX_RT=1).to_int())
 
-        if args.operation == "receive":
+        if args.operation in ("receive", "monitor"):
             if len(args.address) != args.address_width:
                 raise RadioNRF24L01Error("Length of address does not match address width")
+            if en_dpl:
+                if args.length is not None:
+                    raise RadioNRF24L01Error(
+                        "Either --dynamic-length or --length may be specified")
+            else:
+                if args.length is None:
+                    raise RadioNRF24L01Error(
+                        "One of --dynamic-length or --length must be specified")
+
+        if args.operation == "receive":
             if en_aa:
                 await nrf24l01_iface.write_register(ADDR_EN_AA,
                     REG_EN_AA(ENAA_P0=1).to_int())
@@ -414,15 +439,9 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
                 REG_EN_RXADDR(ERX_P0=1).to_int())
             await nrf24l01_iface.write_register_wide(ADDR_RX_ADDR_Pn(0), args.address)
             if en_dpl:
-                if args.length is not None:
-                    raise RadioNRF24L01Error(
-                        "Either --dynamic-length or --length may be specified")
                 await nrf24l01_iface.write_register(ADDR_DYNPD,
                     REG_DYNPD(DPL_P0=1).to_int())
             else:
-                if args.length is None:
-                    raise RadioNRF24L01Error(
-                        "One of --dynamic-length or --length must be specified")
                 await nrf24l01_iface.write_register(ADDR_RX_PW_Pn(0), args.length)
 
             await nrf24l01_iface.flush_rx_all()
@@ -450,6 +469,87 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
 
                     payload = await nrf24l01_iface.read_rx_payload(length)
                     self.logger.info("packet received: %s", dump_hex(payload))
+
+                    if not args.repeat:
+                        break
+            finally:
+                await nrf24l01_iface.disable()
+
+        if args.operation == "monitor":
+            if en_aa:
+                overhead = 2 + args.crc_width
+                if en_dpl:
+                    length = 32 + overhead
+                else:
+                    length = args.length + overhead
+            else:
+                length = args.length
+            if length > 32:
+                self.logger.warn("packets may be up to %d bytes long, but only %d bytes will "
+                                 "be captured", length, 32)
+
+            await nrf24l01_iface.write_register(ADDR_FEATURE,
+                REG_FEATURE(EN_DPL=0, EN_DYN_ACK=0).to_int())
+            await nrf24l01_iface.write_register(ADDR_EN_AA,
+                REG_EN_AA().to_int()) # disable on all pipes to release EN_CRC
+            await nrf24l01_iface.write_register(ADDR_EN_RXADDR,
+                REG_EN_RXADDR(ERX_P0=1).to_int())
+            await nrf24l01_iface.write_register_wide(ADDR_RX_ADDR_Pn(0), args.address)
+            await nrf24l01_iface.write_register(ADDR_RX_PW_Pn(0), min(32, length))
+
+            await nrf24l01_iface.flush_rx_all()
+            if en_aa:
+                await nrf24l01_iface.write_register(ADDR_CONFIG,
+                    REG_CONFIG(PRIM_RX=1, PWR_UP=1, CRCO=CRCO._1_BYTE, EN_CRC=0).to_int())
+            else:
+                await nrf24l01_iface.write_register(ADDR_CONFIG,
+                    REG_CONFIG(PRIM_RX=1, PWR_UP=1, CRCO=crco, EN_CRC=en_crc).to_int())
+
+            await nrf24l01_iface.enable()
+            try:
+                while True:
+                    status = REG_STATUS.from_int(
+                        await nrf24l01_iface.read_register(ADDR_STATUS))
+                    if status.RX_P_NO == 0b111:
+                        await nrf24l01_iface.poll_rx_status()
+                        continue
+
+                    payload = await nrf24l01_iface.read_rx_payload(length)
+                    if en_aa:
+                        dyn_length = payload[0] >> 2
+                        packet_id  = payload[0] & 0b11
+                        no_ack     = payload[1] >> 7
+                        data_crc   = bytes([
+                            ((payload[1 + n + 0] << 1) & 0b1111111_0) |
+                            ((payload[1 + n + 1] >> 7) & 0b0000000_1)
+                            for n in range(len(payload) - 2)
+                        ])
+
+                        if dyn_length == 0:
+                            data, crc = b"", data_crc
+                            payload_msg = "(ACK)"
+                        elif en_dpl:
+                            data, crc = data_crc[:dyn_length], data_crc[dyn_length:]
+                            payload_msg = data.hex()
+                        else:
+                            data, crc = data_crc[:args.length], data_crc[args.length:]
+                            payload_msg = data.hex()
+
+                        if len(crc) < args.crc_width:
+                            crc_msg = " (CRC?)"
+                        else:
+                            crc_actual   = int.from_bytes(crc[:args.crc_width], "big")
+                            crc_expected = crc_nrf24l(bytes(reversed(args.address)) + payload,
+                                bits=len(args.address) * 8 + 9 + len(data) * 8)
+                            if crc_actual != crc_expected:
+                                crc_msg = " (CRC!)"
+                            else:
+                                crc_msg = ""
+
+                        self.logger.info("packet received: PID=%s %s%s",
+                                         "{:02b}".format(packet_id), payload_msg, crc_msg)
+                    else:
+                        self.logger.info("packet received: %s", dump_hex(payload))
 
                     if not args.repeat:
                         break
