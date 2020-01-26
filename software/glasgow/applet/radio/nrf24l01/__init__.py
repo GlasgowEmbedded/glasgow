@@ -66,6 +66,17 @@ class RadioNRF24L01Interface:
     async def write_register(self, address, value):
         await self.write_register_wide(address, [value])
 
+    async def poll_rx_status(self, delay=0.010):
+        poll_bits = clear_bits = REG_STATUS(RX_DR=1).to_int()
+        while True:
+            status_bits, _ = await self.lower.transfer([OP_W_REGISTER|ADDR_STATUS, clear_bits])
+            status = REG_STATUS.from_int(status_bits)
+            self._log("poll rx status %s", status.bits_repr(omit_zero=True))
+            if status_bits & poll_bits:
+                break
+            await asyncio.sleep(delay)
+        return status
+
     async def read_rx_payload_length(self):
         await self.lower.write([OP_R_RX_PL_WID], hold_ss=True)
         length, = await self.lower.read(1)
@@ -82,6 +93,27 @@ class RadioNRF24L01Interface:
         self._log("flush rx")
         await self.lower.write([OP_FLUSH_RX])
 
+    async def flush_rx_all(self):
+        while True:
+            fifo_status = REG_FIFO_STATUS.from_int(
+                await self.read_register(ADDR_FIFO_STATUS))
+            if fifo_status.RX_EMPTY:
+                break
+            await self.flush_rx()
+
+    async def poll_tx_status(self, delay=0.010):
+        # Don't clear MAX_RT, since it prevents REUSE_TX_PL and clears ARC_CNT.
+        poll_bits  = REG_STATUS(TX_DS=1, MAX_RT=1).to_int()
+        clear_bits = REG_STATUS(TX_DS=1).to_int()
+        while True:
+            status_bits, _ = await self.lower.transfer([OP_W_REGISTER|ADDR_STATUS, clear_bits])
+            status = REG_STATUS.from_int(status_bits)
+            self._log("poll rx status %s", status.bits_repr(omit_zero=True))
+            if status_bits & poll_bits:
+                break
+            await asyncio.sleep(delay)
+        return status
+
     async def write_tx_payload(self, payload, *, ack=True):
         self._log("write tx payload=<%s> ack=%s", dump_hex(payload), "yes" if ack else "no")
         if ack:
@@ -96,6 +128,14 @@ class RadioNRF24L01Interface:
     async def flush_tx(self):
         self._log("flush tx")
         await self.lower.write([OP_FLUSH_TX])
+
+    async def flush_tx_all(self):
+        while True:
+            fifo_status = REG_FIFO_STATUS.from_int(
+                await self.read_register(ADDR_FIFO_STATUS))
+            if fifo_status.TX_EMPTY:
+                break
+            await self.flush_tx()
 
 
 class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
@@ -333,28 +373,16 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
                 await nrf24l01_iface.write_register(ADDR_DYNPD,
                     REG_DYNPD(DPL_P0=1).to_int())
 
-            while True:
-                fifo_status = REG_FIFO_STATUS.from_int(
-                    await nrf24l01_iface.read_register(ADDR_FIFO_STATUS))
-                if fifo_status.TX_EMPTY:
-                    break
-                await nrf24l01_iface.flush_tx()
+            await nrf24l01_iface.flush_tx_all()
             await nrf24l01_iface.write_register(ADDR_CONFIG,
                 REG_CONFIG(PRIM_RX=0, PWR_UP=1, CRCO=crco, EN_CRC=en_crc).to_int())
 
             await nrf24l01_iface.write_tx_payload(args.payload,
                 ack=not args.compat_framing and not args.no_ack)
 
-            await nrf24l01_iface.write_register(ADDR_STATUS,
-                REG_STATUS(TX_DS=1, MAX_RT=1).to_int())
             await nrf24l01_iface.enable()
             try:
-                while True:
-                    status = REG_STATUS.from_int(
-                        await nrf24l01_iface.read_register(ADDR_STATUS))
-                    if status.TX_DS or status.MAX_RT:
-                        break
-                    await asyncio.sleep(0.010)
+                status = await nrf24l01_iface.poll_tx_status()
             finally:
                 await nrf24l01_iface.disable()
 
@@ -370,6 +398,8 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
                     self.logger.error("packet lost after %d retransmits", observe_tx.ARC_CNT)
                 else:
                     self.logger.error("packet lost")
+                await nrf24l01_iface.write_register(ADDR_STATUS,
+                    REG_STATUS(MAX_RT=1).to_int())
 
         if args.operation == "receive":
             if len(args.address) != args.address_width:
@@ -395,35 +425,30 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
                         "One of --dynamic-length or --length must be specified")
                 await nrf24l01_iface.write_register(ADDR_RX_PW_Pn(0), args.length)
 
-            while True:
-                fifo_status = REG_FIFO_STATUS.from_int(
-                    await nrf24l01_iface.read_register(ADDR_FIFO_STATUS))
-                if fifo_status.RX_EMPTY:
-                    break
-                await nrf24l01_iface.flush_rx()
+            await nrf24l01_iface.flush_rx_all()
             await nrf24l01_iface.write_register(ADDR_CONFIG,
                 REG_CONFIG(PRIM_RX=1, PWR_UP=1, CRCO=crco, EN_CRC=en_crc).to_int())
 
             await nrf24l01_iface.enable()
             try:
                 while True:
-                    await nrf24l01_iface.write_register(ADDR_STATUS,
-                        REG_STATUS(RX_DR=1).to_int())
-                    while True:
-                        status = REG_STATUS.from_int(
-                            await nrf24l01_iface.read_register(ADDR_STATUS))
-                        if status.RX_DR:
-                            assert status.RX_P_NO == 0
-                            break
-                        await asyncio.sleep(0.010)
+                    status = REG_STATUS.from_int(
+                        await nrf24l01_iface.read_register(ADDR_STATUS))
+                    if status.RX_P_NO == 0b111:
+                        await nrf24l01_iface.poll_rx_status()
+                        continue
 
                     if en_dpl:
                         length = await nrf24l01_iface.read_rx_payload_length()
+                        if length > 32:
+                            self.logger.warn("corrupted packet received with length %d",
+                                             length)
+                            await nrf24l01_iface.flush_rx()
+                            continue
                     else:
                         length = args.length
-                    payload = await nrf24l01_iface.read_rx_payload(length)
-                    await nrf24l01_iface.flush_rx()
 
+                    payload = await nrf24l01_iface.read_rx_payload(length)
                     self.logger.info("packet received: %s", dump_hex(payload))
 
                     if not args.repeat:
