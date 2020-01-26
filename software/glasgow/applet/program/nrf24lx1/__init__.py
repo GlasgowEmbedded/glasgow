@@ -29,6 +29,18 @@ _nrf24le1_map = [
     _MemoryArea(name="info",    mem_addr=0x10000, spi_addr=0x10000, size=0x0200),
 ]
 
+_nrf24lu1p_32k_map = [
+    _MemoryArea(name="code/NV data",
+                                mem_addr= 0x0000, spi_addr= 0x0000, size=0x8000),
+    _MemoryArea(name="info",    mem_addr=0x10000, spi_addr=0x10000, size=0x0200),
+]
+
+_nrf24lu1p_16k_map = [
+    _MemoryArea(name="code",    mem_addr= 0x0000, spi_addr= 0x0000, size=0x4000),
+    _MemoryArea(name="NV data", mem_addr= 0x7C00, spi_addr= 0x7C00, size=0x0400),
+    _MemoryArea(name="info",    mem_addr=0x10000, spi_addr=0x10000, size=0x0200),
+]
+
 
 FSR_BIT_ENDEBUG = 0b10000000
 FSR_BIT_STP     = 0b01000000
@@ -48,7 +60,7 @@ class ProgramNRF24Lx1Interface:
         self._addr_dut_reset = addr_dut_reset
 
     def _log(self, message, *args):
-        self._logger.log(self._level, "nRF24LX1: " + message, *args)
+        self._logger.log(self._level, "nRF24Lx1: " + message, *args)
 
     async def _reset(self):
         await self._device.write_register(self._addr_dut_reset, 1)
@@ -131,9 +143,9 @@ class ProgramNRF24Lx1Interface:
 
 class ProgramNRF24Lx1Applet(GlasgowApplet, name="program-nrf24lx1"):
     logger = logging.getLogger(__name__)
-    help = "program nRF24LE1 RF microcontrollers"
+    help = "program nRF24LE1 and nRF24LU1+ RF microcontrollers"
     description = """
-    Program the non-volatile memory of nRF24LE1 microcontrollers.
+    Program the non-volatile memory of nRF24LE1 and nRF24LU1+ microcontrollers.
     """
 
     __pins = ("prog", "sck", "mosi", "miso", "ss", "reset")
@@ -190,6 +202,11 @@ class ProgramNRF24Lx1Applet(GlasgowApplet, name="program-nrf24lx1"):
 
     @classmethod
     def add_interact_arguments(cls, parser):
+        parser.add_argument(
+            "-d", "--device", metavar="DEVICE", required=True,
+            choices=("LE1", "LU1p16k", "LU1p32k"),
+            help="type of device to program")
+
         # TODO(py3.7): add required=True
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
@@ -221,8 +238,18 @@ class ProgramNRF24Lx1Applet(GlasgowApplet, name="program-nrf24lx1"):
             "enable-debug", help="enable MCU hardare debugging features")
 
     async def interact(self, device, args, nrf24lx1_iface):
-        memory_map = _nrf24le1_map
-        page_size  = 512
+        page_size = 512
+        if args.device == "LE1":
+            memory_map  = _nrf24le1_map
+            buffer_size = 512
+        elif args.device == "LU1p32k":
+            memory_map  = _nrf24lu1p_32k_map
+            buffer_size = 256
+        elif args.device == "LU1p16k":
+            memory_map  = _nrf24lu1p_16k_map
+            buffer_size = 256
+        else:
+            assert False
 
         try:
             await nrf24lx1_iface.reset_program()
@@ -309,10 +336,10 @@ class ProgramNRF24Lx1Applet(GlasgowApplet, name="program-nrf24lx1"):
                                     memory_area.name, chunk_mem_addr, len(chunk_data))
                     while len(chunk_data) > 0:
                         await nrf24lx1_iface.write_enable()
-                        await nrf24lx1_iface.program(chunk_spi_addr, chunk_data[:page_size])
+                        await nrf24lx1_iface.program(chunk_spi_addr, chunk_data[:buffer_size])
                         await nrf24lx1_iface.wait_status()
-                        chunk_data  = chunk_data[page_size:]
-                        chunk_spi_addr += page_size
+                        chunk_data  = chunk_data[buffer_size:]
+                        chunk_spi_addr += buffer_size
 
             if args.operation == "erase":
                 if args.info_page:
