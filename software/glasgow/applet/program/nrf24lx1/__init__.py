@@ -30,13 +30,13 @@ _nrf24le1_map = [
 ]
 
 _nrf24lu1p_32k_map = [
-    _MemoryArea(name="code/NV data",
-                                mem_addr= 0x0000, spi_addr= 0x0000, size=0x8000),
+    _MemoryArea(name="code",    mem_addr= 0x0000, spi_addr= 0x0000, size=0x7C00),
+    _MemoryArea(name="NV data", mem_addr= 0x7C00, spi_addr= 0x7C00, size=0x0400),
     _MemoryArea(name="info",    mem_addr=0x10000, spi_addr=0x10000, size=0x0200),
 ]
 
 _nrf24lu1p_16k_map = [
-    _MemoryArea(name="code",    mem_addr= 0x0000, spi_addr= 0x0000, size=0x4000),
+    _MemoryArea(name="code",    mem_addr= 0x0000, spi_addr= 0x0000, size=0x3C00),
     _MemoryArea(name="NV data", mem_addr= 0x7C00, spi_addr= 0x7C00, size=0x0400),
     _MemoryArea(name="info",    mem_addr=0x10000, spi_addr=0x10000, size=0x0200),
 ]
