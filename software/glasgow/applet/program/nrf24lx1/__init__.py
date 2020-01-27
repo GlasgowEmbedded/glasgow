@@ -324,9 +324,10 @@ class ProgramNRF24Lx1Applet(GlasgowApplet, name="program-nrf24lx1"):
                         (chunk_spi_addr + len(chunk_data) + page_size - 1) // page_size))
                     need_erase_pages = overwrite_pages - erased_pages
                     if need_erase_pages:
-                        self.logger.log(level, "erasing %s memory at %#06x+%#06x",
-                                        memory_area.name, chunk_mem_addr, len(chunk_data))
                         for page in need_erase_pages:
+                            page_addr = (memory_area.spi_addr & 0x10000) | (page * page_size)
+                            self.logger.log(level, "erasing %s memory at %#06x+%#06x",
+                                            memory_area.name, page_addr, page_size)
                             await nrf24lx1_iface.write_enable()
                             await nrf24lx1_iface.erase_page(page)
                             await nrf24lx1_iface.wait_status()
