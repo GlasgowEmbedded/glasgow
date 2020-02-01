@@ -6,7 +6,7 @@ from nmigen.compat.fhdl.specials import TSTriple
 __all__ = ['Pads']
 
 
-class Pads(Module):
+class Pads(Elaboratable):
     """
     Pad adapter.
 
