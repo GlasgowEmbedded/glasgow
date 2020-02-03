@@ -205,7 +205,7 @@ class ProgramNRF24Lx1Applet(GlasgowApplet, name="program-nrf24lx1"):
         parser.add_argument(
             "-d", "--device", metavar="DEVICE", required=True,
             choices=("LE1", "LU1p16k", "LU1p32k"),
-            help="type of device to program")
+            help="type of device to program (one of: %(choices)s)")
 
         # TODO(py3.7): add required=True
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
