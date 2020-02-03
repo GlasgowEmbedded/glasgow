@@ -35,7 +35,7 @@ enum {
 #define PIND_LED_ACT          4
 #define PIND_LED_ERR          5
 #define PIND_ENVB             6
-#define PIND_OEQ_N            7
+#define PIND_OEQ_N_REVAB      7
 
 enum {
   // I2C addresses (unshifted)
