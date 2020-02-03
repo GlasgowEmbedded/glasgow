@@ -137,9 +137,15 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
             if mode in ("pins-int", "pins-ext", "pins-pull"):
                 if mode == "pins-int":
                     await device.set_voltage("AB", 0)
+
+                    # disable the IO-buffers (FXMA108) on revAB to not influence the external ports
+                    # no effect on other revisions
                     await device._iobuf_enable(False)
                 elif mode in ("pins-ext", "pins-pull"):
                     await device.set_voltage("AB", 3.3)
+
+                    # re-enable the IO-buffers (FXMA108) on revAB
+                    # no effect on other revisions
                     await device._iobuf_enable(True)
                 use_pull = (mode == "pins-pull")
 
@@ -172,6 +178,9 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                     report.append((mode, "fail short: {}".format(" ".join(sorted(pins)))))
 
                 await device.set_voltage("AB", 0)
+
+                # re-enable the IO-buffers (FXMA108) on revAB, they are on by default
+                # no effect on other revisions
                 await device._iobuf_enable(True)
 
             if mode == "pins-loop":

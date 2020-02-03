@@ -363,6 +363,8 @@ class GlasgowHardwareDevice:
             await self.download_bitstream(plan.execute(), plan.bitstream_id)
 
     async def _iobuf_enable(self, on):
+        # control the IO-buffers (FXMA108) on revAB, they are on by default
+        # no effect on other revisions
         await self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_IOBUF_ENABLE, on, 0, [])
 
     @staticmethod
