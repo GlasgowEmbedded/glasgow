@@ -18,11 +18,12 @@ void iobuf_init_dac_ldo() {
   IOD  = IOD & ~((1<<PIND_ENVA)|(1<<PIND_ENVB)) | (1<<PIND_OEQ_N);
   OED |=        ((1<<PIND_ENVA)|(1<<PIND_ENVB)  | (1<<PIND_OEQ_N));
 
-  // Enable I/O buffers
+  // Enable I/O buffers, just existing on revAB
   IOD &= ~ (1<<PIND_OEQ_N);
 }
 
 void iobuf_enable(bool on) {
+  // I/O buffers just existing on revAB, pin is unconnected on revC
   if(on) IOD &= ~(1<<PIND_OEQ_N);
   else   IOD |=  (1<<PIND_OEQ_N);
 }
