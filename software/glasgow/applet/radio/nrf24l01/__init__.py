@@ -9,7 +9,7 @@ from nmigen.compat import *
 
 from ....support.logging import *
 from ....support.bits import *
-from ....arch.nrf24l import crc_nrf24l
+from ....arch.nrf24l import *
 from ....arch.nrf24l.rf import *
 from ...interface.spi_master import SPIMasterSubtarget, SPIMasterInterface
 from ... import *
@@ -141,7 +141,6 @@ class RadioNRF24L01Interface:
 
 
 class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
-    preview = True
     logger = logging.getLogger(__name__)
     help = "transmit and receive using nRF24L01(+) RF PHY"
     description = """
@@ -537,14 +536,20 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
 
                         if len(crc) < args.crc_width:
                             crc_msg = " (CRC?)"
-                        else:
+                        elif args.crc_width in (1, 2):
+                            if args.crc_width == 1:
+                                crc_func = crc8_nrf24l
+                            else:
+                                crc_func = crc16_nrf24l
                             crc_actual   = int.from_bytes(crc[:args.crc_width], "big")
-                            crc_expected = crc_nrf24l(bytes(reversed(args.address)) + payload,
+                            crc_expected = crc_func(bytes(reversed(args.address)) + payload,
                                 bits=len(args.address) * 8 + 9 + len(data) * 8)
                             if crc_actual != crc_expected:
                                 crc_msg = " (CRC!)"
                             else:
                                 crc_msg = ""
+                        else:
+                            crc_msg = ""
 
                         self.logger.info("packet received: PID=%s %s%s",
                                          "{:02b}".format(packet_id), payload_msg, crc_msg)

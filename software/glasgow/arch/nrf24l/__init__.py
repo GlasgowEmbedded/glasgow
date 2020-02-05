@@ -1,8 +1,27 @@
 import crcmod
 
 
-# CRC for the on-air format, where packets may not be a multiple of 8 bit.
-def crc_nrf24l(data, *, bits):
+__all__ = ["crc8_nrf24l", "crc16_nrf24l"]
+
+
+def crc8_nrf24l(data, *, bits):
+    rem = 0xff
+    for i, byte in enumerate(data):
+        if (i + 1) * 8 > bits:
+            byte &= ~((1 << (8 - bits % 8)) - 1)
+        rem = rem ^ byte
+        for j in range(8):
+            if i * 8 + j == bits:
+                return rem
+            if rem & 0x80:
+                rem = (rem << 1) ^ 0x07
+            else:
+                rem = rem << 1
+            rem &= 0xff
+    return rem
+
+
+def crc16_nrf24l(data, *, bits):
     rem = 0xffff
     for i, byte in enumerate(data):
         if (i + 1) * 8 > bits:
