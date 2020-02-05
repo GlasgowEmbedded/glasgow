@@ -76,8 +76,8 @@ class CRCO(enum.IntEnum):
 REG_CONFIG      = bitstruct("REG_CONFIG", 8, [
     ("PRIM_RX",     1),
     ("PWR_UP",      1),
-    ("EN_CRC",      1),
     ("CRCO",        1),
+    ("EN_CRC",      1),
     ("MASK_MAX_RT", 1),
     ("MASK_TX_DS",  1),
     ("MASK_RX_DR",  1),
