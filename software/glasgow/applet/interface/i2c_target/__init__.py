@@ -254,4 +254,4 @@ class I2CTargetApplet(GlasgowApplet, name="i2c-target"):
 class I2CTargetAppletTestCase(GlasgowAppletTestCase, applet=I2CTargetApplet):
     @synthesis_test
     def test_build(self):
-        self.assertBuilds()
+        self.assertBuilds(args=["-A", "0b1010000"])
