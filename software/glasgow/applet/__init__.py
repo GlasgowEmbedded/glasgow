@@ -95,7 +95,7 @@ import asyncio
 import threading
 import inspect
 import json
-from nmigen.compat.sim import *
+from nmigen.back.pysim import *
 
 from ..access.simulation import *
 from ..access.direct import *
@@ -297,8 +297,16 @@ def applet_simulation_test(setup, args=[]):
             self._prepare_simulation_target()
 
             getattr(self, setup)()
+            @asyncio.coroutine
+            def run():
+                yield from case(self)
+
+            sim = Simulator(self.target)
+            sim.add_clock(1e9)
+            sim.add_sync_process(run)
             vcd_name = "{}.vcd".format(case.__name__)
-            run_simulation(self.target, case(self), vcd_name=vcd_name)
+            with sim.write_vcd(vcd_name):
+                sim.run()
             os.remove(vcd_name)
 
         return wrapper
