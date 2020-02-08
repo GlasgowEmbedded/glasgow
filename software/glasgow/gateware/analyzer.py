@@ -710,6 +710,7 @@ class EventAnalyzerTestCase(unittest.TestCase):
         ])
 
     @simulation_test(sources=(1,))
+    @unittest.skip("FIXME: see issue #182")
     def test_delay_2_septet(self, tb):
         yield tb.dut._delay_timer.eq(0b1_1110000)
         yield from tb.trigger(0, 1)
@@ -723,6 +724,7 @@ class EventAnalyzerTestCase(unittest.TestCase):
         ])
 
     @simulation_test(sources=(1,))
+    @unittest.skip("FIXME: see issue #182")
     def test_delay_3_septet(self, tb):
         yield tb.dut._delay_timer.eq(0b01_0011000_1100011)
         yield from tb.trigger(0, 1)
@@ -737,6 +739,7 @@ class EventAnalyzerTestCase(unittest.TestCase):
         ])
 
     @simulation_test(sources=(1,))
+    @unittest.skip("FIXME: see issue #182")
     def test_delay_max(self, tb):
         yield tb.dut._delay_timer.eq(0xfffe)
         yield from tb.trigger(0, 1)
@@ -751,6 +754,7 @@ class EventAnalyzerTestCase(unittest.TestCase):
         ])
 
     @simulation_test(sources=(1,))
+    @unittest.skip("FIXME: see issue #182")
     def test_delay_overflow(self, tb):
         yield tb.dut._delay_timer.eq(0xfffe)
         yield
@@ -766,6 +770,7 @@ class EventAnalyzerTestCase(unittest.TestCase):
         ])
 
     @simulation_test(sources=(1,))
+    @unittest.skip("FIXME: see issue #182")
     def test_delay_overflow_p1(self, tb):
         yield tb.dut._delay_timer.eq(0xfffe)
         yield
@@ -782,6 +787,7 @@ class EventAnalyzerTestCase(unittest.TestCase):
         ])
 
     @simulation_test(sources=(1,))
+    @unittest.skip("FIXME: see issue #182")
     def test_delay_4_septet(self, tb):
         for _ in range(64):
             yield tb.dut._delay_timer.eq(0xfffe)
