@@ -22,4 +22,4 @@ install:
   - (cd nextpnr && if ! nextpnr-ice40 --version || [ $(git rev-parse HEAD $(nextpnr-ice40 --version | awk 'match($0,/sha1 ([0-9a-f]+)/,m) { print m[1] }') | uniq | wc -l) != 1 ]; then sudo apt install libeigen3-dev python3-dev libboost-all-dev && (git clone https://github.com/cliffordwolf/icestorm && cd icestorm && make ICEPROG=0 PREFIX=$HOME/.local install) && mkdir build-ice40 && cd build-ice40 && cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/.local -DBUILD_GUI=OFF -DARCH=ice40 -DICEBOX_ROOT=$HOME/.local/share/icebox && make install; fi)
 script:
   - "(cd software && python setup.py install)"
-  - "(cd software && python -W ignore::DeprecationWarning setup.py test)"
+  - "(cd software && python -W ignore::DeprecationWarning test.py)"
