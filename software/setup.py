@@ -79,7 +79,7 @@ setup(
         "crcmod",
     ],
     dependency_links=[
-        "git+https://github.com/m-labs/nmigen.git#egg=nmigen",
+        "git+https://github.com/nmigen/nmigen.git#egg=nmigen",
     ],
     packages=find_packages(),
     package_data={"": ["*.ihex"]},
