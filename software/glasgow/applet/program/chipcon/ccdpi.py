@@ -19,8 +19,8 @@ import logging
 import asyncio
 from collections import namedtuple
 
-from nmigen import Elaboratable, Module, Signal, Cat
-from ... import GlasgowAppletError
+from nmigen import *
+from ... import *
 
 # Index of known devices
 #

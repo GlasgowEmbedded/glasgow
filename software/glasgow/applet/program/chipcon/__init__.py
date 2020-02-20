@@ -6,8 +6,8 @@ import asyncio
 import math
 
 from fx2.format import autodetect, input_data, output_data, flatten_data
-from ... import GlasgowApplet
-from .ccdpi import CCDPISubtarget, CCDPIInterface, CCDPIError, DEVICES, CONFIG_SEL_FLASH_INFO_PAGE
+from ... import *
+from .ccdpi import *
 
 STATUS_BITS = [
     "CHIP_ERASE_DONE",
@@ -212,7 +212,6 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
 
 
 # -------------------------------------------------------------------------------------------------
-from ... import GlasgowAppletTestCase, synthesis_test
 
 class ProgramChipconAppletTestCase(GlasgowAppletTestCase, applet=ProgramChipconApplet):
     @synthesis_test
