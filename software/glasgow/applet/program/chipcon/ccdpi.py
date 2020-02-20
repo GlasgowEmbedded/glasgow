@@ -10,20 +10,8 @@ from collections import namedtuple
 from enum import IntEnum, IntFlag
 
 from nmigen import *
+from ....database.ti.chipcon import *
 from ... import *
-
-# Index of known devices
-#
-CCDPIDevice = namedtuple("CCDevice", ["name", "flash_word_size", "flash_page_size", "write_block_size"])
-
-DEVICES = {
-    0x01: CCDPIDevice(name="CC1110", flash_word_size=2, flash_page_size=1024, write_block_size=512),
-    0x11: CCDPIDevice(name="CC1111", flash_word_size=2, flash_page_size=1024, write_block_size=512),
-    0x81: CCDPIDevice(name="CC2510", flash_word_size=2, flash_page_size=1024, write_block_size=512),
-    0x91: CCDPIDevice(name="CC2511", flash_word_size=2, flash_page_size=1024, write_block_size=512),
-    0x85: CCDPIDevice(name="CC2430", flash_word_size=4, flash_page_size=2048, write_block_size=2048),
-    0x89: CCDPIDevice(name="CC2431", flash_word_size=4, flash_page_size=2048, write_block_size=2048),
-}
 
 class CCDPIError(GlasgowAppletError):
     pass
@@ -314,7 +302,7 @@ class CCDPIInterface:
 
         # Is there something recognizable attached?
         self.chip_id,self.chip_rev = await self.get_chip_id()
-        self.device =  DEVICES.get(self.chip_id, None)
+        self.device = devices.get(self.chip_id, None)
         if not self.device:
             raise CCDPIError("Did not find device")
 
