@@ -9,17 +9,6 @@ from fx2.format import autodetect, input_data, output_data, flatten_data
 from ... import *
 from .ccdpi import *
 
-STATUS_BITS = [
-    "CHIP_ERASE_DONE",
-    "PCON_IDLE",
-    "CPU_HALTED",
-    "POWER_MODE_0",
-    "HALT_STATUS",
-    "DEBUG_LOCKED",
-    "OSCILLATOR_STABLE",
-    "STACK_OVERFLOW"
-]
-
 class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
     logger = logging.getLogger(__name__)
     help = "program TI/Chipcon CC111x CC251x "
@@ -75,9 +64,6 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
 
         p_identify = p_operation.add_parser(
             "identify", help="read identity and revision from connected device")
-
-        p_status = p_operation.add_parser(
-            "status", help="read status of device")
 
         p_erase = p_operation.add_parser(
             "erase", help="erase whole device.")
@@ -142,11 +128,6 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
                 chipcon_iface.chip_id,
                 chipcon_iface.device.name,
                 chipcon_iface.chip_rev))
-
-        elif args.operation == "status":
-            s = await chipcon_iface.get_status()
-            ss = list(x for i,x in enumerate(STATUS_BITS) if ((0x80 >> i) & s) != 0)
-            self.logger.info("Status: 0x{:02x} [{}]".format(s, ", ".join(ss)))
 
         elif args.operation == "erase":
             await chipcon_iface.chip_erase()
