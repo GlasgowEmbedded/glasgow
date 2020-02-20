@@ -50,8 +50,6 @@ class CCDPIBus(Elaboratable):
         o    = Signal()
         i    = Signal()
 
-        led_ready = platform.request("led",0)
-
         m.d.comb += [
             self.pads.dclk_t.oe.eq(1),
             self.pads.dclk_t.o.eq(dclk),
@@ -82,7 +80,6 @@ class CCDPIBus(Elaboratable):
             with m.State("READY"):
                 m.d.comb += [
                     self.rdy.eq(1),
-                    led_ready.eq(1),
                 ]
 
                 with m.If(self.ack):
@@ -196,12 +193,9 @@ class CCDPISubtarget(Elaboratable):
         count_out = Signal(3)
         count_in = Signal(3)
 
-        led_ready = platform.request("led",1)
-
         with m.FSM():
             with m.State("READY"):
                 m.d.comb += self.in_fifo.flush.eq(1)
-                m.d.comb += led_ready.eq(1)
                 with m.If(self.out_fifo.readable):
                     m.d.comb += self.out_fifo.re.eq(1)
                     m.d.sync += Cat(count_in, count_out, op, discard).eq(self.out_fifo.dout)
