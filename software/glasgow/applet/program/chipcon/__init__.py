@@ -178,18 +178,29 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
         await chipcon_iface.disconnect()
 
     async def _write_flash_blocks(self, chipcon_iface, data, block_size):
-        """Write data to flash, breaking into blocks of given size."""
+        """Write and verify data to flash, breaking into blocks of given size."""
+        address, chunk = self._combine_chunks(data)
+        for block_offset in range(0, len(chunk), block_size):
+            block = bytes(chunk[block_offset:block_offset+block_size])
+            await chipcon_iface.write_flash(address+block_offset, block)
+            readback = await chipcon_iface.read_code(address+block_offset, len(block))
+            if block != readback:
+                raise CCDPIError("verification failed at address %#06x: %s != %s" %
+                                 (address, readback.hex(), chunk.hex()))
 
-        for address, chunk in data:
-            for o in range(0, len(chunk), block_size):
-                block = bytes(chunk[o:o+block_size])
-                await chipcon_iface.write_flash(address+o, block)
-                readback = await chipcon_iface.read_code(address+o, len(block))
-
-                if block != readback:
-                    raise CCDPIError("verification failed at address %#06x: %s != %s" %
-                                     (address, readback.hex(), chunk.hex()))
-
+    def _combine_chunks(self, data):
+        """Combine a list of (adress,chunk) to a single start address and bytearray.
+        Any gaps are filled with 0xff.
+        """
+        if len(data) == 1:
+            return data[0]
+        start = min([addr for (addr, _) in data])
+        end = max([addr + len(chunk) for (addr, chunk) in data])
+        combined_data = bytearray([0xff] * (end - start))
+        for (addr, chunk) in data:
+            addr -= start
+            combined_data[addr:addr+len(chunk)] = chunk
+        return (start, data_flat)
 
 # -------------------------------------------------------------------------------------------------
 
