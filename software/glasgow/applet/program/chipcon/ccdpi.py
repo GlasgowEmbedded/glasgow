@@ -218,7 +218,7 @@ class CCDPISubtarget(Elaboratable):
 
 class CCDPIInterface:
     # Number of reads ops that are queued up before pulling data from fifo
-    READ_CHUNK_SIZE=1024
+    READ_BLOCK_SIZE=1024
 
     def __init__(self, interface, logger, addr_reset):
         self.lower   = interface
@@ -261,7 +261,7 @@ class CCDPIInterface:
         # Generate entry signal - two clocks while reset
         await self.lower.device.write_register(self._addr_reset, 1)
         await asyncio.sleep(0.01)
-        r = await self._send(Operation.DEBUG, [], 0)
+        await self._send(Operation.DEBUG, [], 0)
         await self.lower.flush()
         await asyncio.sleep(0.01)
         await self.lower.device.write_register(self._addr_reset, 0)
@@ -299,8 +299,7 @@ class CCDPIInterface:
             raise CCDPIError("Chip erase not done")
 
     async def get_status(self):
-        r = await self._send_recv(Operation.COMMAND, [Cmd.READ_STATUS], 1)
-        return r[0]
+        return (await self._send_recv(Operation.COMMAND, [Cmd.READ_STATUS], 1))[0]
 
     async def halt(self):
         await self._send_recv(Operation.COMMAND, [Cmd.HALT], 1)
@@ -309,24 +308,22 @@ class CCDPIInterface:
         await self._send_recv(Operation.COMMAND, [Cmd.RESUME], 1)
 
     async def step(self):
-        r = await self._send_recv(Operation.COMMAND, [Cmd.STEP_INSTR], 1)
-        return r[0]
+        return (await self._send_recv(Operation.COMMAND, [Cmd.STEP_INSTR], 1))[0]
 
     async def get_pc(self):
-        r = await self._send_recv(Operation.COMMAND, [Cmd.GET_PC], 2)
-        return (r[0] << 8) + r[1]
+        recv_bytes = await self._send_recv(Operation.COMMAND, [Cmd.GET_PC], 2)
+        return (recv_bytes[0] << 8) + recv_bytes[1]
 
     async def get_config(self):
-        r = await self._send_recv(Operation.COMMAND, [Cmd.RD_CONFIG], 1)
-        return r[0]
+        return (await self._send_recv(Operation.COMMAND, [Cmd.RD_CONFIG], 1))[0]
 
     async def set_config(self, cfg):
         await self._send_recv(Operation.COMMAND, [Cmd.WR_CONFIG, cfg], 1)
 
-    async def set_breakpoint(self, bp, bank, address, enable=True):
+    async def set_breakpoint(self, bp_number, bank, address, enable=True):
         await self._send_recv(Operation.COMMAND, [Cmd.SET_HW_BRKPNT,
-                                           (bp << 4)+(0x4 if enable else 0) + bank,
-                                           (address>>8) & 0xff, address & 0xff], 1)
+												  (bp_number << 4)+(0x4 if enable else 0) + bank,
+												  (address>>8) & 0xff, address & 0xff], 1)
 
     async def clear_breakpoint(self, bp):
         await self._send_recv(Operation.COMMAND, [Cmd.SET_HW_BRKPNT, (bp << 4) + 0x00, 0x00, 0x00], 1)
@@ -334,14 +331,13 @@ class CCDPIInterface:
     async def debug_instr(self, *args, discard=True):
         if not 1 <= len(args) <= 3:
             raise CCDPIError("Instructions must be 1..3 bytes")
-        op = Operation.COMMAND_DISCARD if discard else Operation.COMMAND
-        await self._send(op, [Cmd.DEBUG_INSTR + len(args)] + list(args), 1)
+        target_op = Operation.COMMAND_DISCARD if discard else Operation.COMMAND
+        await self._send(target_op, [Cmd.DEBUG_INSTR + len(args)] + list(args), 1)
 
     async def debug_instr_a(self, *args):
         if not 1 <= len(args) <= 3:
             raise CCDPIError("Instructions must be 1..3 bytes")
-        r = await self._send_recv(Operation.COMMAND, [Cmd.DEBUG_INSTR + len(args)] + list(args), 1)
-        return r[0]
+        return (await self._send_recv(Operation.COMMAND, [Cmd.DEBUG_INSTR + len(args)] + list(args), 1))[0]
 
     async def set_pc(self, address):
         await self.debug_instr(0x02, (address >> 8) & 0xff, address & 0xff)     # LJMP address
@@ -360,38 +356,38 @@ class CCDPIInterface:
         await self.debug_instr(0x75, 0xC7, (bank * 16) + 1)                     # MOV MEMCTR, (bank * 16) + 1
         await self.debug_instr(0x90, (address >> 8) & 0xff, address & 0xff)     # MOV DPTR, address
         # Read in chunk - send out a burst of read insns, then read back the replies
-        data = bytearray()
+        recv_bytes = bytearray()
         while count:
-            c = min(self.READ_CHUNK_SIZE, count)
-            count -= c
-            for n in range(c):
+            block_size = min(self.READ_BLOCK_SIZE, count)
+            count -= block_size
+            for _ in range(block_size):
                 await self.debug_instr(0xE4)                                    #   CLR A
                 await self.debug_instr(0x93, discard=False)                     #   MOVC A, @A+DPTR
                 await self.debug_instr(0xA3)                                    #   INC DPTR
             await self._flush()
-            data += await self._recv(c)
-        return data
+            recv_bytes += await self._recv(block_size)
+        return recv_bytes
 
     async def read_xdata(self, address, count):
         """Read from XDATA address space."""
         await self.debug_instr(0x90, (address >> 8) & 0xff, address & 0xff)     # MOV DPTR, address
         # Read in chunk - send out a burst of read insns, then read back the replies
-        data = bytearray()
+        recv_bytes = bytearray()
         while count:
-            c = min(self.READ_CHUNK_SIZE, count)
-            count -= c
-            for n in range(c):
+            block_size = min(self.READ_BLOCK_SIZE, count)
+            count -= block_size
+            for _ in range(block_size):
                 await self.debug_instr(0xE0, discard=False)                     #   MOVC A, @A+DPTR
                 await self.debug_instr(0xA3)                                    #   INC DPTR
             await self._flush()
-            data += await self._recv(c)
+            data += await self._recv(block_size)
         return data
 
     async def write_xdata(self, address, data):
         """Write to XDATA address space."""
-        await self.debug_instr(0x90, (address >> 8) & 0xff, address & 0xff) # MOV DPTR, address
-        for b in data:
-            await self.debug_instr(0x74, b)                                     #   MOV A,#imm8
+        await self.debug_instr(0x90, (address >> 8) & 0xff, address & 0xff)     # MOV DPTR, address
+        for byte in data:
+            await self.debug_instr(0x74, byte)                                  #   MOV A,#imm8
             await self.debug_instr(0xF0)                                        #   MOV @DPTR,A
             await self.debug_instr(0xA3)                                        #   INC DPTR
         await self._flush()
@@ -429,6 +425,8 @@ class CCDPIInterface:
         Expects flash to be erased already.
         Pads data with 0xFF so that writes can be to byte boundaries.
         """
+        DATA_ADDRESS = 0xf000
+
         # Word align start and end of data by padding with 0xff
         start_pad = address % self.device.flash_word_size
         if start_pad != 0:
@@ -436,13 +434,12 @@ class CCDPIInterface:
             address -= start_pad
         end_pad = len(data) % self.device.flash_word_size
         if end_pad != 0:
-            data =  data + bytes([0xff]*(self.device.flash_word_size-end_pad))
-        if len(data) > self.device.flash_page_size:
+            data += bytes([0xff]*(self.device.flash_word_size-end_pad))
+        if len(data) > self.device.write_block_size:
             raise CCDPIError("Trying to write more than a page of data to flash.")
         if not data:
             return
         # Copy data into SRAM at 0xf000
-        data_address = 0xf000
         await self.write_xdata(data_address, data)
         words_per_flash_page = self.device.flash_page_size // self.device.flash_word_size
         word_address = address // self.device.flash_word_size
@@ -470,7 +467,7 @@ class CCDPIInterface:
             0xA5                                                            #    HALT
         ]
         # Copy code into SRAM in next page
-        code_address = 0xf000 + self.device.flash_page_size
+        code_address = DATA_ADDRESS + self.device.write_block_size
         await self.write_xdata(code_address, code)
         # Start CPU - then wait for it to halt
         await self.set_pc(code_address)
