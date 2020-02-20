@@ -7,6 +7,7 @@
 import logging
 import asyncio
 from collections import namedtuple
+from enum import IntEnum, IntFlag
 
 from nmigen import *
 from ... import *
@@ -141,50 +142,44 @@ class CCDPIBus(Elaboratable):
 
         return m
 
-# Interface operations
-OP_COMMAND         = 0b00
-OP_DEBUG           = 0b01
-OP_COMMAND_DISCARD = 0b10
+class Cmd(IntEnum):
+	CHIP_ERASE    = 0b0001_0100
+	WR_CONFIG     = 0b0001_1101
+	RD_CONFIG     = 0b0010_0100
+	GET_PC        = 0b0010_1000
+	READ_STATUS   = 0b0011_0100
+	SET_HW_BRKPNT = 0b0011_1111
+	HALT          = 0b0100_0100
+	RESUME        = 0b0100_1100
+	DEBUG_INSTR   = 0b0101_0100
+	DEBUG_INSTR1  = 0b0101_0101
+	DEBUG_INSTR2  = 0b0101_0110
+	DEBUG_INSTR3  = 0b0101_0111
+	STEP_INSTR    = 0b0101_1100
+	STEP_REPLACE  = 0b0110_0100
+	GET_CHIP_ID   = 0b0110_1000
 
-# Device debug commands
-#
-#  There seems to have been an intention to encode bytes out/in in low nibble,
-#  but there are enought special cases to make it unusable
-#
-CMD_CHIP_ERASE    = 0b0001_0100
-CMD_WR_CONFIG     = 0b0001_1101
-CMD_RD_CONFIG     = 0b0010_0100
-CMD_GET_PC        = 0b0010_1000
-CMD_READ_STATUS   = 0b0011_0100
-CMD_SET_HW_BRKPNT = 0b0011_1111
-CMD_HALT          = 0b0100_0100
-CMD_RESUME        = 0b0100_1100
-CMD_DEBUG_INSTR   = 0b0101_0100
-CMD_DEBUG_INSTR1  = 0b0101_0101
-CMD_DEBUG_INSTR2  = 0b0101_0110
-CMD_DEBUG_INSTR3  = 0b0101_0111
-CMD_STEP_INSTR    = 0b0101_1100
-CMD_STEP_REPLACE  = 0b0110_0100
-CMD_GET_CHIP_ID   = 0b0110_1000
+class Config(IntFlag):
+	TIMERS_OFF          = 0b0000_1000
+	DMA_PAUSE           = 0b0000_0100
+	TIMER_SUSPEND       = 0b0000_0010
+	SEL_FLASH_INFO_PAGE = 0b0000_0001
 
-# Config register bits
-#
-CONFIG_TIMERS_OFF          = 0b0000_1000
-CONFIG_DMA_PAUSE           = 0b0000_0100
-CONFIG_TIMER_SUSPEND       = 0b0000_0010
-CONFIG_SEL_FLASH_INFO_PAGE = 0b0000_0001
+class Status(IntFlag):
+	CHIP_ERASE_DONE   = 0b1000_0000
+	PCON_IDLE         = 0b0100_0000
+	CPU_HALTED        = 0b0010_0000
+	POWER_MODE_0      = 0b0001_0000
+	HALT_STATUS       = 0b0000_1000
+	DEBUG_LOCKED      = 0b0000_0100
+	OSCILLATOR_STABLE = 0b0000_0010
+	STACK_OVERFLOW    = 0b0000_0001
 
-# Status register bits
-#
-STATUS_CHIP_ERASE_DONE   = 0b1000_0000
-STATUS_PCON_IDLE         = 0b0100_0000
-STATUS_CPU_HALTED        = 0b0010_0000
-STATUS_POWER_MODE_0      = 0b0001_0000
-STATUS_HALT_STATUS       = 0b0000_1000
-STATUS_DEBUG_LOCKED      = 0b0000_0100
-STATUS_OSCILLATOR_STABLE = 0b0000_0010
-STATUS_STACK_OVERFLOW    = 0b0000_0001
-
+class Operation(IntEnum):
+	COMMAND         = 0b00
+	DEBUG           = 0b01
+	COMMAND_DISCARD = 0b10
+	
 class CCDPISubtarget(Elaboratable):
     def __init__(self, pads, out_fifo, in_fifo, period):
         self.pads = pads
@@ -214,9 +209,9 @@ class CCDPISubtarget(Elaboratable):
 
             with m.State("START"):
                 with m.Switch(op):
-                    with m.Case(OP_COMMAND):
+                    with m.Case(Operation.COMMAND):
                         m.next = "OUT"
-                    with m.Case(OP_DEBUG):
+                    with m.Case(Operation.DEBUG):
                         m.next = "DEBUG"
 
             with m.State("OUT"):
@@ -269,7 +264,6 @@ class CCDPISubtarget(Elaboratable):
         return m
 
 class CCDPIInterface:
-
     # Number of reads ops that are queued up before pulling data from fifo
     READ_CHUNK_SIZE=1024
 
@@ -319,7 +313,7 @@ class CCDPIInterface:
         # Generate entry signal - two clocks while reset
         await self.lower.device.write_register(self._addr_reset, 1)
         await asyncio.sleep(0.01)
-        r = await self._send(OP_DEBUG, [], 0)
+        r = await self._send(Operation.DEBUG, [], 0)
         await self.lower.flush()
         await asyncio.sleep(0.01)
         await self.lower.device.write_register(self._addr_reset, 0)
@@ -332,7 +326,7 @@ class CCDPIInterface:
 
         # Wait for stable clock
         for c in range(50):
-            if await self.get_status() & STATUS_OSCILLATOR_STABLE:
+            if await self.get_status() & Status.OSCILLATOR_STABLE:
                 break
         else:
             raise CCDPIError("Oscillator not stable")
@@ -349,64 +343,64 @@ class CCDPIInterface:
         await self._flush()
 
     async def get_chip_id(self):
-        id,rev = await self._send_recv(OP_COMMAND, [CMD_GET_CHIP_ID], 2)
+        id,rev = await self._send_recv(Operation.COMMAND, [Cmd.GET_CHIP_ID], 2)
         return (id, rev)
 
     async def chip_erase(self):
-        await self._send_recv(OP_COMMAND, [CMD_CHIP_ERASE], 1)
+        await self._send_recv(Operation.COMMAND, [Cmd.CHIP_ERASE], 1)
         for c in range(50):
-            if await self.get_status() & STATUS_CHIP_ERASE_DONE:
+            if await self.get_status() & Status.CHIP_ERASE_DONE:
                 break
         else:
             raise CCDPIError("Chip erase not done")
 
     async def get_status(self):
-        r = await self._send_recv(OP_COMMAND, [CMD_READ_STATUS], 1)
+        r = await self._send_recv(Operation.COMMAND, [Cmd.READ_STATUS], 1)
         return r[0]
 
     async def halt(self):
-        await self._send_recv(OP_COMMAND, [CMD_HALT], 1)
+        await self._send_recv(Operation.COMMAND, [Cmd.HALT], 1)
 
     async def resume(self):
-        await self._send_recv(OP_COMMAND, [CMD_RESUME], 1)
+        await self._send_recv(Operation.COMMAND, [Cmd.RESUME], 1)
 
     async def step(self):
-        r = await self._send_recv(OP_COMMAND, [CMD_STEP_INSTR], 1)
+        r = await self._send_recv(Operation.COMMAND, [Cmd.STEP_INSTR], 1)
         return r[0]
 
     async def get_pc(self):
-        r = await self._send_recv(OP_COMMAND, [CMD_GET_PC], 2)
+        r = await self._send_recv(Operation.COMMAND, [Cmd.GET_PC], 2)
         return (r[0] << 8) + r[1]
 
     async def get_config(self):
-        r = await self._send_recv(OP_COMMAND, [CMD_RD_CONFIG], 1)
+        r = await self._send_recv(Operation.COMMAND, [Cmd.RD_CONFIG], 1)
         return r[0]
 
     async def set_config(self, cfg):
-        await self._send_recv(OP_COMMAND, [CMD_WR_CONFIG, cfg], 1)
+        await self._send_recv(Operation.COMMAND, [Cmd.WR_CONFIG, cfg], 1)
 
     async def set_breakpoint(self, bp, bank, address, enable=True):
-        await self._send_recv(OP_COMMAND, [CMD_SET_HW_BRKPNT,
+        await self._send_recv(Operation.COMMAND, [Cmd.SET_HW_BRKPNT,
                                            (bp << 4)+(0x4 if enable else 0) + bank,
                                            (address>>8) & 0xff, address & 0xff], 1)
 
     async def clear_breakpoint(self, bp):
-        await self._send_recv(OP_COMMAND, [CMD_SET_HW_BRKPNT, (bp << 4) + 0x00, 0x00, 0x00], 1)
+        await self._send_recv(Operation.COMMAND, [Cmd.SET_HW_BRKPNT, (bp << 4) + 0x00, 0x00, 0x00], 1)
 
     async def debug_instr(self, *args, discard=True):
         if not 1 <= len(args) <= 3:
             raise CCDPIError("Instructions must be 1..3 bytes")
-        op = OP_COMMAND_DISCARD if discard else OP_COMMAND
-        await self._send(op, [CMD_DEBUG_INSTR + len(args)] + list(args), 1)
+        op = Operation.COMMAND_DISCARD if discard else Operation.COMMAND
+        await self._send(op, [Cmd.DEBUG_INSTR + len(args)] + list(args), 1)
 
     async def debug_instr_a(self, *args):
         if not 1 <= len(args) <= 3:
             raise CCDPIError("Instructions must be 1..3 bytes")
-        r = await self._send_recv(OP_COMMAND, [CMD_DEBUG_INSTR + len(args)] + list(args), 1)
+        r = await self._send_recv(Operation.COMMAND, [Cmd.DEBUG_INSTR + len(args)] + list(args), 1)
         return r[0]
 
     async def set_pc(self, address):
-        await self.debug_instr(0x02, (address >> 8) & 0xff, address & 0xff) # LJMP address
+        await self.debug_instr(0x02, (address >> 8) & 0xff, address & 0xff)     # LJMP address
 
     async def read_code(self, linear_address, count):
         """Read from CODE address space."""
@@ -568,7 +562,7 @@ class CCDPIInterface:
         await self.resume()
 
         for c in range(50):
-            if await self.get_status() & STATUS_CPU_HALTED:
+            if await self.get_status() & Status.CPU_HALTED:
                 break
         else:
             raise CCDPIError("Flash code not finished")

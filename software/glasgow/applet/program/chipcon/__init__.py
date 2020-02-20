@@ -145,7 +145,7 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
             if args.lock_bits:
                 self._check_format(args.lock_bits, "lock-bits")
                 self.logger.info("reading flash information (%d bytes)", args.length)
-                await chipcon_iface.set_config(CONFIG_SEL_FLASH_INFO_PAGE)
+                await chipcon_iface.set_config(Config.SEL_FLASH_INFO_PAGE)
                 output_data(args.lock_bits,
                             await chipcon_iface.read_code(args.address, args.length))
                 await chipcon_iface.set_config(0)
@@ -170,7 +170,7 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
                 self.logger.info("writing flash information (%d bytes)",
                                  sum([len(chunk) for address, chunk in data]))
 
-                await chipcon_iface.set_config(CONFIG_SEL_FLASH_INFO_PAGE)
+                await chipcon_iface.set_config(Config.SEL_FLASH_INFO_PAGE)
                 await self._write_flash_blocks(chipcon_iface, data,
                                                chipcon_iface.device.write_block_size)
                 await chipcon_iface.set_config(0)
