@@ -123,7 +123,6 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
         self.logger.info(args.operation)
 
         if args.operation == "identify":
-            # XXX test SRAM to figure out F8/F16/F32 parts
             self.logger.info("Id:{:X} [{}] Rev:{:d}".format(
                 chipcon_iface.chip_id,
                 chipcon_iface.device.name,

@@ -1,19 +1,8 @@
 # Chipcon Debug and Programming Interface
 #
-# Supports: CC1110, CC1111, CC2510, CC2511, CC2430, CC2431
+# Supports: CC1110, CC1111, CC2510, CC2511, CC2430, CC2431 up to ...F32 sizes.
 #
 # From: "CC1110/ CC2430/ CC2510 Debug and Programming Interface Specification Rev. 1.2"
-#
-# TBD: CC2530/1/3, CC2540/1
-#
-# Tested: CC2511F32 rev. 3
-#
-# XXX flash timer register (FTW) - setup in clock_init()
-# XXX f8 parts - write half page at a time - not sure how to identify these parts yet
-# XXX cc2430: set unified code map?
-# XXX implement precise delay in target
-#
-# XXX Could add some radio operations to take over more of SmartRF Studio
 #
 import logging
 import asyncio
