@@ -219,6 +219,8 @@ class CCDPISubtarget(Elaboratable):
 class CCDPIInterface:
     # Number of reads ops that are queued up before pulling data from fifo
     READ_BLOCK_SIZE=1024
+	# XDATA address for block to be written to flash
+    WRITE_DATA_ADDRESS=0xf000
 
     def __init__(self, interface, logger, addr_reset):
         self.lower   = interface
@@ -425,8 +427,6 @@ class CCDPIInterface:
         Expects flash to be erased already.
         Pads data with 0xFF so that writes can be to byte boundaries.
         """
-        DATA_ADDRESS = 0xf000
-
         # Word align start and end of data by padding with 0xff
         start_pad = address % self.device.flash_word_size
         if start_pad != 0:
@@ -436,24 +436,25 @@ class CCDPIInterface:
         if end_pad != 0:
             data += bytes([0xff]*(self.device.flash_word_size-end_pad))
         if len(data) > self.device.write_block_size:
-            raise CCDPIError("Trying to write more than a page of data to flash.")
+            raise CCDPIError("Trying to write a block larger than write buffer.")
         if not data:
             return
         # Copy data into SRAM at 0xf000
-        await self.write_xdata(data_address, data)
+        await self.write_xdata(self.WRITE_DATA_ADDRESS, data)
         words_per_flash_page = self.device.flash_page_size // self.device.flash_word_size
         word_address = address // self.device.flash_word_size
         word_length = len(data) // self.device.flash_word_size
         # Counters for nested DJNZ loop
-        count_l = word_length & 0xff
-        count_h = ((word_length >> 8) & 0xff) + (1 if count_l != 0 else 0)
+        word_count_l = word_length & 0xff
+        word_count_h = ((word_length >> 8) & 0xff) + (1 if word_count_l != 0 else 0)
         # Code to run from RAM
         code = [
             0x75, 0xAD, (word_address >> 8) & 0x7f,                         #    MOV FADDRH, #imm8
             0x75, 0xAC, word_address & 0xff,                                #    MOV FADDRL, #imm8
-            0x90, (data_address >> 8) & 0xff, data_address & 0xff,          #    MOV DPTR, #imm16
-            0x7F, count_h,                                                  #    MOV R7, #imm8
-            0x7E, count_l,                                                  #    MOV R6, #imm8
+            0x90, (self.WRITE_DATA_ADDRESS >> 8) & 0xff,
+			       self.WRITE_DATA_ADDRESS & 0xff,                          #    MOV DPTR, #imm16
+            0x7F, word_count_h,                                             #    MOV R7, #imm8
+            0x7E, word_count_l,                                             #    MOV R6, #imm8
             0x75, 0xAE, 0x02,                                               #    MOV FLC, #02H ; WRITE
             0x7D, self.device.flash_word_size,                              # 1$: MOV R5, #imm8
             0xE0,                                                           # 2$:  MOVX A, @DPTR
@@ -467,7 +468,7 @@ class CCDPIInterface:
             0xA5                                                            #    HALT
         ]
         # Copy code into SRAM in next page
-        code_address = DATA_ADDRESS + self.device.write_block_size
+        code_address = self.WRITE_DATA_ADDRESS + self.device.write_block_size
         await self.write_xdata(code_address, code)
         # Start CPU - then wait for it to halt
         await self.set_pc(code_address)
