@@ -174,7 +174,7 @@ class CCDPISubtarget(Elaboratable):
                 m.d.comb += self.in_fifo.flush.eq(1)
                 with m.If(self.out_fifo.readable):
                     m.d.comb += self.out_fifo.re.eq(1)
-                    m.d.sync += Cat(count_in, count_out, op, discard).eq(self.out_fifo.dout)
+                    m.d.sync += Cat(count_in, count_out, op).eq(self.out_fifo.dout)
                     m.next = "START"
             with m.State("START"):
                 with m.Switch(op):
@@ -317,11 +317,7 @@ class CCDPIInterface:
         self.device = devices.get(self.chip_id, None)
         if not self.device:
             raise CCDPIError("Did not find device")
-        # Wait for stable clock
-        for c in range(50):
-            if await self.get_status() & Status.OSCILLATOR_STABLE:
-                break
-        else:
+        if not await self.get_status() & Status.OSCILLATOR_STABLE:
             raise CCDPIError("Oscillator not stable")
         await self.halt()
 
