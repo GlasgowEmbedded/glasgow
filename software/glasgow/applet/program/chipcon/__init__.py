@@ -6,6 +6,7 @@ import asyncio
 import math
 
 from fx2.format import autodetect, input_data, output_data, flatten_data
+from ....gateware.clockgen import *
 from ... import *
 from .ccdpi import *
 
@@ -32,18 +33,15 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
-            period=math.ceil(target.sys_clk_freq / (args.frequency * 1000))
+            period_cyc=math.ceil(target.sys_clk_freq / (args.frequency * 1000)),
+            delay_cyc=self.derive_clock(input_hz=target.sys_clk_freq,
+                                        output_hz=4e6,
+                                        clock_name="delay")
         ))
-        # Connect up RESETN
-        reset, self._addr_reset = target.registers.add_rw(1)
-        target.comb += [
-            iface.pads.resetn_t.oe.eq(1),
-            iface.pads.resetn_t.o.eq(~reset)
-        ]
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        chipcon_iface = CCDPIInterface(iface, self.logger, self._addr_reset)
+        chipcon_iface = CCDPIInterface(iface, self.logger)
         return chipcon_iface
 
     @classmethod
@@ -113,7 +111,7 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
         elif args.operation == "erase":
             await chipcon_iface.chip_erase()
         elif args.operation == "erase-page":
-            await chipcon_iface.erase_flash_page(args,address)
+            await chipcon_iface.erase_flash_page(args.address)
         elif args.operation == "read":
             if args.code:
                 self._check_format(args.code, "code")
@@ -174,7 +172,21 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
         for (addr, chunk) in data:
             addr -= start
             combined_data[addr:addr+len(chunk)] = chunk
-        return (start, data_flat)
+        return (start, combined_data)
+
+    def _make_lock_bits(self, chipcon_iface, boot, size, debug):
+        """Construct data to write to flash information page encoding the given lock settings."""
+        if size % chipcon_iface.device.flash_page_size:
+            raise CCDPIError("Lock size must be a multiple of flash page size (%d)" %
+                             chipcon_iface.device.flash_page_size)
+        if size > chipcon_iface.device.flash_page_size*8:
+            raise CCDPIError("Lock size must be a less that or equal to flash size (%d)" %
+                             (chipcon_iface.device.flash_page_size*8))
+        lock_byte = (0x00 if boot else 0x10) + \
+                    (((size // chipcon_iface.device.flash_page_size) ^ 7) << 1) + \
+                    (0x00 if debug else 0x01);
+        self.logger.info("Lock byte: 0x{:02x}".format(lock_byte))
+        return [(0,bytes([lock_byte]))]
 
 # -------------------------------------------------------------------------------------------------
 class ProgramChipconAppletTestCase(GlasgowAppletTestCase, applet=ProgramChipconApplet):
