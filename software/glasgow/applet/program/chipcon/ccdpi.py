@@ -257,9 +257,10 @@ class CCDPIInterface:
     # XDATA address for block to be written to flash
     WRITE_DATA_ADDRESS=0xf000
 
-    def __init__(self, interface, logger):
+    def __init__(self, interface, logger, flash_size):
         self.lower   = interface
         self._logger = logger
+        self.flash_size = flash_size
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
         self.connected = False
         self.chip_id = 0
@@ -314,7 +315,7 @@ class CCDPIInterface:
         await self.lower.flush()
         # Is there something recognizable attached?
         self.chip_id,self.chip_rev = await self.get_chip_id()
-        self.device = devices.get(self.chip_id, None)
+        self.device = devices.get((self.chip_id, self.flash_size), None)
         if not self.device:
             raise CCDPIError("Did not find device")
         if not await self.get_status() & Status.OSCILLATOR_STABLE:
@@ -430,8 +431,9 @@ class CCDPIInterface:
     async def clock_init(self):
         """Set up high speed clock (24Mhz Xtal or 12Mhz internal RC). """
         await self.debug_instr(0x75, 0xC6, 0x00)                                # MOV CLKCON,#imm8
-        await self._delay_us(3000)
-        if not await self.debug_instr_a(0xE5, 0xBE) & 0x40:                     #   MOV A, SLEEP
+        await self._delay_us(1000)
+        await self.debug_instr(0x00)                                            # NOP
+        if not await self.debug_instr_a(0xE5, 0xBE) & 0x40:                     # MOV A, SLEEP
             raise CCDPIError("High speed clock not stable")
 
     async def chip_erase(self):

@@ -26,6 +26,9 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=1000,
             help="set bit rate to FREQ kHz (default: %(default)s)")
+        parser.add_argument(
+            "-s", "--flash-size", metavar="FLASH-SIZE", type=int,
+            help="set flash size FLASH-SIZE Kbytes")
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
@@ -40,8 +43,10 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
         ))
 
     async def run(self, device, args):
+        if not args.flash_size:
+            raise CCDPIError("Flash size must be specified (--flash-size=xxx)")
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        chipcon_iface = CCDPIInterface(iface, self.logger)
+        chipcon_iface = CCDPIInterface(iface, self.logger, args.flash_size)
         return chipcon_iface
 
     @classmethod
@@ -80,6 +85,15 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
             "--code", metavar="CODE", type=argparse.FileType("rb"),
             help="program code memory contents from CODE")
         p_write.add_argument(
+            "--lock-size", metavar="LOCK-SIZE", type=int, default=0,
+            help="Set flash lock size - size in KBytes of upper flash memory which is write protected.")
+        p_write.add_argument(
+            "--lock-debug",  action="store_true",
+            help="Set debug lock bit - disable all operations except id, status and erase.")
+        p_write.add_argument(
+            "--lock-boot", action="store_true",
+            help="Set boot page lock bit, disable writing to page 0")
+        p_write.add_argument(
             "--lock-bits", metavar="LOCK-BITS", type=argparse.FileType("rb"),
             help="program flash information page from LOCK-BITS")
         p_write.add_argument(
@@ -98,10 +112,15 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
 
     async def interact(self, device, args, chipcon_iface):
         await chipcon_iface.connect()
-        await chipcon_iface.clock_init()
-        self.logger.info("connected to {} Rev:{}".format(
+        debug_locked = await chipcon_iface.get_status() & Status.DEBUG_LOCKED
+        if not debug_locked:
+            await chipcon_iface.clock_init()
+        self.logger.info("connected to {} Rev:{}{}".format(
             chipcon_iface.device.name,
-            chipcon_iface.chip_rev))
+            chipcon_iface.chip_rev,
+            " Debug Locked" if debug_locked else ""))
+        if debug_locked and args.operation not in ("identify, erase"):
+            raise CCDPIError("Cannot %s when debug is locked" % args.operation)
         self.logger.info(args.operation)
         if args.operation == "identify":
             self.logger.info("Id:{:X} [{}] Rev:{:d}".format(
@@ -138,34 +157,43 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
                 await chipcon_iface.set_config(0)
                 await self._write_flash_blocks(chipcon_iface, data,
                                                chipcon_iface.device.write_block_size)
-            if args.lock_bits:
-                self._check_format(args.lock_bits, "lock-bits")
-                data = input_data(args.lock_bits)
+            if args.lock_bits or args.lock_boot or args.lock_size or args.lock_debug:
+                data = []
+                if args.lock_bits:
+                    self._check_format(args.lock_bits, "lock-bits")
+                    data += input_data(args.lock_bits)
+                if args.lock_boot or args.lock_size or args.lock_debug:
+                    data += self._make_lock_bits(chipcon_iface, args.lock_boot, args.lock_size, args.lock_debug)
                 self.logger.info("writing flash information (%d bytes)",
                                  sum([len(chunk) for address, chunk in data]))
                 await chipcon_iface.set_config(Config.SEL_FLASH_INFO_PAGE)
+                # Cannot verify if debug is locked
                 await self._write_flash_blocks(chipcon_iface, data,
-                                               chipcon_iface.device.write_block_size)
+                                               chipcon_iface.device.write_block_size, not args.lock_debug)
                 await chipcon_iface.set_config(0)
         await chipcon_iface.disconnect()
 
-    async def _write_flash_blocks(self, chipcon_iface, data, block_size):
+    async def _write_flash_blocks(self, chipcon_iface, data, block_size, verify=True):
         """Write and verify data to flash, breaking into blocks of given size."""
-        address, chunk = self._combine_chunks(data)
+        if len(data) == 0:
+            return
+        elif len(data) == 1:
+            address, chunk = data[0]
+        else:
+            address, chunk = self._combine_chunks(data)
         for block_offset in range(0, len(chunk), block_size):
             block = bytes(chunk[block_offset:block_offset+block_size])
             await chipcon_iface.write_flash(address+block_offset, block)
             readback = await chipcon_iface.read_code(address+block_offset, len(block))
-            if block != readback:
+            if verify and block != readback:
                 raise CCDPIError("verification failed at address %#06x: %s != %s" %
                                  (address, readback.hex(), chunk.hex()))
+            self.logger.debug("Written %4d bytes to 0x%04x", len(block), address+block_offset)
 
     def _combine_chunks(self, data):
-        """Combine a list of (adress,chunk) to a single start address and bytearray.
+        """Combine a list of (adress,chunk) to a single entry combining all chunks
         Any gaps are filled with 0xff.
         """
-        if len(data) == 1:
-            return data[0]
         start = min([addr for (addr, _) in data])
         end = max([addr + len(chunk) for (addr, chunk) in data])
         combined_data = bytearray([0xff] * (end - start))
@@ -176,17 +204,17 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
 
     def _make_lock_bits(self, chipcon_iface, boot, size, debug):
         """Construct data to write to flash information page encoding the given lock settings."""
-        if size % chipcon_iface.device.flash_page_size:
-            raise CCDPIError("Lock size must be a multiple of flash page size (%d)" %
-                             chipcon_iface.device.flash_page_size)
-        if size > chipcon_iface.device.flash_page_size*8:
-            raise CCDPIError("Lock size must be a less that or equal to flash size (%d)" %
-                             (chipcon_iface.device.flash_page_size*8))
-        lock_byte = (0x00 if boot else 0x10) + \
-                    (((size // chipcon_iface.device.flash_page_size) ^ 7) << 1) + \
-                    (0x00 if debug else 0x01);
-        self.logger.info("Lock byte: 0x{:02x}".format(lock_byte))
-        return [(0,bytes([lock_byte]))]
+        if size not in chipcon_iface.device.write_protect_sizes:
+            raise CCDPIError("Lock size %d is not valid for device - valid sizes are %s" %
+                             (size, ",".join(str(s) for s in chipcon_iface.device.write_protect_sizes)))
+        lock_byte = chipcon_iface.device.write_protect_sizes[size] << 1
+        if not boot:
+            lock_byte |= 0x10
+        if not debug:
+            lock_byte |= 0x01
+        self.logger.debug("Lock byte: 0x{:02x}".format(lock_byte))
+        # Contrary to the data sheet, the lock byte appears to be byte 1 in information page.
+        return [(0,bytes([0xff, lock_byte]))]
 
 # -------------------------------------------------------------------------------------------------
 class ProgramChipconAppletTestCase(GlasgowAppletTestCase, applet=ProgramChipconApplet):
