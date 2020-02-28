@@ -71,7 +71,7 @@ class SVFLexer:
          None),
         (r"({})(?=\s+|[;()]|\Z)".format("|".join(_keywords)),
          lambda m: m[1]),
-        (r"(\d+)(?![\.E])",
+        (r"(\d+)(?=[^0-9\.E])",
          lambda m: int(m[1])),
         (r"(\d+(?:\.\d+)?(?:E[+-]?\d+)?)",
          lambda m: float(m[1])),
