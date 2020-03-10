@@ -327,9 +327,6 @@ class I2CInitiatorApplet(GlasgowApplet, name="i2c-initiator"):
             "--device-id", "-i", action="store_true", default=False,
             help="read device ID from devices responding to scan")
 
-        p_repl = p_operation.add_parser(
-            "repl", help="drop into Python shell; use `iface` to communicate")
-
     async def interact(self, device, args, i2c_iface):
         if args.operation == "scan":
             # read/write is the default option
@@ -349,9 +346,6 @@ class I2CInitiatorApplet(GlasgowApplet, name="i2c-initiator"):
                         manufacturer, part_ident, revision = device_id
                         self.logger.info("device %s ID: manufacturer %s, part %s, revision %s",
                             bin(addr), bin(manufacturer), bin(part_ident), bin(revision))
-
-        if args.operation == "repl":
-            await AsyncInteractiveConsole(locals={"iface":i2c_iface}).interact()
 
 # -------------------------------------------------------------------------------------------------
 

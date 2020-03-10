@@ -1694,7 +1694,7 @@ F 3 "" H 3650 2000 50  0001 C CNN
 	-1   0    0    -1  
 $EndComp
 Text Notes 9350 2950 0    50   ~ 0
-The iCE40 LVDS buffers require external\ntermination, which is expected to be provided\non a specially designed daughterboard.\n\nSuggested mating connector:\nAmphenol 20021321-00040T4LF
+The iCE40 LVDS buffers require external\ntermination, which is expected to be provided\non a specially designed daughterboard.\n\nSuggested mating connector:\nSamtec FLE-122-01-G-DV-A
 Text Notes 900  7150 0    50   ~ 0
 Balls B6 and B7 correspond to GBIN0/1, whose I/O buffers are shared\nwith one of the PLLs. When the PLL is used, it replaces the input buffer,\nand so the pin input is no longer directly available. Because of this quirk\nof the iCE40 architecture, two common goals are in direct conflict:\n * If an applet is clocked externally, this clock should ideally be provided\n   on a GBINx pin. (This is recommended but not strictly necessary as it is\n   generally OK for a clock to traverse a small amount of iCE40 fabric.)\n * If an applet is using the PLL co-located with the GBIN0 pin and clocking\n   it internally, the GBIN0 pin input buffer is lost, and GBIN1 pin input buffer\n   may be lost as well depending on the chosen PLL configuration.\nTo resolve this conflict, the I/O pins mapped to GBIN0/1 are mapped to\na different pin (balls B5 and A6) as well, giving gateware maximum flexibility.
 Wire Notes Line

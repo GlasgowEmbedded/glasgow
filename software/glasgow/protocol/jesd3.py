@@ -28,34 +28,34 @@ class JESD3Lexer:
     # This follows the JESD3-C grammar, with the exception that spaces are more permissive.
     # As described, only 0x0D is allowed in between fields, which is absurd.
     _fields = (
-        (r"N",  r"[ \r\n]*(.*?)"),
+        (r"N",  r"[ \t\r\n]*(.*?)"),
         (r"D",  r".*?"),
         (r"QF", r"([0-9]+)"),
         (r"QP", r"([0-9]+)"),
         (r"QV", r"([0-9]+)"),
         (r"F",  r"([01])"),
-        (r"L",  r"([0-9]+)[ \r\n]+([01 \r\n]+)"),
+        (r"L",  r"([0-9]+)[ \t\r\n]+([01 \t\r\n]+)"),
         (r"C",  r"([0-9A-F]{4})"),
         (r"EH", r"([0-9A-F]+)"),
         (r"E",  r"([01]+)"),
-        (r"UA", r"([\r\n\x20-\x29\x2B-\x7E]+)"),
+        (r"UA", r"([\t\r\n\x20-\x29\x2B-\x7E]+)"),
         (r"UH", r"([0-9A-F]+)"),
         (r"U",  r"([01]+)"),
-        (r"J",  r"([0-9]+)[ \r\n]+([0-9]+)"),
+        (r"J",  r"([0-9]+)[ \t\r\n]+([0-9]+)"),
         (r"G",  r"([01])"),
         (r"X",  r"([01])"),
-        (r"P",  r"([ \r\n]*[0-9]+)+"),
-        (r"V",  r"([0-9]+)[ \r\n]+([0-9BCDFHTUXZ]+)"),
+        (r"P",  r"([ \t\r\n]*[0-9]+)+"),
+        (r"V",  r"([0-9]+)[ \t\r\n]+([0-9BCDFHTUXZ]+)"),
         (r"S",  r"([01]+)"),
         (r"R",  r"([0-9A-F]{8})"),
         (r"T",  r"([0-9]+)"),
-        (r"A",  r"([\r\n\x20-\x29\x2B-\x7E]*)([0-9]+)"),
+        (r"A",  r"([\t\r\n\x20-\x29\x2B-\x7E]*)([0-9]+)"),
     )
-    _stx_spec_re  = re.compile(r"\x02(.*?)\*[ \r\n]*", re.A|re.S)
-    _stx_quirk_re = re.compile(r"\x02()[ \r\n]*", re.A|re.S)
+    _stx_spec_re  = re.compile(r"\x02(.*?)\*[ \t\r\n]*", re.A|re.S)
+    _stx_quirk_re = re.compile(r"\x02()[ \t\r\n]*", re.A|re.S)
     _etx_re       = re.compile(r"\x03([0-9A-F]{4})", re.A|re.S)
     _ident_re     = re.compile(r"|".join(ident for ident, args in _fields), re.A|re.S)
-    _field_res    = {ident: re.compile(ident + args + r"[ \r\n]*\*[ \r\n]*", re.A|re.S)
+    _field_res    = {ident: re.compile(ident + args + r"[ \t\r\n]*\*[ \t\r\n]*", re.A|re.S)
                      for ident, args in _fields}
 
     def __init__(self, buffer, quirk_no_design_spec=False):

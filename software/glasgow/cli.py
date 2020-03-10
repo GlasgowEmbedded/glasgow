@@ -571,7 +571,8 @@ async def _main():
                             logger.warn("applet provides customized REPL(s); consider using `run "
                                         "{} ...-repl` subcommands".format(applet.name))
                         logger.info("dropping to REPL; use 'help(iface)' to see available APIs")
-                        await AsyncInteractiveConsole(locals={"iface":iface}).interact()
+                        await AsyncInteractiveConsole(locals={"iface":iface},
+                            run_callback=device.demultiplexer.flush).interact()
                 except GlasgowAppletError as e:
                     applet.logger.error(str(e))
                 except asyncio.CancelledError:

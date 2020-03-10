@@ -208,9 +208,6 @@ class UARTApplet(GlasgowApplet, name="uart"):
             "socket", help="connect UART to a socket")
         ServerEndpoint.add_argument(p_socket, "endpoint")
 
-        p_repl = p_operation.add_parser(
-            "repl", help="drop into Python shell; use `iface` to communicate")
-
     async def _monitor_errors(self, device):
         cur_bit_cyc = await device.read_register(self.__addr_bit_cyc, width=4)
         cur_errors  = 0
@@ -338,8 +335,6 @@ class UARTApplet(GlasgowApplet, name="uart"):
             await self._interact_pty(uart)
         if args.operation == "socket":
             await self._interact_socket(uart, args.endpoint)
-        if args.operation == "repl":
-            await AsyncInteractiveConsole(locals={"iface":uart}).interact()
 
 # -------------------------------------------------------------------------------------------------
 

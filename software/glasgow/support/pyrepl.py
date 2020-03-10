@@ -17,7 +17,7 @@ class _FutureResult(Exception):
 
 
 class AsyncInteractiveConsole(code.InteractiveConsole):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, run_callback=None, **kwargs):
         super().__init__(*args, **kwargs)
 
         if readline is not None:
@@ -32,6 +32,7 @@ class AsyncInteractiveConsole(code.InteractiveConsole):
             readline.set_completer(completer.complete)
 
         self.locals["__name__"] = __name__.split(".")[0]
+        self.run_callback = run_callback
         self._future = None
 
     def save_history(self):
@@ -44,7 +45,12 @@ class AsyncInteractiveConsole(code.InteractiveConsole):
             exec(code, self.locals)
             if hasattr(builtins, "_"):
                 if asyncio.iscoroutine(builtins._):
-                    self._future = asyncio.ensure_future(builtins._)
+                    async def run_and_wait():
+                        result = await builtins._
+                        if self.run_callback is not None:
+                            await self.run_callback()
+                        return result
+                    self._future = asyncio.ensure_future(run_and_wait())
         except SystemExit:
             raise
         except:
