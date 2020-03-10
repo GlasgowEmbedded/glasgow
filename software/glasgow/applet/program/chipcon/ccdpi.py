@@ -1,10 +1,15 @@
 # Chipcon Debug and Programming Interface
 #
-# Supports:
-#  CC1110, CC1111, CC2510, CC2511, CC2430, CC2431 up to ...F32 sizes.
-#  CC2530, CC2531, CC2533, CC2540, CC2541
+# Supports all TI/Chipcon embedded 8051 radios:
+#    CC1110, CC1111, CC2510, CC2511, CC2430, CC2431, CC2530, CC2531, CC2533, CC2540, CC2541
 #
-# From: "CC1110/ CC2430/ CC2510 Debug and Programming Interface Specification Rev. 1.2"
+# Base protocol from:
+#   "CC1110/CC2430/CC2510 Debug and Programming Interface Specification Rev. 1.2"
+#
+# Extended protocol from:
+#   "CC253x System-on-Chip Solution for 2.4-GHz IEEE 802.15.4 and ZigBee® Applications
+#    CC2540/41 System-on-Chip Solution for 2.4-GHz Bluetooth® low energy Applications
+#    User's Guide - Literature Number: SWRU191F April 2009–Revised April 2014"
 #
 import logging
 import asyncio
@@ -16,29 +21,20 @@ from nmigen import *
 from ....database.ti.chipcon import *
 from ....gateware.clockgen import *
 from ... import *
-
-from fx2.format import output_data
-
-# Flash register XDATA addresses for:
-#  base part: CC1110x/CC251x/CC243x
-#  extended parts: CCCC253x/CC254x
-#
-CCFlashRegisters = namedtuple("CCFlashRegisters", ["faddrl", "faddrh", "flc", "fwdata"])
-base_flash_registers = CCFlashRegisters(faddrl=0xDFAC, faddrh=0xDFAD,  flc=0xDFAE, fwdata=0xDFAF)
-extended_flash_registers = CCFlashRegisters(faddrl=0x6271, faddrh=0x6272, flc=0x6270, fwdata=0x6273)
+from ....arch.cc8051 import *
 
 class CCDPIError(GlasgowAppletError):
     pass
 
 class CCDPIBus(Elaboratable):
-    """Bus interface - byte<->serial."""
+    """Bus interface - word<->serial."""
 
-    def __init__(self, pads, period_cyc):
+    def __init__(self, width, pads, period_cyc):
         self.pads = pads
         self.period_cyc = period_cyc
-        self.di  = Signal(8)
-        self.do  = Signal(8)
-        self.bits = Signal(4)
+        self.di  = Signal(width)
+        self.do  = Signal(width)
+        self.bits = Signal(range(width+1))
         self.w   = Signal()
         self.ack = Signal()
         self.rdy = Signal()
@@ -62,8 +58,8 @@ class CCDPIBus(Elaboratable):
             self.pads.resetn_t.o.eq(~self.reset),
         ]
 
-        d   = Signal(8)
-        cnt = Signal(4)
+        d   = Signal(self.di.shape())
+        cnt = Signal(self.bits.shape())
         m.d.comb += self.di.eq(d)
 
         with m.FSM():
@@ -147,7 +143,7 @@ class Status(IntFlag):
     OSCILLATOR_STABLE = 0b0000_0010
     STACK_OVERFLOW    = 0b0000_0001
 
-    CHIP_ERASE_BUSY   = 0b1000_0000 # Extended parts invert meaning of this bit
+    CHIP_ERASE_BUSY   = 0b1000_0000 # Extended parts invert meaning of this bit!
 
 class Operation(IntEnum):
     COMMAND              = 0
@@ -169,7 +165,7 @@ class CCDPISubtarget(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.bus = bus = CCDPIBus(self.pads, self.period_cyc)
+        m.submodules.bus = bus = CCDPIBus(8, self.pads, self.period_cyc)
         m.submodules.delay = delay = ClockGen(self.delay_cyc)
 
         op = Signal(3)
@@ -187,7 +183,6 @@ class CCDPISubtarget(Elaboratable):
                     m.d.comb += self.out_fifo.re.eq(1)
                     m.d.sync += Cat(count_in, count_out, op).eq(self.out_fifo.dout)
                     m.next = "START"
-
             with m.State("START"):
                 with m.Switch(op):
                     with m.Case(Operation.COMMAND,
@@ -205,7 +200,6 @@ class CCDPISubtarget(Elaboratable):
                         m.next = "READY"
                     with m.Case(Operation.DELAY):
                         m.next = "DELAY_H"
-
             with m.State("OUT"):
                 with m.If(count_out == 0):
                     m.next = "CHANGE_1"
@@ -218,7 +212,6 @@ class CCDPISubtarget(Elaboratable):
                         bus.ack.eq(1),
                     ]
                     m.d.sync += count_out.eq(count_out-1)
-
             with m.State("CHANGE_1"):
                 with m.If(delay.stb_r & bus.rdy):
                     m.next = "CHANGE_2"
@@ -230,7 +223,6 @@ class CCDPISubtarget(Elaboratable):
                         m.next = "POLL"
                     with m.Else():
                         m.next = "IN"
-
             with m.State("POLL"):
                 with m.If(bus.ddat): # Target still busy - clock 8 bits
                     with m.If(bus.rdy):
@@ -241,7 +233,6 @@ class CCDPISubtarget(Elaboratable):
                         ]
                 with m.Else():
                     m.next = "IN"
-
             with m.State("IN"):
                 with m.If(count_in == 0):
                     m.next = "READY"
@@ -285,12 +276,12 @@ class CCDPISubtarget(Elaboratable):
                     m.next = "READY"
                 with m.Elif(delay.stb_r & bus.rdy):
                     m.d.sync += delay_downcount.eq(delay_downcount-1)
-
         return m
 
 class CCDPIInterface:
     # Number of reads ops that are queued up before pulling data from fifo
     READ_BLOCK_SIZE=1024
+    # CC8051 uses 32K bank size
     BANK_SIZE=0x8000
 
     def __init__(self, interface, logger, flash_size):
@@ -301,6 +292,8 @@ class CCDPIInterface:
         self.chip_id = 0
         self.chip_rev = 0
         self.flash_size = flash_size
+        self.device = None
+        self.xreg = None
 
     def _log(self, message, *args):
         self._logger.log(self._level, "CCDPI: " + message, *args)
@@ -354,8 +347,8 @@ class CCDPIInterface:
     async def get_flash_size(self, default):
         if not self.is_extended():
             return default
-        await self.debug_instr(0x90, 0x62, 0x76)                                # MOV DPTR, addr16
-        chipinfo0 = await self.debug_instr_a(0xE0)                              # MOVX A, @DPTR
+        await self.debug_instr16(O.MOV_DPTR_immed, XREGExtended.CHIPINFO0)
+        chipinfo0 = await self.debug_instr_a(O.MOVX_A_atDPTR)
         return devices_chipid_flashsize.get((self.chip_id, chipinfo0 >> 4), default)
 
     async def connect(self):
@@ -371,7 +364,7 @@ class CCDPIInterface:
         await self.lower.flush()
         # Is there something recognizable attached?
         # NB: It appears that the extended protocol responds to GET_CHIP_ID
-        # without requiring a wait, so all parts will reply to this
+        # without requiring a wait, so all cc8051 parts will reply to this
         self.chip_id,self.chip_rev = await self.get_chip_id()
         # Try and read flash size from device
         self.flash_size = await self.get_flash_size(self.flash_size)
@@ -381,6 +374,7 @@ class CCDPIInterface:
         if not self.device:
             raise CCDPIError("did not find device: {:02x}:{:02x} {:d}K".format(
                 self.chip_id,self.chip_rev, self.flash_size))
+        self.xreg = self.device.extended and XREGExtended or XREGBase
         if not await self.get_status() & Status.OSCILLATOR_STABLE:
             raise CCDPIError("oscillator not stable")
         # Leave CPU halted
@@ -434,8 +428,12 @@ class CCDPIInterface:
             raise CCDPIError("instructions must be 1..3 bytes")
         return (await self._command([Cmd.DEBUG_INSTR + len(args)] + list(args), 1))[0]
 
+    async def debug_instr16(self, op, immed16):
+        "Special case for opcode + immed16."
+        return await self.debug_instr(op, (immed16 >> 8) &0xff, immed16 & 0xff)
+
     async def set_pc(self, address):
-        await self.debug_instr(0x02, (address >> 8) & 0xff, address & 0xff)     # LJMP address
+        await self.debug_instr16(O.LJMP_addr16, address)
 
     async def read_flash(self, linear_address, count):
         """Read from one bank of CODE address space."""
@@ -443,64 +441,64 @@ class CCDPIInterface:
             raise CCDPIError("reading beyond end of code")
         if (linear_address // self.BANK_SIZE) != ((linear_address+count-1) // self.BANK_SIZE):
             raise CCDPIError("reading across a bank boundary")
-        await self.debug_instr(0x75, 0xC7, 0x00)                                # MOV MEMCTR,#imm8
+        await self.debug_instr(O.MOV_direct_immed, SFR.MEMCTR, 0x00)
         if self.device.banked:
             # Always read from top code bank
             address = (linear_address % self.BANK_SIZE) + self.BANK_SIZE
             bank = linear_address // self.BANK_SIZE
-            await self.debug_instr(0x75, 0x9F, bank)                            # MOV FMAP, bank
+            await self.debug_instr(O.MOV_direct_immed, SFR.FMAP, bank)
         else:
             address = linear_address
-        await self.debug_instr(0x90, (address >> 8) & 0xff, address & 0xff)     # MOV DPTR, address
+        await self.debug_instr16(O.MOV_DPTR_immed, address)
         # Read in chunk: Send out a burst of read insns, then read back the replies
         recv_bytes = bytearray()
         while count:
             block_size = min(self.READ_BLOCK_SIZE, count)
             count -= block_size
             for _ in range(block_size):
-                await self.debug_instr(0xE4)                                    # CLR A
-                await self.debug_instr(0x93, discard=False)                     # MOVC A, @A+DPTR
-                await self.debug_instr(0xA3)                                    # INC DPTR
+                await self.debug_instr(O.CLR_A)
+                await self.debug_instr(O.MOVC_A_atAplusDPTR, discard=False)
+                await self.debug_instr(O.INC_DPTR)
             await self._flush()
             recv_bytes += await self._recv(block_size)
         return recv_bytes
 
     async def read_xdata(self, address, count):
         """Read from XDATA address space."""
-        await self.debug_instr(0x90, (address >> 8) & 0xff, address & 0xff)     # MOV DPTR, address
+        await self.debug_instr16(O.MOV_DPTR_immed, address)
         # Read in chunk - send out a burst of read insns, then read back the replies
         recv_bytes = bytearray()
         while count:
             block_size = min(self.READ_BLOCK_SIZE, count)
             count -= block_size
             for _ in range(block_size):
-                await self.debug_instr(0xE0, discard=False)                     # MOVX A, @DPTR
-                await self.debug_instr(0xA3)                                    # INC DPTR
+                await self.debug_instr(O.MOVX_A_atDPTR, discard=False)
+                await self.debug_instr(O.INC_DPTR)
             await self._flush()
             recv_bytes += await self._recv(block_size)
         return recv_bytes
 
     async def write_xdata(self, address, data):
         """Write to XDATA address space."""
-        await self.debug_instr(0x90, (address >> 8) & 0xff, address & 0xff)     # MOV DPTR, address
+        await self.debug_instr16(O.MOV_DPTR_immed, address)
         for byte in data:
-            await self.debug_instr(0x74, byte)                                  #   MOV A,#imm8
-            await self.debug_instr(0xF0)                                        #   MOVX @DPTR,A
-            await self.debug_instr(0xA3)                                        #   INC DPTR
+            await self.debug_instr(O.MOV_A_immed, byte)
+            await self.debug_instr(O.MOVX_atDPTR_A)
+            await self.debug_instr(O.INC_DPTR)
         await self._flush()
 
     async def clock_init(self):
         """Set up high speed clock. """
-        await self.debug_instr(0x75, 0xC6, 0x00)                                # MOV CLKCON,#imm8
+        await self.debug_instr(O.MOV_direct_immed, SFR.CLKCON, 0x00)
         await self._delay_us(1000)
-        await self.debug_instr(0x00)                                            # NOP
+        await self.debug_instr(O.NOP)
         if not await self.get_status() & Status.OSCILLATOR_STABLE:
             raise CCDPIError("high speed clock not stable")
 
     async def chip_erase(self):
         await self._command([Cmd.CHIP_ERASE], 1)
         await self._delay_ms(200)
-        await self.debug_instr(0x00)                                            # NOP
+        await self.debug_instr(O.NOP)
         await self._flush()
         if self.device.extended:
             done = not (await self.get_status() & Status.CHIP_ERASE_BUSY)
@@ -515,11 +513,10 @@ class CCDPIInterface:
             raise CCDPIError("address is not page aligned")
         word_address = address // self.device.flash_word_size
         # Set up flash controller via XDATA writes
-        regs = self.device.extended and extended_flash_registers or base_flash_registers
-        await self.write_xdata(regs.faddrl, [0, (word_address >> 8) & 0x7f])
-        await self.write_xdata(regs.flc, [0x01]) # ERASE
+        await self.write_xdata(self.xreg['FADDRL'], [0, (word_address >> 8) & 0xff])
+        await self.write_xdata(self.xreg['FCTL'], [0x01]) # ERASE
         await self._delay_ms(30)
-        if (await self.read_xdata(regs.flc, 1))[0] & 0x80:
+        if (await self.read_xdata(self.xreg['FCTL'], 1))[0] & 0x80:
             raise CCDPIError("cannot erase flash page")
 
     def _pad_to_words(self, chunk):
@@ -550,41 +547,41 @@ class CCDPIInterface:
         # Counters for nested DJNZ loop
         word_count_l = word_count & 0xff
         word_count_h = ((word_count >> 8) & 0xff) + (1 if word_count_l != 0 else 0)
-        regs = self.device.extended and extended_flash_registers or base_flash_registers
         # Code to run from RAM
-        #  Use MPAGE:R0 MPAGE:R1 to point to FLC and FWDATA regs in XDATA
+        #  Use MPAGE:R0 MPAGE:R1 to point to FCTL and FWDATA regs in XDATA
         code = [
-            0x75, 0x93, (regs.flc >> 8) & 0x0ff,                            #    MOV MPAGE, #imm8
-            0x78, regs.flc & 0x0ff,                                         #    MOV R0, #imm8
-            0x79, regs.fwdata & 0x0ff,                                      #    MOV R1, #imm8
-            0x90, (self.device.write_xdata_address >> 8) & 0xff,
-                   self.device.write_xdata_address & 0xff,                  #    MOV DPTR, #imm16
-            0x7F, word_count_h,                                             #    MOV R7, #imm8
-            0x7E, word_count_l,                                             #    MOV R6, #imm8
-            0x74, 0x02,                                                     #    MOV A,#imm8
-            0xF2,                                                           #    MOVX @R0,A     ; FLC = WRITE
-            0x7D, self.device.flash_word_size,                              # 1$: MOV R5, #imm8
-            0xE0,                                                           # 2$:  MOVX A, @DPTR
-            0xA3,                                                           #      INC DPTR
-            0xF3,                                                           #      MOVX @R1,A   ; FWDATA
-            0xDD, 0xFB,                                                     #      DJNZ R5, 2$
-            0xE2,                                                           # 3$:   MOVX A, @R0 ; FLC
-            0x20, 0XE6, 0xFC,                                               #       JB ACC_SWBSY, 3$
-            0xDE, 0xF3,                                                     #     DJNZ R6, 1$
-            0xDF, 0xF1,                                                     #    DJNZ R7, 1$
-            0xA5                                                            #    HALT
+            O.MOV_direct_immed, SFR.MPAGE, (self.xreg['FCTL'] >> 8) & 0x0ff,
+            O.MOV_R0_immed, self.xreg['FCTL'] & 0x0ff,
+            O.MOV_R1_immed, self.xreg['FWDATA'] & 0x0ff,
+            O.MOV_DPTR_immed, (self.device.write_xdata_address >> 8) & 0xff,
+                              self.device.write_xdata_address & 0xff,
+            O.MOV_R7_immed, word_count_h,
+            O.MOV_R6_immed, word_count_l,
+            O.MOV_A_immed, 0x02,
+            O.MOVX_atR0_A,                                 # FCTL = WRITE
+            O.MOV_R5_immed, self.device.flash_word_size,   # 1$:
+            O.MOVX_A_atDPTR,                               # 2$:
+            O.INC_DPTR,
+            O.MOVX_atR1_A,                                 # FWDATA=A
+            O.DJNZ_R5_offset, offset(-5),                  #  -> 2$
+            O.MOVX_A_atR0,                                 # 3$:  A = FCTL
+            O.JB_bit_offset, SFR.ACC+6, offset(-4),        #  -> 3$
+            O.DJNZ_R6_offset, offset(-13),                 #  -> 1$
+            O.DJNZ_R7_offset, offset(-15),                 #  -> 1$
+            O.HALT
         ]
         # Copy code into SRAM in next page
         await self.write_xdata(self.device.write_xdata_address + self.device.write_block_size, code)
         # Set flash address via XDATA
-        await self.write_xdata(regs.faddrl, [word_address & 0xff, (word_address >> 8) & 0xff])
+        await self.write_xdata(self.xreg['FADDRL'], [word_address & 0xff, (word_address >> 8) & 0xff])
         # Allow code to execute from XDATA
         if self.device.extended:
-            await self.debug_instr(0x75, 0xC7, 0x08)                        # MOV MEMCTR,#imm8
+            memctr = 0x08
         elif self.device.banked:
-            await self.debug_instr(0x75, 0xC7, 0x40)                        # MOV MEMCTR,#imm8
+            memctr = 0x40
         else:
-            await self.debug_instr(0x75, 0xC7, 0x00)                        # MOV MEMCTR,#imm8
+            memctr = 0
+        await self.debug_instr(O.MOV_direct_immed, SFR.MEMCTR, memctr)
         # Start CPU - then wait for it to halt
         await self.set_pc(self.device.write_code_address + self.device.write_block_size)
         await self.resume()
@@ -594,7 +591,7 @@ class CCDPIInterface:
 
     async def soak_test(self, count):
         """
-        Sock test debug communication.
+        Soak test debug communication.
         Repeatedly write a block to XDATA, then read back and check.
         """
         for iteration in range(count):

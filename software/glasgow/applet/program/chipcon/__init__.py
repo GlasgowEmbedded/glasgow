@@ -212,7 +212,7 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
         for (addr, chunk) in data:
             addr -= start
             combined_data[addr:addr+len(chunk)] = chunk
-            return (start, combined_data)
+        return (start, combined_data)
 
     def _aligned_range(self, addr, length, align):
         """Generate addr,length pairs that splits range addr,length on align boundaries."""
