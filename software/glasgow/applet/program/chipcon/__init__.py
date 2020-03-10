@@ -5,7 +5,7 @@ import argparse
 import asyncio
 import math
 
-from fx2.format import autodetect, input_data, flatten_data
+from fx2.format import autodetect, input_data, flatten_data, output_data
 from ....gateware.clockgen import *
 from ... import *
 from .ccdpi import *
@@ -203,7 +203,7 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
             self.logger.info("written %d bytes to %#07x", len(block), address+block_offset)
 
     def _combine_chunks(self, data):
-        """Combine a list of (adress,chunk) to a single entry combining all chunks.
+        """Reduce a list of (adress,chunk) to a single entry combining all chunks.
         Any gaps are filled with 0xff.
         """
         start = min([addr for (addr, _) in data])
