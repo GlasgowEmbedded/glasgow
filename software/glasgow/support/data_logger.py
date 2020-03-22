@@ -196,8 +196,16 @@ class InfluxDBDataLogger(DataLogger, name="influxdb"):
         data_parts.append(",".join(self._escape_name(",= ", key) + "=" +
                                    self._escape_value(fields[key])
                                    for key in fields))
-        if timestamp is not None:
-            data_parts.append(str(self._timestamp(self.precision, timestamp)))
+        if timestamp is None:
+            # If the timestamp is not specified, InfluxDB will timestamp the data point with
+            # the request timestamp. This works just fine with one data point per request, but
+            # if batching is enabled, then, since the series is always same, only one point per
+            # batch will ever be recorded. To avoid that, batched requests must be timestamped
+            # during submission. To achieve consistent behavior in case the local clock and
+            # the InfluxDB server clock are different, all requests are timestamped during
+            # submission regardless of whether batching is enabled.
+            timestamp = time.time()
+        data_parts.append(str(self._timestamp(self.precision, timestamp)))
         data = " ".join(data_parts)
 
         self.logger.debug("InfluxDB: queue data=<%s>", data)
