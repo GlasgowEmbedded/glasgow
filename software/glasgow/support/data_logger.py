@@ -186,6 +186,7 @@ class InfluxDBDataLogger(DataLogger, name="influxdb"):
             *[self._escape_name(",= ", key) + "=" + self._escape_name(",= ", value)
               for key, value in args.tags]
         ])
+        self.precision = args.precision
         self.session = aiohttp.ClientSession()
         self._queue = []
         self._batch_size = args.batch_size
