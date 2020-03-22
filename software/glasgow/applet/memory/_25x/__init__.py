@@ -280,8 +280,7 @@ class Memory25xApplet(SPIMasterApplet, name="memory-25x"):
         def bits(arg):
             return int(arg, 2)
 
-        # TODO(py3.7): add required=True
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_identify = p_operation.add_parser(
             "identify", help="identify memory using REMS and RDID commands")

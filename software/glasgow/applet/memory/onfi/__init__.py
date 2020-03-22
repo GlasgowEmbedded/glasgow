@@ -496,8 +496,7 @@ class MemoryONFIApplet(GlasgowApplet, name="memory-onfi"):
             "-B", "--block-size", metavar="SIZE", type=size,
             help="Flash block size, in pages (default: autodetect)")
 
-        # TODO(py3.7): add required=True
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_identify = p_operation.add_parser(
             "identify", help="identify device using ONFI parameter page")

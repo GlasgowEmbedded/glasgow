@@ -311,8 +311,7 @@ class SensorBMP280Applet(I2CInitiatorApplet, name="sensor-bmp280"):
             "--sea-level-pressure", type=float, metavar="PRESSURE", default=101325,
             help="use PRESSURE Pa as sea level pressure (default: %(default)f)")
 
-        # TODO(py3.7): add required=True
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_measure = p_operation.add_parser(
             "measure", help="read measured values")

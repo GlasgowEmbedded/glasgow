@@ -309,8 +309,7 @@ class I2CInitiatorApplet(GlasgowApplet, name="i2c-initiator"):
 
     @classmethod
     def add_interact_arguments(cls, parser):
-        # TODO(py3.7): add required=True
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_scan = p_operation.add_parser(
             "scan", help="scan all possible I2C addresses")

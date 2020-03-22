@@ -190,8 +190,7 @@ class SensorSCD30Applet(I2CInitiatorApplet, name="sensor-scd30"):
                 return value
             return arg
 
-        # TODO(py3.7): add required=True
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_calibrate = p_operation.add_parser(
             "calibrate", help="display or change calibration parameters")

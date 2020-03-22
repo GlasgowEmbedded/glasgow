@@ -115,8 +115,7 @@ class SensorINA260Applet(I2CInitiatorApplet, name="sensor-ina260"):
 
     @classmethod
     def add_interact_arguments(cls, parser):
-        # TODO(py3.7): add required=True
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_measure = p_operation.add_parser(
             "measure", help="read measured values")
