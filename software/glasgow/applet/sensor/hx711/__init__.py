@@ -7,6 +7,7 @@ from nmigen import *
 from nmigen.lib.cdc import FFSynchronizer
 
 from ... import *
+from ....gateware.clockgen import *
 from ....support.data_logger import DataLogger
 
 
@@ -17,8 +18,9 @@ class HX711Error(GlasgowAppletError):
 class HX711Bus(Elaboratable):
     def __init__(self, pads):
         self.pads = pads
-        self.clk  = Signal()
-        self.dout = Signal()
+        self.clk = Signal()
+        self.din = Signal()
+        self.osc = Signal()
 
     def elaborate(self, platform):
         m = Module()
@@ -27,28 +29,37 @@ class HX711Bus(Elaboratable):
             self.pads.clk_t.o.eq(self.clk),
         ]
         m.submodules += [
-            FFSynchronizer(self.pads.dout_t.i, self.dout),
+            FFSynchronizer(self.pads.din_t.i, self.din),
         ]
+        if hasattr(self.pads, "osc_t"):
+            m.d.comb += [
+                self.pads.osc_t.oe.eq(1),
+                self.pads.osc_t.o.eq(self.osc),
+            ]
         return m
 
 
 class SensorHX711Subtarget(Elaboratable):
-    def __init__(self, pads, in_fifo, out_fifo, clk_cyc):
+    def __init__(self, pads, in_fifo, out_fifo, clk_cyc, osc_cyc):
         self.pads     = pads
         self.in_fifo  = in_fifo
         self.out_fifo = out_fifo
         self.clk_cyc  = clk_cyc
-        self.shreg = Signal(8)
+        self.osc_cyc  = osc_cyc
 
     def elaborate(self, platform):
         m = Module()
         m.submodules.bus = bus = HX711Bus(self.pads)
 
+        if self.osc_cyc is not None:
+            m.submodules.clkgen = clkgen = ClockGen(self.osc_cyc)
+            m.d.comb += bus.osc.eq(clkgen.clk)
+
         with m.FSM():
             timer = Signal(range(self.clk_cyc))
             count = Signal(range(28))
             limit = Signal(range(28))
-            shreg = self.shreg
+            shreg = Signal(8)
 
             with m.State("IDLE"):
                 with m.If(self.out_fifo.r_rdy):
@@ -60,7 +71,7 @@ class SensorHX711Subtarget(Elaboratable):
                     m.next = "WAIT"
 
             with m.State("WAIT"):
-                with m.If(~bus.dout):
+                with m.If(~bus.din):
                     m.next = "SHIFT"
 
             with m.State("SHIFT"):
@@ -79,7 +90,7 @@ class SensorHX711Subtarget(Elaboratable):
                                 self.in_fifo.w_en.eq(1),
                             ]
                     with m.If(bus.clk): # negedge
-                        m.d.sync += shreg.eq(Cat(bus.dout, shreg))
+                        m.d.sync += shreg.eq(Cat(bus.din, shreg))
                         with m.If(count == limit):
                             m.next = "IDLE"
 
@@ -126,18 +137,34 @@ class SensorHX711Applet(GlasgowApplet, name="sensor-hx711"):
     help = "measure voltage with AVIA Semiconductor HX711"
     description = """
     Measure voltage with AVIA Semiconductor HX711 wheatstone bridge analog-to-digital converter.
+
+    This applet can optionally provide a frequency source that can be connected to the XI pin.
+    The provided frequency source is much more accurate than the internal oscillator of the HX711,
+    and, depending on the state of the RATE pin, allows for a much wider sample rate range from
+    approx. 1 Hz to approx. 144 Hz.
     """
 
-    __pins = ("clk", "dout")
+    __pins = ("clk", "din", "osc")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        for pin in cls.__pins:
-            access.add_pin_argument(parser, pin, default=True)
+        parser.add_argument(
+            "-f", "--frequency", metavar="FREQ", type=float,
+            help="set oscillator frequency to FREQ MHz")
+
+        access.add_pin_argument(parser, "clk", default=True)
+        access.add_pin_argument(parser, "din", default=True)
+        access.add_pin_argument(parser, "osc", required=False)
 
     def build(self, target, args):
+        if args.frequency is None:
+            osc_cyc = None
+        else:
+            osc_cyc = self.derive_clock(clock_name="osc",
+                input_hz=target.sys_clk_freq, output_hz=args.frequency * 1e6)
+
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(SensorHX711Subtarget(
             pads=iface.get_pads(args, pins=self.__pins),
@@ -147,6 +174,7 @@ class SensorHX711Applet(GlasgowApplet, name="sensor-hx711"):
             # the lowest retrieval rate is 37 kHz, so it'll always be fast enough unless the FIFO
             # gets full.
             clk_cyc=int(1e-6 * target.sys_clk_freq),
+            osc_cyc=osc_cyc,
         ))
 
     async def run(self, device, args):
