@@ -207,8 +207,7 @@ class ProgramNRF24Lx1Applet(GlasgowApplet, name="program-nrf24lx1"):
             choices=("LE1", "LU1p16k", "LU1p32k"),
             help="type of device to program (one of: %(choices)s)")
 
-        # TODO(py3.7): add required=True
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_read = p_operation.add_parser(
             "read", help="read MCU memory contents")

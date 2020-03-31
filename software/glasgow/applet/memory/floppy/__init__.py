@@ -659,8 +659,7 @@ class MemoryFloppyApplet(GlasgowApplet, name="memory-floppy"):
 
     @classmethod
     def add_interact_arguments(cls, parser):
-        # TODO(py3.7): add required=True
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_read_raw = p_operation.add_parser(
             "read-raw", help="read raw track data")
@@ -721,8 +720,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
 
     @classmethod
     def add_arguments(cls, parser):
-        # TODO(py3.7): add required=True
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         cls._add_histogram_arguments(p_operation)
         cls._add_train_arguments(p_operation)

@@ -267,8 +267,7 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l"):
             "-d", "--dynamic-length", default=False, action="store_true",
             help="enable dynamic payload length (L01+ only)")
 
-        # TODO(py3.7): add required=True
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_transmit = p_operation.add_parser(
             "transmit", help="transmit packets")

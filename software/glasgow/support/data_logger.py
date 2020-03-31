@@ -168,6 +168,9 @@ class InfluxDBDataLogger(DataLogger, name="influxdb"):
         parser.add_argument(
             "-p", "--precision", metavar="PRECISION", choices=["ns", "us", "ms", "s", "m", "h"],
             help="set timestamp precision to PRECISION")
+        parser.add_argument(
+            "--batch-size", metavar="BATCH-SIZE", type=int, default=1,
+            help="submit data in groups of BATCH-SIZE points")
 
     async def setup(self, args):
         url = yarl.URL(args.endpoint)
@@ -183,24 +186,41 @@ class InfluxDBDataLogger(DataLogger, name="influxdb"):
             *[self._escape_name(",= ", key) + "=" + self._escape_name(",= ", value)
               for key, value in args.tags]
         ])
+        self.precision = args.precision
         self.session = aiohttp.ClientSession()
+        self._queue = []
+        self._batch_size = args.batch_size
 
     async def _report(self, fields, timestamp=None):
         data_parts = [self.series]
         data_parts.append(",".join(self._escape_name(",= ", key) + "=" +
                                    self._escape_value(fields[key])
                                    for key in fields))
-        if timestamp is not None:
-            data_parts.append(str(self._timestamp(self.precision, timestamp)))
+        if timestamp is None:
+            # If the timestamp is not specified, InfluxDB will timestamp the data point with
+            # the request timestamp. This works just fine with one data point per request, but
+            # if batching is enabled, then, since the series is always same, only one point per
+            # batch will ever be recorded. To avoid that, batched requests must be timestamped
+            # during submission. To achieve consistent behavior in case the local clock and
+            # the InfluxDB server clock are different, all requests are timestamped during
+            # submission regardless of whether batching is enabled.
+            timestamp = time.time()
+        data_parts.append(str(self._timestamp(self.precision, timestamp)))
         data = " ".join(data_parts)
-        try:
-            self.logger.debug("InfluxDB: write data=<%s>", data)
-            async with self.session.post(self.url, data=data) as response:
-                if response.status not in range(200, 300):
-                    self.logger.error("InfluxDB: write status=%d body=%s",
-                                      response.status, (await response.text()).strip())
-        except aiohttp.ClientError as error:
-            self.logger.error("InfluxDB: http error=%s", str(error), exc_info=error)
+
+        self.logger.debug("InfluxDB: queue data=<%s>", data)
+        self._queue.append(data)
+
+        if len(self._queue) >= self._batch_size:
+            try:
+                async with self.session.post(self.url, data="\n".join(self._queue)) as response:
+                    if response.status not in range(200, 300):
+                        self.logger.error("InfluxDB: write status=%d body=%s",
+                                          response.status, (await response.text()).strip())
+                    self._queue.clear()
+            except aiohttp.ClientError as error:
+                self.logger.error("InfluxDB: http error=%s", str(error), exc_info=error)
+                # don't clear queue on network error
 
     async def report_data(self, fields, timestamp=None):
         assert set(fields) == set(self.field_names)

@@ -7,6 +7,7 @@ import re
 import asyncio
 import signal
 import unittest
+import importlib.resources
 from vcd import VCDWriter
 from datetime import datetime
 
@@ -103,8 +104,7 @@ def get_argparser():
         return subparsers
 
     def add_applet_arg(parser, mode, required=False):
-        # TODO(py3.7): add required=True
-        subparsers = add_subparsers(parser, dest="applet", metavar="APPLET")
+        subparsers = add_subparsers(parser, dest="applet", metavar="APPLET", required=required)
 
         for applet_name, applet in GlasgowApplet.all_applets.items():
             if mode == "test" and not hasattr(applet, "test_cls"):
@@ -425,15 +425,14 @@ async def _main():
 
     device = None
     try:
-        # TODO(py3.7): use importlib.resources
-        firmware_filename = os.path.join(os.path.dirname(__file__), "glasgow.ihex")
-        if args.action in ("build", "test", "tool"):
-            pass
-        elif args.action == "factory":
-            device = GlasgowHardwareDevice(args.serial, firmware_filename,
-                                           _factory_rev=args.factory_rev)
-        else:
-            device = GlasgowHardwareDevice(args.serial, firmware_filename)
+        with importlib.resources.path(__package__, "glasgow.ihex") as firmware_filename:
+            if args.action in ("build", "test", "tool"):
+                pass
+            elif args.action == "factory":
+                device = GlasgowHardwareDevice(args.serial, firmware_filename,
+                                               _factory_rev=args.factory_rev)
+            else:
+                device = GlasgowHardwareDevice(args.serial, firmware_filename)
 
         if args.action == "voltage":
             if args.voltage is not None:

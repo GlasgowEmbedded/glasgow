@@ -192,8 +192,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
 
     @classmethod
     def add_interact_arguments(cls, parser):
-        # TODO(py3.7): add required=True
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_tty = p_operation.add_parser(
             "tty", help="connect UART to stdin/stdout")
@@ -326,8 +325,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
                            return_when=asyncio.FIRST_EXCEPTION)
 
     async def interact(self, device, args, uart):
-        # TODO(py3.7): replace with asyncio.create_task()
-        asyncio.ensure_future(self._monitor_errors(device))
+        asyncio.create_task(self._monitor_errors(device))
 
         if args.operation == "tty":
             await self._interact_tty(uart, args.stream)

@@ -69,8 +69,7 @@ class ControlTPS6598xApplet(I2CInitiatorApplet, name="control-tps6598x"):
         def hex_bytes(arg):
             return bytes.fromhex(arg)
 
-        # TODO(py3.7): add required=True
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_read_reg = p_operation.add_parser(
             "read-reg", help="read register")
