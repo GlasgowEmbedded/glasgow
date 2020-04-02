@@ -32,7 +32,7 @@ from .program.xc9500xl import ProgramXC9500XLApplet
 
 from .control.tps6598x import ControlTPS6598xApplet
 
-from .sensor.bmp280 import SensorBMP280Applet
+from .sensor.bmx280 import SensorBMx280Applet
 from .sensor.hx711 import SensorHX711Applet
 from .sensor.ina260 import SensorINA260Applet
 from .sensor.mouse_ps2 import SensorMousePS2Applet

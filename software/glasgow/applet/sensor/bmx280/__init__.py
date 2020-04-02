@@ -1,5 +1,7 @@
 # Ref: https://ae-bst.resource.bosch.com/media/_tech/media/datasheets/BST-BMP280-DS001.pdf
 # Accession: G00028
+# Ref: https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme280-ds002.pdf
+# Accession: G00050
 
 import logging
 import asyncio
@@ -23,7 +25,8 @@ REG_CAL_P8      = 0x9C # 16-bit signed
 REG_CAL_P9      = 0x9E # 16-bit signed
 
 REG_ID          = 0xD0 # 8-bit
-BIT_ID          = 0x58
+BIT_ID_BMP280   = 0x58
+BIT_ID_BME280   = 0x60
 
 REG_RESET       = 0xE0 # 8-bit
 BIT_RESET       = 0xB6
@@ -115,33 +118,35 @@ REG_PRESS     = 0xF7 # 20-bit unsigned
 REG_TEMP      = 0xFA # 20-bit unsigned
 
 
-class BMP280Error(GlasgowAppletError):
+class BMx280Error(GlasgowAppletError):
     pass
 
 
-class BMP280Interface:
+class BMx280Interface:
     def __init__(self, interface, logger):
         self._iface   = interface
         self._logger  = logger
         self._level   = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
         self._has_cal = False
+        self._ident   = "BMx280"
+
+    def _log(self, message, *args):
+        self._logger.log(self._level, self._ident + ": " + message, *args)
 
     async def _read_reg8(self, reg):
         byte, = await self._iface.read(reg, 1)
-        self._logger.log(self._level, "BMP280: reg=%#04x read=%#04x",
-                         reg, byte)
+        self._log("reg=%#04x read=%#04x", reg, byte)
         return byte
 
     async def _write_reg8(self, reg, byte):
         await self._iface.write(reg, [byte])
-        self._logger.log(self._level, "BMP280: reg=%#04x write=%#04x",
-                         reg, byte)
+        self._log("reg=%#04x write=%#04x", reg, byte)
 
     async def _read_reg16u(self, reg):
         lsb, msb = await self._iface.read(reg, 2)
         raw = (msb << 8) | lsb
         value = raw
-        self._logger.log(self._level, "BMP280: reg=%#04x raw=%#06x read=%d", reg, raw, value)
+        self._log("reg=%#04x raw=%#06x read=%d", reg, raw, value)
         return value
 
     async def _read_reg16s(self, reg):
@@ -151,14 +156,14 @@ class BMP280Interface:
             value = -((1 << 16) - raw)
         else:
             value = raw
-        self._logger.log(self._level, "BMP280: reg=%#04x raw=%#06x read=%+d", reg, raw, value)
+        self._log("reg=%#04x raw=%#06x read=%+d", reg, raw, value)
         return value
 
     async def _read_reg24(self, reg):
         msb, lsb, xlsb = await self._iface.read(reg, 3)
         raw = ((msb << 16) | (lsb << 8) | xlsb)
         value = raw >> 4
-        self._logger.log(self._level, "BMP280: reg=%#04x raw=%#06x read=%d", reg, raw, value)
+        self._log("reg=%#04x raw=%#06x read=%d", reg, raw, value)
         return value
 
     async def reset(self):
@@ -167,8 +172,15 @@ class BMP280Interface:
 
     async def identify(self):
         id = await self._read_reg8(REG_ID)
-        if id != BIT_ID:
-            raise BMP280Error("BMP280: wrong ID=%#04x" % id)
+        if id == BIT_ID_BMP280:
+            ident = "BMP280"
+        elif id == BIT_ID_BME280:
+            ident = "BME280"
+        else:
+            raise BMx280Error("BMx280: wrong ID=%#04x" % id)
+        self._log("identified %s", ident)
+        self._ident = ident
+        return ident
 
     async def _read_cal(self):
         if self._has_cal: return
@@ -244,7 +256,7 @@ class BMP280Interface:
         return h # in m
 
 
-class BMP280I2CInterface:
+class BMx280I2CInterface:
     def __init__(self, interface, logger, i2c_address):
         self.lower     = interface
         self._i2c_addr = i2c_address
@@ -256,22 +268,23 @@ class BMP280I2CInterface:
         await self.lower.write(self._i2c_addr, [addr])
         result = await self.lower.read(self._i2c_addr, size)
         if result is None:
-            raise BMP280Error("BMP280 did not acknowledge I2C read at address {:#07b}"
+            raise BMx280Error("BMx280 did not acknowledge I2C read at address {:#07b}"
                               .format(self._i2c_addr))
         return list(result)
 
     async def write(self, addr, data):
         result = await self.lower.write(self._i2c_addr, [addr, *data])
         if not result:
-            raise BMP280Error("BMP280 did not acknowledge I2C write at address {:#07b}"
+            raise BMx280Error("BMx280 did not acknowledge I2C write at address {:#07b}"
                               .format(self._i2c_addr))
 
 
-class SensorBMP280Applet(I2CInitiatorApplet, name="sensor-bmp280"):
+class SensorBMx280Applet(I2CInitiatorApplet, name="sensor-bmx280"):
     logger = logging.getLogger(__name__)
-    help = "measure temperature and pressure with Bosch BMP280 sensors"
+    help = "measure temperature and pressure with Bosch BMx280 sensors"
     description = """
-    Measure temperature and pressure using Bosch BMP280 sensors connected over the I²C interface.
+    Measure temperature and pressure using Bosch BMP280 and BME280 sensors connected over
+    the I²C interface.
     """
 
     @classmethod
@@ -285,9 +298,9 @@ class SensorBMP280Applet(I2CInitiatorApplet, name="sensor-bmp280"):
             help="I2C address of the sensor (one of: 0x76 0x77, default: %(default)#02x)")
 
     async def run(self, device, args):
-        i2c_iface = await self.run_lower(SensorBMP280Applet, device, args)
-        bmp280_iface = BMP280I2CInterface(i2c_iface, self.logger, args.i2c_address)
-        return BMP280Interface(bmp280_iface, self.logger)
+        i2c_iface = await self.run_lower(SensorBMx280Applet, device, args)
+        bmx280_iface = BMx280I2CInterface(i2c_iface, self.logger, args.i2c_address)
+        return BMx280Interface(bmx280_iface, self.logger)
 
     @classmethod
     def add_interact_arguments(cls, parser):
@@ -323,28 +336,28 @@ class SensorBMP280Applet(I2CInitiatorApplet, name="sensor-bmp280"):
             help="sample each TIME seconds")
         DataLogger.add_subparsers(p_log)
 
-    async def interact(self, device, args, bmp280):
-        await bmp280.reset()
-        await bmp280.identify()
+    async def interact(self, device, args, bmx280):
+        await bmx280.reset()
+        await bmx280.identify()
 
-        await bmp280.set_mode("sleep")
-        await bmp280.set_iir_coefficient(args.iir_filter)
-        await bmp280.set_oversample(ovs_p=args.oversample_pressure,
+        await bmx280.set_mode("sleep")
+        await bmx280.set_iir_coefficient(args.iir_filter)
+        await bmx280.set_oversample(ovs_p=args.oversample_pressure,
                                     ovs_t=args.oversample_temperature)
 
         if args.operation == "measure":
-            await bmp280.set_mode("force")
+            await bmx280.set_mode("force")
 
-            temp_degC = await bmp280.get_temperature()
-            press_Pa  = await bmp280.get_pressure()
+            temp_degC = await bmx280.get_temperature()
+            press_Pa  = await bmx280.get_pressure()
             print("temperature : {:.0f} °C".format(temp_degC))
             print("pressure    : {:.0f} Pa".format(press_Pa))
             if args.report_altitude:
-                altitude_m = await bmp280.get_altitude(p0=args.sea_level_pressure)
+                altitude_m = await bmx280.get_altitude(p0=args.sea_level_pressure)
                 print("altitude    : {:.0f} m".format(altitude_m))
 
         if args.operation == "log":
-            await bmp280.set_mode("normal")
+            await bmx280.set_mode("normal")
 
             field_names = dict(t="T(°C)", p="p(Pa)")
             if args.report_altitude:
@@ -352,17 +365,17 @@ class SensorBMP280Applet(I2CInitiatorApplet, name="sensor-bmp280"):
             data_logger = await DataLogger(self.logger, args, field_names=field_names)
             while True:
                 async def report():
-                    fields = dict(t=await bmp280.get_temperature(),
-                                  p=await bmp280.get_pressure())
+                    fields = dict(t=await bmx280.get_temperature(),
+                                  p=await bmx280.get_pressure())
                     if args.report_altitude:
-                        fields.update(h=await bmp280.get_altitude(p0=args.sea_level_pressure))
+                        fields.update(h=await bmx280.get_altitude(p0=args.sea_level_pressure))
                     await data_logger.report_data(fields)
                 try:
                     await asyncio.wait_for(report(), args.interval * 2)
-                except BMP280Error as error:
+                except BMx280Error as error:
                     await data_logger.report_error(str(error), exception=error)
-                    await bmp280.reset()
+                    await bmx280.reset()
                 except asyncio.TimeoutError as error:
                     await data_logger.report_error("timeout", exception=error)
-                    await bmp280.reset()
+                    await bmx280.reset()
                 await asyncio.sleep(args.interval)
