@@ -1,5 +1,5 @@
 # Ref: HX711 24-Bit Analog-to-Digital Converter (ADC) for Weigh Scales
-# Accession: G00048
+# Accession: G00049
 
 import logging
 import asyncio
