@@ -136,13 +136,13 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
                 self.logger.info("reading code (%d bytes)", args.length)
                 await chipcon_iface.set_config(0)
                 output_data(args.code,
-                            await self.read_code(chipcon_iface, args.address, args.length))
+                            await self.read_flash(chipcon_iface, args.address, args.length))
             if args.lock_bits:
                 self._check_format(args.lock_bits, "lock-bits")
                 self.logger.info("reading flash information (%d bytes)", args.length)
                 await chipcon_iface.set_config(Config.SEL_FLASH_INFO_PAGE)
                 output_data(args.lock_bits,
-                            await self.read_code(args.address, args.length))
+                            await self.read_flash(args.address, args.length))
                 await chipcon_iface.set_config(0)
         elif args.operation == "write":
             if not args.no_erase:
@@ -155,9 +155,9 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
                 self.logger.info("writing code (%d bytes)",
                                  sum([len(chunk) for address, chunk in data]))
                 await chipcon_iface.set_config(0)
-                await self.write_code(chipcon_iface, data,
-                                      chipcon_iface.device.write_block_size,
-                                      not args.no_verify)
+                await self.write_flash(chipcon_iface, data,
+                                       chipcon_iface.device.write_block_size,
+                                       not args.no_verify)
             if args.lock_bits or args.lock_boot or args.lock_size or args.lock_debug:
                 data = []
                 if args.lock_bits:
@@ -170,21 +170,21 @@ class ProgramChipconApplet(GlasgowApplet, name="program-chipcon"):
                                  sum([len(chunk) for address, chunk in data]))
                 await chipcon_iface.set_config(Config.SEL_FLASH_INFO_PAGE)
                 # Cannot verify if debug is locked
-                await self.write_code(chipcon_iface, data,
-                                        chipcon_iface.device.write_block_size, not args.lock_debug)
+                await self.write_flash(chipcon_iface, data,
+                                      chipcon_iface.device.write_block_size, not args.lock_debug)
                 await chipcon_iface.set_config(0)
         await chipcon_iface.disconnect()
 
-    async def read_code(self, chipcon_iface, address, count):
-        """Read from CODE address space."""
+    async def read_flash(self, chipcon_iface, address, count):
+        """Read data from flash."""
         bytes = bytearray()
         for block_address,block_count in self._aligned_range(address, count, 0x8000):
             bytes += await chipcon_iface.read_flash(block_address, block_count)
             self.logger.info("read %d bytes from %#07x", block_count, block_address)
         return bytes
 
-    async def write_code(self, chipcon_iface, data, block_size, verify=True):
-        """Write and verify data to flash, breaking into blocks of given size."""
+    async def write_flash(self, chipcon_iface, data, block_size, verify=True):
+        """Write data (and optionally verify) flash."""
         if len(data) == 0:
             return
         elif len(data) == 1:
