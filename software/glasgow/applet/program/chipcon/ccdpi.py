@@ -585,7 +585,8 @@ class CCDPIInterface:
         # Start CPU - then wait for it to halt
         await self.set_pc(self.device.write_code_address + self.device.write_block_size)
         await self.resume()
-        await self._delay_ms(20)
+        #  Worst case across all parts appears to be CC2430 at 27ms
+        await self._delay_ms(30)
         if not await self.get_status() & Status.CPU_HALTED:
             raise CCDPIError("flash writing code not finished")
 
