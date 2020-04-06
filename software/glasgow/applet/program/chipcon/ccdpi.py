@@ -74,6 +74,7 @@ class CCDPIBus(Elaboratable):
                     with m.Else():
                         m.d.sync += oe.eq(0)
                         m.next = "READ_RISE"
+
             with m.State("WRITE_RISE"):
                 with m.If(period.stb_r):
                     with m.If(cnt == 0):
@@ -87,10 +88,12 @@ class CCDPIBus(Elaboratable):
                             cnt.eq(cnt-1),
                         ]
                         m.next = "WRITE_FALL"
+
             with m.State("WRITE_FALL"):
                 with m.If(period.stb_f):
                     m.d.sync += dclk.eq(0)
                     m.next = "WRITE_RISE"
+
             with m.State("READ_RISE"):
                 with m.If(period.stb_r):
                     with m.If(cnt == 0):
@@ -101,6 +104,7 @@ class CCDPIBus(Elaboratable):
                             cnt.eq(cnt-1),
                         ]
                         m.next = "READ_FALL"
+
             with m.State("READ_FALL"):
                 with m.If(period.stb_f):
                     m.d.sync += [
@@ -183,6 +187,7 @@ class CCDPISubtarget(Elaboratable):
                     m.d.comb += self.out_fifo.re.eq(1)
                     m.d.sync += Cat(count_in, count_out, op).eq(self.out_fifo.dout)
                     m.next = "START"
+
             with m.State("START"):
                 with m.Switch(op):
                     with m.Case(Operation.COMMAND,
@@ -200,6 +205,7 @@ class CCDPISubtarget(Elaboratable):
                         m.next = "READY"
                     with m.Case(Operation.DELAY):
                         m.next = "DELAY_H"
+
             with m.State("OUT"):
                 with m.If(count_out == 0):
                     m.next = "CHANGE_1"
@@ -212,6 +218,7 @@ class CCDPISubtarget(Elaboratable):
                         bus.ack.eq(1),
                     ]
                     m.d.sync += count_out.eq(count_out-1)
+
             with m.State("CHANGE_1"):
                 with m.If(delay.stb_r & bus.rdy):
                     m.next = "CHANGE_2"
@@ -223,6 +230,7 @@ class CCDPISubtarget(Elaboratable):
                         m.next = "POLL"
                     with m.Else():
                         m.next = "IN"
+
             with m.State("POLL"):
                 with m.If(bus.ddat): # Target still busy - clock 8 bits
                     with m.If(bus.rdy):
@@ -233,6 +241,7 @@ class CCDPISubtarget(Elaboratable):
                         ]
                 with m.Else():
                     m.next = "IN"
+
             with m.State("IN"):
                 with m.If(count_in == 0):
                     m.next = "READY"
@@ -243,6 +252,7 @@ class CCDPISubtarget(Elaboratable):
                         bus.ack.eq(1),
                     ]
                     m.next = "IN_WRITE"
+
             with m.State("IN_WRITE"):
                 with m.If(bus.rdy & self.in_fifo.writable):
                     m.d.comb += [
@@ -252,6 +262,7 @@ class CCDPISubtarget(Elaboratable):
                     ]
                     m.d.sync += count_in.eq(count_in-1)
                     m.next = "IN"
+
             with m.State("DEBUG"):
                 with m.If(bus.rdy):
                     m.d.comb += [
@@ -261,16 +272,19 @@ class CCDPISubtarget(Elaboratable):
                         bus.ack.eq(1),
                     ]
                     m.next = "READY"
+
             with m.State("DELAY_H"):
                 with m.If(self.out_fifo.readable):
                     m.d.comb += self.out_fifo.re.eq(1),
                     m.d.sync += delay_downcount[8:16].eq(self.out_fifo.dout)
                     m.next = "DELAY_L"
+
             with m.State("DELAY_L"):
                 with m.If(self.out_fifo.readable):
                     m.d.comb += self.out_fifo.re.eq(1),
                     m.d.sync += delay_downcount[0:8].eq(self.out_fifo.dout)
                     m.next = "DELAYING"
+
             with m.State("DELAYING"):
                 with m.If(delay_downcount == 0):
                     m.next = "READY"
@@ -327,7 +341,7 @@ class CCDPIInterface:
             return await self._recv(num_bytes_in)
 
     async def _delay_us(self, micros):
-        # delay clock is *4, and make sure we wait at least requested time
+        # delay clock is *4, and make sure the wait is at least requested time
         delay_count = micros*4+1
         await self._send(Operation.DELAY, [(delay_count >> 8) & 0xff, delay_count & 0xff], 0)
 
@@ -418,19 +432,21 @@ class CCDPIInterface:
     async def clear_breakpoint(self, bp):
         await self._command([Cmd.SET_HW_BRKPNT, (bp << 4) + 0x00, 0x00, 0x00], 1)
 
-    async def debug_instr(self, *args, discard=True):
-        if not 1 <= len(args) <= 3:
+    async def debug_instr(self, *opcode, discard=True):
+        """Execute opcode on target."""
+        if not 1 <= len(opcode) <= 3:
             raise CCDPIError("instructions must be 1..3 bytes")
-        await self._command([Cmd.DEBUG_INSTR + len(args)] + list(args), 1, discard=discard, defer_read=True)
+        await self._command([Cmd.DEBUG_INSTR + len(opcode)] + list(opcode), 1, discard=discard, defer_read=True)
 
-    async def debug_instr_a(self, *args):
-        if not 1 <= len(args) <= 3:
+    async def debug_instr_a(self, *opcode):
+        """Execute opcode on target and return contents of A."""
+        if not 1 <= len(opcode) <= 3:
             raise CCDPIError("instructions must be 1..3 bytes")
-        return (await self._command([Cmd.DEBUG_INSTR + len(args)] + list(args), 1))[0]
+        return (await self._command([Cmd.DEBUG_INSTR + len(opcode)] + list(opcode), 1))[0]
 
-    async def debug_instr16(self, op, immed16):
-        "Special case for opcode + immed16."
-        return await self.debug_instr(op, (immed16 >> 8) &0xff, immed16 & 0xff)
+    async def debug_instr16(self, opcode, immed16):
+        """Execute opcode with immed16 on target."""
+        return await self.debug_instr(opcode, (immed16 >> 8) &0xff, immed16 & 0xff)
 
     async def set_pc(self, address):
         await self.debug_instr16(O.LJMP_addr16, address)
@@ -548,7 +564,7 @@ class CCDPIInterface:
         word_count_l = word_count & 0xff
         word_count_h = ((word_count >> 8) & 0xff) + (1 if word_count_l != 0 else 0)
         # Code to run from RAM
-        #  Use MPAGE:R0 MPAGE:R1 to point to FCTL and FWDATA regs in XDATA
+        #  Use MPAGE:R0 and MPAGE:R1 to point to FCTL and FWDATA regs in XDATA
         code = [
             O.MOV_direct_immed, SFR.MPAGE, (self.xreg['FCTL'] >> 8) & 0x0ff,
             O.MOV_R0_immed, self.xreg['FCTL'] & 0x0ff,
