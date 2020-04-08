@@ -50,3 +50,5 @@ from .video.vga_terminal import VGATerminalApplet
 from .video.ws2812_output import VideoWS2812OutputApplet
 
 from .radio.nrf24l01 import RadioNRF24L01Applet
+from .radio.sx1272 import RadioSX1272Applet
+from .radio.lora import LoRaWANApplet
