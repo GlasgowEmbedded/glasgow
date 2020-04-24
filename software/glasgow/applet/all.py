@@ -24,6 +24,7 @@ from .debug.arm.swd import DebugARMSWDApplet
 from .program.avr.spi import ProgramAVRSPIApplet
 from .program.ice40_flash import ProgramICE40FlashApplet
 from .program.ice40_sram import ProgramICE40SRAMApplet
+from .program.ecp5_sram import ProgramECP5SRAMApplet
 from .program.m16c import ProgramM16CApplet
 from .program.mec16xx import ProgramMEC16xxApplet
 from .program.nrf24lx1 import ProgramNRF24Lx1Applet
