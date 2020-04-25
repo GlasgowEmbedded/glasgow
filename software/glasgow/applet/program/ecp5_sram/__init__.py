@@ -16,8 +16,8 @@ from ...interface.jtag_probe import JTAGProbeApplet, JTAGProbeStateTransitionErr
 class ProgramECP5SRAMInterface:
     def __init__(self, interface, logger):
         self.lower   = interface
-        self.logger = logger
-        self._level  = logging.DEBUG if self.logger.name == __name__ else logging.TRACE
+        self._logger = logger
+        self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
         
     async def _read_idcode(self):
         await self.lower.test_reset()
@@ -39,18 +39,18 @@ class ProgramECP5SRAMInterface:
         mfg_name = jedec_mfg_name_from_bank_num(idcode.mfg_id >> 7,
                                                 idcode.mfg_id & 0x7f) or \
                         "unknown"
-        self.logger.info("manufacturer=%#05x (%s) part=%#06x version=%#03x",
+        self._logger.info("manufacturer=%#05x (%s) part=%#06x version=%#03x",
                             idcode.mfg_id, mfg_name, idcode.part_id, idcode.version)
         
         # Decode to actual ECP5 devices 
         device = devices_by_idcode[idcode_value] or None
         if device is None:
             raise GlasgowAppletError("IDCODE does not mtach ECP5 device", hex(idcode_value))
-        self.logger.info("Found Device: %s", device)
+        self._logger.info("Found Device: %s", device)
 
     async def _check_status(self, status):
-        self.logger.info("Status Register: 0x%#08x", status.to_int())
-        self.logger.info(" %s", status)
+        self._logger.info("Status Register: 0x%#08x", status.to_int())
+        self._logger.info(" %s", status)
 
     async def program(self, bitstream):
         await self.identify()
@@ -85,7 +85,7 @@ class ProgramECP5SRAMInterface:
         status = await self._read_status()
 
         if status.DONE:
-            self.logger.info("Configuration Done")
+            self._logger.info("Configuration Done")
         else:
             await self._check_status(status)
             raise GlasgowAppletError("Configuration error. DONE not set", status.BSEErrorCode())
@@ -107,7 +107,7 @@ class ProgramECP5SRAMApplet(JTAGProbeApplet, name="program-ecp5-sram"):
 
     async def run(self, device, args):
         jtag_iface = await self.run_lower(ProgramECP5SRAMApplet, device, args)
-        return ProgramECP5SRAMInterface(jtag_iface, self.logger)
+        return ProgramECP5SRAMInterface(jtag_iface, self._logger)
 
     async def interact(self, device, args, ecp5_iface):
         bitstream = args.bitstream.read()
