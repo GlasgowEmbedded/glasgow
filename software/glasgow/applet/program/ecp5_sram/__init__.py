@@ -19,14 +19,14 @@ class ProgramECP5SRAMInterface:
         self.logger = logger
         self._level  = logging.DEBUG if self.logger.name == __name__ else logging.TRACE
         
-    async def _read_IDCODE(self):
+    async def _read_idcode(self):
         await self.lower.test_reset()
         await self.lower.write_ir(IR_READ_ID)
         raw_bits = await self.lower.read_dr(32)
         idcode = struct.unpack("<I", raw_bits.to_bytes())[0]
         return idcode
         
-    async def _read_STATUS(self):
+    async def _read_status(self):
         await self.lower.write_ir(IR_LSC_READ_STATUS)
         raw_bits = await self.lower.read_dr(32)
         status_value = struct.unpack("<I", raw_bits.to_bytes())[0]
@@ -34,7 +34,7 @@ class ProgramECP5SRAMInterface:
         return status
 
     async def identify(self):
-        idcode_value = await self._read_IDCODE()
+        idcode_value = await self._read_idcode()
         idcode   = DR_IDCODE.from_int(idcode_value)
         mfg_name = jedec_mfg_name_from_bank_num(idcode.mfg_id >> 7,
                                                 idcode.mfg_id & 0x7f) or \
@@ -49,7 +49,7 @@ class ProgramECP5SRAMInterface:
             self.logger.error("IDCODE 0x%08X does not mtach ECP5 device", idcode_value)
 
 
-    async def _check_STATUS(self, status):
+    async def _check_status(self, status):
         self.logger.info("Status Register: 0x%08X", status.to_int())
         self.logger.info(" %s", status)
 
@@ -83,12 +83,12 @@ class ProgramECP5SRAMInterface:
 
         # Check status
         # Note ECP5 will not release until STATUS is read
-        status = await self._read_STATUS()
+        status = await self._read_status()
 
         if status.DONE:
             self.logger.info("Configuration Done")
         else:
-            await self._check_STATUS(status)
+            await self._check_status(status)
 
 
 
