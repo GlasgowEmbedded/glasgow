@@ -14,11 +14,11 @@ from ...interface.jtag_probe import JTAGProbeApplet, JTAGProbeStateTransitionErr
 
 
 class ProgramECP5SRAMInterface:
-    def __init__(self, interface, logger, frequency):
+    def __init__(self, interface, logger):
         self.lower   = interface
         self.logger = logger
         self._level  = logging.DEBUG if self.logger.name == __name__ else logging.TRACE
-
+        
     async def _read_IDCODE(self):
         await self.lower.test_reset()
         await self.lower.write_ir(IR_READ_ID)
@@ -49,17 +49,9 @@ class ProgramECP5SRAMInterface:
             self.logger.error("IDCODE 0x%08X does not mtach ECP5 device", idcode_value)
 
 
-    async def check_STATUS(self, status):
+    async def _check_STATUS(self, status):
         self.logger.info("Status Register: 0x%08X", status.to_int())
         self.logger.info(" %s", status)
-    
-
-    def reverse(self, a,size):
-        b = 0
-        for i in range(size):
-            b <<= 1
-            b |= a >> i & 1
-        return b
 
     async def program(self, bitstream):
         await self.identify()
@@ -67,16 +59,24 @@ class ProgramECP5SRAMInterface:
         # perform programming
         await self.lower.write_ir(IR_ISC_ENABLE)
         await self.lower.run_test_idle(10)
+        # Device can now accept a new bitstream
         await self.lower.write_ir(IR_LSC_BITSTREAM_BURST)
 
         # Send entire bitstream data into DR,
         # Bytes are expected MSB by the ECP5, so need to be reversed
-        await self.lower.enter_shift_dr()
-        for b in bitstream:
-            b = self.reverse(b, 8) 
-            await self.lower.shift_tdi(bits.from_int(b, 8), last=False)
-        await self.lower.enter_update_dr()
+        # Slit bitstream up into chunks just for improving JTAG throughput
+        chunk_size = 128
+        bitstream_chunks = [bitstream[i:i + chunk_size] for i in range(0, len(bitstream), chunk_size)]
         
+        await self.lower.enter_shift_dr()
+        for chunk in bitstream_chunks:
+            chunk_bits = bits()
+            for b in chunk:
+                chunk_bits += bits.from_int(b, 8).reversed()
+                
+            await self.lower.shift_tdi(chunk_bits, last=False)
+        await self.lower.enter_update_dr()
+
         
         await self.lower.write_ir(IR_ISC_DISABLE)
         await self.lower.run_test_idle(10)
@@ -88,16 +88,15 @@ class ProgramECP5SRAMInterface:
         if status.DONE:
             self.logger.info("Configuration Done")
         else:
-            self.check_STATUS(status)
+            await self._check_STATUS(status)
 
-        
 
 
 class ProgramECP5SRAMApplet(JTAGProbeApplet, name="program-ecp5-sram"):
     logger = logging.getLogger(__name__)
     help = "Program ECP5 configuration sram via JTAG"
     description = """
-    TODO
+    Program the volatile configuration memory of ECP5 FPGAs
     """
 
     @classmethod
@@ -108,7 +107,7 @@ class ProgramECP5SRAMApplet(JTAGProbeApplet, name="program-ecp5-sram"):
 
     async def run(self, device, args):
         jtag_iface = await self.run_lower(ProgramECP5SRAMApplet, device, args)
-        return ProgramECP5SRAMInterface(jtag_iface, self.logger, args.frequency * 1000)
+        return ProgramECP5SRAMInterface(jtag_iface, self.logger)
 
     async def interact(self, device, args, ecp5_iface):
         bitstream = args.bitstream.read()
