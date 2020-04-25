@@ -41,16 +41,15 @@ class ProgramECP5SRAMInterface:
                         "unknown"
         self.logger.info("manufacturer=%#05x (%s) part=%#06x version=%#03x",
                             idcode.mfg_id, mfg_name, idcode.part_id, idcode.version)
+        
         # Decode to actual ECP5 devices 
-        try:
-            device = devices_by_idcode[idcode_value]
-            self.logger.info("Found Device: %s", device)
-        except:
-            self.logger.error("IDCODE 0x%08X does not mtach ECP5 device", idcode_value)
-
+        device = devices_by_idcode[idcode_value] or None
+        if device is None:
+            raise GlasgowAppletError("IDCODE does not mtach ECP5 device", hex(idcode_value))
+        self.logger.info("Found Device: %s", device)
 
     async def _check_status(self, status):
-        self.logger.info("Status Register: 0x%08X", status.to_int())
+        self.logger.info("Status Register: 0x%#08x", status.to_int())
         self.logger.info(" %s", status)
 
     async def program(self, bitstream):
@@ -67,7 +66,7 @@ class ProgramECP5SRAMInterface:
         # Slit bitstream up into chunks just for improving JTAG throughput
         chunk_size = 128
         bitstream_chunks = [bitstream[i:i + chunk_size] for i in range(0, len(bitstream), chunk_size)]
-        
+
         await self.lower.enter_shift_dr()
         for chunk in bitstream_chunks:
             chunk_bits = bits()
@@ -89,6 +88,8 @@ class ProgramECP5SRAMInterface:
             self.logger.info("Configuration Done")
         else:
             await self._check_status(status)
+            raise GlasgowAppletError("Configuration error. DONE not set", 
+                                        bse_error_code[status.BSE_Error_Code])
 
 
 
