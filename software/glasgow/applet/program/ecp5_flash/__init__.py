@@ -58,6 +58,18 @@ class ProgramECP5FLASHInterface(Memory25xInterface, ProgramECP5SRAMInterface):
         return None
 
     async def _enter_spi_background_mode(self):
+        # Erase currently configured bitstream
+        await self.lower.write_ir(IR_ISC_ENABLE)
+        await self.lower.run_test_idle(100)
+
+        await self.lower.write_ir(IR_ISC_ERASE)
+        await self.lower.write_dr(bits.from_int(0,8))
+        await self.lower.run_test_idle(100)
+
+        await self.lower.write_ir(IR_ISC_DISABLE)
+        await self.lower.run_test_idle(100)
+
+        # Enable background SPI
         await self.lower.write_ir(IR_LSC_BACKGROUD_SPI)
         await self.lower.write_dr(bits.from_int(0x68FE,16))
         await self.lower.run_test_idle(100)
