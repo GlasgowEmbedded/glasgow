@@ -11,7 +11,7 @@ IR_ISC_DISABLE         = bits("00100110")
 IR_ISC_ERASE           = bits("00001110")
 IR_LSC_BITSTREAM_BURST = bits("01111010")
 
-LSC_Status = bitstruct("LSC_STATUS", 32, [
+LSC_Status_bits = bitstruct("LSC_STATUS", 32, [
     ("Transparent_Mode", 1),
     ("Config_Target",    3),
     ("JTAG_Active",      1),
@@ -52,3 +52,33 @@ bse_error_code = [
     BSEErrorCode(0b110, "OVFL Error", "data overflow error"                  ),
     BSEErrorCode(0b111, "SDM Error",  "bitstream pass the size of SRAM array"),
 ]
+
+ConfigTargetCode = namedtuple("ConfigTargetCode", ("code","target"))
+
+config_target_code = [
+    ConfigTargetCode(0b000, "SRAM"),
+    ConfigTargetCode(0b001, "eFuse"),
+]
+
+class LSC_Status(LSC_Status_bits):
+    def __init__(self):
+        ...
+
+    def __iter__(self):
+        properties = {}
+        properties["Config Target"]    = "{}".format(config_target_code[self.Config_Target])
+        properties["BSE Error Code"]   = "{}".format(bse_error_code[self.BSE_Error_Code])
+
+        return iter(properties.items())
+
+    def BSEErrorCode(self):
+        return bse_error_code[self.BSE_Error_Code]
+
+    def flags_repl(self):
+        s = ""
+        for i in self:
+            s += " {}".format(i)
+        return s
+
+    def __repr__(self):
+        return "<{}.{} {}{}>".format(self.__module__, self.__class__.__name__, self.bits_repr(), self.flags_repl())

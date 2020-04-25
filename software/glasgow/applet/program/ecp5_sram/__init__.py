@@ -88,8 +88,7 @@ class ProgramECP5SRAMInterface:
             self.logger.info("Configuration Done")
         else:
             await self._check_status(status)
-            raise GlasgowAppletError("Configuration error. DONE not set", 
-                                        bse_error_code[status.BSE_Error_Code])
+            raise GlasgowAppletError("Configuration error. DONE not set", status.BSEErrorCode())
 
 
 
