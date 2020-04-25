@@ -10,6 +10,7 @@ IR_ISC_ENABLE          = bits("11000110")
 IR_ISC_DISABLE         = bits("00100110")
 IR_ISC_ERASE           = bits("00001110")
 IR_LSC_BITSTREAM_BURST = bits("01111010")
+IR_LSC_BACKGROUD_SPI   = bits("00111010")
 
 LSC_Status_bits = bitstruct("LSC_STATUS", 32, [
     ("Transparent_Mode", 1),
