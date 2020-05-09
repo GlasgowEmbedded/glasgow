@@ -1,0 +1,5 @@
+gerbers: hardware/boards/glasgow/revC1
+bom: hardware/boards/glasgow/revC1/bom.csv
+color: blue
+summary: Glasgow Debug Tool rev C1
+site: https://github.com/GlasgowEmbedded/glasgow
