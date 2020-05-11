@@ -279,15 +279,6 @@ class LoRaWAN_Device:
         await self.api.configure(freq, bw, sf, pwr, codr, sword, plength)
         return True
 
-    async def listen(self):
-        await self.api.listen(self.phy_process)
-
-    async def phy_process(self, payload, crcerr, snr, rssi, codr):
-        pass
-
-    def mac_process(self, phypayload):
-        pass
-
 
 class LoRaWAN_Node(LoRaWAN_Device):
     def __init__(self, api, region, appkey, deveui, appeui, logger, frame_cb):
@@ -314,7 +305,7 @@ class LoRaWAN_Node(LoRaWAN_Device):
         phypl += cmac
         return phypl
 
-    async def __process_join_accept(self, data, crcerr, snr, rssi, codr):
+    def __process_join_accept(self, data, crcerr, snr, rssi, codr):
         if data == None:
             return False
 
@@ -453,7 +444,7 @@ class LoRaWAN_Node(LoRaWAN_Device):
         # Go back to known configuration
         await self.configure_by_channel(chn, datr)
 
-    async def mac_process(self, payload, crcerr, snr, rssi, codr):
+    def mac_process(self, payload, crcerr, snr, rssi, codr):
         if payload == None:
             return False
         self.logger.debug("Payload recived: {}".format(payload))
@@ -690,7 +681,7 @@ class SX1272_LoRa_Device_API(LoRa_Device_API):
             }[codr.RX_CODING_RATE]
 
         if onpayload != None:
-            return await onpayload(data, crcerr, snr, rssi, codr)
+            return onpayload(data, crcerr, snr, rssi, codr)
         else:
             return data, crcerr, snr, rssi, codr
 
@@ -721,7 +712,7 @@ class SX1272_LoRa_Device_API(LoRa_Device_API):
                 regs_lora.CODINGRATE._4_OVER_8: 8,
             }[codr.RX_CODING_RATE]
 
-            await onpayload(data, crcerr, snr, rssi, codr)
+            onpayload(data, crcerr, snr, rssi, codr)
 
     async def sleep(self):
         await self.lower.set_opmode_mode(regs_lora.MODE._SLEEP)
