@@ -2698,7 +2698,7 @@ L Device:Ferrite_Bead FB1
 U 1 1 5C13076A
 P 1350 4050
 F 0 "FB1" H 1200 4150 50  0000 R CNN
-F 1 "Ferrite_Bead" H 1200 4250 50  0000 R CNN
+F 1 "600R, 0.5A" H 1200 4250 50  0000 R CNN
 F 2 "Inductor_SMD:L_0402_1005Metric" V 1280 4050 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/281/c51e-794816.pdf" H 1350 4050 50  0001 C CNN
 F 4 "Murata Electronics" H 1350 4050 50  0001 C CNN "Mfg"
