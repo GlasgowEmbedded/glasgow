@@ -2,7 +2,7 @@
 
 **Want one? [Subscribe here](https://mailchi.mp/44980ff6f0ab/glasgow-announcements).**
 
-**Let's chat! Our IRC channel is [#glasgow at freenode.net](https://webchat.freenode.net/?channels=glasgow); our discussion forum is [glasgow.whitequark.org](https://glasgow.whitequark.org/).**
+**Let's chat! Our IRC channel is [#glasgow at freenode.net](https://webchat.freenode.net/?channels=glasgow); our Discord channel is [#glasgow at 1BitSquared's Discord server](https://1bitsquared.com/pages/chat); our discussion forum is [glasgow.whitequark.org](https://glasgow.whitequark.org/).**
 
 **Important note: if you are looking to assemble boards yourself, use only revC1.**
 
