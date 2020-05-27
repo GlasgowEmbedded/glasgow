@@ -173,6 +173,9 @@ class UARTApplet(GlasgowApplet, name="uart"):
         super().add_run_arguments(parser, access)
 
         parser.add_argument(
+            "--pulls", default=False, action="store_true",
+            help="enable integrated pull-ups")
+        parser.add_argument(
             "-a", "--auto-baud", default=False, action="store_true",
             help="automatically estimate baud rate in response to RX errors")
 
@@ -188,7 +191,14 @@ class UARTApplet(GlasgowApplet, name="uart"):
         if args.auto_baud:
             await device.write_register(self.__addr_use_auto, 1)
 
-        return await device.demultiplexer.claim_interface(self, self.mux_interface, args)
+        # Enable pull-ups, if requested.
+        # This reduces the amount of noise received on tristated lines.
+        pulls = set()
+        if args.pulls:
+            pulls = {args.pin_rx}
+
+        return await device.demultiplexer.claim_interface(self, self.mux_interface, args,
+                                                          pull_high=pulls)
 
     @classmethod
     def add_interact_arguments(cls, parser):
