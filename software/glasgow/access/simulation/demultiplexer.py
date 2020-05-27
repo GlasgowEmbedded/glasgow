@@ -6,7 +6,7 @@ from .. import AccessDemultiplexer, AccessDemultiplexerInterface
 
 
 class SimulationDemultiplexer(AccessDemultiplexer):
-    async def claim_interface(self, applet, mux_interface, args):
+    async def claim_interface(self, applet, mux_interface, args, pull_low=set(), pull_high=set()):
         return SimulationDemultiplexerInterface(self.device, applet, mux_interface)
 
 
