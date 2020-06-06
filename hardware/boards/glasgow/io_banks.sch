@@ -1800,24 +1800,6 @@ F 6 "res-0402-47" H 2400 3550 50  0001 C CNN "1b2-bom-key"
 	1    2400 3550
 	0    1    -1   0   
 $EndComp
-Wire Bus Line
-	2400 4950 2400 5800
-Wire Bus Line
-	3450 4950 3450 5800
-Wire Bus Line
-	6950 4950 6950 5800
-Wire Bus Line
-	5850 4950 5850 5800
-Wire Bus Line
-	10650 3700 10650 5800
-Wire Bus Line
-	9400 3500 9400 5800
-Wire Bus Line
-	2050 3850 2050 5800
-Wire Bus Line
-	5500 3750 5500 5800
-Wire Bus Line
-	9050 3200 9050 5800
 $Comp
 L power:GND #PWR?
 U 1 1 5F47D915
@@ -1842,4 +1824,22 @@ F 3 "" H 6000 4600 50  0001 C CNN
 	1    6000 4600
 	0    -1   -1   0   
 $EndComp
+Wire Bus Line
+	2400 4950 2400 5800
+Wire Bus Line
+	3450 4950 3450 5800
+Wire Bus Line
+	6950 4950 6950 5800
+Wire Bus Line
+	5850 4950 5850 5800
+Wire Bus Line
+	10650 3700 10650 5800
+Wire Bus Line
+	9400 3500 9400 5800
+Wire Bus Line
+	2050 3850 2050 5800
+Wire Bus Line
+	5500 3750 5500 5800
+Wire Bus Line
+	9050 3200 9050 5800
 $EndSCHEMATC
