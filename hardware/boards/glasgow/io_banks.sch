@@ -105,7 +105,7 @@ F 3 "" H 1300 2800 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Text Notes 3250 4250 0    50   ~ 0
-Addr DAC: 0001100\nAddr ADC: 1010100\nAddr Pull: 0100000
+Addr DAC: 0001100\nAddr ADC: 1000000\nAddr Pull: 0100000
 Wire Wire Line
 	6000 4500 6100 4500
 $Comp
@@ -122,22 +122,9 @@ F 3 "" H 6000 4500 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 Text Notes 6750 4250 0    50   ~ 0
-Addr DAC: 0001101\nAddr ADC: 1010101\nAddr Pull: 0100001
+Addr DAC: 0001101\nAddr ADC: 1000001\nAddr Pull: 0100001
 Wire Wire Line
 	6000 4600 6100 4600
-$Comp
-L power:GND #PWR?
-U 1 1 5C9E33D4
-P 6000 4600
-AR Path="/5C9E33D4" Ref="#PWR?"  Part="1" 
-AR Path="/5C7B59B0/5C9E33D4" Ref="#PWR0105"  Part="1" 
-F 0 "#PWR0105" H 6000 4350 50  0001 C CNN
-F 1 "GND" V 6000 4400 50  0000 C CNN
-F 2 "" H 6000 4600 50  0001 C CNN
-F 3 "" H 6000 4600 50  0001 C CNN
-	1    6000 4600
-	0    1    1    0   
-$EndComp
 Wire Wire Line
 	1300 2850 1300 2800
 $Comp
@@ -1029,7 +1016,6 @@ Wire Wire Line
 Wire Wire Line
 	2650 4600 2550 4600
 NoConn ~ 2550 4500
-NoConn ~ 2550 4600
 Wire Wire Line
 	6700 3950 6900 3950
 Wire Wire Line
@@ -1832,4 +1818,28 @@ Wire Bus Line
 	5500 3750 5500 5800
 Wire Bus Line
 	9050 3200 9050 5800
+$Comp
+L power:GND #PWR?
+U 1 1 5F47D915
+P 2550 4600
+AR Path="/5F47D915" Ref="#PWR?"  Part="1" 
+AR Path="/5C7B59B0/5F47D915" Ref="#PWR083"  Part="1" 
+F 0 "#PWR083" H 2550 4350 50  0001 C CNN
+F 1 "GND" V 2550 4400 50  0000 C CNN
+F 2 "" H 2550 4600 50  0001 C CNN
+F 3 "" H 2550 4600 50  0001 C CNN
+	1    2550 4600
+	0    1    1    0   
+$EndComp
+$Comp
+L power:+3.3V #PWR085
+U 1 1 5F485DD6
+P 6000 4600
+F 0 "#PWR085" H 6000 4450 50  0001 C CNN
+F 1 "+3.3V" V 6015 4728 50  0000 L CNN
+F 2 "" H 6000 4600 50  0001 C CNN
+F 3 "" H 6000 4600 50  0001 C CNN
+	1    6000 4600
+	0    -1   -1   0   
+$EndComp
 $EndSCHEMATC
