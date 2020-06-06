@@ -2529,20 +2529,6 @@ Wire Wire Line
 Wire Wire Line
 	5300 6650 5450 6650
 Connection ~ 5450 6650
-$Comp
-L Glasgow:ATECC508A U34
-U 1 1 5CE87574
-P 2600 7000
-F 0 "U34" H 2450 7250 50  0000 R CNN
-F 1 "ATECC508A" H 3050 7250 50  0000 R CNN
-F 2 "Package_DFN_QFN:WDFN-8-1EP_3x2mm_P0.5mm_EP1.3x1.4mm" H 2600 7000 50  0001 C CNN
-F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/20005927A.pdf" H 2600 7000 50  0001 C CNN
-F 4 "Microchip" H 2600 7000 50  0001 C CNN "Mfg"
-F 5 "ATECC508A-MAHDA-T" H 2600 7000 50  0001 C CNN "MPN"
-F 6 "ic-wdfn8-atecc508a" H 2600 7000 50  0001 C CNN "1b2-bom-key"
-	1    2600 7000
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	3200 6900 3000 6900
 Wire Wire Line
@@ -2551,74 +2537,6 @@ Text Label 3200 6900 2    50   ~ 0
 SDA
 Text Label 3200 7000 2    50   ~ 0
 SCL
-$Comp
-L power:+3.3V #PWR099
-U 1 1 5CEC0BD1
-P 2600 6650
-F 0 "#PWR099" H 2600 6500 50  0001 C CNN
-F 1 "+3.3V" H 2615 6823 50  0000 C CNN
-F 2 "" H 2600 6650 50  0001 C CNN
-F 3 "" H 2600 6650 50  0001 C CNN
-	1    2600 6650
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	2600 6650 2600 6700
-$Comp
-L power:GND #PWR0100
-U 1 1 5CEDD963
-P 2600 7350
-F 0 "#PWR0100" H 2600 7100 50  0001 C CNN
-F 1 "GND" H 2605 7177 50  0000 C CNN
-F 2 "" H 2600 7350 50  0001 C CNN
-F 3 "" H 2600 7350 50  0001 C CNN
-	1    2600 7350
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	2600 7300 2600 7350
-$Comp
-L Device:C C16
-U 1 1 5CF17BD2
-P 1950 7000
-F 0 "C16" H 2065 7046 50  0000 L CNN
-F 1 "u1" H 2065 6955 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0402_1005Metric" H 1988 6850 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 1950 7000 50  0001 C CNN
-F 4 "Taiyo Yuden" H -1150 0   50  0001 C CNN "Mfg"
-F 5 "TMK105BJ104KV-F" H -1150 0   50  0001 C CNN "MPN"
-F 6 "cap-cer-0402-100n" H 1950 7000 50  0001 C CNN "1b2-bom-key"
-	1    1950 7000
-	1    0    0    -1  
-$EndComp
-$Comp
-L power:GND #PWR098
-U 1 1 5CF17BD8
-P 1950 7250
-F 0 "#PWR098" H 1950 7000 50  0001 C CNN
-F 1 "GND" H 1955 7077 50  0000 C CNN
-F 2 "" H 1950 7250 50  0001 C CNN
-F 3 "" H 1950 7250 50  0001 C CNN
-	1    1950 7250
-	1    0    0    -1  
-$EndComp
-$Comp
-L power:+3.3V #PWR097
-U 1 1 5CF17BDE
-P 1950 6750
-F 0 "#PWR097" H 1950 6600 50  0001 C CNN
-F 1 "+3.3V" H 1965 6923 50  0000 C CNN
-F 2 "" H 1950 6750 50  0001 C CNN
-F 3 "" H 1950 6750 50  0001 C CNN
-	1    1950 6750
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	1950 6750 1950 6850
-Wire Wire Line
-	1950 7150 1950 7250
-Text Notes 2300 7650 0    50   ~ 0
-Addr: 1100000
 Wire Wire Line
 	7400 4250 7550 4250
 $Comp
@@ -3314,12 +3232,12 @@ Text Label 1700 4550 0    50   ~ 0
 CC1
 Text Label 1700 4650 0    50   ~ 0
 CC2
+Text Notes 4050 1350 0    50   ~ 0
+FX2 boot I2C addrs:\n1010000\n1010001
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
 	7850 2550 7850 6250
 Wire Bus Line
 	4700 2150 4700 6250
-Text Notes 4050 1350 0    50   ~ 0
-FX2 boot I2C addrs:\n1010000\n1010001
 $EndSCHEMATC
