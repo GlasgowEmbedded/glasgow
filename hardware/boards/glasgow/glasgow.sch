@@ -2471,7 +2471,7 @@ Connection ~ 5150 1350
 Connection ~ 7000 1350
 Connection ~ 7000 950 
 Text Notes 9750 2700 0    50   ~ 0
-Addr A DAC: 0001100\nAddr B DAC: 0001101\nAddr A Pull: 0100000\nAddr B Pull: 0100001\nAddr A ADC: 1010100\nAddr B ADC: 1010101
+Addr A DAC: 0001100\nAddr B DAC: 0001101\nAddr A Pull: 0100000\nAddr B Pull: 0100001\nAddr A ADC: 1000000\nAddr B ADC: 1000001
 Wire Wire Line
 	6000 5500 6400 5500
 Connection ~ 6400 5500
@@ -3308,16 +3308,18 @@ Wire Wire Line
 Wire Wire Line
 	1600 4950 2200 4950
 Connection ~ 900  5850
-Wire Bus Line
-	4700 6250 7850 6250
-Wire Bus Line
-	7850 2550 7850 6250
-Wire Bus Line
-	4700 2150 4700 6250
 Text Label 1600 4350 0    50   ~ 0
 xVBUS
 Text Label 1700 4550 0    50   ~ 0
 CC1
 Text Label 1700 4650 0    50   ~ 0
 CC2
+Wire Bus Line
+	4700 6250 7850 6250
+Wire Bus Line
+	7850 2550 7850 6250
+Wire Bus Line
+	4700 2150 4700 6250
+Text Notes 4050 1350 0    50   ~ 0
+FX2 boot I2C addrs:\n1010000\n1010001
 $EndSCHEMATC
