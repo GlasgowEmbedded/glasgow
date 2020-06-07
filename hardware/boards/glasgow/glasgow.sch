@@ -1043,12 +1043,12 @@ $EndComp
 $Comp
 L Graphic:Logo_Open_Hardware_Large #LOGO1
 U 1 1 5B225090
-P 2400 6000
-F 0 "#LOGO1" H 2400 6500 50  0001 C CNN
-F 1 "Logo_Open_Hardware_Large" H 2400 5600 50  0001 C CNN
-F 2 "" H 2400 6000 50  0001 C CNN
-F 3 "~" H 2400 6000 50  0001 C CNN
-	1    2400 6000
+P 2300 6900
+F 0 "#LOGO1" H 2300 7400 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Large" H 2300 6500 50  0001 C CNN
+F 2 "" H 2300 6900 50  0001 C CNN
+F 3 "~" H 2300 6900 50  0001 C CNN
+	1    2300 6900
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -2530,14 +2530,6 @@ Wire Wire Line
 	5300 6650 5450 6650
 Connection ~ 5450 6650
 Wire Wire Line
-	3200 6900 3000 6900
-Wire Wire Line
-	3200 7000 3000 7000
-Text Label 3200 6900 2    50   ~ 0
-SDA
-Text Label 3200 7000 2    50   ~ 0
-SCL
-Wire Wire Line
 	7400 4250 7550 4250
 $Comp
 L Device:Ferrite_Bead FB1
@@ -3234,10 +3226,24 @@ Text Label 1700 4650 0    50   ~ 0
 CC2
 Text Notes 4050 1350 0    50   ~ 0
 FX2 boot I2C addrs:\n1010000\n1010001
+$Comp
+L power:PWR_FLAG #FLG0110
+U 1 1 5EECCAB9
+P 750 3850
+F 0 "#FLG0110" H 750 3925 50  0001 C CNN
+F 1 "PWR_FLAG" H 750 4023 50  0000 C CNN
+F 2 "" H 750 3850 50  0001 C CNN
+F 3 "~" H 750 3850 50  0001 C CNN
+	1    750  3850
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	750  3850 1050 3850
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
 	7850 2550 7850 6250
 Wire Bus Line
 	4700 2150 4700 6250
+Connection ~ 1050 3850
 $EndSCHEMATC
