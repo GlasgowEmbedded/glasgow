@@ -3239,11 +3239,11 @@ F 3 "~" H 750 3850 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	750  3850 1050 3850
+Connection ~ 1050 3850
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
 	7850 2550 7850 6250
 Wire Bus Line
 	4700 2150 4700 6250
-Connection ~ 1050 3850
 $EndSCHEMATC
