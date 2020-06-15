@@ -40,7 +40,7 @@ class SoftwareMFMDecoder:
 
     def lock(self, bitstream, *, debug=False,
              nco_init_period=0, nco_min_period=16, nco_max_period=256,
-             nco_frac_bits=6, pll_kp_exp=5, pll_gph_exp=1):
+             nco_frac_bits=8, pll_kp_exp=2, pll_gph_exp=1):
         nco_period = nco_init_period << nco_frac_bits
         nco_phase  = 0
         nco_step   = 1 << nco_frac_bits
