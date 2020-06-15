@@ -877,6 +877,9 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             "-n", "--no-decode", action="store_true", default=False,
             help="do not attempt to decode track data, just index tracks (much faster)")
         p_index.add_argument(
+            "--ignore-data-crc", action="store_true", default=False,
+            help="do not reject sector data with incorrect CRC")
+        p_index.add_argument(
             "file", metavar="RAW-FILE", type=argparse.FileType("rb"),
             help="read raw disk image from RAW-FILE")
 
@@ -889,13 +892,17 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
 
             mfm        = SoftwareMFMDecoder(self.logger)
             symbstream = mfm.demodulate(mfm.lock(mfm.bits(bytestream)))
-            for _ in self.iter_mfm_sectors(symbstream, verbose=True):
+            for _ in self.iter_mfm_sectors(symbstream, verbose=True,
+                    ignore_data_crc=args.ignore_data_crc):
                 pass
 
     @classmethod
     def _add_raw2img_arguments(self, p_operation):
         p_raw2img = p_operation.add_parser(
             "raw2img", help="extract raw disk images into linear disk images")
+        p_raw2img.add_argument(
+            "--ignore-data-crc", action="store_true", default=False,
+            help="do not reject sector data with incorrect CRC")
         p_raw2img.add_argument(
             "-s", "--sector-size", metavar="BYTES", type=int, default=512,
             help="amount of bytes per sector (~always the default: %(default)s)")
@@ -924,7 +931,8 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
 
                 sectors    = {}
                 seen       = set()
-                for (cyl, hd, sec), data in self.iter_mfm_sectors(symbstream):
+                for (cyl, hd, sec), data in self.iter_mfm_sectors(symbstream,
+                        ignore_data_crc=args.ignore_data_crc):
                     if sec not in range(1, 1 + args.sectors_per_track):
                         self.logger.error("sector at C/H/S %d/%d/%d overflows track geometry "
                                           "(%d sectors per track)",
@@ -966,7 +974,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
                     else:
                         missing  += 1
                         args.linear_file.seek(curr_lba * args.sector_size)
-                        args.linear_file.write(b"\xFA\x11" * (args.sector_size // 2))
+                        args.linear_file.write(b"\x00\x00" * (args.sector_size // 2))
                         self.logger.error("sector at LBA %d missing",
                                           curr_lba)
                     curr_lba += 1
@@ -982,7 +990,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
 
     crc_mfm = staticmethod(crcmod.mkCrcFun(0x11021, initCrc=0xffff, rev=False))
 
-    def iter_mfm_sectors(self, symbstream, verbose=False):
+    def iter_mfm_sectors(self, symbstream, *, verbose=False, ignore_data_crc=False):
         state   = "IDLE"
         count   = 0
         data    = bytearray()
@@ -1000,8 +1008,8 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
                 elif state == "SYNC":
                     count += 1
                 else:
-                    self.logger.warning("desync sym-off=%d state=%s sym=K.A1",
-                                        offset, state)
+                    self.logger.error("desync sym-off=%d state=%s sym=K.A1",
+                                      offset, state)
                     data.clear()
                     count  = 1
                     state  = "SYNC"
@@ -1017,14 +1025,14 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
                     self.logger.warning("early data sym-off=%d sync-n=%d",
                                         offset, count)
                 if symbol == 0xFE:
-                    count = 6 # CYL+HD+SEC+NO+CRCH/L
+                    count = 4 + 2 # CYL+HD+SEC+NO+CRCH/L
                     state = "FORMAT"
                 elif symbol == 0xFB:
                     if header is None:
                         self.logger.warning("spurious sector sym-off=%d",
                                             offset)
                     else:
-                        count = 2 + size # DATA+CRCH/L
+                        count = size + 2 # DATA+CRCH/L
                         state = "SECTOR"
                 else:
                     self.logger.warning("unknown mark sym-off=%d type=%02X",
@@ -1035,10 +1043,16 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             if state in ("FORMAT", "SECTOR"):
                 count -= 1
                 if count == 0 and self.crc_mfm(data) != 0:
-                    self.logger.warning("wrong checksum sym-off=%d state=%s type=%02X",
-                                        offset, state, data[2])
-                    state = "IDLE"
-                    continue
+                    if state == "SECTOR" and ignore_data_crc:
+                        fail_crc = False
+                    else:
+                        fail_crc = True
+                    self.logger.log(logging.ERROR if fail_crc else logging.WARN,
+                                    "wrong checksum sym-off=%d state=%s type=%02X",
+                                    offset, state, data[2])
+                    if fail_crc:
+                        state = "IDLE"
+                        continue
 
             if count == 0 and state == "FORMAT":
                 cyl, hd, sec, no = struct.unpack(">BBBB", data[4:-2])
