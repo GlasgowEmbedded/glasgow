@@ -71,7 +71,7 @@ setup(
     ],
     install_requires=[
         "nmigen",
-        "fx2>=0.8",
+        "fx2>=0.9",
         "libusb1>=1.6.6",
         "aiohttp",
         "pyvcd",
