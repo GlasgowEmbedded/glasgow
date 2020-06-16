@@ -3049,7 +3049,7 @@ U 1 1 5ED2E76F
 P 900 4950
 F 0 "J1" H 550 5700 50  0000 C CNN
 F 1 "USB_C_USB2.0" H 1000 5700 50  0000 C CNN
-F 2 "Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12" H 1050 4950 50  0001 C CNN
+F 2 "Glasgow:USB_C_Receptacle_HRO_TYPE-C-31-M-12" H 1050 4950 50  0001 C CNN
 F 3 "https://www.usb.org/sites/default/files/documents/usb_type-c.zip" H 1050 4950 50  0001 C CNN
 	1    900  4950
 	1    0    0    -1  
