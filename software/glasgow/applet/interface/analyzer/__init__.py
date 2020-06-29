@@ -67,8 +67,27 @@ class AnalyzerApplet(GlasgowApplet, name="analyzer"):
         self._sample_freq = target.sys_clk_freq
         self._event_sources = subtarget.analyzer.event_sources
 
+    @classmethod
+    def add_run_arguments(cls, parser, access):
+        super().add_run_arguments(parser, access)
+
+        g_pulls = parser.add_mutually_exclusive_group()
+        g_pulls.add_argument(
+            "--pull-ups", default=False, action="store_true",
+            help="enable pull-ups on all pins")
+        g_pulls.add_argument(
+            "--pull-downs", default=False, action="store_true",
+            help="enable pull-downs on all pins")
+
     async def run(self, device, args):
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
+        pull_low  = set()
+        pull_high = set()
+        if args.pull_ups:
+            pull_low = set(args.pin_set_i)
+        if args.pull_downs:
+            pull_high = set(args.pin_set_i)
+        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
+                                                           pull_low=pull_low, pull_high=pull_high)
         return AnalyzerInterface(iface, self._event_sources)
 
     @classmethod
