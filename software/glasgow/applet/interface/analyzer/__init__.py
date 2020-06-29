@@ -105,6 +105,7 @@ class AnalyzerApplet(GlasgowApplet, name="analyzer"):
 
         try:
             overrun = False
+            timestamp = 0
             while not overrun:
                 for cycle, events in await iface.read():
                     timestamp = cycle * 1_000_000_000 // self._sample_freq
