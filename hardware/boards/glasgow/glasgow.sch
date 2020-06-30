@@ -3218,7 +3218,7 @@ Wire Wire Line
 Wire Wire Line
 	1600 4950 2200 4950
 Connection ~ 900  5850
-Text Label 1600 4350 0    50   ~ 0
+Text Label 1600 4300 0    50   ~ 0
 xVBUS
 Text Label 1700 4550 0    50   ~ 0
 CC1
@@ -3240,6 +3240,19 @@ $EndComp
 Wire Wire Line
 	750  3850 1050 3850
 Connection ~ 1050 3850
+$Comp
+L power:PWR_FLAG #FLG0111
+U 1 1 5F469765
+P 1950 4350
+F 0 "#FLG0111" H 1950 4425 50  0001 C CNN
+F 1 "PWR_FLAG" H 1950 4523 50  0001 C CNN
+F 2 "" H 1950 4350 50  0001 C CNN
+F 3 "~" H 1950 4350 50  0001 C CNN
+	1    1950 4350
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1950 4350 1600 4350
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
