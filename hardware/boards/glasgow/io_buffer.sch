@@ -1577,8 +1577,6 @@ Wire Wire Line
 	9250 2150 9250 2200
 Wire Wire Line
 	9250 1850 9250 1750
-Wire Wire Line
-	9250 1750 8850 1750
 Text Notes 6950 5650 0    50   ~ 0
 Addr (ADR=L): 0100000\nAddr (ADR=H): 0100001
 $Comp
@@ -2176,8 +2174,6 @@ Wire Wire Line
 	7750 3000 7750 4050
 Wire Wire Line
 	7850 3100 7850 4150
-Wire Wire Line
-	7850 1850 7850 3100
 NoConn ~ 6150 4950
 $Comp
 L power:+3.3V #PWR046
@@ -2679,49 +2675,17 @@ Wire Wire Line
 Wire Wire Line
 	6200 2500 7250 2500
 Wire Wire Line
-	7850 1850 8050 1850
-Wire Wire Line
-	8050 1850 8050 1600
-Wire Wire Line
-	7750 1750 7850 1750
-Wire Wire Line
-	7850 1750 7850 1600
-Wire Wire Line
-	7750 1750 7750 3000
-Wire Wire Line
-	7650 1750 7500 1750
-Wire Wire Line
-	7500 1750 7500 1600
-Wire Wire Line
-	7650 1750 7650 2900
-Wire Wire Line
-	7550 1850 7300 1850
-Wire Wire Line
-	7300 1850 7300 1600
-Wire Wire Line
-	7550 1850 7550 2800
-Wire Wire Line
-	7450 1950 7100 1950
-Wire Wire Line
-	7100 1950 7100 1600
-Wire Wire Line
 	7450 1950 7450 2700
 Wire Wire Line
-	7350 2050 6900 2050
-Wire Wire Line
-	6900 2050 6900 1600
+	7350 2050 7100 2050
 Wire Wire Line
 	7350 2050 7350 2600
 Wire Wire Line
 	7250 2500 7250 2150
 Wire Wire Line
-	7250 2150 6700 2150
+	7250 2150 6900 2150
 Wire Wire Line
-	6700 2150 6700 1600
-Wire Wire Line
-	7150 2250 6500 2250
-Wire Wire Line
-	6500 2250 6500 1600
+	7150 2250 6700 2250
 Wire Wire Line
 	7150 2250 7150 2400
 Wire Wire Line
@@ -2729,71 +2693,10 @@ Wire Wire Line
 Wire Wire Line
 	9250 1600 9250 1750
 Wire Wire Line
-	8850 1500 8850 1600
-Connection ~ 8850 1750
-Wire Wire Line
-	8850 1750 8750 1750
-Wire Wire Line
 	8750 1750 8650 1750
 Wire Wire Line
 	8650 1750 8650 1600
 Connection ~ 8750 1750
-Wire Wire Line
-	6500 1600 6400 1600
-Wire Wire Line
-	6400 1600 6400 1500
-Connection ~ 6500 1600
-Wire Wire Line
-	6500 1600 6500 1500
-Wire Wire Line
-	6700 1600 6600 1600
-Wire Wire Line
-	6600 1600 6600 1500
-Connection ~ 6700 1600
-Wire Wire Line
-	6700 1600 6700 1500
-Wire Wire Line
-	6900 1600 6800 1600
-Wire Wire Line
-	6800 1600 6800 1500
-Connection ~ 6900 1600
-Wire Wire Line
-	6900 1600 6900 1500
-Wire Wire Line
-	7100 1600 7000 1600
-Wire Wire Line
-	7000 1600 7000 1500
-Connection ~ 7100 1600
-Wire Wire Line
-	7100 1600 7100 1500
-Wire Wire Line
-	7300 1600 7200 1600
-Wire Wire Line
-	7200 1600 7200 1500
-Connection ~ 7300 1600
-Wire Wire Line
-	7300 1600 7300 1500
-Wire Wire Line
-	7500 1600 7400 1600
-Wire Wire Line
-	7400 1600 7400 1500
-Connection ~ 7500 1600
-Wire Wire Line
-	7500 1600 7500 1500
-Wire Wire Line
-	7850 1600 7750 1600
-Wire Wire Line
-	7750 1600 7750 1500
-Connection ~ 7850 1600
-Wire Wire Line
-	7850 1600 7850 1500
-Wire Wire Line
-	8050 1600 7950 1600
-Wire Wire Line
-	7950 1600 7950 1500
-Connection ~ 8050 1600
-Wire Wire Line
-	8050 1600 8050 1500
 Wire Wire Line
 	8650 1600 8550 1600
 Wire Wire Line
@@ -2801,13 +2704,6 @@ Wire Wire Line
 Connection ~ 8650 1600
 Wire Wire Line
 	8650 1600 8650 1500
-Wire Wire Line
-	8850 1600 8750 1600
-Wire Wire Line
-	8750 1600 8750 1500
-Connection ~ 8850 1600
-Wire Wire Line
-	8850 1600 8850 1750
 $Comp
 L power:GND #PWR0141
 U 1 1 5F317C7E
@@ -2842,10 +2738,6 @@ Wire Wire Line
 Wire Wire Line
 	6350 700  6350 850 
 Connection ~ 6950 700 
-NoConn ~ 8150 1500
-NoConn ~ 8250 1500
-NoConn ~ 8350 1500
-NoConn ~ 8450 1500
 $Comp
 L Glasgow:SP3012-06UTG D23
 U 1 1 5F447F6C
@@ -2859,6 +2751,97 @@ F 3 "https://www.littelfuse.com/~/media/electronics/datasheets/tvs_diode_arrays/
 	1    8300 1150
 	-1   0    0    1   
 $EndComp
+Wire Wire Line
+	7850 1850 7850 3100
+Wire Wire Line
+	7750 1750 7750 3000
+Wire Wire Line
+	8750 1750 9250 1750
+Wire Wire Line
+	8550 1600 8450 1600
+Wire Wire Line
+	8450 1600 8450 1500
+Connection ~ 8550 1600
+Wire Wire Line
+	8450 1600 8350 1600
+Wire Wire Line
+	8350 1600 8350 1500
+Connection ~ 8450 1600
+NoConn ~ 8750 1500
+NoConn ~ 8850 1500
+Wire Wire Line
+	7650 1600 7750 1600
+Wire Wire Line
+	7750 1600 7750 1500
+Wire Wire Line
+	7650 1600 7650 2900
+Wire Wire Line
+	7750 1600 7850 1600
+Wire Wire Line
+	7850 1600 7850 1500
+Connection ~ 7750 1600
+Wire Wire Line
+	7750 1750 7950 1750
+Wire Wire Line
+	7950 1750 7950 1600
+Wire Wire Line
+	7950 1600 8050 1600
+Wire Wire Line
+	8050 1600 8050 1500
+Connection ~ 7950 1600
+Wire Wire Line
+	7950 1600 7950 1500
+Wire Wire Line
+	7850 1850 8150 1850
+Wire Wire Line
+	8150 1850 8150 1600
+Wire Wire Line
+	8150 1600 8250 1600
+Wire Wire Line
+	8250 1600 8250 1500
+Connection ~ 8150 1600
+Wire Wire Line
+	8150 1600 8150 1500
+Wire Wire Line
+	7550 1600 7500 1600
+Wire Wire Line
+	7400 1600 7400 1500
+Wire Wire Line
+	7550 1600 7550 2800
+Wire Wire Line
+	7500 1600 7500 1500
+Connection ~ 7500 1600
+Wire Wire Line
+	7500 1600 7400 1600
+Wire Wire Line
+	7450 1950 7300 1950
+Wire Wire Line
+	7300 1950 7300 1600
+Wire Wire Line
+	7300 1600 7200 1600
+Wire Wire Line
+	7200 1600 7200 1500
+Connection ~ 7300 1600
+Wire Wire Line
+	7300 1600 7300 1500
+Wire Wire Line
+	7100 1500 7100 1600
+Wire Wire Line
+	7100 1600 7000 1600
+Wire Wire Line
+	7000 1600 7000 1500
+Connection ~ 7100 1600
+Wire Wire Line
+	7100 1600 7100 2050
+Wire Wire Line
+	6900 1500 6900 1600
+Wire Wire Line
+	6900 1600 6800 1600
+Wire Wire Line
+	6800 1600 6800 1500
+Connection ~ 6900 1600
+Wire Wire Line
+	6900 1600 6900 2150
 $Comp
 L Glasgow:SP3012-06UTG D22
 U 1 1 5F44CF84
@@ -2872,4 +2855,15 @@ F 3 "https://www.littelfuse.com/~/media/electronics/datasheets/tvs_diode_arrays/
 	1    6950 1150
 	-1   0    0    1   
 $EndComp
+Wire Wire Line
+	6700 1500 6700 1600
+Wire Wire Line
+	6700 1600 6600 1600
+Wire Wire Line
+	6600 1600 6600 1500
+Connection ~ 6700 1600
+Wire Wire Line
+	6700 1600 6700 2250
+NoConn ~ 6500 1500
+NoConn ~ 6400 1500
 $EndSCHEMATC
