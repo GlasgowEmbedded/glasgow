@@ -1,3 +1,8 @@
+# Ref: Plantower PMS5003 series data manual
+# Accession: G00053
+# Ref: Plantower PMS7003 series data manual (Chinese)
+# Accession: G00054
+
 import logging
 import asyncio
 import struct
