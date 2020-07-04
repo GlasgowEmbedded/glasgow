@@ -77,11 +77,10 @@ class PMSx003Interface:
 class SensorPMSx003Applet(GlasgowApplet, name="sensor-pmsx003"):
     logger = logging.getLogger(__name__)
     help = "measure air quality with Plantower PMx003 sensors"
-    preview = True
     description = """
     Measure PM2.5 air quality with Plantower PMx003 family sensors.
 
-    This applet has been tested with PMS5003.
+    This applet has been tested with PMS5003 and PMS7003.
     """
 
     __pins = ("rx", "tx")
