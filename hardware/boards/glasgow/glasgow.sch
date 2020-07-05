@@ -418,8 +418,6 @@ F 6 "cap-cer-0402-18p" H 2200 2950 50  0001 C CNN "1b2-bom-key"
 	1    2200 2950
 	0    1    1    0   
 $EndComp
-Wire Wire Line
-	2400 3550 2800 3550
 Text Label 2400 3550 0    50   ~ 0
 ~CY_RESET
 $Comp
@@ -1051,39 +1049,8 @@ F 3 "~" H 2300 6900 50  0001 C CNN
 	1    2300 6900
 	1    0    0    -1  
 $EndComp
-$Comp
-L Power_Supervisor:LM3880 U7
-U 1 1 5B225FA9
-P 9400 3700
-F 0 "U7" H 9150 3950 50  0000 C CNN
-F 1 "LM3880MF-1AF" H 9750 3950 50  0000 C CNN
-F 2 "Glasgow:SOT-23-6" H 10050 3450 50  0001 C CNN
-F 3 "http://www.ti.com/lit/ds/symlink/lm3880.pdf" H 9400 3700 50  0001 C CNN
-F 4 "Texas Instruments" H 1700 -2050 50  0001 C CNN "Mfg"
-F 5 "LM3880MFX-1AF/NOPB" H 1700 -2050 50  0001 C CNN "MPN"
-F 6 "ic-sot23-6-lm3880mf-1af" H 9400 3700 50  0001 C CNN "1b2-bom-key"
-	1    9400 3700
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	9800 3800 10200 3800
-Text Label 10200 3800 2    50   ~ 0
+Text Label 10500 3900 2    50   ~ 0
 ~CY_RESET
-Text Label 10200 3600 2    50   ~ 0
-1V2EN
-Text Label 10200 3700 2    50   ~ 0
-3V3EN
-$Comp
-L power:GND #PWR035
-U 1 1 5B2A0BF8
-P 9400 4050
-F 0 "#PWR035" H 9400 3800 50  0001 C CNN
-F 1 "GND" H 9405 3877 50  0000 C CNN
-F 2 "" H 9400 4050 50  0001 C CNN
-F 3 "" H 9400 4050 50  0001 C CNN
-	1    9400 4050
-	1    0    0    -1  
-$EndComp
 $Comp
 L power:GND #PWR036
 U 1 1 5B2A0C59
@@ -1095,21 +1062,6 @@ F 3 "" H 9800 5150 50  0001 C CNN
 	1    9800 5150
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	9400 4000 9400 4050
-$Comp
-L power:+5V #PWR030
-U 1 1 5B2BFD35
-P 9400 3350
-F 0 "#PWR030" H 9400 3200 50  0001 C CNN
-F 1 "+5V" H 9415 3523 50  0000 C CNN
-F 2 "" H 9400 3350 50  0001 C CNN
-F 3 "" H 9400 3350 50  0001 C CNN
-	1    9400 3350
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	9400 3350 9400 3400
 $Comp
 L power:+5V #PWR031
 U 1 1 5B2CFB53
@@ -1145,24 +1097,6 @@ F 3 "" H 10250 4600 50  0001 C CNN
 	1    10250 4600
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	9800 3600 10200 3600
-Wire Wire Line
-	9800 3700 10200 3700
-$Comp
-L Device:R R7
-U 1 1 5B46582D
-P 8900 4850
-F 0 "R7" V 8800 4900 50  0000 R CNN
-F 1 "100k" V 8900 4950 50  0000 R CNN
-F 2 "Resistor_SMD:R_0402_1005Metric" V 8830 4850 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 8900 4850 50  0001 C CNN
-F 4 "Yageo" H -50 -900 50  0001 C CNN "Mfg"
-F 5 "RC0402FR-13100KL" H -50 -900 50  0001 C CNN "MPN"
-F 6 "res-0402-100k" H 8900 4850 50  0001 C CNN "1b2-bom-key"
-	1    8900 4850
-	0    1    1    0   
-$EndComp
 $Comp
 L power:GND #PWR039
 U 1 1 5B488564
@@ -1192,35 +1126,6 @@ Wire Wire Line
 Wire Wire Line
 	10250 5650 10250 5700
 Connection ~ 10250 4650
-$Comp
-L Device:R R8
-U 1 1 5B509A59
-P 8900 5900
-F 0 "R8" V 8800 5950 50  0000 R CNN
-F 1 "100k" V 8900 6000 50  0000 R CNN
-F 2 "Resistor_SMD:R_0402_1005Metric" V 8830 5900 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 8900 5900 50  0001 C CNN
-F 4 "Yageo" H -50 50  50  0001 C CNN "Mfg"
-F 5 "RC0402FR-13100KL" H -50 50  50  0001 C CNN "MPN"
-F 6 "res-0402-100k" H 8900 5900 50  0001 C CNN "1b2-bom-key"
-	1    8900 5900
-	0    1    -1   0   
-$EndComp
-$Comp
-L power:+5V #PWR034
-U 1 1 5B54D0A1
-P 8700 4700
-F 0 "#PWR034" H 8700 4550 50  0001 C CNN
-F 1 "+5V" H 8715 4873 50  0000 C CNN
-F 2 "" H 8700 4700 50  0001 C CNN
-F 3 "" H 8700 4700 50  0001 C CNN
-	1    8700 4700
-	1    0    0    -1  
-$EndComp
-Text Label 9100 4850 0    50   ~ 0
-3V3EN
-Text Label 9100 5900 0    50   ~ 0
-1V2EN
 $Comp
 L power:GND #PWR038
 U 1 1 5B65D29C
@@ -1274,101 +1179,6 @@ F 6 "cap-cer-0603-4u7" H 10250 4950 50  0001 C CNN "1b2-bom-key"
 	1    10250 4950
 	1    0    0    -1  
 $EndComp
-$Comp
-L Device:R R4
-U 1 1 5B69214E
-P 2800 3350
-F 0 "R4" H 2730 3304 50  0000 R CNN
-F 1 "100k" V 2800 3350 50  0000 C CNN
-F 2 "Resistor_SMD:R_0402_1005Metric" V 2730 3350 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 2800 3350 50  0001 C CNN
-F 4 "Yageo" H 650 -250 50  0001 C CNN "Mfg"
-F 5 "RC0402FR-13100KL" H 650 -250 50  0001 C CNN "MPN"
-F 6 "res-0402-100k" H 2800 3350 50  0001 C CNN "1b2-bom-key"
-	1    2800 3350
-	1    0    0    1   
-$EndComp
-$Comp
-L power:+3.3V #PWR028
-U 1 1 5B6922E1
-P 2800 3150
-F 0 "#PWR028" H 2800 3000 50  0001 C CNN
-F 1 "+3.3V" H 2500 3200 50  0000 L CNN
-F 2 "" H 2800 3150 50  0001 C CNN
-F 3 "" H 2800 3150 50  0001 C CNN
-	1    2800 3150
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	2800 3150 2800 3200
-Wire Wire Line
-	2800 3550 2800 3500
-Connection ~ 2800 3550
-Wire Wire Line
-	2800 3550 2850 3550
-$Comp
-L Device:R R6
-U 1 1 5B82C988
-P 8700 3900
-F 0 "R6" H 8650 3900 50  0000 R CNN
-F 1 "10k" V 8700 3900 50  0000 C CNN
-F 2 "Resistor_SMD:R_0402_1005Metric" V 8630 3900 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 8700 3900 50  0001 C CNN
-F 4 "Yageo" H 1700 -2050 50  0001 C CNN "Mfg"
-F 5 "RC0402FR-1310KL" H 1700 -2050 50  0001 C CNN "MPN"
-F 6 "res-0402-10k" H 8700 3900 50  0001 C CNN "1b2-bom-key"
-	1    8700 3900
-	1    0    0    1   
-$EndComp
-$Comp
-L Device:R R5
-U 1 1 5B82CA9C
-P 8700 3500
-F 0 "R5" H 8650 3500 50  0000 R CNN
-F 1 "24k3" V 8700 3500 50  0000 C CNN
-F 2 "Resistor_SMD:R_0402_1005Metric" V 8630 3500 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 8700 3500 50  0001 C CNN
-F 4 "Yageo" H 1700 -2050 50  0001 C CNN "Mfg"
-F 5 "RC0402FR-1324K3L" H 1700 -2050 50  0001 C CNN "MPN"
-F 6 "res-0402-24k3" H 8700 3500 50  0001 C CNN "1b2-bom-key"
-	1    8700 3500
-	1    0    0    1   
-$EndComp
-$Comp
-L power:+5V #PWR029
-U 1 1 5B82CB2C
-P 8700 3300
-F 0 "#PWR029" H 8700 3150 50  0001 C CNN
-F 1 "+5V" H 8715 3473 50  0000 C CNN
-F 2 "" H 8700 3300 50  0001 C CNN
-F 3 "" H 8700 3300 50  0001 C CNN
-	1    8700 3300
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	8700 3300 8700 3350
-Wire Wire Line
-	8700 3650 8700 3700
-Connection ~ 8700 3700
-Wire Wire Line
-	8700 3700 8700 3750
-$Comp
-L power:GND #PWR037
-U 1 1 5B864B7C
-P 8700 4100
-F 0 "#PWR037" H 8700 3850 50  0001 C CNN
-F 1 "GND" H 8705 3927 50  0000 C CNN
-F 2 "" H 8700 4100 50  0001 C CNN
-F 3 "" H 8700 4100 50  0001 C CNN
-	1    8700 4100
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	8700 4050 8700 4100
-Wire Wire Line
-	8700 3700 9000 3700
-Text Label 8750 3700 0    50   ~ 0
-PGOOD
 Text Label 7400 2450 0    50   ~ 0
 PKTEND
 Text Label 7400 2550 0    50   ~ 0
@@ -1731,8 +1541,6 @@ Wire Wire Line
 Connection ~ 10000 1500
 Wire Wire Line
 	10000 1500 10000 1700
-Text Notes 9450 4000 0    50   ~ 0
-Turn on at VBUS >4.1V
 Text Notes 3900 7650 0    50   ~ 0
 Addr: 101001X
 Text Notes 5600 7650 0    50   ~ 0
@@ -2864,12 +2672,6 @@ F 6 "Texas Instruments" H 9800 5800 50  0001 C CNN "Mfg"
 $EndComp
 Wire Wire Line
 	9350 4650 9500 4650
-Wire Wire Line
-	9050 4850 9500 4850
-Wire Wire Line
-	8700 4700 8700 4850
-Wire Wire Line
-	8700 4850 8750 4850
 Text Notes 10500 5750 0    50   ~ 0
 300 mA @ 1V2\n
 $Comp
@@ -2893,18 +2695,16 @@ Wire Wire Line
 $Comp
 L power:+5V #PWR0145
 U 1 1 5D1E5C27
-P 8700 5750
-F 0 "#PWR0145" H 8700 5600 50  0001 C CNN
-F 1 "+5V" H 8715 5923 50  0000 C CNN
-F 2 "" H 8700 5750 50  0001 C CNN
-F 3 "" H 8700 5750 50  0001 C CNN
-	1    8700 5750
+P 9150 5750
+F 0 "#PWR0145" H 9150 5600 50  0001 C CNN
+F 1 "+5V" H 9165 5923 50  0000 C CNN
+F 2 "" H 9150 5750 50  0001 C CNN
+F 3 "" H 9150 5750 50  0001 C CNN
+	1    9150 5750
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	8700 5750 8700 5900
-Wire Wire Line
-	8700 5900 8750 5900
+	9150 5750 9150 5900
 $Comp
 L power:GND #PWR0147
 U 1 1 5D231C89
@@ -2938,8 +2738,6 @@ Wire Wire Line
 	10250 5700 10250 5800
 Wire Wire Line
 	10100 5700 10250 5700
-Wire Wire Line
-	9050 5900 9500 5900
 Wire Wire Line
 	9500 5700 9350 5700
 $Comp
@@ -3253,6 +3051,191 @@ F 3 "~" H 1950 4350 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	1950 4350 1600 4350
+Wire Wire Line
+	9150 5900 9500 5900
+Wire Wire Line
+	9150 4850 9500 4850
+$Comp
+L Diode:BAT54AW D24
+U 1 1 5F20FDD5
+P 9850 3900
+F 0 "D24" V 10050 4000 50  0000 L CNN
+F 1 "BAT54AW" V 9950 4000 50  0000 L CNN
+F 2 "Glasgow:SOT-323_SC-70" H 9925 4025 50  0001 L CNN
+F 3 "https://www.diodes.com/assets/Datasheets/ds30065.pdf" H 9730 3900 50  0001 C CNN
+F 4 "BAT54AW-7-F" V 9850 3900 50  0001 C CNN "MPN"
+F 5 "Diodes Inc." V 9850 3900 50  0001 C CNN "Mfg"
+	1    9850 3900
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	2400 3550 2850 3550
+$Comp
+L power:+3.3V #PWR028
+U 1 1 5F24EB93
+P 10750 3400
+F 0 "#PWR028" H 10750 3250 50  0001 C CNN
+F 1 "+3.3V" H 10765 3573 50  0000 C CNN
+F 2 "" H 10750 3400 50  0001 C CNN
+F 3 "" H 10750 3400 50  0001 C CNN
+	1    10750 3400
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3.3V #PWR029
+U 1 1 5F28E52B
+P 9600 4200
+F 0 "#PWR029" H 9600 4050 50  0001 C CNN
+F 1 "+3.3V" H 9615 4373 50  0000 C CNN
+F 2 "" H 9600 4200 50  0001 C CNN
+F 3 "" H 9600 4200 50  0001 C CNN
+	1    9600 4200
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9600 4200 9600 4250
+Wire Wire Line
+	9600 4250 9850 4250
+Wire Wire Line
+	9850 4250 9850 4200
+$Comp
+L power:GND #PWR034
+U 1 1 5F2B40A5
+P 10750 4250
+F 0 "#PWR034" H 10750 4000 50  0001 C CNN
+F 1 "GND" H 10755 4077 50  0000 C CNN
+F 2 "" H 10750 4250 50  0001 C CNN
+F 3 "" H 10750 4250 50  0001 C CNN
+	1    10750 4250
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	10750 4250 10750 4200
+Wire Wire Line
+	10050 3900 10750 3900
+Wire Wire Line
+	10750 3900 10750 3800
+Wire Wire Line
+	10750 3500 10750 3400
+Text Notes 9800 3550 0    50   ~ 0
+Keep ~CY_RESET \nactive for >5 msec\nafter 3.3V switches on\n
+$Comp
+L power:GND #PWR0156
+U 1 1 5F0A9578
+P 8150 3200
+F 0 "#PWR0156" H 8150 2950 50  0001 C CNN
+F 1 "GND" H 8155 3027 50  0000 C CNN
+F 2 "" H 8150 3200 50  0001 C CNN
+F 3 "" H 8150 3200 50  0001 C CNN
+	1    8150 3200
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8150 3200 8150 3150
+$Comp
+L power:+5V #PWR0159
+U 1 1 5F0D7003
+P 8150 2800
+F 0 "#PWR0159" H 8150 2650 50  0001 C CNN
+F 1 "+5V" H 8165 2973 50  0000 C CNN
+F 2 "" H 8150 2800 50  0001 C CNN
+F 3 "" H 8150 2800 50  0001 C CNN
+	1    8150 2800
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8150 2850 8150 2800
+$Comp
+L Device:C C16
+U 1 1 5F058094
+P 8150 3000
+F 0 "C16" H 8265 3046 50  0000 L CNN
+F 1 "u1" H 8265 2955 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 8188 2850 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 8150 3000 50  0001 C CNN
+F 4 "Taiyo Yuden" H 1150 1600 50  0001 C CNN "Mfg"
+F 5 "TMK105BJ104KV-F" H 1150 1600 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 8150 3000 50  0001 C CNN "1b2-bom-key"
+	1    8150 3000
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:C C88
+U 1 1 5F05A509
+P 10750 4050
+F 0 "C88" H 10865 4096 50  0000 L CNN
+F 1 "u1" H 10865 4005 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 10788 3900 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 10750 4050 50  0001 C CNN
+F 4 "Taiyo Yuden" H 3750 2650 50  0001 C CNN "Mfg"
+F 5 "TMK105BJ104KV-F" H 3750 2650 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 10750 4050 50  0001 C CNN "1b2-bom-key"
+	1    10750 4050
+	1    0    0    -1  
+$EndComp
+Connection ~ 10750 3900
+$Comp
+L Device:R R4
+U 1 1 5F06A1C0
+P 10750 3650
+F 0 "R4" V 10650 3650 50  0000 C CNN
+F 1 "220k" V 10750 3650 50  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 10680 3650 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 10750 3650 50  0001 C CNN
+F 4 "Yageo" H 6350 -1650 50  0001 C CNN "Mfg"
+F 5 "RC0402FR-13220KL" H 6350 -1650 50  0001 C CNN "MPN"
+F 6 "res-0402-220k" H 10750 3650 50  0001 C CNN "1b2-bom-key"
+	1    10750 3650
+	1    0    0    -1  
+$EndComp
+Connection ~ 9150 3600
+Wire Wire Line
+	9150 3600 9150 4850
+Wire Wire Line
+	9850 3600 9150 3600
+Wire Wire Line
+	8700 4000 8700 4050
+Wire Wire Line
+	8700 3200 8700 3100
+Wire Wire Line
+	9000 3600 9150 3600
+$Comp
+L Power_Supervisor:LM809 U7
+U 1 1 5F03C2C4
+P 8700 3600
+F 0 "U7" H 8471 3646 50  0000 R CNN
+F 1 "MAX809JTRG" H 8471 3555 50  0000 R CNN
+F 2 "Glasgow:SOT-23" H 9000 3700 50  0001 C CNN
+F 3 "https://www.onsemi.com/pub/Collateral/MAX809S-D.PDF" H 9000 3700 50  0001 C CNN
+F 4 "MAX809JTRG" H 8700 3600 50  0001 C CNN "MPN"
+F 5 "On Semi" H 8700 3600 50  0001 C CNN "Mfg"
+	1    8700 3600
+	1    0    0    -1  
+$EndComp
+Text Notes 9450 3500 2    50   ~ 0
+Turn on at \nVBUS >4.0V
+$Comp
+L power:+5V #PWR030
+U 1 1 5B2BFD35
+P 8700 3100
+F 0 "#PWR030" H 8700 2950 50  0001 C CNN
+F 1 "+5V" H 8715 3273 50  0000 C CNN
+F 2 "" H 8700 3100 50  0001 C CNN
+F 3 "" H 8700 3100 50  0001 C CNN
+	1    8700 3100
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR035
+U 1 1 5B2A0BF8
+P 8700 4050
+F 0 "#PWR035" H 8700 3800 50  0001 C CNN
+F 1 "GND" H 8705 3877 50  0000 C CNN
+F 2 "" H 8700 4050 50  0001 C CNN
+F 3 "" H 8700 4050 50  0001 C CNN
+	1    8700 4050
+	1    0    0    -1  
+$EndComp
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
