@@ -3073,12 +3073,12 @@ Wire Wire Line
 $Comp
 L power:+3.3V #PWR028
 U 1 1 5F24EB93
-P 10750 3400
-F 0 "#PWR028" H 10750 3250 50  0001 C CNN
-F 1 "+3.3V" H 10765 3573 50  0000 C CNN
-F 2 "" H 10750 3400 50  0001 C CNN
-F 3 "" H 10750 3400 50  0001 C CNN
-	1    10750 3400
+P 10750 3100
+F 0 "#PWR028" H 10750 2950 50  0001 C CNN
+F 1 "+3.3V" H 10765 3273 50  0000 C CNN
+F 2 "" H 10750 3100 50  0001 C CNN
+F 3 "" H 10750 3100 50  0001 C CNN
+	1    10750 3100
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -3115,8 +3115,6 @@ Wire Wire Line
 	10050 3900 10750 3900
 Wire Wire Line
 	10750 3900 10750 3800
-Wire Wire Line
-	10750 3500 10750 3400
 Text Notes 9800 3550 0    50   ~ 0
 Keep ~CY_RESET \nactive for >5 msec\nafter 3.3V switches on\n
 $Comp
@@ -3174,20 +3172,6 @@ F 6 "cap-cer-0402-100n" H 10750 4050 50  0001 C CNN "1b2-bom-key"
 	1    0    0    -1  
 $EndComp
 Connection ~ 10750 3900
-$Comp
-L Device:R R4
-U 1 1 5F06A1C0
-P 10750 3650
-F 0 "R4" V 10650 3650 50  0000 C CNN
-F 1 "220k" V 10750 3650 50  0000 C CNN
-F 2 "Resistor_SMD:R_0402_1005Metric" V 10680 3650 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 10750 3650 50  0001 C CNN
-F 4 "Yageo" H 6350 -1650 50  0001 C CNN "Mfg"
-F 5 "RC0402FR-13220KL" H 6350 -1650 50  0001 C CNN "MPN"
-F 6 "res-0402-220k" H 10750 3650 50  0001 C CNN "1b2-bom-key"
-	1    10750 3650
-	1    0    0    -1  
-$EndComp
 Connection ~ 9150 3600
 Wire Wire Line
 	9150 3600 9150 4850
@@ -3236,10 +3220,42 @@ F 3 "" H 8700 4050 50  0001 C CNN
 	1    8700 4050
 	1    0    0    -1  
 $EndComp
+$Comp
+L Device:R R5
+U 1 1 5F069BA1
+P 10750 3650
+F 0 "R5" V 10650 3650 50  0000 C CNN
+F 1 "100k" V 10750 3650 50  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 10680 3650 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 10750 3650 50  0001 C CNN
+F 4 "Yageo" H 6350 100 50  0001 C CNN "Mfg"
+F 5 "RC0402FR-13100KL" H 6350 100 50  0001 C CNN "MPN"
+F 6 "res-0402-100k" H 10750 3650 50  0001 C CNN "1b2-bom-key"
+	1    10750 3650
+	-1   0    0    -1  
+$EndComp
+$Comp
+L Device:R R4
+U 1 1 5F06D941
+P 10750 3300
+F 0 "R4" V 10650 3300 50  0000 C CNN
+F 1 "100k" V 10750 3300 50  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 10680 3300 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 10750 3300 50  0001 C CNN
+F 4 "Yageo" H 6350 -250 50  0001 C CNN "Mfg"
+F 5 "RC0402FR-13100KL" H 6350 -250 50  0001 C CNN "MPN"
+F 6 "res-0402-100k" H 10750 3300 50  0001 C CNN "1b2-bom-key"
+	1    10750 3300
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	10750 3100 10750 3150
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
 	7850 2550 7850 6250
 Wire Bus Line
 	4700 2150 4700 6250
+Wire Wire Line
+	10750 3450 10750 3500
 $EndSCHEMATC
