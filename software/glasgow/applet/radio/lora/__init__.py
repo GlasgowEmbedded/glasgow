@@ -136,6 +136,14 @@ class LoRaWANApplet(GlasgowApplet, name="radio-lorawan"):
             "-P", "--gw-port", metavar="GWPORT", type=int, default=1700,
             help="set the gateway server port"
         )
+        p_gateway.add_argument(
+            "--downlink-only", default=False, action="store_true",
+            help="retransmit application packets, do not listen to devices"
+        )
+        p_gateway.add_argument(
+            "--uplink-only", default=False, action="store_true",
+            help="retransmit nodes packets, do not listen to gateway"
+        )
 
     async def _interact_socket(self, args, dev):
         endpoint = await ServerEndpoint("socket", self.logger, args.endpoint)
@@ -159,7 +167,7 @@ class LoRaWANApplet(GlasgowApplet, name="radio-lorawan"):
         if args.role == "node":
             dev = node = LoRaWAN_Node(sx1272, region_params, args.app_key, args.dev_eui, args.app_eui, self.logger, self.node_frame_cb)
         elif args.role == "gateway":
-            dev = gw = LoRaWAN_Gateway(sx1272, region_params, args.gw_server, args.gw_port, args.gw_eui, self.logger)
+            dev = gw = LoRaWAN_Gateway(sx1272, region_params, args.gw_server, args.gw_port, args.gw_eui, args.downlink_only, args.uplink_only, self.logger)
 
         await dev.configure_by_channel(args.chn, args.data_rate)
 

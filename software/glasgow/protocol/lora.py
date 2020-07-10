@@ -495,10 +495,12 @@ class LoRaWAN_Node(LoRaWAN_Device):
 
 
 class LoRaWAN_Gateway(LoRaWAN_Device):
-    def __init__(self, api, region, server, port, eui, logger):
+    def __init__(self, api, region, server, port, eui, downlink_only, uplink_only, logger):
         super().__init__(api, region)
         self.pkt_fwd = SemtechPacketForwarder(server, port, eui, self.get_txack_error, self.initTmst, logger)
         self.logger = logger
+        self.uplink_only = uplink_only
+        self.downlink_only = downlink_only
 
     def get_txack_error(self, pkt):
         # Packets are sometime late-ish from the UDP forwarder, here we give a 0.5 s margin
@@ -529,28 +531,32 @@ class LoRaWAN_Gateway(LoRaWAN_Device):
         fastTimeout_s = 7
         self.logger.info("Listening ...")
         while True:
-            # 1. Configure RF parameters 
-            symTimeout = self._get_symbol_timeout(symTimeout_s, datr1)
-            await self.configure_by_channel(chn1, datr1)
-            # 2. Listen with a given symbol timeout
-            payload, crcerr, snr, rssi, codr = await self.api.receive(symTimeout)
-            if None != payload:
-                datr = 'SF{}BW{}'.format(rxsf, round(rxbw/1e3))
-                codr = '4/{}'.format(codr)
-                chan = 0
-                freq = rxfreq
-                pkt = SemtechPacket(0, freq, chan, -1 if crcerr == 1 else 1, datr, rxpwr, codr, rssi, snr, payload)
-                self.logger.info("Device Uplink : {} {}".format(self._get_timestamp(), pkt))
-                # 3. Send packet to UDP forwarder
-                self.pkt_fwd.put_dev_uplink(pkt)
-                # Set fast timeout to send gateway downlink packets more precisely
-                symTimeout_s = 0.05
+            if not self.downlink_only:
+                # 1. Configure RF parameters 
+                symTimeout = self._get_symbol_timeout(symTimeout_s, datr1)
+                await self.configure_by_channel(chn1, datr1)
+                # 2. Listen with a given symbol timeout
+                if self.uplink_only:
+                    payload, crcerr, snr, rssi, codr = await self.api.listen(None)
+                else:
+                    payload, crcerr, snr, rssi, codr = await self.api.receive(symTimeout)
+                if None != payload:
+                    datr = 'SF{}BW{}'.format(rxsf, round(rxbw/1e3))
+                    codr = '4/{}'.format(codr)
+                    chan = 0
+                    freq = rxfreq
+                    pkt = SemtechPacket(0, freq, chan, -1 if crcerr == 1 else 1, datr, rxpwr, codr, rssi, snr, payload)
+                    self.logger.info("Device Uplink : {} {}".format(self._get_timestamp(), pkt))
+                    # 3. Send packet to UDP forwarder
+                    self.pkt_fwd.put_dev_uplink(pkt)
+                    # Set fast timeout to send gateway downlink packets more precisely
+                    symTimeout_s = 0.05
 
-            if fastTimeout_s <= 0:
-                fastTimeout_s = 7
-                symTimeout_s = 0.25
-            else:
-                fastTimeout_s -= symTimeout_s
+                if fastTimeout_s <= 0:
+                    fastTimeout_s = 7
+                    symTimeout_s = 0.25
+                else:
+                    fastTimeout_s -= symTimeout_s
 
             # 4. Execute forwarder process
             await self.pkt_fwd.main()
@@ -559,6 +565,10 @@ class LoRaWAN_Gateway(LoRaWAN_Device):
             appData = self.pkt_fwd.get_dev_downlink()
             later = []
             now = []
+            # Only transmit nodes packets, ignore downlinks
+            if self.uplink_only:
+                continue
+
             while appData != None:
                 # 6. Send packet now or later based on timestamp
                 if appData.tmst <= self._get_timestamp():
@@ -712,7 +722,10 @@ class SX1272_LoRa_Device_API(LoRa_Device_API):
                 regs_lora.CODINGRATE._4_OVER_8: 8,
             }[codr.RX_CODING_RATE]
 
-            onpayload(data, crcerr, snr, rssi, codr)
+            if onpayload is not None:
+                onpayload(data, crcerr, snr, rssi, codr)
+            else:
+                return data, crcerr, snr, rssi, codr
 
     async def sleep(self):
         await self.lower.set_opmode_mode(regs_lora.MODE._SLEEP)

@@ -174,7 +174,7 @@ class RadioSX1272Applet(GlasgowApplet, name="radio-sx1272"):
             else:
                 self.logger.error("No packet received")
         if args.operation == "monitor":
-            async def onpayload(data, crcerr, snr, rssi, codr):
+            def onpayload(data, crcerr, snr, rssi, codr):
                 self.logger.info("Received packet: {} with SNR = {}, RSSI = {}, coding rate = {}".format(data, snr, rssi, codr))
             await dev.listen(onpayload)
         if args.operation == "socket":
