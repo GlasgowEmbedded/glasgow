@@ -46,7 +46,7 @@ class EventAnalyzer(Module):
     once the event FIFO high-water mark is reached.
 
     The event analyzer tries to make efficient use of power-of-2 wide block RAMs and be highly
-    tunable. To achieve this, it separates the event FIFO from the event data FIFOs, and does not
+    tunable. To achieve this, it separates the event FIFO from the event data FIFOs, and avoids
     storing timestamps explicitly. In a system with `n` events, each of which carries `d_n` bits
     of data, there would be a single event FIFO that is `n` bits wide, where a bit being set means
     that event `n` occurred at a given cycle; `n` event data FIFOs that are `d_n` bits wide each,
@@ -80,7 +80,7 @@ class EventAnalyzer(Module):
         self.event_sources = Array()
         self.done          = Signal()
         self.throttle      = Signal()
-        self.overrun      = Signal()
+        self.overrun       = Signal()
 
     def add_event_source(self, name, kind, width, fields=(), depth=None):
         if depth is None:

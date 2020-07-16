@@ -163,10 +163,12 @@ class InfluxDBDataLogger(DataLogger, name="influxdb"):
             key, value = arg.split("=", 1)
             return key, value
         parser.add_argument(
-            "-t", "--tag", metavar="TAG=VALUE", dest="tags", type=tag, action="append",
+            "-t", "--tag", metavar="TAG=VALUE", dest="tags", type=tag,
+            action="append", default=[],
             help="attach TAG=VALUE to all data points")
         parser.add_argument(
-            "-p", "--precision", metavar="PRECISION", choices=["ns", "us", "ms", "s", "m", "h"],
+            "-p", "--precision", metavar="PRECISION",
+            choices=["ns", "us", "ms", "s", "m", "h"], required=True,
             help="set timestamp precision to PRECISION")
         parser.add_argument(
             "--batch-size", metavar="BATCH-SIZE", type=int, default=1,
