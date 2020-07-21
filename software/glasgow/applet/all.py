@@ -15,6 +15,7 @@ from .interface.sbw_probe import SpyBiWireProbeApplet
 
 from .memory._24x import Memory24xApplet
 from .memory._25x import Memory25xApplet
+from .memory._27x import Memory27xApplet
 from .memory.onfi import MemoryONFIApplet
 from .memory.floppy import MemoryFloppyApplet
 
