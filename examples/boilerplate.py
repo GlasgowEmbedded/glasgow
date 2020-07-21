@@ -1,13 +1,19 @@
 import logging
 import asyncio
-from nmigen.compat import *
+from nmigen import *
 
 from ... import *
 
 
-class BoilerplateSubtarget(Module):
+class BoilerplateSubtarget(Elaboratable):
     def __init__(self, pads, in_fifo, out_fifo):
-        pass
+        self.pads     = pads
+        self.in_fifo  = in_fifo
+        self.out_fifo = out_fifo
+
+    def elaborate(self, platform):
+        m = Module()
+        return m
 
 
 class BoilerplateApplet(GlasgowApplet, name="boilerplate"):
