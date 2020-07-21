@@ -536,15 +536,15 @@ async def _main():
 
                             for name in signals:
                                 vcd_writer.change(signals[name], next_timestamp, "x")
-                            timestamp += 1e3 # 1us
+                            next_timestamp += 1000 # 1us
                             break
 
                         event_repr = " ".join("{}={}".format(n, v)
                                               for n, v in events.items())
                         target.analyzer.logger.trace("cycle %d: %s", cycle, event_repr)
 
-                        timestamp      = 1e9 * (cycle + 0) // target.sys_clk_freq
-                        next_timestamp = 1e9 * (cycle + 1) // target.sys_clk_freq
+                        timestamp      = int(1e9 * (cycle + 0) // target.sys_clk_freq)
+                        next_timestamp = int(1e9 * (cycle + 1) // target.sys_clk_freq)
                         if init:
                             init = False
                             vcd_writer._timestamp = timestamp
@@ -555,7 +555,7 @@ async def _main():
                                 vcd_writer.change(signals[name], next_timestamp, "z")
                         vcd_writer.flush()
 
-                vcd_writer.close(timestamp)
+                vcd_writer.close(next_timestamp)
 
             async def run_applet():
                 logger.info("running handler for applet %r", args.applet)
