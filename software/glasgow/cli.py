@@ -425,7 +425,7 @@ async def _main():
 
     device = None
     try:
-        with importlib.resources.path(__package__, "glasgow.ihex") as firmware_filename:
+        with importlib.resources.path(__package__, "firmware.ihex") as firmware_filename:
             if args.action in ("build", "test", "tool"):
                 pass
             elif args.action == "factory":
