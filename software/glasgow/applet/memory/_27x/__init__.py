@@ -94,7 +94,6 @@ class Memory27xInterface:
 class Memory27xApplet(GlasgowApplet, name="memory-27x"):
     logger = logging.getLogger(__name__)
     help = "read 27/28-series parallel (E)EPROM memories"
-    preview = True
     description = """
     Read memories compatible with 27-series erasable read-only memory, such as Microchip 27C512,
     Intel 27C256, or hundreds of other memories that typically have "27X" where X is a letter
