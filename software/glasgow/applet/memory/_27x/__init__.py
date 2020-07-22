@@ -112,7 +112,7 @@ class Memory27xApplet(GlasgowApplet, name="memory-27x"):
         access.add_pin_set_argument(parser, "d", width=range(1, 16), default=8)
 
         parser.add_argument(
-            "--read-latency", metavar="LATENCY", type=int, default=250,
+            "--read-latency", metavar="LATENCY", type=int, default=500,
             help="set read latency to LATENCY ns (default: %(default)s)")
 
     def build(self, target, args):
