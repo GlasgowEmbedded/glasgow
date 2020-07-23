@@ -34,6 +34,13 @@ setup(
         "bitarray",
         "crcmod",
     ],
+    extras_require={
+        "toolchain": [
+            "nmigen-yosys",
+            "yowasp-yosys",
+            "yowasp-nextpnr-ice40-8k",
+        ],
+    },
     dependency_links=[
         "git+https://github.com/nmigen/nmigen.git#egg=nmigen",
     ],
