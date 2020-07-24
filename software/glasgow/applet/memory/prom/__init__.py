@@ -374,7 +374,7 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
             "address", metavar="ADDRESS", type=address,
             help="verify memory starting at address ADDRESS")
         p_verify.add_argument(
-            "-f", "--file", metavar="FILENAME", type=argparse.FileType("rb"),
+            "-f", "--file", metavar="FILENAME", type=argparse.FileType("rb"), required=True,
             help="compare memory with contents of FILENAME")
         p_verify.add_argument(
             "-e", "--endian", choices=("little", "big"), default="little",
