@@ -65,7 +65,9 @@ class DirectArguments(AccessArguments):
             opt_name, metavar="NUM", type=type, default=default, required=required, help=help)
 
     def _pin_set(self, width, arg):
-        if re.match(r"^[0-9]+:[0-9]+$", arg):
+        if arg == "":
+            numbers = []
+        elif re.match(r"^[0-9]+:[0-9]+$", arg):
             first, last = map(int, arg.split(":"))
             numbers = list(range(first, last + 1))
         elif re.match(r"^[0-9]+(,[0-9]+)*$", arg):
@@ -84,7 +86,10 @@ class DirectArguments(AccessArguments):
     def _add_pin_set_argument(self, parser, name, width, default, required):
         help = "bind the applet I/O lines {!r} to pins SET".format(name)
         if default is not None:
-            help += " (default: %(default)s)"
+            if default:
+                help += " (default: %(default)s)"
+            else:
+                help += " (default is empty)"
 
         opt_name = "--pins-" + name.lower().replace("_", "-")
         parser.add_argument(
