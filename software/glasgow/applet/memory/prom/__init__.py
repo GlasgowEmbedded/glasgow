@@ -381,28 +381,28 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
             help="read from file using given endianness")
 
         p_health = p_operation.add_parser(
-            "health", help="estimate floating gate charge decay")
+            "health", help="detect and quantify floating gate charge decay")
 
         p_health_mode = p_health.add_subparsers(dest="mode", metavar="MODE", required=True)
 
         p_health_check = p_health_mode.add_parser(
-            "check", help="rapidly triage a memory")
+            "check", help="quickly probe for unstable words in a memory")
         p_health_check.add_argument(
             "--passes", metavar="COUNT", type=int, default=5,
             help="read entire memory COUNT times (default: %(default)s)")
 
         p_health_scan = p_health_mode.add_parser(
-            "scan", help="detect decayed words in a memory")
+            "scan", help="exhaustively detect unstable words in a memory")
         p_health_scan.add_argument(
             "--confirmations", metavar="COUNT", type=int, default=10,
             help="read entire memory repeatedly until COUNT consecutive passes "
-                 "detect no new decayed words (default: %(default)s)")
+                 "detect no new unstable words (default: %(default)s)")
         p_health_scan.add_argument(
             "-f", "--file", metavar="FILENAME", type=argparse.FileType("wt"),
-            help="write hex addresses of decayed cells to FILENAME")
+            help="write hex addresses of unstable cells to FILENAME")
 
         p_health_sweep = p_health_mode.add_parser(
-            "sweep", help="determine undervolt offset that compensates decay")
+            "sweep", help="determine undervolt offset that prevents instability")
         p_health_sweep.add_argument(
             "--passes", metavar="COUNT", type=int, default=5,
             help="read entire memory COUNT times (default: %(default)s)")
@@ -432,25 +432,25 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
                 raise GlasgowAppletError("verify FAIL")
 
         if args.operation == "health" and args.mode == "check":
-            decayed = set()
+            unstable = set()
             initial_data = await prom_iface.read_linear(0, depth)
 
             for pass_num in range(args.passes):
                 self.logger.info("pass %d", pass_num)
 
                 current_data = await prom_iface.read_shuffled(0, depth)
-                current_decayed = initial_data.difference(current_data)
-                for index in sorted(current_decayed - decayed):
-                    self.logger.warning("word %#x decayed", index)
-                decayed.update(current_decayed)
+                current_unstable = initial_data.difference(current_data)
+                for index in sorted(current_unstable - unstable):
+                    self.logger.warning("word %#x unstable", index)
+                unstable.update(current_unstable)
 
-                if decayed:
+                if unstable:
                     raise GlasgowAppletError("health check FAIL")
 
             self.logger.info("health check PASS")
 
         if args.operation == "health" and args.mode == "scan":
-            decayed = set()
+            unstable = set()
             initial_data = await prom_iface.read_linear(0, depth)
 
             pass_num = 0
@@ -461,21 +461,21 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
                 consecutive += 1
 
                 current_data = await prom_iface.read_shuffled(0, depth)
-                current_decayed = initial_data.difference(current_data)
-                for index in sorted(current_decayed - decayed):
-                    self.logger.warning("word %#x decayed", index)
+                current_unstable = initial_data.difference(current_data)
+                for index in sorted(current_unstable - unstable):
+                    self.logger.warning("word %#x unstable", index)
                     consecutive = 0
-                decayed.update(current_decayed)
+                unstable.update(current_unstable)
 
             if args.file:
-                for index in sorted(decayed):
+                for index in sorted(unstable):
                     args.file.write(f"{index:x}\n")
 
-            if not decayed:
+            if not unstable:
                 self.logger.info("health scan PASS")
             else:
-                raise GlasgowAppletError("health scan FAIL ({} words decayed)"
-                                         .format(len(decayed)))
+                raise GlasgowAppletError("health scan FAIL ({} words unstable)"
+                                         .format(len(unstable)))
 
         if args.operation == "health" and args.mode == "sweep":
             if args.voltage is None:
@@ -491,12 +491,12 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
                 for pass_num in range(args.passes):
                     self.logger.info("  pass %d", pass_num)
                     current_data = await prom_iface.read_shuffled(0, depth)
-                    decayed = initial_data.difference(current_data)
-                    for index in sorted(decayed):
-                        self.logger.warning("  word %#x decayed", index)
-                    if decayed:
-                        self.logger.warning("step %d FAIL (%d words decayed)",
-                                            step_num, len(decayed))
+                    unstable = initial_data.difference(current_data)
+                    for index in sorted(unstable):
+                        self.logger.warning("  word %#x unstable", index)
+                    if unstable:
+                        self.logger.warning("step %d FAIL (%d words unstable)",
+                                            step_num, len(unstable))
                         break
                 else:
                     self.logger.info("step %d PASS", step_num)
