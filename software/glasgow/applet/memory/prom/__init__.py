@@ -197,12 +197,11 @@ class MemoryPROMSubtarget(Elaboratable):
 
 class MemoryPROMInterface:
     def __init__(self, interface, logger, a_bits, dq_bits):
-        self.lower   = interface
-        self._logger = logger
-        self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
-
-        self._a_bytes  = (a_bits  + 7) // 8
-        self._dq_bytes = (dq_bits + 7) // 8
+        self.lower    = interface
+        self._logger  = logger
+        self._level   = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+        self.a_bytes  = (a_bits  + 7) // 8
+        self.dq_bytes = (dq_bits + 7) // 8
 
     def _log(self, message, *args):
         self._logger.log(self._level, "PROM: " + message, *args)
@@ -211,7 +210,7 @@ class MemoryPROMInterface:
         self._log("seek a=%#x", address)
         await self.lower.write([
             _Command.SEEK,
-            *address.to_bytes(self._a_bytes, byteorder="little")
+            *address.to_bytes(self.a_bytes, byteorder="little")
         ])
 
     async def _read_cmd(self, count, *, incr):
@@ -225,7 +224,7 @@ class MemoryPROMInterface:
     async def read_bytes(self, count, *, incr=False):
         await self._read_cmd(count, incr=incr)
 
-        data = await self.lower.read(count * self._dq_bytes)
+        data = await self.lower.read(count * self.dq_bytes)
         self._log("read q=<%s>", dump_hex(data))
         return data
 
@@ -234,7 +233,7 @@ class MemoryPROMInterface:
 
         data = []
         for _ in range(count):
-            data.append(int.from_bytes(await self.lower.read(self._dq_bytes), byteorder="little"))
+            data.append(int.from_bytes(await self.lower.read(self.dq_bytes), byteorder="little"))
         self._log("read q=<%s>", " ".join(f"{q:x}" for q in data))
         return data
 
@@ -243,7 +242,7 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
     logger = logging.getLogger(__name__)
     help = "read parallel (E)EPROM memories"
     description = """
-    Read parallel memories compatible with 27/28/29-series read-only memory, such as  Microchip
+    Read parallel memories compatible with 27/28/29-series read-only memory, such as Microchip
     27C512, Atmel AT28C64B, Atmel AT29C010A, or hundreds of other memories that typically have
     "27X"/"28X"/"29X" where X is a letter in their part number. This applet can also read any other
     directly addressable memory.
@@ -328,6 +327,18 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
             "-e", "--endian", choices=("little", "big"), default="little",
             help="write to file using given endianness")
 
+        p_verify = p_operation.add_parser(
+            "verify", help="verify memory")
+        p_verify.add_argument(
+            "address", metavar="ADDRESS", type=address,
+            help="verify memory starting at address ADDRESS")
+        p_verify.add_argument(
+            "-f", "--file", metavar="FILENAME", type=argparse.FileType("rb"),
+            help="compare memory with contents of FILENAME")
+        p_verify.add_argument(
+            "-e", "--endian", choices=("little", "big"), default="little",
+            help="read from file using given endianness")
+
     async def interact(self, device, args, prom_iface):
         a_bits  = args.a_bits
         dq_bits = len(args.pin_set_dq)
@@ -339,6 +350,17 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
             else:
                 for word in await prom_iface.read_words(args.length, incr=True):
                     print("{:0{}x}".format(word, (dq_bits + 3) // 4))
+
+        if args.operation == "verify":
+            await prom_iface.seek(args.address)
+            golden_data = args.file.read()
+            actual_data = await prom_iface.read_bytes(len(golden_data) // prom_iface.dq_bytes,
+                                                      incr=True)
+            if actual_data == golden_data:
+                self.logger.info("verify PASS")
+            else:
+                raise GlasgowAppletError("verify FAIL")
+
 
 # -------------------------------------------------------------------------------------------------
 
