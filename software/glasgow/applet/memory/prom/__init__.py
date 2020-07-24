@@ -277,7 +277,7 @@ class MemoryPROMInterface:
 
 class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
     logger = logging.getLogger(__name__)
-    help = "read parallel (E)EPROM memories"
+    help = "read and rescue parallel EPROMs, EEPROMs, and Flash memories"
     description = """
     Read parallel memories compatible with 27/28/29-series read-only memory, such as Microchip
     27C512, Atmel AT28C64B, Atmel AT29C010A, or hundreds of other memories that typically have
@@ -286,7 +286,8 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
 
     Floating gate based memories (27x EPROM, 28x EEPROM, 29x Flash) retain data for decades, but
     not indefinitely, since the stored charge slowly decays. This applet can identify memories at
-    risk of data loss and estimate the level of decay. See `health --help` for details.
+    risk of data loss, estimate the level of decay, and suggest conditions under which the memory
+    may still be read reliably. See `health --help` for details.
 
     To handle the large amount of address lines used by parallel memories, this applet supports
     two kinds of addressing: direct and indirect. The full address word (specified with
@@ -381,7 +382,7 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
             help="read from file using given endianness")
 
         p_health = p_operation.add_parser(
-            "health", help="detect and quantify floating gate charge decay")
+            "health", help="manage floating gate charge decay")
 
         p_health_mode = p_health.add_subparsers(dest="mode", metavar="MODE", required=True)
 
