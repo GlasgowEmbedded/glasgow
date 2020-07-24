@@ -401,6 +401,15 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
             "-f", "--file", metavar="FILENAME", type=argparse.FileType("wt"),
             help="write hex addresses of decayed cells to FILENAME")
 
+        p_health_sweep = p_health_mode.add_parser(
+            "sweep", help="determine undervolt offset that compensates decay")
+        p_health_sweep.add_argument(
+            "--passes", metavar="COUNT", type=int, default=5,
+            help="read entire memory COUNT times (default: %(default)s)")
+        p_health_sweep.add_argument(
+            "--voltage-step", metavar="STEP", type=float, default=0.05,
+            help="reduce supply voltage by STEP volts")
+
     async def interact(self, device, args, prom_iface):
         a_bits  = args.a_bits
         dq_bits = len(args.pin_set_dq)
@@ -438,7 +447,7 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
                 if decayed:
                     raise GlasgowAppletError("health check FAIL")
 
-            self.logger.info("health %s PASS", args.mode)
+            self.logger.info("health check PASS")
 
         if args.operation == "health" and args.mode == "scan":
             decayed = set()
@@ -463,10 +472,40 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
                     args.file.write(f"{index:x}\n")
 
             if not decayed:
-                self.logger.info("health %s PASS", args.mode)
+                self.logger.info("health scan PASS")
             else:
                 raise GlasgowAppletError("health scan FAIL ({} words decayed)"
                                          .format(len(decayed)))
+
+        if args.operation == "health" and args.mode == "sweep":
+            if args.voltage is None:
+                raise GlasgowAppletError("health sweep requires --voltage to be specified")
+
+            voltage  = args.voltage
+            step_num = 0
+            while True:
+                self.logger.info("step %d (%.2f V)", step_num, voltage)
+                await device.set_voltage(args.port_spec, voltage)
+
+                initial_data = await prom_iface.read_linear(0, depth)
+                for pass_num in range(args.passes):
+                    self.logger.info("  pass %d", pass_num)
+                    current_data = await prom_iface.read_shuffled(0, depth)
+                    decayed = initial_data.difference(current_data)
+                    for index in sorted(decayed):
+                        self.logger.warning("  word %#x decayed", index)
+                    if decayed:
+                        self.logger.warning("step %d FAIL (%d words decayed)",
+                                            step_num, len(decayed))
+                        break
+                else:
+                    self.logger.info("step %d PASS", step_num)
+                    break
+
+                voltage  -= args.voltage_step
+                step_num += 1
+
+            self.logger.info("health %s PASS at %.2f V", args.mode, voltage)
 
 # -------------------------------------------------------------------------------------------------
 
