@@ -511,7 +511,7 @@ async def _main():
                         var_init = 0
                     elif field_trigger == "change":
                         var_type = "wire"
-                        var_init = "x"
+                        var_init = "x" * field_width
                     elif field_trigger == "strobe":
                         if field_width > 0:
                             var_type = "tri"
