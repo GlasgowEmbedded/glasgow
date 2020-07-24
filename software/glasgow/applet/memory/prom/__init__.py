@@ -356,10 +356,10 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
         p_read = p_operation.add_parser(
             "read", help="read memory")
         p_read.add_argument(
-            "address", metavar="ADDRESS", type=address,
+            "address", metavar="ADDRESS", type=address, nargs="?", default=0,
             help="read memory starting at address ADDRESS, with wraparound")
         p_read.add_argument(
-            "length", metavar="LENGTH", type=length,
+            "length", metavar="LENGTH", type=length, nargs="?",
             help="read LENGTH bytes from memory")
         p_read.add_argument(
             "-f", "--file", metavar="FILENAME", type=argparse.FileType("wb"),
@@ -371,7 +371,7 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
         p_verify = p_operation.add_parser(
             "verify", help="verify memory")
         p_verify.add_argument(
-            "address", metavar="ADDRESS", type=address,
+            "address", metavar="ADDRESS", type=address, nargs="?", default=0,
             help="verify memory starting at address ADDRESS")
         p_verify.add_argument(
             "-f", "--file", metavar="FILENAME", type=argparse.FileType("rb"), required=True,
@@ -416,6 +416,9 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
         depth   = 1 << a_bits
 
         if args.operation == "read":
+            if args.length is None:
+                args.length = depth
+
             data = await prom_iface.read_linear(args.address, args.length)
             for word in data:
                 if args.file:
