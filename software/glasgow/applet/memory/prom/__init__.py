@@ -1,8 +1,10 @@
 # Ref: Microchip 27C512A 512K (64K x 8) CMOS EPROM
 # Accession: G00057
 
+import re
 import math
 import enum
+import random
 import logging
 import asyncio
 import argparse
@@ -157,6 +159,8 @@ class MemoryPROMSubtarget(Elaboratable):
                         with m.Case(_Command.READ):
                             m.d.sync += dq_index.eq(0)
                             m.next = "READ-PULSE"
+                with m.Else():
+                    m.d.comb += in_fifo.flush.eq(1)
 
             with m.State("SEEK-RECV"):
                 with m.If(a_index == a_bytes):
@@ -196,6 +200,30 @@ class MemoryPROMSubtarget(Elaboratable):
 
 
 class MemoryPROMInterface:
+    class Data:
+        def __init__(self, raw_data, dq_bytes):
+            self.raw_data = raw_data
+            self.dq_bytes = dq_bytes
+
+        def __len__(self):
+            return len(self.raw_data) // self.dq_bytes
+
+        def __getitem__(self, index):
+            if index not in range(len(self)):
+                raise IndexError
+            elem = self.raw_data[index * self.dq_bytes:(index + 1) * self.dq_bytes]
+            return int.from_bytes(elem, byteorder="little")
+
+        def __eq__(self, other):
+            return isinstance(other, type(self)) and self.raw_data == other.raw_data
+
+        def difference(self, other):
+            assert isinstance(other, type(self)) and len(self) == len(other)
+            raw_diff = ((int.from_bytes(self.raw_data, "little") ^
+                         int.from_bytes(other.raw_data, "little"))
+                        .to_bytes(len(self.raw_data), "little"))
+            return set(m.start() // self.dq_bytes for m in re.finditer(rb"[^\x00]", raw_diff))
+
     def __init__(self, interface, logger, a_bits, dq_bits):
         self.lower    = interface
         self._logger  = logger
@@ -206,35 +234,44 @@ class MemoryPROMInterface:
     def _log(self, message, *args):
         self._logger.log(self._level, "PROM: " + message, *args)
 
-    async def seek(self, address):
-        self._log("seek a=%#x", address)
+    async def read_linear(self, address, count):
+        self._log("read linear a=%#x n=%d", address, count)
         await self.lower.write([
             _Command.SEEK,
-            *address.to_bytes(self.a_bytes, byteorder="little")
+            *address.to_bytes(self.a_bytes, byteorder="little"),
+            *[
+                _Command.READ,
+                _Command.INCR,
+            ] * count,
         ])
 
-    async def _read_cmd(self, count, *, incr):
-        if incr:
-            self._log("read-incr count=%d", count)
-            await self.lower.write([_Command.READ, _Command.INCR] * count)
-        else:
-            self._log("read count=%d", count)
-            await self.lower.write([_Command.READ] * count)
-
-    async def read_bytes(self, count, *, incr=False):
-        await self._read_cmd(count, incr=incr)
-
-        data = await self.lower.read(count * self.dq_bytes)
-        self._log("read q=<%s>", dump_hex(data))
+        data = self.Data(await self.lower.read(count * self.dq_bytes), self.dq_bytes)
+        self._log("read linear q=<%s>",
+                  dump_mapseq(" ", lambda q: f"{q:0{self.dq_bytes * 2}x}", data))
         return data
 
-    async def read_words(self, count, *, incr=False):
-        await self._read_cmd(count, incr=incr)
+    async def read_shuffled(self, address, count):
+        self._log("read shuffled a=%#x n=%d", address, count)
+        order = [offset for offset in range(count)]
+        random.shuffle(order)
+        commands = []
+        for offset in order:
+            commands += [
+                _Command.SEEK,
+                *(address + offset).to_bytes(self.a_bytes, byteorder="little"),
+                _Command.READ,
+            ]
+        await self.lower.write(commands)
 
-        data = []
-        for _ in range(count):
-            data.append(int.from_bytes(await self.lower.read(self.dq_bytes), byteorder="little"))
-        self._log("read q=<%s>", " ".join(f"{q:x}" for q in data))
+        linear_raw_chunks = [None for _ in range(count)]
+        shuffled_raw_data = await self.lower.read(count * self.dq_bytes)
+        for shuffled_offset, linear_offset in enumerate(order):
+            linear_raw_chunks[linear_offset] = \
+                shuffled_raw_data[shuffled_offset * self.dq_bytes:
+                                 (shuffled_offset + 1) * self.dq_bytes]
+        data = self.Data(b"".join(linear_raw_chunks), self.dq_bytes)
+        self._log("read shuffled q=<%s>",
+                  dump_mapseq(" ", lambda q: f"{q:0{self.dq_bytes * 2}x}", data))
         return data
 
 
@@ -246,6 +283,10 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
     27C512, Atmel AT28C64B, Atmel AT29C010A, or hundreds of other memories that typically have
     "27X"/"28X"/"29X" where X is a letter in their part number. This applet can also read any other
     directly addressable memory.
+
+    Floating gate based memories (27x EPROM, 28x EEPROM, 29x Flash) retain data for decades, but
+    not indefinitely, since the stored charge slowly decays. This applet can identify memories at
+    risk of data loss and estimate the level of decay. See `health --help` for details.
 
     To handle the large amount of address lines used by parallel memories, this applet supports
     two kinds of addressing: direct and indirect. The full address word (specified with
@@ -294,7 +335,7 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
         )
         iface.add_subtarget(MemoryPROMSubtarget(
             bus=bus,
-            in_fifo=iface.get_in_fifo(),
+            in_fifo=iface.get_in_fifo(auto_flush=False),
             out_fifo=iface.get_out_fifo(),
             rd_delay=1e-9 * args.read_latency,
         ))
@@ -339,28 +380,93 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
             "-e", "--endian", choices=("little", "big"), default="little",
             help="read from file using given endianness")
 
+        p_health = p_operation.add_parser(
+            "health", help="estimate floating gate charge decay")
+
+        p_health_mode = p_health.add_subparsers(dest="mode", metavar="MODE", required=True)
+
+        p_health_check = p_health_mode.add_parser(
+            "check", help="rapidly triage a memory")
+        p_health_check.add_argument(
+            "--passes", metavar="COUNT", type=int, default=5,
+            help="read entire memory COUNT times (default: %(default)s)")
+
+        p_health_scan = p_health_mode.add_parser(
+            "scan", help="detect decayed words in a memory")
+        p_health_scan.add_argument(
+            "--confirmations", metavar="COUNT", type=int, default=10,
+            help="read entire memory repeatedly until COUNT consecutive passes "
+                 "detect no new decayed words (default: %(default)s)")
+        p_health_scan.add_argument(
+            "-f", "--file", metavar="FILENAME", type=argparse.FileType("wt"),
+            help="write hex addresses of decayed cells to FILENAME")
+
     async def interact(self, device, args, prom_iface):
         a_bits  = args.a_bits
         dq_bits = len(args.pin_set_dq)
+        depth   = 1 << a_bits
 
         if args.operation == "read":
-            await prom_iface.seek(args.address)
-            if args.file:
-                args.file.write(await prom_iface.read_bytes(args.length, incr=True))
-            else:
-                for word in await prom_iface.read_words(args.length, incr=True):
+            data = await prom_iface.read_linear(args.address, args.length)
+            for word in data:
+                if args.file:
+                    args.file.write(word.to_bytes(prom_iface.dq_bytes, args.endian))
+                else:
                     print("{:0{}x}".format(word, (dq_bits + 3) // 4))
 
         if args.operation == "verify":
-            await prom_iface.seek(args.address)
-            golden_data = args.file.read()
-            actual_data = await prom_iface.read_bytes(len(golden_data) // prom_iface.dq_bytes,
-                                                      incr=True)
+            golden_data = prom_iface.Data(args.file.read(), prom_iface.dq_bytes)
+            actual_data = await prom_iface.read_linear(args.address, len(golden_data))
             if actual_data == golden_data:
                 self.logger.info("verify PASS")
             else:
                 raise GlasgowAppletError("verify FAIL")
 
+        if args.operation == "health" and args.mode == "check":
+            decayed = set()
+            initial_data = await prom_iface.read_linear(0, depth)
+
+            for pass_num in range(args.passes):
+                self.logger.info("pass %d", pass_num)
+
+                current_data = await prom_iface.read_shuffled(0, depth)
+                current_decayed = initial_data.difference(current_data)
+                for index in sorted(current_decayed - decayed):
+                    self.logger.warning("word %#x decayed", index)
+                decayed.update(current_decayed)
+
+                if decayed:
+                    raise GlasgowAppletError("health check FAIL")
+
+            self.logger.info("health %s PASS", args.mode)
+
+        if args.operation == "health" and args.mode == "scan":
+            decayed = set()
+            initial_data = await prom_iface.read_linear(0, depth)
+
+            pass_num = 0
+            consecutive = 0
+            while consecutive < args.confirmations:
+                self.logger.info("pass %d", pass_num)
+                pass_num += 1
+                consecutive += 1
+
+                current_data = await prom_iface.read_shuffled(0, depth)
+                current_decayed = initial_data.difference(current_data)
+                for index in sorted(current_decayed - decayed):
+                    self.logger.warning("word %#x decayed", index)
+                    consecutive = 0
+                decayed.update(current_decayed)
+
+            if args.file:
+                for index in sorted(decayed):
+                    args.file.write(f"{index:x}\n")
+
+            if not decayed:
+                self.logger.info("health %s PASS", args.mode)
+            else:
+                raise GlasgowAppletError("health scan FAIL ({} words decayed)"
+                                         .format(len(decayed)))
 
 # -------------------------------------------------------------------------------------------------
 
