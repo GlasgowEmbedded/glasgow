@@ -2,12 +2,14 @@
 # Accession: G00057
 
 import re
-import math
 import enum
+import math
+import json
 import random
 import logging
 import asyncio
 import argparse
+import statistics
 from nmigen import *
 from nmigen.lib.cdc import FFSynchronizer
 from nmigen.lib.fifo import SyncFIFOBuffered
@@ -467,6 +469,11 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
             return int(arg, 0)
         def length(arg):
             return int(arg, 0)
+        def voltage_range(arg):
+            m = re.match(r"^(\d+(?:\.\d*)?):(\d+(?:\.\d*)?)$", arg)
+            if not m:
+                raise argparse.ArgumentTypeError("'{}' is not a voltage range".format(arg))
+            return float(m[1]), float(m[2])
 
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
@@ -537,7 +544,22 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
             help="read entire memory COUNT times (default: %(default)s)")
         p_health_sweep.add_argument(
             "--voltage-step", metavar="STEP", type=float, default=0.05,
-            help="reduce supply voltage by STEP volts")
+            help="reduce supply voltage by STEP volts (default: %(default)s)")
+
+        p_health_histogram = p_health_mode.add_parser(
+            "histogram", help="sample population count for a voltage range")
+        p_health_histogram.add_argument(
+            "--samples", metavar="COUNT", type=int, default=5,
+            help="average population count COUNT times (default: %(default)s)")
+        p_health_histogram.add_argument(
+            "--sweep", metavar="START:END", type=voltage_range, required=True,
+            help="sweep supply voltage from START to END volts")
+        p_health_histogram.add_argument(
+            "--voltage-step", metavar="STEP", type=float, default=0.05,
+            help="change supply voltage by STEP volts (default: %(default)s)")
+        p_health_histogram.add_argument(
+            "file", metavar="FILENAME", type=argparse.FileType("wt"),
+            help="write aggregated data to FILENAME")
 
     async def interact(self, device, args, prom_iface):
         a_bits  = args.a_bits
@@ -645,6 +667,83 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
                 step_num += 1
 
             self.logger.info("health %s PASS at %.2f V", args.mode, voltage)
+
+        if args.operation == "health" and args.mode == "histogram":
+            voltage_from, voltage_to = args.sweep
+            popcount_lut = [format(n, "b").count("1") for n in range(1 << dq_bits)]
+
+            histogram = []
+            voltage = voltage_from
+            step_num = 0
+            while True:
+                self.logger.info("step %d (%.2f V)", step_num, voltage)
+                await device.set_voltage(args.port_spec, voltage)
+
+                popcounts = []
+                for sample_num in range(args.samples):
+                    self.logger.info("  sample %d", sample_num)
+                    data = await prom_iface.read_shuffled(0, depth)
+                    popcounts.append(sum(popcount_lut[word] for word in data))
+
+                histogram.append((voltage, popcounts))
+                self.logger.info("population %d/%d",
+                                 sum(popcounts) // len(popcounts),
+                                 depth * dq_bits)
+
+                if voltage_to > voltage_from:
+                    voltage += args.voltage_step
+                    if voltage > voltage_to: break
+                else:
+                    voltage -= args.voltage_step
+                    if voltage < voltage_to: break
+                step_num += 1
+
+            json.dump({
+                "density": depth * dq_bits,
+                "histogram": [
+                    {"voltage": voltage, "popcounts": popcounts}
+                    for voltage, popcounts in histogram
+                ]
+            }, args.file)
+
+# -------------------------------------------------------------------------------------------------
+
+class MemoryPROMAppletTool(GlasgowAppletTool, applet=MemoryPROMApplet):
+    help = "display statistics of parallel EPROMs, EEPROMs, and Flash memories"
+    description = """
+    Display statistics collected of parallel memories collected with the `health` subcommand.
+    """
+
+    @classmethod
+    def add_arguments(cls, parser):
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
+
+        p_histogram = p_operation.add_parser(
+            "histogram", help="plot population count for a voltage range")
+        p_histogram.add_argument(
+            "file", metavar="FILENAME", type=argparse.FileType("rt"),
+            help="read aggregated data from FILENAME")
+
+    async def run(self, args):
+        if args.operation == "histogram":
+            data = json.load(args.file)
+            density = data["density"]
+            histogram = [
+                (row["voltage"], row["popcounts"], statistics.mean(row["popcounts"]))
+                for row in data["histogram"]
+            ]
+
+            min_popcount = min(mean_popcounts for _, _, mean_popcounts in histogram)
+            max_popcount = max(mean_popcounts for _, _, mean_popcounts in histogram)
+            histogram_size = 40
+            resolution = (max_popcount - min_popcount) / histogram_size
+            print(f"      {str(min_popcount):<{1 + histogram_size // 2}s}"
+                        f"{str(max_popcount):>{1 + histogram_size // 2}s}")
+            for voltage, popcounts, mean_popcount in histogram:
+                rectangle_size = math.floor((mean_popcount - min_popcount) / resolution)
+                print(f"{voltage:.2f}: |{'=' * rectangle_size:{histogram_size}s}| "
+                      f"({len(popcounts)}× {int(mean_popcount)}/{density}, "
+                      f"sd {statistics.pstdev(popcounts):.2f})")
 
 # -------------------------------------------------------------------------------------------------
 
