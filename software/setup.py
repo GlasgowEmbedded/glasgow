@@ -20,7 +20,7 @@ setup(
     description="Software for Glasgow, a digital interface multitool",
     #long_description="""TODO""",
     license="0-clause BSD License",
-    python_requires="~=3.6",
+    python_requires="~=3.7",
     setup_requires=[
         "setuptools",
         "setuptools_scm"
