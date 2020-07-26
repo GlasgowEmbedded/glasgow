@@ -302,7 +302,11 @@ class MemoryPROMInterface:
             raw_diff = ((int.from_bytes(self.raw_data,  "little") ^
                          int.from_bytes(other.raw_data, "little"))
                         .to_bytes(len(self.raw_data), "little"))
-            return set(m.start() // self.dq_bytes for m in re.finditer(rb"[^\x00]", raw_diff))
+            diff = dict()
+            for m in re.finditer(rb"[^\x00]", raw_diff):
+                index = m.start() // self.dq_bytes
+                diff[index] = (self[index], other[index])
+            return diff
 
     def __init__(self, interface, logger, a_bits, dq_bits):
         self.lower    = interface
@@ -572,8 +576,9 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
 
                 current_data = await prom_iface.read_shuffled(0, depth)
                 current_unstable = initial_data.difference(current_data)
-                for index in sorted(current_unstable - unstable):
-                    self.logger.warning("word %#x unstable", index)
+                for index in sorted(set(current_unstable) - unstable):
+                    self.logger.warning("word %#x unstable (%#x != %#x)",
+                                        index, initial_data[index], current_data[index])
                 unstable.update(current_unstable)
 
                 if unstable:
@@ -594,8 +599,9 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
 
                 current_data = await prom_iface.read_shuffled(0, depth)
                 current_unstable = initial_data.difference(current_data)
-                for index in sorted(current_unstable - unstable):
-                    self.logger.warning("word %#x unstable", index)
+                for index in sorted(set(current_unstable) - unstable):
+                    self.logger.warning("word %#x unstable (%#x != %#x)",
+                                        index, initial_data[index], current_data[index])
                     consecutive = 0
                 unstable.update(current_unstable)
 
@@ -625,7 +631,8 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
                     current_data = await prom_iface.read_shuffled(0, depth)
                     unstable = initial_data.difference(current_data)
                     for index in sorted(unstable):
-                        self.logger.warning("  word %#x unstable", index)
+                        self.logger.warning("word %#x unstable (%#x != %#x)",
+                                            index, initial_data[index], current_data[index])
                     if unstable:
                         self.logger.warning("step %d FAIL (%d words unstable)",
                                             step_num, len(unstable))
