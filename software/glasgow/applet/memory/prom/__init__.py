@@ -10,6 +10,7 @@ import asyncio
 import argparse
 from nmigen import *
 from nmigen.lib.cdc import FFSynchronizer
+from nmigen.lib.fifo import SyncFIFOBuffered
 
 from ....support.logging import *
 from ... import *
@@ -112,18 +113,27 @@ class MemoryPROMBus(Elaboratable):
 
 
 class _Command(enum.IntEnum):
-    SEEK = 0x01
-    INCR = 0x02
-    READ = 0x03
+    SEEK  = 0x01
+    INCR  = 0x02
+    READ  = 0x03
+    WRITE = 0x04
+    QUEUE = 0x05
+    RUN   = 0x06
+
+
+_COMMAND_BUFFER_SIZE = 512
 
 
 class MemoryPROMSubtarget(Elaboratable):
-    def __init__(self, bus, in_fifo, out_fifo, rd_delay):
+    def __init__(self, bus, in_fifo, out_fifo,
+                 read_cycle_delay, write_cycle_delay, write_hold_delay):
         self.bus      = bus
         self.in_fifo  = in_fifo
         self.out_fifo = out_fifo
 
-        self._rd_delay = rd_delay
+        self._read_cycle_delay  = read_cycle_delay
+        self._write_cycle_delay = write_cycle_delay
+        self._write_hold_delay  = write_hold_delay
 
     def elaborate(self, platform):
         m = Module()
@@ -131,10 +141,18 @@ class MemoryPROMSubtarget(Elaboratable):
 
         in_fifo  = self.in_fifo
         out_fifo = self.out_fifo
+        buf_fifo = m.submodules.buf_fifo = SyncFIFOBuffered(width=8, depth=_COMMAND_BUFFER_SIZE)
 
         m.d.comb += bus.ce.eq(1)
 
         with m.FSM():
+            # Page writes in parallel EEPROMs do not tolerate delays, so the entire page needs
+            # to be buffered before programming starts. After receiving the QUEUE command, all
+            # subsequent commands except for RUN are placed into the buffer. The RUN command
+            # restarts command processing. Until the buffer is empty, only buffered commands are
+            # processed.
+            cmd_fifo = Array([out_fifo, buf_fifo])[buf_fifo.r_rdy]
+
             a_bytes  = (bus.a_bits  + 7) // 8
             dq_bytes = (bus.dq_bits + 7) // 8
             a_index  = Signal(range(a_bytes  + 1))
@@ -142,14 +160,16 @@ class MemoryPROMSubtarget(Elaboratable):
             a_latch  = Signal(bus.a_bits)
             dq_latch = Signal(bus.dq_bits)
 
-            rd_cyc = (math.ceil(self._rd_delay * platform.default_clk_frequency)
-                      + 2) # FFSynchronizer latency
-            timer  = Signal(range(rd_cyc + 1))
+            read_cycle_cyc  = (math.ceil(self._read_cycle_delay * platform.default_clk_frequency)
+                               + 2) # FFSynchronizer latency
+            write_cycle_cyc = math.ceil(self._write_cycle_delay * platform.default_clk_frequency)
+            write_hold_cyc  = math.ceil(self._write_hold_delay  * platform.default_clk_frequency)
+            timer = Signal(range(max(read_cycle_cyc, write_cycle_cyc, write_hold_cyc) + 1))
 
             with m.State("COMMAND"):
-                with m.If(out_fifo.r_rdy):
-                    m.d.comb += out_fifo.r_en.eq(1)
-                    with m.Switch(out_fifo.r_data):
+                with m.If(cmd_fifo.r_rdy):
+                    m.d.comb += cmd_fifo.r_en.eq(1)
+                    with m.Switch(cmd_fifo.r_data):
                         with m.Case(_Command.SEEK):
                             m.d.sync += a_index.eq(0)
                             m.next = "SEEK-RECV"
@@ -159,6 +179,11 @@ class MemoryPROMSubtarget(Elaboratable):
                         with m.Case(_Command.READ):
                             m.d.sync += dq_index.eq(0)
                             m.next = "READ-PULSE"
+                        with m.Case(_Command.WRITE):
+                            m.d.sync += dq_index.eq(0)
+                            m.next = "WRITE-RECV"
+                        with m.Case(_Command.QUEUE):
+                            m.next = "QUEUE-RECV"
                 with m.Else():
                     m.d.comb += in_fifo.flush.eq(1)
 
@@ -166,9 +191,9 @@ class MemoryPROMSubtarget(Elaboratable):
                 with m.If(a_index == a_bytes):
                     m.d.sync += bus.a.eq(a_latch)
                     m.next = "SEEK-WAIT"
-                with m.Elif(self.out_fifo.r_rdy):
-                    m.d.comb += self.out_fifo.r_en.eq(1)
-                    m.d.sync += a_latch.word_select(a_index, 8).eq(self.out_fifo.r_data)
+                with m.Elif(cmd_fifo.r_rdy):
+                    m.d.comb += cmd_fifo.r_en.eq(1)
+                    m.d.sync += a_latch.word_select(a_index, 8).eq(cmd_fifo.r_data)
                     m.d.sync += a_index.eq(a_index + 1)
 
             with m.State("SEEK-WAIT"):
@@ -177,10 +202,10 @@ class MemoryPROMSubtarget(Elaboratable):
 
             with m.State("READ-PULSE"):
                 m.d.sync += bus.oe.eq(1)
-                m.d.sync += timer.eq(rd_cyc)
-                m.next = "READ-WAIT"
+                m.d.sync += timer.eq(read_cycle_cyc)
+                m.next = "READ-CYCLE"
 
-            with m.State("READ-WAIT"):
+            with m.State("READ-CYCLE"):
                 with m.If(timer == 0):
                     m.d.sync += bus.oe.eq(0)
                     m.d.sync += dq_latch.eq(bus.q)
@@ -191,19 +216,62 @@ class MemoryPROMSubtarget(Elaboratable):
             with m.State("READ-SEND"):
                 with m.If(dq_index == dq_bytes):
                     m.next = "COMMAND"
-                with m.Elif(self.in_fifo.w_rdy):
-                    m.d.comb += self.in_fifo.w_en.eq(1)
-                    m.d.comb += self.in_fifo.w_data.eq(dq_latch.word_select(dq_index, 8))
+                with m.Elif(in_fifo.w_rdy):
+                    m.d.comb += in_fifo.w_en.eq(1)
+                    m.d.comb += in_fifo.w_data.eq(dq_latch.word_select(dq_index, 8))
                     m.d.sync += dq_index.eq(dq_index + 1)
+
+            with m.State("WRITE-RECV"):
+                with m.If(dq_index == dq_bytes):
+                    m.d.sync += bus.d.eq(dq_latch)
+                    m.d.sync += bus.we.eq(1)
+                    m.d.sync += timer.eq(write_cycle_cyc)
+                    m.next = "WRITE-CYCLE"
+                with m.Elif(cmd_fifo.r_rdy):
+                    m.d.comb += cmd_fifo.r_en.eq(1)
+                    m.d.sync += dq_latch.word_select(dq_index, 8).eq(cmd_fifo.r_data)
+                    m.d.sync += dq_index.eq(dq_index + 1)
+
+            with m.State("WRITE-CYCLE"):
+                with m.If(timer == 0):
+                    m.d.sync += bus.we.eq(0)
+                    m.d.sync += timer.eq(write_hold_cyc)
+                    m.next = "WRITE-HOLD"
+                with m.Else():
+                    m.d.sync += timer.eq(timer - 1)
+
+            with m.State("WRITE-HOLD"):
+                with m.If(timer == 0):
+                    m.next = "COMMAND"
+                with m.Else():
+                    m.d.sync += timer.eq(timer - 1)
+
+            with m.State("QUEUE-RECV"):
+                with m.If(out_fifo.r_rdy):
+                    with m.Switch(out_fifo.r_data):
+                        with m.Case(_Command.RUN):
+                            m.d.comb += out_fifo.r_en.eq(1)
+                            m.next = "COMMAND"
+                        with m.Default():
+                            m.d.comb += out_fifo.r_en.eq(buf_fifo.w_rdy)
+                            m.d.comb += buf_fifo.w_data.eq(out_fifo.r_data)
+                            m.d.comb += buf_fifo.w_en.eq(1)
 
         return m
 
 
 class MemoryPROMInterface:
     class Data:
-        def __init__(self, raw_data, dq_bytes):
+        def __init__(self, raw_data, dq_bytes, endian="little"):
+            assert isinstance(raw_data, (bytes, bytearray, memoryview))
+            assert isinstance(dq_bytes, int)
+            assert endian in ("little", "big")
             self.raw_data = raw_data
             self.dq_bytes = dq_bytes
+            self.endian   = endian
+
+        def __bytes__(self):
+            return bytes(self.raw_data)
 
         def __len__(self):
             return len(self.raw_data) // self.dq_bytes
@@ -212,14 +280,26 @@ class MemoryPROMInterface:
             if index not in range(len(self)):
                 raise IndexError
             elem = self.raw_data[index * self.dq_bytes:(index + 1) * self.dq_bytes]
-            return int.from_bytes(elem, byteorder="little")
+            return int.from_bytes(elem, byteorder=self.endian)
 
         def __eq__(self, other):
-            return isinstance(other, type(self)) and self.raw_data == other.raw_data
+            if not isinstance(other, type(self)):
+                return False
+            if self.endian != other.endian:
+                return self == other.convert(self.endian)
+            return self.raw_data == other.raw_data
+
+        def convert(self, endian):
+            if endian == self.endian:
+                return self
+            return type(self)(b"".join(elem.to_bytes(self.dq_bytes, byteorder=endian)
+                                       for elem in self),
+                              self.dq_bytes, endian)
 
         def difference(self, other):
-            assert isinstance(other, type(self)) and len(self) == len(other)
-            raw_diff = ((int.from_bytes(self.raw_data, "little") ^
+            assert (isinstance(other, type(self)) and len(self) == len(other) and
+                    self.endian == other.endian)
+            raw_diff = ((int.from_bytes(self.raw_data,  "little") ^
                          int.from_bytes(other.raw_data, "little"))
                         .to_bytes(len(self.raw_data), "little"))
             return set(m.start() // self.dq_bytes for m in re.finditer(rb"[^\x00]", raw_diff))
@@ -234,8 +314,8 @@ class MemoryPROMInterface:
     def _log(self, message, *args):
         self._logger.log(self._level, "PROM: " + message, *args)
 
-    async def read_linear(self, address, count):
-        self._log("read linear a=%#x n=%d", address, count)
+    async def read(self, address, count):
+        self._log("read a=%#x n=%d", address, count)
         await self.lower.write([
             _Command.SEEK,
             *address.to_bytes(self.a_bytes, byteorder="little"),
@@ -246,7 +326,7 @@ class MemoryPROMInterface:
         ])
 
         data = self.Data(await self.lower.read(count * self.dq_bytes), self.dq_bytes)
-        self._log("read linear q=<%s>",
+        self._log("read q=<%s>",
                   dump_mapseq(" ", lambda q: f"{q:0{self.dq_bytes * 2}x}", data))
         return data
 
@@ -274,6 +354,29 @@ class MemoryPROMInterface:
                   dump_mapseq(" ", lambda q: f"{q:0{self.dq_bytes * 2}x}", data))
         return data
 
+    async def write(self, address, data):
+        self._log("write a=%#x d=<%s>",
+                  address, dump_mapseq(" ", lambda q: f"{q:0{self.dq_bytes * 2}x}", data))
+        commands = [
+            _Command.SEEK,
+            *address.to_bytes(self.a_bytes, byteorder="little"),
+        ]
+        for word in data:
+            commands += [
+                _Command.WRITE,
+                *word.to_bytes(self.dq_bytes, byteorder="little"),
+                _Command.INCR,
+            ]
+        # Some EEPROMs handle page writes by requiring every byte within a page to be written
+        # within a fixed time interval from the previous byte. To ensure this, we queue all of
+        # the writes first, and then perform them in a deterministic sequence with minimal delay.
+        assert len(commands) <= _COMMAND_BUFFER_SIZE
+        await self.lower.write([
+            _Command.QUEUE,
+            *commands,
+            _Command.RUN,
+        ])
+
 
 class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
     logger = logging.getLogger(__name__)
@@ -282,7 +385,7 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
     Read parallel memories compatible with 27/28/29-series read-only memory, such as Microchip
     27C512, Atmel AT28C64B, Atmel AT29C010A, or hundreds of other memories that typically have
     "27X"/"28X"/"29X" where X is a letter in their part number. This applet can also read any other
-    directly addressable memory.
+    directly addressable memory, such as a mask ROM or a fully combinatorial GAL/PAL.
 
     Floating gate based memories (27x EPROM, 28x EEPROM, 29x Flash) retain data for decades, but
     not indefinitely, since the stored charge slowly decays. This applet can identify memories at
@@ -320,13 +423,20 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
             "--shift-freq", metavar="FREQ", type=float, default=12,
             help="set indirect address shift frequency to FREQ MHz (default: %(default)s)")
         parser.add_argument(
-            "--read-latency", metavar="LATENCY", type=float, default=500,
-            help="set read latency to LATENCY ns "
-                 "(use greater of A→Q and OE→Q, default: %(default)s)")
+            "--read-cycle", metavar="DELAY", type=float, default=500,
+            help="set read cycle time to DELAY ns (default: %(default)s)")
+        parser.add_argument(
+            "--write-cycle", metavar="DELAY", type=float, default=None,
+            help="set write cycle time to DELAY ns (default: same as read cycle time)")
+        parser.add_argument(
+            "--write-hold", metavar="DELAY", type=float, default=500,
+            help="set write hold time to DELAY ns (default: %(default)s)")
 
     def build(self, target, args):
         if args.a_bits is None:
             args.a_bits = len(args.pin_set_a)
+        if args.write_cycle is None:
+            args.write_cycle = args.read_cycle
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         bus = MemoryPROMBus(
@@ -338,7 +448,9 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
             bus=bus,
             in_fifo=iface.get_in_fifo(auto_flush=False),
             out_fifo=iface.get_out_fifo(),
-            rd_delay=1e-9 * args.read_latency,
+            read_cycle_delay=1e-9 * args.read_cycle,
+            write_cycle_delay=1e-9 * args.write_cycle,
+            write_hold_delay=1e-9 * args.write_hold,
         ))
 
     async def run(self, device, args):
@@ -381,6 +493,18 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
             "-e", "--endian", choices=("little", "big"), default="little",
             help="read from file using given endianness")
 
+        p_write = p_operation.add_parser(
+            "write", help="write memory")
+        p_write.add_argument(
+            "address", metavar="ADDRESS", type=address, nargs="?", default=0,
+            help="write memory starting at address ADDRESS")
+        p_write.add_argument(
+            "-f", "--file", metavar="FILENAME", type=argparse.FileType("rb"), required=True,
+            help="write contents of FILENAME to memory")
+        p_write.add_argument(
+            "-e", "--endian", choices=("little", "big"), default="little",
+            help="read from file using given endianness")
+
         p_health = p_operation.add_parser(
             "health", help="manage floating gate charge decay")
 
@@ -420,24 +544,28 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
             if args.length is None:
                 args.length = depth
 
-            data = await prom_iface.read_linear(args.address, args.length)
-            for word in data:
-                if args.file:
-                    args.file.write(word.to_bytes(prom_iface.dq_bytes, args.endian))
-                else:
+            data = await prom_iface.read(args.address, args.length)
+            if args.file:
+                args.file.write(data.convert(args.endian).raw_data)
+            else:
+                for word in data:
                     print("{:0{}x}".format(word, (dq_bits + 3) // 4))
 
         if args.operation == "verify":
-            golden_data = prom_iface.Data(args.file.read(), prom_iface.dq_bytes)
-            actual_data = await prom_iface.read_linear(args.address, len(golden_data))
+            golden_data = prom_iface.Data(args.file.read(), prom_iface.dq_bytes, args.endian)
+            actual_data = await prom_iface.read(args.address, len(golden_data))
             if actual_data == golden_data:
                 self.logger.info("verify PASS")
             else:
                 raise GlasgowAppletError("verify FAIL")
 
+        if args.operation == "write":
+            data = prom_iface.Data(args.file.read(), prom_iface.dq_bytes, args.endian)
+            await prom_iface.write(args.address, data)
+
         if args.operation == "health" and args.mode == "check":
             unstable = set()
-            initial_data = await prom_iface.read_linear(0, depth)
+            initial_data = await prom_iface.read(0, depth)
 
             for pass_num in range(args.passes):
                 self.logger.info("pass %d", pass_num)
@@ -455,7 +583,7 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
 
         if args.operation == "health" and args.mode == "scan":
             unstable = set()
-            initial_data = await prom_iface.read_linear(0, depth)
+            initial_data = await prom_iface.read(0, depth)
 
             pass_num = 0
             consecutive = 0
@@ -491,7 +619,7 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
                 self.logger.info("step %d (%.2f V)", step_num, voltage)
                 await device.set_voltage(args.port_spec, voltage)
 
-                initial_data = await prom_iface.read_linear(0, depth)
+                initial_data = await prom_iface.read(0, depth)
                 for pass_num in range(args.passes):
                     self.logger.info("  pass %d", pass_num)
                     current_data = await prom_iface.read_shuffled(0, depth)
