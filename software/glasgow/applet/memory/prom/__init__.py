@@ -611,18 +611,18 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
             "--voltage-step", metavar="STEP", type=float, default=0.05,
             help="reduce supply voltage by STEP volts (default: %(default)s)")
 
-        p_health_histogram = p_health_mode.add_parser(
-            "histogram", help="sample population count for a voltage range")
-        p_health_histogram.add_argument(
+        p_health_popcount = p_health_mode.add_parser(
+            "popcount", help="sample population count for a voltage range")
+        p_health_popcount.add_argument(
             "--samples", metavar="COUNT", type=int, default=5,
             help="average population count COUNT times (default: %(default)s)")
-        p_health_histogram.add_argument(
+        p_health_popcount.add_argument(
             "--sweep", metavar="START:END", type=voltage_range, required=True,
             help="sweep supply voltage from START to END volts")
-        p_health_histogram.add_argument(
+        p_health_popcount.add_argument(
             "--voltage-step", metavar="STEP", type=float, default=0.05,
             help="change supply voltage by STEP volts (default: %(default)s)")
-        p_health_histogram.add_argument(
+        p_health_popcount.add_argument(
             "file", metavar="FILENAME", type=argparse.FileType("wt"),
             help="write aggregated data to FILENAME")
 
@@ -750,11 +750,11 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
 
             self.logger.info("health %s PASS at %.2f V", args.mode, voltage)
 
-        if args.operation == "health" and args.mode == "histogram":
+        if args.operation == "health" and args.mode == "popcount":
             voltage_from, voltage_to = args.sweep
             popcount_lut = [format(n, "b").count("1") for n in range(1 << dq_bits)]
 
-            histogram = []
+            series = []
             voltage = voltage_from
             step_num = 0
             while True:
@@ -767,7 +767,7 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
                     data = await prom_iface.read_shuffled(0, depth)
                     popcounts.append(sum(popcount_lut[word] for word in data))
 
-                histogram.append((voltage, popcounts))
+                series.append((voltage, popcounts))
                 self.logger.info("population %d/%d",
                                  sum(popcounts) // len(popcounts),
                                  depth * dq_bits)
@@ -782,9 +782,9 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
 
             json.dump({
                 "density": depth * dq_bits,
-                "histogram": [
+                "series": [
                     {"voltage": voltage, "popcounts": popcounts}
-                    for voltage, popcounts in histogram
+                    for voltage, popcounts in series
                 ]
             }, args.file)
 
@@ -800,28 +800,28 @@ class MemoryPROMAppletTool(GlasgowAppletTool, applet=MemoryPROMApplet):
     def add_arguments(cls, parser):
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
-        p_histogram = p_operation.add_parser(
-            "histogram", help="plot population count for a voltage range")
-        p_histogram.add_argument(
+        p_popcount = p_operation.add_parser(
+            "popcount", help="plot population count for a voltage range")
+        p_popcount.add_argument(
             "file", metavar="FILENAME", type=argparse.FileType("rt"),
             help="read aggregated data from FILENAME")
 
     async def run(self, args):
-        if args.operation == "histogram":
+        if args.operation == "popcount":
             data = json.load(args.file)
             density = data["density"]
-            histogram = [
+            series = [
                 (row["voltage"], row["popcounts"], statistics.mean(row["popcounts"]))
-                for row in data["histogram"]
+                for row in data["series"]
             ]
 
-            min_popcount = min(mean_popcounts for _, _, mean_popcounts in histogram)
-            max_popcount = max(mean_popcounts for _, _, mean_popcounts in histogram)
+            min_popcount = min(mean_popcounts for _, _, mean_popcounts in series)
+            max_popcount = max(mean_popcounts for _, _, mean_popcounts in series)
             histogram_size = 40
             resolution = max(1, (max_popcount - min_popcount) / histogram_size)
             print(f"Vcc   {str(math.floor(min_popcount)):<{1 + histogram_size // 2}s}"
                         f"{str(math.ceil (max_popcount)):>{1 + histogram_size // 2}s} popcount")
-            for voltage, popcounts, mean_popcount in histogram:
+            for voltage, popcounts, mean_popcount in series:
                 rectangle_size = math.floor((mean_popcount - min_popcount) / resolution)
                 print(f"{voltage:.2f}: |{'1' * rectangle_size:{histogram_size}s}| "
                       f"({len(popcounts)}× {int(mean_popcount)}/{density}, "
