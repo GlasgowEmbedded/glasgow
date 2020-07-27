@@ -227,7 +227,12 @@ class MemoryPROMSubtarget(Elaboratable):
 
             with m.State("READ-CYCLE"):
                 with m.If(timer == 0):
-                    m.d.sync += bus.oe.eq(0)
+                    # Normally, this would be the place to deassert OE. However, this would reduce
+                    # metastability (during burst reads) in the output buffers of a memory that is
+                    # reading bits close to the buffer threshold. Wait, isn't metastability bad?
+                    # Normally yes, but this is a special case! Metastability causes unstable
+                    # bits, and unstable bits reduce the chance that corrupt data will slip
+                    # through undetected.
                     m.d.sync += dq_latch.eq(bus.q)
                     m.next = "READ-SEND"
                 with m.Else():
@@ -244,6 +249,7 @@ class MemoryPROMSubtarget(Elaboratable):
             with m.State("WRITE-RECV"):
                 with m.If(dq_index == dq_bytes):
                     m.d.sync += bus.d.eq(dq_latch)
+                    m.d.sync += bus.oe.eq(0) # see comment in READ-CYCLE
                     m.d.sync += bus.we.eq(1)
                     m.d.sync += timer.eq(write_cycle_cyc)
                     m.next = "WRITE-CYCLE"
