@@ -823,7 +823,7 @@ class MemoryPROMAppletTool(GlasgowAppletTool, applet=MemoryPROMApplet):
                         f"{str(math.ceil (max_popcount)):>{1 + histogram_size // 2}s} popcount")
             for voltage, popcounts, mean_popcount in histogram:
                 rectangle_size = math.floor((mean_popcount - min_popcount) / resolution)
-                print(f"{voltage:.2f}: |{'=' * rectangle_size:{histogram_size}s}| "
+                print(f"{voltage:.2f}: |{'1' * rectangle_size:{histogram_size}s}| "
                       f"({len(popcounts)}× {int(mean_popcount)}/{density}, "
                       f"sd {statistics.pstdev(popcounts):.2f})")
 
