@@ -524,14 +524,14 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
         p_health_check = p_health_mode.add_parser(
             "check", help="quickly probe for unstable words in a memory")
         p_health_check.add_argument(
-            "--passes", metavar="COUNT", type=int, default=5,
+            "--samples", metavar="COUNT", type=int, default=5,
             help="read entire memory COUNT times (default: %(default)s)")
 
         p_health_scan = p_health_mode.add_parser(
             "scan", help="exhaustively detect unstable words in a memory")
         p_health_scan.add_argument(
             "--confirmations", metavar="COUNT", type=int, default=10,
-            help="read entire memory repeatedly until COUNT consecutive passes "
+            help="read entire memory repeatedly until COUNT consecutive samples "
                  "detect no new unstable words (default: %(default)s)")
         p_health_scan.add_argument(
             "-f", "--file", metavar="FILENAME", type=argparse.FileType("wt"),
@@ -540,7 +540,7 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
         p_health_sweep = p_health_mode.add_parser(
             "sweep", help="determine undervolt offset that prevents instability")
         p_health_sweep.add_argument(
-            "--passes", metavar="COUNT", type=int, default=5,
+            "--samples", metavar="COUNT", type=int, default=5,
             help="read entire memory COUNT times (default: %(default)s)")
         p_health_sweep.add_argument(
             "--voltage-step", metavar="STEP", type=float, default=0.05,
@@ -593,8 +593,8 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
             unstable = set()
             initial_data = await prom_iface.read(0, depth)
 
-            for pass_num in range(args.passes):
-                self.logger.info("pass %d", pass_num)
+            for sample_num in range(args.samples):
+                self.logger.info("sample %d", sample_num)
 
                 current_data = await prom_iface.read_shuffled(0, depth)
                 current_unstable = initial_data.difference(current_data)
@@ -612,11 +612,11 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
             unstable = set()
             initial_data = await prom_iface.read(0, depth)
 
-            pass_num = 0
+            sample_num = 0
             consecutive = 0
             while consecutive < args.confirmations:
-                self.logger.info("pass %d", pass_num)
-                pass_num += 1
+                self.logger.info("sample %d", sample_num)
+                sample_num += 1
                 consecutive += 1
 
                 current_data = await prom_iface.read_shuffled(0, depth)
@@ -648,8 +648,8 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
                 await device.set_voltage(args.port_spec, voltage)
 
                 initial_data = await prom_iface.read(0, depth)
-                for pass_num in range(args.passes):
-                    self.logger.info("  pass %d", pass_num)
+                for sample_num in range(args.samples):
+                    self.logger.info("  sample %d", sample_num)
                     current_data = await prom_iface.read_shuffled(0, depth)
                     unstable = initial_data.difference(current_data)
                     for index in sorted(unstable):
