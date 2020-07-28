@@ -422,6 +422,9 @@ async def _main():
     args = get_argparser().parse_args()
     create_logger(args)
 
+    if sys.version_info < (3, 8) and os.name == "nt":
+        logger.warn("Ctrl-C on Windows is only supported on Python 3.8+")
+
     device = None
     try:
         with importlib.resources.path(__package__, "firmware.ihex") as firmware_filename:
@@ -791,7 +794,6 @@ async def _main():
 
 def main():
     loop = asyncio.get_event_loop()
-    register_wakeup_fd(loop)
     exit(loop.run_until_complete(_main()))
 
 
