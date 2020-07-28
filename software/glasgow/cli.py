@@ -34,7 +34,13 @@ logger = logging.getLogger(__name__)
 
 class TextHelpFormatter(argparse.HelpFormatter):
     def __init__(self, prog):
-        columns, rows = os.get_terminal_size(0)
+        if "COLUMNS" in os.environ:
+            columns = int(os.environ["COLUMNS"])
+        else:
+            try:
+                columns, _ = os.get_terminal_size(sys.stderr.fileno())
+            except OSError:
+                columns = 80
         super().__init__(prog, width=columns, max_help_position=28)
 
     def _fill_text(self, text, width, indent):
