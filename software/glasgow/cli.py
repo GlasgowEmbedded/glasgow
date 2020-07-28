@@ -671,7 +671,7 @@ async def _main():
                 new_image = fx2_config.encode()
                 new_image[0] = 0xC0 # see below
             else:
-                logger.info("using firmware from %r",
+                logger.info("using firmware from %s",
                             args.firmware.name if args.firmware else firmware_filename)
                 with (args.firmware or open(firmware_filename, "rb")) as f:
                     for (addr, chunk) in input_data(f, fmt="ihex"):
