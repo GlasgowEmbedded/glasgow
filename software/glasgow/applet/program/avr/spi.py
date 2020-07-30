@@ -1,12 +1,9 @@
-import time
+# Ref: ATmega16U4/ATmega32U4 8-bit Microcontroller with 16/32K bytes of ISP Flash and USB Controller datasheet
+# Accession: G00058
+
 import math
-import struct
 import logging
-import asyncio
-import argparse
-import collections
 from nmigen.compat import *
-from fx2.format import autodetect, input_data, output_data
 
 from ...interface.spi_master import SPIMasterSubtarget, SPIMasterInterface
 from ... import *
@@ -21,7 +18,7 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
         self._addr_dut_reset = addr_dut_reset
 
     def _log(self, message, *args):
-        self._logger.log(self._level, "AVR: " + message, *args)
+        self._logger.log(self._level, "AVR SPI: " + message, *args)
 
     async def _command(self, byte1, byte2, byte3, byte4):
         command = [byte1, byte2, byte3, byte4]
@@ -73,9 +70,6 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
             0b0000_0000 | a1,
             0,  0)
         return data
-
-    async def read_fuse_range(self, addresses):
-        return bytearray([await self.read_fuse(address) for address in addresses])
 
     async def write_fuse(self, address, data):
         self._log("write fuse address %d data %02x", address, data)

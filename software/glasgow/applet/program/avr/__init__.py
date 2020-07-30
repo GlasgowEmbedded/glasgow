@@ -50,57 +50,56 @@ class ProgramAVRError(GlasgowAppletError):
 class ProgramAVRInterface(metaclass=ABCMeta):
     @abstractmethod
     async def programming_enable(self):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     async def programming_disable(self):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     async def read_signature(self):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     async def read_fuse(self, address):
-        pass
+        raise NotImplementedError
 
-    @abstractmethod
     async def read_fuse_range(self, addresses):
         return bytearray([await self.read_fuse(address) for address in addresses])
 
     @abstractmethod
     async def write_fuse(self, address, data):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     async def read_lock_bits(self):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     async def write_lock_bits(self, data):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     async def read_calibration(self, address):
-        pass
+        raise NotImplementedError
 
     async def read_calibration_range(self, addresses):
         return bytearray([await self.read_calibration(address) for address in addresses])
 
     @abstractmethod
     async def read_program_memory(self, address):
-        pass
+        raise NotImplementedError
 
     async def read_program_memory_range(self, addresses):
         return bytearray([await self.read_program_memory(address) for address in addresses])
 
     @abstractmethod
     async def load_program_memory_page(self, address, data):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     async def write_program_memory_page(self, address):
-        pass
+        raise NotImplementedError
 
     async def write_program_memory_range(self, address, chunk, page_size):
         dirty_page = False
@@ -119,18 +118,18 @@ class ProgramAVRInterface(metaclass=ABCMeta):
 
     @abstractmethod
     async def read_eeprom(self, address):
-        pass
+        raise NotImplementedError
 
     async def read_eeprom_range(self, addresses):
         return bytearray([await self.read_eeprom(address) for address in addresses])
 
     @abstractmethod
     async def load_eeprom_page(self, address, data):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     async def write_eeprom_page(self, address):
-        pass
+        raise NotImplementedError
 
     async def write_eeprom_range(self, address, chunk, page_size):
         dirty_page = False
@@ -149,7 +148,7 @@ class ProgramAVRInterface(metaclass=ABCMeta):
 
     @abstractmethod
     async def chip_erase(self):
-        pass
+        raise NotImplementedError
 
 
 class ProgramAVRApplet(GlasgowApplet):
