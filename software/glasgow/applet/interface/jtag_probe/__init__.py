@@ -972,7 +972,10 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
 
         if args.operation == "jtag-repl":
             self.logger.info("dropping to REPL; use 'help(iface)' to see available APIs")
-            await AsyncInteractiveConsole(locals={"iface":jtag_iface}).interact()
+            await AsyncInteractiveConsole(
+                locals={"iface":jtag_iface},
+                run_callback=jtag_iface.flush
+            ).interact()
 
         if args.operation == "tap-repl":
             tap_iface = await jtag_iface.select_tap(args.tap_index,
@@ -982,7 +985,10 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
                 return
 
             self.logger.info("dropping to REPL; use 'help(iface)' to see available APIs")
-            await AsyncInteractiveConsole(locals={"iface":tap_iface}).interact()
+            await AsyncInteractiveConsole(
+                locals={"iface":tap_iface},
+                run_callback=jtag_iface.flush
+            ).interact()
 
 # -------------------------------------------------------------------------------------------------
 
