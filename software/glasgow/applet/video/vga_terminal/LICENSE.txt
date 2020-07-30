@@ -1,2 +1,0 @@
-ibmvga*.bin extracted from ROM BIOS for IBM VGA Adapter. Typefaces cannot be
-protected by copyright in the United States per 37 CFR 202.1(e).
