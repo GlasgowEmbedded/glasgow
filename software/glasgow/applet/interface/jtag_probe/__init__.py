@@ -530,10 +530,11 @@ class JTAGProbeInterface:
 
     async def exchange_ir(self, data):
         self._current_ir = data = bits(data)
-        self._log_h("exchange ir")
+        self._log_h("exchange ir-i=<%s>", dump_bin(data))
         await self.enter_shift_ir()
         data = await self.shift_tdio(data)
         await self.enter_update_ir()
+        self._log_h("exchange ir-o=<%s>", dump_bin(data))
         return data
 
     async def read_ir(self, count):
@@ -555,10 +556,11 @@ class JTAGProbeInterface:
         await self.enter_update_ir()
 
     async def exchange_dr(self, data):
-        self._log_h("exchange dr")
+        self._log_h("exchange dr-i=<%s>", dump_bin(data))
         await self.enter_shift_dr()
         data = await self.shift_tdio(data)
         await self.enter_update_dr()
+        self._log_h("exchange dr-o=<%s>", dump_bin(data))
         return data
 
     async def read_dr(self, count, idempotent=False):
