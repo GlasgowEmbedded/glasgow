@@ -1,0 +1,15 @@
+{"method": "transfer", "async": true, "args": [[172, 128, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00ac8000"}}
+{"method": "transfer", "async": true, "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
+{"method": "transfer", "async": true, "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
+{"method": "transfer", "async": true, "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
+{"method": "transfer", "async": true, "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
+{"method": "transfer", "async": true, "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
+{"method": "transfer", "async": true, "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000fe"}}
+{"method": "transfer", "async": true, "args": [[88, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "005800ff"}}
+{"method": "transfer", "async": true, "args": [[172, 224, 0, 254]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00ace000"}}
+{"method": "transfer", "async": true, "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "fef000ff"}}
+{"method": "transfer", "async": true, "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
+{"method": "transfer", "async": true, "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
+{"method": "transfer", "async": true, "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
+{"method": "transfer", "async": true, "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000fe"}}
+{"method": "transfer", "async": true, "args": [[88, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "005800fe"}}
