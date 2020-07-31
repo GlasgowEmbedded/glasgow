@@ -212,6 +212,9 @@ class ProgramAVRApplet(GlasgowApplet):
             "file", metavar="FILE", type=argparse.FileType("rb"),
             help="read EEPROM contents from FILE")
 
+        p_erase = p_operation.add_parser(
+            "erase", help="erase device lock bits, program memory, and EEPROM")
+
     @staticmethod
     def _check_format(file, kind):
         try:
@@ -324,5 +327,9 @@ class ProgramAVRApplet(GlasgowApplet):
                 if written != chunk:
                     raise ProgramAVRError("verification failed at address %#06x: %s != %s" %
                                           (address, written.hex(), chunk.hex()))
+
+        if args.operation == "erase":
+            self.logger.info("erasing device")
+            await avr_iface.chip_erase()
 
         await avr_iface.programming_disable()
