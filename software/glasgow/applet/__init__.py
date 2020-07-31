@@ -267,18 +267,18 @@ class GlasgowAppletTestCase(unittest.TestCase):
         self._recording = False
         self._recorders = []
 
-        async def run_lower(cls, device, args):
-            if cls is type(self.applet):
-                if mode == "record":
-                    lower_iface = await super(cls, self.applet).run(device, args)
-                    recorder = MockRecorder(case, lower_iface, fixture)
-                    self._recorders.append(recorder)
-                    return recorder
+        old_run_lower = self.applet.run_lower
 
-                if mode == "replay":
-                    return MockReplayer(case, fixture)
-            else:
-                return await super(cls, self.applet).run(device, args)
+        async def run_lower(cls, device, args):
+            if mode == "record":
+                lower_iface = await old_run_lower(cls, device, args)
+                recorder = MockRecorder(case, lower_iface, fixture)
+                self._recorders.append(recorder)
+                return recorder
+
+            if mode == "replay":
+                return MockReplayer(case, fixture)
+
         self.applet.run_lower = run_lower
 
     async def run_hardware_applet(self, mode):
