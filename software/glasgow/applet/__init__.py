@@ -1,5 +1,6 @@
 import re
 import argparse
+from abc import ABCMeta, abstractmethod
 
 from ..gateware.clockgen import *
 
@@ -11,26 +12,27 @@ class GlasgowAppletError(Exception):
     """An exception raised when an applet encounters an error."""
 
 
-class _GlasgowAppletMeta(type):
-    def __new__(metacls, clsname, bases, namespace, **kwargs):
+class GlasgowAppletMeta(ABCMeta):
+    all_applets = {}
+
+    def __new__(metacls, clsname, bases, namespace, name=None, **kwargs):
+        if name is not None:
+            if name in metacls.all_applets:
+                raise NameError(f"Applet {name:r} already exists")
+            namespace["name"] = name
+
         # Any class that overrides interact() no longer has its superclass' custom REPL, so be
         # helpful and reset that attribute.
         if "has_custom_repl" not in namespace and "interact" in namespace:
             namespace["has_custom_repl"] = False
 
-        return type.__new__(metacls, clsname, bases, namespace, **kwargs)
+        cls = ABCMeta.__new__(metacls, clsname, bases, namespace, **kwargs)
+        if name is not None:
+            metacls.all_applets[name] = cls
+        return cls
 
 
-class GlasgowApplet(metaclass=_GlasgowAppletMeta):
-    all_applets = {}
-
-    def __init_subclass__(cls, name):
-        if name in cls.all_applets:
-            raise ValueError("Applet {!r} already exists".format(name))
-
-        cls.all_applets[name] = cls
-        cls.name = name
-
+class GlasgowApplet(metaclass=GlasgowAppletMeta):
     preview = False
     help = "applet help missing"
     description = "applet description missing"
@@ -50,8 +52,9 @@ class GlasgowApplet(metaclass=_GlasgowAppletMeta):
             else:
                 raise GlasgowAppletError("clock {}: {}".format(clock_name, e))
 
+    @abstractmethod
     def build(self, target):
-        raise NotImplementedError
+        pass
 
     @classmethod
     def add_run_arguments(cls, parser, access):
@@ -60,8 +63,9 @@ class GlasgowApplet(metaclass=_GlasgowAppletMeta):
     async def run_lower(self, cls, device, args, **kwargs):
         return await super(cls, self).run(device, args, **kwargs)
 
+    @abstractmethod
     async def run(self, device, args):
-        raise NotImplementedError
+        pass
 
     @classmethod
     def add_interact_arguments(cls, parser):

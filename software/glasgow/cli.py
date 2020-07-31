@@ -34,7 +34,13 @@ logger = logging.getLogger(__name__)
 
 class TextHelpFormatter(argparse.HelpFormatter):
     def __init__(self, prog):
-        columns, rows = os.get_terminal_size(0)
+        if "COLUMNS" in os.environ:
+            columns = int(os.environ["COLUMNS"])
+        else:
+            try:
+                columns, _ = os.get_terminal_size(sys.stderr.fileno())
+            except OSError:
+                columns = 80
         super().__init__(prog, width=columns, max_help_position=28)
 
     def _fill_text(self, text, width, indent):
@@ -406,8 +412,7 @@ def create_logger(args):
 
     level = logging.INFO + args.quiet * 10 - args.verbose * 10
     if level < 0:
-        dump_hex.limit = None
-        dump_bin.limit = None
+        dump_hex.limit = dump_bin.limit = dump_seq.limit = dump_mapseq.limit = None
 
     if args.log_file or args.filter_log:
         term_handler.addFilter(SubjectFilter(level, args.filter_log))
@@ -423,9 +428,12 @@ async def _main():
     args = get_argparser().parse_args()
     create_logger(args)
 
+    if sys.version_info < (3, 8) and os.name == "nt":
+        logger.warn("Ctrl-C on Windows is only supported on Python 3.8+")
+
     device = None
     try:
-        with importlib.resources.path(__package__, "glasgow.ihex") as firmware_filename:
+        with importlib.resources.path(__package__, "firmware.ihex") as firmware_filename:
             if args.action in ("build", "test", "tool"):
                 pass
             elif args.action == "factory":
@@ -511,7 +519,7 @@ async def _main():
                         var_init = 0
                     elif field_trigger == "change":
                         var_type = "wire"
-                        var_init = "x"
+                        var_init = "x" * field_width
                     elif field_trigger == "strobe":
                         if field_width > 0:
                             var_type = "tri"
@@ -536,15 +544,15 @@ async def _main():
 
                             for name in signals:
                                 vcd_writer.change(signals[name], next_timestamp, "x")
-                            timestamp += 1e3 # 1us
+                            next_timestamp += 1000 # 1us
                             break
 
                         event_repr = " ".join("{}={}".format(n, v)
                                               for n, v in events.items())
                         target.analyzer.logger.trace("cycle %d: %s", cycle, event_repr)
 
-                        timestamp      = 1e9 * (cycle + 0) // target.sys_clk_freq
-                        next_timestamp = 1e9 * (cycle + 1) // target.sys_clk_freq
+                        timestamp      = int(1e9 * (cycle + 0) // target.sys_clk_freq)
+                        next_timestamp = int(1e9 * (cycle + 1) // target.sys_clk_freq)
                         if init:
                             init = False
                             vcd_writer._timestamp = timestamp
@@ -555,7 +563,7 @@ async def _main():
                                 vcd_writer.change(signals[name], next_timestamp, "z")
                         vcd_writer.flush()
 
-                vcd_writer.close(timestamp)
+                vcd_writer.close(next_timestamp)
 
             async def run_applet():
                 logger.info("running handler for applet %r", args.applet)
@@ -672,7 +680,7 @@ async def _main():
                 new_image = fx2_config.encode()
                 new_image[0] = 0xC0 # see below
             else:
-                logger.info("using firmware from %r",
+                logger.info("using firmware from %s",
                             args.firmware.name if args.firmware else firmware_filename)
                 with (args.firmware or open(firmware_filename, "rb")) as f:
                     for (addr, chunk) in input_data(f, fmt="ihex"):
@@ -792,7 +800,6 @@ async def _main():
 
 def main():
     loop = asyncio.get_event_loop()
-    register_wakeup_fd(loop)
     exit(loop.run_until_complete(_main()))
 
 

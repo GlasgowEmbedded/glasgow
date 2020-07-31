@@ -25,9 +25,10 @@ def simulation_test(case=None, **kwargs):
             if isinstance(self.tb, CompatModule):
                 compat_run_simulation(self.tb, setup_wrapper(), vcd_name="test.vcd")
             if isinstance(self.tb, Elaboratable):
-                with Simulator(self.tb, vcd_file=open("test.vcd", "w")) as sim:
+                sim = Simulator(self.tb)
+                with sim.write_vcd(vcd_file=open("test.vcd", "w")):
                     sim.add_clock(1e-8)
-                    sim.add_sync_process(setup_wrapper())
+                    sim.add_sync_process(setup_wrapper)
                     sim.run()
         return wrapper
 

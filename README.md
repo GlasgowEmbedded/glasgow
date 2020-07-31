@@ -26,6 +26,8 @@ Some of the tasks Glasgow can do well are:
     * determine memory parameters via SFDP,
   * read and write ONFI-compatible Flash memories,
     * determine memory parameters via ONFI parameter page,
+  * read parallel 27/28/29-series EPROMs, EEPROMs and Flash memories,
+    * determine the extent of floating gate charge decay and rescue data,
   * program and verify AVR microcontrollers with SPI interface,
   * automatically determine unknown JTAG pinout,
   * play back JTAG SVF files,
@@ -80,10 +82,10 @@ Debugging new applets can be hard, especially if bidirectional buses are involve
 
 **Multiple people have reported various issues with the installation instructions below. If any part of these does not work, please file it as a bug, so that the experience can be made more smooth for everyone.**
 
-You will need git, build tools, sdcc, Python 3.7 (or a newer version, in which case replace `3.7` with that version below). On a Debian or Ubuntu system these can be installed with:
+You will need git and Python 3.7 (or a newer version, in which case replace `3.7` with that version below). On a Debian or Ubuntu system these can be installed with:
 
-    apt-get install --no-install-recommends git build-essential sdcc \
-      python3.7 python3-setuptools python3-libusb1 python3-aiohttp python3-bitarray python3-crcmod
+    apt-get install --no-install-recommends git python3.7 python3-setuptools \
+      python3-libusb1 python3-aiohttp python3-bitarray python3-crcmod
 
 You will also need Yosys and nextpnr-ice40, both from the master branch. Follow the setup instructions for [Yosys](https://github.com/yosysHQ/yosys/#setup) and [nextpnr](https://github.com/YosysHQ/nextpnr/#nextpnr-ice40).
 
@@ -91,25 +93,22 @@ Obtain the source code:
 
     git clone https://github.com/GlasgowEmbedded/glasgow
     cd glasgow
-    git submodule update --init vendor/libfx2
 
 Configure your system to allow unprivileged access (for anyone in the `plugdev` group) to the Glasgow hardware:
 
     sudo cp config/99-glasgow.rules /etc/udev/rules.d
 
-Install the dependencies and the binaries for the current user:
+Install the dependencies and the scripts for the current user:
 
     cd software
     python3.7 setup.py develop --user
 
-The binaries are placed in `$HOME/.local/bin`, so be sure to add that directory to the `PATH` environment variable; after this, you can run `glasgow` from a terminal. Instead of adjusting `PATH` it is also possible to use `python3.7 -m glasgow.cli`.
+The scripts are placed in `$HOME/.local/bin`, so be sure to add that directory to the `PATH` environment variable; after this, you can run `glasgow` from a terminal. Instead of adjusting `PATH` it is also possible to use `python3.7 -m glasgow.cli`.
 
 To update the source code, do:
 
     cd glasgow
     git pull
-    cd software
-    python3.7 setup.py build_ext
 
 ### ... with Windows?
 

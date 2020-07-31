@@ -23,10 +23,10 @@ from .. import AccessDemultiplexer, AccessDemultiplexerInterface
 #   On the other hand, we would like to prevent programs from submitting a
 #   lot of small URBs and using up all the DMA-able kernel memory. [...]
 #
-# In other words, there is be a platform-specific limit for USB I/O size, which is not
-# discoverable via libusb, and hitting which does not result in a sensible error returned
-# from libusb (it returns LIBUSB_ERROR_IO even though USBDEVFS_SUBMITURB ioctl correctly
-# returns -ENOMEM), so it is not even possible to be optimistic and back off after hitting it.
+# In other words, there is a platform-specific limit for USB I/O size, which is not discoverable
+# via libusb, and hitting which does not result in a sensible error returned  from libusb
+# (it returns LIBUSB_ERROR_IO even though USBDEVFS_SUBMITURB ioctl correctly returns -ENOMEM),
+# so it is not even possible to be optimistic and back off after hitting it.
 #
 # To deal with this, use requests of at most 1024 EP buffer sizes (512 KiB with the FX2) as
 # an arbitrary cutoff, and hope for the best.
@@ -54,7 +54,7 @@ _max_packets_per_ep = 1024
 # a single fixed value works.
 _packets_per_xfer = 32
 
-# Queue as many transfers as we can, but no more than 10, as the returns beyond that point
+# Queue as many transfers as we can, but no more than 16, as the returns beyond that point
 # are diminishing.
 _xfers_per_queue = min(16, _max_packets_per_ep // _packets_per_xfer)
 
@@ -180,11 +180,8 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
     async def cancel(self):
         if self._in_tasks or self._out_tasks:
             self.logger.trace("FIFO: cancelling operations")
-            self._in_tasks .cancel()
-            self._out_tasks.cancel()
-            # libusb cancellation is asynchronous, so wait until it's actually done.
-            await self._in_tasks .wait_all()
-            await self._out_tasks.wait_all()
+            await self._in_tasks .cancel()
+            await self._out_tasks.cancel()
 
     async def reset(self):
         await self.cancel()

@@ -17,6 +17,7 @@ from .interface.sbw_probe import SpyBiWireProbeApplet
 from .memory._24x import Memory24xApplet
 from .memory._25x import Memory25xApplet
 from .memory.onfi import MemoryONFIApplet
+from .memory.prom import MemoryPROMApplet
 from .memory.floppy import MemoryFloppyApplet
 
 from .debug.arc import DebugARCApplet
@@ -50,7 +51,6 @@ from .audio.yamaha_opx import AudioYamahaOPxApplet
 
 from .video.rgb_input import VideoRGBInputApplet
 from .video.vga_output import VGAOutputApplet
-from .video.vga_terminal import VGATerminalApplet
 from .video.ws2812_output import VideoWS2812OutputApplet
 
 from .radio.nrf24l01 import RadioNRF24L01Applet

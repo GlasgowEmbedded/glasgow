@@ -41,6 +41,8 @@ devices = [
     ATmega("168P", (0x1e, 0x94, 0x0b), program_size=16384, program_page=128, eeprom_size=512),
     ATmega("328",  (0x1e, 0x95, 0x14), program_size=32768, program_page=128, eeprom_size=1024),
     ATmega("328P", (0x1e, 0x95, 0x0f), program_size=32768, program_page=128, eeprom_size=1024),
+    ATmega("16U4", (0x1e, 0x94, 0x88), program_size=16384, program_page=64,  eeprom_size=4),
+    ATmega("32U4", (0x1e, 0x95, 0x87), program_size=16384, program_page=64,  eeprom_size=4),
 ]
 
 devices_by_signature = defaultdict(lambda: None,
