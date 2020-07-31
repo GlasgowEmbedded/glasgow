@@ -134,7 +134,7 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
         self._log("read EEPROM address %#06x", address)
         _, _, _, data = await self._command(
             0b1010_0000,
-            (address >> 8) & 0x1f,
+            (address >> 8) & 0xff,
             (address >> 0) & 0xff,
             0)
         return data
@@ -152,7 +152,7 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
         await self._command(
             0b1100_0010,
             (address >> 8) & 0xff,
-            (address >> 0) & 0x3f,
+            (address >> 0) & 0xff,
             0)
         while await self._is_busy(): pass
 
