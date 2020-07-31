@@ -291,6 +291,14 @@ class ProgramAVRApplet(GlasgowApplet):
                     raise ProgramAVRError("verification of high fuse failed: %s" %
                                           "{:08b} != {:08b}".format(written, args.high))
 
+            if args.extra:
+                self.logger.info("writing extra fuse")
+                await avr_iface.write_fuse(2, args.extra)
+                written = await avr_iface.read_fuse(2)
+                if written != args.extra:
+                    raise ProgramAVRError("verification of extra fuse failed: %s" %
+                                          "{:08b} != {:08b}".format(written, args.extra))
+
         if args.operation == "write-lock":
             self.logger.info("writing lock bits")
             await avr_iface.write_lock_bits(args.bits)

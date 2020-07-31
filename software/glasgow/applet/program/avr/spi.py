@@ -60,7 +60,7 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
 
     async def read_fuse(self, address):
         self._log("read fuse address %#04x", address)
-        a1, a0 = {
+        a0, a1 = {
             0: (0b0000, 0b0000),
             1: (0b1000, 0b1000),
             2: (0b0000, 0b1000),
@@ -72,7 +72,7 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
         return data
 
     async def write_fuse(self, address, data):
-        self._log("write fuse address %d data %02x", address, data)
+        self._log("write fuse address %#04x data %02x", address, data)
         a = {
             0: 0b0000,
             1: 0b1000,
