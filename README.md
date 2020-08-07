@@ -26,7 +26,7 @@ Some of the tasks Glasgow can do well are:
     * determine memory parameters via SFDP,
   * read and write ONFI-compatible Flash memories,
     * determine memory parameters via ONFI parameter page,
-  * read parallel 27/28/29-series EPROMs, EEPROMs and Flash memories,
+  * read and write parallel 27/28/29-series EPROMs, EEPROMs and Flash memories,
     * determine the extent of floating gate charge decay and rescue data,
   * program and verify AVR microcontrollers with SPI interface,
   * automatically determine unknown JTAG pinout,
