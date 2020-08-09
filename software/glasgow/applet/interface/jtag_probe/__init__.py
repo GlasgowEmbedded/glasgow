@@ -22,8 +22,8 @@
 import struct
 import logging
 import asyncio
-from nmigen.compat import *
-from nmigen.compat.genlib.cdc import MultiReg
+from nmigen import *
+from nmigen.lib.cdc import FFSynchronizer
 
 from ....support.bits import *
 from ....support.logging import *
@@ -34,8 +34,9 @@ from ....arch.jtag import *
 from ... import *
 
 
-class JTAGProbeBus(Module):
+class JTAGProbeBus(Elaboratable):
     def __init__(self, pads):
+        self._pads = pads
         self.tck = Signal(reset=1)
         self.tms = Signal(reset=1)
         self.tdo = Signal(reset=1)
@@ -43,9 +44,10 @@ class JTAGProbeBus(Module):
         self.trst_z = Signal(reset=0)
         self.trst_o = Signal(reset=0)
 
-        ###
-
-        self.comb += [
+    def elaborate(self, platform):
+        m = Module()
+        pads = self._pads
+        m.d.comb += [
             pads.tck_t.oe.eq(1),
             pads.tck_t.o.eq(self.tck),
             pads.tms_t.oe.eq(1),
@@ -53,22 +55,26 @@ class JTAGProbeBus(Module):
             pads.tdi_t.oe.eq(1),
             pads.tdi_t.o.eq(self.tdi),
         ]
-        self.specials += [
-            MultiReg(pads.tdo_t.i, self.tdo),
+        m.submodules += [
+            FFSynchronizer(pads.tdo_t.i, self.tdo),
         ]
         if hasattr(pads, "trst_t"):
-            self.sync += [
+            m.d.sync += [
                 pads.trst_t.oe.eq(~self.trst_z),
                 pads.trst_t.o.eq(~self.trst_o)
             ]
+        return m
 
 
 BIT_AUX_TRST_Z  = 0b01
 BIT_AUX_TRST_O  = 0b10
 
 
-class JTAGProbeAdapter(Module):
+class JTAGProbeAdapter(Elaboratable):
     def __init__(self, bus, period_cyc):
+        self.bus = bus
+        self._period_cyc = period_cyc
+
         self.stb = Signal()
         self.rdy = Signal()
 
@@ -78,37 +84,37 @@ class JTAGProbeAdapter(Module):
         self.aux_i = C(0)
         self.aux_o = Cat(bus.trst_z, bus.trst_o)
 
-        ###
+    def elaborate(self, platform):
+        m = Module()
+        half_cyc = int(self._period_cyc // 2)
+        timer    = Signal(range(half_cyc+1))
 
-        half_cyc = int(period_cyc // 2)
-        timer    = Signal(max=half_cyc)
-
-        self.submodules.fsm = FSM()
-        self.fsm.act("TCK-H",
-            bus.tck.eq(1),
-            If(timer != 0,
-                NextValue(timer, timer - 1)
-            ).Else(
-                If(self.stb,
-                    NextValue(timer, half_cyc - 1),
-                    NextValue(bus.tms, self.tms),
-                    NextValue(bus.tdi, self.tdi),
-                    NextState("TCK-L")
-                ).Else(
-                    self.rdy.eq(1)
-                )
-            )
-        )
-        self.fsm.act("TCK-L",
-            bus.tck.eq(0),
-            If(timer != 0,
-                NextValue(timer, timer - 1)
-            ).Else(
-                NextValue(timer, half_cyc - 1),
-                NextValue(self.tdo, bus.tdo),
-                NextState("TCK-H")
-            )
-        )
+        with m.FSM() as fsm:
+            with m.State("TCK-H"):
+                m.d.comb += self.bus.tck.eq(1)
+                with m.If(timer != 0):
+                    m.d.sync += timer.eq(timer - 1)
+                with m.Else():
+                    with m.If(self.stb):
+                        m.d.sync += [
+                            timer   .eq(half_cyc - 1),
+                            self.bus.tms .eq(self.tms),
+                            self.bus.tdi .eq(self.tdi),
+                        ]
+                        m.next = "TCK-L"
+                    with m.Else():
+                        m.d.comb += self.rdy.eq(1)
+            with m.State("TCK-L"):
+                m.d.comb += self.bus.tck.eq(0)
+                with m.If(timer != 0):
+                    m.d.sync += timer.eq(timer - 1)
+                with m.Else():
+                    m.d.sync += [
+                        timer   .eq(half_cyc - 1),
+                        self.tdo.eq(self.bus.tdo),
+                    ]
+                    m.next = "TCK-H"
+        return m
 
 
 CMD_MASK       = 0b11110000
@@ -124,8 +130,14 @@ BIT_LAST       =     0b0100
 BIT_TDI        =     0b1000
 
 
-class JTAGProbeDriver(Module):
+class JTAGProbeDriver(Elaboratable):
     def __init__(self, adapter, out_fifo, in_fifo):
+        self.adapter = adapter
+        self._out_fifo = out_fifo
+        self._in_fifo = in_fifo
+
+    def elaborate(self, platform):
+        m = Module()
         cmd     = Signal(8)
         count   = Signal(16)
         bitno   = Signal(3)
@@ -133,125 +145,114 @@ class JTAGProbeDriver(Module):
         shreg_o = Signal(8)
         shreg_i = Signal(8)
 
-        self.submodules.fsm = FSM()
-        self.fsm.act("RECV-COMMAND",
-            in_fifo.flush.eq(1),
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(cmd, out_fifo.dout),
-                NextState("COMMAND")
-            )
-        )
-        self.fsm.act("COMMAND",
-            If(((cmd & CMD_MASK) == CMD_SHIFT_TMS) |
-                   ((cmd & CMD_MASK) == CMD_SHIFT_TDIO),
-                NextState("RECV-COUNT-1")
-            ).Elif((cmd & CMD_MASK) == CMD_GET_AUX,
-                NextState("SEND-AUX")
-            ).Elif((cmd & CMD_MASK) == CMD_SET_AUX,
-                NextState("RECV-AUX")
-            )
-        )
-        self.fsm.act("SEND-AUX",
-            If(in_fifo.writable,
-                in_fifo.we.eq(1),
-                in_fifo.din.eq(adapter.aux_i),
-                NextState("RECV-COMMAND")
-            )
-        )
-        self.fsm.act("RECV-AUX",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(adapter.aux_o, out_fifo.dout),
-                NextState("RECV-COMMAND")
-            )
-        )
-        self.fsm.act("RECV-COUNT-1",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(count[0:8], out_fifo.dout),
-                NextState("RECV-COUNT-2")
-            )
-        )
-        self.fsm.act("RECV-COUNT-2",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(count[8:16], out_fifo.dout),
-                NextState("RECV-BITS")
-            )
-        )
-        self.fsm.act("RECV-BITS",
-            If(count == 0,
-                NextState("RECV-COMMAND")
-            ).Else(
-                If(count > 8,
-                    NextValue(bitno, 0)
-                ).Else(
-                    NextValue(align, 8 - count[:3]),
-                    NextValue(bitno, 8 - count[:3])
-                ),
-                If(cmd & BIT_DATA_OUT,
-                    If(out_fifo.readable,
-                        out_fifo.re.eq(1),
-                        NextValue(shreg_o, out_fifo.dout),
-                        NextState("SHIFT-SETUP")
-                    )
-                ).Else(
-                    NextValue(shreg_o, 0b11111111),
-                    NextState("SHIFT-SETUP")
-                )
-            )
-        )
-        self.fsm.act("SHIFT-SETUP",
-            NextValue(adapter.stb, 1),
-            If((cmd & CMD_MASK) == CMD_SHIFT_TMS,
-                NextValue(adapter.tms, shreg_o[0]),
-                NextValue(adapter.tdi, (cmd & BIT_TDI) != 0),
-            ).Else(
-                NextValue(adapter.tms, 0),
-                If(cmd & BIT_LAST,
-                    NextValue(adapter.tms, count == 1)
-                ),
-                NextValue(adapter.tdi, shreg_o[0]),
-            ),
-            NextValue(shreg_o, Cat(shreg_o[1:], 1)),
-            NextValue(count, count - 1),
-            NextValue(bitno, bitno + 1),
-            NextState("SHIFT-CAPTURE")
-        )
-        self.fsm.act("SHIFT-CAPTURE",
-            NextValue(adapter.stb, 0),
-            If(adapter.rdy,
-                NextValue(shreg_i, Cat(shreg_i[1:], adapter.tdo)),
-                If(bitno == 0,
-                    NextState("SEND-BITS")
-                ).Else(
-                    NextState("SHIFT-SETUP")
-                )
-            )
-        )
-        self.fsm.act("SEND-BITS",
-            If(cmd & BIT_DATA_IN,
-                If(in_fifo.writable,
-                    in_fifo.we.eq(1),
-                    If(count == 0,
-                        in_fifo.din.eq(shreg_i >> align)
-                    ).Else(
-                        in_fifo.din.eq(shreg_i)
-                    ),
-                    NextState("RECV-BITS")
-                )
-            ).Else(
-                NextState("RECV-BITS")
-            )
-        )
+        with m.FSM() as fsm:
+            with m.State("RECV-COMMAND"):
+                m.d.comb += self._in_fifo.flush.eq(1)
+                with m.If(self._out_fifo.readable):
+                    m.d.comb += self._out_fifo.re.eq(1)
+                    m.d.sync += cmd.eq(self._out_fifo.dout)
+                    m.next = "COMMAND"
+            with m.State("COMMAND"):
+                with m.If(((cmd & CMD_MASK) == CMD_SHIFT_TMS) |
+                    ((cmd & CMD_MASK) == CMD_SHIFT_TDIO)):
+                    m.next = "RECV-COUNT-1"
+                with m.Elif((cmd & CMD_MASK) == CMD_GET_AUX):
+                    m.next = "SEND-AUX"
+                with m.Elif((cmd & CMD_MASK) == CMD_SET_AUX):
+                    m.next = "RECV-AUX"
+            with m.State("SEND-AUX"):
+                with m.If(self._in_fifo.writable):
+                    m.d.comb += [
+                        self._in_fifo.we.eq(1),
+                        self._in_fifo.din.eq(self.adapter.aux_i),
+                    ]
+                    m.next = "RECV-COMMAND"
+            with m.State("RECV-AUX"):
+                with m.If(self._out_fifo.readable):
+                    m.d.comb += self._out_fifo.re.eq(1)
+                    m.d.sync += self.adapter.aux_o.eq(self._out_fifo.dout)
+                    m.next = "RECV-COMMAND"
+            with m.State("RECV-COUNT-1"):
+                with m.If(self._out_fifo.readable):
+                    m.d.comb += self._out_fifo.re.eq(1)
+                    m.d.sync += count[0:8].eq(self._out_fifo.dout)
+                    m.next = "RECV-COUNT-2"
+            with m.State("RECV-COUNT-2"):
+                with m.If(self._out_fifo.readable):
+                    m.d.comb += self._out_fifo.re.eq(1),
+                    m.d.sync += count[8:16].eq(self._out_fifo.dout)
+                    m.next = "RECV-BITS"
+            with m.State("RECV-BITS"):
+                with m.If(count == 0):
+                    m.next = "RECV-COMMAND"
+                with m.Else():
+                    with m.If(count > 8):
+                        m.d.sync += bitno.eq(0)
+                    with m.Else():
+                        m.d.sync += [
+                            align.eq(8 - count[:3]),
+                            bitno.eq(8 - count[:3]),
+                        ]
+                    with m.If(cmd & BIT_DATA_OUT):
+                        with m.If(self._out_fifo.readable):
+                            m.d.comb += self._out_fifo.re.eq(1)
+                            m.d.sync += shreg_o.eq(self._out_fifo.dout)
+                            m.next = "SHIFT-SETUP"
+                    with m.Else():
+                        m.d.sync += shreg_o.eq(0b11111111)
+                        m.next = "SHIFT-SETUP"
+            with m.State("SHIFT-SETUP"):
+                m.d.sync += self.adapter.stb.eq(1)
+                with m.If((cmd & CMD_MASK) == CMD_SHIFT_TMS):
+                    m.d.sync += self.adapter.tms.eq(shreg_o[0])
+                    m.d.sync += self.adapter.tdi.eq((cmd & BIT_TDI) != 0)
+                with m.Else():
+                    m.d.sync += self.adapter.tms.eq(0)
+                    with m.If(cmd & BIT_LAST):
+                        m.d.sync += self.adapter.tms.eq(count == 1)
+                    m.d.sync += self.adapter.tdi.eq(shreg_o[0])
+                m.d.sync += [
+                    shreg_o.eq(Cat(shreg_o[1:], 1)),
+                    count.eq(count - 1),
+                    bitno.eq(bitno + 1),
+                ]
+                m.next = "SHIFT-CAPTURE"
+            with m.State("SHIFT-CAPTURE"):
+                m.d.sync += self.adapter.stb.eq(0)
+                with m.If(self.adapter.rdy):
+                    m.d.sync += shreg_i.eq(Cat(shreg_i[1:], self.adapter.tdo))
+                    with m.If(bitno == 0):
+                        m.next = "SEND-BITS"
+                    with m.Else():
+                        m.next = "SHIFT-SETUP"
+            with m.State("SEND-BITS"):
+                with m.If(cmd & BIT_DATA_IN):
+                    with m.If(self._in_fifo.writable):
+                        m.d.comb += self._in_fifo.we.eq(1),
+                        with m.If(count == 0):
+                            m.d.comb += self._in_fifo.din.eq(shreg_i >> align)
+                        with m.Else():
+                            m.d.comb += self._in_fifo.din.eq(shreg_i)
+                        m.next = "RECV-BITS"
+                with m.Else():
+                    m.next = "RECV-BITS"
+
+        return m
 
 
-class JTAGProbeSubtarget(Module):
+class JTAGProbeSubtarget(Elaboratable):
     def __init__(self, pads, out_fifo, in_fifo, period_cyc):
-        self.submodules.bus     = JTAGProbeBus(pads)
-        self.submodules.adapter = JTAGProbeAdapter(self.bus, period_cyc)
-        self.submodules.driver  = JTAGProbeDriver(self.adapter, out_fifo, in_fifo)
+        self._pads       = pads
+        self._out_fifo   = out_fifo
+        self._in_fifo    = in_fifo
+        self._period_cyc = period_cyc
+
+    def elaborate(self, platform):
+        m = Module()
+        m.submodules.bus     = JTAGProbeBus(self._pads)
+        m.submodules.adapter = JTAGProbeAdapter(m.submodules.bus, self._period_cyc)
+        m.submodules.driver  = JTAGProbeDriver(m.submodules.adapter, self._out_fifo, self._in_fifo)
+        return m
 
 
 class JTAGProbeError(GlasgowAppletError):
