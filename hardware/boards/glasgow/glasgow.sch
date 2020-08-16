@@ -425,12 +425,12 @@ L Memory_EEPROM:CAT24M01W U2
 U 1 1 5ACD2BB9
 P 4200 7000
 F 0 "U2" H 3950 7250 50  0000 C CNN
-F 1 "CAT24M01W" H 4450 7250 50  0000 C CNN
-F 2 "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" H 4200 7250 50  0001 C CNN
+F 1 "CAT24M01X" H 4450 7250 50  0000 C CNN
+F 2 "Package_SO:TSSOP-8_4.4x3mm_P0.65mm" H 4200 7250 50  0001 C CNN
 F 3 "https://www.onsemi.com/pub/Collateral/CAT24M01-D.PDF" H 4200 7000 50  0001 C CNN
 F 4 "ON Semiconductor" H 350 0   50  0001 C CNN "Mfg"
-F 5 "CAT24M01WI-GT3" H 350 0   50  0001 C CNN "MPN"
-F 6 "ic-soic8-cat24m01w" H 4200 7000 50  0001 C CNN "1b2-bom-key"
+F 5 "CAT24M01XI-T2" H 350 0   50  0001 C CNN "MPN"
+F 6 "eeprom-tssop8-cat24m01" H 4200 7000 50  0001 C CNN "1b2-bom-key"
 	1    4200 7000
 	1    0    0    -1  
 $EndComp
@@ -439,12 +439,12 @@ L Memory_EEPROM:CAT24C256 U3
 U 1 1 5ACD332D
 P 5900 7000
 F 0 "U3" H 5650 7250 50  0000 C CNN
-F 1 "CAT24C256W" H 6150 7250 50  0000 C CNN
-F 2 "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" H 5900 7000 50  0001 C CNN
-F 3 "https://www.mouser.hk/datasheet/2/308/CAT24C256-D-769998.pdf" H 5900 7000 50  0001 C CNN
-F 4 "ON Semiconductor" H 0   0   50  0001 C CNN "Mfg"
-F 5 "CAT24C256WI-GT3" H 0   0   50  0001 C CNN "MPN"
-F 6 "ic-soic8-cat24c256w" H 5900 7000 50  0001 C CNN "1b2-bom-key"
+F 1 "BL24C256A-SFRC" H 6300 7250 50  0000 C CNN
+F 2 "Package_SO:TSSOP-8_4.4x3mm_P0.65mm" H 5900 7000 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/szlcsc/1811151428_BL-Shanghai-Belling-BL24C256A-SFRC_C110276.pdf" H 5900 7000 50  0001 C CNN
+F 4 "BL(Shanghai Belling)" H 0   0   50  0001 C CNN "Mfg"
+F 5 "BL24C256A-SFRC" H 0   0   50  0001 C CNN "MPN"
+F 6 "eeprom-tssop8-bl24c256a" H 5900 7000 50  0001 C CNN "1b2-bom-key"
 	1    5900 7000
 	1    0    0    -1  
 $EndComp
