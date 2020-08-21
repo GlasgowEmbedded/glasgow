@@ -1,0 +1,3 @@
+{"method": "transfer", "async": true, "args": [[48, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "0030001e"}}
+{"method": "transfer", "async": true, "args": [[48, 0, 1, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00300095"}}
+{"method": "transfer", "async": true, "args": [[48, 0, 2, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00300087"}}

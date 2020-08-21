@@ -11,7 +11,7 @@ class UARTBus(Module):
 
     Provides synchronization.
     """
-    def __init__(self, pads):
+    def __init__(self, pads, invert_rx, invert_tx):
         self.has_rx = hasattr(pads, "rx_t")
         if self.has_rx:
             self.rx_t = pads.rx_t
@@ -25,15 +25,17 @@ class UARTBus(Module):
         ###
 
         if self.has_tx:
-            self.comb += [
-                self.tx_t.oe.eq(1),
-                self.tx_t.o.eq(self.tx_o)
-            ]
+            self.comb += self.tx_t.oe.eq(1)
+            if invert_tx:
+                self.comb += self.tx_t.o.eq(~self.tx_o)
+            else:
+                self.comb += self.tx_t.o.eq(self.tx_o)
 
         if self.has_rx:
-            self.specials += [
-                MultiReg(self.rx_t.i, self.rx_i, reset=1)
-            ]
+            if invert_rx:
+                self.specials += MultiReg(~self.rx_t.i, self.rx_i, reset=1)
+            else:
+                self.specials += MultiReg(self.rx_t.i, self.rx_i, reset=1)
 
 
 class UART(Module):
@@ -55,6 +57,12 @@ class UART(Module):
     :type max_bit_cyc: int
     :param max_bit_cyc:
         Maximum possible value for ``bit_cyc`` that can be configured at runtime.
+    :type invert_rx: bool
+    :param invert_rx:
+        Invert the line signal (=idle low) for RX
+    :type invert_tx: bool
+    :param invert_tx:
+        Invert the line signal (=idle low) for TX
 
     :attr bit_cyc:
         Register with the current value for bit time, minus one.
@@ -86,7 +94,8 @@ class UART(Module):
         Transmit acknowledgement. If active when ``tx_rdy`` is active, ``tx_rdy`` is reset,
         ``tx_data`` is sampled, and the transmit state machine starts transmitting a frame.
     """
-    def __init__(self, pads, bit_cyc, data_bits=8, parity="none", max_bit_cyc=None):
+    def __init__(self, pads, bit_cyc, data_bits=8, parity="none", max_bit_cyc=None,
+                 invert_rx=False, invert_tx=False):
         if max_bit_cyc is None:
             max_bit_cyc = bit_cyc
         self.bit_cyc = Signal(reset=bit_cyc, max=max_bit_cyc + 1)
@@ -103,7 +112,7 @@ class UART(Module):
         self.tx_rdy  = Signal()
         self.tx_ack  = Signal()
 
-        self.submodules.bus = bus = UARTBus(pads)
+        self.submodules.bus = bus = UARTBus(pads, invert_rx=invert_rx, invert_tx=invert_tx)
 
         ###
 

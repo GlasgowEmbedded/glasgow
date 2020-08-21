@@ -252,8 +252,9 @@ class GlasgowAppletTestCase(unittest.TestCase):
         assert mode in ("record", "replay")
 
         if mode == "record":
+            self.device = None # in case the next line raises
             self.device = GlasgowHardwareDevice()
-            self.device.demultiplexer = DirectDemultiplexer(self.device)
+            self.device.demultiplexer = DirectDemultiplexer(self.device, pipe_count=1)
             revision = self.device.revision
         else:
             self.device = None
@@ -266,23 +267,23 @@ class GlasgowAppletTestCase(unittest.TestCase):
         self._recording = False
         self._recorders = []
 
-        async def run_lower(cls, device, args):
-            if cls is type(self.applet):
-                if mode == "record":
-                    lower_iface = await super(cls, self.applet).run(device, args)
-                    recorder = MockRecorder(case, lower_iface, fixture)
-                    self._recorders.append(recorder)
-                    return recorder
+        old_run_lower = self.applet.run_lower
 
-                if mode == "replay":
-                    return MockReplayer(case, fixture)
-            else:
-                return await super(cls, self.applet).run(device, args)
+        async def run_lower(cls, device, args):
+            if mode == "record":
+                lower_iface = await old_run_lower(cls, device, args)
+                recorder = MockRecorder(case, lower_iface, fixture)
+                self._recorders.append(recorder)
+                return recorder
+
+            if mode == "replay":
+                return MockReplayer(case, fixture)
+
         self.applet.run_lower = run_lower
 
     async def run_hardware_applet(self, mode):
         if mode == "record":
-            await self.device.download_target(self.target)
+            await self.device.download_target(self.target.build_plan())
 
         return await self.applet.run(self.device, self._parsed_args)
 
@@ -350,6 +351,10 @@ def applet_hardware_test(setup="run_hardware_applet", args=[]):
                         nonlocal exception
                         exception = e
 
+                    finally:
+                        if self.device is not None:
+                            loop.run_until_complete(self.device.demultiplexer.cancel())
+
                 thread = threading.Thread(target=run_test)
                 thread.start()
                 thread.join()
@@ -363,7 +368,8 @@ def applet_hardware_test(setup="run_hardware_applet", args=[]):
 
             finally:
                 if mode == "record":
-                    self.device.close()
+                    if self.device is not None:
+                        self.device.close()
 
         return wrapper
 

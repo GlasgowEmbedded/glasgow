@@ -2,6 +2,7 @@ import os
 import sys
 import logging
 import asyncio
+import argparse
 from nmigen.compat import *
 
 from ....support.pyrepl import *
@@ -74,8 +75,9 @@ class UARTAutoBaud(Module):
 
 class UARTSubtarget(Module):
     def __init__(self, pads, out_fifo, in_fifo, parity, max_bit_cyc,
-                 manual_cyc, auto_cyc, use_auto, bit_cyc, rx_errors):
-        self.submodules.uart = uart = UART(pads, bit_cyc=max_bit_cyc, parity=parity)
+                 manual_cyc, auto_cyc, use_auto, bit_cyc, rx_errors, invert_rx, invert_tx):
+        self.submodules.uart = uart = UART(pads, bit_cyc=max_bit_cyc, parity=parity,
+                                           invert_rx=invert_rx, invert_tx=invert_tx)
         self.submodules.auto_baud = auto_baud = UARTAutoBaud(uart, auto_cyc)
 
         self.comb += uart.bit_cyc.eq(bit_cyc)
@@ -136,6 +138,12 @@ class UARTApplet(GlasgowApplet, name="uart"):
             "--tolerance", metavar="PPM", type=int, default=50000,
             help="verify that actual baud rate is within PPM parts per million of specified"
                  " (default: %(default)s)")
+        parser.add_argument(
+            "--invert-rx", default=False, action="store_true",
+            help="invert the line signal (=idle low) on RX")
+        parser.add_argument(
+            "--invert-tx", default=False, action="store_true",
+            help="invert the line signal (=idle low) on TX")
 
     def build(self, target, args):
         # We support any baud rates, even absurd ones like 60 baud, if you want, but the applet
@@ -166,6 +174,8 @@ class UARTApplet(GlasgowApplet, name="uart"):
             use_auto=use_auto,
             bit_cyc=bit_cyc,
             rx_errors=rx_errors,
+            invert_rx=args.invert_rx,
+            invert_tx=args.invert_tx,
         ))
 
     @classmethod
@@ -174,7 +184,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
 
         parser.add_argument(
             "--pulls", default=False, action="store_true",
-            help="enable integrated pull-ups")
+            help="enable integrated pull-ups or pull-downs (when inverted)")
         parser.add_argument(
             "-a", "--auto-baud", default=False, action="store_true",
             help="automatically estimate baud rate in response to RX errors")
@@ -191,14 +201,18 @@ class UARTApplet(GlasgowApplet, name="uart"):
         if args.auto_baud:
             await device.write_register(self.__addr_use_auto, 1)
 
-        # Enable pull-ups, if requested.
+        # Enable pull-ups or pull-downs, if requested.
         # This reduces the amount of noise received on tristated lines.
-        pulls = set()
+        pulls_high = set()
+        pulls_low = set()
         if args.pulls:
-            pulls = {args.pin_rx}
+            if args.invert_rx:
+                pulls_low = {args.pin_rx}
+            else:
+                pulls_high = {args.pin_rx}
 
         return await device.demultiplexer.claim_interface(self, self.mux_interface, args,
-                                                          pull_high=pulls)
+                                                          pull_high=pulls_high, pull_low=pulls_low)
 
     @classmethod
     def add_interact_arguments(cls, parser):
