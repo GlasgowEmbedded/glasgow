@@ -5,3 +5,6 @@ multi:
         color: green
         summary: Glasgow Debug Tool Revision C1
         site: https://github.com/GlasgowEmbedded/glasgow/tree/master/hardware/boards/glasgow/revC1
+        eda:
+            type: kicad
+            pcb: hardware/boards/glasgow/glasgow.kicad_pcb
