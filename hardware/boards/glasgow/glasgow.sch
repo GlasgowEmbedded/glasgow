@@ -2839,7 +2839,7 @@ Wire Wire Line
 Wire Notes Line
 	5300 7050 5300 7650
 Text Notes 4550 7750 0    50   ~ 0
-Plug in the device while shorting R40 if it stops enumerating
+Release reset while shorting R40 if it stops enumerating
 NoConn ~ 1500 5450
 NoConn ~ 1500 5550
 $Comp
@@ -3239,7 +3239,7 @@ Wire Wire Line
 Wire Wire Line
 	10850 3450 10850 3500
 Text Notes 5300 7550 1    50   ~ 0
-RESCUE
+RECOVER
 $Comp
 L Power_Supervisor:CAT811JTBI-GT3 U7
 U 1 1 5F3CD805
