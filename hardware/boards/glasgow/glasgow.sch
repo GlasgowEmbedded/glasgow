@@ -3248,8 +3248,9 @@ F 0 "U7" H 9146 3647 50  0000 L CNN
 F 1 "APX811-40UG-7" H 8750 3850 50  0000 L CNN
 F 2 "Package_TO_SOT_SMD:SOT-143" H 8800 3300 50  0001 L CNN
 F 3 "https://www.diodes.com/assets/Datasheets/APX811_812.pdf" H 8350 2900 50  0001 C CNN
-F 4 "ic-cat811jtbi" H 8700 3600 50  0001 C CNN "Key"
-F 5 "Diodes Incorporated" H 8700 3600 50  0001 C CNN "Manufacturer"
+F 4 "ic-cat811jtbi" H 8700 3600 50  0001 C CNN "1b2-bom-key"
+F 5 "Diodes Incorporated" H 8700 3600 50  0001 C CNN "Mfg"
+F 6 "APX811-40UG-7" H 8700 3600 50  0001 C CNN "MPN"
 	1    8700 3600
 	1    0    0    -1  
 $EndComp
@@ -3262,7 +3263,10 @@ P 8400 4100
 F 0 "SW1" H 8600 4150 50  0000 C CNN
 F 1 "RST" H 8200 4150 50  0000 C CNN
 F 2 "Button_Switch_SMD:SW_SPST_PTS810" H 8400 4300 50  0001 C CNN
-F 3 "~" H 8400 4300 50  0001 C CNN
+F 3 "https://tech.alpsalpine.com/prod/e/html/tact/surfacemount/skrp/skrpabe010.html" H 8400 4300 50  0001 C CNN
+F 4 "Alps Alpine" H 8400 4100 50  0001 C CNN "Mfg"
+F 5 "SKRPABE010" H 8400 4100 50  0001 C CNN "MPN"
+F 6 "???" H 8400 4100 50  0001 C CNN "1b2-bom-key"
 	1    8400 4100
 	-1   0    0    -1  
 $EndComp
