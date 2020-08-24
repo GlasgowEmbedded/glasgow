@@ -2,7 +2,7 @@
 
   (general
     (thickness 1.6)
-    (drawings 431)
+    (drawings 432)
     (tracks 5335)
     (zones 0)
     (modules 261)
@@ -13239,6 +13239,9 @@
       (net 3 GND) (zone_connect 2))
   )
 
+  (gr_text LEDS (at 61.2 81.9 90) (layer F.SilkS) (tstamp 5F462181)
+    (effects (font (size 1 1) (thickness 0.15)))
+  )
   (gr_line (start 79.75 106.6) (end 71 106.6) (layer F.SilkS) (width 0.2))
   (gr_line (start 70 113.2) (end 70 107.8) (layer F.SilkS) (width 0.15))
   (gr_line (start 62.7 107.6) (end 65 107.6) (layer F.SilkS) (width 0.2))
@@ -13472,7 +13475,7 @@
   (gr_text B7 (at 98.5 105.3 90) (layer F.SilkS) (tstamp 5ECC80D8)
     (effects (font (size 0.6 0.6) (thickness 0.15)))
   )
-  (gr_text "SYS STATUS" (at 61.15 84.7 90) (layer F.SilkS) (tstamp 5F426F51)
+  (gr_text STATUS (at 61.2 86.8 90) (layer F.SilkS) (tstamp 5F46218A)
     (effects (font (size 1 1) (thickness 0.15)))
   )
   (gr_text "USER LEDS" (at 61.45 106.05 90) (layer F.SilkS) (tstamp 5ECB802E)
