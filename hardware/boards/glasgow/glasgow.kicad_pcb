@@ -7151,10 +7151,10 @@
       (net 3 GND))
     (pad 2 thru_hole oval (at -2.54 0 180) (size 1.74 2.2) (drill 1.2) (layers *.Cu *.Mask)
       (net 177 /IO_Banks/~SYNC))
-    (model ../../packages3D/Molex_KK-254_1x02_P2.54mm_Horizontal.wrl
-      (at (xyz 0 0 0))
+    (model ../../packages3D/Molex_KK-254_1x02_P2.54mm_Horizontal-PN022057028.step
+      (offset (xyz -1.3 -4.3 4.1))
       (scale (xyz 1 1 1))
-      (rotate (xyz 0 0 90))
+      (rotate (xyz 180 0 0))
     )
   )
 
