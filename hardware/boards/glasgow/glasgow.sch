@@ -2794,41 +2794,41 @@ Wire Wire Line
 $Comp
 L power:+5V #PWR0149
 U 1 1 5CCEA64E
-P 8200 5000
-F 0 "#PWR0149" H 8200 4850 50  0001 C CNN
-F 1 "+5V" H 8215 5173 50  0000 C CNN
-F 2 "" H 8200 5000 50  0001 C CNN
-F 3 "" H 8200 5000 50  0001 C CNN
-	1    8200 5000
+P 8150 5600
+F 0 "#PWR0149" H 8150 5450 50  0001 C CNN
+F 1 "+5V" H 8165 5773 50  0000 C CNN
+F 2 "" H 8150 5600 50  0001 C CNN
+F 3 "" H 8150 5600 50  0001 C CNN
+	1    8150 5600
 	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR0150
 U 1 1 5CCEA988
-P 8200 5300
-F 0 "#PWR0150" H 8200 5050 50  0001 C CNN
-F 1 "GND" H 8205 5127 50  0000 C CNN
-F 2 "" H 8200 5300 50  0001 C CNN
-F 3 "" H 8200 5300 50  0001 C CNN
-	1    8200 5300
+P 8150 5900
+F 0 "#PWR0150" H 8150 5650 50  0001 C CNN
+F 1 "GND" H 8155 5727 50  0000 C CNN
+F 2 "" H 8150 5900 50  0001 C CNN
+F 3 "" H 8150 5900 50  0001 C CNN
+	1    8150 5900
 	1    0    0    -1  
 $EndComp
 $Comp
 L Device:CP C87
 U 1 1 5CCE6160
-P 8200 5150
-F 0 "C87" H 8318 5196 50  0000 L CNN
-F 1 "150u" H 8318 5105 50  0000 L CNN
-F 2 "Capacitor_SMD:CP_Elec_6.3x5.9" H 8238 5000 50  0001 C CNN
-F 3 "https://api.kemet.com/component-edge/download/datasheet/A765EB157M1ALAE022.pdf" H 8200 5150 50  0001 C CNN
-F 4 "A765EB157M1ALAE022" H 8200 5150 50  0001 C CNN "MPN"
-F 5 "KEMET" H 8200 5150 50  0001 C CNN "Mfg"
-F 6 "cap-poly-6_3x6_0-10v-150u" H 8200 5150 50  0001 C CNN "1b2-bom-key"
-F 7 "10V" H 8200 5150 50  0001 C CNN "Characteristics"
-	1    8200 5150
+P 8150 5750
+F 0 "C87" H 8268 5796 50  0000 L CNN
+F 1 "150u" H 8268 5705 50  0000 L CNN
+F 2 "Capacitor_SMD:CP_Elec_6.3x5.9" H 8188 5600 50  0001 C CNN
+F 3 "https://api.kemet.com/component-edge/download/datasheet/A765EB157M1ALAE022.pdf" H 8150 5750 50  0001 C CNN
+F 4 "A765EB157M1ALAE022" H 8150 5750 50  0001 C CNN "MPN"
+F 5 "KEMET" H 8150 5750 50  0001 C CNN "Mfg"
+F 6 "cap-poly-6_3x6_0-10v-150u" H 8150 5750 50  0001 C CNN "1b2-bom-key"
+F 7 "10V" H 8150 5750 50  0001 C CNN "Characteristics"
+	1    8150 5750
 	1    0    0    -1  
 $EndComp
-Text Notes 8350 5500 0    50   ~ 0
+Text Notes 8300 6100 0    50   ~ 0
 5V bulk decoupling\n100µF required to\nwithstand Vio short
 Wire Wire Line
 	2150 3600 2200 3600
@@ -3311,4 +3311,8 @@ Wire Bus Line
 	7850 2550 7850 6250
 Wire Bus Line
 	4700 2150 4700 6250
+Text Notes 8050 5250 0    50   ~ 0
+A reset of U1 switches off \nthe Vio regulators due to \npulldowns. The RST button\nis designed to be usable \nas emergency off button.
+Text Notes 8850 4700 0    50   ~ 0
+Cycle +3.3V\non reset to \nget I2C peri-\npherals into \nclean state.
 $EndSCHEMATC
