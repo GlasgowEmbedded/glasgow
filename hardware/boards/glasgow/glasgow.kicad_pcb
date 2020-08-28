@@ -2226,7 +2226,7 @@
     (pad 2 smd roundrect (at -0.625 -1 270) (size 0.6 0.3) (layers F.Cu F.Paste F.Mask) (roundrect_rratio 0.25)
       (net 110 /IO_Banks/VIOA))
     (pad 1 smd roundrect (at -0.625 -1.5 270) (size 0.6 0.3) (layers F.Cu F.Paste F.Mask) (roundrect_rratio 0.25))
-    (model ${KISYS3DMOD}/Package_DFN_QFN.3dshapes/UDFN-10_1.35x2.6mm_P0.5mm.wrl
+    (model ../../packages3D/UDFN-14_1.35x3.5mm_Pitch0.5mm.step
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
@@ -2285,7 +2285,7 @@
       (net 87 /IO_Banks/IO_Buffer_A/Z3))
     (pad 1 smd roundrect (at -0.625 -1.5 270) (size 0.6 0.3) (layers F.Cu F.Paste F.Mask) (roundrect_rratio 0.25)
       (net 89 /IO_Banks/IO_Buffer_A/Z4))
-    (model ${KISYS3DMOD}/Package_DFN_QFN.3dshapes/UDFN-10_1.35x2.6mm_P0.5mm.wrl
+    (model ../../packages3D/UDFN-14_1.35x3.5mm_Pitch0.5mm.step
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
@@ -2344,7 +2344,7 @@
     (pad 2 smd roundrect (at -0.625 -1 90) (size 0.6 0.3) (layers F.Cu F.Paste F.Mask) (roundrect_rratio 0.25)
       (net 109 /IO_Banks/VIOB))
     (pad 1 smd roundrect (at -0.625 -1.5 90) (size 0.6 0.3) (layers F.Cu F.Paste F.Mask) (roundrect_rratio 0.25))
-    (model ${KISYS3DMOD}/Package_DFN_QFN.3dshapes/UDFN-10_1.35x2.6mm_P0.5mm.wrl
+    (model ../../packages3D/UDFN-14_1.35x3.5mm_Pitch0.5mm.step
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
@@ -2403,7 +2403,7 @@
       (net 71 /IO_Banks/IO_Buffer_B/Z3))
     (pad 1 smd roundrect (at -0.625 -1.5 90) (size 0.6 0.3) (layers F.Cu F.Paste F.Mask) (roundrect_rratio 0.25)
       (net 73 /IO_Banks/IO_Buffer_B/Z4))
-    (model ${KISYS3DMOD}/Package_DFN_QFN.3dshapes/UDFN-10_1.35x2.6mm_P0.5mm.wrl
+    (model ../../packages3D/UDFN-14_1.35x3.5mm_Pitch0.5mm.step
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
