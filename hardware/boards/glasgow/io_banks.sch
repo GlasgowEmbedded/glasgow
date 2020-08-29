@@ -1845,10 +1845,10 @@ Wire Bus Line
 Text Notes 9400 2950 0    50   ~ 0
 The LVDS connector J5 is considered a \nsecondary connector and will only be \navailable on revC devices. revD and \nfurther are planned to use different \nconnectors.\n\nPorts A and B are the preferred \nconnectors for addons instead.\n
 $Comp
-L Graphic:SYM_ESD_Large #SYM?
+L Graphic:SYM_ESD_Large #SYM1
 U 1 1 5F4FA0F7
 P 7850 6200
-F 0 "#SYM?" H 7850 6400 50  0001 C CNN
+F 0 "#SYM1" H 7850 6400 50  0001 C CNN
 F 1 "SYM_ESD_Large" H 7850 5950 50  0001 C CNN
 F 2 "" H 7845 6170 50  0001 C CNN
 F 3 "~" H 7845 6170 50  0001 C CNN

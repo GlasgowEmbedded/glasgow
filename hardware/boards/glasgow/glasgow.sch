@@ -3262,10 +3262,10 @@ U 1 1 5F4ADDEF
 P 8400 4100
 F 0 "SW1" H 8600 4150 50  0000 C CNN
 F 1 "RST" H 8200 4150 50  0000 C CNN
-F 2 "Button_Switch_SMD:SW_SPST_PTS810" H 8400 4300 50  0001 C CNN
-F 3 "https://tech.alpsalpine.com/prod/e/html/tact/surfacemount/skrp/skrpabe010.html" H 8400 4300 50  0001 C CNN
-F 4 "Alps Alpine" H 8400 4100 50  0001 C CNN "Mfg"
-F 5 "SKRPABE010" H 8400 4100 50  0001 C CNN "MPN"
+F 2 "Glasgow:SW_Tactile_SPST_Angled_1TS003A" H 8400 4300 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/szlcsc/1811011023_HYP-Hongyuan-Precision-1TS003A-1600-3500A-CT_C255805.pdf" H 8400 4300 50  0001 C CNN
+F 4 "HYP (Hongyuan Precision)" H 8400 4100 50  0001 C CNN "Mfg"
+F 5 "1TS003A-1600-3500A-CT" H 8400 4100 50  0001 C CNN "MPN"
 F 6 "???" H 8400 4100 50  0001 C CNN "1b2-bom-key"
 	1    8400 4100
 	-1   0    0    -1  
@@ -3305,14 +3305,14 @@ Wire Wire Line
 Connection ~ 8100 4100
 Wire Wire Line
 	8100 4100 8100 4300
+Text Notes 8050 5250 0    50   ~ 0
+A reset of U1 switches off \nthe Vio regulators due to \npulldowns. The RST button\nis designed to be usable \nas emergency off button.
+Text Notes 8850 4700 0    50   ~ 0
+Cycle +3.3V\non reset to \nget I2C peri-\npherals into \nclean state.
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
 	7850 2550 7850 6250
 Wire Bus Line
 	4700 2150 4700 6250
-Text Notes 8050 5250 0    50   ~ 0
-A reset of U1 switches off \nthe Vio regulators due to \npulldowns. The RST button\nis designed to be usable \nas emergency off button.
-Text Notes 8850 4700 0    50   ~ 0
-Cycle +3.3V\non reset to \nget I2C peri-\npherals into \nclean state.
 $EndSCHEMATC
