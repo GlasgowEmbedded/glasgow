@@ -3198,12 +3198,12 @@ $EndComp
 $Comp
 L power:GND #PWR035
 U 1 1 5B2A0BF8
-P 8700 4400
-F 0 "#PWR035" H 8700 4150 50  0001 C CNN
-F 1 "GND" H 8705 4227 50  0000 C CNN
-F 2 "" H 8700 4400 50  0001 C CNN
-F 3 "" H 8700 4400 50  0001 C CNN
-	1    8700 4400
+P 8700 4500
+F 0 "#PWR035" H 8700 4250 50  0001 C CNN
+F 1 "GND" H 8705 4327 50  0000 C CNN
+F 2 "" H 8700 4500 50  0001 C CNN
+F 3 "" H 8700 4500 50  0001 C CNN
+	1    8700 4500
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -3257,7 +3257,7 @@ $EndComp
 Wire Wire Line
 	8300 3600 8100 3600
 $Comp
-L Switch:SW_Push SW1
+L Glasgow:SW_Push_Shield SW1
 U 1 1 5F4ADDEF
 P 8400 4100
 F 0 "SW1" H 8600 4150 50  0000 C CNN
@@ -3273,42 +3273,50 @@ $EndComp
 $Comp
 L Device:C C89
 U 1 1 5F4262BE
-P 8400 4300
-F 0 "C89" V 8350 4500 50  0000 C CNN
-F 1 "u1" V 8350 4100 50  0000 C CNN
-F 2 "Capacitor_SMD:C_0402_1005Metric" H 8438 4150 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 8400 4300 50  0001 C CNN
-F 4 "Taiyo Yuden" H 1400 2900 50  0001 C CNN "Mfg"
-F 5 "TMK105BJ104KV-F" H 1400 2900 50  0001 C CNN "MPN"
-F 6 "cap-cer-0402-100n" H 8400 4300 50  0001 C CNN "1b2-bom-key"
-	1    8400 4300
-	0    -1   1    0   
+P 8100 4350
+F 0 "C89" H 8250 4450 50  0000 R CNN
+F 1 "u1" H 8200 4250 50  0000 R CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 8138 4200 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 8100 4350 50  0001 C CNN
+F 4 "Taiyo Yuden" H 1100 2950 50  0001 C CNN "Mfg"
+F 5 "TMK105BJ104KV-F" H 1100 2950 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 8100 4350 50  0001 C CNN "1b2-bom-key"
+	1    8100 4350
+	-1   0    0    -1  
 $EndComp
 Wire Wire Line
-	8550 4300 8700 4300
-Wire Wire Line
-	8700 4300 8700 4400
-Wire Wire Line
 	8700 3900 8700 4100
-Connection ~ 8700 4300
 Wire Wire Line
 	8600 4100 8700 4100
 Connection ~ 8700 4100
-Wire Wire Line
-	8700 4100 8700 4300
-Wire Wire Line
-	8250 4300 8100 4300
 Wire Wire Line
 	8100 3600 8100 4100
 Wire Wire Line
 	8200 4100 8100 4100
 Connection ~ 8100 4100
 Wire Wire Line
-	8100 4100 8100 4300
+	8100 4100 8100 4200
 Text Notes 8050 5250 0    50   ~ 0
 A reset of U1 switches off \nthe Vio regulators due to \npulldowns. The RST button\nis designed to be usable \nas emergency off button.
 Text Notes 8850 4700 0    50   ~ 0
 Cycle +3.3V\non reset to \nget I2C peri-\npherals into \nclean state.
+Wire Wire Line
+	8700 4100 8700 4500
+$Comp
+L power:GND #PWR?
+U 1 1 5F620C92
+P 8100 4500
+F 0 "#PWR?" H 8100 4250 50  0001 C CNN
+F 1 "GND" H 8105 4327 50  0000 C CNN
+F 2 "" H 8100 4500 50  0001 C CNN
+F 3 "" H 8100 4500 50  0001 C CNN
+	1    8100 4500
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8400 4200 8400 4300
+Text Label 8400 4300 3    50   ~ 0
+SWSH
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
