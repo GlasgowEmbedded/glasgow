@@ -620,10 +620,10 @@
       (net 224 "Net-(C89-Pad1)"))
     (pad 3 smd roundrect (at 2.15 -0.95 180) (size 1.1 0.7) (layers F.Cu F.Paste F.Mask) (roundrect_rratio 0.25)
       (net 225 /SWSH))
-    (model /mnt/venture-data/projects/glasgow/glasgow-work-git/hardware/packages3D/1ts003a-3d_v3.step
-      (offset (xyz -1.57 0.75 0))
-      (scale (xyz 0.0385 0.0385 0.0385))
-      (rotate (xyz 90 180 0))
+    (model ../../packages3D/1ts003a-3d-v5.step
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
     )
   )
 
