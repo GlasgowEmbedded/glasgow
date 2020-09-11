@@ -1470,12 +1470,12 @@ L Logic_LevelTranslator:SN74LVC1T45DRL U32
 U 1 1 5CA4F297
 P 2650 2400
 F 0 "U32" H 2850 2850 50  0000 L CNN
-F 1 "SN74LVC1T45DRL" H 2850 2750 50  0000 L CNN
+F 1 "SN74LVC1T45DCKR" H 2850 2750 50  0000 L CNN
 F 2 "Glasgow:SOT-363_SC-70-6" H 2650 1950 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 1750 1750 50  0001 C CNN
 F 4 "Texas Instruments" H 2650 2400 50  0001 C CNN "Mfg"
 F 5 "SN74LVC1T45DRL" H 2650 2400 50  0001 C CNN "MPN"
-F 6 "ic-sot563-sn74lvc1t45drl" H 2650 2400 50  0001 C CNN "1b2-bom-key"
+F 6 "ic-sot563-sn4lvc1t45dckr" H 2650 2400 50  0001 C CNN "1b2-bom-key"
 	1    2650 2400
 	1    0    0    -1  
 $EndComp
@@ -1824,6 +1824,21 @@ F 3 "" H 6000 4600 50  0001 C CNN
 	1    6000 4600
 	0    -1   -1   0   
 $EndComp
+Text Notes 9400 2950 0    50   ~ 0
+The LVDS connector J5 is considered a \nsecondary connector and will only be \navailable on revC devices. revD and \nfurther are planned to use different \nconnectors.\n\nPorts A and B are the preferred \nconnectors for addons instead.\n
+$Comp
+L Graphic:SYM_ESD_Large #SYM1
+U 1 1 5F4FA0F7
+P 7850 6200
+F 0 "#SYM1" H 7850 6400 50  0001 C CNN
+F 1 "SYM_ESD_Large" H 7850 5950 50  0001 C CNN
+F 2 "" H 7845 6170 50  0001 C CNN
+F 3 "~" H 7845 6170 50  0001 C CNN
+	1    7850 6200
+	1    0    0    -1  
+$EndComp
+Text Notes 8100 6450 0    50   ~ 0
+The LVDS connector J5 just \nhas minimal ESD protection.\nUse appropriate ESD handling\nprocedures. Plug and unplug \nonly in completely unpowered \nstate.\n
 Wire Bus Line
 	2400 4950 2400 5800
 Wire Bus Line
@@ -1842,19 +1857,4 @@ Wire Bus Line
 	5500 3750 5500 5800
 Wire Bus Line
 	9050 3200 9050 5800
-Text Notes 9400 2950 0    50   ~ 0
-The LVDS connector J5 is considered a \nsecondary connector and will only be \navailable on revC devices. revD and \nfurther are planned to use different \nconnectors.\n\nPorts A and B are the preferred \nconnectors for addons instead.\n
-$Comp
-L Graphic:SYM_ESD_Large #SYM1
-U 1 1 5F4FA0F7
-P 7850 6200
-F 0 "#SYM1" H 7850 6400 50  0001 C CNN
-F 1 "SYM_ESD_Large" H 7850 5950 50  0001 C CNN
-F 2 "" H 7845 6170 50  0001 C CNN
-F 3 "~" H 7845 6170 50  0001 C CNN
-	1    7850 6200
-	1    0    0    -1  
-$EndComp
-Text Notes 8100 6450 0    50   ~ 0
-The LVDS connector J5 just \nhas minimal ESD protection.\nUse appropriate ESD handling\nprocedures. Plug and unplug \nonly in completely unpowered \nstate.\n
 $EndSCHEMATC

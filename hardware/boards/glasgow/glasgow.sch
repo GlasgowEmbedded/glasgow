@@ -62,12 +62,12 @@ L Device:C C11
 U 1 1 5ACB69D3
 P 2200 2450
 F 0 "C11" V 2050 2450 50  0000 C CNN
-F 1 "18p" V 2350 2450 50  0000 C CNN
+F 1 "9p" V 2350 2450 50  0000 C CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 2238 2300 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/UPY-GP_NP0_16V-to-50V_16-1109089.pdf" H 2200 2450 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/Yageo_UPY-AC_NP0X7R_16V-to-630V_12-1827077-1874686.pdf" H 2200 2450 50  0001 C CNN
 F 4 "Yageo" H 650 -250 50  0001 C CNN "Mfg"
-F 5 "CC0402JRNPO8BN180" H 650 -250 50  0001 C CNN "MPN"
-F 6 "cap-cer-0402-18p" H 2200 2450 50  0001 C CNN "1b2-bom-key"
+F 5 "AC0402CRNPO9BN9R0" H 650 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-9p" H 2200 2450 50  0001 C CNN "1b2-bom-key"
 	1    2200 2450
 	0    1    1    0   
 $EndComp
@@ -409,12 +409,12 @@ L Device:C C12
 U 1 1 5AD0B949
 P 2200 2950
 F 0 "C12" V 2050 2950 50  0000 C CNN
-F 1 "18p" V 2350 2950 50  0000 C CNN
+F 1 "9p" V 2350 2950 50  0000 C CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 2238 2800 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/UPY-GP_NP0_16V-to-50V_16-1109089.pdf" H 2200 2950 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/Yageo_UPY-AC_NP0X7R_16V-to-630V_12-1827077-1874686.pdf" H 2200 2950 50  0001 C CNN
 F 4 "Yageo" H 650 -250 50  0001 C CNN "Mfg"
-F 5 "CC0402JRNPO8BN180" H 650 -250 50  0001 C CNN "MPN"
-F 6 "cap-cer-0402-18p" H 2200 2950 50  0001 C CNN "1b2-bom-key"
+F 5 "AC0402CRNPO9BN9R0" H 650 -250 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-9p" H 2200 2950 50  0001 C CNN "1b2-bom-key"
 	1    2200 2950
 	0    1    1    0   
 $EndComp
@@ -1675,10 +1675,11 @@ P 2450 2700
 F 0 "Y1" V 2600 2550 50  0000 L CNN
 F 1 "24M" V 2350 2400 50  0000 L TNN
 F 2 "Glasgow:Crystal_SMD_3225-4Pin_3.2x2.5mm" H 2450 2700 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/741/LFXTAL058124Reel-940455.pdf" H 2450 2700 50  0001 C CNN
-F 4 "IQD" H 650 -250 50  0001 C CNN "Mfg"
-F 5 "LFXTAL058124REEL" H 650 -250 50  0001 C CNN "MPN"
-F 6 "xtal-lfxtal-24mhz" H 2450 2700 50  0001 C CNN "1b2-bom-key"
+F 3 "https://datasheet.lcsc.com/szlcsc/2008211535_JWT-JF4024M00009T8188070_C709181.pdf" H 2450 2700 50  0001 C CNN
+F 4 "JWT" H 650 -250 50  0001 C CNN "Mfg"
+F 5 "JF4024M00009T8188070" H 650 -250 50  0001 C CNN "MPN"
+F 6 "xtal-smd3225-24mhz-9p" H 2450 2700 50  0001 C CNN "1b2-bom-key"
+F 7 "9pF load" H 2450 2700 50  0001 C CNN "Characteristics"
 	1    2450 2700
 	0    -1   -1   0   
 $EndComp
@@ -2650,7 +2651,7 @@ F 0 "U8" H 9900 5092 50  0000 C CNN
 F 1 "TLV75533PDRVR" H 9900 5001 50  0000 C CNN
 F 2 "Glasgow:DFN-6-1EP_2x2mm_P0.65mm_EP1x1.6mm_ThermalVias" H 9900 5075 50  0001 C CIN
 F 3 "http://www.ti.com/lit/ds/symlink/tlv733p-q1.pdf" H 9900 4800 50  0001 C CNN
-F 4 "ic-dfn6-tlv75533pdrvr" H 9900 4750 50  0001 C CNN "1b2-bom-key"
+F 4 "vreg-dfn6-tlv75533pdrvr" H 9900 4750 50  0001 C CNN "1b2-bom-key"
 F 5 "TLV75533PDRVR" H 9900 4750 50  0001 C CNN "MPN"
 F 6 "Texas Instruments" H 9900 4750 50  0001 C CNN "Mfg"
 	1    9900 4750
@@ -2664,7 +2665,7 @@ F 0 "U36" H 9900 6142 50  0000 C CNN
 F 1 "TLV73312PQDRVRQ1" H 9900 6051 50  0000 C CNN
 F 2 "Glasgow:DFN-6-1EP_2x2mm_P0.65mm_EP1x1.6mm_ThermalVias" H 9900 6125 50  0001 C CIN
 F 3 "http://www.ti.com/lit/ds/symlink/tlv755p.pdf" H 9900 5850 50  0001 C CNN
-F 4 "ic-dfn6-tlv73312pqrdvrq1" H 9900 5800 50  0001 C CNN "1b2-bom-key"
+F 4 "vreg-dfn6-tlv73312pqrdvrq1" H 9900 5800 50  0001 C CNN "1b2-bom-key"
 F 5 "TLV73312PQDRVRQ1" H 9900 5800 50  0001 C CNN "MPN"
 F 6 "Texas Instruments" H 9900 5800 50  0001 C CNN "Mfg"
 	1    9900 5800
@@ -2823,7 +2824,7 @@ F 2 "Capacitor_SMD:CP_Elec_6.3x5.9" H 8188 5600 50  0001 C CNN
 F 3 "https://api.kemet.com/component-edge/download/datasheet/A765EB157M1ALAE022.pdf" H 8150 5750 50  0001 C CNN
 F 4 "A765EB157M1ALAE022" H 8150 5750 50  0001 C CNN "MPN"
 F 5 "KEMET" H 8150 5750 50  0001 C CNN "Mfg"
-F 6 "cap-poly-6_3x6_0-10v-150u" H 8150 5750 50  0001 C CNN "1b2-bom-key"
+F 6 "cap-poly-6_3x5_7-10v-150u" H 8150 5750 50  0001 C CNN "1b2-bom-key"
 F 7 "10V" H 8150 5750 50  0001 C CNN "Characteristics"
 	1    8150 5750
 	1    0    0    -1  
@@ -2850,6 +2851,9 @@ F 0 "J1" H 550 5700 50  0000 C CNN
 F 1 "USB_C_USB2.0" H 1000 5700 50  0000 C CNN
 F 2 "Glasgow:USB_C_Receptacle_HRO_TYPE-C-31-M-12" H 1050 4950 50  0001 C CNN
 F 3 "https://www.usb.org/sites/default/files/documents/usb_type-c.zip" H 1050 4950 50  0001 C CNN
+F 4 "conn-smd-usb-c-2" H 900 4950 50  0001 C CNN "1b2-bom-key"
+F 5 "TYPE-C-31-M-12" H 900 4950 50  0001 C CNN "MPN"
+F 6 "Korean Hroparts Elec" H 900 4950 50  0001 C CNN "Mfg"
 	1    900  4950
 	1    0    0    -1  
 $EndComp
@@ -3066,6 +3070,7 @@ F 2 "Glasgow:SOT-323_SC-70" H 10025 4025 50  0001 L CNN
 F 3 "https://www.diodes.com/assets/Datasheets/ds30065.pdf" H 9830 3900 50  0001 C CNN
 F 4 "BAT54AW-7-F" V 9950 3900 50  0001 C CNN "MPN"
 F 5 "Diodes Inc." V 9950 3900 50  0001 C CNN "Mfg"
+F 6 "diode-sot323-bat54aw" H 9950 3900 50  0001 C CNN "1b2-bom-key"
 	1    9950 3900
 	0    -1   -1   0   
 $EndComp
@@ -3266,7 +3271,7 @@ F 2 "Glasgow:SW_Tactile_SPST_Angled_1TS003A" H 8400 4300 50  0001 C CNN
 F 3 "https://datasheet.lcsc.com/szlcsc/1811011023_HYP-Hongyuan-Precision-1TS003A-1600-3500A-CT_C255805.pdf" H 8400 4300 50  0001 C CNN
 F 4 "HYP (Hongyuan Precision)" H 8400 4100 50  0001 C CNN "Mfg"
 F 5 "1TS003A-1600-3500A-CT" H 8400 4100 50  0001 C CNN "MPN"
-F 6 "???" H 8400 4100 50  0001 C CNN "1b2-bom-key"
+F 6 "sw-tact-side-1ts003a" H 8400 4100 50  0001 C CNN "1b2-bom-key"
 	1    8400 4100
 	-1   0    0    -1  
 $EndComp
@@ -3303,10 +3308,10 @@ Cycle +3.3V\non reset to \nget I2C peri-\npherals into \nclean state.
 Wire Wire Line
 	8700 4100 8700 4500
 $Comp
-L power:GND #PWR?
+L power:GND #PWR0199
 U 1 1 5F620C92
 P 8100 4500
-F 0 "#PWR?" H 8100 4250 50  0001 C CNN
+F 0 "#PWR0199" H 8100 4250 50  0001 C CNN
 F 1 "GND" H 8105 4327 50  0000 C CNN
 F 2 "" H 8100 4500 50  0001 C CNN
 F 3 "" H 8100 4500 50  0001 C CNN
