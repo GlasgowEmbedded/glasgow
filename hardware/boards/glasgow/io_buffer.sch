@@ -2158,12 +2158,12 @@ AR Path="/5AFBDC9E/5CD0C19C" Ref="R?"  Part="1"
 AR Path="/5C7B59B0/5C9E337E/5CD0C19C" Ref="R49"  Part="1" 
 AR Path="/5C7B59B0/5C9E338E/5CD0C19C" Ref="R48"  Part="1" 
 F 0 "R48" V 10550 5500 50  0000 R CNN
-F 1 "0.15" V 10450 5450 50  0000 C CNN
+F 1 "0R15" V 10450 5450 50  0000 C CNN
 F 2 "Resistor_SMD:R_0603_1608Metric" V 10380 5450 50  0001 C CNN
 F 3 "https://www.ohmite.com/assets/docs/res_kdv.pdf" H 10450 5450 50  0001 C CNN
 F 4 "Ohmite" H 4300 500 50  0001 C CNN "Mfg"
 F 5 "KDV06FR150ET" H 4300 500 50  0001 C CNN "MPN"
-F 6 "res-0603-0_15" H 10450 5450 50  0001 C CNN "1b2-bom-key"
+F 6 "res-0603-0r15" H 10450 5450 50  0001 C CNN "1b2-bom-key"
 	1    10450 5450
 	0    -1   -1   0   
 $EndComp
@@ -2253,10 +2253,12 @@ P 1050 2600
 AR Path="/5C7B59B0/5C9E338E/5EAC6F23" Ref="RN1"  Part="1" 
 AR Path="/5C7B59B0/5C9E337E/5EAC6F23" Ref="RN7"  Part="1" 
 F 0 "RN1" V 630 2600 50  0000 C CNN
-F 1 "33" V 723 2600 50  0000 C CNN
+F 1 "33R" V 723 2600 50  0000 C CNN
 F 2 "Glasgow:R_Array_Convex_4x0402" V 1325 2600 50  0001 C CNN
-F 3 "~" H 1050 2600 50  0001 C CNN
-F 4 "res-0402cv-array-4-33" H 1050 2600 50  0001 C CNN "1b2-bom-key"
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-YC_TC_group_51_RoHS_L_7-1313905.pdf" H 1050 2600 50  0001 C CNN
+F 4 "res-0402cv-array-4-33r" H 1050 2600 50  0001 C CNN "1b2-bom-key"
+F 5 "YC124-JR-1333RL" H 1050 2600 50  0001 C CNN "MPN"
+F 6 "Yageo" H 1050 2600 50  0001 C CNN "Mfg"
 	1    1050 2600
 	0    1    1    0   
 $EndComp
@@ -2267,10 +2269,12 @@ P 1050 3000
 AR Path="/5C7B59B0/5C9E338E/5EAFC4A6" Ref="RN2"  Part="1" 
 AR Path="/5C7B59B0/5C9E337E/5EAFC4A6" Ref="RN8"  Part="1" 
 F 0 "RN2" V 1286 3000 50  0000 C CNN
-F 1 "33" V 1379 3000 50  0000 C CNN
+F 1 "33R" V 1379 3000 50  0000 C CNN
 F 2 "Glasgow:R_Array_Convex_4x0402" V 1325 3000 50  0001 C CNN
-F 3 "~" H 1050 3000 50  0001 C CNN
-F 4 "res-0402cv-array-4-33" H 1050 3000 50  0001 C CNN "1b2-bom-key"
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-YC_TC_group_51_RoHS_L_7-1313905.pdf" H 1050 3000 50  0001 C CNN
+F 4 "res-0402cv-array-4-33r" H 1050 3000 50  0001 C CNN "1b2-bom-key"
+F 5 "YC124-JR-1333RL" H 1050 3000 50  0001 C CNN "MPN"
+F 6 "Yageo" H 1050 3000 50  0001 C CNN "Mfg"
 	1    1050 3000
 	0    1    1    0   
 $EndComp
@@ -2281,10 +2285,12 @@ P 6000 2600
 AR Path="/5C7B59B0/5C9E338E/5EAFCC23" Ref="RN3"  Part="1" 
 AR Path="/5C7B59B0/5C9E337E/5EAFCC23" Ref="RN9"  Part="1" 
 F 0 "RN3" V 5580 2600 50  0000 C CNN
-F 1 "33" V 5673 2600 50  0000 C CNN
+F 1 "33R" V 5673 2600 50  0000 C CNN
 F 2 "Glasgow:R_Array_Convex_4x0402" V 6275 2600 50  0001 C CNN
-F 3 "~" H 6000 2600 50  0001 C CNN
-F 4 "res-0402cv-array-4-33" H 6000 2600 50  0001 C CNN "1b2-bom-key"
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-YC_TC_group_51_RoHS_L_7-1313905.pdf" H 6000 2600 50  0001 C CNN
+F 4 "res-0402cv-array-4-33r" H 6000 2600 50  0001 C CNN "1b2-bom-key"
+F 5 "YC124-JR-1333RL" H 6000 2600 50  0001 C CNN "MPN"
+F 6 "Yageo" H 6000 2600 50  0001 C CNN "Mfg"
 	1    6000 2600
 	0    1    1    0   
 $EndComp
@@ -2295,10 +2301,12 @@ P 6000 3000
 AR Path="/5C7B59B0/5C9E338E/5EB2C386" Ref="RN4"  Part="1" 
 AR Path="/5C7B59B0/5C9E337E/5EB2C386" Ref="RN10"  Part="1" 
 F 0 "RN4" V 6236 3000 50  0000 C CNN
-F 1 "33" V 6329 3000 50  0000 C CNN
+F 1 "33R" V 6329 3000 50  0000 C CNN
 F 2 "Glasgow:R_Array_Convex_4x0402" V 6275 3000 50  0001 C CNN
-F 3 "~" H 6000 3000 50  0001 C CNN
-F 4 "res-0402cv-array-4-33" H 6000 3000 50  0001 C CNN "1b2-bom-key"
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-YC_TC_group_51_RoHS_L_7-1313905.pdf" H 6000 3000 50  0001 C CNN
+F 4 "res-0402cv-array-4-33r" H 6000 3000 50  0001 C CNN "1b2-bom-key"
+F 5 "YC124-JR-1333RL" H 6000 3000 50  0001 C CNN "MPN"
+F 6 "Yageo" H 6000 3000 50  0001 C CNN "Mfg"
 	1    6000 3000
 	0    1    1    0   
 $EndComp
@@ -2311,8 +2319,10 @@ AR Path="/5C7B59B0/5C9E337E/5EB2CC53" Ref="RN12"  Part="1"
 F 0 "RN6" H 7370 4403 50  0000 R CNN
 F 1 "10k" H 7370 4496 50  0000 R CNN
 F 2 "Glasgow:R_Array_Convex_4x0402" V 7925 4450 50  0001 C CNN
-F 3 "~" H 7650 4450 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-YC_TC_group_51_RoHS_L_7-1313905.pdf" H 7650 4450 50  0001 C CNN
 F 4 "res-0402cv-array-4-10k" H 7650 4450 50  0001 C CNN "1b2-bom-key"
+F 5 "YC124-JR-0710KL" H 7650 4450 50  0001 C CNN "MPN"
+F 6 "Yageo" H 7650 4450 50  0001 C CNN "Mfg"
 	1    7650 4450
 	-1   0    0    1   
 $EndComp
@@ -2325,8 +2335,10 @@ AR Path="/5C7B59B0/5C9E337E/5EB390F9" Ref="RN11"  Part="1"
 F 0 "RN5" H 7550 4400 50  0000 R CNN
 F 1 "10k" H 7550 4500 50  0000 R CNN
 F 2 "Glasgow:R_Array_Convex_4x0402" V 7525 4450 50  0001 C CNN
-F 3 "~" H 7250 4450 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/447/PYu-YC_TC_group_51_RoHS_L_7-1313905.pdf" H 7250 4450 50  0001 C CNN
 F 4 "res-0402cv-array-4-10k" H 7250 4450 50  0001 C CNN "1b2-bom-key"
+F 5 "YC124-JR-0710KL" H 7250 4450 50  0001 C CNN "MPN"
+F 6 "Yageo" H 7250 4450 50  0001 C CNN "Mfg"
 	1    7250 4450
 	-1   0    0    1   
 $EndComp
@@ -2457,12 +2469,12 @@ AR Path="/5AFBDC9E/5F1A23B9" Ref="R?"  Part="1"
 AR Path="/5C7B59B0/5C9E337E/5F1A23B9" Ref="R54"  Part="1" 
 AR Path="/5C7B59B0/5C9E338E/5F1A23B9" Ref="R25"  Part="1" 
 F 0 "R25" H 9500 3500 50  0000 R CNN
-F 1 "4r7" V 9550 3500 50  0000 C CNN
+F 1 "4R7" V 9550 3500 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9480 3500 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 9550 3500 50  0001 C CNN
 F 4 "Yageo" H 3400 -1450 50  0001 C CNN "Mfg"
 F 5 "RC0402FR-074R7L" H 3400 -1450 50  0001 C CNN "MPN"
-F 6 "res-0402-4R7" H 9550 3500 50  0001 C CNN "1b2-bom-key"
+F 6 "res-0402-4r7" H 9550 3500 50  0001 C CNN "1b2-bom-key"
 	1    9550 3500
 	-1   0    0    1   
 $EndComp
@@ -2475,12 +2487,12 @@ AR Path="/5AFBDC9E/5F1A3005" Ref="R?"  Part="1"
 AR Path="/5C7B59B0/5C9E337E/5F1A3005" Ref="R30"  Part="1" 
 AR Path="/5C7B59B0/5C9E338E/5F1A3005" Ref="R24"  Part="1" 
 F 0 "R24" H 9100 3500 50  0000 R CNN
-F 1 "4r7" V 9150 3500 50  0000 C CNN
+F 1 "4R7" V 9150 3500 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9080 3500 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 9150 3500 50  0001 C CNN
 F 4 "Yageo" H 3000 -1450 50  0001 C CNN "Mfg"
 F 5 "RC0402FR-074R7L" H 3000 -1450 50  0001 C CNN "MPN"
-F 6 "res-0402-4R7" H 9150 3500 50  0001 C CNN "1b2-bom-key"
+F 6 "res-0402-4r7" H 9150 3500 50  0001 C CNN "1b2-bom-key"
 	1    9150 3500
 	-1   0    0    1   
 $EndComp
@@ -2623,6 +2635,8 @@ F 1 "SP3012-06UTG" H 7622 1220 50  0000 R CNN
 F 2 "Glasgow:UDFN-14_3.5x1.35mm_P0.5mm" H 9000 1100 50  0001 L CNN
 F 3 "https://www.littelfuse.com/~/media/electronics/datasheets/tvs_diode_arrays/littelfuse_tvs_diode_array_sp3012_datasheet.pdf.pdf" H 8625 1175 50  0001 C CNN
 F 4 "diode-14udfn-sp3012-06utg" H 8300 1150 50  0001 C CNN "1b2-bom-key"
+F 5 "SP3012-06UTG" H 8300 1150 50  0001 C CNN "MPN"
+F 6 "Littlefuse" H 8300 1150 50  0001 C CNN "Mfg"
 	1    8300 1150
 	-1   0    0    1   
 $EndComp
@@ -2728,6 +2742,8 @@ F 1 "SP3012-06UTG" H 8250 1250 50  0000 R CNN
 F 2 "Glasgow:UDFN-14_3.5x1.35mm_P0.5mm" H 7650 1100 50  0001 L CNN
 F 3 "https://www.littelfuse.com/~/media/electronics/datasheets/tvs_diode_arrays/littelfuse_tvs_diode_array_sp3012_datasheet.pdf.pdf" H 7275 1175 50  0001 C CNN
 F 4 "diode-14udfn-sp3012-06utg" H 6950 1150 50  0001 C CNN "1b2-bom-key"
+F 5 "SP3012-06UTG" H 6950 1150 50  0001 C CNN "MPN"
+F 6 "Littlefuse" H 6950 1150 50  0001 C CNN "Mfg"
 	1    6950 1150
 	-1   0    0    1   
 $EndComp
@@ -2877,12 +2893,12 @@ AR Path="/5AFBDC9E/5F25DFB3" Ref="R?"  Part="1"
 AR Path="/5C7B59B0/5C9E337E/5F25DFB3" Ref="R56"  Part="1" 
 AR Path="/5C7B59B0/5C9E338E/5F25DFB3" Ref="R7"  Part="1" 
 F 0 "R7" V 10250 5500 50  0000 R CNN
-F 1 "0.33" V 10150 5450 50  0000 C CNN
+F 1 "0R33" V 10150 5450 50  0000 C CNN
 F 2 "Resistor_SMD:R_0603_1608Metric" V 10080 5450 50  0001 C CNN
 F 3 "https://www.ohmite.com/assets/docs/res_kdv.pdf" H 10150 5450 50  0001 C CNN
 F 4 "Ohmite" H 4000 500 50  0001 C CNN "Mfg"
 F 5 "KDV06FR330ET" H 4000 500 50  0001 C CNN "MPN"
-F 6 "res-0603-0_33" H 10150 5450 50  0001 C CNN "1b2-bom-key"
+F 6 "res-0603-0r33" H 10150 5450 50  0001 C CNN "1b2-bom-key"
 	1    10150 5450
 	0    -1   -1   0   
 $EndComp
