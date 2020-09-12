@@ -1592,12 +1592,12 @@ P 3250 2400
 AR Path="/5CBF4EC8" Ref="R?"  Part="1" 
 AR Path="/5C7B59B0/5CBF4EC8" Ref="R38"  Part="1" 
 F 0 "R38" V 3150 2400 50  0000 C CNN
-F 1 "47" V 3250 2450 50  0000 R CNN
+F 1 "47R" V 3250 2450 50  0000 R CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 3180 2400 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 3250 2400 50  0001 C CNN
 F 4 "Yageo" H -7100 -150 50  0001 C CNN "Mfg"
 F 5 "RC0402FR-1347RL" H -7100 -150 50  0001 C CNN "MPN"
-F 6 "res-0402-47" H 3250 2400 50  0001 C CNN "1b2-bom-key"
+F 6 "res-0402-47r" H 3250 2400 50  0001 C CNN "1b2-bom-key"
 	1    3250 2400
 	0    1    -1   0   
 $EndComp
@@ -1629,7 +1629,7 @@ F 0 "D11" V 3604 2629 50  0000 L CNN
 F 1 "ESD5Z5.0T1G" V 3695 2629 50  0000 L CNN
 F 2 "Glasgow:D_SOD-523" H 3650 2550 50  0001 C CNN
 F 3 "https://www.onsemi.com/pub/Collateral/ESD5Z2.5T1-D.PDF" H 3650 2550 50  0001 C CNN
-F 4 "On Semiconductor" H 3650 2550 50  0001 C CNN "Mfg"
+F 4 "ON Semiconductor" H 3650 2550 50  0001 C CNN "Mfg"
 F 5 "ESD5Z5.0T1G" H 3650 2550 50  0001 C CNN "MPN"
 F 6 "esd-diode-sod523-esd5z5_0t1g" H 3650 2550 50  0001 C CNN "1b2-bom-key"
 	1    3650 2550
@@ -1757,12 +1757,12 @@ P 2050 2400
 AR Path="/5CB5DA66" Ref="R?"  Part="1" 
 AR Path="/5C7B59B0/5CB5DA66" Ref="R45"  Part="1" 
 F 0 "R45" V 1950 2400 50  0000 C CNN
-F 1 "47" V 2050 2450 50  0000 R CNN
+F 1 "47R" V 2050 2450 50  0000 R CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 1980 2400 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 2050 2400 50  0001 C CNN
 F 4 "Yageo" H -8300 -150 50  0001 C CNN "Mfg"
 F 5 "RC0402FR-1347RL" H -8300 -150 50  0001 C CNN "MPN"
-F 6 "res-0402-47" H 2050 2400 50  0001 C CNN "1b2-bom-key"
+F 6 "res-0402-47r" H 2050 2400 50  0001 C CNN "1b2-bom-key"
 	1    2050 2400
 	0    1    -1   0   
 $EndComp
@@ -1775,12 +1775,12 @@ P 2400 3650
 AR Path="/5CBF65F8" Ref="R?"  Part="1" 
 AR Path="/5C7B59B0/5CBF65F8" Ref="R43"  Part="1" 
 F 0 "R43" V 2300 3650 50  0000 C CNN
-F 1 "47" V 2400 3700 50  0000 R CNN
+F 1 "47R" V 2400 3700 50  0000 R CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 2330 3650 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 2400 3650 50  0001 C CNN
 F 4 "Yageo" H -7950 1100 50  0001 C CNN "Mfg"
 F 5 "RC0402FR-1347RL" H -7950 1100 50  0001 C CNN "MPN"
-F 6 "res-0402-47" H 2400 3650 50  0001 C CNN "1b2-bom-key"
+F 6 "res-0402-47r" H 2400 3650 50  0001 C CNN "1b2-bom-key"
 	1    2400 3650
 	0    1    -1   0   
 $EndComp
@@ -1791,12 +1791,12 @@ P 2400 3550
 AR Path="/5CBF658E" Ref="R?"  Part="1" 
 AR Path="/5C7B59B0/5CBF658E" Ref="R39"  Part="1" 
 F 0 "R39" V 2500 3550 50  0000 C CNN
-F 1 "47" V 2400 3600 50  0000 R CNN
+F 1 "47R" V 2400 3600 50  0000 R CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 2330 3550 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 2400 3550 50  0001 C CNN
 F 4 "Yageo" H -7950 1000 50  0001 C CNN "Mfg"
 F 5 "RC0402FR-1347RL" H -7950 1000 50  0001 C CNN "MPN"
-F 6 "res-0402-47" H 2400 3550 50  0001 C CNN "1b2-bom-key"
+F 6 "res-0402-47r" H 2400 3550 50  0001 C CNN "1b2-bom-key"
 	1    2400 3550
 	0    1    -1   0   
 $EndComp
