@@ -3322,6 +3322,7 @@ Wire Wire Line
 	8400 4200 8400 4300
 Text Label 8400 4300 3    50   ~ 0
 SWSH
+NoConn ~ 8400 4300
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
