@@ -333,6 +333,10 @@ def _applet(revision, args):
     target = GlasgowHardwareTarget(revision=revision,
                                    multiplexer_cls=DirectMultiplexer,
                                    with_analyzer=hasattr(args, "trace") and args.trace)
+    if not args.applet:
+        logger.error("no applet specified")
+        raise SystemExit()
+
     applet = GlasgowApplet.all_applets[args.applet]()
     try:
         message = ("applet requires device rev{}+, rev{} found"
