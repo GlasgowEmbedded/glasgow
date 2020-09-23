@@ -219,6 +219,8 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                                                  "Vio={:.2f} Vsense={:.2f}"
                                                  .format(port, vout, vin)))
 
+                    await device.set_voltage(port, 0)
+
             if mode == "loopback":
                 iface_1 = await device.demultiplexer.claim_interface(
                     self, self.mux_interface_1, None)
