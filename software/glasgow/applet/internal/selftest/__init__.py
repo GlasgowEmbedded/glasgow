@@ -54,7 +54,7 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
         * pins-pull: detects faults in pull resistor circuits
           (all pins on all I/O connectors must be floating)
         * pins-loop: detect faults anywhere in the I/O ciruits
-          (pins A0:A7 must be connected to B7:B0)
+          (pins A0:A7 must be connected to B0:B7)
         * voltage: detect ADC, DAC or LDO faults
           (on all ports, Vsense and Vio pins must be connected)
         * loopback: detect faults in USB FIFO traces
@@ -193,7 +193,7 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                         i, desc = await check_pins(o, o, use_pull=False)
                         self.logger.debug("%s: %s", mode, desc)
 
-                        e = (1 << bit) | (1 << (15 - bit))
+                        e = ((o << 8) | o) if (o & 0xFF) else (o | (o >> 8))
                         if i != e:
                             passed = False
                             pins = decode_pins(i | e)
