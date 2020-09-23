@@ -1337,7 +1337,7 @@ L Connector_Generic:Conn_01x03 J10
 U 1 1 5C072C23
 P 3450 3550
 F 0 "J10" H 3550 3450 50  0000 L CNN
-F 1 "Conn_01x03" H 3450 3350 50  0000 L CNN
+F 1 "AUX" H 3550 3350 50  0000 L CNN
 F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 3450 3550 50  0001 C CNN
 F 3 "~" H 3450 3550 50  0001 C CNN
 F 4 "conn-th-01in-3-1-hdr" H 3450 3550 50  0001 C CNN "1b2-bom-key"
