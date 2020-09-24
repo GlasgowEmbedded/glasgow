@@ -287,7 +287,7 @@ P 10000 4300
 AR Path="/5C9E342D" Ref="J?"  Part="1" 
 AR Path="/5C7B59B0/5C9E342D" Ref="J5"  Part="1" 
 F 0 "J5" H 10050 5517 50  0000 C CNN
-F 1 "Conn_02x22_Odd_Even" H 10050 5426 50  0000 C CNN
+F 1 "PinHeader_2x22_P1.27mm" H 10050 5426 50  0000 C CNN
 F 2 "Glasgow:PinHeader_2x22_P1.27mm_Vertical__SMD" H 10000 4300 50  0001 C CNN
 F 3 "~" H 10000 4300 50  0001 C CNN
 F 4 "conn-smd-005in-22-2-hdr" H 10000 4300 50  0001 C CNN "1b2-bom-key"
