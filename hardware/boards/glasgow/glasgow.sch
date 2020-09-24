@@ -2662,7 +2662,7 @@ L Glasgow:TLV73312PQDRVRQ1 U36
 U 1 1 5CEC599A
 P 9900 5800
 F 0 "U36" H 9900 6142 50  0000 C CNN
-F 1 "TLV73312PQDRVRQ1" H 9900 6051 50  0000 C CNN
+F 1 "TLV73312PQDRVR" H 9900 6051 50  0000 C CNN
 F 2 "Glasgow:DFN-6-1EP_2x2mm_P0.65mm_EP1x1.6mm_ThermalVias" H 9900 6125 50  0001 C CIN
 F 3 "http://www.ti.com/lit/ds/symlink/tlv755p.pdf" H 9900 5850 50  0001 C CNN
 F 4 "vreg-dfn6-tlv73312pqrdvrq1" H 9900 5800 50  0001 C CNN "1b2-bom-key"
@@ -3323,12 +3323,12 @@ Wire Wire Line
 Text Label 8400 4300 3    50   ~ 0
 SWSH
 NoConn ~ 8400 4300
+Text Label 8100 3600 0    50   ~ 0
+~MR
 Wire Bus Line
 	4700 6250 7850 6250
 Wire Bus Line
 	7850 2550 7850 6250
 Wire Bus Line
 	4700 2150 4700 6250
-Text Label 8100 3600 0    50   ~ 0
-~MR
 $EndSCHEMATC
