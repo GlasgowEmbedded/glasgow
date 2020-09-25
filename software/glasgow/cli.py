@@ -325,6 +325,10 @@ def get_argparser():
         default=datetime.now().strftime("%Y%m%dT%H%M%SZ"),
         help="serial number in ISO 8601 format (if not specified: %(default)s)")
 
+    p_list = subparsers.add_parser(
+        "list", formatter_class=TextHelpFormatter,
+        help="list devices connected to the system")
+
     return parser
 
 
@@ -439,6 +443,11 @@ async def _main():
             elif args.action == "factory":
                 device = GlasgowHardwareDevice(args.serial, firmware_filename,
                                                _factory_rev=args.factory_rev)
+            elif args.action == "list":
+                serial_list = GlasgowHardwareDevice.get_serial_list(firmware_filename)
+                for serial in sorted(serial_list):
+                    print(serial)
+                return 0
             else:
                 device = GlasgowHardwareDevice(args.serial, firmware_filename)
 
