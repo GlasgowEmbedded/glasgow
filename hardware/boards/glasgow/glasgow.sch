@@ -3267,11 +3267,11 @@ U 1 1 5F4ADDEF
 P 8400 4100
 F 0 "SW1" H 8600 4150 50  0000 C CNN
 F 1 "RST" H 8200 4150 50  0000 C CNN
-F 2 "Glasgow:SW_Tactile_SPST_Angled_1TS003A" H 8400 4300 50  0001 C CNN
-F 3 "https://datasheet.lcsc.com/szlcsc/1811011023_HYP-Hongyuan-Precision-1TS003A-1600-3500A-CT_C255805.pdf" H 8400 4300 50  0001 C CNN
-F 4 "HYP (Hongyuan Precision)" H 8400 4100 50  0001 C CNN "Mfg"
-F 5 "1TS003A-1600-3500A-CT" H 8400 4100 50  0001 C CNN "MPN"
-F 6 "sw-tact-side-1ts003a" H 8400 4100 50  0001 C CNN "1b2-bom-key"
+F 2 "Glasgow:SW_Tactile_SPST_Angled_TC-1109DE" H 8400 4300 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/szlcsc/2006061832_XKB-Connectivity-TC-1109DE-C-G_C400325.pdf" H 8400 4300 50  0001 C CNN
+F 4 "XKB" H 8400 4100 50  0001 C CNN "Mfg"
+F 5 "TC-1109DE-X-X" H 8400 4100 50  0001 C CNN "MPN"
+F 6 "sw-tact-side-tc-1109de" H 8400 4100 50  0001 C CNN "1b2-bom-key"
 	1    8400 4100
 	-1   0    0    -1  
 $EndComp
