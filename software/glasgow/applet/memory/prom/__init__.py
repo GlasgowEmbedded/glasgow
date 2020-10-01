@@ -69,14 +69,23 @@ class MemoryPROMBus(Elaboratable):
         if hasattr(pads, "a_clk_t") and hasattr(pads, "a_si_t"):
             a_clk = Signal(reset=1)
             a_si  = Signal()
+            a_lat = Signal(reset=0) if hasattr(pads, "a_lat_t") else None
             m.d.comb += [
                 pads.a_clk_t.oe.eq(1),
                 pads.a_clk_t.o.eq(a_clk),
                 pads.a_si_t.oe.eq(1),
                 pads.a_si_t.o.eq(a_si),
             ]
+            if a_lat is not None:
+                m.d.comb += [
+                    pads.a_lat_t.oe.eq(1),
+                    pads.a_lat_t.o.eq(a_lat)
+                ]
 
+            # "sa" is the sliced|shifted address, refering to the top-most bits
             sa_input = self.a[len(pads.a_t.o):]
+            # This represents a buffer of those high address bits,
+            # not to be confused with the latch pin.
             sa_latch = Signal(self.a_bits - len(pads.a_t.o))
 
             sh_cyc = math.ceil(platform.default_clk_frequency / self._sh_freq)
@@ -104,9 +113,29 @@ class MemoryPROMBus(Elaboratable):
                         with m.Else():
                             m.d.sync += sa_latch.eq(sa_latch.rotate_left(1))
                             with m.If(count == 0):
-                                m.next = "READY"
+                                if a_lat is None:
+                                    m.next = "READY"
+                                else:
+                                    m.next = "LATCH-1"
                     with m.Else():
                         m.d.sync += timer.eq(timer - 1)
+
+                if a_lat is not None:
+                    with m.State("LATCH-1"):
+                        m.d.sync += a_lat.eq(1)
+                        with m.If(timer == 0):
+                            m.d.sync += timer.eq(timer.reset)
+                            m.next = "LATCH-2"
+                        with m.Else():
+                            m.d.sync += timer.eq(timer - 1)
+
+                    with m.State("LATCH-2"):
+                        with m.If(timer == 0):
+                            m.d.sync += timer.eq(timer.reset)
+                            m.d.sync += a_lat.eq(0)
+                            m.next = "READY"
+                        with m.Else():
+                            m.d.sync += timer.eq(timer - 1)
 
         else:
             m.d.comb += self.rdy.eq(1)
@@ -460,10 +489,11 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
     the IO pins (specified with the --pins-a option). The high part is presented through
     a SIPO shift register (clock and data input specified with the --pin-a-clk and --pin-a-si
     options respectively), such as a chain of 74HC164 ICs of the appropriate length.
+    Additionally, for shift registers with latches, specify --pin-a-lat to drive the latch pins.
     """
 
     __pin_sets = ("dq", "a")
-    __pins = ("a_clk", "a_si", "oe", "we", "ce")
+    __pins = ("a_clk", "a_si", "a_lat", "oe", "we", "ce")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
@@ -473,6 +503,7 @@ class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
         access.add_pin_set_argument(parser, "a",  width=range(0, 24), default=0)
         access.add_pin_argument(parser, "a-clk")
         access.add_pin_argument(parser, "a-si")
+        access.add_pin_argument(parser, "a-lat")
         access.add_pin_argument(parser, "oe")
         access.add_pin_argument(parser, "we")
         access.add_pin_argument(parser, "ce")
