@@ -114,6 +114,12 @@ class GlasgowHardwareDevice:
 
         return handles
 
+    @classmethod
+    def get_serial_list(cls, firmware_filename=None, *, _factory_rev=None):
+        with usb1.USBContext() as usb_context:
+            handles = cls._enumerate_devices(usb_context, firmware_filename, _factory_rev)
+        return list(handles.keys())
+
     def __init__(self, serial=None, firmware_filename=None, *, _factory_rev=None):
         usb_context = usb1.USBContext()
         handles = self._enumerate_devices(usb_context, firmware_filename, _factory_rev)
