@@ -112,7 +112,7 @@ To update the source code, do:
 
 ### ... with macOS?
 
-If you haven't already, install [homebrew](https://brew.sh/). Now:
+If you haven't already, install [Homebrew](https://brew.sh/). Now:
 
     brew install python
     brew tap ktemkin/oss-fpga
