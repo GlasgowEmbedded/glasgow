@@ -3,6 +3,13 @@ Factory Flashing
 
 "Factory flashing" refers to the process of assigning a brand new Glasgow board (that you probably just assembled) a serial number, as well as writing a few critical configuration options that will let the normal Glasgow CLI pick up this device. Barring severe and unusual EEPROM corruption, this process is performed only once for each board.
 
+.. warning::
+
+        If an un-flashed Glasgow board is plugged into a Windows machine, Windows will remember the fact that it has no
+        WinUSB descriptor, even after it has been flashed, which will prevent it from working on that machine.
+
+        For simplicity, it is more convenient to initially flash Glasgow using a non-Windows host.
+
 As a prerequisite to factory flashing, make sure you have a working Glasgow CLI as described in the README.
 
 Any board that is factory flashed must have a blank `FX2_MEM` EEPROM. If the `FX2_MEM` is not completely erased (all bytes set to `FF`), the factory flashing process may fail.
