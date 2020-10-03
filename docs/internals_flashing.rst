@@ -23,5 +23,6 @@ Note that this udev rule will affect more devices than just Glasgow, since the C
 Plug in the newly assembled device. At this point, `lsusb | grep 04b4:8613` should list one entry. Assuming you are factory flashing a board revision C1, run::
 
     glasgow factory --rev C1
+    glasgow flash
 
 Done! At this point, `lsusb | grep 20b7:9db1` should list one entry.
