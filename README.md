@@ -78,9 +78,9 @@ Debugging new applets can be hard, especially if bidirectional buses are involve
 
 ## How do I use Glasgow?
 
-### ... with Linux?
+**If these instructions don't work for you, please file it as a bug, so that the experience can be made more smooth for everyone.**
 
-**Multiple people have reported various issues with the installation instructions below. If any part of these does not work, please file it as a bug, so that the experience can be made more smooth for everyone.**
+### ... with Linux?
 
 You will need git and Python 3.7 (or a newer version, in which case replace `3.7` with that version below). On a Debian or Ubuntu system these can be installed with:
 
@@ -109,6 +109,26 @@ To update the source code, do:
 
     cd glasgow
     git pull
+
+### ... with macOS?
+
+If you haven't already, install [Homebrew](https://brew.sh/). Now:
+
+    brew install python
+    brew tap ktemkin/oss-fpga
+    brew install --HEAD icestorm yosys nextpnr-ice40
+
+Obtain the source code:
+
+    git clone https://github.com/GlasgowEmbedded/glasgow
+    cd glasgow
+
+Install the dependencies and the scripts for the current user:
+
+    cd software
+    python setup.py develop
+
+The scripts will be installed in `/usr/local/bin`, which should already be in your `PATH`.
 
 ### ... with Windows?
 
