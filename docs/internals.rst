@@ -8,4 +8,5 @@ Contents:
 .. toctree::
    :maxdepth: 1
 
+   internals_flashing
    internals_startup

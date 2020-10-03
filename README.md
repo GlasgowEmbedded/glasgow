@@ -76,9 +76,9 @@ Implementing reliable, high-performance USB communication is not trivial—packe
 
 Debugging new applets can be hard, especially if bidirectional buses are involved. Glasgow provides a built-in cycle-accurate logic analyzer that can relate the I/O pin level and direction changes to commands and responses received and sent by the applet. The logic analyzer compresses waveforms and can pause the applet if its buffer is about to overflow.
 
-## How do I use Glasgow?
+## How do I set up Glasgow?
 
-**If these instructions don't work for you, please file it as a bug, so that the experience can be made more smooth for everyone.**
+**If these instructions don't work for you, please [file it as a bug](https://github.com/GlasgowEmbedded/glasgow/issues), so that the experience can be made more smooth for everyone.**
 
 ### ... with Linux?
 
@@ -134,31 +134,29 @@ The scripts will be installed in `/usr/local/bin`, which should already be in yo
 
 Although first-class Windows support is an important goal and Glasgow already works on Windows, the installation process is not yet ready.
 
-## How do I factory flash Glasgow?
+## How do I use Glasgow?
 
-"Factory flashing" refers to the process of assigning a brand new Glasgow board (that you probably just assembled) a serial number, as well as writing a few critical configuration options that will let the normal Glasgow CLI pick up this device. Barring severe and unusual EEPROM corruption, this process is performed only once for each board.
+*Note:* if you've just assembled a new board, you'll need to follow the [factory flashing](./docs/internals_flashing.rst) instructions first.
 
-As a prerequisite to factory flashing, follow all steps from the "[How do I use Glasgow?](#how-do-i-use-glasgow)" section.
+Once you've installed the Glasgow CLI, we can run a few commands to check that it's working. First, plug in your board and check if the CLI can talk to it:
 
-Any board that is factory flashed must have a blank FX2_MEM EEPROM. If the FX2_MEM EEPROM is not completely erased (all bytes set to `FF`), the factory flashing process may fail.
+    glasgow voltage
 
-### ... with Linux?
+This should display the configured and sensed voltages on Glasgow's IO ports.
 
-Configure your system to allow unprivileged access (for anyone in the `plugdev` group) to any hardware that enumerates as the Cypress FX2 ROM bootloader:
+Next, we can try running an applet. Here, we'll use the [uart](./software/glasgow/applet/interface/uart) applet to create a 3.3V serial port on pins 0 and 1:
 
-    sudo cp config/99-cypress.rules /etc/udev/rules.d
+    glasgow run uart -V3.3 tty
 
-Note that this udev rule will affect more devices than just Glasgow, since the Cypress VID:PID pair is shared.
+If you receive any errors when running this command, it means your FPGA toolchain (yosys/nextpnr) is not working. If it is working, you should see:
 
-Plug in the newly assembled device. At this point, `lsusb | grep 04b4:8613` should list one entry. Assuming you are factory flashing a board revision C1, run:
+    I: g.applet.interface.uart: running on a TTY; enter `Ctrl+\ q` to quit
 
-    glasgow factory --rev C1
+You'll also see the `VIO` LEDs light up on your Glasgow board to indicate there is now voltage present on the ports.
 
-Done! At this point, `lsusb | grep 20b7:9db1` should list one entry.
+If your serial port isn't connected to anything, you'll also see some harmless `frame or parity errors detected` warnings. As the message says, you'll need to use `Ctrl+\ q` to exit the applet.
 
-### ... with Windows?
-
-See [above](#-with-windows).
+If all this succeeded, your Glasgow is working!
 
 ## Who made Glasgow?
 
