@@ -23,6 +23,10 @@ class GlasgowAppletMeta(ABCMeta):
             namespace["name"] = name
 
         cls = ABCMeta.__new__(metacls, clsname, bases, namespace, **kwargs)
+
+        if not namespace['__module__'].startswith('glasgow.applet.'):
+            cls.help += ' [Out-of-Tree]'
+
         if name is not None:
             metacls.all_applets[name] = cls
         return cls
