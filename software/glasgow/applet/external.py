@@ -1,4 +1,6 @@
+import os
 import pkg_resources
 
-for entry_point in pkg_resources.iter_entry_points('glasgow'):
-    entry_point.load()
+if "GLASGOW_DISABLE_OOT" not in os.environ:
+    for entry_point in pkg_resources.iter_entry_points('glasgow'):
+        entry_point.load()

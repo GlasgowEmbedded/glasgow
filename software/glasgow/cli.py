@@ -74,7 +74,9 @@ class TextHelpFormatter(argparse.HelpFormatter):
 
 
 def create_argparser():
-    parser = argparse.ArgumentParser(formatter_class=TextHelpFormatter)
+    parser = argparse.ArgumentParser(formatter_class=TextHelpFormatter,
+        epilog="Set the GLASGOW_DISABLE_OOT environment variable to disable loading of "
+               "out-of-tree applets")
 
     version = "Glasgow version {version} (Python {python_version})" \
         .format(python_version=".".join(str(n) for n in sys.version_info[:3]),
