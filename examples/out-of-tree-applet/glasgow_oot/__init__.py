@@ -1,0 +1,1 @@
+from .uart import CustomUARTApplet
