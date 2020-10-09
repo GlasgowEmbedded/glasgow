@@ -29,7 +29,7 @@ from .gateware.analyzer import TraceDecoder
 from .device.hardware import VID_QIHW, PID_GLASGOW, GlasgowHardwareDevice
 from .access.direct import *
 from .applet import *
-from .applet import all
+from .applet import all, external
 
 
 # When running as `-m glasgow.cli`, `__name__` is `__main__`, and the real name
