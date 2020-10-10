@@ -12,7 +12,7 @@ from nmigen.compat import *
 from fx2.format import input_data, output_data
 
 from ....support.logging import dump_hex
-from ...interface.spi_master import SPIMasterSubtarget, SPIMasterInterface
+from ...interface.spi_controller import SPIControllerSubtarget, SPIControllerInterface
 from ... import *
 
 
@@ -148,7 +148,7 @@ class ProgramNRF24Lx1Applet(GlasgowApplet, name="program-nrf24lx1"):
     Program the non-volatile memory of nRF24LE1 and nRF24LU1+ microcontrollers.
     """
 
-    __pins = ("prog", "sck", "mosi", "miso", "ss", "reset")
+    __pins = ("prog", "sck", "copi", "cipo", "cs", "reset")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
@@ -157,9 +157,9 @@ class ProgramNRF24Lx1Applet(GlasgowApplet, name="program-nrf24lx1"):
         # Order matches the pin order, in clockwise direction.
         access.add_pin_argument(parser, "prog",  default=True)
         access.add_pin_argument(parser, "sck",   default=True)
-        access.add_pin_argument(parser, "mosi",  default=True)
-        access.add_pin_argument(parser, "miso",  default=True)
-        access.add_pin_argument(parser, "ss",    default=True)
+        access.add_pin_argument(parser, "copi",  default=True)
+        access.add_pin_argument(parser, "cipo",  default=True)
+        access.add_pin_argument(parser, "cs",    default=True)
         access.add_pin_argument(parser, "reset", default=True)
 
         parser.add_argument(
@@ -173,7 +173,7 @@ class ProgramNRF24Lx1Applet(GlasgowApplet, name="program-nrf24lx1"):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         pads = iface.get_pads(args, pins=self.__pins)
 
-        subtarget = iface.add_subtarget(SPIMasterSubtarget(
+        subtarget = iface.add_subtarget(SPIControllerSubtarget(
             pads=pads,
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=True),
@@ -181,7 +181,7 @@ class ProgramNRF24Lx1Applet(GlasgowApplet, name="program-nrf24lx1"):
             delay_cyc=math.ceil(target.sys_clk_freq / 1e6),
             sck_idle=0,
             sck_edge="rising",
-            ss_active=0,
+            cs_active=0,
         ))
         subtarget.comb += [
             pads.prog_t.o.eq(dut_prog),
@@ -195,7 +195,7 @@ class ProgramNRF24Lx1Applet(GlasgowApplet, name="program-nrf24lx1"):
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        spi_iface = SPIMasterInterface(iface, self.logger)
+        spi_iface = SPIControllerInterface(iface, self.logger)
         nrf24lx1_iface = ProgramNRF24Lx1Interface(spi_iface, self.logger, device,
                                                   self.__addr_dut_prog, self.__addr_dut_reset)
         return nrf24lx1_iface

@@ -3,7 +3,7 @@ from .internal.benchmark import BenchmarkApplet
 
 from .interface.analyzer import AnalyzerApplet
 from .interface.uart import UARTApplet
-from .interface.spi_master import SPIMasterApplet
+from .interface.spi_controller import SPIControllerApplet
 from .interface.i2c_initiator import I2CInitiatorApplet
 from .interface.i2c_target import I2CTargetApplet
 from .interface.jtag_pinout import JTAGPinoutApplet
