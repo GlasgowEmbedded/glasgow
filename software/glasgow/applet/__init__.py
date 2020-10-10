@@ -18,7 +18,7 @@ class GlasgowAppletMeta(ABCMeta):
     def __new__(metacls, clsname, bases, namespace, name=None, **kwargs):
         if name is not None:
             if name in metacls.all_applets:
-                raise NameError(f"Applet {name:r} already exists")
+                raise NameError(f"Applet {name!r} already exists")
             namespace["name"] = name
 
         # Any class that overrides interact() no longer has its superclass' custom REPL, so be
