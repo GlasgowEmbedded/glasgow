@@ -10,32 +10,32 @@ from ....gateware.clockgen import *
 from ... import *
 
 
-class SPIMasterBus(Module):
-    def __init__(self, pads, sck_idle, sck_edge, ss_active):
+class SPIControllerBus(Module):
+    def __init__(self, pads, sck_idle, sck_edge, cs_active):
         self.oe   = Signal(reset=1)
 
         self.sck  = Signal(reset=sck_idle)
-        self.ss   = Signal(reset=not ss_active)
-        self.mosi = Signal()
-        self.miso = Signal()
+        self.cs   = Signal(reset=not cs_active)
+        self.copi = Signal()
+        self.cipo = Signal()
 
         self.comb += [
             pads.sck_t.oe.eq(self.oe),
             pads.sck_t.o.eq(self.sck),
         ]
-        if hasattr(pads, "ss_t"):
+        if hasattr(pads, "cs_t"):
             self.comb += [
-                pads.ss_t.oe.eq(1),
-                pads.ss_t.o.eq(self.ss),
+                pads.cs_t.oe.eq(1),
+                pads.cs_t.o.eq(self.cs),
             ]
-        if hasattr(pads, "mosi_t"):
+        if hasattr(pads, "copi_t"):
             self.comb += [
-                pads.mosi_t.oe.eq(self.oe),
-                pads.mosi_t.o.eq(self.mosi)
+                pads.copi_t.oe.eq(self.oe),
+                pads.copi_t.o.eq(self.copi)
             ]
-        if hasattr(pads, "miso_t"):
+        if hasattr(pads, "cipo_t"):
             self.specials += \
-                MultiReg(pads.miso_t.i, self.miso)
+                MultiReg(pads.cipo_t.i, self.cipo)
 
         sck_r = Signal()
         self.sync += sck_r.eq(self.sck)
@@ -66,10 +66,10 @@ BIT_DATA_IN  =     0b0010
 BIT_HOLD_SS  =     0b0100
 
 
-class SPIMasterSubtarget(Module):
+class SPIControllerSubtarget(Module):
     def __init__(self, pads, out_fifo, in_fifo, period_cyc, delay_cyc,
-                 sck_idle, sck_edge, ss_active):
-        self.submodules.bus = SPIMasterBus(pads, sck_idle, sck_edge, ss_active)
+                 sck_idle, sck_edge, cs_active):
+        self.submodules.bus = SPIControllerBus(pads, sck_idle, sck_edge, cs_active)
 
         ###
 
@@ -89,13 +89,13 @@ class SPIMasterSubtarget(Module):
         shreg_i = Signal(8)
         self.comb += [
             self.bus.sck.eq(self.clkgen.clk),
-            self.bus.mosi.eq(shreg_o[-1]),
+            self.bus.copi.eq(shreg_o[-1]),
         ]
         self.sync += [
             If(self.bus.setup,
                 shreg_o.eq(Cat(C(0, 1), shreg_o))
             ).Elif(self.bus.latch,
-                shreg_i.eq(Cat(self.bus.miso, shreg_i))
+                shreg_i.eq(Cat(self.bus.cipo, shreg_i))
             )
         ]
 
@@ -155,10 +155,10 @@ class SPIMasterSubtarget(Module):
             If(count == 0,
                 NextState("RECV-COMMAND"),
                 If((cmd & BIT_HOLD_SS) != 0,
-                    NextValue(self.bus.ss, ss_active),
+                    NextValue(self.bus.cs, cs_active),
                 ),
             ).Else(
-                NextValue(self.bus.ss, ss_active),
+                NextValue(self.bus.cs, cs_active),
                 NextState("RECV-DATA")
             )
         )
@@ -193,7 +193,7 @@ class SPIMasterSubtarget(Module):
             If(((cmd & BIT_DATA_OUT) != 0) | in_fifo.writable,
                 If(count == 0,
                     If((cmd & BIT_HOLD_SS) == 0,
-                        NextValue(self.bus.ss, not ss_active),
+                        NextValue(self.bus.cs, not cs_active),
                     ),
                     NextState("RECV-COMMAND")
                 ).Else(
@@ -203,7 +203,7 @@ class SPIMasterSubtarget(Module):
         )
 
 
-class SPIMasterInterface:
+class SPIControllerInterface:
     def __init__(self, interface, logger):
         self.lower   = interface
         self._logger = logger
@@ -287,14 +287,14 @@ class SPIMasterInterface:
         await self.lower.read(1)
 
 
-class SPIMasterApplet(GlasgowApplet, name="spi-master"):
+class SPIControllerApplet(GlasgowApplet, name="spi-controller"):
     logger = logging.getLogger(__name__)
     help = "initiate SPI transactions"
     description = """
     Initiate transactions on the SPI bus.
     """
 
-    __pins = ("sck", "ss", "mosi", "miso")
+    __pins = ("sck", "cs", "copi", "cipo")
 
     @classmethod
     def add_build_arguments(cls, parser, access, omit_pins=False):
@@ -302,9 +302,9 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
 
         if not omit_pins:
             access.add_pin_argument(parser, "sck", required=True)
-            access.add_pin_argument(parser, "ss")
-            access.add_pin_argument(parser, "mosi")
-            access.add_pin_argument(parser, "miso")
+            access.add_pin_argument(parser, "cs")
+            access.add_pin_argument(parser, "copi")
+            access.add_pin_argument(parser, "cipo")
 
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=100,
@@ -317,19 +317,19 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
             default="rising",
             help="latch data at clock edge EDGE (default: %(default)s)")
         parser.add_argument(
-            "--ss-active", metavar="LEVEL", type=int, choices=[0, 1], default=0,
+            "--cs-active", metavar="LEVEL", type=int, choices=[0, 1], default=0,
             help="set active chip select level to LEVEL (default: %(default)s)")
 
     def build(self, target, args, pins=__pins):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        return iface.add_subtarget(SPIMasterSubtarget(
+        return iface.add_subtarget(SPIControllerSubtarget(
             pads=iface.get_pads(args, pins=pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
             period_cyc=self.derive_clock(input_hz=target.sys_clk_freq,
                                          output_hz=args.frequency * 1000,
                                          clock_name="master",
-                                         # 2 cyc MultiReg delay from SCK to MISO requires a 4 cyc
+                                         # 2 cyc MultiReg delay from SCK to CIPO requires a 4 cyc
                                          # period with current implementation of SERDES
                                          min_cyc=4),
             delay_cyc=self.derive_clock(input_hz=target.sys_clk_freq,
@@ -337,12 +337,12 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
                                         clock_name="delay"),
             sck_idle=args.sck_idle,
             sck_edge=args.sck_edge,
-            ss_active=args.ss_active,
+            cs_active=args.cs_active,
         ))
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        spi_iface = SPIMasterInterface(iface, self.logger)
+        spi_iface = SPIControllerInterface(iface, self.logger)
         return spi_iface
 
     @classmethod
@@ -359,27 +359,27 @@ class SPIMasterApplet(GlasgowApplet, name="spi-master"):
 
 # -------------------------------------------------------------------------------------------------
 
-class SPIMasterAppletTestCase(GlasgowAppletTestCase, applet=SPIMasterApplet):
+class SPIControllerAppletTestCase(GlasgowAppletTestCase, applet=SPIControllerApplet):
     @synthesis_test
     def test_build(self):
-        self.assertBuilds(args=["--pin-sck",  "0", "--pin-ss",   "1",
-                                "--pin-mosi", "2", "--pin-miso", "3"])
+        self.assertBuilds(args=["--pin-sck",  "0", "--pin-cs",   "1",
+                                "--pin-copi", "2", "--pin-cipo", "3"])
 
     def setup_loopback(self):
         self.build_simulated_applet()
         mux_iface = self.applet.mux_interface
-        mux_iface.comb += mux_iface.pads.miso_t.i.eq(mux_iface.pads.mosi_t.o)
+        mux_iface.comb += mux_iface.pads.cipo_t.i.eq(mux_iface.pads.copi_t.o)
 
     @applet_simulation_test("setup_loopback",
-                            ["--pin-sck",  "0", "--pin-ss", "1",
-                             "--pin-mosi", "2", "--pin-miso",   "3",
+                            ["--pin-sck",  "0", "--pin-cs", "1",
+                             "--pin-copi", "2", "--pin-cipo",   "3",
                              "--frequency", "5000"])
     @asyncio.coroutine
     def test_loopback(self):
         mux_iface = self.applet.mux_interface
         spi_iface = yield from self.run_simulated_applet()
 
-        self.assertEqual((yield mux_iface.pads.ss_t.o), 1)
+        self.assertEqual((yield mux_iface.pads.cs_t.o), 1)
         result = yield from spi_iface.transfer([0xAA, 0x55, 0x12, 0x34])
         self.assertEqual(result, bytearray([0xAA, 0x55, 0x12, 0x34]))
-        self.assertEqual((yield mux_iface.pads.ss_t.o), 1)
+        self.assertEqual((yield mux_iface.pads.cs_t.o), 1)

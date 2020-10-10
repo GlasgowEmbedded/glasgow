@@ -64,7 +64,7 @@ import asyncio
 from bitarray import bitarray
 from nmigen.compat import *
 
-from ...interface.spi_master import SPIMasterSubtarget, SPIMasterInterface
+from ...interface.spi_controller import SPIControllerSubtarget, SPIControllerInterface
 from ... import *
 
 
@@ -330,7 +330,7 @@ class DisplayPDIApplet(GlasgowApplet, name="display-pdi"):
     Circuit. In particular, the G1 COG will not start up without PWM.
     """
 
-    __pins    = ("power", "disch", "reset", "ss", "sck", "miso", "mosi")
+    __pins    = ("power", "disch", "reset", "cs", "sck", "cipo", "copi")
     __pins_g1 = ("pwm",)
 
     @classmethod
@@ -342,7 +342,7 @@ class DisplayPDIApplet(GlasgowApplet, name="display-pdi"):
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        subtarget = iface.add_subtarget(SPIMasterSubtarget(
+        subtarget = iface.add_subtarget(SPIControllerSubtarget(
             pads=iface.get_pads(args, pins=self.__pins + self.__pins_g1),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
@@ -350,7 +350,7 @@ class DisplayPDIApplet(GlasgowApplet, name="display-pdi"):
             delay_cyc=math.ceil(target.sys_clk_freq / 1e6),
             sck_idle=0,
             sck_edge="rising",
-            ss_active=0,
+            cs_active=0,
         ))
 
         cog_power, self.__addr_cog_power = target.registers.add_rw(1)
@@ -395,7 +395,7 @@ class DisplayPDIApplet(GlasgowApplet, name="display-pdi"):
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        spi_iface = SPIMasterInterface(iface, self.logger)
+        spi_iface = SPIControllerInterface(iface, self.logger)
         pdi_iface = PDIG1DisplayInterface(spi_iface, device, self.logger,
             self.__addr_cog_power, self.__addr_cog_disch, self.__addr_cog_reset,
             self.__addr_cog_pwmen,
