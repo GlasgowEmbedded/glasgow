@@ -242,9 +242,9 @@ class FreqCounterApplet(GlasgowApplet, name="freq-counter"):
 
     def print_results(self, results, title, key, unit):
         values = (
-            num_to_si(min(*( v[key] for k,v in results.items() if k != "total" ))),
+            num_to_si(min(*( v[key] for k,v in results.items() ))),
             num_to_si(results["total"][key]),
-            num_to_si(max(*( v[key] for k,v in results.items() if k != "total" ))),
+            num_to_si(max(*( v[key] for k,v in results.items() ))),
         )
         self.print_result_row(title, unit, *values)
 
