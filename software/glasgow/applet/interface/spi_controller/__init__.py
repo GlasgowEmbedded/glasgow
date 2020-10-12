@@ -328,7 +328,7 @@ class SPIControllerApplet(GlasgowApplet, name="spi-controller"):
             in_fifo=iface.get_in_fifo(auto_flush=False),
             period_cyc=self.derive_clock(input_hz=target.sys_clk_freq,
                                          output_hz=args.frequency * 1000,
-                                         clock_name="master",
+                                         clock_name="sck",
                                          # 2 cyc MultiReg delay from SCK to CIPO requires a 4 cyc
                                          # period with current implementation of SERDES
                                          min_cyc=4),
