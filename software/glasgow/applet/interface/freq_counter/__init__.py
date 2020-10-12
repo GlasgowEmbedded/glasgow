@@ -14,13 +14,12 @@ class _Command(enum.IntEnum):
 
 
 class FreqCounter(Elaboratable):
-    def __init__(self, signal_in, trigger, busy, count, cyc_lo, cyc_hi, edge="r"):
+    def __init__(self, signal_in, trigger, busy, count, counters, edge="r"):
         self.signal_in = signal_in
         self.trigger = trigger
         self.busy = busy
         self.count = count
-        self.cyc_lo = cyc_lo
-        self.cyc_hi = cyc_hi
+        self.counters = counters
         self.edge = edge
 
     def elaborate(self, platform):
@@ -39,7 +38,12 @@ class FreqCounter(Elaboratable):
 
         count_t = Signal.like(self.count)
 
-        cyc = Array([ self.cyc_lo, self.cyc_hi ])[self.signal_in]
+        cyc = Array(self.counters["total"])[self.signal_in]
+
+        cyc_cur_lo = Signal.like(self.counters["total"][0])
+        cyc_cur_hi = Signal.like(self.counters["total"][1])
+        cyc_cur_v = Array([ cyc_cur_lo, cyc_cur_hi ])
+        cyc_cur = cyc_cur_v[self.signal_in]
 
         with m.FSM() as fsm:
             m.d.comb += self.busy.eq(~fsm.ongoing("IDLE"))
@@ -48,8 +52,13 @@ class FreqCounter(Elaboratable):
                 with m.If(self.trigger):
                     m.d.sync += [
                         count_t.eq(self.count),
-                        self.cyc_lo.eq(0),
-                        self.cyc_hi.eq(0),
+                        cyc_cur_lo.eq(0),
+                        cyc_cur_hi.eq(0),
+                        self.counters["total"][0].eq( 0), self.counters["total"][1].eq( 0),
+                        self.counters["min_l"][0].eq(~0), self.counters["min_l"][1].eq(~0),
+                        self.counters["max_l"][0].eq( 0), self.counters["max_l"][1].eq( 0),
+                        self.counters["min_h"][0].eq(~0), self.counters["min_h"][1].eq(~0),
+                        self.counters["max_h"][0].eq( 0), self.counters["max_h"][1].eq( 0),
                     ]
                     m.next = "COUNT-WAIT"
 
@@ -58,9 +67,32 @@ class FreqCounter(Elaboratable):
                     m.next = "COUNT-RUN"
 
             with m.State("COUNT-RUN"):
-                m.d.sync += cyc.eq(cyc + 1)
+                m.d.sync += [
+                    cyc.eq(cyc + 1),
+                    cyc_cur.eq(cyc_cur + 1),
+                ]
+
                 with m.If(f_start):
-                    m.d.sync += count_t.eq(count_t - 1)
+                    m.d.sync += [
+                        count_t.eq(count_t - 1),
+                        cyc_cur_lo.eq(0),
+                        cyc_cur_hi.eq(0),
+                    ]
+
+                    for k, lvl, lt in (
+                        ( "min_l", 0, True  ),
+                        ( "max_l", 0, False ),
+                        ( "min_h", 1, True  ),
+                        ( "max_h", 1, False ),
+                    ):
+                        cyc_cur_x = cyc_cur_v[lvl]
+                        counter_x = self.counters[k][lvl]
+                        with m.If(cyc_cur_x < counter_x if lt else cyc_cur_x > counter_x):
+                            m.d.sync += [
+                                self.counters[k][0].eq(cyc_cur_v[0]),
+                                self.counters[k][1].eq(cyc_cur_v[1]),
+                            ]
+
                 with m.If(count_t == 0):
                     m.next = "IDLE"
 
@@ -68,13 +100,12 @@ class FreqCounter(Elaboratable):
 
 
 class FreqCounterSubtarget(Elaboratable):
-    def __init__(self, pads, out_fifo, reg_busy, reg_count, reg_cyc_lo, reg_cyc_hi, edge="r"):
+    def __init__(self, pads, out_fifo, reg_busy, reg_count, counters, edge="r"):
         self.pads =  pads
         self.out_fifo = out_fifo
         self.reg_busy = reg_busy
         self.reg_count = reg_count
-        self.reg_cyc_lo = reg_cyc_lo
-        self.reg_cyc_hi = reg_cyc_hi
+        self.counters = counters
         self.edge = edge
 
     def elaborate(self, platform):
@@ -95,8 +126,7 @@ class FreqCounterSubtarget(Elaboratable):
             trigger=trigger,
             busy=self.reg_busy,
             count=self.reg_count,
-            cyc_lo=self.reg_cyc_lo,
-            cyc_hi=self.reg_cyc_hi,
+            counters=self.counters,
             edge=self.edge
         )
 
@@ -128,18 +158,25 @@ class FreqCounterApplet(GlasgowApplet, name="freq-counter"):
         self.sys_clk_freq = target.sys_clk_freq
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
 
-        reg_busy,   self.__reg_busy   = target.registers.add_ro(1)
-        reg_count,  self.__reg_count  = target.registers.add_rw(32)
-        reg_cyc_lo, self.__reg_cyc_lo = target.registers.add_ro(32)
-        reg_cyc_hi, self.__reg_cyc_hi = target.registers.add_ro(32)
+        reg_busy,  self.__reg_busy  = target.registers.add_ro(1)
+        reg_count, self.__reg_count = target.registers.add_rw(32)
+
+        counter_regs = {
+            "total": ( target.registers.add_ro(32), target.registers.add_ro(32) ),
+            "min_l": ( target.registers.add_ro(32), target.registers.add_ro(32) ),
+            "max_l": ( target.registers.add_ro(32), target.registers.add_ro(32) ),
+            "min_h": ( target.registers.add_ro(32), target.registers.add_ro(32) ),
+            "max_h": ( target.registers.add_ro(32), target.registers.add_ro(32) ),
+        }
+        counters        = { k: [ _[0] for _ in v ] for k,v in counter_regs.items() }
+        self.__counters = { k: [ _[1] for _ in v ] for k,v in counter_regs.items() }
 
         iface.add_subtarget(FreqCounterSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             reg_busy=reg_busy,
             reg_count=reg_count,
-            reg_cyc_lo=reg_cyc_lo,
-            reg_cyc_hi=reg_cyc_hi,
+            counters=counters,
             edge=args.edge,
         ))
 
@@ -160,6 +197,57 @@ class FreqCounterApplet(GlasgowApplet, name="freq-counter"):
 
         raise TimeoutError("Timeout while waiting for counter to return to idle")
 
+    async def get_result_series(self, device, rising_edge, count, reg_cyc_lo, reg_cyc_hi):
+        cyc_lo = await device.read_register(reg_cyc_lo, width=4)
+        cyc_hi = await device.read_register(reg_cyc_hi, width=4)
+        cyc_t  = cyc_lo + cyc_hi
+
+        sys_clk_period = 1 / self.sys_clk_freq
+        duration = sys_clk_period * cyc_t
+
+        frequency = (self.sys_clk_freq / cyc_t) * count
+        period = 1 / frequency
+
+        t_lo = sys_clk_period * (cyc_lo / count)
+        t_hi = sys_clk_period * (cyc_hi / count)
+        t_t = t_lo + t_hi
+
+        if rising_edge:
+            duty = cyc_hi / cyc_t
+        else:
+            duty = cyc_lo / cyc_t
+
+        return {
+            "count": count,
+            "duration": duration, "frequency": frequency,
+            "cyc_lo": cyc_lo, "cyc_hi": cyc_hi, "cyc_total": cyc_t,
+            "t_lo":   t_lo,   "t_hi":   t_hi,   "t_total":   t_t,
+            "duty": duty * 100.0,
+        }
+
+    async def get_results(self, device, rising_edge, args):
+        results = {
+            k: await self.get_result_series(device, rising_edge, args.count if k == "total" else 1, *v)
+            for k,v in self.__counters.items()
+        }
+        return results
+
+    def print_result_row(self, title, unit, *values):
+        print(f"{title:10}: ", end="")
+        for i, ( value, prefix ) in enumerate(values):
+            if i > 0:
+                print("  <  ", end="")
+            print(f"{value:>7.3f} {prefix:1}{unit:2}", end="")
+        print("")
+
+    def print_results(self, results, title, key, unit):
+        values = (
+            num_to_si(min(*( v[key] for k,v in results.items() if k != "total" ))),
+            num_to_si(results["total"][key]),
+            num_to_si(max(*( v[key] for k,v in results.items() if k != "total" ))),
+        )
+        self.print_result_row(title, unit, *values)
+
     async def run(self, device, args):
         rising_edge = args.edge in ("r", "rising")
 
@@ -173,31 +261,17 @@ class FreqCounterApplet(GlasgowApplet, name="freq-counter"):
 
         await self.wait_for_idle(device)
 
-        cyc_lo = await device.read_register(self.__reg_cyc_lo, width=4)
-        cyc_hi = await device.read_register(self.__reg_cyc_hi, width=4)
-        cyc_t  = cyc_lo + cyc_hi
+        results = await self.get_results(device, rising_edge, args)
 
-        sys_clk_period = 1 / self.sys_clk_freq
-        duration = sys_clk_period * cyc_t
-
-        frequency = (self.sys_clk_freq / cyc_t) * args.count
-        period = 1 / frequency
-
-        t_lo = sys_clk_period * (cyc_lo / args.count)
-        t_hi = sys_clk_period * (cyc_hi / args.count)
-
+        self.print_result_row("Duration", "s", num_to_si(results["total"]["duration"]))
+        self.print_results(results, "Frequency", "frequency", "Hz")
+        self.print_results(results, "Duty",      "duty",      "%")
         if rising_edge:
-            duty = cyc_hi / cyc_t
+            self.print_results(results, "Time Lo", "t_lo", "s")
+            self.print_results(results, "Time Hi", "t_hi", "s")
         else:
-            duty = cyc_lo / cyc_t
-
-        print('Duration:         {:>7.3f} {:1}s  / {:>7} cycles'.format(*num_to_si(duration), args.count))
-        print('Frequency:        {:>7.3f} {:1}Hz / {:>7.3f} {:1}s'.format(*num_to_si(frequency), *num_to_si(period)))
-        if rising_edge:
-            print('Time High / Low:  {:>7.3f} {:1}s  / {:>7.3f} {:1}s'.format(*num_to_si(t_hi), *num_to_si(t_lo)))
-        else:
-            print('Time Low / High:  {:>7.3f} {:1}s  / {:>7.3f} {:1}s'.format(*num_to_si(t_lo), *num_to_si(t_hi)))
-        print('Duty Cycle:       {:>7.3f} %'.format(duty * 100))
+            self.print_results(results, "Time Hi", "t_hi", "s")
+            self.print_results(results, "Time Lo", "t_lo", "s")
 
 # -------------------------------------------------------------------------------------------------
 
