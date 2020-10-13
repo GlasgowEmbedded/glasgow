@@ -46,6 +46,7 @@ from .display.pdi import DisplayPDIApplet
 
 from .audio.dac import AudioDACApplet
 from .audio.yamaha_opx import AudioYamahaOPxApplet
+from .audio.i2s_capture import AudioI2SCaptureApplet
 
 from .video.rgb_input import VideoRGBInputApplet
 from .video.vga_output import VGAOutputApplet
