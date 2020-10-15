@@ -1,5 +1,6 @@
 import os
 import sys
+import ast
 import logging
 import argparse
 import textwrap
@@ -142,16 +143,16 @@ def get_argparser():
                     "tests", metavar="TEST", nargs="*",
                     help="test cases to run")
 
-            if mode in ("build", "run", "run-repl"):
+            if mode in ("build", "run", "run-repl", "run-script"):
                 access_args = DirectArguments(applet_name=applet_name,
                                               default_port="AB",
                                               pin_count=16)
-                if mode in ("run", "run-repl"):
+                if mode in ("run", "run-repl", "run-script"):
                     g_applet_build = p_applet.add_argument_group("build arguments")
                     applet.add_build_arguments(g_applet_build, access_args)
                     g_applet_run = p_applet.add_argument_group("run arguments")
                     applet.add_run_arguments(g_applet_run, access_args)
-                    if mode != "run-repl":
+                    if mode not in ( "run-repl", "run-script" ):
                         # FIXME: this makes it impossible to add subparsers in applets
                         # g_applet_interact = p_applet.add_argument_group("interact arguments")
                         # applet.add_interact_arguments(g_applet_interact)
@@ -245,6 +246,15 @@ def get_argparser():
     add_run_args(p_run_repl)
     add_applet_arg(p_run_repl, mode="run-repl")
 
+    p_run_script = subparsers.add_parser(
+        "run-script", formatter_class=TextHelpFormatter,
+        help="run an applet and execute a script against its low-level interface")
+    add_run_args(p_run_script)
+    p_run_script.add_argument(
+        "script", metavar="SCRIPT", type=argparse.FileType("r"),
+        help="the script to run")
+    add_applet_arg(p_run_script, mode="run-script")
+
     p_run_prebuilt = subparsers.add_parser(
         "run-prebuilt", formatter_class=TextHelpFormatter,
         help="(advanced) load a prebuilt applet bitstream and run applet code")
@@ -324,6 +334,10 @@ def get_argparser():
         "--serial", metavar="SERIAL", dest="factory_serial", type=factory_serial,
         default=datetime.now().strftime("%Y%m%dT%H%M%SZ"),
         help="serial number in ISO 8601 format (if not specified: %(default)s)")
+
+    p_list = subparsers.add_parser(
+        "list", formatter_class=TextHelpFormatter,
+        help="list devices connected to the system")
 
     return parser
 
@@ -439,6 +453,11 @@ async def _main():
             elif args.action == "factory":
                 device = GlasgowHardwareDevice(args.serial, firmware_filename,
                                                _factory_rev=args.factory_rev)
+            elif args.action == "list":
+                serial_list = GlasgowHardwareDevice.get_serial_list(firmware_filename)
+                for serial in sorted(serial_list):
+                    print(serial)
+                return 0
             else:
                 device = GlasgowHardwareDevice(args.serial, firmware_filename)
 
@@ -486,12 +505,12 @@ async def _main():
                 print("{}\t{:.2}\t{:.2}"
                       .format(port, vio, vlimit))
 
-        if args.action in ("run", "run-repl", "run-prebuilt"):
+        if args.action in ("run", "run-repl", "run-script", "run-prebuilt"):
             target, applet = _applet(device.revision, args)
             device.demultiplexer = DirectDemultiplexer(device, target.multiplexer.pipe_count)
             plan = target.build_plan()
 
-            if args.action in ("run", "run-repl"):
+            if args.action in ("run", "run-repl", "run-script"):
                 await device.download_target(plan, rebuild=args.rebuild)
             if args.action == "run-prebuilt":
                 bitstream_file = args.bitstream or open("{}.bin".format(args.applet), "rb")
@@ -578,8 +597,14 @@ async def _main():
                             logger.warn("applet provides customized REPL(s); consider using `run "
                                         "{} ...-repl` subcommands".format(applet.name))
                         logger.info("dropping to REPL; use 'help(iface)' to see available APIs")
-                        await AsyncInteractiveConsole(locals={"iface":iface},
+                        await AsyncInteractiveConsole(locals={"iface":iface, "device":device},
                             run_callback=device.demultiplexer.flush).interact()
+
+                    if args.action == "run-script":
+                        c = compile(args.script.read(), filename=args.script.name, mode="exec",
+                            flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+                        await eval(c, {"iface":iface, "device":device})
+
                 except GlasgowAppletError as e:
                     applet.logger.error(str(e))
                 except asyncio.CancelledError:
