@@ -910,7 +910,13 @@ class YamahaOPxWebInterface:
                     await sock.send_bytes(samples)
 
                 for fut in [play_fut, record_fut]:
-                    await fut
+                    try:
+                        await fut
+                    except NotImplementedError as e:
+                        self._logger.exception("web: %s: error streaming",
+                                               digest)
+                        await sock.close(code=1003, message=str(e))
+                        return sock
 
                 self._logger.info("web: %s: done streaming",
                                   digest)
