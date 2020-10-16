@@ -155,6 +155,7 @@ from ... import *
 
 class YamahaCPUBus(Module):
     def __init__(self, pads, master_cyc):
+        self.rst   = Signal()
         self.stb_m = Signal()
 
         self.a  = Signal(2)
@@ -190,6 +191,11 @@ class YamahaCPUBus(Module):
             self.comb += [
                 pads.cs_t.oe.eq(1),
                 pads.cs_t.o.eq(~self.cs),
+            ]
+        if hasattr(pads, "ic_t"):
+            self.comb += [
+                pads.ic_t.oe.eq(1),
+                pads.ic_t.o.eq(~self.rst),
             ]
 
 
@@ -241,6 +247,7 @@ class YamahaOPxSubtarget(Module):
         wait_timer  = Signal(16)
 
         enabled     = Signal()
+        self.comb += self.cpu_bus.rst.eq(~enabled)
 
         # The code below assumes that the FSM clock is under ~50 MHz, which frees us from the need
         # to explicitly satisfy setup/hold timings.
@@ -732,7 +739,8 @@ class YamahaVGMStreamPlayer(VGMStreamPlayer):
     async def play(self):
         try:
             await self._opx_iface.enable()
-            await self.wait_seconds(1.0)
+            # Flush out the state after reset.
+            await self._opx_iface.wait_clocks(self._opx_iface.sample_clocks * 1024)
             await self._reader.parse_data(self)
         finally:
             # Various parts of our stack are not completely synchronized to each other, resulting
@@ -742,6 +750,9 @@ class YamahaVGMStreamPlayer(VGMStreamPlayer):
             await self._opx_iface.disable()
 
     async def record(self, queue, chunk_count=16384):
+        # Skip a few initial samples that are used to flush state.
+        await self._opx_iface.read_samples(1024)
+
         total_count = int(self._reader.total_seconds / self.sample_time)
         done_count  = 0
         while done_count < total_count:
@@ -1014,20 +1025,23 @@ class AudioYamahaOPxApplet(GlasgowApplet, name="audio-yamaha-opx"):
 
     __pin_sets = ("d", "a")
     __pins = ("wr", "rd", "clk_m",
-              "sh", "mo", "clk_sy")
+              "sh", "mo", "clk_sy",
+              "cs", "ic")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
         access.add_pin_set_argument(parser, "d", width=8, default=True)
-        access.add_pin_set_argument(parser, "a", width=2, default=True)
+        access.add_pin_set_argument(parser, "a", width=range(1, 3), default=2)
         access.add_pin_argument(parser, "wr", default=True)
         access.add_pin_argument(parser, "rd", default=True)
         access.add_pin_argument(parser, "clk_m", default=True)
         access.add_pin_argument(parser, "sh", default=True)
         access.add_pin_argument(parser, "mo", default=True)
         access.add_pin_argument(parser, "clk_sy", default=True)
+        access.add_pin_argument(parser, "cs", required=False)
+        access.add_pin_argument(parser, "ic", required=False)
 
         parser.add_argument(
             "-d", "--device", metavar="DEVICE", choices=["OPL", "OPL2", "OPL3", "OPM"],
