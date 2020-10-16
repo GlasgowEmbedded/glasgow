@@ -803,8 +803,11 @@ class YamahaOPxWebInterface:
                                          message=client_resp.reason)
                         return sock
 
-                    if ("Content-Length" not in client_resp.headers or
-                            int(client_resp.headers["Content-Length"]) > (1<<20)):
+                    if "Content-Length" not in client_resp.headers:
+                        await sock.close(code=2999, message=
+                            "Remote server did not specify Content-Length")
+                        return sock
+                    elif int(client_resp.headers["Content-Length"]) > (1<<20):
                         await sock.close(code=2999, message=
                             "File too large ({} bytes) to be fetched"
                             .format(client_resp.headers["Content-Length"]))
@@ -915,7 +918,7 @@ class YamahaOPxWebInterface:
                     except NotImplementedError as e:
                         self._logger.exception("web: %s: error streaming",
                                                digest)
-                        await sock.close(code=1003, message=str(e))
+                        await sock.close(code=2000, message=str(e))
                         return sock
 
                 self._logger.info("web: %s: done streaming",
