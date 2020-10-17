@@ -6,6 +6,7 @@ from nmigen import *
 from nmigen.lib.cdc import FFSynchronizer
 
 from ....gateware.pads import *
+from ....gateware.pll import *
 from ....support.si_prefix import num_to_si
 from ... import *
 
@@ -14,19 +15,20 @@ class _Command(enum.IntEnum):
 
 
 class FreqCounter(Elaboratable):
-    def __init__(self, signal_in, trigger, busy, count, counters, edge="r"):
+    def __init__(self, signal_in, trigger, busy, count, counters, edge="r", domain="sync"):
         self.signal_in = signal_in
         self.trigger = trigger
         self.busy = busy
         self.count = count
         self.counters = counters
         self.edge = edge
+        self.domain = domain
 
     def elaborate(self, platform):
         m = Module()
 
         f_edge = Signal(2)
-        m.d.sync += f_edge.eq(Cat(self.signal_in, f_edge[:-1]))
+        m.d[self.domain] += f_edge.eq(Cat(self.signal_in, f_edge[:-1]))
 
         f_start = Signal()
         if self.edge in ("r", "rising"):
@@ -45,12 +47,12 @@ class FreqCounter(Elaboratable):
         cyc_cur_v = Array([ cyc_cur_lo, cyc_cur_hi ])
         cyc_cur = cyc_cur_v[self.signal_in]
 
-        with m.FSM() as fsm:
+        with m.FSM(domain=self.domain) as fsm:
             m.d.comb += self.busy.eq(~fsm.ongoing("IDLE"))
 
             with m.State("IDLE"):
                 with m.If(self.trigger):
-                    m.d.sync += [
+                    m.d[self.domain] += [
                         count_t.eq(self.count),
                         cyc_cur_lo.eq(0),
                         cyc_cur_hi.eq(0),
@@ -67,13 +69,13 @@ class FreqCounter(Elaboratable):
                     m.next = "COUNT-RUN"
 
             with m.State("COUNT-RUN"):
-                m.d.sync += [
+                m.d[self.domain] += [
                     cyc.eq(cyc + 1),
                     cyc_cur.eq(cyc_cur + 1),
                 ]
 
                 with m.If(f_start):
-                    m.d.sync += [
+                    m.d[self.domain] += [
                         count_t.eq(count_t - 1),
                         cyc_cur_lo.eq(0),
                         cyc_cur_hi.eq(0),
@@ -88,7 +90,7 @@ class FreqCounter(Elaboratable):
                         cyc_cur_x = cyc_cur_v[lvl]
                         counter_x = self.counters[k][lvl]
                         with m.If(cyc_cur_x < counter_x if lt else cyc_cur_x > counter_x):
-                            m.d.sync += [
+                            m.d[self.domain] += [
                                 self.counters[k][0].eq(cyc_cur_v[0]),
                                 self.counters[k][1].eq(cyc_cur_v[1]),
                             ]
@@ -100,19 +102,24 @@ class FreqCounter(Elaboratable):
 
 
 class FreqCounterSubtarget(Elaboratable):
-    def __init__(self, pads, out_fifo, reg_busy, reg_count, counters, edge="r"):
+    def __init__(self, pads, out_fifo, reg_busy, reg_count, counters, sys_clk_freq, pll_out_freq, edge="r"):
         self.pads =  pads
         self.out_fifo = out_fifo
         self.reg_busy = reg_busy
         self.reg_count = reg_count
         self.counters = counters
+        self.sys_clk_freq = sys_clk_freq
+        self.pll_out_freq = pll_out_freq
         self.edge = edge
 
     def elaborate(self, platform):
         m = Module()
 
+        m.domains += ClockDomain("samp")
+        m.submodules += PLL(f_in=self.sys_clk_freq, f_out=self.pll_out_freq, odomain="samp")
+
         signal_in = Signal.like(self.pads.f_t.i)
-        m.submodules += FFSynchronizer(self.pads.f_t.i, signal_in)
+        m.submodules += FFSynchronizer(self.pads.f_t.i, signal_in, o_domain="samp")
 
         trigger = Signal()
 
@@ -127,7 +134,8 @@ class FreqCounterSubtarget(Elaboratable):
             busy=self.reg_busy,
             count=self.reg_count,
             counters=self.counters,
-            edge=self.edge
+            edge=self.edge,
+            domain="samp",
         )
 
         return m
@@ -156,6 +164,7 @@ class FreqCounterApplet(GlasgowApplet, name="freq-counter"):
 
     def build(self, target, args):
         self.sys_clk_freq = target.sys_clk_freq
+        self.pll_out_freq = 100e6
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
 
         reg_busy,  self.__reg_busy  = target.registers.add_ro(1)
@@ -177,6 +186,8 @@ class FreqCounterApplet(GlasgowApplet, name="freq-counter"):
             reg_busy=reg_busy,
             reg_count=reg_count,
             counters=counters,
+            sys_clk_freq=self.sys_clk_freq,
+            pll_out_freq=self.pll_out_freq,
             edge=args.edge,
         ))
 
@@ -202,10 +213,10 @@ class FreqCounterApplet(GlasgowApplet, name="freq-counter"):
         cyc_hi = await device.read_register(reg_cyc_hi, width=4)
         cyc_t  = cyc_lo + cyc_hi
 
-        sys_clk_period = 1 / self.sys_clk_freq
+        sys_clk_period = 1 / self.pll_out_freq
         duration = sys_clk_period * cyc_t
 
-        frequency = (self.sys_clk_freq / cyc_t) * count
+        frequency = (self.pll_out_freq / cyc_t) * count
         period = 1 / frequency
 
         t_lo = sys_clk_period * (cyc_lo / count)
