@@ -226,12 +226,12 @@ class SpyBiWireProbeApplet(GlasgowApplet, name="sbw-probe"):
 
     async def interact(self, device, args, sbw_iface):
         await sbw_iface.test_reset()
-        version_bits = await sbw_iface.read_ir(8)
-        version = int(version_bits.reversed())
-        if version == 0xff:
+        jtag_id_bits = await sbw_iface.read_ir(8)
+        jtag_id = int(jtag_id_bits.reversed())
+        if jtag_id == 0xff:
             self.logger.error("no target detected; connection problem?")
         else:
-            self.logger.info("found MSP430 core with JTAG ID %#04x", version)
+            self.logger.info("found MSP430 core with JTAG ID %#04x", jtag_id)
 
 # -------------------------------------------------------------------------------------------------
 
