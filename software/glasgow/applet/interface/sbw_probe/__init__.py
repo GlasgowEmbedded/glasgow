@@ -74,9 +74,9 @@ class SpyBiWireProbeAdapter(Elaboratable):
             # This logic follows "JTAG Access Entry Sequences (for Devices That Support SBW)",
             # Case 1a: SBW entry sequence in section 2.3.1.1.
             #
-            # Note that because SBW does not have any way to re-synchronize its time slots, the only
-            # way to restore lost SBW synchronization is to reset the entire applet for >100 us, which
-            # will reset the DUT and restart the SBW entry sequence.
+            # Note that because SBW does not have any way to re-synchronize its time slots,
+            # the only way to restore lost SBW synchronization is to reset the entire applet
+            # for >100 us, which will reset the DUT and restart the SBW entry sequence.
             with m.State("RESET-1"):
                 with m.If(timer == 0):
                     m.d.sync += bus.sbwtck.eq(1),
