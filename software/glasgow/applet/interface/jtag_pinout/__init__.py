@@ -112,7 +112,7 @@ class JTAGPinoutInterface:
     def __init__(self, interface, logger):
         self._lower  = interface
         self._logger = logger
-        self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+        self._level  = logging.TRACE
 
     def _log(self, message, *args):
         self._logger.log(self._level, "JTAG: " + message, *args)
@@ -234,13 +234,14 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
         await iface.wait()
         return word
 
-    async def _enter_shift_ir(self, iface, *, tck, tms, tdi, trst=0):
+    async def _enter_shift_ir(self, iface, *, tck, tms, tdi, trst=0, assert_trst=False):
         await iface.set_o (tck|tms|tdi|trst)
         await iface.set_oe(tck|tms|tdi|trst)
         await iface.wait()
-        # Pulse TRST
+        # Pulse or assert TRST
         await iface.set_o_0(trst); await iface.wait()
-        await iface.set_o_1(trst); await iface.wait()
+        if not assert_trst:
+            await iface.set_o_1(trst); await iface.wait()
         # Enter Test-Logic-Reset
         await iface.set_o_1(tms)
         for _ in range(5):
@@ -254,8 +255,9 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
         await iface.set_o_0(tms); await self._strobe_tck(iface, tck)
         await iface.set_o_0(tms); await self._strobe_tck(iface, tck)
 
-    async def _detect_tdo(self, iface, *, tck, tms, trst=0):
-        await self._enter_shift_ir(iface, tck=tck, tms=tms, tdi=0, trst=trst)
+    async def _detect_tdo(self, iface, *, tck, tms, trst=0, assert_trst=False):
+        await self._enter_shift_ir(iface, tck=tck, tms=tms, tdi=0, trst=trst,
+                                   assert_trst=assert_trst)
 
         # Shift IR
         ir_0 = await self._strobe_tck_input(iface, tck)
@@ -306,22 +308,32 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
         if pull_down_bits:
             self.logger.info("pull-L: %s", bits_to_str(pull_down_bits))
 
+        trst_l_bits = []
+        trst_h_bits = []
         if len(self.bits) > 4:
-            # Try possible TRST# pins from most to least likely.
-            trst_bits = [*pull_down_bits, *high_z_bits, *pull_up_bits]
-        else:
-            trst_bits = []
+            # Try possible TRST# pins from most to least likely. This changes based on whether we
+            # expect TRST# to be low (i.e. if we can't detect the TAP without TRST) or to be high
+            # (i.e. if we found a TAP without TRST).
+            trst_l_bits += pull_down_bits
+            trst_h_bits += pull_up_bits
+            trst_l_bits += high_z_bits
+            trst_h_bits += high_z_bits
+            # Try inconsistent (neither pull-up nor pull-down nor high-Z) pins and pins pulled to
+            # the wrong direction after exhausting every reasonable attempt.
+            trst_l_bits += self.bits - set(trst_l_bits)
+            trst_h_bits += self.bits - set(trst_h_bits)
 
         results = []
-        for bit_trst in [None, *trst_bits]:
+        for bit_trst in [None, *trst_l_bits]:
             if bit_trst is None:
-                self.logger.info("detecting TCK, TMS and TDO")
+                self.logger.info("detecting TCK, TMS, and TDO")
                 data_bits = self.bits
             else:
-                self.logger.info("detecting TCK, TMS and TDO with TRST#=%s",
+                self.logger.info("detecting TCK, TMS, and TDO with TRST#=%s",
                                  self.names[bit_trst])
                 data_bits = self.bits - {bit_trst}
 
+            # Try every TCK, TMS pin combination to detect possible TDO pins in parallel.
             tck_tms_tdo = []
             for bit_tck in data_bits:
                 for bit_tms in data_bits - {bit_tck}:
@@ -339,6 +351,9 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
                 continue
 
             self.logger.info("detecting TDI")
+
+            # Try every TDI pin for every potential TCK, TMS, TDO combination.
+            tck_tms_tdi_tdo = []
             for (bit_tck, bit_tms, bit_tdo) in tck_tms_tdo:
                 for bit_tdi in data_bits - {bit_tck, bit_tms, bit_tdo}:
                     self.logger.debug("trying TCK=%s TMS=%s TDI=%s TDO=%s",
@@ -353,23 +368,63 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
                         ir_len,
                         self.names[bit_tck], self.names[bit_tms],
                         self.names[bit_tdi], self.names[bit_tdo])
-                    results.append((bit_tck, bit_tms, bit_tdi, bit_tdo, bit_trst))
+                    tck_tms_tdi_tdo.append((bit_tck, bit_tms, bit_tdi, bit_tdo))
 
-            if bit_trst is None:
-                if results:
-                    self.logger.info("JTAG interface detected, not probing TRST#")
-                    break
-                elif trst_bits:
-                    self.logger.info("no JTAG interface detected yet, probing TRST#")
-            elif results:
-                self.logger.info("JTAG interface detected with TRST#=%s",
-                                 self.names[bit_trst])
+            if not tck_tms_tdi_tdo:
+                continue
+
+            if bit_trst is not None or len(self.bits) == 4:
+                # TRST# is either already known, or can't be present.
+                for bits in tck_tms_tdi_tdo:
+                    results.append((*bits, bit_trst))
                 break
+
+            self.logger.info("detecting TRST#")
+
+            # Although we have discovered a JTAG interface without TRST#, if it is still possible
+            # that a TRST# pin is connected and pulled up (or worse, floating), try to detect it.
+            # Otherwise, if the pull-up is weak or the pin is floating, interference may cause it
+            # to become spuriously active, especially with high volume of JTAG traffic on nearby
+            # pins, and disrupt operation of the probe.
+            #
+            # Try every TRST# pin for every potential TCK, TMS, TDI, TDO combination.
+            for (bit_tck, bit_tms, bit_tdi, bit_tdo) in tck_tms_tdi_tdo:
+                for bit_trst in trst_h_bits:
+                    if bit_trst in {bit_tck, bit_tms, bit_tdi, bit_tdo}:
+                        continue
+                    self.logger.debug("trying TCK=%s TMS=%s TDI=%s TDO=%s TRST#=%s",
+                        self.names[bit_tck], self.names[bit_tms],
+                        self.names[bit_tdi], self.names[bit_tdo],
+                        self.names[bit_trst])
+                    tdo_bits_1 = await self._detect_tdo(iface,
+                        tck=1 << bit_tck, tms=1 << bit_tms, trst=1 << bit_trst,
+                        assert_trst=True)
+                    tdo_bits_0 = await self._detect_tdo(iface,
+                        tck=1 << bit_tck, tms=1 << bit_tms, trst=1 << bit_trst,
+                        assert_trst=False)
+                    if bit_tdo in tdo_bits_0 and bit_tdo not in tdo_bits_1:
+                        self.logger.info("disabled TAP with TCK=%s TMS=%s TDI=%s "
+                                         "TDO=%s TRST#=%s",
+                            self.names[bit_tck], self.names[bit_tms],
+                            self.names[bit_tdi], self.names[bit_tdo],
+                            self.names[bit_trst])
+                        results.append((bit_tck, bit_tms, bit_tdi, bit_tdo, bit_trst))
+
+            if not results:
+                # TRST# is not found.
+                for bits in tck_tms_tdi_tdo:
+                    results.append((*bits, None))
+            break
 
         if len(results) == 0:
             self.logger.warning("no JTAG interface detected")
         elif len(results) == 1:
             bit_tck, bit_tms, bit_tdi, bit_tdo, bit_trst = results[0]
+            if bit_trst is not None:
+                self.logger.info("JTAG interface with reset detected")
+            else:
+                self.logger.info("JTAG interface without reset detected")
+
             args = ["jtag-probe"]
             args += ["--pin-tck", str(self.pins[bit_tck])]
             args += ["--pin-tms", str(self.pins[bit_tms])]
@@ -379,7 +434,7 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
                 args += ["--pin-trst", str(self.pins[bit_trst])]
             self.logger.info("use `%s` as arguments", " ".join(args))
         else:
-            self.logger.warning("more than one JTAG interface detected; this likely a false "
+            self.logger.warning("more than one JTAG interface detected; this is likely a false "
                                 "positive")
 
 # -------------------------------------------------------------------------------------------------
