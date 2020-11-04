@@ -287,13 +287,11 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
         # Release the bus
         await iface.set_oe(0)
 
-        ir_lens = []
         for ir_len in range(flush_bits):
             corr_result = [result[ir_len + bit] if pattern & (1 << bit) else ~result[ir_len + bit]
                            for bit in range(pat_bits)]
             if reduce(lambda x, y: x&y, corr_result) & tdo:
-                ir_lens.append(ir_len)
-        return ir_lens
+                return ir_len
 
     async def interact(self, device, args, iface):
         def bits_to_str(pins):
@@ -346,17 +344,16 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
                     self.logger.debug("trying TCK=%s TMS=%s TDI=%s TDO=%s",
                         self.names[bit_tck], self.names[bit_tms],
                         self.names[bit_tdi], self.names[bit_tdo])
-                    ir_lens = await self._detect_tdi(iface,
+                    ir_len = await self._detect_tdi(iface,
                         tck=1 << bit_tck, tms=1 << bit_tms, tdi=1 << bit_tdi, tdo=1 << bit_tdo,
                         trst=0 if bit_trst is None else 1 << bit_trst)
-                    for ir_len in ir_lens:
-                        self.logger.info("shifted %d-bit IR with TCK=%s TMS=%s TDI=%s TDO=%s",
-                            ir_len,
-                            self.names[bit_tck], self.names[bit_tms],
-                            self.names[bit_tdi], self.names[bit_tdo])
-                        results.append((bit_tck, bit_tms, bit_tdi, bit_tdo, bit_trst))
-                    else:
+                    if ir_len is None or ir_len < 2:
                         continue
+                    self.logger.info("shifted %d-bit IR with TCK=%s TMS=%s TDI=%s TDO=%s",
+                        ir_len,
+                        self.names[bit_tck], self.names[bit_tms],
+                        self.names[bit_tdi], self.names[bit_tdo])
+                    results.append((bit_tck, bit_tms, bit_tdi, bit_tdo, bit_trst))
 
             if bit_trst is None:
                 if results:
