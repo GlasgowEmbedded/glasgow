@@ -827,15 +827,9 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
             period_cyc=target.sys_clk_freq // (args.frequency * 1000),
         ))
 
-    async def run(self, device, args, reset=False):
+    async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        jtag_iface = JTAGProbeInterface(iface, self.logger, has_trst=args.pin_trst is not None)
-        if reset:
-            if jtag_iface.has_trst:
-                await jtag_iface.pulse_trst()
-            else:
-                await jtag_iface.test_reset()
-        return jtag_iface
+        return JTAGProbeInterface(iface, self.logger, has_trst=args.pin_trst is not None)
 
     @classmethod
     def add_run_tap_arguments(cls, parser, access):
