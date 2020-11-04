@@ -152,6 +152,7 @@ class JTAGProbeDriver(Elaboratable):
                     m.d.comb += self._out_fifo.re.eq(1)
                     m.d.sync += cmd.eq(self._out_fifo.dout)
                     m.next = "COMMAND"
+
             with m.State("COMMAND"):
                 with m.If(((cmd & CMD_MASK) == CMD_SHIFT_TMS) |
                     ((cmd & CMD_MASK) == CMD_SHIFT_TDIO)):
@@ -160,6 +161,7 @@ class JTAGProbeDriver(Elaboratable):
                     m.next = "SEND-AUX"
                 with m.Elif((cmd & CMD_MASK) == CMD_SET_AUX):
                     m.next = "RECV-AUX"
+
             with m.State("SEND-AUX"):
                 with m.If(self._in_fifo.writable):
                     m.d.comb += [
@@ -167,21 +169,25 @@ class JTAGProbeDriver(Elaboratable):
                         self._in_fifo.din.eq(self.adapter.aux_i),
                     ]
                     m.next = "RECV-COMMAND"
+
             with m.State("RECV-AUX"):
                 with m.If(self._out_fifo.readable):
                     m.d.comb += self._out_fifo.re.eq(1)
                     m.d.sync += self.adapter.aux_o.eq(self._out_fifo.dout)
                     m.next = "RECV-COMMAND"
+
             with m.State("RECV-COUNT-1"):
                 with m.If(self._out_fifo.readable):
                     m.d.comb += self._out_fifo.re.eq(1)
                     m.d.sync += count[0:8].eq(self._out_fifo.dout)
                     m.next = "RECV-COUNT-2"
+
             with m.State("RECV-COUNT-2"):
                 with m.If(self._out_fifo.readable):
                     m.d.comb += self._out_fifo.re.eq(1),
                     m.d.sync += count[8:16].eq(self._out_fifo.dout)
                     m.next = "RECV-BITS"
+
             with m.State("RECV-BITS"):
                 with m.If(count == 0):
                     m.next = "RECV-COMMAND"
@@ -201,6 +207,7 @@ class JTAGProbeDriver(Elaboratable):
                     with m.Else():
                         m.d.sync += shreg_o.eq(0b11111111)
                         m.next = "SHIFT-SETUP"
+
             with m.State("SHIFT-SETUP"):
                 m.d.sync += self.adapter.stb.eq(1)
                 with m.If((cmd & CMD_MASK) == CMD_SHIFT_TMS):
@@ -217,6 +224,7 @@ class JTAGProbeDriver(Elaboratable):
                     bitno.eq(bitno + 1),
                 ]
                 m.next = "SHIFT-CAPTURE"
+
             with m.State("SHIFT-CAPTURE"):
                 m.d.sync += self.adapter.stb.eq(0)
                 with m.If(self.adapter.rdy):
@@ -225,6 +233,7 @@ class JTAGProbeDriver(Elaboratable):
                         m.next = "SEND-BITS"
                     with m.Else():
                         m.next = "SHIFT-SETUP"
+
             with m.State("SEND-BITS"):
                 with m.If(cmd & BIT_DATA_IN):
                     with m.If(self._in_fifo.writable):
