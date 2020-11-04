@@ -308,9 +308,9 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
 
         if len(self.bits) > 4:
             # Try possible TRST# pins from most to least likely.
-            trst_bits = set.union(pull_down_bits, high_z_bits, pull_up_bits)
+            trst_bits = [*pull_down_bits, *high_z_bits, *pull_up_bits]
         else:
-            trst_bits = set()
+            trst_bits = []
 
         results = []
         for bit_trst in [None, *trst_bits]:
