@@ -6,8 +6,8 @@ import asyncio
 import random
 import struct
 from functools import reduce
-from nmigen.compat import *
-from nmigen.compat.genlib.cdc import MultiReg
+from nmigen import *
+from nmigen.lib.cdc import FFSynchronizer
 
 from ....gateware.pads import *
 from ... import *
@@ -21,87 +21,91 @@ CMD_H  = 0x04
 CMD_I  = 0x05
 
 
-class JTAGPinoutSubtarget(Module):
+class JTAGPinoutSubtarget(Elaboratable):
     def __init__(self, pins, out_fifo, in_fifo, period_cyc):
+        self._pins       = pins
+        self._out_fifo   = out_fifo
+        self._in_fifo    = in_fifo
+        self._period_cyc = period_cyc
+
+    def elaborate(self, platform):
+        m = Module()
+        pins = self._pins
+        in_fifo  = self._in_fifo
+        out_fifo = self._out_fifo
+
         jtag_oe = Signal(len(pins))
         jtag_o  = Signal(len(pins))
         jtag_i  = Signal(len(pins))
-        self.comb += [
+        m.d.comb += [
             Cat(pin.oe for pin in pins).eq(jtag_oe),
             Cat(pin.o  for pin in pins).eq(jtag_o),
         ]
-        self.specials += MultiReg(Cat(pin.i for pin in pins), jtag_i)
+        m.submodules += FFSynchronizer(Cat(pin.i for pin in pins), jtag_i)
 
-        timer = Signal(max=period_cyc)
+        timer = Signal(range(self._period_cyc))
         cmd   = Signal(8)
         data  = Signal(16)
 
-        self.submodules.fsm = FSM(reset_state="RECV-COMMAND")
-        self.fsm.act("RECV-COMMAND",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(cmd, out_fifo.dout),
-                If(out_fifo.dout == CMD_W,
-                    NextValue(timer, period_cyc - 1),
-                    NextState("WAIT")
-                ).Elif(out_fifo.dout == CMD_I,
-                    NextState("SAMPLE")
-                ).Else(
-                    NextState("RECV-DATA-1")
-                )
-            )
-        )
-        self.fsm.act("RECV-DATA-1",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(data[0:8], out_fifo.dout),
-                NextState("RECV-DATA-2")
-            )
-        )
-        self.fsm.act("RECV-DATA-2",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(data[8:16], out_fifo.dout),
-                NextState("DRIVE")
-            )
-        )
-        self.fsm.act("DRIVE",
-            If(cmd == CMD_OE,
-                NextValue(jtag_oe, data)
-            ).Elif(cmd == CMD_O,
-                NextValue(jtag_o,  data)
-            ).Elif(cmd == CMD_L,
-                NextValue(jtag_o, ~data & jtag_o)
-            ).Elif(cmd == CMD_H,
-                NextValue(jtag_o,  data | jtag_o)
-            ),
-            NextState("RECV-COMMAND")
-        )
-        self.fsm.act("WAIT",
-            If(timer == 0,
-                NextState("RECV-COMMAND")
-            ).Else(
-                NextValue(timer, timer - 1)
-            )
-        )
-        self.fsm.act("SAMPLE",
-            NextValue(data, jtag_i),
-            NextState("SEND-DATA-1")
-        )
-        self.fsm.act("SEND-DATA-1",
-            If(in_fifo.writable,
-                in_fifo.we.eq(1),
-                in_fifo.din.eq(data[0:8]),
-                NextState("SEND-DATA-2")
-            )
-        )
-        self.fsm.act("SEND-DATA-2",
-            If(in_fifo.writable,
-                in_fifo.we.eq(1),
-                in_fifo.din.eq(data[8:16]),
-                NextState("RECV-COMMAND")
-            )
-        )
+        with m.FSM():
+            with m.State("RECV-COMMAND"):
+                with m.If(out_fifo.readable):
+                    m.d.comb += out_fifo.re.eq(1)
+                    m.d.sync += cmd.eq(out_fifo.dout)
+                    with m.If(out_fifo.dout == CMD_W):
+                        m.d.sync += timer.eq(self._period_cyc - 1)
+                        m.next = "WAIT"
+                    with m.Elif(out_fifo.dout == CMD_I):
+                        m.next = "SAMPLE"
+                    with m.Else():
+                        m.next = "RECV-DATA-1"
+
+            with m.State("RECV-DATA-1"):
+                with m.If(out_fifo.readable):
+                    m.d.comb += out_fifo.re.eq(1)
+                    m.d.sync += data[0:8].eq(out_fifo.dout)
+                    m.next = "RECV-DATA-2"
+
+            with m.State("RECV-DATA-2"):
+                with m.If(out_fifo.readable):
+                    m.d.comb += out_fifo.re.eq(1)
+                    m.d.sync += data[8:16].eq(out_fifo.dout)
+                    m.next = "DRIVE"
+
+            with m.State("DRIVE"):
+                with m.If(cmd == CMD_OE):
+                    m.d.sync += jtag_oe.eq(data)
+                with m.Elif(cmd == CMD_O):
+                    m.d.sync += jtag_o.eq( data)
+                with m.Elif(cmd == CMD_L):
+                    m.d.sync += jtag_o.eq(~data & jtag_o)
+                with m.Elif(cmd == CMD_H):
+                    m.d.sync += jtag_o.eq( data | jtag_o)
+                m.next = "RECV-COMMAND"
+
+            with m.State("WAIT"):
+                with m.If(timer == 0):
+                    m.next = "RECV-COMMAND"
+                with m.Else():
+                    m.d.sync += timer.eq(timer - 1)
+
+            with m.State("SAMPLE"):
+                m.d.sync += data.eq(jtag_i)
+                m.next = "SEND-DATA-1"
+
+            with m.State("SEND-DATA-1"):
+                with m.If(in_fifo.writable):
+                    m.d.comb += in_fifo.we.eq(1)
+                    m.d.comb += in_fifo.din.eq(data[0:8])
+                    m.next = "SEND-DATA-2"
+
+            with m.State("SEND-DATA-2"):
+                with m.If(in_fifo.writable):
+                    m.d.comb += in_fifo.we.eq(1)
+                    m.d.comb += in_fifo.din.eq(data[8:16])
+                    m.next = "RECV-COMMAND"
+
+        return m
 
 
 class JTAGPinoutInterface:
