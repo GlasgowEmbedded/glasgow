@@ -31,7 +31,7 @@ class MEC16xxInterface(aobject):
 
         idcode, device = await self.lower.identify()
         if device is None or device.name != "ARC6xx":
-            raise MEC16xxError("cannot operate on unknown device IDCODE=%08x"
+            raise MEC16xxError("cannot operate on unknown device with IDCODE=%08x"
                                % idcode.to_int())
 
         self._log("halting CPU")
