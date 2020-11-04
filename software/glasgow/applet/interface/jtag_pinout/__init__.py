@@ -418,6 +418,7 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
 
         if len(results) == 0:
             self.logger.warning("no JTAG interface detected")
+
         elif len(results) == 1:
             bit_tck, bit_tms, bit_tdi, bit_tdo, bit_trst = results[0]
             if bit_trst is not None:
@@ -425,14 +426,24 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
             else:
                 self.logger.info("JTAG interface without reset detected")
 
-            args = ["jtag-probe"]
-            args += ["--pin-tck", str(self.pins[bit_tck])]
-            args += ["--pin-tms", str(self.pins[bit_tms])]
-            args += ["--pin-tdi", str(self.pins[bit_tdi])]
-            args += ["--pin-tdo", str(self.pins[bit_tdo])]
+            probe_args = ["jtag-probe"]
+
+            if args.voltage is not None:
+                probe_args += ["-V", "{:.1f}".format(args.voltage)]
+            elif args.mirror_voltage:
+                probe_args += ["-M"]
+            elif args.keep_voltage:
+                probe_args += ["--keep-voltage"]
+
+            probe_args += ["--pin-tck", str(self.pins[bit_tck])]
+            probe_args += ["--pin-tms", str(self.pins[bit_tms])]
+            probe_args += ["--pin-tdi", str(self.pins[bit_tdi])]
+            probe_args += ["--pin-tdo", str(self.pins[bit_tdo])]
             if bit_trst is not None:
-                args += ["--pin-trst", str(self.pins[bit_trst])]
-            self.logger.info("use `%s` as arguments", " ".join(args))
+                probe_args += ["--pin-trst", str(self.pins[bit_trst])]
+
+            self.logger.info("use `%s` as arguments", " ".join(probe_args))
+
         else:
             self.logger.warning("more than one JTAG interface detected; this is likely a false "
                                 "positive")
