@@ -520,8 +520,7 @@ async def _main():
             if args.prebuilt or args.bitstream:
                 bitstream_file = args.bitstream or open("{}.bin".format(args.applet), "rb")
                 with bitstream_file:
-                    logger.warn("downloading prebuilt bitstream from %r", bitstream_file.name)
-                    await device.download_bitstream(bitstream_file.read())
+                    await device.download_prebuilt(plan, bitstream_file)
             else:
                 await device.download_target(plan, rebuild=args.rebuild)
 
@@ -679,9 +678,10 @@ async def _main():
             elif args.bitstream:
                 logger.info("using bitstream from %s", args.bitstream.name)
                 with args.bitstream as f:
-                    new_bitstream = f.read()
+                    new_bitstream_id = f.read(16)
+                    new_bitstream    = f.read()
                     glasgow_config.bitstream_size = len(new_bitstream)
-                    glasgow_config.bitstream_id   = b"\xff"*16
+                    glasgow_config.bitstream_id   = new_bitstream_id
             elif args.applet:
                 logger.info("building bitstream for applet %s", args.applet)
                 target, applet = _applet(device.revision, args)
@@ -748,13 +748,14 @@ async def _main():
                 logger.info("building RTLIL for applet %r", args.applet)
                 with open(args.filename or args.applet + ".il", "wt") as f:
                     f.write(plan.rtlil)
-            if args.type in ("bin", "bitstream"):
-                logger.info("building bitstream for applet %r", args.applet)
-                with open(args.filename or args.applet + ".bin", "wb") as f:
-                    f.write(plan.execute())
             if args.type in ("zip", "archive"):
                 logger.info("building archive for applet %r", args.applet)
                 plan.archive(args.filename or args.applet + ".zip")
+            if args.type in ("bin", "bitstream"):
+                logger.info("building bitstream for applet %r", args.applet)
+                with open(args.filename or args.applet + ".bin", "wb") as f:
+                    f.write(plan.bitstream_id)
+                    f.write(plan.execute())
 
         if args.action == "test":
             logger.info("testing applet %r", args.applet)

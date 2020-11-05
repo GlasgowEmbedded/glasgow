@@ -366,12 +366,24 @@ class GlasgowHardwareDevice:
         except usb1.USBErrorPipe:
             raise GlasgowDeviceError("FPGA configuration failed")
 
-    async def download_target(self, plan, rebuild=False):
+    async def download_target(self, plan, *, rebuild=False):
         if await self.bitstream_id() == plan.bitstream_id and not rebuild:
             logger.info("device already has bitstream ID %s", plan.bitstream_id.hex())
         else:
             logger.info("building bitstream ID %s", plan.bitstream_id.hex())
             await self.download_bitstream(plan.execute(), plan.bitstream_id)
+
+    async def download_prebuilt(self, plan, bitstream_file):
+        bitstream_file_id = bitstream_file.read(16)
+        if bitstream_file_id != plan.bitstream_id:
+            logger.warn("prebuilt bitstream ID %s does not match design bitstream ID %s",
+                        bitstream_file_id.hex(), plan.bitstream_id.hex())
+        elif await self.bitstream_id() == plan.bitstream_id:
+            logger.info("device already has bitstream ID %s", plan.bitstream_id.hex())
+        else:
+            logger.info("downloading prebuilt bitstream ID %s from file %r",
+                        plan.bitstream_id.hex(), bitstream_file.name)
+            await self.download_bitstream(bitstream_file.read(), plan.bitstream_id)
 
     async def _iobuf_enable(self, on):
         # control the IO-buffers (FXMA108) on revAB, they are on by default
