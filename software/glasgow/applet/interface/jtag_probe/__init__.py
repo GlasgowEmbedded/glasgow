@@ -606,13 +606,18 @@ class JTAGProbeInterface:
             await self.enter_shift_dr()
 
         try:
-            data_1 = await self.shift_tdio((1,) * max_length, last=False)
-            data_0 = await self.shift_tdio((0,) * max_length, last=False)
-            for length in range(max_length):
+            # Add 1 so that registers of exactly `max_length` could be scanned successfully.
+            data_1 = await self.shift_tdio((1,) * (max_length + 1), last=False)
+            data_0 = await self.shift_tdio((0,) * (max_length + 1), last=False)
+            for length in range(max_length + 1):
                 if data_0[length] == 0:
-                    self._log_h("scan %s length=%d data=<%s>",
-                                xr, length, dump_bin(data_1[:length]))
-                    return data_1[:length]
+                    if all(data_1[length:]):
+                        self._log_h("scan %s length=%d data=<%s>",
+                                    xr, length, dump_bin(data_1[:length]))
+                        return data_1[:length]
+                    else:
+                        self._log_h("overlong %s", xr)
+                        return
             else:
                 self._log_h("overlong %s", xr)
                 return
