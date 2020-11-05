@@ -724,36 +724,37 @@ class JTAGProbeInterface:
                 ir_chunks.append(ir_start1 - ir_start0)
             self._log_h("ambiguous ir chain length=%d chunks=%s",
                         len(ir_value), ",".join("{:d}".format(chunk) for chunk in ir_chunks))
-            return None
+            return
 
-    async def select_tap(self, tap):
+    async def _scan_taps(self):
         await self.test_reset()
 
         dr_value = await self.scan_dr()
         if dr_value is None:
-            return
+            return (None, None)
 
         idcodes = self.interrogate_dr(dr_value)
         if idcodes is None:
-            return
+            return (None, None)
 
         ir_value = await self.scan_ir()
         if ir_value is None:
-            return
+            return (idcodes, None)
 
         irs = self.interrogate_ir(ir_value, dr_count=len(idcodes))
         if not irs:
-            return
+            return (idcodes, None)
 
-        if tap >= len(irs):
-            self._log_h("missing tap %d")
-            return
+        return (idcodes, irs)
 
-        ir_offset, ir_length = irs[tap]
+    def _create_tap_iface(self, irs, index):
+        assert index in range(len(irs))
+
+        ir_offset, ir_length = irs[index]
         total_ir_length = sum(length for offset, length in irs)
 
-        dr_offset, dr_length = tap, 1
-        total_dr_length = len(idcodes)
+        dr_offset, dr_length = index, 1
+        total_dr_length = len(irs)
 
         bypass = bits((1,))
         def affix(offset, length, total_length):
@@ -764,6 +765,14 @@ class JTAGProbeInterface:
         return TAPInterface(self, ir_length,
             *affix(ir_offset, ir_length, total_ir_length),
             *affix(dr_offset, dr_length, total_dr_length))
+
+    async def select_tap(self, index):
+        idcodes, irs = await self._scan_taps()
+        if irs is None:
+            raise JTAGProbeError("TAP interrogation failed")
+        if index not in range(len(irs)):
+            raise JTAGProbeError("TAP #{:d} not found".format(index))
+        return self._create_tap_iface(irs, index)
 
 
 class TAPInterface:
@@ -896,15 +905,25 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
     @classmethod
     def add_run_tap_arguments(cls, parser):
         parser.add_argument(
-            "--tap-index", metavar="INDEX", type=int, default=0,
-            help="select TAP #INDEX for communication (default: %(default)s)")
+            "--tap-index", metavar="INDEX", type=int,
+            help="select TAP #INDEX for communication (default: sole TAP)")
 
     async def run_tap(self, cls, device, args):
         jtag_iface = await self.run_lower(cls, device, args)
-        tap_iface = await jtag_iface.select_tap(args.tap_index)
-        if not tap_iface:
-            raise JTAGProbeError("cannot select TAP #%d" % args.tap_index)
-        return tap_iface
+
+        idcodes, irs = await jtag_iface._scan_taps()
+        if irs is None:
+            raise JTAGProbeError("TAP interrogation failed")
+
+        tap_index = args.tap_index
+        if tap_index is None:
+            if len(irs) > 1:
+                raise JTAGProbeError("more than one TAP found; use explicit --tap-index")
+            else:
+                tap_index = 0
+        if tap_index not in range(len(irs)):
+            raise JTAGProbeError("TAP #{:d} not found".format(tap_index))
+        return jtag_iface._create_tap_iface(irs, tap_index)
 
     @classmethod
     def add_interact_arguments(cls, parser):
@@ -949,7 +968,7 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
             """)
         p_enumerate_ir.add_argument(
             "tap_indexes", metavar="INDEX", type=int, nargs="+",
-            help="enumerate IR values for TAP #INDEX")
+            help="enumerate IR values for TAP(s) #INDEX")
 
         # This one is identical to run-repl, and is just for consistency when using the subcommands
         # tap-repl and jtag-repl alternately.
@@ -959,8 +978,8 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
         p_tap_repl = p_operation.add_parser(
             "tap-repl", help="select a TAP and drop into Python REPL")
         p_tap_repl.add_argument(
-            "tap_index", metavar="INDEX", type=int, default=0, nargs="?",
-            help="select TAP #INDEX for communication (default: %(default)s)")
+            "tap_index", metavar="INDEX", type=int,
+            help="select TAP #INDEX for communication")
 
     async def interact(self, device, args, jtag_iface):
         if args.operation in ("scan", "enumerate-ir"):
@@ -968,20 +987,17 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
 
             dr_value = await jtag_iface.scan_dr()
             if dr_value is None:
-                self.logger.error("DR length scan did not terminate")
-                return
+                raise JTAGProbeError("DR scan did not terminate")
             self.logger.info("shifted %d-bit DR=<%s>", len(dr_value), dump_bin(dr_value))
 
             ir_value = await jtag_iface.scan_ir()
             if ir_value is None:
-                self.logger.error("IR length scan did not terminate")
-                return
+                raise JTAGProbeError("IR scan did not terminate")
             self.logger.info("shifted %d-bit IR=<%s>", len(ir_value), dump_bin(ir_value))
 
             idcodes = jtag_iface.interrogate_dr(dr_value)
             if idcodes is None:
-                self.logger.error("DR interrogation failed")
-                return
+                raise JTAGProbeError("DR interrogation failed")
             if len(idcodes) == 0:
                 self.logger.warning("DR interrogation discovered no TAPs")
                 return
@@ -1011,17 +1027,13 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
 
         if args.operation == "enumerate-ir":
             if not irs:
-                self.logger.error("IR interrogation failed")
-                return
+                raise JTAGProbeError("IR interrogation failed")
 
             for tap_index in args.tap_indexes or range(len(irs)):
                 ir_offset, ir_length = irs[tap_index]
                 self.logger.info("TAP #%d: IR[%d]", tap_index, ir_length)
 
                 tap_iface = await jtag_iface.select_tap(tap_index)
-                if not tap_iface:
-                    raise GlasgowAppletError("cannot select TAP #%d" % tap_index)
-
                 for ir_value in range(0, (1 << ir_length)):
                     ir_value = bits(ir_value & (1 << bit) for bit in range(ir_length))
                     await tap_iface.test_reset()
@@ -1049,10 +1061,6 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
 
         if args.operation == "tap-repl":
             tap_iface = await jtag_iface.select_tap(args.tap_index)
-            if not tap_iface:
-                self.logger.error("cannot select TAP #%d" % args.tap_index)
-                return
-
             self.logger.info("dropping to REPL; use 'help(iface)' to see available APIs")
             await AsyncInteractiveConsole(
                 locals={"iface":tap_iface},
