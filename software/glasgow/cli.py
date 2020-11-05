@@ -18,7 +18,6 @@ from fx2.format import input_data, diff_data
 from . import __version__
 from .support.logging import *
 from .support.asignal import *
-from .support.pyrepl import *
 from .device import GlasgowDeviceError
 from .device.config import GlasgowConfig
 from .target.hardware import GlasgowHardwareTarget
@@ -155,11 +154,14 @@ def get_argparser():
                     applet.add_build_arguments(g_applet_build, access_args)
                     g_applet_run = p_applet.add_argument_group("run arguments")
                     applet.add_run_arguments(g_applet_run, access_args)
-                    if mode not in ( "run-repl", "run-script" ):
+                    if mode == "run":
                         # FIXME: this makes it impossible to add subparsers in applets
                         # g_applet_interact = p_applet.add_argument_group("interact arguments")
                         # applet.add_interact_arguments(g_applet_interact)
                         applet.add_interact_arguments(p_applet)
+                    if mode == "run-repl":
+                        # FIXME: same as above
+                        applet.add_repl_arguments(p_applet)
                 if mode == "build":
                     applet.add_build_arguments(p_applet, access_args)
 
@@ -596,17 +598,11 @@ async def _main():
                     if args.action in ("run", "run-prebuilt"):
                         await applet.interact(device, args, iface)
                     if args.action == "run-repl":
-                        if applet.has_custom_repl:
-                            logger.warn("applet provides customized REPL(s); consider using `run "
-                                        "{} ...-repl` subcommands".format(applet.name))
-                        logger.info("dropping to REPL; use 'help(iface)' to see available APIs")
-                        await AsyncInteractiveConsole(locals={"iface":iface, "device":device},
-                            run_callback=device.demultiplexer.flush).interact()
-
+                        await applet.repl(device, args, iface)
                     if args.action == "run-script":
-                        c = compile(args.script.read(), filename=args.script.name, mode="exec",
+                        code = compile(args.script.read(), filename=args.script.name, mode="exec",
                             flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
-                        await eval(c, {"iface":iface, "device":device})
+                        await eval(code, {"iface":iface, "device":device})
 
                 except GlasgowAppletError as e:
                     applet.logger.error(str(e))

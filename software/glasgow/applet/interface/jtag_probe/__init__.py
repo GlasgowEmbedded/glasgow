@@ -869,7 +869,6 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
     description = """
     Identify, test and debug integrated circuits and board assemblies via IEEE 1149.1 JTAG.
     """
-    has_custom_repl = True
 
     __pins = ("tck", "tms", "tdi", "tdo", "trst")
 
@@ -923,9 +922,9 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
     async def run_tap(self, cls, device, args):
         jtag_iface = await self.run_lower(cls, device, args)
 
-        dr_value, ir_value = await self.scan_reset_dr_ir()
-        idcodes = self.interrogate_dr(dr_value)
-        ir_layout = self.interrogate_ir(ir_value, tap_count=len(idcodes))
+        dr_value, ir_value = await jtag_iface.scan_reset_dr_ir()
+        idcodes = jtag_iface.interrogate_dr(dr_value)
+        ir_layout = jtag_iface.interrogate_ir(ir_value, tap_count=len(idcodes))
 
         tap_index = args.tap_index
         if tap_index is None:
@@ -980,28 +979,16 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
             "tap_indexes", metavar="INDEX", type=int, nargs="+",
             help="enumerate IR values for TAP(s) #INDEX")
 
-        # This one is identical to run-repl, and is just for consistency when using the subcommands
-        # tap-repl and jtag-repl alternately.
-        p_jtag_repl = p_operation.add_parser(
-            "jtag-repl", help="drop into Python REPL")
-
-        p_tap_repl = p_operation.add_parser(
-            "tap-repl", help="select a TAP and drop into Python REPL")
-        p_tap_repl.add_argument(
-            "tap_index", metavar="INDEX", type=int,
-            help="select TAP #INDEX for communication")
-
     async def interact(self, device, args, jtag_iface):
-        if args.operation in ("scan", "enumerate-ir"):
-            dr_value, ir_value = await jtag_iface.scan_reset_dr_ir()
-            self.logger.info("shifted %d-bit DR=<%s>", len(dr_value), dump_bin(dr_value))
-            self.logger.info("shifted %d-bit IR=<%s>", len(ir_value), dump_bin(ir_value))
+        dr_value, ir_value = await jtag_iface.scan_reset_dr_ir()
+        self.logger.info("shifted %d-bit DR=<%s>", len(dr_value), dump_bin(dr_value))
+        self.logger.info("shifted %d-bit IR=<%s>", len(ir_value), dump_bin(ir_value))
 
-            idcodes = jtag_iface.interrogate_dr(dr_value)
-            if len(idcodes) == 0:
-                self.logger.warning("DR interrogation discovered no TAPs")
-                return
-            self.logger.info("discovered %d TAPs", len(idcodes))
+        idcodes = jtag_iface.interrogate_dr(dr_value)
+        if len(idcodes) == 0:
+            self.logger.warning("DR interrogation discovered no TAPs")
+            return
+        self.logger.info("discovered %d TAPs", len(idcodes))
 
         if args.operation == "scan":
             ir_layout = jtag_iface.interrogate_ir(ir_value, tap_count=len(idcodes), check=False)
@@ -1049,20 +1036,34 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
                             level = logging.INFO
                     self.logger.log(level, "  IR=%s DR[%s]", ir_value, dr_length)
 
-        if args.operation == "jtag-repl":
-            self.logger.info("dropping to REPL; use 'help(iface)' to see available APIs")
-            await AsyncInteractiveConsole(
-                locals={"iface":jtag_iface},
-                run_callback=jtag_iface.flush
-            ).interact()
+    @classmethod
+    def add_repl_arguments(cls, parser):
+        # Inheriting from the JTAG probe applet does not inherit the REPL.
+        if cls is not JTAGProbeApplet:
+            return super().add_repl_arguments(parser)
 
-        if args.operation == "tap-repl":
-            tap_iface = await jtag_iface.select_tap(args.tap_index)
-            self.logger.info("dropping to REPL; use 'help(iface)' to see available APIs")
-            await AsyncInteractiveConsole(
-                locals={"iface":tap_iface},
-                run_callback=jtag_iface.flush
-            ).interact()
+        parser.add_argument(
+            "--tap-index", metavar="INDEX", type=int,
+            help="select TAP #INDEX instead of the full chain")
+
+    async def repl(self, device, args, jtag_iface):
+        # See explanation in add_repl_arguments().
+        if type(self) is not JTAGProbeApplet:
+            return await super().repl(device, args, jtag_iface)
+
+        if args.tap_index is None:
+            iface = jtag_iface
+            self.logger.info("dropping to REPL for JTAG chain; "
+                             "use 'help(iface)' to see available APIs")
+        else:
+            iface = await jtag_iface.select_tap(args.tap_index)
+            self.logger.info("dropping to REPL for TAP #%d; "
+                             "use 'help(iface)' to see available APIs",
+                             args.tap_index)
+        await AsyncInteractiveConsole(
+            locals={"iface":jtag_iface},
+            run_callback=jtag_iface.flush
+        ).interact()
 
 # -------------------------------------------------------------------------------------------------
 
