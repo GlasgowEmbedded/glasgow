@@ -592,9 +592,9 @@ class JTAGProbeInterface:
 
     # Shift chain introspection
 
-    async def _scan_xr(self, xr, *, max_length):
+    async def _scan_xr(self, xr, *, check=True, max_length=None):
         assert xr in ("ir", "dr")
-        self._log_h("scan %s length", xr)
+        self._log_h("scan %s", xr)
 
         if max_length is None:
             if xr == "ir":
@@ -608,29 +608,34 @@ class JTAGProbeInterface:
             await self.enter_shift_dr()
 
         try:
-            # Cancellation can cause the `finally` block to run before we have enough information
-            # to actually restore the value.
-            restore = False
-
             # Add 1 so that registers of exactly `max_length` could be scanned successfully.
             data_1 = await self.shift_tdio((1,) * (max_length + 1), last=False)
             data_0 = await self.shift_tdio((0,) * (max_length + 1), last=False)
+
+            value = None
             for length in range(max_length + 1):
                 if data_0[length] == 0:
                     if all(data_1[length:]):
-                        restore = True
-                        self._log_h("scan %s length=%d data=<%s>",
-                                    xr, length, dump_bin(data_1[:length]))
-                        return data_1[:length]
-                    else:
-                        self._log_h("overlong %s", xr)
-                        return
+                        value = data_1[:length]
+                    break
+
+            if value is None:
+                self._log_h("scan %s overlong", xr)
+                if check:
+                    raise JTAGProbeError("{} shift chain is too long".format(xr.upper()))
+            elif len(value) == 0:
+                self._log_h("scan %s empty", xr)
+                if check:
+                    raise JTAGProbeError("{} shift chain is empty".format(xr.upper()))
             else:
-                self._log_h("overlong %s", xr)
-                return
+                self._log_h("scan %s length=%d data=<%s>",
+                            xr, length, dump_bin(data_1[:length]))
+            return value
 
         finally:
-            if restore:
+            # Cancellation can cause the loop above to return early, so make sure we have enough
+            # information to actually restore the value.
+            if value is not None:
                 if xr == "ir":
                     # Fill the register with BYPASS instructions.
                     await self.shift_tdi((1,) * length, last=True)
@@ -640,26 +645,30 @@ class JTAGProbeInterface:
 
                 await self.enter_run_test_idle()
 
-    async def _scan_xr_length(self, xr, *, max_length):
-        data = await self._scan_xr(xr, max_length=max_length)
-        assert data is not None and len(data) > 0
-        return len(data)
+    async def scan_ir(self, *, check=True, max_length=None):
+        return await self._scan_xr("ir", check=check, max_length=max_length)
 
-    async def scan_ir(self, *, max_length=None):
-        return await self._scan_xr("ir", max_length=max_length)
-
-    async def scan_dr(self, *, max_length=None):
-        return await self._scan_xr("dr", max_length=max_length)
+    async def scan_dr(self, *, check=True, max_length=None):
+        return await self._scan_xr("dr", check=check, max_length=max_length)
 
     async def scan_ir_length(self, *, max_length=None):
-        return await self._scan_xr_length("ir", max_length=max_length)
+        return len(await self.scan_ir(max_length=max_length))
 
     async def scan_dr_length(self, *, max_length=None):
-        return await self._scan_xr_length("dr", max_length=max_length)
+        return len(await self.scan_dr(max_length=max_length))
+
+    async def scan_reset_dr_ir(self):
+        """Capture IR values and IDCODE/BYPASS DR values using Test-Logic-Reset."""
+
+        await self.test_reset()
+        # Scan DR chain first, since scanning IR chain will latch BYPASS into every IR.
+        dr_value = await self.scan_dr()
+        ir_value = await self.scan_ir()
+        return (dr_value, ir_value)
 
     # Blind interrogation
 
-    def interrogate_dr(self, dr_value):
+    def interrogate_dr(self, dr_value, *, check=True):
         """Split DR value captured after TAP reset into IDCODE/BYPASS chunks."""
 
         idcodes = []
@@ -670,24 +679,31 @@ class JTAGProbeInterface:
                     dr_chunk = dr_value[offset:offset + 32]
                     idcode = int(dr_chunk)
                     if dr_chunk[1:12] == bits("00001111111"):
-                        self._log_h("invalid idcode=%08x", idcode)
+                        self._log_h("invalid dr idcode=%08x", idcode)
+                        if check:
+                            raise JTAGProbeError("TAP #{} has invalid DR IDCODE={:08x}"
+                                                 .format(len(idcodes), idcode))
                         return
                     else:
-                        self._log_h("found idcode=%08x", idcode)
+                        self._log_h("found dr idcode=%08x (tap #%d)", idcode, len(idcodes))
                     idcodes.append(idcode)
                     offset += 32
                 else:
-                    self._log_h("truncated idcode=<%s>", dump_bin(dr_value[offset:]))
+                    self._log_h("truncated dr idcode=<%s>", dump_bin(dr_value[offset:]))
+                    if check:
+                        raise JTAGProbeError("TAP #{} has truncated DR IDCODE=<{}>"
+                                             .format(len(idcodes), dump_bin(dr_value[offset:])))
                     return
             else:
-                self._log_h("found bypass")
+                self._log_h("found dr bypass (tap #%d)", len(idcodes))
                 idcodes.append(None)
                 offset += 1
 
         return idcodes
 
-    def interrogate_ir(self, ir_value, dr_count):
-        assert dr_count > 0
+    def interrogate_ir(self, ir_value, tap_count, *, check=True):
+        """Split IR value captured after TAP reset to determine IR boundaries."""
+        assert tap_count > 0
 
         # Each captured IR value in a chain must start with <10>. However, the rest of captured
         # IR bits has unspecified value, which may include <10>.
@@ -698,27 +714,35 @@ class JTAGProbeInterface:
                 break
             ir_starts.append(ir_start)
 
-        # There must be at least as many captured IRs in the chain as there are IDCODE/BYPASS DRs,
-        # and the chain must start with a valid captured IR value.
-        if len(ir_starts) < dr_count or ir_starts[0] != 0:
-            self._log_h("invalid ir chain")
+        # There must be at least as many captured IRs in the chain as there are IDCODE/BYPASS DRs.
+        if tap_count > len(ir_starts):
+            self._log_h("invalid ir taps=%d starts=%d", tap_count, len(ir_starts))
+            if check:
+                raise JTAGProbeError("IR capture has fewer <10> transitions than TAPs")
+            return
+
+        # The chain must start with a valid captured IR value.
+        if ir_starts[0] != 0:
+            self._log_h("invalid ir starts[0]=%d", ir_starts[0])
+            if check:
+                raise JTAGProbeError("IR capture does not start with <10> transition")
             return
 
         # If there's only one device in the chain, then the entire captured IR belongs to it.
-        if dr_count == 1:
+        if tap_count == 1:
             ir_length = len(ir_value)
-            self._log_h("found ir[%d] (only tap)", ir_length)
+            self._log_h("found ir length=%d (single tap)", ir_length)
             return [ir_length]
 
         # If there are no more captured IRs than devices in the chain, then IR lengths can be
         # determined unambiguously.
-        elif dr_count == len(ir_starts):
-            ir_lengths = []
+        elif tap_count == len(ir_starts):
+            ir_layout = []
             for ir_start0, ir_start1 in zip(ir_starts, ir_starts[1:] + [len(ir_value)]):
                 ir_length = ir_start1 - ir_start0
-                self._log_h("found ir[%d] (tap #%d)", ir_length, len(ir_lengths))
-                ir_lengths.append(ir_length)
-            return ir_lengths
+                self._log_h("found ir length=%d (tap #%d)", ir_length, len(ir_layout))
+                ir_layout.append(ir_length)
+            return ir_layout
 
         # Otherwise IR lengths are ambiguous.
         else:
@@ -726,38 +750,26 @@ class JTAGProbeInterface:
             for ir_start0, ir_start1 in zip(ir_starts, ir_starts[1:] + [len(ir_value)]):
                 ir_chunks.append(ir_start1 - ir_start0)
             self._log_h("ambiguous ir taps=%d chunks=[%s]",
-                        dr_count, ",".join("{:d}".format(chunk) for chunk in ir_chunks))
+                        tap_count, ",".join("{:d}".format(chunk) for chunk in ir_chunks))
+            if check:
+                raise JTAGProbeError("IR capture ambiguously defines IR lengths")
             return
 
-    async def _scan_taps(self):
-        await self.test_reset()
-
-        dr_value = await self.scan_dr()
-        if dr_value is None:
-            return (None, None)
-
+    async def select_tap(self, index):
+        dr_value, ir_value = await self.scan_reset_dr_ir()
         idcodes = self.interrogate_dr(dr_value)
-        if idcodes is None:
-            return (None, None)
+        ir_layout = self.interrogate_ir(ir_value, tap_count=len(idcodes))
+        return self._create_tap_iface(ir_layout, index)
 
-        ir_value = await self.scan_ir()
-        if ir_value is None:
-            return (idcodes, None)
+    def _create_tap_iface(self, ir_layout, index):
+        if index not in range(len(ir_layout)):
+            raise JTAGProbeError("TAP #{:d} not found".format(index))
 
-        ir_lengths = self.interrogate_ir(ir_value, dr_count=len(idcodes))
-        if not ir_lengths:
-            return (idcodes, None)
-
-        return (idcodes, ir_lengths)
-
-    def _create_tap_iface(self, ir_lengths, index):
-        assert index in range(len(ir_lengths))
-
-        ir_offset, ir_length = sum(ir_lengths[:index]), ir_lengths[index]
-        total_ir_length = sum(ir_lengths)
+        ir_offset, ir_length = sum(ir_layout[:index]), ir_layout[index]
+        total_ir_length = sum(ir_layout)
 
         dr_offset, dr_length = index, 1
-        total_dr_length = len(ir_lengths)
+        total_dr_length = len(ir_layout)
 
         bypass = bits((1,))
         def affix(offset, length, total_length):
@@ -768,14 +780,6 @@ class JTAGProbeInterface:
         return TAPInterface(self, ir_length,
             *affix(ir_offset, ir_length, total_ir_length),
             *affix(dr_offset, dr_length, total_dr_length))
-
-    async def select_tap(self, index):
-        idcodes, irs = await self._scan_taps()
-        if irs is None:
-            raise JTAGProbeError("TAP interrogation failed")
-        if index not in range(len(irs)):
-            raise JTAGProbeError("TAP #{:d} not found".format(index))
-        return self._create_tap_iface(irs, index)
 
 
 class TAPInterface:
@@ -835,12 +839,15 @@ class TAPInterface:
         data = bits(data)
         await self.lower.write_dr(self._dr_prefix + data + self._dr_suffix)
 
-    async def scan_dr(self, *, max_length=None):
+    async def scan_dr(self, *, check=True, max_length=None):
         if max_length is not None:
             max_length = self._dr_overhead + max_length
-        data = await self.lower.scan_dr(max_length=max_length)
+        data = await self.lower.scan_dr(check=check, max_length=max_length)
         if data is None:
             return data
+        if check and len(data) == self._dr_overhead:
+            raise JTAGProbeError("DR shift chain is empty")
+        assert len(data) > self._dr_overhead
         if self._dr_suffix:
             return data[len(self._dr_prefix):-len(self._dr_suffix)]
         else:
@@ -850,6 +857,8 @@ class TAPInterface:
         if max_length is not None:
             max_length = self._dr_overhead + max_length
         length = await self.lower.scan_dr_length(max_length=max_length)
+        if length == self._dr_overhead:
+            raise JTAGProbeError("DR shift chain is empty")
         assert length > self._dr_overhead
         return length - self._dr_overhead
 
@@ -909,24 +918,22 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
     def add_run_tap_arguments(cls, parser):
         parser.add_argument(
             "--tap-index", metavar="INDEX", type=int,
-            help="select TAP #INDEX for communication (default: sole TAP)")
+            help="select TAP #INDEX for communication (default: single TAP)")
 
     async def run_tap(self, cls, device, args):
         jtag_iface = await self.run_lower(cls, device, args)
 
-        idcodes, ir_lengths = await jtag_iface._scan_taps()
-        if ir_lengths is None:
-            raise JTAGProbeError("TAP interrogation failed")
+        dr_value, ir_value = await self.scan_reset_dr_ir()
+        idcodes = self.interrogate_dr(dr_value)
+        ir_layout = self.interrogate_ir(ir_value, tap_count=len(idcodes))
 
         tap_index = args.tap_index
         if tap_index is None:
-            if len(ir_lengths) > 1:
+            if len(idcodes) > 1:
                 raise JTAGProbeError("more than one TAP found; use explicit --tap-index")
             else:
                 tap_index = 0
-        if tap_index not in range(len(ir_lengths)):
-            raise JTAGProbeError("TAP #{:d} not found".format(tap_index))
-        return jtag_iface._create_tap_iface(ir_lengths, tap_index)
+        return jtag_iface._create_tap_iface(ir_layout, tap_index)
 
     @classmethod
     def add_interact_arguments(cls, parser):
@@ -986,34 +993,23 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
 
     async def interact(self, device, args, jtag_iface):
         if args.operation in ("scan", "enumerate-ir"):
-            await jtag_iface.test_reset()
-
-            dr_value = await jtag_iface.scan_dr()
-            if dr_value is None:
-                raise JTAGProbeError("DR scan did not terminate")
+            dr_value, ir_value = await jtag_iface.scan_reset_dr_ir()
             self.logger.info("shifted %d-bit DR=<%s>", len(dr_value), dump_bin(dr_value))
-
-            ir_value = await jtag_iface.scan_ir()
-            if ir_value is None:
-                raise JTAGProbeError("IR scan did not terminate")
             self.logger.info("shifted %d-bit IR=<%s>", len(ir_value), dump_bin(ir_value))
 
             idcodes = jtag_iface.interrogate_dr(dr_value)
-            if idcodes is None:
-                raise JTAGProbeError("DR interrogation failed")
             if len(idcodes) == 0:
                 self.logger.warning("DR interrogation discovered no TAPs")
                 return
             self.logger.info("discovered %d TAPs", len(idcodes))
 
-            ir_lengths = jtag_iface.interrogate_ir(ir_value, dr_count=len(idcodes))
-
         if args.operation == "scan":
-            if not ir_lengths:
+            ir_layout = jtag_iface.interrogate_ir(ir_value, tap_count=len(idcodes), check=False)
+            if not ir_layout:
                 self.logger.warning("IR interrogation failed")
-                ir_lengths = ["?" for _ in idcodes]
+                ir_layout = ["?" for _ in idcodes]
 
-            for tap_index, (idcode_value, ir_length) in enumerate(zip(idcodes, ir_lengths)):
+            for tap_index, (idcode_value, ir_length) in enumerate(zip(idcodes, ir_layout)):
                 if idcode_value is None:
                     self.logger.info("TAP #%d: IR[%s] BYPASS",
                                      tap_index, ir_length)
@@ -1029,11 +1025,9 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
                                      idcode.mfg_id, mfg_name, idcode.part_id, idcode.version)
 
         if args.operation == "enumerate-ir":
-            if not ir_lengths:
-                raise JTAGProbeError("IR interrogation failed")
-
+            ir_layout = jtag_iface.interrogate_ir(ir_value, tap_count=len(idcodes))
             for tap_index in args.tap_indexes:
-                ir_length = ir_lengths[tap_index]
+                ir_length = ir_layout[tap_index]
                 self.logger.info("TAP #%d: IR[%d]", tap_index, ir_length)
 
                 tap_iface = await jtag_iface.select_tap(tap_index)
@@ -1041,7 +1035,7 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
                     ir_value = bits(ir_value & (1 << bit) for bit in range(ir_length))
                     await tap_iface.test_reset()
                     await tap_iface.write_ir(ir_value)
-                    dr_value = await tap_iface.scan_dr()
+                    dr_value = await tap_iface.scan_dr(check=False)
                     if dr_value is None:
                         dr_length = "?"
                         level = logging.WARN
@@ -1075,7 +1069,7 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
 import unittest
 
 
-class JTAGSegmentationTestCase(unittest.TestCase):
+class JTAGInterrogationTestCase(unittest.TestCase):
     def setUp(self):
         self.iface = JTAGProbeInterface(interface=None, logger=JTAGProbeApplet.logger)
 
@@ -1091,7 +1085,10 @@ class JTAGSegmentationTestCase(unittest.TestCase):
 
     def test_dr_truncated(self):
         dr = bits("0011101110100000000001000111011")
-        self.assertEqual(self.iface.interrogate_dr(dr), None)
+        with self.assertRaisesRegex(JTAGProbeError,
+                r"^TAP #0 has truncated DR IDCODE=<1101110001000000000010111011100>$"):
+            self.iface.interrogate_dr(dr)
+        self.assertEqual(self.iface.interrogate_dr(dr, check=False), None)
 
     def test_dr_bypass_idcode(self):
         dr = bits("001110111010000000000100011101110")
@@ -1103,11 +1100,17 @@ class JTAGSegmentationTestCase(unittest.TestCase):
 
     def test_dr_invalid(self):
         dr = bits("00000000000000000000000011111111")
-        self.assertEqual(self.iface.interrogate_dr(dr), None)
+        with self.assertRaisesRegex(JTAGProbeError,
+                r"^TAP #0 has invalid DR IDCODE=000000ff$"):
+            self.iface.interrogate_dr(dr)
+        self.assertEqual(self.iface.interrogate_dr(dr, check=False), None)
 
     def test_ir_1tap_0start(self):
-        ir = bits("0000")
-        self.assertEqual(self.iface.interrogate_ir(ir, 1),
+        ir = bits("0100")
+        with self.assertRaisesRegex(JTAGProbeError,
+                r"^IR capture does not start with <10> transition$"):
+            self.iface.interrogate_ir(ir, 1)
+        self.assertEqual(self.iface.interrogate_ir(ir, 1, check=False),
                          None)
 
     def test_ir_1tap_1start(self):
@@ -1122,7 +1125,10 @@ class JTAGSegmentationTestCase(unittest.TestCase):
 
     def test_ir_2tap_1start(self):
         ir = bits("0001")
-        self.assertEqual(self.iface.interrogate_ir(ir, 2),
+        with self.assertRaisesRegex(JTAGProbeError,
+                r"^IR capture has fewer <10> transitions than TAPs$"):
+            self.iface.interrogate_ir(ir, 2)
+        self.assertEqual(self.iface.interrogate_ir(ir, 2, check=False),
                          None)
 
     def test_ir_2tap_2start(self):
