@@ -888,31 +888,40 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
 
         p_scan = p_operation.add_parser(
             "scan", help="scan JTAG chain and attempt to identify devices",
+            formatter_class=parser.formatter_class,
             description="""
             Reset the JTAG TAPs and shift IDCODE or BYPASS register values out to determine
             the count and (if available) identity of the devices in the scan chain.
             """)
 
         p_enumerate_ir = p_operation.add_parser(
-            "enumerate-ir", help="use heuristics to enumerate JTAG IR values (DANGEROUS)",
+            "enumerate-ir", help="(DANGEROUS) use heuristics to enumerate JTAG IR values",
+            formatter_class=parser.formatter_class,
             description="""
-            THIS COMMAND CAN HAVE POTENTIALLY DESTRUCTIVE CONSEQUENCES.
+            THIS COMMAND CAN PERMANENTLY DAMAGE DEVICE UNDER TEST.
 
-            IEEE 1149.1 requires that any unimplemented IR value select the BYPASS DR.
-            By exploiting this, and measuring DR lengths for every possible IR value,
-            we can discover DR lengths for every IR value.
+            IEEE 1149.1 requires every unimplemented IR value to select the BYPASS DR.
+            By selecting every possible IR value and measuring DR lengths, it is possible to
+            discover IR values that definitively correspond to non-BYPASS DRs.
 
-            Note that discovering DR length requires going through Capture-DR and Update-DR
-            states. While we strive to be as unobtrustive as possible by shifting the original
-            DR value back after we discover DR length, there is no guarantee that updating DR
-            with the captured DR value is side effect free. As such, this command can potentially
-            have UNPREDICTABLE side effects that, due to the nature of JTAG, can permanently
-            damage your target. Use with care.
+            Due to the design of JTAG state machine, measuring DR length requires going
+            through Capture-DR and Update-DR states for instructions that may have
+            IRREVERSIBLE or UNDEFINED behavior. Although this command updates the DR with
+            the data just captured from it, IEEE 1149.1 does not require this operation
+            to be idempotent. Additionally, many devices are not strictly compliant and
+            in practice may perform IRREVERSIBLE or UNDEFINED actions during operations
+            that IEEE 1149.1 requires to be benign, such as selecting an unimplemented
+            instruction, or shifting into DR. USE THIS COMMAND AT YOUR OWN RISK.
 
-            Note that while unimplemented IR values are required to select the BYPASS DR,
-            in practice, many apparently (from the documentation) unimplemented IR values
-            would actually select reserved DRs instead, which can lead to confusion. In some
-            cases they even select a constant 0 level on TDO!
+            DR length measurement can have one of the following four results:
+                * DR[n], n > 1: non-BYPASS n-bit DR.
+                * DR[1]: (likely) BYPASS or (less likely) non-BYPASS 1-bit DR.
+                  This result is not shown because most IR values correspond to DR[1].
+                * DR[0]: TDI connected directly to TDO.
+                  This is not allowed by IEEE 1149.1, but is very common in practice.
+                * DR[?]: (commonly) no connection to TDO or (less commonly) complex logic
+                  connected between TDI and TDO that is active during Shift-DR.
+                  This is not allowed by IEEE 1149.1, but is common in practice.
             """)
         p_enumerate_ir.add_argument(
             "tap_indexes", metavar="INDEX", type=int, nargs="+",
@@ -997,7 +1006,7 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
                     dr_length = await tap_iface.scan_dr_length(max_length=args.max_dr_length,
                                                                zero_ok=True)
                     if dr_length is None:
-                        level = logging.ERROR
+                        level = logging.WARN
                         dr_length = "?"
                     elif dr_length == 0:
                         level = logging.WARN
