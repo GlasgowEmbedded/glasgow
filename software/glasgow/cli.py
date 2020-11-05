@@ -50,16 +50,19 @@ class TextHelpFormatter(argparse.HelpFormatter):
             if text.startswith("::"):
                 return text[2:]
 
-            list_match = re.match(r"(\s*)\*", text)
+            list_match = re.match(r"(\s*)(\*.+)", text, flags=re.S)
             if list_match:
-                return text
+                text = re.sub(r"(\S)\s+(\S)", r"\1 \2", list_match[2])
+                text = textwrap.fill(text, width,
+                                     initial_indent=indent + "  ",
+                                     subsequent_indent=indent + "    ")
+            else:
+                text = textwrap.fill(text, width,
+                                     initial_indent=indent,
+                                     subsequent_indent=indent)
 
-            text = textwrap.fill(text, width,
-                                 initial_indent=indent,
-                                 subsequent_indent=indent)
-
-            text = re.sub(r"(\w-) (\w)", r"\1\2", text)
             text = text + (match[2] or "")
+            text = re.sub(r"(\w-) (\w)", r"\1\2", text)
             return text
 
         text = textwrap.dedent(text).strip()
