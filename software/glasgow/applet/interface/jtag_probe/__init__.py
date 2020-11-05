@@ -276,6 +276,9 @@ class JTAGProbeStateTransitionError(JTAGProbeError):
 
 
 class JTAGProbeInterface:
+    scan_ir_max_length = 128
+    scan_dr_max_length = 1024
+
     def __init__(self, interface, logger, has_trst=False, __name__=__name__):
         self.lower   = interface
         self._logger = logger
@@ -594,15 +597,21 @@ class JTAGProbeInterface:
         await self.shift_tdi(data)
         await self.enter_update_dr()
 
-    # Specialized operations
+    # Shift chain introspection
 
-    async def _scan_xr(self, xr, max_length, zero_ok=False):
+    async def _scan_xr(self, xr, *, max_length):
         assert xr in ("ir", "dr")
         self._log_h("scan %s length", xr)
 
-        if xr ==  "ir":
+        if max_length is None:
+            if xr == "ir":
+                max_length = self.scan_ir_max_length
+            if xr == "dr":
+                max_length = self.scan_dr_max_length
+
+        if xr == "ir":
             await self.enter_shift_ir()
-        if xr ==  "dr":
+        if xr == "dr":
             await self.enter_shift_dr()
 
         try:
@@ -632,23 +641,27 @@ class JTAGProbeInterface:
 
             await self.enter_run_test_idle()
 
-    async def scan_ir(self, max_length):
-        return await self._scan_xr("ir", max_length)
-
-    async def scan_dr(self, max_length):
-        return await self._scan_xr("dr", max_length)
-
-    async def scan_ir_length(self, max_length):
-        data = await self.scan_ir(max_length)
-        if data is None: return
-        return len(data)
-
-    async def scan_dr_length(self, max_length, zero_ok=False):
-        data = await self.scan_dr(max_length)
-        if data is None: return
+    async def _scan_xr_length(self, xr, *, max_length, zero_ok=False):
+        data = await self._scan_xr(xr, max_length=max_length)
+        if data is None:
+            return
         length = len(data)
         assert zero_ok or length > 0
         return length
+
+    async def scan_ir(self, *, max_length=None):
+        return await self._scan_xr("ir", max_length=max_length)
+
+    async def scan_dr(self, *, max_length=None):
+        return await self._scan_xr("dr", max_length=max_length)
+
+    async def scan_ir_length(self, *, max_length=None):
+        return await self._scan_xr_length("ir", max_length=max_length)
+
+    async def scan_dr_length(self, *, max_length=None, zero_ok=False):
+        return await self._scan_xr_length("dr", max_length=max_length, zero_ok=zero_ok)
+
+    # Blind interrogation
 
     def interrogate_dr(self, dr_value):
         """Split DR value captured after TAP reset into IDCODE/BYPASS chunks."""
@@ -723,10 +736,10 @@ class JTAGProbeInterface:
                         len(ir_value), ",".join("{:d}".format(chunk) for chunk in ir_chunks))
             return None
 
-    async def select_tap(self, tap, max_ir_length=128, max_dr_length=1024):
+    async def select_tap(self, tap):
         await self.test_reset()
 
-        dr_value = await self.scan_dr(max_dr_length)
+        dr_value = await self.scan_dr()
         if dr_value is None:
             return
 
@@ -734,7 +747,7 @@ class JTAGProbeInterface:
         if idcodes is None:
             return
 
-        ir_value = await self.scan_ir(max_ir_length)
+        ir_value = await self.scan_ir()
         if ir_value is None:
             return
 
@@ -820,9 +833,10 @@ class TAPInterface:
         data = bits(data)
         await self.lower.write_dr(self._dr_prefix + data + self._dr_suffix)
 
-    async def scan_dr_length(self, max_length, zero_ok=False):
-        length = await self.lower.scan_dr_length(max_length=self._dr_overhead + max_length,
-                                                 zero_ok=zero_ok)
+    async def scan_dr_length(self, *, max_length=None, zero_ok=False):
+        if max_length is not None:
+            max_length = self._dr_overhead + max_length
+        length = await self.lower.scan_dr_length(max_length=max_length, zero_ok=zero_ok)
         if length is None or length == 0:
             return
         assert length >= self._dr_overhead
@@ -861,14 +875,28 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
             period_cyc=target.sys_clk_freq // (args.frequency * 1000),
         ))
 
-    async def run(self, device, args):
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        return JTAGProbeInterface(iface, self.logger, has_trst=args.pin_trst is not None)
-
     @classmethod
-    def add_run_tap_arguments(cls, parser, access):
+    def add_run_arguments(cls, parser, access):
         super().add_run_arguments(parser, access)
 
+        parser.add_argument(
+            "--scan-ir-max-length", metavar="LENGTH", type=int,
+            default=JTAGProbeInterface.scan_ir_max_length,
+            help="give up scanning IRs longer than LENGTH bits (default: %(default)s)")
+        parser.add_argument(
+            "--scan-dr-max-length", metavar="LENGTH", type=int,
+            default=JTAGProbeInterface.scan_dr_max_length,
+            help="give up scanning DRs longer than LENGTH bits (default: %(default)s)")
+
+    async def run(self, device, args):
+        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
+        jtag_iface = JTAGProbeInterface(iface, self.logger, has_trst=args.pin_trst is not None)
+        jtag_iface.scan_ir_max_length = args.scan_ir_max_length
+        jtag_iface.scan_dr_max_length = args.scan_dr_max_length
+        return jtag_iface
+
+    @classmethod
+    def add_run_tap_arguments(cls, parser):
         parser.add_argument(
             "--tap-index", metavar="INDEX", type=int, default=0,
             help="select TAP #INDEX for communication (default: %(default)s)")
@@ -882,13 +910,6 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
 
     @classmethod
     def add_interact_arguments(cls, parser):
-        parser.add_argument(
-            "--max-ir-length", metavar="LENGTH", type=int, default=128,
-            help="give up scanning IR after LENGTH bits")
-        parser.add_argument(
-            "--max-dr-length", metavar="LENGTH", type=int, default=1024,
-            help="give up scanning DR after LENGTH bits")
-
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_scan = p_operation.add_parser(
@@ -947,13 +968,13 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
         if args.operation in ("scan", "enumerate-ir"):
             await jtag_iface.test_reset()
 
-            dr_value = await jtag_iface.scan_dr(max_length=args.max_dr_length)
+            dr_value = await jtag_iface.scan_dr()
             if dr_value is None:
                 self.logger.error("DR length scan did not terminate")
                 return
             self.logger.info("shifted %d-bit DR=<%s>", len(dr_value), dump_bin(dr_value))
 
-            ir_value = await jtag_iface.scan_ir(max_length=args.max_ir_length)
+            ir_value = await jtag_iface.scan_ir()
             if ir_value is None:
                 self.logger.error("IR length scan did not terminate")
                 return
@@ -999,8 +1020,7 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
                 ir_offset, ir_length = irs[tap_index]
                 self.logger.info("TAP #%d: IR[%d]", tap_index, ir_length)
 
-                tap_iface = await jtag_iface.select_tap(tap_index,
-                                                        args.max_ir_length, args.max_dr_length)
+                tap_iface = await jtag_iface.select_tap(tap_index)
                 if not tap_iface:
                     raise GlasgowAppletError("cannot select TAP #%d" % tap_index)
 
@@ -1008,8 +1028,7 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
                     ir_value = bits(ir_value & (1 << bit) for bit in range(ir_length))
                     await tap_iface.test_reset()
                     await tap_iface.write_ir(ir_value)
-                    dr_length = await tap_iface.scan_dr_length(max_length=args.max_dr_length,
-                                                               zero_ok=True)
+                    dr_length = await tap_iface.scan_dr_length(zero_ok=True)
                     if dr_length is None:
                         level = logging.WARN
                         dr_length = "?"
@@ -1029,8 +1048,7 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
             ).interact()
 
         if args.operation == "tap-repl":
-            tap_iface = await jtag_iface.select_tap(args.tap_index,
-                                                    args.max_ir_length, args.max_dr_length)
+            tap_iface = await jtag_iface.select_tap(args.tap_index)
             if not tap_iface:
                 self.logger.error("cannot select TAP #%d" % args.tap_index)
                 return
