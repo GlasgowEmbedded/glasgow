@@ -576,18 +576,11 @@ class JTAGProbeInterface:
         self._log_h("exchange dr-o=<%s>", dump_bin(data))
         return data
 
-    async def read_dr(self, count, idempotent=False):
+    async def read_dr(self, count):
         await self.enter_shift_dr()
-        data = await self.shift_tdo(count, last=not idempotent)
-        if idempotent:
-            # Shift what we just read back in. This is useful to avoid disturbing any bits
-            # in R/W DRs when we go through Update-DR.
-            await self.shift_tdi(data)
+        data = await self.shift_tdo(count, last=True)
         await self.enter_update_dr()
-        if idempotent:
-            self._log_h("read idempotent dr=<%s>", dump_bin(data))
-        else:
-            self._log_h("read dr=<%s>", dump_bin(data))
+        self._log_h("read dr=<%s>", dump_bin(data))
         return data
 
     async def write_dr(self, data):
@@ -819,8 +812,8 @@ class TAPInterface:
         else:
             return data[len(self._dr_prefix):]
 
-    async def read_dr(self, count, idempotent=False):
-        data = await self.lower.read_dr(self._dr_overhead + count, idempotent=idempotent)
+    async def read_dr(self, count):
+        data = await self.lower.read_dr(self._dr_overhead + count)
         if self._dr_suffix:
             return data[len(self._dr_prefix):-len(self._dr_suffix)]
         else:
