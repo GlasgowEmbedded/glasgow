@@ -664,10 +664,10 @@ class JTAGProbeInterface:
                     dr_chunk = dr_value[offset:offset + 32]
                     idcode = int(dr_chunk)
                     if dr_chunk[1:12] == bits("00001111111"):
-                        self._log_h("invalid idcode=<%08x>", idcode)
+                        self._log_h("invalid idcode=%08x", idcode)
                         return
                     else:
-                        self._log_h("found idcode=<%08x>", idcode)
+                        self._log_h("found idcode=%08x", idcode)
                     idcodes.append(idcode)
                     offset += 32
                 else:
@@ -700,30 +700,27 @@ class JTAGProbeInterface:
 
         # If there's only one device in the chain, then the entire captured IR belongs to it.
         if dr_count == 1:
-            ir_offset = 0
             ir_length = len(ir_value)
             self._log_h("found ir[%d] (only tap)", ir_length)
-            return [(ir_offset, ir_length)]
+            return [ir_length]
 
         # If there are no more captured IRs than devices in the chain, then IR lengths can be
         # determined unambiguously.
         elif dr_count == len(ir_starts):
-            irs = []
-            ir_offset = 0
+            ir_lengths = []
             for ir_start0, ir_start1 in zip(ir_starts, ir_starts[1:] + [len(ir_value)]):
                 ir_length = ir_start1 - ir_start0
-                self._log_h("found ir[%d] (tap #%d)", ir_length, len(irs))
-                irs.append((ir_offset, ir_length))
-                ir_offset += ir_length
-            return irs
+                self._log_h("found ir[%d] (tap #%d)", ir_length, len(ir_lengths))
+                ir_lengths.append(ir_length)
+            return ir_lengths
 
         # Otherwise IR lengths are ambiguous.
         else:
             ir_chunks = []
             for ir_start0, ir_start1 in zip(ir_starts, ir_starts[1:] + [len(ir_value)]):
                 ir_chunks.append(ir_start1 - ir_start0)
-            self._log_h("ambiguous ir chain length=%d chunks=%s",
-                        len(ir_value), ",".join("{:d}".format(chunk) for chunk in ir_chunks))
+            self._log_h("ambiguous ir taps=%d chunks=[%s]",
+                        dr_count, ",".join("{:d}".format(chunk) for chunk in ir_chunks))
             return
 
     async def _scan_taps(self):
@@ -741,20 +738,20 @@ class JTAGProbeInterface:
         if ir_value is None:
             return (idcodes, None)
 
-        irs = self.interrogate_ir(ir_value, dr_count=len(idcodes))
-        if not irs:
+        ir_lengths = self.interrogate_ir(ir_value, dr_count=len(idcodes))
+        if not ir_lengths:
             return (idcodes, None)
 
-        return (idcodes, irs)
+        return (idcodes, ir_lengths)
 
-    def _create_tap_iface(self, irs, index):
-        assert index in range(len(irs))
+    def _create_tap_iface(self, ir_lengths, index):
+        assert index in range(len(ir_lengths))
 
-        ir_offset, ir_length = irs[index]
-        total_ir_length = sum(length for offset, length in irs)
+        ir_offset, ir_length = sum(ir_lengths[:index]), ir_lengths[index]
+        total_ir_length = sum(ir_lengths)
 
         dr_offset, dr_length = index, 1
-        total_dr_length = len(irs)
+        total_dr_length = len(ir_lengths)
 
         bypass = bits((1,))
         def affix(offset, length, total_length):
@@ -911,19 +908,19 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
     async def run_tap(self, cls, device, args):
         jtag_iface = await self.run_lower(cls, device, args)
 
-        idcodes, irs = await jtag_iface._scan_taps()
-        if irs is None:
+        idcodes, ir_lengths = await jtag_iface._scan_taps()
+        if ir_lengths is None:
             raise JTAGProbeError("TAP interrogation failed")
 
         tap_index = args.tap_index
         if tap_index is None:
-            if len(irs) > 1:
+            if len(ir_lengths) > 1:
                 raise JTAGProbeError("more than one TAP found; use explicit --tap-index")
             else:
                 tap_index = 0
-        if tap_index not in range(len(irs)):
+        if tap_index not in range(len(ir_lengths)):
             raise JTAGProbeError("TAP #{:d} not found".format(tap_index))
-        return jtag_iface._create_tap_iface(irs, tap_index)
+        return jtag_iface._create_tap_iface(ir_lengths, tap_index)
 
     @classmethod
     def add_interact_arguments(cls, parser):
@@ -1003,14 +1000,14 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
                 return
             self.logger.info("discovered %d TAPs", len(idcodes))
 
-            irs = jtag_iface.interrogate_ir(ir_value, dr_count=len(idcodes))
+            ir_lengths = jtag_iface.interrogate_ir(ir_value, dr_count=len(idcodes))
 
         if args.operation == "scan":
-            if not irs:
+            if not ir_lengths:
                 self.logger.warning("IR interrogation failed")
-                irs = [(None, "?") for _ in idcodes]
+                ir_lengths = ["?" for _ in idcodes]
 
-            for tap_index, (idcode_value, (ir_offset, ir_length)) in enumerate(zip(idcodes, irs)):
+            for tap_index, (idcode_value, ir_length) in enumerate(zip(idcodes, ir_lengths)):
                 if idcode_value is None:
                     self.logger.info("TAP #%d: IR[%s] BYPASS",
                                      tap_index, ir_length)
@@ -1026,11 +1023,11 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
                                      idcode.mfg_id, mfg_name, idcode.part_id, idcode.version)
 
         if args.operation == "enumerate-ir":
-            if not irs:
+            if not ir_lengths:
                 raise JTAGProbeError("IR interrogation failed")
 
-            for tap_index in args.tap_indexes or range(len(irs)):
-                ir_offset, ir_length = irs[tap_index]
+            for tap_index in args.tap_indexes:
+                ir_length = ir_lengths[tap_index]
                 self.logger.info("TAP #%d: IR[%d]", tap_index, ir_length)
 
                 tap_iface = await jtag_iface.select_tap(tap_index)
