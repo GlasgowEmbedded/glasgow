@@ -641,13 +641,10 @@ class JTAGProbeInterface:
 
             await self.enter_run_test_idle()
 
-    async def _scan_xr_length(self, xr, *, max_length, zero_ok=False):
+    async def _scan_xr_length(self, xr, *, max_length):
         data = await self._scan_xr(xr, max_length=max_length)
-        if data is None:
-            return
-        length = len(data)
-        assert zero_ok or length > 0
-        return length
+        assert data is not None and len(data) > 0
+        return len(data)
 
     async def scan_ir(self, *, max_length=None):
         return await self._scan_xr("ir", max_length=max_length)
@@ -658,8 +655,8 @@ class JTAGProbeInterface:
     async def scan_ir_length(self, *, max_length=None):
         return await self._scan_xr_length("ir", max_length=max_length)
 
-    async def scan_dr_length(self, *, max_length=None, zero_ok=False):
-        return await self._scan_xr_length("dr", max_length=max_length, zero_ok=zero_ok)
+    async def scan_dr_length(self, *, max_length=None):
+        return await self._scan_xr_length("dr", max_length=max_length)
 
     # Blind interrogation
 
@@ -833,14 +830,22 @@ class TAPInterface:
         data = bits(data)
         await self.lower.write_dr(self._dr_prefix + data + self._dr_suffix)
 
-    async def scan_dr_length(self, *, max_length=None, zero_ok=False):
+    async def scan_dr(self, *, max_length=None):
         if max_length is not None:
             max_length = self._dr_overhead + max_length
-        length = await self.lower.scan_dr_length(max_length=max_length, zero_ok=zero_ok)
-        if length is None or length == 0:
-            return
-        assert length >= self._dr_overhead
-        assert zero_ok or length - self._dr_overhead > 0
+        data = await self.lower.scan_dr(max_length=max_length)
+        if data is None:
+            return data
+        if self._dr_suffix:
+            return data[len(self._dr_prefix):-len(self._dr_suffix)]
+        else:
+            return data[len(self._dr_prefix):]
+
+    async def scan_dr_length(self, *, max_length=None):
+        if max_length is not None:
+            max_length = self._dr_overhead + max_length
+        length = await self.lower.scan_dr_length(max_length=max_length)
+        assert length > self._dr_overhead
         return length - self._dr_overhead
 
 
@@ -1028,16 +1033,18 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
                     ir_value = bits(ir_value & (1 << bit) for bit in range(ir_length))
                     await tap_iface.test_reset()
                     await tap_iface.write_ir(ir_value)
-                    dr_length = await tap_iface.scan_dr_length(zero_ok=True)
-                    if dr_length is None:
-                        level = logging.WARN
+                    dr_value = await tap_iface.scan_dr()
+                    if dr_value is None:
                         dr_length = "?"
-                    elif dr_length == 0:
                         level = logging.WARN
-                    elif dr_length == 1:
-                        level = logging.DEBUG
                     else:
-                        level = logging.INFO
+                        dr_length = len(dr_value)
+                        if dr_length == 0:
+                            level = logging.WARN
+                        elif dr_length == 1:
+                            level = logging.DEBUG
+                        else:
+                            level = logging.INFO
                     self.logger.log(level, "  IR=%s DR[%s]", ir_value, dr_length)
 
         if args.operation == "jtag-repl":
