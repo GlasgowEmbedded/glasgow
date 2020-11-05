@@ -608,12 +608,17 @@ class JTAGProbeInterface:
             await self.enter_shift_dr()
 
         try:
+            # Cancellation can cause the `finally` block to run before we have enough information
+            # to actually restore the value.
+            restore = False
+
             # Add 1 so that registers of exactly `max_length` could be scanned successfully.
             data_1 = await self.shift_tdio((1,) * (max_length + 1), last=False)
             data_0 = await self.shift_tdio((0,) * (max_length + 1), last=False)
             for length in range(max_length + 1):
                 if data_0[length] == 0:
                     if all(data_1[length:]):
+                        restore = True
                         self._log_h("scan %s length=%d data=<%s>",
                                     xr, length, dump_bin(data_1[:length]))
                         return data_1[:length]
@@ -625,14 +630,15 @@ class JTAGProbeInterface:
                 return
 
         finally:
-            if xr == "ir":
-                # Fill the register with BYPASS instructions.
-                await self.shift_tdi((1,) * length, last=True)
-            if xr == "dr":
-                # Restore the old contents, just in case this matters.
-                await self.shift_tdi(data_1[:length], last=True)
+            if restore:
+                if xr == "ir":
+                    # Fill the register with BYPASS instructions.
+                    await self.shift_tdi((1,) * length, last=True)
+                if xr == "dr":
+                    # Restore the old contents, just in case this matters.
+                    await self.shift_tdi(data_1[:length], last=True)
 
-            await self.enter_run_test_idle()
+                await self.enter_run_test_idle()
 
     async def _scan_xr_length(self, xr, *, max_length):
         data = await self._scan_xr(xr, max_length=max_length)
