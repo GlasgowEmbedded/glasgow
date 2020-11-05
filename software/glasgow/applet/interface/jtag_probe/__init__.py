@@ -1113,12 +1113,12 @@ class JTAGSegmentationTestCase(unittest.TestCase):
     def test_ir_1tap_1start(self):
         ir = bits("0001")
         self.assertEqual(self.iface.interrogate_ir(ir, 1),
-                         [(0, 4)])
+                         [4])
 
     def test_ir_1tap_2start(self):
         ir = bits("0101")
         self.assertEqual(self.iface.interrogate_ir(ir, 1),
-                         [(0, 4)])
+                         [4])
 
     def test_ir_2tap_1start(self):
         ir = bits("0001")
@@ -1128,7 +1128,7 @@ class JTAGSegmentationTestCase(unittest.TestCase):
     def test_ir_2tap_2start(self):
         ir = bits("01001")
         self.assertEqual(self.iface.interrogate_ir(ir, 2),
-                         [(0, 3), (3, 2)])
+                         [3, 2])
 
 
 class JTAGProbeAppletTestCase(GlasgowAppletTestCase, applet=JTAGProbeApplet):
