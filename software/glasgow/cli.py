@@ -145,21 +145,21 @@ def get_argparser():
                     "tests", metavar="TEST", nargs="*",
                     help="test cases to run")
 
-            if mode in ("build", "run", "run-repl", "run-script"):
+            if mode in ("build", "interact", "repl", "script"):
                 access_args = DirectArguments(applet_name=applet_name,
                                               default_port="AB",
                                               pin_count=16)
-                if mode in ("run", "run-repl", "run-script"):
+                if mode in ("interact", "repl", "script"):
                     g_applet_build = p_applet.add_argument_group("build arguments")
                     applet.add_build_arguments(g_applet_build, access_args)
                     g_applet_run = p_applet.add_argument_group("run arguments")
                     applet.add_run_arguments(g_applet_run, access_args)
-                    if mode == "run":
+                    if mode == "interact":
                         # FIXME: this makes it impossible to add subparsers in applets
                         # g_applet_interact = p_applet.add_argument_group("interact arguments")
                         # applet.add_interact_arguments(g_applet_interact)
                         applet.add_interact_arguments(p_applet)
-                    if mode == "run-repl":
+                    if mode == "repl":
                         # FIXME: same as above
                         applet.add_repl_arguments(p_applet)
                 if mode == "build":
@@ -243,22 +243,22 @@ def get_argparser():
         "run", formatter_class=TextHelpFormatter,
         help="run an applet and interact through its command-line interface")
     add_run_args(p_run)
-    add_applet_arg(p_run, mode="run")
+    add_applet_arg(p_run, mode="interact")
 
-    p_run_repl = subparsers.add_parser(
-        "run-repl", formatter_class=TextHelpFormatter,
-        help="run an applet and open a REPL to use its low-level interface")
-    add_run_args(p_run_repl)
-    add_applet_arg(p_run_repl, mode="run-repl")
+    p_repl = subparsers.add_parser(
+        "repl", formatter_class=TextHelpFormatter,
+        help="run an applet and open a REPL to use its programming interface")
+    add_run_args(p_repl)
+    add_applet_arg(p_repl, mode="repl")
 
-    p_run_script = subparsers.add_parser(
-        "run-script", formatter_class=TextHelpFormatter,
-        help="run an applet and execute a script against its low-level interface")
-    add_run_args(p_run_script)
-    p_run_script.add_argument(
-        "script", metavar="SCRIPT", type=argparse.FileType("r"),
-        help="the script to run")
-    add_applet_arg(p_run_script, mode="run-script")
+    p_script = subparsers.add_parser(
+        "script", formatter_class=TextHelpFormatter,
+        help="run an applet and execute a script against its programming interface")
+    add_run_args(p_script)
+    p_script.add_argument(
+        "script", metavar="SCRIPT-FILE", type=argparse.FileType("r"),
+        help="run Python SCRIPT-FILE in the applet context")
+    add_applet_arg(p_script, mode="script")
 
     p_run_prebuilt = subparsers.add_parser(
         "run-prebuilt", formatter_class=TextHelpFormatter,
@@ -510,12 +510,12 @@ async def _main():
                 print("{}\t{:.2}\t{:.2}"
                       .format(port, vio, vlimit))
 
-        if args.action in ("run", "run-repl", "run-script", "run-prebuilt"):
+        if args.action in ("run", "repl", "script", "run-prebuilt"):
             target, applet = _applet(device.revision, args)
             device.demultiplexer = DirectDemultiplexer(device, target.multiplexer.pipe_count)
             plan = target.build_plan()
 
-            if args.action in ("run", "run-repl", "run-script"):
+            if args.action in ("run", "repl", "script"):
                 await device.download_target(plan, rebuild=args.rebuild)
             if args.action == "run-prebuilt":
                 bitstream_file = args.bitstream or open("{}.bin".format(args.applet), "rb")
@@ -597,11 +597,11 @@ async def _main():
                     iface = await applet.run(device, args)
                     if args.action in ("run", "run-prebuilt"):
                         await applet.interact(device, args, iface)
-                    if args.action == "run-repl":
+                    if args.action == "repl":
                         await applet.repl(device, args, iface)
-                    if args.action == "run-script":
-                        code = compile(args.script.read(), filename=args.script.name, mode="exec",
-                            flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+                    if args.action == "script":
+                        code = compile(args.script.read(), filename=args.script.name,
+                            mode="exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
                         await eval(code, {"iface":iface, "device":device})
 
                 except GlasgowAppletError as e:
