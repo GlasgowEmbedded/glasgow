@@ -185,4 +185,5 @@ class VGMStreamReader:
                 samples = (command & 0xf) + 1
                 await player.wait_seconds(Fraction(samples, SAMPLE_RATE))
             else:
-                raise NotImplementedError("Unknown VGM command {:#04x}".format(command))
+                raise NotImplementedError("Unknown VGM command {:#04x} at stream offset {}"
+                                          .format(command, self._input.tell() - 1))

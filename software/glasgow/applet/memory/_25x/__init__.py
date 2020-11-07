@@ -10,7 +10,7 @@ import argparse
 from ....support.logging import dump_hex
 from ....database.jedec import *
 from ....protocol.sfdp import *
-from ...interface.spi_master import SPIMasterApplet
+from ...interface.spi_controller import SPIControllerApplet
 from ... import *
 
 
@@ -212,7 +212,7 @@ class Memory25xSFDPParser(SFDPParser):
         return await self._m25x_iface.read_sfdp(offset, length)
 
 
-class Memory25xApplet(SPIMasterApplet, name="memory-25x"):
+class Memory25xApplet(SPIControllerApplet, name="memory-25x"):
     logger = logging.getLogger(__name__)
     help = "read and write 25-series SPI Flash memories"
     description = """
@@ -228,14 +228,14 @@ class Memory25xApplet(SPIMasterApplet, name="memory-25x"):
 
     ::
             16-pin             8-pin
-        HOLD# @ * SCK       SS# @ * VCC
-          VCC * * MOSI     MISO * * HOLD#
+        HOLD# @ * SCK       CS# @ * VCC
+          VCC * * COPI     CIPO * * HOLD#
           N/C * * N/C       WP# * * SCK
-          N/C * * N/C       GND * * MOSI
+          N/C * * N/C       GND * * COPI
           N/C * * N/C
           N/C * * N/C
-          SS# * * GND
-         MISO * * WP#
+          CS# * * GND
+         CIPO * * WP#
 
     The default pin assignment follows the pinouts above in the clockwise direction, making it easy
     to connect the memory with probes or, alternatively, crimp an IDC cable wired to a SOIC clip.
@@ -245,16 +245,16 @@ class Memory25xApplet(SPIMasterApplet, name="memory-25x"):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access, omit_pins=True)
 
-        access.add_pin_argument(parser, "ss",   default=True, required=True)
-        access.add_pin_argument(parser, "miso", default=True, required=True)
+        access.add_pin_argument(parser, "cs",   default=True, required=True)
+        access.add_pin_argument(parser, "cipo", default=True, required=True)
         access.add_pin_argument(parser, "wp",   default=True)
-        access.add_pin_argument(parser, "mosi", default=True, required=True)
+        access.add_pin_argument(parser, "copi", default=True, required=True)
         access.add_pin_argument(parser, "sck",  default=True, required=True)
         access.add_pin_argument(parser, "hold", default=True)
 
     def build(self, target, args):
         subtarget = super().build(target, args)
-        subtarget.comb += subtarget.bus.oe.eq(subtarget.bus.ss == args.ss_active)
+        subtarget.comb += subtarget.bus.oe.eq(subtarget.bus.cs == args.cs_active)
 
         if args.pin_hold is not None:
             hold_t = self.mux_interface.get_pin(args.pin_hold)
@@ -507,14 +507,14 @@ import unittest
 class Memory25xAppletTestCase(GlasgowAppletTestCase, applet=Memory25xApplet):
     @synthesis_test
     def test_build(self):
-        self.assertBuilds(args=["--pin-sck",  "0", "--pin-ss",   "1",
-                                "--pin-mosi", "2", "--pin-miso", "3"])
+        self.assertBuilds(args=["--pin-sck",  "0", "--pin-cs",   "1",
+                                "--pin-copi", "2", "--pin-cipo", "3"])
 
     # Flash used for testing: Winbond 25Q32BVSIG
     hardware_args = [
         "--voltage",  "3.3",
-        "--pin-ss",   "0", "--pin-miso", "1",
-        "--pin-mosi", "2", "--pin-sck",  "3",
+        "--pin-cs",   "0", "--pin-cipo", "1",
+        "--pin-copi", "2", "--pin-sck",  "3",
         "--pin-hold", "4"
     ]
     dut_ids = (0xef, 0x15, 0x4016)

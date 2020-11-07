@@ -6,8 +6,8 @@ import asyncio
 import random
 import struct
 from functools import reduce
-from nmigen.compat import *
-from nmigen.compat.genlib.cdc import MultiReg
+from nmigen import *
+from nmigen.lib.cdc import FFSynchronizer
 
 from ....gateware.pads import *
 from ... import *
@@ -21,94 +21,98 @@ CMD_H  = 0x04
 CMD_I  = 0x05
 
 
-class JTAGPinoutSubtarget(Module):
+class JTAGPinoutSubtarget(Elaboratable):
     def __init__(self, pins, out_fifo, in_fifo, period_cyc):
+        self._pins       = pins
+        self._out_fifo   = out_fifo
+        self._in_fifo    = in_fifo
+        self._period_cyc = period_cyc
+
+    def elaborate(self, platform):
+        m = Module()
+        pins = self._pins
+        in_fifo  = self._in_fifo
+        out_fifo = self._out_fifo
+
         jtag_oe = Signal(len(pins))
         jtag_o  = Signal(len(pins))
         jtag_i  = Signal(len(pins))
-        self.comb += [
+        m.d.comb += [
             Cat(pin.oe for pin in pins).eq(jtag_oe),
             Cat(pin.o  for pin in pins).eq(jtag_o),
         ]
-        self.specials += MultiReg(Cat(pin.i for pin in pins), jtag_i)
+        m.submodules += FFSynchronizer(Cat(pin.i for pin in pins), jtag_i)
 
-        timer = Signal(max=period_cyc)
+        timer = Signal(range(self._period_cyc))
         cmd   = Signal(8)
         data  = Signal(16)
 
-        self.submodules.fsm = FSM(reset_state="RECV-COMMAND")
-        self.fsm.act("RECV-COMMAND",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(cmd, out_fifo.dout),
-                If(out_fifo.dout == CMD_W,
-                    NextValue(timer, period_cyc - 1),
-                    NextState("WAIT")
-                ).Elif(out_fifo.dout == CMD_I,
-                    NextState("SAMPLE")
-                ).Else(
-                    NextState("RECV-DATA-1")
-                )
-            )
-        )
-        self.fsm.act("RECV-DATA-1",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(data[0:8], out_fifo.dout),
-                NextState("RECV-DATA-2")
-            )
-        )
-        self.fsm.act("RECV-DATA-2",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(data[8:16], out_fifo.dout),
-                NextState("DRIVE")
-            )
-        )
-        self.fsm.act("DRIVE",
-            If(cmd == CMD_OE,
-                NextValue(jtag_oe, data)
-            ).Elif(cmd == CMD_O,
-                NextValue(jtag_o,  data)
-            ).Elif(cmd == CMD_L,
-                NextValue(jtag_o, ~data & jtag_o)
-            ).Elif(cmd == CMD_H,
-                NextValue(jtag_o,  data | jtag_o)
-            ),
-            NextState("RECV-COMMAND")
-        )
-        self.fsm.act("WAIT",
-            If(timer == 0,
-                NextState("RECV-COMMAND")
-            ).Else(
-                NextValue(timer, timer - 1)
-            )
-        )
-        self.fsm.act("SAMPLE",
-            NextValue(data, jtag_i),
-            NextState("SEND-DATA-1")
-        )
-        self.fsm.act("SEND-DATA-1",
-            If(in_fifo.writable,
-                in_fifo.we.eq(1),
-                in_fifo.din.eq(data[0:8]),
-                NextState("SEND-DATA-2")
-            )
-        )
-        self.fsm.act("SEND-DATA-2",
-            If(in_fifo.writable,
-                in_fifo.we.eq(1),
-                in_fifo.din.eq(data[8:16]),
-                NextState("RECV-COMMAND")
-            )
-        )
+        with m.FSM():
+            with m.State("RECV-COMMAND"):
+                with m.If(out_fifo.readable):
+                    m.d.comb += out_fifo.re.eq(1)
+                    m.d.sync += cmd.eq(out_fifo.dout)
+                    with m.If(out_fifo.dout == CMD_W):
+                        m.d.sync += timer.eq(self._period_cyc - 1)
+                        m.next = "WAIT"
+                    with m.Elif(out_fifo.dout == CMD_I):
+                        m.next = "SAMPLE"
+                    with m.Else():
+                        m.next = "RECV-DATA-1"
+
+            with m.State("RECV-DATA-1"):
+                with m.If(out_fifo.readable):
+                    m.d.comb += out_fifo.re.eq(1)
+                    m.d.sync += data[0:8].eq(out_fifo.dout)
+                    m.next = "RECV-DATA-2"
+
+            with m.State("RECV-DATA-2"):
+                with m.If(out_fifo.readable):
+                    m.d.comb += out_fifo.re.eq(1)
+                    m.d.sync += data[8:16].eq(out_fifo.dout)
+                    m.next = "DRIVE"
+
+            with m.State("DRIVE"):
+                with m.If(cmd == CMD_OE):
+                    m.d.sync += jtag_oe.eq(data)
+                with m.Elif(cmd == CMD_O):
+                    m.d.sync += jtag_o.eq( data)
+                with m.Elif(cmd == CMD_L):
+                    m.d.sync += jtag_o.eq(~data & jtag_o)
+                with m.Elif(cmd == CMD_H):
+                    m.d.sync += jtag_o.eq( data | jtag_o)
+                m.next = "RECV-COMMAND"
+
+            with m.State("WAIT"):
+                with m.If(timer == 0):
+                    m.next = "RECV-COMMAND"
+                with m.Else():
+                    m.d.sync += timer.eq(timer - 1)
+
+            with m.State("SAMPLE"):
+                m.d.sync += data.eq(jtag_i)
+                m.next = "SEND-DATA-1"
+
+            with m.State("SEND-DATA-1"):
+                with m.If(in_fifo.writable):
+                    m.d.comb += in_fifo.we.eq(1)
+                    m.d.comb += in_fifo.din.eq(data[0:8])
+                    m.next = "SEND-DATA-2"
+
+            with m.State("SEND-DATA-2"):
+                with m.If(in_fifo.writable):
+                    m.d.comb += in_fifo.we.eq(1)
+                    m.d.comb += in_fifo.din.eq(data[8:16])
+                    m.next = "RECV-COMMAND"
+
+        return m
 
 
 class JTAGPinoutInterface:
     def __init__(self, interface, logger):
         self._lower  = interface
         self._logger = logger
-        self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+        self._level  = logging.TRACE
 
     def _log(self, message, *args):
         self._logger.log(self._level, "JTAG: " + message, *args)
@@ -230,13 +234,14 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
         await iface.wait()
         return word
 
-    async def _enter_shift_ir(self, iface, *, tck, tms, tdi, trst=0):
+    async def _enter_shift_ir(self, iface, *, tck, tms, tdi, trst=0, assert_trst=False):
         await iface.set_o (tck|tms|tdi|trst)
         await iface.set_oe(tck|tms|tdi|trst)
         await iface.wait()
-        # Pulse TRST
+        # Pulse or assert TRST
         await iface.set_o_0(trst); await iface.wait()
-        await iface.set_o_1(trst); await iface.wait()
+        if not assert_trst:
+            await iface.set_o_1(trst); await iface.wait()
         # Enter Test-Logic-Reset
         await iface.set_o_1(tms)
         for _ in range(5):
@@ -250,8 +255,9 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
         await iface.set_o_0(tms); await self._strobe_tck(iface, tck)
         await iface.set_o_0(tms); await self._strobe_tck(iface, tck)
 
-    async def _detect_tdo(self, iface, *, tck, tms, trst=0):
-        await self._enter_shift_ir(iface, tck=tck, tms=tms, tdi=0, trst=trst)
+    async def _detect_tdo(self, iface, *, tck, tms, trst=0, assert_trst=False):
+        await self._enter_shift_ir(iface, tck=tck, tms=tms, tdi=0, trst=trst,
+                                   assert_trst=assert_trst)
 
         # Shift IR
         ir_0 = await self._strobe_tck_input(iface, tck)
@@ -283,13 +289,11 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
         # Release the bus
         await iface.set_oe(0)
 
-        ir_lens = []
         for ir_len in range(flush_bits):
             corr_result = [result[ir_len + bit] if pattern & (1 << bit) else ~result[ir_len + bit]
                            for bit in range(pat_bits)]
             if reduce(lambda x, y: x&y, corr_result) & tdo:
-                ir_lens.append(ir_len)
-        return ir_lens
+                return ir_len
 
     async def interact(self, device, args, iface):
         def bits_to_str(pins):
@@ -304,22 +308,32 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
         if pull_down_bits:
             self.logger.info("pull-L: %s", bits_to_str(pull_down_bits))
 
+        trst_l_bits = []
+        trst_h_bits = []
         if len(self.bits) > 4:
-            # Try possible TRST# pins from most to least likely.
-            trst_bits = set.union(pull_down_bits, high_z_bits, pull_up_bits)
-        else:
-            trst_bits = set()
+            # Try possible TRST# pins from most to least likely. This changes based on whether we
+            # expect TRST# to be low (i.e. if we can't detect the TAP without TRST) or to be high
+            # (i.e. if we found a TAP without TRST).
+            trst_l_bits += pull_down_bits
+            trst_h_bits += pull_up_bits
+            trst_l_bits += high_z_bits
+            trst_h_bits += high_z_bits
+            # Try inconsistent (neither pull-up nor pull-down nor high-Z) pins and pins pulled to
+            # the wrong direction after exhausting every reasonable attempt.
+            trst_l_bits += self.bits - set(trst_l_bits)
+            trst_h_bits += self.bits - set(trst_h_bits)
 
         results = []
-        for bit_trst in [None, *trst_bits]:
+        for bit_trst in [None, *trst_l_bits]:
             if bit_trst is None:
-                self.logger.info("detecting TCK, TMS and TDO")
+                self.logger.info("detecting TCK, TMS, and TDO")
                 data_bits = self.bits
             else:
-                self.logger.info("detecting TCK, TMS and TDO with TRST#=%s",
+                self.logger.info("detecting TCK, TMS, and TDO with TRST#=%s",
                                  self.names[bit_trst])
                 data_bits = self.bits - {bit_trst}
 
+            # Try every TCK, TMS pin combination to detect possible TDO pins in parallel.
             tck_tms_tdo = []
             for bit_tck in data_bits:
                 for bit_tms in data_bits - {bit_tck}:
@@ -337,48 +351,101 @@ class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
                 continue
 
             self.logger.info("detecting TDI")
+
+            # Try every TDI pin for every potential TCK, TMS, TDO combination.
+            tck_tms_tdi_tdo = []
             for (bit_tck, bit_tms, bit_tdo) in tck_tms_tdo:
                 for bit_tdi in data_bits - {bit_tck, bit_tms, bit_tdo}:
                     self.logger.debug("trying TCK=%s TMS=%s TDI=%s TDO=%s",
                         self.names[bit_tck], self.names[bit_tms],
                         self.names[bit_tdi], self.names[bit_tdo])
-                    ir_lens = await self._detect_tdi(iface,
+                    ir_len = await self._detect_tdi(iface,
                         tck=1 << bit_tck, tms=1 << bit_tms, tdi=1 << bit_tdi, tdo=1 << bit_tdo,
                         trst=0 if bit_trst is None else 1 << bit_trst)
-                    for ir_len in ir_lens:
-                        self.logger.info("shifted %d-bit IR with TCK=%s TMS=%s TDI=%s TDO=%s",
-                            ir_len,
-                            self.names[bit_tck], self.names[bit_tms],
-                            self.names[bit_tdi], self.names[bit_tdo])
-                        results.append((bit_tck, bit_tms, bit_tdi, bit_tdo, bit_trst))
-                    else:
+                    if ir_len is None or ir_len < 2:
                         continue
+                    self.logger.info("shifted %d-bit IR with TCK=%s TMS=%s TDI=%s TDO=%s",
+                        ir_len,
+                        self.names[bit_tck], self.names[bit_tms],
+                        self.names[bit_tdi], self.names[bit_tdo])
+                    tck_tms_tdi_tdo.append((bit_tck, bit_tms, bit_tdi, bit_tdo))
 
-            if bit_trst is None:
-                if results:
-                    self.logger.info("JTAG interface detected, not probing TRST#")
-                    break
-                elif trst_bits:
-                    self.logger.info("no JTAG interface detected yet, probing TRST#")
-            elif results:
-                self.logger.info("JTAG interface detected with TRST#=%s",
-                                 self.names[bit_trst])
+            if not tck_tms_tdi_tdo:
+                continue
+
+            if bit_trst is not None or len(self.bits) == 4:
+                # TRST# is either already known, or can't be present.
+                for bits in tck_tms_tdi_tdo:
+                    results.append((*bits, bit_trst))
                 break
+
+            self.logger.info("detecting TRST#")
+
+            # Although we have discovered a JTAG interface without TRST#, if it is still possible
+            # that a TRST# pin is connected and pulled up (or worse, floating), try to detect it.
+            # Otherwise, if the pull-up is weak or the pin is floating, interference may cause it
+            # to become spuriously active, especially with high volume of JTAG traffic on nearby
+            # pins, and disrupt operation of the probe.
+            #
+            # Try every TRST# pin for every potential TCK, TMS, TDI, TDO combination.
+            for (bit_tck, bit_tms, bit_tdi, bit_tdo) in tck_tms_tdi_tdo:
+                for bit_trst in trst_h_bits:
+                    if bit_trst in {bit_tck, bit_tms, bit_tdi, bit_tdo}:
+                        continue
+                    self.logger.debug("trying TCK=%s TMS=%s TDI=%s TDO=%s TRST#=%s",
+                        self.names[bit_tck], self.names[bit_tms],
+                        self.names[bit_tdi], self.names[bit_tdo],
+                        self.names[bit_trst])
+                    tdo_bits_1 = await self._detect_tdo(iface,
+                        tck=1 << bit_tck, tms=1 << bit_tms, trst=1 << bit_trst,
+                        assert_trst=True)
+                    tdo_bits_0 = await self._detect_tdo(iface,
+                        tck=1 << bit_tck, tms=1 << bit_tms, trst=1 << bit_trst,
+                        assert_trst=False)
+                    if bit_tdo in tdo_bits_0 and bit_tdo not in tdo_bits_1:
+                        self.logger.info("disabled TAP with TCK=%s TMS=%s TDI=%s "
+                                         "TDO=%s TRST#=%s",
+                            self.names[bit_tck], self.names[bit_tms],
+                            self.names[bit_tdi], self.names[bit_tdo],
+                            self.names[bit_trst])
+                        results.append((bit_tck, bit_tms, bit_tdi, bit_tdo, bit_trst))
+
+            if not results:
+                # TRST# is not found.
+                for bits in tck_tms_tdi_tdo:
+                    results.append((*bits, None))
+            break
 
         if len(results) == 0:
             self.logger.warning("no JTAG interface detected")
+
         elif len(results) == 1:
             bit_tck, bit_tms, bit_tdi, bit_tdo, bit_trst = results[0]
-            args = ["jtag-probe"]
-            args += ["--pin-tck", str(self.pins[bit_tck])]
-            args += ["--pin-tms", str(self.pins[bit_tms])]
-            args += ["--pin-tdi", str(self.pins[bit_tdi])]
-            args += ["--pin-tdo", str(self.pins[bit_tdo])]
             if bit_trst is not None:
-                args += ["--pin-trst", str(self.pins[bit_trst])]
-            self.logger.info("use `%s` as arguments", " ".join(args))
+                self.logger.info("JTAG interface with reset detected")
+            else:
+                self.logger.info("JTAG interface without reset detected")
+
+            probe_args = ["jtag-probe"]
+
+            if args.voltage is not None:
+                probe_args += ["-V", "{:.1f}".format(args.voltage)]
+            elif args.mirror_voltage:
+                probe_args += ["-M"]
+            elif args.keep_voltage:
+                probe_args += ["--keep-voltage"]
+
+            probe_args += ["--pin-tck", str(self.pins[bit_tck])]
+            probe_args += ["--pin-tms", str(self.pins[bit_tms])]
+            probe_args += ["--pin-tdi", str(self.pins[bit_tdi])]
+            probe_args += ["--pin-tdo", str(self.pins[bit_tdo])]
+            if bit_trst is not None:
+                probe_args += ["--pin-trst", str(self.pins[bit_trst])]
+
+            self.logger.info("use `%s` as arguments", " ".join(probe_args))
+
         else:
-            self.logger.warning("more than one JTAG interface detected; this likely a false "
+            self.logger.warning("more than one JTAG interface detected; this is likely a false "
                                 "positive")
 
 # -------------------------------------------------------------------------------------------------

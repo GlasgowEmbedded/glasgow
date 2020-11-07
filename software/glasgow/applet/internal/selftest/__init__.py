@@ -135,6 +135,10 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
             self.logger.info("running self-test mode %s", mode)
 
             if mode in ("pins-int", "pins-ext", "pins-pull"):
+                if device.revision >= "C0":
+                    raise GlasgowAppletError(f"mode {mode} is broken on device revision "
+                                             f"{device.revision}")
+
                 if mode == "pins-int":
                     await device.set_voltage("AB", 0)
 

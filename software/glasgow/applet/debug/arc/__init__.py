@@ -40,7 +40,7 @@ class ARCDebugInterface:
         self._logger.log(self._level, "ARC: " + message, *args)
 
     async def identify(self):
-        await self.lower.write_ir(IR_IDCODE)
+        await self.lower.test_reset()
         idcode_bits = await self.lower.read_dr(32)
         idcode = DR_IDCODE.from_bits(idcode_bits)
         self._log("read IDCODE mfg_id=%03x arc_type=%02x arc_number=%03x",
@@ -125,16 +125,21 @@ class DebugARCApplet(JTAGProbeApplet, name="debug-arc"):
 
     @classmethod
     def add_run_arguments(cls, parser, access):
-        super().add_run_tap_arguments(parser, access)
+        super().add_run_arguments(parser, access)
+        super().add_run_tap_arguments(parser)
 
     async def run(self, device, args):
-        tap_iface = await self.run_tap(DebugARCApplet, device, args, reset=True)
+        tap_iface = await self.run_tap(DebugARCApplet, device, args)
         return ARCDebugInterface(tap_iface, self.logger)
+
+    @classmethod
+    def add_interact_arguments(cls, parser):
+        pass
 
     async def interact(self, device, args, arc_iface):
         idcode, device = await arc_iface.identify()
         if device is None:
-            raise GlasgowAppletError("cannot operate on unknown device IDCODE=%08x"
+            raise GlasgowAppletError("cannot operate on unknown device with IDCODE=%08x"
                                      % idcode.to_int())
         self.logger.info("IDCODE=%08x device=%s rev=%d",
                          idcode.to_int(), device.name, idcode.version)

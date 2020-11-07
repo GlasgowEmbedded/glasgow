@@ -90,7 +90,8 @@ class ProgramXC6SApplet(JTAGProbeApplet, name="program-xc6s"):
 
     @classmethod
     def add_run_arguments(cls, parser, access):
-        super().add_run_tap_arguments(parser, access)
+        super().add_run_arguments(parser, access)
+        super().add_run_tap_arguments(parser)
 
     async def run(self, device, args):
         tap_iface = await self.run_tap(ProgramXC6SApplet, device, args)

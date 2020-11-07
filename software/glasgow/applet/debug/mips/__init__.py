@@ -830,11 +830,11 @@ class DebugMIPSApplet(JTAGProbeApplet, name="debug-mips"):
     Other configurations might or might not work. In particular, it certainly does not currently
     work on little-endian CPUs. Sorry about that.
     """
-    has_custom_repl = True
 
     @classmethod
     def add_run_arguments(cls, parser, access):
-        super().add_run_tap_arguments(parser, access)
+        super().add_run_arguments(parser, access)
+        super().add_run_tap_arguments(parser)
 
     async def run(self, device, args):
         tap_iface = await self.run_tap(DebugMIPSApplet, device, args)
@@ -878,9 +878,9 @@ class DebugMIPSApplet(JTAGProbeApplet, name="debug-mips"):
                 if ejtag_iface.target_attached():
                     await ejtag_iface.target_detach()
 
-        if args.operation == "repl":
-            await AsyncInteractiveConsole(locals={"iface":ejtag_iface}).interact()
+    async def repl(self, device, args, ejtag_iface):
+        await super().repl(device, args, ejtag_iface)
 
-            # Same as above.
-            if ejtag_iface.target_attached():
-                await ejtag_iface.target_detach()
+        # Same reason as above.
+        if ejtag_iface.target_attached():
+            await ejtag_iface.target_detach()

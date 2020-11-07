@@ -167,7 +167,7 @@ See [above](#-with-windows).
   * [@marcan](https://github.com/marcan) improved almost every aspect of hardware for revC;
   * [@esden](https://github.com/esden) is handling batch manufacturing;
   * [@smunaut](https://github.com/smunaut) provided advice crucial for stability and performance of USB communication;
-  * [@electronic_eel](https://github.com/electronic_eel) designed the test jig and advanced protection circuitry;
+  * [@electronic_eel](https://github.com/electronic_eel) improved the hardware for revC2, designed the test jig and is working on advanced protection circuitry;
   * ... and many [other people](https://github.com/GlasgowEmbedded/Glasgow/graphs/contributors).
 
 ## License

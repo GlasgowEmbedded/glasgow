@@ -3,32 +3,35 @@
 
 import logging
 import asyncio
-from nmigen.compat import *
-from nmigen.compat.genlib.cdc import MultiReg
+from nmigen import *
+from nmigen.lib.cdc import FFSynchronizer
 
 from ....gateware.pads import *
 from ... import *
 from ..jtag_probe import JTAGProbeDriver, JTAGProbeInterface
 
 
-class SpyBiWireProbeBus(Module):
+class SpyBiWireProbeBus(Elaboratable):
     def __init__(self, pads):
+        self._pads = pads
         self.sbwtck  = Signal(reset=0)
         self.sbwtd_z = Signal(reset=0)
         self.sbwtd_o = Signal(reset=1)
         self.sbwtd_i = Signal()
 
-        ###
-
-        self.comb += [
+    def elaborate(self, platform):
+        m = Module()
+        pads = self._pads
+        m.d.comb += [
             pads.sbwtck_t.oe.eq(1),
             pads.sbwtck_t.o.eq(self.sbwtck),
             pads.sbwtdio_t.oe.eq(~self.sbwtd_z),
             pads.sbwtdio_t.o.eq(self.sbwtd_o),
         ]
-        self.specials += [
-            MultiReg(pads.sbwtdio_t.i, self.sbwtd_i),
+        m.submodules += [
+            FFSynchronizer(pads.sbwtdio_t.i, self.sbwtd_i),
         ]
+        return m
 
 
 BIT_AUX_TCLK_LEVEL  = 0b001
@@ -36,8 +39,11 @@ BIT_AUX_TCLK_LATCH  = 0b010
 BIT_AUX_TCLK_TOGGLE = 0b100
 
 
-class SpyBiWireProbeAdapter(Module):
+class SpyBiWireProbeAdapter(Elaboratable):
     def __init__(self, bus, period_cyc):
+        self.bus = bus
+        self._period_cyc = period_cyc
+
         self.stb = Signal()
         self.rdy = Signal()
 
@@ -52,122 +58,116 @@ class SpyBiWireProbeAdapter(Module):
         self.aux_i = Cat(self.tclk)
         self.aux_o = Cat(self.tclk_level, self.tclk_latch, self.tclk_toggle)
 
-        ###
+    def elaborate(self, platform):
+        m = Module()
+        bus = self.bus
 
-        half_cyc  = int(period_cyc // 2)
-        quart_cyc = int(period_cyc // 4)
-        timer     = Signal(max=half_cyc)
-        self.sync += [
-            If(self.rdy | (timer == 0),
-                timer.eq(half_cyc - 1)
-            ).Else(
-                timer.eq(timer - 1)
-            )
-        ]
+        half_cyc  = int(self._period_cyc // 2)
+        quart_cyc = int(self._period_cyc // 4)
+        timer     = Signal(range(half_cyc))
+        with m.If(self.rdy | (timer == 0)):
+            m.d.sync += timer.eq(half_cyc - 1)
+        with m.Else():
+            m.d.sync += timer.eq(timer - 1)
 
-        self.submodules.fsm = FSM()
-        # This logic follows "JTAG Access Entry Sequences (for Devices That Support SBW)",
-        # Case 1a: SBW entry sequence in section 2.3.1.1.
-        #
-        # Note that because SBW does not have any way to re-synchronize its time slots, the only
-        # way to restore lost SBW synchronization is to reset the entire applet for >100 us, which
-        # will reset the DUT and restart the SBW entry sequence.
-        self.fsm.act("RESET-1",
-            If(timer == 0,
-                NextValue(bus.sbwtck, 1),
-                NextState("RESET-2")
-            )
-        )
-        self.fsm.act("RESET-2",
-            If(timer == 0,
-                NextValue(bus.sbwtck, 0),
-                NextState("RESET-3")
-            )
-        )
-        self.fsm.act("RESET-3",
-            If(timer == 0,
-                NextValue(bus.sbwtck, 1),
-                NextState("IDLE")
-            )
-        )
-        self.fsm.act("IDLE",
-            If(self.stb,
-                NextState("TMS-SETUP")
-            ).Else(
-                self.rdy.eq(1)
-            )
-        )
-        self.fsm.act("TMS-SETUP",
-            NextValue(bus.sbwtd_o, self.tms),
-            NextState("TMS-HOLD")
-        )
-        self.fsm.act("TMS-HOLD",
-            If(timer == 0,
-                NextValue(bus.sbwtck,  0),
-                NextState("TDI-SETUP")
-            )
-        )
-        self.fsm.act("TDI-SETUP",
-            If(timer == quart_cyc,
-                # This logic follows "Synchronization of TDI and TCLK During Run-Test/Idle" in
-                # section 2.2.3.5.1.
-                If(self.tclk_latch | self.tclk_toggle,
-                    NextValue(bus.sbwtd_o, self.tclk)
-                ),
-                If(self.tclk_latch,
-                    NextValue(self.tclk, self.tclk_level)
-                ).Elif(self.tclk_toggle,
-                    NextValue(self.tclk, ~self.tclk)
-                )
-            ),
-            If(timer == 0,
-                NextValue(bus.sbwtck,  1),
-                If(~(self.tclk_latch | self.tclk_toggle),
-                    NextValue(bus.sbwtd_o, self.tdi)
-                ),
-                NextState("TDI-HOLD")
-            )
-        )
-        self.fsm.act("TDI-HOLD",
-            If(timer == quart_cyc,
-                # Same as above.
-                If(self.tclk_latch | self.tclk_toggle,
-                    NextValue(bus.sbwtd_o, self.tclk)
-                )
-            ),
-            If(timer == 0,
-                NextValue(bus.sbwtck,  0),
-                NextState("TDO-TURNAROUND")
-            )
-        )
-        self.fsm.act("TDO-TURNAROUND",
-            If(timer == 0,
-                NextValue(bus.sbwtck,  1),
-                NextValue(bus.sbwtd_z, 1),
-                NextState("TDO-SETUP")
-            )
-        )
-        self.fsm.act("TDO-SETUP",
-            If(timer == 0,
-                NextValue(bus.sbwtck,  0),
-                NextState("TDO-CAPTURE")
-            )
-        )
-        self.fsm.act("TDO-CAPTURE",
-            If(timer == 0,
-                NextValue(bus.sbwtck,  1),
-                NextValue(bus.sbwtd_z, 0),
-                NextValue(self.tdo,    bus.sbwtd_i),
-                NextState("IDLE")
-            )
-        )
+        with m.FSM():
+            # This logic follows "JTAG Access Entry Sequences (for Devices That Support SBW)",
+            # Case 1a: SBW entry sequence in section 2.3.1.1.
+            #
+            # Note that because SBW does not have any way to re-synchronize its time slots,
+            # the only way to restore lost SBW synchronization is to reset the entire applet
+            # for >100 us, which will reset the DUT and restart the SBW entry sequence.
+            with m.State("RESET-1"):
+                with m.If(timer == 0):
+                    m.d.sync += bus.sbwtck.eq(1),
+                    m.next = "RESET-2"
+
+            with m.State("RESET-2"):
+                with m.If(timer == 0):
+                    m.d.sync += bus.sbwtck.eq(0),
+                    m.next = "RESET-3"
+
+            with m.State("RESET-3"):
+                with m.If(timer == 0):
+                    m.d.sync += bus.sbwtck.eq(1),
+                    m.next = "IDLE"
+
+            with m.State("IDLE"):
+                with m.If(self.stb):
+                    m.next = "TMS-SETUP"
+                with m.Else():
+                    m.d.comb += self.rdy.eq(1)
+
+            with m.State("TMS-SETUP"):
+                m.d.sync += bus.sbwtd_o.eq(self.tms)
+                m.next = "TMS-HOLD"
+
+            with m.State("TMS-HOLD"):
+                with m.If(timer == 0):
+                    m.d.sync += bus.sbwtck.eq(0)
+                    m.next = "TDI-SETUP"
+
+            with m.State("TDI-SETUP"):
+                with m.If(timer == quart_cyc):
+                    # This logic follows "Synchronization of TDI and TCLK During Run-Test/Idle" in
+                    # section 2.2.3.5.1.
+                    with m.If(self.tclk_latch | self.tclk_toggle):
+                        m.d.sync += bus.sbwtd_o.eq(self.tclk)
+                    with m.If(self.tclk_latch):
+                        m.d.sync += self.tclk.eq(self.tclk_level)
+                    with m.Elif(self.tclk_toggle):
+                        m.d.sync += self.tclk.eq(self.tclk)
+
+                with m.Elif(timer == 0):
+                    m.d.sync += bus.sbwtck.eq(1),
+                    with m.If(~(self.tclk_latch | self.tclk_toggle)):
+                        m.d.sync += bus.sbwtd_o.eq(self.tdi)
+                    m.next = "TDI-HOLD"
+
+            with m.State("TDI-HOLD"):
+                with m.If(timer == quart_cyc):
+                    # Same as above.
+                    with m.If(self.tclk_latch | self.tclk_toggle):
+                        m.d.sync += bus.sbwtd_o.eq(self.tclk)
+
+                with m.Elif(timer == 0):
+                    m.d.sync += bus.sbwtck.eq(0),
+                    m.next = "TDO-TURNAROUND"
+
+            with m.State("TDO-TURNAROUND"):
+                with m.If(timer == 0):
+                    m.d.sync += bus.sbwtck.eq(1)
+                    m.d.sync += bus.sbwtd_z.eq(1)
+                    m.next = "TDO-SETUP"
+
+            with m.State("TDO-SETUP"):
+                with m.If(timer == 0):
+                    m.d.sync += bus.sbwtck.eq(0)
+                    m.next = "TDO-CAPTURE"
+
+            with m.State("TDO-CAPTURE"):
+                with m.If(timer == 0):
+                    m.d.sync += bus.sbwtck.eq(1)
+                    m.d.sync += bus.sbwtd_z.eq(0)
+                    m.d.sync += self.tdo.eq(bus.sbwtd_i)
+                    m.next = "IDLE"
+
+        return m
 
 
-class SpyBiWireProbeSubtarget(Module):
+class SpyBiWireProbeSubtarget(Elaboratable):
     def __init__(self, pads, out_fifo, in_fifo, period_cyc):
-        self.submodules.bus     = SpyBiWireProbeBus(pads)
-        self.submodules.adapter = SpyBiWireProbeAdapter(self.bus, period_cyc)
-        self.submodules.driver  = JTAGProbeDriver(self.adapter, out_fifo, in_fifo)
+        self._pads       = pads
+        self._out_fifo   = out_fifo
+        self._in_fifo    = in_fifo
+        self._period_cyc = period_cyc
+
+    def elaborate(self, platform):
+        m = Module()
+        m.submodules.bus     = SpyBiWireProbeBus(self._pads)
+        m.submodules.adapter = SpyBiWireProbeAdapter(m.submodules.bus, self._period_cyc)
+        m.submodules.driver  = JTAGProbeDriver(m.submodules.adapter, self._out_fifo, self._in_fifo)
+        return m
 
 
 class SpyBiWireProbeInterface(JTAGProbeInterface):
@@ -226,12 +226,12 @@ class SpyBiWireProbeApplet(GlasgowApplet, name="sbw-probe"):
 
     async def interact(self, device, args, sbw_iface):
         await sbw_iface.test_reset()
-        version_bits = await sbw_iface.read_ir(8)
-        version = int(version_bits.reversed())
-        if version == 0xff:
+        jtag_id_bits = await sbw_iface.read_ir(8)
+        jtag_id = int(jtag_id_bits.reversed())
+        if jtag_id == 0xff:
             self.logger.error("no target detected; connection problem?")
         else:
-            self.logger.info("found MSP430 core with JTAG ID %#04x", version)
+            self.logger.info("found MSP430 core with JTAG ID %#04x", jtag_id)
 
 # -------------------------------------------------------------------------------------------------
 

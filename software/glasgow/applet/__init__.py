@@ -2,6 +2,7 @@ import re
 import argparse
 from abc import ABCMeta, abstractmethod
 
+from ..support.pyrepl import *
 from ..gateware.clockgen import *
 
 
@@ -18,13 +19,8 @@ class GlasgowAppletMeta(ABCMeta):
     def __new__(metacls, clsname, bases, namespace, name=None, **kwargs):
         if name is not None:
             if name in metacls.all_applets:
-                raise NameError(f"Applet {name:r} already exists")
+                raise NameError(f"Applet {name!r} already exists")
             namespace["name"] = name
-
-        # Any class that overrides interact() no longer has its superclass' custom REPL, so be
-        # helpful and reset that attribute.
-        if "has_custom_repl" not in namespace and "interact" in namespace:
-            namespace["has_custom_repl"] = False
 
         cls = ABCMeta.__new__(metacls, clsname, bases, namespace, **kwargs)
         if name is not None:
@@ -37,7 +33,6 @@ class GlasgowApplet(metaclass=GlasgowAppletMeta):
     help = "applet help missing"
     description = "applet description missing"
     required_revision = "A0"
-    has_custom_repl = False
 
     @classmethod
     def add_build_arguments(cls, parser, access):
@@ -71,8 +66,17 @@ class GlasgowApplet(metaclass=GlasgowAppletMeta):
     def add_interact_arguments(cls, parser):
         pass
 
-    async def interact(self, device, args, interface):
+    async def interact(self, device, args, iface):
         pass
+
+    @classmethod
+    def add_repl_arguments(cls, parser):
+        pass
+
+    async def repl(self, device, args, iface):
+        self.logger.info("dropping to REPL; use 'help(iface)' to see available APIs")
+        await AsyncInteractiveConsole(locals={"device":device, "iface":iface},
+            run_callback=device.demultiplexer.flush).interact()
 
 
 class GlasgowAppletTool:

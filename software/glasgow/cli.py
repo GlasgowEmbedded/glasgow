@@ -18,7 +18,6 @@ from fx2.format import input_data, diff_data
 from . import __version__
 from .support.logging import *
 from .support.asignal import *
-from .support.pyrepl import *
 from .device import GlasgowDeviceError
 from .device.config import GlasgowConfig
 from .target.hardware import GlasgowHardwareTarget
@@ -50,16 +49,19 @@ class TextHelpFormatter(argparse.HelpFormatter):
             if text.startswith("::"):
                 return text[2:]
 
-            list_match = re.match(r"(\s*)\*", text)
+            list_match = re.match(r"(\s*)(\*.+)", text, flags=re.S)
             if list_match:
-                return text
+                text = re.sub(r"(\S)\s+(\S)", r"\1 \2", list_match[2])
+                text = textwrap.fill(text, width,
+                                     initial_indent=indent + "  ",
+                                     subsequent_indent=indent + "    ")
+            else:
+                text = textwrap.fill(text, width,
+                                     initial_indent=indent,
+                                     subsequent_indent=indent)
 
-            text = textwrap.fill(text, width,
-                                 initial_indent=indent,
-                                 subsequent_indent=indent)
-
-            text = re.sub(r"(\w-) (\w)", r"\1\2", text)
             text = text + (match[2] or "")
+            text = re.sub(r"(\w-) (\w)", r"\1\2", text)
             return text
 
         text = textwrap.dedent(text).strip()
@@ -143,20 +145,23 @@ def get_argparser():
                     "tests", metavar="TEST", nargs="*",
                     help="test cases to run")
 
-            if mode in ("build", "run", "run-repl", "run-script"):
+            if mode in ("build", "interact", "repl", "script"):
                 access_args = DirectArguments(applet_name=applet_name,
                                               default_port="AB",
                                               pin_count=16)
-                if mode in ("run", "run-repl", "run-script"):
+                if mode in ("interact", "repl", "script"):
                     g_applet_build = p_applet.add_argument_group("build arguments")
                     applet.add_build_arguments(g_applet_build, access_args)
                     g_applet_run = p_applet.add_argument_group("run arguments")
                     applet.add_run_arguments(g_applet_run, access_args)
-                    if mode not in ( "run-repl", "run-script" ):
+                    if mode == "interact":
                         # FIXME: this makes it impossible to add subparsers in applets
                         # g_applet_interact = p_applet.add_argument_group("interact arguments")
                         # applet.add_interact_arguments(g_applet_interact)
                         applet.add_interact_arguments(p_applet)
+                    if mode == "repl":
+                        # FIXME: same as above
+                        applet.add_repl_arguments(p_applet)
                 if mode == "build":
                     applet.add_build_arguments(p_applet, access_args)
 
@@ -227,41 +232,43 @@ def get_argparser():
 
     def add_run_args(parser):
         add_build_args(parser)
-        parser.add_argument(
+
+        g_run_bitstream = parser.add_mutually_exclusive_group()
+        g_run_bitstream.add_argument(
             "--rebuild", default=False, action="store_true",
-            help="rebuild bitstream even if an identical one is already loaded")
+            help="(advanced) rebuild bitstream even if an identical one is already loaded")
+        g_run_bitstream.add_argument(
+            "--prebuilt", default=False, action="store_true",
+            help="(advanced) load prebuilt applet bitstream from ./<applet-name.bin>")
+        g_run_bitstream.add_argument(
+            "--prebuilt-at", dest="bitstream", metavar="BITSTREAM-FILE",
+            type=argparse.FileType("rb"),
+            help="(advanced) load prebuilt applet bitstream from BITSTREAM-FILE")
+
         parser.add_argument(
-            "--trace", metavar="FILENAME", type=argparse.FileType("wt"), default=None,
-            help="trace applet I/O to FILENAME")
+            "--trace", metavar="VCD-FILE", type=argparse.FileType("wt"),
+            help="trace applet I/O to VCD-FILE")
 
     p_run = subparsers.add_parser(
         "run", formatter_class=TextHelpFormatter,
         help="run an applet and interact through its command-line interface")
     add_run_args(p_run)
-    add_applet_arg(p_run, mode="run")
+    add_applet_arg(p_run, mode="interact")
 
-    p_run_repl = subparsers.add_parser(
-        "run-repl", formatter_class=TextHelpFormatter,
-        help="run an applet and open a REPL to use its low-level interface")
-    add_run_args(p_run_repl)
-    add_applet_arg(p_run_repl, mode="run-repl")
+    p_repl = subparsers.add_parser(
+        "repl", formatter_class=TextHelpFormatter,
+        help="run an applet and open a REPL to use its programming interface")
+    add_run_args(p_repl)
+    add_applet_arg(p_repl, mode="repl")
 
-    p_run_script = subparsers.add_parser(
-        "run-script", formatter_class=TextHelpFormatter,
-        help="run an applet and execute a script against its low-level interface")
-    add_run_args(p_run_script)
-    p_run_script.add_argument(
-        "script", metavar="SCRIPT", type=argparse.FileType("r"),
-        help="the script to run")
-    add_applet_arg(p_run_script, mode="run-script")
-
-    p_run_prebuilt = subparsers.add_parser(
-        "run-prebuilt", formatter_class=TextHelpFormatter,
-        help="(advanced) load a prebuilt applet bitstream and run applet code")
-    p_run_prebuilt.add_argument(
-        "-f", "--filename", dest="bitstream", metavar="FILENAME", type=argparse.FileType("rb"),
-        help="read bitstream from the specified file (default: <applet-name.bin>)")
-    add_applet_arg(p_run_prebuilt, mode="run")
+    p_script = subparsers.add_parser(
+        "script", formatter_class=TextHelpFormatter,
+        help="run an applet and execute a script against its programming interface")
+    p_script.add_argument(
+        "script", metavar="SCRIPT-FILE", type=argparse.FileType("r"),
+        help="run Python SCRIPT-FILE in the applet context")
+    add_run_args(p_script)
+    add_applet_arg(p_script, mode="script")
 
     p_tool = subparsers.add_parser(
         "tool", formatter_class=TextHelpFormatter,
@@ -276,7 +283,7 @@ def get_argparser():
     g_flash_firmware = p_flash.add_mutually_exclusive_group()
     g_flash_firmware.add_argument(
         "--firmware", metavar="FILENAME", type=argparse.FileType("rb"),
-        help="read firmware from the specified file")
+        help="(advanced) read firmware from the specified file")
     g_flash_firmware.add_argument(
         "--remove-firmware", default=False, action="store_true",
         help="remove any firmware present")
@@ -284,7 +291,7 @@ def get_argparser():
     g_flash_bitstream = p_flash.add_mutually_exclusive_group()
     g_flash_bitstream.add_argument(
         "--bitstream", metavar="FILENAME", type=argparse.FileType("rb"),
-        help="read bitstream from the specified file")
+        help="(advanced) read bitstream from the specified file")
     g_flash_bitstream.add_argument(
         "--remove-bitstream", default=False, action="store_true",
         help="remove any bitstream present")
@@ -505,18 +512,17 @@ async def _main():
                 print("{}\t{:.2}\t{:.2}"
                       .format(port, vio, vlimit))
 
-        if args.action in ("run", "run-repl", "run-script", "run-prebuilt"):
+        if args.action in ("run", "repl", "script"):
             target, applet = _applet(device.revision, args)
             device.demultiplexer = DirectDemultiplexer(device, target.multiplexer.pipe_count)
             plan = target.build_plan()
 
-            if args.action in ("run", "run-repl", "run-script"):
-                await device.download_target(plan, rebuild=args.rebuild)
-            if args.action == "run-prebuilt":
+            if args.prebuilt or args.bitstream:
                 bitstream_file = args.bitstream or open("{}.bin".format(args.applet), "rb")
                 with bitstream_file:
-                    logger.warn("downloading prebuilt bitstream from %r", bitstream_file.name)
-                    await device.download_bitstream(bitstream_file.read())
+                    await device.download_prebuilt(plan, bitstream_file)
+            else:
+                await device.download_target(plan, rebuild=args.rebuild)
 
             do_trace = hasattr(args, "trace") and args.trace
             if do_trace:
@@ -590,20 +596,14 @@ async def _main():
                     logger.warn("applet %r is PREVIEW QUALITY and may CORRUPT DATA", args.applet)
                 try:
                     iface = await applet.run(device, args)
-                    if args.action in ("run", "run-prebuilt"):
+                    if args.action in "run":
                         await applet.interact(device, args, iface)
-                    if args.action == "run-repl":
-                        if applet.has_custom_repl:
-                            logger.warn("applet provides customized REPL(s); consider using `run "
-                                        "{} ...-repl` subcommands".format(applet.name))
-                        logger.info("dropping to REPL; use 'help(iface)' to see available APIs")
-                        await AsyncInteractiveConsole(locals={"iface":iface, "device":device},
-                            run_callback=device.demultiplexer.flush).interact()
-
-                    if args.action == "run-script":
-                        c = compile(args.script.read(), filename=args.script.name, mode="exec",
-                            flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
-                        await eval(c, {"iface":iface, "device":device})
+                    if args.action == "repl":
+                        await applet.repl(device, args, iface)
+                    if args.action == "script":
+                        code = compile(args.script.read(), filename=args.script.name,
+                            mode="exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+                        await eval(code, {"iface":iface, "device":device})
 
                 except GlasgowAppletError as e:
                     applet.logger.error(str(e))
@@ -678,9 +678,10 @@ async def _main():
             elif args.bitstream:
                 logger.info("using bitstream from %s", args.bitstream.name)
                 with args.bitstream as f:
-                    new_bitstream = f.read()
+                    new_bitstream_id = f.read(16)
+                    new_bitstream    = f.read()
                     glasgow_config.bitstream_size = len(new_bitstream)
-                    glasgow_config.bitstream_id   = b"\xff"*16
+                    glasgow_config.bitstream_id   = new_bitstream_id
             elif args.applet:
                 logger.info("building bitstream for applet %s", args.applet)
                 target, applet = _applet(device.revision, args)
@@ -747,13 +748,14 @@ async def _main():
                 logger.info("building RTLIL for applet %r", args.applet)
                 with open(args.filename or args.applet + ".il", "wt") as f:
                     f.write(plan.rtlil)
-            if args.type in ("bin", "bitstream"):
-                logger.info("building bitstream for applet %r", args.applet)
-                with open(args.filename or args.applet + ".bin", "wb") as f:
-                    f.write(plan.execute())
             if args.type in ("zip", "archive"):
                 logger.info("building archive for applet %r", args.applet)
                 plan.archive(args.filename or args.applet + ".zip")
+            if args.type in ("bin", "bitstream"):
+                logger.info("building bitstream for applet %r", args.applet)
+                with open(args.filename or args.applet + ".bin", "wb") as f:
+                    f.write(plan.bitstream_id)
+                    f.write(plan.execute())
 
         if args.action == "test":
             logger.info("testing applet %r", args.applet)

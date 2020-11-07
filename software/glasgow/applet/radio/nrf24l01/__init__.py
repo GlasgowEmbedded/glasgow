@@ -11,7 +11,7 @@ from ....support.logging import *
 from ....support.bits import *
 from ....arch.nrf24l import *
 from ....arch.nrf24l.rf import *
-from ...interface.spi_master import SPIMasterSubtarget, SPIMasterInterface
+from ...interface.spi_controller import SPIControllerSubtarget, SPIControllerInterface
 from ... import *
 
 
@@ -163,12 +163,12 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l01"):
 
     ::
           GND @ * VCC
-           CE * * SS
-          SCK * * MOSI
-         MISO * * IRQ
+           CE * * CS
+          SCK * * COPI
+         CIPO * * IRQ
     """
 
-    __pins = ("ce", "ss", "sck", "mosi", "miso", "irq")
+    __pins = ("ce", "cs", "sck", "copi", "cipo", "irq")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
@@ -176,10 +176,10 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l01"):
 
         # Order matches the pin order, in clockwise direction.
         access.add_pin_argument(parser, "ce",   default=True)
-        access.add_pin_argument(parser, "ss",   default=True)
+        access.add_pin_argument(parser, "cs",   default=True)
         access.add_pin_argument(parser, "sck",  default=True)
-        access.add_pin_argument(parser, "mosi", default=True)
-        access.add_pin_argument(parser, "miso", default=True)
+        access.add_pin_argument(parser, "copi", default=True)
+        access.add_pin_argument(parser, "cipo", default=True)
         access.add_pin_argument(parser, "irq",  default=True)
 
         parser.add_argument(
@@ -192,7 +192,7 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l01"):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         pads = iface.get_pads(args, pins=self.__pins)
 
-        subtarget = iface.add_subtarget(SPIMasterSubtarget(
+        subtarget = iface.add_subtarget(SPIControllerSubtarget(
             pads=pads,
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
@@ -200,7 +200,7 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l01"):
             delay_cyc=math.ceil(target.sys_clk_freq / 1e6),
             sck_idle=0,
             sck_edge="rising",
-            ss_active=0,
+            cs_active=0,
         ))
         subtarget.comb += [
             pads.ce_t.o.eq(dut_ce),
@@ -211,7 +211,7 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l01"):
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        spi_iface = SPIMasterInterface(iface, self.logger)
+        spi_iface = SPIControllerInterface(iface, self.logger)
         nrf24l01_iface = RadioNRF24L01Interface(spi_iface, self.logger, device,
                                                 self.__addr_dut_ce)
         return nrf24l01_iface

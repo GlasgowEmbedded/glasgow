@@ -40,6 +40,7 @@ class TaskQueue:
             task.cancel()
         if self._live:
             await asyncio.wait(self._live, return_when=asyncio.ALL_COMPLETED)
+        self._done.clear()
 
     async def poll(self):
         """

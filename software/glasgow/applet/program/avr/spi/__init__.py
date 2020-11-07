@@ -5,7 +5,7 @@ import math
 import logging
 from nmigen.compat import *
 
-from ....interface.spi_master import SPIMasterSubtarget, SPIMasterInterface
+from ....interface.spi_controller import SPIControllerSubtarget, SPIControllerInterface
 from .... import *
 from .. import *
 
@@ -175,12 +175,12 @@ class ProgramAVRSPIApplet(ProgramAVRApplet, name="program-avr-spi"):
     The standard AVR ICSP connector layout is as follows:
 
     ::
-        MISO @ * VCC
-         SCK * * MOSI
+        CIPO @ * VCC
+         SCK * * COPI
         RST# * * GND
     """
 
-    __pins = ("reset", "sck", "miso", "mosi")
+    __pins = ("reset", "sck", "cipo", "copi")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
@@ -188,8 +188,8 @@ class ProgramAVRSPIApplet(ProgramAVRApplet, name="program-avr-spi"):
 
         access.add_pin_argument(parser, "reset", default=True)
         access.add_pin_argument(parser, "sck",   default=True)
-        access.add_pin_argument(parser, "miso",  default=True)
-        access.add_pin_argument(parser, "mosi",  default=True)
+        access.add_pin_argument(parser, "cipo",  default=True)
+        access.add_pin_argument(parser, "copi",  default=True)
 
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=100,
@@ -197,7 +197,7 @@ class ProgramAVRSPIApplet(ProgramAVRApplet, name="program-avr-spi"):
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        subtarget = iface.add_subtarget(SPIMasterSubtarget(
+        subtarget = iface.add_subtarget(SPIControllerSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
@@ -205,7 +205,7 @@ class ProgramAVRSPIApplet(ProgramAVRApplet, name="program-avr-spi"):
             delay_cyc=math.ceil(target.sys_clk_freq / 1e6),
             sck_idle=0,
             sck_edge="rising",
-            ss_active=0,
+            cs_active=0,
         ))
 
         dut_reset, self.__addr_dut_reset = target.registers.add_rw(1)
@@ -217,7 +217,7 @@ class ProgramAVRSPIApplet(ProgramAVRApplet, name="program-avr-spi"):
 
     async def run_lower(self, cls, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        return SPIMasterInterface(iface, self.logger)
+        return SPIControllerInterface(iface, self.logger)
 
     async def run(self, device, args):
         spi_iface = await self.run_lower(ProgramAVRSPIApplet, device, args)

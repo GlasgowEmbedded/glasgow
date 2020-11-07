@@ -3,7 +3,7 @@ import asyncio
 import logging
 from nmigen.compat import *
 
-from ...interface.spi_master import SPIMasterApplet
+from ...interface.spi_controller import SPIControllerApplet
 from ... import *
 
 
@@ -43,7 +43,7 @@ class ProgramICE40SRAMInterface:
         await self.lower.write([0] * 16)
 
 
-class ProgramICE40SRAMApplet(SPIMasterApplet, name="program-ice40-sram"):
+class ProgramICE40SRAMApplet(SPIControllerApplet, name="program-ice40-sram"):
     logger = logging.getLogger(__name__)
     help = "program SRAM of iCE40 FPGAs"
     description = """
@@ -55,13 +55,13 @@ class ProgramICE40SRAMApplet(SPIMasterApplet, name="program-ice40-sram"):
         super().add_build_arguments(parser, access, omit_pins=True)
 
         access.add_pin_argument(parser, "sck",   required=True)
-        access.add_pin_argument(parser, "ss",    required=True)
-        access.add_pin_argument(parser, "mosi",  required=True)
+        access.add_pin_argument(parser, "cs",    required=True)
+        access.add_pin_argument(parser, "copi",  required=True)
         access.add_pin_argument(parser, "reset", required=True)
         access.add_pin_argument(parser, "done")
 
     def build(self, target, args):
-        subtarget = super().build(target, args, pins=("sck", "ss", "mosi"))
+        subtarget = super().build(target, args, pins=("sck", "cs", "copi"))
 
         reset_t = self.mux_interface.get_pin(args.pin_reset)
         dut_reset, self.__addr_dut_reset = target.registers.add_rw(1)
@@ -113,5 +113,5 @@ class ProgramICE40SRAMAppletTestCase(GlasgowAppletTestCase, applet=ProgramICE40S
     @synthesis_test
     def test_build(self):
         self.assertBuilds(args=["--pin-reset", "0", "--pin-done", "1",
-                                "--pin-sck",   "2", "--pin-ss",   "3",
-                                "--pin-mosi",  "4"])
+                                "--pin-sck",   "2", "--pin-cs",   "3",
+                                "--pin-copi",  "4"])

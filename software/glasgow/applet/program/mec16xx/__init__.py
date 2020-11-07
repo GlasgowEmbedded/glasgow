@@ -31,7 +31,7 @@ class MEC16xxInterface(aobject):
 
         idcode, device = await self.lower.identify()
         if device is None or device.name != "ARC6xx":
-            raise MEC16xxError("cannot operate on unknown device IDCODE=%08x"
+            raise MEC16xxError("cannot operate on unknown device with IDCODE=%08x"
                                % idcode.to_int())
 
         self._log("halting CPU")
@@ -109,13 +109,11 @@ class MEC16xxInterface(aobject):
                       address + offset * 4, data_1)
 
             # This is hella cursed. In theory, we should be able to just enable Burst in
-            # Flash_Command and do a long series of reads from Flash_Data. However... sometimes
-            # we silently get zeroes back for no discernible reason. I spent like two days trying
-            # to figure out *anything* that correlates with glitches, and could not, so I guess
-            # this works as a workaround. I'm sorry.
-            #
-            # Remarkably, none of this happens during *programming* for some inexplicable reason,
-            # which is why we can just do a simple burst there.
+            # Flash_Command and do a long series of reads from Flash_Data. However, sometimes
+            # we silently get zeroes back for no discernible reason. Since data never gets
+            # corrupted during programming, the most likely explanation is a silicon bug where
+            # the debug interface is not correctly waiting for the Flash memory to acknowledge
+            # the read.
             await self.lower.write(Flash_Address_addr, address + offset * 4, space="memory")
             data_2 = await self.lower.read(Flash_Data_addr, space="memory")
             self._log("read Flash_Address=%05x Flash_Data=%08x",
