@@ -3,7 +3,7 @@ import sys
 import logging
 import asyncio
 import argparse
-from nmigen.compat import *
+from nmigen import *
 
 from ....support.endpoint import *
 from ....gateware.pads import *
@@ -11,7 +11,7 @@ from ....gateware.uart import *
 from ... import *
 
 
-class UARTAutoBaud(Module):
+class UARTAutoBaud(Elaboratable):
     """
     Automatic UART baud rate determination.
 
@@ -30,82 +30,97 @@ class UARTAutoBaud(Module):
     consulted when frame errors are detected.
     """
     def __init__(self, uart, auto_cyc, seq_size=32):
+        self.uart = uart
+        self.auto_cyc = auto_cyc
+        self.seq_size = seq_size
+
+    def elaborate(self, platform):
+        m = Module()
+
         # Edge detector
-        rx_i = uart.bus.rx_i
+        rx_i = self.uart.bus.rx_i
         rx_r = Signal()
         edge = Signal()
 
-        self.sync += rx_r.eq(rx_i)
-        self.comb += edge.eq(rx_i != rx_r)
+        m.d.sync += rx_r.eq(rx_i)
+        m.d.comb += edge.eq(rx_i != rx_r)
 
         # Training state machine
-        seq_count = Signal(max=seq_size)
-        cyc_count = Signal.like(uart.bit_cyc)
-        cyc_latch = Signal.like(uart.bit_cyc)
+        seq_count = Signal(range(self.seq_size))
+        cyc_count = Signal.like(self.uart.bit_cyc)
+        cyc_latch = Signal.like(self.uart.bit_cyc)
 
-        self.submodules.fsm = FSM()
-        self.fsm.act("EDGE",
-            If(seq_count == seq_size - 1,
-                NextValue(auto_cyc,  cyc_latch),
-                NextValue(cyc_latch, ~0),
-                NextValue(seq_count, 0),
-            ).Else(
-                NextValue(seq_count, seq_count + 1),
-            ),
-            NextValue(cyc_count, 1),
-            NextState("COUNT")
-        )
-        self.fsm.act("COUNT",
-            NextValue(cyc_count, cyc_count + 1),
-            If(cyc_count == cyc_latch,
-                # This branch also handles overflow of cyc_count.
-                NextState("SKIP")
-            ).Elif(edge,
-                NextValue(cyc_latch, cyc_count + 1),
-                NextState("EDGE")
-            )
-        )
-        self.fsm.act("SKIP",
-            If(edge,
-                NextState("EDGE")
-            )
-        )
+        with m.FSM():
+            with m.State("EDGE"):
+                with m.If(seq_count == (self.seq_size - 1)):
+                    m.d.sync += [
+                        self.auto_cyc.eq(cyc_latch),
+                        cyc_latch.eq(~0),
+                        seq_count.eq(0),
+                    ]
+                with m.Else():
+                    m.d.sync += seq_count.eq(seq_count + 1)
+                m.d.sync += cyc_count.eq(1)
+                m.next = "COUNT"
+
+            with m.State("COUNT"):
+                m.d.sync += cyc_count.eq(cyc_count + 1)
+                with m.If(cyc_count == cyc_latch):
+                    # This branch also handles overflow of cyc_count.
+                    m.next = "SKIP"
+                with m.Elif(edge):
+                    m.d.sync += cyc_latch.eq(cyc_count + 1)
+                    m.next = "EDGE"
+
+            with m.State("SKIP"):
+                with m.If(edge):
+                    m.next = "EDGE"
+
+        return m
 
 
-class UARTSubtarget(Module):
+class UARTSubtarget(Elaboratable):
     def __init__(self, pads, out_fifo, in_fifo, parity, max_bit_cyc,
                  manual_cyc, auto_cyc, use_auto, bit_cyc, rx_errors, invert_rx, invert_tx):
-        self.submodules.uart = uart = UART(pads, bit_cyc=max_bit_cyc, parity=parity,
-                                           invert_rx=invert_rx, invert_tx=invert_tx)
-        self.submodules.auto_baud = auto_baud = UARTAutoBaud(uart, auto_cyc)
+        self.out_fifo = out_fifo
+        self.in_fifo = in_fifo
+        self.manual_cyc = manual_cyc
+        self.auto_cyc = auto_cyc
+        self.use_auto = use_auto
+        self.bit_cyc = bit_cyc
+        self.rx_errors = rx_errors
 
-        self.comb += uart.bit_cyc.eq(bit_cyc)
-        self.sync += [
-            If(use_auto,
-                If((uart.rx_ferr | uart.rx_perr) & (auto_cyc != ~0),
-                    bit_cyc.eq(auto_cyc)
-                )
-            ).Else(
-                bit_cyc.eq(manual_cyc)
-            )
+        self.uart = UART(pads, bit_cyc=max_bit_cyc, parity=parity,
+                         invert_rx=invert_rx, invert_tx=invert_tx)
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.uart = uart = self.uart
+        m.submodules.auto_baud = auto_baud = UARTAutoBaud(uart, self.auto_cyc)
+
+        m.d.comb += uart.bit_cyc.eq(self.bit_cyc)
+        with m.If(self.use_auto):
+            with m.If((uart.rx_ferr | uart.rx_perr) & (self.auto_cyc != ~0)):
+                m.d.sync += self.bit_cyc.eq(self.auto_cyc)
+        with m.Else():
+            m.d.sync += self.bit_cyc.eq(self.manual_cyc)
+
+        m.d.comb += [
+            self.in_fifo.w_data.eq(uart.rx_data),
+            self.in_fifo.w_en.eq(uart.rx_rdy),
+            uart.rx_ack.eq(self.in_fifo.w_rdy)
+        ]
+        with m.If(uart.rx_ferr | uart.rx_perr):
+            m.d.sync += self.rx_errors.eq(self.rx_errors + 1)
+
+        m.d.comb += [
+            uart.tx_data.eq(self.out_fifo.r_data),
+            self.out_fifo.r_en.eq(uart.tx_rdy),
+            uart.tx_ack.eq(self.out_fifo.r_rdy),
         ]
 
-        self.comb += [
-            in_fifo.din.eq(uart.rx_data),
-            in_fifo.we.eq(uart.rx_rdy),
-            uart.rx_ack.eq(in_fifo.writable)
-        ]
-        self.sync += [
-            If(uart.rx_ferr | uart.rx_perr,
-                rx_errors.eq(rx_errors + 1),
-            )
-        ]
-
-        self.comb += [
-            uart.tx_data.eq(out_fifo.dout),
-            out_fifo.re.eq(uart.tx_rdy),
-            uart.tx_ack.eq(out_fifo.readable),
-        ]
+        return m
 
 
 class UARTApplet(GlasgowApplet, name="uart"):
