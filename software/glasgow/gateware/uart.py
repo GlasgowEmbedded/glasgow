@@ -175,7 +175,7 @@ class UART(Elaboratable):
                 with m.State("DATA"):
                     with m.If(rx_stb):
                         m.d.sync += [
-                            rx_shreg.eq(Cat(rx_shreg[1:8], self.bus.rx_i)),
+                            rx_shreg.eq(Cat(rx_shreg[1:], self.bus.rx_i)),
                             rx_bitno.eq(rx_bitno + 1),
                         ]
                         with m.If(rx_bitno == rx_shreg.nbits - 1):
@@ -241,7 +241,7 @@ class UART(Elaboratable):
                     with m.If(tx_stb):
                         m.d.sync += [
                             self.bus.tx_o.eq(tx_shreg[0]),
-                            tx_shreg.eq(Cat(tx_shreg[1:8], C(0,1))),
+                            tx_shreg.eq(Cat(tx_shreg[1:], C(0,1))),
                         ]
                         m.next = "DATA"
                 with m.State("DATA"):
@@ -250,7 +250,7 @@ class UART(Elaboratable):
                         with m.If(tx_bitno != tx_shreg.nbits - 1):
                             m.d.sync += [
                                 self.bus.tx_o.eq(tx_shreg[0]),
-                                tx_shreg.eq(Cat(tx_shreg[1:8], C(0,1))),
+                                tx_shreg.eq(Cat(tx_shreg[1:], C(0,1))),
                             ]
                         with m.Else():
                             if self.parity == "none":
