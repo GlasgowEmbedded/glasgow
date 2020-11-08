@@ -1,41 +1,48 @@
 import logging
 import asyncio
-from nmigen.compat import *
+from nmigen import *
 from nmigen.build.plat import ResourceError
 
 from ... import *
 
 
-class SelfTestSubtarget(Module):
+class SelfTestSubtarget(Elaboratable):
     def __init__(self, applet, target):
-        pins_a = [target.platform.request("port_a", n) for n in range(8)]
-        pins_b = [target.platform.request("port_b", n) for n in range(8)]
+        self.reg_oe_a, applet.addr_oe_a = target.registers.add_rw(8)
+        self.reg_o_a,  applet.addr_o_a  = target.registers.add_rw(8)
+        self.reg_i_a,  applet.addr_i_a  = target.registers.add_ro(8)
+
+        self.reg_oe_b, applet.addr_oe_b = target.registers.add_rw(8)
+        self.reg_o_b,  applet.addr_o_b  = target.registers.add_rw(8)
+        self.reg_i_b,  applet.addr_i_b  = target.registers.add_ro(8)
+
+        self.pins_a = [target.platform.request("port_a", n) for n in range(8)]
+        self.pins_b = [target.platform.request("port_b", n) for n in range(8)]
         try:
-            leds = [target.platform.request("led", n) for n in range(5)]
+            self.leds = [target.platform.request("led", n) for n in range(5)]
         except ResourceError:
-            leds = []
+            self.leds = []
 
-        self.comb += [pin.oe.eq(pin.io.oe) for pin in pins_a if hasattr(pin, "oe")]
-        self.comb += [pin.oe.eq(pin.io.oe) for pin in pins_b if hasattr(pin, "oe")]
-        self.comb += [led.eq(1) for led in leds]
+    def elaborate(self, platform):
+        m = Module()
 
-        reg_oe_a, applet.addr_oe_a = target.registers.add_rw(8)
-        reg_o_a,  applet.addr_o_a  = target.registers.add_rw(8)
-        reg_i_a,  applet.addr_i_a  = target.registers.add_ro(8)
-        self.comb += [
-            Cat(pin.io.oe for pin in pins_a).eq(reg_oe_a),
-            Cat(pin.io.o for pin in pins_a).eq(reg_o_a),
-            reg_i_a.eq(Cat(pin.io.i for pin in pins_a))
+        m.d.comb += [pin.oe.eq(pin.io.oe) for pin in self.pins_a if hasattr(pin, "oe")]
+        m.d.comb += [pin.oe.eq(pin.io.oe) for pin in self.pins_b if hasattr(pin, "oe")]
+        m.d.comb += [led.eq(1) for led in self.leds]
+
+        m.d.comb += [
+            Cat(pin.io.oe for pin in self.pins_a).eq(self.reg_oe_a),
+            Cat(pin.io.o for pin in self.pins_a).eq(self.reg_o_a),
+            self.reg_i_a.eq(Cat(pin.io.i for pin in self.pins_a))
         ]
 
-        reg_oe_b, applet.addr_oe_b = target.registers.add_rw(8)
-        reg_o_b,  applet.addr_o_b  = target.registers.add_rw(8)
-        reg_i_b,  applet.addr_i_b  = target.registers.add_ro(8)
-        self.comb += [
-            Cat(pin.io.oe for pin in pins_b).eq(reg_oe_b),
-            Cat(pin.io.o for pin in pins_b).eq(reg_o_b),
-            reg_i_b.eq(Cat(pin.io.i for pin in pins_b))
+        m.d.comb += [
+            Cat(pin.io.oe for pin in self.pins_b).eq(self.reg_oe_b),
+            Cat(pin.io.o for pin in self.pins_b).eq(self.reg_o_b),
+            self.reg_i_b.eq(Cat(pin.io.i for pin in self.pins_b))
         ]
+
+        return m
 
 
 class SelfTestApplet(GlasgowApplet, name="selftest"):
