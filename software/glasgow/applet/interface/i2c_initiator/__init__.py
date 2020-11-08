@@ -1,7 +1,7 @@
 import argparse
 import logging
 import math
-from nmigen.compat import *
+from nmigen import *
 
 from ....support.pyrepl import *
 from ....gateware.pads import *
@@ -16,113 +16,116 @@ CMD_WRITE = 0x04
 CMD_READ  = 0x05
 
 
-class I2CInitiatorSubtarget(Module):
+class I2CInitiatorSubtarget(Elaboratable):
     def __init__(self, pads, out_fifo, in_fifo, period_cyc):
-        self.submodules.i2c_initiator = I2CInitiator(pads, period_cyc)
+        self.pads = pads
+        self.out_fifo = out_fifo
+        self.in_fifo = in_fifo
+        self.period_cyc = period_cyc
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.i2c_initiator = i2c_initiator = I2CInitiator(self.pads, self.period_cyc)
 
         ###
 
         cmd   = Signal(8)
         count = Signal(16)
 
-        self.submodules.fsm = FSM(reset_state="IDLE")
-        self.fsm.act("IDLE",
-            If(~self.i2c_initiator.busy & out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(cmd, out_fifo.dout),
-                NextState("COMMAND")
-            )
-        )
-        self.fsm.act("COMMAND",
-            If(cmd == CMD_START,
-                self.i2c_initiator.start.eq(1),
-                NextState("IDLE")
-            ).Elif(cmd == CMD_STOP,
-                self.i2c_initiator.stop.eq(1),
-                NextState("IDLE")
-            ).Elif(cmd == CMD_COUNT,
-                NextState("COUNT-MSB")
-            ).Elif(cmd == CMD_WRITE,
-                If(count == 0,
-                    NextState("IDLE")
-                ).Else(
-                    NextState("WRITE-FIRST")
-                )
-            ).Elif(cmd == CMD_READ,
-                If(count == 0,
-                    NextState("IDLE")
-                ).Else(
-                    NextState("READ-FIRST")
-                )
-            ).Else(
-                NextState("IDLE")
-            )
-        )
-        self.fsm.act("COUNT-MSB",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(count, out_fifo.dout << 8),
-                NextState("COUNT-LSB")
-            )
-        )
-        self.fsm.act("COUNT-LSB",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(count, count | out_fifo.dout),
-                NextState("IDLE")
-            )
-        )
-        self.fsm.act("WRITE-FIRST",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                self.i2c_initiator.data_i.eq(out_fifo.dout),
-                self.i2c_initiator.write.eq(1),
-                NextState("WRITE")
-            )
-        )
-        self.fsm.act("WRITE",
-            If(~self.i2c_initiator.busy,
-                If(self.i2c_initiator.ack_o,
-                    NextValue(count, count - 1)
-                ),
-                If((count == 1) | ~self.i2c_initiator.ack_o,
-                    NextState("REPORT")
-                ).Elif(out_fifo.readable,
-                    out_fifo.re.eq(1),
-                    self.i2c_initiator.data_i.eq(out_fifo.dout),
-                    self.i2c_initiator.write.eq(1),
-                )
-            )
-        )
-        self.fsm.act("REPORT",
-            If(in_fifo.writable,
-                in_fifo.we.eq(1),
-                in_fifo.din.eq(count),
-                NextValue(count, 0),
-                NextState("IDLE")
-            )
-        )
-        self.fsm.act("READ-FIRST",
-            self.i2c_initiator.ack_i.eq(~(count == 1)),
-            self.i2c_initiator.read.eq(1),
-            NextValue(count, count - 1),
-            NextState("READ")
-        )
-        self.fsm.act("READ",
-            If(~self.i2c_initiator.busy,
-                If(in_fifo.writable,
-                    in_fifo.we.eq(1),
-                    in_fifo.din.eq(self.i2c_initiator.data_o),
-                    If(count == 0,
-                        NextState("IDLE")
-                    ).Else(
-                        self.i2c_initiator.ack_i.eq(~(count == 1)),
-                        self.i2c_initiator.read.eq(1),
-                        NextValue(count, count - 1)
-                    )
-                )
-            )
-        )
+        with m.FSM():
+            with m.State("IDLE"):
+                with m.If(~i2c_initiator.busy & self.out_fifo.r_rdy):
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    m.d.sync += cmd.eq(self.out_fifo.r_data)
+                    m.next = "COMMAND"
+
+            with m.State("COMMAND"):
+                with m.If(cmd == CMD_START):
+                    m.d.comb += i2c_initiator.start.eq(1)
+                    m.next = "IDLE"
+                with m.Elif(cmd == CMD_STOP):
+                    m.d.comb += i2c_initiator.stop.eq(1)
+                    m.next = "IDLE"
+                with m.Elif(cmd == CMD_COUNT):
+                    m.next = "COUNT-MSB"
+                with m.Elif(cmd == CMD_WRITE):
+                    with m.If(count == 0):
+                        m.next = "IDLE"
+                    with m.Else():
+                        m.next = "WRITE-FIRST"
+                with m.Elif(cmd == CMD_READ):
+                    with m.If(count == 0):
+                        m.next = "IDLE"
+                    with m.Else():
+                        m.next = "READ-FIRST"
+                with m.Else():
+                    m.next = "IDLE"
+
+            with m.State("COUNT-MSB"):
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    m.d.sync += count.eq(self.out_fifo.r_data << 8)
+                    m.next = "COUNT-LSB"
+            with m.State("COUNT-LSB"):
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    m.d.sync += count.eq(count | self.out_fifo.r_data)
+                    m.next = "IDLE"
+
+            with m.State("WRITE-FIRST"):
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.comb += [
+                        self.out_fifo.r_en.eq(1),
+                        i2c_initiator.data_i.eq(self.out_fifo.r_data),
+                        i2c_initiator.write.eq(1),
+                    ]
+                    m.next = "WRITE"
+            with m.State("WRITE"):
+                with m.If(~i2c_initiator.busy):
+                    with m.If(i2c_initiator.ack_o):
+                        m.d.sync += count.eq(count - 1)
+                    with m.If((count == 1) | ~i2c_initiator.ack_o):
+                        m.next = "REPORT"
+                    with m.Elif(self.out_fifo.r_rdy):
+                        m.d.comb += [
+                            self.out_fifo.r_en.eq(1),
+                            i2c_initiator.data_i.eq(self.out_fifo.r_data),
+                            i2c_initiator.write.eq(1),
+                        ]
+            with m.State("REPORT"):
+                with m.If(self.in_fifo.w_rdy):
+                    m.d.comb += [
+                        self.in_fifo.w_data.eq(count),
+                        self.in_fifo.w_en.eq(1),
+                    ]
+                    m.d.sync += count.eq(0)
+                    m.next = "IDLE"
+
+            with m.State("READ-FIRST"):
+                m.d.comb += [
+                    i2c_initiator.ack_i.eq(~(count == 1)),
+                    i2c_initiator.read.eq(1),
+                ]
+                m.d.sync += count.eq(count - 1)
+                m.next = "READ"
+            with m.State("READ"):
+                with m.If(~i2c_initiator.busy):
+                    with m.If(self.in_fifo.w_rdy):
+                        m.d.comb += [
+                            self.in_fifo.w_data.eq(i2c_initiator.data_o),
+                            self.in_fifo.w_en.eq(1),
+                        ]
+                        with m.If(count == 0):
+                            m.next = "IDLE"
+                        with m.Else():
+                            m.d.comb += [
+                                i2c_initiator.ack_i.eq(~(count == 1)),
+                                i2c_initiator.read.eq(1),
+                            ]
+                            m.d.sync += count.eq(count - 1)
+
+        return m
 
 
 class I2CInitiatorInterface:
