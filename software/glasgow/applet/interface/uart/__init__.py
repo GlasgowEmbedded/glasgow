@@ -156,7 +156,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
         self.__sys_clk_freq = target.sys_clk_freq
 
         manual_cyc, self.__addr_manual_cyc = target.registers.add_rw(32)
-        auto_cyc,   self.__addr_auto_cyc   = target.registers.add_ro(32)
+        auto_cyc,   self.__addr_auto_cyc   = target.registers.add_ro(32, reset=~0)
         use_auto,   self.__addr_use_auto   = target.registers.add_rw(1)
 
         bit_cyc,    self.__addr_bit_cyc    = target.registers.add_ro(32)
@@ -197,10 +197,6 @@ class UARTApplet(GlasgowApplet, name="uart"):
         await device.write_register(self.__addr_manual_cyc, manual_cyc, width=4)
         await device.write_register(self.__addr_use_auto, 0)
 
-        # Enable auto-baud, if requested.
-        if args.auto_baud:
-            await device.write_register(self.__addr_use_auto, 1)
-
         # Enable pull-ups or pull-downs, if requested.
         # This reduces the amount of noise received on tristated lines.
         pulls_high = set()
@@ -211,8 +207,14 @@ class UARTApplet(GlasgowApplet, name="uart"):
             else:
                 pulls_high = {args.pin_rx}
 
-        return await device.demultiplexer.claim_interface(self, self.mux_interface, args,
-                                                          pull_high=pulls_high, pull_low=pulls_low)
+        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
+                                                           pull_high=pulls_high, pull_low=pulls_low)
+
+        # Enable auto-baud, if requested.
+        if args.auto_baud:
+            await device.write_register(self.__addr_use_auto, 1)
+
+        return iface
 
     @classmethod
     def add_interact_arguments(cls, parser):
