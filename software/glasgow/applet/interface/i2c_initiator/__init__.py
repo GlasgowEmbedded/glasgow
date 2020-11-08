@@ -127,6 +127,7 @@ class I2CInitiatorSubtarget(Elaboratable):
 
         return m
 
+
 class I2CInitiatorInterface:
     def __init__(self, interface, logger):
         self.lower   = interface
