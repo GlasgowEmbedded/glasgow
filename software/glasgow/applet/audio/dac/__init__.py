@@ -1,108 +1,119 @@
 import logging
 import asyncio
 import argparse
-from nmigen.compat import *
+from nmigen import *
 
 from ....support.endpoint import *
 from ....gateware.clockgen import *
 from ... import *
 
 
-class SigmaDeltaDACChannel(Module):
+class SigmaDeltaDACChannel(Elaboratable):
     def __init__(self, output, bits, signed):
+        self._output = output
+
+        self.bits   = bits
+        self.signed = signed
+
         self.stb    = Signal()
 
         self.level  = Signal(bits)
         self.update = Signal()
 
-        ###
+    def elaborate(self, platform):
+        m = Module()
 
-        level_u = Signal(bits)
-        if signed:
-            self.comb += level_u.eq(self.level - (1 << (bits - 1)))
+        level_u = Signal(self.bits)
+        if self.signed:
+            m.d.comb += level_u.eq(self.level - (1 << (self.bits - 1)))
         else:
-            self.comb += level_u.eq(self.level)
+            m.d.comb += level_u.eq(self.level)
 
-        accum   = Signal(bits)
-        level_r = Signal(bits)
-        self.sync += [
-            If(self.stb,
-                Cat(accum, output).eq(accum + level_r)
-            ),
-            If(self.update,
-                level_r.eq(level_u)
-            )
-        ]
+        accum   = Signal(self.bits)
+        level_r = Signal(self.bits)
+
+        with m.If(self.stb):
+            m.d.sync += Cat(accum, self._output).eq(accum + level_r)
+        with m.If(self.update):
+            m.d.sync += level_r.eq(level_u)
+
+        return m
 
 
-class AudioDACSubtarget(Module):
+class AudioDACSubtarget(Elaboratable):
     def __init__(self, pads, out_fifo, pulse_cyc, sample_cyc, width, signed):
         assert width in (1, 2)
 
-        channels = [SigmaDeltaDACChannel(output, bits=width * 8, signed=signed)
-                    for output in pads.o_t.o]
-        self.submodules += channels
+        self.pads = pads
+        self.out_fifo = out_fifo
+        self.pulse_cyc = pulse_cyc
+        self.sample_cyc = sample_cyc
+        self.width = width
+        self.signed = signed
 
-        self.submodules.clkgen = ClockGen(pulse_cyc)
+    def elaborate(self, platform):
+        m = Module()
+
+        channels = [
+            SigmaDeltaDACChannel(output, bits=self.width * 8, signed=self.signed)
+            for output in self.pads.o_t.o
+        ]
+        m.submodules += channels
+
+        m.submodules.clkgen = clkgen = ClockGen(self.pulse_cyc)
         for channel in channels:
-            self.comb += channel.stb.eq(self.clkgen.stb_r)
+            m.d.comb += channel.stb.eq(clkgen.stb_r)
 
-        timer = Signal(max=sample_cyc)
+        timer = Signal(range(self.sample_cyc))
 
-        self.submodules.fsm = FSM()
-        self.fsm.act("STANDBY",
-            NextValue(pads.o_t.oe, 0),
-            If(out_fifo.readable,
-                NextValue(pads.o_t.oe, 1),
-                NextState("WAIT")
-            )
-        )
-        self.fsm.act("WAIT",
-            If(timer == 0,
-                NextValue(timer, sample_cyc - len(channels) * width - 1),
-                NextState("CHANNEL-0-READ-1")
-            ).Else(
-                NextValue(timer, timer - 1)
-            )
-        )
-        for index, channel in enumerate(channels):
-            if index + 1 < len(channels):
-                next_state = "CHANNEL-%d-READ-1" % (index + 1)
-            else:
-                next_state = "LATCH"
-            if width == 1:
-                self.fsm.act("CHANNEL-%d-READ-1" % index,
-                    out_fifo.re.eq(1),
-                    If(out_fifo.readable,
-                        NextValue(channel.level[0:8], out_fifo.dout),
-                        NextState(next_state)
-                    ).Else(
-                        NextState("STANDBY")
-                    )
-                )
-            if width == 2:
-                self.fsm.act("CHANNEL-%d-READ-1" % index,
-                    out_fifo.re.eq(1),
-                    If(out_fifo.readable,
-                        NextValue(channel.level[0:8], out_fifo.dout),
-                        NextState("CHANNEL-%d-READ-2" % index)
-                    ).Else(
-                        NextState("STANDBY")
-                    )
-                )
-                self.fsm.act("CHANNEL-%d-READ-2" % index,
-                    out_fifo.re.eq(1),
-                    If(out_fifo.readable,
-                        NextValue(channel.level[8:16], out_fifo.dout),
-                        NextState(next_state)
-                    ).Else(
-                        NextState("STANDBY")
-                    )
-                )
-        self.fsm.act("LATCH",
-            [channel.update.eq(1) for channel in channels],
-            NextState("WAIT")
-        )
+        with m.FSM():
+            with m.State("STANDBY"):
+                m.d.sync += self.pads.o_t.oe.eq(0)
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.sync += self.pads.o_t.oe.eq(1)
+                    m.next = "WAIT"
+
+            with m.State("WAIT"):
+                with m.If(timer == 0):
+                    m.d.sync += timer.eq(self.sample_cyc - len(channels) * self.width - 1)
+                    m.next = "CHANNEL-0-READ-1"
+                with m.Else():
+                    m.d.sync += timer.eq(timer - 1)
+
+            for index, channel in enumerate(channels):
+                if index + 1 < len(channels):
+                    next_state = "CHANNEL-%d-READ-1" % (index + 1)
+                else:
+                    next_state = "LATCH"
+                if self.width == 1:
+                    with m.State("CHANNEL-%d-READ-1" % index):
+                        m.d.comb += self.out_fifo.r_en.eq(1)
+                        with m.If(self.out_fifo.r_rdy):
+                            m.d.sync += channel.level[0:8].eq(self.out_fifo.r_data)
+                            m.next = next_state
+                        with m.Else():
+                            m.next = "STANDBY"
+                if self.width == 2:
+                    with m.State("CHANNEL-%d-READ-1" % index):
+                        m.d.comb += self.out_fifo.r_en.eq(1)
+                        with m.If(self.out_fifo.r_rdy):
+                            m.d.sync += channel.level[0:8].eq(self.out_fifo.r_data)
+                            m.next = "CHANNEL-%d-READ-2" % index
+                        with m.Else():
+                            m.next = "STANDBY"
+                    with m.State("CHANNEL-%d-READ-2" % index):
+                        m.d.comb += self.out_fifo.r_en.eq(1)
+                        with m.If(self.out_fifo.r_rdy):
+                            m.d.sync += channel.level[8:16].eq(self.out_fifo.r_data)
+                            m.next = next_state
+                        with m.Else():
+                            m.next = "STANDBY"
+
+            with m.State("LATCH"):
+                m.d.comb += [ channel.update.eq(1) for channel in channels ]
+                m.next = "WAIT"
+
+        return m
 
 
 class AudioDACApplet(GlasgowApplet, name="audio-dac"):
