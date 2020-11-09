@@ -109,7 +109,7 @@ def get_argparser():
                                                     **kwargs)
             parser._add_action(subparsers)
         else:
-            subparsers = parser.add_subparsers(dest="applet", metavar="APPLET")
+            subparsers = parser.add_subparsers(**kwargs)
         return subparsers
 
     def add_applet_arg(parser, mode, required=False):
@@ -253,13 +253,13 @@ def get_argparser():
         "run", formatter_class=TextHelpFormatter,
         help="run an applet and interact through its command-line interface")
     add_run_args(p_run)
-    add_applet_arg(p_run, mode="interact")
+    add_applet_arg(p_run, mode="interact", required=True)
 
     p_repl = subparsers.add_parser(
         "repl", formatter_class=TextHelpFormatter,
         help="run an applet and open a REPL to use its programming interface")
     add_run_args(p_repl)
-    add_applet_arg(p_repl, mode="repl")
+    add_applet_arg(p_repl, mode="repl", required=True)
 
     p_script = subparsers.add_parser(
         "script", formatter_class=TextHelpFormatter,
@@ -268,12 +268,12 @@ def get_argparser():
         "script", metavar="SCRIPT-FILE", type=argparse.FileType("r"),
         help="run Python SCRIPT-FILE in the applet context")
     add_run_args(p_script)
-    add_applet_arg(p_script, mode="script")
+    add_applet_arg(p_script, mode="script", required=True)
 
     p_tool = subparsers.add_parser(
         "tool", formatter_class=TextHelpFormatter,
         help="run an offline tool provided with an applet")
-    add_applet_arg(p_tool, mode="tool")
+    add_applet_arg(p_tool, mode="tool", required=True)
 
     p_flash = subparsers.add_parser(
         "flash", formatter_class=TextHelpFormatter,
@@ -315,12 +315,12 @@ def get_argparser():
     p_build.add_argument(
         "-f", "--filename", metavar="FILENAME", type=str,
         help="file to save artifact to (default: <applet-name>.{zip,il,bin})")
-    add_applet_arg(p_build, mode="build")
+    add_applet_arg(p_build, mode="build", required=True)
 
     p_test = subparsers.add_parser(
         "test", formatter_class=TextHelpFormatter,
         help="(advanced) test applet logic without target hardware")
-    add_applet_arg(p_test, mode="test")
+    add_applet_arg(p_test, mode="test", required=True)
 
     def factory_serial(arg):
         if re.match(r"^\d{8}T\d{6}Z$", arg):
