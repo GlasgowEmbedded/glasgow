@@ -365,7 +365,8 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
             self.logger.trace("FIFO: wait for flush")
             if self._out_tasks:
                 self._out_stalls += 1
-            await self._out_tasks.wait_all()
+            while self._out_tasks:
+                await self._out_tasks.wait_all()
 
     def statistics(self):
         self.logger.info("FIFO statistics:")
