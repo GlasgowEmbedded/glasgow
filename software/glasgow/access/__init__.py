@@ -123,6 +123,10 @@ class AccessDemultiplexer(metaclass=ABCMeta):
         for iface in self._interfaces:
             await iface.cancel()
 
+    def statistics(self):
+        for iface in self._interfaces:
+            iface.statistics()
+
 
 class AccessDemultiplexerInterface(metaclass=ABCMeta):
     def __init__(self, device, applet):
@@ -158,4 +162,7 @@ class AccessDemultiplexerInterface(metaclass=ABCMeta):
 
     @abstractmethod
     async def flush(self, wait=True):
+        pass
+
+    def statistics(self):
         pass

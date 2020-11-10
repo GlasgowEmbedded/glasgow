@@ -90,6 +90,9 @@ def create_argparser():
     parser.add_argument(
         "-F", "--filter-log", metavar="FILTER", type=str, action="append",
         help="raise TRACE log messages to DEBUG if they begin with 'FILTER: '")
+    parser.add_argument(
+        "--statistics", dest="show_statistics", default=False, action="store_true",
+        help="display performance counters before exiting")
 
     return parser
 
@@ -611,6 +614,8 @@ async def _main():
                     pass # terminate gracefully
                 finally:
                     await device.demultiplexer.flush()
+                    if args.show_statistics:
+                        device.demultiplexer.statistics()
 
             async def wait_for_sigint():
                 await wait_for_signal(signal.SIGINT)
