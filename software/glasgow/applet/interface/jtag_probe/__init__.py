@@ -22,6 +22,7 @@
 import struct
 import logging
 import asyncio
+import argparse
 from nmigen import *
 from nmigen.lib.cdc import FFSynchronizer
 
@@ -708,7 +709,7 @@ class JTAGProbeInterface:
 
         return idcodes
 
-    def interrogate_ir(self, ir_value, tap_count, *, check=True):
+    def interrogate_ir(self, ir_value, tap_count, *, ir_lengths=None, check=True):
         """Split IR value captured after TAP reset to determine IR boundaries."""
         assert tap_count > 0
 
@@ -735,8 +736,38 @@ class JTAGProbeInterface:
                 raise JTAGProbeError("IR capture does not start with <10> transition")
             return
 
+        # If IR lengths are specified explicitly, use them but validate first.
+        if ir_lengths is not None:
+            if len(ir_lengths) != tap_count:
+                self._log_h("invalid ir taps=%d user-lengths=%d", tap_count, len(ir_lengths))
+                if check:
+                    raise JTAGProbeError("IR length count differs from TAP count")
+                return
+
+            if sum(ir_lengths) != len(ir_value):
+                self._log_h("invalid ir total-length=%d user-total-length=%d",
+                            sum(ir_lengths), len(ir_value))
+                if check:
+                    raise JTAGProbeError("IR capture length differs from sum of IR lengths")
+                return
+
+            ir_offset = 0
+            for tap_index, ir_length in enumerate(ir_lengths):
+                if (ir_offset + ir_length not in ir_starts and
+                        ir_offset + ir_length != len(ir_value)):
+                    self._log_h("misaligned ir (tap #%d)", tap_index)
+                    if check:
+                        raise JTAGProbeError("IR length for TAP #{:d} misaligns next TAP"
+                                             .format(tap_index))
+                    return
+
+                self._log_h("explicit ir length=%d (tap #%d)", ir_length, tap_index)
+                ir_offset += ir_length
+
+            return list(ir_lengths)
+
         # If there's only one device in the chain, then the entire captured IR belongs to it.
-        if tap_count == 1:
+        elif tap_count == 1:
             ir_length = len(ir_value)
             self._log_h("found ir length=%d (single tap)", ir_length)
             return [ir_length]
@@ -759,13 +790,13 @@ class JTAGProbeInterface:
             self._log_h("ambiguous ir taps=%d chunks=[%s]",
                         tap_count, ",".join("{:d}".format(chunk) for chunk in ir_chunks))
             if check:
-                raise JTAGProbeError("IR capture ambiguously defines IR lengths")
+                raise JTAGProbeError("IR capture insufficiently constrains IR lengths")
             return
 
-    async def select_tap(self, index):
+    async def select_tap(self, index, *, ir_lengths=None):
         dr_value, ir_value = await self.scan_reset_dr_ir()
         idcodes = self.interrogate_dr(dr_value)
-        ir_layout = self.interrogate_ir(ir_value, tap_count=len(idcodes))
+        ir_layout = self.interrogate_ir(ir_value, tap_count=len(idcodes), ir_lengths=ir_lengths)
         return TAPInterface.from_layout(self, ir_layout, index=index)
 
 
@@ -889,6 +920,24 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
             default=JTAGProbeInterface.scan_dr_max_length,
             help="give up scanning DRs longer than LENGTH bits (default: %(default)s)")
 
+        def ir_lengths(args):
+            lengths = []
+            for arg in args.split(","):
+                try:
+                    length = int(arg, 10)
+                    if length >= 2:
+                        lengths.append(length)
+                        continue
+                except ValueError:
+                    pass
+                raise argparse.ArgumentTypeError("{!r} is not a valid IR length"
+                                                 .format(arg))
+            return lengths
+
+        parser.add_argument(
+            "--ir-lengths", metavar="IR-LENGTH,...", default=None, type=ir_lengths,
+            help="set IR lengths of each TAP to corresponding IR-LENGTH (default: autodetect)")
+
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
         jtag_iface = JTAGProbeInterface(iface, self.logger, has_trst=args.pin_trst is not None)
@@ -900,19 +949,20 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
     def add_run_tap_arguments(cls, parser):
         parser.add_argument(
             "--tap-index", metavar="INDEX", type=int,
-            help="select TAP #INDEX for communication (default: single TAP)")
+            help="select TAP #INDEX for communication (default: select only TAP)")
 
     async def run_tap(self, cls, device, args):
         jtag_iface = await self.run_lower(cls, device, args)
 
         dr_value, ir_value = await jtag_iface.scan_reset_dr_ir()
         idcodes = jtag_iface.interrogate_dr(dr_value)
-        ir_layout = jtag_iface.interrogate_ir(ir_value, tap_count=len(idcodes))
+        ir_layout = jtag_iface.interrogate_ir(ir_value,
+            tap_count=len(idcodes), ir_lengths=args.ir_lengths)
 
         tap_index = args.tap_index
         if tap_index is None:
             if len(idcodes) > 1:
-                raise JTAGProbeError("more than one TAP found; use explicit --tap-index")
+                raise JTAGProbeError("multiple TAPs found; use explicit --tap-index")
             else:
                 tap_index = 0
         return TAPInterface.from_layout(jtag_iface, ir_layout, index=tap_index)
@@ -974,7 +1024,8 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
         self.logger.info("discovered %d TAPs", len(idcodes))
 
         if args.operation == "scan":
-            ir_layout = jtag_iface.interrogate_ir(ir_value, tap_count=len(idcodes), check=False)
+            ir_layout = jtag_iface.interrogate_ir(ir_value,
+                tap_count=len(idcodes), ir_lengths=args.ir_lengths, check=False)
             if not ir_layout:
                 self.logger.warning("IR interrogation failed")
                 ir_layout = ["?" for _ in idcodes]
@@ -995,12 +1046,13 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
                                      idcode.mfg_id, mfg_name, idcode.part_id, idcode.version)
 
         if args.operation == "enumerate-ir":
-            ir_layout = jtag_iface.interrogate_ir(ir_value, tap_count=len(idcodes))
+            ir_layout = jtag_iface.interrogate_ir(ir_value,
+                tap_count=len(idcodes), ir_lengths=args.ir_lengths)
             for tap_index in args.tap_indexes:
                 ir_length = ir_layout[tap_index]
                 self.logger.info("TAP #%d: IR[%d]", tap_index, ir_length)
 
-                tap_iface = await jtag_iface.select_tap(tap_index)
+                tap_iface = TAPInterface.from_layout(jtag_iface, ir_layout, index=tap_index)
                 for ir_value in range(0, (1 << ir_length)):
                     ir_value = bits(ir_value & (1 << bit) for bit in range(ir_length))
                     await tap_iface.test_reset()
@@ -1039,7 +1091,7 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
             self.logger.info("dropping to REPL for JTAG chain; "
                              "use 'help(iface)' to see available APIs")
         else:
-            iface = await jtag_iface.select_tap(args.tap_index)
+            iface = await jtag_iface.select_tap(args.tap_index, ir_lengths=args.ir_lengths)
             self.logger.info("dropping to REPL for TAP #%d; "
                              "use 'help(iface)' to see available APIs",
                              args.tap_index)
@@ -1097,6 +1149,14 @@ class JTAGInterrogationTestCase(unittest.TestCase):
         self.assertEqual(self.iface.interrogate_ir(ir, 1, check=False),
                          None)
 
+    def test_ir_1tap_0start_1length(self):
+        ir = bits("0100")
+        with self.assertRaisesRegex(JTAGProbeError,
+                r"^IR capture does not start with <10> transition$"):
+            self.iface.interrogate_ir(ir, 1, ir_lengths=[4])
+        self.assertEqual(self.iface.interrogate_ir(ir, 1, ir_lengths=[4], check=False),
+                         None)
+
     def test_ir_1tap_1start(self):
         ir = bits("0001")
         self.assertEqual(self.iface.interrogate_ir(ir, 1),
@@ -1107,6 +1167,19 @@ class JTAGInterrogationTestCase(unittest.TestCase):
         self.assertEqual(self.iface.interrogate_ir(ir, 1),
                          [4])
 
+    def test_ir_1tap_2start_1length(self):
+        ir = bits("0101")
+        self.assertEqual(self.iface.interrogate_ir(ir, 1, ir_lengths=[4]),
+                         [4])
+
+    def test_ir_1tap_2start_1length_over(self):
+        ir = bits("0101")
+        with self.assertRaisesRegex(JTAGProbeError,
+                r"^IR capture length differs from sum of IR lengths$"):
+            self.iface.interrogate_ir(ir, 1, ir_lengths=[5])
+        self.assertEqual(self.iface.interrogate_ir(ir, 1, ir_lengths=[5], check=False),
+                         None)
+
     def test_ir_2tap_1start(self):
         ir = bits("0001")
         with self.assertRaisesRegex(JTAGProbeError,
@@ -1115,10 +1188,41 @@ class JTAGInterrogationTestCase(unittest.TestCase):
         self.assertEqual(self.iface.interrogate_ir(ir, 2, check=False),
                          None)
 
+    def test_ir_2tap_1start_2length(self):
+        ir = bits("0001")
+        with self.assertRaisesRegex(JTAGProbeError,
+                r"^IR capture has fewer <10> transitions than TAPs$"):
+            self.iface.interrogate_ir(ir, 2, ir_lengths=[2, 2])
+        self.assertEqual(self.iface.interrogate_ir(ir, 2, ir_lengths=[2, 2], check=False),
+                         None)
+
     def test_ir_2tap_2start(self):
         ir = bits("01001")
         self.assertEqual(self.iface.interrogate_ir(ir, 2),
                          [3, 2])
+
+    def test_ir_2tap_3start(self):
+        ir = bits("01001001")
+        with self.assertRaisesRegex(JTAGProbeError,
+                r"^IR capture insufficiently constrains IR lengths$"):
+            self.iface.interrogate_ir(ir, 2)
+        self.assertEqual(self.iface.interrogate_ir(ir, 2, check=False),
+                         None)
+
+    def test_ir_2tap_3start_1length(self):
+        ir = bits("01001001")
+        with self.assertRaisesRegex(JTAGProbeError,
+                r"^IR length count differs from TAP count$"):
+            self.iface.interrogate_ir(ir, 3, ir_lengths=[1])
+        self.assertEqual(self.iface.interrogate_ir(ir, 3, ir_lengths=[1], check=False),
+                         None)
+
+    def test_ir_2tap_3start_2length(self):
+        ir = bits("01001001")
+        self.assertEqual(self.iface.interrogate_ir(ir, 2, ir_lengths=[6, 2]),
+                         [6, 2])
+        self.assertEqual(self.iface.interrogate_ir(ir, 2, ir_lengths=[3, 5]),
+                         [3, 5])
 
 
 class JTAGProbeAppletTestCase(GlasgowAppletTestCase, applet=JTAGProbeApplet):
