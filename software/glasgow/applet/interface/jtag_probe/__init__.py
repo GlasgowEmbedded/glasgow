@@ -1062,7 +1062,7 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
                              "use 'help(iface)' to see available APIs",
                              args.tap_index)
         await AsyncInteractiveConsole(
-            locals={"iface":jtag_iface},
+            locals={"iface":iface},
             run_callback=jtag_iface.flush
         ).interact()
 
