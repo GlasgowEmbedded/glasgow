@@ -592,9 +592,12 @@ class JTAGProbeInterface:
 
     # Shift chain introspection
 
-    async def _scan_xr(self, xr, *, check=True, max_length=None):
+    async def _scan_xr(self, xr, *, max_length=None, check=True, idempotent=True):
         assert xr in ("ir", "dr")
-        self._log_h("scan %s", xr)
+        if idempotent:
+            self._log_h("scan %s idempotent", xr)
+        else:
+            self._log_h("scan %s", xr)
 
         if max_length is None:
             if xr == "ir":
@@ -607,16 +610,16 @@ class JTAGProbeInterface:
         if xr == "dr":
             await self.enter_shift_dr()
 
-        try:
-            # Add 1 so that registers of exactly `max_length` could be scanned successfully.
-            data_1 = await self.shift_tdio((1,) * (max_length + 1), last=False)
-            data_0 = await self.shift_tdio((0,) * (max_length + 1), last=False)
+        # Add 1 so that registers of exactly `max_length` could be scanned successfully.
+        data_0 = await self.shift_tdio((0,) * (max_length + 1), last=False)
+        data_1 = await self.shift_tdio((1,) * (max_length + 1), last=not idempotent)
 
+        try:
             value = None
             for length in range(max_length + 1):
-                if data_0[length] == 0:
-                    if all(data_1[length:]):
-                        value = data_1[:length]
+                if data_1[length] == 1:
+                    if data_0[length:].to_int() == 0:
+                        value = data_0[:length]
                     break
 
             if value is None:
@@ -629,27 +632,25 @@ class JTAGProbeInterface:
                     raise JTAGProbeError("{} shift chain is empty".format(xr.upper()))
             else:
                 self._log_h("scan %s length=%d data=<%s>",
-                            xr, length, dump_bin(data_1[:length]))
+                            xr, length, dump_bin(data_0[:length]))
             return value
 
         finally:
-            # Cancellation can cause the loop above to return early, so make sure we have enough
-            # information to actually restore the value.
-            if value is not None:
-                if xr == "ir":
-                    # Fill the register with BYPASS instructions.
-                    await self.shift_tdi((1,) * length, last=True)
-                if xr == "dr":
-                    # Restore the old contents, just in case this matters.
-                    await self.shift_tdi(data_1[:length], last=True)
+            if idempotent:
+                if value is None or length == 0:
+                    # Idempotent scan requested, but isn't possible: finish shifting.
+                    await self.shift_tdi((1,), last=True)
+                else:
+                    # Idempotent scan is possible: shift scanned data back.
+                    await self.shift_tdi(value, last=True)
 
-                await self.enter_run_test_idle()
+            await self.enter_run_test_idle()
 
-    async def scan_ir(self, *, check=True, max_length=None):
-        return await self._scan_xr("ir", check=check, max_length=max_length)
+    async def scan_ir(self, *, max_length=None, check=True):
+        return await self._scan_xr("ir", max_length=max_length, check=check, idempotent=False)
 
-    async def scan_dr(self, *, check=True, max_length=None):
-        return await self._scan_xr("dr", check=check, max_length=max_length)
+    async def scan_dr(self, *, max_length=None, check=True):
+        return await self._scan_xr("dr", max_length=max_length, check=check, idempotent=True)
 
     async def scan_ir_length(self, *, max_length=None):
         return len(await self.scan_ir(max_length=max_length))
@@ -662,8 +663,8 @@ class JTAGProbeInterface:
 
         await self.test_reset()
         # Scan DR chain first, since scanning IR chain will latch BYPASS into every IR.
-        dr_value = await self.scan_dr()
-        ir_value = await self.scan_ir()
+        dr_value = await self._scan_xr("dr", idempotent=False)
+        ir_value = await self._scan_xr("ir", idempotent=False)
         return (dr_value, ir_value)
 
     # Blind interrogation
