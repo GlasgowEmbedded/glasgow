@@ -340,6 +340,7 @@ class JTAGProbeInterface:
 
     @staticmethod
     def _chunk_count(count, last, chunk_size=0xffff):
+        assert count >= 0
         while count > chunk_size:
             yield chunk_size, False
             count -= chunk_size
@@ -353,55 +354,58 @@ class JTAGProbeInterface:
             offset += chunk_size
         yield bits[offset:], last
 
-    async def shift_tdio(self, tdi_bits, last=True):
+    async def _shift_dummy(self, count, last=False):
+        for count, chunk_last in self._chunk_count(count, last):
+            await self.lower.write(struct.pack("<BH",
+                CMD_SHIFT_TDIO|(BIT_LAST if chunk_last else 0), count))
+
+    async def shift_tdio(self, tdi_bits, *, prefix=0, suffix=0, last=True):
         assert self._state in ("Shift-IR", "Shift-DR")
         tdi_bits = bits(tdi_bits)
         tdo_bits = bits()
-        self._log_l("shift tdio-i=<%s>", dump_bin(tdi_bits))
-        for tdi_bits, last in self._chunk_bits(tdi_bits, last):
+        self._log_l("shift tdio-i=%d,<%s>,%d", prefix, dump_bin(tdi_bits), suffix)
+        await self._shift_dummy(prefix)
+        for tdi_bits, chunk_last in self._chunk_bits(tdi_bits, last and suffix == 0):
             await self.lower.write(struct.pack("<BH",
-                CMD_SHIFT_TDIO|BIT_DATA_IN|BIT_DATA_OUT|(BIT_LAST if last else 0),
+                CMD_SHIFT_TDIO|BIT_DATA_IN|BIT_DATA_OUT|(BIT_LAST if chunk_last else 0),
                 len(tdi_bits)))
             tdi_bytes = bytes(tdi_bits)
             await self.lower.write(tdi_bytes)
             tdo_bytes = await self.lower.read(len(tdi_bytes))
             tdo_bits += bits(tdo_bytes, len(tdi_bits))
-        self._log_l("shift tdio-o=<%s>", dump_bin(tdo_bits))
+        await self._shift_dummy(suffix, last)
+        self._log_l("shift tdio-o=%d,<%s>,%d", prefix, dump_bin(tdo_bits), suffix)
         self._shift_last(last)
         return tdo_bits
 
-    async def shift_tdi(self, tdi_bits, last=True):
+    async def shift_tdi(self, tdi_bits, *, prefix=0, suffix=0, last=True):
         assert self._state in ("Shift-IR", "Shift-DR")
         tdi_bits = bits(tdi_bits)
-        self._log_l("shift tdi=<%s>", dump_bin(tdi_bits))
-        for tdi_bits, last in self._chunk_bits(tdi_bits, last):
+        self._log_l("shift tdi=%d,<%s>,%d", prefix, dump_bin(tdi_bits), suffix)
+        await self._shift_dummy(prefix)
+        for tdi_bits, chunk_last in self._chunk_bits(tdi_bits, last and suffix == 0):
             await self.lower.write(struct.pack("<BH",
-                CMD_SHIFT_TDIO|BIT_DATA_OUT|(BIT_LAST if last else 0),
+                CMD_SHIFT_TDIO|BIT_DATA_OUT|(BIT_LAST if chunk_last else 0),
                 len(tdi_bits)))
             tdi_bytes = bytes(tdi_bits)
             await self.lower.write(tdi_bytes)
+        await self._shift_dummy(suffix, last)
         self._shift_last(last)
 
-    async def shift_tdo(self, count, last=True):
+    async def shift_tdo(self, count, *, prefix=0, suffix=0, last=True):
         assert self._state in ("Shift-IR", "Shift-DR")
         tdo_bits = bits()
-        for count, last in self._chunk_count(count, last):
+        await self._shift_dummy(prefix)
+        for count, chunk_last in self._chunk_count(count, last and suffix == 0):
             await self.lower.write(struct.pack("<BH",
-                CMD_SHIFT_TDIO|BIT_DATA_IN|(BIT_LAST if last else 0),
+                CMD_SHIFT_TDIO|BIT_DATA_IN|(BIT_LAST if chunk_last else 0),
                 count))
             tdo_bytes = await self.lower.read((count + 7) // 8)
             tdo_bits += bits(tdo_bytes, count)
-        self._log_l("shift tdo=<%s>", dump_bin(tdo_bits))
+        await self._shift_dummy(suffix, last)
+        self._log_l("shift tdo=%d,<%s>,%d", prefix, dump_bin(tdo_bits), suffix)
         self._shift_last(last)
         return tdo_bits
-
-    async def shift_dummy(self, count, last=True):
-        assert self._state in ("Shift-IR", "Shift-DR")
-        self._log_l("shift dummy count=%d", count)
-        for count, last in self._chunk_count(count, last):
-            await self.lower.write(struct.pack("<BH",
-                CMD_SHIFT_TDIO|(BIT_LAST if last else 0), count))
-        self._shift_last(last)
 
     async def pulse_tck(self, count):
         assert self._state in ("Run-Test/Idle", "Pause-IR", "Pause-DR")
@@ -541,53 +545,55 @@ class JTAGProbeInterface:
         await self.enter_run_test_idle()
         await self.pulse_tck(count)
 
-    async def exchange_ir(self, data):
-        self._current_ir = data = bits(data)
-        self._log_h("exchange ir-i=<%s>", dump_bin(data))
+    async def exchange_ir(self, data, *, prefix=0, suffix=0):
+        data = bits(data)
+        self._current_ir = (prefix, data, suffix)
+        self._log_h("exchange ir-i=%d,<%s>,%d", prefix, dump_bin(data), suffix)
         await self.enter_shift_ir()
-        data = await self.shift_tdio(data)
+        data = await self.shift_tdio(data, prefix=prefix, suffix=suffix)
         await self.enter_update_ir()
-        self._log_h("exchange ir-o=<%s>", dump_bin(data))
+        self._log_h("exchange ir-o=%d,<%s>,%d", prefix, dump_bin(data), suffix)
         return data
 
-    async def read_ir(self, count):
-        self._current_ir = bits((1,)) * count
+    async def read_ir(self, count, *, prefix=0, suffix=0):
+        self._current_ir = (prefix, bits((1,)) * count, suffix)
         await self.enter_shift_ir()
-        data = await self.shift_tdo(count)
+        data = await self.shift_tdo(count, prefix=prefix, suffix=suffix)
         await self.enter_update_ir()
-        self._log_h("read ir=<%s>", dump_bin(data))
+        self._log_h("read ir=%d,<%s>,%d", prefix, dump_bin(data), suffix)
         return data
 
-    async def write_ir(self, data, *, elide=True):
-        if data == self._current_ir and elide:
+    async def write_ir(self, data, *, prefix=0, suffix=0, elide=True):
+        data = bits(data)
+        if (prefix, data, suffix) == self._current_ir and elide:
             self._log_h("write ir (elided)")
             return
-        self._current_ir = data = bits(data)
-        self._log_h("write ir=<%s>", dump_bin(data))
+        self._current_ir = (prefix, data, suffix)
+        self._log_h("write ir=%d,<%s>,%d", prefix, dump_bin(data), suffix)
         await self.enter_shift_ir()
-        await self.shift_tdi(data)
+        await self.shift_tdi(data, prefix=prefix, suffix=suffix)
         await self.enter_update_ir()
 
-    async def exchange_dr(self, data):
-        self._log_h("exchange dr-i=<%s>", dump_bin(data))
+    async def exchange_dr(self, data, *, prefix=0, suffix=0):
+        self._log_h("exchange dr-i=%d,<%s>,%d", prefix, dump_bin(data), suffix)
         await self.enter_shift_dr()
-        data = await self.shift_tdio(data)
+        data = await self.shift_tdio(data, prefix=prefix, suffix=suffix)
         await self.enter_update_dr()
-        self._log_h("exchange dr-o=<%s>", dump_bin(data))
+        self._log_h("exchange dr-o=%d,<%s>,%d", prefix, dump_bin(data), suffix)
         return data
 
-    async def read_dr(self, count):
+    async def read_dr(self, count, *, prefix=0, suffix=0):
         await self.enter_shift_dr()
-        data = await self.shift_tdo(count, last=True)
+        data = await self.shift_tdo(count, prefix=prefix, suffix=suffix)
         await self.enter_update_dr()
-        self._log_h("read dr=<%s>", dump_bin(data))
+        self._log_h("read dr=%d,<%s>,%d", prefix, dump_bin(data), suffix)
         return data
 
-    async def write_dr(self, data):
+    async def write_dr(self, data, *, prefix=0, suffix=0):
         data = bits(data)
-        self._log_h("write dr=<%s>", dump_bin(data))
+        self._log_h("write dr=%d,<%s>,%d", prefix, dump_bin(data), suffix)
         await self.enter_shift_dr()
-        await self.shift_tdi(data)
+        await self.shift_tdi(data, prefix=prefix, suffix=suffix)
         await self.enter_update_dr()
 
     # Shift chain introspection
@@ -760,39 +766,27 @@ class JTAGProbeInterface:
         dr_value, ir_value = await self.scan_reset_dr_ir()
         idcodes = self.interrogate_dr(dr_value)
         ir_layout = self.interrogate_ir(ir_value, tap_count=len(idcodes))
-        return self._create_tap_iface(ir_layout, index)
-
-    def _create_tap_iface(self, ir_layout, index):
-        if index not in range(len(ir_layout)):
-            raise JTAGProbeError("TAP #{:d} not found".format(index))
-
-        ir_offset, ir_length = sum(ir_layout[:index]), ir_layout[index]
-        total_ir_length = sum(ir_layout)
-
-        dr_offset, dr_length = index, 1
-        total_dr_length = len(ir_layout)
-
-        bypass = bits((1,))
-        def affix(offset, length, total_length):
-            prefix = bypass * offset
-            suffix = bypass * (total_length - offset - length)
-            return prefix, suffix
-
-        return TAPInterface(self, ir_length,
-            *affix(ir_offset, ir_length, total_ir_length),
-            *affix(dr_offset, dr_length, total_dr_length))
+        return TAPInterface.from_layout(self, ir_layout, index=index)
 
 
 class TAPInterface:
-    def __init__(self, lower, ir_length, ir_prefix, ir_suffix, dr_prefix, dr_suffix):
+    @classmethod
+    def from_layout(cls, lower, ir_layout, *, index):
+        if index not in range(len(ir_layout)):
+            raise JTAGProbeError("TAP #{:d} is not a part of {:d}-TAP chain"
+                                 .format(index, len(ir_layout)))
+
+        return cls(lower, ir_length=ir_layout[index],
+            ir_prefix=sum(ir_layout[:index]), ir_suffix=sum(ir_layout[index + 1:]),
+            dr_prefix=len(ir_layout[:index]), dr_suffix=len(ir_layout[index + 1:]))
+
+    def __init__(self, lower, *, ir_length, ir_prefix=0, ir_suffix=0, dr_prefix=0, dr_suffix=0):
         self.lower = lower
-        self.ir_length    = ir_length
-        self._ir_prefix   = ir_prefix
-        self._ir_suffix   = ir_suffix
-        self._ir_overhead = len(ir_prefix) + len(ir_suffix)
-        self._dr_prefix   = dr_prefix
-        self._dr_suffix   = dr_suffix
-        self._dr_overhead = len(dr_prefix) + len(dr_suffix)
+        self.ir_length  = ir_length
+        self._ir_prefix = ir_prefix
+        self._ir_suffix = ir_suffix
+        self._dr_prefix = dr_prefix
+        self._dr_suffix = dr_suffix
 
     async def test_reset(self):
         await self.lower.test_reset()
@@ -803,65 +797,53 @@ class TAPInterface:
     async def exchange_ir(self, data):
         data = bits(data)
         assert len(data) == self.ir_length
-        data = await self.lower.exchange_ir(self._ir_prefix + data + self._ir_suffix)
-        if self._ir_suffix:
-            return data[len(self._ir_prefix):-len(self._ir_suffix)]
-        else:
-            return data[len(self._ir_prefix):]
+        return await self.lower.exchange_ir(data,
+            prefix=self._ir_prefix, suffix=self._ir_suffix)
 
     async def read_ir(self):
-        data = await self.lower.read_ir(self._ir_overhead + self.ir_length)
-        if self._ir_suffix:
-            return data[len(self._ir_prefix):-len(self._ir_suffix)]
-        else:
-            return data[len(self._ir_prefix):]
+        return await self.lower.read_ir(self.ir_length,
+            prefix=self._ir_prefix, suffix=self._ir_suffix)
 
     async def write_ir(self, data, *, elide=True):
         data = bits(data)
         assert len(data) == self.ir_length
-        await self.lower.write_ir(self._ir_prefix + data + self._ir_suffix, elide=elide)
+        await self.lower.write_ir(data, elide=elide,
+            prefix=self._ir_prefix, suffix=self._ir_suffix)
 
     async def exchange_dr(self, data):
-        data = bits(data)
-        data = await self.lower.exchange_dr(self._dr_prefix + data + self._dr_suffix)
-        if self._dr_suffix:
-            return data[len(self._dr_prefix):-len(self._dr_suffix)]
-        else:
-            return data[len(self._dr_prefix):]
+        return await self.lower.exchange_dr(data,
+            prefix=self._dr_prefix, suffix=self._dr_suffix)
 
-    async def read_dr(self, count):
-        data = await self.lower.read_dr(self._dr_overhead + count)
-        if self._dr_suffix:
-            return data[len(self._dr_prefix):-len(self._dr_suffix)]
-        else:
-            return data[len(self._dr_prefix):]
+    async def read_dr(self, length):
+        return await self.lower.read_dr(length,
+            prefix=self._dr_prefix, suffix=self._dr_suffix)
 
     async def write_dr(self, data):
-        data = bits(data)
-        await self.lower.write_dr(self._dr_prefix + data + self._dr_suffix)
+        await self.lower.write_dr(data,
+            prefix=self._dr_prefix, suffix=self._dr_suffix)
 
     async def scan_dr(self, *, check=True, max_length=None):
         if max_length is not None:
-            max_length = self._dr_overhead + max_length
+            max_length = self._dr_prefix + max_length + self._dr_suffix
         data = await self.lower.scan_dr(check=check, max_length=max_length)
         if data is None:
             return data
-        if check and len(data) == self._dr_overhead:
+        if check and len(data) == self._dr_prefix + self._dr_suffix:
             raise JTAGProbeError("DR shift chain is empty")
-        assert len(data) > self._dr_overhead
+        assert len(data) > self._dr_prefix + self._dr_suffix
         if self._dr_suffix:
-            return data[len(self._dr_prefix):-len(self._dr_suffix)]
+            return data[self._dr_prefix:-self._dr_suffix]
         else:
-            return data[len(self._dr_prefix):]
+            return data[self._dr_prefix:]
 
     async def scan_dr_length(self, *, max_length=None):
         if max_length is not None:
-            max_length = self._dr_overhead + max_length
+            max_length = self._dr_prefix + max_length + self._dr_suffix
         length = await self.lower.scan_dr_length(max_length=max_length)
-        if length == self._dr_overhead:
+        if length == self._dr_prefix + self._dr_suffix:
             raise JTAGProbeError("DR shift chain is empty")
-        assert length > self._dr_overhead
-        return length - self._dr_overhead
+        assert length > self._dr_prefix + self._dr_suffix
+        return length - self._dr_prefix - self._dr_suffix
 
 
 class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
@@ -933,7 +915,7 @@ class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
                 raise JTAGProbeError("more than one TAP found; use explicit --tap-index")
             else:
                 tap_index = 0
-        return jtag_iface._create_tap_iface(ir_layout, tap_index)
+        return TAPInterface.from_layout(jtag_iface, ir_layout, index=tap_index)
 
     @classmethod
     def add_interact_arguments(cls, parser):
