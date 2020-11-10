@@ -225,7 +225,7 @@ class DirectDemultiplexerInterface(AccessDemultiplexerInterface):
     async def read(self, length=None, *, flush=True):
         if flush and len(self._out_buffer) > 0:
             # Flush the buffer, so that everything written before the read reaches the device.
-            await self.flush()
+            await self.flush(wait=False)
 
         if length is None and len(self._in_buffer) > 0:
             # Just return whatever is in the buffer.
