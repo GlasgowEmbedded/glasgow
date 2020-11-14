@@ -6,6 +6,8 @@ from .ice40 import *
 __all__ = ["GlasgowPlatformRevC1"]
 
 
+# In terms of FPGA I/O, the only change from revC0 to revC1 is the addition of a level shifter
+# on the sync port.
 class GlasgowPlatformRevC1(GlasgowPlatformICE40):
     device      = "iCE40HX8K"
     package     = "BG121"
@@ -76,7 +78,7 @@ class GlasgowPlatformRevC1(GlasgowPlatformICE40):
 
         Resource("port_b", 0,
                  Subsignal("io", Pins("B11"), Attrs(PULLUP=1)),
-                 Subsignal("oe", Pins("F9", dir="o")),
+                 Subsignal("oe", Pins("F9",  dir="o")),
                  Attrs(IO_STANDARD="SB_LVCMOS33")),
         Resource("port_b", 1,
                  Subsignal("io", Pins("C11"), Attrs(PULLUP=1)),
