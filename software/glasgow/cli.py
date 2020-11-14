@@ -271,9 +271,13 @@ def get_argparser():
     p_script = subparsers.add_parser(
         "script", formatter_class=TextHelpFormatter,
         help="run an applet and execute a script against its programming interface")
-    p_script.add_argument(
-        "script", metavar="SCRIPT-FILE", type=argparse.FileType("r"),
-        help="run Python SCRIPT-FILE in the applet context")
+    g_script_source = p_script.add_mutually_exclusive_group(required=True)
+    g_script_source.add_argument(
+        "script_file", metavar="FILENAME", type=argparse.FileType("r"), nargs="?",
+        help="run Python script FILENAME in the applet context")
+    g_script_source.add_argument(
+        "-c", metavar="COMMAND", dest="script_cmd", type=str,
+        help="run Python statement COMMAND in the applet context")
     add_run_args(p_script)
     add_applet_arg(p_script, mode="script", required=True)
 
@@ -608,8 +612,12 @@ async def _main():
                     if args.action == "repl":
                         await applet.repl(device, args, iface)
                     if args.action == "script":
-                        code = compile(args.script.read(), filename=args.script.name,
-                            mode="exec", flags=PyCF_ALLOW_TOP_LEVEL_AWAIT)
+                        if args.script_file:
+                            code = compile(args.script_file.read(), filename=args.script_file.name,
+                                mode="exec", flags=PyCF_ALLOW_TOP_LEVEL_AWAIT)
+                        else:
+                            code = compile(args.script_cmd, filename="<command>",
+                                mode="exec", flags=PyCF_ALLOW_TOP_LEVEL_AWAIT)
                         future = eval(code, {"iface":iface, "device":device})
                         if future is not None:
                             await future
