@@ -9,7 +9,7 @@ import asyncio
 from ....support.aobject import *
 from ....support.endpoint import *
 from ....support.bits import *
-from ....support.pyrepl import *
+from ....support.arepl import *
 from ....arch.mips import *
 from ....protocol.gdb_remote import *
 from ...interface.jtag_probe import JTAGProbeApplet

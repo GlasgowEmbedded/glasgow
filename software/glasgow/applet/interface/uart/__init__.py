@@ -5,7 +5,6 @@ import asyncio
 import argparse
 from nmigen.compat import *
 
-from ....support.pyrepl import *
 from ....support.endpoint import *
 from ....gateware.pads import *
 from ....gateware.uart import *

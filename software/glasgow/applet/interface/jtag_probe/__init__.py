@@ -28,7 +28,7 @@ from nmigen.lib.cdc import FFSynchronizer
 
 from ....support.bits import *
 from ....support.logging import *
-from ....support.pyrepl import *
+from ....support.arepl import *
 from ....gateware.pads import *
 from ....database.jedec import *
 from ....arch.jtag import *

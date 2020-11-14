@@ -2,7 +2,7 @@ import re
 import argparse
 from abc import ABCMeta, abstractmethod
 
-from ..support.pyrepl import *
+from ..support.arepl import *
 from ..gateware.clockgen import *
 
 
