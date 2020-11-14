@@ -11,6 +11,10 @@ import unittest
 import importlib.resources
 from vcd import VCDWriter
 from datetime import datetime
+try:
+    from ast import PyCF_ALLOW_TOP_LEVEL_AWAIT # Python 3.8+
+except ImportError:
+    PyCF_ALLOW_TOP_LEVEL_AWAIT = 0 # Python 3.7-
 
 from fx2 import FX2Config
 from fx2.format import input_data, diff_data
@@ -605,8 +609,10 @@ async def _main():
                         await applet.repl(device, args, iface)
                     if args.action == "script":
                         code = compile(args.script.read(), filename=args.script.name,
-                            mode="exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
-                        await eval(code, {"iface":iface, "device":device})
+                            mode="exec", flags=PyCF_ALLOW_TOP_LEVEL_AWAIT)
+                        future = eval(code, {"iface":iface, "device":device})
+                        if future is not None:
+                            await future
 
                 except GlasgowAppletError as e:
                     applet.logger.error(str(e))
