@@ -8,7 +8,6 @@ import re
 import asyncio
 import signal
 import unittest
-import importlib.resources
 from vcd import VCDWriter
 from datetime import datetime
 try:
@@ -465,19 +464,8 @@ async def _main():
 
     device = None
     try:
-        with importlib.resources.path(__package__, "firmware.ihex") as firmware_filename:
-            if args.action in ("build", "test", "tool"):
-                pass
-            elif args.action == "factory":
-                device = GlasgowHardwareDevice(args.serial, firmware_filename,
-                                               _factory_rev=args.factory_rev)
-            elif args.action == "list":
-                serial_list = GlasgowHardwareDevice.get_serial_list(firmware_filename)
-                for serial in sorted(serial_list):
-                    print(serial)
-                return 0
-            else:
-                device = GlasgowHardwareDevice(args.serial, firmware_filename)
+        if args.action not in ("build", "test", "tool", "factory", "list"):
+            device = GlasgowHardwareDevice(args.serial)
 
         if args.action == "voltage":
             if args.voltage is not None:
@@ -726,10 +714,14 @@ async def _main():
                 new_image = fx2_config.encode()
                 new_image[0] = 0xC0 # see below
             else:
-                logger.info("using firmware from %s",
-                            args.firmware.name if args.firmware else firmware_filename)
-                with (args.firmware or open(firmware_filename, "rb")) as f:
-                    for (addr, chunk) in input_data(f, fmt="ihex"):
+                if args.firmware:
+                    logger.warn("using custom firmware from %s", args.firmware.name)
+                    with args.firmware as f:
+                        for (addr, chunk) in input_data(f, fmt="ihex"):
+                            fx2_config.append(addr, chunk)
+                else:
+                    logger.info("using built-in firmware")
+                    for (addr, chunk) in GlasgowHardwareDevice.builtin_firmware():
                         fx2_config.append(addr, chunk)
                 fx2_config.disconnect = True
                 new_image = fx2_config.encode()
@@ -801,6 +793,8 @@ async def _main():
                 return 1
 
         if args.action == "factory":
+            device = GlasgowHardwareDevice(args.serial, _factory_rev=args.factory_rev)
+
             logger.info("reading device configuration")
             header = await device.read_eeprom("fx2", 0, 8 + 4 + GlasgowConfig.size)
             if not re.match(rb"^\xff+$", header):
@@ -829,6 +823,11 @@ async def _main():
             if await device.read_eeprom("fx2", 0, len(image)) != image:
                 logger.critical("factory programming failed")
                 return 1
+
+        if args.action == "list":
+            for serial in sorted(GlasgowHardwareDevice.get_serial_list()):
+                print(serial)
+            return 0
 
     except GlasgowDeviceError as e:
         logger.error(e)

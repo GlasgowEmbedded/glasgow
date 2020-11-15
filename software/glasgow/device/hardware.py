@@ -5,6 +5,7 @@ import logging
 import usb1
 import asyncio
 import threading
+import importlib.resources
 from fx2 import VID_CYPRESS, PID_FX2, REQ_RAM, REG_CPUCS
 from fx2.format import input_data
 
@@ -55,8 +56,12 @@ class _PollerThread(threading.Thread):
 
 class GlasgowHardwareDevice:
     @staticmethod
-    def _enumerate_devices(usb_context, firmware_filename=None, _factory_rev=None):
-        firmware = None
+    def builtin_firmware():
+        with importlib.resources.open_text(__package__, "firmware.ihex") as f:
+            return input_data(f, fmt="ihex")
+
+    @classmethod
+    def _enumerate_devices(cls, usb_context, _factory_rev=None):
         handles  = {}
         discover = True
         while discover:
@@ -76,18 +81,12 @@ class GlasgowHardwareDevice:
                     revision = _factory_rev
 
                 if device_id & 0xFF00 in (0x0000, 0xA000):
-                    if firmware_filename is None:
-                        logger.warn("found device without firmware, but no firmware is provided")
-                        continue
-                    elif firmware is None:
-                        logger.debug("loading firmware from %s", firmware_filename)
-                        with open(firmware_filename, "rb") as f:
-                            firmware = input_data(f, fmt="ihex")
+                    logger.debug("found rev%s device without firmware", revision)
 
-                    logger.debug("loading firmware to rev%s device", revision)
+                    logger.debug("loading built-in firmware to rev%s device", revision)
                     handle = device.open()
                     handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [1])
-                    for address, data in firmware:
+                    for address, data in cls.builtin_firmware():
                         while len(data) > 0:
                             handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM,
                                                   address, 0, data[:4096])
@@ -115,14 +114,14 @@ class GlasgowHardwareDevice:
         return handles
 
     @classmethod
-    def get_serial_list(cls, firmware_filename=None, *, _factory_rev=None):
+    def get_serial_list(cls):
         with usb1.USBContext() as usb_context:
-            handles = cls._enumerate_devices(usb_context, firmware_filename, _factory_rev)
-        return list(handles.keys())
+            handles = cls._enumerate_devices(usb_context)
+            return list(handles.keys())
 
-    def __init__(self, serial=None, firmware_filename=None, *, _factory_rev=None):
+    def __init__(self, serial=None, *, _factory_rev=None):
         usb_context = usb1.USBContext()
-        handles = self._enumerate_devices(usb_context, firmware_filename, _factory_rev)
+        handles = self._enumerate_devices(usb_context, _factory_rev)
 
         if len(handles) == 0:
             raise GlasgowDeviceError("device not found")
