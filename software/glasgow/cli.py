@@ -825,7 +825,7 @@ async def _main():
                 return 1
 
         if args.action == "list":
-            for serial in sorted(GlasgowHardwareDevice.get_serial_list()):
+            for serial in sorted(GlasgowHardwareDevice.enumerate_serials()):
                 print(serial)
             return 0
 

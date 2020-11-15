@@ -265,7 +265,9 @@ static void descriptors_init() {
 }
 
 enum {
-  // Glasgow requests
+  // Glasgow API level request
+  USB_REQ_API_LEVEL    = 0x0F,
+  // Glasgow API requests
   USB_REQ_EEPROM       = 0x10,
   USB_REQ_FPGA_CFG     = 0x11,
   USB_REQ_STATUS       = 0x12,
@@ -736,6 +738,17 @@ void handle_pending_usb_setup() {
       }
     }
 
+    return;
+  }
+
+  if(req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN) &&
+     req->bRequest == USB_REQ_API_LEVEL &&
+     req->wLength == 1) {
+    pending_setup = false;
+
+    while(EP0CS & _BUSY);
+    EP0BUF[0] = CUR_API_LEVEL;
+    SETUP_EP0_BUF(1);
     return;
   }
 

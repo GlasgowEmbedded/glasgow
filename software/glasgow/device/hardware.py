@@ -22,6 +22,9 @@ logger = logging.getLogger(__name__)
 VID_QIHW         = 0x20b7
 PID_GLASGOW      = 0x9db1
 
+REQ_API_LEVEL    = 0x0F
+CUR_API_LEVEL    = 0x01
+
 REQ_EEPROM       = 0x10
 REQ_FPGA_CFG     = 0x11
 REQ_STATUS       = 0x12
@@ -62,7 +65,7 @@ class GlasgowHardwareDevice:
 
     @classmethod
     def _enumerate_devices(cls, usb_context, _factory_rev=None):
-        handles  = {}
+        devices = {}
         discover = True
         while discover:
             discover = False
@@ -80,68 +83,77 @@ class GlasgowHardwareDevice:
                         continue
                     revision = _factory_rev
 
+                handle = device.open()
                 if device_id & 0xFF00 in (0x0000, 0xA000):
                     logger.debug("found rev%s device without firmware", revision)
-
-                    logger.debug("loading built-in firmware to rev%s device", revision)
-                    handle = device.open()
-                    handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [1])
-                    for address, data in cls.builtin_firmware():
-                        while len(data) > 0:
-                            handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM,
-                                                  address, 0, data[:4096])
-                            data = data[4096:]
-                            address += 4096
-                    handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [0])
-                    handle.close()
-
-                    # And rediscover the device after it reenumerates.
-                    discover = True
                 else:
-                    handle = device.open()
                     device_serial = handle.getASCIIStringDescriptor(
                         device.getSerialNumberDescriptor())
-                    if device_serial in handles:
+                    if device_serial in devices:
+                        handle.close()
                         continue
 
-                    logger.debug("found rev%s device with serial %s", revision, device_serial)
-                    handles[device_serial] = (revision, handle)
+                    try:
+                        device_api_level, = handle.controlRead(
+                            usb1.REQUEST_TYPE_VENDOR, REQ_API_LEVEL, 0, 0, 1)
+                    except usb1.USBErrorPipe:
+                        device_api_level = 0x00
+                    if device_api_level != CUR_API_LEVEL:
+                        logger.info("found rev%s device with API level %d "
+                                    "(supported API level is %d)",
+                                    revision, device_api_level, CUR_API_LEVEL)
+                    else:
+                        handle.close()
+                        logger.debug("found rev%s device with serial %s", revision, device_serial)
+                        devices[device_serial] = (revision, device)
+                        continue
+
+                logger.debug("loading built-in firmware to rev%s device", revision)
+                handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [1])
+                for address, data in cls.builtin_firmware():
+                    while len(data) > 0:
+                        handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM,
+                                            address, 0, data[:4096])
+                        data = data[4096:]
+                        address += 4096
+                handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [0])
+                handle.close()
+                discover = True
 
             if discover:
                 # Give every device we loaded firmware onto a bit of time to reenumerate.
                 time.sleep(1.0)
 
-        return handles
+        return devices
 
     @classmethod
-    def get_serial_list(cls):
+    def enumerate_serials(cls):
         with usb1.USBContext() as usb_context:
-            handles = cls._enumerate_devices(usb_context)
-            return list(handles.keys())
+            devices = cls._enumerate_devices(usb_context)
+            return list(devices.keys())
 
     def __init__(self, serial=None, *, _factory_rev=None):
         usb_context = usb1.USBContext()
-        handles = self._enumerate_devices(usb_context, _factory_rev)
+        devices = self._enumerate_devices(usb_context, _factory_rev)
 
-        if len(handles) == 0:
+        if len(devices) == 0:
             raise GlasgowDeviceError("device not found")
-        if serial is None:
-            if len(handles) > 1:
+        elif serial is None:
+            if len(devices) > 1:
                 raise GlasgowDeviceError("found {} devices (serial numbers {}), but a serial "
                                          "number is not specified"
-                                         .format(len(handles), ", ".join(handles.keys())))
+                                         .format(len(devices), ", ".join(devices.keys())))
+            self.revision, usb_device = next(iter(devices.values()))
         else:
-            if serial not in handles:
+            if serial not in devices:
                 raise GlasgowDeviceError("device with serial number {} not found"
                                          .format(serial))
+            self.revision, usb_device = devices[serial]
 
         self.usb_context = usb_context
         self.usb_poller = _PollerThread(self.usb_context)
         self.usb_poller.start()
-        if serial is None:
-            self.revision, self.usb_handle = next(iter(handles.values()))
-        else:
-            self.revision, self.usb_handle = handles[serial]
+        self.usb_handle = usb_device.open()
         try:
             self.usb_handle.setAutoDetachKernelDriver(True)
         except usb1.USBErrorNotSupported:

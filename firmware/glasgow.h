@@ -19,6 +19,11 @@ enum {
   GLASGOW_REV_NA = 0xF9,
 };
 
+enum {
+  // API compatibility level
+  CUR_API_LEVEL  = 0x01,
+};
+
 // PORTA pins
 #define PINA_ALERT_N          0
 #define PINA_CDONE            3
