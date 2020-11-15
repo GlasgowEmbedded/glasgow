@@ -461,7 +461,7 @@ async def _main():
     create_logger(args)
 
     if sys.version_info < (3, 8) and os.name == "nt":
-        logger.warn("Ctrl-C on Windows is only supported on Python 3.8+")
+        logger.warn("Ctrl+C on Windows is only supported on Python 3.8+")
 
     device = None
     try:
@@ -607,11 +607,11 @@ async def _main():
                     logger.warn("applet %r is PREVIEW QUALITY and may CORRUPT DATA", args.applet)
                 try:
                     iface = await applet.run(device, args)
-                    if args.action in "run":
+                    if args.action == "run":
                         await applet.interact(device, args, iface)
-                    if args.action == "repl":
+                    elif args.action == "repl":
                         await applet.repl(device, args, iface)
-                    if args.action == "script":
+                    elif args.action == "script":
                         if args.script_file:
                             code = compile(args.script_file.read(), filename=args.script_file.name,
                                 mode="exec", flags=PyCF_ALLOW_TOP_LEVEL_AWAIT)
@@ -638,10 +638,11 @@ async def _main():
             if do_trace:
                 analyzer_task = asyncio.ensure_future(run_analyzer())
 
-            applet_task = asyncio.ensure_future(run_applet())
-            sigint_task = asyncio.ensure_future(wait_for_sigint())
+            tasks = []
+            tasks.append(asyncio.ensure_future(run_applet()))
+            if args.action != "repl":
+                tasks.append(asyncio.ensure_future(wait_for_sigint()))
 
-            tasks = [applet_task, sigint_task]
             done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
             for task in pending:
                 task.cancel()
