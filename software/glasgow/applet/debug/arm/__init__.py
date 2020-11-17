@@ -8,7 +8,11 @@ from ....database.jedec import *
 from ....arch.arm.dap import *
 
 
-__all__ = ["ARMDPInterface", "DebugARMAppletMixin"]
+__all__ = ["ARMDPInterface", "ARMAPTransactionError", "DebugARMAppletMixin"]
+
+
+class ARMAPTransactionError(Exception):
+    pass
 
 
 class ARMDPInterface(metaclass=ABCMeta):
@@ -44,17 +48,7 @@ class ARMDPInterface(metaclass=ABCMeta):
 
     # Data link independent interface
 
-    async def iter_aps(self):
-        for ap_index in range(256):
-            ap_idr = AP_IDR.from_int(await self.read_ap_reg(ap_index, AP_IDR_addr))
-            if ap_idr.to_int() == 0:
-                break
-            # For backwards compatibility, debuggers must treat an AP return a JEP106 field
-            # of zero as an AP designed by Arm. This encoding was used in early implementations
-            # of the DAP. In such an implementation, the REVISION and CLASS fields are also RAZ.
-            if ap_idr.DESIGNER == 0:
-                ap_idr.DESIGNER = 0x43B # Arm
-            yield ap_index, ap_idr
+    ...
 
 
 class DebugARMAppletMixin:
@@ -63,7 +57,25 @@ class DebugARMAppletMixin:
         pass
 
     async def interact(self, device, args, dp_iface):
-        async for ap_index, ap_idr in dp_iface.iter_aps():
+        for ap_index in range(256):
+            try:
+                ap_idr = AP_IDR.from_int(await dp_iface.read_ap_reg(ap_index, AP_IDR_addr))
+            except ARMAPTransactionError:
+                # There's an AP at this index but it doesn't work.
+                self.logger.error("AP #%d: IDR read error", ap_index)
+                continue
+
+            if ap_idr.to_int() == 0:
+                # No AP at this index.
+                self.logger.debug("AP #%d: IDR=0", ap_index)
+                continue
+
+            # "For backwards compatibility, debuggers must treat an AP return a JEP106 field
+            # of zero as an AP designed by Arm. This encoding was used in early implementations
+            # of the DAP. In such an implementation, the REVISION and CLASS fields are also RAZ."
+            if ap_idr.DESIGNER == 0:
+                ap_idr.DESIGNER = 0x43B # Arm
+
             designer_name = jedec_mfg_name_from_bank_num(ap_idr.DESIGNER >> 7,
                                                          ap_idr.DESIGNER & 0x7f)
             if designer_name is None:

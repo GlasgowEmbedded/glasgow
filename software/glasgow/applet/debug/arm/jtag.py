@@ -71,10 +71,16 @@ class ARMJTAGDPInterface(ARMDPInterface, aobject):
         assert dp_capture.ACK == DR_xPACC_ACK.OK_FAULT
 
         dp_ctrl_stat = DP_CTRL_STAT.from_int(dp_capture.ReadResult)
-        assert not dp_ctrl_stat.STICKYERR, "AP transaction error"
         assert not dp_ctrl_stat.STICKYORUN, "AP transaction overrun"
+        if dp_ctrl_stat.STICKYERR:
+            dp_update_bits = DR_xPACC_update(
+                RnW=0, A=DP_CTRL_STAT_addr >> 2, DATAIN=dp_ctrl_stat.to_int()).to_bits()
+            dp_capture = DR_xPACC_capture.from_bits(await self.lower.exchange_dr(dp_update_bits))
+            assert dp_capture.ACK == DR_xPACC_ACK.OK_FAULT
 
-        return ap_capture.ReadResult
+            raise ARMAPTransactionError("AP transaction error")
+        else:
+            return ap_capture.ReadResult
 
     async def _write_apacc(self, addr, value):
         await self.lower.write_ir(IR_APACC)
