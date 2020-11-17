@@ -20,6 +20,7 @@ from .memory.prom import MemoryPROMApplet
 from .memory.floppy import MemoryFloppyApplet
 
 from .debug.arc import DebugARCApplet
+from .debug.arm.jtag import DebugARMJTAGApplet
 from .debug.mips import DebugMIPSApplet
 
 from .program.avr.spi import ProgramAVRSPIApplet
