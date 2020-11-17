@@ -6,12 +6,17 @@ from abc import ABCMeta, abstractmethod
 
 from ....database.jedec import *
 from ....arch.arm.dap import *
+from ... import *
 
 
 __all__ = ["ARMDPInterface", "ARMAPTransactionError", "DebugARMAppletMixin"]
 
 
-class ARMAPTransactionError(Exception):
+class ARMDPError(GlasgowAppletError):
+    pass
+
+
+class ARMAPTransactionError(GlasgowAppletError):
     pass
 
 
@@ -48,7 +53,29 @@ class ARMDPInterface(metaclass=ABCMeta):
 
     # Data link independent interface
 
-    ...
+    async def set_debug_power(self, enabled):
+        dp_ctrl_stat = DP_CTRL_STAT.from_int(await self.read_dp_reg(DP_CTRL_STAT_addr))
+        dp_ctrl_stat.CDBGPWRUPREQ = enabled
+        await self.write_dp_reg(DP_CTRL_STAT_addr, dp_ctrl_stat.to_int())
+
+        for _ in range(4):
+            dp_ctrl_stat = DP_CTRL_STAT.from_int(await self.read_dp_reg(DP_CTRL_STAT_addr))
+            if dp_ctrl_stat.CDBGPWRUPACK == enabled:
+                break
+        else:
+            raise ARMDPError("cannot %s debug power".format("enable" if enabled else "disable"))
+
+    async def set_system_power(self, enabled):
+        dp_ctrl_stat = DP_CTRL_STAT.from_int(await self.read_dp_reg(DP_CTRL_STAT_addr))
+        dp_ctrl_stat.CSYSPWRUPREQ = enabled
+        await self.write_dp_reg(DP_CTRL_STAT_addr, dp_ctrl_stat.to_int())
+
+        for _ in range(4):
+            dp_ctrl_stat = DP_CTRL_STAT.from_int(await self.read_dp_reg(DP_CTRL_STAT_addr))
+            if dp_ctrl_stat.CSYSPWRUPACK == enabled:
+                break
+        else:
+            raise ARMDPError("cannot %s system power".format("enable" if enabled else "disable"))
 
 
 class DebugARMAppletMixin:
@@ -57,6 +84,8 @@ class DebugARMAppletMixin:
         pass
 
     async def interact(self, device, args, dp_iface):
+        await dp_iface.set_debug_power(True)
+
         for ap_index in range(256):
             try:
                 ap_idr = AP_IDR.from_int(await dp_iface.read_ap_reg(ap_index, AP_IDR_addr))
