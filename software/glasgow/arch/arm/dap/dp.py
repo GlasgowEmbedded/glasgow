@@ -4,8 +4,8 @@
 
 import enum
 
-from ...support.bits import *
-from ...support.bitstruct import *
+from ....support.bits import *
+from ....support.bitstruct import *
 
 
 __all__ = [

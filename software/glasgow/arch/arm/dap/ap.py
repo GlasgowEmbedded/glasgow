@@ -4,7 +4,7 @@
 
 from enum import IntEnum
 
-from ...support.bitstruct import *
+from ....support.bitstruct import *
 
 
 __all__ = [
