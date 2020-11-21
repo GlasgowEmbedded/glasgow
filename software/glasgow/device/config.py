@@ -42,6 +42,13 @@ class GlasgowConfig:
 
     @staticmethod
     def encode_revision(string):
+        """
+        Encode the human readable revision to the revision byte as used in the firmware.
+
+        The revision byte encodes the letter ``X`` and digit ``N`` in ``revXN`` in the high and
+        low nibble respectively. The high nibble is the letter (1 means ``A``) and the low nibble
+        is the digit.
+        """
         if re.match(r"^[A-Z][0-9]$", string):
             major, minor = string
             return ((ord(major) - ord("A") + 1) << 4) | (ord(minor) - ord("0"))
@@ -50,6 +57,11 @@ class GlasgowConfig:
 
     @staticmethod
     def decode_revision(value):
+        """
+        Decode the revision byte as used in the firmware to the human readable revision.
+
+        This inverts the transformation done by :meth:`encode_revision`.
+        """
         major, minor = (value & 0xF0) >> 4, value & 0x0F
         if major == 0:
             return chr(ord("A") + minor - 1) + "0"

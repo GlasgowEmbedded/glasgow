@@ -11,10 +11,16 @@
 
 enum {
   // Board revisions
+  //
+  // The revision byte encodes the letter X and digit N in "revXN" in the high and low nibble
+  // respectively. The high nibble is the letter (1 means 'A') and the low nibble is the digit.
+  // This means that host software can always decode a revision to be human-readable, even if
+  // the hardware is newer than the software.
   GLASGOW_REV_A  = 0x10,
   GLASGOW_REV_B  = 0x20,
   GLASGOW_REV_C0 = 0x30,
   GLASGOW_REV_C1 = 0x31,
+  GLASGOW_REV_C2 = 0x32,
 
   GLASGOW_REV_NA = 0xF9,
 };
