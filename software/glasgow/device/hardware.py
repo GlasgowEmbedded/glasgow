@@ -78,9 +78,13 @@ class GlasgowHardwareDevice:
                     if (vendor_id, product_id) != (VID_QIHW, PID_GLASGOW):
                         continue
                     revision = GlasgowConfig.decode_revision(device_id & 0xFF)
+                    logger.debug("found rev%s device on bus %03i device %03i", 
+                                 revision, device.getBusNumber(), device.getDeviceAddress())
                 else:
                     if (vendor_id, product_id) != (VID_CYPRESS, PID_FX2):
                         continue
+                    logger.debug("found device with FX2 bare vid+pid on bus %03i device %03i", 
+                                 device.getBusNumber(), device.getDeviceAddress())
                     revision = _factory_rev
 
                 handle = device.open()

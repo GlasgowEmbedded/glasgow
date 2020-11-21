@@ -793,7 +793,14 @@ async def _main():
                 return 1
 
         if args.action == "factory":
-            device = GlasgowHardwareDevice(args.serial, _factory_rev=args.factory_rev)
+            try:
+                device = GlasgowHardwareDevice(args.serial, _factory_rev=args.factory_rev)
+            except GlasgowDeviceError as e:
+                if args.force and str(e) == "device not found":
+                    # device could already have a revision flashed, search again and accept flashed ones
+                    device = GlasgowHardwareDevice(args.serial, _factory_rev=None)
+                else:
+                    raise
 
             logger.info("reading device configuration")
             header = await device.read_eeprom("fx2", 0, 8 + 4 + GlasgowConfig.size)
