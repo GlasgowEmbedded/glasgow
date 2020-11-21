@@ -797,12 +797,14 @@ async def _main():
 
             logger.info("reading device configuration")
             header = await device.read_eeprom("fx2", 0, 8 + 4 + GlasgowConfig.size)
-            if not re.match(rb"^\xff+$", header):
-                if args.force:
-                    logger.warning("device already factory-programmed, proceeding anyway")
-                else:
-                    logger.error("device already factory-programmed")
-                    return 1
+            if re.match(rb"^\xff+$", header):
+                needs_power_cycle = False
+            elif args.force:
+                logger.warning("device already factory-programmed, proceeding anyway")
+                needs_power_cycle = True
+            else:
+                logger.error("device already factory-programmed")
+                return 1
 
             fx2_config = FX2Config(vendor_id=VID_QIHW, product_id=PID_GLASGOW,
                                    device_id=GlasgowConfig.encode_revision(args.factory_rev),
@@ -823,6 +825,9 @@ async def _main():
             if await device.read_eeprom("fx2", 0, len(image)) != image:
                 logger.critical("factory programming failed")
                 return 1
+
+            if needs_power_cycle:
+                logger.warning("power-cycle the device for the changes to take effect")
 
         if args.action == "list":
             for serial in sorted(GlasgowHardwareDevice.enumerate_serials()):

@@ -74,14 +74,21 @@ class GlasgowHardwareDevice:
                 vendor_id  = device.getVendorID()
                 product_id = device.getProductID()
                 device_id  = device.getbcdDevice()
-                if _factory_rev is None:
-                    if (vendor_id, product_id) != (VID_QIHW, PID_GLASGOW):
+                if (vendor_id, product_id) == (VID_CYPRESS, PID_FX2):
+                    if _factory_rev is None:
+                        logger.debug("found bare FX2 device %03d/%03d",
+                                     device.getBusNumber(), device.getDeviceAddress())
                         continue
+                    else:
+                        logger.debug("found bare FX2 device %03d/%03d to be factory flashed",
+                                     device.getBusNumber(), device.getDeviceAddress())
+                        vendor_id  = VID_QIHW
+                        product_id = PID_GLASGOW
+                        revision   = _factory_rev
+                elif (vendor_id, product_id) == (VID_QIHW, PID_GLASGOW):
                     revision = GlasgowConfig.decode_revision(device_id & 0xFF)
                 else:
-                    if (vendor_id, product_id) != (VID_CYPRESS, PID_FX2):
-                        continue
-                    revision = _factory_rev
+                    continue
 
                 handle = device.open()
                 if device_id & 0xFF00 in (0x0000, 0xA000):
