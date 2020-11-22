@@ -602,9 +602,16 @@ void handle_pending_usb_setup() {
      req->wLength == 2) {
     uint8_t  arg_mask = req->wIndex;
     pending_setup = false;
+    bool result;
 
     while(EP0CS & _BUSY);
-    if(!iobuf_measure_voltage_adc081c(arg_mask, (__xdata uint16_t *)EP0BUF)) {
+
+    if(glasgow_config.revision == GLASGOW_REV_C2)
+      result = iobuf_measure_voltage_ina233(arg_mask, (__xdata uint16_t *)EP0BUF);
+    else
+      result = iobuf_measure_voltage_adc081c(arg_mask, (__xdata uint16_t *)EP0BUF);
+
+    if(!result) {
       STALL_EP0();
     } else {
       SETUP_EP0_BUF(2);
