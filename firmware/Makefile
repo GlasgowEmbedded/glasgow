@@ -7,7 +7,7 @@ CONF_SIZE = 0x0040
 MODEL     = medium
 
 TARGET    = glasgow
-SOURCES   = main fpga dac_ldo adc pull fifo
+SOURCES   = main fpga dac_ldo adc_adc081c adc_ina233 pull fifo
 LIBRARIES = fx2 fx2isrs fx2usb
 CFLAGS    = -DSYNCDELAYLEN=16 -DCONF_SIZE=$(CONF_SIZE)
 

@@ -50,16 +50,18 @@ enum {
 
 enum {
   // I2C addresses (unshifted)
-  I2C_ADDR_FPGA     = 0b0001000,
-  I2C_ADDR_FX2_MEM  = 0b1010001,
-  I2C_ADDR_ICE_MEM  = 0b1010010,
-  I2C_ADDR_IOA_DAC  = 0b0001100,
-  I2C_ADDR_IOB_DAC  = 0b0001101,
-  I2C_ADDR_ALL_DAC  = 0b1001000,
-  I2C_ADDR_IOA_ADC  = 0b1010100,
-  I2C_ADDR_IOB_ADC  = 0b1010101,
-  I2C_ADDR_IOA_PULL = 0b0100000,
-  I2C_ADDR_IOB_PULL = 0b0100001,
+  I2C_ADDR_FPGA            = 0b0001000,
+  I2C_ADDR_FX2_MEM         = 0b1010001,
+  I2C_ADDR_ICE_MEM         = 0b1010010,
+  I2C_ADDR_IOA_DAC         = 0b0001100,
+  I2C_ADDR_IOB_DAC         = 0b0001101,
+  I2C_ADDR_ALL_DAC         = 0b1001000,
+  I2C_ADDR_IOA_ADC_ADC081C = 0b1010100,
+  I2C_ADDR_IOB_ADC_ADC081C = 0b1010101,
+  I2C_ADDR_IOA_ADC_INA233  = 0b1000000,
+  I2C_ADDR_IOB_ADC_INA233  = 0b1000001,
+  I2C_ADDR_IOA_PULL        = 0b0100000,
+  I2C_ADDR_IOB_PULL        = 0b0100001,
 };
 
 enum {
@@ -102,17 +104,21 @@ bool iobuf_get_voltage(uint8_t selector, __xdata uint16_t *millivolts);
 bool iobuf_set_voltage_limit(uint8_t mask, __xdata const uint16_t *millivolts);
 bool iobuf_get_voltage_limit(uint8_t selector, __xdata uint16_t *millivolts);
 
-// ADC API
-void iobuf_init_adc();
-bool iobuf_measure_voltage(uint8_t selector, __xdata uint16_t *millivolts);
-bool iobuf_set_alert(uint8_t mask,
+// ADC API (TI ADC081C)
+void iobuf_init_adc_adc081c();
+bool iobuf_measure_voltage_adc081c(uint8_t selector, __xdata uint16_t *millivolts);
+bool iobuf_set_alert_adc081c(uint8_t mask,
                      __xdata const uint16_t *low_millivolts,
                      __xdata const uint16_t *high_millivolts);
-bool iobuf_get_alert(uint8_t selector,
+bool iobuf_get_alert_adc081c(uint8_t selector,
                      __xdata uint16_t *low_millivolts,
                      __xdata uint16_t *high_millivolts);
-bool iobuf_is_alerted();
-bool iobuf_poll_alert(__xdata uint8_t *mask, bool clear);
+bool iobuf_is_alerted_adc081c();
+bool iobuf_poll_alert_adc081c(__xdata uint8_t *mask, bool clear);
+
+// ADC API (TI INA233)
+bool iobuf_init_adc_ina233();
+
 
 // Pull API
 bool iobuf_set_pull(uint8_t selector, uint8_t enable, uint8_t level);

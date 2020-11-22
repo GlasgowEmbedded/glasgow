@@ -604,7 +604,7 @@ void handle_pending_usb_setup() {
     pending_setup = false;
 
     while(EP0CS & _BUSY);
-    if(!iobuf_measure_voltage(arg_mask, (__xdata uint16_t *)EP0BUF)) {
+    if(!iobuf_measure_voltage_adc081c(arg_mask, (__xdata uint16_t *)EP0BUF)) {
       STALL_EP0();
     } else {
       SETUP_EP0_BUF(2);
@@ -624,7 +624,7 @@ void handle_pending_usb_setup() {
 
     if(arg_get) {
       while(EP0CS & _BUSY);
-      if(!iobuf_get_alert(arg_mask, (__xdata uint16_t *)EP0BUF, (__xdata uint16_t *)EP0BUF + 1)) {
+      if(!iobuf_get_alert_adc081c(arg_mask, (__xdata uint16_t *)EP0BUF, (__xdata uint16_t *)EP0BUF + 1)) {
         STALL_EP0();
       } else {
         SETUP_EP0_BUF(4);
@@ -632,7 +632,7 @@ void handle_pending_usb_setup() {
     } else {
       SETUP_EP0_BUF(4);
       while(EP0CS & _BUSY);
-      if(!iobuf_set_alert(arg_mask, (__xdata uint16_t *)EP0BUF, (__xdata uint16_t *)EP0BUF + 1)) {
+      if(!iobuf_set_alert_adc081c(arg_mask, (__xdata uint16_t *)EP0BUF, (__xdata uint16_t *)EP0BUF + 1)) {
         latch_status_bit(ST_ERROR);
       }
     }
@@ -647,7 +647,7 @@ void handle_pending_usb_setup() {
     pending_setup = false;
 
     while(EP0CS & _BUSY);
-    iobuf_poll_alert(EP0BUF, /*clear=*/true);
+    iobuf_poll_alert_adc081c(EP0BUF, /*clear=*/true);
     SETUP_EP0_BUF(1);
 
     reset_status_bit(ST_ALERT);
@@ -780,7 +780,7 @@ void handle_pending_alert() {
   pending_alert = false;
 
   latch_status_bit(ST_ALERT);
-  iobuf_poll_alert(&mask, /*clear=*/false);
+  iobuf_poll_alert_adc081c(&mask, /*clear=*/false);
   iobuf_set_voltage(mask, &millivolts);
 }
 
@@ -820,7 +820,14 @@ int main() {
   config_fixup();
   descriptors_init();
   iobuf_init_dac_ldo();
-  iobuf_init_adc();
+
+  if(glasgow_config.revision == GLASGOW_REV_C2) {
+    if (!iobuf_init_adc_ina233())
+      latch_status_bit(ST_ERROR);
+  }
+  else
+    iobuf_init_adc_adc081c();
+
   fpga_init();
   fifo_init();
 
