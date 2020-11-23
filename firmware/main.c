@@ -628,10 +628,17 @@ void handle_pending_usb_setup() {
     bool     arg_get = (req->bmRequestType & USB_DIR_IN);
     uint8_t  arg_mask = req->wIndex;
     pending_setup = false;
+    bool result;
 
     if(arg_get) {
       while(EP0CS & _BUSY);
-      if(!iobuf_get_alert_adc081c(arg_mask, (__xdata uint16_t *)EP0BUF, (__xdata uint16_t *)EP0BUF + 1)) {
+
+      if(glasgow_config.revision == GLASGOW_REV_C2)
+        result = iobuf_get_alert_ina233(arg_mask, (__xdata uint16_t *)EP0BUF, (__xdata uint16_t *)EP0BUF + 1);
+      else
+        result = iobuf_get_alert_adc081c(arg_mask, (__xdata uint16_t *)EP0BUF, (__xdata uint16_t *)EP0BUF + 1);
+
+      if(!result) {
         STALL_EP0();
       } else {
         SETUP_EP0_BUF(4);
@@ -639,7 +646,14 @@ void handle_pending_usb_setup() {
     } else {
       SETUP_EP0_BUF(4);
       while(EP0CS & _BUSY);
-      if(!iobuf_set_alert_adc081c(arg_mask, (__xdata uint16_t *)EP0BUF, (__xdata uint16_t *)EP0BUF + 1)) {
+
+      if(glasgow_config.revision == GLASGOW_REV_C2)
+        // TODO
+        result = true;
+      else
+        result = iobuf_set_alert_adc081c(arg_mask, (__xdata uint16_t *)EP0BUF, (__xdata uint16_t *)EP0BUF + 1);
+
+      if(!result) {
         latch_status_bit(ST_ERROR);
       }
     }

@@ -119,6 +119,9 @@ bool iobuf_poll_alert_adc081c(__xdata uint8_t *mask, bool clear);
 // ADC API (TI INA233)
 bool iobuf_init_adc_ina233();
 bool iobuf_measure_voltage_ina233(uint8_t selector, __xdata uint16_t *millivolts);
+bool iobuf_get_alert_ina233(uint8_t selector,
+                     __xdata uint16_t *low_millivolts,
+                     __xdata uint16_t *high_millivolts);
 
 // Pull API
 bool iobuf_set_pull(uint8_t selector, uint8_t enable, uint8_t level);
