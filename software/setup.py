@@ -45,7 +45,7 @@ setup(
         "git+https://github.com/nmigen/nmigen.git#egg=nmigen",
     ],
     packages=find_packages(),
-    package_data={"glasgow": ["firmware.ihex"]},
+    package_data={"glasgow.device": ["firmware.ihex"]},
     entry_points={
         "console_scripts": [
             "glasgow = glasgow.cli:main"
