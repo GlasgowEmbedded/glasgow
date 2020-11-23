@@ -65,73 +65,105 @@ class GlasgowHardwareDevice:
 
     @classmethod
     def _enumerate_devices(cls, usb_context, _factory_rev=None):
-        devices = {}
-        discover = True
-        while discover:
-            discover = False
+        devices = []
+        devices_by_serial = {}
 
-            for device in usb_context.getDeviceIterator():
+        def hotplug_callback(usb_context, device, event):
+            if event == usb1.HOTPLUG_EVENT_DEVICE_ARRIVED:
                 vendor_id  = device.getVendorID()
                 product_id = device.getProductID()
-                device_id  = device.getbcdDevice()
-                if (vendor_id, product_id) == (VID_CYPRESS, PID_FX2):
-                    if _factory_rev is None:
-                        logger.debug("found bare FX2 device %03d/%03d",
-                                     device.getBusNumber(), device.getDeviceAddress())
-                        continue
-                    else:
-                        logger.debug("found bare FX2 device %03d/%03d to be factory flashed",
-                                     device.getBusNumber(), device.getDeviceAddress())
-                        vendor_id  = VID_QIHW
-                        product_id = PID_GLASGOW
-                        revision   = _factory_rev
-                elif (vendor_id, product_id) == (VID_QIHW, PID_GLASGOW):
-                    revision = GlasgowConfig.decode_revision(device_id & 0xFF)
+
+                if (vendor_id, product_id) in [(VID_CYPRESS, PID_FX2), (VID_QIHW, PID_GLASGOW)]:
+                    devices.append(device)
+
+        usb_context.hotplugRegisterCallback(hotplug_callback,
+            flags=usb1.HOTPLUG_ENUMERATE)
+
+        while any(devices):
+            device = devices.pop()
+
+            vendor_id  = device.getVendorID()
+            product_id = device.getProductID()
+            device_id  = device.getbcdDevice()
+            if (vendor_id, product_id) == (VID_CYPRESS, PID_FX2):
+                if _factory_rev is None:
+                    logger.debug("found bare FX2 device %03d/%03d",
+                                 device.getBusNumber(), device.getDeviceAddress())
+                    continue
                 else:
+                    logger.debug("found bare FX2 device %03d/%03d to be factory flashed",
+                                 device.getBusNumber(), device.getDeviceAddress())
+                    vendor_id  = VID_QIHW
+                    product_id = PID_GLASGOW
+                    revision   = _factory_rev
+            elif (vendor_id, product_id) == (VID_QIHW, PID_GLASGOW):
+                revision = GlasgowConfig.decode_revision(device_id & 0xFF)
+            else:
+                continue
+
+            handle = device.open()
+            if device_id & 0xFF00 in (0x0000, 0xA000):
+                logger.debug("found rev%s device without firmware", revision)
+            else:
+                device_serial = handle.getASCIIStringDescriptor(
+                    device.getSerialNumberDescriptor())
+                if device_serial in devices_by_serial:
+                    handle.close()
                     continue
 
-                handle = device.open()
-                if device_id & 0xFF00 in (0x0000, 0xA000):
-                    logger.debug("found rev%s device without firmware", revision)
+                try:
+                    device_api_level, = handle.controlRead(
+                        usb1.REQUEST_TYPE_VENDOR, REQ_API_LEVEL, 0, 0, 1)
+                except usb1.USBErrorPipe:
+                    device_api_level = 0x00
+                if device_api_level != CUR_API_LEVEL:
+                    logger.info("found rev%s device with API level %d "
+                                "(supported API level is %d)",
+                                revision, device_api_level, CUR_API_LEVEL)
                 else:
-                    device_serial = handle.getASCIIStringDescriptor(
-                        device.getSerialNumberDescriptor())
-                    if device_serial in devices:
-                        handle.close()
-                        continue
+                    handle.close()
+                    logger.debug("found rev%s device with serial %s", revision, device_serial)
+                    devices_by_serial[device_serial] = (revision, device)
+                    continue
 
-                    try:
-                        device_api_level, = handle.controlRead(
-                            usb1.REQUEST_TYPE_VENDOR, REQ_API_LEVEL, 0, 0, 1)
-                    except usb1.USBErrorPipe:
-                        device_api_level = 0x00
-                    if device_api_level != CUR_API_LEVEL:
-                        logger.info("found rev%s device with API level %d "
-                                    "(supported API level is %d)",
-                                    revision, device_api_level, CUR_API_LEVEL)
-                    else:
-                        handle.close()
-                        logger.debug("found rev%s device with serial %s", revision, device_serial)
-                        devices[device_serial] = (revision, device)
-                        continue
+            logger.debug("loading built-in firmware to rev%s device", revision)
+            handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [1])
+            for address, data in cls.builtin_firmware():
+                while len(data) > 0:
+                    handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM,
+                                        address, 0, data[:4096])
+                    data = data[4096:]
+                    address += 4096
+            handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [0])
+            handle.close()
 
-                logger.debug("loading built-in firmware to rev%s device", revision)
-                handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [1])
-                for address, data in cls.builtin_firmware():
-                    while len(data) > 0:
-                        handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM,
-                                            address, 0, data[:4096])
-                        data = data[4096:]
-                        address += 4096
-                handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [0])
-                handle.close()
-                discover = True
+            if usb_context.hasCapability(usb1.CAP_HAS_HOTPLUG):
+                # Hotplug is available; process hotplug events for a while looking for the device
+                # that re-enumerates after firmware upload. We expect two events (one detach and
+                # one attach event), but allow for a bit more than that. (It is not possible to
+                # wait for re-enumeration without some guesswork because USB lacks geographical
+                # addressing.)
+                devices_len = len(devices)
+                for event_count in range(5):
+                    usb_context.handleEventsTimeout(1.0)
+                    if devices_len < len(devices):
+                        # Found it!
+                        break
+                else:
+                    logger.warn("device %03d/%03d did not re-enumerate after firmware upload",
+                                device.getBusNumber(), device.getDeviceAddress())
 
-            if discover:
-                # Give every device we loaded firmware onto a bit of time to reenumerate.
-                time.sleep(1.0)
+            else:
+                # No hotplug capability (most likely because we're running on Windows); give
+                # the device a bit of time to re-enumerate. (The device disconnects from the bus
+                # for ~1 second, so we should wait a few times that to allow for the variable
+                # OS and platform delays).
+                logger.debug("waiting for re-enumeration")
+                time.sleep(5.0)
 
-        return devices
+                devices.extend(list(usb_context.getDeviceIterator()))
+
+        return devices_by_serial
 
     @classmethod
     def enumerate_serials(cls):
