@@ -2,13 +2,8 @@
 #include "glasgow.h"
 
 void leds_init() {
-  IOD  = (IOD | (1<<PIND_LED_CY)) & ~((1<<PIND_LED_FPGA)|(1<<PIND_LED_ACT)|(1<<PIND_LED_ERR));
-  OED |=        (1<<PIND_LED_CY)  |   (1<<PIND_LED_FPGA)|(1<<PIND_LED_ACT)|(1<<PIND_LED_ERR);
-}
-
-void led_fpga_set(bool on) {
-  if(on) IOD |=  (1<<PIND_LED_FPGA);
-  else   IOD &= ~(1<<PIND_LED_FPGA);
+  IOD  = (IOD | (1<<PIND_LED_CY)) & ~((1<<PIND_LED_ACT)|(1<<PIND_LED_ERR));
+  OED |=        (1<<PIND_LED_CY)  |   (1<<PIND_LED_ACT)|(1<<PIND_LED_ERR);
 }
 
 void led_act_set(bool on) {

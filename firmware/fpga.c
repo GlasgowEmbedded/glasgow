@@ -3,6 +3,21 @@
 #include <fx2i2c.h>
 #include "glasgow.h"
 
+static bool fpga_check_ready() {
+  if(IOA & (1 << PINA_CDONE)) {
+    IOD |=  (1<<PIND_LED_FPGA);
+    return true;
+  } else {
+    IOD &= ~(1<<PIND_LED_FPGA);
+    return false;
+  }
+}
+
+void fpga_init() {
+  OED |=  (1<<PIND_LED_FPGA);
+  fpga_check_ready();
+}
+
 void fpga_reset() {
   // Disable FIFO bus.
   SYNCDELAY;
@@ -45,6 +60,9 @@ void fpga_reset() {
       break;
   }
   delay_us(1200); // 1200 us for HX8K, 800 us for others
+
+  // Update FPGA status.
+  fpga_check_ready();
 }
 
 void fpga_load(__xdata uint8_t *data, uint8_t len) {
@@ -90,7 +108,7 @@ __endasm;
 #undef  BIT
 }
 
-void fpga_start() {
+bool fpga_start() {
 __asm
   mov  a, #49
 
@@ -118,10 +136,13 @@ __endasm;
       IFCONFIG |= _IFCLKOE|_3048MHZ|_IFCFG0|_IFCFG1;
       break;
   }
+
+  // Update and return FPGA status.
+  return fpga_check_ready();
 }
 
 bool fpga_is_ready() {
-  return (IOA & (1 << PINA_CDONE));
+  return fpga_check_ready();
 }
 
 bool fpga_reg_select(uint8_t addr) {

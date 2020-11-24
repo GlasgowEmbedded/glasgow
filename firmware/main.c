@@ -306,7 +306,6 @@ static uint8_t status;
 
 static void update_leds() {
   led_err_set(status & (ST_ERROR | ST_ALERT));
-  led_fpga_set(status & ST_FPGA_RDY);
 }
 
 static void latch_status_bit(uint8_t bit) {
@@ -510,7 +509,8 @@ void handle_pending_usb_setup() {
     pending_setup = false;
 
     while(EP0CS & _BUSY);
-    EP0BUF[0] = status;
+    EP0BUF[0] = status |
+      (fpga_is_ready() ? ST_FPGA_RDY : 0);
     SETUP_EP0_BUF(1);
 
     reset_status_bit(ST_ERROR);
@@ -527,7 +527,6 @@ void handle_pending_usb_setup() {
     pending_setup = false;
 
     if(arg_idx == 0) {
-      reset_status_bit(ST_FPGA_RDY);
       memset(glasgow_config.bitstream_id, 0, BITSTREAM_ID_SIZE);
       fpga_reset();
     }
@@ -559,10 +558,7 @@ void handle_pending_usb_setup() {
       xmemcpy(EP0BUF, glasgow_config.bitstream_id, BITSTREAM_ID_SIZE);
       SETUP_EP0_BUF(BITSTREAM_ID_SIZE);
     } else {
-      fpga_start();
-      if(fpga_is_ready()) {
-        latch_status_bit(ST_FPGA_RDY);
-
+      if(fpga_start()) {
         SETUP_EP0_BUF(0);
         while(EP0CS & _BUSY);
         xmemcpy(glasgow_config.bitstream_id, EP0BUF, BITSTREAM_ID_SIZE);
@@ -827,6 +823,7 @@ int main() {
   leds_init();
   iobuf_init_dac_ldo();
   iobuf_init_adc();
+  fpga_init();
   fifo_init();
 
   // Disable EP1IN/OUT
@@ -879,19 +876,12 @@ int main() {
       }
     }
     if(length == 0) {
-      fpga_start();
-      if(!fpga_is_ready())
+      if(!fpga_start())
         latch_status_bit(ST_ERROR);
     }
 
     led_act_set(false);
   }
-
-  // Latch initial status bits.
-  // FPGA could be ready because we've loaded it above, or because the firmware was
-  // reloaded live.
-  if(fpga_is_ready())
-    latch_status_bit(ST_FPGA_RDY);
 
   // Finally, enumerate.
   usb_init(/*reconnect=*/true);

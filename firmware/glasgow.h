@@ -86,14 +86,14 @@ __xdata __at(0x4000 - CONF_SIZE) struct glasgow_config {
 
 // LED API
 void leds_init();
-void led_fpga_set(bool on);
 void led_act_set(bool on);
 void led_err_set(bool on);
 
 // FPGA API
+void fpga_init();
 void fpga_reset();
 void fpga_load(__xdata uint8_t *data, uint8_t len);
-void fpga_start();
+bool fpga_start();
 bool fpga_is_ready();
 bool fpga_reg_select(uint8_t addr);
 bool fpga_reg_read(__xdata uint8_t *value, uint8_t length);
