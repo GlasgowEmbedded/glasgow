@@ -5,16 +5,16 @@
 
 static bool fpga_check_ready() {
   if(IOA & (1 << PINA_CDONE)) {
-    IOD |=  (1<<PIND_LED_FPGA);
+    IOD |=  (1<<PIND_LED_ICE);
     return true;
   } else {
-    IOD &= ~(1<<PIND_LED_FPGA);
+    IOD &= ~(1<<PIND_LED_ICE);
     return false;
   }
 }
 
 void fpga_init() {
-  OED |=  (1<<PIND_LED_FPGA);
+  OED |=  (1<<PIND_LED_ICE);
   fpga_check_ready();
 }
 

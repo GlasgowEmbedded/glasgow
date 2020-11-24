@@ -304,23 +304,22 @@ enum {
 // an USB timeout, and we want to indicate error conditions faster.
 static uint8_t status;
 
-static void update_leds() {
-  led_err_set(status & (ST_ERROR | ST_ALERT));
+static void update_err_led() {
+  if(status & (ST_ERROR | ST_ALERT))
+    IOD |=  (1<<PIND_LED_ERR);
+  else
+    IOD &= ~(1<<PIND_LED_ERR);
 }
 
 static void latch_status_bit(uint8_t bit) {
   status |= bit;
-  update_leds();
-}
-
-static bool check_status_bit(uint8_t bit) {
-  return status & bit;
+  update_err_led();
 }
 
 static bool reset_status_bit(uint8_t bit) {
   if(status & bit) {
     status &= ~bit;
-    update_leds();
+    update_err_led();
     return true;
   }
   return false;
@@ -820,7 +819,6 @@ int main() {
   config_init();
   config_fixup();
   descriptors_init();
-  leds_init();
   iobuf_init_dac_ldo();
   iobuf_init_adc();
   fpga_init();
@@ -831,6 +829,11 @@ int main() {
   EP1INCFG = 0;
   SYNCDELAY;
   EP1OUTCFG = 0;
+
+  // Set up LEDs.
+  OED |= (1<<PIND_LED_FX2)|(1<<PIND_LED_ACT)|(1<<PIND_LED_ERR);
+  IOD |= (1<<PIND_LED_FX2);
+  IOD &=                 ~((1<<PIND_LED_ACT)|(1<<PIND_LED_ERR));
 
   // Use timer 2 in 16-bit timer mode for ACT LED.
   T2CON = _CPRL2;
@@ -849,7 +852,7 @@ int main() {
     uint16_t addr = 0;
 
     // Loading the bitstream over I2C can take up to five seconds.
-    led_act_set(true);
+    IOD |=  (1<<PIND_LED_ACT);
 
     fpga_reset();
     while(length > 0) {
@@ -880,7 +883,7 @@ int main() {
         latch_status_bit(ST_ERROR);
     }
 
-    led_act_set(false);
+    IOD &= ~(1<<PIND_LED_ACT);
   }
 
   // Finally, enumerate.
