@@ -332,7 +332,7 @@ Wire Wire Line
 Wire Wire Line
 	9350 4250 9400 4250
 $Comp
-L Logic_LevelTranslator:SN74LVC1T45DRL U5
+L Logic_LevelTranslator:SN74LVC1T45DCK U5
 U 1 1 5B3D9A66
 P 2500 1450
 AR Path="/5AF7D604/5B3D9A66" Ref="U5"  Part="1" 
@@ -344,7 +344,7 @@ F 1 "SN74LVC1T45DCKR" H 2650 1000 50  0000 L CNN
 F 2 "Glasgow:SOT-363_SC-70-6" H 2500 950 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 1600 800 50  0001 C CNN
 F 4 "Texas Instruments" H 2500 1450 50  0001 C CNN "Mfg"
-F 5 "SN74LVC1T45DRL" H 2500 1450 50  0001 C CNN "MPN"
+F 5 "SN74LVC1T45DCKR" H 2500 1450 50  0001 C CNN "MPN"
 F 6 "ic-sot563-sn4lvc1t45dckr" H 2500 1450 50  0001 C CNN "1b2-bom-key"
 	1    2500 1450
 	1    0    0    -1  
@@ -447,7 +447,7 @@ Q2
 Text HLabel 2050 3250 0    50   Input ~ 0
 DIR2
 $Comp
-L Logic_LevelTranslator:SN74LVC1T45DRL U6
+L Logic_LevelTranslator:SN74LVC1T45DCK U6
 U 1 1 5B4ABDD7
 P 2500 3050
 AR Path="/5AF7D604/5B4ABDD7" Ref="U6"  Part="1" 
@@ -459,7 +459,7 @@ F 1 "SN74LVC1T45DCKR" H 2650 2600 50  0000 L CNN
 F 2 "Glasgow:SOT-363_SC-70-6" H 2500 2550 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 1600 2400 50  0001 C CNN
 F 4 "Texas Instruments" H 2500 3050 50  0001 C CNN "Mfg"
-F 5 "SN74LVC1T45DRL" H 2500 3050 50  0001 C CNN "MPN"
+F 5 "SN74LVC1T45DCKR" H 2500 3050 50  0001 C CNN "MPN"
 F 6 "ic-sot563-sn4lvc1t45dckr" H 2500 3050 50  0001 C CNN "1b2-bom-key"
 	1    2500 3050
 	1    0    0    -1  
@@ -560,7 +560,7 @@ Q4
 Text HLabel 2050 4850 0    50   Input ~ 0
 DIR4
 $Comp
-L Logic_LevelTranslator:SN74LVC1T45DRL U16
+L Logic_LevelTranslator:SN74LVC1T45DCK U16
 U 1 1 5B4B0E48
 P 2500 4650
 AR Path="/5AF7D604/5B4B0E48" Ref="U16"  Part="1" 
@@ -572,7 +572,7 @@ F 1 "SN74LVC1T45DCKR" H 2650 4200 50  0000 L CNN
 F 2 "Glasgow:SOT-363_SC-70-6" H 2500 4150 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 1600 4000 50  0001 C CNN
 F 4 "Texas Instruments" H 2500 4650 50  0001 C CNN "Mfg"
-F 5 "SN74LVC1T45DRL" H 2500 4650 50  0001 C CNN "MPN"
+F 5 "SN74LVC1T45DCKR" H 2500 4650 50  0001 C CNN "MPN"
 F 6 "ic-sot563-sn4lvc1t45dckr" H 2500 4650 50  0001 C CNN "1b2-bom-key"
 	1    2500 4650
 	1    0    0    -1  
@@ -673,7 +673,7 @@ Q6
 Text HLabel 2050 6450 0    50   Input ~ 0
 DIR6
 $Comp
-L Logic_LevelTranslator:SN74LVC1T45DRL U17
+L Logic_LevelTranslator:SN74LVC1T45DCK U17
 U 1 1 5B4B6B3E
 P 2500 6250
 AR Path="/5AF7D604/5B4B6B3E" Ref="U17"  Part="1" 
@@ -685,7 +685,7 @@ F 1 "SN74LVC1T45DCKR" H 2650 5800 50  0000 L CNN
 F 2 "Glasgow:SOT-363_SC-70-6" H 2500 5750 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 1600 5600 50  0001 C CNN
 F 4 "Texas Instruments" H 2500 6250 50  0001 C CNN "Mfg"
-F 5 "SN74LVC1T45DRL" H 2500 6250 50  0001 C CNN "MPN"
+F 5 "SN74LVC1T45DCKR" H 2500 6250 50  0001 C CNN "MPN"
 F 6 "ic-sot563-sn4lvc1t45dckr" H 2500 6250 50  0001 C CNN "1b2-bom-key"
 	1    2500 6250
 	1    0    0    -1  
@@ -786,7 +786,7 @@ Q1
 Text HLabel 3800 2450 0    50   Input ~ 0
 DIR1
 $Comp
-L Logic_LevelTranslator:SN74LVC1T45DRL U18
+L Logic_LevelTranslator:SN74LVC1T45DCK U18
 U 1 1 5B4E41CE
 P 4250 2250
 AR Path="/5AF7D604/5B4E41CE" Ref="U18"  Part="1" 
@@ -798,7 +798,7 @@ F 1 "SN74LVC1T45DCKR" H 4400 1800 50  0000 L CNN
 F 2 "Glasgow:SOT-363_SC-70-6" H 4250 1750 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 3350 1600 50  0001 C CNN
 F 4 "Texas Instruments" H 4250 2250 50  0001 C CNN "Mfg"
-F 5 "SN74LVC1T45DRL" H 4250 2250 50  0001 C CNN "MPN"
+F 5 "SN74LVC1T45DCKR" H 4250 2250 50  0001 C CNN "MPN"
 F 6 "ic-sot563-sn4lvc1t45dckr" H 4250 2250 50  0001 C CNN "1b2-bom-key"
 	1    4250 2250
 	1    0    0    -1  
@@ -899,7 +899,7 @@ Q3
 Text HLabel 3800 4050 0    50   Input ~ 0
 DIR3
 $Comp
-L Logic_LevelTranslator:SN74LVC1T45DRL U19
+L Logic_LevelTranslator:SN74LVC1T45DCK U19
 U 1 1 5B4E4203
 P 4250 3850
 AR Path="/5AF7D604/5B4E4203" Ref="U19"  Part="1" 
@@ -911,7 +911,7 @@ F 1 "SN74LVC1T45DCKR" H 4400 3400 50  0000 L CNN
 F 2 "Glasgow:SOT-363_SC-70-6" H 4250 3350 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 3350 3200 50  0001 C CNN
 F 4 "Texas Instruments" H 4250 3850 50  0001 C CNN "Mfg"
-F 5 "SN74LVC1T45DRL" H 4250 3850 50  0001 C CNN "MPN"
+F 5 "SN74LVC1T45DCKR" H 4250 3850 50  0001 C CNN "MPN"
 F 6 "ic-sot563-sn4lvc1t45dckr" H 4250 3850 50  0001 C CNN "1b2-bom-key"
 	1    4250 3850
 	1    0    0    -1  
@@ -1012,7 +1012,7 @@ Q5
 Text HLabel 3800 5650 0    50   Input ~ 0
 DIR5
 $Comp
-L Logic_LevelTranslator:SN74LVC1T45DRL U20
+L Logic_LevelTranslator:SN74LVC1T45DCK U20
 U 1 1 5B4E4238
 P 4250 5450
 AR Path="/5AF7D604/5B4E4238" Ref="U20"  Part="1" 
@@ -1024,7 +1024,7 @@ F 1 "SN74LVC1T45DCKR" H 4400 5000 50  0000 L CNN
 F 2 "Glasgow:SOT-363_SC-70-6" H 4250 4950 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 3350 4800 50  0001 C CNN
 F 4 "Texas Instruments" H 4250 5450 50  0001 C CNN "Mfg"
-F 5 "SN74LVC1T45DRL" H 4250 5450 50  0001 C CNN "MPN"
+F 5 "SN74LVC1T45DCKR" H 4250 5450 50  0001 C CNN "MPN"
 F 6 "ic-sot563-sn4lvc1t45dckr" H 4250 5450 50  0001 C CNN "1b2-bom-key"
 	1    4250 5450
 	1    0    0    -1  
@@ -1125,7 +1125,7 @@ Q7
 Text HLabel 3800 7250 0    50   Input ~ 0
 DIR7
 $Comp
-L Logic_LevelTranslator:SN74LVC1T45DRL U21
+L Logic_LevelTranslator:SN74LVC1T45DCK U21
 U 1 1 5B4E426D
 P 4250 7050
 AR Path="/5AF7D604/5B4E426D" Ref="U21"  Part="1" 
@@ -1137,7 +1137,7 @@ F 1 "SN74LVC1T45DCKR" H 4400 6600 50  0000 L CNN
 F 2 "Glasgow:SOT-363_SC-70-6" H 4250 6550 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 3350 6400 50  0001 C CNN
 F 4 "Texas Instruments" H 4250 7050 50  0001 C CNN "Mfg"
-F 5 "SN74LVC1T45DRL" H 4250 7050 50  0001 C CNN "MPN"
+F 5 "SN74LVC1T45DCKR" H 4250 7050 50  0001 C CNN "MPN"
 F 6 "ic-sot563-sn4lvc1t45dckr" H 4250 7050 50  0001 C CNN "1b2-bom-key"
 	1    4250 7050
 	1    0    0    -1  
