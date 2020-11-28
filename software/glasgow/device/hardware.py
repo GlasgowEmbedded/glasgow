@@ -76,8 +76,11 @@ class GlasgowHardwareDevice:
                 if (vendor_id, product_id) in [(VID_CYPRESS, PID_FX2), (VID_QIHW, PID_GLASGOW)]:
                     devices.append(device)
 
-        usb_context.hotplugRegisterCallback(hotplug_callback,
-            flags=usb1.HOTPLUG_ENUMERATE)
+        if usb_context.hasCapability(usb1.CAP_HAS_HOTPLUG):
+            usb_context.hotplugRegisterCallback(hotplug_callback,
+                flags=usb1.HOTPLUG_ENUMERATE)
+        else:
+            devices.extend(list(usb_context.getDeviceIterator()))
 
         while any(devices):
             device = devices.pop()
