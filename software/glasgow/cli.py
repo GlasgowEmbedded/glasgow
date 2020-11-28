@@ -32,7 +32,9 @@ from .applet import *
 from .applet import all
 
 
-logger = logging.getLogger(__name__)
+# When running as `-m glasgow.cli`, `__name__` is `__main__`, and the real name
+# can be retrieved from `__loader__.name`.
+logger = logging.getLogger(__loader__.name)
 
 
 class TextHelpFormatter(argparse.HelpFormatter):
