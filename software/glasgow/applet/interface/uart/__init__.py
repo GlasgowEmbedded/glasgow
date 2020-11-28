@@ -333,17 +333,17 @@ class UARTApplet(GlasgowApplet, name="uart"):
             while True:
                 try:
                     data = await asyncio.shield(endpoint.recv())
-                    await uart.write(data)
-                    await uart.flush()
                 except asyncio.CancelledError:
-                    pass
+                    continue
+                await uart.write(data)
+                await uart.flush()
         async def forward_in():
             while True:
+                data = await uart.read()
                 try:
-                    data = await uart.read()
-                    await endpoint.send(data)
+                    await asyncio.shield(endpoint.send(data))
                 except asyncio.CancelledError:
-                    pass
+                    continue
         forward_out_fut = asyncio.ensure_future(forward_out())
         forward_in_fut  = asyncio.ensure_future(forward_in())
         await asyncio.wait([forward_out_fut, forward_in_fut],
