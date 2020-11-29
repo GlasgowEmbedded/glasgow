@@ -25,8 +25,13 @@ bool i2c_reg8_write(uint8_t addr, uint8_t reg,
     goto fail;
   if(!i2c_write(&reg, 1))
     goto fail;
-  if(!i2c_write(value, length))
-    goto fail;
+
+  // Allow to use length = 0 to issue just a write to the register address
+  // without any data afterwards. This pattern is called "send byte" in the PMBus spec.
+  if (length)
+    if(!i2c_write(value, length))
+      goto fail;
+
   if(!i2c_stop())
     return false;
   return true;
