@@ -648,8 +648,7 @@ void handle_pending_usb_setup() {
       while(EP0CS & _BUSY);
 
       if(glasgow_config.revision == GLASGOW_REV_C2)
-        // TODO
-        result = true;
+        result = iobuf_set_alert_ina233(arg_mask, (__xdata uint16_t *)EP0BUF, (__xdata uint16_t *)EP0BUF + 1);
       else
         result = iobuf_set_alert_adc081c(arg_mask, (__xdata uint16_t *)EP0BUF, (__xdata uint16_t *)EP0BUF + 1);
 
@@ -666,13 +665,24 @@ void handle_pending_usb_setup() {
      req->bRequest == USB_REQ_POLL_ALERT &&
      req->wLength == 1) {
     pending_setup = false;
+    bool result = true;
 
     while(EP0CS & _BUSY);
-    iobuf_poll_alert_adc081c(EP0BUF, /*clear=*/true);
-    SETUP_EP0_BUF(1);
-
-    reset_status_bit(ST_ALERT);
-
+    
+    // Read out the alert status and also clear the alert status (or cache)
+    if(glasgow_config.revision == GLASGOW_REV_C2)
+      iobuf_read_alert_cache_ina233(EP0BUF, /*clear=*/true);
+    else
+      result = iobuf_poll_alert_adc081c(EP0BUF, /*clear=*/true);
+    
+    if(!result) {
+      STALL_EP0();
+    } else {
+      SETUP_EP0_BUF(1);
+      // Clear the ERR led since we cleared the alert status above
+      reset_status_bit(ST_ALERT);
+    }
+    
     return;
   }
 
@@ -803,12 +813,29 @@ void handle_pending_alert() {
   __xdata uint8_t mask;
   __xdata uint16_t millivolts = 0;
 
+  // switch on the ERR led
   latch_status_bit(ST_ALERT);
-  iobuf_poll_alert_adc081c(&mask, /*clear=*/false);
-  iobuf_set_voltage(mask, &millivolts);
+  
+  if(glasgow_config.revision == GLASGOW_REV_C2) {
+    iobuf_poll_alert_ina233(&mask);
+    // the ~ALERT line was not yet cleared by this call
+  } else {
+    iobuf_poll_alert_adc081c(&mask, /*clear=*/false);
+    // the ~ALERT line was cleared by this call
+  }
 
   // TODO: handle i2c comms errors of above calls
+  
+  // permanently switch off the voltage regulators of the ports we got a alert on
+  iobuf_set_voltage(mask, &millivolts);
 
+  if(glasgow_config.revision == GLASGOW_REV_C2) {
+    // only clear the ~ALERT line after the port vio has been disabled
+    // this prevents re-enabling the port voltage for a short time
+    // since on revC2 ~ALERT already disables the respective Vreg on a hw level
+    iobuf_clear_alert_ina233(mask);
+  }
+  
   // the ADC that pulled the ~ALERT line should have released it by now
   // so we can re-enable the interrupt to catch the next alert
   armed_alert = true;
