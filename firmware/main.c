@@ -788,21 +788,30 @@ void handle_pending_usb_setup() {
   STALL_EP0();
 }
 
-volatile bool pending_alert;
+// Directly use the irq enable register EX0 to notify about a pending alert to avoid using
+// a separate variable which could get out of sync. 
+// Define it to armed_alert to document this usage pattern 
+#define armed_alert EX0
 
 void isr_IE0() __interrupt(_INT_IE0) {
-  pending_alert = true;
+  // INT_IE0 is level triggered, the ~ALERT line is continously pulled low by the ADC
+  // So disable this irq unil we have fully handled it, otherwise it permanently triggers
+  armed_alert = false;
 }
 
 void handle_pending_alert() {
   __xdata uint8_t mask;
   __xdata uint16_t millivolts = 0;
 
-  pending_alert = false;
-
   latch_status_bit(ST_ALERT);
   iobuf_poll_alert_adc081c(&mask, /*clear=*/false);
   iobuf_set_voltage(mask, &millivolts);
+
+  // TODO: handle i2c comms errors of above calls
+
+  // the ADC that pulled the ~ALERT line should have released it by now
+  // so we can re-enable the interrupt to catch the next alert
+  armed_alert = true;
 }
 
 void isr_TF2() __interrupt(_INT_TF2) {
@@ -870,8 +879,8 @@ int main() {
   // Set up endpoint interrupts for ACT LED.
   EPIE |= _EPI_EP0IN|_EPI_EP0OUT|_EPI_EP2|_EPI_EP4|_EPI_EP6|_EPI_EP8;
 
-  // Set up interrupt for ADC ALERT.
-  EX0 = true;
+  // Set up interrupt for ADC ALERT, see documentation at the armed_alert definition for details
+  armed_alert = true;
 
   // If there's a bitstream flashed, load it.
   if(glasgow_config.bitstream_size > 0) {
@@ -920,7 +929,7 @@ int main() {
   while(1) {
     if(pending_setup)
       handle_pending_usb_setup();
-    if(pending_alert)
+    if(!armed_alert)
       handle_pending_alert();
   }
 }
