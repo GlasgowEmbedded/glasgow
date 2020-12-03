@@ -28,7 +28,7 @@ setup(
     install_requires=[
         "nmigen",
         "fx2>=0.9",
-        "libusb1>=1.7.1",
+        "libusb1>=1.8.1",
         "aiohttp",
         "pyvcd",
         "bitarray",
