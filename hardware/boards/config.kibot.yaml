@@ -1,0 +1,382 @@
+kibot:
+  version: 1
+    
+preflight:
+  update_xml: true
+  run_drc: true
+  run_erc: true
+  check_zone_fills: true
+  ignore_unconnected: false
+  filters:
+    - filter: 'Courtyards overlap'
+      error: '45'
+      regex: 'Courtyards overlap'
+    - filter: 'Track too close to pad'
+      error: '4'
+      regex: 'Pad'
+  
+#global:
+  #  output: '%f-%i.%x'
+  
+outputs:
+  
+# BOM
+  - name: 'https://github.com/openscopeproject/InteractiveHtmlBom'
+    comment: 'ibom.html'
+    type: 'ibom'
+    dir: 'docs/bom'
+    options:
+      blacklist: ''
+      blacklist_empty_val: false
+      board_rotation: 0
+      bom_view: 'left-right'
+#      checkboxes: 'Sourced,Placed'
+      dark_mode: false
+#      dnf_filter: ''
+#      dnp_field: ''
+      extra_fields: 'MPN,variant'
+      hide_pads: false
+      hide_silkscreen: false
+      highlight_pin1: true
+      include_nets: true
+      include_tracks: true
+      layer_view: 'FB'
+#      name_format: 'ibom'
+#      netlist_file: ''
+      no_blacklist_virtual: false
+      no_redraw_on_drag: false
+      normalize_field_case: true
+#      output: '%f-%i%v.%x'
+      show_fabrication: false
+      sort_order: 'C,R,L,D,U,Y,X,F,SW,A,~,HS,CNN,J,P,NT,MH'
+#      variant: ''
+#      variant_field: ''
+#      variants_blacklist: ''
+#      variants_whitelist: ''
+
+  - name: 'https://github.com/SchrodingersGat/KiBoM'
+    comment: 'bom.html'
+    type: 'kibom'
+    dir: 'docs/bom'
+    options:
+      conf:
+        component_aliases: [['r', 'r_small', 'res', 'resistor'], ['l', 'l_small', 'inductor'], ['c', 'c_small', 'cap', 'capacitor'], ['sw', 'switch'], ['zener', 'zenersmall'], ['d', 'diode', 'd_small']]
+        datasheet_as_link: 'Datasheet'
+        digikey_link: ''
+#        exclude_any:
+#          - column: References
+#            regex: '^TP[0-9]*'
+#          - column: References
+#            regex: '^FID'
+#          - column: Part
+#            regex: 'mount.*hole'
+#          - column: Part
+#            regex: 'solder.*bridge'
+#          - column: Part
+#            regex: 'test.*point'
+#          - column: Footprint
+#            regex: 'test.*point'
+#          - column: Footprint
+#            regex: 'mount.*hole'
+#          - column: Footprint
+#            regex: 'fiducial'
+#          - column: References
+#            regex: 'LOGO'
+        fit_field: 'Variant'
+        group_connectors: true
+        group_fields: ['Part', 'Part Lib', 'Value', 'Footprint', 'Footprint Lib']
+        hide_headers: false
+        hide_pcb_info: false
+        html_generate_dnf: true
+        ignore_dnf: true
+        merge_blank_fields: true
+        number_rows: true
+        test_regex: true
+        use_alt: false
+      format: 'HTML'
+#      number: 1
+#      output: '%f-%i%v.%x'
+#      separator: ','
+#      variant: ''
+
+#  - name: 'https://github.com/SchrodingersGat/KiBoM'
+#    comment: 'bom.xlsx'
+#    type: 'kibom'
+#    dir: 'docs/bom'
+#    options:
+#      conf:
+#        component_aliases: [['r', 'r_small', 'res', 'resistor'], ['l', 'l_small', 'inductor'], ['c', 'c_small', 'cap', 'capacitor'], ['sw', 'switch'], ['zener', 'zenersmall'], ['d', 'diode', 'd_small']]
+#        datasheet_as_link: 'Datasheet'
+#        digikey_link: ''
+#        exclude_any:
+#          - column: References
+#            regex: '^TP[0-9]*'
+#          - column: References
+#            regex: '^FID'
+#          - column: Part
+#            regex: 'mount.*hole'
+#          - column: Part
+#            regex: 'solder.*bridge'
+#          - column: Part
+#            regex: 'test.*point'
+#          - column: Footprint
+#            regex: 'test.*point'
+#          - column: Footprint
+#            regex: 'mount.*hole'
+#          - column: Footprint
+#            regex: 'fiducial'
+#          - column: References
+#            regex: 'LOGO'
+#        fit_field: 'Variant'
+#        group_connectors: true
+#        group_fields: ['Part', 'Part Lib', 'Value', 'Footprint', 'Footprint Lib']
+#        hide_headers: false
+#        hide_pcb_info: false
+#        html_generate_dnf: true
+#        ignore_dnf: true
+#        merge_blank_fields: true
+#        number_rows: true
+#        test_regex: true
+#        use_alt: false
+#      format: 'XLSX'
+#      number: 1
+#      output: '%f-%i%v.%x'
+#      separator: ';'
+#      variant: ''
+
+# DOCS
+  - name: 'print schema'
+    comment: "Print schematic (PDF)"
+    type: pdf_sch_print
+    dir: docs
+#    options:
+#      dnf_filter: [string|list(string)=''] Name of the filter to mark components as not fitted. A short-cut to use for simple cases where a variant is an overkill.
+#      output: [string='%f-%i%v.%x'] filename for the output PDF (%i=schematic %x=pdf). Affected by global options.
+#      variant: [string=''] Board variant to apply. Not fitted components are crossed.
+
+  - name: 'print schema'
+    comment: "Print schematic (SVG)"
+    type: svg_sch_print
+    dir: docs/img
+#    options:
+#      dnf_filter: [string|list(string)=''] Name of the filter to mark components as not fitted. A short-cut to use for simple cases where a variant is an overkill.
+#      output: [string='%f-%i%v.%x'] filename for the output SVG (%i=schematic %x=svg). Affected by global options.
+#      variant: [string=''] Board variant to apply. Not fitted components are crossed.
+
+  - name: 'print board mechanics'
+    comment: "Print board (PDF)"
+    type: pdf_pcb_print
+    layers:
+      - Dwgs.User
+      - Edge.Cuts
+      - F.CrtYd
+    dir: docs
+    options:
+#      dnf_filter: [string|list(string)=''] Name of the filter to mark components as not fitted. A short-cut to use for simple cases where a variant is an overkill.
+      drill_marks: full #[string='full'] what to use to indicate the drill places, can be none, small or full (for real scale).
+#      mirror: [boolean=false] print mirrored (X axis inverted). ONLY for KiCad 6.
+#      monochrome: [boolean=false] print in black and white.
+      output: '%f-mechanic.%x' #[string='%f-%i%v.%x'] filename for the output PDF (%i=layers, %x=pdf). Affected by global options.
+#      output_name: Alias for output.
+      plot_sheet_reference: true # [boolean=true] include the title-block.
+#      scaling: [number=1.0] scale factor (0 means autoscaling).
+#      separated: [boolean=false] print layers in separated pages.
+#      variant: [string=''] Board variant to apply.
+
+  - name: 'print board documentation'
+    comment: "Print board (PDF)"
+    type: pdf_pcb_print
+    layers: 
+      - Edge.Cuts
+      - Cmts.User
+      - F.Fab
+    dir: docs
+    options:
+#      dnf_filter: [string|list(string)=''] Name of the filter to mark components as not fitted. A short-cut to use for simple cases where a variant is an overkill.
+#      drill_marks: true #[string='full'] what to use to indicate the drill places, can be none, small or full (for real scale).
+#      mirror: [boolean=false] print mirrored (X axis inverted). ONLY for KiCad 6.
+#      monochrome: [boolean=false] print in black and white.
+      output: '%f-documentation.%x' #[string='%f-%i%v.%x'] filename for the output PDF (%i=layers, %x=pdf). Affected by global options.
+#      output_name: Alias for output.
+      plot_sheet_reference: true # [boolean=true] include the title-block.
+#      scaling: [number=1.0] scale factor (0 means autoscaling).
+#      separated: [boolean=false] print layers in separated pages.
+#      variant: [string=''] Board variant to apply.
+
+# GERBERS
+  - name: "https://en.wikipedia.org/wiki/Gerber_format"
+    comment: 'gerbers'
+    type: 'gerber'
+    dir: 'gerbers'
+    options:
+      create_gerber_job_file: false
+      dnf_filter: ''
+      exclude_edge_layer: true
+      exclude_pads_from_silkscreen: false
+      force_plot_invisible_refs_vals: false
+#      gerber_job_file: '%f-%i%v.%x'
+      gerber_precision: 4.6
+      line_width: 0.1
+#      output: '%f-%i%v.%x'
+      plot_footprint_refs: true
+      plot_footprint_values: true
+      plot_sheet_reference: false
+      subtract_mask_from_silk: false
+      tent_vias: true
+      use_aux_axis_as_origin: true
+      use_gerber_net_attributes: true
+      use_gerber_x2_attributes: true
+      use_protel_extensions: false
+#      variant: ''
+    layers: all
+
+  - name: 'https://en.wikipedia.org/wiki/Gerber_format'
+    comment: 'drill'
+    type: gerb_drill
+    dir: 'gerbers'
+    options:
+#      map:
+#        output: ''
+#        type: 'gerber'
+#      output: '%f-%i%v.%x'
+#      report:
+#        filename: '%i.%x'
+      use_aux_axis_as_origin: true
+
+  - name: 'https://en.wikipedia.org/wiki/Gerber_format'
+    comment: 'drill excellon'
+    type: "excellon"
+    dir: 'gerbers'
+    options:
+#      map:
+#        output: '%f-%i%v.%x'
+#        type: 'gerber'
+      metric_units: true
+      minimal_header: false
+      mirror_y_axis: false
+#      output: '%f-%i%v.%x'
+      pth_and_npth_single_file: false
+#      report:
+#        filename: '%i.%x'
+      use_aux_axis_as_origin: true
+
+
+  # This output is what you get from the 'File/Fabrication output/Footprint poistion (.pos) file' menu in pcbnew.
+  - name: 'link'
+    comment: '*_pos.csv'
+    type: 'position'
+    dir: 'gerbers'
+    options:
+      # [string|list(string)=''] Name of the filter to mark components as not fitted.
+      # A short-cut to use for simple cases where a variant is an overkill
+      dnf_filter: ''
+      # [string='ASCII'] [ASCII,CSV] format for the position file
+      format: 'CSV'
+      # [boolean=true] only include the surface mount components
+      only_smd: true
+      # [string='%f-%i%v.%x'] output file name (%i='top_pos'|'bottom_pos'|'both_pos', %x='pos'|'csv'). Affected by global options
+      output: '%f-%i%v.%x'
+      # [boolean=true] generate two separated files, one for the top and another for the bottom
+      separate_files_for_front_and_back: false
+      # [string='millimeters'] [millimeters,inches] units used for the positions
+      units: 'millimeters'
+      # [string=''] Board variant to apply
+      variant: ''
+
+# PLOT
+  - name: 'https://github.com/yaqwsx/PcbDraw'
+    comment: 'default green svg top'
+    type: 'pcbdraw'
+    dir: 'docs/img'
+    options:
+      bottom: false
+      mirror: true
+      dnf_filter: ''
+      dpi: 300
+      format: 'svg'
+#      highlight: []
+#      libs: ['/usr/share/pcbdraw/footprints/KiCAD-base']
+      libs: []
+      mirror: false
+      no_drillholes: false
+#      output: '%f-%i%v.%x'
+#      placeholder: false
+#      remap:
+#      show_components: none
+      style: '/usr/share/pcbdraw/styles/jlcpcb-green-enig.json'
+#      variant: ''
+#      vcuts: false
+#      warnings: 'none'
+
+  - name: 'https://github.com/yaqwsx/PcbDraw'
+    comment: 'default green svg bottom'
+    type: 'pcbdraw'
+    dir: 'docs/img'
+    options:
+      bottom: true
+      mirror: false
+      dnf_filter: ''
+      dpi: 300
+      format: 'svg'
+#      highlight: []
+#      libs: ['/usr/share/pcbdraw/footprints/KiCAD-base']
+      libs: []
+      no_drillholes: false
+#      output: '%f-%i%v.%x'
+#      placeholder: false
+#      remap:
+#      show_components: none
+      style: '/usr/share/pcbdraw/styles/jlcpcb-green-enig.json'
+#      variant: ''
+#      vcuts: false
+#      warnings: 'none'
+
+# MODEL
+  - name: 'https://www.freecadweb.org/'
+    comment: '3D step model'
+    type: 'step'
+    dir: 'cad'
+    options:
+#      dnf_filter: ''
+      metric_units: true
+      min_distance: -1
+      no_virtual: false
+      origin: 'grid'
+      output: '%f.%x'
+#      variant: ''
+
+# BOM 
+  - name: 'https://octopart.com/'
+    comment: 'bom.csv - octopart'
+    type: 'kibom'
+    dir: 'docs/bom'
+    options:
+      conf:
+        columns:
+          - Description
+          - Part
+          - References
+          - Value
+          - field: Quantity Per PCB
+            name: Qty
+#          - field: MPN
+#            name: Part Number
+        component_aliases: [['r', 'r_small', 'res', 'resistor'], ['l', 'l_small', 'inductor'], ['c', 'c_small', 'cap', 'capacitor'], ['sw', 'switch'], ['zener', 'zenersmall'], ['d', 'diode', 'd_small']]
+        datasheet_as_link: ''
+        digikey_link: ''
+        fit_field: 'Variant'
+        group_connectors: true
+        group_fields: ['']
+        hide_headers: false
+        hide_pcb_info: true
+        html_generate_dnf: true
+        ignore_dnf: true
+        merge_blank_fields: false
+        number_rows: false
+        test_regex: true
+        use_alt: false
+      format: 'CSV'
+#      number: 1
+      output: '%f-%i%v_octopart.%x'
+      separator: ';'
+#      variant: ''

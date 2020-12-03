@@ -1,0 +1,20 @@
+[filter "bom_csv"]
+	clean = sed -E 's/^BoM Date:.*$/BoM Date:Date/'
+	smudge = sed -E \"s/BoM Date:Date/BoM Date:,`date +\\\"%a %d %b %Y %X %:::z\\\"`/\"
+[filter "bom_html"]
+	clean = sed -E 's/^<tr><td>BoM Date<\\/td><td>.*$/<tr><td>BoM Date<\\/td><td>Date<\\/td><\\/tr>/'
+	smudge = sed -E \"s/<tr><td>BoM Date<\\/td><td>Date<\\/td><\\/tr>/<tr><td>BoM Date<\\/td><td>`date +\\\"%a %d %b %Y %X %:::z\\\"`<\\/td><\\/tr>/\"
+[filter "gerber"]
+	clean = sed -E -e 's/^%TF.CreationDate,.*$/%TF.CreationDate,Date%/' -e 's/^G04 Created by KiCad.*$/G04 Created by KiCad*/'
+	smudge = sed -E \"s/%TF.CreationDate,Date%/%TF.CreationDate,`date +%Y-%m-%dT%H:%M:%S%:z`/\"
+[filter "gbrjob"]
+	clean = sed -E 's/\"CreationDate\":.*/\"CreationDate\":  \"Date\"/'
+	smudge = sed -E \"s/\\\"CreationDate\\\":  \\\"Date\\\"/\\\"CreationDate\\\":  \\\"`date +%Y-%m-%dT%H:%M:%S%:z`\\\"/\"
+[filter "xml"]
+	clean = sed -E -e 's/^        <date>.*<\\/date>/        <date>Date2<\\/date>/' -e 's/^    <date>.*<\\/date>/    <date>Date1<\\/date>/'
+	smudge = sed -E -e \"s/<date>Date1<\\/date>/<date>`date +\\\"%a %d %b %Y %X %:::z\\\"`<\\/date>/\" -e \"s/<date>Date2<\\/date>/<date>`date +\\\"%Y-%m-%d\\\"`<\\/date>/\"
+[filter "kicad_pcb_f"]
+	clean = sed -E 's/\\(host pcbnew ([[:digit:]]+\\.[[:digit:]]+\\.[[:digit:]]+).*/\\(host pcbnew \\1\\)/'
+[filter "net_filter"]
+	clean = sed -E -e 's/\\(date \\\".*\\\"\\)/\\(date \\\"Date\\\"\\)/'
+	smudge = sed -E -e \"s/\\(date \\\"Date\\\"\\)/\\(date \\\"`date +\\\"%a %d %b %Y %X %:::z\\\"`\\\"\\)/\"

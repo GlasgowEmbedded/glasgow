@@ -1,0 +1,42 @@
+name: kicad-export
+
+on:
+# run only on push/pull_request on branches matching "wip-revC[0-9]" AND if KiCad files changed
+  push:
+    branch: 'wip-revC[0-9]'
+    paths:
+    - '**.sch'
+    - '**.kicad_pcb'
+  pull_request:
+    branch: 'wip-revC[0-9]'
+    paths:
+    - '**.sch'
+    - '**.kicad_pcb'
+    
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
+    - name: get current BRANCH and REVISION
+      run: |
+        BRANCH=`git branch --show-current`
+        echo "BRANCH=$BRANCH" >> $GITHUB_ENV
+        echo "REVISION=${BRANCH:4}" >> $GITHUB_ENV
+    - uses: nerdyscout/kicad-exports@v2.2
+      with:
+        config: hardware/boards/config.kibot.yaml
+        board: hardware/boards/glasgow/glasgow.kicad_pcb
+        schema: hardware/boards/glasgow/glasgow.sch
+        dir: hardware/boards/glasgow/${{ env.REVISION }}
+    - uses: github-actions-x/commit@v2.7
+      if: ${{ success() }}
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        name: 'GitHub Actions'
+        email: 'actions@github.com'
+        commit-message: ${{ github.workflow }}
+        files: hardware/boards/glasgow/${{ env.REVISION }}/*
