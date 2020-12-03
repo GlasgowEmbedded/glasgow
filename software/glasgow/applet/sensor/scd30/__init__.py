@@ -223,10 +223,10 @@ class SensorSCD30Applet(I2CInitiatorApplet, name="sensor-scd30"):
             "stop", help="stop measurement")
 
         p_measure = p_operation.add_parser(
-            "measure", help="read measured values")
+            "measure", help="read measured values (must start first)")
 
         p_log = p_operation.add_parser(
-            "log", help="log measured values")
+            "log", help="log measured values (must start first)")
         DataLogger.add_subparsers(p_log)
 
     async def interact(self, device, args, scd30):
