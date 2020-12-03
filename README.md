@@ -168,6 +168,7 @@ See [above](#-with-windows).
   * [@esden](https://github.com/esden) is handling batch manufacturing;
   * [@smunaut](https://github.com/smunaut) provided advice crucial for stability and performance of USB communication;
   * [@electronic_eel](https://github.com/electronic_eel) improved the hardware for revC2, designed the test jig and is working on advanced protection circuitry;
+  * [@Attie](https://github.com/attie) improved and refactored many applets;
   * ... and many [other people](https://github.com/GlasgowEmbedded/Glasgow/graphs/contributors).
 
 ## License
