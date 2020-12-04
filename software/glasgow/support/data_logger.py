@@ -108,9 +108,9 @@ class CSVDataLogger(DataLogger, name="csv"):
 
 
 class InfluxDBDataLogger(DataLogger, name="influxdb"):
-    help = "log data to an InfluxDB endpoint"
+    help = "log data to an InfluxDB 1.x endpoint"
     description = """
-    Log data to an InfluxDB endpoint over HTTP(S).
+    Log data to an InfluxDB 1.x endpoint over HTTP(S).
     """
 
     @staticmethod
@@ -216,6 +216,108 @@ class InfluxDBDataLogger(DataLogger, name="influxdb"):
         if len(self._queue) >= self._batch_size:
             try:
                 async with self.session.post(self.url, data="\n".join(self._queue)) as response:
+                    if response.status not in range(200, 300):
+                        self.logger.error("InfluxDB: write status=%d body=%s",
+                                          response.status, (await response.text()).strip())
+                    self._queue.clear()
+            except aiohttp.ClientError as error:
+                self.logger.error("InfluxDB: http error=%s", str(error), exc_info=error)
+                # don't clear queue on network error
+
+    async def report_data(self, fields, timestamp=None):
+        assert set(fields) == set(self.field_names)
+        await self._report({"error": False, **fields}, timestamp)
+
+    async def report_error(self, message, *args, exception=None, **kwargs):
+        await super().report_error(message, *args, **kwargs, exception=exception)
+        await self._report({"error": True})
+
+
+class InfluxDB2DataLogger(DataLogger, name="influxdb2"):
+    help = "log data to an InfluxDB 2.x endpoint"
+    description = """
+    Log data to an InfluxDB 2.x endpoint over HTTP(S).
+    """
+
+    # see https://docs.influxdata.com/influxdb/v2.0/query-data/execute-queries/influx-api/
+    # see https://docs.influxdata.com/influxdb/cloud/api/#tag/Write
+
+    @classmethod
+    def add_arguments(cls, parser):
+        parser.add_argument(
+            "endpoint", metavar="ENDPOINT", type=str,
+            help="write to endpoint URL //ENDPOINT/api/v2/write")
+        parser.add_argument(
+            "measurement", metavar="SERIES", type=str,
+            help="write to measurement SERIES")
+        def tag(arg):
+            if "=" not in arg:
+                raise argparse.ArgumentTypeError("{} is not a valid tag".format(arg))
+            key, value = arg.split("=", 1)
+            return key, value
+        parser.add_argument(
+            "-t", "--tag", metavar="TAG=VALUE", dest="tags", type=tag,
+            action="append", default=[],
+            help="attach TAG=VALUE to all data points")
+        parser.add_argument(
+            "-p", "--precision", metavar="PRECISION",
+            choices=["ns", "us", "ms", "s", "m", "h"], required=True,
+            help="set timestamp precision to PRECISION")
+        parser.add_argument(
+            "--batch-size", metavar="BATCH-SIZE", type=int, default=1,
+            help="submit data in groups of BATCH-SIZE points")
+        parser.add_argument(
+            "--token", metavar="TOKEN", type=str,
+            help="Auth token")
+        parser.add_argument(
+            "--org", metavar="ORGANIZATION", type=str,
+            help="Organization")
+        parser.add_argument(
+            "--bucket", metavar="BUCKET", type=str,
+            help="Bucket")
+
+    async def setup(self, args):
+        url = yarl.URL(args.endpoint)
+        url = url.with_path("/api/v2/write")
+        url = url.with_query(org=args.org, bucket=args.bucket)
+        if args.precision:
+            url = url.update_query(precision=args.precision)
+        self.url = url
+        self.token = args.token
+        self.series = ",".join([
+            InfluxDBDataLogger._escape_name(", ", args.measurement),
+            *[InfluxDBDataLogger._escape_name(",= ", key) + "=" + InfluxDBDataLogger._escape_name(",= ", value)
+              for key, value in args.tags]
+        ])
+        self.precision = args.precision
+        self.session = aiohttp.ClientSession()
+        self._queue = []
+        self._batch_size = args.batch_size
+
+    async def _report(self, fields, timestamp=None):
+        data_parts = [self.series]
+        data_parts.append(",".join(InfluxDBDataLogger._escape_name(",= ", key) + "=" +
+                                   InfluxDBDataLogger._escape_value(fields[key])
+                                   for key in fields))
+        if timestamp is None:
+            # If the timestamp is not specified, InfluxDB will timestamp the data point with
+            # the request timestamp. This works just fine with one data point per request, but
+            # if batching is enabled, then, since the series is always same, only one point per
+            # batch will ever be recorded. To avoid that, batched requests must be timestamped
+            # during submission. To achieve consistent behavior in case the local clock and
+            # the InfluxDB server clock are different, all requests are timestamped during
+            # submission regardless of whether batching is enabled.
+            timestamp = time.time()
+        data_parts.append(str(InfluxDBDataLogger._timestamp(self.precision, timestamp)))
+        data = " ".join(data_parts)
+
+        self.logger.debug("InfluxDB: queue data=<%s>", data)
+        self._queue.append(data)
+
+        if len(self._queue) >= self._batch_size:
+            try:
+                authHeader = 'Token ' + self.token
+                async with self.session.post(self.url, data="\n".join(self._queue), headers= {'Authorization': authHeader}) as response:
                     if response.status not in range(200, 300):
                         self.logger.error("InfluxDB: write status=%d body=%s",
                                           response.status, (await response.text()).strip())
