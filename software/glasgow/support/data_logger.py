@@ -248,6 +248,12 @@ class InfluxDB2DataLogger(DataLogger, name="influxdb2"):
             "endpoint", metavar="ENDPOINT", type=str,
             help="write to endpoint URL //ENDPOINT/api/v2/write")
         parser.add_argument(
+            "org", metavar="ORGANIZATION", type=str,
+            help="Organization")
+        parser.add_argument(
+            "bucket", metavar="BUCKET", type=str,
+            help="Bucket")
+        parser.add_argument(
             "measurement", metavar="SERIES", type=str,
             help="write to measurement SERIES")
         def tag(arg):
@@ -269,12 +275,6 @@ class InfluxDB2DataLogger(DataLogger, name="influxdb2"):
         parser.add_argument(
             "--token", metavar="TOKEN", type=str, required=True,
             help="Auth token")
-        parser.add_argument(
-            "--org", metavar="ORGANIZATION", type=str, required=True,
-            help="Organization")
-        parser.add_argument(
-            "--bucket", metavar="BUCKET", type=str, required=True,
-            help="Bucket")
 
     async def setup(self, args):
         url = yarl.URL(args.endpoint)
