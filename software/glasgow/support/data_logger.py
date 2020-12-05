@@ -267,13 +267,13 @@ class InfluxDB2DataLogger(DataLogger, name="influxdb2"):
             "--batch-size", metavar="BATCH-SIZE", type=int, default=1,
             help="submit data in groups of BATCH-SIZE points")
         parser.add_argument(
-            "--token", metavar="TOKEN", type=str,
+            "--token", metavar="TOKEN", type=str, required=True,
             help="Auth token")
         parser.add_argument(
-            "--org", metavar="ORGANIZATION", type=str,
+            "--org", metavar="ORGANIZATION", type=str, required=True,
             help="Organization")
         parser.add_argument(
-            "--bucket", metavar="BUCKET", type=str,
+            "--bucket", metavar="BUCKET", type=str, required=True,
             help="Bucket")
 
     async def setup(self, args):
