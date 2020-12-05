@@ -249,10 +249,10 @@ class InfluxDB2DataLogger(DataLogger, name="influxdb2"):
             help="write to endpoint URL //ENDPOINT/api/v2/write")
         parser.add_argument(
             "org", metavar="ORGANIZATION", type=str,
-            help="Organization")
+            help="write to Organization ORGANIZATION (can be either the name or the id)")
         parser.add_argument(
             "bucket", metavar="BUCKET", type=str,
-            help="Bucket")
+            help="write to bucket BUCKET")
         parser.add_argument(
             "measurement", metavar="SERIES", type=str,
             help="write to measurement SERIES")
@@ -274,7 +274,7 @@ class InfluxDB2DataLogger(DataLogger, name="influxdb2"):
             help="submit data in groups of BATCH-SIZE points")
         parser.add_argument(
             "--token", metavar="TOKEN", type=str, required=True,
-            help="Auth token")
+            help="set the Token to use for Authentication")
 
     async def setup(self, args):
         url = yarl.URL(args.endpoint)
