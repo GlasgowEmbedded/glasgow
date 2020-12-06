@@ -60,21 +60,23 @@ bool iobuf_set_voltage(uint8_t mask, __xdata const uint16_t *millivolts_ptr) {
   if((mask & IO_BUF_A) && millivolts > glasgow_config.voltage_limit[0]) return false;
   if((mask & IO_BUF_B) && millivolts > glasgow_config.voltage_limit[1]) return false;
 
-  // Just disable the LDOs, DAC power is irrelevant
   if(millivolts == 0) {
+    // disable the LDOs before any I2C comms, we may need to be fast in case of an alert
     IOD &= ~pin_mask;
-    return true;
+
+    code_bytes[0] = 0;
+    code_bytes[1] = 0;
+  } else {
+    // Compute the DAC code word
+    if(millivolts < MIN_VOLTAGE || millivolts > MAX_VOLTAGE)
+      return false;
+
+    // Offset 1650, slope -15.2, 0x1000/15.2 = 269
+    // The DAC has a 12-bit code word, so we only shift back by 8
+    code_word = (254 << 4) - ((((millivolts - 1650) >> 4) * 269) >> 4);
+    code_bytes[0] = code_word >> 8;
+    code_bytes[1] = code_word & 0xff;
   }
-
-  // Compute the DAC code word
-  if(millivolts < MIN_VOLTAGE || millivolts > MAX_VOLTAGE)
-    return false;
-
-  // Offset 1650, slope -15.2, 0x1000/15.2 = 269
-  // The DAC has a 12-bit code word, so we only shift back by 8
-  code_word = (254 << 4) - ((((millivolts - 1650) >> 4) * 269) >> 4);
-  code_bytes[0] = code_word >> 8;
-  code_bytes[1] = code_word & 0xff;
 
   // Send the DAC code word
   if(!dac_start(mask, /*read=*/false))
@@ -86,8 +88,10 @@ bool iobuf_set_voltage(uint8_t mask, __xdata const uint16_t *millivolts_ptr) {
   if(!i2c_stop())
     return false;
 
-  // Enable LDO(s)
-  IOD |= pin_mask;
+  if(millivolts != 0) {
+    // Enable LDO(s)
+    IOD |= pin_mask;
+  }
 
   return true;
 }
