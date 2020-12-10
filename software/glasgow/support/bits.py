@@ -114,7 +114,7 @@ class bits:
     def __getitem__(self, key):
         if isinstance(key, int):
             if key < 0:
-                return (self._int_ >> (self._len_ - key)) & 1
+                return (self._int_ >> (self._len_ + key)) & 1
             else:
                 return (self._int_ >> key) & 1
         if isinstance(key, slice):
@@ -312,6 +312,9 @@ class BitsTestCase(unittest.TestCase):
         self.assertEqual(some[0], 1)
         self.assertEqual(some[2], 0)
         self.assertEqual(some[5], 0)
+        self.assertEqual(some[-1], 1)
+        self.assertEqual(some[-2], 0)
+        self.assertEqual(some[-5], 1)
 
     def test_getitem_slice(self):
         some = bits("10001001011")
