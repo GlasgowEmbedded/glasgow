@@ -121,7 +121,7 @@ class GlasgowHardwareDevice:
                     device_api_level = 0x00
                 if device_api_level != CUR_API_LEVEL:
                     logger.info("found rev%s device with API level %d "
-                                "(supported API level is %d)",
+                                "(supported API level is %d, run 'glasgow flash' to update your device)",
                                 revision, device_api_level, CUR_API_LEVEL)
                 else:
                     handle.close()
