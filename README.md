@@ -1,6 +1,6 @@
 # Glasgow Debug Tool
 
-**Want one? [Subscribe here](https://mailchi.mp/44980ff6f0ab/glasgow-announcements).**
+**Want one? The [Crowdsupply campaign](https://www.crowdsupply.com/1bitsquared/glasgow) is now live.**
 
 **Let's chat! Our IRC channel is [#glasgow at freenode.net](https://webchat.freenode.net/?channels=glasgow); our Discord channel is [#glasgow at 1BitSquared's Discord server](https://1bitsquared.com/pages/chat).**
 
