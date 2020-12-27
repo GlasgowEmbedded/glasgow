@@ -15,7 +15,7 @@ LibDir=
 [schematic_editor]
 version=1
 PageLayoutDescrFile=
-PlotDirectoryName=revC1/
+PlotDirectoryName=revC2/
 SubpartIdSeparator=0
 SubpartFirstId=65
 NetFmtName=
