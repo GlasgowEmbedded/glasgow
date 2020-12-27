@@ -377,6 +377,7 @@ class PS2HostInterface:
 
     async def stream(self, callback):
         assert not self._streaming
+        self._streaming = True
         await self._lower.write([0x7f])
         while True:
             await callback(*await self._lower.read(1))
