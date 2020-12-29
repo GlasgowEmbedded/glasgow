@@ -38,6 +38,7 @@ setup(
         "toolchain": [
             "nmigen-yosys",
             "yowasp-yosys",
+            "yowasp-nextpnr-ice40-5k",
             "yowasp-nextpnr-ice40-8k",
         ],
     },
