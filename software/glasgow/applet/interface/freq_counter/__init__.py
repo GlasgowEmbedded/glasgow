@@ -79,7 +79,9 @@ class FrequencyCounterInterface:
         sample_duration = clk_count / self.applet.sys_clk_freq
         signal_freq = edge_count / sample_duration
 
-        return signal_freq
+        precision = self.applet.sys_clk_freq / clk_count
+
+        return signal_freq, precision
 
     async def measure(self, duration=2.0):
         await self.configure(duration)
@@ -131,8 +133,9 @@ class FrequencyCounterApplet(GlasgowApplet, name="freq-counter"):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
         freq_ctr = FrequencyCounterInterface(self, device, iface)
 
-        signal_freq = await freq_ctr.measure(args.duration)
+        signal_freq, precision = await freq_ctr.measure(args.duration)
         print('signal frequency: {:>7.3f} {:1}Hz'.format( *num_to_si(signal_freq) ))
+        print('precision:   +/-  {:>7.3f} {:1}Hz'.format( *num_to_si(precision) ))
 
     # TODO: for some reason, accessing the registers from the FrequencyCounterInterface
     #       class will raise an odd / malformed AttributeException... as below. This exception
