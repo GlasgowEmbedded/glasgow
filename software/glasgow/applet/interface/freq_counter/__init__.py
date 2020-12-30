@@ -139,6 +139,9 @@ class FrequencyCounterApplet(GlasgowApplet, name="freq-counter"):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args, pull_low={args.pin_i})
         freq_ctr = FrequencyCounterInterface(self, device, iface)
 
+        return freq_ctr
+
+    async def interact(self, device, args, freq_ctr):
         signal_freq, precision = await freq_ctr.measure(args.duration)
         print('signal frequency: {:>7.3f} {:1}Hz'.format( *num_to_si(signal_freq) ))
         print('precision:   +/-  {:>7.3f} {:1}Hz'.format( *num_to_si(precision) ))
