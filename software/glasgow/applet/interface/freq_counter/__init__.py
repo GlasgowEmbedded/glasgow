@@ -136,7 +136,7 @@ class FrequencyCounterApplet(GlasgowApplet, name="freq-counter"):
     async def run(self, device, args):
         self.device = device
 
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
+        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args, pull_low={args.pin_i})
         freq_ctr = FrequencyCounterInterface(self, device, iface)
 
         signal_freq, precision = await freq_ctr.measure(args.duration)
