@@ -9,7 +9,7 @@ def num_to_si(num, long_prefix=False):
         ( -3, 'n', 'nano'  ),
     ]
     try:
-        factor, tshort, tlong = next(filter(lambda x: num > (1000 ** x[0]), prefixes))
+        factor, tshort, tlong = next(filter(lambda x: num >= (1000 ** x[0]), prefixes))
     except StopIteration:
         factor, tshort, tlong = prefixes[-1]
     prefix = tlong if long_prefix else tshort
