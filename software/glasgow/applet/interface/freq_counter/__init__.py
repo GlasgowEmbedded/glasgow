@@ -60,6 +60,10 @@ class FrequencyCounterApplet(GlasgowApplet, name="freq-counter"):
 
         access.add_pin_argument(parser, "i", default=True)
 
+        parser.add_argument(
+            "--duration", metavar="DURATION", type=float, default=2.0,
+            help="how long to run for, longer gives higher resolution (default: %(default)s)")
+
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
 
@@ -100,5 +104,5 @@ class FrequencyCounterApplet(GlasgowApplet, name="freq-counter"):
         return signal_freq
 
     async def run(self, device, args):
-        signal_freq = await self.measure(device, args, int(self.sys_clk_freq * 2))
+        signal_freq = await self.measure(device, args, int(self.sys_clk_freq * args.duration))
         print('signal frequency: {:>7.3f} {:1}Hz'.format( *num_to_si(signal_freq) ))
