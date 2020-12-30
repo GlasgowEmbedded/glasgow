@@ -47,7 +47,7 @@ class FrequencyCounterSubtarget(Elaboratable):
             rst=trigger,
             clk=self.pads.i_t.i,
             clk_en=self.running,
-            width=64,
+            width=32,
         )
         m.d.comb += self.edge_count.eq(m.submodules.ripple.count)
 
@@ -63,7 +63,7 @@ class FrequencyCounterInterface:
         ctr = int(self.applet.sys_clk_freq * duration)
 
         # this is broken (see comment below)
-        #await self.device.write_register(self.applet.__reg_clk_count, ctr, width=8)
+        #await self.device.write_register(self.applet.__reg_clk_count, ctr, width=4)
 
         await self.applet.set_clk_count(ctr)
 
@@ -115,8 +115,8 @@ class FrequencyCounterApplet(GlasgowApplet, name="freq-counter"):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
 
-        reg_clk_count,  self.__reg_clk_count  = target.registers.add_rw(64)
-        reg_edge_count, self.__reg_edge_count = target.registers.add_ro(64)
+        reg_clk_count,  self.__reg_clk_count  = target.registers.add_rw(32)
+        reg_edge_count, self.__reg_edge_count = target.registers.add_ro(32)
         reg_running,    self.__reg_running    = target.registers.add_ro(1)
 
         subtarget = iface.add_subtarget(FrequencyCounterSubtarget(
@@ -174,16 +174,19 @@ class FrequencyCounterApplet(GlasgowApplet, name="freq-counter"):
     #     File "/home/attie/proj_local/glasgow/glasgow/software/glasgow/applet/interface/freq_counter/__init__.py", line 85, in measure
     #       await self.configure(duration)
     #     File "/home/attie/proj_local/glasgow/glasgow/software/glasgow/applet/interface/freq_counter/__init__.py", line 60, in configure
-    #       await self.device.write_register(self.applet.__reg_clk_count, ctr, width=8)
+    #       await self.device.write_register(self.applet.__reg_clk_count, ctr, width=4)
     #   AttributeError: 'FrequencyCounterApplet' object has no attribute '_FrequencyCounterInterface__reg_clk_count'
 
     async def get_clk_count(self):
-        return await self.device.read_register(self.__reg_clk_count, width=8)
+        return await self.device.read_register(self.__reg_clk_count, width=4)
     async def set_clk_count(self, value):
-        await self.device.write_register(self.__reg_clk_count, value, width=8)
+        await self.device.write_register(self.__reg_clk_count, value, width=4)
+
+    async def get_ctr(self):
+        return await self.device.read_register(self.__reg_ctr, width=4)
 
     async def get_edge_count(self):
-        return await self.device.read_register(self.__reg_edge_count, width=8)
+        return await self.device.read_register(self.__reg_edge_count, width=4)
 
     async def get_running(self):
         return bool(await self.device.read_register(self.__reg_running, width=1))
