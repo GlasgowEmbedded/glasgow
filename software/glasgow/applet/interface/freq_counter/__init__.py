@@ -2,6 +2,16 @@
 # notes:
 #    - does not play nicely with slow edges or analog signals (e.g: sine wave)
 #      will produce very inaccurate and inconsistent results
+#    - max runtime is ~89 sec, at which the max freq is ~48 MHz
+#    - given a max freq of ~100 MHz, the max sensible runtime is ~42 sec
+#    - given the diminishing returns in precision past a few seconds of runtime, long runtimes aren't actually that helpful
+#        - a  1 sec runtime will give a precision of +/- 1.000 Hz (max freq of ~4.2 GHz)
+#        - a  2 sec runtime will give a precision of +/- 0.500 Hz (max freq of ~2.1 GHz)
+#        - a  5 sec runtime will give a precision of +/- 0.200 Hz (max freq of ~858 MHz)
+#        - a 15 sec runtime will give a precision of +/- 0.066 Hz (max freq of ~286 MHz)
+#        - a 20 sec runtime will give a precision of +/- 0.050 Hz (max freq of ~214 MHz)
+#        - a 30 sec runtime will give a precision of +/- 0.033 Hz (max freq of ~140 MHz)
+#        - given the crossover, a hard limit of 20 seconds has been put on the runtime
 #
 
 import enum
