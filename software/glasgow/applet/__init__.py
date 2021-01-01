@@ -311,7 +311,7 @@ def applet_simulation_test(setup, args=[]):
                 yield from case(self)
 
             sim = Simulator(self.target)
-            sim.add_clock(1e9)
+            sim.add_clock(1e-9)
             sim.add_sync_process(run)
             vcd_name = "{}.vcd".format(case.__name__)
             with sim.write_vcd(vcd_name):
