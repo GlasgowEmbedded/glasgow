@@ -1687,7 +1687,7 @@ Wire Notes Line
 Wire Notes Line
 	750  4950 900  4950
 Text Notes 3850 2200 0    50   ~ 0
-Synchronization input/output accomodates multiple I/O standards: Vil=0.8V, Vih=2.0V.\n * Nominally, ~SYNC~ is open-drain and 3.3V, with weak internal pull-up.\n * Nevertheless, ~SYNC~ can be connected to 5V circuits directly.\n * ~SYNC~ may also be driven as push-pull to increase bandwidth.\n   Care must be taken to avoid contention. Nevertheless, two Glasgows \n   contending on ~SYNC~ will not exceed absolute maximum ratings.\n   A 47 ohm series resistor is recommended for other drivers.
+Synchronization input/output accommodates multiple I/O standards: Vil=0.8V, Vih=2.0V.\n * Nominally, ~SYNC~ is open-drain and 3.3V, with weak internal pull-up.\n * Nevertheless, ~SYNC~ can be connected to 5V circuits directly.\n * ~SYNC~ may also be driven as push-pull to increase bandwidth.\n   Care must be taken to avoid contention. Nevertheless, two Glasgows \n   contending on ~SYNC~ will not exceed absolute maximum ratings.\n   A 47 ohm series resistor is recommended for other drivers.
 Wire Bus Line
 	5500 5800 6950 5800
 Wire Bus Line

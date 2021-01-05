@@ -794,7 +794,7 @@ void handle_pending_usb_setup() {
 #define armed_alert EX0
 
 void isr_IE0() __interrupt(_INT_IE0) {
-  // INT_IE0 is level triggered, the ~ALERT line is continously pulled low by the ADC
+  // INT_IE0 is level triggered, the ~ALERT line is continuously pulled low by the ADC
   // So disable this irq unil we have fully handled it, otherwise it permanently triggers
   armed_alert = false;
 }

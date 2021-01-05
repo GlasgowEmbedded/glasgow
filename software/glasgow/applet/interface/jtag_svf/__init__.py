@@ -177,7 +177,7 @@ class JTAGSVFApplet(JTAGProbeApplet, name="jtag-svf"):
 
     This applet currently does not implement some SVF features:
         * PIOMAP and PIO are not supported;
-        * Explict state path may not be specified for STATE;
+        * Explicit state path may not be specified for STATE;
         * The SCK clock in RUNTEST is not supported.
 
     If any commands requiring these features are encountered, the applet terminates itself.

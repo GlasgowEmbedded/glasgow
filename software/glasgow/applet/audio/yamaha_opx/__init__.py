@@ -26,7 +26,7 @@
 # Bitstream format
 # ----------------
 #
-# The Yamaha DAC bitstream fromat is somewhat underdocumented and confusing. The DAC bitstream
+# The Yamaha DAC bitstream format is somewhat underdocumented and confusing. The DAC bitstream
 # has 16 bit dynamic range and uses 13 bit samples in a bespoke floating point format. These 13 bit
 # samples are padded to 16 bits and transmitted over a serial protocol similar to I²S.
 #

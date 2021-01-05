@@ -60,7 +60,7 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
           (all pins on all I/O connectors must be floating)
         * pins-pull: detects faults in pull resistor circuits
           (all pins on all I/O connectors must be floating)
-        * pins-loop: detect faults anywhere in the I/O ciruits
+        * pins-loop: detect faults anywhere in the I/O circuits
           (pins A0:A7 must be connected to B0:B7)
         * voltage: detect ADC, DAC or LDO faults
           (on all ports, Vsense and Vio pins must be connected)
