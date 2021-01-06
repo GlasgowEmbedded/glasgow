@@ -101,7 +101,7 @@ class UARTSubtarget(Elaboratable):
 
         m.d.comb += uart.bit_cyc.eq(self.bit_cyc)
         with m.If(self.use_auto):
-            with m.If((uart.rx_ferr | uart.rx_perr) & (self.auto_cyc != ~0)):
+            with m.If(self.auto_cyc != ~0):
                 m.d.sync += self.bit_cyc.eq(self.auto_cyc)
         with m.Else():
             m.d.sync += self.bit_cyc.eq(self.manual_cyc)
