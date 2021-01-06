@@ -82,7 +82,7 @@ class MemoryPROMBus(Elaboratable):
                     pads.a_lat_t.o.eq(a_lat)
                 ]
 
-            # "sa" is the sliced|shifted address, refering to the top-most bits
+            # "sa" is the sliced|shifted address, referring to the top-most bits
             sa_input = self.a[len(pads.a_t.o):]
             # This represents a buffer of those high address bits,
             # not to be confused with the latch pin.
