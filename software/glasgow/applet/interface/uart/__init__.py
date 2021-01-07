@@ -260,7 +260,11 @@ class UARTApplet(GlasgowApplet, name="uart"):
                 self.logger.warning("%d frame or parity errors detected", delta)
 
             new_bit_cyc = await device.read_register(self.__addr_bit_cyc, width=4)
-            if new_bit_cyc != cur_bit_cyc:
+
+            cur_bit_cyc_lo = cur_bit_cyc * 0.95
+            cur_bit_cyc_hi = cur_bit_cyc * 1.05
+
+            if new_bit_cyc < cur_bit_cyc_lo or new_bit_cyc > cur_bit_cyc_hi:
                 self.logger.info("switched to %d baud",
                                  self.__sys_clk_freq // (new_bit_cyc + 1))
             cur_bit_cyc = new_bit_cyc
