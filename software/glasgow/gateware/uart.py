@@ -137,7 +137,7 @@ class UART(Elaboratable):
             elif kind == "one":
                 return C(1, 1)
             else:
-                bits, _ = value_bits_sign(sig)
+                bits, _ = sig.shape()
                 even_parity = sum([sig[b] for b in range(bits)]) & 1
                 if kind == "odd":
                     return ~even_parity
