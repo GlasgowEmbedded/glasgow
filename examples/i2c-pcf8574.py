@@ -3,7 +3,7 @@ An example of a script that can be used with the run-script mode.
 
 This will read and write the pins of a PCF8574. Once connected, run:
 
-    glasgow run-script i2c-pcf8574.py i2c-initiator -V 3.3
+    glasgow script i2c-pcf8574.py i2c-initiator -V 3.3
 """
 
 # read pin values
