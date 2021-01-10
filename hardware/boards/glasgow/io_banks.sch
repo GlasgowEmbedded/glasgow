@@ -104,8 +104,8 @@ F 3 "" H 1300 2800 50  0001 C CNN
 	1    1300 2800
 	1    0    0    -1  
 $EndComp
-Text Notes 3250 4250 0    50   ~ 0
-Addr DAC: 0001100\nAddr ADC: 1000000\nAddr Pull: 0100000
+Text Notes 3250 4350 0    50   ~ 0
+Addr DAC: 0001110\nAddr ADC: 1000000\nAddr Pull: 0100000\nSMBus ARA: 0001100\n
 Wire Wire Line
 	6000 4500 6100 4500
 $Comp
@@ -121,8 +121,8 @@ F 3 "" H 6000 4500 50  0001 C CNN
 	1    6000 4500
 	0    1    1    0   
 $EndComp
-Text Notes 6750 4250 0    50   ~ 0
-Addr DAC: 0001101\nAddr ADC: 1000001\nAddr Pull: 0100001
+Text Notes 6750 4350 0    50   ~ 0
+Addr DAC: 0001101\nAddr ADC: 1000001\nAddr Pull: 0100001\nSMBus ARA: 0001100
 Wire Wire Line
 	6000 4600 6100 4600
 Wire Wire Line
@@ -1015,7 +1015,6 @@ Wire Wire Line
 	2550 4500 2650 4500
 Wire Wire Line
 	2650 4600 2550 4600
-NoConn ~ 2550 4500
 Wire Wire Line
 	6700 3950 6900 3950
 Wire Wire Line
@@ -1857,4 +1856,15 @@ Wire Bus Line
 	5500 3750 5500 5800
 Wire Bus Line
 	9050 3200 9050 5800
+$Comp
+L power:+3.3V #PWR0202
+U 1 1 60034178
+P 2550 4500
+F 0 "#PWR0202" H 2550 4350 50  0001 C CNN
+F 1 "+3.3V" V 2565 4628 50  0000 L CNN
+F 2 "" H 2550 4500 50  0001 C CNN
+F 3 "" H 2550 4500 50  0001 C CNN
+	1    2550 4500
+	0    -1   -1   0   
+$EndComp
 $EndSCHEMATC
