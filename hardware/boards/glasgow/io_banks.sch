@@ -1838,6 +1838,17 @@ F 3 "~" H 7845 6170 50  0001 C CNN
 $EndComp
 Text Notes 8100 6450 0    50   ~ 0
 The LVDS connector J5 just \nhas minimal ESD protection.\nUse appropriate ESD handling\nprocedures. Plug and unplug \nonly in completely unpowered \nstate.\n
+$Comp
+L power:+3.3V #PWR0202
+U 1 1 60034178
+P 2550 4500
+F 0 "#PWR0202" H 2550 4350 50  0001 C CNN
+F 1 "+3.3V" V 2565 4628 50  0000 L CNN
+F 2 "" H 2550 4500 50  0001 C CNN
+F 3 "" H 2550 4500 50  0001 C CNN
+	1    2550 4500
+	0    -1   -1   0   
+$EndComp
 Wire Bus Line
 	2400 4950 2400 5800
 Wire Bus Line
@@ -1856,15 +1867,4 @@ Wire Bus Line
 	5500 3750 5500 5800
 Wire Bus Line
 	9050 3200 9050 5800
-$Comp
-L power:+3.3V #PWR0202
-U 1 1 60034178
-P 2550 4500
-F 0 "#PWR0202" H 2550 4350 50  0001 C CNN
-F 1 "+3.3V" V 2565 4628 50  0000 L CNN
-F 2 "" H 2550 4500 50  0001 C CNN
-F 3 "" H 2550 4500 50  0001 C CNN
-	1    2550 4500
-	0    -1   -1   0   
-$EndComp
 $EndSCHEMATC
