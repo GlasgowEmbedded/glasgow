@@ -2280,7 +2280,7 @@ Connection ~ 5150 1350
 Connection ~ 7000 1350
 Connection ~ 7000 950 
 Text Notes 9750 2700 0    50   ~ 0
-Addr A DAC: 0001100\nAddr B DAC: 0001101\nAddr A Pull: 0100000\nAddr B Pull: 0100001\nAddr A ADC: 1000000\nAddr B ADC: 1000001
+Addr A DAC: 0001110\nAddr B DAC: 0001101\nAddr A Pull: 0100000\nAddr B Pull: 0100001\nAddr A ADC: 1000000\nAddr B ADC: 1000001\nSMBus ARA: 0001100\n
 Wire Wire Line
 	6000 5500 6400 5500
 Connection ~ 6400 5500
@@ -3251,7 +3251,7 @@ U 1 1 5F3CD805
 P 8700 3600
 F 0 "U7" H 9146 3647 50  0000 L CNN
 F 1 "APX811-40UG-7" H 8750 3850 50  0000 L CNN
-F 2 "Package_TO_SOT_SMD:SOT-143" H 8800 3300 50  0001 L CNN
+F 2 "Glasgow:SOT-143" H 8800 3300 50  0001 L CNN
 F 3 "https://www.diodes.com/assets/Datasheets/APX811_812.pdf" H 8350 2900 50  0001 C CNN
 F 4 "ic-cat811jtbi" H 8700 3600 50  0001 C CNN "1b2-bom-key"
 F 5 "Diodes Incorporated" H 8700 3600 50  0001 C CNN "Mfg"
