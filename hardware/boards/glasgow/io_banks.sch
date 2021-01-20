@@ -276,9 +276,7 @@ Text Label 8950 5500 2    50   ~ 0
 Z12_P
 Text Label 8950 5600 2    50   ~ 0
 Z12_N
-Wire Wire Line
-	8250 2500 8250 2450
-Text Label 8500 2450 2    50   ~ 0
+Text Label 8500 2250 2    50   ~ 0
 VIO_AUX
 $Comp
 L Connector_Generic:Conn_02x22_Odd_Even J?
@@ -1099,36 +1097,34 @@ DB7
 $Comp
 L Device:C C?
 U 1 1 5CF06543
-P 8850 2650
+P 8700 2450
 AR Path="/5CF06543" Ref="C?"  Part="1" 
 AR Path="/5C7B59B0/5CF06543" Ref="C33"  Part="1" 
-F 0 "C33" H 8965 2696 50  0000 L CNN
-F 1 "u1" H 8965 2605 50  0000 L CNN
-F 2 "Capacitor_SMD:C_0402_1005Metric" H 8888 2500 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 8850 2650 50  0001 C CNN
-F 4 "Taiyo Yuden" H 2200 1250 50  0001 C CNN "Mfg"
-F 5 "TMK105BJ104KV-F" H 2200 1250 50  0001 C CNN "MPN"
-F 6 "cap-cer-0402-100n" H 8850 2650 50  0001 C CNN "1b2-bom-key"
-	1    8850 2650
+F 0 "C33" H 8815 2496 50  0000 L CNN
+F 1 "u1" H 8815 2405 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 8738 2300 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/396/mlcc02_e-1307760.pdf" H 8700 2450 50  0001 C CNN
+F 4 "Taiyo Yuden" H 2050 1050 50  0001 C CNN "Mfg"
+F 5 "TMK105BJ104KV-F" H 2050 1050 50  0001 C CNN "MPN"
+F 6 "cap-cer-0402-100n" H 8700 2450 50  0001 C CNN "1b2-bom-key"
+	1    8700 2450
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	8850 2500 8850 2450
 $Comp
 L power:GND #PWR?
 U 1 1 5CF0654D
-P 8850 2800
+P 8700 2600
 AR Path="/5CF0654D" Ref="#PWR?"  Part="1" 
 AR Path="/5C7B59B0/5CF0654D" Ref="#PWR0116"  Part="1" 
-F 0 "#PWR0116" H 8850 2550 50  0001 C CNN
-F 1 "GND" H 8855 2627 50  0000 C CNN
-F 2 "" H 8850 2800 50  0001 C CNN
-F 3 "" H 8850 2800 50  0001 C CNN
-	1    8850 2800
+F 0 "#PWR0116" H 8700 2350 50  0001 C CNN
+F 1 "GND" H 8705 2427 50  0000 C CNN
+F 2 "" H 8700 2600 50  0001 C CNN
+F 3 "" H 8700 2600 50  0001 C CNN
+	1    8700 2600
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	8250 2450 8550 2450
+	8250 2250 8550 2250
 Entry Wire Line
 	5400 3650 5500 3750
 Entry Wire Line
@@ -1609,17 +1605,15 @@ Wire Wire Line
 $Comp
 L power:PWR_FLAG #FLG0101
 U 1 1 5CFF6FB6
-P 8550 2450
-F 0 "#FLG0101" H 8550 2525 50  0001 C CNN
-F 1 "PWR_FLAG" H 8550 2624 50  0000 C CNN
-F 2 "" H 8550 2450 50  0001 C CNN
-F 3 "~" H 8550 2450 50  0001 C CNN
-	1    8550 2450
+P 8550 2250
+F 0 "#FLG0101" H 8550 2325 50  0001 C CNN
+F 1 "PWR_FLAG" H 8550 2424 50  0000 C CNN
+F 2 "" H 8550 2250 50  0001 C CNN
+F 3 "~" H 8550 2250 50  0001 C CNN
+	1    8550 2250
 	1    0    0    -1  
 $EndComp
-Connection ~ 8550 2450
-Wire Wire Line
-	8550 2450 8850 2450
+Connection ~ 8550 2250
 $Comp
 L Device:D_Zener D11
 U 1 1 5D1DFDD1
@@ -1849,6 +1843,43 @@ F 3 "" H 2550 4500 50  0001 C CNN
 	1    2550 4500
 	0    -1   -1   0   
 $EndComp
+Wire Wire Line
+	8250 2250 8250 2500
+$Comp
+L power:GND #PWR?
+U 1 1 60181A6F
+P 9100 2600
+AR Path="/60181A6F" Ref="#PWR?"  Part="1" 
+AR Path="/5C7B59B0/60181A6F" Ref="#PWR098"  Part="1" 
+F 0 "#PWR098" H 9100 2350 50  0001 C CNN
+F 1 "GND" H 9105 2427 50  0000 C CNN
+F 2 "" H 9100 2600 50  0001 C CNN
+F 3 "" H 9100 2600 50  0001 C CNN
+	1    9100 2600
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:C C?
+U 1 1 60181A79
+P 9100 2450
+AR Path="/60181A79" Ref="C?"  Part="1" 
+AR Path="/5C7B59B0/60181A79" Ref="C92"  Part="1" 
+F 0 "C92" H 9215 2496 50  0000 L CNN
+F 1 "4u7" H 9215 2405 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0603_1608Metric" H 9138 2300 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/400/lcc_commercial_general_en-837201.pdf" H 9100 2450 50  0001 C CNN
+F 4 "Taiyo Yuden" H -1300 -3600 50  0001 C CNN "Mfg"
+F 5 "LMK107BJ475KAHT" H -1300 -3600 50  0001 C CNN "MPN"
+F 6 "cap-cer-0603-4u7" H 9100 2450 50  0001 C CNN "1b2-bom-key"
+	1    9100 2450
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9100 2250 9100 2300
+Wire Wire Line
+	8550 2250 8700 2250
+Wire Wire Line
+	8700 2300 8700 2250
 Wire Bus Line
 	2400 4950 2400 5800
 Wire Bus Line
@@ -1867,4 +1898,7 @@ Wire Bus Line
 	5500 3750 5500 5800
 Wire Bus Line
 	9050 3200 9050 5800
+Connection ~ 8700 2250
+Wire Wire Line
+	8700 2250 9100 2250
 $EndSCHEMATC
