@@ -9,7 +9,6 @@
 
 import logging
 import argparse
-from bitarray import bitarray
 from nmigen.compat import *
 
 from ... import *
@@ -17,6 +16,7 @@ from ....arch.jtag import *
 from ....arch.xilinx.xc6s import *
 from ....database.xilinx.xc6s import *
 from ....support.bits import *
+from ....support.bitarray import *
 from ...interface.jtag_probe import JTAGProbeApplet
 
 
@@ -59,10 +59,9 @@ class XC6SJTAGInterface:
 
     async def load_bitstream(self, bitstream, *, byte_reverse=True):
         if byte_reverse:
-            ba = bitarray()
-            ba.frombytes(bitstream)
-            ba.bytereverse()
-            bitstream = bits(ba.tobytes(), len(ba))
+            ba = bitarray(bitstream, 8*len(bitstream))
+            ba.byte_reverse()
+            bitstream = bits(ba.to_bytes(), len(ba))
         else:
             bitstream = bits(bitstream)
         self._log("load size=%d [bits]", len(bitstream))

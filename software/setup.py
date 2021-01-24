@@ -31,7 +31,6 @@ setup(
         "libusb1>=1.8.1",
         "aiohttp",
         "pyvcd",
-        "bitarray",
         "crcmod",
     ],
     extras_require={

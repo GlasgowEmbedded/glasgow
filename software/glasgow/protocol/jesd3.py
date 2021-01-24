@@ -2,7 +2,7 @@
 # Accession: G00029
 
 import re
-from bitarray import bitarray
+from ..support.bitarray import *
 
 
 __all__ = ["JESD3Parser", "JESD3ParsingError"]
@@ -164,7 +164,7 @@ class JESD3Parser:
         """Fuse count"""
         if self.fuse is not None:
             self._parse_error("fuse count specified more than once")
-        self.fuse = bitarray(int(count, 10), endian="little")
+        self.fuse = bitarray(0, int(count, 10))
 
     def _on_QP(self, count):
         """Pin count (unsupported and ignored)"""
@@ -190,7 +190,7 @@ class JESD3Parser:
         if self.fuse is None:
             self._parse_error("fuse list specified before fuse count")
         index  = int(index, 10)
-        values = bitarray(re.sub(r"[ \r\n]", "", values), endian="little")
+        values = bitarray(re.sub(r"[ \r\n]", "", values))
         if index + len(values) > len(self.fuse):
             self._parse_error("fuse list specifies range [%d:%d] beyond last fuse %d"
                               % (index, index + len(values), len(self.fuse)))
@@ -200,7 +200,7 @@ class JESD3Parser:
     def _on_C(self, checksum):
         """Fuse checksum"""
         expected_checksum = int(checksum, 16)
-        actual_checksum   = sum(self.fuse.tobytes()) & 0xffff
+        actual_checksum   = sum(self.fuse.to_bytes()) & 0xffff
         if expected_checksum != actual_checksum:
             self._parse_error("fuse checksum mismatch: expected %04X, actual %04X"
                               % (expected_checksum, actual_checksum))
