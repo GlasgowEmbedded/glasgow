@@ -332,7 +332,7 @@ class bitarray:
         if self._len_ % 8:
             # Adding zero padding in the low bits allows easier bit reversal
             # for the cases where bit length is not multiple of byte size
-            out = bitarray(0, 8-(self._len_%8)) + self
+            out = self.__class__(0, 8-(self._len_%8)) + self
         else:
             out = self.__class__(self._array_, self._len_)
         out._array_.reverse()   # Reverse byte order (last to first)
