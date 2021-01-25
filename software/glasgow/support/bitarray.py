@@ -41,16 +41,17 @@ class bitarray:
         # Perform actual copy considering that the start bit might be
         # aligned to byte boundaries. In that case it is done with a
         # regular copy, otherwise we have to merge adjacent bytes.
+        out = memoryview(dst)
         if start == 0:
-            dst[:dst_bytes] = array('B', src[:dst_bytes])
+            out[:dst_bytes] = src[:dst_bytes]
         else:
             for i in range(src_bytes-1):
-                dst[i] = ((src[i] >> start) | (src[i+1] << (8-start))) & 0xFF
+                out[i] = ((src[i] >> start) | (src[i+1] << (8-start))) & 0xFF
             if src_bytes == dst_bytes:
-                dst[dst_bytes-1] = src[dst_bytes-1] >> start
+                out[dst_bytes-1] = src[dst_bytes-1] >> start
         # Mask the last byte when length is not multiple of a byte.
         if rem_bits:
-            dst[dst_bytes-1] &= ~(-1 << rem_bits)
+            out[dst_bytes-1] &= ~(-1 << rem_bits)
         return dst
 
     @classmethod
@@ -264,7 +265,7 @@ class bitarray:
         for i in range(len(b)):
             a[i] = op(a[i], b[i])
         if clear_top:
-            a[len(b):] = array('B', bytes(len(a)-len(b)))
+            memoryview(a)[len(b):] = bytes(len(a)-len(b))
         self._array_ = a
         self._len_ = max(self._len_, other._len_)
         return self
