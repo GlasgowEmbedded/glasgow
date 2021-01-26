@@ -313,14 +313,17 @@ class bitarray:
         return self ^ other
     
     @staticmethod
-    def __reverse_byte(b):
+    def __build_revbyte_table():
         # From 'Bit Twiddling Hacks' by Sean Eron Anderson
-        return (((b * 0x80200802) & 0x0884422110) * 0x0101010101 >> 32) & 0xFF;
+        return bytes([((i * 0x0202020202 & 0x010884422010) % 1023) & 0xFF for i in range(256)])
 
     def byte_reverse(self):
         """ In-place byte reversal """
+        if not hasattr(self.byte_reverse, "table"):  # only build once
+            self.byte_reverse.__func__.table = self.__build_revbyte_table()
+        table = self.byte_reverse.table
         for i in range(len(self._array_)):
-            self._array_[i] = self.__reverse_byte(self._array_[i])
+            self._array_[i] = table[self._array_[i]]
         if self._len_ % 8:
             self._array_[-1] &= ~(-1 << (self._len_ % 8))
         return self
