@@ -172,7 +172,7 @@ class bitarray:
             if key < 0:
                 key += self._len_
             elif key >= self._len_:
-                raise IndexError("bitarray assignment index out of range")
+                raise IndexError("bitarray index out of range")
             return self.__getbit(key)
         if isinstance(key, slice):
             start, stop, step = key.indices(self._len_)
@@ -189,7 +189,7 @@ class bitarray:
             if key < 0:
                 key += self._len_
             elif key >= self._len_:
-                raise IndexError("bitarray index out of range")
+                raise IndexError("bitarray assignment index out of range")
             self.__setbit(key, value)
             return
         if isinstance(key, slice):
