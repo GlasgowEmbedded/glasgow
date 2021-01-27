@@ -103,7 +103,6 @@ class bitarray:
         byte_len = (length - 1) // 8 + 1
         inst._array_ = array('B', bytes(byte_len))
         cls.__copy_bit_slice(value, 0, length, inst._array_)
-        assert type(inst._array_) == array
         return inst
             
     def __new__(cls, value=0, length=None):
