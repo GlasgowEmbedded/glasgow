@@ -100,7 +100,9 @@ class bitarray:
     def from_bytes(cls, value, length):
         inst = object.__new__(cls)
         inst._len_ = length
-        inst._array_ = cls.__slice_bits(value, 0, length)
+        byte_len = (length - 1) // 8 + 1
+        inst._array_ = array('B', bytes(byte_len))
+        cls.__slice_bits(value, 0, length, inst._array_)
         assert type(inst._array_) == array
         return inst
             
