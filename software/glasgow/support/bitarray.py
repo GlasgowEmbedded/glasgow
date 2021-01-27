@@ -31,8 +31,8 @@ class bitarray:
             length = 8 * len(src) - start
         else:
             length = min(length, 8*len(src)-start)
-        src_bytes = (length + start - 1) // 8 + 1
-        dst_bytes = (length - 1) // 8 + 1
+        src_bytes = ((length + start - 1) // 8) + 1
+        dst_bytes = ((length - 1) // 8) + 1
         rem_bits = length % 8
         if dst is None:
             dst = array('B', bytes(dst_bytes))
