@@ -279,9 +279,9 @@ class bitarray:
 
     def __and__(self, other):
         other = self.__class__(other)
-        larger = other if other._len_ > self._len_ else self
-        new = self.__class__(larger._array_, larger._len_)
-        new &= other
+        a, b = (other, self) if other._len_ > self._len_ else (self, other)
+        new = self.__class__(a._array_, a._len_)
+        new &= b
         return new
 
     def __rand__(self, other):
@@ -293,9 +293,9 @@ class bitarray:
 
     def __or__(self, other):
         other = self.__class__(other)
-        larger = other if other._len_ > self._len_ else self
-        new = self.__class__(larger._array_, larger._len_)
-        new |= other
+        a, b = (other, self) if other._len_ > self._len_ else (self, other)
+        new = self.__class__(a._array_, a._len_)
+        new |= b
         return new
     
     def __ror__(self, other):
@@ -307,9 +307,9 @@ class bitarray:
 
     def __xor__(self, other):
         other = self.__class__(other)
-        larger = other if other._len_ > self._len_ else self
-        new = self.__class__(larger._array_, larger._len_)
-        new ^= other
+        a, b = (other, self) if other._len_ > self._len_ else (self, other)
+        new = self.__class__(a._array_, a._len_)
+        new ^= b
         return new
     
     def __rxor__(self, other):
