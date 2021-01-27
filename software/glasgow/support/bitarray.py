@@ -20,7 +20,7 @@ class bitarray:
     __slots__ = ["_len_", "_array_"]
     
     @staticmethod
-    def __slice_bits(src, start=0, length=None, dst=None):
+    def __copy_bit_slice(src, start=0, length=None, dst=None):
         # Reduce larger-than-byte start bit offsets to a single case
         if start // 8:
             src = memoryview(src)[start//8:]
@@ -102,7 +102,7 @@ class bitarray:
         inst._len_ = length
         byte_len = (length - 1) // 8 + 1
         inst._array_ = array('B', bytes(byte_len))
-        cls.__slice_bits(value, 0, length, inst._array_)
+        cls.__copy_bit_slice(value, 0, length, inst._array_)
         assert type(inst._array_) == array
         return inst
             
@@ -180,7 +180,7 @@ class bitarray:
             if stop < start:
                 return self.__class__()
             else:
-                return self.__class__(self.__slice_bits(self._array_, start, stop - start), stop - start)
+                return self.__class__(self.__copy_bit_slice(self._array_, start, stop - start), stop - start)
         raise TypeError("bitarray indices must be integers or slices, not {}"
                         .format(key.__class__.__name__))
     
@@ -240,7 +240,7 @@ class bitarray:
             prev_array_len = len(self._array_)
             self._array_.frombytes(bytes(rem_bytes)) # extend buffer
             self_arr = memoryview(self._array_)      # avoid copies
-            self.__slice_bits(other._array_, 8-offset, 
+            self.__copy_bit_slice(other._array_, 8-offset, 
                               rem_bits, self_arr[prev_array_len:])
             return self
         
