@@ -64,7 +64,7 @@ class bitarray:
         else:
             length = operator.index(length)
             value &= ~(-1 << length)
-        bytelen = (length - 1) // 8 + 1
+        bytelen = ((length - 1) // 8) + 1
         return cls.from_bytes(value.to_bytes(bytelen, "little"), length)
     
     @classmethod
@@ -100,7 +100,7 @@ class bitarray:
     def from_bytes(cls, value, length):
         inst = object.__new__(cls)
         inst._len_ = length
-        byte_len = (length - 1) // 8 + 1
+        byte_len = ((length - 1) // 8) + 1
         inst._array_ = array('B', bytes(byte_len))
         cls.__copy_bit_slice(value, 0, length, inst._array_)
         return inst
