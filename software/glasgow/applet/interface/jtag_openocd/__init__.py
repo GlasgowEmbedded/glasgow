@@ -43,6 +43,7 @@ class JTAGOpenOCDSubtarget(Elaboratable):
                     m.d.comb += out_fifo.r_en.eq(1)
                     # remote_bitbang_write(int tck, int tms, int tdi)
                     with m.Case(*b"01234567"):
+                        m.d.sync += bus.tms_z.eq(0)
                         m.d.sync += Cat(bus.tdi, bus.tms, bus.tck).eq(out_fifo.r_data[:3])
                     # remote_bitbang_reset(int trst, int srst)
                     with m.Case(*b"rs"):
@@ -57,9 +58,22 @@ class JTAGOpenOCDSubtarget(Elaboratable):
                     # remote_bitbang_blink(int on)
                     with m.Case(*b"Bb"):
                         m.d.sync += blink.eq(~out_fifo.r_data[5])
+
+                    # remote_bitbang_swdio_drive(int is_output)
+                    with m.Case(*b"Oo"):
+                        m.d.sync += bus.tms_z.eq(out_fifo.r_data[5])
+                    # remote_bitbang_swdio_read()
+                    with m.Case(*b"c"):
+                        m.d.comb += out_fifo.r_en.eq(in_fifo.w_rdy)
+                        m.d.comb += in_fifo.w_en.eq(1)
+                        m.d.comb += in_fifo.w_data.eq(b"0"[0] | Cat(bus.tms_i))
+                    # remote_bitbang_swd_write(int swclk, int swdio)
+                    with m.Case(*b"defg"):
+                        m.d.sync += Cat(bus.tms, bus.tck).eq(out_fifo.r_data[:2])
+
                     # remote_bitbang_quit(void)
                     with m.Case(*b"Q"):
-                        pass
+                        m.d.sync += bus.tms_z.eq(0)
                     with m.Default():
                         m.d.comb += out_fifo.r_en.eq(0)
                 with m.If(out_fifo.r_en):
@@ -70,21 +84,21 @@ class JTAGOpenOCDSubtarget(Elaboratable):
 
 class JTAGOpenOCDApplet(GlasgowApplet, name="jtag-openocd"):
     logger = logging.getLogger(__name__)
-    help = "expose JTAG via OpenOCD remote bitbang interface"
+    help = "expose JTAG+SWD via OpenOCD remote bitbang interface"
     description = """
-    Expose JTAG via a socket using the OpenOCD remote bitbang protocol.
+    Expose JTAG+SWD via a socket using the OpenOCD remote bitbang protocol.
 
     Usage with TCP sockets:
 
     ::
         glasgow run jtag-openocd tcp:localhost:2222
-        openocd -c 'interface remote_bitbang; remote_bitbang_port 2222'
+        openocd -c 'adapter driver remote_bitbang; remote_bitbang_port 2222'
 
     Usage with Unix domain sockets:
 
     ::
         glasgow run jtag-openocd unix:/tmp/jtag.sock
-        openocd -c 'interface remote_bitbang; remote_bitbang_host /tmp/jtag.sock'
+        openocd -c 'adapter driver remote_bitbang; remote_bitbang_host /tmp/jtag.sock'
     """
 
     __pins = ("tck", "tms", "tdi", "tdo", "trst")

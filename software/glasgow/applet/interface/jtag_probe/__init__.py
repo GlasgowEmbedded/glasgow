@@ -44,6 +44,11 @@ class JTAGProbeBus(Elaboratable):
         self.tdi = Signal(reset=1)
         self.trst_z = Signal(reset=0)
         self.trst_o = Signal(reset=0)
+        # (optional) TMS signals to make SWD possible
+        # Defaults here make sure regular JTAG is working
+        # without using theses signals (i.e. TMS is driven).
+        self.tms_z = Signal(reset=0)
+        self.tms_i = Signal(reset=1)
 
     def elaborate(self, platform):
         m = Module()
@@ -51,13 +56,14 @@ class JTAGProbeBus(Elaboratable):
         m.d.comb += [
             pads.tck_t.oe.eq(1),
             pads.tck_t.o.eq(self.tck),
-            pads.tms_t.oe.eq(1),
+            pads.tms_t.oe.eq(~self.tms_z),
             pads.tms_t.o.eq(self.tms),
             pads.tdi_t.oe.eq(1),
             pads.tdi_t.o.eq(self.tdi),
         ]
         m.submodules += [
             FFSynchronizer(pads.tdo_t.i, self.tdo),
+            FFSynchronizer(pads.tms_t.i, self.tms_i),
         ]
         if hasattr(pads, "trst_t"):
             m.d.sync += [
