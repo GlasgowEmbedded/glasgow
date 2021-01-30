@@ -14,11 +14,12 @@ from ..jtag_probe import JTAGProbeBus
 
 
 class JTAGOpenOCDSubtarget(Elaboratable):
-    def __init__(self, pads, out_fifo, in_fifo, period_cyc):
-        self.pads       = pads
-        self.out_fifo   = out_fifo
-        self.in_fifo    = in_fifo
-        self.period_cyc = period_cyc
+    def __init__(self, pads, out_fifo, in_fifo, period_cyc, ignore_unsupported):
+        self.pads               = pads
+        self.out_fifo           = out_fifo
+        self.in_fifo            = in_fifo
+        self.period_cyc         = period_cyc
+        self.ignore_unsupported = ignore_unsupported
 
     def elaborate(self, platform):
         m = Module()
@@ -61,7 +62,8 @@ class JTAGOpenOCDSubtarget(Elaboratable):
                     with m.Case(*b"Q"):
                         pass
                     with m.Default():
-                        m.d.comb += out_fifo.r_en.eq(0)
+                        if not self.ignore_unsupported:
+                            m.d.comb += out_fifo.r_en.eq(0)
                 with m.If(out_fifo.r_en):
                     m.d.sync += timer.eq(self.period_cyc - 1)
 
@@ -100,6 +102,9 @@ class JTAGOpenOCDApplet(GlasgowApplet, name="jtag-openocd"):
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=100,
             help="set TCK frequency to FREQ kHz (default: %(default)s)")
+        parser.add_argument(
+            "-i", "--ignore-unsupported", action="store_true",
+            help="ignore incoming commands that are unsupported to not get stuck (default: %(default)s)")
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
@@ -108,6 +113,7 @@ class JTAGOpenOCDApplet(GlasgowApplet, name="jtag-openocd"):
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             period_cyc=int(target.sys_clk_freq // (args.frequency * 1000)),
+            ignore_unsupported=args.ignore_unsupported
         ))
 
     async def run(self, device, args):
