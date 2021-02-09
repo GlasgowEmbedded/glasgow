@@ -83,9 +83,9 @@ class AnalyzerApplet(GlasgowApplet, name="analyzer"):
         pull_low  = set()
         pull_high = set()
         if args.pull_ups:
-            pull_low = set(args.pin_set_i)
-        if args.pull_downs:
             pull_high = set(args.pin_set_i)
+        if args.pull_downs:
+            pull_low = set(args.pin_set_i)
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
                                                            pull_low=pull_low, pull_high=pull_high)
         return AnalyzerInterface(iface, self._event_sources)
