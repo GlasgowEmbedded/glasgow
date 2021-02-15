@@ -262,17 +262,13 @@ class bitarray:
     
     def __bitop(self, other, op, clear_top=False):
         other = self.__class__(other)
-        # Only perform operation in-place when the other bitarray is smaller
         if other._len_ > self._len_:
-            a, b = array('B', other._array_), self._array_
-        else:
-            a, b = self._array_, other._array_
+            raise ValueError("provided bitarray exceeds length of original")
+        a, b = self._array_, other._array_
         for i in range(len(b)):
             a[i] = op(a[i], b[i])
         if clear_top:
             memoryview(a)[len(b):] = bytes(len(a)-len(b))
-        self._array_ = a
-        self._len_ = max(self._len_, other._len_)
         return self
     
     def __iand__(self, other):
