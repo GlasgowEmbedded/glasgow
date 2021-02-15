@@ -21,16 +21,24 @@ class bitarray:
     
     @staticmethod
     def __copy_bit_slice(src, start=0, length=None, dst=None):
-        # Reduce larger-than-byte start bit offsets to a single case
+        """Copy 'length' bits from 'src' to either a provided 'dst' or to a new array, skipping 
+        the first 'start' bits.
+        """
         if start // 8:
+            # Reduce larger-than-byte start bit offsets to a single case
             src = memoryview(src)[start//8:]
             start %= 8
-        # Length is limited by the size of the input data. From it we also
-        # compute the number of bytes needed to retrieve the requested slice
+        # The maximum number of bits to copy is the total available bits in the 'src' block 
+        # minus the amount of them that we want to skip ('start' bit offset).
         if length is None:
             length = 8 * len(src) - start
         else:
             length = min(length, 8*len(src)-start)
+        # The amount of bytes needed at the destination is just the minimum capable of storing
+        # the requested bit length. However, at the source these bits can span an additional byte
+        # depending on the 'start' bit offset value. Take length = 10 and start = 7 as an example:
+        # we know that 10 bits can be stored in 2 bytes (dst_bytes=2), but the final bit to copy
+        # is at index 17 of the source, that is, the 3rd byte (src_bytes=3).
         src_bytes = ((length + start - 1) // 8) + 1
         dst_bytes = ((length - 1) // 8) + 1
         rem_bits = length % 8
@@ -38,9 +46,8 @@ class bitarray:
             dst = array('B', bytes(dst_bytes))
         if length == 0:
             return dst
-        # Perform actual copy considering that the start bit might be
-        # aligned to byte boundaries. In that case it is done with a
-        # regular copy, otherwise we have to merge adjacent bytes.
+        # Perform actual copy considering that the start bit might be aligned to byte boundaries. 
+        # In that case it is done with a regular copy, otherwise we have to merge adjacent bytes.
         out = memoryview(dst)
         if start == 0:
             out[:dst_bytes] = src[:dst_bytes]
