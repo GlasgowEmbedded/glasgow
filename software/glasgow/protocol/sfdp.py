@@ -233,10 +233,10 @@ class SFDPJEDECFlashParametersTable(SFDPTable):
 
     def __iter__(self):
         properties = {}
-        properties["density (Mbits)"]    = "{}".format(self.density >> 20)
-        properties["density (Mbytes)"]   = "{}".format(self.density >> 23)
-        properties["address byte count"] = ", ".join(map(str, self.address_byte_count))
-        properties["write granularity"]  = "{} byte(s)".format(self.write_granularity)
+        properties["density (Mebibits)"]  = "{}".format(self.density >> 20)
+        properties["density (Mebibytes)"] = "{}".format(self.density >> 23)
+        properties["address byte count"]  = ", ".join(map(str, self.address_byte_count))
+        properties["write granularity"]   = "{} byte(s)".format(self.write_granularity)
 
         properties["sector sizes"] = ", ".join(map(str, self.sector_sizes))
         for sector_size, opcode in self.sector_sizes.items():
