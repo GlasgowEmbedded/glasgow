@@ -106,7 +106,7 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
         async def set_pull(bits_o, bits_oe):
             pull_low  = {x for x in range(16) if bits_oe & (1 << x) and not bits_o & (1 << x)}
             pull_high = {x for x in range(16) if bits_oe & (1 << x) and     bits_o & (1 << x)}
-            await device.set_pulls("AB", pull_low, pull_high)
+            await device.set_pulls(args.port_spec, pull_low, pull_high)
 
         async def get_i():
             return ((await device.read_register(self.addr_i_a) << 0) |
@@ -128,7 +128,7 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
             desc = "oe={:016b} o={:016b} i={:016b}".format(oe, o, i)
             return i, desc
 
-        pin_names = sum([["%s%d" % (p, n) for n in range(8)] for p in ("A", "B")], [])
+        pin_names = sum([["%s%d" % (p, n) for n in range(8)] for p in list(args.port_spec)], [])
         def decode_pins(bits):
             result = set()
             for bit in range(0, 16):
@@ -147,13 +147,13 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                                              f"{device.revision}")
 
                 if mode == "pins-int":
-                    await device.set_voltage("AB", 0)
+                    await device.set_voltage(args.port_spec, 0)
 
                     # disable the IO-buffers (FXMA108) on revAB to not influence the external ports
                     # no effect on other revisions
                     await device._iobuf_enable(False)
                 elif mode in ("pins-ext", "pins-pull"):
-                    await device.set_voltage("AB", 3.3)
+                    await device.set_voltage(args.port_spec, 3.3)
 
                     # re-enable the IO-buffers (FXMA108) on revAB
                     # no effect on other revisions
@@ -188,14 +188,14 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                 for pins in shorted:
                     report.append((mode, "fail short: {}".format(" ".join(sorted(pins)))))
 
-                await device.set_voltage("AB", 0)
+                await device.set_voltage(args.port_spec, 0)
 
                 # re-enable the IO-buffers (FXMA108) on revAB, they are on by default
                 # no effect on other revisions
                 await device._iobuf_enable(True)
 
             if mode == "pins-loop":
-                await device.set_voltage("AB", 3.3)
+                await device.set_voltage(args.port_spec, 3.3)
 
                 broken = []
                 for bit in range(0, 8):
@@ -211,12 +211,12 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                             report.append((mode, "fault: {}".format(" ".join(pins))))
                             break
 
-                await device.set_voltage("AB", 0)
+                await device.set_voltage(args.port_spec, 0)
 
             if mode == "voltage":
-                await device.set_voltage("AB", 0)
+                await device.set_voltage(args.port_spec, 0)
 
-                for port in ("A", "B"):
+                for port in list(args.port_spec):
                     for vout in (1.8, 2.7, 3.3, 5.0):
                         await device.set_voltage(port, vout)
                         await asyncio.sleep(0.1)
