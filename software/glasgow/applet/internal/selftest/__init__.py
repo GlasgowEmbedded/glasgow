@@ -141,12 +141,12 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
         for mode in args.modes or self.__default_modes:
             self.logger.info("running self-test mode %s", mode)
 
+            use_oe_override = False
             if mode in ("pins-int", "pins-ext", "pins-pull"):
-                if device.revision >= "C0":
-                    raise GlasgowAppletError(f"mode {mode} is broken on device revision "
-                                             f"{device.revision}")
-
                 if mode == "pins-int":
+                    if device.revision >= "C0":
+                        use_oe_override = True
+
                     await device.set_voltage(args.port_spec, 0)
 
                     # disable the IO-buffers (FXMA108) on revAB to not influence the external ports
@@ -158,11 +158,12 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                     # re-enable the IO-buffers (FXMA108) on revAB
                     # no effect on other revisions
                     await device._iobuf_enable(True)
-                use_pull = (mode == "pins-pull")
 
+                use_pull = (mode == "pins-pull")
                 for bits in (0x0000, 0xffff):
                     await reset_pins(bits)
-                    i, desc = await check_pins(bits, bits, use_pull=use_pull)
+                    oe = 0xffff if use_oe_override else bits
+                    i, desc = await check_pins(oe, bits, use_pull=use_pull)
                     self.logger.debug("%s: %s", mode, desc)
                     if bits == 0x0000:
                         fail_high = decode_pins(i)
@@ -172,7 +173,8 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                 shorted = []
                 for bit in range(0, 16):
                     await reset_pins(bits=0x0000)
-                    i, desc = await check_pins(1 << bit, 1 << bit, use_pull=use_pull)
+                    oe = 0xffff if use_oe_override else 1 << bit
+                    i, desc = await check_pins(oe, 1 << bit, use_pull=use_pull)
                     self.logger.debug("%s: %s", mode, desc)
 
                     if i != 1 << bit:
