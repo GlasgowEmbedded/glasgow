@@ -118,14 +118,14 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
             await asyncio.sleep(0.001)
             await set_oe(0x0000)
 
-        async def check_pins(oe, o, use_pull):
-            if use_pull:
-                await set_pull(o, oe)
+        async def check_pins(oe, o, oe_pull=0, o_pull=0):
+            if oe_pull != 0:
+                await set_pull(o_pull, oe_pull)
             else:
                 await set_o(o)
                 await set_oe(oe)
             i = await get_i()
-            desc = "oe={:016b} o={:016b} i={:016b}".format(oe, o, i)
+            desc = "oe={:016b} o={:016b} oe_pull={:016b} o_pull={:016b} i={:016b}".format(oe, o, oe_pull, o_pull, i)
             return i, desc
 
         pin_names = sum([["%s%d" % (p, n) for n in range(8)] for p in list(args.port_spec)], [])
@@ -159,11 +159,15 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                     # no effect on other revisions
                     await device._iobuf_enable(True)
 
-                use_pull = (mode == "pins-pull")
+                oe_pull = 0
+                o_pull = 0
                 for bits in (0x0000, 0xffff):
                     await reset_pins(bits)
                     oe = 0xffff if use_oe_override else bits
-                    i, desc = await check_pins(oe, bits, use_pull=use_pull)
+                    if (mode == "pins-pull"):
+                        oe_pull=oe
+                        o_pull=bits
+                    i, desc = await check_pins(oe=oe, o=bits, oe_pull=oe_pull, o_pull=o_pull)
                     self.logger.debug("%s: %s", mode, desc)
                     if bits == 0x0000:
                         fail_high = decode_pins(i)
@@ -174,7 +178,10 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                 for bit in range(0, 16):
                     await reset_pins(bits=0x0000)
                     oe = 0xffff if use_oe_override else 1 << bit
-                    i, desc = await check_pins(oe, 1 << bit, use_pull=use_pull)
+                    if (mode == "pins-pull"):
+                        oe_pull=oe
+                        o_pull=bits
+                    i, desc = await check_pins(oe=oe, o=1 << bit,  oe_pull=oe_pull, o_pull=o_pull)
                     self.logger.debug("%s: %s", mode, desc)
 
                     if i != 1 << bit:
@@ -203,7 +210,7 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
                 for bit in range(0, 8):
                     for o in (1 << bit, 1 << (15 - bit)):
                         await reset_pins(bits=0x0000)
-                        i, desc = await check_pins(o, o, use_pull=False)
+                        i, desc = await check_pins(oe=o, o=o)
                         self.logger.debug("%s: %s", mode, desc)
 
                         e = ((o << 8) | o) if (o & 0xFF) else (o | (o >> 8))
