@@ -126,7 +126,7 @@ Obtain the source code:
 Install the dependencies and the scripts for the current user:
 
     cd software
-    python setup.py develop
+    python3 setup.py develop
 
 The scripts will be installed in `/usr/local/bin`, which should already be in your `PATH`.
 
