@@ -1278,9 +1278,9 @@ P 9800 900
 F 0 "D1" H 9500 900 50  0000 C CNN
 F 1 "GRN" H 9350 900 50  0000 C CNN
 F 2 "LED_SMD:LED_0603_1608Metric" H 9800 900 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/445/150060GS75000-368921.pdf" H 9800 900 50  0001 C CNN
-F 4 "Wurth Electronics" H -450 0   50  0001 C CNN "Mfg"
-F 5 "150060GS75000" H -450 0   50  0001 C CNN "MPN"
+F 3 "https://datasheet.lcsc.com/szlcsc/2008201032_Foshan-NationStar-Optoelectronics-NCD0603G1_C84267.pdf" H 9800 900 50  0001 C CNN
+F 4 "Foshan NationStar Optoelectronics" H -450 0   50  0001 C CNN "Mfg"
+F 5 "NCD0603G1" H -450 0   50  0001 C CNN "MPN"
 F 6 "led-0603-grn" H 9800 900 50  0001 C CNN "1b2-bom-key"
 	1    9800 900 
 	-1   0    0    1   
@@ -1303,12 +1303,12 @@ L Device:LED D2
 U 1 1 5B097D14
 P 9800 1100
 F 0 "D2" H 9500 1100 50  0000 C CNN
-F 1 "GRN" H 9350 1100 50  0000 C CNN
+F 1 "WHT" H 9350 1100 50  0000 C CNN
 F 2 "LED_SMD:LED_0603_1608Metric" H 9800 1100 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/445/150060GS75000-368921.pdf" H 9800 1100 50  0001 C CNN
-F 4 "Wurth Electronics" H -450 0   50  0001 C CNN "Mfg"
-F 5 "150060GS75000" H -450 0   50  0001 C CNN "MPN"
-F 6 "led-0603-grn" H 9800 1100 50  0001 C CNN "1b2-bom-key"
+F 3 "https://datasheet.lcsc.com/szlcsc/2008201032_Foshan-NationStar-Optoelectronics-NCD0603W1_C84265.pdf" H 9800 1100 50  0001 C CNN
+F 4 "Foshan NationStar Optoelectronics" H -450 0   50  0001 C CNN "Mfg"
+F 5 "NCD0603W1" H -450 0   50  0001 C CNN "MPN"
+F 6 "led-0603-wht" H 9800 1100 50  0001 C CNN "1b2-bom-key"
 	1    9800 1100
 	-1   0    0    1   
 $EndComp
@@ -1317,12 +1317,12 @@ L Device:LED D3
 U 1 1 5B097DA8
 P 9800 1300
 F 0 "D3" H 9500 1300 50  0000 C CNN
-F 1 "GRN" H 9350 1300 50  0000 C CNN
+F 1 "BLU" H 9350 1300 50  0000 C CNN
 F 2 "LED_SMD:LED_0603_1608Metric" H 9800 1300 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/445/150060GS75000-368921.pdf" H 9800 1300 50  0001 C CNN
-F 4 "Wurth Electronics" H -450 0   50  0001 C CNN "Mfg"
-F 5 "150060GS75000" H -450 0   50  0001 C CNN "MPN"
-F 6 "led-0603-grn" H 9800 1300 50  0001 C CNN "1b2-bom-key"
+F 3 "https://datasheet.lcsc.com/szlcsc/1811100911_Orient-ORH-B36G_C193191.pdf" H 9800 1300 50  0001 C CNN
+F 4 "Orient" H -450 0   50  0001 C CNN "Mfg"
+F 5 "ORH-B36G" H -450 0   50  0001 C CNN "MPN"
+F 6 "led-0603-blu" H 9800 1300 50  0001 C CNN "1b2-bom-key"
 	1    9800 1300
 	-1   0    0    1   
 $EndComp
@@ -1331,12 +1331,12 @@ L Device:LED D4
 U 1 1 5B097E38
 P 9800 1500
 F 0 "D4" H 9500 1500 50  0000 C CNN
-F 1 "YEL" H 9350 1500 50  0000 C CNN
+F 1 "ORA" H 9350 1500 50  0000 C CNN
 F 2 "LED_SMD:LED_0603_1608Metric" H 9800 1500 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/445/150060YS75000-368983.pdf" H 9800 1500 50  0001 C CNN
-F 4 "Wurth Electronics" H -450 0   50  0001 C CNN "Mfg"
-F 5 "150060YS75000" H -450 0   50  0001 C CNN "MPN"
-F 6 "led-0603-yel" H 9800 1500 50  0001 C CNN "1b2-bom-key"
+F 3 "https://datasheet.lcsc.com/szlcsc/2008201033_Foshan-NationStar-Optoelectronics-NCD0603O1_C84269.pdf" H 9800 1500 50  0001 C CNN
+F 4 "Foshan NationStar Optoelectronics" H -450 0   50  0001 C CNN "Mfg"
+F 5 "NCD0603O1" H -450 0   50  0001 C CNN "MPN"
+F 6 "led-0603-ora" H 9800 1500 50  0001 C CNN "1b2-bom-key"
 	1    9800 1500
 	-1   0    0    1   
 $EndComp
@@ -1347,9 +1347,9 @@ P 9800 1700
 F 0 "D5" H 9500 1700 50  0000 C CNN
 F 1 "RED" H 9350 1700 50  0000 C CNN
 F 2 "LED_SMD:LED_0603_1608Metric" H 9800 1700 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/445/150060RS75000-368563.pdf" H 9800 1700 50  0001 C CNN
-F 4 "Wurth Electronics" H -450 0   50  0001 C CNN "Mfg"
-F 5 "150060RS75000" H -450 0   50  0001 C CNN "MPN"
+F 3 "https://datasheet.lcsc.com/szlcsc/2008201032_Foshan-NationStar-Optoelectronics-NCD0603R1_C84263.pdf" H 9800 1700 50  0001 C CNN
+F 4 "Foshan NationStar Optoelectronics" H -450 0   50  0001 C CNN "Mfg"
+F 5 "NCD0603R1" H -450 0   50  0001 C CNN "MPN"
 F 6 "led-0603-red" H 9800 1700 50  0001 C CNN "1b2-bom-key"
 	1    9800 1700
 	-1   0    0    1   
@@ -1378,25 +1378,17 @@ F 3 "" H 10000 1750 50  0001 C CNN
 	1    10000 1750
 	1    0    0    -1  
 $EndComp
-Wire Notes Line
-	10350 850  10400 850 
-Wire Notes Line
-	10400 850  10400 1350
-Wire Notes Line
-	10400 1350 10350 1350
-Text Notes 10450 1350 0    50   ~ 0
-56µA Vf = 2.18V
 $Comp
 L Device:R R12
 U 1 1 5B18B70C
 P 9450 900
 F 0 "R12" V 9350 900 50  0000 C CNN
-F 1 "20k" V 9450 900 50  0000 C CNN
+F 1 "10k" V 9450 900 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 900 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 9450 900 50  0001 C CNN
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
-F 5 "RC0402FR-1320KL" H -450 0   50  0001 C CNN "MPN"
-F 6 "res-0402-20k" H 9450 900 50  0001 C CNN "1b2-bom-key"
+F 5 "RC0402FR-1310KL" H -450 0   50  0001 C CNN "MPN"
+F 6 "res-0402-10k" H 9450 900 50  0001 C CNN "1b2-bom-key"
 	1    9450 900 
 	0    -1   1    0   
 $EndComp
@@ -1420,26 +1412,20 @@ Wire Wire Line
 	9250 900  9300 900 
 Wire Wire Line
 	9600 900  9650 900 
-Text Notes 10450 1550 0    50   ~ 0
-536µA Vf = 2.12V
 $Comp
 L Device:R R15
 U 1 1 5B2E1435
 P 9450 1500
 F 0 "R15" V 9350 1500 50  0000 C CNN
-F 1 "2k2" V 9450 1500 50  0000 C CNN
+F 1 "1k" V 9450 1500 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1500 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 9450 1500 50  0001 C CNN
-F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
-F 5 "RC0402FR-132K2L" H -450 0   50  0001 C CNN "MPN"
-F 6 "res-0402-2k2" H 9450 1500 50  0001 C CNN "1b2-bom-key"
+F 3 "" H 9450 1500 50  0001 C CNN
+F 4 "" H -450 0   50  0001 C CNN "Mfg"
+F 5 "" H -450 0   50  0001 C CNN "MPN"
+F 6 "res-0402-1k" H 9450 1500 50  0001 C CNN "1b2-bom-key"
 	1    9450 1500
 	0    -1   1    0   
 $EndComp
-Wire Notes Line
-	10350 1500 10400 1500
-Wire Notes Line
-	10350 1700 10400 1700
 Wire Wire Line
 	9650 1500 9600 1500
 Wire Wire Line
@@ -1448,19 +1434,17 @@ Wire Wire Line
 	9650 1300 9600 1300
 Wire Wire Line
 	9650 1700 9600 1700
-Text Notes 10450 1750 0    50   ~ 0
-159µA Vf = 1.71V
 $Comp
 L Device:R R16
 U 1 1 5B4782C1
 P 9450 1700
 F 0 "R16" V 9350 1700 50  0000 C CNN
-F 1 "10k" V 9450 1700 50  0000 C CNN
+F 1 "1k" V 9450 1700 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1700 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 9450 1700 50  0001 C CNN
-F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
-F 5 "RC0402FR-1310KL" H -450 0   50  0001 C CNN "MPN"
-F 6 "res-0402-10k" H 9450 1700 50  0001 C CNN "1b2-bom-key"
+F 3 "" H 9450 1700 50  0001 C CNN
+F 4 "" H -450 0   50  0001 C CNN "Mfg"
+F 5 "" H -450 0   50  0001 C CNN "MPN"
+F 6 "res-0402-1k" H 9450 1700 50  0001 C CNN "1b2-bom-key"
 	1    9450 1700
 	0    -1   1    0   
 $EndComp
@@ -1469,12 +1453,12 @@ L Device:R R13
 U 1 1 5B4785D4
 P 9450 1100
 F 0 "R13" V 9350 1100 50  0000 C CNN
-F 1 "20k" V 9450 1100 50  0000 C CNN
+F 1 "2k2" V 9450 1100 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1100 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 9450 1100 50  0001 C CNN
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
-F 5 "RC0402FR-1320KL" H -450 0   50  0001 C CNN "MPN"
-F 6 "res-0402-20k" H 9450 1100 50  0001 C CNN "1b2-bom-key"
+F 5 "RC0402FR-132K2L" H -450 0   50  0001 C CNN "MPN"
+F 6 "res-0402-2k2" H 9450 1100 50  0001 C CNN "1b2-bom-key"
 	1    9450 1100
 	0    -1   1    0   
 $EndComp
@@ -1483,12 +1467,12 @@ L Device:R R14
 U 1 1 5B478672
 P 9450 1300
 F 0 "R14" V 9350 1300 50  0000 C CNN
-F 1 "20k" V 9450 1300 50  0000 C CNN
+F 1 "2k2" V 9450 1300 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1300 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 9450 1300 50  0001 C CNN
 F 4 "Yageo" H -450 0   50  0001 C CNN "Mfg"
-F 5 "RC0402FR-1320KL" H -450 0   50  0001 C CNN "MPN"
-F 6 "res-0402-20k" H 9450 1300 50  0001 C CNN "1b2-bom-key"
+F 5 "RC0402FR-132K2L" H -450 0   50  0001 C CNN "MPN"
+F 6 "res-0402-2k2" H 9450 1300 50  0001 C CNN "1b2-bom-key"
 	1    9450 1300
 	0    -1   1    0   
 $EndComp

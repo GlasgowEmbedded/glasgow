@@ -2342,9 +2342,9 @@ AR Path="/5C7B59B0/5C9E337E/5CC5F544" Ref="D15"  Part="1"
 F 0 "D15" V 8750 6000 50  0000 C CNN
 F 1 "GRN" V 8650 6000 50  0000 C CNN
 F 2 "LED_SMD:LED_0603_1608Metric" H 8700 6150 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/445/150060GS75000-368921.pdf" H 8700 6150 50  0001 C CNN
-F 4 "Wurth Electronics" H -1550 5050 50  0001 C CNN "Mfg"
-F 5 "150060GS75000" H -1550 5050 50  0001 C CNN "MPN"
+F 3 "https://datasheet.lcsc.com/szlcsc/2008201032_Foshan-NationStar-Optoelectronics-NCD0603G1_C84267.pdf" H 8700 6150 50  0001 C CNN
+F 4 "Foshan NationStar Optoelectronics" H -1550 5050 50  0001 C CNN "Mfg"
+F 5 "NCD0603G1" H -1550 5050 50  0001 C CNN "MPN"
 F 6 "led-0603-grn" H 8700 6150 50  0001 C CNN "1b2-bom-key"
 	1    8700 6150
 	0    -1   -1   0   
@@ -2459,7 +2459,7 @@ F 2 "Capacitor_SMD:C_0402_1005Metric" H 8938 2700 50  0001 C CNN
 F 3 "https://www.mouser.de/datasheet/2/281/murata_03122018_GCM_Series-1310150.pdf" H 8900 2850 50  0001 C CNN
 F 4 "Murata" H 8900 2850 50  0001 C CNN "Mfg"
 F 5 "GCM1555C1H102JA16J" H 8900 2850 50  0001 C CNN "MPN"
-F 6 "TODO" H 8900 2850 50  0001 C CNN "1b2-bom-key"
+F 6 "cap-cer-0402-1n" H 8900 2850 50  0001 C CNN "1b2-bom-key"
 	1    8900 2850
 	-1   0    0    1   
 $EndComp

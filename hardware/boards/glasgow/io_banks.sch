@@ -472,9 +472,9 @@ AR Path="/5C7B59B0/5C9E3491" Ref="D6"  Part="1"
 F 0 "D6" H 9500 1050 50  0000 C CNN
 F 1 "BLU" H 9350 1050 50  0000 C CNN
 F 2 "LED_SMD:LED_0603_1608Metric" H 9800 1050 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/445/150060BS75000-368917.pdf" H 9800 1050 50  0001 C CNN
-F 4 "Wurth Electronics" H -450 150 50  0001 C CNN "Mfg"
-F 5 "150060BS75000" H -450 150 50  0001 C CNN "MPN"
+F 3 "https://datasheet.lcsc.com/szlcsc/1811100911_Orient-ORH-B36G_C193191.pdf" H 9800 1050 50  0001 C CNN
+F 4 "Orient" H -450 150 50  0001 C CNN "Mfg"
+F 5 "ORH-B36G" H -450 150 50  0001 C CNN "MPN"
 F 6 "led-0603-blu" H 9800 1050 50  0001 C CNN "1b2-bom-key"
 	1    9800 1050
 	-1   0    0    1   
@@ -506,9 +506,9 @@ AR Path="/5C7B59B0/5C9E34A4" Ref="D8"  Part="1"
 F 0 "D8" H 9500 1450 50  0000 C CNN
 F 1 "WHT" H 9350 1450 50  0000 C CNN
 F 2 "LED_SMD:LED_0603_1608Metric" H 9800 1450 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/348/sml-e1-e-1139169.pdf" H 9800 1450 50  0001 C CNN
-F 4 "ROHM Semiconductor" H -450 150 50  0001 C CNN "Mfg"
-F 5 "SMLEN3WBC8W1" H -450 150 50  0001 C CNN "MPN"
+F 3 "https://datasheet.lcsc.com/szlcsc/2008201032_Foshan-NationStar-Optoelectronics-NCD0603W1_C84265.pdf" H 9800 1450 50  0001 C CNN
+F 4 "Foshan NationStar Optoelectronics" H -450 150 50  0001 C CNN "Mfg"
+F 5 "NCD0603W1" H -450 150 50  0001 C CNN "MPN"
 F 6 "led-0603-wht" H 9800 1450 50  0001 C CNN "1b2-bom-key"
 	1    9800 1450
 	-1   0    0    1   
@@ -538,9 +538,9 @@ AR Path="/5C7B59B0/5C9E34B6" Ref="D10"  Part="1"
 F 0 "D10" H 9500 1850 50  0000 C CNN
 F 1 "BLU" H 9350 1850 50  0000 C CNN
 F 2 "LED_SMD:LED_0603_1608Metric" H 9800 1850 50  0001 C CNN
-F 3 "https://www.mouser.com/datasheet/2/445/150060BS75000-368917.pdf" H 9800 1850 50  0001 C CNN
-F 4 "Wurth Electronics" H -450 150 50  0001 C CNN "Mfg"
-F 5 "150060BS75000" H -450 150 50  0001 C CNN "MPN"
+F 3 "https://datasheet.lcsc.com/szlcsc/1811100911_Orient-ORH-B36G_C193191.pdf" H 9800 1850 50  0001 C CNN
+F 4 "Orient" H -450 150 50  0001 C CNN "Mfg"
+F 5 "ORH-B36G" H -450 150 50  0001 C CNN "MPN"
 F 6 "led-0603-blu" H 9800 1850 50  0001 C CNN "1b2-bom-key"
 	1    9800 1850
 	-1   0    0    1   
@@ -578,12 +578,12 @@ P 9450 1050
 AR Path="/5C9E34D0" Ref="R?"  Part="1" 
 AR Path="/5C7B59B0/5C9E34D0" Ref="R11"  Part="1" 
 F 0 "R11" V 9350 1050 50  0000 C CNN
-F 1 "4k7" V 9450 1050 50  0000 C CNN
+F 1 "2k2" V 9450 1050 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1050 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 9450 1050 50  0001 C CNN
 F 4 "Yageo" H -450 150 50  0001 C CNN "Mfg"
-F 5 "RC0402FR-134K7L" H -450 150 50  0001 C CNN "MPN"
-F 6 "res-0402-4k7" H 9450 1050 50  0001 C CNN "1b2-bom-key"
+F 5 "RC0402FR-132K2L" H -450 150 50  0001 C CNN "MPN"
+F 6 "res-0402-2k2" H 9450 1050 50  0001 C CNN "1b2-bom-key"
 	1    9450 1050
 	0    -1   1    0   
 $EndComp
@@ -596,12 +596,12 @@ P 9450 1650
 AR Path="/5C9E34DB" Ref="R?"  Part="1" 
 AR Path="/5C7B59B0/5C9E34DB" Ref="R22"  Part="1" 
 F 0 "R22" V 9350 1650 50  0000 C CNN
-F 1 "10k" V 9450 1650 50  0000 C CNN
+F 1 "2k2" V 9450 1650 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1650 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 9450 1650 50  0001 C CNN
 F 4 "Yageo" H -450 150 50  0001 C CNN "Mfg"
-F 5 "RC0402FR-1310KL" H -450 150 50  0001 C CNN "MPN"
-F 6 "res-0402-10k" H 9450 1650 50  0001 C CNN "1b2-bom-key"
+F 5 "RC0402FR-132K2L" H -450 150 50  0001 C CNN "MPN"
+F 6 "res-0402-2k2" H 9450 1650 50  0001 C CNN "1b2-bom-key"
 	1    9450 1650
 	0    -1   1    0   
 $EndComp
@@ -620,12 +620,12 @@ P 9450 1850
 AR Path="/5C9E34EB" Ref="R?"  Part="1" 
 AR Path="/5C7B59B0/5C9E34EB" Ref="R23"  Part="1" 
 F 0 "R23" V 9350 1850 50  0000 C CNN
-F 1 "4k7" V 9450 1850 50  0000 C CNN
+F 1 "2k2" V 9450 1850 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1850 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 9450 1850 50  0001 C CNN
 F 4 "Yageo" H -450 150 50  0001 C CNN "Mfg"
-F 5 "RC0402FR-134K7L" H -450 150 50  0001 C CNN "MPN"
-F 6 "res-0402-4k7" H 9450 1850 50  0001 C CNN "1b2-bom-key"
+F 5 "RC0402FR-132K2L" H -450 150 50  0001 C CNN "MPN"
+F 6 "res-0402-2k2" H 9450 1850 50  0001 C CNN "1b2-bom-key"
 	1    9450 1850
 	0    -1   1    0   
 $EndComp
@@ -636,12 +636,12 @@ P 9450 1250
 AR Path="/5C9E34F4" Ref="R?"  Part="1" 
 AR Path="/5C7B59B0/5C9E34F4" Ref="R20"  Part="1" 
 F 0 "R20" V 9350 1250 50  0000 C CNN
-F 1 "10k" V 9450 1250 50  0000 C CNN
+F 1 "2k2" V 9450 1250 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1250 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 9450 1250 50  0001 C CNN
 F 4 "Yageo" H -450 150 50  0001 C CNN "Mfg"
-F 5 "RC0402FR-1310KL" H -450 150 50  0001 C CNN "MPN"
-F 6 "res-0402-10k" H 9450 1250 50  0001 C CNN "1b2-bom-key"
+F 5 "RC0402FR-132K2L" H -450 150 50  0001 C CNN "MPN"
+F 6 "res-0402-2k2" H 9450 1250 50  0001 C CNN "1b2-bom-key"
 	1    9450 1250
 	0    -1   1    0   
 $EndComp
@@ -652,12 +652,12 @@ P 9450 1450
 AR Path="/5C9E34FD" Ref="R?"  Part="1" 
 AR Path="/5C7B59B0/5C9E34FD" Ref="R21"  Part="1" 
 F 0 "R21" V 9350 1450 50  0000 C CNN
-F 1 "6k8" V 9450 1450 50  0000 C CNN
+F 1 "2k2" V 9450 1450 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 9380 1450 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 9450 1450 50  0001 C CNN
 F 4 "Yageo" H -450 150 50  0001 C CNN "Mfg"
-F 5 "RC0402FR-136K8L" H -450 150 50  0001 C CNN "MPN"
-F 6 "res-0402-6k8" H 9450 1450 50  0001 C CNN "1b2-bom-key"
+F 5 "RC0402FR-132K2L" H -450 150 50  0001 C CNN "MPN"
+F 6 "res-0402-2k2" H 9450 1450 50  0001 C CNN "1b2-bom-key"
 	1    9450 1450
 	0    -1   1    0   
 $EndComp
@@ -1430,26 +1430,6 @@ Wire Wire Line
 Connection ~ 1900 4650
 Wire Wire Line
 	1900 4650 1950 4650
-Wire Notes Line
-	10350 1250 10400 1250
-Wire Notes Line
-	10350 1450 10400 1450
-Text Notes 10450 1100 0    50   ~ 0
-174µA Vf = 2.48V
-Text Notes 10450 1300 0    50   ~ 0
-76µA Vf = 2.54V
-Wire Notes Line
-	10350 1650 10400 1650
-Wire Notes Line
-	10350 1850 10400 1850
-Text Notes 10450 1500 0    50   ~ 0
-116µA Vf = 2.51V
-Wire Notes Line
-	10350 1050 10400 1050
-Text Notes 10450 1700 0    50   ~ 0
-76µA Vf = 2.54V
-Text Notes 10450 1900 0    50   ~ 0
-174µA Vf = 2.48V
 Wire Wire Line
 	9150 1850 9300 1850
 Wire Wire Line
@@ -1880,6 +1860,9 @@ Wire Wire Line
 	8550 2250 8700 2250
 Wire Wire Line
 	8700 2300 8700 2250
+Connection ~ 8700 2250
+Wire Wire Line
+	8700 2250 9100 2250
 Wire Bus Line
 	2400 4950 2400 5800
 Wire Bus Line
@@ -1898,7 +1881,4 @@ Wire Bus Line
 	5500 3750 5500 5800
 Wire Bus Line
 	9050 3200 9050 5800
-Connection ~ 8700 2250
-Wire Wire Line
-	8700 2250 9100 2250
 $EndSCHEMATC
