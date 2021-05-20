@@ -2,7 +2,7 @@
 
 **Want one? The [Crowdsupply campaign](https://www.crowdsupply.com/1bitsquared/glasgow) is now live.**
 
-**Let's chat! Our IRC channel is [#glasgow at freenode.net](https://webchat.freenode.net/?channels=glasgow); our Discord channel is [#glasgow at 1BitSquared's Discord server](https://1bitsquared.com/pages/chat).**
+**Let's chat! Our IRC channel is [#glasgow at libera.chat](irc://irc.libera.chat/glasgow); our Discord channel is [#glasgow at 1BitSquared's Discord server](https://1bitsquared.com/pages/chat).**
 
 **Important note: if you are looking to assemble boards yourself, use only revC1.**
 
