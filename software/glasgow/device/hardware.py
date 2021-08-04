@@ -5,6 +5,7 @@ import logging
 import usb1
 import asyncio
 import threading
+import importlib.resources
 from fx2 import VID_CYPRESS, PID_FX2, REQ_RAM, REG_CPUCS
 from fx2.format import input_data
 
@@ -20,6 +21,9 @@ logger = logging.getLogger(__name__)
 
 VID_QIHW         = 0x20b7
 PID_GLASGOW      = 0x9db1
+
+REQ_API_LEVEL    = 0x0F
+CUR_API_LEVEL    = 0x01
 
 REQ_EEPROM       = 0x10
 REQ_FPGA_CFG     = 0x11
@@ -55,94 +59,143 @@ class _PollerThread(threading.Thread):
 
 class GlasgowHardwareDevice:
     @staticmethod
-    def _enumerate_devices(usb_context, firmware_filename=None, _factory_rev=None):
-        firmware = None
-        handles  = {}
-        discover = True
-        while discover:
-            discover = False
-
-            for device in usb_context.getDeviceIterator():
-                vendor_id  = device.getVendorID()
-                product_id = device.getProductID()
-                device_id  = device.getbcdDevice()
-                if _factory_rev is None:
-                    if (vendor_id, product_id) != (VID_QIHW, PID_GLASGOW):
-                        continue
-                    revision = GlasgowConfig.decode_revision(device_id & 0xFF)
-                else:
-                    if (vendor_id, product_id) != (VID_CYPRESS, PID_FX2):
-                        continue
-                    revision = _factory_rev
-
-                if device_id & 0xFF00 in (0x0000, 0xA000):
-                    if firmware_filename is None:
-                        logger.warn("found device without firmware, but no firmware is provided")
-                        continue
-                    elif firmware is None:
-                        logger.debug("loading firmware from %s", firmware_filename)
-                        with open(firmware_filename, "rb") as f:
-                            firmware = input_data(f, fmt="ihex")
-
-                    logger.debug("loading firmware to rev%s device", revision)
-                    handle = device.open()
-                    handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [1])
-                    for address, data in firmware:
-                        while len(data) > 0:
-                            handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM,
-                                                  address, 0, data[:4096])
-                            data = data[4096:]
-                            address += 4096
-                    handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [0])
-                    handle.close()
-
-                    # And rediscover the device after it reenumerates.
-                    discover = True
-                else:
-                    handle = device.open()
-                    device_serial = handle.getASCIIStringDescriptor(
-                        device.getSerialNumberDescriptor())
-                    if device_serial in handles:
-                        continue
-
-                    logger.debug("found rev%s device with serial %s", revision, device_serial)
-                    handles[device_serial] = (revision, handle)
-
-            if discover:
-                # Give every device we loaded firmware onto a bit of time to reenumerate.
-                time.sleep(1.0)
-
-        return handles
+    def builtin_firmware():
+        with importlib.resources.open_text(__package__, "firmware.ihex") as f:
+            return input_data(f, fmt="ihex")
 
     @classmethod
-    def get_serial_list(cls, firmware_filename=None, *, _factory_rev=None):
+    def _enumerate_devices(cls, usb_context, _factory_rev=None):
+        devices = []
+        devices_by_serial = {}
+
+        def hotplug_callback(usb_context, device, event):
+            if event == usb1.HOTPLUG_EVENT_DEVICE_ARRIVED:
+                vendor_id  = device.getVendorID()
+                product_id = device.getProductID()
+
+                if (vendor_id, product_id) in [(VID_CYPRESS, PID_FX2), (VID_QIHW, PID_GLASGOW)]:
+                    devices.append(device)
+
+        if usb_context.hasCapability(usb1.CAP_HAS_HOTPLUG):
+            usb_context.hotplugRegisterCallback(hotplug_callback,
+                flags=usb1.HOTPLUG_ENUMERATE)
+        else:
+            devices.extend(list(usb_context.getDeviceIterator()))
+
+        while any(devices):
+            device = devices.pop()
+
+            vendor_id  = device.getVendorID()
+            product_id = device.getProductID()
+            device_id  = device.getbcdDevice()
+            if (vendor_id, product_id) == (VID_CYPRESS, PID_FX2):
+                if _factory_rev is None:
+                    logger.debug("found bare FX2 device %03d/%03d",
+                                 device.getBusNumber(), device.getDeviceAddress())
+                    continue
+                else:
+                    logger.debug("found bare FX2 device %03d/%03d to be factory flashed",
+                                 device.getBusNumber(), device.getDeviceAddress())
+                    vendor_id  = VID_QIHW
+                    product_id = PID_GLASGOW
+                    revision   = _factory_rev
+            elif (vendor_id, product_id) == (VID_QIHW, PID_GLASGOW):
+                revision = GlasgowConfig.decode_revision(device_id & 0xFF)
+            else:
+                continue
+
+            handle = device.open()
+            if device_id & 0xFF00 in (0x0000, 0xA000):
+                logger.debug("found rev%s device without firmware", revision)
+            else:
+                device_serial = handle.getASCIIStringDescriptor(
+                    device.getSerialNumberDescriptor())
+                if device_serial in devices_by_serial:
+                    handle.close()
+                    continue
+
+                try:
+                    device_api_level, = handle.controlRead(
+                        usb1.REQUEST_TYPE_VENDOR, REQ_API_LEVEL, 0, 0, 1)
+                except usb1.USBErrorPipe:
+                    device_api_level = 0x00
+                if device_api_level != CUR_API_LEVEL:
+                    logger.info("found rev%s device with API level %d "
+                                "(supported API level is %d)",
+                                revision, device_api_level, CUR_API_LEVEL)
+                else:
+                    handle.close()
+                    logger.debug("found rev%s device with serial %s", revision, device_serial)
+                    devices_by_serial[device_serial] = (revision, device)
+                    continue
+
+            logger.debug("loading built-in firmware to rev%s device", revision)
+            handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [1])
+            for address, data in cls.builtin_firmware():
+                while len(data) > 0:
+                    handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM,
+                                        address, 0, data[:4096])
+                    data = data[4096:]
+                    address += 4096
+            handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [0])
+            handle.close()
+
+            if usb_context.hasCapability(usb1.CAP_HAS_HOTPLUG):
+                # Hotplug is available; process hotplug events for a while looking for the device
+                # that re-enumerates after firmware upload. We expect two events (one detach and
+                # one attach event), but allow for a bit more than that. (It is not possible to
+                # wait for re-enumeration without some guesswork because USB lacks geographical
+                # addressing.)
+                devices_len = len(devices)
+                for event_count in range(5):
+                    usb_context.handleEventsTimeout(1.0)
+                    if devices_len < len(devices):
+                        # Found it!
+                        break
+                else:
+                    logger.warn("device %03d/%03d did not re-enumerate after firmware upload",
+                                device.getBusNumber(), device.getDeviceAddress())
+
+            else:
+                # No hotplug capability (most likely because we're running on Windows); give
+                # the device a bit of time to re-enumerate. (The device disconnects from the bus
+                # for ~1 second, so we should wait a few times that to allow for the variable
+                # OS and platform delays).
+                logger.debug("waiting for re-enumeration")
+                time.sleep(5.0)
+
+                devices.extend(list(usb_context.getDeviceIterator()))
+
+        return devices_by_serial
+
+    @classmethod
+    def enumerate_serials(cls):
         with usb1.USBContext() as usb_context:
-            handles = cls._enumerate_devices(usb_context, firmware_filename, _factory_rev)
-        return list(handles.keys())
+            devices = cls._enumerate_devices(usb_context)
+            return list(devices.keys())
 
-    def __init__(self, serial=None, firmware_filename=None, *, _factory_rev=None):
+    def __init__(self, serial=None, *, _factory_rev=None):
         usb_context = usb1.USBContext()
-        handles = self._enumerate_devices(usb_context, firmware_filename, _factory_rev)
+        devices = self._enumerate_devices(usb_context, _factory_rev)
 
-        if len(handles) == 0:
+        if len(devices) == 0:
             raise GlasgowDeviceError("device not found")
-        if serial is None:
-            if len(handles) > 1:
+        elif serial is None:
+            if len(devices) > 1:
                 raise GlasgowDeviceError("found {} devices (serial numbers {}), but a serial "
                                          "number is not specified"
-                                         .format(len(handles), ", ".join(handles.keys())))
+                                         .format(len(devices), ", ".join(devices.keys())))
+            self.revision, usb_device = next(iter(devices.values()))
         else:
-            if serial not in handles:
+            if serial not in devices:
                 raise GlasgowDeviceError("device with serial number {} not found"
                                          .format(serial))
+            self.revision, usb_device = devices[serial]
 
         self.usb_context = usb_context
         self.usb_poller = _PollerThread(self.usb_context)
         self.usb_poller.start()
-        if serial is None:
-            self.revision, self.usb_handle = next(iter(handles.values()))
-        else:
-            self.revision, self.usb_handle = handles[serial]
+        self.usb_handle = usb_device.open()
         try:
             self.usb_handle.setAutoDetachKernelDriver(True)
         except usb1.USBErrorNotSupported:
@@ -369,21 +422,24 @@ class GlasgowHardwareDevice:
     async def download_target(self, plan, *, rebuild=False):
         if await self.bitstream_id() == plan.bitstream_id and not rebuild:
             logger.info("device already has bitstream ID %s", plan.bitstream_id.hex())
-        else:
-            logger.info("building bitstream ID %s", plan.bitstream_id.hex())
-            await self.download_bitstream(plan.execute(), plan.bitstream_id)
+            return
+        logger.info("building bitstream ID %s", plan.bitstream_id.hex())
+        await self.download_bitstream(plan.execute(), plan.bitstream_id)
 
     async def download_prebuilt(self, plan, bitstream_file):
         bitstream_file_id = bitstream_file.read(16)
-        if bitstream_file_id != plan.bitstream_id:
-            logger.warn("prebuilt bitstream ID %s does not match design bitstream ID %s",
-                        bitstream_file_id.hex(), plan.bitstream_id.hex())
+        force_download = (bitstream_file_id == b'\xff' * 16)
+        if force_download:
+            logger.warn("prebuilt bitstream ID is all ones, forcing download")
         elif await self.bitstream_id() == plan.bitstream_id:
             logger.info("device already has bitstream ID %s", plan.bitstream_id.hex())
-        else:
-            logger.info("downloading prebuilt bitstream ID %s from file %r",
-                        plan.bitstream_id.hex(), bitstream_file.name)
-            await self.download_bitstream(bitstream_file.read(), plan.bitstream_id)
+            return
+        elif bitstream_file_id != plan.bitstream_id:
+            logger.warn("prebuilt bitstream ID %s does not match design bitstream ID %s",
+                        bitstream_file_id.hex(), plan.bitstream_id.hex())
+        logger.info("downloading prebuilt bitstream ID %s from file %r",
+                    plan.bitstream_id.hex(), bitstream_file.name)
+        await self.download_bitstream(bitstream_file.read(), plan.bitstream_id)
 
     async def _iobuf_enable(self, on):
         # control the IO-buffers (FXMA108) on revAB, they are on by default

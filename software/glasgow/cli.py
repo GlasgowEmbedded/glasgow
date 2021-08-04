@@ -8,9 +8,12 @@ import re
 import asyncio
 import signal
 import unittest
-import importlib.resources
 from vcd import VCDWriter
 from datetime import datetime
+try:
+    from ast import PyCF_ALLOW_TOP_LEVEL_AWAIT # Python 3.8+
+except ImportError:
+    PyCF_ALLOW_TOP_LEVEL_AWAIT = 0 # Python 3.7-
 
 from fx2 import FX2Config
 from fx2.format import input_data, diff_data
@@ -29,7 +32,9 @@ from .applet import *
 from .applet import all
 
 
-logger = logging.getLogger(__name__)
+# When running as `-m glasgow.cli`, `__name__` is `__main__`, and the real name
+# can be retrieved from `__loader__.name`.
+logger = logging.getLogger(__loader__.name)
 
 
 class TextHelpFormatter(argparse.HelpFormatter):
@@ -90,6 +95,9 @@ def create_argparser():
     parser.add_argument(
         "-F", "--filter-log", metavar="FILTER", type=str, action="append",
         help="raise TRACE log messages to DEBUG if they begin with 'FILTER: '")
+    parser.add_argument(
+        "--statistics", dest="show_statistics", default=False, action="store_true",
+        help="display performance counters before exiting")
 
     return parser
 
@@ -109,7 +117,7 @@ def get_argparser():
                                                     **kwargs)
             parser._add_action(subparsers)
         else:
-            subparsers = parser.add_subparsers(dest="applet", metavar="APPLET")
+            subparsers = parser.add_subparsers(**kwargs)
         return subparsers
 
     def add_applet_arg(parser, mode, required=False):
@@ -171,7 +179,7 @@ def get_argparser():
     parser = create_argparser()
 
     def revision(arg):
-        revisions = ["A0", "B0", "C0", "C1"]
+        revisions = ["A0", "B0", "C0", "C1", "C2"]
         if arg in revisions:
             return arg
         else:
@@ -253,27 +261,31 @@ def get_argparser():
         "run", formatter_class=TextHelpFormatter,
         help="run an applet and interact through its command-line interface")
     add_run_args(p_run)
-    add_applet_arg(p_run, mode="interact")
+    add_applet_arg(p_run, mode="interact", required=True)
 
     p_repl = subparsers.add_parser(
         "repl", formatter_class=TextHelpFormatter,
         help="run an applet and open a REPL to use its programming interface")
     add_run_args(p_repl)
-    add_applet_arg(p_repl, mode="repl")
+    add_applet_arg(p_repl, mode="repl", required=True)
 
     p_script = subparsers.add_parser(
         "script", formatter_class=TextHelpFormatter,
         help="run an applet and execute a script against its programming interface")
-    p_script.add_argument(
-        "script", metavar="SCRIPT-FILE", type=argparse.FileType("r"),
-        help="run Python SCRIPT-FILE in the applet context")
+    g_script_source = p_script.add_mutually_exclusive_group(required=True)
+    g_script_source.add_argument(
+        "script_file", metavar="FILENAME", type=argparse.FileType("r"), nargs="?",
+        help="run Python script FILENAME in the applet context")
+    g_script_source.add_argument(
+        "-c", metavar="COMMAND", dest="script_cmd", type=str,
+        help="run Python statement COMMAND in the applet context")
     add_run_args(p_script)
-    add_applet_arg(p_script, mode="script")
+    add_applet_arg(p_script, mode="script", required=True)
 
     p_tool = subparsers.add_parser(
         "tool", formatter_class=TextHelpFormatter,
         help="run an offline tool provided with an applet")
-    add_applet_arg(p_tool, mode="tool")
+    add_applet_arg(p_tool, mode="tool", required=True)
 
     p_flash = subparsers.add_parser(
         "flash", formatter_class=TextHelpFormatter,
@@ -315,12 +327,12 @@ def get_argparser():
     p_build.add_argument(
         "-f", "--filename", metavar="FILENAME", type=str,
         help="file to save artifact to (default: <applet-name>.{zip,il,bin})")
-    add_applet_arg(p_build, mode="build")
+    add_applet_arg(p_build, mode="build", required=True)
 
     p_test = subparsers.add_parser(
         "test", formatter_class=TextHelpFormatter,
         help="(advanced) test applet logic without target hardware")
-    add_applet_arg(p_test, mode="test")
+    add_applet_arg(p_test, mode="test", required=True)
 
     def factory_serial(arg):
         if re.match(r"^\d{8}T\d{6}Z$", arg):
@@ -450,23 +462,12 @@ async def _main():
     create_logger(args)
 
     if sys.version_info < (3, 8) and os.name == "nt":
-        logger.warn("Ctrl-C on Windows is only supported on Python 3.8+")
+        logger.warn("Ctrl+C on Windows is only supported on Python 3.8+")
 
     device = None
     try:
-        with importlib.resources.path(__package__, "firmware.ihex") as firmware_filename:
-            if args.action in ("build", "test", "tool"):
-                pass
-            elif args.action == "factory":
-                device = GlasgowHardwareDevice(args.serial, firmware_filename,
-                                               _factory_rev=args.factory_rev)
-            elif args.action == "list":
-                serial_list = GlasgowHardwareDevice.get_serial_list(firmware_filename)
-                for serial in sorted(serial_list):
-                    print(serial)
-                return 0
-            else:
-                device = GlasgowHardwareDevice(args.serial, firmware_filename)
+        if args.action not in ("build", "test", "tool", "factory", "list"):
+            device = GlasgowHardwareDevice(args.serial)
 
         if args.action == "voltage":
             if args.voltage is not None:
@@ -531,7 +532,8 @@ async def _main():
                 analyzer_iface = await device.demultiplexer.claim_interface(
                     target.analyzer, target.analyzer.mux_interface, args=None)
                 trace_decoder = TraceDecoder(target.analyzer.event_sources)
-                vcd_writer = VCDWriter(args.trace, timescale="1 ns", check_values=False,
+                # Use the coarsest possible timescale to improve performance with sigrok.
+                vcd_writer = VCDWriter(args.trace, timescale="10 ns", check_values=False,
                     comment='Generated by Glasgow for bitstream ID %s'
                             % plan.bitstream_id.hex())
 
@@ -569,15 +571,15 @@ async def _main():
 
                             for name in signals:
                                 vcd_writer.change(signals[name], next_timestamp, "x")
-                            next_timestamp += 1000 # 1us
+                            next_timestamp += 100 # 1us
                             break
 
                         event_repr = " ".join("{}={}".format(n, v)
                                               for n, v in events.items())
                         target.analyzer.logger.trace("cycle %d: %s", cycle, event_repr)
 
-                        timestamp      = int(1e9 * (cycle + 0) // target.sys_clk_freq)
-                        next_timestamp = int(1e9 * (cycle + 1) // target.sys_clk_freq)
+                        timestamp      = int(1e8 * (cycle + 0) // target.sys_clk_freq)
+                        next_timestamp = int(1e8 * (cycle + 1) // target.sys_clk_freq)
                         if init:
                             init = False
                             vcd_writer._timestamp = timestamp
@@ -596,14 +598,20 @@ async def _main():
                     logger.warn("applet %r is PREVIEW QUALITY and may CORRUPT DATA", args.applet)
                 try:
                     iface = await applet.run(device, args)
-                    if args.action in "run":
+                    if args.action == "run":
                         await applet.interact(device, args, iface)
-                    if args.action == "repl":
+                    elif args.action == "repl":
                         await applet.repl(device, args, iface)
-                    if args.action == "script":
-                        code = compile(args.script.read(), filename=args.script.name,
-                            mode="exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
-                        await eval(code, {"iface":iface, "device":device})
+                    elif args.action == "script":
+                        if args.script_file:
+                            code = compile(args.script_file.read(), filename=args.script_file.name,
+                                mode="exec", flags=PyCF_ALLOW_TOP_LEVEL_AWAIT)
+                        else:
+                            code = compile(args.script_cmd, filename="<command>",
+                                mode="exec", flags=PyCF_ALLOW_TOP_LEVEL_AWAIT)
+                        future = eval(code, {"iface":iface, "device":device})
+                        if future is not None:
+                            await future
 
                 except GlasgowAppletError as e:
                     applet.logger.error(str(e))
@@ -611,6 +619,8 @@ async def _main():
                     pass # terminate gracefully
                 finally:
                     await device.demultiplexer.flush()
+                    if args.show_statistics:
+                        device.demultiplexer.statistics()
 
             async def wait_for_sigint():
                 await wait_for_signal(signal.SIGINT)
@@ -619,10 +629,11 @@ async def _main():
             if do_trace:
                 analyzer_task = asyncio.ensure_future(run_analyzer())
 
-            applet_task = asyncio.ensure_future(run_applet())
-            sigint_task = asyncio.ensure_future(wait_for_sigint())
+            tasks = []
+            tasks.append(asyncio.ensure_future(run_applet()))
+            if args.action != "repl":
+                tasks.append(asyncio.ensure_future(wait_for_sigint()))
 
-            tasks = [applet_task, sigint_task]
             done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
             for task in pending:
                 task.cancel()
@@ -706,10 +717,14 @@ async def _main():
                 new_image = fx2_config.encode()
                 new_image[0] = 0xC0 # see below
             else:
-                logger.info("using firmware from %s",
-                            args.firmware.name if args.firmware else firmware_filename)
-                with (args.firmware or open(firmware_filename, "rb")) as f:
-                    for (addr, chunk) in input_data(f, fmt="ihex"):
+                if args.firmware:
+                    logger.warn("using custom firmware from %s", args.firmware.name)
+                    with args.firmware as f:
+                        for (addr, chunk) in input_data(f, fmt="ihex"):
+                            fx2_config.append(addr, chunk)
+                else:
+                    logger.info("using built-in firmware")
+                    for (addr, chunk) in GlasgowHardwareDevice.builtin_firmware():
                         fx2_config.append(addr, chunk)
                 fx2_config.disconnect = True
                 new_image = fx2_config.encode()
@@ -781,14 +796,18 @@ async def _main():
                 return 1
 
         if args.action == "factory":
+            device = GlasgowHardwareDevice(args.serial, _factory_rev=args.factory_rev)
+
             logger.info("reading device configuration")
             header = await device.read_eeprom("fx2", 0, 8 + 4 + GlasgowConfig.size)
-            if not re.match(rb"^\xff+$", header):
-                if args.force:
-                    logger.warning("device already factory-programmed, proceeding anyway")
-                else:
-                    logger.error("device already factory-programmed")
-                    return 1
+            if re.match(rb"^\xff+$", header):
+                needs_power_cycle = False
+            elif args.force:
+                logger.warning("device already factory-programmed, proceeding anyway")
+                needs_power_cycle = True
+            else:
+                logger.error("device already factory-programmed")
+                return 1
 
             fx2_config = FX2Config(vendor_id=VID_QIHW, product_id=PID_GLASGOW,
                                    device_id=GlasgowConfig.encode_revision(args.factory_rev),
@@ -809,6 +828,14 @@ async def _main():
             if await device.read_eeprom("fx2", 0, len(image)) != image:
                 logger.critical("factory programming failed")
                 return 1
+
+            if needs_power_cycle:
+                logger.warning("power-cycle the device for the changes to take effect")
+
+        if args.action == "list":
+            for serial in sorted(GlasgowHardwareDevice.enumerate_serials()):
+                print(serial)
+            return 0
 
     except GlasgowDeviceError as e:
         logger.error(e)

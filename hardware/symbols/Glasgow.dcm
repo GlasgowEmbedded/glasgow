@@ -18,6 +18,18 @@ K SMBUS I2C Expander Level Shifter
 F https://www.nxp.com/docs/en/data-sheet/PCA6408A.pdf
 $ENDCMP
 #
+$CMP SP3012-06UTG
+D Low Capacitance TVS Diode Array, 5V Standoff, 6 Channels, UDFN-14
+K usb 3.0 esd protection suppression transient
+F https://www.littelfuse.com/~/media/electronics/datasheets/tvs_diode_arrays/littelfuse_tvs_diode_array_sp3012_datasheet.pdf.pdf
+$ENDCMP
+#
+$CMP SW_Push_Shield
+D Push button switch, generic, two pins
+K switch normally-open pushbutton push-button
+F ~
+$ENDCMP
+#
 $CMP TLV73310PQDRVRQ1
 D 300 mA Low Dropout Voltage Regulator, Fixed Output 1.0V, WSON6
 K 300mA LDO Regulator Fixed Positive

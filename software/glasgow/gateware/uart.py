@@ -1,17 +1,20 @@
-from nmigen.compat import *
-from nmigen.compat.genlib.cdc import MultiReg
+from nmigen import *
+from nmigen.lib.cdc import FFSynchronizer
 
 
 __all__ = ["UART"]
 
 
-class UARTBus(Module):
+class UARTBus(Elaboratable):
     """
     UART bus.
 
     Provides synchronization.
     """
     def __init__(self, pads, invert_rx, invert_tx):
+        self.invert_rx = invert_rx
+        self.invert_tx = invert_tx
+
         self.has_rx = hasattr(pads, "rx_t")
         if self.has_rx:
             self.rx_t = pads.rx_t
@@ -22,23 +25,26 @@ class UARTBus(Module):
             self.tx_t = pads.tx_t
             self.tx_o = Signal(reset=1)
 
-        ###
+    def elaborate(self, platform):
+        m = Module()
 
         if self.has_tx:
-            self.comb += self.tx_t.oe.eq(1)
-            if invert_tx:
-                self.comb += self.tx_t.o.eq(~self.tx_o)
+            m.d.comb += self.tx_t.oe.eq(1)
+            if self.invert_tx:
+                m.d.comb += self.tx_t.o.eq(~self.tx_o)
             else:
-                self.comb += self.tx_t.o.eq(self.tx_o)
+                m.d.comb += self.tx_t.o.eq(self.tx_o)
 
         if self.has_rx:
-            if invert_rx:
-                self.specials += MultiReg(~self.rx_t.i, self.rx_i, reset=1)
+            if self.invert_rx:
+                m.submodules += FFSynchronizer(~self.rx_t.i, self.rx_i, reset=1)
             else:
-                self.specials += MultiReg(self.rx_t.i, self.rx_i, reset=1)
+                m.submodules += FFSynchronizer(self.rx_t.i, self.rx_i, reset=1)
+
+        return m
 
 
-class UART(Module):
+class UART(Elaboratable):
     """
     Asynchronous serial receiver-transmitter.
 
@@ -96,9 +102,15 @@ class UART(Module):
     """
     def __init__(self, pads, bit_cyc, data_bits=8, parity="none", max_bit_cyc=None,
                  invert_rx=False, invert_tx=False):
-        if max_bit_cyc is None:
-            max_bit_cyc = bit_cyc
-        self.bit_cyc = Signal(reset=bit_cyc, max=max_bit_cyc + 1)
+        if max_bit_cyc is not None:
+            self.max_bit_cyc = max_bit_cyc
+        else:
+            self.max_bit_cyc = bit_cyc
+
+        self.data_bits = data_bits
+        self.parity = parity
+
+        self.bit_cyc = Signal(range(self.max_bit_cyc + 1), reset=bit_cyc)
 
         self.rx_data = Signal(data_bits)
         self.rx_rdy  = Signal()
@@ -112,9 +124,12 @@ class UART(Module):
         self.tx_rdy  = Signal()
         self.tx_ack  = Signal()
 
-        self.submodules.bus = bus = UARTBus(pads, invert_rx=invert_rx, invert_tx=invert_tx)
+        self.bus = UARTBus(pads, invert_rx=invert_rx, invert_tx=invert_tx)
 
-        ###
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.bus = self.bus
 
         def calc_parity(sig, kind):
             if kind in ("zero", "none"):
@@ -122,7 +137,7 @@ class UART(Module):
             elif kind == "one":
                 return C(1, 1)
             else:
-                bits, _ = value_bits_sign(sig)
+                bits, _ = sig.shape()
                 even_parity = sum([sig[b] for b in range(bits)]) & 1
                 if kind == "odd":
                     return ~even_parity
@@ -131,170 +146,151 @@ class UART(Module):
                 else:
                     assert False
 
-        if bus.has_rx:
+        if self.bus.has_rx:
             rx_start = Signal()
-            rx_timer = Signal(max=max_bit_cyc)
+            rx_timer = Signal(range(self.max_bit_cyc))
             rx_stb   = Signal()
-            rx_shreg = Signal(data_bits)
-            rx_bitno = Signal(max=rx_shreg.nbits)
+            rx_shreg = Signal(self.data_bits)
+            rx_bitno = Signal(range(rx_shreg.nbits))
 
-            self.comb += self.rx_err.eq(self.rx_ferr | self.rx_ovf | self.rx_perr)
+            m.d.comb += self.rx_err.eq(self.rx_ferr | self.rx_ovf | self.rx_perr)
 
-            self.sync += [
-                If(rx_start,
-                    rx_timer.eq(self.bit_cyc >> 1),
-                ).Elif(rx_timer == 0,
-                    rx_timer.eq(self.bit_cyc - 1)
-                ).Else(
-                    rx_timer.eq(rx_timer - 1)
-                )
-            ]
-            self.comb += rx_stb.eq(rx_timer == 0)
+            with m.If(rx_start):
+                m.d.sync += rx_timer.eq(self.bit_cyc >> 1)
+            with m.Elif(rx_timer == 0):
+                m.d.sync += rx_timer.eq(self.bit_cyc - 1)
+            with m.Else():
+                m.d.sync += rx_timer.eq(rx_timer - 1)
+            m.d.comb += rx_stb.eq(rx_timer == 0)
 
-            self.submodules.rx_fsm = FSM(reset_state="IDLE")
-            self.rx_fsm.act("IDLE",
-                NextValue(self.rx_rdy, 0),
-                If(~bus.rx_i,
-                    rx_start.eq(1),
-                    NextState("START")
-                )
-            )
-            self.rx_fsm.act("START",
-                If(rx_stb,
-                    NextState("DATA")
-                )
-            )
-            self.rx_fsm.act("DATA",
-                If(rx_stb,
-                    NextValue(rx_shreg, Cat(rx_shreg[1:8], bus.rx_i)),
-                    NextValue(rx_bitno, rx_bitno + 1),
-                    If(rx_bitno == rx_shreg.nbits - 1,
-                        If(parity == "none",
-                            NextState("STOP")
-                        ).Else(
-                            NextState("PARITY")
-                        )
-                    )
-                )
-            )
-            self.rx_fsm.act("PARITY",
-                If(rx_stb,
-                    If(bus.rx_i == calc_parity(rx_shreg, parity),
-                        NextState("STOP")
-                    ).Else(
-                        self.rx_perr.eq(1),
-                        NextState("IDLE")
-                    )
-                )
-            )
-            self.rx_fsm.act("STOP",
-                If(rx_stb,
-                    If(~bus.rx_i,
-                        self.rx_ferr.eq(1),
-                        NextState("IDLE")
-                    ).Else(
-                        NextValue(self.rx_data, rx_shreg),
-                        NextState("READY")
-                    )
-                )
-            )
-            self.rx_fsm.act("READY",
-                NextValue(self.rx_rdy, 1),
-                If(self.rx_ack,
-                    NextState("IDLE")
-                ).Elif(~bus.rx_i,
-                    self.rx_ovf.eq(1),
-                    NextState("IDLE")
-                )
-            )
+            with m.FSM():
+                with m.State("IDLE"):
+                    m.d.sync += self.rx_rdy.eq(0),
+                    with m.If(~self.bus.rx_i):
+                        m.d.comb += rx_start.eq(1)
+                        m.next = "START"
+                with m.State("START"):
+                    with m.If(rx_stb):
+                        m.next = "DATA"
+                with m.State("DATA"):
+                    with m.If(rx_stb):
+                        m.d.sync += [
+                            rx_shreg.eq(Cat(rx_shreg[1:], self.bus.rx_i)),
+                            rx_bitno.eq(rx_bitno + 1),
+                        ]
+                        with m.If(rx_bitno == rx_shreg.nbits - 1):
+                            if self.parity == "none":
+                                m.next = "STOP"
+                            else:
+                                m.next = "PARITY"
+                with m.State("PARITY"):
+                    with m.If(rx_stb):
+                        with m.If(self.bus.rx_i == calc_parity(rx_shreg, self.parity)):
+                            m.next = "STOP"
+                        with m.Else():
+                            m.d.comb += self.rx_perr.eq(1)
+                            m.next = "IDLE"
+
+                with m.State("STOP"):
+                    with m.If(rx_stb):
+                        with m.If(~self.bus.rx_i):
+                            m.d.comb += self.rx_ferr.eq(1)
+                            m.next = "IDLE"
+                        with m.Else():
+                            m.d.sync += self.rx_data.eq(rx_shreg)
+                            m.next = "READY"
+                with m.State("READY"):
+                    m.d.sync += self.rx_rdy.eq(1)
+                    with m.If(self.rx_ack):
+                        m.next = "IDLE"
+                    with m.Elif(~self.bus.rx_i):
+                        m.d.comb += self.rx_ovf.eq(1)
+                        m.next = "IDLE"
 
         ###
 
-        if bus.has_tx:
+        if self.bus.has_tx:
             tx_start  = Signal()
-            tx_timer  = Signal(max=max_bit_cyc)
+            tx_timer  = Signal(range(self.max_bit_cyc))
             tx_stb    = Signal()
-            tx_shreg  = Signal(data_bits)
-            tx_bitno  = Signal(max=tx_shreg.nbits)
+            tx_shreg  = Signal(self.data_bits)
+            tx_bitno  = Signal(range(tx_shreg.nbits))
             tx_parity = Signal()
 
-            self.sync += [
-                If(tx_start | (tx_timer == 0),
-                    tx_timer.eq(self.bit_cyc - 1)
-                ).Else(
-                    tx_timer.eq(tx_timer - 1)
-                )
-            ]
-            self.comb += tx_stb.eq(tx_timer == 0)
+            with m.If(tx_start | (tx_timer == 0)):
+                m.d.sync += tx_timer.eq(self.bit_cyc - 1)
+            with m.Else():
+                m.d.sync += tx_timer.eq(tx_timer - 1)
+            m.d.comb += tx_stb.eq(tx_timer == 0)
 
-            self.submodules.tx_fsm = FSM(reset_state="IDLE")
-            self.tx_fsm.act("IDLE",
-                self.tx_rdy.eq(1),
-                If(self.tx_ack,
-                    tx_start.eq(1),
-                    NextValue(tx_shreg, self.tx_data),
-                    If(parity != "none",
-                        NextValue(tx_parity, calc_parity(self.tx_data, parity))
-                    ),
-                    NextValue(bus.tx_o, 0),
-                    NextState("START")
-                ).Else(
-                    NextValue(bus.tx_o, 1)
-                )
-            )
-            self.tx_fsm.act("START",
-                If(tx_stb,
-                    NextValue(bus.tx_o, tx_shreg[0]),
-                    NextValue(tx_shreg, Cat(tx_shreg[1:8], 0)),
-                    NextState("DATA")
-                )
-            )
-            self.tx_fsm.act("DATA",
-                If(tx_stb,
-                    NextValue(tx_bitno, tx_bitno + 1),
-                    If(tx_bitno != tx_shreg.nbits - 1,
-                        NextValue(bus.tx_o, tx_shreg[0]),
-                        NextValue(tx_shreg, Cat(tx_shreg[1:8], 0)),
-                    ).Else(
-                        If(parity == "none",
-                            NextValue(bus.tx_o, 1),
-                            NextState("STOP")
-                        ).Else(
-                            NextValue(bus.tx_o, tx_parity),
-                            NextState("PARITY")
-                        )
-                    )
-                )
-            )
-            self.tx_fsm.act("PARITY",
-                If(tx_stb,
-                    NextValue(bus.tx_o, 1),
-                    NextState("STOP")
-                )
-            )
-            self.tx_fsm.act("STOP",
-                If(tx_stb,
-                    NextState("IDLE")
-                )
-            )
+            with m.FSM():
+                with m.State("IDLE"):
+                    m.d.comb += self.tx_rdy.eq(1)
+                    with m.If(self.tx_ack):
+                        m.d.comb += tx_start.eq(1)
+                        m.d.sync += [
+                            tx_shreg.eq(self.tx_data),
+                            self.bus.tx_o.eq(0),
+                        ]
+                        if self.parity != "none":
+                            m.d.sync += tx_parity.eq(calc_parity(self.tx_data, self.parity))
+                        m.next = "START"
+                    with m.Else():
+                        m.d.sync += self.bus.tx_o.eq(1)
+                with m.State("START"):
+                    with m.If(tx_stb):
+                        m.d.sync += [
+                            self.bus.tx_o.eq(tx_shreg[0]),
+                            tx_shreg.eq(Cat(tx_shreg[1:], C(0,1))),
+                        ]
+                        m.next = "DATA"
+                with m.State("DATA"):
+                    with m.If(tx_stb):
+                        m.d.sync += tx_bitno.eq(tx_bitno + 1)
+                        with m.If(tx_bitno != tx_shreg.nbits - 1):
+                            m.d.sync += [
+                                self.bus.tx_o.eq(tx_shreg[0]),
+                                tx_shreg.eq(Cat(tx_shreg[1:], C(0,1))),
+                            ]
+                        with m.Else():
+                            if self.parity == "none":
+                                m.d.sync += self.bus.tx_o.eq(1)
+                                m.next = "STOP"
+                            else:
+                                m.d.sync += self.bus.tx_o.eq(tx_parity)
+                                m.next = "PARITY"
+                with m.State("PARITY"):
+                    with m.If(tx_stb):
+                        m.d.sync += self.bus.tx_o.eq(1),
+                        m.next = "STOP"
+                with m.State("STOP"):
+                    with m.If(tx_stb):
+                        m.next = "IDLE"
+
+        return m
 
 # -------------------------------------------------------------------------------------------------
 
 import unittest
+from nmigen.lib.io import Pin
 
 from . import simulation_test
 
 
-class UARTTestbench(Module):
+class UARTTestbench(Elaboratable):
     def __init__(self):
-        self.rx_t = TSTriple(reset_i=1)
+        self.rx_t = Pin(width=1, dir='i')
         self.rx_i = self.rx_t.i
 
-        self.tx_t = TSTriple()
+        self.tx_t = Pin(width=1, dir='oe')
         self.tx_o = self.tx_t.o
 
         self.bit_cyc = 4
-        self.submodules.dut = UART(pads=self, bit_cyc=self.bit_cyc)
+
+        self.dut = UART(pads=self, bit_cyc=self.bit_cyc)
+
+    def elaborate(self, platform):
+        return self.dut
 
 
 class UARTRXTestCase(unittest.TestCase):

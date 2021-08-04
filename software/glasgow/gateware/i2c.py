@@ -65,7 +65,7 @@ class I2CInitiator(Module):
     :type period_cyc: int
     :param clk_stretch:
         If true, SCL will be monitored for devices stretching the clock. Otherwise,
-        only interally generated SCL is considered.
+        only internally generated SCL is considered.
     :type clk_stretch: bool
 
     :attr busy:
@@ -284,7 +284,7 @@ class I2CTarget(Module):
     :attr read:
         Read strobe. Active for one cycle immediately before latching ``data_o``.
     :attr data_o:
-        Data octet to be transmitted to the initiator. Latched immedately after receiving
+        Data octet to be transmitted to the initiator. Latched immediately after receiving
         a read command.
     """
     def __init__(self, pads):

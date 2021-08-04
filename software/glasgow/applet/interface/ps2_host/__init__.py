@@ -60,11 +60,10 @@
 # details on the command set.
 
 import logging
-import operator
 import asyncio
-from nmigen.compat import *
-from nmigen.compat.genlib.cdc import MultiReg
-from nmigen.compat.genlib.fifo import SyncFIFOBuffered
+from nmigen import *
+from nmigen.lib.cdc import FFSynchronizer
+from nmigen.hdl.rec import Record
 
 from ... import *
 
@@ -79,21 +78,23 @@ _frame_layout = [
 def _verify_frame(frame):
     return (
         (frame.start == 0) &
-        (frame.parity == ~reduce(operator.xor, frame.data)) &
+        (frame.parity == ~frame.data.xor()) &
         (frame.stop == 1)
     )
 
 def _prepare_frame(frame, data):
     return [
-        NextValue(frame.start,  0),
-        NextValue(frame.data,   data),
-        NextValue(frame.parity, ~reduce(operator.xor, data)),
-        NextValue(frame.stop,   1),
+        frame.start.eq(0),
+        frame.data.eq(data),
+        frame.parity.eq(~data.xor()),
+        frame.stop.eq(1),
     ]
 
 
-class PS2Bus(Module):
+class PS2Bus(Elaboratable):
     def __init__(self, pads):
+        self.pads = pads
+
         self.falling = Signal()
         self.rising  = Signal()
         self.clock_i = Signal(reset=1)
@@ -101,31 +102,36 @@ class PS2Bus(Module):
         self.data_i  = Signal(reset=1)
         self.data_o  = Signal(reset=1)
 
-        ###
+    def elaborate(self, platform):
+        m = Module()
 
-        self.comb += [
-            pads.clock_t.o.eq(0),
-            pads.clock_t.oe.eq(~self.clock_o),
-            pads.data_t.o.eq(0),
-            pads.data_t.oe.eq(~self.data_o),
+        m.d.comb += [
+            self.pads.clock_t.o.eq(0),
+            self.pads.clock_t.oe.eq(~self.clock_o),
+            self.pads.data_t.o.eq(0),
+            self.pads.data_t.oe.eq(~self.data_o),
         ]
-        self.specials += [
-            MultiReg(pads.clock_t.i, self.clock_i, reset=1),
-            MultiReg(pads.data_t.i,  self.data_i,  reset=1),
+        m.submodules += [
+            FFSynchronizer(self.pads.clock_t.i, self.clock_i, reset=1),
+            FFSynchronizer(self.pads.data_t.i,  self.data_i,  reset=1),
         ]
 
         clock_s = Signal(reset=1)
         clock_r = Signal(reset=1)
-        self.sync += [
+        m.d.sync += [
             clock_s.eq(self.clock_i),
             clock_r.eq(clock_s),
             self.falling.eq( clock_r & ~clock_s),
             self.rising .eq(~clock_r &  clock_s),
         ]
 
+        return m
 
-class PS2HostController(Module):
+
+class PS2HostController(Elaboratable):
     def __init__(self, bus):
+        self.bus = bus
+
         self.en      = Signal()  # whether communication should be allowed or inhibited
         self.stb     = Signal()  # strobed for 1 cycle after each stop bit to indicate an update
 
@@ -136,160 +142,180 @@ class PS2HostController(Module):
         self.o_valid = Signal()  # whether o_data has been received correctly
         self.o_data  = Signal(8) # data byte read from device
 
-        ###
+    def elaborate(self, platform):
+        m = Module()
 
         frame = Record(_frame_layout)
-        bitno = self.bitno = Signal(max=12)
+        bitno = self.bitno = Signal(range(12))
         setup = Signal()
         shift = Signal()
         input = Signal()
-        self.sync += [
-            If(setup,
-                bus.data_o.eq(frame.raw_bits()[0])
-            ),
-            If(shift,
-                frame.raw_bits().eq(Cat(frame.raw_bits()[1:], input)),
+
+        with m.If(setup):
+            m.d.sync += self.bus.data_o.eq(frame[0])
+        with m.If(shift):
+            m.d.sync += [
+                frame.eq(Cat(frame[1:], input)),
                 bitno.eq(bitno + 1),
-            )
-        ]
+            ]
 
-        self.submodules.fsm = FSM()
-        self.fsm.act("IDLE",
-            If(self.en,
-                _prepare_frame(frame, self.i_data),
-                NextValue(bus.clock_o, 1),
-                NextValue(bitno, 0),
-                If(self.i_valid,
-                    setup.eq(1),
-                    shift.eq(1),
-                    NextState("SEND-BIT")
-                ).Else(
-                    NextState("RECV-BIT")
-                )
-            ).Else(
-                # Inhibit clock
-                NextValue(bus.clock_o, 0),
-                NextValue(bus.data_o,  1),
-            )
-        )
-        self.fsm.act("SEND-BIT",
-            input.eq(1),
-            setup.eq(bus.falling),
-            shift.eq(bus.rising),
-            If(bitno == 12,
-                self.stb.eq(1),
-                NextValue(bitno, 0),
-                # Device acknowledgement ("line control" bit)
-                NextValue(self.i_ack, ~bus.data_i),
-                NextState("RECV-BIT")
-            ),
-            If(~self.en,
-                NextState("IDLE"),
-            )
-        )
-        self.fsm.act("RECV-BIT",
-            input.eq(bus.data_i),
-            shift.eq(bus.falling),
-            If(bitno == 11,
-                self.stb.eq(1),
-                NextValue(bitno, 0),
-                NextValue(self.o_valid, _verify_frame(frame)),
-                NextValue(self.o_data, frame.data),
-            ),
-            If(~self.en,
-                NextState("IDLE"),
-            )
-        )
+        with m.FSM():
+            with m.State("IDLE"):
+                with m.If(self.en):
+                    m.d.sync += [
+                        *_prepare_frame(frame, self.i_data),
+                        self.bus.clock_o.eq(1),
+                        bitno.eq(0),
+                    ]
+                    with m.If(self.i_valid):
+                        m.d.comb += [
+                            setup.eq(1),
+                            shift.eq(1),
+                        ]
+                        m.next = "SEND-BIT"
+                    with m.Else():
+                        m.next = "RECV-BIT"
+                with m.Else():
+                    m.d.sync += [
+                        # Inhibit clock
+                        self.bus.clock_o.eq(0),
+                        self.bus.data_o.eq(1),
+                    ]
+
+            with m.State("SEND-BIT"):
+                m.d.comb += [
+                    input.eq(1),
+                    setup.eq(self.bus.falling),
+                    shift.eq(self.bus.rising),
+                ]
+                with m.If(bitno == 12):
+                    m.d.comb += self.stb.eq(1)
+                    m.d.sync += [
+                        bitno.eq(0),
+                        # Device acknowledgement ("line control" bit)
+                        self.i_ack.eq(~self.bus.data_i),
+                    ]
+                    m.next = "RECV-BIT"
+                with m.If(~self.en):
+                    m.next = "IDLE"
+
+            with m.State("RECV-BIT"):
+                m.d.comb += [
+                    input.eq(self.bus.data_i),
+                    shift.eq(self.bus.falling),
+                ]
+                with m.If(bitno == 11):
+                    m.d.comb += self.stb.eq(1),
+                    m.d.sync += [
+                        bitno.eq(0),
+                        self.o_valid.eq(_verify_frame(frame)),
+                        self.o_data.eq(frame.data),
+                    ]
+                with m.If(~self.en):
+                    m.next = "IDLE"
+
+        return m
 
 
-class PS2HostSubtarget(Module):
+class PS2HostSubtarget(Elaboratable):
     def __init__(self, pads, in_fifo, out_fifo, inhibit_cyc):
-        self.submodules.bus  = bus  = PS2Bus(pads)
-        self.submodules.ctrl = ctrl = PS2HostController(bus)
+        self.pads = pads
+        self.in_fifo = in_fifo
+        self.out_fifo = out_fifo
+        self.inhibit_cyc = inhibit_cyc
 
-        timer = Signal(max=inhibit_cyc)
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.bus  = bus  = PS2Bus(self.pads)
+        m.submodules.ctrl = ctrl = PS2HostController(bus)
+
+        timer = Signal(range(self.inhibit_cyc))
         count = Signal(7)
         error = Signal()
 
-        self.submodules.fsm = FSM()
-        self.fsm.act("RECV-COMMAND",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(count, out_fifo.dout[:7]),
-                NextValue(error, 0),
-                If(out_fifo.dout[7],
-                    NextValue(ctrl.i_valid, 1),
-                    NextState("WRITE-BYTE")
-                ).Else(
-                    NextValue(ctrl.i_valid, 0),
-                    NextValue(ctrl.en, 1),
-                    NextState("READ-WAIT")
-                )
-            )
-        )
-        self.fsm.act("WRITE-BYTE",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(ctrl.i_data, out_fifo.dout),
-                NextValue(ctrl.en, 1),
-                NextState("WRITE-WAIT")
-            )
-        )
-        self.fsm.act("WRITE-WAIT",
-            If(ctrl.stb,
-                NextState("WRITE-CHECK")
-            )
-        )
-        self.fsm.act("WRITE-CHECK",
-            # Writability not checked to avoid dealing with overflows on host controller side.
-            # You better be reading from that FIFO. (But the FIFO is 4× larger than the largest
-            # possible command response, so it's never a race.)
-            in_fifo.we.eq(1),
-            in_fifo.din.eq(ctrl.i_ack),
-            If((count == 0) | ~ctrl.i_ack,
-                NextState("INHIBIT")
-            ).Else(
-                NextState("READ-WAIT")
-            )
-        )
-        self.fsm.act("READ-WAIT",
-            If(count == 0,
-                NextState("SEND-ERROR")
-            ).Elif(ctrl.stb,
-                NextState("READ-BYTE")
-            ),
-        )
-        self.fsm.act("READ-BYTE",
-            in_fifo.we.eq(1),
-            in_fifo.din.eq(ctrl.o_data),
-            If(~ctrl.o_valid & (error == 0),
-                NextValue(error, count),
-            ),
-            If(count != 0x7f,
-                # Maximum count means an infinite read.
-                NextValue(count, count - 1),
-            ),
-            NextState("READ-WAIT")
-        )
-        self.fsm.act("SEND-ERROR",
-            in_fifo.we.eq(1),
-            in_fifo.din.eq(error),
-            NextState("INHIBIT")
-        )
-        self.fsm.act("INHIBIT",
-            # Make sure the controller has time to react to clock inhibition, in case we are
-            # sending two back-to-back commands (or a command and a read, etc).
-            NextValue(ctrl.en, 0),
-            NextValue(timer, inhibit_cyc),
-            NextState("INHIBIT-WAIT")
-        )
-        self.fsm.act("INHIBIT-WAIT",
-            If(timer == 0,
-                NextState("RECV-COMMAND")
-            ).Else(
-                NextValue(timer, timer - 1)
-            )
-        )
+        with m.FSM():
+            with m.State("RECV-COMMAND"):
+                m.d.comb += self.out_fifo.r_en.eq(1)
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.sync += [
+                        count.eq(self.out_fifo.r_data[:7]),
+                        error.eq(0),
+                    ]
+                    with m.If(self.out_fifo.r_data[7]):
+                        m.d.sync += ctrl.i_valid.eq(1)
+                        m.next = "WRITE-BYTE"
+                    with m.Else():
+                        m.d.sync += [
+                            ctrl.i_valid.eq(0),
+                            ctrl.en.eq(1),
+                        ]
+                        m.next = "READ-WAIT"
+
+            with m.State("WRITE-BYTE"):
+                m.d.comb += self.out_fifo.r_en.eq(1)
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.sync += [
+                        ctrl.i_data.eq(self.out_fifo.r_data),
+                        ctrl.en.eq(1),
+                    ]
+                    m.next = "WRITE-WAIT"
+            with m.State("WRITE-WAIT"):
+                with m.If(ctrl.stb):
+                    m.next = "WRITE-CHECK"
+            with m.State("WRITE-CHECK"):
+                # Writability not checked to avoid dealing with overflows on host controller side.
+                # You better be reading from that FIFO. (But the FIFO is 4× larger than the largest
+                # possible command response, so it's never a race.)
+                m.d.comb += [
+                    self.in_fifo.w_en.eq(1),
+                    self.in_fifo.w_data.eq(ctrl.i_ack),
+                ]
+                with m.If((count == 0) | ~ctrl.i_ack):
+                    m.next = "INHIBIT"
+                with m.Else():
+                    m.next = "READ-WAIT"
+
+            with m.State("READ-WAIT"):
+                with m.If(count == 0):
+                    m.next = "SEND-ERROR"
+                with m.Elif(ctrl.stb):
+                    m.next = "READ-BYTE"
+            with m.State("READ-BYTE"):
+                m.d.comb += [
+                    self.in_fifo.w_en.eq(1),
+                    self.in_fifo.w_data.eq(ctrl.o_data),
+                ]
+                with m.If(~ctrl.o_valid & (error == 0)):
+                    m.d.sync += error.eq(count)
+                with m.If(count != 0x7f):
+                    # Maximum count means an infinite read.
+                    m.d.sync += count.eq(count - 1)
+                m.next = "READ-WAIT"
+
+            with m.State("SEND-ERROR"):
+                m.d.comb += [
+                    self.in_fifo.w_en.eq(1),
+                    self.in_fifo.w_data.eq(error),
+                ]
+                m.next = "INHIBIT"
+
+            with m.State("INHIBIT"):
+                # Make sure the controller has time to react to clock inhibition, in case we are
+                # sending two back-to-back commands (or a command and a read, etc).
+                m.d.sync += [
+                    ctrl.en.eq(0),
+                    timer.eq(self.inhibit_cyc),
+                ]
+                m.next = "INHIBIT-WAIT"
+
+            with m.State("INHIBIT-WAIT"):
+                with m.If(timer == 0):
+                    m.next = "RECV-COMMAND"
+                with m.Else():
+                    m.d.sync += timer.eq(timer - 1)
+
+        return m
 
 
 class PS2HostError(GlasgowAppletError):
@@ -351,6 +377,7 @@ class PS2HostInterface:
 
     async def stream(self, callback):
         assert not self._streaming
+        self._streaming = True
         await self._lower.write([0x7f])
         while True:
             await callback(*await self._lower.read(1))

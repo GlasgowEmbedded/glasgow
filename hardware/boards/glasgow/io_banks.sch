@@ -1,4 +1,4 @@
-EESchema Schematic File Version 5
+EESchema Schematic File Version 4
 EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
@@ -6,17 +6,12 @@ encoding utf-8
 Sheet 2 4
 Title "I/O Banks"
 Date ""
-Rev "C1"
+Rev "C2"
 Comp "whitequark research"
 Comment1 "Glasgow debug tool"
 Comment2 ""
 Comment3 ""
 Comment4 ""
-Comment5 ""
-Comment6 ""
-Comment7 ""
-Comment8 ""
-Comment9 ""
 $EndDescr
 $Sheet
 S 6100 3850 600  1800
@@ -110,7 +105,7 @@ F 3 "" H 1300 2800 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Text Notes 3250 4250 0    50   ~ 0
-Addr DAC: 0001100\nAddr ADC: 1010100\nAddr Pull: 0100000
+Addr DAC: 0001100\nAddr ADC: 1000000\nAddr Pull: 0100000
 Wire Wire Line
 	6000 4500 6100 4500
 $Comp
@@ -127,22 +122,9 @@ F 3 "" H 6000 4500 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 Text Notes 6750 4250 0    50   ~ 0
-Addr DAC: 0001101\nAddr ADC: 1010101\nAddr Pull: 0100001
+Addr DAC: 0001101\nAddr ADC: 1000001\nAddr Pull: 0100001
 Wire Wire Line
 	6000 4600 6100 4600
-$Comp
-L power:GND #PWR?
-U 1 1 5C9E33D4
-P 6000 4600
-AR Path="/5C9E33D4" Ref="#PWR?"  Part="1" 
-AR Path="/5C7B59B0/5C9E33D4" Ref="#PWR0105"  Part="1" 
-F 0 "#PWR0105" H 6000 4350 50  0001 C CNN
-F 1 "GND" V 6000 4400 50  0000 C CNN
-F 2 "" H 6000 4600 50  0001 C CNN
-F 3 "" H 6000 4600 50  0001 C CNN
-	1    6000 4600
-	0    1    1    0   
-$EndComp
 Wire Wire Line
 	1300 2850 1300 2800
 $Comp
@@ -305,8 +287,8 @@ P 10000 4300
 AR Path="/5C9E342D" Ref="J?"  Part="1" 
 AR Path="/5C7B59B0/5C9E342D" Ref="J5"  Part="1" 
 F 0 "J5" H 10050 5517 50  0000 C CNN
-F 1 "Conn_02x22_Odd_Even" H 10050 5426 50  0000 C CNN
-F 2 "Connector_PinHeader_1.27mm:PinHeader_2x22_P1.27mm_Vertical_SMD" H 10000 4300 50  0001 C CNN
+F 1 "PinHeader_2x22_P1.27mm" H 10050 5426 50  0000 C CNN
+F 2 "Glasgow:PinHeader_2x22_P1.27mm_Vertical__SMD" H 10000 4300 50  0001 C CNN
 F 3 "~" H 10000 4300 50  0001 C CNN
 F 4 "conn-smd-005in-22-2-hdr" H 10000 4300 50  0001 C CNN "1b2-bom-key"
 F 5 "FTS-122-01-L-DV" H 10000 4300 50  0001 C CNN "MPN"
@@ -491,7 +473,7 @@ AR Path="/5C9E3491" Ref="D?"  Part="1"
 AR Path="/5C7B59B0/5C9E3491" Ref="D6"  Part="1" 
 F 0 "D6" H 9500 1050 50  0000 C CNN
 F 1 "BLU" H 9350 1050 50  0000 C CNN
-F 2 "LED_SMD:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 9800 1050 50  0001 C CNN
+F 2 "LED_SMD:LED_0603_1608Metric" H 9800 1050 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/445/150060BS75000-368917.pdf" H 9800 1050 50  0001 C CNN
 F 4 "Wurth Electronics" H -450 150 50  0001 C CNN "Mfg"
 F 5 "150060BS75000" H -450 150 50  0001 C CNN "MPN"
@@ -509,7 +491,7 @@ AR Path="/5C9E349B" Ref="D?"  Part="1"
 AR Path="/5C7B59B0/5C9E349B" Ref="D7"  Part="1" 
 F 0 "D7" H 9500 1250 50  0000 C CNN
 F 1 "PNK" H 9350 1250 50  0000 C CNN
-F 2 "LED_SMD:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 9800 1250 50  0001 C CNN
+F 2 "LED_SMD:LED_0603_1608Metric" H 9800 1250 50  0001 C CNN
 F 3 "https://lcsc.com/product-detail/Light-Emitting-Diodes-LED_OptoSupply-OSK40603C1E_C268294.html" H 9800 1250 50  0001 C CNN
 F 4 "Optosupply" H -450 150 50  0001 C CNN "Mfg"
 F 5 "OSK40603C1E" H -450 150 50  0001 C CNN "MPN"
@@ -525,7 +507,7 @@ AR Path="/5C9E34A4" Ref="D?"  Part="1"
 AR Path="/5C7B59B0/5C9E34A4" Ref="D8"  Part="1" 
 F 0 "D8" H 9500 1450 50  0000 C CNN
 F 1 "WHT" H 9350 1450 50  0000 C CNN
-F 2 "LED_SMD:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 9800 1450 50  0001 C CNN
+F 2 "LED_SMD:LED_0603_1608Metric" H 9800 1450 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/348/sml-e1-e-1139169.pdf" H 9800 1450 50  0001 C CNN
 F 4 "ROHM Semiconductor" H -450 150 50  0001 C CNN "Mfg"
 F 5 "SMLEN3WBC8W1" H -450 150 50  0001 C CNN "MPN"
@@ -541,7 +523,7 @@ AR Path="/5C9E34AD" Ref="D?"  Part="1"
 AR Path="/5C7B59B0/5C9E34AD" Ref="D9"  Part="1" 
 F 0 "D9" H 9500 1650 50  0000 C CNN
 F 1 "PNK" H 9350 1650 50  0000 C CNN
-F 2 "LED_SMD:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 9800 1650 50  0001 C CNN
+F 2 "LED_SMD:LED_0603_1608Metric" H 9800 1650 50  0001 C CNN
 F 3 "https://lcsc.com/product-detail/Light-Emitting-Diodes-LED_OptoSupply-OSK40603C1E_C268294.html" H 9800 1650 50  0001 C CNN
 F 4 "Optosupply" H -450 150 50  0001 C CNN "Mfg"
 F 5 "OSK40603C1E" H -450 150 50  0001 C CNN "MPN"
@@ -557,7 +539,7 @@ AR Path="/5C9E34B6" Ref="D?"  Part="1"
 AR Path="/5C7B59B0/5C9E34B6" Ref="D10"  Part="1" 
 F 0 "D10" H 9500 1850 50  0000 C CNN
 F 1 "BLU" H 9350 1850 50  0000 C CNN
-F 2 "LED_SMD:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder" H 9800 1850 50  0001 C CNN
+F 2 "LED_SMD:LED_0603_1608Metric" H 9800 1850 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/445/150060BS75000-368917.pdf" H 9800 1850 50  0001 C CNN
 F 4 "Wurth Electronics" H -450 150 50  0001 C CNN "Mfg"
 F 5 "150060BS75000" H -450 150 50  0001 C CNN "MPN"
@@ -1034,7 +1016,6 @@ Wire Wire Line
 Wire Wire Line
 	2650 4600 2550 4600
 NoConn ~ 2550 4500
-NoConn ~ 2550 4600
 Wire Wire Line
 	6700 3950 6900 3950
 Wire Wire Line
@@ -1356,7 +1337,7 @@ L Connector_Generic:Conn_01x03 J10
 U 1 1 5C072C23
 P 3450 3550
 F 0 "J10" H 3550 3450 50  0000 L CNN
-F 1 "Conn_01x03" H 3450 3350 50  0000 L CNN
+F 1 "AUX" H 3550 3350 50  0000 L CNN
 F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 3450 3550 50  0001 C CNN
 F 3 "~" H 3450 3550 50  0001 C CNN
 F 4 "conn-th-01in-3-1-hdr" H 3450 3550 50  0001 C CNN "1b2-bom-key"
@@ -1415,12 +1396,12 @@ P 1950 2750
 AR Path="/5C9610A4" Ref="R?"  Part="1" 
 AR Path="/5C7B59B0/5C9610A4" Ref="R10"  Part="1" 
 F 0 "R10" H 1900 2750 50  0000 R CNN
-F 1 "1k" V 1950 2800 50  0000 R CNN
+F 1 "2k2" V 1950 2800 50  0000 R CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 1880 2750 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 1950 2750 50  0001 C CNN
 F 4 "Yageo" H -8400 200 50  0001 C CNN "Mfg"
-F 5 "RC0402FR-131KL" H -8400 200 50  0001 C CNN "MPN"
-F 6 "res-0402-1k" H 1950 2750 50  0001 C CNN "1b2-bom-key"
+F 5 "RC0402FR-132K2L" H -8400 200 50  0001 C CNN "MPN"
+F 6 "res-0402-2k2" H 1950 2750 50  0001 C CNN "1b2-bom-key"
 	1    1950 2750
 	-1   0    0    -1  
 $EndComp
@@ -1485,16 +1466,16 @@ Wire Wire Line
 Wire Wire Line
 	9150 1050 9300 1050
 $Comp
-L Logic_LevelTranslator:SN74LVC1T45DRL U32
+L Logic_LevelTranslator:SN74LVC1T45DCK U32
 U 1 1 5CA4F297
 P 2650 2400
 F 0 "U32" H 2850 2850 50  0000 L CNN
-F 1 "SN74LVC1T45DRL" H 2850 2750 50  0000 L CNN
-F 2 "Glasgow:SOT-563" H 2650 1950 50  0001 C CNN
+F 1 "SN74LVC1T45DCKR" H 2850 2750 50  0000 L CNN
+F 2 "Glasgow:SOT-363_SC-70-6" H 2650 1950 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf" H 1750 1750 50  0001 C CNN
 F 4 "Texas Instruments" H 2650 2400 50  0001 C CNN "Mfg"
-F 5 "SN74LVC1T45DRL" H 2650 2400 50  0001 C CNN "MPN"
-F 6 "ic-sot563-sn74lvc1t45drl" H 2650 2400 50  0001 C CNN "1b2-bom-key"
+F 5 "SN74LVC1T45DCKR" H 2650 2400 50  0001 C CNN "MPN"
+F 6 "ic-sot563-sn4lvc1t45dckr" H 2650 2400 50  0001 C CNN "1b2-bom-key"
 	1    2650 2400
 	1    0    0    -1  
 $EndComp
@@ -1611,12 +1592,12 @@ P 3250 2400
 AR Path="/5CBF4EC8" Ref="R?"  Part="1" 
 AR Path="/5C7B59B0/5CBF4EC8" Ref="R38"  Part="1" 
 F 0 "R38" V 3150 2400 50  0000 C CNN
-F 1 "47" V 3250 2450 50  0000 R CNN
+F 1 "47R" V 3250 2450 50  0000 R CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 3180 2400 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 3250 2400 50  0001 C CNN
 F 4 "Yageo" H -7100 -150 50  0001 C CNN "Mfg"
 F 5 "RC0402FR-1347RL" H -7100 -150 50  0001 C CNN "MPN"
-F 6 "res-0402-47" H 3250 2400 50  0001 C CNN "1b2-bom-key"
+F 6 "res-0402-47r" H 3250 2400 50  0001 C CNN "1b2-bom-key"
 	1    3250 2400
 	0    1    -1   0   
 $EndComp
@@ -1646,9 +1627,9 @@ U 1 1 5D1DFDD1
 P 3650 2550
 F 0 "D11" V 3604 2629 50  0000 L CNN
 F 1 "ESD5Z5.0T1G" V 3695 2629 50  0000 L CNN
-F 2 "Diode_SMD:D_SOD-523" H 3650 2550 50  0001 C CNN
+F 2 "Glasgow:D_SOD-523" H 3650 2550 50  0001 C CNN
 F 3 "https://www.onsemi.com/pub/Collateral/ESD5Z2.5T1-D.PDF" H 3650 2550 50  0001 C CNN
-F 4 "On Semiconductor" H 3650 2550 50  0001 C CNN "Mfg"
+F 4 "ON Semiconductor" H 3650 2550 50  0001 C CNN "Mfg"
 F 5 "ESD5Z5.0T1G" H 3650 2550 50  0001 C CNN "MPN"
 F 6 "esd-diode-sod523-esd5z5_0t1g" H 3650 2550 50  0001 C CNN "1b2-bom-key"
 	1    3650 2550
@@ -1693,7 +1674,7 @@ F 3 "" H 3650 2000 50  0001 C CNN
 	1    3650 2000
 	-1   0    0    -1  
 $EndComp
-Text Notes 9350 2950 0    50   ~ 0
+Text Notes 9450 6450 0    50   ~ 0
 The iCE40 LVDS buffers require external\ntermination, which is expected to be provided\non a specially designed daughterboard.\n\nSuggested mating connector:\nSamtec FLE-122-01-G-DV-A
 Text Notes 900  7150 0    50   ~ 0
 Balls B6 and B7 correspond to GBIN0/1, whose I/O buffers are shared\nwith one of the PLLs. When the PLL is used, it replaces the input buffer,\nand so the pin input is no longer directly available. Because of this quirk\nof the iCE40 architecture, two common goals are in direct conflict:\n * If an applet is clocked externally, this clock should ideally be provided\n   on a GBINx pin. (This is recommended but not strictly necessary as it is\n   generally OK for a clock to traverse a small amount of iCE40 fabric.)\n * If an applet is using the PLL co-located with the GBIN0 pin and clocking\n   it internally, the GBIN0 pin input buffer is lost, and GBIN1 pin input buffer\n   may be lost as well depending on the chosen PLL configuration.\nTo resolve this conflict, the I/O pins mapped to GBIN0/1 are mapped to\na different pin (balls B5 and A6) as well, giving gateware maximum flexibility.
@@ -1706,7 +1687,7 @@ Wire Notes Line
 Wire Notes Line
 	750  4950 900  4950
 Text Notes 3850 2200 0    50   ~ 0
-Synchronization input/output accomodates multiple I/O standards: Vil=0.8V, Vih=2.0V.\n * Nominally, ~SYNC~ is open-drain and 3.3V, with weak internal pull-up.\n * Nevertheless, ~SYNC~ can be connected to 5V circuits directly.\n * ~SYNC~ may also be driven as push-pull to increase bandwidth.\n   Care must be taken to avoid contention. Nevertheless, two Glasgows \n   contending on ~SYNC~ will not exceed absolute maximum ratings.\n   A 47 ohm series resistor is recommended for other drivers.
+Synchronization input/output accommodates multiple I/O standards: Vil=0.8V, Vih=2.0V.\n * Nominally, ~SYNC~ is open-drain and 3.3V, with weak internal pull-up.\n * Nevertheless, ~SYNC~ can be connected to 5V circuits directly.\n * ~SYNC~ may also be driven as push-pull to increase bandwidth.\n   Care must be taken to avoid contention. Nevertheless, two Glasgows \n   contending on ~SYNC~ will not exceed absolute maximum ratings.\n   A 47 ohm series resistor is recommended for other drivers.
 Wire Bus Line
 	5500 5800 6950 5800
 Wire Bus Line
@@ -1717,7 +1698,7 @@ U 1 1 5CB8809B
 P 2700 3350
 F 0 "D12" V 2600 3250 50  0000 L CNN
 F 1 "ESD5Z5.0T1G" H 2550 3450 50  0000 L CNN
-F 2 "Diode_SMD:D_SOD-523" H 2700 3350 50  0001 C CNN
+F 2 "Glasgow:D_SOD-523" H 2700 3350 50  0001 C CNN
 F 3 "https://www.onsemi.com/pub/Collateral/ESD5Z2.5T1-D.PDF" H 2700 3350 50  0001 C CNN
 F 4 "ON Semiconductor" H 2700 3350 50  0001 C CNN "Mfg"
 F 5 "ESD5Z5.0T1G" H 2700 3350 50  0001 C CNN "MPN"
@@ -1732,7 +1713,7 @@ U 1 1 5CB88F58
 P 3000 3350
 F 0 "D13" V 2900 3250 50  0000 L CNN
 F 1 "ESD5Z5.0T1G" H 2850 3450 50  0000 L CNN
-F 2 "Diode_SMD:D_SOD-523" H 3000 3350 50  0001 C CNN
+F 2 "Glasgow:D_SOD-523" H 3000 3350 50  0001 C CNN
 F 3 "https://www.onsemi.com/pub/Collateral/ESD5Z2.5T1-D.PDF" H 3000 3350 50  0001 C CNN
 F 4 "ON Semiconductor" H 3000 3350 50  0001 C CNN "Mfg"
 F 5 "ESD5Z5.0T1G" H 3000 3350 50  0001 C CNN "MPN"
@@ -1776,12 +1757,12 @@ P 2050 2400
 AR Path="/5CB5DA66" Ref="R?"  Part="1" 
 AR Path="/5C7B59B0/5CB5DA66" Ref="R45"  Part="1" 
 F 0 "R45" V 1950 2400 50  0000 C CNN
-F 1 "47" V 2050 2450 50  0000 R CNN
+F 1 "47R" V 2050 2450 50  0000 R CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 1980 2400 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 2050 2400 50  0001 C CNN
 F 4 "Yageo" H -8300 -150 50  0001 C CNN "Mfg"
 F 5 "RC0402FR-1347RL" H -8300 -150 50  0001 C CNN "MPN"
-F 6 "res-0402-47" H 2050 2400 50  0001 C CNN "1b2-bom-key"
+F 6 "res-0402-47r" H 2050 2400 50  0001 C CNN "1b2-bom-key"
 	1    2050 2400
 	0    1    -1   0   
 $EndComp
@@ -1794,12 +1775,12 @@ P 2400 3650
 AR Path="/5CBF65F8" Ref="R?"  Part="1" 
 AR Path="/5C7B59B0/5CBF65F8" Ref="R43"  Part="1" 
 F 0 "R43" V 2300 3650 50  0000 C CNN
-F 1 "47" V 2400 3700 50  0000 R CNN
+F 1 "47R" V 2400 3700 50  0000 R CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 2330 3650 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 2400 3650 50  0001 C CNN
 F 4 "Yageo" H -7950 1100 50  0001 C CNN "Mfg"
 F 5 "RC0402FR-1347RL" H -7950 1100 50  0001 C CNN "MPN"
-F 6 "res-0402-47" H 2400 3650 50  0001 C CNN "1b2-bom-key"
+F 6 "res-0402-47r" H 2400 3650 50  0001 C CNN "1b2-bom-key"
 	1    2400 3650
 	0    1    -1   0   
 $EndComp
@@ -1810,15 +1791,54 @@ P 2400 3550
 AR Path="/5CBF658E" Ref="R?"  Part="1" 
 AR Path="/5C7B59B0/5CBF658E" Ref="R39"  Part="1" 
 F 0 "R39" V 2500 3550 50  0000 C CNN
-F 1 "47" V 2400 3600 50  0000 R CNN
+F 1 "47R" V 2400 3600 50  0000 R CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 2330 3550 50  0001 C CNN
 F 3 "https://www.mouser.com/datasheet/2/447/PYu-RC_Group_51_RoHS_L_10-1527934.pdf" H 2400 3550 50  0001 C CNN
 F 4 "Yageo" H -7950 1000 50  0001 C CNN "Mfg"
 F 5 "RC0402FR-1347RL" H -7950 1000 50  0001 C CNN "MPN"
-F 6 "res-0402-47" H 2400 3550 50  0001 C CNN "1b2-bom-key"
+F 6 "res-0402-47r" H 2400 3550 50  0001 C CNN "1b2-bom-key"
 	1    2400 3550
 	0    1    -1   0   
 $EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 5F47D915
+P 2550 4600
+AR Path="/5F47D915" Ref="#PWR?"  Part="1" 
+AR Path="/5C7B59B0/5F47D915" Ref="#PWR083"  Part="1" 
+F 0 "#PWR083" H 2550 4350 50  0001 C CNN
+F 1 "GND" V 2550 4400 50  0000 C CNN
+F 2 "" H 2550 4600 50  0001 C CNN
+F 3 "" H 2550 4600 50  0001 C CNN
+	1    2550 4600
+	0    1    1    0   
+$EndComp
+$Comp
+L power:+3.3V #PWR085
+U 1 1 5F485DD6
+P 6000 4600
+F 0 "#PWR085" H 6000 4450 50  0001 C CNN
+F 1 "+3.3V" V 6015 4728 50  0000 L CNN
+F 2 "" H 6000 4600 50  0001 C CNN
+F 3 "" H 6000 4600 50  0001 C CNN
+	1    6000 4600
+	0    -1   -1   0   
+$EndComp
+Text Notes 9400 2950 0    50   ~ 0
+The LVDS connector J5 is considered a \nsecondary connector and will only be \navailable on revC devices. revD and \nfurther are planned to use different \nconnectors.\n\nPorts A and B are the preferred \nconnectors for addons instead.\n
+$Comp
+L Graphic:SYM_ESD_Large #SYM1
+U 1 1 5F4FA0F7
+P 7850 6200
+F 0 "#SYM1" H 7850 6400 50  0001 C CNN
+F 1 "SYM_ESD_Large" H 7850 5950 50  0001 C CNN
+F 2 "" H 7845 6170 50  0001 C CNN
+F 3 "~" H 7845 6170 50  0001 C CNN
+	1    7850 6200
+	1    0    0    -1  
+$EndComp
+Text Notes 8100 6450 0    50   ~ 0
+The LVDS connector J5 just \nhas minimal ESD protection.\nUse appropriate ESD handling\nprocedures. Plug and unplug \nonly in completely unpowered \nstate.\n
 Wire Bus Line
 	2400 4950 2400 5800
 Wire Bus Line

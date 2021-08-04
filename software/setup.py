@@ -28,7 +28,7 @@ setup(
     install_requires=[
         "nmigen",
         "fx2>=0.9",
-        "libusb1>=1.6.6",
+        "libusb1>=1.8.1",
         "aiohttp",
         "pyvcd",
         "bitarray",
@@ -38,6 +38,7 @@ setup(
         "toolchain": [
             "nmigen-yosys",
             "yowasp-yosys",
+            "yowasp-nextpnr-ice40-5k",
             "yowasp-nextpnr-ice40-8k",
         ],
     },
@@ -45,7 +46,7 @@ setup(
         "git+https://github.com/nmigen/nmigen.git#egg=nmigen",
     ],
     packages=find_packages(),
-    package_data={"glasgow": ["firmware.ihex"]},
+    package_data={"glasgow.device": ["firmware.ihex"]},
     entry_points={
         "console_scripts": [
             "glasgow = glasgow.cli:main"

@@ -13,6 +13,8 @@ class ChunkedFIFO:
         self._chunk  = None
         self._offset = 0
         self._length = 0
+        self._rtotal = 0
+        self._wtotal = 0
 
     def clear(self):
         """Remove all data from the buffer."""
@@ -31,6 +33,7 @@ class ChunkedFIFO:
         if not data:
             return
         self._length += len(data)
+        self._wtotal += len(data)
         self._queue.append(data)
 
     def read(self, max_length=None):
@@ -45,6 +48,7 @@ class ChunkedFIFO:
             # Fast path.
             chunk = self._queue.popleft()
             self._length -= len(chunk)
+            self._rtotal += len(chunk)
             return chunk
 
         if max_length == 0:
@@ -68,13 +72,26 @@ class ChunkedFIFO:
             self._offset += len(result)
 
         self._length -= len(result)
+        self._rtotal += len(result)
         return result
 
     def __bool__(self):
+        """Check whether there are any bytes in the FIFO."""
         return bool(self._queue) or self._chunk is not None
 
     def __len__(self):
+        """Count bytes in the FIFO."""
         return self._length
+
+    @property
+    def total_read_bytes(self):
+        """Determine the total amount of bytes read from the FIFO."""
+        return self._rtotal
+
+    @property
+    def total_written_bytes(self):
+        """Determine the total amount of bytes written to the FIFO."""
+        return self._wtotal
 
 # -------------------------------------------------------------------------------------------------
 

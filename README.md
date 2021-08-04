@@ -1,8 +1,8 @@
 # Glasgow Debug Tool
 
-**Want one? [Subscribe here](https://mailchi.mp/44980ff6f0ab/glasgow-announcements).**
+**Want one? The [Crowdsupply campaign](https://www.crowdsupply.com/1bitsquared/glasgow) is now live.**
 
-**Let's chat! Our IRC channel is [#glasgow at freenode.net](https://webchat.freenode.net/?channels=glasgow); our Discord channel is [#glasgow at 1BitSquared's Discord server](https://1bitsquared.com/pages/chat).**
+**Let's chat! Our IRC channel is [#glasgow at libera.chat](irc://irc.libera.chat/glasgow); our Discord channel is [#glasgow at 1BitSquared's Discord server](https://1bitsquared.com/pages/chat).**
 
 **Important note: if you are looking to assemble boards yourself, use only revC1.**
 
@@ -21,8 +21,8 @@ Some of the tasks Glasgow can do well are:
   * communicate via UART,
     * automatically determine and follow the baud rate of device under test,
   * initiate transactions via SPI or I²C,
-  * read and write 24-series EEPROMs,
-  * read and write 25-series Flash memories,
+  * read and write 24-series I²C EEPROMs,
+  * read and write 25-series SPI Flash memories,
     * determine memory parameters via SFDP,
   * read and write ONFI-compatible Flash memories,
     * determine memory parameters via ONFI parameter page,
@@ -62,9 +62,9 @@ Revisions A and B have not been produced in significant amounts, contain major d
 
 ![Overview of the Glasgow PCB](hardware/boards/glasgow/3drender-readme.png)
 
-Revision C is the latest revision and is being prepared for mass production. It provides 16 I/O pins with a maximum data rate of approx. 200 Mbps/pin (100 MHz)\*, independent direction control and independent programmable pull-up/pull-down resistors. The I/O pins are grouped into two I/O ports, each of which can use any voltage from 1.8 V to 5 V, sense and monitor I/O voltage of the device under test, as well as provide up to 150 mA of power. The board uses USB 2 for power, configuration, and communication, achieving up to 336 Mbps (42 MB/s) of sustained combined throughput.
+Revision C is the latest revision and is being prepared for mass production. It provides 16 I/O pins with a data rate up to approx. 100 Mbps/pin (50 MHz)\*, independent direction control and independent programmable pull-up/pull-down resistors. The I/O pins are grouped into two I/O ports, each of which can use any voltage from 1.8 V to 5 V, sense and monitor I/O voltage of the device under test, as well as provide up to 150 mA of power. The board uses USB 2 for power, configuration, and communication, achieving up to 336 Mbps (42 MB/s) of sustained combined throughput.
 
-<sub>\* Maximum data rate achievable in practice depends on many factors and will vary greatly with specific interface and applet design. 12 Mbps/pin (6 MHz) can be achieved with minimal development effort; reaching higher data rates requires careful HDL coding and a good understanding of timing analysis.</sub>
+<sub>\* Data rate achievable in practice depends on many factors and will vary greatly with specific interface and applet design. 12 Mbps/pin (6 MHz) can be achieved with minimal development effort; reaching higher data rates requires careful HDL coding and a good understanding of timing analysis.</sub>
 
 ## What software does Glasgow use?
 
@@ -126,7 +126,7 @@ Obtain the source code:
 Install the dependencies and the scripts for the current user:
 
     cd software
-    python setup.py develop
+    python3 setup.py develop
 
 The scripts will be installed in `/usr/local/bin`, which should already be in your `PATH`.
 
@@ -168,6 +168,7 @@ See [above](#-with-windows).
   * [@esden](https://github.com/esden) is handling batch manufacturing;
   * [@smunaut](https://github.com/smunaut) provided advice crucial for stability and performance of USB communication;
   * [@electronic_eel](https://github.com/electronic_eel) improved the hardware for revC2, designed the test jig and is working on advanced protection circuitry;
+  * [@Attie](https://github.com/attie) improved and refactored many applets;
   * ... and many [other people](https://github.com/GlasgowEmbedded/Glasgow/graphs/contributors).
 
 ## License

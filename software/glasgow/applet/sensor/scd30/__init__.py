@@ -173,6 +173,9 @@ class SensorSCD30Applet(I2CInitiatorApplet, name="sensor-scd30"):
     description = """
     Measure CO₂ concentration, humidity, and temperature using Sensirion SCD30 sensors
     connected over the I²C interface.
+
+    NOTE: The SCD30 takes some time to start up. Run `glasgow voltage AB 3.3 --no-alert`
+    or similar before attempting to interact with it.
     """
 
     async def run(self, device, args):
@@ -223,10 +226,10 @@ class SensorSCD30Applet(I2CInitiatorApplet, name="sensor-scd30"):
             "stop", help="stop measurement")
 
         p_measure = p_operation.add_parser(
-            "measure", help="read measured values")
+            "measure", help="read measured values (must start first)")
 
         p_log = p_operation.add_parser(
-            "log", help="log measured values")
+            "log", help="log measured values (must start first)")
         DataLogger.add_subparsers(p_log)
 
     async def interact(self, device, args, scd30):

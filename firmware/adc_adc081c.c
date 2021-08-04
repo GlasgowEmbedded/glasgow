@@ -30,18 +30,18 @@ struct buffer_desc {
 };
 
 static const struct buffer_desc buffers[] = {
-  { IO_BUF_A, I2C_ADDR_IOA_ADC },
-  { IO_BUF_B, I2C_ADDR_IOB_ADC },
+  { IO_BUF_A, I2C_ADDR_IOA_ADC_ADC081C },
+  { IO_BUF_B, I2C_ADDR_IOB_ADC_ADC081C },
   { 0, 0 }
 };
 
-void iobuf_init_adc() {
+void iobuf_init_adc_adc081c() {
   // Set up a level-triggered interrupt on INT0# pin.
   PORTACFG |= _INT0;
   TCON &= ~_IT0;
 }
 
-static uint16_t code_bytes_to_millivolts(__pdata const uint8_t *code_bytes) {
+static uint16_t code_bytes_to_millivolts_adc081c(__pdata const uint8_t *code_bytes) {
   // 0x000 = 0 mV, 0xff0 = 6600 mV, 16 LSB = 25.9 mV;
   // highest code word achievable is 0xd50 = 5500 mV,
   // so the following doesn't overflow.
@@ -50,56 +50,22 @@ static uint16_t code_bytes_to_millivolts(__pdata const uint8_t *code_bytes) {
   return millivolts;
 }
 
-static void millivolts_to_code_bytes(uint16_t millivolts, __pdata uint8_t *code_bytes) {
+static void millivolts_to_code_bytes_adc081c(uint16_t millivolts, __pdata uint8_t *code_bytes) {
   // See explanation above.
   uint16_t code_word = (millivolts * 10 / 259) << 4;
   code_bytes[0] = code_word >> 8;
   code_bytes[1] = code_word & 0xff;
 }
 
-static bool adc_reg_read(uint8_t addr, uint8_t reg,
-                         __pdata uint8_t *value, uint8_t length) {
-  if(!i2c_start(addr<<1))
-    goto fail;
-  if(!i2c_write(&reg, 1))
-    goto fail;
-  if(!i2c_start((addr<<1)|1))
-    goto fail;
-  if(!i2c_read(value, length))
-    goto fail;
-  return true;
-
-fail:
-  i2c_stop();
-  return false;
-}
-
-static bool adc_reg_write(uint8_t addr, uint8_t reg,
-                          __pdata const uint8_t *value, uint8_t length) {
-  if(!i2c_start(addr<<1))
-    goto fail;
-  if(!i2c_write(&reg, 1))
-    goto fail;
-  if(!i2c_write(value, length))
-    goto fail;
-  if(!i2c_stop())
-    return false;
-  return true;
-
-fail:
-  i2c_stop();
-  return false;
-}
-
-bool iobuf_measure_voltage(uint8_t selector, __xdata uint16_t *millivolts) {
+bool iobuf_measure_voltage_adc081c(uint8_t selector, __xdata uint16_t *millivolts) {
   __code const struct buffer_desc *buffer;
   for(buffer = buffers; buffer->selector; buffer++) {
     if(selector == buffer->selector) {
       __pdata uint8_t code_bytes[2];
-      if(!adc_reg_read(buffer->address, ADC081_REG_CONV_RESULT, code_bytes, 2))
+      if(!i2c_reg8_read(buffer->address, ADC081_REG_CONV_RESULT, code_bytes, 2))
         return false;
 
-      *millivolts = code_bytes_to_millivolts(code_bytes);
+      *millivolts = code_bytes_to_millivolts_adc081c(code_bytes);
       return true;
     }
   }
@@ -107,7 +73,7 @@ bool iobuf_measure_voltage(uint8_t selector, __xdata uint16_t *millivolts) {
   return false;
 }
 
-bool iobuf_set_alert(uint8_t mask,
+bool iobuf_set_alert_adc081c(uint8_t mask,
                      __xdata const uint16_t *low_millivolts,
                      __xdata const uint16_t *high_millivolts) {
   __code const struct buffer_desc *buffer;
@@ -121,24 +87,24 @@ bool iobuf_set_alert(uint8_t mask,
 
   if(!(*low_millivolts == 0 && *high_millivolts == MAX_VOLTAGE)) {
     // Alert enabled
-    millivolts_to_code_bytes(*low_millivolts, low_code_bytes);
-    millivolts_to_code_bytes(*high_millivolts, high_code_bytes);
+    millivolts_to_code_bytes_adc081c(*low_millivolts, low_code_bytes);
+    millivolts_to_code_bytes_adc081c(*high_millivolts, high_code_bytes);
     control_byte  = ADC081_BIT_ALERT_PIN_EN|ADC081_BIT_ALERT_HOLD;
     control_byte |= 0b110 << 5; // 1 ksps
   }
 
   for(buffer = buffers; buffer->selector; buffer++) {
     if(mask & buffer->selector) {
-      if(!adc_reg_write(buffer->address, ADC081_REG_LOW_LIMIT, low_code_bytes, 2))
+      if(!i2c_reg8_write(buffer->address, ADC081_REG_LOW_LIMIT, low_code_bytes, 2))
         return false;
 
-      if(!adc_reg_write(buffer->address, ADC081_REG_HIGH_LIMIT, high_code_bytes, 2))
+      if(!i2c_reg8_write(buffer->address, ADC081_REG_HIGH_LIMIT, high_code_bytes, 2))
         return false;
 
-      if(!adc_reg_write(buffer->address, ADC081_REG_ALERT_STATUS, &status_byte, 1))
+      if(!i2c_reg8_write(buffer->address, ADC081_REG_ALERT_STATUS, &status_byte, 1))
         return false;
 
-      if(!adc_reg_write(buffer->address, ADC081_REG_CONFIGURATION, &control_byte, 1))
+      if(!i2c_reg8_write(buffer->address, ADC081_REG_CONFIGURATION, &control_byte, 1))
         return false;
     }
   }
@@ -146,7 +112,7 @@ bool iobuf_set_alert(uint8_t mask,
   return true;
 }
 
-bool iobuf_get_alert(uint8_t selector,
+bool iobuf_get_alert_adc081c(uint8_t selector,
                      __xdata uint16_t *low_millivolts,
                      __xdata uint16_t *high_millivolts) {
   __code const struct buffer_desc *buffer;
@@ -155,7 +121,7 @@ bool iobuf_get_alert(uint8_t selector,
       __pdata uint8_t code_bytes[2];
       __pdata uint8_t control_byte;
 
-      if(!adc_reg_read(buffer->address, ADC081_REG_CONFIGURATION, &control_byte, 1))
+      if(!i2c_reg8_read(buffer->address, ADC081_REG_CONFIGURATION, &control_byte, 1))
         return false;
 
       if(control_byte == 0) {
@@ -164,13 +130,13 @@ bool iobuf_get_alert(uint8_t selector,
         return true;
       }
 
-      if(!adc_reg_read(buffer->address, ADC081_REG_LOW_LIMIT, code_bytes, 2))
+      if(!i2c_reg8_read(buffer->address, ADC081_REG_LOW_LIMIT, code_bytes, 2))
         return false;
-      *low_millivolts = code_bytes_to_millivolts(code_bytes);
+      *low_millivolts = code_bytes_to_millivolts_adc081c(code_bytes);
 
-      if(!adc_reg_read(buffer->address, ADC081_REG_HIGH_LIMIT, code_bytes, 2))
+      if(!i2c_reg8_read(buffer->address, ADC081_REG_HIGH_LIMIT, code_bytes, 2))
         return false;
-      *high_millivolts = code_bytes_to_millivolts(code_bytes);
+      *high_millivolts = code_bytes_to_millivolts_adc081c(code_bytes);
 
       return true;
     }
@@ -179,27 +145,27 @@ bool iobuf_get_alert(uint8_t selector,
   return false;
 }
 
-bool iobuf_is_alerted() {
+bool iobuf_is_alerted_adc081c() {
   return !(IOA & (1<<PINA_ALERT_N));
 }
 
-bool iobuf_poll_alert(__xdata uint8_t *mask, bool clear) {
+bool iobuf_poll_alert_adc081c(__xdata uint8_t *mask, bool clear) {
   __code const struct buffer_desc *buffer;
   for(*mask = 0, buffer = buffers; buffer->selector; buffer++) {
     __pdata uint8_t status_byte;
-    if(!adc_reg_read(buffer->address, ADC081_REG_ALERT_STATUS, &status_byte, 1))
+    if(!i2c_reg8_read(buffer->address, ADC081_REG_ALERT_STATUS, &status_byte, 1))
       return false;
 
     if(status_byte) {
       __pdata uint8_t control_byte = 0;
       *mask |= buffer->selector;
 
-      if(!adc_reg_read(buffer->address, ADC081_REG_CONFIGURATION, &control_byte, 1))
+      if(!i2c_reg8_read(buffer->address, ADC081_REG_CONFIGURATION, &control_byte, 1))
         return false;
 
       if(clear) {
         // Clear actual alert and re-arm the alert pin
-        if(!adc_reg_write(buffer->address, ADC081_REG_ALERT_STATUS, &status_byte, 1))
+        if(!i2c_reg8_read(buffer->address, ADC081_REG_ALERT_STATUS, &status_byte, 1))
           return false;
         control_byte |=  ADC081_BIT_ALERT_PIN_EN;
       } else {
@@ -207,7 +173,7 @@ bool iobuf_poll_alert(__xdata uint8_t *mask, bool clear) {
         control_byte &= ~ADC081_BIT_ALERT_PIN_EN;
       }
 
-      if(!adc_reg_write(buffer->address, ADC081_REG_CONFIGURATION, &control_byte, 1))
+      if(!i2c_reg8_write(buffer->address, ADC081_REG_CONFIGURATION, &control_byte, 1))
         return false;
     }
   }
