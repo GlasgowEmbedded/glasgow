@@ -122,6 +122,10 @@ class GlasgowPlatformRevC12(GlasgowPlatformICE40):
         Resource("unused", 0, Pins("A6 B5", dir="oe"), Attrs(IO_STANDARD="SB_LVCMOS33")),
     ]
     connectors  = [
+        #                     1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22
+        #                     23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44
+        Connector("lvds", 0, "-  -  K1 -  J1 -  -  K2 H1 J2 H2 -  -  H3 G1 G3 G2 -  -  F3 F1 F4 "
+                             "F2 -  -  E3 E1 E2 D1 -  -  D2 C1 D3 C2 -  -  C3 B1 C4 B2 -  -  -  "),
     ]
 
 

@@ -428,7 +428,10 @@ class GlasgowHardwareDevice:
 
     async def download_prebuilt(self, plan, bitstream_file):
         bitstream_file_id = bitstream_file.read(16)
-        if await self.bitstream_id() == plan.bitstream_id:
+        force_download = (bitstream_file_id == b'\xff' * 16)
+        if force_download:
+            logger.warn("prebuilt bitstream ID is all ones, forcing download")
+        elif await self.bitstream_id() == plan.bitstream_id:
             logger.info("device already has bitstream ID %s", plan.bitstream_id.hex())
             return
         elif bitstream_file_id != plan.bitstream_id:
