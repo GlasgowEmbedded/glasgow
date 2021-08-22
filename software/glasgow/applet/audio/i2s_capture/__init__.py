@@ -10,6 +10,7 @@ from nmigen.lib.cdc import FFSynchronizer
 from ....gateware.pads import *
 from ... import *
 
+# TODO: recommend / force clock on to A4/A6/B4/B6
 
 RATE_MEASURE_EVENTS=32
 STREAM_TIMEOUT=0.25 # 250ms
