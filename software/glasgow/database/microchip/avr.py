@@ -18,11 +18,11 @@ def ATtiny(name, signature, program_size, program_page, eeprom_size, fuses_size=
                      program_size=program_size, program_page=program_page,
                      eeprom_size=eeprom_size, eeprom_page=4)
 
-def ATmega(name, signature, program_size, program_page, eeprom_size):
+def ATmega(name, signature, program_size, program_page, eeprom_size, eeprom_page=4):
     return AVRDevice("ATmega{}".format(name), signature=signature,
                      calibration_size=1, fuses_size=3,
                      program_size=program_size, program_page=program_page,
-                     eeprom_size=eeprom_size, eeprom_page=4)
+                     eeprom_size=eeprom_size, eeprom_page=eeprom_page)
 
 
 devices = [
