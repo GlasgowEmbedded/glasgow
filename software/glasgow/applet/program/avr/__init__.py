@@ -318,7 +318,7 @@ class ProgramAVRApplet(GlasgowApplet):
             for address, chunk in data:
                 chunk = bytes(chunk)
                 await avr_iface.write_program_memory_range(address, chunk, device.program_page)
-                written = await avr_iface.read_program_memory_range(range(address, len(chunk)))
+                written = await avr_iface.read_program_memory_range(range(address, address + len(chunk)))
                 if written != chunk:
                     raise ProgramAVRError("verification failed at address %#06x: %s != %s" %
                                           (address, written.hex(), chunk.hex()))
