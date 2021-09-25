@@ -231,6 +231,9 @@ class ProgramAVRApplet(GlasgowApplet):
             "{:02x} {:02x} {:02x}".format(*signature),
             "unknown" if device is None else device.name)
 
+        if device.erase_time is not None:
+            avr_iface.erase_time = device.erase_time
+
         if args.operation not in (None, "identify") and device is None:
             raise ProgramAVRError("cannot operate on unknown device")
 
