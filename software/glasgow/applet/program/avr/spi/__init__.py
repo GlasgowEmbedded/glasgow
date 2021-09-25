@@ -17,6 +17,7 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
         self._addr_dut_reset = addr_dut_reset
         self._extended_addr  = None
+        self.erase_time      = None
 
     def _log(self, message, *args):
         self._logger.log(self._level, "AVR SPI: " + message, *args)
@@ -47,6 +48,10 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
         await self.lower.delay_ms(20)
 
     async def _is_busy(self):
+        if self.erase_time is not None:
+            self._log("wait for completion")
+            await self.lower.delay_ms(self.erase_time)
+            return False
         self._log("poll ready/busy flag")
         _, _, _, busy = await self._command(0b1111_0000, 0b0000_0000, 0, 0)
         return bool(busy & 1)
