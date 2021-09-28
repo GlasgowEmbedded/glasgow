@@ -70,6 +70,7 @@
 {"method": "transfer", "async": true, "args": [[72, 0, 62, 61]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "3c48003e"}}
 {"method": "transfer", "async": true, "args": [[64, 0, 63, 62]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "3d40003f"}}
 {"method": "transfer", "async": true, "args": [[72, 0, 63, 63]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "3e48003f"}}
+{"method": "transfer", "async": true, "args": [[77, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00000000"}}
 {"method": "transfer", "async": true, "args": [[76, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "3f4c0000"}}
 {"method": "transfer", "async": true, "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
 {"method": "transfer", "async": true, "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}

@@ -16,6 +16,8 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
         self._addr_dut_reset = addr_dut_reset
+        self._extended_addr  = None
+        self.erase_time      = None
 
     def _log(self, message, *args):
         self._logger.log(self._level, "AVR SPI: " + message, *args)
@@ -46,6 +48,10 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
         await self.lower.delay_ms(20)
 
     async def _is_busy(self):
+        if self.erase_time is not None:
+            self._log("wait for completion")
+            await self.lower.delay_ms(self.erase_time)
+            return False
         self._log("poll ready/busy flag")
         _, _, _, busy = await self._command(0b1111_0000, 0b0000_0000, 0, 0)
         return bool(busy & 1)
@@ -104,7 +110,15 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
         _, _, _, data = await self._command(0b0011_1000, 0b0000_0000, address, 0)
         return data
 
+    async def load_extended_address_byte(self, address):
+        extended_addr = (address >> 17) & 0xff
+        if self._extended_addr != extended_addr:
+            self._log("load extended address %#02x", extended_addr)
+            await self._command(0b0100_1101, 0, extended_addr, 0)
+            self._extended_addr = extended_addr
+
     async def read_program_memory(self, address):
+        await self.load_extended_address_byte(address)
         self._log("read program memory address %#06x", address)
         _, _, _, data = await self._command(
             0b0010_0000 | (address & 1) << 3,
@@ -122,6 +136,7 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
             data)
 
     async def write_program_memory_page(self, address):
+        await self.load_extended_address_byte(address)
         self._log("write program memory page at %#06x", address)
         await self._command(
             0b0100_1100,
