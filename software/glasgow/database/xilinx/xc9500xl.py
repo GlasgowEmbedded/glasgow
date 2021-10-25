@@ -12,7 +12,7 @@ XC9500XLDevice = namedtuple("XC9500XLDevice", (
 devices = [
     XC9500XLDevice("XC95288XL",
         idcode=(0x049, 0x9616),
-        bitstream_words=6420,
+        bitstream_words=1620,
         word_width=128,
         usercode_low=90, usercode_high=105),
     XC9500XLDevice("XC95144XL",

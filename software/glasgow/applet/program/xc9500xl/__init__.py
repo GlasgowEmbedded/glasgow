@@ -543,12 +543,9 @@ class ProgramXC9500XLApplet(JTAGProbeApplet, name="program-xc9500xl"):
         if xc9500_device is None:
             raise GlasgowAppletError("cannot operate on unknown device with IDCODE=%#10x"
                                      % idcode.to_int())
-        elif type(xc9500_device.name) == str: # XC95288XL reports a string as device id...
-            self.logger.info("found %s rev=%d",
-                             xc9500_device.name, idcode.version)
-        else: # other CPLDs might have xc9500_device.name as an int?
-            self.logger.info("found %s rev=%d",
-                             idcode.to_int(), xc9500_device.name, idcode.version)
+
+        self.logger.info("found %s rev=%d",
+                         xc9500_device.name, idcode.version)
 
         usercode = await xc9500_iface.read_usercode()
         self.logger.info("USERCODE=%s (%s)",
