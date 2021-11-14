@@ -514,22 +514,22 @@ class ProgramXC9500XLApplet(JTAGProbeApplet, name="program-xc9500xl"):
 
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
-        p_read_bit = p_operation.add_parser(
-            "read-bit", help="read bitstream from the device and save it to a .bit file")
-        p_read_bit.add_argument(
-            "bit_file", metavar="BIT-FILE", type=argparse.FileType("wb"),
+        p_read_jed = p_operation.add_parser(
+            "read-jed", help="read bitstream from the device and save it to a .jed file")
+        p_read_jed.add_argument(
+            "jed_file", metavar="JED-FILE", type=argparse.FileType("wb"),
             help="bitstream file to write")
 
-        p_program_bit = p_operation.add_parser(
-            "program-bit", help="read bitstream from a .bit file and program it to the device")
-        p_program_bit.add_argument(
-            "bit_file", metavar="BIT-FILE", type=argparse.FileType("rb"),
+        p_program_jed = p_operation.add_parser(
+            "program-jed", help="read bitstream from a .jed file and program it to the device")
+        p_program_jed.add_argument(
+            "jed_file", metavar="JED-FILE", type=argparse.FileType("rb"),
             help="bitstream file to read")
 
-        p_verify_bit = p_operation.add_parser(
-            "verify-bit", help="read bitstream from a .bit file and verify it against the device")
-        p_verify_bit.add_argument(
-            "bit_file", metavar="BIT-FILE", type=argparse.FileType("rb"),
+        p_verify_jed = p_operation.add_parser(
+            "verify-jed", help="read bitstream from a .jed file and verify it against the device")
+        p_verify_jed.add_argument(
+            "jed_file", metavar="JED-FILE", type=argparse.FileType("rb"),
             help="bitstream file to read")
 
         p_erase = p_operation.add_parser(
@@ -554,29 +554,29 @@ class ProgramXC9500XLApplet(JTAGProbeApplet, name="program-xc9500xl"):
 
         bytes_per_word = (xc9500_device.word_width + 7) // 8
         try:
-            if args.operation == "read-bit":
+            if args.operation == "read-jed":
                 await xc95xx_iface.programming_enable()
                 for word in await xc95xx_iface.read(0, xc9500_device.bitstream_words,
                                                     fast=not args.slow):
-                    args.bit_file.write(word.to_bytes(bytes_per_word, "little"))
+                    args.jed_file.write(word.to_bytes(bytes_per_word, "little"))
 
-            if args.operation in ("program-bit", "verify-bit"):
+            if args.operation in ("program-jed", "verify-jed"):
                 words = []
                 while True:
-                    data = args.bit_file.read(bytes_per_word)
+                    data = args.jed_file.read(bytes_per_word)
                     if data == b"": break
                     words.append(int.from_bytes(data, "little"))
 
                 if len(words) != xc9500_device.bitstream_words:
-                    raise GlasgowAppletError("incorrect .bit file size (%d words) for device %s"
+                    raise GlasgowAppletError("incorrect .jed file size (%d words) for device %s"
                                              % (len(words), xc9500_device.name))
 
-            if args.operation == "program-bit":
+            if args.operation == "program-jed":
                 await xc95xx_iface.programming_enable()
                 await xc95xx_iface.program(0, words,
                                            fast=not args.slow)
 
-            if args.operation == "verify-bit":
+            if args.operation == "verify-jed":
                 await xc95xx_iface.programming_enable()
                 device_words = await xc95xx_iface.read(0, xc9500_device.bitstream_words,
                                                        fast=not args.slow)
@@ -594,86 +594,44 @@ class ProgramXC9500XLApplet(JTAGProbeApplet, name="program-xc9500xl"):
         finally:
             await xc95xx_iface.programming_disable()
 
-# -------------------------------------------------------------------------------------------------
+        
 
-class ProgramXC9500XLAppletTool(GlasgowAppletTool, applet=ProgramXC9500XLApplet):
-    help = "manipulate Xilinx XC9500XL CPLD bitstreams"
-    description = """
-    See `run program-xc9500xl --help` for details.
-    """
+    # async def run(self, args):
+    #     bytes_per_word = (args.device.word_width + 7) // 8
 
-    @classmethod
-    def add_arguments(cls, parser):
-        def idcode(arg):
-            if arg.upper() in devices_by_name:
-                return devices_by_name[arg.upper()]
-            try:
-                idcode = DR_IDCODE.from_int(int(arg, 16))
-            except ValueError:
-                raise argparse.ArgumentTypeError("unknown device")
+    #     if args.operation == "read-jed-usercode":
+    #         words = []
+    #         while True:
+    #             data = args.jed_file.read(bytes_per_word)
+    #             if data == b"": break
+    #             words.append(int.from_bytes(data, "little"))
 
-            device = devices_by_idcode[idcode.mfg_id, idcode.part_id]
-            if device is None:
-                raise argparse.ArgumentTypeError("unknown IDCODE")
-            return device
+    #         if len(words) != args.device.bitstream_words:
+    #             raise GlasgowAppletError("incorrect .jed file size (%d words) for device %s"
+    #                                      % (len(words), args.device.name))
 
-        parser.add_argument(
-            "-d", "--device", metavar="DEVICE", type=idcode, required=True,
-            help="select device with given name or JTAG IDCODE")
+    #         usercode_words = [
+    #             words[index] for index in range(args.device.usercode_low,
+    #                                             args.device.usercode_low  + 8)
+    #         ] + [
+    #             words[index] for index in range(args.device.usercode_high,
+    #                                             args.device.usercode_high + 8)
+    #         ]
+    #         usercode = 0
+    #         for usercode_word in usercode_words:
+    #             usercode = (usercode << 2) | ((usercode_word >> 6) & 0b11)
+    #         usercode = struct.pack(">L", usercode)
+    #         self.logger.info("USERCODE=%s (%s)",
+    #                          usercode.hex(),
+    #                          re.sub(rb"[^\x20-\x7e]", b"?", usercode).decode("ascii"))
 
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+        # if args.operation == "jed-to-bit":
+        #     try:
+        #         parser = JESD3Parser(args.jed_file.read(), quirk_no_design_spec=True)
+        #         parser.parse()
+        #     except JESD3ParsingError as e:
+        #         raise GlasgowAppletError(str(e))
 
-        p_read_bit_usercode = p_operation.add_parser(
-            "read-bit-usercode", help="read USERCODE from a .bit file")
-        p_read_bit_usercode.add_argument(
-            "bit_file", metavar="BIT-FILE", type=argparse.FileType("rb"),
-            help="bitstream file to read")
-
-        p_jed_to_bit = p_operation.add_parser(
-            "jed-to-bit", help="convert a .jed file to a .bit file")
-        p_jed_to_bit.add_argument(
-            "jed_file", metavar="JED-FILE", type=argparse.FileType("r"),
-            help="bitstream file to read")
-        p_jed_to_bit.add_argument(
-            "bit_file", metavar="BIT-FILE", type=argparse.FileType("wb"),
-            help="bitstream file to write")
-
-    async def run(self, args):
-        bytes_per_word = (args.device.word_width + 7) // 8
-
-        if args.operation == "read-bit-usercode":
-            words = []
-            while True:
-                data = args.bit_file.read(bytes_per_word)
-                if data == b"": break
-                words.append(int.from_bytes(data, "little"))
-
-            if len(words) != args.device.bitstream_words:
-                raise GlasgowAppletError("incorrect .bit file size (%d words) for device %s"
-                                         % (len(words), args.device.name))
-
-            usercode_words = [
-                words[index] for index in range(args.device.usercode_low,
-                                                args.device.usercode_low  + 8)
-            ] + [
-                words[index] for index in range(args.device.usercode_high,
-                                                args.device.usercode_high + 8)
-            ]
-            usercode = 0
-            for usercode_word in usercode_words:
-                usercode = (usercode << 2) | ((usercode_word >> 6) & 0b11)
-            usercode = struct.pack(">L", usercode)
-            self.logger.info("USERCODE=%s (%s)",
-                             usercode.hex(),
-                             re.sub(rb"[^\x20-\x7e]", b"?", usercode).decode("ascii"))
-
-        if args.operation == "jed-to-bit":
-            try:
-                parser = JESD3Parser(args.jed_file.read(), quirk_no_design_spec=True)
-                parser.parse()
-            except JESD3ParsingError as e:
-                raise GlasgowAppletError(str(e))
-
-            words = fuses_to_words(parser.fuse, args.device)
-            for word in words:
-                args.bit_file.write(word.to_bytes(bytes_per_word, "little"))
+        #     words = fuses_to_words(parser.fuse, args.device)
+        #     for word in words:
+        #         args.bit_file.write(word.to_bytes(bytes_per_word, "little"))
