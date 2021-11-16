@@ -1,6 +1,12 @@
 # Ref: Using the XC9500/XL/XV JTAG Boundary Scan Interface
 # Document Number: XAPP069
 # Accession: G00014
+# Ref: XC95288XL High Performance CPLD
+# Document Number: DS055
+# Accession: G00081
+# Ref: XC95144XL High Performance CPLD
+# Document Number: DS056
+# Accession: G00082
 # Ref: XC9572XL BSDL files
 # Accession: G00015
 # Ref: black box reverse engineering of XC9572XL by whitequark
@@ -537,8 +543,9 @@ class ProgramXC9500XLApplet(JTAGProbeApplet, name="program-xc9500xl"):
         if xc9500_device is None:
             raise GlasgowAppletError("cannot operate on unknown device with IDCODE=%#10x"
                                      % idcode.to_int())
+
         self.logger.info("found %s rev=%d",
-                         idcode.to_int(), xc9500_device.name, idcode.version)
+                         xc9500_device.name, idcode.version)
 
         usercode = await xc9500_iface.read_usercode()
         self.logger.info("USERCODE=%s (%s)",
