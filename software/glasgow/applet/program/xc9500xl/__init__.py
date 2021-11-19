@@ -488,11 +488,6 @@ class ProgramXC9500XLApplet(JTAGProbeApplet, name="program-xc9500xl"):
 
     Supported devices are:
 {devices}
-
-    The Glasgow .bit XC9500XL bitstream format is a flat, unstructured sequence of n-bit words
-    comprising the bitstream, written in little endian binary. It is substantially different
-    from both .jed and .svf bitstream formats, but matches the internal device programming
-    architecture.
     """.format(
         devices="\n".join("        * {.name}".format(device) for device in devices)
     )
