@@ -37,9 +37,8 @@ setup(
     extras_require={
         "toolchain": [
             "nmigen-yosys",
-            "yowasp-yosys",
-            "yowasp-nextpnr-ice40-5k",
-            "yowasp-nextpnr-ice40-8k",
+            "yowasp-yosys~=0.11",
+            "yowasp-nextpnr-ice40~=0.1",
         ],
     },
     dependency_links=[
