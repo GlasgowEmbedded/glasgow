@@ -4,8 +4,8 @@ import sys
 import tempfile
 import shutil
 import logging
-from nmigen.compat import *
-from nmigen.build import ResourceError
+from amaranth.compat import *
+from amaranth.build import ResourceError
 
 from ..gateware.pads import Pads
 from ..gateware.i2c import I2CTarget

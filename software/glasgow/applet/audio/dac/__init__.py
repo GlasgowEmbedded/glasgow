@@ -1,7 +1,7 @@
 import logging
 import asyncio
 import argparse
-from nmigen import *
+from amaranth import *
 
 from ....support.endpoint import *
 from ....gateware.clockgen import *

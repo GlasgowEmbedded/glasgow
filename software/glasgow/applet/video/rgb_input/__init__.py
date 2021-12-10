@@ -1,7 +1,7 @@
 import logging
 import math
-from nmigen.compat import *
-from nmigen.compat.genlib.cdc import *
+from amaranth.compat import *
+from amaranth.compat.genlib.cdc import *
 
 from ... import *
 

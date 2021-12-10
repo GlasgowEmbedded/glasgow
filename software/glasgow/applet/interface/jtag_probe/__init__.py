@@ -23,8 +23,8 @@ import struct
 import logging
 import asyncio
 import argparse
-from nmigen import *
-from nmigen.lib.cdc import FFSynchronizer
+from amaranth import *
+from amaranth.lib.cdc import FFSynchronizer
 
 from ....support.bits import *
 from ....support.logging import *

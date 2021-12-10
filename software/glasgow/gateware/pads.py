@@ -1,6 +1,6 @@
-from nmigen import *
-from nmigen.lib.io import Pin
-from nmigen.compat.fhdl.specials import TSTriple
+from amaranth import *
+from amaranth.lib.io import Pin
+from amaranth.compat.fhdl.specials import TSTriple
 
 
 __all__ = ['Pads']

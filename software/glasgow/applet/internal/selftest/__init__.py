@@ -1,7 +1,7 @@
 import logging
 import asyncio
-from nmigen import *
-from nmigen.build.plat import ResourceError
+from amaranth import *
+from amaranth.build.res import ResourceError
 
 from ... import *
 

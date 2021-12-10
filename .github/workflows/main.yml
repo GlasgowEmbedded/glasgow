@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install git+https://github.com/nmigen/nmigen.git
+          python -m pip install git+https://github.com/amaranth-lang/amaranth.git
       - name: Install software
         run: python -m pip install -e ./software[toolchain]
       - name: Run tests

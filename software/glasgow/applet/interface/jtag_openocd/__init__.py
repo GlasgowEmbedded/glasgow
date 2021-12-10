@@ -1,7 +1,7 @@
 import struct
 import logging
 import asyncio
-from nmigen import *
+from amaranth import *
 
 from ....support.bits import *
 from ....support.logging import *

@@ -1,8 +1,8 @@
 import functools
 import os
-from nmigen import Elaboratable
-from nmigen.back.pysim import Simulator
-from nmigen.compat import Module as CompatModule, run_simulation as compat_run_simulation
+from amaranth import Elaboratable
+from amaranth.back.pysim import Simulator
+from amaranth.compat import Module as CompatModule, run_simulation as compat_run_simulation
 
 
 __all__ = ["GatewareBuildError", "simulation_test"]

@@ -2,8 +2,8 @@ import struct
 import logging
 import asyncio
 import math
-from nmigen.compat import *
-from nmigen.compat.genlib.cdc import *
+from amaranth.compat import *
+from amaranth.compat.genlib.cdc import *
 
 from ....support.logging import *
 from ....gateware.clockgen import *

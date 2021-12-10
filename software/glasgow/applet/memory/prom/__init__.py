@@ -10,9 +10,9 @@ import logging
 import asyncio
 import argparse
 import statistics
-from nmigen import *
-from nmigen.lib.cdc import FFSynchronizer
-from nmigen.lib.fifo import SyncFIFOBuffered
+from amaranth import *
+from amaranth.lib.cdc import FFSynchronizer
+from amaranth.lib.fifo import SyncFIFOBuffered
 
 from ....support.logging import *
 from ... import *

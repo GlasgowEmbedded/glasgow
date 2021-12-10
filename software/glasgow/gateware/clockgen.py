@@ -1,4 +1,4 @@
-from nmigen.compat import *
+from amaranth.compat import *
 
 
 __all__ = ["ClockGen"]

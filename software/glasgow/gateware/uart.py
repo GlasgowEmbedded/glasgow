@@ -1,5 +1,5 @@
-from nmigen import *
-from nmigen.lib.cdc import FFSynchronizer
+from amaranth import *
+from amaranth.lib.cdc import FFSynchronizer
 
 
 __all__ = ["UART"]
@@ -272,7 +272,7 @@ class UART(Elaboratable):
 # -------------------------------------------------------------------------------------------------
 
 import unittest
-from nmigen.lib.io import Pin
+from amaranth.lib.io import Pin
 
 from . import simulation_test
 

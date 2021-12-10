@@ -21,7 +21,7 @@ import argparse
 import asyncio
 import enum
 from contextlib import contextmanager
-from nmigen import *
+from amaranth import *
 
 from ....support.logging import *
 from ....gateware.pads import *

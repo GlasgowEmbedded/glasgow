@@ -13,8 +13,8 @@ import math
 import argparse
 import logging
 import asyncio
-from nmigen.compat import *
-from nmigen.compat.genlib.cdc import MultiReg
+from amaranth.compat import *
+from amaranth.compat.genlib.cdc import MultiReg
 
 from ... import *
 
