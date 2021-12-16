@@ -351,6 +351,16 @@ class XC95xxXLInterface:
 
         return words
 
+    async def jed_template(self, isdata, word_width, nfuses, fuse_nr):
+        """
+            # QF<#fuses>*
+            # F0*
+            # L<nfuse> <data>
+        """
+        print("QF{}*".format(nfuses))
+        print("F0*")
+        print("L{} {}".format(fuse_nr, isdata.data))
+
     async def _fvfyi(self, count):
         await self.lower.write_ir(IR_FVFYI)
 
@@ -365,6 +375,7 @@ class XC95xxXLInterface:
                 self._log("read autoinc %d data=%s",
                           index, "{:0{}b}".format(isdata.data, self.device.word_width))
                 words.append(isdata.data)
+                await self.jed_template(isdata, self.device.word_width, count, index)
                 index += 1
             else:
                 self._log("read autoinc %d invalid")
