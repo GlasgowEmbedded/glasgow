@@ -357,9 +357,10 @@ class XC95xxXLInterface:
             # F0*
             # L<nfuse> <data>
         """
+        #print(dir(isdata))
         print("QF{}*".format(nfuses))
         print("F0*")
-        print("L{} {}".format(fuse_nr, isdata.data))
+        print("L{} {}".format(fuse_nr, isdata.to_bits(), 'b'))
 
     async def _fvfyi(self, count):
         await self.lower.write_ir(IR_FVFYI)
