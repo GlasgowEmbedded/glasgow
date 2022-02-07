@@ -123,6 +123,16 @@ class JESD3Lexer:
         self.position = match.end()
         return token, match.start(), match.groups()
 
+class JESD3Writer:
+    async def jed_basic_template(self, isdata, word_width, nfuses, fuse_nr):
+        """
+            # QF<#fuses>*
+            # F0*
+            # L<nfuse> <data>
+        """
+        print("QF{}*".format(nfuses))
+        print("F0*")
+        print("L{} {}".format(fuse_nr, isdata.to_bits(), 'b'))
 
 class JESD3Parser:
     def __init__(self, buffer, **kwargs):

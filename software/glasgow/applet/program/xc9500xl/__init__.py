@@ -221,7 +221,6 @@
 # by FPGM in a way that it is reused by FPGMI once FPGM DR is updated once with the strobe bit
 # set.
 
-import struct
 import logging
 import argparse
 import re
@@ -231,7 +230,7 @@ from ....arch.xilinx.xc9500xl import *
 from ....support.logging import *
 from ....database.xilinx.xc9500xl import *
 from ...interface.jtag_probe import JTAGProbeApplet
-from ....protocol.jesd3 import *
+from ....protocol.jesd3 import JESD3Writer
 from ... import *
 
 
@@ -351,17 +350,6 @@ class XC95xxXLInterface:
 
         return words
 
-    async def jed_template(self, isdata, word_width, nfuses, fuse_nr):
-        """
-            # QF<#fuses>*
-            # F0*
-            # L<nfuse> <data>
-        """
-        #print(dir(isdata))
-        print("QF{}*".format(nfuses))
-        print("F0*")
-        print("L{} {}".format(fuse_nr, isdata.to_bits(), 'b'))
-
     async def _fvfyi(self, count):
         await self.lower.write_ir(IR_FVFYI)
 
@@ -376,7 +364,7 @@ class XC95xxXLInterface:
                 self._log("read autoinc %d data=%s",
                           index, "{:0{}b}".format(isdata.data, self.device.word_width))
                 words.append(isdata.data)
-                await self.jed_template(isdata, self.device.word_width, count, index)
+                await JESD3Writer.jed_basic_template(self, isdata, self.device.word_width, count, index)
                 index += 1
             else:
                 self._log("read autoinc %d invalid")
@@ -565,7 +553,8 @@ class ProgramXC9500XLApplet(JTAGProbeApplet, name="program-xc9500xl"):
                 await xc95xx_iface.programming_enable()
                 for word in await xc95xx_iface.read(0, xc9500_device.bitstream_words,
                                                     fast=not args.slow):
-                    args.jed_file.write(word.to_bytes(bytes_per_word, "little"))
+                    print(dir(xc9500_device))
+                    args.jed_file.write(JESD3Writer.jed_basic_template(self, xc9500_device.word_width, xc9500_device.count, xc9500_device.index, xc9500_device.count))
 
             if args.operation in ("program-jed", "verify-jed"):
                 words = []
@@ -600,45 +589,3 @@ class ProgramXC9500XLApplet(JTAGProbeApplet, name="program-xc9500xl"):
 
         finally:
             await xc95xx_iface.programming_disable()
-
-        
-
-    # async def run(self, args):
-    #     bytes_per_word = (args.device.word_width + 7) // 8
-
-    #     if args.operation == "read-jed-usercode":
-    #         words = []
-    #         while True:
-    #             data = args.jed_file.read(bytes_per_word)
-    #             if data == b"": break
-    #             words.append(int.from_bytes(data, "little"))
-
-    #         if len(words) != args.device.bitstream_words:
-    #             raise GlasgowAppletError("incorrect .jed file size (%d words) for device %s"
-    #                                      % (len(words), args.device.name))
-
-    #         usercode_words = [
-    #             words[index] for index in range(args.device.usercode_low,
-    #                                             args.device.usercode_low  + 8)
-    #         ] + [
-    #             words[index] for index in range(args.device.usercode_high,
-    #                                             args.device.usercode_high + 8)
-    #         ]
-    #         usercode = 0
-    #         for usercode_word in usercode_words:
-    #             usercode = (usercode << 2) | ((usercode_word >> 6) & 0b11)
-    #         usercode = struct.pack(">L", usercode)
-    #         self.logger.info("USERCODE=%s (%s)",
-    #                          usercode.hex(),
-    #                          re.sub(rb"[^\x20-\x7e]", b"?", usercode).decode("ascii"))
-
-        # if args.operation == "jed-to-bit":
-        #     try:
-        #         parser = JESD3Parser(args.jed_file.read(), quirk_no_design_spec=True)
-        #         parser.parse()
-        #     except JESD3ParsingError as e:
-        #         raise GlasgowAppletError(str(e))
-
-        #     words = fuses_to_words(parser.fuse, args.device)
-        #     for word in words:
-        #         args.bit_file.write(word.to_bytes(bytes_per_word, "little"))
