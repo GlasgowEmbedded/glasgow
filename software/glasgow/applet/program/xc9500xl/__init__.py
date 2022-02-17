@@ -354,6 +354,7 @@ class XC95xxXLInterface:
         await self.lower.write_ir(IR_FVFYI)
 
         words = []
+        jed_file = []
         index = 0
         while index < count:
             await self.lower.run_test_idle(1)
@@ -364,7 +365,7 @@ class XC95xxXLInterface:
                 self._log("read autoinc %d data=%s",
                           index, "{:0{}b}".format(isdata.data, self.device.word_width))
                 words.append(isdata.data)
-                await JESD3Writer.jed_basic_template(self, isdata, self.device.word_width, count, index)
+                await JESD3Writer().jed_basic_template(jed_file, isdata, self.device.word_width, count, index)
                 index += 1
             else:
                 self._log("read autoinc %d invalid")
@@ -549,12 +550,13 @@ class ProgramXC9500XLApplet(JTAGProbeApplet, name="program-xc9500xl"):
 
         bytes_per_word = (xc9500_device.word_width + 7) // 8
         try:
+            jed_file = []
             if args.operation == "read-jed":
                 await xc95xx_iface.programming_enable()
                 for word in await xc95xx_iface.read(0, xc9500_device.bitstream_words,
                                                     fast=not args.slow):
                     print(dir(xc9500_device))
-                    args.jed_file.write(JESD3Writer.jed_basic_template(self, xc9500_device.word_width, xc9500_device.count, xc9500_device.index, xc9500_device.count))
+                    args.jed_file.write(await JESD3Writer().jed_basic_template(jed_file, xc9500_device.word_width, xc9500_device.count, xc9500_device.index, xc9500_device.count))
 
             if args.operation in ("program-jed", "verify-jed"):
                 words = []
