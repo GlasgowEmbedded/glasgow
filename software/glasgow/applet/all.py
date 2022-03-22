@@ -39,6 +39,7 @@ from .sensor.hx711 import SensorHX711Applet
 from .sensor.ina260 import SensorINA260Applet
 from .sensor.mouse_ps2 import SensorMousePS2Applet
 from .sensor.pmsx003 import SensorPMSx003Applet
+from .sensor.sen5x import SensorSEN5xApplet
 from .sensor.scd30 import SensorSCD30Applet
 
 from .display.hd44780 import DisplayHD44780Applet
