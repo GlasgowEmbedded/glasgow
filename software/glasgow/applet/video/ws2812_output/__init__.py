@@ -1,6 +1,6 @@
 import logging
 import asyncio
-from nmigen import *
+from amaranth import *
 
 from ....support.endpoint import *
 from ....gateware.pads import *

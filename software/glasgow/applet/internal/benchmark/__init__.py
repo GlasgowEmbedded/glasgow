@@ -5,7 +5,7 @@ import array
 import time
 import statistics
 import enum
-from nmigen import *
+from amaranth import *
 
 from ....gateware.lfsr import *
 from ... import *

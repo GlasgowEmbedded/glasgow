@@ -304,8 +304,8 @@ import random
 import itertools
 import crcmod
 import math
-from nmigen.compat import *
-from nmigen.compat.genlib.cdc import MultiReg
+from amaranth.compat import *
+from amaranth.compat.genlib.cdc import MultiReg
 
 from ....gateware.pads import *
 from ... import *

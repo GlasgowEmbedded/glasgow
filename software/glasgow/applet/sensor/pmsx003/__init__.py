@@ -7,7 +7,7 @@ import logging
 import asyncio
 import struct
 from collections import namedtuple
-from nmigen import *
+from amaranth import *
 
 from ... import *
 from ....support.data_logger import DataLogger

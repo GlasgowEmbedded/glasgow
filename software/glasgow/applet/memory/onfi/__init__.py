@@ -79,8 +79,8 @@ import argparse
 import logging
 import asyncio
 import struct
-from nmigen.compat import *
-from nmigen.compat.genlib.cdc import MultiReg
+from amaranth.compat import *
+from amaranth.compat.genlib.cdc import MultiReg
 
 from ....support.logging import *
 from ....database.jedec import *

@@ -2,8 +2,8 @@
 # http://www.ftdichip.com/Support/Documents/AppNotes/AN_135_MPSSE_Basics.pdf
 # http://www.ftdichip.com/Support/Documents/AppNotes/ AN_108_Command_Processor_for_MPSSE_and_MCU_Host_Bus_Emulation_Modes.pdf
 
-from nmigen.compat import *
-from nmigen.compat.genlib.cdc import MultiReg
+from amaranth.compat import *
+from amaranth.compat.genlib.cdc import MultiReg
 
 
 __all__ = ['MPSSE']

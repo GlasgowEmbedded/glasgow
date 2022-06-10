@@ -10,7 +10,7 @@
 import logging
 import argparse
 from bitarray import bitarray
-from nmigen.compat import *
+from amaranth.compat import *
 
 from ... import *
 from ....arch.jtag import *

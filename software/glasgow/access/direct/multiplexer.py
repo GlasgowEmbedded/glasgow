@@ -1,5 +1,5 @@
 import logging
-from nmigen import *
+from amaranth import *
 
 from .. import AccessMultiplexer, AccessMultiplexerInterface
 
@@ -31,7 +31,7 @@ class _FIFOReadPort(Elaboratable):
         self.r_rdy  = Signal()
         self.r_data = fifo.r_data
 
-        # TODO(nmigen): rename these
+        # TODO(amaranth): rename these
         self.re       = self.r_en
         self.readable = self.r_rdy
         self.dout     = self.r_data
@@ -75,7 +75,7 @@ class _FIFOWritePort(Elaboratable):
         self.w_data = fifo.w_data
         self.flush  = fifo.flush
 
-        # TODO(nmigen): rename these
+        # TODO(amaranth): rename these
         self.we       = self.w_en
         self.writable = self.w_rdy
         self.din      = self.w_data

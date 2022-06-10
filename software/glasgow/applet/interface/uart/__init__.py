@@ -3,7 +3,7 @@ import sys
 import logging
 import asyncio
 import argparse
-from nmigen import *
+from amaranth import *
 
 from ....support.endpoint import *
 from ....gateware.pads import *

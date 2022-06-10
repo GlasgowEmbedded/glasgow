@@ -1,8 +1,8 @@
 from functools import reduce
 from collections import OrderedDict
-from nmigen.compat import *
-from nmigen.compat.genlib.fifo import _FIFOInterface, SyncFIFOBuffered
-from nmigen.compat.genlib.coding import PriorityEncoder, PriorityDecoder
+from amaranth.compat import *
+from amaranth.compat.genlib.fifo import _FIFOInterface, SyncFIFOBuffered
+from amaranth.compat.genlib.coding import PriorityEncoder, PriorityDecoder
 
 
 __all__ = ["EventSource", "EventAnalyzer", "TraceDecodingError", "TraceDecoder"]

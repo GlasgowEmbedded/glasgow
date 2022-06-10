@@ -5,7 +5,7 @@ import math
 import asyncio
 import logging
 import argparse
-from nmigen.compat import *
+from amaranth.compat import *
 
 from ....support.logging import *
 from ....support.bits import *

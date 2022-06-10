@@ -1,5 +1,5 @@
 import logging
-from nmigen import *
+from amaranth import *
 
 
 __all__ = ["PLL"]

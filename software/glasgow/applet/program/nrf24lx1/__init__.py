@@ -8,7 +8,7 @@ import logging
 import argparse
 import struct
 from collections import namedtuple
-from nmigen.compat import *
+from amaranth.compat import *
 from fx2.format import input_data, output_data
 
 from ....support.logging import dump_hex

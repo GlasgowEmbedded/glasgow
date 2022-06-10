@@ -1,5 +1,5 @@
 import asyncio
-from nmigen.compat import *
+from amaranth.compat import *
 
 from ...support.logging import *
 from .. import AccessDemultiplexer, AccessDemultiplexerInterface

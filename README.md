@@ -2,7 +2,7 @@
 
 **Want one? The [Crowdsupply campaign](https://www.crowdsupply.com/1bitsquared/glasgow) is now live.**
 
-**Let's chat! Our IRC channel is [#glasgow at libera.chat](irc://irc.libera.chat/glasgow); our Discord channel is [#glasgow at 1BitSquared's Discord server](https://1bitsquared.com/pages/chat).**
+**Let's chat! Our IRC channel is [#glasgow at libera.chat](https://web.libera.chat/#glasgow); our Discord channel is [#glasgow at 1BitSquared's Discord server](https://1bitsquared.com/pages/chat).**
 
 **Important note: if you are looking to assemble boards yourself, use only revC1.**
 
@@ -68,9 +68,9 @@ Revision C is the latest revision and is being prepared for mass production. It 
 
 ## What software does Glasgow use?
 
-Glasgow is written entirely in Python 3. The interface logic that runs on the FPGA is described using [nMigen](https://github.com/nmigen/nmigen/), which is a Python-based domain specific language. The supporting code that runs on the host PC is written in Python with [asyncio](https://docs.python.org/3/library/asyncio.html). This way, the logic on the FPGA can be assembled on demand for any requested configuration, keeping it as fast and compact as possible, and code can be shared between gateware and software, removing the need to add error-prone "glue" boilerplate.
+Glasgow is written entirely in Python 3. The interface logic that runs on the FPGA is described using [Amaranth](https://github.com/amaranth-lang/amaranth/), which is a Python-based domain specific language. The supporting code that runs on the host PC is written in Python with [asyncio](https://docs.python.org/3/library/asyncio.html). This way, the logic on the FPGA can be assembled on demand for any requested configuration, keeping it as fast and compact as possible, and code can be shared between gateware and software, removing the need to add error-prone "glue" boilerplate.
 
-Glasgow would not be possible without the [open-source iCE40 FPGA toolchain](http://www.clifford.at/icestorm/), which is not only very reliable but also extremely fast. It is so fast that FPGA bitstreams are not cached (beyond not rebuilding the bitstream already on the device), as it only takes a few seconds to build one from scratch for something like an UART. When developing a new applet it is rarely necessary to wait for the toolchain.
+Glasgow would not be possible without the [open-source iCE40 FPGA toolchain](http://bygone.clairexen.net/icestorm/), which is not only very reliable but also extremely fast. It is so fast that FPGA bitstreams are not cached (beyond not rebuilding the bitstream already on the device), as it only takes a few seconds to build one from scratch for something like an UART. When developing a new applet it is rarely necessary to wait for the toolchain.
 
 Implementing reliable, high-performance USB communication is not trivial—packetization, buffering, and USB quirks add up. Glasgow abstracts away USB: on the FPGA, the applet gateware writes to or reads from a FIFO, and on the host, applet software writes to or reads from a socket-like interface. Idiomatic Python code can communicate at maximum USB 2 bulk bandwidth on a modern PC without additional effort. Moreover, when a future Glasgow revision will use Ethernet in addition to USB, no changes to applet code will be required.
 

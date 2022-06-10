@@ -1,6 +1,6 @@
 import asyncio
-from nmigen import *
-from nmigen.vendor.lattice_ice40 import *
+from amaranth import *
+from amaranth.vendor.lattice_ice40 import *
 
 from ..device.hardware import *
 from ..gateware import GatewareBuildError

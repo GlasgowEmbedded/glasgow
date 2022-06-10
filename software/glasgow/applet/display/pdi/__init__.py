@@ -62,7 +62,7 @@ import logging
 import argparse
 import asyncio
 from bitarray import bitarray
-from nmigen.compat import *
+from amaranth.compat import *
 
 from ...interface.spi_controller import SPIControllerSubtarget, SPIControllerInterface
 from ... import *

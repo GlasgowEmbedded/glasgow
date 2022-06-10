@@ -142,10 +142,10 @@
 # FIFOADR->FLAG                 10.7
 # FIFOADR->FIFODATA             14.3
 
-from nmigen.compat import *
-from nmigen.compat.genlib.cdc import MultiReg
-from nmigen.compat.genlib.fifo import _FIFOInterface, AsyncFIFO, SyncFIFO, SyncFIFOBuffered
-from nmigen.compat.genlib.resetsync import AsyncResetSynchronizer
+from amaranth.compat import *
+from amaranth.compat.genlib.cdc import MultiReg
+from amaranth.compat.genlib.fifo import _FIFOInterface, AsyncFIFO, SyncFIFO, SyncFIFOBuffered
+from amaranth.compat.genlib.resetsync import AsyncResetSynchronizer
 
 
 __all__ = ["FX2Crossbar"]
@@ -290,7 +290,7 @@ class _FX2Bus(Module):
         #
         # For input pins, we use DDR input to capture the FX2 output in the valid window, that is
         # on negedge of system clock. The output pins are SDR, although for bidirectional pins SDR
-        # is emulated by using same data on both edges. (nMigen does not allow different gearbox
+        # is emulated by using same data on both edges. (Amaranth does not allow different gearbox
         # ratio between input and output buffers.)
         #
         # See https://github.com/GlasgowEmbedded/Glasgow/issues/89 for details.

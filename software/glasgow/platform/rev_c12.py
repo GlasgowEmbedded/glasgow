@@ -1,4 +1,4 @@
-from nmigen.build import *
+from amaranth.build import *
 
 from .ice40 import *
 
@@ -130,5 +130,5 @@ class GlasgowPlatformRevC12(GlasgowPlatformICE40):
 
 
 if __name__ == "__main__":
-    from nmigen_boards.test.blinky import *
+    from amaranth_boards.test.blinky import *
     GlasgowPlatformRevC1().build(Blinky(), do_program=True)

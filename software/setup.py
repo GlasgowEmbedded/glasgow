@@ -26,7 +26,7 @@ setup(
         "setuptools_scm"
     ],
     install_requires=[
-        "nmigen",
+        "amaranth",
         "fx2>=0.9",
         "libusb1>=1.8.1",
         "aiohttp",
@@ -36,14 +36,13 @@ setup(
     ],
     extras_require={
         "toolchain": [
-            "nmigen-yosys",
-            "yowasp-yosys",
-            "yowasp-nextpnr-ice40-5k",
-            "yowasp-nextpnr-ice40-8k",
+            "amaranth-yosys",
+            "yowasp-yosys>=0.11.*",
+            "yowasp-nextpnr-ice40>=0.1.*",
         ],
     },
     dependency_links=[
-        "git+https://github.com/nmigen/nmigen.git#egg=nmigen",
+        "git+https://github.com/amaranth-lang/amaranth.git#egg=amaranth",
     ],
     packages=find_packages(),
     package_data={"glasgow.device": ["firmware.ihex"]},

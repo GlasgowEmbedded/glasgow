@@ -4,8 +4,8 @@ import sys
 import tempfile
 import shutil
 import logging
-from nmigen.compat import *
-from nmigen.build import ResourceError
+from amaranth.compat import *
+from amaranth.build import ResourceError
 
 from ..gateware.pads import Pads
 from ..gateware.i2c import I2CTarget
@@ -86,8 +86,8 @@ class GlasgowHardwareTarget(Module):
 
     def build_plan(self, **kwargs):
         overrides = {
-            "synth_opts": ["-abc9"],
-            "nextpnr_opts": ["--placer", "heap"],
+            "synth_opts": "-abc9",
+            "nextpnr_opts": "--placer heap",
         }
         overrides.update(kwargs)
         return GlasgowBuildPlan(self.platform.prepare(self, **overrides))

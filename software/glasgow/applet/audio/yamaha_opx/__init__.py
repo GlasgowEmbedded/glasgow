@@ -144,8 +144,8 @@ import aiohttp, aiohttp.web
 import hashlib
 import gzip
 import io
-from nmigen.compat import *
-from nmigen.compat.genlib.cdc import MultiReg
+from amaranth.compat import *
+from amaranth.compat.genlib.cdc import MultiReg
 
 from ....gateware.pads import *
 from ....gateware.clockgen import *
