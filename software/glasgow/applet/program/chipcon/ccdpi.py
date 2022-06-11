@@ -17,7 +17,7 @@ import random
 from collections import namedtuple
 from enum import IntEnum, IntFlag
 
-from nmigen import *
+from amaranth import *
 from ....database.ti.chipcon import *
 from ....gateware.clockgen import *
 from ... import *
