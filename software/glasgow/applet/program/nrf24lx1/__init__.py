@@ -111,6 +111,13 @@ class ProgramNRF24Lx1Interface:
         self._log("write disable")
         await self._command(0x04)
 
+    async def check_presence(self):
+        await self.write_enable()
+        present = (await self.read_status() & FSR_BIT_WEN) != 0
+        if present:
+            await self.write_disable()
+        return present
+
     async def read(self, address, length):
         self._log("read address=%#06x length=%#06x", address, length)
         return await self._command(0x03, arg=struct.pack(">H", address), ret=length)
@@ -252,6 +259,9 @@ class ProgramNRF24Lx1Applet(GlasgowApplet, name="program-nrf24lx1"):
 
         try:
             await nrf24lx1_iface.reset_program()
+
+            if not await nrf24lx1_iface.check_presence():
+                raise ProgramNRF24Lx1Error("MCU is not present")
 
             async def check_info_page(address):
                 old_status = await nrf24lx1_iface.read_status()
