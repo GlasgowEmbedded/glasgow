@@ -34,7 +34,7 @@
   (pad 7 thru_hole circle (at 0 -0.55) (size 0.5 0.5) (drill 0.3) (layers *.Cu))
   (pad 7 thru_hole circle (at 0 0.55) (size 0.5 0.5) (drill 0.3) (layers *.Cu))
   (pad 7 smd roundrect (at 0 0) (size 1 1.6) (layers B.Cu) (roundrect_rratio 0.05))
-  (model ${KISYS3DMOD}/Package_DFN_QFN.3dshapes/DFN-6-1EP_2x2mm_P0.65mm_EP1x1.6mm.wrl
+  (model ${KICAD6_3DMODEL_DIR}/Package_DFN_QFN.3dshapes/DFN-6-1EP_2x2mm_P0.65mm_EP1x1.6mm.wrl
     (at (xyz 0 0 0))
     (scale (xyz 1 1 1))
     (rotate (xyz 0 0 0))

@@ -30,7 +30,7 @@
   (fp_line (start -1.75 0.95) (end 1.7 0.95) (layer F.CrtYd) (width 0.05))
   (pad 1 smd roundrect (at -1.15 0) (size 0.9 0.6) (layers F.Cu F.Paste F.Mask) (roundrect_rratio 0.25))
   (pad 2 smd roundrect (at 1.15 0) (size 0.9 0.6) (layers F.Cu F.Paste F.Mask) (roundrect_rratio 0.25))
-  (model ${KISYS3DMOD}/Diode_SMD.3dshapes/D_SOD-323.wrl
+  (model ${KICAD6_3DMODEL_DIR}/Diode_SMD.3dshapes/D_SOD-323.wrl
     (at (xyz 0 0 0))
     (scale (xyz 1 1 1))
     (rotate (xyz 0 0 0))
