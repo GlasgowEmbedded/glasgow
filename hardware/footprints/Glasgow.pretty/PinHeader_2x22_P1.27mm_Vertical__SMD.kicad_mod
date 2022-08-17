@@ -205,7 +205,7 @@
   (pad 44 smd roundrect (at 1.875 13.335) (size 2.75 0.76) (layers F.Cu F.Paste F.Mask) (roundrect_rratio 0.25))
   (pad "" np_thru_hole circle (at 0 -12.7) (size 1.1 1.1) (drill 1.1) (layers *.Cu *.Mask))
   (pad "" np_thru_hole circle (at 0 12.7) (size 1.1 1.1) (drill 1.1) (layers *.Cu *.Mask))
-  (model ${KISYS3DMOD}/Connector_PinHeader_1.27mm.3dshapes/PinHeader_2x22_P1.27mm_Vertical_SMD.wrl
+  (model ${KICAD6_3DMODEL_DIR}/Connector_PinHeader_1.27mm.3dshapes/PinHeader_2x22_P1.27mm_Vertical_SMD.wrl
     (at (xyz 0 0 0))
     (scale (xyz 1 1 1))
     (rotate (xyz 0 0 0))
