@@ -10613,7 +10613,7 @@
       (reference "U11") (unit 1) (value "SN74LVC1T45DCKR") (footprint "Glasgow:SOT-363_SC-70-6")
     )
     (path "/00000000-0000-0000-0000-00005c7b59b0/00000000-0000-0000-0000-00005c9e338e/00000000-0000-0000-0000-00005ee2ecd6"
-      (reference "U12") (unit 1) (value "INA233") (footprint "Package_SO:VSSOP-10_3x3mm_P0.5mm")
+      (reference "U12") (unit 1) (value "INA233") (footprint "Glasgow:VSSOP-10_3x3mm_P0.5mm")
     )
     (path "/00000000-0000-0000-0000-00005c7b59b0/00000000-0000-0000-0000-00005c9e338e/00000000-0000-0000-0000-00005ae8e38a"
       (reference "U13") (unit 1) (value "DAC081C081CIMK") (footprint "Glasgow:SOT-23-6")
@@ -10640,7 +10640,7 @@
       (reference "U20") (unit 1) (value "DAC081C081CIMK") (footprint "Glasgow:SOT-23-6")
     )
     (path "/00000000-0000-0000-0000-00005c7b59b0/00000000-0000-0000-0000-00005c9e337e/00000000-0000-0000-0000-00005ee2ecd6"
-      (reference "U21") (unit 1) (value "INA233") (footprint "Package_SO:VSSOP-10_3x3mm_P0.5mm")
+      (reference "U21") (unit 1) (value "INA233") (footprint "Glasgow:VSSOP-10_3x3mm_P0.5mm")
     )
     (path "/00000000-0000-0000-0000-00005c7b59b0/00000000-0000-0000-0000-00005c9e338e/00000000-0000-0000-0000-00005b3d9a66"
       (reference "U22") (unit 1) (value "SN74LVC1T45DCKR") (footprint "Glasgow:SOT-363_SC-70-6")
