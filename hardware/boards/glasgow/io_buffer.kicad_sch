@@ -6901,7 +6901,7 @@
     (uuid 00000000-0000-0000-0000-00005ee2ecd6)
     (property "Reference" "U21" (id 0) (at 255.27 63.5 0))
     (property "Value" "INA233" (id 1) (at 267.97 63.5 0))
-    (property "Footprint" "Package_SO:VSSOP-10_3x3mm_P0.5mm" (id 2) (at 281.94 86.36 0)
+    (property "Footprint" "Glasgow:VSSOP-10_3x3mm_P0.5mm" (id 2) (at 281.94 86.36 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "https://www.ti.com/lit/ds/symlink/ina233.pdf" (id 3) (at 270.51 77.47 0)
