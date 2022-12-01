@@ -9057,7 +9057,7 @@
     (property "Datasheet" "https://www.diodes.com/assets/Datasheets/APX811_812.pdf" (id 3) (at 212.09 109.22 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "1b2-bom-key" "ic-cat811jtbi" (id 4) (at 220.98 91.44 0)
+    (property "1b2-bom-key" "ic-apx811-40ug-7" (id 4) (at 220.98 91.44 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Mfg" "Diodes Incorporated" (id 5) (at 220.98 91.44 0)
