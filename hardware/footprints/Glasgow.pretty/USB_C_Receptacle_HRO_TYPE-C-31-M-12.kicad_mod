@@ -52,7 +52,7 @@
   (pad "S1" thru_hole oval (at -4.32 -3.13) (size 1 2.1) (drill oval 0.6 1.7) (layers *.Cu *.Mask "F.Paste") (tstamp 2b566805-6af1-4fb7-8573-47e80b3464e2))
   (pad "S1" thru_hole oval (at 4.32 -3.13) (size 1 2.1) (drill oval 0.6 1.7) (layers *.Cu *.Mask "F.Paste") (tstamp f46fc840-d2ae-4d95-9190-964348b224ee))
   (model "$(KIPRJMOD)/../../packages3D/USB_C_Receptacle_HRO_TYPE-C-31-M-12.step"
-    (offset (xyz -4.5 -3.6 0))
+    (offset (xyz -4.47 -3.65 0))
     (scale (xyz 1 1 1))
     (rotate (xyz 0 0 0))
   )
