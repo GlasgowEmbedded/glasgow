@@ -606,7 +606,7 @@ void handle_pending_usb_setup() {
 
     while(EP0CS & _BUSY);
 
-    if(glasgow_config.revision == GLASGOW_REV_C2)
+    if(glasgow_config.revision >= GLASGOW_REV_C2)
       result = iobuf_measure_voltage_ina233(arg_mask, (__xdata uint16_t *)EP0BUF);
     else
       result = iobuf_measure_voltage_adc081c(arg_mask, (__xdata uint16_t *)EP0BUF);
@@ -633,7 +633,7 @@ void handle_pending_usb_setup() {
     if(arg_get) {
       while(EP0CS & _BUSY);
 
-      if(glasgow_config.revision == GLASGOW_REV_C2)
+      if(glasgow_config.revision >= GLASGOW_REV_C2)
         result = iobuf_get_alert_ina233(arg_mask, (__xdata uint16_t *)EP0BUF, (__xdata uint16_t *)EP0BUF + 1);
       else
         result = iobuf_get_alert_adc081c(arg_mask, (__xdata uint16_t *)EP0BUF, (__xdata uint16_t *)EP0BUF + 1);
@@ -647,7 +647,7 @@ void handle_pending_usb_setup() {
       SETUP_EP0_BUF(4);
       while(EP0CS & _BUSY);
 
-      if(glasgow_config.revision == GLASGOW_REV_C2)
+      if(glasgow_config.revision >= GLASGOW_REV_C2)
         result = iobuf_set_alert_ina233(arg_mask, (__xdata uint16_t *)EP0BUF, (__xdata uint16_t *)EP0BUF + 1);
       else
         result = iobuf_set_alert_adc081c(arg_mask, (__xdata uint16_t *)EP0BUF, (__xdata uint16_t *)EP0BUF + 1);
@@ -668,13 +668,13 @@ void handle_pending_usb_setup() {
     bool result = true;
 
     while(EP0CS & _BUSY);
-    
+
     // Read out the alert status and also clear the alert status (or cache)
-    if(glasgow_config.revision == GLASGOW_REV_C2)
+    if(glasgow_config.revision >= GLASGOW_REV_C2)
       iobuf_read_alert_cache_ina233(EP0BUF, /*clear=*/true);
     else
       result = iobuf_poll_alert_adc081c(EP0BUF, /*clear=*/true);
-    
+
     if(!result) {
       STALL_EP0();
     } else {
@@ -682,7 +682,7 @@ void handle_pending_usb_setup() {
       // Clear the ERR led since we cleared the alert status above
       reset_status_bit(ST_ALERT);
     }
-    
+
     return;
   }
 
@@ -799,8 +799,8 @@ void handle_pending_usb_setup() {
 }
 
 // Directly use the irq enable register EX0 to notify about a pending alert to avoid using
-// a separate variable which could get out of sync. 
-// Define it to armed_alert to document this usage pattern 
+// a separate variable which could get out of sync.
+// Define it to armed_alert to document this usage pattern
 #define armed_alert EX0
 
 void isr_IE0() __interrupt(_INT_IE0) {
@@ -815,8 +815,8 @@ void handle_pending_alert() {
 
   // switch on the ERR led
   latch_status_bit(ST_ALERT);
-  
-  if(glasgow_config.revision == GLASGOW_REV_C2) {
+
+  if(glasgow_config.revision >= GLASGOW_REV_C2) {
     iobuf_poll_alert_ina233(&mask);
     // the ~ALERT line was not yet cleared by this call
   } else {
@@ -825,17 +825,17 @@ void handle_pending_alert() {
   }
 
   // TODO: handle i2c comms errors of above calls
-  
+
   // permanently switch off the voltage regulators of the ports we got a alert on
   iobuf_set_voltage(mask, &millivolts);
 
-  if(glasgow_config.revision == GLASGOW_REV_C2) {
+  if(glasgow_config.revision >= GLASGOW_REV_C2) {
     // only clear the ~ALERT line after the port vio has been disabled
     // this prevents re-enabling the port voltage for a short time
     // since on revC2 ~ALERT already disables the respective Vreg on a hw level
     iobuf_clear_alert_ina233(mask);
   }
-  
+
   // the ADC that pulled the ~ALERT line should have released it by now
   // so we can re-enable the interrupt to catch the next alert
   armed_alert = true;
@@ -878,7 +878,7 @@ int main() {
   descriptors_init();
   iobuf_init_dac_ldo();
 
-  if(glasgow_config.revision == GLASGOW_REV_C2) {
+  if(glasgow_config.revision >= GLASGOW_REV_C2) {
     if (!iobuf_init_adc_ina233())
       latch_status_bit(ST_ERROR);
   }

@@ -31,7 +31,12 @@ void iobuf_enable(bool on) {
 static bool dac_start(uint8_t mask, bool read) {
   uint8_t addr = 0;
   switch(mask) {
-    case IO_BUF_A:   addr = I2C_ADDR_IOA_DAC; break;
+    case IO_BUF_A:
+      if (glasgow_config.revision < GLASGOW_REV_C3)
+        addr = I2C_ADDR_IOA_DAC_REVBC12;
+      else
+        addr = I2C_ADDR_IOA_DAC_REVC3;
+      break;
     case IO_BUF_B:   addr = I2C_ADDR_IOB_DAC; break;
     case IO_BUF_ALL: if(!read) addr = I2C_ADDR_ALL_DAC; break;
   }
