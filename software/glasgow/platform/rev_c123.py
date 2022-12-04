@@ -3,12 +3,12 @@ from amaranth.build import *
 from .ice40 import *
 
 
-__all__ = ["GlasgowPlatformRevC12"]
+__all__ = ["GlasgowPlatformRevC123"]
 
 
 # In terms of FPGA I/O, the only change from revC0 to revC1 is the addition of a level shifter
-# on the sync port. There are no changes from revC1 to revC2.
-class GlasgowPlatformRevC12(GlasgowPlatformICE40):
+# on the sync port. There are no changes between revC1, revC2 or revC3.
+class GlasgowPlatformRevC123(GlasgowPlatformICE40):
     device      = "iCE40HX8K"
     package     = "BG121"
     default_clk = "clk_if"
