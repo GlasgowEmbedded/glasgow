@@ -314,7 +314,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
         in_fileno  = sys.stdin.fileno()
         out_fileno = sys.stdout.fileno()
 
-        if os.isatty(in_fileno):
+        if os.isatty(in_fileno) and os.name != "nt":
             import atexit, termios
 
             old_stdin_attrs = termios.tcgetattr(sys.stdin)
