@@ -27,7 +27,7 @@ setup(
     ],
     install_requires=[
         "amaranth",
-        "fx2>=0.9",
+        "fx2>=0.11",
         "libusb1>=1.8.1",
         "aiohttp",
         "pyvcd",
