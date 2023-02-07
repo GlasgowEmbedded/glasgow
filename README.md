@@ -4,7 +4,7 @@
 
 **Let's chat! Our IRC channel is [#glasgow at libera.chat](https://web.libera.chat/#glasgow); our Discord channel is [#glasgow at 1BitSquared's Discord server](https://1bitsquared.com/pages/chat).**
 
-**Important note: if you are looking to assemble boards yourself, use only revC1.**
+**Important note: if you are looking to assemble boards yourself, use only revC2.**
 
 ## What is Glasgow?
 
@@ -150,9 +150,9 @@ Configure your system to allow unprivileged access (for anyone in the `plugdev` 
 
 Note that this udev rule will affect more devices than just Glasgow, since the Cypress VID:PID pair is shared.
 
-Plug in the newly assembled device. At this point, `lsusb | grep 04b4:8613` should list one entry. Assuming you are factory flashing a board revision C1, run:
+Plug in the newly assembled device. At this point, `lsusb | grep 04b4:8613` should list one entry. Assuming you are factory flashing a board revision C2, run:
 
-    glasgow factory --rev C1
+    glasgow factory --rev C2
 
 Done! At this point, `lsusb | grep 20b7:9db1` should list one entry.
 
