@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools~=67.0", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+dynamic = ["version"]
+
+name = "glasgow"
+description = "Software for the Glasgow Interface Explorer, a digital interface multitool"
+authors = [
+  {name = "Catherine", email = "whitequark@whitequark.org"},
+  {name = "Glasgow Interface Explorer contributors"}
+]
+license = {text = "BSD-0-clause"}
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved",
+  "Topic :: Software Development :: Embedded Systems",
+  "Topic :: System :: Hardware",
+]
+
+dependencies = [
+  "amaranth @ git+https://github.com/amaranth-lang/amaranth.git",
+  "fx2>=0.11",
+  "libusb1>=1.8.1",
+  "aiohttp",
+  "pyvcd",
+  "bitarray",
+  "crcmod",
+]
+
+[project.optional-dependencies]
+toolchain = [
+  "amaranth[builtin-yosys]",
+  "yowasp-yosys>=0.11",
+  "yowasp-nextpnr-ice40>=0.1",
+]
+
+[project.scripts]
+glasgow = "glasgow.cli:main"
+
+[project.urls]
+# "Documentation" = "https://glasgow.readthedocs.io/"
+"Source Code" = "https://github.com/GlasgowEmebedded/Glasgow"
+"Bug Tracker" = "https://github.com/GlasgowEmebedded/Glasgow/issues"
+
+[tool.setuptools.package-data]
+"glasgow.device" = ["firmware.ihex"]
+
+[tool.setuptools_scm]
+root = ".."
+local_scheme = "node-and-timestamp"
