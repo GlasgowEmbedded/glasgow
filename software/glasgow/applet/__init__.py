@@ -103,7 +103,7 @@ import asyncio
 import threading
 import inspect
 import json
-from amaranth.back.pysim import *
+from amaranth.sim import *
 
 from ..access.simulation import *
 from ..access.direct import *

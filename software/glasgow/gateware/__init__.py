@@ -1,7 +1,7 @@
 import functools
 import os
 from amaranth import Elaboratable
-from amaranth.back.pysim import Simulator
+from amaranth.sim import Simulator
 from amaranth.compat import Module as CompatModule, run_simulation as compat_run_simulation
 
 
