@@ -23,7 +23,7 @@ dependencies = [
   "amaranth @ git+https://github.com/amaranth-lang/amaranth.git",
   "fx2>=0.11",
   "libusb1>=1.8.1",
-  "aiohttp",
+  "aiohttp~=3.8",
   "pyvcd",
   "bitarray",
   "crcmod",
