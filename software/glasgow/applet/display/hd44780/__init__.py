@@ -13,8 +13,8 @@ import math
 import argparse
 import logging
 import asyncio
-from amaranth.compat import *
-from amaranth.compat.genlib.cdc import MultiReg
+from amaranth import *
+from amaranth.lib.cdc import FFSynchronizer
 
 from ... import *
 
@@ -60,130 +60,137 @@ CMD_CGRAM_ADDRESS  = 0b01000000
 CMD_DDRAM_ADDRESS  = 0b10000000
 
 
-class HD44780Subtarget(Module):
+class HD44780Subtarget(Elaboratable):
     def __init__(self, pads, out_fifo, in_fifo, sys_clk_freq):
-        di = Signal(4)
-        self.comb += [
-            pads.rs_t.oe.eq(1),
-            pads.rw_t.oe.eq(1),
-            pads.e_t.oe.eq(1),
-            pads.d_t.oe.eq(~pads.rw_t.o),
-        ]
-        self.specials += [
-            MultiReg(pads.d_t.i, di)
-        ]
+        self.pads = pads
+        self.out_fifo = out_fifo
+        self.in_fifo = in_fifo
+        self.sys_clk_freq = sys_clk_freq
 
-        rx_setup_cyc = math.ceil(60e-9 * sys_clk_freq)
-        e_pulse_cyc  = math.ceil(500e-9 * sys_clk_freq)
-        e_wait_cyc   = math.ceil(700e-9 * sys_clk_freq)
-        cmd_wait_cyc = math.ceil(1.52e-3 * sys_clk_freq)
-        timer        = Signal(max=max([rx_setup_cyc, e_pulse_cyc, e_wait_cyc, cmd_wait_cyc]))
+    def elaborate(self, platform):
+        m = Module()
+
+        di = Signal(4)
+
+        m.d.comb += [
+            self.pads.rs_t.oe.eq(1),
+            self.pads.rw_t.oe.eq(1),
+            self.pads.e_t.oe.eq(1),
+            self.pads.d_t.oe.eq(~self.pads.rw_t.o),
+        ]
+        m.submodules += FFSynchronizer(self.pads.d_t.i, di)
+
+        rx_setup_cyc = math.ceil(60e-9 * self.sys_clk_freq)
+        e_pulse_cyc  = math.ceil(500e-9 * self.sys_clk_freq)
+        e_wait_cyc   = math.ceil(700e-9 * self.sys_clk_freq)
+        cmd_wait_cyc = math.ceil(1.52e-3 * self.sys_clk_freq)
+        timer        = Signal(range(max([rx_setup_cyc, e_pulse_cyc, e_wait_cyc, cmd_wait_cyc])))
 
         cmd  = Signal(8)
-        data = Signal(8)
+        rdata = Signal(8)
+        wdata = Signal(8)
         msb  = Signal()
 
-        self.submodules.fsm = FSM(reset_state="IDLE")
-        self.fsm.act("IDLE",
-            NextValue(pads.e_t.o, 0),
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(cmd, out_fifo.dout),
-                NextState("COMMAND")
-            )
-        )
-        self.fsm.act("COMMAND",
-            NextValue(msb, (cmd & XFER_BIT_HALF) == 0),
-            NextValue(pads.rs_t.o, (cmd & XFER_BIT_DATA) != 0),
-            NextValue(pads.rw_t.o, (cmd & XFER_BIT_READ) != 0),
-            If(cmd & XFER_BIT_WAIT,
-                NextValue(timer, cmd_wait_cyc),
-                NextState("WAIT")
-            ).Elif(cmd & XFER_BIT_READ,
-                NextValue(timer, rx_setup_cyc),
-                NextState("READ-SETUP")
-            ).Elif(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(data, out_fifo.dout),
-                NextState("WRITE"),
-            )
-        )
-        self.fsm.act("WRITE",
-            If(timer == 0,
-                NextValue(pads.e_t.o, 1),
-                If(msb,
-                    NextValue(pads.d_t.o, data[4:])
-                ).Else(
-                    NextValue(pads.d_t.o, data[:4])
-                ),
-                NextValue(timer, e_pulse_cyc),
-                NextState("WRITE-HOLD")
-            ).Else(
-                NextValue(timer, timer - 1)
-            )
-        )
-        self.fsm.act("WRITE-HOLD",
-            If(timer == 0,
-                NextValue(pads.e_t.o, 0),
-                NextValue(msb, ~msb),
-                NextValue(timer, e_wait_cyc),
-                If(msb,
-                    NextState("WRITE")
-                ).Else(
-                    NextState("WAIT")
-                )
-            ).Else(
-                NextValue(timer, timer - 1)
-            )
-        )
-        self.fsm.act("READ-SETUP",
-            If(timer == 0,
-                NextValue(pads.e_t.o, 1),
-                NextValue(timer, e_pulse_cyc),
-                NextState("READ")
-            ).Else(
-                NextValue(timer, timer - 1)
-            )
-        )
-        self.fsm.act("READ",
-            If(timer == 0,
-                If(~(cmd & XFER_BIT_DATA) & msb & di[3],
-                    # BF=1, wait until it goes low
-                ).Else(
-                    NextValue(pads.e_t.o, 0),
-                    NextValue(msb, ~msb),
-                    NextValue(timer, e_wait_cyc),
-                    If(msb,
-                        NextValue(data[4:], di),
-                        NextState("READ-SETUP")
-                    ).Else(
-                        NextValue(data[:4], di),
-                        NextState("READ-PROCESS")
-                    )
-                )
-            ).Else(
-                NextValue(timer, timer - 1)
-            )
-        )
-        self.fsm.act("READ-PROCESS",
-            If(cmd & XFER_BIT_DATA,
-                If(in_fifo.writable,
-                    in_fifo.din.eq(data),
-                    in_fifo.we.eq(1),
-                    NextState("WAIT")
-                )
-            ).Else(
-                # done reading status register, ignore it and continue
-                NextState("WAIT")
-            )
-        )
-        self.fsm.act("WAIT",
-            If(timer == 0,
-                NextState("IDLE"),
-            ).Else(
-                NextValue(timer, timer - 1)
-            )
-        )
+        with m.FSM() as fsm:
+            with m.State("IDLE"):
+                m.d.sync += self.pads.e_t.o.eq(0)
+                m.d.comb += self.out_fifo.r_en.eq(1)
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.sync += cmd.eq(self.out_fifo.r_data)
+                    m.next = "COMMAND"
+
+            with m.State("COMMAND"):
+                m.d.sync += [
+                    msb.eq((cmd & XFER_BIT_HALF) == 0),
+                    self.pads.rs_t.o.eq((cmd & XFER_BIT_DATA) != 0),
+                    self.pads.rw_t.o.eq((cmd & XFER_BIT_READ) != 0),
+                ]
+                with m.If(cmd & XFER_BIT_WAIT):
+                    m.d.sync += timer.eq(cmd_wait_cyc)
+                    m.next = "WAIT"
+                with m.Elif(cmd & XFER_BIT_READ):
+                    m.d.sync += timer.eq(rx_setup_cyc)
+                    m.next = "READ-SETUP"
+                with m.Else():
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    with m.If(self.out_fifo.r_rdy):
+                        m.d.sync += wdata.eq(self.out_fifo.r_data)
+                        m.next = "WRITE"
+
+            with m.State("WRITE"):
+                with m.If(timer == 0):
+                    m.d.sync += [
+                        self.pads.e_t.o.eq(1),
+                        self.pads.d_t.o.eq(Mux(msb, wdata[4:], wdata[:4])),
+                        timer.eq(e_pulse_cyc),
+                    ]
+                    m.next = "WRITE-HOLD"
+                with m.Else():
+                    m.d.sync += timer.eq(timer - 1)
+
+            with m.State("WRITE-HOLD"):
+                with m.If(timer == 0):
+                    m.d.sync += [
+                        self.pads.e_t.o.eq(0),
+                        msb.eq(0),
+                        timer.eq(e_wait_cyc),
+                    ]
+                    with m.If(msb):
+                        m.next = "WRITE"
+                    with m.Else():
+                        m.next = "WAIT"
+                with m.Else():
+                    m.d.sync += timer.eq(timer - 1)
+
+            with m.State("READ-SETUP"):
+                with m.If(timer == 0):
+                    m.d.sync += [
+                        self.pads.e_t.o.eq(1),
+                        timer.eq(e_pulse_cyc),
+                    ]
+                    m.next = "READ"
+                with m.Else():
+                    m.d.sync += timer.eq(timer - 1)
+
+            with m.State("READ"):
+                with m.If(timer == 0):
+                    with m.If(((cmd & XFER_BIT_DATA) == 0) & msb & di[3]):
+                        # BF=1, wait until it goes low
+                        pass
+                    with m.Else():
+                        m.d.sync += [
+                            self.pads.e_t.o.eq(0),
+                            msb.eq(0),
+                            timer.eq(e_wait_cyc),
+                        ]
+                        with m.If(msb):
+                            m.d.sync += rdata[4:].eq(di)
+                            m.next = "READ-SETUP"
+                        with m.Else():
+                            m.d.sync += rdata[:4].eq(di)
+                            m.next = "READ-PROCESS"
+                with m.Else():
+                    m.d.sync += timer.eq(timer - 1)
+
+            with m.State("READ-PROCESS"):
+                with m.If(cmd & XFER_BIT_DATA):
+                    m.d.comb += [
+                        self.in_fifo.w_data.eq(rdata),
+                        self.in_fifo.w_en.eq(1),
+                    ]
+                    with m.If(self.in_fifo.w_rdy):
+                        m.next = "WAIT"
+                with m.Else():
+                    # done reading status register, ignore it and continue
+                    m.next = "WAIT"
+
+            with m.State("WAIT"):
+                with m.If(timer == 0):
+                    m.next = "IDLE"
+                with m.Else():
+                    m.d.sync += timer.eq(timer - 1)
+
+        return m
 
 
 class DisplayHD44780Applet(GlasgowApplet, name="display-hd44780"):
