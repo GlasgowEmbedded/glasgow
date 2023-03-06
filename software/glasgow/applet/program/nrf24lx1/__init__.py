@@ -8,7 +8,7 @@ import logging
 import argparse
 import struct
 from collections import namedtuple
-from amaranth.compat import *
+from amaranth import *
 from fx2.format import input_data, output_data
 
 from ....support.logging import dump_hex
@@ -48,6 +48,30 @@ FSR_BIT_WEN     = 0b00100000
 FSR_BIT_RDYN    = 0b00010000
 FSR_BIT_INFEN   = 0b00001000
 FSR_BIT_RDISMB  = 0b00000100
+
+
+class ProgramNRF24Lx1Subtarget(Elaboratable):
+    def __init__(self, controller, prog_t, dut_prog, reset_t, dut_reset):
+        self.controller = controller
+        self.prog_t = prog_t
+        self.dut_prog = dut_prog
+        self.reset_t = reset_t
+        self.dut_reset = dut_reset
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.controller = self.controller
+
+        m.d.comb += [
+            self.prog_t.o.eq(self.dut_prog),
+            self.prog_t.oe.eq(1),
+            self.reset_t.o.eq(~self.dut_reset),
+            self.reset_t.oe.eq(1),
+            self.controller.bus.oe.eq(self.dut_prog),
+        ]
+
+        return m
 
 
 class ProgramNRF24Lx1Interface:
@@ -180,7 +204,7 @@ class ProgramNRF24Lx1Applet(GlasgowApplet, name="program-nrf24lx1"):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         pads = iface.get_pads(args, pins=self.__pins)
 
-        subtarget = iface.add_subtarget(SPIControllerSubtarget(
+        controller = SPIControllerSubtarget(
             pads=pads,
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=True),
@@ -189,16 +213,11 @@ class ProgramNRF24Lx1Applet(GlasgowApplet, name="program-nrf24lx1"):
             sck_idle=0,
             sck_edge="rising",
             cs_active=0,
-        ))
-        subtarget.comb += [
-            pads.prog_t.o.eq(dut_prog),
-            pads.prog_t.oe.eq(1),
-            pads.reset_t.o.eq(~dut_reset),
-            pads.reset_t.oe.eq(1),
-            subtarget.bus.oe.eq(dut_prog),
-        ]
+        )
 
-        return subtarget
+        subtarget = ProgramNRF24Lx1Subtarget(controller, pads.prog_t, dut_prog, pads.reset_t, dut_reset)
+
+        return iface.add_subtarget(subtarget)
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
