@@ -2,16 +2,21 @@ import struct
 import logging
 import asyncio
 import math
-from amaranth.compat import *
-from amaranth.compat.genlib.cdc import *
+from amaranth import *
+from amaranth.lib.cdc import FFSynchronizer
 
 from ....support.logging import *
 from ....gateware.clockgen import *
 from ... import *
 
 
-class SPIControllerBus(Module):
+class SPIControllerBus(Elaboratable):
     def __init__(self, pads, sck_idle, sck_edge, cs_active):
+        self.pads = pads
+        self.sck_idle = sck_idle
+        self.sck_edge = sck_edge
+        self.cs_active = cs_active
+
         self.oe   = Signal(reset=1)
 
         self.sck  = Signal(reset=sck_idle)
@@ -19,41 +24,46 @@ class SPIControllerBus(Module):
         self.copi = Signal()
         self.cipo = Signal()
 
-        self.comb += [
-            pads.sck_t.oe.eq(self.oe),
-            pads.sck_t.o.eq(self.sck),
-        ]
-        if hasattr(pads, "cs_t"):
-            self.comb += [
-                pads.cs_t.oe.eq(1),
-                pads.cs_t.o.eq(self.cs),
-            ]
-        if hasattr(pads, "copi_t"):
-            self.comb += [
-                pads.copi_t.oe.eq(self.oe),
-                pads.copi_t.o.eq(self.copi)
-            ]
-        if hasattr(pads, "cipo_t"):
-            self.specials += \
-                MultiReg(pads.cipo_t.i, self.cipo)
-
-        sck_r = Signal()
-        self.sync += sck_r.eq(self.sck)
-
         self.setup = Signal()
         self.latch = Signal()
-        if sck_edge in ("r", "rising"):
-            self.comb += [
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.d.comb += [
+            self.pads.sck_t.oe.eq(self.oe),
+            self.pads.sck_t.o.eq(self.sck),
+        ]
+        if hasattr(self.pads, "cs_t"):
+            m.d.comb += [
+                self.pads.cs_t.oe.eq(1),
+                self.pads.cs_t.o.eq(self.cs),
+            ]
+        if hasattr(self.pads, "copi_t"):
+            m.d.comb += [
+                self.pads.copi_t.oe.eq(self.oe),
+                self.pads.copi_t.o.eq(self.copi)
+            ]
+        if hasattr(self.pads, "cipo_t"):
+            m.submodules += FFSynchronizer(self.pads.cipo_t.i, self.cipo)
+
+        sck_r = Signal()
+        m.d.sync += sck_r.eq(self.sck)
+
+        if self.sck_edge in ("r", "rising"):
+            m.d.comb += [
                 self.setup.eq( sck_r & ~self.sck),
                 self.latch.eq(~sck_r &  self.sck),
             ]
-        elif sck_edge in ("f", "falling"):
-            self.comb += [
+        elif self.sck_edge in ("f", "falling"):
+            m.d.comb += [
                 self.setup.eq(~sck_r &  self.sck),
                 self.latch.eq( sck_r & ~self.sck),
             ]
         else:
             assert False
+
+        return m
 
 
 CMD_MASK     = 0b11110000
@@ -66,141 +76,141 @@ BIT_DATA_IN  =     0b0010
 BIT_HOLD_SS  =     0b0100
 
 
-class SPIControllerSubtarget(Module):
+class SPIControllerSubtarget(Elaboratable):
     def __init__(self, pads, out_fifo, in_fifo, period_cyc, delay_cyc,
                  sck_idle, sck_edge, cs_active):
-        self.submodules.bus = SPIControllerBus(pads, sck_idle, sck_edge, cs_active)
+        self.pads = pads
+        self.out_fifo = out_fifo
+        self.in_fifo = in_fifo
+        self.period_cyc = period_cyc
+        self.delay_cyc = delay_cyc
+        self.cs_active = cs_active
+
+        self.bus = SPIControllerBus(pads, sck_idle, sck_edge, cs_active)
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.bus = self.bus
 
         ###
 
-        self.submodules.clkgen = ResetInserter()(ClockGen(period_cyc))
+        clkgen_reset = Signal()
+        m.submodules.clkgen = clkgen = ResetInserter(clkgen_reset)(ClockGen(self.period_cyc))
 
-        timer    = Signal(max=delay_cyc)
+        timer    = Signal(range(self.delay_cyc))
         timer_en = Signal()
-        self.sync += [
-            If(timer != 0,
-                timer.eq(timer - 1)
-            ).Elif(timer_en,
-                timer.eq(delay_cyc - 1)
-            )
-        ]
+
+        with m.If(timer != 0):
+            m.d.sync += timer.eq(timer - 1)
+        with m.Elif(timer_en):
+            m.d.sync += timer.eq(self.delay_cyc - 1)
 
         shreg_o = Signal(8)
         shreg_i = Signal(8)
-        self.comb += [
-            self.bus.sck.eq(self.clkgen.clk),
+        m.d.comb += [
+            self.bus.sck.eq(clkgen.clk),
             self.bus.copi.eq(shreg_o[-1]),
         ]
-        self.sync += [
-            If(self.bus.setup,
-                shreg_o.eq(Cat(C(0, 1), shreg_o))
-            ).Elif(self.bus.latch,
-                shreg_i.eq(Cat(self.bus.cipo, shreg_i))
-            )
-        ]
+
+        with m.If(self.bus.setup):
+            m.d.sync += shreg_o.eq(Cat(C(0, 1), shreg_o))
+        with m.Elif(self.bus.latch):
+            m.d.sync += shreg_i.eq(Cat(self.bus.cipo, shreg_i))
 
         cmd   = Signal(8)
         count = Signal(16)
-        bitno = Signal(max=8 + 1)
+        bitno = Signal(range(8 + 1))
 
-        self.submodules.fsm = FSM(reset_state="RECV-COMMAND")
-        self.fsm.act("RECV-COMMAND",
-            in_fifo.flush.eq(1),
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(cmd, out_fifo.dout),
-                If((out_fifo.dout & CMD_MASK) == CMD_SYNC,
-                    NextState("SYNC")
-                ).Else(
-                    NextState("RECV-COUNT-1")
-                )
-            )
-        )
-        self.fsm.act("SYNC",
-            If(in_fifo.writable,
-                in_fifo.we.eq(1),
-                in_fifo.din.eq(0),
-                NextState("RECV-COMMAND")
-            )
-        )
-        self.fsm.act("RECV-COUNT-1",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(count[0:8], out_fifo.dout),
-                NextState("RECV-COUNT-2")
-            )
-        )
-        self.fsm.act("RECV-COUNT-2",
-             If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(count[8:16], out_fifo.dout),
-                If((cmd & CMD_MASK) == CMD_DELAY,
-                    NextState("DELAY")
-                ).Else(
-                    NextState("COUNT-CHECK")
-                )
-             )
-        )
-        self.fsm.act("DELAY",
-            If(timer == 0,
-                If(count == 0,
-                    NextState("RECV-COMMAND")
-                ).Else(
-                    NextValue(count, count - 1),
-                    timer_en.eq(1)
-                )
-            )
-        )
-        self.fsm.act("COUNT-CHECK",
-            If(count == 0,
-                NextState("RECV-COMMAND"),
-                If((cmd & BIT_HOLD_SS) != 0,
-                    NextValue(self.bus.cs, cs_active),
-                ),
-            ).Else(
-                NextValue(self.bus.cs, cs_active),
-                NextState("RECV-DATA")
-            )
-        )
-        self.fsm.act("RECV-DATA",
-            If((cmd & BIT_DATA_OUT) != 0,
-                out_fifo.re.eq(1),
-                NextValue(shreg_o, out_fifo.dout),
-            ).Else(
-                NextValue(shreg_o, 0)
-            ),
-            If(((cmd & BIT_DATA_IN) != 0) | out_fifo.readable,
-                NextValue(count, count - 1),
-                NextValue(bitno, 8),
-                NextState("TRANSFER")
-            )
-        )
-        self.comb += self.clkgen.reset.eq(~self.fsm.ongoing("TRANSFER")),
-        self.fsm.act("TRANSFER",
-            If(self.clkgen.stb_r,
-                NextValue(bitno, bitno - 1)
-            ).Elif(self.clkgen.stb_f,
-                If(bitno == 0,
-                    NextState("SEND-DATA")
-                ),
-            )
-        )
-        self.fsm.act("SEND-DATA",
-            If((cmd & BIT_DATA_IN) != 0,
-                in_fifo.din.eq(shreg_i),
-                in_fifo.we.eq(1),
-            ),
-            If(((cmd & BIT_DATA_OUT) != 0) | in_fifo.writable,
-                If(count == 0,
-                    If((cmd & BIT_HOLD_SS) == 0,
-                        NextValue(self.bus.cs, not cs_active),
-                    ),
-                    NextState("RECV-COMMAND")
-                ).Else(
-                    NextState("RECV-DATA")
-                )
-            )
-        )
+        with m.FSM() as fsm:
+            with m.State("RECV-COMMAND"):
+                m.d.comb += self.in_fifo.flush.eq(1)
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    m.d.sync += cmd.eq(self.out_fifo.r_data)
+                    with m.If((self.out_fifo.r_data & CMD_MASK) == CMD_SYNC):
+                        m.next = "SYNC"
+                    with m.Else():
+                        m.next = "RECV-COUNT-1"
+
+            with m.State("SYNC"):
+                with m.If(self.in_fifo.w_rdy):
+                    m.d.comb += [
+                        self.in_fifo.w_en.eq(1),
+                        self.in_fifo.w_data.eq(0),
+                    ]
+                    m.next = "RECV-COMMAND"
+
+            with m.State("RECV-COUNT-1"):
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    m.d.sync += count[0:8].eq(self.out_fifo.r_data)
+                    m.next = "RECV-COUNT-2"
+
+            with m.State("RECV-COUNT-2"):
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    m.d.sync += count[8:16].eq(self.out_fifo.r_data)
+                    with m.If((cmd & CMD_MASK) == CMD_DELAY):
+                        m.next = "DELAY"
+                    with m.Else():
+                        m.next = "COUNT-CHECK"
+
+            with m.State("DELAY"):
+                with m.If(timer == 0):
+                    with m.If(count == 0):
+                        m.next = "RECV-COMMAND"
+                    with m.Else():
+                        m.d.sync += count.eq(count - 1)
+                        m.d.comb += timer_en.eq(1)
+
+            with m.State("COUNT-CHECK"):
+                with m.If(count == 0):
+                    m.next = "RECV-COMMAND"
+                    with m.If((cmd & BIT_HOLD_SS) != 0):
+                        m.d.sync += self.bus.cs.eq(self.cs_active)
+                with m.Else():
+                    m.d.sync += self.bus.cs.eq(self.cs_active)
+                    m.next = "RECV-DATA"
+
+            with m.State("RECV-DATA"):
+                with m.If((cmd & BIT_DATA_OUT) != 0):
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    m.d.sync += shreg_o.eq(self.out_fifo.r_data)
+                with m.Else():
+                    m.d.sync += shreg_o.eq(0)
+
+                with m.If(((cmd & BIT_DATA_IN) != 0) | self.out_fifo.r_rdy):
+                    m.d.sync += [
+                        count.eq(count - 1),
+                        bitno.eq(8),
+                    ]
+                    m.next = "TRANSFER"
+
+            m.d.comb += clkgen_reset.eq(~fsm.ongoing("TRANSFER"))
+            with m.State("TRANSFER"):
+                with m.If(clkgen.stb_r):
+                    m.d.sync += bitno.eq(bitno - 1)
+                with m.Elif(clkgen.stb_f):
+                    with m.If(bitno == 0):
+                        m.next = "SEND-DATA"
+
+            with m.State("SEND-DATA"):
+                with m.If((cmd & BIT_DATA_IN) != 0):
+                    m.d.comb += [
+                        self.in_fifo.w_data.eq(shreg_i),
+                        self.in_fifo.w_en.eq(1),
+                    ]
+
+                with m.If(((cmd & BIT_DATA_OUT) != 0) | self.in_fifo.w_rdy):
+                    with m.If(count == 0):
+                        with m.If((cmd & BIT_HOLD_SS) == 0):
+                            m.d.sync += self.bus.cs.eq(not self.cs_active)
+                        m.next = "RECV-COMMAND"
+                    with m.Else():
+                        m.next = "RECV-DATA"
+
+        return m
 
 
 class SPIControllerInterface:
@@ -320,9 +330,9 @@ class SPIControllerApplet(GlasgowApplet, name="spi-controller"):
             "--cs-active", metavar="LEVEL", type=int, choices=[0, 1], default=0,
             help="set active chip select level to LEVEL (default: %(default)s)")
 
-    def build(self, target, args, pins=__pins):
-        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        return iface.add_subtarget(SPIControllerSubtarget(
+    def build_subtarget(self, target, args, pins=__pins):
+        iface = self.mux_interface
+        return SPIControllerSubtarget(
             pads=iface.get_pads(args, pins=pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
@@ -338,7 +348,12 @@ class SPIControllerApplet(GlasgowApplet, name="spi-controller"):
             sck_idle=args.sck_idle,
             sck_edge=args.sck_edge,
             cs_active=args.cs_active,
-        ))
+        )
+
+    def build(self, target, args):
+        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
+        controller = self.build_subtarget(target, args)
+        return iface.add_subtarget(controller)
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)

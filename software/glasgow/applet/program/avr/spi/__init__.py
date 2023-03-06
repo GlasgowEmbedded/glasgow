@@ -3,11 +3,31 @@
 
 import math
 import logging
-from amaranth.compat import *
+from amaranth import *
 
 from ....interface.spi_controller import SPIControllerSubtarget, SPIControllerInterface
 from .... import *
 from .. import *
+
+
+class ProgramAVRSPISubtarget(Elaboratable):
+    def __init__(self, controller, reset_t, dut_reset):
+        self.controller = controller
+        self.reset_t = reset_t
+        self.dut_reset = dut_reset
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.controller = self.controller
+
+        m.d.comb += [
+            self.controller.bus.oe.eq(self.dut_reset),
+            self.reset_t.oe.eq(1),
+            self.reset_t.o.eq(~self.dut_reset)
+        ]
+
+        return m
 
 
 class ProgramAVRSPIInterface(ProgramAVRInterface):
@@ -212,7 +232,7 @@ class ProgramAVRSPIApplet(ProgramAVRApplet, name="program-avr-spi"):
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        subtarget = iface.add_subtarget(SPIControllerSubtarget(
+        controller = SPIControllerSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
@@ -221,14 +241,12 @@ class ProgramAVRSPIApplet(ProgramAVRApplet, name="program-avr-spi"):
             sck_idle=0,
             sck_edge="rising",
             cs_active=0,
-        ))
+        )
 
         dut_reset, self.__addr_dut_reset = target.registers.add_rw(1)
-        target.comb += [
-            subtarget.bus.oe.eq(dut_reset),
-            iface.pads.reset_t.oe.eq(1),
-            iface.pads.reset_t.o.eq(~dut_reset)
-        ]
+        subtarget = ProgramAVRSPISubtarget(controller, iface.pads.reset_t, dut_reset)
+
+        iface.add_subtarget(subtarget)
 
     async def run_lower(self, cls, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)

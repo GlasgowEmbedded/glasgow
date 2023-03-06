@@ -5,7 +5,7 @@ import math
 import asyncio
 import logging
 import argparse
-from amaranth.compat import *
+from amaranth import *
 
 from ....support.logging import *
 from ....support.bits import *
@@ -17,6 +17,25 @@ from ... import *
 
 class RadioNRF24L01Error(GlasgowAppletError):
     pass
+
+
+class RadioNRF24L01Subtarget(Elaboratable):
+    def __init__(self, controller, ce_t, dut_ce):
+        self.controller = controller
+        self.ce_t = ce_t
+        self.dut_ce = dut_ce
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.controller = self.controller
+
+        m.d.comb += [
+            self.ce_t.o.eq(self.dut_ce),
+            self.ce_t.oe.eq(1),
+        ]
+
+        return m
 
 
 class RadioNRF24L01Interface:
@@ -192,7 +211,7 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l01"):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         pads = iface.get_pads(args, pins=self.__pins)
 
-        subtarget = iface.add_subtarget(SPIControllerSubtarget(
+        controller = SPIControllerSubtarget(
             pads=pads,
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
@@ -201,13 +220,11 @@ class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l01"):
             sck_idle=0,
             sck_edge="rising",
             cs_active=0,
-        ))
-        subtarget.comb += [
-            pads.ce_t.o.eq(dut_ce),
-            pads.ce_t.oe.eq(1),
-        ]
+        )
 
-        return subtarget
+        subtarget = RadioNRF24L01Subtarget(controller, pads.ce_t, dut_ce)
+
+        return iface.add_subtarget(subtarget)
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
