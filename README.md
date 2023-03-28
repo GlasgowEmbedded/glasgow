@@ -85,7 +85,7 @@ Debugging new applets can be hard, especially if bidirectional buses are involve
 You will need git and Python 3.7 (or a newer version, in which case replace `3.7` with that version below). On a Debian or Ubuntu system these can be installed with:
 
     apt-get install --no-install-recommends git python3.7 python3-setuptools \
-      python3-libusb1 python3-aiohttp python3-bitarray python3-crcmod
+      python3-libusb1 python3-aiohttp python3-bitarray
 
 You will also need Yosys and nextpnr-ice40, both from the master branch. Follow the setup instructions for [Yosys](https://github.com/yosysHQ/yosys/#setup) and [nextpnr](https://github.com/YosysHQ/nextpnr/#nextpnr-ice40).
 
