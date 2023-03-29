@@ -302,7 +302,7 @@ import argparse
 import struct
 import random
 import itertools
-import crcmod
+import crc
 import math
 from amaranth.compat import *
 from amaranth.compat.genlib.cdc import MultiReg
@@ -988,7 +988,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             size, cylinder, head = struct.unpack(">LBB", header)
             yield cylinder, head, file.read(size)
 
-    crc_mfm = staticmethod(crcmod.mkCrcFun(0x11021, initCrc=0xffff, rev=False))
+    crc_mfm = staticmethod(crc.Calculator(crc.Configuration(width=16, polynomial=0x11021, init_value=0xffff)).checksum)
 
     def iter_mfm_sectors(self, symbstream, *, verbose=False, ignore_data_crc=False):
         state   = "IDLE"
