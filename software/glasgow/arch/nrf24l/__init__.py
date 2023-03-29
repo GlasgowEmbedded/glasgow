@@ -1,6 +1,3 @@
-import crcmod
-
-
 __all__ = ["crc8_nrf24l", "crc16_nrf24l"]
 
 

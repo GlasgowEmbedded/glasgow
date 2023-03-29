@@ -6,7 +6,7 @@ import argparse
 import logging
 import asyncio
 import struct
-import crcmod
+import crc
 
 from ....support.logging import dump_hex
 from ....support.data_logger import DataLogger
@@ -42,7 +42,7 @@ class SEN5xI2CInterface:
     def _log(self, message, *args):
         self._logger.log(self._level, "SEN5x: " + message, *args)
 
-    _crc = staticmethod(crcmod.mkCrcFun(0x131, initCrc=0xff, rev=False))
+    _crc = staticmethod(crc.Calculator(crc.Configuration(width=8,polynomial=0x131,init_value=0xff)).checksum)
 
     async def _read_raw(self, addr, length=0, delay_seconds=None):
         assert length % 2 == 0
