@@ -29,6 +29,7 @@ from .program.ice40_sram import ProgramICE40SRAMApplet
 from .program.m16c import ProgramM16CApplet
 from .program.mec16xx import ProgramMEC16xxApplet
 from .program.nrf24lx1 import ProgramNRF24Lx1Applet
+from .program.stusb4500_nvm import StUsb4500NvmApplet
 from .program.xc6s import ProgramXC6SApplet
 from .program.xc9500xl import ProgramXC9500XLApplet
 
