@@ -1,3 +1,7 @@
+.env/*
+.venv/*
+venv/*
+env/*
 *.vcd
 *.gtkw
 *.log
