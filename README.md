@@ -97,7 +97,7 @@ You will need git and Python 3.8 (or newer). On a Debian (11 or newer) or Ubuntu
 
     python3 --version
 
-You will also need Yosys and nextpnr-ice40, both from the master branch. Follow the setup instructions for [Yosys](https://github.com/yosysHQ/yosys/#setup) and [nextpnr](https://github.com/YosysHQ/nextpnr/#nextpnr-ice40).
+You will also need recent versions of Yosys and nextpnr-ice40, which can be installed from the [binary Tabby CAD Suite distribution](https://github.com/YosysHQ/oss-cad-suite-build#installation), or from separate sources ([Yosys](https://github.com/YosysHQ/yosys#installation) and [nextpnr-ice40](https://github.com/YosysHQ/nextpnr#nextpnr-ice40)).
 
 Obtain the source code:
 
