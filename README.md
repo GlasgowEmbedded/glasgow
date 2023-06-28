@@ -90,10 +90,12 @@ Debugging new applets can be hard, especially if bidirectional buses are involve
 
 ### ... with Linux?
 
-You will need git and Python 3.7 (or a newer version, in which case replace `3.7` with that version below). On a Debian or Ubuntu system these can be installed with:
+You will need git and Python 3.8 (or newer). On a Debian (11 or newer) or Ubuntu (20.04 or newer) system these can be installed with:
 
-    apt-get install --no-install-recommends git python3.7 python3-setuptools \
-      python3-libusb1 python3-aiohttp python3-bitarray
+    apt install --no-install-recommends \
+      git python3 python3-setuptools python3-pip python3-libusb1 python3-aiohttp python3-bitarray
+
+    python3 --version
 
 You will also need Yosys and nextpnr-ice40, both from the master branch. Follow the setup instructions for [Yosys](https://github.com/yosysHQ/yosys/#setup) and [nextpnr](https://github.com/YosysHQ/nextpnr/#nextpnr-ice40).
 
@@ -111,7 +113,7 @@ Install the dependencies and the scripts for the current user:
     cd software
     pip install --user --editable ./
 
-The scripts are placed in `$HOME/.local/bin`, so be sure to add that directory to the `PATH` environment variable; after this, you can run `glasgow` from a terminal. Instead of adjusting `PATH` it is also possible to use `python3.7 -m glasgow.cli`.
+The scripts are placed in `$HOME/.local/bin`, so be sure to add that directory to the `PATH` environment variable; after this, you can run `glasgow` from a terminal. Instead of adjusting `PATH` it is also possible to use `python3 -m glasgow.cli`.
 
 To update the source code, do:
 
