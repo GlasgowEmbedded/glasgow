@@ -109,7 +109,7 @@ Configure your system to allow unprivileged access (for anyone in the `plugdev` 
 Install the dependencies and the scripts for the current user:
 
     cd software
-    python3.7 setup.py develop --user
+    pip install --user --editable ./
 
 The scripts are placed in `$HOME/.local/bin`, so be sure to add that directory to the `PATH` environment variable; after this, you can run `glasgow` from a terminal. Instead of adjusting `PATH` it is also possible to use `python3.7 -m glasgow.cli`.
 
