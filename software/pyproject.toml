@@ -18,6 +18,7 @@ classifiers = [
   "Topic :: Software Development :: Embedded Systems",
   "Topic :: System :: Hardware",
 ]
+requires-python = "~=3.8"
 
 dependencies = [
   "amaranth @ git+https://github.com/amaranth-lang/amaranth.git",
