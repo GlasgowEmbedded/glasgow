@@ -79,8 +79,8 @@ import argparse
 import logging
 import asyncio
 import struct
-from amaranth.compat import *
-from amaranth.compat.genlib.cdc import MultiReg
+from amaranth import *
+from amaranth.lib.cdc import FFSynchronizer
 
 from ....support.logging import *
 from ....database.jedec import *
@@ -98,8 +98,10 @@ CMD_READ    = 0x04
 CMD_WAIT    = 0x05
 
 
-class MemoryONFIBus(Module):
+class MemoryONFIBus(Elaboratable):
     def __init__(self, pads):
+        self.pads = pads
+
         self.doe = Signal()
         self.do  = Signal.like(pads.io_t.o)
         self.di  = Signal.like(pads.io_t.i)
@@ -110,155 +112,150 @@ class MemoryONFIBus(Module):
         self.we  = Signal()
         self.rdy = Signal()
 
-        ###
+    def elaborate(self, platform):
+        m = Module()
 
-        self.comb += [
-            pads.io_t.oe.eq(self.doe),
-            pads.io_t.o.eq(self.do),
-            pads.ce_t.oe.eq(1),
-            pads.ce_t.o.eq(~self.ce),
-            pads.cle_t.oe.eq(1),
-            pads.cle_t.o.eq(self.cle),
-            pads.ale_t.oe.eq(1),
-            pads.ale_t.o.eq(self.ale),
-            pads.re_t.oe.eq(1),
-            pads.re_t.o.eq(~self.re),
-            pads.we_t.oe.eq(1),
-            pads.we_t.o.eq(~self.we),
+        m.d.comb += [
+            self.pads.io_t.oe.eq(self.doe),
+            self.pads.io_t.o.eq(self.do),
+            self.pads.ce_t.oe.eq(1),
+            self.pads.ce_t.o.eq(~self.ce),
+            self.pads.cle_t.oe.eq(1),
+            self.pads.cle_t.o.eq(self.cle),
+            self.pads.ale_t.oe.eq(1),
+            self.pads.ale_t.o.eq(self.ale),
+            self.pads.re_t.oe.eq(1),
+            self.pads.re_t.o.eq(~self.re),
+            self.pads.we_t.oe.eq(1),
+            self.pads.we_t.o.eq(~self.we),
         ]
-        self.specials += [
-            MultiReg(pads.io_t.i, self.di),
-            MultiReg(pads.r_b_t.i, self.rdy),
+        m.submodules += [
+            FFSynchronizer(self.pads.io_t.i, self.di),
+            FFSynchronizer(self.pads.r_b_t.i, self.rdy),
         ]
 
+        return m
 
-class MemoryONFISubtarget(Module):
+
+class MemoryONFISubtarget(Elaboratable):
     def __init__(self, pads, in_fifo, out_fifo):
-        self.submodules.bus = bus = MemoryONFIBus(pads)
+        self.bus = MemoryONFIBus(pads)
+        self.in_fifo = in_fifo
+        self.out_fifo = out_fifo
 
-        ###
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.bus = self.bus
 
         command = Signal(8)
-        select  = Signal(max=4)
+        select  = Signal(range(4))
         control = Signal(3)
         length  = Signal(16)
 
         wait_cyc = 3 # currently required for reliable reads
-        timer    = Signal(max=wait_cyc + 2, reset=wait_cyc)
+        timer    = Signal(range(wait_cyc + 2), reset=wait_cyc)
 
-        self.submodules.fsm = FSM(reset_state="RECV-COMMAND")
-        self.fsm.act("RECV-COMMAND",
-            in_fifo.flush.eq(1),
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(command, out_fifo.dout),
-                If(out_fifo.dout == CMD_SELECT,
-                    NextState("RECV-SELECT")
-                ).Elif(out_fifo.dout == CMD_CONTROL,
-                    NextState("RECV-CONTROL")
-                ).Elif((out_fifo.dout == CMD_READ) | (out_fifo.dout == CMD_WRITE),
-                    NextState("RECV-LENGTH-1")
-                ).Elif((out_fifo.dout == CMD_WAIT),
-                    NextState("ONFI-SETUP")
-                )
-            ),
-            NextValue(bus.doe, 0)
-        )
-        self.fsm.act("RECV-SELECT",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(select, out_fifo.dout),
-                NextState("RECV-COMMAND")
-            )
-        )
-        self.fsm.act("RECV-CONTROL",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(control, out_fifo.dout),
-                NextState("ONFI-SETUP")
-            )
-        )
-        self.fsm.act("RECV-LENGTH-1",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(length[0:8], out_fifo.dout),
-                NextState("RECV-LENGTH-2")
-            )
-        )
-        self.fsm.act("RECV-LENGTH-2",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(length[8:16], out_fifo.dout),
-                NextState("ONFI-SETUP")
-            )
-        )
-        self.fsm.act("ONFI-SETUP",
-            If(timer != 0,
-                NextValue(timer, timer - 1),
-            ).Else(
-                NextValue(timer, wait_cyc),
-                If(command == CMD_CONTROL,
-                    NextValue(bus.ce, Mux(control & BIT_CE, 1 << select, 0)),
-                    NextValue(bus.cle, (control & BIT_CLE) != 0),
-                    NextValue(bus.ale, (control & BIT_ALE) != 0),
-                    NextState("RECV-COMMAND")
-                ).Elif(command == CMD_WRITE,
-                    If(length == 0,
-                        NextState("RECV-COMMAND")
-                    ).Else(
-                        NextState("RECV-DATA")
-                    )
-                ).Elif(command == CMD_READ,
-                    If(length == 0,
-                        NextState("RECV-COMMAND")
-                    ).Else(
-                        NextValue(bus.re, 1),
-                        NextState("ONFI-READ-HOLD")
-                    )
-                ).Elif(command == CMD_WAIT,
-                    If(bus.rdy,
-                        NextState("RECV-COMMAND")
-                    )
-                )
-            )
-        )
-        self.fsm.act("RECV-DATA",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(bus.do, out_fifo.dout),
-                NextValue(bus.we, 1),
-                NextState("ONFI-WRITE-HOLD")
-            )
-        )
-        self.fsm.act("ONFI-WRITE-HOLD",
-            NextValue(bus.doe, 1),
-            If(timer != 0,
-                NextValue(timer, timer - 1),
-            ).Else(
-                NextValue(bus.we, 0),
-                NextValue(timer, wait_cyc),
-                NextValue(length, length - 1),
-                NextState("ONFI-SETUP")
-            )
-        )
-        self.fsm.act("ONFI-READ-HOLD",
-            NextValue(bus.doe, 0),
-            If(timer != 0,
-                NextValue(timer, timer - 1),
-            ).Else(
-                NextValue(bus.re, 0),
-                NextValue(in_fifo.din, bus.di),
-                NextValue(timer, wait_cyc),
-                NextState("SEND-DATA")
-            )
-        )
-        self.fsm.act("SEND-DATA",
-            If(in_fifo.writable,
-                in_fifo.we.eq(1),
-                NextValue(length, length - 1),
-                NextState("ONFI-SETUP")
-            )
-        )
+        with m.FSM() as fsm:
+            with m.State("RECV-COMMAND"):
+                m.d.comb += self.in_fifo.flush.eq(1),
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    m.d.sync += command.eq(self.out_fifo.r_data)
+                    with m.Switch(self.out_fifo.r_data):
+                        with m.Case(CMD_SELECT):
+                            m.next = "RECV-SELECT"
+                        with m.Case(CMD_CONTROL):
+                            m.next = "RECV-CONTROL"
+                        with m.Case(CMD_READ, CMD_WRITE):
+                            m.next = "RECV-LENGTH-1"
+                        with m.Case(CMD_WAIT):
+                            m.next = "ONFI-SETUP"
+                m.d.sync += self.bus.doe.eq(0)
+            with m.State("RECV-SELECT"):
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    m.d.sync += select.eq(self.out_fifo.r_data)
+                    m.next = "RECV-COMMAND"
+            with m.State("RECV-CONTROL"):
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    m.d.sync += control.eq(self.out_fifo.r_data)
+                    m.next = "ONFI-SETUP"
+            with m.State("RECV-LENGTH-1"):
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    m.d.sync += length[0:8].eq(self.out_fifo.r_data)
+                    m.next = "RECV-LENGTH-2"
+            with m.State("RECV-LENGTH-2"):
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    m.d.sync += length[8:16].eq(self.out_fifo.r_data)
+                    m.next = "ONFI-SETUP"
+            with m.State("ONFI-SETUP"):
+                with m.If(timer != 0):
+                    m.d.sync += timer.eq(timer - 1)
+                with m.Else():
+                    m.d.sync += timer.eq(wait_cyc)
+                    with m.Switch(command):
+                        with m.Case(CMD_CONTROL):
+                            m.d.sync += [
+                                self.bus.ce.eq(Mux(control & BIT_CE, 1 << select, 0)),
+                                self.bus.cle.eq((control & BIT_CLE) != 0),
+                                self.bus.ale.eq((control & BIT_ALE) != 0),
+                            ]
+                            m.next = "RECV-COMMAND"
+                        with m.Case(CMD_WRITE):
+                            with m.If(length == 0):
+                                m.next = "RECV-COMMAND"
+                            with m.Else():
+                                m.next = "RECV-DATA"
+                        with m.Case(CMD_READ):
+                            with m.If(length == 0):
+                                m.next = "RECV-COMMAND"
+                            with m.Else():
+                                m.d.sync += self.bus.re.eq(1)
+                                m.next = "ONFI-READ-HOLD"
+                        with m.Case(CMD_WAIT):
+                            with m.If(self.bus.rdy):
+                                m.next = "RECV-COMMAND"
+            with m.State("RECV-DATA"):
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    m.d.sync += [
+                        self.bus.do.eq(self.out_fifo.r_data),
+                        self.bus.we.eq(1),
+                    ]
+                    m.next = "ONFI-WRITE-HOLD"
+            with m.State("ONFI-WRITE-HOLD"):
+                m.d.sync += self.bus.doe.eq(1)
+                with m.If(timer != 0):
+                    m.d.sync += timer.eq(timer - 1)
+                with m.Else():
+                    m.d.sync += [
+                        self.bus.we.eq(0),
+                        timer.eq(wait_cyc),
+                        length.eq(length - 1),
+                    ]
+                    m.next = "ONFI-SETUP"
+            with m.State("ONFI-READ-HOLD"):
+                m.d.sync += self.bus.doe.eq(0)
+                with m.If(timer != 0):
+                    m.d.sync += timer.eq(timer - 1)
+                with m.Else():
+                    m.d.sync += [
+                        self.bus.re.eq(0),
+                        self.in_fifo.w_data.eq(self.bus.di),
+                        timer.eq(wait_cyc),
+                    ]
+                    m.next = "SEND-DATA"
+            with m.State("SEND-DATA"):
+                with m.If(self.in_fifo.w_rdy):
+                    m.d.comb += self.in_fifo.w_en.eq(1)
+                    m.d.sync += length.eq(length - 1)
+                    m.next = "ONFI-SETUP"
+
+        return m
 
 
 BIT_STATUS_FAIL        = 1 << 0
