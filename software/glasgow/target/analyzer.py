@@ -1,7 +1,6 @@
 import logging
-from amaranth.compat import *
-from amaranth.compat.genlib.cdc import MultiReg
-from amaranth.compat.genlib.fifo import _FIFOInterface
+from amaranth import *
+from amaranth.lib.cdc import FFSynchronizer
 
 from ..gateware.analyzer import *
 
@@ -9,7 +8,7 @@ from ..gateware.analyzer import *
 __all__ = ["GlasgowAnalyzer"]
 
 
-class GlasgowAnalyzer(Module):
+class GlasgowAnalyzer(Elaboratable):
     logger = logging.getLogger(__name__)
 
     def __init__(self, registers, multiplexer, event_depth=None):
@@ -23,8 +22,10 @@ class GlasgowAnalyzer(Module):
 
         self.done, self.addr_done = registers.add_rw(1)
         self.logger.debug("adding done register at address %#04x", self.addr_done)
-        self.comb += self.event_analyzer.done.eq(self.done)
 
+        self._generics = []
+        self._in_fifos = []
+        self._out_fifos = []
         self._pins = []
 
     def _name(self, applet, event):
@@ -33,31 +34,18 @@ class GlasgowAnalyzer(Module):
 
     def add_generic_event(self, applet, name, signal):
         event_source = self.event_analyzer.add_event_source(
-            name=self._name(applet, name), kind="change", width=signal.nbits)
-        signal_r = Signal.like(signal)
-        event_source.sync += [
-            signal_r.eq(signal),
-        ]
-        event_source.comb += [
-            event_source.data.eq(signal),
-            event_source.trigger.eq(signal != signal_r),
-        ]
+            name=self._name(applet, name), kind="change", width=len(signal))
+        self._generics.append((signal, event_source))
 
     def add_in_fifo_event(self, applet, fifo):
         event_source = self.event_analyzer.add_event_source(
             name=self._name(applet, "fifo-in"), kind="strobe", width=8)
-        event_source.sync += [
-            event_source.trigger.eq(fifo.writable & fifo.we),
-            event_source.data.eq(fifo.din)
-        ]
+        self._in_fifos.append((fifo, event_source))
 
     def add_out_fifo_event(self, applet, fifo):
         event_source = self.event_analyzer.add_event_source(
             name=self._name(applet, "fifo-out"), kind="strobe", width=8)
-        event_source.comb += [
-            event_source.trigger.eq(fifo.readable & fifo.re),
-            event_source.data.eq(fifo.dout)
-        ]
+        self._out_fifos.append((fifo, event_source))
 
     def add_pin_event(self, applet, name, triple):
         self._pins.append((self._name(applet, name), triple))
@@ -66,35 +54,70 @@ class GlasgowAnalyzer(Module):
         if not self._pins:
             return
 
-        reg_reset = Signal()
-        self.sync += reg_reset.eq(self.mux_interface.reset)
-
         pin_oes = []
         pin_ios = []
+        self._ffsyncs = []
         for (name, triple) in self._pins:
             sync_i = Signal.like(triple.i)
-            self.specials += MultiReg(triple.i, sync_i)
+            self._ffsyncs.append(FFSynchronizer(triple.i, sync_i))
             pin_oes.append((name, triple.oe))
             pin_ios.append((name, Mux(triple.oe, triple.o, sync_i)))
 
-        sig_oes = Cat(oe for n, oe in pin_oes)
-        reg_oes = Signal.like(sig_oes)
-        sig_ios = Cat(io for n, io in pin_ios)
-        reg_ios = Signal.like(sig_ios)
-        self.sync += [
-            reg_oes.eq(sig_oes),
-            reg_ios.eq(sig_ios),
-        ]
+        self.sig_oes = Cat(oe for n, oe in pin_oes)
+        self.sig_ios = Cat(io for n, io in pin_ios)
 
-        oe_event_source = self.event_analyzer.add_event_source(
-            name="oe", kind="change", width=value_bits_sign(sig_oes)[0],
-            fields=[(name, value_bits_sign(oe)[0]) for name, oe in pin_oes])
-        io_event_source = self.event_analyzer.add_event_source(
-            name="io", kind="change", width=value_bits_sign(sig_ios)[0],
-            fields=[(name, value_bits_sign(io)[0]) for name, io in pin_ios])
-        self.comb += [
-            oe_event_source.trigger.eq(reg_reset | (sig_oes != reg_oes)),
-            oe_event_source.data.eq(sig_oes),
-            io_event_source.trigger.eq(reg_reset | (sig_ios != reg_ios)),
-            io_event_source.data.eq(sig_ios),
-        ]
+        self.oe_event_source = self.event_analyzer.add_event_source(
+            name="oe", kind="change", width=len(self.sig_oes),
+            fields=[(name, len(oe)) for name, oe in pin_oes])
+        self.io_event_source = self.event_analyzer.add_event_source(
+            name="io", kind="change", width=len(self.sig_ios),
+            fields=[(name, len(io)) for name, io in pin_ios])
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.d.comb += self.event_analyzer.done.eq(self.done)
+
+        for signal, event_source in self._generics:
+            signal_r = Signal.like(signal)
+            m.d.sync += [
+                signal_r.eq(signal),
+            ]
+            m.d.comb += [
+                event_source.data.eq(signal),
+                event_source.trigger.eq(signal != signal_r),
+            ]
+
+        for fifo, event_source in self._in_fifos:
+            m.d.sync += [
+                event_source.trigger.eq(fifo.w_rdy & fifo.w_en),
+                event_source.data.eq(fifo.w_data)
+            ]
+
+        for fifo, event_source in self._out_fifos:
+            m.d.comb += [
+                event_source.trigger.eq(fifo.r_rdy & fifo.r_en),
+                event_source.data.eq(fifo.r_data)
+            ]
+
+        if self._pins:
+            m.submodules += self._ffsyncs
+
+            reg_reset = Signal()
+            m.d.sync += reg_reset.eq(self.mux_interface.reset)
+
+            reg_oes = Signal.like(self.sig_oes)
+            reg_ios = Signal.like(self.sig_ios)
+            m.d.sync += [
+                reg_oes.eq(self.sig_oes),
+                reg_ios.eq(self.sig_ios),
+            ]
+
+            m.d.comb += [
+                self.oe_event_source.trigger.eq(reg_reset | (self.sig_oes != reg_oes)),
+                self.oe_event_source.data.eq(self.sig_oes),
+                self.io_event_source.trigger.eq(reg_reset | (self.sig_ios != reg_ios)),
+                self.io_event_source.data.eq(self.sig_ios),
+            ]
+
+        return m
