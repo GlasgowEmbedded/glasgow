@@ -144,8 +144,9 @@ import aiohttp, aiohttp.web
 import hashlib
 import gzip
 import io
-from amaranth.compat import *
-from amaranth.compat.genlib.cdc import MultiReg
+from amaranth import *
+from amaranth.lib import data
+from amaranth.lib.cdc import FFSynchronizer
 
 from ....gateware.pads import *
 from ....gateware.clockgen import *
@@ -153,8 +154,11 @@ from ....protocol.vgm import *
 from ... import *
 
 
-class YamahaCPUBus(Module):
+class YamahaCPUBus(Elaboratable):
     def __init__(self, pads, master_cyc):
+        self.pads = pads
+        self.master_cyc = master_cyc
+
         self.rst   = Signal()
         self.stb_m = Signal()
 
@@ -168,63 +172,75 @@ class YamahaCPUBus(Module):
         self.rd = Signal()
         self.wr = Signal()
 
-        ###
+        self.clkgen_ce = Signal()
 
-        self.submodules.clkgen = CEInserter()(ClockGen(master_cyc))
-        self.comb += self.stb_m.eq(self.clkgen.stb_r)
+    def elaborate(self, platform):
+        m = Module()
 
-        self.comb += [
-            pads.clk_m_t.oe.eq(1),
-            pads.clk_m_t.o.eq(self.clkgen.clk),
-            pads.a_t.oe.eq(1),
-            pads.a_t.o.eq(self.a),
-            pads.d_t.oe.eq(self.oe),
-            pads.d_t.o.eq(Cat((self.do))),
-            self.di.eq(Cat((pads.d_t.i))),
+        m.submodules.clkgen = clkgen = EnableInserter(self.clkgen_ce)(ClockGen(self.master_cyc))
+        m.d.comb += self.stb_m.eq(clkgen.stb_r)
+
+        m.d.comb += [
+            self.pads.clk_m_t.oe.eq(1),
+            self.pads.clk_m_t.o.eq(clkgen.clk),
+            self.pads.a_t.oe.eq(1),
+            self.pads.a_t.o.eq(self.a),
+            self.pads.d_t.oe.eq(self.oe),
+            self.pads.d_t.o.eq(self.do),
+            self.di.eq(self.pads.d_t.i),
             # handle (self.rd & (self.wr | self.oe)) == 1 safely
-            pads.rd_t.oe.eq(1),
-            pads.rd_t.o.eq(~(self.rd & ~self.wr & ~self.oe)),
-            pads.wr_t.oe.eq(1),
-            pads.wr_t.o.eq(~(self.wr & ~self.rd)),
+            self.pads.rd_t.oe.eq(1),
+            self.pads.rd_t.o.eq(~(self.rd & ~self.wr & ~self.oe)),
+            self.pads.wr_t.oe.eq(1),
+            self.pads.wr_t.o.eq(~(self.wr & ~self.rd)),
         ]
-        if hasattr(pads, "cs_t"):
-            self.comb += [
-                pads.cs_t.oe.eq(1),
-                pads.cs_t.o.eq(~self.cs),
+        if hasattr(self.pads, "cs_t"):
+            m.d.comb += [
+                self.pads.cs_t.oe.eq(1),
+                self.pads.cs_t.o.eq(~self.cs),
             ]
-        if hasattr(pads, "ic_t"):
-            self.comb += [
-                pads.ic_t.oe.eq(1),
-                pads.ic_t.o.eq(~self.rst),
+        if hasattr(self.pads, "ic_t"):
+            m.d.comb += [
+                self.pads.ic_t.oe.eq(1),
+                self.pads.ic_t.o.eq(~self.rst),
             ]
 
+        return m
 
-class YamahaDACBus(Module):
+
+class YamahaDACBus(Elaboratable):
     def __init__(self, pads):
+        self.pads = pads
+
         self.stb_sy = Signal()
         self.stb_sh = Signal()
 
         self.sh = Signal()
         self.mo = Signal()
 
+    def elaborate(self, platform):
+        m = Module()
+
         clk_sy_s = Signal()
         clk_sy_r = Signal()
-        self.sync += [
+        m.d.sync += [
             clk_sy_r.eq(clk_sy_s),
             self.stb_sy.eq(clk_sy_r & ~clk_sy_s)
         ]
 
         sh_r = Signal()
-        self.sync += [
+        m.d.sync += [
             sh_r.eq(self.sh),
             self.stb_sh.eq(sh_r & ~self.sh)
         ]
 
-        self.specials += [
-            MultiReg(pads.clk_sy_t.i, clk_sy_s),
-            MultiReg(pads.sh_t.i, self.sh),
-            MultiReg(pads.mo_t.i, self.mo)
+        m.submodules += [
+            FFSynchronizer(self.pads.clk_sy_t.i, clk_sy_s),
+            FFSynchronizer(self.pads.sh_t.i, self.sh),
+            FFSynchronizer(self.pads.mo_t.i, self.mo)
         ]
+
+        return m
 
 
 OP_ENABLE = 0x00
@@ -234,143 +250,139 @@ OP_WAIT   = 0x30
 OP_MASK   = 0xf0
 
 
-class YamahaOPxSubtarget(Module):
+class YamahaOPxSubtarget(Elaboratable):
     def __init__(self, pads, in_fifo, out_fifo, sample_decoder_cls, channel_count,
                  master_cyc, read_pulse_cyc, write_pulse_cyc,
                  address_clocks, data_clocks):
-        self.submodules.cpu_bus = cpu_bus = YamahaCPUBus(pads, master_cyc)
-        self.submodules.dac_bus = dac_bus = YamahaDACBus(pads)
+        self.in_fifo = in_fifo
+        self.out_fifo = out_fifo
+        self.channel_count = channel_count
+        self.read_pulse_cyc = read_pulse_cyc
+        self.write_pulse_cyc = write_pulse_cyc
+        self.address_clocks = address_clocks
+        self.data_clocks = data_clocks
+
+        self.decoder = sample_decoder_cls()
+        self.cpu_bus = YamahaCPUBus(pads, master_cyc)
+        self.dac_bus = YamahaDACBus(pads)
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.cpu_bus = self.cpu_bus
+        m.submodules.dac_bus = self.dac_bus
 
         # Control
 
-        pulse_timer = Signal(max=max(read_pulse_cyc, write_pulse_cyc))
+        pulse_timer = Signal(range(max(self.read_pulse_cyc, self.write_pulse_cyc)))
         wait_timer  = Signal(16)
 
         enabled     = Signal()
-        self.comb += self.cpu_bus.rst.eq(~enabled)
+        m.d.comb += self.cpu_bus.rst.eq(~enabled)
 
         # The code below assumes that the FSM clock is under ~50 MHz, which frees us from the need
         # to explicitly satisfy setup/hold timings.
-        self.submodules.control_fsm = FSM()
-        self.comb += self.cpu_bus.clkgen.ce.eq(out_fifo.readable)
-        self.control_fsm.act("IDLE",
-            NextValue(cpu_bus.oe, 1),
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                Case(out_fifo.dout & OP_MASK, {
-                    OP_ENABLE: [
-                        NextValue(enabled, out_fifo.dout & ~OP_MASK),
-                    ],
-                    OP_WRITE:  [
-                        NextValue(cpu_bus.a, out_fifo.dout & ~OP_MASK),
-                        NextState("WRITE-DATA")
-                    ],
-                    # OP_READ: NextState("READ"),
-                    OP_WAIT: [
-                        NextState("WAIT-H-BYTE")
+        m.d.comb += self.cpu_bus.clkgen_ce.eq(self.out_fifo.r_rdy)
+        with m.FSM() as fsm:
+            with m.State("IDLE"):
+                m.d.sync += self.cpu_bus.oe.eq(1)
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    with m.Switch(self.out_fifo.r_data & OP_MASK):
+                        with m.Case(OP_ENABLE):
+                            m.d.sync += enabled.eq(self.out_fifo.r_data & ~OP_MASK)
+                        with m.Case(OP_WRITE):
+                            m.d.sync += self.cpu_bus.a.eq(self.out_fifo.r_data & ~OP_MASK)
+                            m.next = "WRITE-DATA"
+                        # OP_READ: m.next = "READ",
+                        with m.Case(OP_WAIT):
+                            m.next = "WAIT-H-BYTE"
+            with m.State("WRITE-DATA"):
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    m.d.sync += [
+                        self.cpu_bus.do.eq(self.out_fifo.r_data),
+                        self.cpu_bus.cs.eq(1),
+                        self.cpu_bus.wr.eq(1),
+                        pulse_timer.eq(self.write_pulse_cyc - 1),
                     ]
-                })
-            )
-        )
-        self.control_fsm.act("WRITE-DATA",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(cpu_bus.do, out_fifo.dout),
-                NextValue(cpu_bus.cs, 1),
-                NextValue(cpu_bus.wr, 1),
-                NextValue(pulse_timer, write_pulse_cyc - 1),
-                NextState("WRITE-PULSE")
-            )
-        )
-        self.control_fsm.act("WRITE-PULSE",
-            If(pulse_timer == 0,
-                NextValue(cpu_bus.cs, 0),
-                NextValue(cpu_bus.wr, 0),
-                If(cpu_bus.a[0] == 0b0,
-                    NextValue(wait_timer, address_clocks - 1)
-                ).Else(
-                    NextValue(wait_timer, data_clocks - 1)
-                ),
-                NextState("WAIT-LOOP")
-            ).Else(
-                NextValue(pulse_timer, pulse_timer - 1)
-            )
-        )
-        self.control_fsm.act("WAIT-H-BYTE",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(wait_timer[8:16], out_fifo.dout),
-                NextState("WAIT-L-BYTE")
-            )
-        )
-        self.control_fsm.act("WAIT-L-BYTE",
-            If(out_fifo.readable,
-                out_fifo.re.eq(1),
-                NextValue(wait_timer[0:8], out_fifo.dout),
-                NextState("WAIT-LOOP")
-            )
-        )
-        self.control_fsm.act("WAIT-LOOP",
-            If(wait_timer == 0,
-                NextState("IDLE")
-            ).Else(
-                If(cpu_bus.stb_m,
-                    NextValue(wait_timer, wait_timer - 1)
-                )
-            )
-        )
+                    m.next = "WRITE-PULSE"
+            with m.State("WRITE-PULSE"):
+                with m.If(pulse_timer == 0):
+                    m.d.sync += [
+                        self.cpu_bus.cs.eq(0),
+                        self.cpu_bus.wr.eq(0),
+                    ]
+                    with m.If(self.cpu_bus.a[0] == 0b0):
+                        m.d.sync += wait_timer.eq(self.address_clocks - 1)
+                    with m.Else():
+                        m.d.sync += wait_timer.eq(self.data_clocks - 1)
+                    m.next = "WAIT-LOOP"
+                with m.Else():
+                    m.d.sync += pulse_timer.eq(pulse_timer - 1)
+            with m.State("WAIT-H-BYTE"):
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    m.d.sync += wait_timer[8:16].eq(self.out_fifo.r_data)
+                    m.next = "WAIT-L-BYTE"
+            with m.State("WAIT-L-BYTE"):
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    m.d.sync += wait_timer[0:8].eq(self.out_fifo.r_data)
+                    m.next = "WAIT-LOOP"
+            with m.State("WAIT-LOOP"):
+                with m.If(wait_timer == 0):
+                    m.next = "IDLE"
+                with m.Else():
+                    with m.If(self.cpu_bus.stb_m):
+                        m.d.sync += wait_timer.eq(wait_timer - 1)
 
         # Audio
 
-        self.submodules.decoder = decoder = sample_decoder_cls()
+        m.submodules.decoder = self.decoder
 
-        shreg  = Signal(len(decoder.i.raw_bits()) * channel_count)
+        channel_width = len(self.decoder.i.as_value())
+        shreg  = Signal(channel_width * self.channel_count)
         sample = Signal.like(shreg)
-        self.sync += [
-            If(dac_bus.stb_sy,
-                shreg.eq(Cat(shreg[1:], dac_bus.mo))
-            )
-        ]
+        with m.If(self.dac_bus.stb_sy):
+            m.d.sync += shreg.eq(Cat(shreg[1:], self.dac_bus.mo))
 
-        self.submodules.data_fsm = FSM()
         channel = Signal(1)
-        self.data_fsm.act("WAIT-SH",
-            NextValue(in_fifo.flush, ~enabled),
-            If(dac_bus.stb_sh & enabled,
-                NextState("SAMPLE")
-            )
-        )
-        self.data_fsm.act("SAMPLE",
-            NextValue(sample, shreg),
-            NextValue(channel, 0),
-            NextState("SEND-CHANNEL")
-        )
-        self.data_fsm.act("SEND-CHANNEL",
-            NextValue(decoder.i.raw_bits(),
-                      sample.word_select(channel, len(decoder.i.raw_bits()))),
-            NextState("SEND-BYTE")
-        )
-        byteno = Signal(1)
-        self.data_fsm.act("SEND-BYTE",
-            in_fifo.din.eq(decoder.o.word_select(byteno, 8)),
-            If(in_fifo.writable,
-                in_fifo.we.eq(1),
-                NextValue(byteno, byteno + 1),
-                If(byteno == 1,
-                    NextValue(channel, channel + 1),
-                    If(channel == channel_count - 1,
-                        NextState("WAIT-SH")
-                    ).Else(
-                        NextState("SEND-CHANNEL")
-                    )
-                )
-            ).Elif(dac_bus.stb_sh,
-                NextState("OVERFLOW")
-            )
-        )
-        self.data_fsm.act("OVERFLOW",
-            NextState("OVERFLOW")
-        )
+        with m.FSM() as fsm:
+            with m.State("WAIT-SH"):
+                m.d.sync += self.in_fifo.flush.eq(~enabled)
+                with m.If(self.dac_bus.stb_sh & enabled):
+                    m.next = "SAMPLE"
+            with m.State("SAMPLE"):
+                m.d.sync += [
+                    sample.eq(shreg),
+                    channel.eq(0),
+                ]
+                m.next = "SEND-CHANNEL"
+            with m.State("SEND-CHANNEL"):
+                m.d.sync += [
+                    self.decoder.i.eq(
+                          sample.word_select(channel, channel_width)),
+                ]
+                m.next = "SEND-BYTE"
+            byteno = Signal(1)
+            with m.State("SEND-BYTE"):
+                m.d.comb += self.in_fifo.w_data.eq(self.decoder.o.word_select(byteno, 8))
+                with m.If(self.in_fifo.w_rdy):
+                    m.d.comb += self.in_fifo.w_en.eq(1)
+                    m.d.sync += byteno.eq(byteno + 1)
+                    with m.If(byteno == 1):
+                        m.d.sync += channel.eq(channel + 1)
+                        with m.If(channel == self.channel_count - 1):
+                            m.next = "WAIT-SH"
+                        with m.Else():
+                            m.next = "SEND-CHANNEL"
+                with m.Elif(self.dac_bus.stb_sh):
+                    m.next = "OVERFLOW"
+            with m.State("OVERFLOW"):
+                m.next = "OVERFLOW"
+
+        return m
 
 
 class YamahaOPxInterface(metaclass=ABCMeta):
@@ -554,14 +566,26 @@ class YamahaOPxCommandFilter:
         return count
 
 
-class YM301xSampleDecoder(Module):
+class YM301xSample(data.Struct):
+    z: unsigned(3)
+    m: unsigned(9)
+    s: unsigned(1)
+    e: unsigned(3)
+
+
+class YM301xSampleDecoder(Elaboratable):
     def __init__(self):
-        self.i = Record([("z", 3), ("m", 9), ("s", 1), ("e", 3)])
+        self.i = Signal(YM301xSample)
         self.o = Signal(16)
 
-        self.comb += [
-            self.o.eq(Cat((Cat(self.i.m, Replicate(~self.i.s, 7)) << self.i.e)[1:16], ~self.i.s))
+    def elaborate(self, platform):
+        m = Module()
+
+        m.d.comb += [
+            self.o.eq(Cat((Cat(self.i.m, (~self.i.s).replicate(7)) << self.i.e)[1:16], ~self.i.s))
         ]
+
+        return m
 
 
 class YamahaOPLInterface(YamahaOPxInterface):
@@ -620,15 +644,25 @@ class YamahaOPL2Interface(YamahaOPLInterface):
             await super()._check_enable_features(address, data)
 
 
-class YAC512SampleDecoder(Module):
+class YAC512Sample(data.Struct):
+    # There are 2 dummy clocks between each sample. The DAC doesn't rely on it (it uses two
+    # phases for two channels per DAC, and a clever arrangement to provide four channels
+    # without requiring four phases), but we want to save pins and so we do.
+    z: unsigned(2)
+    d: unsigned(16)
+
+
+class YAC512SampleDecoder(Elaboratable):
     def __init__(self):
-        # There are 2 dummy clocks between each sample. The DAC doesn't rely on it (it uses two
-        # phases for two channels per DAC, and a clever arrangement to provide four channels
-        # without requiring four phases), but we want to save pins and so we do.
-        self.i = Record([("z", 2), ("d", 16)])
+        self.i = Signal(YAC512Sample)
         self.o = Signal(16)
 
-        self.comb += self.o.eq(self.i.d + 0x8000)
+    def elaborate(self, platform):
+        m = Module()
+
+        m.d.comb += self.o.eq(self.i.d + 0x8000)
+
+        return m
 
 
 class YamahaOPL3Interface(YamahaOPL2Interface):
