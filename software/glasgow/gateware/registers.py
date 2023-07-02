@@ -1,10 +1,10 @@
-from amaranth.compat import *
+from amaranth import *
 
 
 __all__ = ["Registers", "I2CRegisters"]
 
 
-class Registers(Module):
+class Registers(Elaboratable):
     """
     A register array.
 
@@ -34,6 +34,10 @@ class Registers(Module):
         self.regs_w.append(reg)
         return reg, addr
 
+    def elaborate(self, platform):
+        m = Module()
+        return m
+
 
 class I2CRegisters(Registers):
     """
@@ -46,43 +50,40 @@ class I2CRegisters(Registers):
         super().__init__()
         self.i2c_target = i2c_target
 
-    def do_finalize(self):
-        if self.reg_count == 0:
-            return
+    def elaborate(self, platform):
+        m = super().elaborate(platform)
 
-        latch_addr = Signal()
-        reg_addr   = Signal(max=max(self.reg_count, 2))
-        reg_data   = Signal(max(s.nbits for s in self.regs_r))
-        self.comb += [
-            self.i2c_target.data_o.eq(reg_data),
-            If(self.i2c_target.write,
-                If(latch_addr,
-                    If(self.i2c_target.data_i < self.reg_count,
-                        self.i2c_target.ack_o.eq(1)
-                    )
-                ).Elif(~latch_addr,
-                    self.i2c_target.ack_o.eq(1),
-                )
-            )
-        ]
-        self.sync += [
-            If(self.i2c_target.start,
-                latch_addr.eq(1)
-            ),
-            If(self.i2c_target.write,
-                latch_addr.eq(0),
-                If(latch_addr,
-                    reg_addr.eq(self.i2c_target.data_i),
-                    reg_data.eq(self.regs_r[self.i2c_target.data_i]),
-                ).Else(
-                    reg_data.eq(Cat(self.i2c_target.data_i, reg_data)),
-                    self.regs_w[reg_addr].eq(Cat(self.i2c_target.data_i, reg_data)),
-                )
-            ),
-            If(self.i2c_target.read,
-                reg_data.eq(reg_data >> 8),
-            )
-        ]
+        if self.reg_count != 0:
+            latch_addr = Signal()
+            reg_addr   = Signal(range(self.reg_count))
+            reg_data   = Signal(max(len(s) for s in self.regs_r))
+
+            m.d.comb += self.i2c_target.data_o.eq(reg_data)
+
+            with m.If(self.i2c_target.start):
+                m.d.sync += latch_addr.eq(1)
+
+            with m.If(self.i2c_target.write):
+                m.d.sync += latch_addr.eq(0)
+
+                with m.If(latch_addr):
+                    with m.If(self.i2c_target.data_i < self.reg_count):
+                        m.d.comb += self.i2c_target.ack_o.eq(1)
+                    m.d.sync += [
+                        reg_addr.eq(self.i2c_target.data_i),
+                        reg_data.eq(self.regs_r[self.i2c_target.data_i]),
+                    ]
+                with m.Else():
+                    m.d.comb += self.i2c_target.ack_o.eq(1)
+                    m.d.sync += [
+                        reg_data.eq(Cat(self.i2c_target.data_i, reg_data)),
+                        self.regs_w[reg_addr].eq(Cat(self.i2c_target.data_i, reg_data)),
+                    ]
+
+            with m.If(self.i2c_target.read):
+                m.d.sync += reg_data.eq(reg_data >> 8)
+
+        return m
 
 # -------------------------------------------------------------------------------------------------
 
@@ -92,10 +93,10 @@ from . import simulation_test
 from .i2c import I2CTargetTestbench
 
 
-class I2CRegistersTestbench(Module):
+class I2CRegistersTestbench(Elaboratable):
     def __init__(self):
-        self.submodules.i2c = I2CTargetTestbench()
-        self.submodules.dut = I2CRegisters(self.i2c.dut)
+        self.i2c = I2CTargetTestbench()
+        self.dut = I2CRegisters(self.i2c.dut)
         self.reg_dummy, self.addr_dummy = self.dut.add_rw(8)
         self.reg_rw_8,  self.addr_rw_8  = self.dut.add_rw(8)
         self.reg_ro_8,  self.addr_ro_8  = self.dut.add_ro(8)
@@ -103,6 +104,12 @@ class I2CRegistersTestbench(Module):
         self.reg_ro_16, self.addr_ro_16 = self.dut.add_ro(16)
         self.reg_rw_12, self.addr_rw_12 = self.dut.add_rw(12)
         self.reg_ro_12, self.addr_ro_12 = self.dut.add_ro(12)
+
+    def elaborate(self, platform):
+        m = Module()
+        m.submodules.i2c = self.i2c
+        m.submodules.dut = self.dut
+        return m
 
 
 class I2CRegistersTestCase(unittest.TestCase):
