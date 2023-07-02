@@ -1,10 +1,10 @@
-from amaranth.compat import *
+from amaranth import *
 
 
 __all__ = ["ClockGen"]
 
 
-class ClockGen(Module):
+class ClockGen(Elaboratable):
     """
     A clock generator. The purpose of a clock generator is to use an input clock signal to
     generate an output clock (50% duty cycle pulses) and rising/falling strobe (1 input clock
@@ -41,53 +41,57 @@ class ClockGen(Module):
     """
 
     def __init__(self, cyc):
+        self.cyc = cyc
+
         self.clk   = Signal()
         self.stb_r = Signal()
         self.stb_f = Signal()
 
-        ###
+    def elaborate(self, platform):
+        m = Module()
 
-        if cyc == 0:
+        if self.cyc == 0:
             # Special case: output frequency equal to input frequency.
             # Implementation: wire.
-            self.comb += [
+            m.d.comb += [
                 self.clk.eq(ClockSignal()),
                 self.stb_r.eq(1),
                 self.stb_f.eq(1),
             ]
 
-        if cyc == 1:
+        if self.cyc == 1:
             # Special case: output frequency half of input frequency.
             # Implementation: flip-flop.
-            self.sync += [
+            m.d.sync += [
                 self.clk.eq(~self.clk),
             ]
-            self.comb += [
+            m.d.comb += [
                 self.stb_r.eq(~self.clk),
                 self.stb_f.eq(self.clk),
             ]
 
-        if cyc >= 2:
+        if self.cyc >= 2:
             # General case.
             # Implementation: counter.
-            counter = Signal(max=cyc)
+            counter = Signal(range(self.cyc))
             clk_r   = Signal()
-            self.sync += [
-                counter.eq(counter - 1),
-                If(counter == 0,
-                    counter.eq(cyc - 1),
-                ),
-                If(counter == cyc // 2,
-                    self.clk.eq(1),
-                ).Elif(counter == 0,
-                    self.clk.eq(0),
-                ),
-                clk_r.eq(self.clk),
-            ]
-            self.comb += [
+
+            m.d.sync += counter.eq(counter - 1)
+            with m.If(counter == 0):
+                m.d.sync += counter.eq(self.cyc - 1)
+
+            with m.If(counter == self.cyc // 2):
+                m.d.sync += self.clk.eq(1)
+            with m.If(counter == 0):
+                m.d.sync += self.clk.eq(0)
+
+            m.d.sync += clk_r.eq(self.clk)
+            m.d.comb += [
                 self.stb_r.eq(~clk_r &  self.clk),
                 self.stb_f.eq( clk_r & ~self.clk),
             ]
+
+        return m
 
     @staticmethod
     def calculate(input_hz, output_hz, max_deviation_ppm=None, min_cyc=None):
