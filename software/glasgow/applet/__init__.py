@@ -1,6 +1,7 @@
 import re
 import argparse
 from abc import ABCMeta, abstractmethod
+from amaranth import *
 
 from ..support.arepl import *
 from ..gateware.clockgen import *
@@ -288,6 +289,9 @@ class GlasgowAppletTestCase(unittest.TestCase):
     async def run_hardware_applet(self, mode):
         if mode == "record":
             await self.device.download_target(self.target.build_plan())
+        else:
+            # avoid UnusedElaboratable warning
+            Fragment.get(self.target, None)
 
         return await self.applet.run(self.device, self._parsed_args)
 
