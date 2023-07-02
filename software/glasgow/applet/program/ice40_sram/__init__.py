@@ -7,7 +7,7 @@ from ...interface.spi_controller import SPIControllerApplet
 from ... import *
 
 
-class ProgramICE40SRAMSubtarget:
+class ProgramICE40SRAMSubtarget(Elaboratable):
     def __init__(self, controller, reset_t, dut_reset, done_t, dut_done):
         self.controller = controller
         self.reset_t = reset_t
