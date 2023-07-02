@@ -125,6 +125,12 @@ class PS2Bus(Elaboratable):
             self.rising .eq(~clock_r &  clock_s),
         ]
 
+        if hasattr(self.pads, "reset_t"):
+            m.d.comb += [
+                self.pads.reset_t.o.eq(ResetSignal()),
+                self.pads.reset_t.oe.eq(1),
+            ]
+
         return m
 
 
@@ -395,14 +401,14 @@ class PS2HostApplet(GlasgowApplet, name="ps2-host"):
     """
     required_revision = "C0"
 
-    __pins = ("clock", "data")
+    __pins = ("clock", "data", "reset")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        for pin in cls.__pins:
-            access.add_pin_argument(parser, pin, default=True)
+        access.add_pin_argument(parser, "clock", default=True)
+        access.add_pin_argument(parser, "data", default=True)
         access.add_pin_argument(parser, "reset")
 
     def build(self, target, args):
@@ -413,12 +419,6 @@ class PS2HostApplet(GlasgowApplet, name="ps2-host"):
             out_fifo=iface.get_out_fifo(),
             inhibit_cyc=int(target.sys_clk_freq * 60e-6),
         ))
-        if args.pin_reset is not None:
-            reset_t = self.mux_interface.get_pin(args.pin_reset, name="reset")
-            subtarget.comb += [
-                reset_t.o.eq(subtarget.reset),
-                reset_t.oe.eq(1),
-            ]
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
