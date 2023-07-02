@@ -1,7 +1,8 @@
 on:
   push:
     branches: main
-  pull_request: {}
+  pull_request:
+  merge_group:
 
 name: CI
 jobs:
