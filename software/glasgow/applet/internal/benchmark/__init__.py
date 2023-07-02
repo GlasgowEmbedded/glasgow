@@ -58,7 +58,7 @@ class BenchmarkSubtarget(Elaboratable):
 
             with m.State("SINK"):
                 with m.If(self.out_fifo.r_rdy):
-                    with m.If(self.out_fifo.dout != lfsr_word):
+                    with m.If(self.out_fifo.r_data != lfsr_word):
                         m.d.sync += self.reg_error.eq(1)
                     m.d.comb += [
                         self.out_fifo.r_en.eq(1),
@@ -67,7 +67,7 @@ class BenchmarkSubtarget(Elaboratable):
                     m.d.sync += self.reg_count.eq(self.reg_count + 1)
 
             with m.State("LOOPBACK"):
-                m.d.comb += self.in_fifo.din.eq(self.out_fifo.dout)
+                m.d.comb += self.in_fifo.w_data.eq(self.out_fifo.r_data)
                 with m.If(self.in_fifo.w_rdy & self.out_fifo.r_rdy):
                     m.d.comb += [
                         self.in_fifo.w_en.eq(1),
