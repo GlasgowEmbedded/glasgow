@@ -54,22 +54,21 @@ class VideoRGBInputSubtarget(Elaboratable):
             m.d.sync += pixel.eq(Cat(rx, gx, bx))
 
         frame = Signal(5)
-        f_stb = Signal()
-        with m.If(f_stb):
-            m.d.sync += frame.eq(frame + 1)
 
         ovf_r = Signal()
-        row   = Signal(range(self.rows))
+        row   = Signal(range(self.rows + 1))
         col   = Signal(range(self.columns))
         m.domains.fsm = ClockDomain()
         with m.FSM(domain="fsm"):
             with m.State("CAPTURE-ROW"):
                 with m.If(stb):
                     with m.If(row == 0):
-                        m.d.comb += [
+                        m.d.sync += [
                             ovf_r.eq(ovf),
+                            frame.eq(frame + 1)
+                        ]
+                        m.d.comb += [
                             ovf_c.eq(1),
-                            f_stb.eq(1),
                         ]
                         m.next = "SKIP-FIRST-PIXEL"
                     with m.Elif(row == self.rows):
@@ -82,7 +81,7 @@ class VideoRGBInputSubtarget(Elaboratable):
                     m.next = "REPORT-FRAME"
             with m.State("REPORT-FRAME"):
                 m.d.comb += [
-                    w_data.eq(0x80 | (ovf_r << 7) | (frame << 1) | (row >> 7)),
+                    w_data.eq(0x80 | (ovf_r << 6) | (frame << 1) | (row >> 7)),
                     w_en.eq(1),
                 ]
                 m.next = "REPORT-ROW"
@@ -183,4 +182,4 @@ class VideoRGBInputAppletTestCase(GlasgowAppletTestCase, applet=VideoRGBInputApp
     def test_build(self):
         self.assertBuilds(args=["--pins-r", "0:4", "--pins-g", "5:9", "--pins-b", "10:14",
                                 "--pin-dck", "15", "--columns", "160", "--rows", "144",
-                                "--vblank", "960"])
+                                "--vblank", "960e-6"])
