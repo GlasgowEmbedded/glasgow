@@ -363,6 +363,7 @@ def applet_hardware_test(setup="run_hardware_applet", args=[]):
                     finally:
                         if self.device is not None:
                             loop.run_until_complete(self.device.demultiplexer.cancel())
+                        loop.close()
 
                 thread = threading.Thread(target=run_test)
                 thread.start()
