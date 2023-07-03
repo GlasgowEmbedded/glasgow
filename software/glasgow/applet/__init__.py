@@ -242,8 +242,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
         self._parsed_args = parser.parse_args(args)
 
     def _prepare_simulation_target(self):
-        self.target = GlasgowSimulationTarget()
-        self.target.submodules.multiplexer = SimulationMultiplexer()
+        self.target = GlasgowSimulationTarget(multiplexer_cls=SimulationMultiplexer)
 
         self.device = GlasgowSimulationDevice(self.target)
         self.device.demultiplexer = SimulationDemultiplexer(self.device)

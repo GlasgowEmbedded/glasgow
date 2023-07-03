@@ -100,6 +100,12 @@ class DirectMultiplexer(AccessMultiplexer):
         self._analyzer      = None
         self._registers     = registers
         self._fx2_crossbar  = fx2_crossbar
+        self._ifaces        = []
+
+    def elaborate(self, platform):
+        m = Module()
+        m.submodules += self._ifaces
+        return m
 
     def set_analyzer(self, analyzer):
         assert self._analyzer is None
@@ -152,7 +158,7 @@ class DirectMultiplexer(AccessMultiplexer):
 
         iface = DirectMultiplexerInterface(applet, analyzer, self._registers,
             self._fx2_crossbar, pipe_num, pins, throttle)
-        self.submodules += iface
+        self._ifaces.append(iface)
         return iface
 
 
@@ -162,14 +168,43 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
         assert throttle in ("full", "fifo", "none")
 
         super().__init__(applet, analyzer)
-        self._registers    = registers
-        self._fx2_crossbar = fx2_crossbar
-        self._pipe_num     = pipe_num
-        self._pins         = pins
-        self._throttle     = throttle
+        self._registers     = registers
+        self._fx2_crossbar  = fx2_crossbar
+        self._pipe_num      = pipe_num
+        self._pins          = pins
+        self._throttle      = throttle
+        self._subtargets    = []
+        self._fifos         = []
+        self._pin_tristates = []
 
         self.reset, self._addr_reset = self._registers.add_rw(1, reset=1)
         self.logger.debug("adding reset register at address %#04x", self._addr_reset)
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules += self._subtargets
+        if self.pads is not None:
+            m.submodules.pads = self.pads
+
+        for fifo in self._fifos:
+            if self._throttle == "full":
+                m.d.comb += fifo._ctrl_en.eq(~self.analyzer.throttle)
+            elif self._throttle == "fifo":
+                m.d.comb += fifo._data_en.eq(~self.analyzer.throttle)
+
+            m.submodules += fifo
+
+        for pin_parts, oe, o, i in self._pin_tristates:
+            m.d.comb += [
+                pin_parts.io.oe.eq(oe),
+                pin_parts.io.o.eq(o),
+                i.eq(pin_parts.io.i),
+            ]
+            if hasattr(pin_parts, "oe"):
+                m.d.comb += pin_parts.oe.o.eq(oe)
+
+        return m
 
     def get_pin_name(self, pin_num):
         port, bit, req = self._pins[pin_num]
@@ -178,34 +213,23 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
     def build_pin_tristate(self, pin_num, oe, o, i):
         port, bit, req = self._pins[pin_num]
         pin_parts = req(bit)
-        self.comb += [
-            pin_parts.io.oe.eq(oe),
-            pin_parts.io.o.eq(o),
-            i.eq(pin_parts.io.i),
-        ]
-        if hasattr(pin_parts, "oe"):
-            self.comb += pin_parts.oe.o.eq(oe)
-
-    def _throttle_fifo(self, fifo):
-        if self._throttle == "full":
-            self.comb += fifo._ctrl_en.eq(~self.analyzer.throttle)
-        elif self._throttle == "fifo":
-            self.comb += fifo._data_en.eq(~self.analyzer.throttle)
-
-        self.submodules += fifo
-        return fifo
+        self._pin_tristates.append((pin_parts, oe, o, i))
 
     def get_in_fifo(self, **kwargs):
         fifo = self._fx2_crossbar.get_in_fifo(self._pipe_num, **kwargs, reset=self.reset)
         if self.analyzer:
             self.analyzer.add_in_fifo_event(self.applet, fifo)
-        return self._throttle_fifo(_FIFOWritePort(fifo))
+        fifo = _FIFOWritePort(fifo)
+        self._fifos.append(fifo)
+        return fifo
 
     def get_out_fifo(self, **kwargs):
         fifo = self._fx2_crossbar.get_out_fifo(self._pipe_num, **kwargs, reset=self.reset)
         if self.analyzer:
             self.analyzer.add_out_fifo_event(self.applet, fifo)
-        return self._throttle_fifo(_FIFOReadPort(fifo))
+        fifo = _FIFOReadPort(fifo)
+        self._fifos.append(fifo)
+        return fifo
 
     def add_subtarget(self, subtarget):
         if self._throttle == "full":
@@ -216,7 +240,7 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
             # (This is deliberate; throttling often happens because the analyzer CY7C FIFO is
             # full, but we might still be able to transfer data between the other FIFOs.)
             #
-            # Thus, in `_throttle_fifo` above, we add the read (for OUT FIFOs) or write
+            # Thus, in `elaborate` above, we add the read (for OUT FIFOs) or write
             # (for IN FIFOs) ports into the applet control enable domain.
             subtarget = EnableInserter(~self.analyzer.throttle)(subtarget)
 
@@ -225,5 +249,5 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
         # synchronized with each other.
         subtarget = ResetInserter(self.reset)(subtarget)
 
-        self.submodules += subtarget
+        self._subtargets.append(subtarget)
         return subtarget
