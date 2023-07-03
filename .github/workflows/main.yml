@@ -43,7 +43,7 @@ jobs:
           YOSYS: yowasp-yosys
           NEXTPNR_ICE40: yowasp-nextpnr-ice40
           ICEPACK: yowasp-icepack
-        run: python -W ignore::DeprecationWarning test.py -v
+        run: python test.py -v
 
   build-firmware:
     runs-on: ubuntu-20.04
