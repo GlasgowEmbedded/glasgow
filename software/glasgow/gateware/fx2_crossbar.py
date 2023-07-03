@@ -142,131 +142,198 @@
 # FIFOADR->FLAG                 10.7
 # FIFOADR->FIFODATA             14.3
 
-from amaranth.compat import *
-from amaranth.compat.genlib.cdc import MultiReg
-from amaranth.compat.genlib.fifo import _FIFOInterface, AsyncFIFO, SyncFIFO, SyncFIFOBuffered
-from amaranth.compat.genlib.resetsync import AsyncResetSynchronizer
+from amaranth import *
+from amaranth.lib.cdc import FFSynchronizer, ResetSynchronizer
+from amaranth.lib.fifo import FIFOInterface, AsyncFIFO, SyncFIFO, SyncFIFOBuffered
+from amaranth.lib.io import Pin
 
 
 __all__ = ["FX2Crossbar"]
 
 
-class _OUTFIFO(Module, _FIFOInterface):
+class _OUTFIFO(Elaboratable, FIFOInterface):
     """
     A FIFO with a skid buffer in front of it. This FIFO may be fed from a pipeline that
-    reacts to the ``writable`` flag with a latency up to the skid buffer depth, and writes
+    reacts to the ``w_rdy`` flag with a latency up to the skid buffer depth, and writes
     will not be lost.
     """
     def __init__(self, inner, skid_depth):
-        super().__init__(inner.width, inner.depth)
+        super().__init__(width=inner.width, depth=inner.depth, fwft=False)
 
-        self.submodules.inner = inner
-        self.submodules.skid  = skid  = SyncFIFO(inner.width, skid_depth)
+        self.inner = inner
+        self.skid  = skid  = SyncFIFO(width=inner.width, depth=skid_depth)
 
-        self.dout     = inner.dout
-        self.re       = inner.re
-        self.readable = inner.readable
+        self.r_data   = inner.r_data
+        self.r_en     = inner.r_en
+        self.r_rdy    = inner.r_rdy
 
-        ###
+    def elaborate(self, platform):
+        m = Module()
 
-        self.comb += [
-            If(skid.readable,
-                inner.din.eq(skid.dout),
-                inner.we.eq(1),
-                skid.re.eq(inner.writable)
-            ),
-            If(inner.writable & ~skid.readable,
-                inner.din.eq(self.din),
-                inner.we.eq(self.we),
-                self.writable.eq(inner.writable)
-            ).Else(
-                skid.din.eq(self.din),
-                skid.we.eq(self.we),
-                self.writable.eq(skid.writable)
-            )
-        ]
+        m.submodules.inner = inner = self.inner
+        m.submodules.skid = skid = self.skid
+
+        with m.If(skid.r_rdy):
+            m.d.comb += [
+                inner.w_data.eq(skid.r_data),
+                inner.w_en.eq(1),
+                skid.r_en.eq(inner.w_rdy)
+            ]
+
+        with m.If(inner.w_rdy & ~skid.r_rdy):
+            m.d.comb += [
+                inner.w_data.eq(self.w_data),
+                inner.w_en.eq(self.w_en),
+                self.w_rdy.eq(inner.w_rdy)
+            ]
+        with m.Else():
+            m.d.comb += [
+                skid.w_data.eq(self.w_data),
+                skid.w_en.eq(self.w_en),
+                self.w_rdy.eq(skid.w_rdy)
+            ]
+
+        return m
 
 
-class _UnimplementedOUTFIFO(Module, _FIFOInterface):
+class _UnimplementedOUTFIFO(FIFOInterface):
     def __init__(self, width):
-        super().__init__(width, 0)
+        super().__init__(width=width, depth=0, fwft=False)
 
-        self.submodules.inner = _FIFOInterface(width, 0)
+        self.inner = FIFOInterface(width=width, depth=0, fwft=False)
 
 
-class _INFIFO(Module, _FIFOInterface):
+class _INFIFO(Elaboratable, FIFOInterface):
     """
     A FIFO with a sideband flag indicating whether the FIFO has enough data to read from it yet.
     This FIFO may be used for packetizing the data read from the FIFO when there is no particular
     framing available to optimize the packet boundaries.
     """
     def __init__(self, inner, packet_size=512, asynchronous=False, auto_flush=True):
-        super().__init__(inner.width, inner.depth)
+        super().__init__(width=inner.width, depth=inner.depth, fwft=False)
 
-        self.submodules.inner = inner
+        self.inner = inner
+        self.packet_size = packet_size
+        self.asynchronous = asynchronous
+        self.auto_flush = auto_flush
 
-        self.dout     = inner.dout
-        self.re       = inner.re
-        self.readable = inner.readable
-        self.din      = inner.din
-        self.we       = inner.we
-        self.writable = inner.writable
+        self.r_data   = inner.r_data
+        self.r_en     = inner.r_en
+        self.r_rdy    = inner.r_rdy
+        self.w_data   = inner.w_data
+        self.w_en     = inner.w_en
+        self.w_rdy    = inner.w_rdy
 
         self.flush = Signal(reset=auto_flush)
-        if asynchronous:
-            _flush_s = Signal()
-            self.specials += MultiReg(self.flush, _flush_s, reset=auto_flush)
-        else:
-            _flush_s = self.flush
 
         # This is a model of the IN FIFO buffer in the FX2. Keep in mind that it is legal
         # to assert PKTEND together with SLWR, and in that case PKTEND takes priority.
         # This model is placed in the _INFIFO so that it is reset together with the FIFO itself,
         # which happens on Set Configuration and Set Interface requests.
-        self.queued   = Signal(max=1 + packet_size)
+        self.queued   = Signal(range(1 + packet_size))
         self.complete = Signal() # one FX2 FIFO buffer full
         self.pending  = Signal() # PKTEND requested
         self.flushed  = Signal() # PKTEND asserted
 
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.inner = self.inner
+
+        if self.asynchronous:
+            _flush_s = Signal()
+            m.submodules += FFSynchronizer(self.flush, _flush_s, reset=self.auto_flush)
+        else:
+            _flush_s = self.flush
+
         _pending = Signal()
-        self.sync += [
-            If(self.flushed,
-                self.queued.eq(0),
-                # If we sent a maximum-size packet, we still need a ZLP afterwards.
-                If(self.queued < packet_size,
-                    _pending.eq(0)
-                )
-            ).Elif(self.readable & self.re,
+        with m.If(self.flushed):
+            m.d.sync += self.queued.eq(0)
+            # If we sent a maximum-size packet, we still need a ZLP afterwards.
+            with m.If(self.queued < self.packet_size):
+                m.d.sync += _pending.eq(0)
+        with m.Elif(self.r_rdy & self.r_en):
+            m.d.sync += [
                 self.queued.eq(self.queued + 1),
                 _pending.eq(1)
-            )
-        ]
-        self.comb += [
-            self.complete.eq(self.queued >= packet_size),
+            ]
+
+        m.d.comb += [
+            self.complete.eq(self.queued >= self.packet_size),
             self.pending.eq(_pending & _flush_s),
         ]
 
+        return m
 
-class _UnimplementedINFIFO(Module, _FIFOInterface):
+
+class _UnimplementedINFIFO(FIFOInterface):
     def __init__(self, width, packet_size=512):
-        super().__init__(width, 0)
+        super().__init__(width=width, depth=0, fwft=False)
 
-        self.submodules.inner = _FIFOInterface(width, 0)
+        self.inner = FIFOInterface(width=width, depth=0, fwft=False)
 
         self.flush    = Signal()
         self.flush_s  = Signal()
 
-        self.queued   = Signal(max=1 + packet_size)
+        self.queued   = Signal(range(1 + packet_size))
         self.complete = Signal()
         self.pending  = Signal()
         self.flushed  = Signal()
 
 
-class _FX2Bus(Module):
+class _AsyncFIFOWrapper(Elaboratable, FIFOInterface):
+    def __init__(self, inner, cd_logic, reset):
+        super().__init__(width=inner.width, depth=inner.depth, fwft=False)
+
+        self.inner = inner
+        self.cd_logic = cd_logic
+        self.reset = reset
+
+        self.r_data   = inner.r_data
+        self.r_en     = inner.r_en
+        self.r_rdy    = inner.r_rdy
+        self.w_data   = inner.w_data
+        self.w_en     = inner.w_en
+        self.w_rdy    = inner.w_rdy
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.inner = self.inner
+
+        # Note that for the reset to get asserted AND deasserted, the logic clock domain must
+        # have a running clock. This is because, while AsyncResetSynchronizer is indeed
+        # asynchronous, the registers in the FIFO logic clock domain reset synchronous
+        # to the logic clock, as this is how Migen handles clock domain reset signals.
+        #
+        # If the logic clock domain does not have a single clock transition between assertion
+        # and deassertion of FIFO reset, and the FIFO has not been empty at the time when
+        # reset has been asserted, stale data will be read from the FIFO after deassertion.
+        #
+        # This can lead to all sorts of framing issues, and is rather unfortunate, but at
+        # the moment I do not know of a way to fix this, since Migen does not support
+        # asynchronous resets.
+        cd_crossbar = ClockDomain(reset_less=self.reset is None, local=True)
+        cd_logic    = ClockDomain(reset_less=self.reset is None, local=True)
+        m.d.comb += [
+            cd_crossbar.clk.eq(ClockSignal()),
+            cd_logic.clk.eq(self.cd_logic.clk),
+        ]
+        if self.reset is not None:
+            m.d.comb += cd_crossbar.rst.eq(self.reset)
+            m.submodules += ResetSynchronizer(self.reset, domain="logic")
+
+        m.domains.logic = cd_logic
+        m.domains.crossbar = cd_crossbar
+
+        return m
+
+
+class _FX2Bus(Elaboratable):
     def __init__(self, pads):
         self.flag = Signal(4)
         self.addr = Signal(2)
-        self.data = TSTriple(8)
+        self.data = Pin(width=8, dir='io')
         self.sloe = Signal()
         self.slrd = Signal()
         self.slwr = Signal()
@@ -282,7 +349,10 @@ class _FX2Bus(Module):
         self.nrdy_i = Signal.like(self.flag)
         self.nrdy_o = Signal.like(self.flag)
 
-        ###
+        self.pads = pads
+
+    def elaborate(self, platform):
+        m = Module()
 
         # The FX2 output valid window starts well after (5.4 ns past) the iCE40 input capture
         # window for the rising edge. However, the input capture for the falling edge is
@@ -294,32 +364,32 @@ class _FX2Bus(Module):
         # ratio between input and output buffers.)
         #
         # See https://github.com/GlasgowEmbedded/Glasgow/issues/89 for details.
-        self.comb += [
-            pads.flag.i_clk.eq(ClockSignal()),
-            self.flag.eq(pads.flag.i1),
-            pads.fifoadr.o_clk.eq(ClockSignal()),
-            pads.fifoadr.o.eq(self.addr),
-            pads.fd.o_clk.eq(ClockSignal()),
-            pads.fd.oe.eq(self.data.oe),
-            pads.fd.o0.eq(self.data.o),
-            pads.fd.o1.eq(self.data.o),
-            pads.fd.i_clk.eq(ClockSignal()),
-            self.data.i.eq(pads.fd.i1),
-            pads.sloe.o_clk.eq(ClockSignal()),
-            pads.sloe.o.eq(~self.sloe),
-            pads.slrd.o_clk.eq(ClockSignal()),
-            pads.slrd.o.eq(~self.slrd),
-            pads.slwr.o_clk.eq(ClockSignal()),
-            pads.slwr.o.eq(~self.slwr),
-            pads.pktend.o_clk.eq(ClockSignal()),
-            pads.pktend.o.eq(~self.pend),
+        m.d.comb += [
+            self.pads.flag.i_clk.eq(ClockSignal()),
+            self.flag.eq(self.pads.flag.i1),
+            self.pads.fifoadr.o_clk.eq(ClockSignal()),
+            self.pads.fifoadr.o.eq(self.addr),
+            self.pads.fd.o_clk.eq(ClockSignal()),
+            self.pads.fd.oe.eq(self.data.oe),
+            self.pads.fd.o0.eq(self.data.o),
+            self.pads.fd.o1.eq(self.data.o),
+            self.pads.fd.i_clk.eq(ClockSignal()),
+            self.data.i.eq(self.pads.fd.i1),
+            self.pads.sloe.o_clk.eq(ClockSignal()),
+            self.pads.sloe.o.eq(~self.sloe),
+            self.pads.slrd.o_clk.eq(ClockSignal()),
+            self.pads.slrd.o.eq(~self.slrd),
+            self.pads.slwr.o_clk.eq(ClockSignal()),
+            self.pads.slwr.o.eq(~self.slwr),
+            self.pads.pktend.o_clk.eq(ClockSignal()),
+            self.pads.pktend.o.eq(~self.pend),
         ]
 
         # Delay the FX2 bus control signals, taking into account the roundtrip latency.
         addr_r = Signal.like(self.addr)
         slrd_r = Signal.like(self.slrd)
         nrdy_r = Signal.like(self.flag)
-        self.sync += [
+        m.d.sync += [
             addr_r.eq(self.addr),
             self.addr_p.eq(addr_r),
             slrd_r.eq(self.slrd),
@@ -328,8 +398,10 @@ class _FX2Bus(Module):
             self.nrdy_o.eq(nrdy_r | self.nrdy_i),
         ]
 
+        return m
 
-class FX2Crossbar(Module):
+
+class FX2Crossbar(Elaboratable):
     """
     FX2 FIFO bus master.
 
@@ -340,135 +412,119 @@ class FX2Crossbar(Module):
     are never readable or writable.
     """
     def __init__(self, pads):
-        self.submodules.bus = _FX2Bus(pads)
+        self.bus = _FX2Bus(pads)
 
         self.out_fifos = Array([_UnimplementedOUTFIFO(width=8)
                                 for _ in range(2)])
         self. in_fifos = Array([_UnimplementedINFIFO(width=8)
                                 for _ in range(2)])
 
-    @staticmethod
-    def _round_robin(addr, rdy):
-        # Calculate the address of the next ready FIFO in a round robin process.
-        cases = {}
-        for addr_v in range(2**addr.nbits):
-            for rdy_v in range(2**rdy.nbits):
-                for offset in range(2**addr.nbits):
-                    addr_n = (addr_v + offset) % 2**addr.nbits
-                    if rdy_v & (1 << addr_n):
-                        break
-                else:
-                    addr_n = (addr_v + 1) % 2**addr.nbits
-                cases[rdy_v|(addr_v<<rdy.nbits)] = NextValue(addr, addr_n)
-        return Case(Cat(rdy, addr), cases)
 
-    def do_finalize(self):
-        bus = self.bus
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.bus = bus = self.bus
+
+        for n, fifo in enumerate(self.in_fifos):
+            if isinstance(fifo, Elaboratable):
+                m.submodules[f"in_fifo_{n}"] = fifo
+        for n, fifo in enumerate(self.out_fifos):
+            if isinstance(fifo, Elaboratable):
+                m.submodules[f"out_fifo_{n}"] = fifo
 
         rdy = Signal(4)
-        self.comb += [
-            rdy.eq(Cat([fifo.inner.writable          for fifo in self.out_fifos] +
-                       [fifo.readable | fifo.pending for fifo in self. in_fifos]) &
+        m.d.comb += [
+            rdy.eq(Cat([fifo.inner.w_rdy          for fifo in self.out_fifos] +
+                       [fifo.r_rdy | fifo.pending for fifo in self. in_fifos]) &
                    bus.flag &
                    ~bus.nrdy_o),
         ]
 
-        sel_flag     = bus.flag.part(bus.addr, 1)
+        sel_flag     = bus.flag.bit_select(bus.addr, 1)
         sel_in_fifo  = self.in_fifos [bus.addr  [0]]
         sel_out_fifo = self.out_fifos[bus.addr_p[0]]
-        self.comb += [
-            bus.data.o.eq(sel_in_fifo.dout),
-            sel_out_fifo.din.eq(bus.data.i),
-            If(bus.addr[1],
-                sel_in_fifo.re.eq(bus.slwr),
+        m.d.comb += [
+            bus.data.o.eq(sel_in_fifo.r_data),
+            sel_out_fifo.w_data.eq(bus.data.i),
+        ]
+
+        with m.If(bus.addr[1]):
+            m.d.comb += [
+                sel_in_fifo.r_en.eq(bus.slwr),
                 sel_in_fifo.flushed.eq(bus.pend),
                 bus.nrdy_i.eq(Cat(C(0b00, 2), (bus.slwr | bus.pend) << bus.addr[0])),
-            ).Else(
-                sel_out_fifo.we.eq(bus.slrd_p & sel_flag),
-            )
-        ]
+            ]
+        with m.Else():
+            m.d.comb += [
+                sel_out_fifo.w_en.eq(bus.slrd_p & sel_flag),
+            ]
 
         # The FX2 requires the following setup latencies in worst case:
         #   * FIFOADR to FIFODATA: 2 cycles
         #   * SLOE    to FIFODATA: 1 cycle
-        self.submodules.fsm = FSM()
-        self.fsm.act("SWITCH",
-            NextValue(bus.sloe, 0),
-            NextValue(bus.data.oe, 0),
-            self._round_robin(bus.addr, rdy),
-            If(rdy,
-                NextState("DRIVE")
-            )
-        )
-        self.fsm.act("DRIVE",
-            If(bus.addr[1],
-                NextValue(bus.data.oe, 1),
-            ).Else(
-                NextValue(bus.sloe, 1),
-            ),
-            NextState("SETUP")
-        )
-        self.fsm.act("SETUP",
-            If(bus.addr[1],
-                NextState("IN-XFER")
-            ).Else(
-                NextState("OUT-XFER")
-            )
-        )
-        self.fsm.act("IN-XFER",
-            If(~sel_in_fifo.complete & sel_in_fifo.readable,
-                bus.slwr.eq(1),
-            ).Elif(sel_in_fifo.complete | sel_in_fifo.pending,
-                bus.pend.eq(1),
-                NextState("SWITCH")
-            ).Else(
-                NextState("SWITCH")
-            )
-        )
-        self.fsm.act("OUT-XFER",
-            If(sel_flag & sel_out_fifo.inner.writable,
-                bus.slrd.eq(1),
-            ).Else(
-                NextState("SWITCH")
-            )
-        )
+        with m.FSM() as fsm:
+            with m.State("SWITCH"):
+                m.d.sync += [
+                    bus.sloe.eq(0),
+                    bus.data.oe.eq(0),
+                ]
+                # Calculate the address of the next ready FIFO in a round robin process.
+                cases = {}
+                with m.Switch(Cat(rdy, bus.addr)):
+                    for addr_v in range(2**len(bus.addr)):
+                        for rdy_v in range(2**len(rdy)):
+                            for offset in range(2**len(bus.addr)):
+                                addr_n = (addr_v + offset) % 2**len(bus.addr)
+                                if rdy_v & (1 << addr_n):
+                                    break
+                            else:
+                                addr_n = (addr_v + 1) % 2**len(bus.addr)
+                            with m.Case(rdy_v|(addr_v<<len(rdy))):
+                                m.d.sync += bus.addr.eq(addr_n)
+                with m.If(rdy):
+                    m.next = "DRIVE"
+            with m.State("DRIVE"):
+                with m.If(bus.addr[1]):
+                    m.d.sync += bus.data.oe.eq(1)
+                with m.Else():
+                    m.d.sync += bus.sloe.eq(1)
+                m.next = "SETUP"
+            with m.State("SETUP"):
+                with m.If(bus.addr[1]):
+                    m.next = "IN-XFER"
+                with m.Else():
+                    m.next = "OUT-XFER"
+            with m.State("IN-XFER"):
+                with m.If(~sel_in_fifo.complete & sel_in_fifo.r_rdy):
+                    m.d.comb += bus.slwr.eq(1)
+                with m.Elif(sel_in_fifo.complete | sel_in_fifo.pending):
+                    m.d.comb += bus.pend.eq(1)
+                    m.next = "SWITCH"
+                with m.Else():
+                    m.next = "SWITCH"
+            with m.State("OUT-XFER"):
+                with m.If(sel_flag & sel_out_fifo.inner.w_rdy):
+                    m.d.comb += bus.slrd.eq(1)
+                with m.Else():
+                    m.next = "SWITCH"
+
+        return m
 
     def _make_fifo(self, crossbar_side, logic_side, cd_logic, reset, depth, wrapper):
         if cd_logic is None:
-            fifo = wrapper(SyncFIFOBuffered(8, depth))
+            fifo = wrapper(SyncFIFOBuffered(width=8, depth=depth))
 
             if reset is not None:
-                fifo = ResetInserter()(fifo)
-                fifo.comb += fifo.reset.eq(reset)
+                fifo = ResetInserter(reset)(fifo)
         else:
             assert isinstance(cd_logic, ClockDomain)
 
-            fifo = wrapper(ClockDomainsRenamer({
+            raw_fifo = DomainRenamer({
                 crossbar_side: "crossbar",
                 logic_side:    "logic",
-            })(AsyncFIFO(8, depth)))
+            })(AsyncFIFO(width=8, depth=depth))
 
-            # Note that for the reset to get asserted AND deasserted, the logic clock domain must
-            # have a running clock. This is because, while AsyncResetSynchronizer is indeed
-            # asynchronous, the registers in the FIFO logic clock domain reset synchronous
-            # to the logic clock, as this is how Migen handles clock domain reset signals.
-            #
-            # If the logic clock domain does not have a single clock transition between assertion
-            # and deassertion of FIFO reset, and the FIFO has not been empty at the time when
-            # reset has been asserted, stale data will be read from the FIFO after deassertion.
-            #
-            # This can lead to all sorts of framing issues, and is rather unfortunate, but at
-            # the moment I do not know of a way to fix this, since Migen does not support
-            # asynchronous resets.
-            fifo.clock_domains.cd_crossbar = ClockDomain(reset_less=reset is None)
-            fifo.clock_domains.cd_logic    = ClockDomain(reset_less=reset is None)
-            fifo.comb += [
-                fifo.cd_crossbar.clk.eq(ClockSignal()),
-                fifo.cd_logic.clk.eq(cd_logic.clk),
-            ]
-            if reset is not None:
-                fifo.comb += fifo.cd_crossbar.rst.eq(reset)
-                fifo.specials += AsyncResetSynchronizer(fifo.cd_logic, reset)
+            fifo = wrapper(_AsyncFIFOWrapper(raw_fifo, cd_logic, reset))
 
         return fifo
 
@@ -483,7 +539,6 @@ class FX2Crossbar(Module):
                                depth=depth,
                                wrapper=lambda fifo: _OUTFIFO(fifo,
                                     skid_depth=3))
-        setattr(self.submodules, f"out_fifo_{n}", fifo)
         self.out_fifos[n] = fifo
         return fifo
 
@@ -499,6 +554,5 @@ class FX2Crossbar(Module):
                                wrapper=lambda fifo: _INFIFO(fifo,
                                     asynchronous=clock_domain is not None,
                                     auto_flush=auto_flush))
-        setattr(self.submodules, f"in_fifo_{n}", fifo)
         self.in_fifos[n] = fifo
         return fifo
