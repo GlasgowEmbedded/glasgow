@@ -101,6 +101,7 @@ import os
 import unittest
 import functools
 import asyncio
+import types
 import threading
 import inspect
 import json
@@ -310,7 +311,7 @@ def applet_simulation_test(setup, args=[]):
             self._prepare_simulation_target()
 
             getattr(self, setup)()
-            @asyncio.coroutine
+            @types.coroutine
             def run():
                 yield from case(self)
 
