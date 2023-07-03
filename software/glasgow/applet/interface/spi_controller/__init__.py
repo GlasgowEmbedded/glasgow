@@ -383,7 +383,9 @@ class SPIControllerAppletTestCase(GlasgowAppletTestCase, applet=SPIControllerApp
     def setup_loopback(self):
         self.build_simulated_applet()
         mux_iface = self.applet.mux_interface
-        mux_iface.comb += mux_iface.pads.cipo_t.i.eq(mux_iface.pads.copi_t.o)
+        m = Module()
+        m.d.comb += mux_iface.pads.cipo_t.i.eq(mux_iface.pads.copi_t.o)
+        self.target.add_submodule(m)
 
     @applet_simulation_test("setup_loopback",
                             ["--pin-sck",  "0", "--pin-cs", "1",

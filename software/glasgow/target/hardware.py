@@ -4,7 +4,7 @@ import sys
 import tempfile
 import shutil
 import logging
-from amaranth.compat import *
+from amaranth import *
 from amaranth.build import ResourceError
 
 from ..gateware.pads import Pads
@@ -21,7 +21,7 @@ __all__ = ["GlasgowHardwareTarget"]
 logger = logging.getLogger(__name__)
 
 
-class GlasgowHardwareTarget(Module):
+class GlasgowHardwareTarget(Elaboratable):
     def __init__(self, revision, multiplexer_cls=None, with_analyzer=False):
         if revision in ("A0", "B0"):
             self.platform = GlasgowPlatformRevAB()
@@ -40,11 +40,12 @@ class GlasgowHardwareTarget(Module):
         except ResourceError:
             pass
 
-        self.submodules.i2c_target = I2CTarget(self.platform.request("i2c"))
-        self.submodules.registers = I2CRegisters(self.i2c_target)
-        self.comb += self.i2c_target.address.eq(0b0001000)
+        self._submodules = []
 
-        self.submodules.fx2_crossbar = FX2Crossbar(self.platform.request("fx2", xdr={
+        self.i2c_target = I2CTarget(self.platform.request("i2c"))
+        self.registers = I2CRegisters(self.i2c_target)
+
+        self.fx2_crossbar = FX2Crossbar(self.platform.request("fx2", xdr={
             "sloe": 1, "slrd": 1, "slwr": 1, "pktend": 1, "fifoadr": 1, "flag": 2, "fd": 2
         }))
 
@@ -55,34 +56,46 @@ class GlasgowHardwareTarget(Module):
 
         if multiplexer_cls:
             pipes = "PQ"
-            self.submodules.multiplexer = multiplexer_cls(ports=self.ports, pipes="PQ",
+            self.multiplexer = multiplexer_cls(ports=self.ports, pipes="PQ",
                 registers=self.registers, fx2_crossbar=self.fx2_crossbar)
         else:
             self.multiplexer = None
 
         if with_analyzer:
-            self.submodules.analyzer = GlasgowAnalyzer(self.registers, self.multiplexer)
+            self.analyzer = GlasgowAnalyzer(self.registers, self.multiplexer)
         else:
             self.analyzer = None
 
-    # TODO: adjust the logic in do_finalize in migen to recurse?
-    def finalize(self, *args, **kwargs):
-        if not self.finalized:
-            if self.analyzer:
-                self.analyzer._finalize_pin_events()
+    def elaborate(self, platform):
+        m = Module()
 
-            unused_pins = []
-            for width, req in self.ports.values():
-                for n in range(width):
-                    try:
-                        unused_pins.append(req(n))
-                    except ResourceError:
-                        pass
-            for unused_pin in unused_pins:
-                if hasattr(unused_pin, "oe"):
-                    self.comb += unused_pin.oe.o.eq(0)
+        m.submodules.i2c_target = self.i2c_target
+        m.submodules.registers = self.registers
+        m.submodules.fx2_crossbar = self.fx2_crossbar
+        if self.multiplexer is not None:
+            m.submodules.multiplexer = self.multiplexer
+        if self.analyzer is not None:
+            self.analyzer._finalize_pin_events()
+            m.submodules.analyzer = self.analyzer
+        m.submodules += self._submodules
 
-            super().finalize(*args, **kwargs)
+        m.d.comb += self.i2c_target.address.eq(0b0001000)
+
+        unused_pins = []
+        for width, req in self.ports.values():
+            for n in range(width):
+                try:
+                    unused_pins.append(req(n))
+                except ResourceError:
+                    pass
+        for unused_pin in unused_pins:
+            if hasattr(unused_pin, "oe"):
+                m.d.comb += unused_pin.oe.o.eq(0)
+
+        return m
+
+    def add_submodule(self, sub):
+        self._submodules.append(sub)
 
     def build_plan(self, **kwargs):
         overrides = {
