@@ -15,13 +15,11 @@ jobs:
         - '3.8'
         - '3.9'
         - '3.10'
+        - '3.11'
         - 'pypy-3.8'
         - 'pypy-3.9'
         allow-failure:
         - false
-        include:
-        - python-version: '3.11' # known bugs on 3.11
-          allow-failure: true
     continue-on-error: '${{ matrix.allow-failure }}'
     name: 'test-software (${{ matrix.python-version }})'
     steps:
