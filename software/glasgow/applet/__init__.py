@@ -378,6 +378,7 @@ def applet_hardware_test(setup="run_hardware_applet", args=[]):
                 if mode == "record":
                     if self.device is not None:
                         self.device.close()
+                fixture.close()
 
         return wrapper
 
