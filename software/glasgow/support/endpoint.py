@@ -280,6 +280,7 @@ class ServerEndpointTestCase(unittest.TestCase):
         self.assertEqual(await conn_rd.read(1), b"")
         with self.assertRaises(asyncio.CancelledError):
             await endp.recv(1)
+        conn_wr.close()
 
         conn_rd, conn_wr = await asyncio.open_unix_connection(*sock[1:])
         conn_wr.write(b"ABC")
