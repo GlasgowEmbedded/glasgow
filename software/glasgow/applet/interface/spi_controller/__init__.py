@@ -1,6 +1,6 @@
 import struct
 import logging
-import asyncio
+import types
 import math
 from amaranth import *
 from amaranth.lib.cdc import FFSynchronizer
@@ -389,7 +389,7 @@ class SPIControllerAppletTestCase(GlasgowAppletTestCase, applet=SPIControllerApp
                             ["--pin-sck",  "0", "--pin-cs", "1",
                              "--pin-copi", "2", "--pin-cipo",   "3",
                              "--frequency", "5000"])
-    @asyncio.coroutine
+    @types.coroutine
     def test_loopback(self):
         mux_iface = self.applet.mux_interface
         spi_iface = yield from self.run_simulated_applet()

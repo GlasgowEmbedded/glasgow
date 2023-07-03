@@ -1,4 +1,4 @@
-import asyncio
+import types
 from amaranth.compat import *
 
 from ...support.logging import *
@@ -17,15 +17,13 @@ class SimulationDemultiplexerInterface(AccessDemultiplexerInterface):
         self._in_fifo  = mux_interface.in_fifo
         self._out_fifo = mux_interface.out_fifo
 
-    @asyncio.coroutine
-    def cancel(self):
+    async def cancel(self):
         pass
 
-    @asyncio.coroutine
-    def reset(self):
+    async def reset(self):
         pass
 
-    @asyncio.coroutine
+    @types.coroutine
     def read(self, length=None):
         data = []
         if length is None:
@@ -42,7 +40,7 @@ class SimulationDemultiplexerInterface(AccessDemultiplexerInterface):
         self.logger.trace("FIFO: read <%s>", dump_hex(data))
         return data
 
-    @asyncio.coroutine
+    @types.coroutine
     def write(self, data):
         data = bytes(data)
         self.logger.trace("FIFO: write <%s>", dump_hex(data))
@@ -52,6 +50,5 @@ class SimulationDemultiplexerInterface(AccessDemultiplexerInterface):
                 yield
             yield from self._out_fifo.write(byte)
 
-    @asyncio.coroutine
-    def flush(self):
+    async def flush(self):
         pass
