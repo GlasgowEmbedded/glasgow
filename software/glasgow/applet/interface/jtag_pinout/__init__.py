@@ -49,27 +49,27 @@ class JTAGPinoutSubtarget(Elaboratable):
 
         with m.FSM():
             with m.State("RECV-COMMAND"):
-                with m.If(out_fifo.readable):
-                    m.d.comb += out_fifo.re.eq(1)
-                    m.d.sync += cmd.eq(out_fifo.dout)
-                    with m.If(out_fifo.dout == CMD_W):
+                with m.If(out_fifo.r_rdy):
+                    m.d.comb += out_fifo.r_en.eq(1)
+                    m.d.sync += cmd.eq(out_fifo.r_data)
+                    with m.If(out_fifo.r_data == CMD_W):
                         m.d.sync += timer.eq(self._period_cyc - 1)
                         m.next = "WAIT"
-                    with m.Elif(out_fifo.dout == CMD_I):
+                    with m.Elif(out_fifo.r_data == CMD_I):
                         m.next = "SAMPLE"
                     with m.Else():
                         m.next = "RECV-DATA-1"
 
             with m.State("RECV-DATA-1"):
-                with m.If(out_fifo.readable):
-                    m.d.comb += out_fifo.re.eq(1)
-                    m.d.sync += data[0:8].eq(out_fifo.dout)
+                with m.If(out_fifo.r_rdy):
+                    m.d.comb += out_fifo.r_en.eq(1)
+                    m.d.sync += data[0:8].eq(out_fifo.r_data)
                     m.next = "RECV-DATA-2"
 
             with m.State("RECV-DATA-2"):
-                with m.If(out_fifo.readable):
-                    m.d.comb += out_fifo.re.eq(1)
-                    m.d.sync += data[8:16].eq(out_fifo.dout)
+                with m.If(out_fifo.r_rdy):
+                    m.d.comb += out_fifo.r_en.eq(1)
+                    m.d.sync += data[8:16].eq(out_fifo.r_data)
                     m.next = "DRIVE"
 
             with m.State("DRIVE"):
@@ -94,15 +94,15 @@ class JTAGPinoutSubtarget(Elaboratable):
                 m.next = "SEND-DATA-1"
 
             with m.State("SEND-DATA-1"):
-                with m.If(in_fifo.writable):
-                    m.d.comb += in_fifo.we.eq(1)
-                    m.d.comb += in_fifo.din.eq(data[0:8])
+                with m.If(in_fifo.w_rdy):
+                    m.d.comb += in_fifo.w_en.eq(1)
+                    m.d.comb += in_fifo.w_data.eq(data[0:8])
                     m.next = "SEND-DATA-2"
 
             with m.State("SEND-DATA-2"):
-                with m.If(in_fifo.writable):
-                    m.d.comb += in_fifo.we.eq(1)
-                    m.d.comb += in_fifo.din.eq(data[8:16])
+                with m.If(in_fifo.w_rdy):
+                    m.d.comb += in_fifo.w_en.eq(1)
+                    m.d.comb += in_fifo.w_data.eq(data[8:16])
                     m.next = "RECV-COMMAND"
 
         return m
