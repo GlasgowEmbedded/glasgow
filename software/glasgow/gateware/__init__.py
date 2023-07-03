@@ -2,7 +2,6 @@ import functools
 import os
 from amaranth import Elaboratable
 from amaranth.sim import Simulator
-from amaranth.compat import Module as CompatModule, run_simulation as compat_run_simulation
 
 
 __all__ = ["GatewareBuildError", "simulation_test"]
@@ -22,8 +21,6 @@ def simulation_test(case=None, **kwargs):
                 if hasattr(self, "simulationSetUp"):
                     yield from self.simulationSetUp(self.tb)
                 yield from case(self, self.tb)
-            if isinstance(self.tb, CompatModule):
-                compat_run_simulation(self.tb, setup_wrapper(), vcd_name="test.vcd")
             if isinstance(self.tb, Elaboratable):
                 sim = Simulator(self.tb)
                 with sim.write_vcd(vcd_file=open("test.vcd", "w")):
