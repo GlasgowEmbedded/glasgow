@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from amaranth import *
-from amaranth.compat.fhdl.specials import TSTriple
+from amaranth.lib.io import Pin
 
 from ..gateware.pads import Pads
 
@@ -69,7 +69,7 @@ class AccessMultiplexerInterface(Elaboratable, metaclass=ABCMeta):
         pass
 
     def get_pins(self, pins, name=None):
-        triple = TSTriple(len(pins), name=name)
+        triple = Pin(width=len(pins), dir='io')
         for n, pin in enumerate(pins):
             self.build_pin_tristate(pin, triple.oe, triple.o[n], triple.i[n])
 

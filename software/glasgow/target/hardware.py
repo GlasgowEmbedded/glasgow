@@ -7,7 +7,6 @@ import logging
 from amaranth import *
 from amaranth.build import ResourceError
 
-from ..gateware.pads import Pads
 from ..gateware.i2c import I2CTarget
 from ..gateware.registers import I2CRegisters
 from ..gateware.fx2_crossbar import FX2Crossbar
