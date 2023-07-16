@@ -5,8 +5,6 @@ from collections import namedtuple
 import argparse
 import logging
 import asyncio
-import aiohttp
-import yarl
 import struct
 import crc
 
