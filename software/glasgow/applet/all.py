@@ -1,3 +1,4 @@
+
 from .internal.selftest import SelfTestApplet
 from .internal.benchmark import BenchmarkApplet
 
@@ -24,6 +25,7 @@ from .debug.arm.jtag import DebugARMJTAGApplet
 from .debug.mips import DebugMIPSApplet
 
 from .program.avr.spi import ProgramAVRSPIApplet
+from .program.chipcon import ProgramChipconApplet
 from .program.ice40_flash import ProgramICE40FlashApplet
 from .program.ice40_sram import ProgramICE40SRAMApplet
 from .program.m16c import ProgramM16CApplet
