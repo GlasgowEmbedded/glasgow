@@ -179,6 +179,7 @@ See [above](#-with-windows).
   * [@smunaut](https://github.com/smunaut) provided advice crucial for stability and performance of USB communication;
   * [@electronic_eel](https://github.com/electronic_eel) improved the hardware for revC2, designed the test jig and is working on advanced protection circuitry;
   * [@Attie](https://github.com/attie) improved and refactored many applets;
+  * [@mwkmwkmwk](https://github.com/mwkmwkmwk) did important maintenance work to keep the codebase in good shape;
   * ... and many [other people](https://github.com/GlasgowEmbedded/Glasgow/graphs/contributors).
 
 ## License
