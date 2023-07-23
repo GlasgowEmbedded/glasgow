@@ -128,7 +128,7 @@ sudo cp glasgow/config/99-glasgow.rules /etc/udev/rules.d
 Install the Glasgow software for the current user:
 
 ```shell
-pipx install -e 'glasgow/software[toolchain]'
+pipx install -e 'glasgow/software[builtin-toolchain]'
 ```
 
 To update the software to its newest revision, navigate to your working directory and run:
@@ -162,7 +162,7 @@ git clone https://github.com/GlasgowEmbedded/glasgow
 Install the Glasgow software for the current user:
 
 ```cmd
-pipx install -e glasgow/software[toolchain]
+pipx install -e glasgow/software[builtin-toolchain]
 ```
 
 To update the software to its newest revision, navigate to your working directory and run:
@@ -193,7 +193,7 @@ git clone https://github.com/GlasgowEmbedded/glasgow
 Install the Glasgow software for the current user:
 
 ```shell
-pipx install -e 'glasgow/software[toolchain]'
+pipx install -e 'glasgow/software[builtin-toolchain]'
 ```
 
 To update the software to its newest revision, navigate to your working directory and run:
