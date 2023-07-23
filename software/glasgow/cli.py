@@ -845,6 +845,10 @@ async def _main():
         applet.logger.error(e)
         return 1
 
+    except KeyboardInterrupt:
+        logger.warn("interrupted")
+        return 130 # 128 + SIGINT
+
     finally:
         if device is not None:
             device.close()
