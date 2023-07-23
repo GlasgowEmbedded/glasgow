@@ -609,7 +609,7 @@ class ShugartFloppyInterface:
                 data.append(packet)
 
 
-class MemoryFloppyApplet(GlasgowApplet, name="memory-floppy"):
+class MemoryFloppyApplet(GlasgowApplet):
     preview = True
     logger = logging.getLogger(__name__)
     help = "read and write disks using IBM/Shugart floppy drives"

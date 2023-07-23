@@ -80,7 +80,7 @@ class Memory24xInterface:
         return True
 
 
-class Memory24xApplet(I2CInitiatorApplet, name="memory-24x"):
+class Memory24xApplet(I2CInitiatorApplet):
     logger = logging.getLogger(__name__)
     help = "read and write 24-series I²C EEPROM memories"
     default_page_size = 8

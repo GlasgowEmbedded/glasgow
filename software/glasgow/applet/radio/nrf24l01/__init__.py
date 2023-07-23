@@ -159,7 +159,7 @@ class RadioNRF24L01Interface:
             await self.flush_tx()
 
 
-class RadioNRF24L01Applet(GlasgowApplet, name="radio-nrf24l01"):
+class RadioNRF24L01Applet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "transmit and receive using nRF24L01(+) RF PHY"
     description = """

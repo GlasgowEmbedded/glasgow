@@ -122,7 +122,7 @@ class SEN5xI2CInterface:
         return SEN5xMeasurement(pm1_0, pm2_5, pm4_0, pm10, rh_pct, temp_degC, voc_index, nox_index)
 
 
-class SensorSEN5xApplet(I2CInitiatorApplet, name="sensor-sen5x"):
+class SensorSEN5xApplet(I2CInitiatorApplet):
     logger = logging.getLogger(__name__)
     help = "measure PM, NOx, VOC, humidity, and temperature with Sensirion SEN5x sensors"
     description = """

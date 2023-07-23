@@ -877,7 +877,7 @@ class TAPInterface:
         return length - self._dr_prefix - self._dr_suffix
 
 
-class JTAGProbeApplet(GlasgowApplet, name="jtag-probe"):
+class JTAGProbeApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "test integrated circuits via IEEE 1149.1 JTAG"
     description = """

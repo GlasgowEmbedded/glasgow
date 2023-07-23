@@ -471,7 +471,7 @@ class XC95xxXLInterface:
             return await self._fpgm(address, words)
 
 
-class ProgramXC9500XLApplet(JTAGProbeApplet, name="program-xc9500xl"):
+class ProgramXC9500XLApplet(JTAGProbeApplet):
     logger = logging.getLogger(__name__)
     help = "program Xilinx XC9500XL CPLDs via JTAG"
     description = """

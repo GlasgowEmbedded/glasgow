@@ -128,7 +128,7 @@ class VGAOutputSubtarget(Elaboratable):
 
 
 # video video graphics adapter is dumb, so the applet is just called VGAOutputApplet
-class VGAOutputApplet(GlasgowApplet, name="video-vga-output"):
+class VGAOutputApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "display video via VGA"
     description = """

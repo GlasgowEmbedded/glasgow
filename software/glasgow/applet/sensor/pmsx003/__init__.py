@@ -79,7 +79,7 @@ class PMSx003Interface:
         return sample
 
 
-class SensorPMSx003Applet(GlasgowApplet, name="sensor-pmsx003"):
+class SensorPMSx003Applet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "measure air quality with Plantower PMx003 sensors"
     description = """

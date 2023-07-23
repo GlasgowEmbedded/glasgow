@@ -169,7 +169,7 @@ class ARMJTAGDPInterface(ARMDPInterface, aobject):
         return value
 
 
-class DebugARMJTAGApplet(DebugARMAppletMixin, JTAGProbeApplet, name="debug-arm-jtag"):
+class DebugARMJTAGApplet(DebugARMAppletMixin, JTAGProbeApplet):
     preview = True
     logger = logging.getLogger(__name__)
     help = "debug ARM processors via JTAG"

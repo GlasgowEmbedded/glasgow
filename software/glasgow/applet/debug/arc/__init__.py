@@ -108,7 +108,7 @@ class ARCDebugInterface:
         await self.write(AUX_STATUS32_addr, AUX_STATUS32(halted=halted).to_int(), space="aux")
 
 
-class DebugARCApplet(JTAGProbeApplet, name="debug-arc"):
+class DebugARCApplet(JTAGProbeApplet):
     logger = logging.getLogger(__name__)
     help = "debug ARC processors via JTAG"
     description = """

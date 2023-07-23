@@ -801,7 +801,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
             await self._pracc_write_memory(address, data)
 
 
-class DebugMIPSApplet(JTAGProbeApplet, name="debug-mips"):
+class DebugMIPSApplet(JTAGProbeApplet):
     preview = True
     logger = logging.getLogger(__name__)
     help = "debug MIPS processors via EJTAG"

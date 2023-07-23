@@ -79,7 +79,7 @@ class XC6SJTAGInterface:
         raise GlasgowAppletError("configuration start failed: {}".format(status.bits_repr()))
 
 
-class ProgramXC6SApplet(JTAGProbeApplet, name="program-xc6s"):
+class ProgramXC6SApplet(JTAGProbeApplet):
     logger = logging.getLogger(__name__)
     help = "program Xilinx Spartan-6 FPGAs via JTAG"
     preview = True

@@ -174,7 +174,7 @@ class SVFInterface(SVFEventHandler):
         raise SVFError("the PIO command is not supported")
 
 
-class JTAGSVFApplet(JTAGProbeApplet, name="jtag-svf"):
+class JTAGSVFApplet(JTAGProbeApplet):
     logger = logging.getLogger(__name__)
     help = "play SVF test vectors via JTAG"
     description = """

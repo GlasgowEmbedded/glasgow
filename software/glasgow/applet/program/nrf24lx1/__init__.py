@@ -172,7 +172,7 @@ class ProgramNRF24Lx1Interface:
         await self._command(0x86)
 
 
-class ProgramNRF24Lx1Applet(GlasgowApplet, name="program-nrf24lx1"):
+class ProgramNRF24Lx1Applet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "program nRF24LE1 and nRF24LU1+ RF microcontrollers"
     description = """

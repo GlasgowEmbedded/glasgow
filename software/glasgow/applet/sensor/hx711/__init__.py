@@ -132,7 +132,7 @@ class HX711Interface:
         return sample_as_unsigned - ((sample_as_unsigned & 0x800000) << 1)
 
 
-class SensorHX711Applet(GlasgowApplet, name="sensor-hx711"):
+class SensorHX711Applet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "measure voltage with AVIA Semiconductor HX711"
     description = """

@@ -469,7 +469,7 @@ class MemoryPROMInterface:
         await self.lower.read(1)
 
 
-class MemoryPROMApplet(GlasgowApplet, name="memory-prom"):
+class MemoryPROMApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "read and rescue parallel EPROMs, EEPROMs, and Flash memories"
     description = """

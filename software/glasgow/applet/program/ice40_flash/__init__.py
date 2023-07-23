@@ -49,7 +49,7 @@ class ProgramICE40FlashInterface:
             return await self._device.read_register(self._addr_dut_done)
 
 
-class ProgramICE40FlashApplet(Memory25xApplet, name="program-ice40-flash"):
+class ProgramICE40FlashApplet(Memory25xApplet):
     logger = logging.getLogger(__name__)
     help = "program 25-series Flash memories used with iCE40 FPGAs"
     description = """

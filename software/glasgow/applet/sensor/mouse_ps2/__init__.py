@@ -215,7 +215,7 @@ class SensorMousePS2Interface:
             more = (yield self._decode_report(ident, packet))
 
 
-class SensorMousePS2Applet(PS2HostApplet, name="sensor-mouse-ps2"):
+class SensorMousePS2Applet(PS2HostApplet):
     logger = logging.getLogger(__name__)
     help = "receive axis and button information from PS/2 mice"
     description = """

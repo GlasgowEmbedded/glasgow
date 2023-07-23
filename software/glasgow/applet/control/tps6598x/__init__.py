@@ -41,7 +41,7 @@ class TPS6598xInterface:
         self._check(await self.lower.write(self._i2c_addr, [address, len(data), *data], stop=True))
 
 
-class ControlTPS6598xApplet(I2CInitiatorApplet, name="control-tps6598x"):
+class ControlTPS6598xApplet(I2CInitiatorApplet):
     logger = logging.getLogger(__name__)
     help = "configure TPS6598x USB PD controllers"
     description = """

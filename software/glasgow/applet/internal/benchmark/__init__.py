@@ -82,7 +82,7 @@ class BenchmarkSubtarget(Elaboratable):
         return m
 
 
-class BenchmarkApplet(GlasgowApplet, name="benchmark"):
+class BenchmarkApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "evaluate communication performance"
     description = """

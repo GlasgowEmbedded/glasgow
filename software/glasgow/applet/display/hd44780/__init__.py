@@ -193,7 +193,7 @@ class HD44780Subtarget(Elaboratable):
         return m
 
 
-class DisplayHD44780Applet(GlasgowApplet, name="display-hd44780"):
+class DisplayHD44780Applet(GlasgowApplet):
     preview = True
     logger = logging.getLogger(__name__)
     help = "display characters on HD44780-compatible LCDs"

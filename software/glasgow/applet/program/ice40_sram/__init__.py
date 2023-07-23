@@ -67,7 +67,7 @@ class ProgramICE40SRAMInterface:
         await self.lower.write([0] * 16)
 
 
-class ProgramICE40SRAMApplet(SPIControllerApplet, name="program-ice40-sram"):
+class ProgramICE40SRAMApplet(SPIControllerApplet):
     logger = logging.getLogger(__name__)
     help = "program SRAM of iCE40 FPGAs"
     description = """

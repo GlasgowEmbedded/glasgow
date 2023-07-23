@@ -235,7 +235,7 @@ class Memory25xSFDPParser(SFDPParser):
         return await self._m25x_iface.read_sfdp(offset, length)
 
 
-class Memory25xApplet(SPIControllerApplet, name="memory-25x"):
+class Memory25xApplet(SPIControllerApplet):
     logger = logging.getLogger(__name__)
     help = "read and write 25-series SPI Flash memories"
     description = """

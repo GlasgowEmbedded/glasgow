@@ -197,7 +197,7 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
         while await self._is_busy(): pass
 
 
-class ProgramAVRSPIApplet(ProgramAVRApplet, name="program-avr-spi"):
+class ProgramAVRSPIApplet(ProgramAVRApplet):
     logger = logging.getLogger(__name__)
     help = f"{ProgramAVRApplet.help} via SPI"
     description = """

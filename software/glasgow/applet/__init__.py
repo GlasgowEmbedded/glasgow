@@ -14,22 +14,7 @@ class GlasgowAppletError(Exception):
     """An exception raised when an applet encounters an error."""
 
 
-class GlasgowAppletMeta(ABCMeta):
-    all_applets = {}
-
-    def __new__(metacls, clsname, bases, namespace, name=None, **kwargs):
-        if name is not None:
-            if name in metacls.all_applets:
-                raise NameError(f"Applet {name!r} already exists")
-            namespace["name"] = name
-
-        cls = ABCMeta.__new__(metacls, clsname, bases, namespace, **kwargs)
-        if name is not None:
-            metacls.all_applets[name] = cls
-        return cls
-
-
-class GlasgowApplet(metaclass=GlasgowAppletMeta):
+class GlasgowApplet(metaclass=ABCMeta):
     preview = False
     help = "applet help missing"
     description = "applet description missing"
@@ -217,7 +202,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
         if access == "direct":
             target = GlasgowHardwareTarget(revision="A0",
                                            multiplexer_cls=DirectMultiplexer)
-            access_args = DirectArguments(applet_name=self.applet.name,
+            access_args = DirectArguments(applet_name="applet",
                                           default_port="AB", pin_count=16)
         else:
             raise NotImplementedError
