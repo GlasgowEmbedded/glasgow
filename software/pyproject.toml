@@ -32,8 +32,9 @@ dependencies = [
 
 [project.optional-dependencies]
 toolchain = [
-  "amaranth-yosys",
-  "yowasp-yosys>=0.11",
+  "amaranth-yosys", # use amaranth[builtin-yosys] when tooling stops breaking
+  "yowasp-runtime>=1.30",
+  "yowasp-yosys>=0.31.0.13",
   "yowasp-nextpnr-ice40>=0.1",
 ]
 

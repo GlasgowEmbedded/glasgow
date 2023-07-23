@@ -6,6 +6,7 @@
 
 **Important note: if you are looking to assemble boards yourself, use only revC2.**
 
+
 ## ⚠️⚠️⚠️ NEWCOMERS AND CROWDSUPPLY BUYERS: PLEASE READ THIS FIRST ⚠️⚠️⚠️
 
 At the moment the project does not see much activity because the founder and primary maintainer, [Catherine @whitequark](https://github.com/whitequark), has spent several years struggling to survive due to disability, large scale social unrest, and other factors. She has now moved to the UK, got necessary healthcare, and is doing a lot better; the project's pace will pick up soon and more maintainers will be added to the current team of three in close future, but the timing of Crowdsupply orders being shipped doesn't match up to maintainer capacity a little bit.
@@ -14,6 +15,7 @@ Please stay patient and keep in mind that hardware is made by people who have li
 
 If you want to show appreciation or help with Catherine's living costs, she has a personal [Patreon](https://patreon.com/whitequark). These donations will not impact the progress of the project since the limiting factor is health first and time second, but they are very much appreciated.
 
+
 ## What is Glasgow?
 
 Glasgow is a tool for exploring digital interfaces, aimed at embedded developers, reverse engineers, digital archivists, electronics hobbyists, and everyone else who wants to communicate to a wide selection of digital devices with high reliability and minimum hassle. It can be attached to most devices without additional active or passive components, and includes extensive protection from unexpected conditions and operator error.
@@ -21,6 +23,7 @@ Glasgow is a tool for exploring digital interfaces, aimed at embedded developers
 The Glasgow hardware can support many digital interfaces because it uses reconfigurable logic. Instead of only offering a small selection of standard hardware supported interfaces, it uses an FPGA to adapt on the fly to the task at hand without compromising on performance or reliability, even for unusual, custom or obsolete interfaces.
 
 The Glasgow software is a set of building blocks designed to eliminate incidental complexity. Each interface is packaged into a self-contained *applet* that can be used directly from the command line, or reused as a part of a more complex system. Using Glasgow does not require any programming knowledge, although it becomes much more powerful if you know a bit of Python.
+
 
 ## What can I do with Glasgow?
 
@@ -50,11 +53,13 @@ Some of the tasks Glasgow can do well are:
 
 Everything above can be done with only a Glasgow revC board, some wires, and depending on the device under test, external power.
 
+
 ## How does using Glasgow look like?
 
 Watch a typical command-line workflow in this screencast:
 
 [![asciicast](https://asciinema.org/a/i9edqaUBVLLw7mRZCpdxe91Fu.svg)](https://asciinema.org/a/i9edqaUBVLLw7mRZCpdxe91Fu)
+
 
 ## What hardware does Glasgow use?
 
@@ -62,9 +67,11 @@ The Glasgow hardware evolves over time, with each major milestone called a "revi
 
 Glasgow boards use a version in the `revXN` format, where `X` is a revision letter (increased on major design changes) and `N` is a stepping number (increased on any layout or component changes). For example, `revC0` is the first stepping of revision C.
 
+
 ### revA/revB
 
 Revisions A and B have not been produced in significant amounts, contain major design issues, and are therefore mostly of historical interest. Nevertheless, everyone who has one of the revA/revB boards can keep using them—forever.
+
 
 ### revC
 
@@ -73,6 +80,7 @@ Revisions A and B have not been produced in significant amounts, contain major d
 Revision C is the latest revision and is being prepared for mass production. It provides 16 I/O pins with a data rate up to approx. 100 Mbps/pin (50 MHz)\*, independent direction control and independent programmable pull-up/pull-down resistors. The I/O pins are grouped into two I/O ports, each of which can use any voltage from 1.8 V to 5 V, sense and monitor I/O voltage of the device under test, as well as provide up to 150 mA of power. The board uses USB 2 for power, configuration, and communication, achieving up to 336 Mbps (42 MB/s) of sustained combined throughput.
 
 <sub>\* Data rate achievable in practice depends on many factors and will vary greatly with specific interface and applet design. 12 Mbps/pin (6 MHz) can be achieved with minimal development effort; reaching higher data rates requires careful HDL coding and a good understanding of timing analysis.</sub>
+
 
 ## What software does Glasgow use?
 
@@ -84,65 +92,136 @@ Implementing reliable, high-performance USB communication is not trivial—packe
 
 Debugging new applets can be hard, especially if bidirectional buses are involved. Glasgow provides a built-in cycle-accurate logic analyzer that can relate the I/O pin level and direction changes to commands and responses received and sent by the applet. The logic analyzer compresses waveforms and can pause the applet if its buffer is about to overflow.
 
+
 ## How do I use Glasgow?
 
-**If these instructions don't work for you, please file it as a bug, so that the experience can be made more smooth for everyone.**
+A lot of care and effort has been put into making the use of the software stack as seamless as possible. In particular, every dependency where it is possible is shipped via the [Python package index][pypi] (including the USB driver and the FPGA toolchains) to make installation and upgrades as seamless as they can be.
+
+[pypi]: https://pypi.org/
+
+**If these instructions don't work for you, please file it as a bug, so that the experience can be made smoother for everyone.**
+
 
 ### ... with Linux?
 
-You will need git and Python 3.8 (or newer). On a Debian (11 or newer) or Ubuntu (20.04 or newer) system these can be installed with:
+You will need to have git, Python, and pipx installed. To install these on an Ubuntu or Debian system, run:
 
-    apt install --no-install-recommends \
-      git python3 python3-setuptools python3-pip python3-libusb1 python3-aiohttp python3-bitarray
+```shell
+sudo apt install --no-install-recommends git pipx
+pipx ensurepath
+```
 
-    python3 --version
+The `pipx ensurepath` command may prompt you to reopen the terminal window; do so.
 
-You will also need recent versions of Yosys and nextpnr-ice40, which can be installed from the [binary Tabby CAD Suite distribution](https://github.com/YosysHQ/oss-cad-suite-build#installation), or from separate sources ([Yosys](https://github.com/YosysHQ/yosys#installation) and [nextpnr-ice40](https://github.com/YosysHQ/nextpnr#nextpnr-ice40)).
+Navigate to a convenient working directory and download the source code:
 
-Obtain the source code:
-
-    git clone https://github.com/GlasgowEmbedded/glasgow
-    cd glasgow
+```shell
+git clone https://github.com/GlasgowEmbedded/glasgow
+```
 
 Configure your system to allow unprivileged access (for anyone in the `plugdev` group) to the Glasgow hardware:
 
-    sudo cp config/99-glasgow.rules /etc/udev/rules.d
+```shell
+sudo cp glasgow/config/99-glasgow.rules /etc/udev/rules.d
+```
 
-Install the dependencies and the scripts for the current user:
+Install the Glasgow software for the current user:
 
-    cd software
-    pip install --user --editable ./
+```shell
+pipx install -e 'glasgow/software[toolchain]'
+```
 
-The scripts are placed in `$HOME/.local/bin`, so be sure to add that directory to the `PATH` environment variable; after this, you can run `glasgow` from a terminal. Instead of adjusting `PATH` it is also possible to use `python3 -m glasgow.cli`.
+To update the software to its newest revision, navigate to your working directory and run:
 
-To update the source code, do:
+```shell
+git -C glasgow pull
+pipx reinstall glasgow
+```
 
-    cd glasgow
-    git pull
-
-### ... with macOS?
-
-If you haven't already, install [Homebrew](https://brew.sh/). Now:
-
-    brew install python
-    brew tap ktemkin/oss-fpga
-    brew install --HEAD icestorm yosys nextpnr-ice40
-
-Obtain the source code:
-
-    git clone https://github.com/GlasgowEmbedded/glasgow
-    cd glasgow
-
-Install the dependencies and the scripts for the current user:
-
-    cd software
-    python3 setup.py develop
-
-The scripts will be installed in `/usr/local/bin`, which should already be in your `PATH`.
 
 ### ... with Windows?
 
-Although first-class Windows support is an important goal and Glasgow already works on Windows, the installation process is not yet ready.
+You will need to have git, Python, and pipx installed. To install [git][git-win] and [Python][py-win], follow the instructions from their respective pages. To install pipx, run:
+
+[git-win]: https://git-scm.com/download/win
+[py-win]: https://www.python.org/downloads/windows/
+
+```cmd
+py -3 -m pip install --user pipx
+py -3 -m pipx ensurepath
+```
+
+The `py -3 -m pipx ensurepath` command may prompt you to reopen the terminal window; do so.
+
+Navigate to a convenient working directory (it is highly recommended to use a local directory, e.g. `%LOCALAPPDATA%`, since running Glasgow software from a network drive or a roaming profile causes significant slowdown) and download the source code:
+
+```cmd
+git clone https://github.com/GlasgowEmbedded/glasgow
+```
+
+Install the Glasgow software for the current user:
+
+```cmd
+pipx install -e glasgow/software[toolchain]
+```
+
+To update the software to its newest revision, navigate to your working directory and run:
+
+```cmd
+git -C glasgow pull
+pipx reinstall glasgow
+```
+
+
+### ... with macOS?
+
+You will need to have pipx installed. If you haven't already, install [Homebrew](https://brew.sh/). To install pipx, run:
+
+```shell
+brew install pipx
+pipx ensurepath
+```
+
+The `pipx ensurepath` command may prompt you to reopen the terminal window; do so.
+
+Navigate to a convenient working directory and download the source code:
+
+```shell
+git clone https://github.com/GlasgowEmbedded/glasgow
+```
+
+Install the Glasgow software for the current user:
+
+```shell
+pipx install -e 'glasgow/software[toolchain]'
+```
+
+To update the software to its newest revision, navigate to your working directory and run:
+
+```shell
+git -C glasgow pull
+pipx reinstall glasgow
+```
+
+
+### Advanced topic: Using a native FPGA toolchain
+
+The steps above install the [YoWASP][] FPGA toolchain, which is a good low-friction option, especially for people whose primary competence is not in software, since it does not require any additional steps besides those that are already necessary. However, the YoWASP toolchain is noticeably slower than the native one (usually by a factor of less than 2×). The YoWASP toolchain is also not available for all platforms and architectures; notably, 32-bit Raspberry Pi is not covered.
+
+If you already have the required tools (`yosys`, `nextpnr-ice40`, `icepack`) installed or are willing to [install][oss-cad-suite] them, you can update your profile to set the environment variable `GLASGOW_TOOLCHAIN` to `native,builtin`, which prioritizes using the native tools over the YoWASP tools. The default value is `builtin,native`, which causes the native tools to be used only if the YoWASP tools are unusable.
+
+[yowasp]: https://yowasp.org/
+[oss-cad-suite]: https://github.com/YosysHQ/oss-cad-suite-build
+
+
+### Advanced topic: Developing the Glasgow software
+
+The steps above install the Glasgow software using `pipx install -e`, which performs an _editable install_: changes to the downloaded source code modify the behavior of the next invocation of the `glasgow` tool. Changes to `pyproject.toml`, most importantly to the dependencies, are not picked up until `pipx reinstall` is manually run.
+
+If you want to have your global Glasgow installation be independent from the source code check-out, you can omit `-e` in the instructions above. You can use any way of managing virtual environments for your development workflow, but we use and recommend [PDM][].
+
+[pdm]: https://pdm.fming.dev/
+
 
 ## How do I factory flash Glasgow?
 
@@ -151,6 +230,7 @@ Although first-class Windows support is an important goal and Glasgow already wo
 As a prerequisite to factory flashing, follow all steps from the "[How do I use Glasgow?](#how-do-i-use-glasgow)" section.
 
 Any board that is factory flashed must have a blank FX2_MEM EEPROM. If the FX2_MEM EEPROM is not completely erased (all bytes set to `FF`), the factory flashing process may fail.
+
 
 ### ... with Linux?
 
@@ -166,9 +246,11 @@ Plug in the newly assembled device. At this point, `lsusb | grep 04b4:8613` shou
 
 Done! At this point, `lsusb | grep 20b7:9db1` should list one entry.
 
+
 ### ... with Windows?
 
-See [above](#-with-windows).
+The steps are similar to the steps for Linux above, but you will need to use Zadig to bind the WinUSB driver to the device, since this will not happen automatically with a device that hasn't been flashed yet.
+
 
 ## Who made Glasgow?
 
@@ -181,6 +263,7 @@ See [above](#-with-windows).
   * [@Attie](https://github.com/attie) improved and refactored many applets;
   * [@mwkmwkmwk](https://github.com/mwkmwkmwk) did important maintenance work to keep the codebase in good shape;
   * ... and many [other people](https://github.com/GlasgowEmbedded/Glasgow/graphs/contributors).
+
 
 ## License
 

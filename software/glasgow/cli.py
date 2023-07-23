@@ -23,6 +23,7 @@ from .support.logging import *
 from .support.asignal import *
 from .device import GlasgowDeviceError
 from .device.config import GlasgowConfig
+from .target.toolchain import ToolchainNotFound
 from .target.hardware import GlasgowHardwareTarget
 from .gateware import GatewareBuildError
 from .gateware.analyzer import TraceDecoder
@@ -841,9 +842,12 @@ async def _main():
         logger.error(e)
         return 1
 
+    except ToolchainNotFound as e:
+        return 2
+
     except GatewareBuildError as e:
         applet.logger.error(e)
-        return 1
+        return 2
 
     except KeyboardInterrupt:
         logger.warn("interrupted")

@@ -4,6 +4,7 @@ import sys
 import tempfile
 import shutil
 import logging
+import hashlib
 from amaranth import *
 from amaranth.build import ResourceError
 
@@ -12,6 +13,7 @@ from ..gateware.registers import I2CRegisters
 from ..gateware.fx2_crossbar import FX2Crossbar
 from ..platform.all import *
 from .analyzer import GlasgowAnalyzer
+from .toolchain import find_toolchain
 
 
 __all__ = ["GlasgowHardwareTarget"]
@@ -102,13 +104,14 @@ class GlasgowHardwareTarget(Elaboratable):
             "nextpnr_opts": "--placer heap",
         }
         overrides.update(kwargs)
-        return GlasgowBuildPlan(self.platform.prepare(self, **overrides))
+        return GlasgowBuildPlan(find_toolchain(), self.platform.prepare(self, **overrides))
 
 
 class GlasgowBuildPlan:
-    def __init__(self, lower):
-        self.lower   = lower
-        self._digest = None
+    def __init__(self, toolchain, lower):
+        self.toolchain = toolchain
+        self.lower = lower
+        self._bitstream_id = None
 
     @property
     def rtlil(self):
@@ -116,9 +119,12 @@ class GlasgowBuildPlan:
 
     @property
     def bitstream_id(self):
-        if self._digest is None:
-            self._digest = self.lower.digest()[:16]
-        return self._digest
+        if self._bitstream_id is None:
+            hasher = hashlib.blake2s()
+            hasher.update(self.toolchain.identifier)
+            hasher.update(self.lower.digest())
+            self._bitstream_id = hasher.digest()[:16]
+        return self._bitstream_id
 
     def archive(self, filename):
         self.lower.archive(filename)
@@ -127,7 +133,7 @@ class GlasgowBuildPlan:
         if build_dir is None:
             build_dir = tempfile.mkdtemp(prefix="glasgow_")
         try:
-            products  = self.lower.execute_local(build_dir)
+            products  = self.lower.execute_local(build_dir, env=self.toolchain.env_vars)
             bitstream = products.get("top.bin")
         except:
             if debug:
