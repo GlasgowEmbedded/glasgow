@@ -1,5 +1,11 @@
+# Python
 __pycache__/
-/*.egg-info
-/.eggs
-/build
+*.egg-info
 /dist
+/build
+
+# pdm
+/.pdm-plugins
+/.pdm-python
+/.venv
+/pdm.lock
