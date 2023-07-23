@@ -317,5 +317,5 @@ def find_toolchain(tools=("yosys", "nextpnr-ice40", "icepack")):
             logger.error(f"could not find a usable FPGA toolchain; examined: {examined}")
             logger.error(f"consider reinstalling the package with the 'builtin-toolchain' "
                          f"feature enabled, "
-                         f"e.g.: `pipx install --force -e glasgow/software[toolchain]`")
+                         f"e.g.: `pipx install --force -e glasgow/software[builtin-toolchain]`")
         raise ToolchainNotFound(f"No usable toolchain is available (examined: {', '.join(kinds)})")
