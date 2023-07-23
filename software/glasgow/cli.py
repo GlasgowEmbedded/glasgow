@@ -244,8 +244,8 @@ def get_argparser():
 
         g_run_bitstream = parser.add_mutually_exclusive_group()
         g_run_bitstream.add_argument(
-            "--rebuild", default=False, action="store_true",
-            help="(advanced) rebuild bitstream even if an identical one is already loaded")
+            "--reload", default=False, action="store_true",
+            help="(advanced) reload bitstream even if an identical one is already loaded")
         g_run_bitstream.add_argument(
             "--prebuilt", default=False, action="store_true",
             help="(advanced) load prebuilt applet bitstream from ./<applet-name.bin>")
@@ -524,7 +524,7 @@ async def _main():
                 with bitstream_file:
                     await device.download_prebuilt(plan, bitstream_file)
             else:
-                await device.download_target(plan, rebuild=args.rebuild)
+                await device.download_target(plan, reload=args.reload)
 
             do_trace = hasattr(args, "trace") and args.trace
             if do_trace:
@@ -695,18 +695,18 @@ async def _main():
                     glasgow_config.bitstream_size = len(new_bitstream)
                     glasgow_config.bitstream_id   = new_bitstream_id
             elif args.applet:
-                logger.info("building bitstream for applet %s", args.applet)
+                logger.info("generating bitstream for applet %s", args.applet)
                 target, applet = _applet(device.revision, args)
                 plan = target.build_plan()
                 new_bitstream_id = plan.bitstream_id
-                new_bitstream    = plan.execute()
+                new_bitstream    = plan.get_bitstream()
 
                 # We always build and reflash the bitstream in case the one currently
                 # in EEPROM is corrupted. If we only compared the ID, there would be
                 # no easy way to recover from that case. There's also no point in
                 # storing the bitstream hash (as opposed to Verilog hash) in the ID,
                 # as building the bitstream takes much longer than flashing it.
-                logger.info("built bitstream ID %s", new_bitstream_id.hex())
+                logger.info("generated bitstream ID %s", new_bitstream_id.hex())
                 glasgow_config.bitstream_size = len(new_bitstream)
                 glasgow_config.bitstream_id   = new_bitstream_id
 
@@ -761,17 +761,17 @@ async def _main():
             target, applet = _applet(args.rev, args)
             plan = target.build_plan()
             if args.type in ("il", "rtlil"):
-                logger.info("building RTLIL for applet %r", args.applet)
+                logger.info("generating RTLIL for applet %r", args.applet)
                 with open(args.filename or args.applet + ".il", "wt") as f:
                     f.write(plan.rtlil)
             if args.type in ("zip", "archive"):
-                logger.info("building archive for applet %r", args.applet)
+                logger.info("generating archive for applet %r", args.applet)
                 plan.archive(args.filename or args.applet + ".zip")
             if args.type in ("bin", "bitstream"):
-                logger.info("building bitstream for applet %r", args.applet)
+                logger.info("generating bitstream for applet %r", args.applet)
                 with open(args.filename or args.applet + ".bin", "wb") as f:
                     f.write(plan.bitstream_id)
-                    f.write(plan.execute())
+                    f.write(plan.get_bitstream())
 
         if args.action == "test":
             logger.info("testing applet %r", args.applet)

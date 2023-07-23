@@ -5,6 +5,8 @@ import tempfile
 import shutil
 import logging
 import hashlib
+import appdirs
+import pathlib
 from amaranth import *
 from amaranth.build import ResourceError
 
@@ -143,3 +145,27 @@ class GlasgowBuildPlan:
             if not debug:
                 shutil.rmtree(build_dir)
         return bitstream
+
+    def get_bitstream(self, *, debug=False):
+        cache_path = appdirs.user_cache_dir("GlasgowEmbedded", appauthor=False)
+        cache_filename = pathlib.Path(cache_path) / "bitstreams" / self.bitstream_id.hex()
+        cache_exists = False
+        if cache_filename.exists():
+            with cache_filename.open("rb") as cache_file:
+                bitstream_hash = cache_file.read(hashlib.blake2s().digest_size)
+                bitstream_data = cache_file.read()
+                if hashlib.blake2s(bitstream_data).digest() == bitstream_hash:
+                    cache_exists = True
+        if cache_exists:
+            logger.debug(f"bitstream ID {self.bitstream_id.hex()} is cached")
+            logger.trace(f"bitstream was read from {str(cache_filename)!r}")
+        else:
+            logger.debug(f"bitstream ID {self.bitstream_id.hex()} is not cached, executing build")
+            bitstream_data = self.execute(debug=debug)
+            bitstream_hash = hashlib.blake2s(bitstream_data).digest()
+            cache_filename.parent.mkdir(parents=True, exist_ok=True)
+            with cache_filename.open("wb") as cache_file:
+                cache_file.write(bitstream_hash)
+                cache_file.write(bitstream_data)
+            logger.trace(f"bitstream was written to {str(cache_filename)!r}")
+        return bitstream_data

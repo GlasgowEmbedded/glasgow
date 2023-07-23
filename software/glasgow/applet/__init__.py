@@ -231,7 +231,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
             raise AssertionError("argument parsing failed") from None
         self.applet.build(target, parsed_args)
 
-        target.build_plan().execute()
+        target.build_plan().get_bitstream()
 
     def _prepare_applet_args(self, args, access_args, interact=False):
         parser = argparse.ArgumentParser()
