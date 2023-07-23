@@ -306,7 +306,7 @@ class ProgramM16CInterface:
             raise M16CBootloaderError("entire array erase timeout")
 
 
-class ProgramM16CApplet(GlasgowApplet, name="program-m16c"):
+class ProgramM16CApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "program Renesas M16C microcomputers via UART"
     description = """

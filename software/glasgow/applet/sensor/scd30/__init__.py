@@ -165,7 +165,7 @@ class SCD30I2CInterface:
         await self._write(CMD_ALTITUDE_COMP, ">H", altitude_m)
 
 
-class SensorSCD30Applet(I2CInitiatorApplet, name="sensor-scd30"):
+class SensorSCD30Applet(I2CInitiatorApplet):
     logger = logging.getLogger(__name__)
     help = "measure CO₂, humidity, and temperature with Sensirion SCD30 sensors"
     description = """

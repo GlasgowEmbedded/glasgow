@@ -130,7 +130,7 @@ class VideoRGBInputSubtarget(Elaboratable):
         return m
 
 
-class VideoRGBInputApplet(GlasgowApplet, name="video-rgb-input"):
+class VideoRGBInputApplet(GlasgowApplet):
     preview = True
     logger = logging.getLogger(__name__)
     help = "capture video stream from RGB555 LCD bus"

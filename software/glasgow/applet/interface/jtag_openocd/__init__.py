@@ -68,7 +68,7 @@ class JTAGOpenOCDSubtarget(Elaboratable):
         return m
 
 
-class JTAGOpenOCDApplet(GlasgowApplet, name="jtag-openocd"):
+class JTAGOpenOCDApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "expose JTAG via OpenOCD remote bitbang interface"
     description = """

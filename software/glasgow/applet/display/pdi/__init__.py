@@ -359,7 +359,7 @@ class PDIG1DisplayInterface(PDIDisplayInterface):
         await self._set_disch(0)
 
 
-class DisplayPDIApplet(GlasgowApplet, name="display-pdi"):
+class DisplayPDIApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "display images on Pervasive Display Inc EPD panels"
     description = """

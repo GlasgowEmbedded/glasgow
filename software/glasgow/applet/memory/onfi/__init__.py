@@ -398,7 +398,7 @@ class ONFIInterface:
         return (await self.read_status() & BIT_STATUS_FAIL) == 0
 
 
-class MemoryONFIApplet(GlasgowApplet, name="memory-onfi"):
+class MemoryONFIApplet(GlasgowApplet):
     preview = True
     logger = logging.getLogger(__name__)
     help = "read and write ONFI-like NAND Flash memories"

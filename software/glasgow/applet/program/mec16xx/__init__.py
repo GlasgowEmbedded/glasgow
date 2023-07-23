@@ -153,7 +153,7 @@ class MEC16xxInterface(aobject):
             self._log("program Flash_Address=%05x Flash_Data=%08x", address + offset * 4, data)
 
 
-class ProgramMEC16xxApplet(DebugARCApplet, name="program-mec16xx"):
+class ProgramMEC16xxApplet(DebugARCApplet):
     logger = logging.getLogger(__name__)
     help = "program Microchip MEC16xx embedded controller via JTAG"
     description = """

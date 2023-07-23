@@ -47,7 +47,7 @@ class SelfTestSubtarget(Elaboratable):
         return m
 
 
-class SelfTestApplet(GlasgowApplet, name="selftest"):
+class SelfTestApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "diagnose hardware faults"
     description = """

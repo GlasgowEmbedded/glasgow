@@ -297,7 +297,7 @@ class SPIControllerInterface:
         await self.lower.read(1)
 
 
-class SPIControllerApplet(GlasgowApplet, name="spi-controller"):
+class SPIControllerApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "initiate SPI transactions"
     description = """

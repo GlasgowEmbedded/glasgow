@@ -31,7 +31,7 @@ from .gateware.analyzer import TraceDecoder
 from .device.hardware import VID_QIHW, PID_GLASGOW, GlasgowHardwareDevice
 from .access.direct import *
 from .applet import *
-from .applet import all
+from .applet.metadata import *
 
 
 # When running as `-m glasgow.cli`, `__name__` is `__main__`, and the real name
@@ -125,7 +125,9 @@ def get_argparser():
     def add_applet_arg(parser, mode, required=False):
         subparsers = add_subparsers(parser, dest="applet", metavar="APPLET", required=required)
 
-        for applet_name, applet in GlasgowApplet.all_applets.items():
+        for applet_name, applet_meta in GlasgowAppletMetadata.all().items():
+            applet = applet_meta.applet_cls
+
             if mode == "test" and not hasattr(applet, "test_cls"):
                 continue
             if mode == "tool" and not hasattr(applet, "tool_cls"):
@@ -378,7 +380,7 @@ def _applet(revision, args):
     target = GlasgowHardwareTarget(revision=revision,
                                    multiplexer_cls=DirectMultiplexer,
                                    with_analyzer=hasattr(args, "trace") and args.trace)
-    applet = GlasgowApplet.all_applets[args.applet]()
+    applet = GlasgowAppletMetadata.get(args.applet).applet_cls()
     try:
         message = ("applet requires device rev{}+, rev{} found"
                    .format(applet.required_revision, revision))
@@ -661,7 +663,7 @@ async def _main():
             return applet_task.result()
 
         if args.action == "tool":
-            tool = GlasgowApplet.all_applets[args.applet].tool_cls()
+            tool = GlasgowAppletMetadata.get(args.applet).applet_cls.tool_cls()
             try:
                 return await tool.run(args)
             except GlasgowAppletError as e:
@@ -788,7 +790,7 @@ async def _main():
 
         if args.action == "test":
             logger.info("testing applet %r", args.applet)
-            applet = GlasgowApplet.all_applets[args.applet]()
+            applet = GlasgowAppletMetadata.get(args.applet).applet_cls()
             loader = unittest.TestLoader()
             stream = unittest.runner._WritelnDecorator(sys.stderr)
             result = unittest.TextTestResult(stream=stream, descriptions=True, verbosity=2)

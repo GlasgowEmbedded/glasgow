@@ -137,7 +137,7 @@ class VideoWS2812OutputSubtarget(Elaboratable):
         return m
 
 
-class VideoWS2812OutputApplet(GlasgowApplet, name="video-ws2812-output"):
+class VideoWS2812OutputApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "display video via WS2812 LEDs"
     description = """

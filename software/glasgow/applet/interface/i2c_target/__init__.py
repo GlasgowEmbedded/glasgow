@@ -189,7 +189,7 @@ class _DummyI2CTargetInterface(I2CTargetInterface):
         return 0xFF
 
 
-class I2CTargetApplet(GlasgowApplet, name="i2c-target"):
+class I2CTargetApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "accept I²C transactions"
     description = """

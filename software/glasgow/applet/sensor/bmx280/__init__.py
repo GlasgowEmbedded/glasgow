@@ -363,7 +363,7 @@ class BMx280I2CInterface:
                               .format(self._i2c_addr))
 
 
-class SensorBMx280Applet(I2CInitiatorApplet, name="sensor-bmx280"):
+class SensorBMx280Applet(I2CInitiatorApplet):
     logger = logging.getLogger(__name__)
     help = "measure temperature, pressure, and humidity with Bosch BMx280 sensors"
     description = """

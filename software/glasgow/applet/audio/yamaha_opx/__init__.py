@@ -1011,7 +1011,7 @@ class YamahaOPxWebInterface:
         await asyncio.Future()
 
 
-class AudioYamahaOPxApplet(GlasgowApplet, name="audio-yamaha-opx"):
+class AudioYamahaOPxApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "drive and record Yamaha OP* FM synthesizers"
     description = """

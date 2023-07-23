@@ -189,7 +189,7 @@ class SpyBiWireProbeInterface(JTAGProbeInterface):
         await self.set_aux(0)
 
 
-class SpyBiWireProbeApplet(GlasgowApplet, name="sbw-probe"):
+class SpyBiWireProbeApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "probe microcontrollers via TI Spy-Bi-Wire"
     description = """

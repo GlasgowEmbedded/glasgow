@@ -130,7 +130,7 @@ class UARTSubtarget(Elaboratable):
         return m
 
 
-class UARTApplet(GlasgowApplet, name="uart"):
+class UARTApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "communicate via UART"
     description = """

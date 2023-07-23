@@ -116,7 +116,7 @@ class AudioDACSubtarget(Elaboratable):
         return m
 
 
-class AudioDACApplet(GlasgowApplet, name="audio-dac"):
+class AudioDACApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "play sound using a ΣΔ-DAC"
     description = """

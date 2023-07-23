@@ -157,7 +157,7 @@ class JTAGPinoutInterface:
         return word
 
 
-class JTAGPinoutApplet(GlasgowApplet, name="jtag-pinout"):
+class JTAGPinoutApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "automatically determine JTAG pinout"
     description = """

@@ -389,7 +389,7 @@ class PS2HostInterface:
             await callback(*await self._lower.read(1))
 
 
-class PS2HostApplet(GlasgowApplet, name="ps2-host"):
+class PS2HostApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "communicate with IBM PS/2 peripherals"
     description = """

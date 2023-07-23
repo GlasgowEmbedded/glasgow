@@ -260,7 +260,7 @@ class I2CInitiatorInterface:
         return found
 
 
-class I2CInitiatorApplet(GlasgowApplet, name="i2c-initiator"):
+class I2CInitiatorApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "initiate I²C transactions"
     description = """
