@@ -113,7 +113,7 @@ from ..target.simulation import *
 from ..target.hardware import *
 from ..device.simulation import *
 from ..device.hardware import *
-from ..platform.all import GlasgowPlatformRevAB
+from ..target.toolchain import find_toolchain
 
 
 __all__ += ["GlasgowAppletTestCase", "synthesis_test", "applet_simulation_test",
@@ -297,7 +297,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
 
 
 def synthesis_test(case):
-    synthesis_available = GlasgowPlatformRevAB().has_required_tools()
+    synthesis_available = find_toolchain(quiet=True) is not None
     return unittest.skipUnless(synthesis_available, "synthesis not available")(case)
 
 
