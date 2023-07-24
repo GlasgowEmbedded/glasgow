@@ -139,7 +139,7 @@ usb_configuration_set_c usb_configs[] = {
 
 usb_ascii_string_c usb_strings[] = {
   [0] = "whitequark research",
-  [1] = "Glasgow Debug Tool",
+  [1] = "Glasgow Interface Explorer",
   [2] = "XX-XXXXXXXXXXXXXXXX",
   // Configurations
   [3] = "Pipe P at {2x512B EP2OUT/EP6IN}, Q at {2x512B EP4OUT/EP8IN}",
