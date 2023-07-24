@@ -17,11 +17,11 @@ classifiers = [
 requires-python = "~=3.8"
 
 dependencies = [
+  "packaging>=23",
   "appdirs~=1.4",
   "amaranth[builtin-yosys] @ git+https://github.com/amaranth-lang/amaranth.git",
   "fx2>=0.11",
   "libusb1>=1.8.1",
-  "aiohttp~=3.8",
   "pyvcd",
   "bitarray",
 ]
@@ -31,6 +31,10 @@ builtin-toolchain = [
   "yowasp-runtime>=1.30",
   "yowasp-yosys>=0.31.0.13",
   "yowasp-nextpnr-ice40>=0.1",
+]
+http = [
+  "aiohttp~=3.8",
+  "aiohttp-remotes~=1.2",
 ]
 
 [project.scripts]
@@ -86,7 +90,7 @@ display-hd44780 = "glasgow.applet.display.hd44780:DisplayHD44780Applet"
 display-pdi = "glasgow.applet.display.pdi:DisplayPDIApplet"
 
 audio-dac = "glasgow.applet.audio.dac:AudioDACApplet"
-audio-yamaha-opx = "glasgow.applet.audio.yamaha_opx:AudioYamahaOPxApplet"
+audio-yamaha-opx = "glasgow.applet.audio.yamaha_opx:AudioYamahaOPxApplet [http]"
 
 video-rgb-input = "glasgow.applet.video.rgb_input:VideoRGBInputApplet"
 vga-ouput = "glasgow.applet.video.vga_output:VGAOutputApplet"
