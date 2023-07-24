@@ -5,7 +5,7 @@ import sysconfig
 import textwrap
 
 
-__all__ = ["GlasgowAppletUnavailable", "GlasgowAppletMetadata"]
+__all__ = ["PluginRequirementsUnmet", "PluginMetadata"]
 
 
 def _requirements_for_optional_dependencies(distribution, depencencies):
@@ -20,21 +20,21 @@ def _requirements_for_optional_dependencies(distribution, depencencies):
     return selected_requirements
 
 
-def _unsatisfied_requirements_in(requirements):
-    unsatisfied_requirements = set()
+def _unmet_requirements_in(requirements):
+    unmet_requirements = set()
     for requirement in requirements:
         try:
             version = importlib.metadata.version(requirement.name)
         except importlib.metadata.PackageNotFoundError:
-            unsatisfied_requirements.add(requirement)
+            unmet_requirements.add(requirement)
             continue
         if not requirement.specifier.contains(version):
-            unsatisfied_requirements.add(requirement)
+            unmet_requirements.add(requirement)
             continue
         if requirement.extras:
-            raise NotImplementedError("Optional dependency requirements within optional applet "
-                                      "dependencies are not supported yet")
-    return unsatisfied_requirements
+            raise NotImplementedError("Optional dependency requirements within plugin dependencies "
+                                      "are not supported yet")
+    return unmet_requirements
 
 
 def _install_command_for_requirements(requirements):
@@ -46,27 +46,33 @@ def _install_command_for_requirements(requirements):
         return f"pip install --user {' '.join(str(r) for r in requirements)}"
 
 
-class GlasgowAppletUnavailable(Exception):
+class PluginRequirementsUnmet(Exception):
     def __init__(self, metadata):
         self.metadata = metadata
 
     def __str__(self):
-        return (f"applet {self.metadata.handle} has unsatisfied requirements: "
-                f"{', '.join(str(r) for r in self.metadata.unsatisfied_requirements)}")
+        return (f"plugin {self.metadata.handle} has unmet requirements: "
+                f"{', '.join(str(r) for r in self.metadata.unmet_requirements)}")
 
 
-class GlasgowAppletMetadata:
+class PluginMetadata:
+    # Name of the 'entry point' group that contains plugin registration entries.
+    #
+    # E.g. if the name is `"glasgow.applet"` then the `pyproject.toml` section will be
+    # `[project.entry-points."glasgow.applet"]`.
+    GROUP_NAME = None
+
     @classmethod
     def get(cls, handle):
-        return cls(importlib.metadata.entry_points(group="glasgow.applet", name=handle)[0])
+        return cls(importlib.metadata.entry_points(group=cls.GROUP_NAME, name=handle)[0])
 
     @classmethod
     def all(cls):
-        return {ep.name: cls(ep) for ep in importlib.metadata.entry_points(group="glasgow.applet")}
+        return {ep.name: cls(ep) for ep in importlib.metadata.entry_points(group=cls.GROUP_NAME)}
 
     def __init__(self, entry_point):
         if entry_point.dist.name != "glasgow":
-            raise Exception("Out-of-tree applets are not supported yet")
+            raise Exception("Out-of-tree plugins are not supported yet")
 
         # Python-side metadata (how to load it, etc.)
         self.module = entry_point.module
@@ -82,27 +88,26 @@ class GlasgowAppletMetadata:
             self.synopsis = self._cls.help
             self.description = self._cls.description
         else:
-            self.synopsis = (f"/!\\ unavailable due to unsatisfied requirements: "
-                             f"{', '.join(str(r) for r in self.unsatisfied_requirements)}")
+            self.synopsis = (f"/!\\ unavailable due to unmet requirements: "
+                             f"{', '.join(str(r) for r in self.unmet_requirements)}")
             self.description = textwrap.dedent(f"""
-            This applet is unavailable because it requires additional packages that are
+            This plugin is unavailable because it requires additional packages that are
             not installed. To install them, run:
 
-                {_install_command_for_requirements(self.unsatisfied_requirements)}
+                {_install_command_for_requirements(self.unmet_requirements)}
             """)
 
     @property
-    def unsatisfied_requirements(self):
-        return _unsatisfied_requirements_in(self.requirements)
+    def unmet_requirements(self):
+        return _unmet_requirements_in(self.requirements)
 
     @property
     def available(self):
-        return not self.unsatisfied_requirements
+        return not self.unmet_requirements
 
-    @property
-    def applet_cls(self):
+    def load(self):
         if not self.available:
-            raise GlasgowAppletUnavailable(self)
+            raise PluginRequirementsUnmet(self)
         return self._cls
 
     def __repr__(self):
