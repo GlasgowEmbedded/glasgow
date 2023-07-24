@@ -8,6 +8,7 @@ import re
 import asyncio
 import signal
 import unittest
+import importlib.metadata
 from vcd import VCDWriter
 from datetime import datetime
 try:
@@ -15,7 +16,7 @@ try:
 except ImportError:
     PyCF_ALLOW_TOP_LEVEL_AWAIT = 0 # Python 3.7-
 
-from fx2 import FX2Config
+from fx2 import FX2Config, FX2Device, FX2DeviceError, VID_CYPRESS, PID_FX2
 from fx2.format import input_data, diff_data
 
 from . import __version__
@@ -345,8 +346,8 @@ def get_argparser():
         "factory", formatter_class=TextHelpFormatter,
         help="(advanced) initial device programming")
     p_factory.add_argument(
-        "--force", default=False, action="store_true",
-        help="reinitialize the device, even if it is already programmed")
+        "--reinitialize", default=False, action="store_true",
+        help="(DANGEROUS) find an already programmed device and reinitialize it")
     p_factory.add_argument(
         "--rev", metavar="REVISION", dest="factory_rev", type=revision, required=True,
         help="board revision")
@@ -716,7 +717,10 @@ async def _main():
                 logger.info("removing firmware")
                 fx2_config.disconnect = False
                 new_image = fx2_config.encode()
-                new_image[0] = 0xC0 # see below
+                # Let FX2 hardware enumerate. This won't load the configuration block
+                # into memory automatically, but the firmware has code that does that
+                # if it detects a C0 load.
+                new_image[0] = 0xC0
             else:
                 if args.firmware:
                     logger.warn("using custom firmware from %s", args.firmware.name)
@@ -725,7 +729,7 @@ async def _main():
                             fx2_config.append(addr, chunk)
                 else:
                     logger.info("using built-in firmware")
-                    for (addr, chunk) in GlasgowHardwareDevice.builtin_firmware():
+                    for (addr, chunk) in GlasgowHardwareDevice.firmware():
                         fx2_config.append(addr, chunk)
                 fx2_config.disconnect = True
                 new_image = fx2_config.encode()
@@ -797,41 +801,43 @@ async def _main():
                 return 1
 
         if args.action == "factory":
-            device = GlasgowHardwareDevice(args.serial, _factory_rev=args.factory_rev)
-
-            logger.info("reading device configuration")
-            header = await device.read_eeprom("fx2", 0, 8 + 4 + GlasgowConfig.size)
-            if re.match(rb"^\xff+$", header):
-                needs_power_cycle = False
-            elif args.force:
-                logger.warning("device already factory-programmed, proceeding anyway")
-                needs_power_cycle = True
-            else:
-                logger.error("device already factory-programmed")
+            if args.serial:
+                logger.error(f"--serial is not supported for factory flashing")
                 return 1
 
-            fx2_config = FX2Config(vendor_id=VID_QIHW, product_id=PID_GLASGOW,
-                                   device_id=GlasgowConfig.encode_revision(args.factory_rev),
-                                   i2c_400khz=True)
+            device_id = GlasgowConfig.encode_revision(args.factory_rev)
             glasgow_config = GlasgowConfig(args.factory_rev, args.factory_serial)
-            fx2_config.append(0x4000 - GlasgowConfig.size, glasgow_config.encode())
+            firmware = GlasgowHardwareDevice.firmware()
 
+            if args.reinitialize:
+                vid, pid = VID_QIHW, PID_GLASGOW
+            else:
+                vid, pid = VID_CYPRESS, PID_FX2
+            try:
+                fx2_device = FX2Device(vid, pid)
+            except FX2DeviceError:
+                logger.error(f"device {vid:#06x}:{pid:#06x} not found")
+                return
+
+            with importlib.resources.files("fx2").joinpath("boot-cypress.ihex").open("r") as f:
+                fx2_device.load_ram(input_data(f, fmt="ihex"))
+
+            fx2_config = FX2Config(vendor_id=VID_QIHW, product_id=PID_GLASGOW,
+                                   device_id=device_id, i2c_400khz=True, disconnect=True)
+            fx2_config.append(0x4000 - glasgow_config.size, glasgow_config.encode())
+            for (addr, chunk) in firmware:
+                fx2_config.append(addr, chunk)
             image = fx2_config.encode()
-            # Let FX2 hardware enumerate. This won't load the configuration block
-            # into memory automatically, but the firmware has code that does that
-            # if it detects a C0 load.
-            image[0] = 0xC0
 
-            logger.info("programming device configuration")
-            await device.write_eeprom("fx2", 0, image)
+            logger.info("programming device configuration and firmware")
+            fx2_device.write_boot_eeprom(0, image, addr_width=2, page_size=8)
 
-            logger.info("verifying device configuration")
-            if await device.read_eeprom("fx2", 0, len(image)) != image:
+            logger.info("verifying device configuration and firmware")
+            if fx2_device.read_boot_eeprom(0, len(image), addr_width=2) != image:
                 logger.critical("factory programming failed")
                 return 1
 
-            if needs_power_cycle:
-                logger.warning("power-cycle the device for the changes to take effect")
+            logger.warning("power cycle the device to finish the operation")
 
         if args.action == "list":
             for serial in sorted(GlasgowHardwareDevice.enumerate_serials()):

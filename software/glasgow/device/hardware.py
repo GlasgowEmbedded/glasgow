@@ -6,7 +6,7 @@ import usb1
 import asyncio
 import threading
 import importlib.resources
-from fx2 import VID_CYPRESS, PID_FX2, REQ_RAM, REG_CPUCS
+from fx2 import REQ_RAM, REG_CPUCS
 from fx2.format import input_data
 
 from ..support.logging import *
@@ -15,6 +15,7 @@ from .config import GlasgowConfig
 
 
 __all__ = ["GlasgowHardwareDevice"]
+
 
 logger = logging.getLogger(__name__)
 
@@ -59,21 +60,18 @@ class _PollerThread(threading.Thread):
 
 class GlasgowHardwareDevice:
     @staticmethod
-    def builtin_firmware():
-        with importlib.resources.open_text(__package__, "firmware.ihex") as f:
+    def firmware():
+        with importlib.resources.files(__package__).joinpath("firmware.ihex").open("r") as f:
             return input_data(f, fmt="ihex")
 
     @classmethod
-    def _enumerate_devices(cls, usb_context, _factory_rev=None):
+    def _enumerate_devices(cls, usb_context):
         devices = []
         devices_by_serial = {}
 
         def hotplug_callback(usb_context, device, event):
             if event == usb1.HOTPLUG_EVENT_DEVICE_ARRIVED:
-                vendor_id  = device.getVendorID()
-                product_id = device.getProductID()
-
-                if (vendor_id, product_id) in [(VID_CYPRESS, PID_FX2), (VID_QIHW, PID_GLASGOW)]:
+                if device.getVendorID() == VID_QIHW and device.getProductID() == PID_GLASGOW:
                     devices.append(device)
 
         if usb_context.hasCapability(usb1.CAP_HAS_HOTPLUG):
@@ -85,27 +83,13 @@ class GlasgowHardwareDevice:
         while any(devices):
             device = devices.pop()
 
-            vendor_id  = device.getVendorID()
-            product_id = device.getProductID()
-            device_id  = device.getbcdDevice()
-            if (vendor_id, product_id) == (VID_CYPRESS, PID_FX2):
-                if _factory_rev is None:
-                    logger.debug("found bare FX2 device %03d/%03d",
-                                 device.getBusNumber(), device.getDeviceAddress())
-                    continue
-                else:
-                    logger.debug("found bare FX2 device %03d/%03d to be factory flashed",
-                                 device.getBusNumber(), device.getDeviceAddress())
-                    vendor_id  = VID_QIHW
-                    product_id = PID_GLASGOW
-                    revision   = _factory_rev
-            elif (vendor_id, product_id) == (VID_QIHW, PID_GLASGOW):
-                revision = GlasgowConfig.decode_revision(device_id & 0xFF)
+            if device.getVendorID() == VID_QIHW and device.getProductID() == PID_GLASGOW:
+                revision = GlasgowConfig.decode_revision(device.getbcdDevice() & 0xFF)
             else:
                 continue
 
             handle = device.open()
-            if device_id & 0xFF00 in (0x0000, 0xA000):
+            if device.getbcdDevice() & 0xFF00 == 0x0000:
                 logger.debug("found rev%s device without firmware", revision)
             else:
                 device_serial = handle.getASCIIStringDescriptor(
@@ -120,8 +104,7 @@ class GlasgowHardwareDevice:
                 except usb1.USBErrorPipe:
                     device_api_level = 0x00
                 if device_api_level != CUR_API_LEVEL:
-                    logger.info("found rev%s device with API level %d "
-                                "(supported API level is %d)",
+                    logger.info("found rev%s device with API level %d (supported API level is %d)",
                                 revision, device_api_level, CUR_API_LEVEL)
                 else:
                     handle.close()
@@ -129,9 +112,9 @@ class GlasgowHardwareDevice:
                     devices_by_serial[device_serial] = (revision, device)
                     continue
 
-            logger.debug("loading built-in firmware to rev%s device", revision)
+            logger.debug("loading firmware to rev%s device", revision)
             handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [1])
-            for address, data in cls.builtin_firmware():
+            for address, data in cls.firmware():
                 while len(data) > 0:
                     handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM,
                                         address, 0, data[:4096])
@@ -174,9 +157,9 @@ class GlasgowHardwareDevice:
             devices = cls._enumerate_devices(usb_context)
             return list(devices.keys())
 
-    def __init__(self, serial=None, *, _factory_rev=None):
+    def __init__(self, serial=None):
         usb_context = usb1.USBContext()
-        devices = self._enumerate_devices(usb_context, _factory_rev)
+        devices = self._enumerate_devices(usb_context)
 
         if len(devices) == 0:
             raise GlasgowDeviceError("device not found")
