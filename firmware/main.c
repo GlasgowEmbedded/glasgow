@@ -330,7 +330,7 @@ static bool reset_status_bit(uint8_t bit) {
 // to allow new SETUP requests to arrive while the previous one is still being
 // handled (with all data received), the flag should be reset as soon as
 // the entire SETUP request is parsed.
-static volatile bool pending_setup;
+static volatile __bit pending_setup;
 
 void handle_usb_setup(__xdata struct usb_req_setup *req) {
   req;
