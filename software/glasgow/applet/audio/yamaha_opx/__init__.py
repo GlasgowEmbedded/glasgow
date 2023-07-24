@@ -1006,7 +1006,7 @@ class YamahaOPxWebInterface:
         runner = aiohttp.web.AppRunner(app,
             access_log_format='%a(%{X-Forwarded-For}i) "%r" %s "%{Referer}i" "%{User-Agent}i"')
         await runner.setup()
-        site = aiohttp.web.TCPSite(runner, *endpoint.split(":", 2))
+        site = aiohttp.web.TCPSite(runner, *endpoint.split(":", 1))
         await site.start()
         await asyncio.Future()
 
