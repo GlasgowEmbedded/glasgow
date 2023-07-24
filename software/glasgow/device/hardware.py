@@ -38,6 +38,7 @@ REQ_BITSTREAM_ID = 0x18
 REQ_IOBUF_ENABLE = 0x19
 REQ_LIMIT_VOLT   = 0x1A
 REQ_PULL         = 0x1B
+REQ_TEST_LEDS    = 0x1C
 
 ST_ERROR         = 1<<0
 ST_FPGA_RDY      = 1<<1
@@ -570,6 +571,10 @@ class GlasgowHardwareDevice:
                 raise GlasgowDeviceError("cannot set I/O port(s) {} pull resistors to "
                                          "low={} high={}"
                                          .format(spec or "(none)", low or "{}", high or "{}"))
+
+    async def test_leds(self, states):
+        await self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_TEST_LEDS,
+            0, states, [])
 
     async def _register_error(self, addr):
         if await self._status() & ST_FPGA_RDY:
