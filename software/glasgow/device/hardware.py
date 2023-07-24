@@ -102,6 +102,14 @@ class GlasgowHardwareDevice:
                         handle.claimInterface(intf_num)
                     logger.info("found rev%s device with API level %d (supported API level is %d)",
                                 revision, api_level, CUR_API_LEVEL)
+                    # Updating the firmware is not strictly required. However, re-enumeration tends
+                    # to expose all kinds of issues related to hotplug (especially on Windows,
+                    # where libusb does not listen to hotplug events) and the more you do it,
+                    # the more likely it is to eventually cause misery.
+                    serial = handle.getASCIIStringDescriptor(
+                        device.getSerialNumberDescriptor())
+                    logger.warn(f"please run `glasgow flash` to update firmware of device "
+                                f"{serial}")
                 except usb1.USBErrorBusy:
                     logger.debug("found busy rev%s device with unsupported API level %d",
                                  revision, api_level)
