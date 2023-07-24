@@ -22,6 +22,7 @@ from fx2.format import input_data, diff_data
 from . import __version__
 from .support.logging import *
 from .support.asignal import *
+from .support.plugin import PluginRequirementsUnmet
 from .device import GlasgowDeviceError
 from .device.config import GlasgowConfig
 from .target.toolchain import ToolchainNotFound
@@ -31,7 +32,6 @@ from .gateware.analyzer import TraceDecoder
 from .device.hardware import VID_QIHW, PID_GLASGOW, GlasgowHardwareDevice
 from .access.direct import *
 from .applet import *
-from .applet.metadata import *
 
 
 # When running as `-m glasgow.cli`, `__name__` is `__main__`, and the real name
@@ -672,7 +672,7 @@ async def _main():
             return applet_task.result()
 
         if args.action == "tool":
-            tool = GlasgowAppletMetadata.get(args.applet).applet_cls.tool_cls()
+            tool = GlasgowAppletMetadata.get(args.applet).tool_cls()
             try:
                 return await tool.run(args)
             except GlasgowAppletError as e:
@@ -876,7 +876,7 @@ async def _main():
         return 2
 
     # Environment-related errors
-    except GlasgowAppletUnavailable as e:
+    except PluginRequirementsUnmet as e:
         logger.error(e)
         print(e.metadata.description)
         return 3

@@ -4,10 +4,23 @@ from abc import ABCMeta, abstractmethod
 from amaranth import *
 
 from ..support.arepl import *
+from ..support.plugin import *
 from ..gateware.clockgen import *
 
 
-__all__ = ["GlasgowAppletError", "GlasgowApplet", "GlasgowAppletTool"]
+__all__ = ["GlasgowAppletMetadata", "GlasgowAppletError", "GlasgowApplet", "GlasgowAppletTool"]
+
+
+class GlasgowAppletMetadata(PluginMetadata):
+    GROUP_NAME = "glasgow.applet"
+
+    @property
+    def applet_cls(self):
+        return self.load()
+
+    @property
+    def tool_cls(self):
+        return self.load().tool_cls
 
 
 class GlasgowAppletError(Exception):
