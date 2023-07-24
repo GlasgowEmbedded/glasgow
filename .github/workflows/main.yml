@@ -36,6 +36,14 @@ jobs:
       - name: Install dependencies
         working-directory: ./software
         run: pdm install -G :all
+      - name: Preserve caches
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/wasmtime
+            ~/.cache/YoWASP
+            ~/.cache/GlasgowEmbedded
+          key: ${{ runner.os }}
       - name: Run tests
         working-directory: ./software
         env:
