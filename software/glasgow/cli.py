@@ -125,31 +125,40 @@ def get_argparser():
     def add_applet_arg(parser, mode, required=False):
         subparsers = add_subparsers(parser, dest="applet", metavar="APPLET", required=required)
 
-        for applet_name, applet_meta in GlasgowAppletMetadata.all().items():
-            applet = applet_meta.applet_cls
-
-            if mode == "test" and not hasattr(applet, "test_cls"):
+        for handle, metadata in GlasgowAppletMetadata.all().items():
+            if not metadata.available:
+                # fantastically cursed
+                p_applet = subparsers.add_parser(
+                    handle, help=metadata.synopsis, description=metadata.description,
+                    formatter_class=TextHelpFormatter, prefix_chars='\0', add_help=False)
+                p_applet.add_argument("args", nargs="...", help=argparse.SUPPRESS)
+                p_applet.add_argument("help", nargs="?", default=p_applet.format_help())
                 continue
-            if mode == "tool" and not hasattr(applet, "tool_cls"):
+
+            applet_cls = metadata.applet_cls
+
+            if mode == "test" and not hasattr(applet_cls, "test_cls"):
+                continue
+            if mode == "tool" and not hasattr(applet_cls, "tool_cls"):
                 continue
 
             if mode == "tool":
-                help        = applet.tool_cls.help
-                description = applet.tool_cls.description
+                help        = applet_cls.tool_cls.help
+                description = applet_cls.tool_cls.description
             else:
-                help        = applet.help
-                description = applet.description
-            if applet.preview:
+                help        = applet_cls.help
+                description = applet_cls.description
+            if applet_cls.preview:
                 help += " (PREVIEW QUALITY APPLET)"
                 description = "    This applet is PREVIEW QUALITY and may CORRUPT DATA or " \
                               "have missing features. Use at your own risk.\n" + description
-            if applet.required_revision > "A0":
-                help += " (rev{}+)".format(applet.required_revision)
+            if applet_cls.required_revision > "A0":
+                help += " (rev{}+)".format(applet_cls.required_revision)
                 description += "\n    This applet requires Glasgow rev{} or later." \
-                               .format(applet.required_revision)
+                               .format(applet_cls.required_revision)
 
             p_applet = subparsers.add_parser(
-                applet_name, help=help, description=description,
+                handle, help=help, description=description,
                 formatter_class=TextHelpFormatter)
 
             if mode == "test":
@@ -158,27 +167,27 @@ def get_argparser():
                     help="test cases to run")
 
             if mode in ("build", "interact", "repl", "script"):
-                access_args = DirectArguments(applet_name=applet_name,
+                access_args = DirectArguments(applet_name=handle,
                                               default_port="AB",
                                               pin_count=16)
                 if mode in ("interact", "repl", "script"):
                     g_applet_build = p_applet.add_argument_group("build arguments")
-                    applet.add_build_arguments(g_applet_build, access_args)
+                    applet_cls.add_build_arguments(g_applet_build, access_args)
                     g_applet_run = p_applet.add_argument_group("run arguments")
-                    applet.add_run_arguments(g_applet_run, access_args)
+                    applet_cls.add_run_arguments(g_applet_run, access_args)
                     if mode == "interact":
                         # FIXME: this makes it impossible to add subparsers in applets
                         # g_applet_interact = p_applet.add_argument_group("interact arguments")
                         # applet.add_interact_arguments(g_applet_interact)
-                        applet.add_interact_arguments(p_applet)
+                        applet_cls.add_interact_arguments(p_applet)
                     if mode == "repl":
                         # FIXME: same as above
-                        applet.add_repl_arguments(p_applet)
+                        applet_cls.add_repl_arguments(p_applet)
                 if mode == "build":
-                    applet.add_build_arguments(p_applet, access_args)
+                    applet_cls.add_build_arguments(p_applet, access_args)
 
             if mode == "tool":
-                applet.tool_cls.add_arguments(p_applet)
+                applet_cls.tool_cls.add_arguments(p_applet)
 
     parser = create_argparser()
 
@@ -856,17 +865,26 @@ async def _main():
                 print(serial)
             return 0
 
+    # Device-related errors
     except GlasgowDeviceError as e:
         logger.error(e)
         return 1
 
-    except ToolchainNotFound as e:
-        return 2
-
+    # Applet-related errors
     except GatewareBuildError as e:
         applet.logger.error(e)
         return 2
 
+    # Environment-related errors
+    except GlasgowAppletUnavailable as e:
+        logger.error(e)
+        print(e.metadata.description)
+        return 3
+
+    except ToolchainNotFound as e:
+        return 3
+
+    # User interruption
     except KeyboardInterrupt:
         logger.warn("interrupted")
         return 130 # 128 + SIGINT

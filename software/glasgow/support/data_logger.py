@@ -5,8 +5,12 @@ import re
 import time
 import sys
 import csv
-import yarl
-import aiohttp
+try:
+    import yarl
+    import aiohttp
+except ImportError:
+    yarl = None
+    aiohttp = None
 
 
 __all__ = ["DataLogger", "STDOUTDataLogger"]
@@ -18,13 +22,20 @@ class DataLogger:
     def __init_subclass__(cls, name):
         cls.all_data_loggers[name] = cls
 
-    help = "applet help missing"
-    description = "applet description missing"
+    help = "data logger help missing"
+    description = "data logger description missing"
+
+    # TODO: use the same importlib magic as for applets
+    @classmethod
+    def available(cls):
+        return True
 
     @classmethod
     def add_subparsers(cls, parser):
         p_data_logger = parser.add_subparsers(dest="data_logger", metavar="DATA-LOGGER")
         for name, subcls in cls.all_data_loggers.items():
+            if not subcls.available:
+                continue
             p_data_logger_subcls = p_data_logger.add_parser(
                 name, help=subcls.help, description=subcls.description)
             subcls.add_arguments(p_data_logger_subcls)
@@ -144,6 +155,10 @@ class InfluxDBDataLogger(DataLogger, name="influxdb"):
         assert False
 
     @classmethod
+    def available(cls):
+        return aiohttp is not None
+
+    @classmethod
     def add_arguments(cls, parser):
         parser.add_argument(
             "endpoint", metavar="ENDPOINT", type=str,
@@ -241,6 +256,10 @@ class InfluxDB2DataLogger(DataLogger, name="influxdb2"):
 
     # see https://docs.influxdata.com/influxdb/v2.0/query-data/execute-queries/influx-api/
     # see https://docs.influxdata.com/influxdb/cloud/api/#tag/Write
+
+    @classmethod
+    def available(cls):
+        return aiohttp is not None
 
     @classmethod
     def add_arguments(cls, parser):
