@@ -302,18 +302,20 @@ import argparse
 import struct
 import random
 import itertools
-import crcmod
+import crc
 import math
-from nmigen.compat import *
-from nmigen.compat.genlib.cdc import MultiReg
+from amaranth import *
+from amaranth.lib.cdc import FFSynchronizer
 
 from ....gateware.pads import *
 from ... import *
 from .mfm import *
 
 
-class ShugartFloppyBus(Module):
+class ShugartFloppyBus(Elaboratable):
     def __init__(self, pins):
+        self.pins = pins
+
         self.redwc  = Signal()
         self.index  = Signal()
         self.drvs   = Signal(2)
@@ -331,45 +333,48 @@ class ShugartFloppyBus(Module):
         self.index_e = Signal()
         self.rdata_e = Signal()
 
-        ###
+    def elaborate(self, platform):
+        m = Module()
 
-        self.comb += [
-            pins.redwc_t.oe.eq(1),
-            pins.redwc_t.o.eq(~self.redwc),
-            pins.motea_t.oe.eq(1),
-            pins.motea_t.o.eq(~self.mote[0]),
-            pins.drvsb_t.oe.eq(1),
-            pins.drvsb_t.o.eq(~self.drvs[1]),
-            pins.drvsa_t.oe.eq(1),
-            pins.drvsa_t.o.eq(~self.drvs[0]),
-            pins.moteb_t.oe.eq(1),
-            pins.moteb_t.o.eq(~self.mote[1]),
-            pins.dir_t.oe.eq(1),
-            pins.dir_t.o.eq(~self.dir),
-            pins.step_t.oe.eq(1),
-            pins.step_t.o.eq(~self.step),
-            pins.wdata_t.oe.eq(1),
-            pins.wdata_t.o.eq(~self.wdata),
-            pins.wgate_t.oe.eq(1),
-            pins.wgate_t.o.eq(~self.wgate),
-            pins.side1_t.oe.eq(1),
-            pins.side1_t.o.eq(~self.side1),
+        m.d.comb += [
+            self.pins.redwc_t.oe.eq(1),
+            self.pins.redwc_t.o.eq(~self.redwc),
+            self.pins.motea_t.oe.eq(1),
+            self.pins.motea_t.o.eq(~self.mote[0]),
+            self.pins.drvsb_t.oe.eq(1),
+            self.pins.drvsb_t.o.eq(~self.drvs[1]),
+            self.pins.drvsa_t.oe.eq(1),
+            self.pins.drvsa_t.o.eq(~self.drvs[0]),
+            self.pins.moteb_t.oe.eq(1),
+            self.pins.moteb_t.o.eq(~self.mote[1]),
+            self.pins.dir_t.oe.eq(1),
+            self.pins.dir_t.o.eq(~self.dir),
+            self.pins.step_t.oe.eq(1),
+            self.pins.step_t.o.eq(~self.step),
+            self.pins.wdata_t.oe.eq(1),
+            self.pins.wdata_t.o.eq(~self.wdata),
+            self.pins.wgate_t.oe.eq(1),
+            self.pins.wgate_t.o.eq(~self.wgate),
+            self.pins.side1_t.oe.eq(1),
+            self.pins.side1_t.o.eq(~self.side1),
         ]
-        self.specials += [
-            MultiReg(~pins.index_t.i, self.index),
-            MultiReg(~pins.trk00_t.i, self.trk00),
-            MultiReg(~pins.wpt_t.i, self.wpt),
-            MultiReg(~pins.rdata_t.i, self.rdata),
-            MultiReg(~pins.dskchg_t.i, self.dskchg),
+        m.submodules += [
+            FFSynchronizer(~self.pins.index_t.i, self.index),
+            FFSynchronizer(~self.pins.trk00_t.i, self.trk00),
+            FFSynchronizer(~self.pins.wpt_t.i, self.wpt),
+            FFSynchronizer(~self.pins.rdata_t.i, self.rdata),
+            FFSynchronizer(~self.pins.dskchg_t.i, self.dskchg),
         ]
 
         index_r = Signal()
-        self.sync += index_r.eq(self.index)
-        self.comb += self.index_e.eq(index_r & ~self.index)
+        m.d.sync += index_r.eq(self.index)
+        m.d.comb += self.index_e.eq(index_r & ~self.index)
 
         rdata_r = Signal()
-        self.sync += rdata_r.eq(self.rdata)
-        self.comb += self.rdata_e.eq(~rdata_r & self.rdata)
+        m.d.sync += rdata_r.eq(self.rdata)
+        m.d.comb += self.rdata_e.eq(~rdata_r & self.rdata)
+
+        return m
 
 
 CMD_SYNC  = 0x00
@@ -381,164 +386,173 @@ CMD_MEAS  = 0x05
 CMD_READ_RAW = 0x06
 
 
-class ShugartFloppySubtarget(Module):
+class ShugartFloppySubtarget(Elaboratable):
     def __init__(self, pins, out_fifo, in_fifo, sys_freq):
-        self.submodules.bus = bus = ShugartFloppyBus(pins)
+        self.bus = ShugartFloppyBus(pins)
+        self.out_fifo = out_fifo
+        self.in_fifo = in_fifo
+        self.sys_freq = sys_freq
 
-        spin_up_cyc  = math.ceil(250e-3 * sys_freq) # motor spin up
-        setup_cyc    = math.ceil(1e-6   * sys_freq) # pulse setup time
-        trk_step_cyc = math.ceil(7e-6   * sys_freq) # step pulse width
-        trk_trk_cyc  = math.ceil(6e-3   * sys_freq) # step pulse period
-        settle_cyc   = math.ceil(15e-3  * sys_freq) # step to head settle interval
-        timer        = Signal(max=max(spin_up_cyc, setup_cyc, trk_step_cyc, trk_trk_cyc,
-                                      settle_cyc))
+    def elaborate(self, platform):
+        m = Module()
+
+        spin_up_cyc  = math.ceil(250e-3 * self.sys_freq) # motor spin up
+        setup_cyc    = math.ceil(1e-6   * self.sys_freq) # pulse setup time
+        trk_step_cyc = math.ceil(7e-6   * self.sys_freq) # step pulse width
+        trk_trk_cyc  = math.ceil(6e-3   * self.sys_freq) # step pulse period
+        settle_cyc   = math.ceil(15e-3  * self.sys_freq) # step to head settle interval
+        timer        = Signal(range(max(spin_up_cyc, setup_cyc, trk_step_cyc, trk_trk_cyc,
+                                      settle_cyc)))
+        m.submodules.bus = self.bus
 
         cmd     = Signal(8)
 
-        cur_trk = Signal(max=80)
+        cur_trk = Signal(range(80))
         tgt_trk = Signal.like(cur_trk)
         trk_len = Signal(24)
 
-        cur_rot = Signal(max=16)
+        cur_rot = Signal(range(16))
         tgt_rot = Signal.like(cur_rot)
 
-        self.submodules.fsm = FSM(reset_state="RECV-COMMAND")
-        self.fsm.act("RECV-COMMAND",
-            in_fifo.flush.eq(1),
-            If(timer == 0,
-                If(out_fifo.readable,
-                    out_fifo.re.eq(1),
-                    NextValue(cmd, out_fifo.dout),
-                    NextState("PARSE-COMMAND")
-                )
-            ).Else(
-                NextValue(timer, timer - 1)
-            )
-        )
-        self.fsm.act("PARSE-COMMAND",
-            If(cmd == CMD_SYNC,
-                If(in_fifo.writable,
-                    in_fifo.we.eq(1),
-                    NextState("RECV-COMMAND")
-                )
-            ).Elif(cmd == CMD_START,
-                NextValue(bus.drvs, 0b11),
-                NextValue(bus.mote, 0b11),
-                NextValue(timer, spin_up_cyc - 1),
-                NextState("RECV-COMMAND")
-            ).Elif(cmd == CMD_STOP,
-                NextValue(bus.drvs, 0),
-                NextValue(bus.mote, 0),
-                NextState("RECV-COMMAND")
-            ).Elif(cmd == CMD_TRK0,
-                NextValue(bus.dir, 0), # DIR->STEP S/H=1/24us
-                NextValue(timer, setup_cyc - 1),
-                NextState("TRACK-STEP")
-            ).Elif(cmd == CMD_TRK,
-                If(out_fifo.readable,
-                    out_fifo.re.eq(1),
-                    NextValue(tgt_trk, out_fifo.dout[1:]),
-                    NextValue(bus.dir, out_fifo.dout[1:] > cur_trk),
-                    NextValue(bus.side1, out_fifo.dout[0]),
-                    NextValue(timer, setup_cyc - 1),
-                    NextState("TRACK-STEP")
-                )
-            ).Elif(cmd == CMD_MEAS,
-                If(bus.index_e,
-                    NextValue(trk_len, 1),
-                    NextState("MEASURE")
-                )
-            ).Elif(cmd == CMD_READ_RAW,
-                If(out_fifo.readable,
-                    out_fifo.re.eq(1),
-                    NextValue(cur_rot, 0),
-                    NextValue(tgt_rot, out_fifo.dout),
-                    NextState("READ-RAW-SYNC")
-                )
-            )
-        )
+        with m.FSM() as fsm:
+            with m.State("RECV-COMMAND"):
+                m.d.comb += self.in_fifo.flush.eq(1)
+                with m.If(timer == 0):
+                    with m.If(self.out_fifo.r_rdy):
+                        m.d.comb += self.out_fifo.r_en.eq(1)
+                        m.d.sync += cmd.eq(self.out_fifo.r_data)
+                        m.next = "PARSE-COMMAND"
+                with m.Else():
+                    m.d.sync += timer.eq(timer - 1)
 
-        # === Track positioning
-        self.fsm.act("TRACK-STEP",
-            If(timer == 0,
-                If((cmd == CMD_TRK0) & bus.trk00,
-                    NextValue(cur_trk, 0),
-                    NextValue(timer, settle_cyc - 1),
-                    NextState("RECV-COMMAND")
-                ).Elif((cmd == CMD_TRK) & (cur_trk == tgt_trk),
-                    NextValue(timer, settle_cyc - 1),
-                    NextState("RECV-COMMAND")
-                ).Else(
-                    NextValue(cur_trk, Mux(bus.dir, cur_trk + 1, cur_trk - 1)),
-                    NextValue(bus.step, 1),
-                    NextValue(timer, trk_step_cyc - 1),
-                    NextState("TRACK-HOLD")
-                )
-            ).Else(
-                NextValue(timer, timer - 1)
-            )
-        )
-        self.fsm.act("TRACK-HOLD",
-            If(timer == 0,
-                NextValue(bus.step, 0),
-                NextValue(timer, trk_trk_cyc - 1),
-                NextState("TRACK-STEP")
-            ).Else(
-                NextValue(timer, timer - 1)
-            )
-        )
+            with m.State("PARSE-COMMAND"):
+                with m.Switch(cmd):
+                    with m.Case(CMD_SYNC):
+                        with m.If(self.in_fifo.w_rdy):
+                            m.d.comb += self.in_fifo.w_en.eq(1)
+                            m.next = "RECV-COMMAND"
+                    with m.Case(CMD_START):
+                        m.d.sync += [
+                            self.bus.drvs.eq(0b11),
+                            self.bus.mote.eq(0b11),
+                            timer.eq(spin_up_cyc - 1),
+                        ]
+                        m.next = "RECV-COMMAND"
+                    with m.Case(CMD_STOP):
+                        m.d.sync += [
+                            self.bus.drvs.eq(0),
+                            self.bus.mote.eq(0),
+                        ]
+                        m.next = "RECV-COMMAND"
+                    with m.Case(CMD_TRK0):
+                        m.d.sync += [
+                            self.bus.dir.eq(0), # DIR->STEP S/H=1/24us
+                            timer.eq(setup_cyc - 1),
+                        ]
+                        m.next = "TRACK-STEP"
+                    with m.Case(CMD_TRK):
+                        with m.If(self.out_fifo.r_rdy):
+                            m.d.comb += self.out_fifo.r_en.eq(1)
+                            m.d.sync += [
+                                tgt_trk.eq(self.out_fifo.r_data[1:]),
+                                self.bus.dir.eq(self.out_fifo.r_data[1:] > cur_trk),
+                                self.bus.side1.eq(self.out_fifo.r_data[0]),
+                                timer.eq(setup_cyc - 1),
+                            ]
+                            m.next = "TRACK-STEP"
+                    with m.Case(CMD_MEAS):
+                        with m.If(self.bus.index_e):
+                            m.d.sync += trk_len.eq(1)
+                            m.next = "MEASURE"
+                    with m.Case(CMD_READ_RAW):
+                        with m.If(self.out_fifo.r_rdy):
+                            m.d.comb += self.out_fifo.r_en.eq(1)
+                            m.d.sync += [
+                                cur_rot.eq(0),
+                                tgt_rot.eq(self.out_fifo.r_data),
+                            ]
+                            m.next = "READ-RAW-SYNC"
 
-        # === Speed measurement
-        self.fsm.act("MEASURE",
-            If(bus.index_e,
-                NextState("MEASURE-SEND-0")
-            ).Else(
-                NextValue(trk_len, trk_len + 1),
-            )
-        )
-        for n in range(3):
-            self.fsm.act("MEASURE-SEND-%d" % n,
-                If(in_fifo.writable,
-                    in_fifo.we.eq(1),
-                    in_fifo.din.eq(trk_len[8 * n:]),
-                    NextState("MEASURE-SEND-%d" % (n + 1) if n < 2 else "RECV-COMMAND")
-                )
-            )
+            # === Track positioning
+            with m.State("TRACK-STEP"):
+                with m.If(timer == 0):
+                    with m.If((cmd == CMD_TRK0) & self.bus.trk00):
+                        m.d.sync += [
+                            cur_trk.eq(0),
+                            timer.eq(settle_cyc - 1),
+                        ]
+                        m.next = "RECV-COMMAND"
+                    with m.Elif((cmd == CMD_TRK) & (cur_trk == tgt_trk)):
+                        m.d.sync += timer.eq(settle_cyc - 1)
+                        m.next = "RECV-COMMAND"
+                    with m.Else():
+                        m.d.sync += [
+                            cur_trk.eq(Mux(self.bus.dir, cur_trk + 1, cur_trk - 1)),
+                            self.bus.step.eq(1),
+                            timer.eq(trk_step_cyc - 1),
+                        ]
+                        m.next = "TRACK-HOLD"
+                with m.Else():
+                    m.d.sync += timer.eq(timer - 1)
+            with m.State("TRACK-HOLD"):
+                with m.If(timer == 0):
+                    m.d.sync += [
+                        self.bus.step.eq(0),
+                        timer.eq(trk_trk_cyc - 1),
+                    ]
+                    m.next = "TRACK-STEP"
+                with m.Else():
+                    m.d.sync += timer.eq(timer - 1)
 
-        # === Raw data reads
-        rdata_cyc = Signal(8)
-        rdata_ovf = Signal()
+            # === Speed measurement
+            with m.State("MEASURE"):
+                with m.If(self.bus.index_e):
+                    m.next = "MEASURE-SEND-0"
+                with m.Else():
+                    m.d.sync += trk_len.eq(trk_len + 1)
+            for n in range(3):
+                with m.State(f"MEASURE-SEND-{n}"):
+                    with m.If(self.in_fifo.w_rdy):
+                        m.d.comb += [
+                            self.in_fifo.w_en.eq(1),
+                            self.in_fifo.w_data.eq(trk_len[8 * n:]),
+                        ]
+                        if n < 2:
+                            m.next = f"MEASURE-SEND-{n + 1}"
+                        else:
+                            m.next = "RECV-COMMAND"
 
-        self.fsm.act("READ-RAW-SYNC",
-            If(bus.index_e,
-                NextValue(rdata_ovf, 0),
-                NextState("READ-RAW-SEND-DATA")
-            )
-        )
-        self.fsm.act("READ-RAW-SEND-DATA",
-            If(bus.index_e,
-                NextValue(cur_rot, cur_rot + 1),
-                If(cur_rot == tgt_rot,
-                    NextState("READ-RAW-SEND-TRAILER")
-                ),
-            ),
-            NextValue(rdata_cyc, Mux(bus.rdata_e, 0, rdata_cyc + 1)),
-            If(bus.rdata_e | (rdata_cyc == 0xfd),
-                in_fifo.din.eq(rdata_cyc),
-                in_fifo.we.eq(1),
-                If(~in_fifo.writable,
-                    NextValue(rdata_ovf, 1),
-                    NextState("READ-RAW-SEND-TRAILER")
-                )
-            ),
-        )
-        self.fsm.act("READ-RAW-SEND-TRAILER",
-            If(in_fifo.writable,
-                in_fifo.we.eq(1),
-                in_fifo.din.eq(0xfe | rdata_ovf),
-                NextState("RECV-COMMAND")
-            )
-        )
+            # === Raw data reads
+            rdata_cyc = Signal(8)
+            rdata_ovf = Signal()
+
+            with m.State("READ-RAW-SYNC"):
+                with m.If(self.bus.index_e):
+                    m.d.sync += rdata_ovf.eq(0)
+                    m.next = "READ-RAW-SEND-DATA"
+            with m.State("READ-RAW-SEND-DATA"):
+                with m.If(self.bus.index_e):
+                    m.d.sync += cur_rot.eq(cur_rot + 1)
+                    with m.If(cur_rot == tgt_rot):
+                        m.next = "READ-RAW-SEND-TRAILER"
+                m.d.sync += rdata_cyc.eq(Mux(self.bus.rdata_e, 0, rdata_cyc + 1))
+                with m.If(self.bus.rdata_e | (rdata_cyc == 0xfd)):
+                    m.d.comb += [
+                        self.in_fifo.w_data.eq(rdata_cyc),
+                        self.in_fifo.w_en.eq(1),
+                    ]
+                    with m.If(~self.in_fifo.w_rdy):
+                        m.d.sync += rdata_ovf.eq(1)
+                        m.next = "READ-RAW-SEND-TRAILER"
+            with m.State("READ-RAW-SEND-TRAILER"):
+                with m.If(self.in_fifo.w_rdy):
+                    m.d.comb += [
+                        self.in_fifo.w_data.eq(0xfe | rdata_ovf),
+                        self.in_fifo.w_en.eq(1),
+                    ]
+                    m.next = "RECV-COMMAND"
+
+        return m
 
 
 class ShugartFloppyInterface:
@@ -988,7 +1002,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             size, cylinder, head = struct.unpack(">LBB", header)
             yield cylinder, head, file.read(size)
 
-    crc_mfm = staticmethod(crcmod.mkCrcFun(0x11021, initCrc=0xffff, rev=False))
+    crc_mfm = staticmethod(crc.Calculator(crc.Configuration(width=16, polynomial=0x11021, init_value=0xffff)).checksum)
 
     def iter_mfm_sectors(self, symbstream, *, verbose=False, ignore_data_crc=False):
         state   = "IDLE"

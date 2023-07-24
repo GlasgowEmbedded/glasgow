@@ -1,7 +1,7 @@
 import logging
-from nmigen import *
-from nmigen.hdl.cd import ClockDomain
-from nmigen.hdl.rec import Record
+from amaranth import *
+from amaranth.hdl.cd import ClockDomain
+from amaranth.hdl.rec import Record
 
 from ....gateware.pads import *
 from ....gateware.pll import *

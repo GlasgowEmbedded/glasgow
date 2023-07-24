@@ -1,8 +1,8 @@
 from functools import reduce
 from collections import OrderedDict
-from nmigen.compat import *
-from nmigen.compat.genlib.fifo import _FIFOInterface, SyncFIFOBuffered
-from nmigen.compat.genlib.coding import PriorityEncoder, PriorityDecoder
+from amaranth import *
+from amaranth.lib.fifo import FIFOInterface, SyncFIFOBuffered
+from amaranth.lib.coding import PriorityEncoder, PriorityDecoder
 
 
 __all__ = ["EventSource", "EventAnalyzer", "TraceDecodingError", "TraceDecoder"]
@@ -20,7 +20,7 @@ SPECIAL_THROTTLE    =   0b000010
 SPECIAL_DETHROTTLE  =   0b000011
 
 
-class EventSource(Module):
+class EventSource(Elaboratable):
     def __init__(self, name, kind, width, fields, depth):
         assert (width >  0 and kind in ("change", "strobe") or
                 width == 0 and kind == "strobe")
@@ -34,8 +34,26 @@ class EventSource(Module):
         self.data    = Signal(max(1, width))
         self.trigger = Signal()
 
+        if width > 0:
+            self.data_fifo = SyncFIFOBuffered(width=width, depth=depth)
+        else:
+            self.data_fifo = FIFOInterface(width=1, depth=0, fwft=False)
 
-class EventAnalyzer(Module):
+    def elaborate(self, platform):
+        m = Module()
+
+        if self.width > 0:
+            m.submodules.data_fifo = self.data_fifo
+
+            m.d.comb += [
+                self.data_fifo.w_data.eq(self.data),
+                self.data_fifo.w_en.eq(self.trigger),
+            ]
+
+        return m
+
+
+class EventAnalyzer(Elaboratable):
     """
     An event analyzer module.
 
@@ -82,6 +100,8 @@ class EventAnalyzer(Module):
         self.throttle      = Signal()
         self.overrun       = Signal()
 
+        self._delay_timer = Signal(self.delay_width)
+
     def add_event_source(self, name, kind, width, fields=(), depth=None):
         if depth is None:
             depth = self._depth_for_width(width)
@@ -90,7 +110,9 @@ class EventAnalyzer(Module):
         self.event_sources.append(event_source)
         return event_source
 
-    def do_finalize(self):
+    def elaborate(self, platform):
+        m = Module()
+
         assert len(self.event_sources) < 2 ** 6
         assert max(s.width for s in self.event_sources) <= 32
 
@@ -99,25 +121,26 @@ class EventAnalyzer(Module):
         throttle_off   = Signal()
         throttle_edge  = Signal()
         throttle_fifos = []
-        self.sync += [
-            If(~self.throttle & throttle_on,
+
+        with m.If(~self.throttle & throttle_on):
+            m.d.sync += [
                 self.throttle.eq(1),
-                throttle_edge.eq(1)
-            ).Elif(self.throttle & throttle_off,
+                throttle_edge.eq(1),
+            ]
+        with m.Elif(self.throttle & throttle_off):
+            m.d.sync += [
                 self.throttle.eq(0),
-                throttle_edge.eq(1)
-            ).Else(
-                throttle_edge.eq(0)
-            )
-        ]
+                throttle_edge.eq(1),
+            ]
+        with m.Else():
+            m.d.sync += [
+                throttle_edge.eq(0),
+            ]
 
         overrun_trip   = Signal()
         overrun_fifos  = []
-        self.sync += [
-            If(overrun_trip,
-                self.overrun.eq(1)
-            )
-        ]
+        with m.If(overrun_trip):
+            m.d.sync += self.overrun.eq(1)
 
         event_width = 1 + len(self.event_sources)
         if self.event_depth is None:
@@ -126,48 +149,37 @@ class EventAnalyzer(Module):
         else:
             event_depth = self.event_depth
 
-        self.submodules.event_fifo = event_fifo = \
+        m.submodules.event_fifo = event_fifo = \
             SyncFIFOBuffered(width=event_width, depth=event_depth)
-        throttle_fifos.append(self.event_fifo)
-        self.comb += [
-            event_fifo.din.eq(Cat(self.throttle, [s.trigger for s in self.event_sources])),
-            event_fifo.we.eq(reduce(lambda a, b: a | b, (s.trigger for s in self.event_sources)) |
+        throttle_fifos.append(event_fifo)
+        m.d.comb += [
+            event_fifo.w_data.eq(Cat(self.throttle, [s.trigger for s in self.event_sources])),
+            event_fifo.w_en.eq(reduce(lambda a, b: a | b, (s.trigger for s in self.event_sources)) |
                              throttle_edge)
         ]
 
-        self.submodules.delay_fifo = delay_fifo = \
+        m.submodules.delay_fifo = delay_fifo = \
             SyncFIFOBuffered(width=self.delay_width, depth=event_depth)
-        delay_timer = self._delay_timer = Signal(self.delay_width)
+        delay_timer = self._delay_timer
         delay_ovrun = ((1 << self.delay_width) - 1)
         delay_max   = delay_ovrun - 1
-        self.sync += [
-            If(delay_fifo.we,
-                delay_timer.eq(0)
-            ).Else(
-                delay_timer.eq(delay_timer + 1)
-            )
-        ]
-        self.comb += [
-            delay_fifo.din.eq(Mux(self.overrun, delay_ovrun, delay_timer)),
-            delay_fifo.we.eq(event_fifo.we | (delay_timer == delay_max) |
+        with m.If(delay_fifo.w_en):
+            m.d.sync += delay_timer.eq(0)
+        with m.Else():
+            m.d.sync += delay_timer.eq(delay_timer + 1)
+        m.d.comb += [
+            delay_fifo.w_data.eq(Mux(self.overrun, delay_ovrun, delay_timer)),
+            delay_fifo.w_en.eq(event_fifo.w_en | (delay_timer == delay_max) |
                              self.done | self.overrun),
         ]
 
         for event_source in self.event_sources:
+            m.submodules += event_source
             if event_source.width > 0:
-                event_source.submodules.data_fifo = event_data_fifo = \
-                    SyncFIFOBuffered(event_source.width, event_source.depth)
-                self.submodules += event_source
-                throttle_fifos.append(event_data_fifo)
-                self.comb += [
-                    event_data_fifo.din.eq(event_source.data),
-                    event_data_fifo.we.eq(event_source.trigger),
-                ]
-            else:
-                event_source.submodules.data_fifo = _FIFOInterface(1, 0)
+                throttle_fifos.append(event_source.data_fifo)
 
         # Throttle applets based on FIFO levels with hysteresis.
-        self.comb += [
+        m.d.comb += [
             throttle_on .eq(reduce(lambda a, b: a | b,
                 (f.level >= f.depth - f.depth // (4 if f.depth > 4 else 2)
                  for f in throttle_fifos))),
@@ -177,178 +189,151 @@ class EventAnalyzer(Module):
         ]
 
         # Detect imminent FIFO overrun and trip overrun indication.
-        self.comb += [
+        m.d.comb += [
             overrun_trip.eq(reduce(lambda a, b: a | b,
                 (f.level == f.depth - 2
                  for f in throttle_fifos)))
         ]
 
         # Dequeue events, and serialize events and event data.
-        self.submodules.event_encoder = event_encoder = \
+        m.submodules.event_encoder = event_encoder = \
             PriorityEncoder(width=len(self.event_sources))
-        self.submodules.event_decoder = event_decoder = \
+        m.submodules.event_decoder = event_decoder = \
             PriorityDecoder(width=len(self.event_sources))
-        self.comb += event_decoder.i.eq(event_encoder.o)
+        m.d.comb += event_decoder.i.eq(event_encoder.o)
 
-        self.submodules.serializer = serializer = FSM(reset_state="WAIT-EVENT")
         rep_overrun      = Signal()
         rep_throttle_new = Signal()
         rep_throttle_cur = Signal()
         delay_septets = 5
         delay_counter = Signal(7 * delay_septets)
-        serializer.act("WAIT-EVENT",
-            If(delay_fifo.readable,
-                delay_fifo.re.eq(1),
-                NextValue(delay_counter, delay_counter + delay_fifo.dout + 1),
-                If(delay_fifo.dout == delay_ovrun,
-                    NextValue(rep_overrun, 1),
-                    NextState("REPORT-DELAY")
-                )
-            ),
-            If(event_fifo.readable,
-                event_fifo.re.eq(1),
-                NextValue(event_encoder.i, event_fifo.dout[1:]),
-                NextValue(rep_throttle_new, event_fifo.dout[0]),
-                If((event_fifo.dout != 0) | (rep_throttle_cur != event_fifo.dout[0]),
-                    NextState("REPORT-DELAY")
-                )
-            ).Elif(self.done,
-                NextState("REPORT-DELAY")
-            )
-        )
-        serializer.act("REPORT-DELAY",
-            If(delay_counter >= 128 ** 4,
-                NextState("REPORT-DELAY-5")
-            ).Elif(delay_counter >= 128 ** 3,
-                NextState("REPORT-DELAY-4")
-            ).Elif(delay_counter >= 128 ** 2,
-                NextState("REPORT-DELAY-3")
-            ).Elif(delay_counter >= 128 ** 1,
-                NextState("REPORT-DELAY-2")
-            ).Else(
-                NextState("REPORT-DELAY-1")
-            )
-        )
-        for septet_no in range(delay_septets, 0, -1):
-            if septet_no == 1:
-                next_state = [
-                    NextValue(delay_counter, 0),
-                    If(rep_overrun,
-                        NextState("REPORT-OVERRUN")
-                    ).Elif(rep_throttle_cur != rep_throttle_new,
-                        NextState("REPORT-THROTTLE")
-                    ).Elif(event_encoder.i,
-                        NextState("REPORT-EVENT")
-                    ).Elif(self.done,
-                        NextState("REPORT-DONE")
-                    ).Else(
-                        NextState("WAIT-EVENT")
-                    )
-                ]
-            else:
-                next_state = [
-                    NextState("REPORT-DELAY-%d" % (septet_no - 1))
-                ]
-            serializer.act("REPORT-DELAY-%d" % septet_no,
-                If(self.output_fifo.writable,
-                    self.output_fifo.din.eq(
-                        REPORT_DELAY | delay_counter.part((septet_no - 1) * 7, 7)),
-                    self.output_fifo.we.eq(1),
-                    *next_state
-                )
-            )
-        serializer.act("REPORT-THROTTLE",
-            If(self.output_fifo.writable,
-                NextValue(rep_throttle_cur, rep_throttle_new),
-                If(rep_throttle_new,
-                    self.output_fifo.din.eq(REPORT_SPECIAL | SPECIAL_THROTTLE),
-                ).Else(
-                    self.output_fifo.din.eq(REPORT_SPECIAL | SPECIAL_DETHROTTLE),
-                ),
-                self.output_fifo.we.eq(1),
-                If(event_encoder.n,
-                    NextState("WAIT-EVENT")
-                ).Else(
-                    NextState("REPORT-EVENT")
-                )
-            )
-        )
-        event_source = self.event_sources[event_encoder.o]
-        event_data   = Signal(32)
-        serializer.act("REPORT-EVENT",
-            If(self.output_fifo.writable,
-                NextValue(event_encoder.i, event_encoder.i & ~event_decoder.o),
-                self.output_fifo.din.eq(
-                    REPORT_EVENT | event_encoder.o),
-                self.output_fifo.we.eq(1),
-                NextValue(event_data, event_source.data_fifo.dout),
-                event_source.data_fifo.re.eq(1),
-                If(event_source.width > 24,
-                    NextState("REPORT-EVENT-DATA-4")
-                ).Elif(event_source.width > 16,
-                    NextState("REPORT-EVENT-DATA-3")
-                ).Elif(event_source.width > 8,
-                    NextState("REPORT-EVENT-DATA-2")
-                ).Elif(event_source.width > 0,
-                    NextState("REPORT-EVENT-DATA-1")
-                ).Else(
-                    If(event_encoder.i & ~event_decoder.o,
-                        NextState("REPORT-EVENT")
-                    ).Else(
-                        NextState("WAIT-EVENT")
-                    )
-                )
-            )
-        )
-        for octet_no in range(4, 0, -1):
-            if octet_no == 1:
-                next_state = [
-                    If(event_encoder.n,
-                        NextState("WAIT-EVENT")
-                    ).Else(
-                        NextState("REPORT-EVENT")
-                    )
-                ]
-            else:
-                next_state = [
-                    NextState("REPORT-EVENT-DATA-%d" % (octet_no - 1))
-                ]
-            serializer.act("REPORT-EVENT-DATA-%d" % octet_no,
-                If(self.output_fifo.writable,
-                    self.output_fifo.din.eq(event_data.part((octet_no - 1) * 8, 8)),
-                    self.output_fifo.we.eq(1),
-                    *next_state
-                )
-            )
-            serializer.act("REPORT-DONE",
-                If(self.output_fifo.writable,
-                    self.output_fifo.din.eq(REPORT_SPECIAL | SPECIAL_DONE),
-                    self.output_fifo.we.eq(1),
-                    NextState("DONE")
-                )
-            )
+        with m.FSM() as serializer:
+            with m.State("WAIT-EVENT"):
+                with m.If(delay_fifo.r_rdy):
+                    m.d.comb += delay_fifo.r_en.eq(1)
+                    m.d.sync += delay_counter.eq(delay_counter + delay_fifo.r_data + 1)
+                    with m.If(delay_fifo.r_data == delay_ovrun):
+                        m.d.sync += rep_overrun.eq(1)
+                        m.next = "REPORT-DELAY"
+                with m.If(event_fifo.r_rdy):
+                    m.d.comb += event_fifo.r_en.eq(1)
+                    m.d.sync += event_encoder.i.eq(event_fifo.r_data[1:])
+                    m.d.sync += rep_throttle_new.eq(event_fifo.r_data[0])
+                    with m.If((event_fifo.r_data != 0) | (rep_throttle_cur != event_fifo.r_data[0])):
+                        m.next = "REPORT-DELAY"
+                with m.Elif(self.done):
+                    m.next = "REPORT-DELAY"
+            with m.State("REPORT-DELAY"):
+                with m.If(delay_counter >= 128 ** 4):
+                    m.next = "REPORT-DELAY-5"
+                with m.Elif(delay_counter >= 128 ** 3):
+                    m.next = "REPORT-DELAY-4"
+                with m.Elif(delay_counter >= 128 ** 2):
+                    m.next = "REPORT-DELAY-3"
+                with m.Elif(delay_counter >= 128 ** 1):
+                    m.next = "REPORT-DELAY-2"
+                with m.Else():
+                    m.next = "REPORT-DELAY-1"
+            for septet_no in range(delay_septets, 0, -1):
+                with m.State(f"REPORT-DELAY-{septet_no}"):
+                    with m.If(self.output_fifo.w_rdy):
+                        m.d.comb += [
+                            self.output_fifo.w_data.eq(
+                                REPORT_DELAY | delay_counter.word_select(septet_no - 1, 7)),
+                            self.output_fifo.w_en.eq(1),
+                        ]
+                        if septet_no == 1:
+                            m.d.sync += delay_counter.eq(0)
+                            with m.If(rep_overrun):
+                                m.next = "REPORT-OVERRUN"
+                            with m.Elif(rep_throttle_cur != rep_throttle_new):
+                                m.next = "REPORT-THROTTLE"
+                            with m.Elif(event_encoder.i):
+                                m.next = "REPORT-EVENT"
+                            with m.Elif(self.done):
+                                m.next = "REPORT-DONE"
+                            with m.Else():
+                                m.next = "WAIT-EVENT"
+                        else:
+                            m.next = f"REPORT-DELAY-{septet_no - 1}"
+            with m.State("REPORT-THROTTLE"):
+                with m.If(self.output_fifo.w_rdy):
+                    m.d.sync += rep_throttle_cur.eq(rep_throttle_new)
+                    with m.If(rep_throttle_new):
+                        m.d.comb += self.output_fifo.w_data.eq(REPORT_SPECIAL | SPECIAL_THROTTLE)
+                    with m.Else():
+                        m.d.comb += self.output_fifo.w_data.eq(REPORT_SPECIAL | SPECIAL_DETHROTTLE)
+                    m.d.comb += self.output_fifo.w_en.eq(1)
+                    with m.If(event_encoder.n):
+                        m.next = "WAIT-EVENT"
+                    with m.Else():
+                        m.next = "REPORT-EVENT"
+            event_source = self.event_sources[event_encoder.o]
+            event_data   = Signal(32)
+            with m.State("REPORT-EVENT"):
+                with m.If(self.output_fifo.w_rdy):
+                    m.d.sync += event_encoder.i.eq(event_encoder.i & ~event_decoder.o)
+                    m.d.comb += [
+                        self.output_fifo.w_data.eq(REPORT_EVENT | event_encoder.o),
+                        self.output_fifo.w_en.eq(1),
+                    ]
+                    m.d.sync += event_data.eq(event_source.data_fifo.r_data)
+                    m.d.comb += event_source.data_fifo.r_en.eq(1)
+                    with m.If(event_source.width > 24):
+                        m.next = "REPORT-EVENT-DATA-4"
+                    with m.Elif(event_source.width > 16):
+                        m.next = "REPORT-EVENT-DATA-3"
+                    with m.Elif(event_source.width > 8):
+                        m.next = "REPORT-EVENT-DATA-2"
+                    with m.Elif(event_source.width > 0):
+                        m.next = "REPORT-EVENT-DATA-1"
+                    with m.Else():
+                        with m.If(event_encoder.i & ~event_decoder.o):
+                            m.next = "REPORT-EVENT"
+                        with m.Else():
+                            m.next = "WAIT-EVENT"
+            for octet_no in range(4, 0, -1):
+                with m.State(f"REPORT-EVENT-DATA-{octet_no}"):
+                    with m.If(self.output_fifo.w_rdy):
+                        m.d.comb += [
+                            self.output_fifo.w_data.eq(event_data.word_select(octet_no - 1, 8)),
+                            self.output_fifo.w_en.eq(1),
+                        ]
+                        if octet_no == 1:
+                            with m.If(event_encoder.n):
+                                m.next = "WAIT-EVENT"
+                            with m.Else():
+                                m.next = "REPORT-EVENT"
+                        else:
+                            m.next = f"REPORT-EVENT-DATA-{octet_no - 1}"
+            with m.State("REPORT-DONE"):
+                with m.If(self.output_fifo.w_rdy):
+                    m.d.comb += [
+                        self.output_fifo.w_data.eq(REPORT_SPECIAL | SPECIAL_DONE),
+                        self.output_fifo.w_en.eq(1),
+                    ]
+                    m.next = "DONE"
             if hasattr(self.output_fifo, "flush"):
                 flush_output_fifo = [self.output_fifo.flush.eq(1)]
             else:
                 flush_output_fifo = []
-            serializer.act("DONE",
-                If(self.done,
-                    flush_output_fifo
-                ).Else(
-                    NextState("WAIT-EVENT")
-                )
-            )
-            serializer.act("REPORT-OVERRUN",
-                If(self.output_fifo.writable,
-                    self.output_fifo.din.eq(REPORT_SPECIAL | SPECIAL_OVERRUN),
-                    self.output_fifo.we.eq(1),
-                    NextState("OVERRUN")
-                )
-            )
-            serializer.act("OVERRUN",
-                flush_output_fifo,
-                NextState("OVERRUN")
-            )
+            with m.State("DONE"):
+                with m.If(self.done):
+                    m.d.comb += flush_output_fifo
+                with m.Else():
+                    m.next = "WAIT-EVENT"
+            with m.State("REPORT-OVERRUN"):
+                with m.If(self.output_fifo.w_rdy):
+                    m.d.comb += [
+                        self.output_fifo.w_data.eq(REPORT_SPECIAL | SPECIAL_OVERRUN),
+                        self.output_fifo.w_en.eq(1),
+                    ]
+                    m.next = "OVERRUN"
+            with m.State("OVERRUN"):
+                m.d.comb += flush_output_fifo
+                m.next = "OVERRUN"
+
+        return m
 
 
 class TraceDecodingError(Exception):
@@ -500,10 +485,18 @@ import unittest
 from . import simulation_test
 
 
-class EventAnalyzerTestbench(Module):
+class EventAnalyzerTestbench(Elaboratable):
     def __init__(self, **kwargs):
-        self.submodules.fifo = SyncFIFOBuffered(width=8, depth=64)
-        self.submodules.dut  = EventAnalyzer(self.fifo, **kwargs)
+        self.fifo = SyncFIFOBuffered(width=8, depth=64)
+        self.dut  = EventAnalyzer(self.fifo, **kwargs)
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.fifo = self.fifo
+        m.submodules.dut = self.dut
+
+        return m
 
     def trigger(self, index, data):
         yield self.dut.event_sources[index].trigger.eq(1)
@@ -519,20 +512,23 @@ class EventAnalyzerTestbench(Module):
         data  = []
         cycle = 0
         while len(data) < count:
-            while not (yield self.fifo.readable) and cycle < limit:
+            while not (yield self.fifo.r_rdy) and cycle < limit:
                 yield
                 cycle += 1
-            if not (yield self.fifo.readable):
+            if not (yield self.fifo.r_rdy):
                 raise ValueError("FIFO underflow")
-            data.append((yield from self.fifo.read()))
+            data.append((yield self.fifo.r_data))
+            yield self.fifo.r_en.eq(1)
+            yield
+            yield self.fifo.r_en.eq(0)
             yield
 
         cycle = 16
-        while not (yield self.fifo.readable) and cycle < limit:
+        while not (yield self.fifo.r_rdy) and cycle < limit:
             yield
             cycle += 1
-        if (yield self.fifo.readable):
-            raise ValueError("junk in FIFO: %#04x at %d" % ((yield self.fifo.dout), count))
+        if (yield self.fifo.r_rdy):
+            raise ValueError("junk in FIFO: %#04x at %d" % ((yield self.fifo.r_data), count))
 
         return data
 
@@ -830,10 +826,10 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield from tb.trigger(0, 1)
         yield from tb.step()
         self.assertEqual((yield tb.dut.throttle), 1)
-        yield tb.fifo.re.eq(1)
+        yield tb.fifo.r_en.eq(1)
         for x in range(52):
             yield
-        yield tb.fifo.re.eq(0)
+        yield tb.fifo.r_en.eq(0)
         yield
         self.assertEqual((yield tb.dut.throttle), 0)
 
@@ -846,12 +842,12 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield from tb.trigger(0, 1)
         yield from tb.step()
         self.assertEqual((yield tb.dut.overrun), 1)
-        yield tb.fifo.re.eq(1)
+        yield tb.fifo.r_en.eq(1)
         for x in range(55):
-            while not (yield tb.fifo.readable):
+            while not (yield tb.fifo.r_rdy):
                 yield
             yield
-        yield tb.fifo.re.eq(0)
+        yield tb.fifo.r_en.eq(0)
         yield
         yield from self.assertEmitted(tb, [
             REPORT_DELAY|0b0000100,

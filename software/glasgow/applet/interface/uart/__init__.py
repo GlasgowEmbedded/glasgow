@@ -3,7 +3,7 @@ import sys
 import logging
 import asyncio
 import argparse
-from nmigen import *
+from amaranth import *
 
 from ....support.endpoint import *
 from ....gateware.pads import *
@@ -21,6 +21,13 @@ class UARTAutoBaud(Elaboratable):
     often in the bitstream. (E.g. if the only transmitted byte is ``11110000``, the autobaud
     algorithm will not correctly lock onto this sequence. In fact, it would determine the baud rate
     that is 5× slower than the actual one.)
+
+    When running on an ASCII stream, approximately 82% of the printable characters will allow this
+    algorithm to produce a valid baud rate (17 characters do not have a single bit-time)... an
+    extended series of the characters listed below may cause issues when combined with framing or
+    parity errors (e.g: due to glitches).
+
+        01389<?`acgpqsxy|
 
     This algorithm works by training on a fixed-length sequence of pulses, choosing the length
     of the shortest one as the bit time. After the sequence ends, it retrains again from scratch,
@@ -130,6 +137,10 @@ class UARTApplet(GlasgowApplet, name="uart"):
     Transmit and receive data via UART.
 
     Any baud rate is supported. Only 8n1 mode is supported.
+
+    NOTE: The automatic baud rate algorithm requires a burst of data, and will lock on to the
+    shortest bit-times present in the stream... updates only occur on frame or parity errors, and
+    and random data will help.
     """
 
     __pins = ("rx", "tx")
@@ -314,7 +325,7 @@ class UARTApplet(GlasgowApplet, name="uart"):
         in_fileno  = sys.stdin.fileno()
         out_fileno = sys.stdout.fileno()
 
-        if os.isatty(in_fileno):
+        if os.isatty(in_fileno) and os.name != "nt":
             import atexit, termios
 
             old_stdin_attrs = termios.tcgetattr(sys.stdin)
@@ -384,7 +395,9 @@ class UARTAppletTestCase(GlasgowAppletTestCase, applet=UARTApplet):
     def setup_loopback(self):
         self.build_simulated_applet()
         mux_iface = self.applet.mux_interface
-        mux_iface.comb += mux_iface.pads.rx_t.i.eq(mux_iface.pads.tx_t.o)
+        m = Module()
+        m.d.comb += mux_iface.pads.rx_t.i.eq(mux_iface.pads.tx_t.o)
+        self.target.add_submodule(m)
 
     @applet_simulation_test("setup_loopback", ["--baud", "5000000"])
     async def test_loopback(self):

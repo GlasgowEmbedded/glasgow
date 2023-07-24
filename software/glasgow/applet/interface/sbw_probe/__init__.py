@@ -3,8 +3,8 @@
 
 import logging
 import asyncio
-from nmigen import *
-from nmigen.lib.cdc import FFSynchronizer
+from amaranth import *
+from amaranth.lib.cdc import FFSynchronizer
 
 from ....gateware.pads import *
 from ... import *

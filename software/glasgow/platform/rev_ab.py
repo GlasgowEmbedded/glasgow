@@ -1,4 +1,4 @@
-from nmigen.build import *
+from amaranth.build import *
 
 from .ice40 import *
 

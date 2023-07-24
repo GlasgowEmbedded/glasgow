@@ -1,6 +1,7 @@
 import re
 import argparse
 from abc import ABCMeta, abstractmethod
+from amaranth import *
 
 from ..support.arepl import *
 from ..gateware.clockgen import *
@@ -100,10 +101,11 @@ import os
 import unittest
 import functools
 import asyncio
+import types
 import threading
 import inspect
 import json
-from nmigen.back.pysim import *
+from amaranth.sim import *
 
 from ..access.simulation import *
 from ..access.direct import *
@@ -111,7 +113,7 @@ from ..target.simulation import *
 from ..target.hardware import *
 from ..device.simulation import *
 from ..device.hardware import *
-from ..platform.all import GlasgowPlatformRevAB
+from ..target.toolchain import find_toolchain
 
 
 __all__ += ["GlasgowAppletTestCase", "synthesis_test", "applet_simulation_test",
@@ -229,7 +231,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
             raise AssertionError("argument parsing failed") from None
         self.applet.build(target, parsed_args)
 
-        target.build_plan().execute()
+        target.build_plan().get_bitstream()
 
     def _prepare_applet_args(self, args, access_args, interact=False):
         parser = argparse.ArgumentParser()
@@ -240,8 +242,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
         self._parsed_args = parser.parse_args(args)
 
     def _prepare_simulation_target(self):
-        self.target = GlasgowSimulationTarget()
-        self.target.submodules.multiplexer = SimulationMultiplexer()
+        self.target = GlasgowSimulationTarget(multiplexer_cls=SimulationMultiplexer)
 
         self.device = GlasgowSimulationDevice(self.target)
         self.device.demultiplexer = SimulationDemultiplexer(self.device)
@@ -288,12 +289,15 @@ class GlasgowAppletTestCase(unittest.TestCase):
     async def run_hardware_applet(self, mode):
         if mode == "record":
             await self.device.download_target(self.target.build_plan())
+        else:
+            # avoid UnusedElaboratable warning
+            Fragment.get(self.target, None)
 
         return await self.applet.run(self.device, self._parsed_args)
 
 
 def synthesis_test(case):
-    synthesis_available = GlasgowPlatformRevAB().has_required_tools()
+    synthesis_available = find_toolchain(quiet=True) is not None
     return unittest.skipUnless(synthesis_available, "synthesis not available")(case)
 
 
@@ -306,7 +310,7 @@ def applet_simulation_test(setup, args=[]):
             self._prepare_simulation_target()
 
             getattr(self, setup)()
-            @asyncio.coroutine
+            @types.coroutine
             def run():
                 yield from case(self)
 
@@ -358,6 +362,7 @@ def applet_hardware_test(setup="run_hardware_applet", args=[]):
                     finally:
                         if self.device is not None:
                             loop.run_until_complete(self.device.demultiplexer.cancel())
+                        loop.close()
 
                 thread = threading.Thread(target=run_test)
                 thread.start()
@@ -374,6 +379,7 @@ def applet_hardware_test(setup="run_hardware_applet", args=[]):
                 if mode == "record":
                     if self.device is not None:
                         self.device.close()
+                fixture.close()
 
         return wrapper
 

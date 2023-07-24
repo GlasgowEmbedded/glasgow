@@ -1,7 +1,34 @@
 import asyncio
 import logging
+from amaranth import *
 
 from ...memory._25x import Memory25xInterface, Memory25xApplet
+from ... import *
+
+
+class ProgramICE40FlashSubtarget(Elaboratable):
+    def __init__(self, lower, reset_t, dut_reset, done_t, dut_done):
+        self.lower = lower
+        self.reset_t = reset_t
+        self.dut_reset = dut_reset
+        self.done_t = done_t
+        self.dut_done = dut_done
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.lower = self.lower
+
+        if self.reset_t is not None:
+            m.d.comb += [
+                self.reset_t.o.eq(0),
+                self.reset_t.oe.eq(self.dut_reset),
+            ]
+
+        if self.done_t is not None:
+            m.d.comb += self.dut_done.eq(self.done_t.i)
+
+        return m
 
 
 class ProgramICE40FlashInterface:
@@ -41,29 +68,26 @@ class ProgramICE40FlashApplet(Memory25xApplet, name="program-ice40-flash"):
         access.add_pin_argument(parser, "reset")
         access.add_pin_argument(parser, "done")
 
-    def build(self, target, args):
-        subtarget = super().build(target, args)
+    def build_subtarget(self, target, args):
+        subtarget = super().build_subtarget(target, args)
 
         if args.pin_reset is not None:
             reset_t = self.mux_interface.get_pin(args.pin_reset)
             dut_reset, self.__addr_dut_reset = target.registers.add_rw(1)
-            subtarget.comb += [
-                reset_t.o.eq(0),
-                reset_t.oe.eq(dut_reset),
-            ]
         else:
+            reset_t = None
+            dut_reset = None
             self.__addr_dut_reset = None
 
         if args.pin_done is not None:
             done_t = self.mux_interface.get_pin(args.pin_done)
             dut_done, self.__addr_dut_done = target.registers.add_ro(1)
-            subtarget.comb += [
-                dut_done.eq(done_t.i),
-            ]
         else:
+            done_t = None
+            dut_done = None
             self.__addr_dut_done = None
 
-        return subtarget
+        return ProgramICE40FlashSubtarget(subtarget, reset_t, dut_reset, done_t, dut_done)
 
     async def run(self, device, args):
         m25x_iface = await super().run(device, args)
@@ -85,3 +109,10 @@ class ProgramICE40FlashApplet(Memory25xApplet, name="program-ice40-flash"):
                 self.logger.info("FPGA configured from flash")
             else:
                 self.logger.warning("FPGA failed to configure after releasing reset")
+
+# -------------------------------------------------------------------------------------------------
+
+class ProgramICE40FlashAppletTestCase(GlasgowAppletTestCase, applet=ProgramICE40FlashApplet):
+    @synthesis_test
+    def test_build(self):
+        self.assertBuilds()

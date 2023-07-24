@@ -62,7 +62,7 @@ import logging
 import argparse
 import asyncio
 from bitarray import bitarray
-from nmigen.compat import *
+from amaranth import *
 
 from ...interface.spi_controller import SPIControllerSubtarget, SPIControllerInterface
 from ... import *
@@ -82,6 +82,51 @@ REG_DATA        = 0x0A
 
 class PDIDisplayError(GlasgowAppletError):
     pass
+
+
+class PDIDisplaySubtarget(Elaboratable):
+    def __init__(self, controller, pads, sys_clk_freq, cog_power, cog_disch, cog_reset, cog_pwmen):
+        self.controller = controller
+        self.pads = pads
+        self.sys_clk_freq = sys_clk_freq
+        self.cog_power = cog_power
+        self.cog_disch = cog_disch
+        self.cog_reset = cog_reset
+        self.cog_pwmen = cog_pwmen
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.controller = self.controller
+
+        m.d.comb += [
+            # Make sure power and disch are never asserted together, as a safety interlock.
+            self.pads.power_t.oe.eq(1),
+            self.pads.power_t.o.eq(self.cog_power & ~self.cog_disch),
+            self.pads.disch_t.oe.eq(1),
+            self.pads.disch_t.o.eq(self.cog_disch & ~self.cog_power),
+            self.pads.reset_t.oe.eq(1),
+            self.pads.reset_t.o.eq(~self.cog_reset),
+        ]
+
+        if hasattr(self.pads, "pwm_t"):
+            pwm_half  = math.ceil(self.sys_clk_freq / 50e3)
+            pwm_timer = Signal(range(pwm_half))
+            pwm_phase = Signal()
+            with m.If(pwm_timer == 0):
+                m.d.sync += [
+                    pwm_phase.eq(~pwm_phase),
+                    pwm_timer.eq(pwm_half),
+                ]
+            with m.Else():
+                m.d.sync += pwm_timer.eq(pwm_timer - 1)
+
+            m.d.comb += [
+                self.pads.pwm_t.oe.eq(1),
+                self.pads.pwm_t.o.eq(self.cog_pwmen & pwm_phase),
+            ]
+
+        return m
 
 
 class PDIDisplayInterface:
@@ -342,7 +387,8 @@ class DisplayPDIApplet(GlasgowApplet, name="display-pdi"):
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        subtarget = iface.add_subtarget(SPIControllerSubtarget(
+
+        controller = SPIControllerSubtarget(
             pads=iface.get_pads(args, pins=self.__pins + self.__pins_g1),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
@@ -351,39 +397,28 @@ class DisplayPDIApplet(GlasgowApplet, name="display-pdi"):
             sck_idle=0,
             sck_edge="rising",
             cs_active=0,
-        ))
+        )
 
         cog_power, self.__addr_cog_power = target.registers.add_rw(1)
         cog_disch, self.__addr_cog_disch = target.registers.add_rw(1)
         cog_reset, self.__addr_cog_reset = target.registers.add_rw(1, reset=1)
-        target.comb += [
-            # Make sure power and disch are never asserted together, as a safety interlock.
-            iface.pads.power_t.oe.eq(1),
-            iface.pads.power_t.o.eq(cog_power & ~cog_disch),
-            iface.pads.disch_t.oe.eq(1),
-            iface.pads.disch_t.o.eq(cog_disch & ~cog_power),
-            iface.pads.reset_t.oe.eq(1),
-            iface.pads.reset_t.o.eq(~cog_reset),
-        ]
 
         if hasattr(iface.pads, "pwm_t"):
-            pwm_half  = math.ceil(target.sys_clk_freq / 50e3)
-            pwm_timer = Signal(max=pwm_half)
-            pwm_phase = Signal()
-            target.sync += [
-                If(pwm_timer == 0,
-                    pwm_phase.eq(~pwm_phase),
-                    pwm_timer.eq(pwm_half),
-                ).Else(
-                    pwm_timer.eq(pwm_timer - 1)
-                )
-            ]
-
             cog_pwmen, self.__addr_cog_pwmen = target.registers.add_rw(1)
-            target.comb += [
-                iface.pads.pwm_t.oe.eq(1),
-                iface.pads.pwm_t.o.eq(cog_pwmen & pwm_phase),
-            ]
+        else:
+            cog_pwmen = None
+
+        subtarget = PDIDisplaySubtarget(
+            controller=controller,
+            pads=iface.pads,
+            sys_clk_freq=target.sys_clk_freq,
+            cog_power=cog_power,
+            cog_disch=cog_disch,
+            cog_reset=cog_reset,
+            cog_pwmen=cog_pwmen,
+        )
+
+        iface.add_subtarget(subtarget)
 
     @classmethod
     def add_run_arguments(cls, parser, access):

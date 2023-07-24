@@ -1,5 +1,5 @@
-from nmigen import *
-from nmigen.lib.cdc import FFSynchronizer
+from amaranth import *
+from amaranth.lib.cdc import FFSynchronizer
 
 
 __all__ = ["UART"]
@@ -151,7 +151,7 @@ class UART(Elaboratable):
             rx_timer = Signal(range(self.max_bit_cyc))
             rx_stb   = Signal()
             rx_shreg = Signal(self.data_bits)
-            rx_bitno = Signal(range(rx_shreg.nbits))
+            rx_bitno = Signal(range(len(rx_shreg)))
 
             m.d.comb += self.rx_err.eq(self.rx_ferr | self.rx_ovf | self.rx_perr)
 
@@ -178,7 +178,7 @@ class UART(Elaboratable):
                             rx_shreg.eq(Cat(rx_shreg[1:], self.bus.rx_i)),
                             rx_bitno.eq(rx_bitno + 1),
                         ]
-                        with m.If(rx_bitno == rx_shreg.nbits - 1):
+                        with m.If(rx_bitno == len(rx_shreg) - 1):
                             if self.parity == "none":
                                 m.next = "STOP"
                             else:
@@ -214,7 +214,7 @@ class UART(Elaboratable):
             tx_timer  = Signal(range(self.max_bit_cyc))
             tx_stb    = Signal()
             tx_shreg  = Signal(self.data_bits)
-            tx_bitno  = Signal(range(tx_shreg.nbits))
+            tx_bitno  = Signal(range(len(tx_shreg)))
             tx_parity = Signal()
 
             with m.If(tx_start | (tx_timer == 0)):
@@ -247,7 +247,7 @@ class UART(Elaboratable):
                 with m.State("DATA"):
                     with m.If(tx_stb):
                         m.d.sync += tx_bitno.eq(tx_bitno + 1)
-                        with m.If(tx_bitno != tx_shreg.nbits - 1):
+                        with m.If(tx_bitno != len(tx_shreg) - 1):
                             m.d.sync += [
                                 self.bus.tx_o.eq(tx_shreg[0]),
                                 tx_shreg.eq(Cat(tx_shreg[1:], C(0,1))),
@@ -272,7 +272,7 @@ class UART(Elaboratable):
 # -------------------------------------------------------------------------------------------------
 
 import unittest
-from nmigen.lib.io import Pin
+from amaranth.lib.io import Pin
 
 from . import simulation_test
 

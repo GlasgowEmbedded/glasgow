@@ -7,7 +7,7 @@ import logging
 import asyncio
 import struct
 from collections import namedtuple
-from nmigen import *
+from amaranth import *
 
 from ... import *
 from ....support.data_logger import DataLogger
@@ -29,12 +29,12 @@ class PMSx003Subtarget(Elaboratable):
         m.submodules.uart = uart = UART(self.pads,
             bit_cyc=int(platform.default_clk_frequency // 9600))
         m.d.comb += [
-            self.in_fifo.din.eq(uart.rx_data),
-            self.in_fifo.we.eq(uart.rx_rdy),
-            uart.rx_ack.eq(self.in_fifo.writable),
-            uart.tx_data.eq(self.out_fifo.dout),
-            self.out_fifo.re.eq(uart.tx_rdy),
-            uart.tx_ack.eq(self.out_fifo.readable),
+            self.in_fifo.w_data.eq(uart.rx_data),
+            self.in_fifo.w_en.eq(uart.rx_rdy),
+            uart.rx_ack.eq(self.in_fifo.w_rdy),
+            uart.tx_data.eq(self.out_fifo.r_data),
+            self.out_fifo.r_en.eq(uart.tx_rdy),
+            uart.tx_ack.eq(self.out_fifo.r_rdy),
         ]
         return m
 

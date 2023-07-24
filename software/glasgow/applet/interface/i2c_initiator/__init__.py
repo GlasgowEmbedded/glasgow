@@ -1,7 +1,7 @@
 import argparse
 import logging
 import math
-from nmigen import *
+from amaranth import *
 
 from ....gateware.pads import *
 from ....gateware.i2c import I2CInitiator

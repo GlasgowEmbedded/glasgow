@@ -1,7 +1,7 @@
 import logging
 import asyncio
-from nmigen import *
-from nmigen.build.plat import ResourceError
+from amaranth import *
+from amaranth.build.res import ResourceError
 
 from ... import *
 
@@ -72,21 +72,23 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
     __default_modes = ["pins-int", "loopback"]
 
     def build(self, target, args):
-        target.submodules += SelfTestSubtarget(applet=self, target=target)
+        target.add_submodule(SelfTestSubtarget(applet=self, target=target))
 
         self.mux_interface_1 = iface_1 = target.multiplexer.claim_interface(self, None)
         self.mux_interface_2 = iface_2 = target.multiplexer.claim_interface(self, None)
 
         in_fifo_1, out_fifo_1 = iface_1.get_inout_fifo()
         in_fifo_2, out_fifo_2 = iface_2.get_inout_fifo()
-        target.comb += [
-            in_fifo_1.din.eq(out_fifo_1.dout),
-            in_fifo_1.we.eq(out_fifo_1.readable),
-            out_fifo_1.re.eq(in_fifo_1.writable),
-            in_fifo_2.din.eq(out_fifo_2.dout),
-            in_fifo_2.we.eq(out_fifo_2.readable),
-            out_fifo_2.re.eq(in_fifo_2.writable),
+        m = Module()
+        m.d.comb += [
+            in_fifo_1.w_data.eq(out_fifo_1.r_data),
+            in_fifo_1.w_en.eq(out_fifo_1.r_rdy),
+            out_fifo_1.r_en.eq(in_fifo_1.w_rdy),
+            in_fifo_2.w_data.eq(out_fifo_2.r_data),
+            in_fifo_2.w_en.eq(out_fifo_2.r_rdy),
+            out_fifo_2.r_en.eq(in_fifo_2.w_rdy),
         ]
+        target.add_submodule(m)
 
     @classmethod
     def add_run_arguments(cls, parser, access):

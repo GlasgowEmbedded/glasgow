@@ -6,6 +6,7 @@ import sys
 import struct
 import logging
 import argparse
+from amaranth import *
 
 from ....support.logging import dump_hex
 from ....database.jedec import *
@@ -23,6 +24,28 @@ BIT_WEL  = 0b00000010
 MSK_PROT = 0b00111100
 BIT_CP   = 0b01000000
 BIT_ERR  = 0b10000000
+
+
+class Memory25xSubtarget(Elaboratable):
+    def __init__(self, controller, hold_t, cs_active):
+        self.controller = controller
+        self.hold_t = hold_t
+        self.cs_active = cs_active
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.controller = self.controller
+
+        m.d.comb += self.controller.bus.oe.eq(self.controller.bus.cs == self.cs_active)
+
+        if self.hold_t is not None:
+            m.d.comb += [
+                self.hold_t.oe.eq(1),
+                self.hold_t.o.eq(1),
+            ]
+
+        return m
 
 
 class Memory25xInterface:
@@ -252,18 +275,13 @@ class Memory25xApplet(SPIControllerApplet, name="memory-25x"):
         access.add_pin_argument(parser, "sck",  default=True, required=True)
         access.add_pin_argument(parser, "hold", default=True)
 
-    def build(self, target, args):
-        subtarget = super().build(target, args)
-        subtarget.comb += subtarget.bus.oe.eq(subtarget.bus.cs == args.cs_active)
-
+    def build_subtarget(self, target, args):
+        subtarget = super().build_subtarget(target, args)
         if args.pin_hold is not None:
             hold_t = self.mux_interface.get_pin(args.pin_hold)
-            subtarget.comb += [
-                hold_t.oe.eq(1),
-                hold_t.o.eq(1),
-            ]
-
-        return subtarget
+        else:
+            hold_t = None
+        return Memory25xSubtarget(subtarget, hold_t, args.cs_active)
 
     async def run(self, device, args):
         spi_iface = await self.run_lower(Memory25xApplet, device, args)

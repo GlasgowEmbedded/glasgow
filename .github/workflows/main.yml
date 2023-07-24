@@ -1,7 +1,8 @@
 on:
   push:
-    branches: master
-  pull_request: {}
+    branches: main
+  pull_request:
+  merge_group:
 
 name: CI
 jobs:
@@ -10,35 +11,52 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9']
+        python-version:
+        - '3.8'
+        - '3.9'
+        - '3.10'
+        - '3.11'
+        - 'pypy-3.8'
+        - 'pypy-3.9'
+        allow-failure:
+        - false
+    continue-on-error: '${{ matrix.allow-failure }}'
+    name: 'test-software (${{ matrix.python-version }})'
     steps:
       - name: Check out source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install PDM
+        run: curl -sSL https://pdm.fming.dev/dev/install-pdm.py | python -
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip setuptools wheel
-          python -m pip install git+https://github.com/nmigen/nmigen.git
-      - name: Install software
-        run: python -m pip install -e ./software[toolchain]
+        working-directory: ./software
+        run: pdm install -G :all
+      - name: Preserve caches
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/wasmtime
+            ~/.cache/YoWASP
+            ~/.cache/GlasgowEmbedded
+          key: ${{ runner.os }}
       - name: Run tests
         working-directory: ./software
         env:
           YOSYS: yowasp-yosys
           NEXTPNR_ICE40: yowasp-nextpnr-ice40
           ICEPACK: yowasp-icepack
-        run: python -W ignore::DeprecationWarning test.py -v
+        run: pdm run test
 
   build-firmware:
     runs-on: ubuntu-20.04
     steps:
       - name: Check out source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: recursive
       - name: Install dependencies

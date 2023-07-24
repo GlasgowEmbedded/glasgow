@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
-from nmigen.compat import *
+from amaranth import *
+from amaranth.lib.io import Pin
 
 from ..gateware.pads import Pads
 
@@ -31,7 +32,7 @@ class AccessArguments(metaclass=ABCMeta):
         pass
 
 
-class AccessMultiplexer(Module, metaclass=ABCMeta):
+class AccessMultiplexer(Elaboratable, metaclass=ABCMeta):
     @abstractmethod
     def set_analyzer(self, analyzer):
         pass
@@ -41,11 +42,12 @@ class AccessMultiplexer(Module, metaclass=ABCMeta):
         pass
 
 
-class AccessMultiplexerInterface(Module, metaclass=ABCMeta):
+class AccessMultiplexerInterface(Elaboratable, metaclass=ABCMeta):
     def __init__(self, applet, analyzer):
         self.applet   = applet
         self.logger   = applet.logger
         self.analyzer = analyzer
+        self.pads     = None
 
     @abstractmethod
     def get_out_fifo(self, **kwargs):
@@ -67,7 +69,7 @@ class AccessMultiplexerInterface(Module, metaclass=ABCMeta):
         pass
 
     def get_pins(self, pins, name=None):
-        triple = TSTriple(len(pins), name=name)
+        triple = Pin(width=len(pins), dir='io')
         for n, pin in enumerate(pins):
             self.build_pin_tristate(pin, triple.oe, triple.o[n], triple.i[n])
 
@@ -102,7 +104,7 @@ class AccessMultiplexerInterface(Module, metaclass=ABCMeta):
                     pin_set, ", ".join([self.get_pin_name(pin_num) for pin_num in pin_nums]))
                 pad_args[pin_set] = self.get_pins(pin_nums, name=pin_set)
 
-        self.submodules.pads = Pads(**pad_args)
+        self.pads = Pads(**pad_args)
         return self.pads
 
 

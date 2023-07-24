@@ -1,10 +1,34 @@
 import argparse
 import asyncio
 import logging
-from nmigen.compat import *
+from amaranth import *
 
 from ...interface.spi_controller import SPIControllerApplet
 from ... import *
+
+
+class ProgramICE40SRAMSubtarget(Elaboratable):
+    def __init__(self, controller, reset_t, dut_reset, done_t, dut_done):
+        self.controller = controller
+        self.reset_t = reset_t
+        self.dut_reset = dut_reset
+        self.done_t = done_t
+        self.dut_done = dut_done
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.controller = self.controller
+
+        m.d.comb += [
+            self.reset_t.o.eq(0),
+            self.reset_t.oe.eq(self.dut_reset)
+        ]
+
+        if self.done_t is not None:
+            m.d.comb += self.dut_done.eq(self.done_t.i)
+
+        return m
 
 
 class ProgramICE40SRAMInterface:
@@ -60,26 +84,21 @@ class ProgramICE40SRAMApplet(SPIControllerApplet, name="program-ice40-sram"):
         access.add_pin_argument(parser, "reset", required=True)
         access.add_pin_argument(parser, "done")
 
-    def build(self, target, args):
-        subtarget = super().build(target, args, pins=("sck", "cs", "copi"))
+    def build_subtarget(self, target, args):
+        subtarget = super().build_subtarget(target, args, pins=("sck", "cs", "copi"))
 
         reset_t = self.mux_interface.get_pin(args.pin_reset)
         dut_reset, self.__addr_dut_reset = target.registers.add_rw(1)
-        subtarget.comb += [
-            reset_t.o.eq(0),
-            reset_t.oe.eq(dut_reset),
-        ]
 
         if args.pin_done is not None:
             done_t = self.mux_interface.get_pin(args.pin_done)
             dut_done, self.__addr_dut_done = target.registers.add_ro(1)
-            subtarget.comb += [
-                dut_done.eq(done_t.i),
-            ]
         else:
+            done_t = None
+            dut_done = None
             self.__addr_dut_done = None
 
-        return subtarget
+        return ProgramICE40SRAMSubtarget(subtarget, reset_t, dut_reset, done_t, dut_done)
 
     @classmethod
     def add_interact_arguments(cls, parser):

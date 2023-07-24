@@ -2,7 +2,7 @@
 # Accession: G00030
 
 import struct
-import crcmod
+import crc
 
 from ..support.bitstruct import *
 
@@ -14,7 +14,7 @@ class ONFIParameterError(Exception):
     pass
 
 
-_crc_onfi = crcmod.mkCrcFun(0x18005, initCrc=0x4f4e, rev=False)
+_crc_onfi = staticmethod(crc.Calculator(crc.Configuration(width=16, polynomial=0x18005, init_value=0x4f4e)).checksum)
 
 
 _ONFI_Revision = bitstruct("ONFI_Revision", 16, [
