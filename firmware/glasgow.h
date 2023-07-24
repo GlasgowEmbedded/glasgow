@@ -88,6 +88,9 @@ __xdata __at(0x4000 - CONF_SIZE) struct glasgow_config {
   uint16_t  voltage_limit[2];
 } glasgow_config;
 
+// Test mode API
+extern __bit test_leds;
+
 // FPGA API
 void fpga_init();
 void fpga_reset();

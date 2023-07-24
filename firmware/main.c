@@ -280,6 +280,7 @@ enum {
   USB_REQ_IOBUF_ENABLE = 0x19,
   USB_REQ_LIMIT_VOLT   = 0x1A,
   USB_REQ_PULL         = 0x1B,
+  USB_REQ_TEST_LEDS    = 0x1C,
   // Cypress requests
   USB_REQ_CYPRESS_EEPROM_DB = 0xA9,
   // libfx2 requests
@@ -287,6 +288,9 @@ enum {
   // Microsoft requests
   USB_REQ_GET_MS_DESCRIPTOR = 0xC0,
 };
+
+// Test mode functions
+__bit test_leds = false;
 
 enum {
   // Status bits
@@ -305,10 +309,12 @@ enum {
 static uint8_t status;
 
 static void update_err_led() {
-  if(status & (ST_ERROR | ST_ALERT))
-    IOD |=  (1<<PIND_LED_ERR);
-  else
-    IOD &= ~(1<<PIND_LED_ERR);
+  if(!test_leds) {
+    if(status & (ST_ERROR | ST_ALERT))
+      IOD |=  (1<<PIND_LED_ERR);
+    else
+      IOD &= ~(1<<PIND_LED_ERR);
+  }
 }
 
 static void latch_status_bit(uint8_t bit) {
@@ -767,6 +773,23 @@ void handle_pending_usb_setup() {
     return;
   }
 
+  // LED test mode request
+  if(req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT) &&
+     req->bRequest == USB_REQ_TEST_LEDS &&
+     req->wLength == 0) {
+    uint8_t arg_states = req->wIndex;
+    pending_setup = false;
+
+    // Exit LED testing mode by resetting the device.
+    test_leds = true;
+    IOD &=             ~(0xf  << PIND_LED_FX2);
+    IOD |= (arg_states & 0xf) << PIND_LED_FX2;
+    ACK_EP0();
+
+    return;
+  }
+
+  // API level request
   if(req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN) &&
      req->bRequest == USB_REQ_API_LEVEL &&
      req->wLength == 1) {
@@ -842,15 +865,15 @@ void handle_pending_alert() {
 }
 
 void isr_TF2() __interrupt(_INT_TF2) {
-  // Inlined from led_act_set() for call-free interrupt code.
-  IOD &= ~(1<<PIND_LED_ACT);
+  if (!test_leds)
+    IOD &= ~(1<<PIND_LED_ACT);
   TR2 = false;
   TF2 = false;
 }
 
 static void isr_EPn() __interrupt {
-  // Inlined from led_act_set() for call-free interrupt code.
-  IOD |= (1<<PIND_LED_ACT);
+  if (!test_leds)
+    IOD |= (1<<PIND_LED_ACT);
   // Just let it run, at the maximum reload value we get a pulse width of around 16ms.
   TR2 = true;
   // Clear all EPn IRQs, since we don't really need this IRQ to be fine-grained.
