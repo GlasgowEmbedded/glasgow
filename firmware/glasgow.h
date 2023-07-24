@@ -86,6 +86,7 @@ __xdata __at(0x4000 - CONF_SIZE) struct glasgow_config {
   uint32_t  bitstream_size;
   char      bitstream_id[BITSTREAM_ID_SIZE];
   uint16_t  voltage_limit[2];
+  char      manufacturer[23];
 } glasgow_config;
 
 // Test mode API
