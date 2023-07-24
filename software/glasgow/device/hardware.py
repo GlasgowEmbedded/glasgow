@@ -89,27 +89,36 @@ class GlasgowHardwareDevice:
             else:
                 continue
 
+            handle = device.open()
             if api_level == 0:
                 logger.debug("found rev%s device without firmware", revision)
             elif api_level != CUR_API_LEVEL:
-                logger.info("found rev%s device with API level %d (supported API level is %d)",
-                            revision, api_level, CUR_API_LEVEL)
+                for config in handle.getDevice().iterConfigurations():
+                    if config.getConfigurationValue() == handle.getConfiguration():
+                        break
+                try:
+                    # `handle` is getting closed either way, so explicit release isn't necessary.
+                    for intf_num in range(config.getNumInterfaces()):
+                        handle.claimInterface(intf_num)
+                    logger.info("found rev%s device with API level %d (supported API level is %d)",
+                                revision, api_level, CUR_API_LEVEL)
+                except usb1.USBErrorBusy:
+                    logger.debug("found busy rev%s device with unsupported API level %d",
+                                 revision, api_level)
+                    handle.close()
+                    continue
             else: # api_level == CUR_API_LEVEL
-                handle = device.open()
                 serial = handle.getASCIIStringDescriptor(
                     device.getSerialNumberDescriptor())
-                if serial in devices_by_serial:
-                    continue
+                if serial not in devices_by_serial:
+                    logger.debug("found rev%s device with serial %s", revision, serial)
+                    devices_by_serial[serial] = (revision, device)
                 handle.close()
-
-                logger.debug("found rev%s device with serial %s", revision, serial)
-                devices_by_serial[serial] = (revision, device)
                 continue
 
             # If the device has no firmware or the firmware is too old (or, potentially, too new),
             # load the firmware that we know will work.
             logger.debug("loading firmware to rev%s device", revision)
-            handle = device.open()
             handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [1])
             for address, data in cls.firmware():
                 while len(data) > 0:
