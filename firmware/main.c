@@ -138,7 +138,7 @@ usb_configuration_set_c usb_configs[] = {
 };
 
 usb_ascii_string_c usb_strings[] = {
-  [0] = "whitequark research",
+  [0] = "whitequark research\0\0\0\0", // 23 characters
   [1] = "Glasgow Interface Explorer",
   [2] = "XX-XXXXXXXXXXXXXXXX",
   // Configurations
@@ -251,17 +251,31 @@ static void config_fixup() {
 // Populate descriptors from device configuration, if any.
 static void descriptors_init() {
   __xdata struct usb_desc_device *desc_device = (__xdata struct usb_desc_device *)usb_device;
-  __xdata char *desc_serial = (__xdata char *)usb_strings[usb_device.iSerialNumber - 1];
+  __xdata char *desc_string;
 
-  desc_device->bcdDevice |= glasgow_config.revision;
-  desc_serial[0] = 'A' + (glasgow_config.revision >> 4) - 1;
-  desc_serial[1] = '0' + (glasgow_config.revision & 0xF);
-  xmemcpy(&desc_serial[3], (__xdata void *)glasgow_config.serial,
-          sizeof(glasgow_config.serial));
-  if(glasgow_config.revision == GLASGOW_REV_NA) {
+  // Set revision from configuration if any, or pretend to be an unflashed device if it's missing.
+  if(glasgow_config.revision != GLASGOW_REV_NA) {
+    desc_device->bcdDevice |= glasgow_config.revision;
+  } else {
     desc_device->idVendor  = VID_CYPRESS;
     desc_device->idProduct = PID_FX2;
   }
+
+  // Set manufacturer from configuration if it's set. Most devices will have this field zeroed,
+  // leaving the manufacturer string at the default value.
+  if (glasgow_config.manufacturer[0] != '\0') {
+    desc_string = (__xdata char *)usb_strings[usb_device.iManufacturer - 1];
+    xmemcpy(&desc_string[0], (__xdata void *)glasgow_config.manufacturer,
+            sizeof(glasgow_config.manufacturer));
+  }
+
+  // Set serial number from configuration. Serial number must be always valid, and the firmware
+  // fixes up the serial number in `config_init()` if the configuration is corrupted or missing.
+  desc_string = (__xdata char *)usb_strings[usb_device.iSerialNumber - 1];
+  desc_string[0] = 'A' + (glasgow_config.revision >> 4) - 1;
+  desc_string[1] = '0' + (glasgow_config.revision & 0xF);
+  xmemcpy(&desc_string[3], (__xdata void *)glasgow_config.serial,
+          sizeof(glasgow_config.serial));
 }
 
 enum {

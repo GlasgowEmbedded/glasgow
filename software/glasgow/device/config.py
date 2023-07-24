@@ -28,17 +28,21 @@ class GlasgowConfig:
 
     :ivar int[2] voltage_limit:
         Maximum allowed I/O port voltage, in millivolts.
+
+    :ivar str[23] manufacturer:
+        Manufacturer string
     """
     size = 64
-    _encoding = "<B16sI16s2H"
+    _encoding = "<B16sI16s2H23s"
 
     def __init__(self, revision, serial, bitstream_size=0, bitstream_id=b"\x00"*16,
-                 voltage_limit=None):
+                 voltage_limit=None, manufacturer=""):
         self.revision = revision
         self.serial   = serial
         self.bitstream_size = bitstream_size
         self.bitstream_id   = bitstream_id
         self.voltage_limit  = [5500, 5500] if voltage_limit is None else voltage_limit
+        self.manufacturer   = manufacturer
 
     @staticmethod
     def encode_revision(string):
@@ -80,7 +84,8 @@ class GlasgowConfig:
                            self.bitstream_size,
                            self.bitstream_id,
                            self.voltage_limit[0],
-                           self.voltage_limit[1])
+                           self.voltage_limit[1],
+                           self.manufacturer.encode("ascii"))
         return data.ljust(self.size, b"\x00")
 
     @classmethod
@@ -96,10 +101,11 @@ class GlasgowConfig:
 
         voltage_limit = [0, 0]
         revision, serial, bitstream_size, bitstream_id, \
-            voltage_limit[0], voltage_limit[1] = \
+            voltage_limit[0], voltage_limit[1], manufacturer = \
             struct.unpack_from(cls._encoding, data, 0)
         return cls(cls.decode_revision(revision),
                    serial.decode("ascii"),
                    bitstream_size,
                    bitstream_id,
-                   voltage_limit)
+                   voltage_limit,
+                   manufacturer.decode("ascii"))

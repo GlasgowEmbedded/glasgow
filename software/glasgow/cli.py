@@ -340,7 +340,13 @@ def get_argparser():
         if re.match(r"^\d{8}T\d{6}Z$", arg):
             return arg
         else:
-            raise argparse.ArgumentTypeError("{} is not a valid serial number".format(arg))
+            raise argparse.ArgumentTypeError(f"{arg} is not a valid serial number")
+
+    def factory_manufacturer(arg):
+        if len(arg) <= 23:
+            return arg
+        else:
+            raise argparse.ArgumentTypeError("f{arg} is too long for the manufacturer field")
 
     p_factory = subparsers.add_parser(
         "factory", formatter_class=TextHelpFormatter,
@@ -355,6 +361,10 @@ def get_argparser():
         "--serial", metavar="SERIAL", dest="factory_serial", type=factory_serial,
         default=datetime.now().strftime("%Y%m%dT%H%M%SZ"),
         help="serial number in ISO 8601 format (if not specified: %(default)s)")
+    p_factory.add_argument(
+        "--manufacturer", metavar="MFG", dest="factory_manufacturer", type=factory_manufacturer,
+        default="", # the default is implemented in the firmware
+        help="manufacturer string (if not specified: whitequark research)")
 
     p_list = subparsers.add_parser(
         "list", formatter_class=TextHelpFormatter,
@@ -806,7 +816,8 @@ async def _main():
                 return 1
 
             device_id = GlasgowConfig.encode_revision(args.factory_rev)
-            glasgow_config = GlasgowConfig(args.factory_rev, args.factory_serial)
+            glasgow_config = GlasgowConfig(args.factory_rev, args.factory_serial,
+                                           manufacturer=args.factory_manufacturer)
             firmware = GlasgowHardwareDevice.firmware()
 
             if args.reinitialize:
