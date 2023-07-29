@@ -9,6 +9,12 @@
 #include <usbmicrosoft.h>
 #include "glasgow.h"
 
+// bcdDevice is a 16-bit number where the high byte indicates the API revision and the low byte
+// indicates the hardware revision. If the firmware is not flashed (only the FX2 header is present)
+// then the high byte is zero (as configured by `glasgow factory`). The low byte can be zero on
+// legacy devices with old or no firmware where the hardware revision is present only in
+// the Glasgow configuration block. Loading new firmware ensures it is present in the FX2 header.
+
 usb_desc_device_c usb_device = {
   .bLength              = sizeof(struct usb_desc_device),
   .bDescriptorType      = USB_DESC_DEVICE,
@@ -19,7 +25,7 @@ usb_desc_device_c usb_device = {
   .bMaxPacketSize0      = 64,
   .idVendor             = VID_QIHW,
   .idProduct            = PID_GLASGOW,
-  .bcdDevice            = 0x0100,
+  .bcdDevice            = CUR_API_LEVEL << 8,
   .iManufacturer        = 1,
   .iProduct             = 2,
   .iSerialNumber        = 3,
@@ -279,7 +285,7 @@ static void descriptors_init() {
 }
 
 enum {
-  // Glasgow API level request
+  // Only used by old checkouts of software, can be removed.
   USB_REQ_API_LEVEL    = 0x0F,
   // Glasgow API requests
   USB_REQ_EEPROM       = 0x10,
@@ -803,7 +809,7 @@ void handle_pending_usb_setup() {
     return;
   }
 
-  // API level request
+  // Only used by old checkouts of software, can be removed.
   if(req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN) &&
      req->bRequest == USB_REQ_API_LEVEL &&
      req->wLength == 1) {
