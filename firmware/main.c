@@ -1002,18 +1002,20 @@ int main() {
     // an address it should indicate this unusual condition, though in a gentle way
     // because there are legitimate reasons for this to happen (PC in suspend, Glasgow
     // used 'offline', etc).
-    if(FNADDR == 0) {
-      // If no address is assigned, slowly breathe. (Or, during enumeration, abruptly
-      // blink. That's okay though.)
-      switch (USBFRAMEH >> 1) {
-        case 0b00: IOD |=  (1<<PIND_LED_FX2); break;
-        case 0b01: IOD ^=  (1<<PIND_LED_FX2); break;
-        case 0b10: IOD &= ~(1<<PIND_LED_FX2); break;
-        case 0b11: IOD ^=  (1<<PIND_LED_FX2); break;
+    if(!test_leds) {
+      if(FNADDR == 0) {
+        // If no address is assigned, slowly breathe. (Or, during enumeration, abruptly
+        // blink. That's okay though.)
+        switch (USBFRAMEH >> 1) {
+          case 0b00: IOD |=  (1<<PIND_LED_FX2); break;
+          case 0b01: IOD ^=  (1<<PIND_LED_FX2); break;
+          case 0b10: IOD &= ~(1<<PIND_LED_FX2); break;
+          case 0b11: IOD ^=  (1<<PIND_LED_FX2); break;
+        }
+      } else {
+        // Got plugged in, light up permanently.
+        IOD |= (1<<PIND_LED_FX2);
       }
-    } else {
-      // Got plugged in, light up permanently.
-      IOD |= (1<<PIND_LED_FX2);
     }
   }
 }
