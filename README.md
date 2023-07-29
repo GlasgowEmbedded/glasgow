@@ -208,7 +208,7 @@ pipx reinstall glasgow
 
 The steps above install the [YoWASP][] FPGA toolchain, which is a good low-friction option, especially for people whose primary competence is not in software, since it does not require any additional steps besides those that are already necessary. However, the YoWASP toolchain is noticeably slower than the native one (usually by a factor of less than 2×). The YoWASP toolchain is also not available for all platforms and architectures; notably, 32-bit Raspberry Pi is not covered.
 
-If you already have the required tools (`yosys`, `nextpnr-ice40`, `icepack`) installed or are willing to [install][oss-cad-suite] them, you can update your profile to set the environment variable `GLASGOW_TOOLCHAIN` to `native,builtin`, which prioritizes using the native tools over the YoWASP tools. The default value is `builtin,native`, which causes the native tools to be used only if the YoWASP tools are unusable.
+If you already have the required tools (`yosys`, `nextpnr-ice40`, `icepack`) installed or are willing to [install][oss-cad-suite] them, you can update your profile to set the environment variable `GLASGOW_TOOLCHAIN` to `system,builtin`, which prioritizes using the native tools over the YoWASP tools. The default value is `builtin,system`, which causes the native tools to be used only if the YoWASP tools are unusable.
 
 [yowasp]: https://yowasp.org/
 [oss-cad-suite]: https://github.com/YosysHQ/oss-cad-suite-build
