@@ -290,9 +290,9 @@ class SelfTestApplet(GlasgowApplet, name="selftest"):
         if passed:
             self.logger.info("self-test: PASS")
         else:
-            self.logger.error("self-test: FAIL")
             for (mode, message) in report:
                 self.logger.error("%s: %s", mode, message)
+            raise GlasgowAppletError("self-test: FAIL")
 
 # -------------------------------------------------------------------------------------------------
 
