@@ -828,7 +828,7 @@ async def _main():
                 fx2_device = FX2Device(vid, pid)
             except FX2DeviceError:
                 logger.error(f"device {vid:#06x}:{pid:#06x} not found")
-                return
+                return 1
 
             with importlib.resources.files("fx2").joinpath("boot-cypress.ihex").open("r") as f:
                 fx2_device.load_ram(input_data(f, fmt="ihex"))
