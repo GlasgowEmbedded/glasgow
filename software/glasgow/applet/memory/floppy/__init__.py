@@ -302,10 +302,10 @@ import argparse
 import struct
 import random
 import itertools
-import crc
 import math
 from amaranth import *
 from amaranth.lib.cdc import FFSynchronizer
+from amaranth.lib.crc.catalog import CRC16_CCITT_FALSE
 
 from ....gateware.pads import *
 from ... import *
@@ -1002,7 +1002,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             size, cylinder, head = struct.unpack(">LBB", header)
             yield cylinder, head, file.read(size)
 
-    crc_mfm = staticmethod(crc.Calculator(crc.Configuration(width=16, polynomial=0x11021, init_value=0xffff)).checksum)
+    crc_mfm = staticmethod(CRC16_CCITT_FALSE(data_width=8).compute)
 
     def iter_mfm_sectors(self, symbstream, *, verbose=False, ignore_data_crc=False):
         state   = "IDLE"

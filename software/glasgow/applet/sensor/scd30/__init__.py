@@ -6,7 +6,7 @@ import argparse
 import logging
 import asyncio
 import struct
-import crc
+from amaranth.lib.crc.catalog import CRC8_NRSC_5
 
 from ....support.logging import dump_hex
 from ....support.data_logger import DataLogger
@@ -45,7 +45,7 @@ class SCD30I2CInterface:
     def _log(self, message, *args):
         self._logger.log(self._level, "SCD30: " + message, *args)
 
-    _crc = staticmethod(crc.Calculator(crc.Configuration(width=8,polynomial=0x131,init_value=0xff)).checksum)
+    _crc = staticmethod(CRC8_NRSC_5(data_width=8).compute)
 
     async def _read_raw(self, addr, length=0):
         assert length % 2 == 0

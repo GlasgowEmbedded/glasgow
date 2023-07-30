@@ -24,7 +24,6 @@ dependencies = [
   "aiohttp~=3.8",
   "pyvcd",
   "bitarray",
-  "crc",
 ]
 
 [project.optional-dependencies]
