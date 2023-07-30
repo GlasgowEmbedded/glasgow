@@ -20,6 +20,9 @@ jobs:
         - 'pypy-3.9'
         allow-failure:
         - false
+        include:
+        - python-version: '3.12-dev'
+          allow-failure: true
     continue-on-error: '${{ matrix.allow-failure }}'
     name: 'test-software (${{ matrix.python-version }})'
     steps:
@@ -67,3 +70,12 @@ jobs:
       - name: Build firmware
         working-directory: ./firmware
         run: make
+
+  required: # group all `test (*)` workflows into one for the required status check
+    needs:
+      - test-software
+      - build-firmware
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          true
