@@ -2,7 +2,7 @@
 # Accession: G00030
 
 import struct
-import crc
+import amaranth.lib.crc
 
 from ..support.bitstruct import *
 
@@ -14,7 +14,9 @@ class ONFIParameterError(Exception):
     pass
 
 
-_crc_onfi = staticmethod(crc.Calculator(crc.Configuration(width=16, polynomial=0x18005, init_value=0x4f4e)).checksum)
+_crc_onfi = staticmethod(amaranth.lib.crc.Algorithm(crc_width=16, polynomial=0x8005,
+    initial_crc=0x4f4e, reflect_input=False, reflect_output=False,
+    xor_output=0)(data_width=8).compute)
 
 
 _ONFI_Revision = bitstruct("ONFI_Revision", 16, [
