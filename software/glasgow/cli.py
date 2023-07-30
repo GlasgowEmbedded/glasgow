@@ -611,7 +611,7 @@ async def _main():
                 try:
                     iface = await applet.run(device, args)
                     if args.action == "run":
-                        await applet.interact(device, args, iface)
+                        return await applet.interact(device, args, iface)
                     elif args.action == "repl":
                         await applet.repl(device, args, iface)
                     elif args.action == "script":
@@ -627,8 +627,9 @@ async def _main():
 
                 except GlasgowAppletError as e:
                     applet.logger.error(str(e))
+                    return 1
                 except asyncio.CancelledError:
-                    pass # terminate gracefully
+                    return 130 # 128 + SIGINT
                 finally:
                     await device.demultiplexer.flush()
                     if args.show_statistics:
@@ -642,7 +643,7 @@ async def _main():
                 analyzer_task = asyncio.ensure_future(run_analyzer())
 
             tasks = []
-            tasks.append(asyncio.ensure_future(run_applet()))
+            tasks.append(applet_task := asyncio.ensure_future(run_applet()))
             if args.action != "repl":
                 tasks.append(asyncio.ensure_future(wait_for_sigint()))
 
@@ -657,17 +658,15 @@ async def _main():
 
             await device.demultiplexer.cancel()
 
-            for task in tasks:
-                if not task.cancelled():
-                    task.result()
+            return applet_task.result()
 
         if args.action == "tool":
             tool = GlasgowApplet.all_applets[args.applet].tool_cls()
             try:
-                await tool.run(args)
+                return await tool.run(args)
             except GlasgowAppletError as e:
                 tool.logger.error(e)
-                raise SystemExit()
+                return 1
 
         if args.action == "flash":
             logger.info("reading device configuration")
