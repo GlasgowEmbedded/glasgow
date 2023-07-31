@@ -1,4 +1,5 @@
 *.*bak
 boards/**/*.xml
 boards/**/*_bom.txt
+boards/**/*-backups/
 fp-info-cache
