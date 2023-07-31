@@ -495,7 +495,7 @@ async def _main():
                     await device.set_alert_tolerance(args.ports, args.voltage,
                                                      args.tolerance / 100)
 
-            print("Port\tVio\tVlimit\tVsense\tMonitor")
+            print("Port\tVio\tVlimit\tVsense\tVsense(range)")
             alerts = await device.poll_alert()
             for port in args.ports:
                 vio    = await device.get_voltage(port)
