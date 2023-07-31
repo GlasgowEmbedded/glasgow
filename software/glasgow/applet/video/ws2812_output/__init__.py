@@ -26,11 +26,12 @@ class VideoWS2812Output(Elaboratable):
 
 
 class VideoWS2812OutputSubtarget(Elaboratable):
-    def __init__(self, pads, count, pixel_bytes, pixel_format_func, out_fifo):
+    def __init__(self, pads, count, pix_in_size, pix_out_size, pix_format_func, out_fifo):
         self.pads = pads
         self.count = count
-        self.pixel_bytes = pixel_bytes
-        self.pixel_format_func = pixel_format_func
+        self.pix_in_size = pix_in_size
+        self.pix_out_size = pix_out_size
+        self.pix_format_func = pix_format_func
         self.out_fifo = out_fifo
 
     def elaborate(self, platform):
@@ -52,17 +53,18 @@ class VideoWS2812OutputSubtarget(Elaboratable):
 
         m.submodules.output = output = VideoWS2812Output(self.pads)
 
-        pix_bytes = self.pixel_bytes
-        pix_bpp = pix_bytes * 8
+        pix_in_size = self.pix_in_size
+        pix_out_size = self.pix_out_size
+        pix_out_bpp = pix_out_size * 8
 
         cyc_ctr = Signal(range(t_reset+1))
-        bit_ctr = Signal(range(pix_bpp+1))
-        byt_ctr = Signal(range((pix_bytes)+1))
+        bit_ctr = Signal(range(pix_out_bpp+1))
+        byt_ctr = Signal(range((pix_in_size)+1))
         pix_ctr = Signal(range(self.count+1))
         word_ctr = Signal(range(max(2, len(self.pads))))
 
-        pix = Array([ Signal(8) for i in range((pix_bytes) - 1) ])
-        word = Signal(pix_bpp * len(self.pads))
+        pix = Array([ Signal(8) for i in range((pix_in_size) - 1) ])
+        word = Signal(pix_out_bpp * len(self.pads))
 
         with m.FSM():
             with m.State("LOAD"):
@@ -71,14 +73,14 @@ class VideoWS2812OutputSubtarget(Elaboratable):
                     output.out.eq(0),
                 ]
                 with m.If(self.out_fifo.r_rdy):
-                    with m.If(byt_ctr < ((pix_bytes) - 1)):
+                    with m.If(byt_ctr < ((pix_in_size) - 1)):
                         m.d.sync += [
                             pix[byt_ctr].eq(self.out_fifo.r_data),
                             byt_ctr.eq(byt_ctr + 1),
                         ]
                     with m.Else():
-                        p = self.pixel_format_func(*pix, self.out_fifo.r_data)
-                        m.d.sync += word.eq(Cat(word[pix_bpp:], p))
+                        p = self.pix_format_func(*pix, self.out_fifo.r_data)
+                        m.d.sync += word.eq(Cat(word[pix_out_bpp:], p))
                         with m.If(word_ctr < (len(self.pads) - 1)):
                             m.d.sync += [
                                 word_ctr.eq(word_ctr + 1),
@@ -92,12 +94,12 @@ class VideoWS2812OutputSubtarget(Elaboratable):
                     m.d.comb += output.out.eq((1 << len(self.pads)) - 1)
                     m.d.sync += cyc_ctr.eq(cyc_ctr + 1)
                 with m.Elif(cyc_ctr < t_one):
-                    m.d.comb += ( o.eq(word[(pix_bpp - 1) + (pix_bpp * i)]) for i,o in enumerate(output.out) )
+                    m.d.comb += ( o.eq(word[(pix_out_bpp - 1) + (pix_out_bpp * i)]) for i,o in enumerate(output.out) )
                     m.d.sync += cyc_ctr.eq(cyc_ctr + 1)
                 with m.Elif(cyc_ctr < t_period):
                     m.d.comb += output.out.eq(0)
                     m.d.sync += cyc_ctr.eq(cyc_ctr + 1)
-                with m.Elif(bit_ctr < (pix_bpp - 1)):
+                with m.Elif(bit_ctr < (pix_out_bpp - 1)):
                     m.d.comb += output.out.eq(0)
                     m.d.sync += [
                         cyc_ctr.eq(0),
@@ -143,9 +145,10 @@ class VideoWS2812OutputApplet(GlasgowApplet):
     """
 
     pixel_formats = {
-        'RGB':  ( 3, lambda r,g,b:   Cat(b,r,g)   ),
-        'RGBx': ( 4, lambda r,g,b,x: Cat(Const(0, unsigned(8)),b,r,g) ),
-        'RGBW': ( 4, lambda r,g,b,w: Cat(w,b,r,g) ),
+        # in-out      in size  out size  format_func
+        'RGB-BRG':   (   3,        3,    lambda r,g,b:   Cat(b,r,g)   ),
+        'RGB-xBRG':  (   3,        4,    lambda r,g,b:   Cat(Const(0, unsigned(8)),b,r,g) ),
+        'RGBW-WBRG': (   4,        4,    lambda r,g,b,w: Cat(w,b,r,g) ),
     }
 
     @classmethod
@@ -157,17 +160,19 @@ class VideoWS2812OutputApplet(GlasgowApplet):
             "-c", "--count", metavar="N", type=int, required=True,
             help="set the number of LEDs per string")
         parser.add_argument(
-            "-f", "--pix-fmt", metavar="F", choices=cls.pixel_formats.keys(), default="RGB",
+            "-f", "--pix-fmt", metavar="F", choices=cls.pixel_formats.keys(), default="RGB-BRG",
             help="set the pixel format (one of: %(choices)s, default: %(default)s)")
 
     def build(self, target, args):
-        self.pixel_bytes, pixel_format_func = self.pixel_formats[args.pix_fmt]
+        self.pix_in_size, pix_out_size, pix_format_func = self.pixel_formats[args.pix_fmt]
+
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(VideoWS2812OutputSubtarget(
             pads=[iface.get_pin(pin) for pin in args.pin_set_out],
             count=args.count,
-            pixel_bytes=self.pixel_bytes,
-            pixel_format_func=pixel_format_func,
+            pix_in_size=self.pix_in_size,
+            pix_out_size=pix_out_size,
+            pix_format_func=pix_format_func,
             out_fifo=iface.get_out_fifo(),
         ))
 
@@ -182,7 +187,7 @@ class VideoWS2812OutputApplet(GlasgowApplet):
             help="set the number of frames to buffer internally (buffered twice)")
 
     async def run(self, device, args):
-        buffer_size = len(args.pin_set_out) * args.count * self.pixel_bytes * args.buffer
+        buffer_size = len(args.pin_set_out) * args.count * self.pix_in_size * args.buffer
         return await device.demultiplexer.claim_interface(self, self.mux_interface, args, write_buffer_size=buffer_size)
 
     @classmethod
@@ -190,7 +195,7 @@ class VideoWS2812OutputApplet(GlasgowApplet):
         ServerEndpoint.add_argument(parser, "endpoint")
 
     async def interact(self, device, args, leds):
-        frame_size = len(args.pin_set_out) * args.count * self.pixel_bytes
+        frame_size = len(args.pin_set_out) * args.count * self.pix_in_size
         buffer_size = frame_size * args.buffer
         endpoint = await ServerEndpoint("socket", self.logger, args.endpoint, queue_size=buffer_size)
         while True:
