@@ -459,8 +459,16 @@ class GlasgowHardwareDevice:
         await self._write_voltage(REQ_IO_VOLT, spec, volts)
         # Check if we've succeeded
         if await self._status() & ST_ERROR:
-            raise GlasgowDeviceError("cannot set I/O port(s) {} voltage to {:.2} V"
-                                     .format(spec or "(none)", float(volts)))
+            causes = []
+            for port in spec:
+                if (limit := await self._read_voltage(REQ_LIMIT_VOLT, port)) < volts:
+                    causes.append("port {} voltage limit is set to {:.2} V"
+                                  .format(port, limit))
+            causes_string = ""
+            if causes:
+                causes_string = f" ({', '.join(causes)})"
+            raise GlasgowDeviceError("cannot set I/O port(s) {} voltage to {:.2} V{}"
+                                     .format(spec or "(none)", float(volts), causes_string))
 
     async def set_voltage_limit(self, spec, volts):
         await self._write_voltage(REQ_LIMIT_VOLT, spec, volts)
