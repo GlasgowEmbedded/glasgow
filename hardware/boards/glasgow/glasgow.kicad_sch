@@ -5785,7 +5785,7 @@
     (property "Mfg" "ON Semiconductor" (at 8.89 355.6 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "MPN" "CAT24M01XI-T2" (at 8.89 355.6 0)
+    (property "MPN" "CAT24M01YI−GT3" (at 8.89 355.6 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "1b2-bom-key" "eeprom-tssop8-cat24m01" (at 106.68 177.8 0)
