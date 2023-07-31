@@ -60,7 +60,7 @@ U12 U21 ,2,"INA233","Package_SO:VSSOP-10_3x3mm_P0.5mm","https://www.ti.com/lit/d
 U13 U20 ,2,"DAC081C081CIMK","Glasgow:SOT-23-6","http://www.ti.com/lit/ds/symlink/dac081c081.pdf","ic-sot23-6-dac081c081cimk","DAC081C081CIMK/NOPB","Texas Instruments","",""
 U14 U31 ,2,"TPS73101DBV","Glasgow:SOT-23-5","http://www.ti.com/lit/ds/symlink/tps731.pdf","ic-sot23-5-tps73101dbv","TPS73101DBVR","Texas Instruments","",""
 U15 ,1,"TPD3S014","Glasgow:SOT-23-6","http://www.ti.com/lit/ds/symlink/tpd3s014.pdf","ic-sot23-6-tpd3s014","TPD3S014DBVR","Texas Instruments","",""
-U2 ,1,"CAT24M01X","Package_SO:TSSOP-8_4.4x3mm_P0.65mm","https://www.onsemi.com/pub/Collateral/CAT24M01-D.PDF","eeprom-tssop8-cat24m01","CAT24M01XI-T2","ON Semiconductor","",""
+U2 ,1,"CAT24M01X","Package_SO:TSSOP-8_4.4x3mm_P0.65mm","https://www.onsemi.com/pub/Collateral/CAT24M01-D.PDF","eeprom-tssop8-cat24m01","CAT24M01YI−GT3","ON Semiconductor","",""
 U3 ,1,"BL24C256A-SFRC","Package_SO:TSSOP-8_4.4x3mm_P0.65mm","https://datasheet.lcsc.com/szlcsc/1811151428_BL-Shanghai-Belling-BL24C256A-SFRC_C110276.pdf","eeprom-tssop8-bl24c256a","BL24C256A-SFRC","BL(Shanghai Belling)","",""
 U30 ,1,"ICE40HX8K-BG121","Package_BGA:BGA-121_9.0x9.0mm_Layout11x11_P0.8mm_Ball0.4mm_Pad0.35mm_NSMD","http://www.latticesemi.com/Products/FPGAandCPLD/iCE40","ic-ice40hx8k-bg121","ICE40HX8K-BG121","Lattice Semiconductor Corporation","",""
 U4 U6 U9 U10 U11 U16 U17 U18 U22 U23 U24 U25 U26 U27 U28 U29 U32 ,17,"SN74LVC1T45DCKR","Glasgow:SOT-363_SC-70-6","http://www.ti.com/lit/ds/symlink/sn74lvc1t45.pdf","ic-sot563-sn4lvc1t45dckr","SN74LVC1T45DCKR","Texas Instruments","",""
