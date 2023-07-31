@@ -429,7 +429,7 @@ F 1 "CAT24M01X" H 4450 7250 50  0000 C CNN
 F 2 "Package_SO:TSSOP-8_4.4x3mm_P0.65mm" H 4200 7250 50  0001 C CNN
 F 3 "https://www.onsemi.com/pub/Collateral/CAT24M01-D.PDF" H 4200 7000 50  0001 C CNN
 F 4 "ON Semiconductor" H 350 0   50  0001 C CNN "Mfg"
-F 5 "CAT24M01XI-T2" H 350 0   50  0001 C CNN "MPN"
+F 5 "CAT24M01YI−GT3" H 350 0   50  0001 C CNN "MPN"
 F 6 "eeprom-tssop8-cat24m01" H 4200 7000 50  0001 C CNN "1b2-bom-key"
 	1    4200 7000
 	1    0    0    -1  
