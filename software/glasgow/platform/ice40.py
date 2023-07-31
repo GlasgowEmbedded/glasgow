@@ -116,3 +116,34 @@ class GlasgowPlatformICE40(LatticeICE40Platform):
             i_RESETB=~ResetSignal(pll.idomain),
             i_BYPASS=Const(0),
         )
+
+    def get_ripple_ff_stage(self, d_out, clk, clk_en=None, rst=None):
+        """
+        a single stage of a ripple counter
+
+        d_out should be used as the clock for the following stage, and as the data output
+        """
+        if clk_en is None:
+            clk_en = Const(1)
+        if rst is None:
+            rst = Const(0)
+
+        m = Module()
+        d_in = Signal()
+
+        m.submodules += [
+            Instance("SB_LUT4",
+                p_LUT_INIT=Const(0x00FF, 16),
+                i_I0=0, i_I1=0, i_I2=0, i_I3=d_out,
+                o_O=d_in
+            ),
+            Instance("SB_DFFNER",
+                i_D=d_in,
+                o_Q=d_out,
+                i_C=clk,
+                i_E=clk_en,
+                i_R=rst,
+            ),
+        ]
+
+        return m
