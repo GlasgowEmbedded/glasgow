@@ -92,6 +92,7 @@ display-pdi = "glasgow.applet.display.pdi:DisplayPDIApplet"
 audio-dac = "glasgow.applet.audio.dac:AudioDACApplet"
 audio-yamaha-opx = "glasgow.applet.audio.yamaha_opx:AudioYamahaOPxApplet [http]"
 
+video-hub75-output = "glasgow.applet.video.hub75_output:VideoHub75OutputApplet"
 video-rgb-input = "glasgow.applet.video.rgb_input:VideoRGBInputApplet"
 vga-ouput = "glasgow.applet.video.vga_output:VGAOutputApplet"
 video-ws2812-output = "glasgow.applet.video.ws2812_output:VideoWS2812OutputApplet"
