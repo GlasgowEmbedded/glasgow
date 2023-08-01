@@ -216,7 +216,7 @@ If you already have the required tools (`yosys`, `nextpnr-ice40`, `icepack`) ins
 
 ### Advanced topic: Developing the Glasgow software
 
-The steps above install the Glasgow software using `pipx install -e`, which performs an _editable install_: changes to the downloaded source code modify the behavior of the next invocation of the `glasgow` tool. Changes to `pyproject.toml`, most importantly to the dependencies, are not picked up until `pipx reinstall` is manually run.
+The steps above install the Glasgow software using `pipx install -e`, which performs an _editable install_: changes to the downloaded source code modify the behavior of the next invocation of the `glasgow` tool. Changes to `pyproject.toml`, most importantly to the dependencies or list of applet entrypoints, are not picked up until `pipx reinstall` is manually run.
 
 If you want to have your global Glasgow installation be independent from the source code check-out, you can omit `-e` in the instructions above. You can use any way of managing virtual environments for your development workflow, but we use and recommend [PDM][].
 
