@@ -93,7 +93,7 @@ audio-dac = "glasgow.applet.audio.dac:AudioDACApplet"
 audio-yamaha-opx = "glasgow.applet.audio.yamaha_opx:AudioYamahaOPxApplet [http]"
 
 video-rgb-input = "glasgow.applet.video.rgb_input:VideoRGBInputApplet"
-vga-ouput = "glasgow.applet.video.vga_output:VGAOutputApplet"
+video-vga-output = "glasgow.applet.video.vga_output:VGAOutputApplet"
 video-ws2812-output = "glasgow.applet.video.ws2812_output:VideoWS2812OutputApplet"
 
 radio-nrf24l1 = "glasgow.applet.radio.nrf24l01:RadioNRF24L01Applet"
