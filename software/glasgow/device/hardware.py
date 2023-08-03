@@ -82,19 +82,13 @@ class GlasgowHardwareDevice:
 
         while any(devices):
             device = devices.pop()
-
-            if device.getVendorID() == VID_QIHW and device.getProductID() == PID_GLASGOW:
-                revision  = GlasgowConfig.decode_revision(device.getbcdDevice() & 0xFF)
-                api_level = device.getbcdDevice() >> 8
-            else:
+            if not (device.getVendorID() == VID_QIHW and device.getProductID() == PID_GLASGOW):
                 continue
 
-            if api_level == 0:
-                logger.debug("found rev%s device without firmware", revision)
-            elif api_level != CUR_API_LEVEL:
-                logger.info("found rev%s device with API level %d (supported API level is %d)",
-                            revision, api_level, CUR_API_LEVEL)
-            else: # api_level == CUR_API_LEVEL
+            revision  = GlasgowConfig.decode_revision(device.getbcdDevice() & 0xFF)
+            api_level = device.getbcdDevice() >> 8
+
+            if api_level == CUR_API_LEVEL:
                 handle = device.open()
                 serial = handle.getASCIIStringDescriptor(
                     device.getSerialNumberDescriptor())
@@ -105,6 +99,12 @@ class GlasgowHardwareDevice:
                 logger.debug("found rev%s device with serial %s", revision, serial)
                 devices_by_serial[serial] = (revision, device)
                 continue
+
+            if api_level == 0:
+                logger.debug("found rev%s device without firmware", revision)
+            else:
+                logger.info("found rev%s device with API level %d (supported API level is %d)",
+                            revision, api_level, CUR_API_LEVEL)
 
             # If the device has no firmware or the firmware is too old (or, potentially, too new),
             # load the firmware that we know will work.
