@@ -135,7 +135,12 @@ class GlasgowBuildPlan:
         if build_dir is None:
             build_dir = tempfile.mkdtemp(prefix="glasgow_")
         try:
-            products  = self.lower.execute_local(build_dir, env=self.toolchain.env_vars)
+            environ = self.toolchain.env_vars
+            if os.name == 'nt':
+                # PROCESSOR_ARCHITECTURE: required for YoWASP (used by wasmtime)
+                for var in ("PROCESSOR_ARCHITECTURE",):
+                    environ[var] = os.environ[var]
+            products  = self.lower.execute_local(build_dir, env=environ)
             bitstream = products.get("top.bin")
         except:
             if debug:
