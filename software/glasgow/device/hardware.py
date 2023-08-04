@@ -2,6 +2,7 @@ import re
 import time
 import struct
 import logging
+import os
 import usb1
 import asyncio
 import threading
@@ -156,7 +157,17 @@ class GlasgowHardwareDevice:
 
     def __init__(self, serial=None):
         usb_context = usb1.USBContext()
-        devices = self._enumerate_devices(usb_context)
+        try:
+            devices = self._enumerate_devices(usb_context)
+        except usb1.USBErrorNotSupported:
+            if os.name == "nt":
+                # This could be caused by https://github.com/GlasgowEmbedded/glasgow/issues/382.
+                # Display a better message as a workaround, since we have shipped units with
+                # the firmware that triggers this error. If/when #382 is actually fixed it should
+                # be removed.
+                raise GlasgowDeviceError("failed to enumerate a device; "
+                                         "try unplugging it and plugging it back in")
+            raise
 
         if len(devices) == 0:
             raise GlasgowDeviceError("device not found")
