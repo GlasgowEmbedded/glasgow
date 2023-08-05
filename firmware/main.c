@@ -223,37 +223,6 @@ fail:
   glasgow_config.bitstream_size = 0;
 }
 
-// Upgrade legacy revision encoding.
-static void config_fixup() {
-  __xdata uint8_t data;
-
-  switch(glasgow_config.revision) {
-    case 'A': glasgow_config.revision = GLASGOW_REV_A;  break;
-    case 'B': glasgow_config.revision = GLASGOW_REV_B;  break;
-    case 'C': glasgow_config.revision = GLASGOW_REV_C0; break;
-    default: return;
-  }
-
-  // Invalidate the old firmware (if any), since it will get confused if it sees new revision
-  // field contents.
-  data = 0x01; // I2C_400KHZ, no DISCON
-  eeprom_write(I2C_ADDR_FX2_MEM, 7,
-               (__xdata void *)&data, 1,
-               /*double_byte=*/true, /*page_size=*/8, /*timeout=*/255);
-  data = 0xC0; // C0 load
-  eeprom_write(I2C_ADDR_FX2_MEM, 0,
-               (__xdata void *)&data, 1,
-               /*double_byte=*/true, /*page_size=*/8, /*timeout=*/255);
-  // Update Device ID and revision fields.
-  data = glasgow_config.revision;
-  eeprom_write(I2C_ADDR_FX2_MEM, 5,
-               (__xdata void *)&data, 1,
-               /*double_byte=*/true, /*page_size=*/8, /*timeout=*/255);
-  eeprom_write(I2C_ADDR_FX2_MEM, 8 + 4 + __builtin_offsetof(struct glasgow_config, revision),
-               (__xdata void *)&data, 1,
-               /*double_byte=*/true, /*page_size=*/8, /*timeout=*/255);
-}
-
 // Populate descriptors from device configuration, if any.
 static void descriptors_init() {
   __xdata struct usb_desc_device *desc_device = (__xdata struct usb_desc_device *)usb_device;
@@ -917,7 +886,6 @@ int main() {
 
   // Initialize subsystems.
   config_init();
-  config_fixup();
   descriptors_init();
   iobuf_init_dac_ldo();
 
