@@ -37,7 +37,7 @@ class EventSource(Elaboratable):
         if width > 0:
             self.data_fifo = SyncFIFOBuffered(width=width, depth=depth)
         else:
-            self.data_fifo = FIFOInterface(width=1, depth=0, fwft=False)
+            self.data_fifo = FIFOInterface(width=1, depth=0, fwft=True)
 
     def elaborate(self, platform):
         m = Module()
