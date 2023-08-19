@@ -26,7 +26,7 @@ class SimulationMultiplexer(AccessMultiplexer):
 
 class _AsyncFIFOWrapper(Elaboratable, FIFOInterface):
     def __init__(self, inner, cd_logic):
-        super().__init__(width=inner.width, depth=inner.depth, fwft=False)
+        super().__init__(width=inner.width, depth=inner.depth, fwft=True)
 
         self.inner = inner
         self.cd_logic = cd_logic
