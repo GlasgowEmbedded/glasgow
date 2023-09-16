@@ -42,7 +42,7 @@ class SelfTestSubtarget(Elaboratable):
             self.reg_i_b.eq(Cat(pin.io.i for pin in self.pins_b))
         ]
 
-        m.d.comb += Cat(self.leds).eq(self.reg_leds)
+        m.d.comb += Cat(pin.o for pin in self.leds).eq(self.reg_leds)
 
         return m
 
