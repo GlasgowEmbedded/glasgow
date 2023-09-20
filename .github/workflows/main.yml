@@ -8,7 +8,7 @@ name: CI
 jobs:
 
   test-software:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         python-version:
@@ -54,7 +54,7 @@ jobs:
         run: pdm run test
 
   build-firmware:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Check out source code
         uses: actions/checkout@v3
