@@ -187,6 +187,13 @@ usb_desc_ms_ext_compat_id_c usb_ms_ext_compat_id = {
   }
 };
 
+usb_desc_ms_ext_property_c usb_ms_ext_properties = {
+  .dwLength         = sizeof(struct usb_desc_ms_ext_property),
+  .bcdVersion       = 0x0100,
+  .wIndex           = USB_DESC_MS_EXTENDED_PROPERTIES,
+  .wCount           = 0,
+};
+
 void handle_usb_get_descriptor(enum usb_descriptor type, uint8_t index) {
   if(type == USB_DESC_STRING && index == 0xEE) {
     xmemcpy(scratch, (__xdata void *)&usb_microsoft, usb_microsoft.bLength);
@@ -792,18 +799,21 @@ void handle_pending_usb_setup() {
 
   // Microsoft descriptor requests
   if(req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN) &&
-     req->bRequest == USB_REQ_GET_MS_DESCRIPTOR) {
-    enum usb_descriptor_microsoft arg_desc = req->wIndex;
+     req->bRequest == USB_REQ_GET_MS_DESCRIPTOR &&
+     req->wIndex == USB_DESC_MS_EXTENDED_COMPAT_ID) {
     pending_setup = false;
 
-    switch(arg_desc) {
-      case USB_DESC_MS_EXTENDED_COMPAT_ID:
-        xmemcpy(scratch, (__xdata void *)&usb_ms_ext_compat_id, usb_ms_ext_compat_id.dwLength);
-        SETUP_EP0_IN_DESC(scratch);
-        return;
-    }
+    xmemcpy(scratch, (__xdata void *)&usb_ms_ext_compat_id, usb_ms_ext_compat_id.dwLength);
+    SETUP_EP0_IN_DESC(scratch);
+    return;
+  }
+  if(req->bmRequestType == (USB_RECIP_IFACE|USB_TYPE_VENDOR|USB_DIR_IN) &&
+     req->bRequest == USB_REQ_GET_MS_DESCRIPTOR &&
+     req->wIndex == USB_DESC_MS_EXTENDED_PROPERTIES) {
+    pending_setup = false;
 
-    STALL_EP0();
+    xmemcpy(scratch, (__xdata void *)&usb_ms_ext_properties, usb_ms_ext_properties.dwLength);
+    SETUP_EP0_IN_DESC(scratch);
     return;
   }
 
