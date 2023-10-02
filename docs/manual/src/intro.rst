@@ -71,7 +71,7 @@ How does using Glasgow look like?
 This screencast shows a typical command-line workflow:
 
 .. image:: https://asciinema.org/a/i9edqaUBVLLw7mRZCpdxe91Fu.svg
-   :target: https://asciinema.org/a/i9edqaUBVLLw7mRZCpdxe91Fu
+   :target: https://asciinema.org/a/245309
 
 
 What software does Glasgow use?
@@ -85,7 +85,7 @@ Implementing reliable, high-performance USB communication is not trivial—packe
 
 Debugging applets can be hard, especially if bidirectional communication over the same wires is involved. Glasgow provides a built-in cycle-accurate logic analyzer that can relate the I/O pin level and direction changes to commands and responses received and sent by the applet. The logic analyzer compresses waveforms and can pause the applet if its buffer is about to overflow.
 
-.. _Python 3: https://python.org/
+.. _Python 3: https://www.python.org/
 .. _Amaranth: https://github.com/amaranth-lang/amaranth/
 .. _asyncio: https://docs.python.org/3/library/asyncio.html
 .. _icestorm: https://github.com/YosysHQ/icestorm
