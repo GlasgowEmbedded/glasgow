@@ -7,7 +7,7 @@ Hardware revisions
 
 The Glasgow hardware evolves over time, with each major milestone called a "revision". Although all revisions are, and will always be supported with the latest software stack, they vary significantly in their capabilities, and the revision that is being used will determine which tasks can be achieved using the hardware.
 
-Glasgow hardware revisions use the ``revXN`` format, where ``X`` is a revision letter (incremented alphabetically when major design changes are made) and ``N`` is a stepping number (increased on any layout or component changes). For example, ``revC0`` is the first stepping of revision C.
+Glasgow hardware revisions use the ``revXN`` format, where ``X`` is a revision letter (advanced alphabetically when major design changes are made) and ``N`` is a stepping number (incremented on any layout or component changes). For example, ``revC0`` is the first stepping of revision C.
 
 
 .. _revD:
