@@ -153,5 +153,5 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@releases/v4
         with:
           folder: pages/
-          clean: true
+          clean: ${{ github.repository == 'GlasgowEmbedded/glasgow' && github.event.ref == 'refs/heads/main' }}
           single-commit: true
