@@ -16,6 +16,7 @@ copybutton_prompt_text = r">>> |\.\.\. |\$ |> "
 copybutton_copy_empty_lines = False
 
 html_theme = "furo"
+html_baseurl = "https://glasgow-embedded.org/latest/"
 html_css_files = [
       "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/fontawesome.min.css",
       "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/solid.min.css",
