@@ -1,3 +1,6 @@
+import os
+is_production = True if os.getenv("DOCS_IS_PRODUCTION", "").lower() in ('1', 'yes', 'true') else False
+
 html_title = project = "Glasgow Interface\u00a0Explorer"
 release = version = ""
 copyright = "2020—2023, Glasgow Interface Explorer contributors"
@@ -14,6 +17,9 @@ todo_emit_warnings = True
 copybutton_prompt_is_regexp = True
 copybutton_prompt_text = r">>> |\.\.\. |\$ |> "
 copybutton_copy_empty_lines = False
+
+html_use_modindex = False
+html_use_index = False
 
 html_theme = "furo"
 html_baseurl = "https://glasgow-embedded.org/latest/"
@@ -35,7 +41,24 @@ html_theme_options = {
             "class": "fa-brands fa-solid fa-github fa-2x",
         },
     ],
-    "announcement": "The Early Bird units are being shipped by Mouser! <a href='https://crowdsupply.com/1bitsquared/glasgow'>Pre-Order yours now</a>",
 }
-html_use_modindex = False
-html_use_index = False
+if is_production:
+    html_theme_options.update({
+        "announcement":
+            "The Early Bird units are being shipped by Mouser! "
+            "<a href='https://crowdsupply.com/1bitsquared/glasgow'>Pre-Order yours now</a>"
+    })
+else:
+    html_theme_options.update({
+        "light_css_variables": {
+            "color-announcement-background": "#ffdf76",
+            "color-announcement-text": "#664e04",
+        },
+        "dark_css_variables": {
+            "color-announcement-background": "#604b2b",
+            "color-announcement-text": "#eee388",
+        },
+        "announcement":
+            "This documentation page has been built as a preview. It may be outdated or incorrect "
+            "compared to <a href='https://glasgow-embedded.org/'>the official version</a>."
+    })
