@@ -23,7 +23,7 @@ For a timely resolution of your issues involving the Glasgow software, include t
 
 If you believe there is an issue with the design of the Glasgow hardware or firmware, `open an issue on GitHub <issues_>`__. The Glasgow hardware and firmware have been extensively reviewed, evaluated, and tested, and it is relatively unlikely for you to experience a design issue.
 
-If you believe that your device may be damaged or malfunctioning, and the device is unmodified from the design files published in this repository (bearing the "Glasgow" name on it), you may :ref:`ask the community for assistance <community>` before referring to the manufacturer of your device. If your device has been :ref:`modified from the original design files <build-your-own>` or does not bear the "Glasgow" name on it, you must request assistance from the manufacturer of your device. You may ask the community for assistance if you make it clear in your request that your device has been modified from the original design files, but the effort required to evaluate the modifications is scarcely available.
+If you believe that your device may be damaged or malfunctioning, and the device is unmodified from the design files published in this repository (bearing the "Glasgow" name on it), you may :ref:`ask the community for assistance <community>` before referring to the manufacturer of your device. If your device has been :ref:`modified from the original design files <build-your-own>` or does not bear the "Glasgow" name on it, you must request assistance from the manufacturer of your device. You may ask the community for assistance if you make it clear in your request that your device has been modified from the original design files, but the effort required to evaluate such modifications is scarcely available.
 
 .. _issues: https://github.com/GlasgowEmbedded/glasgow/issues/new
 
@@ -53,13 +53,13 @@ When modifying Python code, the first line of a commit message should, if possib
 
     protocol.jtag_svf: accept and ignore whitespace in scan data.
 
-When modifying documentation, the first line of a commit message should start with ``manual: ``, followed by the base name of the ``.rst`` file that is being modified. E.g.:
+When modifying documentation, the first line of a commit message should start with ``manual:``, followed by the base name of the ``.rst`` file that is being modified. E.g.:
 
 .. code-block:: text
 
     manual: intro: update the list of applets.
 
-When modifying firmware, the first line of a commit message should start with ``firmware: ``. E.g.:
+When modifying firmware, the first line of a commit message should start with ``firmware:``. E.g.:
 
 .. code-block:: text
 
