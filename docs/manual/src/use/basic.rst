@@ -14,7 +14,7 @@ Glasgow has a number of commands, the most basic being ``safe`` and ``run``.
 At all times, a ``--help`` argument may be appended for more details.
 
 .. warning::
-    Please be aware that Glasgow device will slowly fade the `FX2` LED on and off to indicate that it has been able to establish an USB connection. This can occur if you connect the Glasgow device to your computer via a power-only USB cable.
+    Please be aware that Glasgow device will slowly fade the `FX2` LED on and off to indicate that it has been unable to establish a USB connection. This can occur if you connect the Glasgow device to your computer via a power-only USB cable.
 
 
 ``glasgow safe``
