@@ -1,4 +1,4 @@
-html_title = project = "Glasgow Interface Explorer"
+html_title = project = "Glasgow Interface\u00a0Explorer"
 release = version = ""
 copyright = "2020—2023, Glasgow Interface Explorer contributors"
 
