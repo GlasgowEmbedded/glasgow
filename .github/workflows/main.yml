@@ -89,6 +89,8 @@ jobs:
         run: |
           pdm install
       - name: Build documentation
+        env:
+          DOCS_IS_PRODUCTION: ${{ (github.repository == 'GlasgowEmbedded/glasgow' && github.event.ref == 'refs/heads/main') && 'yes' || 'no' }}
         run: |
           pdm run build
       - name: Upload documentation archive
