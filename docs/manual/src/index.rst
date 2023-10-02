@@ -28,7 +28,7 @@ Glasgow Interface Explorer manual
     intro
     revisions
     purchase
-    factory
+    build
     install
     use/index
     develop/index
