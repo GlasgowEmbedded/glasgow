@@ -100,7 +100,7 @@ video-ws2812-output = "glasgow.applet.video.ws2812_output:VideoWS2812OutputApple
 radio-nrf24l1 = "glasgow.applet.radio.nrf24l01:RadioNRF24L01Applet"
 
 [project.urls]
-# "Documentation" = "https://glasgow.readthedocs.io/"
+"Documentation" = "https://glasgow-embedded.org/"
 "Source Code" = "https://github.com/GlasgowEmebedded/Glasgow"
 "Bug Tracker" = "https://github.com/GlasgowEmebedded/Glasgow/issues"
 
