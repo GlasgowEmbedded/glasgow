@@ -40,6 +40,25 @@ In some cases (primarily when you are updating the documentation index in the si
 
 The markup language we are using, reStructuredText, has an awkward syntax, and it is easy for new editors to introduce syntax changes. If this happens, the web server prints a warning message whenever the ``.rst`` file is saved. Watch out for these warnings---they can save a lot of time trying to understand why the markup does not render correctly.
 
+To check that all of the external links in the documentation are valid, run the following command:
+
+.. code-block:: console
+
+    $ pdm check
+    Running Sphinx v7.1.2
+    [part of the output elided]
+
+    (    develop/docs: line   37) ok        http://127.0.0.1:8000
+    (        purchase: line   10) ok        https://1bitsquared.de/products/glasgow
+    (        purchase: line    9) ok        https://1bitsquared.com/products/glasgow
+    (       community: line   10) ok        https://1bitsquared.com/pages/chat
+    (           intro: line   69) ok        https://asciinema.org/a/245309
+    (           intro: line   69) ok        https://asciinema.org/a/i9edqaUBVLLw7mRZCpdxe91Fu.svg
+    (         install: line  106) ok        https://brew.sh/
+    [... continued]
+
+At the moment, some of the URLs fail despite being valid, so this command is not included in a continuous integration check.
+
 .. _GlasgowEmbedded/glasgow: https://github.com/GlasgowEmbedded/glasgow
 .. _reStructuredText: https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html
 .. _Sphinx: https://www.sphinx-doc.org/en/master/index.html
