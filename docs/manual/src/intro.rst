@@ -65,8 +65,8 @@ What can I do with Glasgow?
 
 Everything above can be done with only a Glasgow revC board, some wires, and depending on the device under test, external power.
 
-How does using Glasgow look like?
----------------------------------
+What does using Glasgow look like?
+----------------------------------
 
 This screencast shows a typical command-line workflow:
 
