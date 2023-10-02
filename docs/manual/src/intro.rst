@@ -79,7 +79,7 @@ What software does Glasgow use?
 
 Glasgow is written entirely in `Python 3`_. The interface logic that runs on the FPGA is described using `Amaranth`_, which is a Python-based domain specific language. The supporting code that runs on the host PC is written in Python with `asyncio`_. This way, the logic on the FPGA can be assembled on demand for any requested configuration, keeping it as fast and compact as possible, and code can be shared between gateware and software, removing the need to add error-prone "glue" boilerplate.
 
-Glasgow would not be possible without the `open-source iCE40 FPGA toolchain <ice40_>`__, which is not only very reliable but also extremely fast. It is so fast it usually only takes a few seconds to build one from scratch for something like an UART. When developing a new applet it is rarely necessary to wait for the toolchain.
+Glasgow would not be possible without the `open-source iCE40 FPGA toolchain <ice40_>`__, which is not only very reliable but also extremely fast. It is so fast that it usually only takes a few seconds to build a bitstream from scratch for something like a UART. When developing a new applet it is rarely necessary to wait for the toolchain to finish.
 
 Implementing reliable, high-performance USB communication is not trivial—packetization, buffering, and USB quirks add up. Glasgow abstracts away USB: on the FPGA, the applet gateware writes to or reads from a FIFO, and on the host, applet software writes to or reads from a socket-like interface. Idiomatic Python code can communicate at maximum USB 2 bulk bandwidth on a modern PC without additional effort. Moreover, when a future Glasgow revision adds Ethernet next to USB, no changes to applet code will be necessary.
 
