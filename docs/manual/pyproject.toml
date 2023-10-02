@@ -1,0 +1,14 @@
+[project]
+requires-python = "~=3.8"
+dependencies = [
+    "sphinx",
+    "sphinx-autobuild",
+    "sphinx-inline-tabs",
+    "sphinx-copybutton",
+    "furo",
+]
+
+[tool.pdm.scripts]
+check.cmd = "sphinx-build src out -b linkcheck"
+build.cmd = "sphinx-build src out -b html"
+live.cmd = "sphinx-autobuild src out"

@@ -1,0 +1,7 @@
+# pdm
+/.pdm-plugins
+/.pdm-python
+/.venv
+
+# Sphinx
+/out

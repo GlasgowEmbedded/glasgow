@@ -1,6 +1,5 @@
 on:
   push:
-    branches: main
   pull_request:
   merge_group:
 
@@ -8,7 +7,8 @@ name: CI
 jobs:
 
   test-software:
-    runs-on: ubuntu-22.04
+    if: (github.event.ref == 'refs/heads/main' || github.event_name == 'pull_request') || github.repository != 'GlasgowEmbedded/glasgow'
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version:
@@ -54,7 +54,8 @@ jobs:
         run: pdm run test
 
   build-firmware:
-    runs-on: ubuntu-22.04
+    if: (github.event.ref == 'refs/heads/main' || github.event_name == 'pull_request') || github.repository != 'GlasgowEmbedded/glasgow'
+    runs-on: ubuntu-latest
     steps:
       - name: Check out source code
         uses: actions/checkout@v3
@@ -71,11 +72,86 @@ jobs:
         working-directory: ./firmware
         run: make
 
-  required: # group all `test (*)` workflows into one for the required status check
+  build-manual:
+    if: (github.event.ref == 'refs/heads/main' || github.event_name == 'pull_request') || github.repository != 'GlasgowEmbedded/glasgow'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs/manual
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set up PDM
+        uses: pdm-project/setup-pdm@v3
+      - name: Install dependencies
+        run: |
+          pdm install
+      - name: Build documentation
+        run: |
+          pdm run build
+      - name: Upload documentation archive
+        uses: actions/upload-artifact@v3
+        with:
+          name: docs
+          path: docs/manual/out
+
+  required: # group all required workflows into one to avoid reconfiguring this in Actions settings
+    if: (github.event.ref == 'refs/heads/main' || github.event_name == 'pull_request') || github.repository != 'GlasgowEmbedded/glasgow'
     needs:
       - test-software
       - build-firmware
+      - build-manual
     runs-on: ubuntu-latest
     steps:
       - run: |
           true
+
+  publish-manual:
+    needs: build-manual
+    if: (github.repository == 'GlasgowEmbedded/glasgow' && github.event.ref == 'refs/heads/main') || github.repository != 'GlasgowEmbedded/glasgow'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v3
+      - if: github.repository == 'GlasgowEmbedded/glasgow' && github.event.ref == 'refs/heads/main'
+        name: Inject documentation from artifact under latest/
+        uses: actions/download-artifact@v3
+        with:
+          name: docs
+          path: pages/latest/
+      - if: github.repository == 'GlasgowEmbedded/glasgow' && github.event.ref == 'refs/heads/main'
+        name: Add CNAME and redirect from the root to latest/
+        run: |
+          echo >pages/CNAME 'glasgow-embedded.org'
+          cat >pages/index.html <<END
+          <!DOCTYPE html>
+          <html lang="en-US">
+            <meta charset="utf-8">
+            <title>Redirecting&hellip;</title>
+            <link rel="canonical" href="latest/">
+            <script>location="latest/"</script>
+            <meta http-equiv="refresh" content="0; url=latest/">
+            <meta name="robots" content="noindex">
+            <h1>Redirecting&hellip;</h1>
+            <a href="latest/">Click here if you are not redirected.</a>
+          </html>
+          END
+      - if: github.repository != 'GlasgowEmbedded/glasgow'
+        name: Inject documentation from artifact under {branch}/
+        uses: actions/download-artifact@v3
+        with:
+          name: docs
+          path: pages/${{ github.ref_name }}/
+      - name: Disable Jekyll
+        run: |
+          touch pages/.nojekyll
+      - name: Publish documentation for a branch
+        uses: JamesIves/github-pages-deploy-action@releases/v4
+        with:
+          folder: pages/
+          clean: true
+          single-commit: true
