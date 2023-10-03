@@ -18,6 +18,18 @@ All of our chat channels are bridged together; regardless of which one you choos
 .. _discord: https://1bitsquared.com/pages/chat
 
 
+.. _meetings:
+
+Weekly meetings
+---------------
+
+Every week we conduct an informal developer meeting on our chat channels, discussing the progress over the last week, outstanding issues, and any other matters that need attention. At the moment the meeting is scheduled **every Saturday at 22:00 UTC**. Anyone is free to attend, and we publish our past `meeting minutes <minutes_>`__.
+
+.. _minutes: https://github.com/GlasgowEmbedded/glasgow/tree/main/docs/meetings
+
+
+.. _acknowledgements:
+
 Acknowledgements
 ----------------
 
