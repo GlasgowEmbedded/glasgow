@@ -189,6 +189,12 @@ def get_argparser():
             if mode == "tool":
                 applet_cls.tool_cls.add_arguments(p_applet)
 
+            if mode in ("repl", "script"):
+                # this will absorb all arguments from the '--' onwards (inclusive), make sure it's
+                # always last... the '--' item that ends up at the front is removed before the list
+                # is passed to the repo / script environment
+                p_applet.add_argument('script_args', nargs=argparse.REMAINDER)
+
     parser = create_argparser()
 
     def revision(arg):
@@ -621,6 +627,9 @@ async def _main():
                     logger.warn("applet %r is PREVIEW QUALITY and may CORRUPT DATA", args.applet)
                 try:
                     iface = await applet.run(device, args)
+                    if args.action in ("repl", "script"):
+                        if len(args.script_args) > 0 and args.script_args[0] == "--":
+                            args.script_args = args.script_args[1:]
                     if args.action == "run":
                         return await applet.interact(device, args, iface)
                     elif args.action == "repl":
@@ -632,7 +641,7 @@ async def _main():
                         else:
                             code = compile(args.script_cmd, filename="<command>",
                                 mode="exec", flags=PyCF_ALLOW_TOP_LEVEL_AWAIT)
-                        future = eval(code, {"iface":iface, "device":device})
+                        future = eval(code, {"iface":iface, "device":device, "args":args})
                         if future is not None:
                             await future
 

@@ -74,7 +74,7 @@ class GlasgowApplet(metaclass=ABCMeta):
 
     async def repl(self, device, args, iface):
         self.logger.info("dropping to REPL; use 'help(iface)' to see available APIs")
-        await AsyncInteractiveConsole(locals={"device":device, "iface":iface},
+        await AsyncInteractiveConsole(locals={"device":device, "iface":iface, "args":args},
             run_callback=device.demultiplexer.flush).interact()
 
 
