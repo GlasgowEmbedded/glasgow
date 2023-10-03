@@ -44,6 +44,14 @@ html_theme_options = {
 }
 if is_production:
     html_theme_options.update({
+        "light_css_variables": {
+            "color-announcement-background": "#56bf62",
+            "color-announcement-text": "#094a05",
+        },
+        "dark_css_variables": {
+            "color-announcement-background": "#1c4808",
+            "color-announcement-text": "#64cc69",
+        },
         "announcement":
             "The Early Bird units are being shipped by Mouser! "
             "<a href='https://crowdsupply.com/1bitsquared/glasgow'>Pre-Order yours now</a>"
