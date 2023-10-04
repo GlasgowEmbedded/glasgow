@@ -7,7 +7,7 @@ name: CI
 jobs:
 
   test-software:
-    if: (github.event.ref == 'refs/heads/main' || github.event_name == 'pull_request') || github.repository != 'GlasgowEmbedded/glasgow'
+    if: ${{ !(github.event_name == 'push' && github.repository == 'GlasgowEmbedded/glasgow' && github.event.ref != 'refs/heads/main') }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -60,7 +60,7 @@ jobs:
           pdm run test
 
   build-firmware:
-    if: (github.event.ref == 'refs/heads/main' || github.event_name == 'pull_request') || github.repository != 'GlasgowEmbedded/glasgow'
+    if: ${{ !(github.event_name == 'push' && github.repository == 'GlasgowEmbedded/glasgow' && github.event.ref != 'refs/heads/main') }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out source code
@@ -79,7 +79,7 @@ jobs:
         run: make
 
   build-manual:
-    if: (github.event.ref == 'refs/heads/main' || github.event_name == 'pull_request') || github.repository != 'GlasgowEmbedded/glasgow'
+    if: ${{ !(github.event_name == 'push' && github.repository == 'GlasgowEmbedded/glasgow' && github.event.ref != 'refs/heads/main') }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -106,7 +106,6 @@ jobs:
           path: docs/manual/out
 
   required: # group all required workflows into one to avoid reconfiguring this in Actions settings
-    if: (github.event.ref == 'refs/heads/main' || github.event_name == 'pull_request') || github.repository != 'GlasgowEmbedded/glasgow'
     needs:
       - test-software
       - build-firmware
