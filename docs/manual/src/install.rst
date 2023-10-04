@@ -138,12 +138,52 @@ If these instructions don't work for you, please `file it as a bug <file-a-bug_>
         $ glasgow --version
         $ glasgow build --rev C3 uart
 
+.. tab:: FreeBSD
+
+    You will need to have `pipx`_, `Yosys`_, `nextpnr`_, and `icestorm`_ installed. To install these packages, run:
+
+    .. code-block:: console
+
+        $ sudo pkg install pip pipx yosys abc nextpnr icestorm
+        $ pipx ensurepath
+
+    The ``pipx ensurepath`` command may prompt you to reopen the terminal window; do so.
+
+    Navigate to a convenient working directory and download the source code:
+
+    .. code-block:: console
+
+        $ git clone https://github.com/GlasgowEmbedded/glasgow
+
+    Install the Glasgow software for the current user:
+
+    .. code-block:: console
+
+        $ pipx install -e 'glasgow/software'
+
+    To update the software to its newest revision, navigate to your working directory and run:
+
+    .. code-block:: console
+
+        $ git -C glasgow pull
+        $ pipx reinstall glasgow
+
+    After setup, confirm that the Glasgow utility is operational by running:
+
+    .. code-block:: console
+
+        $ glasgow --version
+        $ glasgow build --rev C3 uart
+
 .. _git-lin: https://git-scm.com/download/linux
 .. _git-win: https://git-scm.com/download/win
 .. _python-lin: https://www.python.org/downloads/source/
 .. _python-win: https://www.python.org/downloads/windows/
 .. _pypi: https://pypi.org/
 .. _pipx: https://pypa.github.io/pipx/installation/
+.. _Yosys: https://github.com/YosysHQ/yosys
+.. _nextpnr: https://github.com/YosysHQ/yosys
+.. _icestorm: https://github.com/YosysHQ/icestorm
 
 
 Using a system FPGA toolchain
