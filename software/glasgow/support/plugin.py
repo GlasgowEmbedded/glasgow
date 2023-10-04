@@ -10,7 +10,7 @@ __all__ = ["PluginRequirementsUnmet", "PluginMetadata"]
 
 # There are subtle differences between Python versions for both importlib.metadata (the built-in
 # package) and importlib_metadata (the PyPI installable shim), so implement this function the way
-# we need ourselves based on the Python 3.8 API. Once we drop Python 3.9 support this abomination
+# we need ourselves based on the Python 3.9 API. Once we drop Python 3.9 support this abomination
 # can be removed.
 def _entry_points(*, group, name=None):
     for distribution in importlib.metadata.distributions():

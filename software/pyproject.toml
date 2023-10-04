@@ -15,7 +15,7 @@ classifiers = [
   "Topic :: System :: Hardware",
 ]
 
-requires-python = "~=3.8"
+requires-python = "~=3.9"
 dependencies = [
   "packaging>=23",
   "appdirs~=1.4",
