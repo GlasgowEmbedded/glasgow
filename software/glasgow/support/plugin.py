@@ -18,7 +18,7 @@ def _requirements_for_optional_dependencies(distribution, depencencies):
         for requirement in requirements:
             if requirement.marker and requirement.marker.evaluate({"extra": dependency}):
                 requirement = packaging.requirements.Requirement(str(requirement))
-                requirement.marker = ""
+                requirement.marker = None
                 selected_requirements.add(requirement)
     return selected_requirements
 
