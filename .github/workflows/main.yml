@@ -47,12 +47,9 @@ jobs:
         run: pdm install -G :all
       - name: Run tests
         working-directory: ./software
-        env:
-          YOSYS: yowasp-yosys
-          NEXTPNR_ICE40: yowasp-nextpnr-ice40
-          ICEPACK: yowasp-icepack
         run: |
           pdm run glasgow --help
+          pdm run glasgow build --rev C3 uart
           pdm run test
 
   build-firmware:
