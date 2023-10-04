@@ -14,10 +14,12 @@ __all__ = ["PluginRequirementsUnmet", "PluginMetadata"]
 # can be removed.
 def _entry_points(*, group, name=None):
     for distribution in importlib.metadata.distributions():
-        distribution.name = distribution.metadata["Name"]
+        if not hasattr(distribution, "name"):
+            distribution.name = distribution.metadata["Name"]
         for entry_point in distribution.entry_points:
             if entry_point.group == group and (name is None or entry_point.name == name):
-                entry_point.dist = distribution
+                if not hasattr(entry_point, "dist"):
+                    entry_point.dist = distribution
                 yield entry_point
 
 
