@@ -1,14 +1,24 @@
+import importlib.metadata
 import packaging.requirements
 import pathlib
 import sysconfig
 import textwrap
-try:
-    import importlib_metadata # py3.9-
-except ImportError:
-    import importlib.metadata as importlib_metadata
 
 
 __all__ = ["PluginRequirementsUnmet", "PluginMetadata"]
+
+
+# There are subtle differences between Python versions for both importlib.metadata (the built-in
+# package) and importlib_metadata (the PyPI installable shim), so implement this function the way
+# we need ourselves based on the Python 3.8 API. Once we drop Python 3.9 support this abomination
+# can be removed.
+def _entry_points(*, group, name=None):
+    for distribution in importlib.metadata.distributions():
+        distribution.name = distribution.metadata["Name"]
+        for entry_point in distribution.entry_points:
+            if entry_point.group == group and (name is None or entry_point.name == name):
+                entry_point.dist = distribution
+                yield entry_point
 
 
 def _requirements_for_optional_dependencies(distribution, depencencies):
@@ -27,8 +37,8 @@ def _unmet_requirements_in(requirements):
     unmet_requirements = set()
     for requirement in requirements:
         try:
-            version = importlib_metadata.version(requirement.name)
-        except importlib_metadata.PackageNotFoundError:
+            version = importlib.metadata.version(requirement.name)
+        except importlib.metadata.PackageNotFoundError:
             unmet_requirements.add(requirement)
             continue
         if not requirement.specifier.contains(version):
@@ -67,11 +77,12 @@ class PluginMetadata:
 
     @classmethod
     def get(cls, handle):
-        return cls(importlib_metadata.entry_points(group=cls.GROUP_NAME, name=handle)[0])
+        entry_point, *_ = _entry_points(group=cls.GROUP_NAME, name=handle)
+        return cls(entry_point)
 
     @classmethod
     def all(cls):
-        return {ep.name: cls(ep) for ep in importlib_metadata.entry_points(group=cls.GROUP_NAME)}
+        return {ep.name: cls(ep) for ep in _entry_points(group=cls.GROUP_NAME)}
 
     def __init__(self, entry_point):
         if entry_point.dist.name != "glasgow":

@@ -18,7 +18,6 @@ classifiers = [
 requires-python = "~=3.8"
 dependencies = [
   "packaging>=23",
-  "importlib_metadata; python_version<'3.10'",
   "appdirs~=1.4",
   "amaranth[builtin-yosys] @ git+https://github.com/amaranth-lang/amaranth.git",
   "fx2>=0.11",
