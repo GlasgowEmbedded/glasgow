@@ -24,14 +24,6 @@ jobs:
     continue-on-error: '${{ matrix.allow-failure }}'
     name: 'test-software (${{ matrix.python-version }})'
     steps:
-      - name: Preserve caches
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/wasmtime
-            ~/.cache/YoWASP
-            ~/.cache/GlasgowEmbedded
-          key: ${{ runner.os }}
       - name: Check out source code
         uses: actions/checkout@v3
         with:
@@ -43,6 +35,18 @@ jobs:
       - name: Install dependencies
         working-directory: ./software
         run: pdm install -G :all
+      - name: Cache YoWASP build products
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/YoWASP
+          key: YoWASP-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('./software/.venv/**/*.wasm') }}
+          restore-keys: YoWASP-
+      - name: Cache Glasgow build products
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/GlasgowEmbedded
+          key: Glasgow-py${{ matrix.python-version }}-${{ hashFiles('./software/**', '!./software/.venv') }}
+          restore-keys: Glasgow-py${{ matrix.python-version }}-
       - name: Run tests
         working-directory: ./software
         run: |
