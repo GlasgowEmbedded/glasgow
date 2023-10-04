@@ -1,8 +1,11 @@
-import importlib.metadata
 import packaging.requirements
 import pathlib
 import sysconfig
 import textwrap
+try:
+    import importlib_metadata # py3.9-
+except ImportError:
+    import importlib.metadata as importlib_metadata
 
 
 __all__ = ["PluginRequirementsUnmet", "PluginMetadata"]
@@ -24,8 +27,8 @@ def _unmet_requirements_in(requirements):
     unmet_requirements = set()
     for requirement in requirements:
         try:
-            version = importlib.metadata.version(requirement.name)
-        except importlib.metadata.PackageNotFoundError:
+            version = importlib_metadata.version(requirement.name)
+        except importlib_metadata.PackageNotFoundError:
             unmet_requirements.add(requirement)
             continue
         if not requirement.specifier.contains(version):
@@ -64,11 +67,11 @@ class PluginMetadata:
 
     @classmethod
     def get(cls, handle):
-        return cls(importlib.metadata.entry_points(group=cls.GROUP_NAME, name=handle)[0])
+        return cls(importlib_metadata.entry_points(group=cls.GROUP_NAME, name=handle)[0])
 
     @classmethod
     def all(cls):
-        return {ep.name: cls(ep) for ep in importlib.metadata.entry_points(group=cls.GROUP_NAME)}
+        return {ep.name: cls(ep) for ep in importlib_metadata.entry_points(group=cls.GROUP_NAME)}
 
     def __init__(self, entry_point):
         if entry_point.dist.name != "glasgow":
