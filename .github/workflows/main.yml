@@ -51,7 +51,9 @@ jobs:
           YOSYS: yowasp-yosys
           NEXTPNR_ICE40: yowasp-nextpnr-ice40
           ICEPACK: yowasp-icepack
-        run: pdm run test
+        run: |
+          pdm run glasgow --help
+          pdm run test
 
   build-firmware:
     if: (github.event.ref == 'refs/heads/main' || github.event_name == 'pull_request') || github.repository != 'GlasgowEmbedded/glasgow'
