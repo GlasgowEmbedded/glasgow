@@ -8,7 +8,7 @@ Initial setup
 
 A lot of care and effort has been put into making the use of the software stack as seamless as possible. In particular, every dependency where it is possible is shipped via the `Python package index <pypi_>`__ (including the USB driver and the FPGA toolchains) to make installation and upgrades as seamless as they can be.
 
-If these instructions don't work for you, please `file it as a bug <file-a-bug_>`__ so that the experience can be improved for everyone.
+If these instructions don't work for you, please `file a bug <file-a-bug_>`__ so that the experience can be improved for everyone.
 
 .. _file-a-bug: https://github.com/GlasgowEmbedded/glasgow/issues/new
 
