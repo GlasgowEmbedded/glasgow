@@ -102,6 +102,7 @@ class GlasgowHardwareTarget(Elaboratable):
 
     def build_plan(self, **kwargs):
         overrides = {
+            "emit_src": False,
             "synth_opts": "-abc9",
             "nextpnr_opts": "--placer heap",
         }
