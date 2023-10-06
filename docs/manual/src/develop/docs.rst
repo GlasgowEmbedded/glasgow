@@ -7,14 +7,14 @@ The source files for this documentation manual is contained in the `GlasgowEmbed
 
 To build the documentation locally, first `install PDM`_. Then, navigate to the working directory you have :ref:`installed <initial-setup>` the Glasgow software in, and run:
 
-.. code-block:: console
+.. code:: console
 
     $ cd docs/manual
     $ pdm install
 
 Once this step completes (which should always happen without errors), you are ready to edit the documentation. In a terminal, run:
 
-.. code-block:: console
+.. code:: console
 
     $ pdm run live
     [sphinx-autobuild] > sphinx-build .../glasgow/docs/manual/src .../glasgow/docs/manual/out
@@ -42,7 +42,7 @@ The markup language we are using, reStructuredText, has an awkward syntax, and i
 
 To check that all of the external links in the documentation are valid, run the following command:
 
-.. code-block:: console
+.. code:: console
 
     $ pdm check
     Running Sphinx v7.1.2
