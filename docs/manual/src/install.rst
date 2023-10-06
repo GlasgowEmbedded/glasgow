@@ -20,14 +20,21 @@ If these instructions don't work for you, please `file a bug <file-a-bug_>`__ so
 
         .. code-block:: console
 
-            $ sudo apt install --no-install-recommends git pipx
+            $ sudo apt install -y --no-install-recommends git pipx
             $ pipx ensurepath
 
     .. tab:: Arch
 
         .. code-block:: console
 
-            $ sudo pacman -S git python-pipx
+            $ sudo pacman -Sy git python-pipx
+            $ pipx ensurepath
+
+    .. tab:: Fedora
+
+        .. code:: console
+
+            $ sudo dnf install -y git pipx
             $ pipx ensurepath
 
     The ``pipx ensurepath`` command may prompt you to reopen the terminal window; do so.
