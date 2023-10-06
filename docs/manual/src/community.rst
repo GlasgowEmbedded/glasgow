@@ -18,6 +18,16 @@ All of our chat channels are bridged together; regardless of which one you choos
 .. _discord: https://1bitsquared.com/pages/chat
 
 
+.. _fediverse:
+
+Fediverse
+---------
+
+Many of the community members involved with the project have Fediverse pages; `@esden@chaos.social <https://chaos.social/@esden>`_ has been writing a lot about the process of mass manufacturing the hardware.
+
+You, too, can join the conversation via the `#GlasgowInterfaceExplorer` hashtag. Please avoid using `#Glasgow`; we are not talking about the city. (Unless you live there, in which case both are appropriate!)
+
+
 .. _meetings:
 
 Weekly meetings
