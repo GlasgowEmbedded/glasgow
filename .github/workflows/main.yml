@@ -28,6 +28,14 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+      - name: Cache Glasgow build products
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/GlasgowEmbedded
+          key: Glasgow-${{ matrix.python-version }}-${{ hashFiles('./software/**') }}
+          restore-keys: |
+            Glasgow-${{ matrix.python-version }}-
+            Glasgow-
       - name: Set up PDM
         uses: pdm-project/setup-pdm@v3
         with:
@@ -40,13 +48,9 @@ jobs:
         with:
           path: ~/.cache/YoWASP
           key: YoWASP-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('./software/.venv/**/*.wasm') }}
-          restore-keys: YoWASP-
-      - name: Cache Glasgow build products
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/GlasgowEmbedded
-          key: Glasgow-py${{ matrix.python-version }}-${{ hashFiles('./software/**', '!./software/.venv') }}
-          restore-keys: Glasgow-py${{ matrix.python-version }}-
+          restore-keys: |
+            YoWASP-${{ runner.os }}-${{ matrix.python-version }}-
+            YoWASP-${{ runner.os }}-
       - name: Run tests
         working-directory: ./software
         run: |
