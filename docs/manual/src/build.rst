@@ -41,7 +41,7 @@ Any board that is being factory flashed must have a blank ``FX2_MEM`` EEPROM. If
 
     Configure your system to allow unprivileged access (for anyone in the ``plugdev`` group) to any hardware that enumerates as the Cypress FX2 ROM bootloader:
 
-    .. code-block:: console
+    .. code:: console
 
         $ sudo cp config/99-cypress.rules /etc/udev/rules.d
 
@@ -49,7 +49,7 @@ Any board that is being factory flashed must have a blank ``FX2_MEM`` EEPROM. If
 
     Plug in the newly assembled device. At this point, ``lsusb -d 04b4:8613`` should list one entry. Note the revision of the board you are factory flashing. If the board has revision ``C3``, run:
 
-    .. code-block:: console
+    .. code:: console
 
         $ glasgow factory --rev C3
 
@@ -67,7 +67,7 @@ Any board that is being factory flashed must have a blank ``FX2_MEM`` EEPROM. If
 
     Plug in the newly assembled device. At this point, ``System Information.app`` should list the FX2 device with Vid ``04b4`` and Pid ``8613``. Note the revision of the board you are factory flashing. If the board has revision ``C3``, run:
 
-    .. code-block:: console
+    .. code:: console
 
         $ glasgow factory --rev C3
 

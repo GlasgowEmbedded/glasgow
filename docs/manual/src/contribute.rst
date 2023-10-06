@@ -49,19 +49,19 @@ Writing commit messages
 
 When modifying Python code, the first line of a commit message should, if possible, start with the name of the module that is being modified, such that ``git log --grep`` can be used to filter changes by scope. E.g.:
 
-.. code-block:: text
+.. code:: text
 
     protocol.jtag_svf: accept and ignore whitespace in scan data.
 
 When modifying documentation, the first line of a commit message should start with ``manual:``, followed by the base name of the ``.rst`` file that is being modified. E.g.:
 
-.. code-block:: text
+.. code:: text
 
     manual: intro: update the list of applets.
 
 When modifying firmware, the first line of a commit message should start with ``firmware:``. E.g.:
 
-.. code-block:: text
+.. code:: text
 
     firmware: fix an operator precedence issue.
 
@@ -79,7 +79,7 @@ If you have used vendor documentation while writing the code you're contributing
 
 * reference the documentation at the top of the file in the following format:
 
-  .. code-block:: text
+  .. code:: text
 
       Ref: <insert vendor documentation title or, if impossible, any permanent-looking URL>
       Document Number: <insert vendor document number; omit the field if one does not exist>

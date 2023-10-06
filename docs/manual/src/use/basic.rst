@@ -6,7 +6,7 @@ How do I use Glasgow?
 
 After :ref:`installing <initial-setup>` the Glasgow software, the ``glasgow`` utility should be operational:
 
-.. code-block:: console
+.. code:: console
 
     $ glasgow --version
 
@@ -24,7 +24,7 @@ At all times, a ``--help`` argument may be appended for more details.
 
 Set all I/O to a `safe` state - disable voltage outputs, and set all I/O pins to high impedance.
 
-.. code-block:: console
+.. code:: console
 
     $ glasgow safe
 
@@ -41,7 +41,7 @@ Be careful that you set the correct voltage for your connected devices.
 
 The following command will run the ``uart`` applet, with an I/O voltage of 3.3v, and will configure pin ``A0`` to be `Tx`, and pin ``A1`` to be `Rx` (from the Glasgow hardware's point of view):
 
-.. code-block:: console
+.. code:: console
 
     $ glasgow run uart -V 3.3 --pin-tx 0 --pin-rx 1 tty
 
@@ -53,7 +53,7 @@ Command line format
 
 As you build up the Glasgow command line, the `context` changes - for example the output of the following ``--help`` are all different.
 
-.. code-block:: console
+.. code:: console
 
     $ glasgow --help
     $ glasgow run --help
@@ -63,7 +63,7 @@ The upshot of this, is that different arguments need to be placed at different p
 The help section at each level should clarify where each argument should be placed.
 For example, the ``--serial`` parameter is for the top-level ``glasgow`` command, and not ``glasgow run uart``.
 
-.. code-block:: console
+.. code:: console
 
     ## this is valid:
     $ glasgow --serial ${my_serial} run uart -V 3.3 tty
@@ -82,7 +82,7 @@ By default, the `port` will typically be set to ``AB``, which results in all 16�
 
 In some cases, you may want to use ``B3`` without using port A, which can be achieved using the following:
 
-.. code-block:: console
+.. code:: console
 
     $ glasgow run uart -V 3.3 --port B --pin-tx 3 tty
 
@@ -102,7 +102,7 @@ The baudrate can be set using `-b 57600`, and auto-baud can be enabled with `-a`
 
 Other modes of operation are available (``tty``, ``pty``, ``socket``), which are explained further by the help text.
 
-.. code-block:: console
+.. code:: console
 
     $ glasgow run uart -V 3.3 --pin-tx 0 --pin-rx 1 -b 57600 tty
 
@@ -113,7 +113,7 @@ SPI Controller
 The ``spi-controller`` applet implements an SPI controller, allowing full-duplex transfer to an SPI device.
 The following command will assert ``#CS``, send the bytes ``03,01,23,5f,f5``, and then de-assert ``#CS``, before printing the received data to the console.
 
-.. code-block:: console
+.. code:: console
 
     $ glasgow run spi-controller -V 3.3 --pin-sck 0 --pin-cs 1 --pin-copi 2 --pin-cipo 3 0301235ff5
 
@@ -123,7 +123,7 @@ I²C Initiator
 
 The ``i2c-initiator`` applet implements an I²C initiator, which facilitates a simple bus scan from the command line, using the on-board pull-up resistors.
 
-.. code-block:: console
+.. code:: console
 
     $ glasgow run i2c-initiator -V 3.3 --pulls scan
 
