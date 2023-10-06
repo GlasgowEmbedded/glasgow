@@ -1,4 +1,5 @@
 *.*bak
+*.*lck
 boards/**/*.xml
 boards/**/*_bom.txt
 boards/**/*.kicad_prl
