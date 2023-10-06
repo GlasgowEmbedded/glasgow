@@ -136,9 +136,9 @@ jobs:
           <html lang="en-US">
             <meta charset="utf-8">
             <title>Redirecting&hellip;</title>
-            <link rel="canonical" href="latest/">
-            <script>location="latest/"</script>
-            <meta http-equiv="refresh" content="0; url=latest/">
+            <link rel="canonical" href="latest/intro.html">
+            <script>location="latest/intro.html"</script>
+            <meta http-equiv="refresh" content="0; url=latest/intro.html">
             <meta content="Glasgow Interface Explorer" name="og:title" />
             <meta content="website" name="og:type" />
             <meta content="https://glasgow-embedded.org/" name="og:url" />
@@ -151,7 +151,7 @@ jobs:
             <meta content="https://www.crowdsupply.com/img/f9a9/glasgow-revc2_jpg_project-main.jpg" name="twitter:image" />
             <meta content="A Glasgow Interface Explorer PCB, without a case" name="twitter:image:alt" />
             <h1>Redirecting&hellip;</h1>
-            <a href="latest/">Click here if you are not redirected.</a>
+            <a href="latest/intro.html">Click here if you are not redirected.</a>
           </html>
           END
       - if: github.repository != 'GlasgowEmbedded/glasgow'
