@@ -18,14 +18,14 @@ If these instructions don't work for you, please `file a bug <file-a-bug_>`__ so
 
     .. tab:: Debian
 
-        .. code-block:: console
+        .. code:: console
 
             $ sudo apt install -y --no-install-recommends git pipx
             $ pipx ensurepath
 
     .. tab:: Arch
 
-        .. code-block:: console
+        .. code:: console
 
             $ sudo pacman -Sy git python-pipx
             $ pipx ensurepath
@@ -41,41 +41,48 @@ If these instructions don't work for you, please `file a bug <file-a-bug_>`__ so
 
     Navigate to a convenient working directory and download the source code:
 
-    .. code-block:: console
+    .. code:: console
 
         $ git clone https://github.com/GlasgowEmbedded/glasgow
 
     Configure your system to allow unprivileged access (for anyone in the ``plugdev`` group) to the Glasgow hardware:
 
-    .. code-block:: console
+    .. code:: console
 
         $ sudo cp glasgow/config/99-glasgow.rules /etc/udev/rules.d
 
     Install the Glasgow software for the current user:
 
-    .. code-block:: console
+    .. code:: console
 
         $ pipx install -e 'glasgow/software[builtin-toolchain]'
 
     To update the software to its newest revision, navigate to your working directory and run:
 
-    .. code-block:: console
+    .. code:: console
 
         $ git -C glasgow pull
         $ pipx reinstall glasgow
 
     After setup, confirm that the Glasgow utility is operational by running:
 
-    .. code-block:: console
+    .. code:: console
 
         $ glasgow --version
         $ glasgow build --rev C3 uart
+
+    Plug in your device and confirm that it is discovered by running:
+
+    .. code:: console
+
+        $ glasgow list
+        C3-20230729T201611Z
 
 .. tab:: Windows
 
     You will need to have `git <git-win_>`__, `Python <python-win_>`__, and `pipx`_ installed.  To install git and Python, follow the instructions from their respective pages. To install pipx, run:
 
-    .. code-block:: doscon
+    .. code:: doscon
 
         > py -3 -m pip install --user pipx
         > py -3 -m pipx ensurepath
@@ -84,35 +91,42 @@ If these instructions don't work for you, please `file a bug <file-a-bug_>`__ so
 
     Navigate to a convenient working directory (it is highly recommended to use a local directory, e.g. ``%LOCALAPPDATA%``, since running Glasgow software from a network drive or a roaming profile causes significant slowdown) and download the source code:
 
-    .. code-block:: doscon
+    .. code:: doscon
 
         > git clone https://github.com/GlasgowEmbedded/glasgow
 
     Install the Glasgow software for the current user:
 
-    .. code-block:: doscon
+    .. code:: doscon
 
         > pipx install -e glasgow/software[builtin-toolchain]
 
     To update the software to its newest revision, navigate to your working directory and run:
 
-    .. code-block:: doscon
+    .. code:: doscon
 
         > git -C glasgow pull
         > pipx reinstall glasgow
 
     After setup, confirm that the Glasgow utility is operational by running:
 
-    .. code-block:: doscon
+    .. code:: doscon
 
         > glasgow --version
         > glasgow build --rev C3 uart
+
+    Plug in your device and confirm that it is discovered by running:
+
+    .. code:: doscon
+
+        > glasgow list
+        C3-20230729T201611Z
 
 .. tab:: macOS
 
     You will need to have `pipx`_ installed. If you haven't already, install `Homebrew <https://brew.sh/>`_. To install pipx, run:
 
-    .. code-block:: console
+    .. code:: console
 
         $ brew install pipx
         $ pipx ensurepath
@@ -121,35 +135,42 @@ If these instructions don't work for you, please `file a bug <file-a-bug_>`__ so
 
     Navigate to a convenient working directory and download the source code:
 
-    .. code-block:: console
+    .. code:: console
 
         $ git clone https://github.com/GlasgowEmbedded/glasgow
 
     Install the Glasgow software for the current user:
 
-    .. code-block:: console
+    .. code:: console
 
         $ pipx install -e 'glasgow/software[builtin-toolchain]'
 
     To update the software to its newest revision, navigate to your working directory and run:
 
-    .. code-block:: console
+    .. code:: console
 
         $ git -C glasgow pull
         $ pipx reinstall glasgow
 
     After setup, confirm that the Glasgow utility is operational by running:
 
-    .. code-block:: console
+    .. code:: console
 
         $ glasgow --version
         $ glasgow build --rev C3 uart
+
+    Plug in your device and confirm that it is discovered by running:
+
+    .. code:: console
+
+        $ glasgow list
+        C3-20230729T201611Z
 
 .. tab:: FreeBSD
 
     You will need to have `pipx`_, `Yosys`_, `nextpnr`_, and `icestorm`_ installed. To install these packages, run:
 
-    .. code-block:: console
+    .. code:: console
 
         $ sudo pkg install pip pipx yosys abc nextpnr icestorm
         $ pipx ensurepath
@@ -158,29 +179,36 @@ If these instructions don't work for you, please `file a bug <file-a-bug_>`__ so
 
     Navigate to a convenient working directory and download the source code:
 
-    .. code-block:: console
+    .. code:: console
 
         $ git clone https://github.com/GlasgowEmbedded/glasgow
 
     Install the Glasgow software for the current user:
 
-    .. code-block:: console
+    .. code:: console
 
         $ pipx install -e 'glasgow/software'
 
     To update the software to its newest revision, navigate to your working directory and run:
 
-    .. code-block:: console
+    .. code:: console
 
         $ git -C glasgow pull
         $ pipx reinstall glasgow
 
     After setup, confirm that the Glasgow utility is operational by running:
 
-    .. code-block:: console
+    .. code:: console
 
         $ glasgow --version
         $ glasgow build --rev C3 uart
+
+    Plug in your device and confirm that it is discovered by running:
+
+    .. code:: console
+
+        $ glasgow list
+        C3-20230729T201611Z
 
 .. _git-lin: https://git-scm.com/download/linux
 .. _git-win: https://git-scm.com/download/win
