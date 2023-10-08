@@ -47,19 +47,25 @@ The Glasgow project does not strictly adhere to any specific Python or C coding 
 Writing commit messages
 #######################
 
-When modifying Python code, the first line of a commit message should, if possible, start with the name of the module that is being modified, such that ``git log --grep`` can be used to filter changes by scope. E.g.:
+When modifying Python code, the first line of a commit message should, if possible, start with the name of the module (not including the leading ``glasgow.``) that is being modified, such that ``git log --grep`` can be used to filter changes by scope:
 
 .. code:: text
 
     protocol.jtag_svf: accept and ignore whitespace in scan data.
 
-When modifying documentation, the first line of a commit message should start with ``manual:``, followed by the base name of the ``.rst`` file that is being modified. E.g.:
+The format is the same for Python code implementing applets:
+
+.. code:: text
+
+    applet.interface.uart: make autobaud more reliable.
+
+When modifying documentation, the first line of a commit message should start with ``manual:``, followed by the base name of the ``.rst`` file that is being modified:
 
 .. code:: text
 
     manual: intro: update the list of applets.
 
-When modifying firmware, the first line of a commit message should start with ``firmware:``. E.g.:
+When modifying firmware, the first line of a commit message should start with ``firmware:``:
 
 .. code:: text
 
