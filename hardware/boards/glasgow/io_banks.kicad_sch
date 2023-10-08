@@ -4518,7 +4518,7 @@
   )
 
   (symbol (lib_id "Connector_Generic:Conn_01x03") (at 87.63 90.17 0) (unit 1)
-    (in_bom no) (on_board yes) (dnp yes)
+    (in_bom yes) (on_board yes) (dnp yes)
     (uuid 00000000-0000-0000-0000-00005c072c23)
     (property "Reference" "J10" (at 90.17 92.71 0)
       (effects (font (size 1.27 1.27)) (justify left))
@@ -5844,7 +5844,7 @@
   )
 
   (symbol (lib_id "Device:D_Zener") (at 68.58 85.09 90) (unit 1)
-    (in_bom no) (on_board yes) (dnp yes)
+    (in_bom yes) (on_board yes) (dnp yes)
     (uuid 00000000-0000-0000-0000-00005cb8809b)
     (property "Reference" "D12" (at 71.12 87.63 90)
       (effects (font (size 1.27 1.27)) (justify left))
@@ -5882,7 +5882,7 @@
   )
 
   (symbol (lib_id "Device:D_Zener") (at 76.2 85.09 90) (unit 1)
-    (in_bom no) (on_board yes) (dnp yes)
+    (in_bom yes) (on_board yes) (dnp yes)
     (uuid 00000000-0000-0000-0000-00005cb88f58)
     (property "Reference" "D13" (at 78.74 87.63 90)
       (effects (font (size 1.27 1.27)) (justify left))
