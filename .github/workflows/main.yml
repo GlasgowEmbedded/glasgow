@@ -7,9 +7,10 @@ name: CI
 jobs:
 
   test-software:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
+        os-version:
+        - ubuntu-latest
         python-version:
         - '3.9'
         - '3.10'
@@ -19,9 +20,14 @@ jobs:
         allow-failure:
         - false
         include:
-        - python-version: '3.12-dev'
-          allow-failure: true
+          - os-version: ubuntu-latest
+            python-version: '3.12-dev'
+            allow-failure: true
+          - os-version: ubuntu-20.04
+            python-version: '3.9.5' # shipped with 20.04 LTS
+            allow-failure: false
     continue-on-error: '${{ matrix.allow-failure }}'
+    runs-on: ${{ matrix.os-version }}
     name: 'test-software (${{ matrix.python-version }})'
     steps:
       - name: Check out source code
