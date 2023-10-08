@@ -1,3 +1,5 @@
+import re
+import sys
 import importlib.metadata
 import packaging.requirements
 import pathlib
@@ -6,6 +8,20 @@ import textwrap
 
 
 __all__ = ["PluginRequirementsUnmet", "PluginMetadata"]
+
+
+# TODO(py3.10): remove
+# Ubuntu 20.04 ships an outdated Python version with a serious bug impacting importlib.metadata:
+# https://github.com/python/importlib_metadata/issues/369
+# It is a pain to update Python on that Ubuntu version, so just patch it here to match the fixed
+# method from the later version. The same bug affects >=3.10.0 <3.10.3, but installation of these
+# versions is prohibited in pyproject.toml to avoid excessive CI matrix size.
+if sys.version_info >= (3, 9, 0) and sys.version_info < (3, 9, 11):
+    @property
+    def _EntryPoint_extras(self):
+        match = self.pattern.match(self.value)
+        return re.findall(r'\w+', match.group('extras') or '')
+    importlib.metadata.EntryPoint.extras = _EntryPoint_extras
 
 
 # There are subtle differences between Python versions for both importlib.metadata (the built-in
