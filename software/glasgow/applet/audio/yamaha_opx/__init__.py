@@ -147,6 +147,7 @@ import io
 from amaranth import *
 from amaranth.lib import data
 from amaranth.lib.cdc import FFSynchronizer
+from urllib.parse import urlparse
 
 from ....gateware.pads import *
 from ....gateware.clockgen import *
@@ -1014,7 +1015,8 @@ class YamahaOPxWebInterface:
         runner = aiohttp.web.AppRunner(app,
             access_log_format='%a(%{X-Forwarded-For}i) "%r" %s "%{Referer}i" "%{User-Agent}i"')
         await runner.setup()
-        site = aiohttp.web.TCPSite(runner, *endpoint.split(":", 1))
+        parsed_endpoint = urlparse(f"//{endpoint}")
+        site = aiohttp.web.TCPSite(runner, parsed_endpoint.hostname, parsed_endpoint.port)
         await site.start()
         await asyncio.Future()
 
