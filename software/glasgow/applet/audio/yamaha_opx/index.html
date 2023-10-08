@@ -9,7 +9,7 @@
   <p>Connected synthesizer: {{chip}}. Playback support for: {{compat}}.</p>
   <p><b>Glitching</b>: undervolt to <input type="number" min="1.65" max="5.50" value="5.00" step="0.01" id="voltage"></p>
   <p>Upload a <a href="https://vgmrips.net/packs/chips">VGM/VGZ file</a>: <input type="file" id="vgmFile" accept=".vgm,.vgz"></p>
-  <p>... or provide an URL for it: <input type="url" id="vgmUrl" size="50"></p>
+  <p style="display: {{url_display}};">... or provide an URL for it: <input type="url" id="vgmUrl" size="50"></p>
   <p>Control: <input type="button" id="play" value="Play"> <input type="button" id="replay" value="Replay" disabled> <input type="checkbox" id="loop"> <label for="loop">Loop</label> <input type="button" id="exportFull" value="Export full" disabled> <input type="button" id="exportLoop" value="Export loop" disabled></p>
   <p>Status: <span id="chipStatus">no chip</span>, <span id="pcmStatus">no format</span>, <span id="netStatus">idle</span>, <span id="playStatus">stopped</span>.</p>
   <p id="errorPane" style="color:red; display:none">Error: <span id="error"></span></p>
