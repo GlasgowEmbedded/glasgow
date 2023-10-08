@@ -4518,7 +4518,7 @@
   )
 
   (symbol (lib_id "Connector_Generic:Conn_01x03") (at 87.63 90.17 0) (unit 1)
-    (in_bom yes) (on_board yes) (dnp no)
+    (in_bom no) (on_board yes) (dnp yes)
     (uuid 00000000-0000-0000-0000-00005c072c23)
     (property "Reference" "J10" (at 90.17 92.71 0)
       (effects (font (size 1.27 1.27)) (justify left))
@@ -5844,7 +5844,7 @@
   )
 
   (symbol (lib_id "Device:D_Zener") (at 68.58 85.09 90) (unit 1)
-    (in_bom yes) (on_board yes) (dnp no)
+    (in_bom no) (on_board yes) (dnp yes)
     (uuid 00000000-0000-0000-0000-00005cb8809b)
     (property "Reference" "D12" (at 71.12 87.63 90)
       (effects (font (size 1.27 1.27)) (justify left))
@@ -5870,8 +5870,8 @@
     (property "DNP" "DNP" (at 64.516 86.868 0)
       (effects (font (size 1.27 1.27)))
     )
-    (pin "1" (uuid afe1f9f9-ed5c-42a4-bd2c-9e3303ba8d32))
-    (pin "2" (uuid a4d37bbb-aabb-430c-9652-1f8d9752b372))
+    (pin "1" (uuid 35ee78ea-bd53-4045-a9e2-3344bf8c45e3))
+    (pin "2" (uuid 445dde62-a8cf-4e09-a14a-94f653ed058d))
     (instances
       (project "glasgow"
         (path "/8f38e89c-17d2-45bd-b2a9-83bd9bb08903/00000000-0000-0000-0000-00005c7b59b0"
@@ -5882,7 +5882,7 @@
   )
 
   (symbol (lib_id "Device:D_Zener") (at 76.2 85.09 90) (unit 1)
-    (in_bom yes) (on_board yes) (dnp no)
+    (in_bom no) (on_board yes) (dnp yes)
     (uuid 00000000-0000-0000-0000-00005cb88f58)
     (property "Reference" "D13" (at 78.74 87.63 90)
       (effects (font (size 1.27 1.27)) (justify left))
@@ -5908,8 +5908,8 @@
     (property "DNP" "DNP" (at 72.136 88.9 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (pin "1" (uuid 7a2cd947-48d8-476e-a7be-1ae42387baf7))
-    (pin "2" (uuid 9ae69792-e827-435a-bd88-726812aaf1a0))
+    (pin "1" (uuid 3b6d794d-9a88-4e03-aa90-417b33fdb473))
+    (pin "2" (uuid 42b75e98-daf8-4e4c-9b4c-6f9cb7911945))
     (instances
       (project "glasgow"
         (path "/8f38e89c-17d2-45bd-b2a9-83bd9bb08903/00000000-0000-0000-0000-00005c7b59b0"

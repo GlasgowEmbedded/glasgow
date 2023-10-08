@@ -9649,7 +9649,7 @@
   )
 
   (symbol (lib_id "Device:R") (at 134.62 172.72 180) (unit 1)
-    (in_bom yes) (on_board yes) (dnp no)
+    (in_bom no) (on_board yes) (dnp yes)
     (uuid 00000000-0000-0000-0000-00005cdc036d)
     (property "Reference" "R40" (at 132.842 173.8884 0)
       (effects (font (size 1.27 1.27)) (justify left))
