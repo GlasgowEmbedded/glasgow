@@ -7467,7 +7467,7 @@
   )
 
   (symbol (lib_id "Device:R") (at 265.43 133.35 90) (unit 1)
-    (in_bom yes) (on_board yes) (dnp no)
+    (in_bom no) (on_board yes) (dnp yes)
     (uuid 00000000-0000-0000-0000-00005cc70bfc)
     (property "Reference" "R51" (at 264.16 130.81 90)
       (effects (font (size 1.27 1.27)) (justify right))
@@ -7649,7 +7649,7 @@
   )
 
   (symbol (lib_id "Connector_Generic:Conn_01x08") (at 209.55 95.25 0) (unit 1)
-    (in_bom yes) (on_board yes) (dnp no)
+    (in_bom no) (on_board yes) (dnp yes)
     (uuid 00000000-0000-0000-0000-00005dad05ff)
     (property "Reference" "J8" (at 215.0618 96.6216 90)
       (effects (font (size 1.27 1.27)))
@@ -7690,7 +7690,7 @@
   )
 
   (symbol (lib_id "Connector_Generic:Conn_01x08") (at 209.55 128.27 0) (unit 1)
-    (in_bom yes) (on_board yes) (dnp no)
+    (in_bom no) (on_board yes) (dnp yes)
     (uuid 00000000-0000-0000-0000-00005db11458)
     (property "Reference" "J9" (at 215.265 130.175 90)
       (effects (font (size 1.27 1.27)) (justify left))
@@ -8495,7 +8495,7 @@
   )
 
   (symbol (lib_id "Device:R") (at 257.81 133.35 90) (unit 1)
-    (in_bom yes) (on_board yes) (dnp no)
+    (in_bom no) (on_board yes) (dnp yes)
     (uuid 00000000-0000-0000-0000-00005f25ea2a)
     (property "Reference" "R8" (at 256.54 130.81 90)
       (effects (font (size 1.27 1.27)) (justify right))
