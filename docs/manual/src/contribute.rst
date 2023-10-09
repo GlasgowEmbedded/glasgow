@@ -15,9 +15,7 @@ Bug reports are always welcome! If you are experiencing an issue with your devic
 
 For a timely resolution of your issues involving the Glasgow software, include the following information when `reporting a bug on GitHub <issues_>`__:
 
-* Your operating system, including its version (e.g.: "Debian Linux bookworm" or "Windows 10 update 22H2");
-
-* The version of the Glasgow software stack (as printed by ``glasgow --version``);
+* The version of the Glasgow software stack and environment components (as printed by ``glasgow --version``);
 
 * The complete debug information produced by the command you are running (as printed by ``glasgow -vvv [command...]``).
 
