@@ -1,6 +1,7 @@
 import os
 import sys
 import ast
+import platform
 import logging
 import argparse
 import textwrap
@@ -71,15 +72,30 @@ class TextHelpFormatter(argparse.HelpFormatter):
         return re.sub(r"((?!\n\n)(?!\n\s+(?:\*|\$|\d+\.)).)+(\n*)?", filler, text, flags=re.S)
 
 
+def version_info():
+    glasgow_version = __version__
+    python_version = '.'.join(map(str, sys.version_info[:3]))
+    python_implementation = platform.python_implementation()
+    python_platform = platform.platform()
+    freedesktop_os_name = ""
+    if hasattr(platform, "freedesktop_os_release"): # TODO(py3.9): present in 3.10+
+        try:
+            freedesktop_os_release = platform.freedesktop_os_release()
+            if "PRETTY_NAME" in freedesktop_os_release:
+                freedesktop_os_name = f" {freedesktop_os_release['PRETTY_NAME']}"
+        except OSError:
+            pass
+    return (
+        f"Glasgow {glasgow_version} "
+        f"({python_implementation} {python_version} on {python_platform}{freedesktop_os_name})"
+    )
+
+
 def create_argparser():
     parser = argparse.ArgumentParser(formatter_class=TextHelpFormatter)
 
-    version = "Glasgow version {version} (Python {python_version})" \
-        .format(python_version=".".join(str(n) for n in sys.version_info[:3]),
-                version=__version__)
-
     parser.add_argument(
-        "-V", "--version", action="version", version=version,
+        "-V", "--version", action="version", version=version_info(),
         help="show version and exit")
     parser.add_argument(
         "-v", "--verbose", default=0, action="count",
