@@ -89,7 +89,12 @@ class GlasgowHardwareDevice:
             else:
                 continue
 
-            handle = device.open()
+            try:
+                handle = device.open()
+            except usb1.USBErrorAccess:
+                logger.error("missing permissions to open device %03d/%03d",
+                             device.getBusNumber(), device.getDeviceAddress())
+                continue
             if api_level == 0:
                 logger.debug("found rev%s device without firmware", revision)
             elif api_level != CUR_API_LEVEL:
