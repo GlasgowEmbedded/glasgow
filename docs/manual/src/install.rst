@@ -45,11 +45,13 @@ If these instructions don't work for you, please `file a bug <file-a-bug_>`__ so
 
         $ git clone https://github.com/GlasgowEmbedded/glasgow
 
-    Configure your system to allow unprivileged access (for anyone in the ``plugdev`` group) to the Glasgow hardware:
+    Configure your system to allow unprivileged access (for anyone in the ``plugdev`` group) to the Glasgow hardware and apply the rules to any devices that are already plugged in:
 
     .. code:: console
 
         $ sudo cp glasgow/config/99-glasgow.rules /etc/udev/rules.d
+        $ sudo udevadm control --reload
+        $ sudo udevadm trigger -v -c add -s usb -a idVendor=20b7 -a idProduct=9db1
 
     Install the Glasgow software for the current user:
 
