@@ -20,12 +20,15 @@ jobs:
         allow-failure:
         - false
         include:
-          - os-version: ubuntu-latest
-            python-version: '3.12-dev'
-            allow-failure: true
           - os-version: ubuntu-20.04
             python-version: '3.9.5' # shipped with 20.04 LTS
             allow-failure: false
+          - os-version: ubuntu-latest
+            python-version: '3.12'
+            allow-failure: true
+          - os-version: ubuntu-latest
+            python-version: '3.13-dev'
+            allow-failure: true
     continue-on-error: '${{ matrix.allow-failure }}'
     runs-on: ${{ matrix.os-version }}
     name: 'test-software (${{ matrix.python-version }})'
