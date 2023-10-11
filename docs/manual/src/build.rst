@@ -44,6 +44,8 @@ Any board that is being factory flashed must have a blank ``FX2_MEM`` EEPROM. If
     .. code:: console
 
         $ sudo cp config/99-cypress.rules /etc/udev/rules.d
+        $ sudo udevadm control --reload
+        $ sudo udevadm trigger -v -c add -s usb -a idVendor=04b4 -a idProduct=8613
 
     Note that this rule will allow unprivileged access to any device based on the Cypress FX2 that has a blank EEPROM, and not just the Glasgow.
 
