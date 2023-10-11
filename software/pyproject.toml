@@ -25,9 +25,9 @@ dependencies = [
   "appdirs~=1.4",
   "amaranth[builtin-yosys] @ git+https://github.com/amaranth-lang/amaranth.git",
   "fx2>=0.11",
-  "libusb1>=1.8.1",
-  "pyvcd",
-  "bitarray",
+  "libusb1>=2.0",
+  "pyvcd~=0.2",
+  "bitarray~=2.5",
 ]
 
 [project.optional-dependencies]
@@ -37,7 +37,7 @@ builtin-toolchain = [
   "yowasp-nextpnr-ice40>=0.1",
 ]
 http = [
-  "aiohttp~=3.8",
+  "aiohttp~=3.8,>=3.8.5",
   "aiohttp-remotes~=1.2",
 ]
 
