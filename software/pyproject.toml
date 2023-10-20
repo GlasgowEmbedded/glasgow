@@ -116,8 +116,5 @@ build-backend = "pdm.backend"
 
 # Development workflow configuration
 
-[tool.pdm.dev-dependencies]
-test = ["setuptools"]
-
 [tool.pdm.scripts]
-test = {cmd = "test.py -v"}
+test = {cmd = "python -m unittest"}
