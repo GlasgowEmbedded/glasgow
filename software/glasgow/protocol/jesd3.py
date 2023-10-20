@@ -283,7 +283,7 @@ class JESD3Parser:
             self._parse_error("transmission checksum mismatch: expected %04X, actual %04X"
                               % (expected_checksum, actual_checksum))
 
-        if self._fuse_default is not None and self._fuse_bit_count < len(self.fuse):
+        if self._fuse_default is None and self._fuse_bit_count < len(self.fuse):
             self._parse_error("fuse default state is not specified, and only %d out of %d fuse "
                               "bits are explicitly defined"
                               % (self._fuse_bit_count, len(self.fuse)))
