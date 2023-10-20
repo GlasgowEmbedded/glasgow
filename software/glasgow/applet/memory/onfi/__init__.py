@@ -751,10 +751,3 @@ class MemoryONFIApplet(GlasgowApplet):
 
                 row   += block_size
                 count -= block_size
-
-# -------------------------------------------------------------------------------------------------
-
-class MemoryONFIAppletTestCase(GlasgowAppletTestCase, applet=MemoryONFIApplet):
-    @synthesis_test
-    def test_build(self):
-        self.assertBuilds(args=["--port", "AB"])

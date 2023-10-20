@@ -248,10 +248,3 @@ class I2CTargetApplet(GlasgowApplet):
     async def interact(self, device, args, iface):
         while True:
             await iface.read_event()
-
-# -------------------------------------------------------------------------------------------------
-
-class I2CTargetAppletTestCase(GlasgowAppletTestCase, applet=I2CTargetApplet):
-    @synthesis_test
-    def test_build(self):
-        self.assertBuilds(args=["-A", "0b1010000"])

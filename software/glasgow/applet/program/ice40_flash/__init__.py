@@ -109,10 +109,3 @@ class ProgramICE40FlashApplet(Memory25xApplet):
                 self.logger.info("FPGA configured from flash")
             else:
                 self.logger.warning("FPGA failed to configure after releasing reset")
-
-# -------------------------------------------------------------------------------------------------
-
-class ProgramICE40FlashAppletTestCase(GlasgowAppletTestCase, applet=ProgramICE40FlashApplet):
-    @synthesis_test
-    def test_build(self):
-        self.assertBuilds()

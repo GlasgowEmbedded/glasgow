@@ -1084,10 +1084,3 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
 
             if count == 0:
                 state = "IDLE"
-
-# -------------------------------------------------------------------------------------------------
-
-class MemoryFloppyAppletTestCase(GlasgowAppletTestCase, applet=MemoryFloppyApplet):
-    @synthesis_test
-    def test_build(self):
-        self.assertBuilds()

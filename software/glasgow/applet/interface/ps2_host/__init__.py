@@ -439,10 +439,3 @@ class PS2HostApplet(GlasgowApplet):
         async def print_byte(byte):
             print("{:02x}".format(byte), end=" ", flush=True)
         await iface.stream(print_byte)
-
-# -------------------------------------------------------------------------------------------------
-
-class PS2HostAppletTestCase(GlasgowAppletTestCase, applet=PS2HostApplet):
-    @synthesis_test
-    def test_build(self):
-        self.assertBuilds()

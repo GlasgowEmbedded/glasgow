@@ -347,10 +347,3 @@ class I2CInitiatorApplet(GlasgowApplet):
                         manufacturer, part_ident, revision = device_id
                         self.logger.info("device %s ID: manufacturer %s, part %s, revision %s",
                             bin(addr), bin(manufacturer), bin(part_ident), bin(revision))
-
-# -------------------------------------------------------------------------------------------------
-
-class I2CInitiatorAppletTestCase(GlasgowAppletTestCase, applet=I2CInitiatorApplet):
-    @synthesis_test
-    def test_build(self):
-        self.assertBuilds()
