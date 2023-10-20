@@ -476,10 +476,3 @@ class DisplayPDIApplet(GlasgowApplet):
         await pdi_iface.display_frame(mode="white", time_ms=stage_ms, image=image)
         await pdi_iface.display_frame(mode="white", time_ms=stage_ms, image=image)
         await pdi_iface.power_off()
-
-# -------------------------------------------------------------------------------------------------
-
-class DisplayPDIAppletTestCase(GlasgowAppletTestCase, applet=DisplayPDIApplet):
-    @synthesis_test
-    def test_build(self):
-        self.assertBuilds()

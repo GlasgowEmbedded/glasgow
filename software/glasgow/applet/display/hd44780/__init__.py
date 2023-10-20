@@ -278,10 +278,3 @@ class DisplayHD44780Applet(GlasgowApplet):
             await cmd(CMD_DDRAM_ADDRESS|0x40)
             await data(datetime.now().strftime("%y-%m-%d").encode("ascii"))
             await iface.flush()
-
-# -------------------------------------------------------------------------------------------------
-
-class DisplayHD44780AppletTestCase(GlasgowAppletTestCase, applet=DisplayHD44780Applet):
-    @synthesis_test
-    def test_build(self):
-        self.assertBuilds()

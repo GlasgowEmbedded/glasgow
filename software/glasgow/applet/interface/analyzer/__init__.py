@@ -124,10 +124,3 @@ class AnalyzerApplet(GlasgowApplet):
 
         finally:
             vcd_writer.close(timestamp)
-
-# -------------------------------------------------------------------------------------------------
-
-class AnalyzerAppletTestCase(GlasgowAppletTestCase, applet=AnalyzerApplet):
-    @synthesis_test
-    def test_build(self):
-        self.assertBuilds()

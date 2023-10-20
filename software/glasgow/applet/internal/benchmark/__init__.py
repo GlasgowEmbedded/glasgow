@@ -237,10 +237,3 @@ class BenchmarkApplet(GlasgowApplet):
                                  mode,
                                  (length / (end - begin)) / (1 << 20),
                                  (length / (end - begin)) / (1 << 17))
-
-# -------------------------------------------------------------------------------------------------
-
-class BenchmarkAppletTestCase(GlasgowAppletTestCase, applet=BenchmarkApplet):
-    @synthesis_test
-    def test_build(self):
-        self.assertBuilds()

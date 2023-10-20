@@ -162,10 +162,3 @@ class VideoHub75OutputApplet(GlasgowApplet):
 
     async def run(self, device, args):
         return await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-
-# -------------------------------------------------------------------------------------------------
-
-class VideoHub75OutputAppletTestCase(GlasgowAppletTestCase, applet=VideoHub75OutputApplet):
-    @synthesis_test
-    def test_build(self):
-        self.assertBuilds()

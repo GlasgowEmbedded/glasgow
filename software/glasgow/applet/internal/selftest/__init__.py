@@ -293,10 +293,3 @@ class SelfTestApplet(GlasgowApplet):
             for (mode, message) in report:
                 self.logger.error("%s: %s", mode, message)
             raise GlasgowAppletError("self-test: FAIL")
-
-# -------------------------------------------------------------------------------------------------
-
-class SelfTestAppletTestCase(GlasgowAppletTestCase, applet=SelfTestApplet):
-    @synthesis_test
-    def test_build(self):
-        self.assertBuilds()

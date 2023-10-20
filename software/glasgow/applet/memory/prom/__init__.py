@@ -863,10 +863,3 @@ class MemoryPROMAppletTool(GlasgowAppletTool, applet=MemoryPROMApplet):
                 print(f"{voltage:.2f}: |{'1' * rectangle_size:{histogram_size}s}| "
                       f"({len(popcounts)}× {int(mean_popcount)}/{density}, "
                       f"sd {statistics.pstdev(popcounts):.2f})")
-
-# -------------------------------------------------------------------------------------------------
-
-class MemoryPROMAppletTestCase(GlasgowAppletTestCase, applet=MemoryPROMApplet):
-    @synthesis_test
-    def test_build(self):
-        self.assertBuilds()

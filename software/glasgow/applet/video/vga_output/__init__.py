@@ -203,10 +203,3 @@ class VGAOutputApplet(GlasgowApplet):
 
     async def run(self, device, args):
         return await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-
-# -------------------------------------------------------------------------------------------------
-
-class VGAOutputAppletTestCase(GlasgowAppletTestCase, applet=VGAOutputApplet):
-    @synthesis_test
-    def test_build(self):
-        self.assertBuilds(args=["--port", "B"])

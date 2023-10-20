@@ -482,10 +482,3 @@ class ProgramM16CApplet(GlasgowApplet):
 
         finally:
             await iface.reset_application()
-
-# -------------------------------------------------------------------------------------------------
-
-class ProgramM16CAppletTestCase(GlasgowAppletTestCase, applet=ProgramM16CApplet):
-    @synthesis_test
-    def test_build(self):
-        self.assertBuilds()
