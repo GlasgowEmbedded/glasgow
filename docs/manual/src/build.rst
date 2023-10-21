@@ -11,7 +11,7 @@ Pre-assembled Glasgow devices and cases are :ref:`available for purchase <purcha
 
     If you use the PCBA design files and the BOM that are included in this repository without modifications (other than the modifications required above), the Glasgow project will provide the same degree of support for your device as it does for the CrowdSupply orders (except for repairs under warranty).
 
-    If you modify the design files (which the license allows you to do without restrictions), the Glasgow project will not in general provide support for such devices, and you must not call your modified devices "Glasgow". You must remove the name "Glasgow" from the PCB silkscreen artwork to ensure that the device is clearly identifiable as being modified from the original source files.
+    If you modify the design files (which the license allows you to do without restrictions), the Glasgow project will not in general provide support for such devices, and you must not call your modified devices "Glasgow". You must remove the name "Glasgow" from the PCB silkscreen artwork to ensure that the device is clearly identifiable as being modified from the original source files. You must run ``glasgow factory`` with the ``--using-modified-design-files=yes`` argument when preparing the device, which will appropriately mark the device and change the product name USB descriptor to not include "Glasgow".
 
     If you are modifying the BOM to replace passive components with equivalent parts from a different vendor (such as in response to shortages), you may call your modified device "Glasgow". In addition, exceptions to the rule above can be made after discussing your case with Catherine "whitequark" or Piotr Esden-Tempski.
 
