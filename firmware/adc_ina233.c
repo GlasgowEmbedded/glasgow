@@ -166,7 +166,6 @@ bool iobuf_get_alert_ina233(uint8_t selector,
   for(buffer = buffers; buffer->selector; buffer++) {
     if(selector == buffer->selector) {
       __pdata uint8_t code_bytes[2];
-      __pdata uint8_t mask_reg;
 
       if(!i2c_reg8_read(buffer->address, INA233_REG_VIN_UV_WARN_LIMIT, code_bytes, 2))
         return false;
