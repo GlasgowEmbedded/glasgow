@@ -38,12 +38,25 @@ class TaskQueue:
     async def cancel(self):
         """
         Cancel all tasks in the queue, and wait until cancellation is finished.
+
+        After cancelling them, waits until all the pending tasks become finished, and then awaits
+        every finished task, ignoring cancellation errors. If some of the tasks raised an exception
+        before or during being cancelled, the first exception will be re-raised, and the other ones
+        will be consumed.
         """
         for task in self._live:
             task.cancel()
         if self._live:
             await asyncio.wait(self._live, return_when=asyncio.ALL_COMPLETED)
-        self._done.clear()
+        exception = None
+        while self._done:
+            task = self._done.popleft()
+            if task.cancelled():
+                continue
+            if task.exception() is not None and exception is None:
+                exception = task.exception()
+        if exception is not None:
+            raise exception
 
     async def poll(self):
         """
