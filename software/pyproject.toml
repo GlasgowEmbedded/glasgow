@@ -101,7 +101,7 @@ video-rgb-input = "glasgow.applet.video.rgb_input:VideoRGBInputApplet"
 video-vga-output = "glasgow.applet.video.vga_output:VGAOutputApplet"
 video-ws2812-output = "glasgow.applet.video.ws2812_output:VideoWS2812OutputApplet"
 
-radio-nrf24l1 = "glasgow.applet.radio.nrf24l01:RadioNRF24L01Applet"
+radio-nrf24l01 = "glasgow.applet.radio.nrf24l01:RadioNRF24L01Applet"
 
 [project.urls]
 "Documentation" = "https://glasgow-embedded.org/"
