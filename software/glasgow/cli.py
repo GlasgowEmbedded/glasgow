@@ -681,6 +681,10 @@ async def _main():
                 task.cancel()
             await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
 
+            # If the applet task has raised an exception, retrieve it here in case any of the await
+            # statements above will fail; if we don't, asyncio will unnecessarily complain.
+            applet_task.exception()
+
             if do_trace:
                 await device.write_register(target.analyzer.addr_done, 1)
                 await analyzer_task
