@@ -516,3 +516,8 @@ class Memory25xApplet(SPIControllerApplet):
                 status = (status & ~MSK_PROT) | ((args.bits << 2) & MSK_PROT)
                 await m25x_iface.write_enable()
                 await m25x_iface.write_status(status)
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.Memory25xAppletTestCase

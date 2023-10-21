@@ -370,3 +370,8 @@ class SPIControllerApplet(GlasgowApplet):
     async def interact(self, device, args, spi_iface):
         data = await spi_iface.transfer(args.data)
         print(data.hex())
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.SPIControllerAppletTestCase

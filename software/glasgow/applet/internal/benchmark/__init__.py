@@ -237,3 +237,8 @@ class BenchmarkApplet(GlasgowApplet):
                                  mode,
                                  (length / (end - begin)) / (1 << 20),
                                  (length / (end - begin)) / (1 << 17))
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.BenchmarkAppletTestCase

@@ -482,3 +482,8 @@ class ProgramM16CApplet(GlasgowApplet):
 
         finally:
             await iface.reset_application()
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.ProgramM16CAppletTestCase

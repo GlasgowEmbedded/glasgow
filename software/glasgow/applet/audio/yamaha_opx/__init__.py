@@ -1248,3 +1248,8 @@ class AudioYamahaOPxApplet(GlasgowApplet):
             for fut in done:
                 await fut
             args.pcm_file.write(record_fut.result())
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.AudioYamahaOPxAppletTestCase

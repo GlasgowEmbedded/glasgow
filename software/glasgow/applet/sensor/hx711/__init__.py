@@ -211,3 +211,8 @@ class SensorHX711Applet(GlasgowApplet):
             while True:
                 sample = await hx711.sample()
                 await data_logger.report_data(fields={"n": sample})
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.SensorHX711AppletTestCase

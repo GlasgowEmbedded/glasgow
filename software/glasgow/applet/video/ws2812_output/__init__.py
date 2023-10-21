@@ -209,3 +209,8 @@ class VideoWS2812OutputApplet(GlasgowApplet):
                 await leds.flush(wait=False)
             except asyncio.CancelledError:
                 pass
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.VideoWS2812OutputAppletTestCase

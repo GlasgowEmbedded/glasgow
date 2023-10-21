@@ -162,3 +162,8 @@ class VideoHub75OutputApplet(GlasgowApplet):
 
     async def run(self, device, args):
         return await device.demultiplexer.claim_interface(self, self.mux_interface, args)
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.VideoHub75OutputAppletTestCase

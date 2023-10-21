@@ -248,3 +248,8 @@ class I2CTargetApplet(GlasgowApplet):
     async def interact(self, device, args, iface):
         while True:
             await iface.read_event()
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.I2CTargetAppletTestCase

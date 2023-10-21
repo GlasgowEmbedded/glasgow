@@ -476,3 +476,8 @@ class DisplayPDIApplet(GlasgowApplet):
         await pdi_iface.display_frame(mode="white", time_ms=stage_ms, image=image)
         await pdi_iface.display_frame(mode="white", time_ms=stage_ms, image=image)
         await pdi_iface.power_off()
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.DisplayPDIAppletTestCase

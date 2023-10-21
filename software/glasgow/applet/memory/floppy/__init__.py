@@ -710,6 +710,11 @@ class MemoryFloppyApplet(GlasgowApplet):
         finally:
             await floppy_iface.stop()
 
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.MemoryFloppyAppletTestCase
+
 # -------------------------------------------------------------------------------------------------
 
 class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):

@@ -576,3 +576,8 @@ class RadioNRF24L01Applet(GlasgowApplet):
                         break
             finally:
                 await nrf24l01_iface.disable()
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.RadioNRF24L01AppletTestCase

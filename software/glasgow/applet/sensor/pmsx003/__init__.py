@@ -161,3 +161,8 @@ class SensorPMSx003Applet(GlasgowApplet):
                     await data_logger.report_data(fields)
                 except PMSx003Error as error:
                     await data_logger.report_error(str(error), exception=error)
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.SensorPMSx003AppletTestCase

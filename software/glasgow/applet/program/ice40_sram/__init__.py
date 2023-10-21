@@ -125,3 +125,8 @@ class ProgramICE40SRAMApplet(SPIControllerApplet):
                 self.logger.info("FPGA successfully configured")
             else:
                 self.logger.warning("FPGA failed to configure after releasing reset")
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.ProgramICE40SRAMAppletTestCase
