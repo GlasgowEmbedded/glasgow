@@ -1,11 +1,11 @@
 # Python
+*.pyc
 __pycache__/
-*.egg-info
 /dist
-/build
 
 # pdm
 /.pdm-plugins
 /.pdm-python
+/.pdm-build
 /.venv*
 /pdm.lock

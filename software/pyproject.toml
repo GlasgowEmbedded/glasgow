@@ -1,3 +1,6 @@
+[tool.pdm.version]
+source = "scm"
+
 [project]
 dynamic = ["version"]
 
@@ -108,15 +111,8 @@ radio-nrf24l1 = "glasgow.applet.radio.nrf24l01:RadioNRF24L01Applet"
 # Build system configuration
 
 [build-system]
-requires = ["setuptools>=67.0", "setuptools_scm[toml]>=6.2"]
-build-backend = "setuptools.build_meta"
-
-[tool.setuptools.package-data]
-"glasgow.device" = ["firmware.ihex"]
-
-[tool.setuptools_scm]
-root = ".."
-local_scheme = "node-and-timestamp"
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
 
 # Development workflow configuration
 
