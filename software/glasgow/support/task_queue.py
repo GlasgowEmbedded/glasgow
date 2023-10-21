@@ -82,12 +82,12 @@ class TaskQueue:
         await self.poll()
 
     def __bool__(self):
-        """Check whether there are any pending tasks in the queue."""
-        return bool(self._live)
+        """Check whether there are any tasks in the queue."""
+        return bool(self._live) or bool(self._done)
 
     def __len__(self):
-        """Count pending tasks in the queue."""
-        return len(self._live)
+        """Count tasks in the queue."""
+        return len(self._live) + len(self._done)
 
     @property
     def total_wait_time(self):
