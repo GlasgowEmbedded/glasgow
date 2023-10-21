@@ -59,7 +59,7 @@ static bool iobuf_reset_ina233(uint8_t i2c_addr) {
     return false;
 
   // TODO: write cal register to allow current measurement
-  
+
   return true;
 }
 
@@ -68,11 +68,11 @@ bool iobuf_init_adc_ina233() {
   for(buffer = buffers; buffer->selector; buffer++) {
     // clear cache
     *(buffer->status_cache_ptr) = 0;
-      
+
     if (!iobuf_reset_ina233(buffer->address))
       return false;
   }
-  
+
   return true;
 }
 
@@ -117,7 +117,7 @@ bool iobuf_set_alert_ina233(uint8_t mask,
   __pdata uint8_t mask_reg = 0xFF;
 
   // TODO: we probably want to allow more than MAX_VOLTAGE for the INA233
-  
+
   if(*low_millivolts > MAX_VOLTAGE || *high_millivolts > MAX_VOLTAGE)
     return false;
 
@@ -135,7 +135,7 @@ bool iobuf_set_alert_ina233(uint8_t mask,
 
   for(buffer = buffers; buffer->selector; buffer++) {
     if(mask & buffer->selector) {
-       
+
       if(!i2c_reg8_write(buffer->address, INA233_REG_VIN_UV_WARN_LIMIT, low_code_bytes, 2))
         return false;
 
@@ -144,14 +144,14 @@ bool iobuf_set_alert_ina233(uint8_t mask,
 
       if(!i2c_reg8_write(buffer->address, INA233_REG_MFR_ALERT_MASK, &mask_reg, 1))
         return false;
-      
+
       // a CLEAR_FAULTS seems to be necessary after changing the alert mask.
       // Experimentation shows that the alert mask is only evaluated when a fault occurs
-      // When a currently masked fault occured, a later change in the alert mask does not 
+      // When a currently masked fault occured, a later change in the alert mask does not
       // cause the fault to trigger ~ALERT. A change in the limit vaules also doesn't cause
       // a fault to be reevaluated.
       if(!i2c_reg8_write(buffer->address, INA233_REG_CLEAR_FAULTS, &mask_reg, 0))
-        return false;      
+        return false;
     }
   }
 
@@ -170,7 +170,7 @@ bool iobuf_get_alert_ina233(uint8_t selector,
 
       if(!i2c_reg8_read(buffer->address, INA233_REG_VIN_UV_WARN_LIMIT, code_bytes, 2))
         return false;
-      
+
       if (code_bytes[0] == 0 && code_bytes[1] == 0)
         *low_millivolts = 0;
       else
@@ -178,8 +178,8 @@ bool iobuf_get_alert_ina233(uint8_t selector,
 
       if(!i2c_reg8_read(buffer->address, INA233_REG_VIN_OV_WARN_LIMIT, code_bytes, 2))
         return false;
-      
-      if (code_bytes[0] == 0xf8 && code_bytes[1] == 0x7f) 
+
+      if (code_bytes[0] == 0xf8 && code_bytes[1] == 0x7f)
         *high_millivolts = MAX_VOLTAGE;
       else
         *high_millivolts = code_bytes_to_millivolts_ina233(code_bytes);
@@ -201,7 +201,7 @@ bool iobuf_poll_alert_ina233(__xdata uint8_t *mask) {
       return false;
 
     // just check the actual limit alert bits, ignoring the others
-    if(status_byte & 
+    if(status_byte &
         (INA233_BIT_IN_UV_WARNING | INA233_BIT_IN_OV_WARNING | INA233_BIT_IN_OC_WARNING | INA233_BIT_IN_OP_WARNING))
     {
       // we got some kind of limit alert, return the port in the bitmask
@@ -211,7 +211,7 @@ bool iobuf_poll_alert_ina233(__xdata uint8_t *mask) {
       *(buffer->status_cache_ptr) = status_byte;
     }
   }
-  
+
   return true;
 }
 
@@ -223,7 +223,7 @@ void iobuf_read_alert_cache_ina233(__xdata uint8_t *mask, bool clear) {
     uint8_t status_byte = *(buffer->status_cache_ptr);
 
     // just check the actual limit alert bits, ignoring the others
-    if(status_byte & 
+    if(status_byte &
         (INA233_BIT_IN_UV_WARNING | INA233_BIT_IN_OV_WARNING | INA233_BIT_IN_OC_WARNING | INA233_BIT_IN_OP_WARNING))
     {
       // we got some kind of limit alert, return the port in the bitmask
@@ -248,24 +248,24 @@ bool iobuf_clear_alert_ina233(uint8_t mask) {
       // Experimentation showed only RESTORE_DEFAULT_ALL (aka software reset)
       // as alternative way to clear ~ALERT. Especially CLEAR_FAULTS does not
       // affect the ~ALERT line, despite the datasheet claiming otherwise
-        
+
       // So first read out the currently set limit values, reset, and write them back
       if(!i2c_reg8_read(buffer->address, INA233_REG_VIN_UV_WARN_LIMIT, low_code_bytes, 2))
         return false;
 
       if(!i2c_reg8_read(buffer->address, INA233_REG_VIN_OV_WARN_LIMIT, high_code_bytes, 2))
         return false;
-        
+
       if(!iobuf_reset_ina233(buffer->address))
         return false;
 
       // After the reset, the ~ALERT line is cleared. But so is any trace in the INA233 itself
-      // that an alert has happened at all. To allow finding out about the alert, the status_cache 
+      // that an alert has happened at all. To allow finding out about the alert, the status_cache
       // in firmware is necessary. iobuf_poll_alert_ina233() stored the alert details in the cache.
       // It has to be called before iobuf_clear_alert_ina233().
-      
+
       // we masked all alerts after the reset, so the alert will not trigger again instantly
-      
+
       if(!i2c_reg8_write(buffer->address, INA233_REG_VIN_UV_WARN_LIMIT, low_code_bytes, 2))
         return false;
 
@@ -273,6 +273,6 @@ bool iobuf_clear_alert_ina233(uint8_t mask) {
         return false;
     }
   }
-  
+
   return true;
 }
