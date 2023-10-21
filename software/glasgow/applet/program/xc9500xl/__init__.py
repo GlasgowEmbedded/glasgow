@@ -632,7 +632,7 @@ class ProgramXC9500XLAppletTool(GlasgowAppletTool, applet=ProgramXC9500XLApplet)
         p_jed_to_bit = p_operation.add_parser(
             "jed-to-bit", help="convert a .jed file to a .bit file")
         p_jed_to_bit.add_argument(
-            "jed_file", metavar="JED-FILE", type=argparse.FileType("r"),
+            "jed_file", metavar="JED-FILE", type=argparse.FileType("rb"),
             help="bitstream file to read")
         p_jed_to_bit.add_argument(
             "bit_file", metavar="BIT-FILE", type=argparse.FileType("wb"),

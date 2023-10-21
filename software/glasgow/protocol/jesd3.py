@@ -28,37 +28,40 @@ class JESD3Lexer:
     # This follows the JESD3-C grammar, with the exception that spaces are more permissive.
     # As described, only 0x0D is allowed in between fields, which is absurd.
     _fields = (
-        (r"N",  r"[ \t\r\n]*(.*?)"),
-        (r"D",  r".*?"),
-        (r"QF", r"([0-9]+)"),
-        (r"QP", r"([0-9]+)"),
-        (r"QV", r"([0-9]+)"),
-        (r"F",  r"([01])"),
-        (r"L",  r"([0-9]+)[ \t\r\n]+([01 \t\r\n]+)"),
-        (r"C",  r"([0-9A-F]{4})"),
-        (r"EH", r"([0-9A-F]+)"),
-        (r"E",  r"([01]+)"),
-        (r"UA", r"([\t\r\n\x20-\x29\x2B-\x7E]+)"),
-        (r"UH", r"([0-9A-F]+)"),
-        (r"U",  r"([01]+)"),
-        (r"J",  r"([0-9]+)[ \t\r\n]+([0-9]+)"),
-        (r"G",  r"([01])"),
-        (r"X",  r"([01])"),
-        (r"P",  r"([ \t\r\n]*[0-9]+)+"),
-        (r"V",  r"([0-9]+)[ \t\r\n]+([0-9BCDFHTUXZ]+)"),
-        (r"S",  r"([01]+)"),
-        (r"R",  r"([0-9A-F]{8})"),
-        (r"T",  r"([0-9]+)"),
-        (r"A",  r"([\t\r\n\x20-\x29\x2B-\x7E]*)([0-9]+)"),
+        (rb"N",  rb"[ \t\r\n]*(.*?)"),
+        (rb"D",  rb".*?"),
+        (rb"QF", rb"([0-9]+)"),
+        (rb"QP", rb"([0-9]+)"),
+        (rb"QV", rb"([0-9]+)"),
+        (rb"F",  rb"([01])"),
+        (rb"L",  rb"([0-9]+)[ \t\r\n]+([01 \t\r\n]+)"),
+        (rb"C",  rb"([0-9A-F]{4})"),
+        (rb"EH", rb"([0-9A-F]+)"),
+        (rb"E",  rb"([01]+)"),
+        (rb"UA", rb"([\t\r\n\x20-\x29\x2B-\x7E]+)"),
+        (rb"UH", rb"([0-9A-F]+)"),
+        (rb"U",  rb"([01]+)"),
+        (rb"J",  rb"([0-9]+)[ \t\r\n]+([0-9]+)"),
+        (rb"G",  rb"([01])"),
+        (rb"X",  rb"([01])"),
+        (rb"P",  rb"([ \t\r\n]*[0-9]+)+"),
+        (rb"V",  rb"([0-9]+)[ \t\r\n]+([0-9BCDFHTUXZ]+)"),
+        (rb"S",  rb"([01]+)"),
+        (rb"Rb",  rb"([0-9A-F]{8})"),
+        (rb"T",  rb"([0-9]+)"),
+        (rb"A",  rb"([\t\r\n\x20-\x29\x2B-\x7E]*)([0-9]+)"),
     )
-    _stx_spec_re  = re.compile(r"\x02(.*?)\*[ \t\r\n]*", re.A|re.S)
-    _stx_quirk_re = re.compile(r"\x02()[ \t\r\n]*", re.A|re.S)
-    _etx_re       = re.compile(r"\x03([0-9A-F]{4})", re.A|re.S)
-    _ident_re     = re.compile(r"|".join(ident for ident, args in _fields), re.A|re.S)
-    _field_res    = {ident: re.compile(ident + args + r"[ \t\r\n]*\*[ \t\r\n]*", re.A|re.S)
+    _stx_spec_re  = re.compile(rb"\x02(.*?)\*[ \t\r\n]*", re.A|re.S)
+    _stx_quirk_re = re.compile(rb"\x02()[ \t\r\n]*", re.A|re.S)
+    _etx_re       = re.compile(rb"\x03([0-9A-F]{4})", re.A|re.S)
+    _ident_re     = re.compile(rb"|".join(ident for ident, args in _fields), re.A|re.S)
+    _field_res    = {ident: re.compile(ident + args + rb"[ \t\r\n]*\*[ \t\r\n]*", re.A|re.S)
                      for ident, args in _fields}
 
     def __init__(self, buffer, quirk_no_design_spec=False):
+        if not isinstance(buffer, (bytes, bytearray)):
+            raise ValueError(f"JESD3 lexer requires bytes or bytearray as input, not {type(buffer)}")
+
         self.buffer   = buffer
         self.position = 0
         self.checksum = 0
@@ -91,9 +94,9 @@ class JESD3Lexer:
             if not match:
                 raise JESD3ParsingError("could not find STX marker")
             else:
-                token = "start"
+                token = b"start"
                 self._state = "fields"
-                self.checksum += sum(map(ord, match.group(0)))
+                self.checksum += sum(match.group(0))
 
         elif self._state == "fields":
             match = self._ident_re.match(self.buffer, self.position)
@@ -104,7 +107,7 @@ class JESD3Lexer:
                     raise JESD3ParsingError("field %s has invalid format at line %d, column %d"
                                             % (token, *self.line_column()))
                 else:
-                    self.checksum += sum(map(ord, match.group(0)))
+                    self.checksum += sum(match.group(0))
 
             else:
                 match = self._etx_re.match(self.buffer, self.position)
@@ -113,7 +116,7 @@ class JESD3Lexer:
                                             % (*self.line_column(),
                                                self.buffer[self.position:self.position + 16]))
                 else:
-                    token = "end"
+                    token = b"end"
                     self._state = "end"
                     self.checksum += 0x03
 
@@ -121,7 +124,7 @@ class JESD3Lexer:
             raise StopIteration
 
         self.position = match.end()
-        return token, match.start(), match.groups()
+        return token.decode("ascii"), match.start(), match.groups()
 
 
 class JESD3Parser:
@@ -190,7 +193,7 @@ class JESD3Parser:
         if self.fuse is None:
             self._parse_error("fuse list specified before fuse count")
         index  = int(index, 10)
-        values = bitarray(re.sub(r"[ \r\n]", "", values), endian="little")
+        values = bitarray(re.sub(r"[ \r\n]", "", values.decode("ascii")), endian="little")
         if index + len(values) > len(self.fuse):
             self._parse_error("fuse list specifies range [%d:%d] beyond last fuse %d"
                               % (index, index + len(values), len(self.fuse)))
@@ -291,7 +294,7 @@ class JESD3Parser:
 
 if __name__ == "__main__":
     import sys
-    with open(sys.argv[1], "r") as f:
+    with open(sys.argv[1], "rb") as f:
         parser = JESD3Parser(f.read(), quirk_no_design_spec=False)
         parser.parse()
         for i in range(0, len(parser.fuse) + 63, 64):
