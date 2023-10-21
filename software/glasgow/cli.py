@@ -394,6 +394,11 @@ def get_argparser():
         "--manufacturer", metavar="MFG", dest="factory_manufacturer", type=factory_manufacturer,
         default="", # the default is implemented in the firmware
         help="manufacturer string (if not specified: whitequark research)")
+    p_factory.add_argument(
+        "--using-modified-design-files", dest="factory_modified_design", choices=("yes", "no"),
+        required=True, # must be specified explicitly
+        help="whether the design files used to manufacture the PCBA were modified from the ones "
+             "published in the https://github.com/GlasgowEmbedded/glasgow/ repository")
 
     p_list = subparsers.add_parser(
         "list", formatter_class=TextHelpFormatter,
@@ -849,8 +854,9 @@ async def _main():
 
             device_id = GlasgowConfig.encode_revision(args.factory_rev)
             glasgow_config = GlasgowConfig(args.factory_rev, args.factory_serial,
-                                           manufacturer=args.factory_manufacturer)
-            firmware = GlasgowHardwareDevice.firmware()
+                                           manufacturer=args.factory_manufacturer,
+                                           modified_design=(args.factory_modified_design != "no"))
+            firmware_data = GlasgowHardwareDevice.firmware_data()
 
             if args.reinitialize:
                 vid, pid = VID_QIHW, PID_GLASGOW
@@ -868,7 +874,7 @@ async def _main():
             fx2_config = FX2Config(vendor_id=VID_QIHW, product_id=PID_GLASGOW,
                                    device_id=device_id, i2c_400khz=True, disconnect=True)
             fx2_config.append(0x4000 - glasgow_config.size, glasgow_config.encode())
-            for (addr, chunk) in firmware:
+            for (addr, chunk) in firmware_data:
                 fx2_config.append(addr, chunk)
             image = fx2_config.encode()
 

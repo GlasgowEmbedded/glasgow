@@ -26,7 +26,7 @@ usb_desc_device_c usb_device = {
   .bMaxPacketSize0      = 64,
   .idVendor             = VID_QIHW,
   .idProduct            = PID_GLASGOW,
-  .bcdDevice            = CUR_API_LEVEL << 8,
+  .bcdDevice            = 0, // filled in descriptors_init()
   .iManufacturer        = 1,
   .iProduct             = 2,
   .iSerialNumber        = 3,
@@ -144,8 +144,12 @@ usb_configuration_set_c usb_configs[] = {
   &usb_config_1_pipe,
 };
 
+// This replaces the beginning of "Glasgow Interface Explorer" in the string table below if
+// the "modified from original design" flag is set in the configuration.
+#define MODIFIED_DESIGN_PRODUCT_STRING "Another"
+
 usb_ascii_string_c usb_strings[] = {
-  [0] = "whitequark research\0\0\0\0", // 23 characters
+  [0] = "whitequark research\0\0\0", // CONFIG_SIZE_MANUFACTURER characters long
   [1] = "Glasgow Interface Explorer (git " GIT_REVISION ")",
   [2] = "XX-XXXXXXXXXXXXXXXX",
   // Configurations
@@ -231,6 +235,10 @@ fail:
   glasgow_config.bitstream_size = 0;
 }
 
+static __xdata char *usb_string_at_index(uint8_t index) {
+  return (__xdata char *)usb_strings[index - 1];
+}
+
 // Populate descriptors from device configuration, if any.
 static void descriptors_init() {
   __xdata struct usb_desc_device *desc_device = (__xdata struct usb_desc_device *)usb_device;
@@ -238,7 +246,7 @@ static void descriptors_init() {
 
   // Set revision from configuration if any, or pretend to be an unflashed device if it's missing.
   if(glasgow_config.revision != GLASGOW_REV_NA) {
-    desc_device->bcdDevice |= glasgow_config.revision;
+    desc_device->bcdDevice = (CUR_API_LEVEL << 8) | glasgow_config.revision;
   } else {
     desc_device->idVendor  = VID_CYPRESS;
     desc_device->idProduct = PID_FX2;
@@ -247,14 +255,21 @@ static void descriptors_init() {
   // Set manufacturer from configuration if it's set. Most devices will have this field zeroed,
   // leaving the manufacturer string at the default value.
   if (glasgow_config.manufacturer[0] != '\0') {
-    desc_string = (__xdata char *)usb_strings[usb_device.iManufacturer - 1];
+    desc_string = usb_string_at_index(usb_device.iManufacturer);
     xmemcpy(&desc_string[0], (__xdata void *)glasgow_config.manufacturer,
             sizeof(glasgow_config.manufacturer));
   }
 
+  // Set product based on configuration flags.
+  if (glasgow_config.flags & CONFIG_FLAG_MODIFIED_DESIGN) {
+    desc_string = usb_string_at_index(usb_device.iProduct);
+    xmemcpy(&desc_string[0], (__xdata void *)MODIFIED_DESIGN_PRODUCT_STRING,
+            sizeof(MODIFIED_DESIGN_PRODUCT_STRING) - 1); // without trailing \0
+  }
+
   // Set serial number from configuration. Serial number must be always valid, and the firmware
   // fixes up the serial number in `config_init()` if the configuration is corrupted or missing.
-  desc_string = (__xdata char *)usb_strings[usb_device.iSerialNumber - 1];
+  desc_string = usb_string_at_index(usb_device.iSerialNumber);
   desc_string[0] = 'A' + (glasgow_config.revision >> 4) - 1;
   desc_string[1] = '0' + (glasgow_config.revision & 0xF);
   xmemcpy(&desc_string[3], (__xdata void *)glasgow_config.serial,
@@ -529,7 +544,7 @@ void handle_pending_usb_setup() {
     pending_setup = false;
 
     if(arg_idx == 0) {
-      memset(glasgow_config.bitstream_id, 0, BITSTREAM_ID_SIZE);
+      memset(glasgow_config.bitstream_id, 0, CONFIG_SIZE_BITSTREAM_ID);
       fpga_reset();
     }
 
@@ -551,19 +566,19 @@ void handle_pending_usb_setup() {
   if((req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN) ||
       req->bmRequestType == (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT)) &&
      req->bRequest == USB_REQ_BITSTREAM_ID &&
-     req->wLength == BITSTREAM_ID_SIZE) {
+     req->wLength == CONFIG_SIZE_BITSTREAM_ID) {
     bool arg_get = (req->bmRequestType & USB_DIR_IN);
     pending_setup = false;
 
     if(arg_get) {
       while(EP0CS & _BUSY);
-      xmemcpy(EP0BUF, glasgow_config.bitstream_id, BITSTREAM_ID_SIZE);
-      SETUP_EP0_BUF(BITSTREAM_ID_SIZE);
+      xmemcpy(EP0BUF, glasgow_config.bitstream_id, CONFIG_SIZE_BITSTREAM_ID);
+      SETUP_EP0_BUF(CONFIG_SIZE_BITSTREAM_ID);
     } else {
       if(fpga_start()) {
         SETUP_EP0_BUF(0);
         while(EP0CS & _BUSY);
-        xmemcpy(glasgow_config.bitstream_id, EP0BUF, BITSTREAM_ID_SIZE);
+        xmemcpy(glasgow_config.bitstream_id, EP0BUF, CONFIG_SIZE_BITSTREAM_ID);
       } else {
         STALL_EP0();
       }

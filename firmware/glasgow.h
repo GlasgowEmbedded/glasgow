@@ -78,15 +78,28 @@ enum {
 #define MAX_VOLTAGE 5500 // mV
 
 // Config API
-#define BITSTREAM_ID_SIZE 16
+enum {
+  /// Size of the bitstream ID field.
+  CONFIG_SIZE_BITSTREAM_ID      = 16,
+
+  /// Size of the manufacturer name field.
+  CONFIG_SIZE_MANUFACTURER      = 22,
+
+  /// Modified from the original design files. This flag must be set if the PCBA has been modified
+  /// from the design files published in https://github.com/GlasgowEmbedded/glasgow/ in any way
+  /// except those exempted in https://glasgow-embedded.org/latest/build.html. It will be set when
+  /// running `glasgow factory --using-modified-design-files=yes`.
+  CONFIG_FLAG_MODIFIED_DESIGN   = 0b00000001,
+};
 
 __xdata __at(0x4000 - CONF_SIZE) struct glasgow_config {
   uint8_t   revision;
   char      serial[16];
   uint32_t  bitstream_size;
-  char      bitstream_id[BITSTREAM_ID_SIZE];
+  char      bitstream_id[CONFIG_SIZE_BITSTREAM_ID];
   uint16_t  voltage_limit[2];
-  char      manufacturer[23];
+  char      manufacturer[CONFIG_SIZE_MANUFACTURER];
+  uint8_t   flags; // last field in a 64-byte configuration block
 } glasgow_config;
 
 // Test mode API
