@@ -207,6 +207,25 @@ class GlasgowHardwareDevice:
             self.usb_handle.setAutoDetachKernelDriver(True)
         except usb1.USBErrorNotSupported:
             pass
+        device_serial = self.usb_handle.getASCIIStringDescriptor(
+            usb_device.getSerialNumberDescriptor())
+        device_product = self.usb_handle.getASCIIStringDescriptor(
+            usb_device.getProductDescriptor())
+        self._serial = device_serial
+        self._modified_design = not device_product.startswith("Glasgow Interface Explorer")
+        if self._modified_design:
+            logger.info("device with serial number %s was manufactured from modified design files",
+                        self._serial)
+            logger.info("the Glasgow Interface Explorer project is not responsible for "
+                        "operation of this device")
+
+    @property
+    def serial(self):
+        return self._serial
+
+    @property
+    def modified_design(self):
+        return self._modified_design
 
     def close(self):
         self.usb_poller.done = True
