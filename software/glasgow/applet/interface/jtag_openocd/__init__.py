@@ -138,3 +138,8 @@ class JTAGOpenOCDApplet(GlasgowApplet):
         forward_in_fut  = asyncio.ensure_future(forward_in())
         await asyncio.wait([forward_out_fut, forward_in_fut],
                            return_when=asyncio.FIRST_EXCEPTION)
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.JTAGOpenOCDAppletTestCase

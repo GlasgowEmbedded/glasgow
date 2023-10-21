@@ -825,6 +825,11 @@ class MemoryPROMApplet(GlasgowApplet):
                 ]
             }, args.file)
 
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.MemoryPROMAppletTestCase
+
 # -------------------------------------------------------------------------------------------------
 
 class MemoryPROMAppletTool(GlasgowAppletTool, applet=MemoryPROMApplet):

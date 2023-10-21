@@ -256,3 +256,8 @@ class ProgramAVRSPIApplet(ProgramAVRApplet):
         spi_iface = await self.run_lower(ProgramAVRSPIApplet, device, args)
         avr_iface = ProgramAVRSPIInterface(spi_iface, self.logger, self.__addr_dut_reset)
         return avr_iface
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.ProgramAVRSPIAppletTestCase

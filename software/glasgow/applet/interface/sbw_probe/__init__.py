@@ -232,3 +232,8 @@ class SpyBiWireProbeApplet(GlasgowApplet):
             self.logger.error("no target detected; connection problem?")
         else:
             self.logger.info("found MSP430 core with JTAG ID %#04x", jtag_id)
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.SpyBiWireProbeAppletTestCase

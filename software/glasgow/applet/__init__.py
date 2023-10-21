@@ -77,6 +77,10 @@ class GlasgowApplet(metaclass=ABCMeta):
         await AsyncInteractiveConsole(locals={"device":device, "iface":iface, "args":args},
             run_callback=device.demultiplexer.flush).interact()
 
+    @classmethod
+    def tests(cls):
+        return None
+
 
 class GlasgowAppletTool:
     def __init_subclass__(cls, applet, **kwargs):
@@ -205,7 +209,6 @@ class GlasgowAppletTestCase(unittest.TestCase):
     def __init_subclass__(cls, applet, **kwargs):
         super().__init_subclass__(**kwargs)
 
-        applet.test_cls = cls
         cls.applet_cls  = applet
 
     def setUp(self):

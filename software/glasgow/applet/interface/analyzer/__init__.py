@@ -124,3 +124,8 @@ class AnalyzerApplet(GlasgowApplet):
 
         finally:
             vcd_writer.close(timestamp)
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.AnalyzerAppletTestCase

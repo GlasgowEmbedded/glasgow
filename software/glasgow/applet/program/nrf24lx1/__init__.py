@@ -420,3 +420,8 @@ class ProgramNRF24Lx1Applet(GlasgowApplet):
 
         finally:
             await nrf24lx1_iface.reset_application()
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.ProgramNRF24Lx1AppletTestCase

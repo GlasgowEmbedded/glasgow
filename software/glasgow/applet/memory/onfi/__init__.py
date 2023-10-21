@@ -751,3 +751,8 @@ class MemoryONFIApplet(GlasgowApplet):
 
                 row   += block_size
                 count -= block_size
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.MemoryONFIAppletTestCase

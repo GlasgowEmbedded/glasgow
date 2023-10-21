@@ -439,3 +439,8 @@ class PS2HostApplet(GlasgowApplet):
         async def print_byte(byte):
             print("{:02x}".format(byte), end=" ", flush=True)
         await iface.stream(print_byte)
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.PS2HostAppletTestCase

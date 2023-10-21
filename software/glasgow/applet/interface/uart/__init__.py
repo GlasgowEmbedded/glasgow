@@ -386,3 +386,8 @@ class UARTApplet(GlasgowApplet):
             await self._interact_pty(uart)
         if args.operation == "socket":
             await self._interact_socket(uart, args.endpoint)
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.UARTAppletTestCase

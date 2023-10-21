@@ -149,7 +149,7 @@ def get_argparser():
 
             applet_cls = metadata.applet_cls
 
-            if mode == "test" and not hasattr(applet_cls, "test_cls"):
+            if mode == "test" and applet_cls.tests() is None:
                 continue
             if mode == "tool" and not hasattr(applet_cls, "tool_cls"):
                 continue
@@ -827,11 +827,11 @@ async def _main():
                 result.stream.write("\n")
             result.startTest = startTest
             if args.tests == []:
-                suite = loader.loadTestsFromTestCase(applet.test_cls)
+                suite = loader.loadTestsFromTestCase(applet.tests())
                 suite.run(result)
             else:
                 for test in args.tests:
-                    suite = loader.loadTestsFromName(test, module=applet.test_cls)
+                    suite = loader.loadTestsFromName(test, module=applet.tests())
                     suite.run(result)
             if not result.wasSuccessful():
                 for _, traceback in result.errors + result.failures:

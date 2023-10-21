@@ -1099,3 +1099,8 @@ class JTAGProbeApplet(GlasgowApplet):
             locals={"iface":iface},
             run_callback=jtag_iface.flush
         ).interact()
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.JTAGProbeAppletTestCase
