@@ -59,10 +59,14 @@ class _PollerThread(threading.Thread):
 
 
 class GlasgowHardwareDevice:
-    @staticmethod
-    def firmware():
-        with importlib.resources.files(__package__).joinpath("firmware.ihex").open("r") as f:
-            return input_data(f, fmt="ihex")
+    @classmethod
+    def firmware_file(cls):
+        return importlib.resources.files(__package__).joinpath("firmware.ihex")
+
+    @classmethod
+    def firmware_data(cls):
+        with cls.firmware_file().open() as file:
+            return input_data(file, fmt="ihex")
 
     @classmethod
     def _enumerate_devices(cls, usb_context):
@@ -131,9 +135,10 @@ class GlasgowHardwareDevice:
 
             # If the device has no firmware or the firmware is too old (or, potentially, too new),
             # load the firmware that we know will work.
-            logger.debug("loading firmware to rev%s device", revision)
+            logger.debug("loading firmware from %r to rev%s device",
+                         str(cls.firmware_file()), revision)
             handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [1])
-            for address, data in cls.firmware():
+            for address, data in cls.firmware_data():
                 while len(data) > 0:
                     handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM,
                                         address, 0, data[:4096])
