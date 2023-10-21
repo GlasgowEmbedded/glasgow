@@ -22,9 +22,9 @@ By invoking ``glasgow repl ...`` you can gain interactive code-level access to t
     I: g.applet.interface.i2c_initiator: dropping to REPL; use 'help(iface)' to see available APIs
     >>>
 
-What happens now is entirely up to you --- ``glasgow script ...`` is given an identical environment, except that will run the nominated script rather than present control to you.
+What happens now is entirely up to you --- ``glasgow script ...`` is given an identical environment, except that it will run the nominated script rather than present control to you.
 
-The Glasgow framework provides us access to the ``device``, ``iface`` and ``args`` variables.
+The Glasgow framework provides us with access to the ``device``, ``iface`` and ``args`` variables.
 
 .. code:: console
 
@@ -34,13 +34,13 @@ The Glasgow framework provides us access to the ``device``, ``iface`` and ``args
 .. note::
     Some examples are maintained in the `examples <https://github.com/GlasgowEmbedded/glasgow/tree/main/examples>`_ directory.
 
-One further note --- a lot of the Glasgow framework uses ``asyncio``, with the most apparent impact to users being that the ``await`` keyword must be used. You are provided with an async-capable environment, so no additional work is required on your part --- just use the ``await`` keyword... if you ever see a ``<coroutine object ....>``, try using ``await``.
+One further note --- a lot of the Glasgow framework uses ``asyncio``, with the most apparent impact to users being that the ``await`` keyword must be used. You are provided with an async-capable environment, so no additional setup work is required on your part --- just use the ``await`` keyword... if you ever see a ``<coroutine object ....>``, try using ``await``.
 
 
 How do I use this interface?
 ----------------------------
 
-The exact usage will depend heavily on the applet you've requested, some examples are provided below, but please also have a look in the `examples <https://github.com/GlasgowEmbedded/glasgow/tree/main/examples>`_ directory.
+The exact usage will depend heavily on the applet you've requested, some examples are provided below with explanations.
 
 As the startup prompt suggests, investigating ``help(iface)`` and ``help(device)`` are good places to start... after that, have a look at the applet's code.
 
@@ -50,7 +50,7 @@ I²C
 For this example, I will be using the `Sparkfun BMP085 <https://www.sparkfun.com/products/retired/9694>`_ (a now-retired breakout for an I²C barometric pressure sensor), which supports 3.3v operation.
 
 .. note::
-    I²C busses are implemented using open-drain, meaning that pull-up resistors are `required`... Glasgow's onboard 10kΩ pull-ups can be enabled by passing the ``--pulls`` argument, though they may not suffice for fast or long busses. This particular breakout board has on-board pull-ups already, so it's not necessary.
+    I²C busses are implemented using open-drain, meaning that pull-up resistors are `required`... Glasgow's onboard 10kΩ pull-ups can be enabled by passing the ``--pulls`` argument --- while they will generally be enough, they may not suffice for fast or long busses. This particular breakout board has on-board pull-ups already, so it's not necessary to use them.
 
 .. code:: console
 
@@ -69,11 +69,11 @@ Let's start with a bus scan:
     {119}
     >>>
 
-Address``119`` has responded, which is ``0x77`` --- and this matches the datasheet!
+Address ``119`` has responded, which is ``0x77`` --- and this matches the datasheet!
 
-This sensor isn't the easiest to operate directly (you need to read a bunch of calibration and perform long calculations), so this is a great example of when you might want to start writing a script instead of using the REPL interface... however, to prove the point, we're going to read a register and leave the rest as an exercise for the reader.
+This sensor isn't the easiest to operate directly (you need to read a number of calibration variables and perform long calculations), so this is a great example of when you might want to start writing a script instead of using the REPL interface... however, to prove the point, we're going to read a register and leave the rest as an exercise for the reader.
 
-If you're familiar with I²C, you'll know that the typical convention is that the first portion of a write's payload will indicate the register to access, and a subsequent read will access the data from that location. Here we read the ``AC1`` value, which is a 16-bit integer stored at addresses ``0xAA`` and ``0xAB`` --- first by writing the ``0xAA`` base address, and then performing a 2-byte read.
+If you're familiar with I²C, you'll know that a common convention is for the target register address to be conveyed as the first portion of a write's payload, with a subsequent read accessing the data from that location, with addresses incrementing automatically. Here we read the ``AC1`` value, which is a 16-bit integer stored at addresses ``0xAA`` and ``0xAB`` --- first by writing the ``0xAA`` base address, and then performing a 2-byte read.
 
 .. code:: console
 
@@ -84,12 +84,12 @@ If you're familiar with I²C, you'll know that the typical convention is that th
     >>> _.hex()
     '1c04'
 
-Note here, that the read operation returned a memory view, perhaps not what was expected... we can still access the result without repeating the operation by using Python's ``_`` variable (`ref <https://docs.python.org/3/reference/lexical_analysis.html#reserved-classes-of-identifiers>`_).
+Note here, that the read operation returned a memory view, perhaps not what was expected... we can still access the result without repeating the operation by using Python's ``_`` variable (`ref <https://docs.python.org/3/reference/lexical_analysis.html#reserved-classes-of-identifiers>`_). If we were to only re-issue the ``iface.read()``, then we would retrieve the contents of registers ``0xAC`` and ``0xAD`` (i.e: perhaps not what was expected).
 
 UART
 ~~~~
 
-To demonstrate a simple UART loopback, I've connected pin 0 and 1 of Port A together... i.e: anything that we transmit, will be immediately received by us again.
+To demonstrate a simple UART loopback, I've connected pin 0 and 1 of Port A together... i.e: anything that we transmit, will be immediately received again by us.
 
 .. code:: console
 
@@ -144,7 +144,8 @@ I've got a `quater of an Adafruit 60 LED ring <https://www.adafruit.com/product/
     I: g.applet.video.ws2812_output: dropping to REPL; use 'help(iface)' to see available APIs
     >>>
 
-Next, we just write pixel data! Glasgow handles the pixel format mapping for us, so here the format is just RGB24 (three bytes per pixel).
+Next, we just write pixel data! Glasgow handles the pixel format mapping for us, and because we requested ``RGB-xBRG``, the conversion from RGB24 (three bytes per pixel) will be handled in hardware.
+The ``xBRG`` indicates that we're giving a constand ``0`` for the White channel, followed by the required order of Red, Green, and Blue.
 
 They're bright, so be careful of your eyes (I used ``1`` for a reason)... here's a strip of green pixels:
 
@@ -162,7 +163,8 @@ A 3-bit rainbow: (black, red, green, yellow, blue, magenta, cyan, white)
     >>> pix = chain.from_iterable(pix)                          # flatten to 1 dimension
     >>> pix = map(lambda v: 1 if v else 0, pix)                 # flatten to 0 or 1
     >>> pix = [ *pix ]                                          # make into a list for re-use
-    >>> await iface.write(pix)
+    >>> await iface.write(pix)                                  # display it
+    >>>
 
 And all off again, followed by a full power-down of the I/O:
 
@@ -172,7 +174,7 @@ And all off again, followed by a full power-down of the I/O:
     >>> await device.set_voltage('AB', 0)
     >>>
 
-Hopefully here you can start to see the power you have available.
+Hopefully this example starts to show you the power you have available.
 
 
 How do I use a script?
@@ -189,6 +191,8 @@ Can I use command line arguments?
 
 Yes! The ``args`` variable that is passed into the REPL and script environments contains all command line arguments that Glasgow sets up (including any defaults), along with a ``script_args`` member which contains anything after the first terminating ``--``.
 
+Of course you're also able to setup ``argparse`` or do whatever argument parsing you need to do --- see the `script args <https://github.com/GlasgowEmbedded/glasgow/blob/main/examples/script_args.py>`_ example.
+
 .. code:: console
 
     $ glasgow repl i2c-initiator -V 3.3 --pulls -- test me
@@ -202,4 +206,3 @@ Yes! The ``args`` variable that is passed into the REPL and script environments 
     ['test', 'me']
     >>>
 
-Of course now you're able to setup ``argparse`` or do whatever argument parsing you need to do --- see the `script args <https://github.com/GlasgowEmbedded/glasgow/blob/main/examples/script_args.py>`_ example.
