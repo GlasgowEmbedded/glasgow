@@ -253,18 +253,18 @@ def fuses_to_words(fuses, device):
     if len(fuses) != total_bits:
         raise GlasgowAppletError(
             "JED file does not have the right fuse count (expected %d, got %d)"
-            % (total_bits, fuses))
+            % (total_bits, len(fuses)))
 
     words = []
     p = 0
     for block in range(blocks):
         for word in range(9):
-            words.append(int.from_bytes(fuses[p:p + 8 * wc].tobytes(), "little"))
+            words.append(int(fuses[p:p + 8 * wc]))
             p += 8 * wc
         for word in range(6):
             val = []
             for sextuplet in range(wc):
-                val.append(fuses[p:p + 6].tobytes()[0])
+                val.append(int(fuses[p:p + 6]))
                 p += 6
             words.append(int.from_bytes(bytes(val), "little"))
     return words
