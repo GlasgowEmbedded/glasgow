@@ -1,7 +1,7 @@
 multi:
-    Glasgow_revC2:
-        gerbers: hardware/boards/glasgow/revC2
-        bom: hardware/boards/glasgow/revC2/bom.csv
+    Glasgow_revC3:
+        gerbers: hardware/boards/glasgow/revC3
+        bom: hardware/boards/glasgow/revC3/bom.csv
         color: green
-        summary: Glasgow Debug Tool Revision C2
-        site: https://github.com/GlasgowEmbedded/glasgow/tree/master/hardware/boards/glasgow/revC2
+        summary: Glasgow Debug Tool revC3
+        site: https://github.com/GlasgowEmbedded/glasgow/tree/master/hardware/boards/glasgow/revC3
