@@ -9,7 +9,6 @@
 
 import logging
 import argparse
-from bitarray import bitarray
 
 from ... import *
 from ....arch.jtag import *
@@ -57,13 +56,9 @@ class XC6SJTAGInterface:
         raise GlasgowAppletError("configuration reset failed: {}".format(status.bits_repr()))
 
     async def load_bitstream(self, bitstream, *, byte_reverse=True):
+        bitstream = bits(bitstream)
         if byte_reverse:
-            ba = bitarray()
-            ba.frombytes(bitstream)
-            ba.bytereverse()
-            bitstream = bits(ba.tobytes(), len(ba))
-        else:
-            bitstream = bits(bitstream)
+            bitstream = bitstream.byte_reversed()
         self._log("load size=%d [bits]", len(bitstream))
         await self.lower.lower.write_ir(IR_CFG_IN)
         await self.lower.write_dr(bitstream)

@@ -61,7 +61,7 @@ import itertools
 import logging
 import argparse
 import asyncio
-from bitarray import bitarray
+from glasgow.support.bits import bitarray
 from amaranth import *
 
 from ...interface.spi_controller import SPIControllerSubtarget, SPIControllerInterface
@@ -464,8 +464,7 @@ class DisplayPDIApplet(GlasgowApplet):
             image_width, image_height = int(image_size[1]), int(image_size[2])
             if image_width != pdi_iface.width or image_height != pdi_iface.height:
                 raise GlasgowAppletError("image size does not match display size")
-            image = bitarray()
-            image.frombytes(args.image_file.read())
+            image = bitarray(args.image_file.read())
 
         stage_ms = 300
 

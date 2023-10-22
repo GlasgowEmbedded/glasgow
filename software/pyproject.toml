@@ -27,7 +27,6 @@ dependencies = [
   "fx2>=0.11",
   "libusb1>=1.8.1",
   "pyvcd",
-  "bitarray",
 ]
 
 [project.optional-dependencies]
