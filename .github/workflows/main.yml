@@ -139,10 +139,10 @@ jobs:
       - test-software
       - build-firmware
       - build-manual
+    if: always() && !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
     steps:
-      - run: |
-          true
+      - run: ${{ contains(needs.*.result, 'failure') && 'false' || 'true' }}
 
   publish-manual:
     needs: build-manual
