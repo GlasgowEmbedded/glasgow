@@ -10,28 +10,41 @@ jobs:
     strategy:
       matrix:
         os-version:
-        - ubuntu-latest
+        - ubuntu-20.04
         python-version:
-        - '3.9'
-        - '3.10'
-        - '3.11'
+        - '3.9.5' # shipped with 20.04 LTS
+        - '3.9.x' # latest in the 3.9.x branch
+        - '3.10.x'
+        - '3.11.x'
         - 'pypy-3.9'
         - 'pypy-3.10'
+        dep-versions:
+        - minimal
+        - latest
         allow-failure:
         - false
         include:
-          - os-version: ubuntu-20.04
-            python-version: '3.9.5' # shipped with 20.04 LTS
-            allow-failure: false
-          - os-version: ubuntu-latest
-            python-version: '3.12'
-            allow-failure: true
-          - os-version: ubuntu-latest
-            python-version: '3.13-dev'
-            allow-failure: true
+        - os-version: ubuntu-20.04
+          python-version: '3.12.x'
+          dep-versions: minimal
+          allow-failure: true
+        - os-version: ubuntu-20.04
+          python-version: '3.12.x'
+          dep-versions: latest
+          allow-failure: true
+        - os-version: ubuntu-20.04
+          python-version: '3.13-dev'
+          dep-versions: minimal
+          allow-failure: true
+        - os-version: ubuntu-20.04
+          python-version: '3.13-dev'
+          dep-versions: latest
+          allow-failure: true
     continue-on-error: '${{ matrix.allow-failure }}'
     runs-on: ${{ matrix.os-version }}
-    name: 'test-software (${{ matrix.python-version }})'
+    name: 'test-software (${{ matrix.python-version }}, deps: ${{ matrix.dep-versions }})'
+    env:
+      PDM_LOCKFILE: ${{ matrix.dep-versions == 'minimal' && 'pdm.min.lock' || 'pdm.lock' }}
     steps:
       - name: Check out source code
         uses: actions/checkout@v3
@@ -41,23 +54,32 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/GlasgowEmbedded
-          key: Glasgow-${{ matrix.python-version }}-${{ hashFiles('./software/**') }}
+          key: Glasgow-${{ matrix.python-version }}-${{ matrix.dep-versions }}-${{ hashFiles('./software/**') }}
           restore-keys: |
+            Glasgow-${{ matrix.python-version }}-${{ matrix.dep-versions }}-
             Glasgow-${{ matrix.python-version }}-
             Glasgow-
       - name: Set up PDM
         uses: pdm-project/setup-pdm@v3
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Generate lockfile
+        working-directory: ./software
+        run: pdm lock --group :all ${{ matrix.dep-versions == 'minimal' && '--strategy direct_minimal_versions' || '' }}
+      - name: Verify that lockfile matches checked-in version
+        if: matrix.dep-versions == 'minimal'
+        working-directory: ./software
+        run: git diff --exit-code pdm.min.lock
       - name: Install dependencies
         working-directory: ./software
-        run: pdm install -G :all
+        run: pdm sync
       - name: Cache YoWASP build products
         uses: actions/cache@v3
         with:
           path: ~/.cache/YoWASP
-          key: YoWASP-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('./software/.venv/**/*.wasm') }}
+          key: YoWASP-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.dep-versions }}-${{ hashFiles('./software/.venv/**/*.wasm') }}
           restore-keys: |
+            YoWASP-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.dep-versions }}-
             YoWASP-${{ runner.os }}-${{ matrix.python-version }}-
             YoWASP-${{ runner.os }}-
       - name: Run tests
