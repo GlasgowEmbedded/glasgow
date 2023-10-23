@@ -18,26 +18,53 @@ classifiers = [
   "Topic :: System :: Hardware",
 ]
 
-# See support.plugin for reasoning behind this constraint.
+# See the source of `support.plugin` for reasoning behind this constraint.
 requires-python = "~=3.9, !=3.10.0, !=3.10.1, !=3.10.2"
+
+# Glasgow has only a few carefully chosen dependencies. The rationale for having them, as well as
+# the rationale for the particular version constraint, is explained below, and should be kept
+# synchronized with the source code. For clarity, we do not use the `~=` version constraint.
 dependencies = [
-  "packaging>=23",
-  "appdirs~=1.4",
-  "amaranth[builtin-yosys] @ git+https://github.com/amaranth-lang/amaranth.git",
-  "fx2>=0.11",
-  "libusb1>=1.8.1",
-  "pyvcd",
+  # Amaranth is the core of the Glasgow software/gateware interoperability layer. It uses SemVer.
+  # We use the git version of Amaranth until the next release.
+  "amaranth @ git+https://github.com/amaranth-lang/amaranth.git",
+  # `packaging` is used in the plugin system, `support.plugin`. It uses CalVer: the major version
+  # is the two last digits of the year and the minor version is the release within that year.
+  "packaging>=23.0",
+  # `appdirs` is used in the bitstream builder to use platform-appropriate cache directories.
+  # It uses SemVer.
+  "appdirs>=1.4.2,<2",
+  # `fx2` is effectively maintained together with Glasgow. It uses SemVer, and keeps backward
+  # compatibility within the 0.x release series.
+  "fx2>=0.11,<1",
+  # `libusb1` is used to communicate with the device, and its API mirrors the stable API/ABI of
+  # of the native `libusb1` library. It increases major version when dropping support for older
+  # Python versions.
+  "libusb1>=2.0.1",
+  # `pyvcd` is used in the applet analyzer to dump waveform files. It is also a dependency of
+  # Amaranth, and the version range here must be compatible with Amaranth's.
+  "pyvcd>=0.2,<0.5",
 ]
 
 [project.optional-dependencies]
+# By default, Glasgow uses the YoWASP (https://yowasp.org/) to build bitstreams. YoWASP is not
+# installable on certain architectures and platforms, so this dependency is optional
 builtin-toolchain = [
+  # The version of `amaranth-yosys` is constrained by Amaranth; this optional dependency only
+  # includes it in the dependency resolution set.
+  "amaranth-yosys",
+  # `yowasp-runtime` is a dependency of other toolchain components, and it is constrained here to
+  # the lowest that has features required for isolated builds.
   "yowasp-runtime>=1.30",
+  # Most versions of Yosys and nextpnr work; the minimum versions listed here are known good.
   "yowasp-yosys>=0.31.0.13",
   "yowasp-nextpnr-ice40>=0.1",
 ]
+
+# The rest of the optional dependences belong to plugins (applets, loggers, etc.)
 http = [
-  "aiohttp~=3.8",
-  "aiohttp-remotes~=1.2",
+  "aiohttp~=3.8,>=3.8.5",
+  "aiohttp-remotes>=1.2,<2",
 ]
 
 [project.scripts]
