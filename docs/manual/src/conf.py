@@ -7,12 +7,15 @@ copyright = "2020—2023, Glasgow Interface Explorer contributors"
 
 extensions = [
     "sphinx.ext.todo",
+    "sphinx.ext.intersphinx",
     "sphinx_copybutton",
     "sphinx_inline_tabs",
 ]
 
 todo_include_todos = True
 todo_emit_warnings = True
+
+intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
 
 copybutton_prompt_is_regexp = True
 copybutton_prompt_text = r">>> |\.\.\. |\$ |> "
