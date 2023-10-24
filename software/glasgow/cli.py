@@ -19,7 +19,7 @@ from fx2.format import input_data, diff_data
 from . import __version__
 from .support.logging import *
 from .support.asignal import *
-from .support.plugin import PluginRequirementsUnmet
+from .support.plugin import PluginRequirementsUnmet, PluginLoadError
 from .device import GlasgowDeviceError
 from .device.config import GlasgowConfig
 from .target.toolchain import ToolchainNotFound
@@ -138,7 +138,7 @@ def get_argparser():
         subparsers = add_subparsers(parser, dest="applet", metavar="APPLET", required=required)
 
         for handle, metadata in GlasgowAppletMetadata.all().items():
-            if not metadata.available:
+            if not metadata.loadable:
                 # fantastically cursed
                 p_applet = subparsers.add_parser(
                     handle, help=metadata.synopsis, description=metadata.description,
@@ -904,7 +904,7 @@ async def _main():
         return 2
 
     # Environment-related errors
-    except PluginRequirementsUnmet as e:
+    except (PluginRequirementsUnmet, PluginLoadError) as e:
         logger.error(e)
         print(e.metadata.description)
         return 3
