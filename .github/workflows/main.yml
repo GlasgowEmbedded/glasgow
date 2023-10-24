@@ -67,7 +67,7 @@ jobs:
       - name: Generate lockfile
         working-directory: ./software
         run: pdm lock --group :all ${{ matrix.dep-versions == 'minimal' && '--strategy direct_minimal_versions' || '' }}
-      - name: Verify that lockfile matches checked-in version
+      - name: Verify lockfile matches checked-in version
         if: matrix.dep-versions == 'minimal'
         working-directory: ./software
         run: git diff --exit-code pdm.min.lock
@@ -96,17 +96,14 @@ jobs:
       - name: Check out source code
         uses: actions/checkout@v3
         with:
+          fetch-depth: 0
           submodules: recursive
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install sdcc
-      - name: Build libfx2
-        working-directory: ./vendor/libfx2/firmware
-        run: make
-      - name: Build firmware
-        working-directory: ./firmware
-        run: make
+      - name: Build and deploy firmware
+        working-directory: ./software
+        run: ./deploy-firmware.sh
+      - name: Verify firmware matches checked-in version
+        working-directory: ./software
+        run: git diff --exit-code --text glasgow/device/firmware.ihex
 
   build-manual:
     runs-on: ubuntu-latest
@@ -121,13 +118,11 @@ jobs:
       - name: Set up PDM
         uses: pdm-project/setup-pdm@v3
       - name: Install dependencies
-        run: |
-          pdm install
+        run: pdm install
       - name: Build documentation
         env:
           DOCS_IS_PRODUCTION: ${{ (github.repository == 'GlasgowEmbedded/glasgow' && github.event.ref == 'refs/heads/main') && 'yes' || 'no' }}
-        run: |
-          pdm run build
+        run: pdm run build
       - name: Upload documentation archive
         uses: actions/upload-artifact@v3
         with:
@@ -193,8 +188,7 @@ jobs:
           name: docs
           path: pages/${{ github.ref_name }}/
       - name: Disable Jekyll
-        run: |
-          touch pages/.nojekyll
+        run: touch pages/.nojekyll
       - name: Publish documentation for a branch
         uses: JamesIves/github-pages-deploy-action@releases/v4
         with:
