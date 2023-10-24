@@ -5,7 +5,7 @@
 groups = ["default", "builtin-toolchain", "http"]
 strategy = ["cross_platform", "direct_minimal_versions"]
 lock_version = "4.4"
-content_hash = "sha256:e473de1f0d372087bdfffebe1b7692103f5dcee8830f1520730804137a080177"
+content_hash = "sha256:d424d8501f58db7a76e39083ce4f514dfbad48d09441e736c60393017ebfe3b2"
 
 [[package]]
 name = "aiohttp"
@@ -99,10 +99,11 @@ files = [
 
 [[package]]
 name = "amaranth"
-version = "0.4.dev223+g00699f7"
+version = "0.4.dev227+g4e4085a"
 requires_python = "~=3.8"
 git = "https://github.com/amaranth-lang/amaranth.git"
-revision = "00699f7c41a97cf8373a15e0b28e29361e017812"
+ref = "4e4085a95b"
+revision = "4e4085a95b50e41288615d20211c6c5a41a01193"
 summary = "Amaranth hardware definition language"
 dependencies = [
     "Jinja2~=3.0",
