@@ -55,7 +55,7 @@ The API level is exposed to the software stack by being placed in the high byte 
 Building firmware
 -----------------
 
-The firmware can only built on a Unix-like system; to develop the firmware on Windows, use `WSL`_. You will need `GNU Make`_ and `sdcc`_ (version 4.0 or newer). To install these, run:
+The firmware can only be built on a Unix-like system; to develop the firmware on Windows, use `WSL`_. You will need `GNU Make`_ and `sdcc`_ (version 4.0 or newer). To install these, run:
 
 .. tab:: Debian
 
