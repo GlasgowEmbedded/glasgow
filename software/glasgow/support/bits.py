@@ -385,7 +385,7 @@ class bitarray(_bits_base, MutableSequence):
             elif start % 8 == 0 and stop % 8 == 0 and value._len % 8 == 0:
                 # byte-aligned fastpath with aligned ends
                 self._bytes[start // 8 : stop // 8] = value._bytes
-                self._len = len(self._bytes) * 8
+                self._len += value._len - (stop - start)
             elif start % 8 == 0 and stop == self._len:
                 # byte-aligned fastpath with no tail
                 self._bytes[start // 8 :] = value._bytes

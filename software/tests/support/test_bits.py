@@ -62,7 +62,7 @@ class BitsTestCase(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,
                 r"bits can only contain 0 and 1"):
             bits.from_iter([0, 2, 1])
-            
+
     def test_new(self):
         self.assertBits(bits(), 0, 0b0)
         self.assertBits(bits(10), 4, 0b1010)
@@ -202,12 +202,12 @@ class BitsTestCase(unittest.TestCase):
 
     def test_reversed(self):
         self.assertBits(bits("1010").reversed(), 4, 0b0101)
-    
-
-    def test_reversed(self):
-        self.assertBits(bits("1010").reversed(), 4, 0b0101)
         self.assertBits(bits("10101100").reversed(), 8, 0b00110101)
         self.assertEqual(bits(b"\x99\x55").reversed(), bits(b"\xaa\x99"))
+
+    def test_byte_reversed(self):
+        self.assertBits(bits("10101100").byte_reversed(), 8, 0b00110101)
+        self.assertEqual(bits(b"\x99\x55").byte_reversed(), bits(b"\x99\xaa"))
 
     def test_find(self):
         self.assertEqual(bits("1011").find(bits("11")), 0)
@@ -293,9 +293,9 @@ class BitarrayTestCase(unittest.TestCase):
         some[16:] = bits("1010")
         self.assertBitarray(some, 20, 0b10101001100110101010)
 
-        some = bitarray(b"\xaa\x99\x55\x66")
+        some = bitarray(b"\xaa\x99\x55\x66")[:-3]
         some[16:24] = bits(b"\x77\x88")
-        self.assertBitarray(some, 40, int.from_bytes(b"\xaa\x99\x77\x88\x66", "little"))
+        self.assertBitarray(some, 37, int.from_bytes(b"\xaa\x99\x77\x88\x06", "little"))
 
         some = bitarray("01010101")
         some[2:6] = bits("1010")
