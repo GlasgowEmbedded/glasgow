@@ -5,7 +5,7 @@ import tempfile
 import shutil
 import logging
 import hashlib
-import appdirs
+import platformdirs
 import pathlib
 from amaranth import *
 from amaranth.build import ResourceError
@@ -153,8 +153,8 @@ class GlasgowBuildPlan:
         return bitstream
 
     def get_bitstream(self, *, debug=False):
-        cache_path = appdirs.user_cache_dir("GlasgowEmbedded", appauthor=False)
-        cache_filename = pathlib.Path(cache_path) / "bitstreams" / self.bitstream_id.hex()
+        cache_path = platformdirs.user_cache_path("GlasgowEmbedded", appauthor=False)
+        cache_filename = cache_path / "bitstreams" / self.bitstream_id.hex()
         cache_exists = False
         if cache_filename.exists():
             with cache_filename.open("rb") as cache_file:

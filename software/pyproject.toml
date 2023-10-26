@@ -31,9 +31,9 @@ dependencies = [
   # `packaging` is used in the plugin system, `support.plugin`. It uses CalVer: the major version
   # is the two last digits of the year and the minor version is the release within that year.
   "packaging>=23.0",
-  # `appdirs` is used in the bitstream builder to use platform-appropriate cache directories.
+  # `platformdirs` is used in the bitstream builder to use platform-appropriate cache directories.
   # It uses SemVer.
-  "appdirs>=1.4.2,<2",
+  "platformdirs>=3.0.0,<4",
   # `fx2` is effectively maintained together with Glasgow. It uses SemVer, and keeps backward
   # compatibility within the 0.x release series.
   "fx2>=0.11,<1",
@@ -55,7 +55,7 @@ builtin-toolchain = [
   "amaranth-yosys",
   # `yowasp-runtime` is a dependency of other toolchain components, and it is constrained here to
   # the lowest that has features required for isolated builds.
-  "yowasp-runtime>=1.30",
+  "yowasp-runtime>=1.42",
   # Most versions of Yosys and nextpnr work; the minimum versions listed here are known good.
   "yowasp-yosys>=0.31.0.13",
   "yowasp-nextpnr-ice40>=0.1",
