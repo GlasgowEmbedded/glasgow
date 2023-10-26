@@ -63,7 +63,7 @@ builtin-toolchain = [
 
 # The rest of the optional dependences belong to plugins (applets, loggers, etc.)
 http = [
-  "aiohttp~=3.8,>=3.8.5",
+  "aiohttp>=3.9.0b0",
   "aiohttp-remotes>=1.2,<2",
 ]
 
