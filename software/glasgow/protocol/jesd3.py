@@ -193,7 +193,7 @@ class JESD3Parser:
         if self.fuse is None:
             self._parse_error("fuse list specified before fuse count")
         index  = int(index, 10)
-        values = bitarray(values.decode("ascii"))
+        values = bits(values[::-1].decode("ascii"))
         if index + len(values) > len(self.fuse):
             self._parse_error("fuse list specifies range [%d:%d] beyond last fuse %d"
                               % (index, index + len(values), len(self.fuse)))
