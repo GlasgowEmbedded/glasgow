@@ -2,10 +2,10 @@
 # Accession: G00029
 
 import re
-from glasgow.support.bits import bitarray
+from glasgow.support.bits import bits, bitarray
 
 
-__all__ = ["JESD3Parser", "JESD3ParsingError"]
+__all__ = ["JESD3Parser", "JESD3ParsingError", "JESD3Emitter"]
 
 
 class JESD3ParsingError(Exception):
@@ -290,6 +290,40 @@ class JESD3Parser:
             self._parse_error("fuse default state is not specified, and only %d out of %d fuse "
                               "bits are explicitly defined"
                               % (self._fuse_bit_count, len(self.fuse)))
+
+
+class JESD3Emitter:
+    def __init__(self, fuses, *, quirk_no_design_spec=False):
+        if not isinstance(fuses, (bits, bitarray)):
+            raise TypeError("JESD3Emitter needs a bits or bitarray instance")
+        self.fuses = fuses
+        self.quirk_no_design_spec = quirk_no_design_spec
+        self.comments = []
+
+    def add_comment(self, comment):
+        self.comments.append(comment)
+
+    def emit(self):
+        buffer = bytearray()
+        if self.quirk_no_design_spec:
+            buffer += b"\x02"
+        else:
+            buffer += b"\x02*\n"
+        buffer += b"QF%d*\n" % len(self.fuses)
+        buffer += b"F0*\n"
+        for comment in self.comments:
+            buffer += b"N " + comment + b"*\n"
+        for pos in range(0, len(self.fuses), 64):
+            chunk = self.fuses[pos:pos+64]
+            buffer += b"L%07d " % pos
+            for bit in chunk:
+                buffer += b"%d" % bit
+            buffer += b"*\n"
+        buffer += b"C%04X*\n" % (sum(self.fuses.to_bytes()) & 0xffff)
+        buffer += b"\x03"
+        checksum = sum(buffer) & 0xffff
+        buffer += b"%04X" % checksum
+        return bytes(buffer)
 
 
 if __name__ == "__main__":
