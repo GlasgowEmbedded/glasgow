@@ -16,6 +16,7 @@ jobs:
         - '3.9.x' # latest in the 3.9.x branch
         - '3.10.x'
         - '3.11.x'
+        - '3.12.x'
         - 'pypy-3.9'
         - 'pypy-3.10'
         dep-versions:
@@ -24,14 +25,6 @@ jobs:
         allow-failure:
         - false
         include:
-        - os-version: ubuntu-20.04
-          python-version: '3.12.x'
-          dep-versions: minimal
-          allow-failure: true
-        - os-version: ubuntu-20.04
-          python-version: '3.12.x'
-          dep-versions: latest
-          allow-failure: true
         - os-version: ubuntu-20.04
           python-version: '3.13-dev'
           dep-versions: minimal
