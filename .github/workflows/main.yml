@@ -62,7 +62,6 @@ jobs:
       - name: Set up PDM
         uses: pdm-project/setup-pdm@v3
         with:
-          version: head # for --strategy direct_minimal_versions
           python-version: ${{ matrix.python-version }}
       - name: Generate lockfile
         working-directory: ./software
