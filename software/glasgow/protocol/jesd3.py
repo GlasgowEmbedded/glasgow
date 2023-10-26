@@ -77,9 +77,9 @@ class JESD3Lexer:
 
         Both the line and the column start at 1.
         """
-        line = len(re.compile(r"\n").findall(self.buffer, endpos=self.position))
+        line = len(re.compile(rb"\n").findall(self.buffer, endpos=self.position))
         if line > 1:
-            column = self.position - self.buffer.rindex("\n", 0, self.position)
+            column = self.position - self.buffer.rindex(b"\n", 0, self.position)
         else:
             column = self.position
         return line + 1, column + 1
