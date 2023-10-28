@@ -24,6 +24,9 @@ requires-python = "~=3.9, !=3.10.0, !=3.10.1, !=3.10.2"
 # Glasgow has only a few carefully chosen dependencies. The rationale for having them, as well as
 # the rationale for the particular version constraint, is explained below, and should be kept
 # synchronized with the source code. For clarity, we do not use the `~=` version constraint.
+#
+# Whenever dependencies are changed in any way, run `pdm run update-pdm.min.lock`. If you do not
+# run this command, the CI will reject the pull request with the change.
 dependencies = [
   # Amaranth is the core of the Glasgow software/gateware interoperability layer. It uses SemVer.
   # We use the git version of Amaranth until the next release.
@@ -143,4 +146,5 @@ build-backend = "pdm.backend"
 # Development workflow configuration
 
 [tool.pdm.scripts]
-test = {cmd = "python -m unittest"}
+"update-pdm.min.lock".cmd = "pdm lock -L pdm.min.lock -S direct_minimal_versions"
+test.cmd = "python -m unittest"
