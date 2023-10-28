@@ -103,7 +103,7 @@ class _bits_base(Sequence):
 
     def __new__(cls, value=0, length=None):
         """Creates a new bits instance.  The valid arguments for ``value`` are:
-        
+
         - another bits or bitarray instance (``length`` must not be provided)
         - int (``length`` may be provided or not, see ``from_int``)
         - str (``length`` must not be provided, see ``from_str``)
@@ -157,7 +157,7 @@ class _bits_base(Sequence):
                 # byte-aligned reverse fastpath
                 res = object.__new__(self.__class__)
                 bstart = start // 8
-                bstop = None if stop == -1 else stop // 8 
+                bstop = None if stop == -1 else stop // 8
                 res._bytes = self._bytes[bstart:bstop:-1].translate(_byterev_lut)
                 res._len = start - stop
                 return res
@@ -305,7 +305,7 @@ class _bits_base(Sequence):
         """Returns the start index of the first occurence of a given bit string within this
         bit string. If the ``needle`` is an ``str`` or an iterator, it is first converted
         to ``bits``. If ``needle`` is an integer, it must hava a value of 0 or 1, and is
-        converted to single-bit ``bits``. If ``start`` and ``end`` are given, only start positions in 
+        converted to single-bit ``bits``. If ``start`` and ``end`` are given, only start positions in
         ``range(start, end)`` are checked. If no occurence is found, the result is ``-1``."""
         if isinstance(needle, (str, Iterable)):
             needle = bits(needle)

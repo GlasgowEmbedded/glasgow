@@ -28,6 +28,9 @@ requires-python = "~=3.9, !=3.10.0, !=3.10.1, !=3.10.2"
 # Whenever dependencies are changed in any way, run `pdm run update-pdm.min.lock`. If you do not
 # run this command, the CI will reject the pull request with the change.
 dependencies = [
+  # We use `typing` features not available in the lowest Python version we support. The library
+  # `typing_extensions` provides shims for such features. It uses SemVer.
+  "typing_extensions>=4.8,<5",
   # Amaranth is the core of the Glasgow software/gateware interoperability layer. It uses SemVer.
   # We use the git version of Amaranth until the next release.
   "amaranth @ git+https://github.com/amaranth-lang/amaranth.git@4e4085a95b",
