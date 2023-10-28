@@ -2,8 +2,11 @@ import re
 import itertools
 import operator
 from collections.abc import Sequence, MutableSequence, Iterable
+from typing_extensions import Self
+
 
 __all__ = ["bits", "bitarray"]
+
 
 def _byte_len(l):
     return (l + 7) // 8
@@ -20,7 +23,7 @@ class _bits_base(Sequence):
     __slots__ = ("_len", "_bytes")
 
     @classmethod
-    def from_int(cls, value, length=None):
+    def from_int(cls, value, length=None) -> Self:
         """Creates bits from an integer. If ``length`` is given, the integer will be
         masked to the target width. Otherwise, the smallest possible width will be
         used that does not mask off any bits of the integer, and the value must not
@@ -40,7 +43,7 @@ class _bits_base(Sequence):
         return inst
 
     @classmethod
-    def from_str(cls, value):
+    def from_str(cls, value) -> Self:
         """Creates bits from a string. Any whitespace or ``_`` characters in the string
         will be discarded. The string must consist only of ``0`` and ``1`` characters.
         The bits in the string are treated as MSB-first.
@@ -51,7 +54,7 @@ class _bits_base(Sequence):
         return cls.from_iter(int(x) for x in reversed(value))
 
     @classmethod
-    def from_iter(cls, iterator):
+    def from_iter(cls, iterator) -> Self:
         """Creates bits from an iterator of bit values (ie. ints of value 0 and 1).
         The bits in the iterator are treated as LSB-first."""
         nbits = 0
@@ -78,7 +81,7 @@ class _bits_base(Sequence):
         return res
 
     @classmethod
-    def from_bytes(cls, value, length=None):
+    def from_bytes(cls, value, length=None) -> Self:
         """Creates bits from a bytes (or bytes-like) object. The bits in each byte are
         collected LSB-first, and the bytes are collected in order.  If ``length`` is not
         specified, it is assumed to be ``8 * len(value)``.  Otherwise, the predicate
@@ -101,7 +104,7 @@ class _bits_base(Sequence):
         res._len = length
         return res
 
-    def __new__(cls, value=0, length=None):
+    def __new__(cls, value=0, length=None) -> Self:
         """Creates a new bits instance.  The valid arguments for ``value`` are:
 
         - another bits or bitarray instance (``length`` must not be provided)
@@ -136,18 +139,18 @@ class _bits_base(Sequence):
             return cls.from_iter(value)
         raise TypeError(f"invalid input for {cls.__name__}(): cannot convert from {value.__class__.__name__}")
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self._len
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self._len)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if not isinstance(other, _bits_base):
             return False
         return self._len == other._len and self._bytes == other._bytes
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> Self | int:
         if isinstance(key, slice):
             start, stop, step = key.indices(self._len)
             if not range(start, stop, step):
@@ -182,15 +185,15 @@ class _bits_base(Sequence):
                 raise IndexError(f"{self.__class__.__name__} index out of range")
             return (self._bytes[key // 8] >> (key % 8)) & 1
 
-    def to_int(self):
+    def to_int(self) -> int:
         """Returns the value of this bit string as an integer."""
         return int.from_bytes(self._bytes, 'little')
 
-    def to_str(self):
+    def to_str(self) -> str:
         """Returns the bit string as a human-readable string (MSB-first)."""
         return ''.join(str(x) for x in reversed(self))
 
-    def to_bytes(self):
+    def to_bytes(self) -> bytes:
         """Returns the bits packed into bytes. The bits are packed into bytes LSB-first.
         If the length of the bit string is not divisible by 8, the last byte will have
         padding bits at MSB with a value of 0."""
@@ -200,10 +203,10 @@ class _bits_base(Sequence):
     __str__ = to_str
     __bytes__ = to_bytes
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__}('{self}')"
 
-    def __add__(self, other):
+    def __add__(self, other) -> Self:
         if isinstance(other, (str, Iterable)):
             other = bits(other)
         elif not isinstance(other, _bits_base):
@@ -215,7 +218,7 @@ class _bits_base(Sequence):
             return res
         return self.from_iter(itertools.chain(self, other))
 
-    def __radd__(self, other):
+    def __radd__(self, other) -> Self:
         if isinstance(other, (str, Iterable)):
             other = bits(other)
         elif not isinstance(other, _bits_base):
@@ -227,7 +230,7 @@ class _bits_base(Sequence):
             return res
         return self.from_iter(itertools.chain(other, self))
 
-    def __mul__(self, other):
+    def __mul__(self, other) -> Self:
         if not isinstance(other, int):
             return NotImplemented
         if self._len % 8 == 0:
@@ -251,22 +254,22 @@ class _bits_base(Sequence):
         res._len = self._len
         return res
 
-    def __and__(self, other):
+    def __and__(self, other) -> Self:
         return self._bitop(other, operator.__and__)
 
     __rand__ = __and__
 
-    def __or__(self, other):
+    def __or__(self, other) -> Self:
         return self._bitop(other, operator.__or__)
 
     __ror__ = __or__
 
-    def __xor__(self, other):
+    def __xor__(self, other) -> Self:
         return self._bitop(other, operator.__xor__)
 
     __rxor__ = __xor__
 
-    def __invert__(self):
+    def __invert__(self) -> Self:
         if self._len % 8 == 0:
             pad_idx = None
         else:
@@ -280,7 +283,7 @@ class _bits_base(Sequence):
         res._len = self._len
         return res
 
-    def reversed(self):
+    def reversed(self) -> Self:
         """Returns a reversed copy of this bit string. Equivalent to ``from_iter(reversed(self))``."""
         if self._len % 8 == 0:
             res = object.__new__(self.__class__)
@@ -290,7 +293,7 @@ class _bits_base(Sequence):
         else:
             return self.from_iter(reversed(self))
 
-    def byte_reversed(self):
+    def byte_reversed(self) -> Self:
         """Returns a copy of this bit string with bits reversed within each byte.
         The length of this bit string must be divisible by 8."""
         if self._len % 8 == 0:
@@ -301,7 +304,7 @@ class _bits_base(Sequence):
         else:
             raise ValueError(f"byte_reversed requires {self.__class__.__name__} of length divisible by 8")
 
-    def find(self, needle, start=0, end=None):
+    def find(self, needle, start=0, end=None) -> int:
         """Returns the start index of the first occurence of a given bit string within this
         bit string. If the ``needle`` is an ``str`` or an iterator, it is first converted
         to ``bits``. If ``needle`` is an integer, it must hava a value of 0 or 1, and is
@@ -319,7 +322,7 @@ class _bits_base(Sequence):
                return i
         return -1
 
-    def index(self, *args, **kwargs):
+    def index(self, *args, **kwargs) -> int:
         """Like ``find``, but raises ``ValueError`` when the substring is not found."""
         res = self.find(*args, **kwargs)
         if res == -1:
@@ -340,7 +343,7 @@ class bits(_bits_base):
     __slots__ = ()
     _bytestype = bytes
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self._len, self._bytes))
 
 class bitarray(_bits_base, MutableSequence):
@@ -366,7 +369,7 @@ class bitarray(_bits_base, MutableSequence):
             self._bytes += bytes(blen - len(self._bytes))
             self._len = length
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value) -> None:
         if isinstance(key, slice):
             start, stop, step = key.indices(self._len)
             rng = range(start, stop, step)
@@ -422,7 +425,7 @@ class bitarray(_bits_base, MutableSequence):
             else:
                 self._bytes[key // 8] &= ~(1 << (key % 8))
 
-    def __delitem__(self, key):
+    def __delitem__(self, key) -> None:
         if isinstance(key, slice):
             start, stop, step = key.indices(self._len)
             if not range(start, stop, step):
@@ -464,7 +467,7 @@ class bitarray(_bits_base, MutableSequence):
                 raise IndexError("bits index out of range")
             del self[key:key+1]
 
-    def insert(self, index, value):
+    def insert(self, index, value) -> None:
         index = operator.index(index)
         value = operator.index(value)
         if value not in (0, 1):
@@ -479,11 +482,11 @@ class bitarray(_bits_base, MutableSequence):
         else:
             self[index:index] = bits(value, 1)
 
-    def clear(self):
+    def clear(self) -> None:
         self._bytes.clear()
         self._len = 0
 
-    def reverse(self):
+    def reverse(self) -> None:
         """Reverses the bits of the bitarray in-place."""
         if self._len % 8 == 0:
             self._bytes = self._bytes.translate(_byterev_lut)
@@ -491,7 +494,7 @@ class bitarray(_bits_base, MutableSequence):
         else:
             super().reverse()
 
-    def byte_reverse(self):
+    def byte_reverse(self) -> None:
         """Reverses the bits within every byte of this bitarray in-place. The length
         of this bitarray must be divisible by 8."""
         if self._len % 8 == 0:
@@ -499,13 +502,13 @@ class bitarray(_bits_base, MutableSequence):
         else:
             raise ValueError("byte_reverse requires a bitstream of length divisible by 8")
 
-    def extend(self, values):
+    def extend(self, values) -> None:
         if isinstance(values, (str, _bits_base)):
             self[self._len:] = values
         else:
             super().extend(values)
 
-    def __imul__(self, other):
+    def __imul__(self, other) -> Self:
         other = operator.index(other)
         if self._len % 8 == 0 or other == 0:
             self._bytes *= other
@@ -527,20 +530,18 @@ class bitarray(_bits_base, MutableSequence):
             raise ValueError("mismatched bitwise operator widths")
         for i, b in enumerate(other._bytes):
             self._bytes[i] = op(self._bytes[i], b)
-
-    def __iand__(self, other):
-        self._ibitop(other, operator.__and__)
         return self
 
-    def __ior__(self, other):
-        self._ibitop(other, operator.__or__)
-        return self
+    def __iand__(self, other) -> Self:
+        return self._ibitop(other, operator.__and__)
 
-    def __ixor__(self, other):
-        self._ibitop(other, operator.__xor__)
-        return self
+    def __ior__(self, other) -> Self:
+        return self._ibitop(other, operator.__or__)
 
-    def setall(self, value):
+    def __ixor__(self, other) -> Self:
+        return self._ibitop(other, operator.__xor__)
+
+    def setall(self, value) -> None:
         """Sets all bits of this bitarray to the given value."""
         value = operator.index(value)
         if value not in (0, 1):
