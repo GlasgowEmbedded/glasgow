@@ -46,7 +46,7 @@ dependencies = [
   # `libusb1` is used to communicate with the device, and its API mirrors the stable API/ABI of
   # of the native `libusb1` library. It increases major version when dropping support for older
   # Python versions.
-  "libusb1>=2.0.1",
+  "libusb1>=3.1.0",
   # `pyvcd` is used in the applet analyzer to dump waveform files. It is also a dependency of
   # Amaranth, and the version range here must be compatible with Amaranth's.
   "pyvcd>=0.2,<0.5",
@@ -54,13 +54,13 @@ dependencies = [
 
 [project.optional-dependencies]
 # By default, Glasgow uses the YoWASP (https://yowasp.org/) to build bitstreams. YoWASP is not
-# installable on certain architectures and platforms, so this dependency is optional
+# installable on certain architectures and platforms, so this dependency is optional.
 builtin-toolchain = [
   # The version of `amaranth-yosys` is constrained by Amaranth; this optional dependency only
   # includes it in the dependency resolution set.
   "amaranth-yosys",
   # `yowasp-runtime` is a dependency of other toolchain components, and it is constrained here to
-  # the lowest that has features required for isolated builds.
+  # the lowest that has features transitively required by Glasgow.
   "yowasp-runtime>=1.42",
   # Most versions of Yosys and nextpnr work; the minimum versions listed here are known good.
   "yowasp-yosys>=0.31.0.13",
