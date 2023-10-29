@@ -54,8 +54,22 @@ class _PollerThread(threading.Thread):
         self.context = context
 
     def run(self):
+        # The poller thread spends most of its life in blocking `handleEvents()` calls and this can
+        # cause issues during interpreter shutdown. If it were a daemon thread (it isn't) then it
+        # would be instantly killed on interpreter shutdown and any locks it took could block some
+        # libusb1 objects being destroyed as their Python counterparts are garbage collected. Since
+        # it is not a daemon thread, `threading._shutdown()` (that is called by e.g. `exit()`) will
+        # join it, and so it must terminate during threading shutdown. Note that `atexit.register`
+        # is not enough as those callbacks are called after threading shutdown, and past the point
+        # where a deadlock would happen.
+        threading._register_atexit(self.stop)
         while not self.done:
             self.context.handleEvents()
+
+    def stop(self):
+        self.done = True
+        self.context.interruptEventHandler()
+        self.join()
 
 
 class GlasgowHardwareDevice:
@@ -228,8 +242,8 @@ class GlasgowHardwareDevice:
         return self._modified_design
 
     def close(self):
-        self.usb_poller.done = True
         self.usb_handle.close()
+        self.usb_poller.stop()
         self.usb_context.close()
 
     async def _do_transfer(self, is_read, setup):

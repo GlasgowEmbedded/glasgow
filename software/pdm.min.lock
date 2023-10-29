@@ -5,7 +5,7 @@
 groups = ["default", "builtin-toolchain", "http"]
 strategy = ["cross_platform", "direct_minimal_versions"]
 lock_version = "4.4"
-content_hash = "sha256:8f3a6d83a8f959b68ed91a06346c34d47403afa5cb1c6f926db996addce63bb7"
+content_hash = "sha256:d8664d854e834393abda2400adb7cc1f1cdd037e7c4c22b497b237756f31243f"
 
 [[package]]
 name = "aiohttp"
@@ -269,13 +269,13 @@ files = [
 
 [[package]]
 name = "libusb1"
-version = "2.0.1"
+version = "3.1.0"
 summary = "Pure-python wrapper for libusb-1.0"
 files = [
-    {file = "libusb1-2.0.1-py3-none-any.whl", hash = "sha256:81381ce1d8852a4d4345b2ee8218971d35865b5f025fef96b43ee082757099cd"},
-    {file = "libusb1-2.0.1-py3-none-win32.whl", hash = "sha256:9fda3055c98ab043cfb3beac93ef1de2900ad11d949c694f58bdf414ce2bd03c"},
-    {file = "libusb1-2.0.1-py3-none-win_amd64.whl", hash = "sha256:a97bcb90f589d863c5e971b013c8cf7e1915680a951e66c4222a2c5bb64b7153"},
-    {file = "libusb1-2.0.1.tar.gz", hash = "sha256:d3ba82ecf7ab6a48d21dac6697e26504670cc3522b8e5941bd28fb56cf3f6c46"},
+    {file = "libusb1-3.1.0-py3-none-any.whl", hash = "sha256:9d9f16e2c199cab91f48ead585d3f5ec7e8e4be428a25ddfed22abf786fa9b3a"},
+    {file = "libusb1-3.1.0-py3-none-win32.whl", hash = "sha256:bc7874302565721f443a27d8182fcc7152e5b560523f12f1377b130f473e4a0c"},
+    {file = "libusb1-3.1.0-py3-none-win_amd64.whl", hash = "sha256:77a06ecfb3d002d7c2ce369e28d0138b292fe8db8a3d102b73fda231a716dd35"},
+    {file = "libusb1-3.1.0.tar.gz", hash = "sha256:4ee9b0a55f8bd0b3ea7017ae919a6c1f439af742c4a4b04543c5fd7af89b828c"},
 ]
 
 [[package]]
