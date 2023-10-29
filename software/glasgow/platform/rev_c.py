@@ -3,10 +3,10 @@ from amaranth.build import *
 from .ice40 import *
 
 
-__all__ = ["GlasgowPlatformRevC0"]
+__all__ = ["GlasgowPlatformRevC0", "GlasgowPlatformRevC123"]
 
 
-class GlasgowPlatformRevC0(GlasgowPlatformICE40):
+class _GlasgowPlatformRevC(GlasgowPlatformICE40):
     device      = "iCE40HX8K"
     package     = "BG121"
     default_clk = "clk_if"
@@ -107,10 +107,6 @@ class GlasgowPlatformRevC0(GlasgowPlatformICE40):
                  Subsignal("oe", Pins("K11", dir="o")),
                  Attrs(IO_STANDARD="SB_LVCMOS33")),
 
-        Resource("port_s", 0,
-                 Subsignal("io", Pins("A11")),
-                 Attrs(IO_STANDARD="SB_LVCMOS33")),
-
         Resource("aux", 0, Pins("A10"), Attrs(IO_STANDARD="SB_LVCMOS33")),
         Resource("aux", 1, Pins("C9"),  Attrs(IO_STANDARD="SB_LVCMOS33")),
 
@@ -126,7 +122,18 @@ class GlasgowPlatformRevC0(GlasgowPlatformICE40):
     ]
 
 
+class GlasgowPlatformRevC0(_GlasgowPlatformRevC):
+    resources = _GlasgowPlatformRevC.resources + [
+        Resource("port_s", 0,
+                 Subsignal("io", Pins("A11")),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
+    ]
 
-if __name__ == "__main__":
-    from amaranth_boards.test.blinky import *
-    GlasgowPlatformRevC0().build(Blinky(), do_program=True)
+
+class GlasgowPlatformRevC123(_GlasgowPlatformRevC):
+    resources = _GlasgowPlatformRevC.resources + [
+        Resource("port_s", 0,
+                 Subsignal("io", Pins("A11"), Attrs(PULLUP=1)),
+                 Subsignal("oe", Pins("B4", dir="o")),
+                 Attrs(IO_STANDARD="SB_LVCMOS33")),
+    ]
