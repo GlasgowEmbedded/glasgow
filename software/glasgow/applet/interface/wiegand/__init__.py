@@ -14,59 +14,66 @@ class WiegandSubtarget(Elaboratable):
         self.out_fifo = out_fifo
 
         self.pulse_width = pulse_width
-        self.pulse_gap = pulse_gap
 
         self.limit = pulse_gap + pulse_width
 
-        self.done = Signal()
         self.bits = Signal(range(26 + 1), reset=26)
-        self.preamble = Signal(range(100 + 1), reset=100)
-        self.preamble_done = Signal()
 
         self.ovf = Signal()
-        self.gap = Signal()
 
-        self.count = Signal(range(self.limit + 1))
+        self.count = Signal(range(self.limit * 10 + 1))
 
     def elaborate(self, platform):
         m = Module()
 
-        m.d.comb += self.ovf.eq(self.count == self.limit)
-        m.d.comb += self.gap.eq(self.count > self.pulse_width)
-
-        m.d.comb += self.done.eq(self.bits == 0)
-        m.d.comb += self.preamble_done.eq(self.preamble == 0)
-
         m.d.comb += self.pads.d0_t.oe.eq(1)
         m.d.comb += self.pads.d1_t.oe.eq(1)
 
-        m.d.comb += self.pads.d1_t.o.eq(1)
+        m.d.comb += self.ovf.eq(self.count == self.limit)
 
-        with m.If(self.done):
-            m.d.sync += self.pads.d0_t.o.eq(1)
-        with m.Else():
-            with m.If(~self.preamble_done):
+        with m.FSM() as fsm:
+            with m.State("IDLE"):
+                m.next = "PREAMBLE_START"
+            with m.State("PREAMBLE_START"):
+                m.d.sync += self.count.eq(self.limit * 10)
+                m.next = "PREAMBLE"
+            with m.State("PREAMBLE"):
                 m.d.sync += self.pads.d0_t.o.eq(1)
-                with m.If(self.ovf):
-                    m.d.sync += self.preamble.eq(self.preamble - 1)
-                    m.d.sync += self.count.eq(0)
-                with m.Else():
-                    m.d.sync += self.count.eq(self.count + 1)
-            with m.Else():
-                with m.If(self.ovf):
-                    m.d.sync += self.bits.eq(self.bits - 1)
-                    m.d.sync += self.count.eq(0)
-                with m.Else():
-                    m.d.sync += self.count.eq(self.count + 1)
+                m.d.sync += self.pads.d1_t.o.eq(1)
 
-                with m.If(self.gap):
-                    m.d.sync += self.pads.d0_t.o.eq(1)
+                with m.If(self.count > 0):
+                    m.d.sync += self.count.eq(self.count - 1)
+                with m.Else():
+                    m.d.sync += self.count.eq(0)
+                    m.next = "SEND_BITS"
+            with m.State("SEND_BITS"):
+                m.d.sync += self.pads.d1_t.o.eq(1)
 
+                m.d.sync += self.count.eq(self.count + 1)
+
+                with m.If(self.count > self.pulse_width):
+                    m.next = "SEND_BITS_GAP"
                 with m.Else():
                     m.d.sync += self.pads.d0_t.o.eq(0)
 
+                with m.If(self.bits == 0):
+                    m.next = "DONE"
 
-        # self.pads.d0_t.eq(0)
+            with m.State("SEND_BITS_GAP"):
+                m.d.sync += self.pads.d0_t.o.eq(1)
+                m.d.sync += self.pads.d1_t.o.eq(1)
+
+                with m.If(self.ovf):
+                    m.d.sync += self.bits.eq(self.bits - 1)
+                    m.d.sync += self.count.eq(0)
+                    m.next = "SEND_BITS"
+                with m.Else():
+                    m.d.sync += self.count.eq(self.count + 1)
+
+            with m.State("DONE"):
+                m.d.sync += self.pads.d0_t.o.eq(1)
+                m.d.sync += self.pads.d1_t.o.eq(1)
+
         return m
 
 
