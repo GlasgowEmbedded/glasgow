@@ -23,7 +23,7 @@ class WiegandSubtarget(Elaboratable):
 
         self.count = Signal(range(self.limit * 10 + 1))
 
-        self.bits_data = Signal(1024)
+        self.bits_data = Signal(1024, reset=0b11111111111111111111111111)
         self.bit_to_send = Signal()
 
     def elaborate(self, platform):
@@ -48,7 +48,10 @@ class WiegandSubtarget(Elaboratable):
                     m.d.sync += self.count.eq(self.count - 1)
                 with m.Else():
                     m.d.sync += self.count.eq(0)
+
                     m.d.sync += self.bit_to_send.eq(self.bits_data)
+                    m.d.sync += self.bits_data.eq(self.bits_data.shift_right(1))
+
                     m.next = "SEND_BITS"
             with m.State("SEND_BITS"):
                 m.d.sync += self.pads.d1_t.o.eq(1)
@@ -74,6 +77,10 @@ class WiegandSubtarget(Elaboratable):
                 with m.If(self.ovf):
                     m.d.sync += self.bits.eq(self.bits - 1)
                     m.d.sync += self.count.eq(0)
+
+                    m.d.sync += self.bit_to_send.eq(self.bits_data)
+                    m.d.sync += self.bits_data.eq(self.bits_data.shift_right(1))
+
                     m.next = "SEND_BITS"
                 with m.Else():
                     m.d.sync += self.count.eq(self.count + 1)
