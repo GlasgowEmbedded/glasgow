@@ -37,20 +37,22 @@ class WiegandSubtarget(Elaboratable):
         m.d.comb += self.done.eq(self.bits == 0)
         m.d.comb += self.preamble_done.eq(self.preamble == 0)
 
-        m.d.comb += self.pads.d1_t.eq(1)
+        m.d.comb += self.pads.d0_t.oe.eq(1)
+        m.d.comb += self.pads.d1_t.oe.eq(1)
+
+        m.d.comb += self.pads.d1_t.o.eq(1)
 
         with m.If(self.done):
-            m.d.sync += self.pads.d0_t.eq(1)
+            m.d.sync += self.pads.d0_t.o.eq(1)
         with m.Else():
             with m.If(~self.preamble_done):
-                m.d.sync += self.pads.d0_t.eq(1)
+                m.d.sync += self.pads.d0_t.o.eq(1)
                 with m.If(self.ovf):
                     m.d.sync += self.preamble.eq(self.preamble - 1)
                     m.d.sync += self.count.eq(0)
                 with m.Else():
                     m.d.sync += self.count.eq(self.count + 1)
             with m.Else():
-                m.d.sync += self.pads.d0_t.eq(1)
                 with m.If(self.ovf):
                     m.d.sync += self.bits.eq(self.bits - 1)
                     m.d.sync += self.count.eq(0)
@@ -58,10 +60,10 @@ class WiegandSubtarget(Elaboratable):
                     m.d.sync += self.count.eq(self.count + 1)
 
                 with m.If(self.gap):
-                    m.d.sync += self.pads.d0_t.eq(1)
+                    m.d.sync += self.pads.d0_t.o.eq(1)
 
                 with m.Else():
-                    m.d.sync += self.pads.d0_t.eq(0)
+                    m.d.sync += self.pads.d0_t.o.eq(0)
 
 
         # self.pads.d0_t.eq(0)
