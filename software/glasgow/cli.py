@@ -280,7 +280,7 @@ def get_argparser():
             "--prebuilt", default=False, action="store_true",
             help="(advanced) load prebuilt applet bitstream from ./<applet-name.bin>")
         g_run_bitstream.add_argument(
-            "--prebuilt-at", dest="bitstream", metavar="BITSTREAM-FILE",
+            "--prebuilt-at", dest="prebuilt_at", metavar="BITSTREAM-FILE",
             type=argparse.FileType("rb"),
             help="(advanced) load prebuilt applet bitstream from BITSTREAM-FILE")
 
@@ -561,8 +561,8 @@ async def _main():
             device.demultiplexer = DirectDemultiplexer(device, target.multiplexer.pipe_count)
             plan = target.build_plan()
 
-            if args.prebuilt or args.bitstream:
-                bitstream_file = args.bitstream or open("{}.bin".format(args.applet), "rb")
+            if args.prebuilt or args.prebuilt_at:
+                bitstream_file = args.prebuilt_at or open("{}.bin".format(args.applet), "rb")
                 with bitstream_file:
                     await device.download_prebuilt(plan, bitstream_file)
             else:
@@ -735,9 +735,9 @@ async def _main():
                 logger.info("removing bitstream")
                 glasgow_config.bitstream_size = 0
                 glasgow_config.bitstream_id   = b"\x00"*16
-            elif args.bitstream:
-                logger.info("using bitstream from %s", args.bitstream.name)
-                with args.bitstream as f:
+            elif args.prebuilt_at:
+                logger.info("using bitstream from %s", args.prebuilt_at.name)
+                with args.prebuilt_at as f:
                     new_bitstream_id = f.read(16)
                     new_bitstream    = f.read()
                     glasgow_config.bitstream_size = len(new_bitstream)

@@ -103,6 +103,7 @@ debug-arm = "glasgow.applet.debug.arm.jtag:DebugARMJTAGApplet"
 debug-mips = "glasgow.applet.debug.mips:DebugMIPSApplet"
 
 program-avr-spi = "glasgow.applet.program.avr.spi:ProgramAVRSPIApplet"
+program-ecp5-sram = "glasgow.applet.program.ecp5_sram:ProgramECP5SRAMApplet"
 program-ice40-flash = "glasgow.applet.program.ice40_flash:ProgramICE40FlashApplet"
 program-ice40-sram = "glasgow.applet.program.ice40_sram:ProgramICE40SRAMApplet"
 program-m16c = "glasgow.applet.program.m16c:ProgramM16CApplet"
