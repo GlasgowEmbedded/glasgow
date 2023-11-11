@@ -66,7 +66,7 @@ class GlasgowApplet(metaclass=ABCMeta):
         pass
 
     async def interact(self, device, args, iface):
-        pass
+        raise GlasgowAppletError("This applet can only be used in REPL mode.")
 
     @classmethod
     def add_repl_arguments(cls, parser):

@@ -1,7 +1,11 @@
 # Catherine owns everything that's not owned by someone else.
 *       @whitequark
+
 /software/glasgow/applet/video/hub75_output/  @attie
 /software/glasgow/applet/video/ws2812_output/ @attie
+
 /software/glasgow/arch/xilinx/xc9500xl.py @wanda-phi
 /software/glasgow/applet/program/xc9500xl/ @wanda-phi
 /software/glasgow/database/xilinx/xc9500xl.py @wanda-phi
+
+/software/glasgow/applet/servo/ @tpwrules
