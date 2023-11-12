@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import math
 from amaranth import *
 
 import time
@@ -17,7 +18,7 @@ class WiegandSubtarget(Elaboratable):
 
         self.limit = pulse_gap + pulse_width
 
-        self.bits = Signal(range(26 + 1), reset=26)
+        self.bits = Signal(Shape(width = 16), reset=26)
 
         self.ovf = Signal()
 
@@ -35,8 +36,31 @@ class WiegandSubtarget(Elaboratable):
         m.d.comb += self.ovf.eq(self.count == self.limit)
 
         with m.FSM() as fsm:
-            with m.State("IDLE"):
-                m.next = "PREAMBLE_START"
+            with m.State("WAIT"):
+                m.d.sync += self.bits.eq(0)
+                m.d.sync += self.pads.d0_t.o.eq(1)
+                m.d.sync += self.pads.d1_t.o.eq(1)
+
+                m.d.sync += self.out_fifo.r_en.eq(1)
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.sync += self.bits.eq(self.out_fifo.r_data)
+                    m.next = "READ_LEN"
+            with m.State("READ_LEN"):
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.sync += self.bits.eq(Cat(self.out_fifo.r_data, self.bits))
+                    m.next = "READ_DATA"
+                    m.d.sync += self.out_fifo.r_en.eq(0)
+            with m.State("READ_DATA"):
+                m.d.sync += self.out_fifo.r_en.eq(1)
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.sync += self.bits_data.eq(Cat(self.out_fifo.r_data, self.bits_data))
+
+                    m.d.sync += self.count.eq(self.count + 8)
+
+                    with m.If(self.count >= self.bits):
+                        m.d.sync += self.count.eq(0)
+                        m.d.sync += self.out_fifo.r_en.eq(0)
+                        m.next = "PREAMBLE_START"
             with m.State("PREAMBLE_START"):
                 m.d.sync += self.count.eq(self.limit * 10)
                 m.next = "PREAMBLE"
@@ -68,7 +92,7 @@ class WiegandSubtarget(Elaboratable):
                         m.d.sync += self.pads.d1_t.o.eq(0)
 
                 with m.If(self.bits == 0):
-                    m.next = "DONE"
+                    m.next = "WAIT"
 
             with m.State("SEND_BITS_GAP"):
                 m.d.sync += self.pads.d0_t.o.eq(1)
@@ -84,10 +108,6 @@ class WiegandSubtarget(Elaboratable):
                     m.next = "SEND_BITS"
                 with m.Else():
                     m.d.sync += self.count.eq(self.count + 1)
-
-            with m.State("DONE"):
-                m.d.sync += self.pads.d0_t.o.eq(1)
-                m.d.sync += self.pads.d1_t.o.eq(1)
 
         return m
 
@@ -137,6 +157,10 @@ class WiegandApplet(GlasgowApplet):
     def add_run_arguments(cls, parser, access):
         super().add_run_arguments(parser, access)
 
+        parser.add_argument(
+            "-w", "--wiegand", metavar="DATA", type=str, default='1' * 26,
+            help="Wiegand data to send")
+
     async def run(self, device, args):
         return await device.demultiplexer.claim_interface(self, self.mux_interface, args)
 
@@ -145,9 +169,15 @@ class WiegandApplet(GlasgowApplet):
         pass
 
     async def interact(self, device, args, iface):
-        time.sleep(1)
-        # for i in range(1, 10000000):
-            # pass
+        wiegand_data = args.wiegand[::-1]
+
+        await iface.write((len(wiegand_data)).to_bytes(2, "big"))
+
+        wiegand_binary = int(wiegand_data, 2)
+        byte_count = math.ceil(len(wiegand_data) / 8)
+        await iface.write(wiegand_binary.to_bytes(byte_count, "big"))
+
+        await iface.flush()
 
 # -------------------------------------------------------------------------------------------------
 
