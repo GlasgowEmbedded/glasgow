@@ -1,0 +1,11 @@
+# Python
+*.pyc
+__pycache__/
+/dist
+
+# pdm
+/.pdm-plugins
+/.pdm-python
+/.pdm-build
+/.venv*
+/pdm.lock
