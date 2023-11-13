@@ -1,13 +1,18 @@
 import re
+import os
 import sys
 import traceback
 import importlib.metadata
 import packaging.requirements
 import pathlib
 import sysconfig
+import logging
 
 
 __all__ = ["PluginRequirementsUnmet", "PluginLoadError", "PluginMetadata"]
+
+
+logger = logging.getLogger(__loader__.name)
 
 
 # TODO(py3.10): remove
@@ -103,6 +108,21 @@ class PluginMetadata:
     # `[project.entry-points."glasgow.applet"]`.
     GROUP_NAME = None
 
+    _out_of_tree_warning_printed_for = set()
+
+    @classmethod
+    def _loadable(cls, entry_point):
+        dist_name = entry_point.dist.name
+        if dist_name == "glasgow":
+            return True # in-tree
+        if os.getenv("GLASGOW_OUT_OF_TREE_APPLETS") == "I-am-okay-with-breaking-changes":
+            if dist_name not in cls._out_of_tree_warning_printed_for:
+                logger.warn(f"loading out-of-tree plugin {dist_name!r}; plugin API is currently "
+                            f"unstable and subject to change without warning")
+                cls._out_of_tree_warning_printed_for.add(dist_name)
+            return True
+        return False
+
     @classmethod
     def get(cls, handle):
         entry_point, *_ = _entry_points(group=cls.GROUP_NAME, name=handle)
@@ -110,11 +130,10 @@ class PluginMetadata:
 
     @classmethod
     def all(cls):
-        return {ep.name: cls(ep) for ep in _entry_points(group=cls.GROUP_NAME)}
+        return {ep.name: cls(ep) for ep in _entry_points(group=cls.GROUP_NAME) if cls._loadable(ep)}
 
     def __init__(self, entry_point):
-        if entry_point.dist.name != "glasgow":
-            raise Exception("Out-of-tree plugins are not supported yet")
+        assert self._loadable(entry_point)
 
         # Python-side metadata (how to load it, etc.)
         self.module = entry_point.module

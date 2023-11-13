@@ -469,7 +469,7 @@ class SubjectFilter:
         return levelno >= self.level
 
 
-def create_logger(args):
+def create_logger():
     root_logger = logging.getLogger()
 
     term_formatter_args = {"style": "{",
@@ -480,6 +480,10 @@ def create_logger(args):
     else:
         term_handler.setFormatter(logging.Formatter(**term_formatter_args))
     root_logger.addHandler(term_handler)
+    return term_handler
+
+def configure_logger(args, term_handler):
+    root_logger = logging.getLogger()
 
     file_formatter_args = {"style": "{",
         "fmt": "[{asctime:s}] {levelname:s}: {name:s}: {message:s}"}
@@ -504,8 +508,12 @@ def create_logger(args):
 
 
 async def _main():
+    # Handle log messages emitted during construction of the argument parser (e.g. by the plugin
+    # subsystem).
+    term_handler = create_logger()
+
     args = get_argparser().parse_args()
-    create_logger(args)
+    configure_logger(args, term_handler)
 
     device = None
     try:

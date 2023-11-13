@@ -1,0 +1,19 @@
+[project]
+name = "glasgowcontrib-applet-exampleoot"
+version = "0"
+description = "Example out-of-tree applet for the Glasgow Interface Explorer"
+authors = [{name = "Glasgow Interface Explorer contributors"}]
+license = {text = "0BSD OR Apache-2.0"}
+
+requires-python = "~=3.9"
+dependencies = ["glasgow"]
+
+[project.entry-points."glasgow.applet"]
+exampleoot = "glasgowcontrib.applet.exampleoot:ExampleOOTApplet"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm.build]
+includes = ["glasgowcontrib"]
