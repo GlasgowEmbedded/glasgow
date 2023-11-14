@@ -81,6 +81,7 @@ selftest = "glasgow.applet.internal.selftest:SelfTestApplet"
 benchmark = "glasgow.applet.internal.benchmark:BenchmarkApplet"
 
 analyzer = "glasgow.applet.interface.analyzer:AnalyzerApplet"
+better-la = "glasgow.applet.interface.better_la:BetterLAApplet"
 uart = "glasgow.applet.interface.uart:UARTApplet"
 spi-controller = "glasgow.applet.interface.spi_controller:SPIControllerApplet"
 i2c-initiator = "glasgow.applet.interface.i2c_initiator:I2CInitiatorApplet"
