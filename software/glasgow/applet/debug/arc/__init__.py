@@ -120,7 +120,7 @@ class DebugARCApplet(JTAGProbeApplet):
     There is currently no debug server implemented. This applet only allows manipulating Memory,
     Core and Aux spaces via a Python REPL.
     """.format(
-        devices="\n".join(map(lambda x: "        * {.name}".format(x), devices.values()))
+        devices="\n".join(map(lambda x: f"        * {x.name}", devices.values()))
     )
 
     @classmethod

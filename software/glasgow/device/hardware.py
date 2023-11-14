@@ -290,7 +290,7 @@ class GlasgowHardwareDevice:
                 result_future.set_exception(GlasgowDeviceError("device disconnected"))
             else:
                 result_future.set_exception(GlasgowDeviceError(
-                    "transfer error: {}".format(usb1.libusb1.libusb_transfer_status(status))))
+                    f"transfer error: {usb1.libusb1.libusb_transfer_status(status)}"))
 
         def handle_usb_error(func):
             try:
@@ -382,7 +382,7 @@ class GlasgowHardwareDevice:
         elif kind == "ice":
             base_offset = 1
         else:
-            raise ValueError("Unknown EEPROM kind {}".format(kind))
+            raise ValueError(f"Unknown EEPROM kind {kind}")
         return 0x10000 * base_offset + addr
 
     async def read_eeprom(self, kind, addr, length):
@@ -504,7 +504,7 @@ class GlasgowHardwareDevice:
             elif port == "B":
                 mask |= IO_BUF_B
             else:
-                raise GlasgowDeviceError("unknown I/O port {}".format(port))
+                raise GlasgowDeviceError(f"unknown I/O port {port}")
         return mask
 
     @staticmethod
@@ -554,19 +554,19 @@ class GlasgowHardwareDevice:
         try:
             return await self._read_voltage(REQ_IO_VOLT, spec)
         except usb1.USBErrorPipe:
-            raise GlasgowDeviceError("cannot get I/O port {} I/O voltage".format(spec))
+            raise GlasgowDeviceError(f"cannot get I/O port {spec} I/O voltage")
 
     async def get_voltage_limit(self, spec):
         try:
             return await self._read_voltage(REQ_LIMIT_VOLT, spec)
         except usb1.USBErrorPipe:
-            raise GlasgowDeviceError("cannot get I/O port {} I/O voltage limit".format(spec))
+            raise GlasgowDeviceError(f"cannot get I/O port {spec} I/O voltage limit")
 
     async def measure_voltage(self, spec):
         try:
             return await self._read_voltage(REQ_SENSE_VOLT, spec)
         except usb1.USBErrorPipe:
-            raise GlasgowDeviceError("cannot measure I/O port {} sense voltage".format(spec))
+            raise GlasgowDeviceError(f"cannot measure I/O port {spec} sense voltage")
 
     async def set_alert(self, spec, low_volts, high_volts):
         low_millivolts  = round(low_volts * 1000)
@@ -608,7 +608,7 @@ class GlasgowHardwareDevice:
             high_volts = round(high_millivolts / 1000, 2)
             return low_volts, high_volts
         except usb1.USBErrorPipe:
-            raise GlasgowDeviceError("cannot get I/O port {} voltage alert".format(spec))
+            raise GlasgowDeviceError(f"cannot get I/O port {spec} voltage alert")
 
     async def poll_alert(self):
         try:
@@ -648,7 +648,7 @@ class GlasgowHardwareDevice:
 
     async def _register_error(self, addr):
         if await self._status() & ST_FPGA_RDY:
-            raise GlasgowDeviceError("register 0x{:02x} does not exist".format(addr))
+            raise GlasgowDeviceError(f"register 0x{addr:02x} does not exist")
         else:
             raise GlasgowDeviceError("FPGA is not configured")
 

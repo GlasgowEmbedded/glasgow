@@ -116,11 +116,11 @@ class ProgramNRF24Lx1Interface:
 
     async def read_status(self):
         status, = await self._command(0x05, ret=1)
-        self._log("read status=%s", "{:#010b}".format(status))
+        self._log("read status=%s", f"{status:#010b}")
         return status
 
     async def write_status(self, status):
-        self._log("write status=%s", "{:#010b}".format(status))
+        self._log("write status=%s", f"{status:#010b}")
         await self._command(0x01, arg=[status])
 
     async def wait_status(self):

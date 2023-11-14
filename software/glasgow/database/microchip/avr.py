@@ -14,14 +14,14 @@ AVRDevice = namedtuple("AVRDevice", (
 ))
 
 def ATtiny(name, signature, program_size, program_page, eeprom_size, fuses_size=2, erase_time=None):
-    return AVRDevice("ATtiny{}".format(name), signature=signature,
+    return AVRDevice(f"ATtiny{name}", signature=signature,
                      calibration_size=2, fuses_size=fuses_size,
                      program_size=program_size, program_page=program_page,
                      eeprom_size=eeprom_size, eeprom_page=4,
                      erase_time=erase_time)
 
 def ATmega(name, signature, program_size, program_page, eeprom_size, eeprom_page=4, erase_time=None):
-    return AVRDevice("ATmega{}".format(name), signature=signature,
+    return AVRDevice(f"ATmega{name}", signature=signature,
                      calibration_size=1, fuses_size=3,
                      program_size=program_size, program_page=program_page,
                      eeprom_size=eeprom_size, eeprom_page=eeprom_page,

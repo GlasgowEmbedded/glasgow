@@ -190,7 +190,7 @@ class SVFParser:
         elif isinstance(self._token, bits):
             actual = "scan data"
         elif isinstance(self._token, tuple):
-            actual = "(%s)" % (*self._token,)
+            actual = "({})".format(*self._token)
         elif self._token is None:
             actual = "end of file"
         else:

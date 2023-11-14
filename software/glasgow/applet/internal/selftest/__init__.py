@@ -131,7 +131,7 @@ class SelfTestApplet(GlasgowApplet):
                 await set_o(o)
                 await set_oe(oe)
             i = await get_i()
-            desc = "oe={:016b} o={:016b} i={:016b}".format(oe, o, i)
+            desc = f"oe={oe:016b} o={o:016b} i={i:016b}"
             return i, desc
 
         pin_names = sum([["%s%d" % (p, n) for n in range(8)] for p in ("A", "B")], [])
@@ -272,14 +272,14 @@ class SelfTestApplet(GlasgowApplet):
                         await asyncio.wait_for(iface.flush(), timeout=0.1)
                     except asyncio.TimeoutError:
                         passed = False
-                        report.append((mode, "USB {} timeout".format(ep_out)))
+                        report.append((mode, f"USB {ep_out} timeout"))
                         continue
 
                     try:
                         received = await asyncio.wait_for(iface.read(len(data)), timeout=0.1)
                     except asyncio.TimeoutError:
                         passed = False
-                        report.append((mode, "USB {} timeout".format(ep_in)))
+                        report.append((mode, f"USB {ep_in} timeout"))
                         continue
 
                     if received != data:

@@ -667,7 +667,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
             assert False
 
     def target_register_names(self):
-        reg_names  = ["${}".format(reg) for reg in range(32)]
+        reg_names  = [f"${reg}" for reg in range(32)]
         reg_names += ["sr", "lo", "hi", "bad", "cause", "pc"]
         return reg_names
 
@@ -865,7 +865,7 @@ class DebugMIPSApplet(JTAGProbeApplet):
 
             reg_names = ejtag_iface.target_register_names()
             for name, value in zip(reg_names, reg_values):
-                print("{:<3} = {:08x}".format(name, value))
+                print(f"{name:<3} = {value:08x}")
 
         if args.operation == "gdb":
             endpoint = await ServerEndpoint("GDB socket", self.logger, args.gdb_endpoint)

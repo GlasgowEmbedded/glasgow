@@ -230,7 +230,7 @@ class PDIG1DisplayInterface(PDIDisplayInterface):
         # Verify that COG has the right generation
         cog_id = await self._identify()
         if cog_id != 0x11:
-            raise PDIDisplayError("COG is not PDI EPD G1 (id={:#04x})".format(cog_id))
+            raise PDIDisplayError(f"COG is not PDI EPD G1 (id={cog_id:#04x})")
 
         self._log("power on cog driver")
         # Channel Select

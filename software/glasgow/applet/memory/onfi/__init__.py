@@ -469,7 +469,7 @@ class MemoryONFIApplet(GlasgowApplet):
         available_ce = range(1, 1 + len(args.pin_set_ce))
         if args.chip not in available_ce:
             raise GlasgowAppletError("cannot select chip {}; available select signals are {}"
-                .format(args.chip, ", ".join("CE{}#".format(n) for n in available_ce)))
+                .format(args.chip, ", ".join(f"CE{n}#" for n in available_ce)))
         await onfi_iface.select(args.chip - 1)
 
         return onfi_iface
@@ -551,7 +551,7 @@ class MemoryONFIApplet(GlasgowApplet):
         # so print these for convenience as well.
         signature = await onfi_iface.read_signature()
         self.logger.info("ID signature: %s",
-                         " ".join("{:02x}".format(byte) for byte in signature))
+                         " ".join(f"{byte:02x}" for byte in signature))
 
         onfi_param = None
         if await onfi_iface.read_onfi_signature() == b"ONFI":

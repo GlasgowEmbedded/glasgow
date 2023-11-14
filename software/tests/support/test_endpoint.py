@@ -45,7 +45,7 @@ class EndpointArgumentTestCase(unittest.TestCase):
 
 class ServerEndpointTestCase(unittest.TestCase):
     async def do_test_lifecycle(self):
-        sock = ("unix", "{}/test_lifecycle_sock".format(tempfile.gettempdir()))
+        sock = ("unix", f"{tempfile.gettempdir()}/test_lifecycle_sock")
         endp = await ServerEndpoint("test_lifecycle", logging.getLogger(__name__), sock)
 
         conn_rd, conn_wr = await asyncio.open_unix_connection(*sock[1:])
@@ -75,7 +75,7 @@ class ServerEndpointTestCase(unittest.TestCase):
             self.do_test_lifecycle())
 
     async def do_test_until(self):
-        sock = ("unix", "{}/test_until_sock".format(tempfile.gettempdir()))
+        sock = ("unix", f"{tempfile.gettempdir()}/test_until_sock")
         endp = await ServerEndpoint("test_until", logging.getLogger(__name__), sock)
 
         conn_rd, conn_wr = await asyncio.open_unix_connection(*sock[1:])

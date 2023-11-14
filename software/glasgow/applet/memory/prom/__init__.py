@@ -342,7 +342,7 @@ class MemoryPROMInterface:
             n = len(self)
             if isinstance(key, int):
                 if key not in range(-n, n):
-                    raise IndexError("Cannot index {} words into {}-word data".format(key, n))
+                    raise IndexError(f"Cannot index {key} words into {n}-word data")
                 if key < 0:
                     key += n
                 elem = self.raw_data[key * self.dq_bytes:(key + 1) * self.dq_bytes]
@@ -351,7 +351,7 @@ class MemoryPROMInterface:
                 start, stop, step = key.indices(n)
                 return [self[index] for index in range(start, stop, step)]
             else:
-                raise TypeError("Cannot index value with {}".format(repr(key)))
+                raise TypeError(f"Cannot index value with {key!r}")
 
             if index not in range(len(self)):
                 raise IndexError
@@ -559,7 +559,7 @@ class MemoryPROMApplet(GlasgowApplet):
         def voltage_range(arg):
             m = re.match(r"^(\d+(?:\.\d*)?):(\d+(?:\.\d*)?)$", arg)
             if not m:
-                raise argparse.ArgumentTypeError("'{}' is not a voltage range".format(arg))
+                raise argparse.ArgumentTypeError(f"'{arg}' is not a voltage range")
             return float(m[1]), float(m[2])
 
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
