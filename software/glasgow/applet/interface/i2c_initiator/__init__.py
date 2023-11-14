@@ -246,7 +246,7 @@ class I2CInitiatorInterface:
             if write:
                 if await self.write(addr, [], stop=True) is True:
                     self._logger.log(self._level, "I2C scan: found write address %s",
-                                        "{:#09b}".format(addr))
+                                        f"{addr:#09b}")
                     found.add(addr)
                     # After a successful write detection no read scan is done anymore
                     continue
@@ -255,7 +255,7 @@ class I2CInitiatorInterface:
                 # so that the addressed device releases SDA.
                 if await self.read(addr, 1, stop=True) is not None:
                     self._logger.log(self._level, "I2C scan: found read address %s",
-                                        "{:#09b}".format(addr))
+                                        f"{addr:#09b}")
                     found.add(addr)
         return found
 
@@ -338,7 +338,7 @@ class I2CInitiatorApplet(GlasgowApplet):
             found_addrs = await i2c_iface.scan(read=args.read, write=args.write)
             for addr in sorted(found_addrs):
                 self.logger.info("scan found address %s",
-                                    "{:#09b}".format(addr))
+                                    f"{addr:#09b}")
                 if args.device_id:
                     device_id = await i2c_iface.device_id(addr)
                     if device_id is None:

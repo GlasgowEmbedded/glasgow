@@ -364,9 +364,9 @@ class PS2HostInterface:
             # the first place. (Some devices will reset themselves after sending FC.)
             #
             # In practice treating FE and FC the same seems to be the best option.
-            raise PS2HostError("peripheral did not accept command {:#04x}".format(cmd))
+            raise PS2HostError(f"peripheral did not accept command {cmd:#04x}")
         else:
-            raise PS2HostError("peripheral returned unknown response {:#04x}".format(cmd))
+            raise PS2HostError(f"peripheral returned unknown response {cmd:#04x}")
         return result
 
     async def recv_packet(self, ret):
@@ -437,7 +437,7 @@ class PS2HostApplet(GlasgowApplet):
         for init_byte in args.init:
             await iface.send_command(init_byte)
         async def print_byte(byte):
-            print("{:02x}".format(byte), end=" ", flush=True)
+            print(f"{byte:02x}", end=" ", flush=True)
         await iface.stream(print_byte)
 
     @classmethod

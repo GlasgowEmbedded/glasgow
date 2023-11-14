@@ -143,9 +143,9 @@ class GDBRemote(metaclass=ABCMeta):
 
                     error_num, error_msg = response
                     if self.__error_strings:
-                        response = "E{:02d};{}".format(error_num, error_msg).encode("ascii")
+                        response = f"E{error_num:02d};{error_msg}".encode("ascii")
                     else:
-                        response = "E{:02d}".format(error_num).encode("ascii")
+                        response = f"E{error_num:02d}".encode("ascii")
 
                 while True:
                     response_asc = response.decode("ascii", errors="replace")

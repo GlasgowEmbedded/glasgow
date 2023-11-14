@@ -87,7 +87,7 @@ class AccessMultiplexerInterface(Elaboratable, metaclass=ABCMeta):
         pad_args = {}
 
         for pin in pins:
-            pin_num = getattr(args, "pin_{}".format(pin))
+            pin_num = getattr(args, f"pin_{pin}")
             if pin_num is None:
                 self.logger.debug("not assigning pin %r to any device pin", pin)
             else:
@@ -96,7 +96,7 @@ class AccessMultiplexerInterface(Elaboratable, metaclass=ABCMeta):
                 pad_args[pin] = self.get_pin(pin_num, name=pin)
 
         for pin_set in pin_sets:
-            pin_nums = getattr(args, "pin_set_{}".format(pin_set))
+            pin_nums = getattr(args, f"pin_set_{pin_set}")
             if pin_nums is None:
                 self.logger.debug("not assigning pin set %r to any device pins", pin_set)
             else:

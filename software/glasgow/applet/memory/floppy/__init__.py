@@ -787,7 +787,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
 
             mfm = SoftwareMFMDecoder(self.logger)
             data.append(np.array(list(mfm.edges(bytestream))) * self._timebase)
-            labels.append("cylinder {}, head {}".format(cylinder, head))
+            labels.append(f"cylinder {cylinder}, head {head}")
 
         fig, ax = plt.subplots()
         fig.suptitle("Domain size histogram for {} (heads: {})"

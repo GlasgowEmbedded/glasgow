@@ -53,7 +53,7 @@ class XC6SJTAGInterface:
         async for status in self._poll(IR_CFG_IN, limit=16):
             if status.INIT_B:
                 return
-        raise GlasgowAppletError("configuration reset failed: {}".format(status.bits_repr()))
+        raise GlasgowAppletError(f"configuration reset failed: {status.bits_repr()}")
 
     async def load_bitstream(self, bitstream, *, byte_reverse=True):
         bitstream = bits(bitstream)
@@ -71,7 +71,7 @@ class XC6SJTAGInterface:
             await self.lower.run_test_idle(16)
             if status.ISC_DONE:
                 return
-        raise GlasgowAppletError("configuration start failed: {}".format(status.bits_repr()))
+        raise GlasgowAppletError(f"configuration start failed: {status.bits_repr()}")
 
 
 class ProgramXC6SApplet(JTAGProbeApplet):

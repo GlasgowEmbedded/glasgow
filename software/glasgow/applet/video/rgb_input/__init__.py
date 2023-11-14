@@ -173,7 +173,7 @@ class VideoRGBInputApplet(GlasgowApplet):
             frame = (sync & 0x3e) >> 1
             row   = ((sync & 0x01) << 7) | (await iface.read(1))[0]
 
-            print("frame {} row {}".format(frame, row))
+            print(f"frame {frame} row {row}")
 
     @classmethod
     def tests(cls):

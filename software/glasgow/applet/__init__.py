@@ -44,7 +44,7 @@ class GlasgowApplet(metaclass=ABCMeta):
             if clock_name is None:
                 raise GlasgowAppletError(e)
             else:
-                raise GlasgowAppletError("clock {}: {}".format(clock_name, e))
+                raise GlasgowAppletError(f"clock {clock_name}: {e}")
 
     @abstractmethod
     def build(self, target):
@@ -318,7 +318,7 @@ def applet_simulation_test(setup, args=[]):
             sim = Simulator(self.target)
             sim.add_clock(1e-9)
             sim.add_sync_process(run)
-            vcd_name = "{}.vcd".format(case.__name__)
+            vcd_name = f"{case.__name__}.vcd"
             with sim.write_vcd(vcd_name):
                 sim.run()
             os.remove(vcd_name)
@@ -336,7 +336,7 @@ def applet_hardware_test(setup="run_hardware_applet", args=[]):
                                         case.__name__ + ".json")
             os.makedirs(os.path.dirname(fixture_path), exist_ok=True)
             if os.path.exists(fixture_path):
-                fixture = open(fixture_path, "r")
+                fixture = open(fixture_path)
                 mode = "replay"
             else:
                 fixture = open(fixture_path, "w")

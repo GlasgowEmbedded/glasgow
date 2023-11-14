@@ -508,7 +508,7 @@ class ProgramXC9500XLApplet(JTAGProbeApplet):
     Supported devices are:
 {devices}
     """.format(
-        devices="\n".join("        * {.name}".format(device) for device in devices)
+        devices="\n".join(f"        * {device.name}" for device in devices)
     )
 
     @classmethod

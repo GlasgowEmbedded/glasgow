@@ -1846,7 +1846,7 @@ def _jedec_update_mfg_from_pdf():
     jep106_matches = re.findall(r'^(\d+) (.+(?:\n.+){0,1})(?:(?:\n\d ){8})(?:\n)([0-9A-F]{2})', pdf_text, re.MULTILINE)
 
     output_text = ""
-    with open(__file__, 'r') as source_file:
+    with open(__file__) as source_file:
         output_text += source_file.read()
 
     # Update version string

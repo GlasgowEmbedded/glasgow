@@ -66,7 +66,7 @@ class GlasgowConfig:
             major, minor = string
             return ((ord(major) - ord("A") + 1) << 4) | (ord(minor) - ord("0"))
         else:
-            raise ValueError("invalid revision string {!r}".format(string))
+            raise ValueError(f"invalid revision string {string!r}")
 
     @staticmethod
     def decode_revision(value):
@@ -81,7 +81,7 @@ class GlasgowConfig:
         elif minor in range(10):
             return chr(ord("A") + major - 1) + chr(ord("0") + minor)
         else:
-            raise ValueError("invalid revision value {:#04x}".format(value))
+            raise ValueError(f"invalid revision value {value:#04x}")
 
     def encode(self):
         """

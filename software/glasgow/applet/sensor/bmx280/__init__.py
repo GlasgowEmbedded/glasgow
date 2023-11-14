@@ -442,14 +442,14 @@ class SensorBMx280Applet(I2CInitiatorApplet):
 
             temp_degC = await bmx280.get_temperature()
             press_Pa  = await bmx280.get_pressure()
-            print("temperature : {:.0f} °C".format(temp_degC))
-            print("pressure    : {:.0f} Pa".format(press_Pa))
+            print(f"temperature : {temp_degC:.0f} °C")
+            print(f"pressure    : {press_Pa:.0f} Pa")
             if args.report_altitude:
                 altitude_m = await bmx280.get_altitude(p0=args.sea_level_pressure)
-                print("altitude    : {:.0f} m".format(altitude_m))
+                print(f"altitude    : {altitude_m:.0f} m")
             if bmx280.has_humidity:
                 humidity_pct = await bmx280.get_humidity()
-                print("humidity    : {:.0f}%".format(humidity_pct))
+                print(f"humidity    : {humidity_pct:.0f}%")
 
         if args.operation == "log":
             await bmx280.set_mode("normal")
