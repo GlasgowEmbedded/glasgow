@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from amaranth import *
 from amaranth.lib.io import Pin
+import argparse
 
 from ..gateware.pads import Pads
 

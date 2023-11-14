@@ -1,6 +1,5 @@
 import functools
 import itertools
-import argparse
 import re
 
 from .. import AccessArguments
