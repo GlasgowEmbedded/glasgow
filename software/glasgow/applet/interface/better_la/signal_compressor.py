@@ -58,7 +58,7 @@ class SignalCompressor(Elaboratable):
 
     @staticmethod
     def decode_pkg(pkg) -> List[Tuple[int, int]]:
-        if pkg & 0b01:
+        if pkg & 0b1:
             value = pkg >> 1 & 0b01
             duration = pkg >> 2
             return [(value, duration + 1)]
