@@ -12,9 +12,8 @@ __all__ += ["AccessDemultiplexer", "AccessDemultiplexerInterface"]
 
 
 class AccessArguments(metaclass=ABCMeta):
-    def _arg_error(self, message, *args, **kwargs):
-        raise argparse.ArgumentTypeError(("applet {!r}: " + message)
-                                         .format(self._applet_name, *args, **kwargs))
+    def _arg_error(self, message):
+        raise argparse.ArgumentTypeError(f"applet {self._applet_name!r}: " + message)
 
     @abstractmethod
     def add_build_arguments(self, parser):
