@@ -216,7 +216,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
 
     def assertBuilds(self, access="direct", args=[]):
         if access == "direct":
-            target = GlasgowHardwareTarget(revision="A0",
+            target = GlasgowHardwareTarget(revision=self.applet_cls.required_revision,
                                            multiplexer_cls=DirectMultiplexer)
             access_args = DirectArguments(applet_name="applet",
                                           default_port="AB", pin_count=16)
