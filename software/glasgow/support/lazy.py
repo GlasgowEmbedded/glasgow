@@ -38,7 +38,7 @@ class lazy:
             rep = repr(self._thunk_)
         else:
             rep = repr(self._object_)
-        return "<lazy {}>".format(rep)
+        return f"<lazy {rep}>"
 
     @classmethod
     def _define_special_(cls, name):

@@ -59,7 +59,7 @@ class SCD30I2CInterface:
         data = bytearray()
         for index, (chunk, crc) in enumerate(struct.iter_unpack(">2sB", crc_data)):
             if self._crc(chunk) != crc:
-                raise SCD30Error("CRC failed on word {}".format(index))
+                raise SCD30Error(f"CRC failed on word {index}")
             data += chunk
         return data
 
@@ -187,7 +187,7 @@ class SensorSCD30Applet(I2CInitiatorApplet):
                 value = conv(value)
                 if not (low <= value <= high):
                     raise argparse.ArgumentTypeError(
-                        "{} is not between {} and {}".format(value, low, high))
+                        f"{value} is not between {low} and {high}")
                 return value
             return arg
 
@@ -252,10 +252,10 @@ class SensorSCD30Applet(I2CInitiatorApplet):
             altitude_compensation = await scd30.get_altitude_compensation()
             measurement_interval  = await scd30.get_measurement_interval()
             print("auto-calibration      : {}".format("on" if auto_calibration else "off"))
-            print("forced calibration    : {} ppm (last)".format(force_calibration))
-            print("temperature offset    : {} °C".format(temperature_offset))
-            print("altitude compensation : {} m".format(altitude_compensation))
-            print("measurement interval  : {} s".format(measurement_interval))
+            print(f"forced calibration    : {force_calibration} ppm (last)")
+            print(f"temperature offset    : {temperature_offset} °C")
+            print(f"altitude compensation : {altitude_compensation} m")
+            print(f"measurement interval  : {measurement_interval} s")
 
         if args.operation == "start":
             await scd30.start_measurement(args.pressure_mbar)
@@ -268,9 +268,9 @@ class SensorSCD30Applet(I2CInitiatorApplet):
                 await asyncio.sleep(1.0)
 
             sample = await scd30.read_measurement()
-            print("CO₂ concentration : {:.0f} ppm".format(sample.co2_ppm))
-            print("temperature       : {:.2f} °C".format(sample.temp_degC))
-            print("relative humidity : {:.0f} %".format(sample.rh_pct))
+            print(f"CO₂ concentration : {sample.co2_ppm:.0f} ppm")
+            print(f"temperature       : {sample.temp_degC:.2f} °C")
+            print(f"relative humidity : {sample.rh_pct:.0f} %")
 
         if args.operation == "log":
             field_names = dict(co2="CO₂(ppm)", t="T(°C)", rh="RH(%)")

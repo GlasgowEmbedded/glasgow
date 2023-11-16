@@ -632,11 +632,11 @@ class JTAGProbeInterface:
             if value is None:
                 self._log_h("scan %s overlong", xr)
                 if check:
-                    raise JTAGProbeError("{} shift chain is too long".format(xr.upper()))
+                    raise JTAGProbeError(f"{xr.upper()} shift chain is too long")
             elif len(value) == 0:
                 self._log_h("scan %s empty", xr)
                 if check:
-                    raise JTAGProbeError("{} shift chain is empty".format(xr.upper()))
+                    raise JTAGProbeError(f"{xr.upper()} shift chain is empty")
             else:
                 self._log_h("scan %s length=%d data=<%s>",
                             xr, length, dump_bin(data_0[:length]))
@@ -788,7 +788,7 @@ class JTAGProbeInterface:
             for ir_start0, ir_start1 in zip(ir_starts, ir_starts[1:] + [len(ir_value)]):
                 ir_chunks.append(ir_start1 - ir_start0)
             self._log_h("ambiguous ir taps=%d chunks=[%s]",
-                        tap_count, ",".join("{:d}".format(chunk) for chunk in ir_chunks))
+                        tap_count, ",".join(f"{chunk:d}" for chunk in ir_chunks))
             if check:
                 raise JTAGProbeError("IR capture insufficiently constrains IR lengths")
             return

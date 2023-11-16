@@ -88,7 +88,7 @@ class SVFParserTestCase(unittest.TestCase):
         self.assertEqual(self.handler.events, events)
 
     def assertErrors(self, source, error):
-        with self.assertRaisesRegex(SVFParsingError, r"^{}".format(re.escape(error))):
+        with self.assertRaisesRegex(SVFParsingError, fr"^{re.escape(error)}"):
             self.handler = SVFMockEventHandler()
             self.parser = SVFParser(source, self.handler)
             self.parser.parse_file()
@@ -137,12 +137,12 @@ class SVFParserTestCase(unittest.TestCase):
             ("ENDIR", "svf_endir"),
             ("ENDDR", "svf_enddr")
         ]:
-            self.assertParses("{c} IRPAUSE;".format(c=command),
+            self.assertParses(f"{command} IRPAUSE;",
                               [(event, {"state": "IRPAUSE"})])
 
-            self.assertErrors("{c} IRSHIFT;".format(c=command),
+            self.assertErrors(f"{command} IRSHIFT;",
                               "expected stable TAP state")
-            self.assertErrors("{c};".format(c=command),
+            self.assertErrors(f"{command};",
                               "expected stable TAP state")
 
     def test_hir_sir_tir_hdr_sdr_tdr(self):
@@ -154,7 +154,7 @@ class SVFParserTestCase(unittest.TestCase):
             ("SDR", "svf_sdr"),
             ("TDR", "svf_tdr"),
         ]:
-            self.assertParses("{c} 0;".format(c=command), [
+            self.assertParses(f"{command} 0;", [
                 (event, {
                     "tdi":   bits(""),
                     "smask": bits(""),
@@ -162,7 +162,7 @@ class SVFParserTestCase(unittest.TestCase):
                     "mask":  bits(""),
                 }),
             ])
-            self.assertParses("{c} 8 TDI(a);".format(c=command), [
+            self.assertParses(f"{command} 8 TDI(a);", [
                 (event, {
                     "tdi":   bits("00001010"),
                     "smask": bits("11111111"),
@@ -170,7 +170,7 @@ class SVFParserTestCase(unittest.TestCase):
                     "mask":  bits("00000000"),
                 }),
             ])
-            self.assertParses("{c} 6 TDI(0a);".format(c=command), [
+            self.assertParses(f"{command} 6 TDI(0a);", [
                 (event, {
                     "tdi":   bits("001010"),
                     "smask": bits("111111"),
@@ -242,11 +242,11 @@ class SVFParserTestCase(unittest.TestCase):
                 }),
             ])
 
-            self.assertErrors("{c} 8 TDI(aaa);".format(c=command),
+            self.assertErrors(f"{command} 8 TDI(aaa);",
                               "scan data length 12 exceeds command length 8")
-            self.assertErrors("{c} 8 TDI(0) TDI(0);".format(c=command),
+            self.assertErrors(f"{command} 8 TDI(0) TDI(0);",
                               "parameter TDI specified twice")
-            self.assertErrors("{c} 8;".format(c=command),
+            self.assertErrors(f"{command} 8;",
                               "initial value for parameter TDI required")
             self.assertErrors("{c} 8 TDI(aa); {c} 12;".format(c=command),
                               "parameter TDI needs to be specified again because "

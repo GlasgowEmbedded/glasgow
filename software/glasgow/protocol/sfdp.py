@@ -125,15 +125,15 @@ class SFDPTable(_JEDECRevisionMixin):
         else:
             vendor_name = jedec_mfg_name_from_bytes([self.vendor_id])
         if vendor_name is None:
-            return "Unknown Vendor {:#04x}".format(self.vendor_id)
+            return f"Unknown Vendor {self.vendor_id:#04x}"
         return vendor_name
 
     @property
     def table_name(self):
-        return "Unknown Table {:#04x}".format(self.table_id)
+        return f"Unknown Table {self.table_id:#04x}"
 
     def __str__(self):
-        return "{}, {}".format(self.vendor_name, self.table_name)
+        return f"{self.vendor_name}, {self.table_name}"
 
     def __iter__(self):
         return iter(())
@@ -225,7 +225,7 @@ class SFDPJEDECFlashParametersTable(SFDPTable):
                     word6._fast_read_4_4_4_mode_bits)
 
         except ValueError as e:
-            raise ValueError("cannot parse {}: {}".format(str(self), str(e))) from None
+            raise ValueError(f"cannot parse {str(self)}: {str(e)}") from None
 
     @property
     def table_name(self):
@@ -233,15 +233,15 @@ class SFDPJEDECFlashParametersTable(SFDPTable):
 
     def __iter__(self):
         properties = {}
-        properties["density (Mebibits)"]  = "{}".format(self.density >> 20)
-        properties["density (Mebibytes)"] = "{}".format(self.density >> 23)
+        properties["density (Mebibits)"]  = f"{self.density >> 20}"
+        properties["density (Mebibytes)"] = f"{self.density >> 23}"
         properties["address byte count"]  = ", ".join(map(str, self.address_byte_count))
-        properties["write granularity"]   = "{} byte(s)".format(self.write_granularity)
+        properties["write granularity"]   = f"{self.write_granularity} byte(s)"
 
         properties["sector sizes"] = ", ".join(map(str, self.sector_sizes))
         for sector_size, opcode in self.sector_sizes.items():
-            properties["sector size {}".format(sector_size)] = \
-                "erase opcode {:#04x}".format(opcode)
+            properties[f"sector size {sector_size}"] = \
+                f"erase opcode {opcode:#04x}"
 
         properties["double transfer rate"] = "yes" if self.has_double_transfer_rate else "no"
         properties["fast read modes"] = \

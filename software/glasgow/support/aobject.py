@@ -1,7 +1,7 @@
 __all__ = ["aobject"]
 
 
-class aobject(object):
+class aobject:
     """
     Base class for objects with an async ``__init__`` method.
 

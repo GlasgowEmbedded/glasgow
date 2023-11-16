@@ -57,7 +57,7 @@ class _bitstruct:
             cls["_layout_"][name] = (offset, width)
             offset += width
 
-        cls["__slots__"] = tuple("_f_{}".format(field) for field in cls["_layout_"])
+        cls["__slots__"] = tuple(f"_f_{field}" for field in cls["_layout_"])
 
         code = textwrap.dedent(f"""
         def __init__(self, {", ".join(f"{field}=0" for field in cls["_named_fields_"])}):
@@ -151,7 +151,7 @@ class _bitstruct:
         return " ".join(fields)
 
     def __repr__(self):
-        return "<{}.{} {}>".format(self.__module__, self.__class__.__name__, self.bits_repr())
+        return f"<{self.__module__}.{self.__class__.__name__} {self.bits_repr()}>"
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.to_bits() == other.to_bits()

@@ -165,7 +165,7 @@ def get_argparser():
                 description = "    This applet is PREVIEW QUALITY and may CORRUPT DATA or " \
                               "have missing features. Use at your own risk.\n" + description
             if applet_cls.required_revision > "A0":
-                help += " (rev{}+)".format(applet_cls.required_revision)
+                help += f" (rev{applet_cls.required_revision}+)"
                 description += "\n    This applet requires Glasgow rev{} or later." \
                                .format(applet_cls.required_revision)
 
@@ -221,7 +221,7 @@ def get_argparser():
         if re.match(r"^[A-C][0-9]-\d{8}T\d{6}Z$", arg):
             return arg
         else:
-            raise argparse.ArgumentTypeError("{} is not a valid serial number".format(arg))
+            raise argparse.ArgumentTypeError(f"{arg} is not a valid serial number")
 
     parser.add_argument(
         "--serial", metavar="SERIAL", type=serial,
@@ -238,7 +238,7 @@ def get_argparser():
     def add_voltage_arg(parser, help):
         parser.add_argument(
             "voltage", metavar="VOLTS", type=float, nargs="?", default=None,
-            help="{} (range: 1.8-5.0)".format(help))
+            help=f"{help} (range: 1.8-5.0)")
 
     p_voltage = subparsers.add_parser(
         "voltage", formatter_class=TextHelpFormatter,
@@ -445,7 +445,7 @@ class TerminalFormatter(logging.Formatter):
         for color_override in os.getenv("GLASGOW_COLORS", "").split(":"):
             if color_override:
                 level, color = color_override.split("=", 2)
-                self.colors[level] = "\033[{}m".format(color)
+                self.colors[level] = f"\033[{color}m"
 
     def format(self, record):
         color = self.colors.get(record.levelname, "")
@@ -453,7 +453,7 @@ class TerminalFormatter(logging.Formatter):
         record.name = record.name.replace("glasgow.", "g.")
         # applet.memory._25x → applet.memory.25x
         record.name = record.name.replace("._", ".")
-        return "{}{}\033[0m".format(color, super().format(record))
+        return f"{color}{super().format(record)}\033[0m"
 
 
 class SubjectFilter:
@@ -469,7 +469,7 @@ class SubjectFilter:
         return levelno >= self.level
 
 
-def create_logger(args):
+def create_logger():
     root_logger = logging.getLogger()
 
     term_formatter_args = {"style": "{",
@@ -480,6 +480,10 @@ def create_logger(args):
     else:
         term_handler.setFormatter(logging.Formatter(**term_formatter_args))
     root_logger.addHandler(term_handler)
+    return term_handler
+
+def configure_logger(args, term_handler):
+    root_logger = logging.getLogger()
 
     file_formatter_args = {"style": "{",
         "fmt": "[{asctime:s}] {levelname:s}: {name:s}: {message:s}"}
@@ -504,8 +508,12 @@ def create_logger(args):
 
 
 async def _main():
+    # Handle log messages emitted during construction of the argument parser (e.g. by the plugin
+    # subsystem).
+    term_handler = create_logger()
+
     args = get_argparser().parse_args()
-    create_logger(args)
+    configure_logger(args, term_handler)
 
     device = None
     try:
@@ -562,7 +570,7 @@ async def _main():
             plan = target.build_plan()
 
             if args.prebuilt or args.bitstream:
-                bitstream_file = args.bitstream or open("{}.bin".format(args.applet), "rb")
+                bitstream_file = args.bitstream or open(f"{args.applet}.bin", "rb")
                 with bitstream_file:
                     await device.download_prebuilt(plan, bitstream_file)
             else:
@@ -617,7 +625,7 @@ async def _main():
                             next_timestamp += 100 # 1us
                             break
 
-                        event_repr = " ".join("{}={}".format(n, v)
+                        event_repr = " ".join(f"{n}={v}"
                                               for n, v in events.items())
                         target.analyzer.logger.trace("cycle %d: %s", cycle, event_repr)
 
@@ -813,7 +821,7 @@ async def _main():
             plan = target.build_plan()
             if args.type in ("il", "rtlil"):
                 logger.info("generating RTLIL for applet %r", args.applet)
-                with open(args.filename or args.applet + ".il", "wt") as f:
+                with open(args.filename or args.applet + ".il", "w") as f:
                     f.write(plan.rtlil)
             if args.type in ("zip", "archive"):
                 logger.info("generating archive for applet %r", args.applet)

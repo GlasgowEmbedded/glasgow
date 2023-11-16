@@ -1,5 +1,4 @@
 import functools
-import argparse
 import re
 
 from .. import AccessArguments
@@ -7,10 +6,6 @@ from .. import AccessArguments
 
 class DirectArguments(AccessArguments):
     # First, define some state-less methods that just add arguments to an argparse instance.
-
-    def _arg_error(self, message, *args, **kwargs):
-        raise argparse.ArgumentTypeError(("applet {!r}: " + message)
-                                         .format(self._applet_name, *args, **kwargs))
 
     def _port_spec(self, arg):
         if not re.match(r"^[A-Z]+$", arg):
@@ -49,7 +44,7 @@ class DirectArguments(AccessArguments):
         return self._mandatory_pin_number(arg)
 
     def _add_pin_argument(self, parser, name, default, required):
-        help = "bind the applet I/O line {!r} to pin NUM".format(name)
+        help = f"bind the applet I/O line {name!r} to pin NUM"
         if default is not None:
             help += " (default: %(default)s)"
 
@@ -78,13 +73,13 @@ class DirectArguments(AccessArguments):
             if len(width) == 1:
                 width_desc = str(width[0])
             else:
-                width_desc = "{}..{}".format(width.start, width.stop - 1)
+                width_desc = f"{width.start}..{width.stop - 1}"
             self._arg_error("set {} includes {} pins, but {} pins are required",
                             arg, len(numbers), width_desc)
         return numbers
 
     def _add_pin_set_argument(self, parser, name, width, default, required):
-        help = "bind the applet I/O lines {!r} to pins SET".format(name)
+        help = f"bind the applet I/O lines {name!r} to pins SET"
         if default is not None:
             if default:
                 help += " (default: %(default)s)"
@@ -93,7 +88,7 @@ class DirectArguments(AccessArguments):
 
         opt_name = "--pins-" + name.lower().replace("_", "-")
         parser.add_argument(
-            opt_name, dest="pin_set_{}".format(name), metavar="SET",
+            opt_name, dest=f"pin_set_{name}", metavar="SET",
             type=functools.partial(self._pin_set, width), default=default, required=required,
             help=help)
 

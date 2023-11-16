@@ -134,9 +134,9 @@ class SensorINA260Applet(I2CInitiatorApplet):
             volts = await ina260.get_voltage()
             amps  = await ina260.get_current()
             watts = await ina260.get_power()
-            print("bus voltage : {:7.03f} V".format(volts))
-            print("current     : {:+7.03f} A".format(amps))
-            print("power       : {:7.03f} W".format(watts))
+            print(f"bus voltage : {volts:7.03f} V")
+            print(f"current     : {amps:+7.03f} A")
+            print(f"power       : {watts:7.03f} W")
 
         if args.operation == "log":
             field_names = dict(u="u(V)", i="i(A)", p="p(W)")

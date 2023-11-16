@@ -127,15 +127,15 @@ class SensorPMSx003Applet(GlasgowApplet):
     async def interact(self, device, args, pmsx003):
         if args.operation == "measure":
             sample = await pmsx003.read_measurement()
-            print("PM1.0 air quality : {:d} µg/m³".format(sample.pm1_0_ug_m3))
-            print("PM2.5 air quality : {:d} µg/m³".format(sample.pm2_5_ug_m3))
-            print("PM10 air quality  : {:d} µg/m³".format(sample.pm10_ug_m3))
-            print("0.3 µm particles  : {:d} n/dL".format(sample.p0_3_n_dL))
-            print("0.5 µm particles  : {:d} n/dL".format(sample.p0_5_n_dL))
-            print("1.0 µm particles  : {:d} n/dL".format(sample.p1_0_n_dL))
-            print("2.5 µm particles  : {:d} n/dL".format(sample.p2_5_n_dL))
-            print("5.0 µm particles  : {:d} n/dL".format(sample.p5_0_n_dL))
-            print("10 µm particles   : {:d} n/dL".format(sample.p10_n_dL))
+            print(f"PM1.0 air quality : {sample.pm1_0_ug_m3:d} µg/m³")
+            print(f"PM2.5 air quality : {sample.pm2_5_ug_m3:d} µg/m³")
+            print(f"PM10 air quality  : {sample.pm10_ug_m3:d} µg/m³")
+            print(f"0.3 µm particles  : {sample.p0_3_n_dL:d} n/dL")
+            print(f"0.5 µm particles  : {sample.p0_5_n_dL:d} n/dL")
+            print(f"1.0 µm particles  : {sample.p1_0_n_dL:d} n/dL")
+            print(f"2.5 µm particles  : {sample.p2_5_n_dL:d} n/dL")
+            print(f"5.0 µm particles  : {sample.p5_0_n_dL:d} n/dL")
+            print(f"10 µm particles   : {sample.p10_n_dL:d} n/dL")
 
         if args.operation == "log":
             field_names = dict(

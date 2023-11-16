@@ -136,11 +136,15 @@ class UARTApplet(GlasgowApplet):
     description = """
     Transmit and receive data via UART.
 
-    Any baud rate is supported. Only 8n1 mode is supported.
+    Any baud rate is supported. Only 8 start bits and 1 stop bits are supported, with configurable
+    parity.
 
-    NOTE: The automatic baud rate algorithm requires a burst of data, and will lock on to the
-    shortest bit-times present in the stream... updates only occur on frame or parity errors, and
-    and random data will help.
+    The automatic baud rate determination algorithm works by locking onto the shortest bit time in
+    the receive stream. It will determine the baud rate incorrectly in presence of glitches as well
+    as insufficiently diverse data (e.g. when receiving data consisting only of the letter "a",
+    the baud rate that is determined will be one half of the actual baud rate). To reduce spurious
+    baud rate changes, the algorithm is only consulted when frame or (if enabled) parity errors
+    are present in received data.
     """
 
     __pins = ("rx", "tx")

@@ -3,7 +3,7 @@ import unittest
 from glasgow.support.lazy import lazy
 
 
-class _test(object):
+class _test:
     pass
 
 

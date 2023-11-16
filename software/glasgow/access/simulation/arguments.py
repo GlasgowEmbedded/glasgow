@@ -1,6 +1,5 @@
 import functools
 import itertools
-import argparse
 import re
 
 from .. import AccessArguments
@@ -33,13 +32,13 @@ class SimulationArguments(AccessArguments):
         return numbers
 
     def _add_pin_set_argument(self, parser, name, width, default, required):
-        help = "bind the applet I/O lines {!r} to pins SET".format(self._applet_name, name)
+        help = f"bind the applet I/O lines {self._applet_name!r} to pins SET"
         if default is not None:
             help += " (default: %(default)s)"
 
         opt_name = "--pins-" + name.lower().replace("_", "-")
         parser.add_argument(
-            opt_name, dest="pin_set_{}".format(name), metavar="SET",
+            opt_name, dest=f"pin_set_{name}", metavar="SET",
             type=functools.partial(self._pin_set, width), default=default, required=required,
             help=help)
 

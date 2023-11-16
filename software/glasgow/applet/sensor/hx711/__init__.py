@@ -204,7 +204,7 @@ class SensorHX711Applet(GlasgowApplet):
 
         if args.operation == "measure":
             sample = await hx711.sample()
-            print("count : {:+d} LSB".format(sample))
+            print(f"count : {sample:+d} LSB")
 
         if args.operation == "log":
             data_logger = await DataLogger(self.logger, args, field_names={"n": "count(LSB)"})

@@ -104,7 +104,7 @@ class Memory25xInterface:
 
         data = bytearray()
         while length > len(data):
-            callback(len(data), length, "reading address {:#08x}".format(address))
+            callback(len(data), length, f"reading address {address:#08x}")
             chunk    = await self._command(cmd, arg=self._format_addr(address),
                                            dummy=dummy, ret=min(chunk_size, length - len(data)))
             data    += chunk
@@ -131,7 +131,7 @@ class Memory25xInterface:
 
     async def read_status(self):
         status, = await self._command(0x05, ret=1)
-        self._log("read status=%s", "{:#010b}".format(status))
+        self._log("read status=%s", f"{status:#010b}")
         return status
 
     async def write_enable(self):
@@ -150,11 +150,11 @@ class Memory25xInterface:
             # that. Work around by checking twice in a row. Sigh.
             status = await self.read_status()
             if status & BIT_WEL and not status & BIT_WIP:
-                raise Memory25xError("{} command failed (status {:08b})".format(command, status))
+                raise Memory25xError(f"{command} command failed (status {status:08b})")
         return bool(status & BIT_WIP)
 
     async def write_status(self, status):
-        self._log("write status=%s", "{:#010b}".format(status))
+        self._log("write status=%s", f"{status:#010b}")
         await self._command(0x01, arg=[status])
         while await self.write_in_progress(command="WRITE STATUS"): pass
 
@@ -187,7 +187,7 @@ class Memory25xInterface:
             chunk    = data[:page_size - address % page_size]
             data     = data[len(chunk):]
 
-            callback(done, total, "programming page {:#08x}".format(address))
+            callback(done, total, f"programming page {address:#08x}")
             await self.write_enable()
             await self.page_program(address, chunk)
 
@@ -211,7 +211,7 @@ class Memory25xInterface:
                 sector_data = await self.read(sector_start, sector_size)
                 sector_data[address % sector_size:(address % sector_size) + len(chunk)] = chunk
 
-            callback(done, total, "erasing sector {:#08x}".format(sector_start))
+            callback(done, total, f"erasing sector {sector_start:#08x}")
             await self.write_enable()
             await self.sector_erase(sector_start)
 
@@ -389,9 +389,9 @@ class Memory25xApplet(SPIControllerApplet):
         if sys.stdout.isatty():
             sys.stdout.write("\r\033[0K")
             if done < total:
-                sys.stdout.write("{}/{} bytes done".format(done, total))
+                sys.stdout.write(f"{done}/{total} bytes done")
                 if status:
-                    sys.stdout.write("; {}".format(status))
+                    sys.stdout.write(f"; {status}")
             sys.stdout.flush()
 
     async def interact(self, device, args, m25x_iface):
@@ -511,7 +511,7 @@ class Memory25xApplet(SPIControllerApplet):
             status = await m25x_iface.read_status()
             if args.bits is None:
                 self.logger.info("block protect bits are set to %s",
-                                 "{:04b}".format((status & MSK_PROT) >> 2))
+                                 f"{(status & MSK_PROT) >> 2:04b}")
             else:
                 status = (status & ~MSK_PROT) | ((args.bits << 2) & MSK_PROT)
                 await m25x_iface.write_enable()
