@@ -17,7 +17,7 @@ from .asignal import wait_for_signal
 
 class AsyncInteractiveConsole:
     def __init__(self, locals, *, run_callback=None):
-        self.locals = {"__name__": "__console__", **locals}
+        self.locals = {"__name__": "__console__", "sleep": asyncio.sleep, **locals}
         self.run_callback = run_callback
 
         self._buffer = []
