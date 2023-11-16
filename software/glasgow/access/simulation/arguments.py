@@ -10,7 +10,7 @@ class SimulationArguments(AccessArguments):
 
     def _mandatory_pin_number(self, arg):
         if not re.match(r"^[0-9]+$", arg):
-            self._arg_error("{} is not a valid pin number", arg)
+            self._arg_error(f"{arg} is not a valid pin number")
         return int(arg)
 
     def _optional_pin_number(self, arg):
@@ -43,14 +43,13 @@ class SimulationArguments(AccessArguments):
         elif re.match(r"^[0-9]+(,[0-9]+)*$", arg):
             numbers = list(map(int, arg.split(",")))
         else:
-            self._arg_error("{} is not a valid pin number set", arg)
+            self._arg_error(f"{arg} is not a valid pin number set")
         if len(numbers) not in width:
             if len(width) == 1:
                 width_desc = str(width[0])
             else:
                 width_desc = f"{width.start}..{width.stop - 1}"
-            self._arg_error("set {} includes {} pins, but {} pins are required",
-                            arg, len(numbers), width_desc)
+            self._arg_error(f"set {arg} includes {len(numbers)} pins, but {width_desc} pins are required")
         return numbers
 
     def _add_pin_set_argument(self, parser, name, width, default, required):
