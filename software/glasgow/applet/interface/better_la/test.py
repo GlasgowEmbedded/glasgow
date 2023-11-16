@@ -115,7 +115,6 @@ class StepEncoderTestCase(unittest.TestCase):
 
 
 class BetterLAAppletTestCase(GlasgowAppletTestCase, applet=BetterLAApplet):
-    @unittest.skip("this applet does not meet timing on revA but there is no way to specify a different revision")
     @synthesis_test
     def test_build(self):
         self.assertBuilds()

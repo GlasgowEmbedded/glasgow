@@ -64,6 +64,9 @@ class BetterLAApplet(GlasgowApplet):
     A somewhat better logic analyzer applet that allows for the capture of traces as VCD files.
     """
 
+    # The FPGA on revA/revB is too slow for the complicated logic in this Applet
+    required_revision = "C0"
+
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
