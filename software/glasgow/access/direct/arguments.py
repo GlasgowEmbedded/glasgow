@@ -1,5 +1,4 @@
 import functools
-import argparse
 import re
 
 from .. import AccessArguments
@@ -7,10 +6,6 @@ from .. import AccessArguments
 
 class DirectArguments(AccessArguments):
     # First, define some state-less methods that just add arguments to an argparse instance.
-
-    def _arg_error(self, message, *args, **kwargs):
-        raise argparse.ArgumentTypeError(("applet {!r}: " + message)
-                                         .format(self._applet_name, *args, **kwargs))
 
     def _port_spec(self, arg):
         if not re.match(r"^[A-Z]+$", arg):
