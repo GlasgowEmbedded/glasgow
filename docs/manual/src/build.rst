@@ -53,7 +53,7 @@ Any board that is being factory flashed must have a blank ``FX2_MEM`` EEPROM. If
 
     .. code:: console
 
-        $ glasgow factory --rev C3
+        $ glasgow factory --rev C3 --using-modified-design-files=<yes|no>
 
     That's it! After running this command, the device will disconnect from USB and reconnect, and ``lsusb -d 20b7:9db1`` will list one entry.
 
@@ -71,6 +71,6 @@ Any board that is being factory flashed must have a blank ``FX2_MEM`` EEPROM. If
 
     .. code:: console
 
-        $ glasgow factory --rev C3
+        $ glasgow factory --rev C3 --using-modified-design-files=<yes|no>
 
     That's it! After running this command, the device will disconnect from USB and reconnect, and after refreshing (⌘R) the information in ``System Information.app`` you should see a new entry with Vid ``20b7`` and Pid ``9db1``.
