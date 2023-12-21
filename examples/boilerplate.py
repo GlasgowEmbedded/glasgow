@@ -16,7 +16,7 @@ class BoilerplateSubtarget(Elaboratable):
         return m
 
 
-class BoilerplateApplet(GlasgowApplet, name="boilerplate"):
+class BoilerplateApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "boilerplate applet"
     preview = True
