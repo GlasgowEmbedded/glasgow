@@ -32,8 +32,7 @@ dependencies = [
   # `typing_extensions` provides shims for such features. It uses SemVer.
   "typing_extensions>=4.8,<5",
   # Amaranth is the core of the Glasgow software/gateware interoperability layer. It uses SemVer.
-  # We use the git version of Amaranth until the next release.
-  "amaranth @ git+https://github.com/amaranth-lang/amaranth.git@4e4085a95b",
+  "amaranth>=0.4.0,<0.5",
   # `packaging` is used in the plugin system, `support.plugin`. It uses CalVer: the major version
   # is the two last digits of the year and the minor version is the release within that year.
   "packaging>=23.0",
