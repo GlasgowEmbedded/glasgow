@@ -1,6 +1,6 @@
 import asyncio
 from amaranth import *
-from amaranth.vendor.lattice_ice40 import *
+from amaranth.vendor import LatticeICE40Platform
 
 from ..device.hardware import *
 from ..gateware import GatewareBuildError
