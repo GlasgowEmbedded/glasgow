@@ -784,7 +784,7 @@ async def _main():
                             fx2_config.append(addr, chunk)
                 else:
                     logger.info("using built-in firmware")
-                    for (addr, chunk) in GlasgowHardwareDevice.firmware():
+                    for (addr, chunk) in GlasgowHardwareDevice.firmware_data():
                         fx2_config.append(addr, chunk)
                 fx2_config.disconnect = True
                 new_image = fx2_config.encode()
