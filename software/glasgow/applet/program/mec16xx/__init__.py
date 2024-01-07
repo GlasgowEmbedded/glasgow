@@ -190,6 +190,10 @@ class ProgramMEC16xxApplet(DebugARCApplet):
             "file", metavar="FILE", type=argparse.FileType("wb"),
             help="write EC firmware to FILE")
 
+        p_erase_flash = p_operation.add_parser(
+            "erase-flash", help="erase the flash memory only using normal flash controller " +
+            "commands.")
+
         p_write = p_operation.add_parser(
             "write", help="write EC firmware")
         p_write.add_argument(
@@ -204,6 +208,11 @@ class ProgramMEC16xxApplet(DebugARCApplet):
 
             for word in words:
                 args.file.write(struct.pack("<L", word))
+
+        if args.operation == "erase-flash":
+            await mec_iface.enable_flash_access(enabled=True)
+            await mec_iface.erase_flash()
+            await mec_iface.enable_flash_access(enabled=False)
 
         if args.operation == "write":
             words = []
