@@ -171,6 +171,15 @@ class ProgramMEC16xxApplet(DebugARCApplet):
     via the JTAG interface.
 
     Per the MEC16xx datasheets, the minimum JTAG frequency should be 1 MHz.
+
+    There are two types of erase operations that can be performed:
+
+        * Emergency erase: It erases both the flash and eeprom (if the device has an eeprom),
+          using a special JTAG sequence, which may work even in the case of boot code
+          corruption
+        * Non-emergency erase: (see commands erase-flash and erase-eeprom). This uses normal
+          flash or eeprom controller commands to perform the erase, but if the target is
+          protected, then it might fail.
     """
 
     async def run(self, device, args):
@@ -182,26 +191,25 @@ class ProgramMEC16xxApplet(DebugARCApplet):
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_emergency_erase = p_operation.add_parser(
-            "emergency-erase", help="emergency erase firmware")
+            "emergency-erase", help="erase both flash and eeprom (emergency mode)")
 
-        p_read = p_operation.add_parser(
-            "read", help="read EC firmware")
-        p_read.add_argument(
+        p_read_flash = p_operation.add_parser(
+            "read-flash", help="read flash memory and save it to a binary file")
+        p_read_flash.add_argument(
             "file", metavar="FILE", type=argparse.FileType("wb"),
-            help="write EC firmware to FILE")
+            help="write flash binary image to FILE")
 
         p_erase_flash = p_operation.add_parser(
-            "erase-flash", help="erase the flash memory only using normal flash controller " +
-            "commands.")
+            "erase-flash", help="erase the flash (non-emergency mode)")
 
-        p_write = p_operation.add_parser(
-            "write", help="write EC firmware")
-        p_write.add_argument(
+        p_write_flash = p_operation.add_parser(
+            "write-flash", help="erase and write the flash memory")
+        p_write_flash.add_argument(
             "file", metavar="FILE", type=argparse.FileType("rb"),
-            help="read EC firmware from FILE")
+            help="read flash binary image from FILE")
 
     async def interact(self, device, args, mec_iface):
-        if args.operation == "read":
+        if args.operation == "read-flash":
             await mec_iface.enable_flash_access(enabled=True)
             words = await mec_iface.read_flash(0, FIRMWARE_SIZE // 4)
             await mec_iface.enable_flash_access(enabled=False)
@@ -214,7 +222,7 @@ class ProgramMEC16xxApplet(DebugARCApplet):
             await mec_iface.erase_flash()
             await mec_iface.enable_flash_access(enabled=False)
 
-        if args.operation == "write":
+        if args.operation == "write-flash":
             words = []
             for _ in range(FIRMWARE_SIZE // 4):
                 word, = struct.unpack("<L", args.file.read(4))
