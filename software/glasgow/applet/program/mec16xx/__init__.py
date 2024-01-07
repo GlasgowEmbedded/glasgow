@@ -143,11 +143,13 @@ class MEC16xxInterface(aobject):
                     raise MEC16xxError("cannot select a read by majority")
 
             words.append(data)
+        await self._flash_command(mode=Flash_Mode_Standby)
         return words
 
     async def erase_flash(self, address=0b11111 << 19):
         await self._flash_clean_start()
         await self._flash_command(mode=Flash_Mode_Erase, address=address)
+        await self._flash_command(mode=Flash_Mode_Standby)
 
     async def program_flash(self, address, words):
         await self._flash_clean_start()
@@ -155,6 +157,8 @@ class MEC16xxInterface(aobject):
         for offset, data in enumerate(words):
             await self.lower.write(Flash_Data_addr, data, space="memory")
             self._log("program Flash_Address=%05x Flash_Data=%08x", address + offset * 4, data)
+        await self._flash_wait_for_not_busy()
+        await self._flash_command(mode=Flash_Mode_Standby)
 
 
 class ProgramMEC16xxApplet(DebugARCApplet):
