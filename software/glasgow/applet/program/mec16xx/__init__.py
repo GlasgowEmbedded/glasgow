@@ -17,6 +17,7 @@ from ... import *
 
 
 FIRMWARE_SIZE = 0x30_000
+EEPROM_SIZE = 2048
 
 
 class MEC16xxError(GlasgowAppletError):
@@ -162,6 +163,111 @@ class MEC16xxInterface(aobject):
         await self._flash_wait_for_not_busy()
         await self._flash_command(mode=Flash_Mode_Standby)
 
+    async def is_eeprom_blocked(self):
+        eeprom_status = EEPROM_Status.from_int(
+                await self.lower.read(EEPROM_Status_addr, space="memory"))
+        return eeprom_status.EEPROM_Block
+
+    async def _eeprom_clean_start(self):
+        if await self.is_eeprom_blocked():
+            raise MEC16xxError(f"Error: EEPROM is blocked, no EEPROM operations are possible.")
+        eeprom_command = EEPROM_Command(EEPROM_Mode=EEPROM_Mode_Standby)
+        self._log("write EEPROM_Command %s", eeprom_command.bits_repr(omit_zero=True))
+        await self.lower.write(EEPROM_Command_addr, eeprom_command.to_int(), space="memory")
+
+        # Clear EEPROM controller error status.
+        eeprom_clear_status = EEPROM_Status(Busy_Err=1, CMD_Err=1)
+        self._log("clear EEPROM_Status %s", eeprom_clear_status.bits_repr(omit_zero=True))
+        await self.lower.write(EEPROM_Status_addr, eeprom_clear_status.to_int(), space="memory")
+
+    async def _eeprom_command(self, mode, address=0, burst=False):
+        eeprom_command = EEPROM_Command(EEPROM_Mode=mode, Burst=burst)
+        self._log("write EEPROM_Command %s", eeprom_command.bits_repr(omit_zero=True))
+        await self.lower.write(EEPROM_Command_addr, eeprom_command.to_int(), space="memory")
+
+        if mode != EEPROM_Mode_Standby:
+            self._log("write EEPROM_Address=%08x", address)
+            await self.lower.write(EEPROM_Address_addr, address, space="memory")
+
+        await self._eeprom_wait_for_not_busy(f"EEPROM command {eeprom_command.bits_repr(omit_zero=True)} failed")
+
+    async def _eeprom_wait_for_not_busy(self, fail_msg="Failure detected"):
+        eeprom_status = EEPROM_Status(Busy=1)
+        while eeprom_status.Busy:
+            eeprom_status = EEPROM_Status.from_int(
+                await self.lower.read(EEPROM_Status_addr, space="memory"))
+            self._log("read EEPROM_Status %s", eeprom_status.bits_repr(omit_zero=True))
+
+            if eeprom_status.Busy_Err or eeprom_status.CMD_Err:
+                raise MEC16xxError("%s with status %s"
+                                   % (fail_msg,
+                                      eeprom_status.bits_repr(omit_zero=True)))
+
+    async def _eeprom_wait_for_data_not_full(self, fail_msg="Failure detected"):
+        eeprom_status = EEPROM_Status(Data_Full=1)
+        while eeprom_status.Data_Full:
+            eeprom_status = EEPROM_Status.from_int(
+                await self.lower.read(EEPROM_Status_addr, space="memory"))
+            self._log("read EEPROM_Status %s", eeprom_status.bits_repr(omit_zero=True))
+
+            if eeprom_status.Busy_Err or eeprom_status.CMD_Err:
+                raise MEC16xxError("%s with status %s"
+                                   % (fail_msg,
+                                      eeprom_status.bits_repr(omit_zero=True)))
+
+    async def read_eeprom(self, address=0, count=EEPROM_SIZE):
+        """Read all of the embedded 2KiB eeprom.
+
+        Arguments:
+        address -- byte address of first eeprom address
+        count -- number of bytes to read
+        """
+        await self._eeprom_clean_start()
+        await self._eeprom_command(EEPROM_Mode_Read, address = address, burst=True)
+        bytes = []
+        for offset in range(count):
+            data = await self.lower.read(EEPROM_Data_addr, space="memory")
+            self._log("read address=%05x EEPROM_Data=%08x",
+                      address + offset, data)
+            bytes.append(data)
+        await self._eeprom_command(mode=EEPROM_Mode_Standby)
+        return bytes
+
+    async def erase_eeprom(self, address=0b11111 << 11):
+        """Erase all or part of the embedded 2KiB eeprom.
+
+        Arguments:
+        address -- The default value of 0b11111 << 11 is a magic number that erases
+                   the entire EEPROM. Otherwise one can specify the byte address of
+                   a 8-byte page. The lower 3 bits must always be zero.
+        """
+        await self._eeprom_clean_start()
+        await self._eeprom_command(mode=EEPROM_Mode_Erase, address=address)
+        await self._eeprom_command(mode=EEPROM_Mode_Standby)
+
+    async def program_eeprom(self, address, bytes):
+        """ Program eeprom.
+
+        Assumes that the area has already been erased.
+        """
+        await self._eeprom_clean_start()
+        await self._eeprom_command(mode=EEPROM_Mode_Program, address=address, burst=1)
+        for offset, data in enumerate(bytes):
+            await self._eeprom_wait_for_data_not_full()
+            await self.lower.write(EEPROM_Data_addr, data, space="memory")
+            self._log("program EEPROM_Address=%05x EEPROM_Data=%08x", address + offset * 4, data)
+        await self._eeprom_wait_for_not_busy()
+        await self._eeprom_command(mode=EEPROM_Mode_Standby)
+
+    async def unlock_eeprom(self, password):
+        if not await self.is_eeprom_blocked():
+            self._logger.log(logging.WARNING, "EEPROM is not blocked, there is nothing to unlock.")
+            return
+        await self.lower.write(EEPROM_Unlock_addr, password, space='memory')
+        if await self.is_eeprom_blocked():
+            raise MEC16xxError(f"Error: EEPROM wasn't unlocked!")
+        else:
+            self._logger.log(logging.INFO, "EEPROM has been successfully unlocked.")
 
 class ProgramMEC16xxApplet(DebugARCApplet):
     logger = logging.getLogger(__name__)
@@ -188,6 +294,15 @@ class ProgramMEC16xxApplet(DebugARCApplet):
 
     @classmethod
     def add_interact_arguments(cls, parser):
+        def password(arg):
+            try:
+                value = int(arg, 0)
+            except ValueError:
+                raise argparse.ArgumentTypeError("must be an integer (0x, 0b, and 0o prefixes are allowed for non-decimal bases)")
+            if (value >> 31) != 0:
+                raise argparse.ArgumentTypeError("must be between 0x0000_0000..0x7FFF_FFFF")
+            return value
+
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_emergency_erase = p_operation.add_parser(
@@ -207,6 +322,27 @@ class ProgramMEC16xxApplet(DebugARCApplet):
         p_write_flash.add_argument(
             "file", metavar="FILE", type=argparse.FileType("rb"),
             help="read flash binary image from FILE")
+
+        p_read_eeprom = p_operation.add_parser(
+            "read-eeprom", help="read eeprom memory and save it to a binary file")
+        p_read_eeprom.add_argument(
+            "file", metavar="FILE", type=argparse.FileType("wb"),
+            help="write eeprom binary image to FILE")
+
+        p_erase_eeprom = p_operation.add_parser(
+            "erase-eeprom", help="erase the eeprom (non-emergency mode)")
+
+        p_write_eeprom = p_operation.add_parser(
+            "write-eeprom", help="erase and write the eeprom memory")
+        p_write_eeprom.add_argument(
+            "file", metavar="FILE", type=argparse.FileType("rb"),
+            help="read eeprom binary image from FILE")
+
+        p_unlock_eeprom = p_operation.add_parser(
+            "unlock-eeprom", help="unlock eeprom with a 31-bit password")
+        p_unlock_eeprom.add_argument(
+            "password", metavar="PASSWORD", type=password, help="password to try to unlock with")
+
 
     async def interact(self, device, args, mec_iface):
         if args.operation == "read-flash":
@@ -235,3 +371,20 @@ class ProgramMEC16xxApplet(DebugARCApplet):
 
         if args.operation == "emergency-erase":
             await mec_iface.emergency_flash_erase()
+
+        if args.operation == "read-eeprom":
+            data = bytes(await mec_iface.read_eeprom())
+            args.file.write(data)
+
+        if args.operation == "erase-eeprom":
+            await mec_iface.erase_eeprom()
+
+        if args.operation == "write-eeprom":
+            data = args.file.read()
+            if len(data) != EEPROM_SIZE:
+                raise MEC16xxError(f"Error: given eeprom file size ({len(data)} bytes) is different from the physical EEPROM size ({EEPROM_SIZE} bytes)")
+            await mec_iface.erase_eeprom()
+            await mec_iface.program_eeprom(0, data)
+
+        if args.operation == "unlock-eeprom":
+            await mec_iface.unlock_eeprom(args.password)

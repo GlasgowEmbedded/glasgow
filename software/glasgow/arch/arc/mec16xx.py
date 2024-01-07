@@ -13,7 +13,10 @@ __all__ = [
     "Flash_Data_addr", "Flash_Address_addr", "Flash_Command_addr", "Flash_Status_addr",
     "Flash_Config_addr", "Flash_Init_addr", "Flash_Command", "Flash_Mode_Standby",
     "Flash_Mode_Read", "Flash_Mode_Program", "Flash_Mode_Erase", "Flash_Status",
-    "Flash_Config",
+    "Flash_Config", "EEPROM_Data_addr", "EEPROM_Address_addr", "EEPROM_Command_addr",
+    "EEPROM_Status_addr", "EEPROM_Configuration_addr", "EEPROM_Unlock_addr",
+    "EEPROM_Command", "EEPROM_Status", "EEPROM_Mode_Standby", "EEPROM_Mode_Read",
+    "EEPROM_Mode_Program", "EEPROM_Mode_Erase",
 ]
 
 DR_RESET_TEST = bitstruct("DR_RESET_TEST", 32, [
@@ -61,7 +64,7 @@ Flash_Status = bitstruct("Flash_Status", 32, [
     (None,              1),
     ("Boot_Block",      1),
     ("Data_Block",      1),
-    ("EEPROM_Block",    1),
+    ("EEPROM_Block",    1), # This bit is related to EEPROM emulation, not present on some variants.
     ("Busy_Err",        1),
     ("CMD_Err",         1),
     ("Protect_Err",     1),
@@ -81,3 +84,34 @@ Flash_Config = bitstruct("Flash_Config", 32, [
     ("EEPROM_Force_Block", 1),
     (None,             21),
 ])
+
+EEPROM_base_addr    = 0xf0_2c00
+
+EEPROM_Data_addr = EEPROM_base_addr + 0x00
+EEPROM_Address_addr = EEPROM_base_addr + 0x04
+EEPROM_Command_addr = EEPROM_base_addr + 0x08
+EEPROM_Status_addr = EEPROM_base_addr + 0x0c
+EEPROM_Configuration_addr = EEPROM_base_addr + 0x10
+EEPROM_Unlock_addr = EEPROM_base_addr + 0x20
+
+EEPROM_Command = bitstruct("EEPROM_Command", 32, [
+    ("EEPROM_Mode", 2),
+    ("Burst",       1),
+    (None,         29),
+])
+
+EEPROM_Status = bitstruct("EEPROM_Status", 32, [
+    ("Busy",            1),
+    ("Data_Full",       1),
+    ("Address_Full",    1),
+    (None,              4),
+    ("EEPROM_Block",    1),
+    ("Busy_Err",        1),
+    ("CMD_Err",         1),
+    (None,             22),
+])
+
+EEPROM_Mode_Standby  = 0
+EEPROM_Mode_Read     = 1
+EEPROM_Mode_Program  = 2
+EEPROM_Mode_Erase    = 3
