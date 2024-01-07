@@ -60,6 +60,8 @@ class MEC16xxInterface(aobject):
         dr_reset_test.VTR_POR = 0
         await tap_iface.write_dr(dr_reset_test.to_bits())
 
+        self._logger.warn("after running emergency mass erase, a power cycle may be required on some chips")
+
     async def enable_flash_access(self, enabled):
         # Enable access to Reg_Ctl bit.
         flash_config = Flash_Config(Reg_Ctl_En=enabled)
