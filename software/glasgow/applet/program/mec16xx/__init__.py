@@ -86,6 +86,9 @@ class MEC16xxInterface(aobject):
         self._log("write Flash_Address=%08x", address)
         await self.lower.write(Flash_Address_addr, address, space="memory")
 
+        await self._flash_wait_for_not_busy(f"Flash command {flash_command.bits_repr(omit_zero=True)} failed")
+
+    async def _flash_wait_for_not_busy(self, fail_msg="Failure detected"):
         flash_status = Flash_Status(Busy=1)
         while flash_status.Busy:
             flash_status = Flash_Status.from_int(
@@ -93,8 +96,8 @@ class MEC16xxInterface(aobject):
             self._log("read Flash_Status %s", flash_status.bits_repr(omit_zero=True))
 
             if flash_status.Busy_Err or flash_status.CMD_Err or flash_status.Protect_Err:
-                raise MEC16xxError("Flash command %s failed with status %s"
-                                   % (flash_command.bits_repr(omit_zero=True),
+                raise MEC16xxError("%s with status %s"
+                                   % (fail_msg,
                                       flash_status.bits_repr(omit_zero=True)))
 
     async def read_flash(self, address, count):
