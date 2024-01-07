@@ -83,8 +83,9 @@ class MEC16xxInterface(aobject):
         self._log("write Flash_Command %s", flash_command.bits_repr(omit_zero=True))
         await self.lower.write(Flash_Command_addr, flash_command.to_int(), space="memory")
 
-        self._log("write Flash_Address=%08x", address)
-        await self.lower.write(Flash_Address_addr, address, space="memory")
+        if mode != Flash_Mode_Standby:
+            self._log("write Flash_Address=%08x", address)
+            await self.lower.write(Flash_Address_addr, address, space="memory")
 
         await self._flash_wait_for_not_busy(f"Flash command {flash_command.bits_repr(omit_zero=True)} failed")
 
