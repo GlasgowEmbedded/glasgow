@@ -66,10 +66,7 @@ class MEC16xxInterface(aobject):
         self._log("write Flash_Config %s", flash_config.bits_repr(omit_zero=True))
         await self.lower.write(Flash_Config_addr, flash_config.to_int(), space="memory")
 
-        if not enabled:
-            # Clearing Reg_Ctl_En automatically clears Reg_Ctl.
-            return
-
+    async def _flash_clean_start(self):
         # Enable access to Flash controller registers. Also, bring Flash controller to standby
         # mode if it wasn't already in it, since otherwise it will refuse commands.
         flash_command = Flash_Command(Reg_Ctl=1, Flash_Mode=Flash_Mode_Standby)
@@ -101,6 +98,7 @@ class MEC16xxInterface(aobject):
                                       flash_status.bits_repr(omit_zero=True)))
 
     async def read_flash(self, address, count):
+        await self._flash_clean_start()
         words = []
         for offset in range(count):
             await self._flash_command(mode=Flash_Mode_Read, address=address + offset * 4)
@@ -144,9 +142,11 @@ class MEC16xxInterface(aobject):
         return words
 
     async def erase_flash(self, address=0b11111 << 19):
+        await self._flash_clean_start()
         await self._flash_command(mode=Flash_Mode_Erase, address=address)
 
     async def program_flash(self, address, words):
+        await self._flash_clean_start()
         await self._flash_command(mode=Flash_Mode_Program, address=address, burst=1)
         for offset, data in enumerate(words):
             await self.lower.write(Flash_Data_addr, data, space="memory")
