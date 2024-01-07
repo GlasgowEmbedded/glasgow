@@ -104,9 +104,35 @@ class ARCDebugInterface:
         await self.lower.run_test_idle(1)
         await self._wait_txn()
 
-    async def set_halted(self, halted):
-        await self.write(AUX_STATUS32_addr, AUX_STATUS32(halted=halted).to_int(), space="aux")
+    async def is_halted(self):
+        status32 = AUX_STATUS32.from_int(await self.read(AUX_STATUS32_addr, space="aux"))
+        return status32.H
 
+    async def set_halted(self, halted):
+        current_halted = await self.is_halted()
+        if bool(current_halted) == bool(halted):
+            self._log(f"The ARC was requested to set halted={halted}, but it was already like that")
+            return
+        if halted:
+            # According to the ARCompact Programmers Reference, using the FH(Force Halt) bit
+            # to stop the processor is the correct way.
+            debug = AUX_DEBUG.from_int(await self.read(AUX_DEBUG_addr, space="aux"))
+            debug.FH = 1
+            await self.write(AUX_DEBUG_addr, debug.to_int(), space="aux")
+            debug.FH = 0
+            await self.write(AUX_DEBUG_addr, debug.to_int(), space="aux")
+            if await self.is_halted():
+                self._log(f"The ARC was halted successfully")
+            else:
+                raise ARCDebugError("Halting the ARC failed!")
+        else:
+            status32 = AUX_STATUS32.from_int(await self.read(AUX_STATUS32_addr, space="aux"))
+            status32.H = 0
+            await self.write(AUX_STATUS32_addr, status32.to_int(), space="aux")
+            if not await self.is_halted():
+                self._log(f"The ARC was unhalted successfully")
+            else:
+                raise ARCDebugError("Un halting the ARC failed!")
 
 class DebugARCApplet(JTAGProbeApplet):
     logger = logging.getLogger(__name__)
