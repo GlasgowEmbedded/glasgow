@@ -10,7 +10,7 @@ __all__ = [
     # Core AUX registers
     "AUX_IDENTITY_addr", "AUX_PC_addr", "AUX_STATUS32_addr", "AUX_STATUS32_P0_addr",
     "AUX_AUX_USER_SP_addr", "AUX_INT_VECTOR_BASE_addr",
-    "AUX_STATUS32",
+    "AUX_STATUS32", "AUX_DEBUG", "AUX_DEBUG_addr",
     # Build configuration AUX registers
     "AUX_DCCMBASE_BCR_addr", "AUX_CRC_BCR_addr", "AUX_DVFB_BCR_addr", "AUX_EXTARITH_BCR_addr",
     "AUX_VECBASE_BCR_addr", "AUX_PERIBASE_BCR_addr", "AUX_D_UNCACH_BCR_addr", "AUX_FP_BCR_addr",
@@ -21,11 +21,27 @@ __all__ = [
 
 
 AUX_IDENTITY_addr            = 0x04
+AUX_DEBUG_addr               = 0x05
 AUX_PC_addr                  = 0x06
 AUX_STATUS32_addr            = 0x0a
 AUX_STATUS32_P0_addr         = 0x0b
 AUX_AUX_USER_SP_addr         = 0x0d
 AUX_INT_VECTOR_BASE_addr     = 0x25
+
+AUX_DEBUG = bitstruct("AUX_DEBUG", 32, [
+    ("SS",  1),
+    ("FH",  1),
+    (None,  9),
+    ("IS",  1),
+    (None, 10),
+    ("RA",  1),
+    ("ZZ",  1),
+    (None,  4),
+    ("UB",  1),
+    ("BH",  1),
+    ("SH",  1),
+    ("LD",  1),
+])
 
 AUX_STATUS32 = bitstruct("AUX_STATUS32", 32, [
     ("H",   1),
