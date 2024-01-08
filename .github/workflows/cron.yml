@@ -1,0 +1,35 @@
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+
+name: Cron
+jobs:
+
+  update-software:
+    runs-on: ubuntu-latest
+    env:
+      PDM_LOCKFILE: 'pdm.min.lock'
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set up PDM
+        uses: pdm-project/setup-pdm@v3
+      - name: Generate min-versions lockfile
+        working-directory: ./software
+        run: pdm lock --group :all --strategy direct_minimal_versions
+      - name: Submit pull request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          commit-message: 'software: update `pdm.min.lock`.'
+          branch: update-pdm.min.lock
+          title: 'Update `pdm.min.lock`'
+          body: '*This pull request was automatically created by the `cron` GitHub Actions workflow.*'
+        id: create-pull-request
+      - name: Automatically merge pull request
+        run: gh pr merge --merge --auto ${{ steps.create-pull-request.outputs.pull-request-number }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
