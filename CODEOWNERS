@@ -12,3 +12,5 @@
 /software/glasgow/database/xilinx/xc9500xl.py @wanda-phi
 
 /software/glasgow/applet/servo/ @tpwrules
+
+/software/glasgow/applet/interface/spi_serprog/ @neuschaefer
