@@ -819,6 +819,9 @@ class TAPInterface:
         self._dr_prefix = dr_prefix
         self._dr_suffix = dr_suffix
 
+    async def flush(self):
+        await self.lower.flush()
+
     async def test_reset(self):
         await self.lower.test_reset()
 
