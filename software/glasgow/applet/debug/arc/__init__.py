@@ -108,6 +108,13 @@ class ARCDebugInterface:
         status32 = AUX_STATUS32.from_int(await self.read(AUX_STATUS32_addr, space="aux"))
         return status32.H
 
+    async def force_halt(self, read_modify_write=True):
+        debug = AUX_DEBUG.from_int((await self.read(AUX_DEBUG_addr, space="aux")) if read_modify_write else 0)
+        debug.FH = 1
+        await self.write(AUX_DEBUG_addr, debug.to_int(), space="aux")
+        debug.FH = 0
+        await self.write(AUX_DEBUG_addr, debug.to_int(), space="aux")
+
     async def set_halted(self, halted):
         current_halted = await self.is_halted()
         if bool(current_halted) == bool(halted):
@@ -116,11 +123,7 @@ class ARCDebugInterface:
         if halted:
             # According to the ARCompact Programmers Reference, using the FH(Force Halt) bit
             # to stop the processor is the correct way.
-            debug = AUX_DEBUG.from_int(await self.read(AUX_DEBUG_addr, space="aux"))
-            debug.FH = 1
-            await self.write(AUX_DEBUG_addr, debug.to_int(), space="aux")
-            debug.FH = 0
-            await self.write(AUX_DEBUG_addr, debug.to_int(), space="aux")
+            await self.force_halt()
             if await self.is_halted():
                 self._log(f"The ARC was halted successfully")
             else:
