@@ -8,6 +8,7 @@
 import logging
 import argparse
 import struct
+import asyncio
 
 from ....support.aobject import *
 from ....arch.arc import *
@@ -48,18 +49,59 @@ class MEC16xxInterface(aobject):
             words.append(await self.lower.read(offset, space="memory"))
         return words
 
-    async def emergency_flash_erase(self):
+    async def emergency_mass_erase(self):
         tap_iface = self.lower.lower
 
+        # This sequence difference from the emergency mass erase sequence
+        # that is described in the following ways:
+        # * The polarity of VTR_POR and VCC_POR are described in contradic-
+        #   tory ways in the datasheet. The emergency erase sequence describes
+        #   it as active high, while the register description says it's active
+        #   low. Experiments on MEC1663 show that it's really active-low
+        # * The datasheet doesn't spell this out but the following sequence
+        #   initializes VTR_POR and VCC_POR to its deasserted state before
+        #   beginning the sequence
+        # * At the end we also restore ME, and POR_EN.
+
         await tap_iface.write_ir(IR_RESET_TEST)
-        dr_reset_test = DR_RESET_TEST(POR_EN=1)
+        dr_reset_test = DR_RESET_TEST(VTR_POR=1, VCC_POR=1)
         await tap_iface.write_dr(dr_reset_test.to_bits())
-        dr_reset_test.VTR_POR = 1
+
+        dr_reset_test.POR_EN = 1
         await tap_iface.write_dr(dr_reset_test.to_bits())
-        dr_reset_test.ME = 1
-        await tap_iface.write_dr(dr_reset_test.to_bits())
+
         dr_reset_test.VTR_POR = 0
         await tap_iface.write_dr(dr_reset_test.to_bits())
+
+        dr_reset_test.ME = 1
+        await tap_iface.write_dr(dr_reset_test.to_bits())
+
+        dr_reset_test.VTR_POR = 1
+        await tap_iface.write_dr(dr_reset_test.to_bits())
+
+        # The following flush is needed to ensure that we don't simply spend
+        # the next sleep with the command that causes the mass erase queued up
+        # but not executed
+        await tap_iface.flush()
+
+        WAIT_SECONDS = 1
+        # In practice it has been observed that waiting 0.1 seconds is plenty
+        self._logger.info(f"waiting {WAIT_SECONDS} second(s) to make sure emergency mass erase is complete")
+        await asyncio.sleep(WAIT_SECONDS)
+
+        dr_reset_test.ME = 0
+        await tap_iface.write_dr(dr_reset_test.to_bits())
+
+        dr_reset_test.VTR_POR = 0
+        await tap_iface.write_dr(dr_reset_test.to_bits())
+
+        dr_reset_test.VTR_POR = 1
+        await tap_iface.write_dr(dr_reset_test.to_bits())
+
+        dr_reset_test.POR_EN = 0
+        await tap_iface.write_dr(dr_reset_test.to_bits())
+
+        await tap_iface.flush()
 
         self._logger.warn("after running emergency mass erase, a power cycle may be required on some chips")
 
@@ -411,7 +453,7 @@ class ProgramMEC16xxApplet(DebugARCApplet):
             await mec_iface.enable_flash_access(enabled=False)
 
         if args.operation == "emergency-erase":
-            await mec_iface.emergency_flash_erase()
+            await mec_iface.emergency_mass_erase()
 
         if args.operation == "read-eeprom":
             data = bytes(await mec_iface.read_eeprom())
