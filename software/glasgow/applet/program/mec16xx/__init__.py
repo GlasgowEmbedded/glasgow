@@ -16,7 +16,7 @@ from ...debug.arc import DebugARCApplet
 from ... import *
 
 
-FIRMWARE_SIZE = 0x30_000
+FLASH_SIZE_MAX = 0x40_000
 EEPROM_SIZE = 2048
 
 
@@ -286,6 +286,14 @@ class ProgramMEC16xxApplet(DebugARCApplet):
         * Non-emergency erase: (see commands erase-flash and erase-eeprom). This uses normal
           flash or eeprom controller commands to perform the erase, but if the target is
           protected, then it might fail.
+
+    Typical flash sizes:
+
+        * 192KiB: MEC1609(i), MEC1618(i), MEC1632, MEC1633
+        * 256KiB: MEC1663
+
+    To avoid data loss when the flash size is not known for certain, we recommend attempting
+    to read 256KiB flash image, and analyzing the content.
     """
 
     async def run(self, device, args):
@@ -303,6 +311,20 @@ class ProgramMEC16xxApplet(DebugARCApplet):
                 raise argparse.ArgumentTypeError("must be between 0x0000_0000..0x7FFF_FFFF")
             return value
 
+        def flash_size(arg):
+            mult = 1
+            if arg.endswith("K"):
+                mult = 1024
+                arg = arg[:-1]
+            try:
+                value = int(arg, 0)
+            except ValueError:
+                raise argparse.ArgumentTypeError("must be an integer (0x, 0b, and 0o prefixes are allowed for non-decimal bases, K suffix allowed for *1024)")
+            value *= mult
+            if value > FLASH_SIZE_MAX:
+                raise argparse.ArgumentTypeError(f"given flash size of {value} bytes is larger than the maximum flash size of {FLASH_SIZE_MAX} bytes")
+            return value
+
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_emergency_erase = p_operation.add_parser(
@@ -310,6 +332,9 @@ class ProgramMEC16xxApplet(DebugARCApplet):
 
         p_read_flash = p_operation.add_parser(
             "read-flash", help="read flash memory and save it to a binary file")
+        p_read_flash.add_argument(
+            "-s", "--size-bytes", metavar="FLASH_SIZE_BYTES", type=flash_size, required=True,
+            help="size of the embedded flash memory in bytes (typically 192K or 256K. a K suffix means multiply by 1024)")
         p_read_flash.add_argument(
             "file", metavar="FILE", type=argparse.FileType("wb"),
             help="write flash binary image to FILE")
@@ -347,11 +372,19 @@ class ProgramMEC16xxApplet(DebugARCApplet):
     async def interact(self, device, args, mec_iface):
         if args.operation == "read-flash":
             await mec_iface.enable_flash_access(enabled=True)
-            words = await mec_iface.read_flash(0, FIRMWARE_SIZE // 4)
+
+            self.logger.info(f"reading {args.size_bytes} bytes from flash")
+            if args.size_bytes < FLASH_SIZE_MAX:
+                self.logger.warn("some MEC16xx devices contain 256KiB of flash, even if the datasheet only states 192KiB is available. " +
+                                 "consider attempting this command with '-s 256K' as well to avoid data loss.")
+
+            words = await mec_iface.read_flash(0, (args.size_bytes + 3) // 4)
             await mec_iface.enable_flash_access(enabled=False)
 
+            bytes_left = args.size_bytes
             for word in words:
-                args.file.write(struct.pack("<L", word))
+                args.file.write(struct.pack("<L", word)[:bytes_left])
+                bytes_left -= 4
 
         if args.operation == "erase-flash":
             await mec_iface.enable_flash_access(enabled=True)
@@ -359,10 +392,18 @@ class ProgramMEC16xxApplet(DebugARCApplet):
             await mec_iface.enable_flash_access(enabled=False)
 
         if args.operation == "write-flash":
-            words = []
-            for _ in range(FIRMWARE_SIZE // 4):
-                word, = struct.unpack("<L", args.file.read(4))
-                words.append(word)
+            file_bytes = args.file.read()
+            size = len(file_bytes)
+            if size > FLASH_SIZE_MAX:
+                raise MEC16xxError(f"binary file size ({size} bytes) is larger than the maximum flash address space available ({FLASH_SIZE_MAX} bytes)")
+            if size % 4:
+                # Make sure we pad everything to a multiple of 4 byte words
+                file_bytes += (4 - (size % 4)) * b'\xff' # 0xff is the empty state of flash memory
+            words = [word[0] for word in struct.iter_unpack("<L", file_bytes)]
+
+            self.logger.info(f"erasing the entire flash, and writing {size} bytes into it")
+            if size < FLASH_SIZE_MAX:
+                self.logger.info(f"flash locations beyond the size of the image being written will be left in the erased uninitialized state of 0xff")
 
             await mec_iface.enable_flash_access(enabled=True)
             await mec_iface.erase_flash()
