@@ -407,6 +407,10 @@ class ProgramMEC16xxApplet(DebugARCApplet):
     Read and write Microchip MEC16xx/MEC16xxi embedded controller integrated Flash
     via the JTAG interface.
 
+    This applet has been tested and works correctly on Lenovo Thinkshield-branded MEC1663
+    (2024 january). This applet was originally developed to support MEC1618/MEC1618i, however
+    the latest changes and fixes have not yet been tested on this device.
+
     Per the MEC16xx datasheets, the minimum JTAG frequency should be 1 MHz.
 
     There are two types of erase operations that can be performed:
