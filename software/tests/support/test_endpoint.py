@@ -30,6 +30,16 @@ class EndpointArgumentTestCase(unittest.TestCase):
         self.assertEqual(host, "0.0.0.0")
         self.assertEqual(port, 1234)
 
+        proto, host, port = endpoint("tcp:111.111.111.111:1234")
+        self.assertEqual(proto, "tcp")
+        self.assertEqual(host, "111.111.111.111")
+        self.assertEqual(port, 1234)
+
+        proto, host, port = endpoint("tcp:123.45.67.8:1234")
+        self.assertEqual(proto, "tcp")
+        self.assertEqual(host, "123.45.67.8")
+        self.assertEqual(port, 1234)
+
     def test_tcp_ipv6(self):
         proto, host, port = endpoint("tcp:[2001:DB8::1]:1234")
         self.assertEqual(proto, "tcp")
