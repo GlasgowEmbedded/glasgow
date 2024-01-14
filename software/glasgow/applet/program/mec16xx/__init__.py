@@ -248,6 +248,30 @@ class MEC16xxInterface(aobject):
         await self._flash_command(mode=Flash_Mode_Standby)
         return words
 
+    async def read_flash_burst(self, address, count):
+        await self._flash_clean_start()
+        words = []
+        await self._flash_command(mode=Flash_Mode_Read, address=address, burst = 1)
+        for offset in range(count-2):
+            data = await self.lower.read(Flash_Data_addr, space="memory")
+            self._log("read Flash_Address=%05x Flash_Data=%08x",
+                      address + offset * 4, data)
+            words.append(data)
+        await self._flash_command(mode=Flash_Mode_Standby)
+
+        # The last 2 words should be read out in non-burst mode, to prevent touching a potentially
+        # protected Data Block region, and avoid causing a protection error
+
+        for offset in range(count - 2, count):
+            await self._flash_command(mode=Flash_Mode_Read, address=address + offset * 4, burst = 0)
+            data = await self.lower.read(Flash_Data_addr, space="memory")
+            self._log("read Flash_Address=%05x Flash_Data=%08x",
+                      address + offset * 4, data)
+            words.append(data)
+            await self._flash_command(mode=Flash_Mode_Standby)
+
+        return words
+
     async def erase_flash(self, address=0b11111 << 19):
         await self._flash_clean_start()
         await self._flash_command(mode=Flash_Mode_Erase, address=address)
@@ -446,6 +470,9 @@ class ProgramMEC16xxApplet(DebugARCApplet):
             "-f", "--force", action='store_true',
             help="force reading the flash even if it would result in an incomplete image due to security settings")
         p_read_flash.add_argument(
+            "-b", "--burst", action='store_true',
+            help="use burst read for speed. this may be unreliable on some MEC16xx variants")
+        p_read_flash.add_argument(
             "file", metavar="FILE", type=argparse.FileType("wb"),
             help="write flash binary image to FILE")
 
@@ -545,7 +572,13 @@ class ProgramMEC16xxApplet(DebugARCApplet):
 
             real_size_bytes = args.size_bytes - starting_address - final_bytes_to_skip
 
-            words = await mec_iface.read_flash(starting_address, (real_size_bytes + 3) // 4)
+            if args.burst:
+                self.logger.warn("beware that burst has been observed to not work correctly in the past on some MEC16xx variants")
+                words = await mec_iface.read_flash_burst(starting_address, (real_size_bytes + 3) // 4)
+            else:
+                self.logger.info("this may take many minutes. consider trying higher jtag clock speeds (e.g. '-f 4000'), and consider trying '--burst'. " +
+                                 "beware that burst has been observed to not work correctly in the past on some MEC16xx variants")
+                words = await mec_iface.read_flash(starting_address, (real_size_bytes + 3) // 4)
             await mec_iface.enable_flash_access(enabled=False)
 
             bytes_left = real_size_bytes
