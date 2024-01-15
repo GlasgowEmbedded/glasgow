@@ -19,6 +19,8 @@ class JTAGOpenOCDSubtarget(Elaboratable):
         self.out_fifo   = out_fifo
         self.in_fifo    = in_fifo
         self.period_cyc = period_cyc
+        self.srst_z     = Signal(reset=0)
+        self.srst_o     = Signal(reset=0)
 
     def elaborate(self, platform):
         m = Module()
@@ -29,11 +31,19 @@ class JTAGOpenOCDSubtarget(Elaboratable):
         m.submodules.bus = bus = JTAGProbeBus(self.pads)
         m.d.comb += [
             bus.trst_z.eq(0),
+            self.srst_z.eq(0),
         ]
+        if hasattr(self.pads, "srst_t"):
+            m.d.sync += [
+                self.pads.srst_t.oe.eq(~self.srst_z),
+                self.pads.srst_t.o.eq(~self.srst_o)
+            ]
 
         blink = Signal()
 
         timer = Signal(range(self.period_cyc))
+
+        reset_args = Signal(2)
 
         with m.If(timer != 0):
             m.d.sync += timer.eq(timer - 1)
@@ -45,10 +55,9 @@ class JTAGOpenOCDSubtarget(Elaboratable):
                     with m.Case(*b"01234567"):
                         m.d.sync += Cat(bus.tdi, bus.tms, bus.tck).eq(out_fifo.r_data[:3])
                     # remote_bitbang_reset(int trst, int srst)
-                    with m.Case(*b"rs"):
-                        m.d.sync += Cat(bus.trst_o).eq(0b0)
-                    with m.Case(*b"tu"):
-                        m.d.sync += Cat(bus.trst_o).eq(0b1)
+                    with m.Case(*b"rstu"):
+                        m.d.comb += reset_args.eq(out_fifo.r_data - ord(b"r"))
+                        m.d.sync += Cat(self.srst_o, bus.trst_o).eq(reset_args)
                     # remote_bitbang_sample(void)
                     with m.Case(*b"R"):
                         m.d.comb += out_fifo.r_en.eq(in_fifo.w_rdy)
@@ -87,7 +96,7 @@ class JTAGOpenOCDApplet(GlasgowApplet):
         openocd -c 'interface remote_bitbang; remote_bitbang_host /tmp/jtag.sock'
     """
 
-    __pins = ("tck", "tms", "tdi", "tdo", "trst")
+    __pins = ("tck", "tms", "tdi", "tdo", "trst", "srst")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
@@ -95,7 +104,8 @@ class JTAGOpenOCDApplet(GlasgowApplet):
 
         for pin in ("tck", "tms", "tdi", "tdo"):
             access.add_pin_argument(parser, pin, default=True)
-        access.add_pin_argument(parser, "trst")
+        for pin in ("trst", "srst"):
+            access.add_pin_argument(parser, pin)
 
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=100,
