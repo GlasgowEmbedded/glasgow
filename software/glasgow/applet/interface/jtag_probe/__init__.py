@@ -1057,7 +1057,7 @@ class JTAGProbeApplet(GlasgowApplet):
 
                 tap_iface = TAPInterface.from_layout(jtag_iface, ir_layout, index=tap_index)
                 for ir_value in range(0, (1 << ir_length)):
-                    ir_value = bits(ir_value & (1 << bit) for bit in range(ir_length))
+                    ir_value = bits(ir_value, ir_length)
                     await tap_iface.test_reset()
                     await tap_iface.write_ir(ir_value)
                     dr_value = await tap_iface.scan_dr(check=False)
