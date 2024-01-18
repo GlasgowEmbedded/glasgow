@@ -94,6 +94,13 @@ class JTAGOpenOCDApplet(GlasgowApplet):
     ::
         glasgow run jtag-openocd unix:/tmp/jtag.sock
         openocd -c 'interface remote_bitbang; remote_bitbang_host /tmp/jtag.sock'
+
+    To achieve higher speeds:
+
+    - Set the clock frequency with `--freq N` on the glasgow command line
+      (Replace N with the desired clock frequency).
+    - Add `remote_bitbang use_remote_sleep on` or `adapter speed N` to the
+      OpenOCD commands.
     """
 
     __pins = ("tck", "tms", "tdi", "tdo", "trst", "srst")
