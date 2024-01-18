@@ -21,8 +21,8 @@
 
 import struct
 import logging
-import asyncio
 import argparse
+import enum
 from amaranth import *
 from amaranth.lib.cdc import FFSynchronizer
 
@@ -33,6 +33,27 @@ from ....gateware.pads import *
 from ....database.jedec import *
 from ....arch.jtag import *
 from ... import *
+
+
+class JTAGState(str, enum.Enum):
+    # The names are JTAG SVF state names; the values are IEEE names.
+    UNKNOWN = "Unknown"
+    RESET = "Test-Logic-Reset"
+    IDLE = "Run-Test/Idle"
+    DRSELECT = "Select-DR-Scan"
+    DRCAPTURE = "Capture-DR"
+    DRSHIFT = "Shift-DR"
+    DREXIT1 = "Exit1-DR"
+    DRPAUSE = "Pause-DR"
+    DREXIT2 = "Exit2-DR"
+    DRUPDATE = "Update-DR"
+    IRSELECT = "Select-IR-Scan"
+    IRCAPTURE = "Capture-IR"
+    IRSHIFT = "Shift-IR"
+    IREXIT1 = "Exit1-IR"
+    IRPAUSE = "Pause-IR"
+    IREXIT2 = "Exit2-IR"
+    IRUPDATE = "Update-IR"
 
 
 class JTAGProbeBus(Elaboratable):
@@ -286,7 +307,7 @@ class JTAGProbeInterface:
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
         self.has_trst    = has_trst
-        self._state      = "Unknown"
+        self._state      = JTAGState.UNKNOWN
         self._current_ir = None
 
     def _log_l(self, message, *args):
@@ -332,12 +353,12 @@ class JTAGProbeInterface:
 
     def _shift_last(self, last):
         if last:
-            if self._state == "Shift-IR":
+            if self._state == JTAGState.IRSHIFT:
                 self._log_l("state Shift-IR → Exit1-IR")
-                self._state = "Exit1-IR"
-            elif self._state == "Shift-DR":
+                self._state = JTAGState.IREXIT1
+            elif self._state == JTAGState.DRSHIFT:
                 self._log_l("state Shift-DR → Exit1-DR")
-                self._state = "Exit1-DR"
+                self._state = JTAGState.DREXIT1
 
     @staticmethod
     def _chunk_count(count, last, chunk_size=0xffff):
@@ -361,7 +382,7 @@ class JTAGProbeInterface:
                 CMD_SHIFT_TDIO|(BIT_LAST if chunk_last else 0), count))
 
     async def shift_tdio(self, tdi_bits, *, prefix=0, suffix=0, last=True):
-        assert self._state in ("Shift-IR", "Shift-DR")
+        assert self._state in (JTAGState.IRSHIFT, JTAGState.DRSHIFT)
         tdi_bits = bits(tdi_bits)
         tdo_bits = bits()
         self._log_l("shift tdio-i=%d,<%s>,%d", prefix, dump_bin(tdi_bits), suffix)
@@ -380,7 +401,7 @@ class JTAGProbeInterface:
         return tdo_bits
 
     async def shift_tdi(self, tdi_bits, *, prefix=0, suffix=0, last=True):
-        assert self._state in ("Shift-IR", "Shift-DR")
+        assert self._state in (JTAGState.IRSHIFT, JTAGState.DRSHIFT)
         tdi_bits = bits(tdi_bits)
         self._log_l("shift tdi=%d,<%s>,%d", prefix, dump_bin(tdi_bits), suffix)
         await self._shift_dummy(prefix)
@@ -394,7 +415,7 @@ class JTAGProbeInterface:
         self._shift_last(last)
 
     async def shift_tdo(self, count, *, prefix=0, suffix=0, last=True):
-        assert self._state in ("Shift-IR", "Shift-DR")
+        assert self._state in (JTAGState.IRSHIFT, JTAGState.DRSHIFT)
         tdo_bits = bits()
         await self._shift_dummy(prefix)
         for count, chunk_last in self._chunk_count(count, last and suffix == 0):
@@ -409,7 +430,7 @@ class JTAGProbeInterface:
         return tdo_bits
 
     async def pulse_tck(self, count):
-        assert self._state in ("Run-Test/Idle", "Pause-IR", "Pause-DR")
+        assert self._state in (JTAGState.IDLE, JTAGState.IRPAUSE, JTAGState.DRPAUSE)
         self._log_l("pulse tck count=%d", count)
         for count, last in self._chunk_count(count, last=True):
             await self.lower.write(struct.pack("<BH",
@@ -417,112 +438,114 @@ class JTAGProbeInterface:
 
     # State machine transitions
 
-    def _state_error(self, new_state):
+    def _state_error(self, new_state, old_state=None):
+        if old_state is None:
+            old_state = self._state
         raise JTAGProbeStateTransitionError("cannot transition from state {} to {}",
-                                            self._state, new_state)
+                                            old_state.value, new_state.value)
 
     async def enter_test_logic_reset(self, force=True):
         if force:
             self._log_l("state * → Test-Logic-Reset")
-        elif self._state != "Test-Logic-Reset":
-            self._log_l("state %s → Test-Logic-Reset", self._state)
+        elif self._state != JTAGState.RESET:
+            self._log_l("state %s → Test-Logic-Reset", self._state.value)
         else:
             return
 
         await self.shift_tms((1,1,1,1,1))
-        self._state = "Test-Logic-Reset"
+        self._state = JTAGState.RESET
 
     async def enter_run_test_idle(self):
-        if self._state == "Run-Test/Idle": return
+        if self._state == JTAGState.IDLE: return
 
-        self._log_l("state %s → Run-Test/Idle", self._state)
-        if self._state == "Test-Logic-Reset":
+        self._log_l("state %s → Run-Test/Idle", self._state.value)
+        if self._state == JTAGState.RESET:
             await self.shift_tms((0,))
-        elif self._state in ("Exit1-IR", "Exit1-DR"):
+        elif self._state in (JTAGState.IREXIT1, JTAGState.DREXIT1):
             await self.shift_tms((1,0))
-        elif self._state in ("Pause-IR", "Pause-DR"):
+        elif self._state in (JTAGState.IRPAUSE, JTAGState.DRPAUSE):
             await self.shift_tms((1,1,0))
-        elif self._state in ("Update-IR", "Update-DR"):
+        elif self._state in (JTAGState.IRUPDATE, JTAGState.DRUPDATE):
             await self.shift_tms((0,))
         else:
-            self._state_error("Run-Test/Idle")
-        self._state = "Run-Test/Idle"
+            self._state_error(JTAGState.IDLE)
+        self._state = JTAGState.IDLE
 
     async def enter_shift_ir(self):
-        if self._state == "Shift-IR": return
+        if self._state == JTAGState.IRSHIFT: return
 
-        self._log_l("state %s → Shift-IR", self._state)
-        if self._state == "Test-Logic-Reset":
+        self._log_l("state %s → Shift-IR", self._state.value)
+        if self._state == JTAGState.RESET:
             await self.shift_tms((0,1,1,0,0))
-        elif self._state in ("Run-Test/Idle", "Update-IR", "Update-DR"):
+        elif self._state in (JTAGState.IDLE, JTAGState.IRUPDATE, JTAGState.DRUPDATE):
             await self.shift_tms((1,1,0,0))
-        elif self._state in ("Pause-DR"):
+        elif self._state == JTAGState.DRPAUSE:
             await self.shift_tms((1,1,1,1,0,0))
-        elif self._state in ("Pause-IR"):
+        elif self._state == JTAGState.IRPAUSE:
             await self.shift_tms((1,0))
         else:
-            self._state_error("Shift-IR")
-        self._state = "Shift-IR"
+            self._state_error(JTAGState.IRSHIFT)
+        self._state = JTAGState.IRSHIFT
 
     async def enter_pause_ir(self):
-        if self._state == "Pause-IR": return
+        if self._state == JTAGState.IRPAUSE: return
 
-        self._log_l("state %s → Pause-IR", self._state)
-        if self._state == "Exit1-IR":
+        self._log_l("state %s → Pause-IR", self._state.value)
+        if self._state == JTAGState.IREXIT1:
             await self.shift_tms((0,))
         else:
-            self._state_error("Pause-IR")
-        self._state = "Pause-IR"
+            self._state_error(JTAGState.IRPAUSE)
+        self._state = JTAGState.IRPAUSE
 
     async def enter_update_ir(self):
-        if self._state == "Update-IR": return
+        if self._state == JTAGState.IRUPDATE: return
 
-        self._log_l("state %s → Update-IR", self._state)
-        if self._state == "Shift-IR":
+        self._log_l("state %s → Update-IR", self._state.value)
+        if self._state == JTAGState.IRSHIFT:
             await self.shift_tms((1,1))
-        elif self._state == "Exit1-IR":
+        elif self._state == JTAGState.IREXIT1:
             await self.shift_tms((1,))
         else:
-            self._state_error("Update-IR")
-        self._state = "Update-IR"
+            self._state_error(JTAGState.IRUPDATE)
+        self._state = JTAGState.IRUPDATE
 
     async def enter_shift_dr(self):
-        if self._state == "Shift-DR": return
+        if self._state == JTAGState.DRSHIFT: return
 
-        self._log_l("state %s → Shift-DR", self._state)
-        if self._state == "Test-Logic-Reset":
+        self._log_l("state %s → Shift-DR", self._state.value)
+        if self._state == JTAGState.RESET:
             await self.shift_tms((0,1,0,0))
-        elif self._state in ("Run-Test/Idle", "Update-IR", "Update-DR"):
+        elif self._state in (JTAGState.IDLE, JTAGState.IRUPDATE, JTAGState.DRUPDATE):
             await self.shift_tms((1,0,0))
-        elif self._state in ("Pause-IR"):
+        elif self._state == JTAGState.IRPAUSE:
             await self.shift_tms((1,1,1,0,0))
-        elif self._state in ("Pause-DR"):
+        elif self._state == JTAGState.DRPAUSE:
             await self.shift_tms((1,0))
         else:
-            self._state_error("Shift-DR")
-        self._state = "Shift-DR"
+            self._state_error(JTAGState.DRSHIFT)
+        self._state = JTAGState.DRSHIFT
 
     async def enter_pause_dr(self):
-        if self._state == "Pause-DR": return
+        if self._state == JTAGState.DRPAUSE: return
 
-        self._log_l("state %s → Pause-DR", self._state)
-        if self._state == "Exit1-DR":
+        self._log_l("state %s → Pause-DR", self._state.value)
+        if self._state == JTAGState.DREXIT1:
             await self.shift_tms((0,))
         else:
-            self._state_error("Pause-DR")
-        self._state = "Pause-DR"
+            self._state_error(JTAGState.DRPAUSE)
+        self._state = JTAGState.DRPAUSE
 
     async def enter_update_dr(self):
-        if self._state == "Update-DR": return
+        if self._state == JTAGState.DRUPDATE: return
 
-        self._log_l("state %s → Update-DR", self._state)
-        if self._state == "Shift-DR":
+        self._log_l("state %s → Update-DR", self._state.value)
+        if self._state == JTAGState.DRSHIFT:
             await self.shift_tms((1,1))
-        elif self._state == "Exit1-DR":
+        elif self._state == JTAGState.DREXIT1:
             await self.shift_tms((1,))
         else:
-            self._state_error("Update-DR")
-        self._state = "Update-DR"
+            self._state_error(JTAGState.DRUPDATE)
+        self._state = JTAGState.DRUPDATE
 
     # High-level register manipulation
 
