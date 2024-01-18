@@ -56,6 +56,26 @@ class JTAGState(str, enum.Enum):
     IRUPDATE = "Update-IR"
 
 
+JTAG_TRANSITIONS = {
+    JTAGState.RESET: (JTAGState.IDLE, JTAGState.RESET),
+    JTAGState.IDLE: (JTAGState.IDLE, JTAGState.DRSELECT),
+    JTAGState.DRSELECT: (JTAGState.DRCAPTURE, JTAGState.IRSELECT),
+    JTAGState.DRCAPTURE: (JTAGState.DRSHIFT, JTAGState.DREXIT1),
+    JTAGState.DRSHIFT: (JTAGState.DRSHIFT, JTAGState.DREXIT1),
+    JTAGState.DREXIT1: (JTAGState.DRPAUSE, JTAGState.DRUPDATE),
+    JTAGState.DRPAUSE: (JTAGState.DRPAUSE, JTAGState.DREXIT2),
+    JTAGState.DREXIT2: (JTAGState.DRSHIFT, JTAGState.DRUPDATE),
+    JTAGState.DRUPDATE: (JTAGState.IDLE, JTAGState.DRSELECT),
+    JTAGState.IRSELECT: (JTAGState.IRCAPTURE, JTAGState.RESET),
+    JTAGState.IRCAPTURE: (JTAGState.IRSHIFT, JTAGState.IREXIT1),
+    JTAGState.IRSHIFT: (JTAGState.IRSHIFT, JTAGState.IREXIT1),
+    JTAGState.IREXIT1: (JTAGState.IRPAUSE, JTAGState.IRUPDATE),
+    JTAGState.IRPAUSE: (JTAGState.IRPAUSE, JTAGState.IREXIT2),
+    JTAGState.IREXIT2: (JTAGState.IRSHIFT, JTAGState.IRUPDATE),
+    JTAGState.IRUPDATE: (JTAGState.IDLE, JTAGState.DRSELECT),
+}
+
+
 class JTAGProbeBus(Elaboratable):
     def __init__(self, pads):
         self._pads = pads
@@ -444,6 +464,9 @@ class JTAGProbeInterface:
         raise JTAGProbeStateTransitionError("cannot transition from state {} to {}",
                                             old_state.value, new_state.value)
 
+    def get_state(self):
+        return self._state
+
     async def enter_test_logic_reset(self, force=True):
         if force:
             self._log_l("state * → Test-Logic-Reset")
@@ -546,6 +569,24 @@ class JTAGProbeInterface:
         else:
             self._state_error(JTAGState.DRUPDATE)
         self._state = JTAGState.DRUPDATE
+
+    async def traverse_state_path(self, path):
+        if not path:
+            return
+        self._log_l(f"state {self._state.value} → {' → '.join(s.value for s in path)}")
+        state = self._state
+        bits = []
+        for target in path:
+            assert isinstance(state, JTAGState)
+            if JTAG_TRANSITIONS[state][0] == target:
+                bits.append(0)
+            elif JTAG_TRANSITIONS[state][1] == target:
+                bits.append(1)
+            else:
+                self._state_error(target, state)
+            state = target
+        await self.shift_tms(bits)
+        self._state = state
 
     # High-level register manipulation
 
