@@ -435,6 +435,9 @@ class JTAGPinoutApplet(GlasgowApplet):
             elif args.keep_voltage:
                 probe_args += ["--keep-voltage"]
 
+            if args.port_spec != "AB":
+                probe_args += ["--port", args.port_spec]
+
             probe_args += ["--pin-tck", str(self.pins[bit_tck])]
             probe_args += ["--pin-tms", str(self.pins[bit_tms])]
             probe_args += ["--pin-tdi", str(self.pins[bit_tdi])]
