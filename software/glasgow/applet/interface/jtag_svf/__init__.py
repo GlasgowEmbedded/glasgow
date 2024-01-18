@@ -12,7 +12,7 @@ from ....support.bits import *
 from ....support.logging import *
 from ....protocol.jtag_svf import *
 from ... import *
-from ..jtag_probe import JTAGProbeApplet, JTAGProbeStateTransitionError
+from ..jtag_probe import JTAGState, JTAGProbeApplet, JTAGProbeStateTransitionError
 
 
 class SVFError(GlasgowAppletError):
@@ -61,10 +61,7 @@ class SVFInterface(SVFEventHandler):
     def _log(self, message, *args, level=None):
         self._logger.log(self._level if level is None else level, "SVF: " + message, *args)
 
-    async def _enter_state(self, state, path=[]):
-        if path:
-            raise SVFError("explicitly providing TAP state path is not supported")
-
+    async def _enter_state(self, state):
         try:
             if state == "RESET":
                 await self.lower.enter_test_logic_reset(force=False)
@@ -84,7 +81,7 @@ class SVFInterface(SVFEventHandler):
                 self._log("test vector did not reset DUT explicitly, resetting",
                           level=logging.WARN)
                 await self.lower.enter_test_logic_reset()
-                await self._enter_state(state, path)
+                await self._enter_state(state)
 
     async def svf_frequency(self, frequency):
         if frequency is not None and frequency < self._frequency:
@@ -110,7 +107,93 @@ class SVFInterface(SVFEventHandler):
                 raise SVFError("TRST ON command used, but the TRST# pin is not present")
 
     async def svf_state(self, state, path):
-        await self._enter_state(state, path)
+        if not path and state == "RESET":
+            await self._enter_state(state)
+            return
+        state = getattr(JTAGState, state)
+        if path:
+            path = [getattr(JTAGState, s) for s in path] + [state]
+        else:
+            if state == JTAGState.RESET:
+                await self.lower
+                return
+            path = {
+                (JTAGState.RESET, JTAGState.IDLE): [JTAGState.IDLE],
+                (JTAGState.RESET, JTAGState.DRPAUSE): [
+                    JTAGState.IDLE,
+                    JTAGState.DRSELECT,
+                    JTAGState.DRCAPTURE,
+                    JTAGState.DREXIT1,
+                    JTAGState.DRPAUSE,
+                ],
+                (JTAGState.RESET, JTAGState.IRPAUSE): [
+                    JTAGState.IDLE,
+                    JTAGState.DRSELECT,
+                    JTAGState.IRSELECT,
+                    JTAGState.IRCAPTURE,
+                    JTAGState.IREXIT1,
+                    JTAGState.IRPAUSE,
+                ],
+                (JTAGState.IDLE, JTAGState.IDLE): [],
+                (JTAGState.IDLE, JTAGState.DRPAUSE): [
+                    JTAGState.DRSELECT,
+                    JTAGState.DRCAPTURE,
+                    JTAGState.DREXIT1,
+                    JTAGState.DRPAUSE,
+                ],
+                (JTAGState.IDLE, JTAGState.IRPAUSE): [
+                    JTAGState.DRSELECT,
+                    JTAGState.IRSELECT,
+                    JTAGState.IRCAPTURE,
+                    JTAGState.IREXIT1,
+                    JTAGState.IRPAUSE,
+                ],
+                (JTAGState.DRPAUSE, JTAGState.IDLE): [
+                    JTAGState.DREXIT2,
+                    JTAGState.DRUPDATE,
+                    JTAGState.IDLE,
+                ],
+                (JTAGState.DRPAUSE, JTAGState.DRPAUSE): [
+                    JTAGState.DREXIT2,
+                    JTAGState.DRUPDATE,
+                    JTAGState.DRSELECT,
+                    JTAGState.DRCAPTURE,
+                    JTAGState.DREXIT1,
+                    JTAGState.DRPAUSE,
+                ],
+                (JTAGState.DRPAUSE, JTAGState.IRPAUSE): [
+                    JTAGState.DREXIT2,
+                    JTAGState.DRUPDATE,
+                    JTAGState.DRSELECT,
+                    JTAGState.IRSELECT,
+                    JTAGState.IRCAPTURE,
+                    JTAGState.IREXIT1,
+                    JTAGState.IRPAUSE,
+                ],
+                (JTAGState.IRPAUSE, JTAGState.IDLE): [
+                    JTAGState.IREXIT2,
+                    JTAGState.IRUPDATE,
+                    JTAGState.IDLE,
+                ],
+                (JTAGState.IRPAUSE, JTAGState.DRPAUSE): [
+                    JTAGState.IREXIT2,
+                    JTAGState.IRUPDATE,
+                    JTAGState.DRSELECT,
+                    JTAGState.DRCAPTURE,
+                    JTAGState.DREXIT1,
+                    JTAGState.DRPAUSE,
+                ],
+                (JTAGState.IRPAUSE, JTAGState.IRPAUSE): [
+                    JTAGState.IREXIT2,
+                    JTAGState.IRUPDATE,
+                    JTAGState.DRSELECT,
+                    JTAGState.IRSELECT,
+                    JTAGState.IRCAPTURE,
+                    JTAGState.IREXIT1,
+                    JTAGState.IRPAUSE,
+                ],
+            }[self.lower.get_state(), state]
+        await self.lower.traverse_state_path(path)
 
     async def svf_endir(self, state):
         self._endir = state
