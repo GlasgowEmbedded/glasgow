@@ -158,7 +158,7 @@ class _OUTFIFO(Elaboratable, FIFOInterface):
     will not be lost.
     """
     def __init__(self, inner, skid_depth):
-        super().__init__(width=inner.width, depth=inner.depth, fwft=True)
+        super().__init__(width=inner.width, depth=inner.depth)
 
         self.inner = inner
         self.skid  = skid  = SyncFIFO(width=inner.width, depth=skid_depth)
@@ -198,9 +198,9 @@ class _OUTFIFO(Elaboratable, FIFOInterface):
 
 class _UnimplementedOUTFIFO(FIFOInterface):
     def __init__(self, width):
-        super().__init__(width=width, depth=0, fwft=True)
+        super().__init__(width=width, depth=0)
 
-        self.inner = FIFOInterface(width=width, depth=0, fwft=True)
+        self.inner = FIFOInterface(width=width, depth=0)
 
 
 class _INFIFO(Elaboratable, FIFOInterface):
@@ -210,7 +210,7 @@ class _INFIFO(Elaboratable, FIFOInterface):
     framing available to optimize the packet boundaries.
     """
     def __init__(self, inner, packet_size=512, asynchronous=False, auto_flush=True):
-        super().__init__(width=inner.width, depth=inner.depth, fwft=True)
+        super().__init__(width=inner.width, depth=inner.depth)
 
         self.inner = inner
         self.packet_size = packet_size
@@ -268,9 +268,9 @@ class _INFIFO(Elaboratable, FIFOInterface):
 
 class _UnimplementedINFIFO(FIFOInterface):
     def __init__(self, width, packet_size=512):
-        super().__init__(width=width, depth=0, fwft=True)
+        super().__init__(width=width, depth=0)
 
-        self.inner = FIFOInterface(width=width, depth=0, fwft=True)
+        self.inner = FIFOInterface(width=width, depth=0)
 
         self.flush    = Signal()
         self.flush_s  = Signal()
@@ -283,7 +283,7 @@ class _UnimplementedINFIFO(FIFOInterface):
 
 class _AsyncFIFOWrapper(Elaboratable, FIFOInterface):
     def __init__(self, inner, cd_logic, reset):
-        super().__init__(width=inner.width, depth=inner.depth, fwft=True)
+        super().__init__(width=inner.width, depth=inner.depth)
 
         self.inner = inner
         self.cd_logic = cd_logic
