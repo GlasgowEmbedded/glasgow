@@ -115,7 +115,7 @@ class SVFInterface(SVFEventHandler):
             path = [getattr(JTAGState, s) for s in path] + [state]
         else:
             if state == JTAGState.RESET:
-                await self.lower
+                await self.lower.enter_test_logic_reset()
                 return
             path = {
                 (JTAGState.RESET, JTAGState.IDLE): [JTAGState.IDLE],
