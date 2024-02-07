@@ -494,6 +494,20 @@ class JTAGProbeInterface:
             self._state_error(JTAGState.IDLE)
         self._state = JTAGState.IDLE
 
+    async def enter_capture_ir(self):
+        if self._state == JTAGState.IRCAPTURE: return
+
+        self._log_l("state %s → Capture-IR", self._state.value)
+        if self._state == JTAGState.RESET:
+            await self.shift_tms((0,1,1,0))
+        elif self._state in (JTAGState.IDLE, JTAGState.IRUPDATE, JTAGState.DRUPDATE):
+            await self.shift_tms((1,1,0))
+        elif self._state in (JTAGState.DRPAUSE, JTAGState.IRPAUSE):
+            await self.shift_tms((1,1,1,1,0))
+        else:
+            self._state_error(JTAGState.IRCAPTURE)
+        self._state = JTAGState.IRCAPTURE
+
     async def enter_shift_ir(self):
         if self._state == JTAGState.IRSHIFT: return
 
@@ -506,6 +520,8 @@ class JTAGProbeInterface:
             await self.shift_tms((1,1,1,1,0,0))
         elif self._state == JTAGState.IRPAUSE:
             await self.shift_tms((1,0))
+        elif self._state == JTAGState.IRCAPTURE:
+            await self.shift_tms((0,))
         else:
             self._state_error(JTAGState.IRSHIFT)
         self._state = JTAGState.IRSHIFT
@@ -524,13 +540,27 @@ class JTAGProbeInterface:
         if self._state == JTAGState.IRUPDATE: return
 
         self._log_l("state %s → Update-IR", self._state.value)
-        if self._state == JTAGState.IRSHIFT:
+        if self._state in (JTAGState.IRSHIFT, JTAGState.IRCAPTURE):
             await self.shift_tms((1,1))
         elif self._state == JTAGState.IREXIT1:
             await self.shift_tms((1,))
         else:
             self._state_error(JTAGState.IRUPDATE)
         self._state = JTAGState.IRUPDATE
+
+    async def enter_capture_dr(self):
+        if self._state == JTAGState.DRCAPTURE: return
+
+        self._log_l("state %s → Capture-DR", self._state.value)
+        if self._state == JTAGState.RESET:
+            await self.shift_tms((0,1,0))
+        elif self._state in (JTAGState.IDLE, JTAGState.IRUPDATE, JTAGState.DRUPDATE):
+            await self.shift_tms((1,0))
+        elif self._state in (JTAGState.IRPAUSE, JTAGState.DRPAUSE):
+            await self.shift_tms((1,1,1,0))
+        else:
+            self._state_error(JTAGState.DRCAPTURE)
+        self._state = JTAGState.DRCAPTURE
 
     async def enter_shift_dr(self):
         if self._state == JTAGState.DRSHIFT: return
@@ -544,6 +574,8 @@ class JTAGProbeInterface:
             await self.shift_tms((1,1,1,0,0))
         elif self._state == JTAGState.DRPAUSE:
             await self.shift_tms((1,0))
+        elif self._state == JTAGState.DRCAPTURE:
+            await self.shift_tms((0,))
         else:
             self._state_error(JTAGState.DRSHIFT)
         self._state = JTAGState.DRSHIFT
@@ -562,7 +594,7 @@ class JTAGProbeInterface:
         if self._state == JTAGState.DRUPDATE: return
 
         self._log_l("state %s → Update-DR", self._state.value)
-        if self._state == JTAGState.DRSHIFT:
+        if self._state in (JTAGState.DRSHIFT, JTAGState.DRCAPTURE):
             await self.shift_tms((1,1))
         elif self._state == JTAGState.DREXIT1:
             await self.shift_tms((1,))
@@ -614,16 +646,24 @@ class JTAGProbeInterface:
         data = bits(data)
         self._current_ir = (prefix, data, suffix)
         self._log_h("exchange ir-i=%d,<%s>,%d", prefix, dump_bin(data), suffix)
-        await self.enter_shift_ir()
-        data = await self.shift_tdio(data, prefix=prefix, suffix=suffix)
+        if not data:
+            await self.enter_capture_ir()
+            data = bits()
+        else:
+            await self.enter_shift_ir()
+            data = await self.shift_tdio(data, prefix=prefix, suffix=suffix)
         await self.enter_update_ir()
         self._log_h("exchange ir-o=%d,<%s>,%d", prefix, dump_bin(data), suffix)
         return data
 
     async def read_ir(self, count, *, prefix=0, suffix=0):
         self._current_ir = (prefix, bits((1,)) * count, suffix)
-        await self.enter_shift_ir()
-        data = await self.shift_tdo(count, prefix=prefix, suffix=suffix)
+        if not count:
+            await self.enter_capture_ir()
+            data = bits()
+        else:
+            await self.enter_shift_ir()
+            data = await self.shift_tdo(count, prefix=prefix, suffix=suffix)
         await self.enter_update_ir()
         self._log_h("read ir=%d,<%s>,%d", prefix, dump_bin(data), suffix)
         return data
@@ -635,21 +675,32 @@ class JTAGProbeInterface:
             return
         self._current_ir = (prefix, data, suffix)
         self._log_h("write ir=%d,<%s>,%d", prefix, dump_bin(data), suffix)
-        await self.enter_shift_ir()
-        await self.shift_tdi(data, prefix=prefix, suffix=suffix)
+        if not data:
+            await self.enter_capture_ir()
+        else:
+            await self.enter_shift_ir()
+            await self.shift_tdi(data, prefix=prefix, suffix=suffix)
         await self.enter_update_ir()
 
     async def exchange_dr(self, data, *, prefix=0, suffix=0):
         self._log_h("exchange dr-i=%d,<%s>,%d", prefix, dump_bin(data), suffix)
-        await self.enter_shift_dr()
-        data = await self.shift_tdio(data, prefix=prefix, suffix=suffix)
+        if not data:
+            await self.enter_capture_dr()
+            data = bits()
+        else:
+            await self.enter_shift_dr()
+            data = await self.shift_tdio(data, prefix=prefix, suffix=suffix)
         await self.enter_update_dr()
         self._log_h("exchange dr-o=%d,<%s>,%d", prefix, dump_bin(data), suffix)
         return data
 
     async def read_dr(self, count, *, prefix=0, suffix=0):
-        await self.enter_shift_dr()
-        data = await self.shift_tdo(count, prefix=prefix, suffix=suffix)
+        if not count:
+            await self.enter_capture_dr()
+            data = bits()
+        else:
+            await self.enter_shift_dr()
+            data = await self.shift_tdo(count, prefix=prefix, suffix=suffix)
         await self.enter_update_dr()
         self._log_h("read dr=%d,<%s>,%d", prefix, dump_bin(data), suffix)
         return data
@@ -657,8 +708,11 @@ class JTAGProbeInterface:
     async def write_dr(self, data, *, prefix=0, suffix=0):
         data = bits(data)
         self._log_h("write dr=%d,<%s>,%d", prefix, dump_bin(data), suffix)
-        await self.enter_shift_dr()
-        await self.shift_tdi(data, prefix=prefix, suffix=suffix)
+        if not data:
+            await self.enter_capture_dr()
+        else:
+            await self.enter_shift_dr()
+            await self.shift_tdi(data, prefix=prefix, suffix=suffix)
         await self.enter_update_dr()
 
     # Shift chain introspection
