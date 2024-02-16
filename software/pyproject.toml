@@ -113,6 +113,7 @@ program-stusb4500-nvm = "glasgow.applet.program.stusb4500_nvm:StUsb4500NvmApplet
 program-xc6s = "glasgow.applet.program.xc6s:ProgramXC6SApplet"
 program-xc9500 = "glasgow.applet.program.xc9500:ProgramXC9500Applet"
 program-xc9500xl = "glasgow.applet.program.xc9500xl:ProgramXC9500XLApplet"
+program-xpla3 = "glasgow.applet.program.xpla3:ProgramXPLA3Applet"
 
 control-servo = "glasgow.applet.control.servo:ControlServoApplet"
 control-tps6598x = "glasgow.applet.control.tps6598x:ControlTPS6598xApplet"

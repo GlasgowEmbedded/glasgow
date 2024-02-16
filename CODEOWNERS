@@ -6,10 +6,13 @@
 
 /software/glasgow/arch/xilinx/xc9500.py @wanda-phi
 /software/glasgow/arch/xilinx/xc9500xl.py @wanda-phi
+/software/glasgow/arch/xilinx/xpla3.py @wanda-phi
 /software/glasgow/applet/program/xc9500/ @wanda-phi
 /software/glasgow/applet/program/xc9500xl/ @wanda-phi
+/software/glasgow/applet/program/xpla3/ @wanda-phi
 /software/glasgow/database/xilinx/xc9500.py @wanda-phi
 /software/glasgow/database/xilinx/xc9500xl.py @wanda-phi
+/software/glasgow/database/xilinx/xpla3.py @wanda-phi
 
 /software/glasgow/applet/servo/ @tpwrules
 
