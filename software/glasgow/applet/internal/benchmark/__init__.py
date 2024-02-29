@@ -133,8 +133,9 @@ class BenchmarkApplet(GlasgowApplet):
             help="run benchmark mode MODE (default: {})".format(" ".join(cls.__all_modes)))
 
     async def run(self, device, args):
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args=None)
+        return await device.demultiplexer.claim_interface(self, self.mux_interface, args=None)
 
+    async def interact(self, device, args, iface):
         golden = bytearray()
         while len(golden) < args.count:
             golden += self._sequence[:args.count - len(golden)]
