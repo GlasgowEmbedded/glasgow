@@ -101,6 +101,9 @@ class SelfTestApplet(GlasgowApplet):
             help="run self-test mode MODE (default: {})".format(" ".join(cls.__default_modes)))
 
     async def run(self, device, args):
+        return None
+
+    async def interact(self, device, args, iface):
         async def set_oe(bits):
             await device.write_register(self.addr_oe_a, (bits >> 0) & 0xff)
             await device.write_register(self.addr_oe_b, (bits >> 8) & 0xff)
