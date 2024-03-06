@@ -2,16 +2,40 @@ import struct
 import logging
 import asyncio
 from amaranth import *
+from amaranth.lib.cdc import FFSynchronizer
 
 from ....support.bits import *
 from ....support.logging import *
 from ....support.endpoint import *
 from ....gateware.pads import *
 from ... import *
-from ..jtag_probe import JTAGProbeBus
 
 
-class JTAGOpenOCDSubtarget(Elaboratable):
+# Will eventually live in `..swd_probe`.
+class SWDProbeBus(Elaboratable):
+    def __init__(self, pads):
+        self._pads = pads
+        self.swclk = Signal(reset=1)
+        self.swdio_i = Signal()
+        self.swdio_o = Signal()
+        self.swdio_z = Signal()
+
+    def elaborate(self, platform):
+        m = Module()
+        pads = self._pads
+        m.d.comb += [
+            pads.swclk_t.oe.eq(1),
+            pads.swclk_t.o.eq(self.swclk),
+            pads.swdio_t.oe.eq(~self.swdio_z),
+            pads.swdio_t.o.eq(self.swdio_o),
+        ]
+        m.submodules += [
+            FFSynchronizer(pads.swdio_t.i, self.swdio_i),
+        ]
+        return m
+
+
+class SWDOpenOCDSubtarget(Elaboratable):
     def __init__(self, pads, out_fifo, in_fifo, period_cyc):
         self.pads       = pads
         self.out_fifo   = out_fifo
@@ -26,9 +50,8 @@ class JTAGOpenOCDSubtarget(Elaboratable):
         out_fifo = self.out_fifo
         in_fifo  = self.in_fifo
 
-        m.submodules.bus = bus = JTAGProbeBus(self.pads)
+        m.submodules.bus = bus = SWDProbeBus(self.pads)
         m.d.comb += [
-            bus.trst_z.eq(0),
             self.srst_z.eq(0),
         ]
         if hasattr(self.pads, "srst_t"):
@@ -50,17 +73,20 @@ class JTAGOpenOCDSubtarget(Elaboratable):
             with m.If(out_fifo.r_rdy):
                 with m.Switch(out_fifo.r_data):
                     m.d.comb += out_fifo.r_en.eq(1)
-                    # remote_bitbang_write(int tck, int tms, int tdi)
-                    with m.Case(*b"01234567"):
-                        m.d.sync += Cat(bus.tdi, bus.tms, bus.tck).eq(out_fifo.r_data[:3])
-                    # remote_bitbang_reset(int trst, int srst)
-                    with m.Case(*b"rstu"):
-                        m.d.sync += Cat(self.srst_o, bus.trst_o).eq(out_fifo.r_data - ord(b"r"))
-                    # remote_bitbang_sample(void)
-                    with m.Case(*b"R"):
+                    # remote_bitbang_swdio_drive(int is_output)
+                    with m.Case(*b"Oo"):
+                        m.d.sync += bus.swdio_z.eq(out_fifo.r_data[5])
+                    # remote_bitbang_swdio_read()
+                    with m.Case(*b"c"):
                         m.d.comb += out_fifo.r_en.eq(in_fifo.w_rdy)
                         m.d.comb += in_fifo.w_en.eq(1)
-                        m.d.comb += in_fifo.w_data.eq(b"0"[0] | Cat(bus.tdo))
+                        m.d.comb += in_fifo.w_data.eq(b"0"[0] | Cat(bus.swdio_i))
+                    # remote_bitbang_swd_write(int swclk, int swdio)
+                    with m.Case(*b"defg"):
+                        m.d.sync += Cat(bus.swdio_o, bus.swclk).eq(out_fifo.r_data[:2])
+                    # remote_bitbang_reset(int trst, int srst)
+                    with m.Case(*b"rstu"):
+                        m.d.sync += self.srst_o.eq(out_fifo.r_data - ord(b"r"))
                     # remote_bitbang_blink(int on)
                     with m.Case(*b"Bb"):
                         m.d.sync += blink.eq(~out_fifo.r_data[5])
@@ -75,45 +101,45 @@ class JTAGOpenOCDSubtarget(Elaboratable):
         return m
 
 
-class JTAGOpenOCDApplet(GlasgowApplet):
+class SWDOpenOCDApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
-    help = "expose JTAG via OpenOCD remote bitbang interface"
+    help = "expose SWD via OpenOCD remote bitbang interface"
     description = """
-    Expose JTAG via a socket using the OpenOCD remote bitbang protocol.
+    Expose SWD via a socket using the OpenOCD remote bitbang protocol.
 
     Usage with TCP sockets:
 
     ::
-        glasgow run jtag-openocd tcp:localhost:2222
-        openocd -c 'adapter driver remote_bitbang; transport select jtag' \\
+        glasgow run swd-openocd tcp:localhost:2222
+        openocd -c 'adapter driver remote_bitbang; transport select swd' \\
             -c 'remote_bitbang port 2222'
 
     Usage with Unix domain sockets:
 
     ::
-        glasgow run jtag-openocd unix:/tmp/jtag.sock
-        openocd -c 'adapter driver remote_bitbang; transport select jtag' \\
-            -c 'remote_bitbang host /tmp/jtag.sock'
+        glasgow run swd-openocd unix:/tmp/swd.sock
+        openocd -c 'adapter driver remote_bitbang; transport select swd' \\
+            -c 'remote_bitbang host /tmp/swd.sock'
     """
 
-    __pins = ("tck", "tms", "tdi", "tdo", "trst", "srst")
+    __pins = ("swclk", "swdio", "srst")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        for pin in ("tck", "tms", "tdi", "tdo"):
+        for pin in ("swclk", "swdio"):
             access.add_pin_argument(parser, pin, default=True)
-        for pin in ("trst", "srst"):
+        for pin in ("srst",):
             access.add_pin_argument(parser, pin)
 
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=100,
-            help="set TCK frequency to FREQ kHz (default: %(default)s)")
+            help="set SWCLK frequency to FREQ kHz (default: %(default)s)")
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        iface.add_subtarget(JTAGOpenOCDSubtarget(
+        iface.add_subtarget(SWDOpenOCDSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
@@ -133,6 +159,7 @@ class JTAGOpenOCDApplet(GlasgowApplet):
             while True:
                 try:
                     data = await endpoint.recv()
+                    print(data)
                     await iface.write(data)
                     await iface.flush()
                 except asyncio.CancelledError:
@@ -152,4 +179,4 @@ class JTAGOpenOCDApplet(GlasgowApplet):
     @classmethod
     def tests(cls):
         from . import test
-        return test.JTAGOpenOCDAppletTestCase
+        return test.SWDOpenOCDAppletTestCase
