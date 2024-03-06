@@ -33,7 +33,7 @@ jobs:
           python-version: '3.13-dev'
           dep-versions: latest
           allow-failure: true
-    continue-on-error: '${{ matrix.allow-failure }}'
+    continue-on-error: ${{ matrix.allow-failure }}
     runs-on: ${{ matrix.os-version }}
     name: 'test-software (${{ matrix.python-version }}, deps: ${{ matrix.dep-versions }})'
     env:
@@ -126,27 +126,27 @@ jobs:
       - test-software
       - build-firmware
       - build-manual
-    if: always() && !contains(needs.*.result, 'cancelled')
+    if: ${{ always() && !contains(needs.*.result, 'cancelled') }}
     runs-on: ubuntu-latest
     steps:
       - run: ${{ contains(needs.*.result, 'failure') && 'false' || 'true' }}
 
   publish-manual:
     needs: build-manual
-    if: (github.repository == 'GlasgowEmbedded/glasgow' && github.event.ref == 'refs/heads/main') || github.repository != 'GlasgowEmbedded/glasgow'
+    if: ${{ (github.repository == 'GlasgowEmbedded/glasgow' && github.event.ref == 'refs/heads/main') || github.repository != 'GlasgowEmbedded/glasgow' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - name: Check out source code
         uses: actions/checkout@v3
-      - if: github.repository == 'GlasgowEmbedded/glasgow' && github.event.ref == 'refs/heads/main'
+      - if: ${{ github.repository == 'GlasgowEmbedded/glasgow' && github.event.ref == 'refs/heads/main' }}
         name: Inject documentation from artifact under latest/
         uses: actions/download-artifact@v3
         with:
           name: docs
           path: pages/latest/
-      - if: github.repository == 'GlasgowEmbedded/glasgow' && github.event.ref == 'refs/heads/main'
+      - if: ${{ github.repository == 'GlasgowEmbedded/glasgow' && github.event.ref == 'refs/heads/main' }}
         name: Add CNAME and redirect from the root to latest/
         run: |
           echo >pages/CNAME 'glasgow-embedded.org'
@@ -173,7 +173,7 @@ jobs:
             <a href="latest/intro.html">Click here if you are not redirected.</a>
           </html>
           END
-      - if: github.repository != 'GlasgowEmbedded/glasgow'
+      - if: ${{ github.repository != 'GlasgowEmbedded/glasgow' }}
         name: Inject documentation from artifact under {branch}/
         uses: actions/download-artifact@v3
         with:
