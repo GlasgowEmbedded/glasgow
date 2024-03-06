@@ -159,7 +159,6 @@ class SWDOpenOCDApplet(GlasgowApplet):
             while True:
                 try:
                     data = await endpoint.recv()
-                    print(data)
                     await iface.write(data)
                     await iface.flush()
                 except asyncio.CancelledError:
