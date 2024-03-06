@@ -204,6 +204,9 @@ class VGAOutputApplet(GlasgowApplet):
     async def run(self, device, args):
         return await device.demultiplexer.claim_interface(self, self.mux_interface, args)
 
+    async def interact(self, device, args, vga):
+        pass
+
     @classmethod
     def tests(cls):
         from . import test
