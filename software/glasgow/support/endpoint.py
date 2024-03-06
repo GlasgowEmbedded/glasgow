@@ -18,7 +18,7 @@ def endpoint(spec):
                  r":(\d+)$", spec)
     if m: return (m[1], m[3] or m[4] or m[5] if m[2] is None else "localhost", int(m[6]))
 
-    raise argparse.ArgumentTypeError("invalid format")
+    raise argparse.ArgumentTypeError(f"invalid endpoint: {spec!r}")
 
 
 class ServerEndpoint(aobject, asyncio.Protocol):
