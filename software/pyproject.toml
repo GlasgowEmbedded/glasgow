@@ -125,6 +125,8 @@ sensor-pmsx003 = "glasgow.applet.sensor.pmsx003:SensorPMSx003Applet"
 sensor-sen5x = "glasgow.applet.sensor.sen5x:SensorSEN5xApplet"
 sensor-scd30 = "glasgow.applet.sensor.scd30:SensorSCD30Applet"
 
+trigger-level-timeout = "glasgow.applet.trigger.level_timeout:LevelTimeoutApplet"
+
 display-hd44780 = "glasgow.applet.display.hd44780:DisplayHD44780Applet"
 display-pdi = "glasgow.applet.display.pdi:DisplayPDIApplet"
 
