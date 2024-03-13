@@ -155,7 +155,7 @@ class SPIFlashromApplet(SPIControllerApplet):
     Usage:
 
     ::
-        glasgow run spi-serprog -V 3.3 --pin-cs 0 --pin-cipo 1 --pin-copi 2 --pin-sck 3 \\
+        glasgow run spi-flashrom -V 3.3 --pin-cs 0 --pin-cipo 1 --pin-copi 2 --pin-sck 3 \\
             --freq 4000 tcp::2222
         /sbin/flashrom -p serprog:ip=localhost:2222
 
