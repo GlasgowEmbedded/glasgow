@@ -50,6 +50,7 @@ class AnalyzerApplet(GlasgowApplet):
     description = """
     Capture waveforms, similar to a logic analyzer.
     """
+    required_revision = "C0" # iCE40UP5K isn't quite fast enoughs
 
     @classmethod
     def add_build_arguments(cls, parser, access):
