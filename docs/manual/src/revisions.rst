@@ -44,12 +44,16 @@ Revision C is the latest revision, first mass produced by `1bitSquared`_ at step
 Design and fabrication files are located in the Git repository:
 
 - `revC0 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/revC0/hardware/boards/glasgow>`_,
+  `revC0 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC0/schematics.pdf>`_,
   `revC0 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC0>`_.
 - `revC1 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/revC1/hardware/boards/glasgow>`_,
+  `revC1 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC1/schematics.pdf>`_,
   `revC1 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC1>`_.
 - `revC2 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/revC2/hardware/boards/glasgow>`_,
+  `revC2 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC2/schematics.pdf>`_,
   `revC2 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC2>`_.
 - `revC3 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/revC3/hardware/boards/glasgow>`_,
+  `revC3 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC3/schematics.pdf>`_,
   `revC3 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC3>`_.
 
 .. [#] Data rate achievable in practice depends on many factors and will vary greatly with specific interface and applet design. 12 Mbps/pin (6 MHz) can be achieved with minimal development effort; reaching higher data rates requires careful HDL coding and a good understanding of timing analysis.
@@ -66,6 +70,8 @@ Revisions A and B have not been produced in significant numbers, have major desi
 Design and fabrication files are located in the Git repository:
 
 - `revA (design) <https://github.com/GlasgowEmbedded/glasgow/tree/revA/hardware/boards/glasgow>`_,
+  `revA (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revA/schematics.pdf>`_,
   `revA (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revA>`_.
 - `revB (design) <https://github.com/GlasgowEmbedded/glasgow/tree/revB/hardware/boards/glasgow>`_,
+  `revB (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revB/schematics.pdf>`_,
   `revB (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revB>`_.
