@@ -4,4 +4,5 @@
 /.venv
 
 # Sphinx
-/out
+/build
+/check

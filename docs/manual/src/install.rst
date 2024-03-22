@@ -217,7 +217,7 @@ If these instructions don't work for you, please `file a bug <file-a-bug_>`__ so
 .. _python-lin: https://www.python.org/downloads/source/
 .. _python-win: https://www.python.org/downloads/windows/
 .. _pypi: https://pypi.org/
-.. _pipx: https://pypa.github.io/pipx/installation/
+.. _pipx: https://pipx.pypa.io/stable/
 .. _Yosys: https://github.com/YosysHQ/yosys
 .. _nextpnr: https://github.com/YosysHQ/yosys
 .. _icestorm: https://github.com/YosysHQ/icestorm
@@ -241,4 +241,4 @@ The steps above install the Glasgow software using ``pipx install -e``, which pe
 
 If you want to have your global Glasgow installation be independent from the source code check-out, you can omit the ``-e`` argument in the instructions above. You can use any way of managing virtual environments for your development workflow, but we use and recommend `PDM`_.
 
-.. _pdm: https://pdm.fming.dev/
+.. _pdm: https://pdm-project.org/

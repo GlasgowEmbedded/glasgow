@@ -73,3 +73,16 @@ else:
             "This documentation page has been built as a preview. It may be outdated or incorrect "
             "compared to <a href='https://glasgow-embedded.org/'>the official version</a>."
     })
+
+linkcheck_ignore = [
+    r"^http://127\.0\.0\.1:8000$",
+    # Doesn't like the linkcheck User-Agent.
+    r"^https://mouser\.com/",
+]
+
+linkcheck_anchors_ignore_for_url = [
+    r"^https://matrix\.to/",
+    r"^https://web\.libera\.chat/",
+    # React page with README content included as a JSON payload.
+    r"^https://github\.com/[^/]+/[^/]+/$",
+]
