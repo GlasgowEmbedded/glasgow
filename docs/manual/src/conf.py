@@ -56,8 +56,8 @@ if is_production:
             "color-announcement-text": "#64cc69",
         },
         "announcement":
-            "The Early Bird units are being shipped by Mouser! "
-            "<a href='https://crowdsupply.com/1bitsquared/glasgow'>Pre-Order yours now</a>"
+            "Production units are being shipped by Mouser. "
+            "<a href='https://crowdsupply.com/1bitsquared/glasgow'>Pre-order yours now!</a>"
     })
 else:
     html_theme_options.update({
