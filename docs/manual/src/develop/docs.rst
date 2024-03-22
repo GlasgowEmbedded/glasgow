@@ -67,10 +67,10 @@ Our continuous integration system checks external links on every build, ensuring
 Style guide
 -----------
 
-When writing documentation, please try to follow our style:
+When writing documentation, please follow our style:
 
-* Only capitalise the first word of headings
-* Insert two blank lines before headings
-* Use ``.. note::`` and ``.. warning::`` sparingly, but where important details may otherwise be missed
-* Use an em-dash (---), which can be written as ``---`` in restructured text
-* Link to our official `GlasgowEmbedded <https://github.com/GlasgowEmbedded>`_ repositories where appropriate
+* Only capitalise the first word of headings.
+* Insert two blank lines before headings.
+* Use ``.. note::`` and ``.. warning::`` sparingly, where important details may otherwise be missed.
+* Use an em-dash (---), which can be written as ``---`` in reStructuredText.
+* Link to our `official repositories <https://github.com/GlasgowEmbedded>`_ where appropriate.
