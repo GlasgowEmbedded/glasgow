@@ -139,7 +139,8 @@ class GlasgowBuildPlan:
             environ = self.toolchain.env_vars
             if os.name == 'nt':
                 # PROCESSOR_ARCHITECTURE: required for YoWASP (used by wasmtime)
-                for var in ("PROCESSOR_ARCHITECTURE",):
+                # SYSTEMROOT: required for child Python processes to initialize properly
+                for var in ("PROCESSOR_ARCHITECTURE", "SYSTEMROOT"):
                     environ[var] = os.environ[var]
             products  = self.lower.execute_local(build_dir, env=environ)
             bitstream = products.get("top.bin")
