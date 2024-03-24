@@ -10,7 +10,7 @@ from fx2 import REQ_RAM, REG_CPUCS
 from fx2.format import input_data
 
 from ..support.logging import *
-from . import GlasgowDeviceError
+from . import GlasgowDeviceError, quirks
 from .config import GlasgowConfig
 
 
@@ -221,12 +221,17 @@ class GlasgowHardwareDevice:
             self.usb_handle.setAutoDetachKernelDriver(True)
         except usb1.USBErrorNotSupported:
             pass
-        device_serial = self.usb_handle.getASCIIStringDescriptor(
-            usb_device.getSerialNumberDescriptor())
+        device_manufacturer = self.usb_handle.getASCIIStringDescriptor(
+            usb_device.getManufacturerDescriptor())
         device_product = self.usb_handle.getASCIIStringDescriptor(
             usb_device.getProductDescriptor())
+        device_serial = self.usb_handle.getASCIIStringDescriptor(
+            usb_device.getSerialNumberDescriptor())
         self._serial = device_serial
         self._modified_design = not device_product.startswith("Glasgow Interface Explorer")
+        if (device_manufacturer == "1BitSquared" and
+                device_serial in quirks.modified_design_1b2_mar2024):
+            self._modified_design = False # see quirks.py
         if self._modified_design:
             logger.info("device with serial number %s was manufactured from modified design files",
                         self._serial)
