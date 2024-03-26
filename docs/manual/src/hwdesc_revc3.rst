@@ -106,11 +106,25 @@ VIO rails
 
 There are two main independent VIO rails - one for port A, and one for port B. These rails are adjustable and set the IO voltage levels for the ports. Each VIO rail voltage can be independently configured, which allows you to work with different logic levels on ports A and B simultaneously. The VIOA and VIOB rails are exposed as pins on the port A and port B connectors.
 
-Each VIO rail is derived from the +5V rail using a TPS73101DBV linear regulator (U31, U14). These regulators have an ultra-low dropout voltage of just 30mV, which allows the VIO voltages to be programmed anywhere between 1.2V and the +5V rail voltage (which is essentially equal to VUSB) minus 30mV.
+Each VIO rail is derived from the +5V rail using a TPS73101DBV linear regulator (U31, U14). These regulators have an ultra-low dropout voltage of just 30mV, which allows the VIO voltages to be programmed anywhere between 1.8V and the +5V rail voltage (which is essentially equal to VUSB) minus 30mV.
 
 The TPS73101DBV regulators feature reverse current blocking which prevents current from being sunk into the regulator instead of sourced from it. They also have a unique foldback current limit characteristic which provides excellent protection against short circuits on the VIO rails - see the "Internal Current Limit" section and Figure 12 in the datasheet.
 
-Each VIO regulator has a feedback network which incorporates the output of a DAC081C081CIMK DAC IC. These DACs (U20, U13) are programmed over I2C to adjust the feedback voltage, which in turn adjusts the VIO voltage, thus providing runtime VIO voltage adjustment. The DAC output voltages can be measured using the VDAC A and B test points on the rear of the board.
+Each VIO regulator has a feedback network which incorporates the output of a DAC081C081CIMK DAC IC. These DACs (U20, U13) are programmed over I2C to adjust the feedback voltage by injecting current into the feedback resistor network, which in turn adjusts the VIO voltage, thus providing runtime VIO voltage adjustment. The DAC output voltages can be measured using the VDAC A and B test points on the rear of the board. The FX2 firmware `calculates the correct DAC voltage <https://github.com/GlasgowEmbedded/glasgow/blob/1f5691a4b516f4ac083e7fa4fc32abcc659e608d/firmware/dac_ldo.c#L76-L83>`__ for the target output voltage. Some examples are:
+
++-------------+------------+
+| VIO Voltage | DAC Output |
++=============+============+
+| 5.0V        | 0.45V      |
++-------------+------------+
+| 3.3V        | 1.88V      |
++-------------+------------+
+| 2.8V        | 2.31V      |
++-------------+------------+
+| 2.5V        | 2.56V      |
++-------------+------------+
+| 1.8V        | 3.15V      |
++-------------+------------+
 
 On power-on or reset, both VIO regulators are disabled and the voltage adjustment DACs are reset to 0V. The DAC voltages are programmed over I2C, after which the regulators may be enabled by the FX2 asserting the ``ENVA`` and ``ENVB`` signals (pins 45 and 51 on the FX2 respectively). The VIO A and VIO B LEDs on the front of the board light up when the regulators are enabled.
 
@@ -144,9 +158,6 @@ The VIOB rail is used to power the following devices:
 | U5                                     | PCA6408APW      | I2C I/O expander for programmable pullup/pulldown resistors on port A. VIOB powers IO ports. |
 +----------------------------------------+-----------------+----------------------------------------------------------------------------------------------+
 
-
-*TODO: VIO is exposed on the I/O bank hierarchical sheet symbol; is this actually used anywhere outside the subsheet, other than the loop-back for ADRPULL on buffer B?*
-
 VIO_AUX
 ~~~~~~~
 
@@ -158,9 +169,7 @@ Decoupling capacitors
 Two values of MLCC decoupling capacitor are used across the Glasgow
 design.
 
-4.7uF capacitors are `Taiyo Yuden
-LMK107BJ475KAHT <https://ds.yuden.co.jp/TYCOMPAS/eu/detail?pn=MBASL168SB5475KTNA01&u=M>`__,
-with the following DC bias characteristics:
+4.7uF capacitors are `Taiyo Yuden LMK107BJ475KAHT <https://ds.yuden.co.jp/TYCOMPAS/eu/detail?pn=MBASL168SB5475KTNA01&u=M>`__, with the following DC bias characteristics:
 
 +-----------------+-----------------------+
 | DC bias voltage | Effective Capacitance |
@@ -176,10 +185,7 @@ with the following DC bias characteristics:
 | 1.2V            | 4.37uF                |
 +-----------------+-----------------------+
 
-100nF capacitors are `Taiyo Yuden
-TMK105BJ104KV-F <https://ds.yuden.co.jp/TYCOMPAS/eu/detail?pn=MSAST105SB5104KFNA01&u=M>`__
-(now renamed to MSAST105SB5104KFNA01), with the following DC bias
-characteristics:
+100nF capacitors are `Taiyo Yuden TMK105BJ104KV-F <https://ds.yuden.co.jp/TYCOMPAS/eu/detail?pn=MSAST105SB5104KFNA01&u=M>`__ (now renamed to MSAST105SB5104KFNA01), with the following DC bias characteristics:
 
 +-----------------+-----------------------+
 | DC bias voltage | Effective Capacitance |
@@ -280,6 +286,8 @@ Ports A/B Pinout
 | 20     | NC    | N/A         | Not connected.                                                                                                                                       |
 +--------+-------+-------------+------------------------------------------------------------------------------------------------------------------------------------------------------+
 
+Wire colours described here are correct for the 1BitSquared wiring looms and are not innate to Glasgow itself.
+
 Note that each of the IOs has a GND pin opposite. This provides a ground reference plane for return currents, which helps improve signal integrity and reduces crosstalk in higher speed signals. Where possible, connect each ground wire to GND on the target device, physically close to the signal connection.
 
 Each IO is driven by an SN74LVC1T45DCKR bus transceiver, which converts between the port's logic voltage (VIO) and the 3.3V used by the FPGA IO ports. Each IO can be independently configured as an input or output. Each IO pin can source or sink up to 4mA at 1.8V, 8mA at 2.5V, 24mA at 3.3V, or 32mA at 5V.
@@ -291,7 +299,7 @@ The VSENSE pin is protected by a CDSOD323-T36S unidirectional TVS diode which he
 SYNC Connector
 ~~~~~~~~~~~~~~
 
-The SYNC connector is used to synchronise multiple Glasgows together. *TODO: Expand this with examples.*
+The SYNC connector is used to synchronise multiple Glasgows together. As of March 2024 this has not been used for much, but we expect folks will come up with interesting ways to use it.
 
 The SYNC pin is weakly pulled up to 3.3V and is buffered by a SN74LVC1T45DCKR bus transceiver. The input-low threshold is 0.8V and the input-high threshold is 2.0V, making it directly compatible with 2.5V, 3.3V, and 5V logic.
 
@@ -364,33 +372,37 @@ No termination resistors are included. You should include termination resistors 
 LEDs
 ----
 
-+-------+--------+------------+-------------+------------------------------------------------------------------------------------------+
-| Name  | Colour | Designator | Part        | Description                                                                              |
-+=======+========+============+=============+==========================================================================================+
-| PWR   | Green  | D1         | NCD0603G1   | Powered by +3.3V rail                                                                    |
-+-------+--------+------------+-------------+------------------------------------------------------------------------------------------+
-| FX2   | White  | D2         | NCD0603W1   | Connected to pin 47 (PD2/FD10) of Cypress FX2 (U1). Lights when the FX2 has initialised. |
-+-------+--------+------------+-------------+------------------------------------------------------------------------------------------+
-| ICE   | Blue   | D3         | ORH-B36G    | Connected to pin 48 (PD3/FD11) of Cypress FX2 (U1). Lights when the FPGA is ready.       |
-+-------+--------+------------+-------------+------------------------------------------------------------------------------------------+
-| ACT   | Orange | D4         | NCD0603O1   | Connected to pin 49 (PD4/FD12) of Cypress FX2 (U1). Lights when activity is occurring.   |
-+-------+--------+------------+-------------+------------------------------------------------------------------------------------------+
-| ERR   | Red    | D5         | NCD0603R1   | Connected to pin 50 (PD5/FD13) of Cypress FX2 (U1). Lights when an error occurs.         |
-+-------+--------+------------+-------------+------------------------------------------------------------------------------------------+
-| U1    | Blue   | D6         | ORH-B36G    | Connected to ball G9 (IOR_128) of iCE40 FPGA (U30)                                       |
-+-------+--------+------------+-------------+------------------------------------------------------------------------------------------+
-| U2    | Pink   | D7         | OSK40603C1E | Connected to ball G8 (IOR_118) of iCE40 FPGA (U30)                                       |
-+-------+--------+------------+-------------+------------------------------------------------------------------------------------------+
-| U3    | White  | D8         | NCD0603W1   | Connected to ball E9 (IOR_144) of iCE40 FPGA (U30)                                       |
-+-------+--------+------------+-------------+------------------------------------------------------------------------------------------+
-| U4    | Pink   | D9         | OSK40603C1E | Connected to ball D9 (IOR_147) of iCE40 FPGA (U30)                                       |
-+-------+--------+------------+-------------+------------------------------------------------------------------------------------------+
-| U5    | Blue   | D10        | ORH-B36G    | Connected to ball E8 (IOR_146) of iCE40 FPGA (U30)                                       |
-+-------+--------+------------+-------------+------------------------------------------------------------------------------------------+
-| VIO A | Green  | D15        | NCD0603G1   | Lights when VIO A regulator (U31) is enabled                                             |
-+-------+--------+------------+-------------+------------------------------------------------------------------------------------------+
-| VIO B | Green  | D14        | NCD0603G1   | Lights when VIO B regulator (U14) is enabled                                             |
-+-------+--------+------------+-------------+------------------------------------------------------------------------------------------+
++-------+--------+------------+-------------+---------------------------------------------------------------------------------------------------------------------+
+| Name  | Colour | Designator | Part        | Description                                                                                                         |
++=======+========+============+=============+=====================================================================================================================+
+| PWR   | Green  | D1         | NCD0603G1   | Powered by +3.3V rail                                                                                               |
++-------+--------+------------+-------------+---------------------------------------------------------------------------------------------------------------------+
+| FX2   | White  | D2         | NCD0603W1   | Connected to pin 47 (PD2/FD10) of Cypress FX2 (U1). Pulses during enumeration. Lights when the FX2 has initialised. |
++-------+--------+------------+-------------+---------------------------------------------------------------------------------------------------------------------+
+| ICE   | Blue   | D3         | ORH-B36G    | Connected to pin 48 (PD3/FD11) of Cypress FX2 (U1). Lights when the FPGA is ready.                                  |
++-------+--------+------------+-------------+---------------------------------------------------------------------------------------------------------------------+
+| ACT   | Orange | D4         | NCD0603O1   | Connected to pin 49 (PD4/FD12) of Cypress FX2 (U1). Lights when activity is occurring.                              |
++-------+--------+------------+-------------+---------------------------------------------------------------------------------------------------------------------+
+| ERR   | Red    | D5         | NCD0603R1   | Connected to pin 50 (PD5/FD13) of Cypress FX2 (U1). Lights when an error occurs.                                    |
++-------+--------+------------+-------------+---------------------------------------------------------------------------------------------------------------------+
+| U1    | Blue   | D6         | ORH-B36G    | Connected to ball G9 (IOR_128) of iCE40 FPGA (U30)                                                                  |
++-------+--------+------------+-------------+---------------------------------------------------------------------------------------------------------------------+
+| U2    | Pink   | D7         | OSK40603C1E | Connected to ball G8 (IOR_118) of iCE40 FPGA (U30)                                                                  |
++-------+--------+------------+-------------+---------------------------------------------------------------------------------------------------------------------+
+| U3    | White  | D8         | NCD0603W1   | Connected to ball E9 (IOR_144) of iCE40 FPGA (U30)                                                                  |
++-------+--------+------------+-------------+---------------------------------------------------------------------------------------------------------------------+
+| U4    | Pink   | D9         | OSK40603C1E | Connected to ball D9 (IOR_147) of iCE40 FPGA (U30)                                                                  |
++-------+--------+------------+-------------+---------------------------------------------------------------------------------------------------------------------+
+| U5    | Blue   | D10        | ORH-B36G    | Connected to ball E8 (IOR_146) of iCE40 FPGA (U30)                                                                  |
++-------+--------+------------+-------------+---------------------------------------------------------------------------------------------------------------------+
+| VIO A | Green  | D15        | NCD0603G1   | Lights when VIO A regulator (U31) is enabled                                                                        |
++-------+--------+------------+-------------+---------------------------------------------------------------------------------------------------------------------+
+| VIO B | Green  | D14        | NCD0603G1   | Lights when VIO B regulator (U14) is enabled                                                                        |
++-------+--------+------------+-------------+---------------------------------------------------------------------------------------------------------------------+
+
+The system LEDs (PWR, FX2, ICE, ACT, ERR) are under control of the FX2 firmware, which is responsible for producing the behaviour described above. In the event that the FX2 firmware does not run (e.g. no firmware is present), the LED IO pins default to a high-impedance input state and will either all light dimly or all be off.
+
+The user LEDs (U1-U5) are under control of the gateware. In most cases they go unused and the FPGA defaults the pins to be inputs with weak pullups, which results in the user LEDs lighting dimly.
 
 I²C bus
 -------
