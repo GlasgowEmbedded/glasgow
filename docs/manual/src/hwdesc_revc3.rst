@@ -90,7 +90,7 @@ The +3.3V rail is used to power the following devices:
 | U32                                    | SN74LVC1T45DCKR  | Logic level translator for SYNC input/output connector. +3.3V powers internal side (VCCA)      |
 +----------------------------------------+------------------+------------------------------------------------------------------------------------------------+
 
-.. _12v-rail:
+.. _1.2v-rail:
 
 +1.2V rail
 ~~~~~~~~~~
