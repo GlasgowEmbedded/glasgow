@@ -118,7 +118,7 @@ class AudioDACSubtarget(Elaboratable):
 
 class AudioDACApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
-    help = "play sound using a ΣΔ-DAC"
+    help = "play sound using a sigma-delta DAC"
     description = """
     Play sound using a 1-bit sigma-delta DAC, i.e. pulse density modulation.
 
