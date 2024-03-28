@@ -375,7 +375,7 @@ def get_argparser():
         if len(arg) <= 23:
             return arg
         else:
-            raise argparse.ArgumentTypeError("f{arg} is too long for the manufacturer field")
+            raise argparse.ArgumentTypeError(f"{arg} is too long for the manufacturer field")
 
     p_factory = subparsers.add_parser(
         "factory", formatter_class=TextHelpFormatter,
