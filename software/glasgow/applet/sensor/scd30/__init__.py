@@ -167,9 +167,9 @@ class SCD30I2CInterface:
 
 class SensorSCD30Applet(I2CInitiatorApplet):
     logger = logging.getLogger(__name__)
-    help = "measure CO₂, humidity, and temperature with Sensirion SCD30 sensors"
+    help = "measure CO2, humidity, and temperature with Sensirion SCD30 sensors"
     description = """
-    Measure CO₂ concentration, humidity, and temperature using Sensirion SCD30 sensors
+    Measure CO2 concentration, humidity, and temperature using Sensirion SCD30 sensors
     connected over the I²C interface.
 
     NOTE: The SCD30 takes some time to start up. Run `glasgow voltage AB 3.3 --no-alert`
