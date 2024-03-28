@@ -96,7 +96,7 @@ class GlasgowHardwareDevice:
             usb_context.hotplugRegisterCallback(hotplug_callback,
                 flags=usb1.HOTPLUG_ENUMERATE)
         else:
-            devices.extend(list(usb_context.getDeviceIterator()))
+            devices.extend(list(usb_context.getDeviceIterator(skip_on_error=True)))
 
         while any(devices):
             device = devices.pop()
@@ -185,7 +185,7 @@ class GlasgowHardwareDevice:
                 logger.debug("waiting for re-enumeration")
                 time.sleep(5.0)
 
-                devices.extend(list(usb_context.getDeviceIterator()))
+                devices.extend(list(usb_context.getDeviceIterator(skip_on_error=True)))
 
         return devices_by_serial
 
