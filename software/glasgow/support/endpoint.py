@@ -5,6 +5,7 @@ import re
 from collections import deque
 
 from .aobject import *
+from .logging import dump_hex
 
 
 __all__ = ["ServerEndpoint", "ClientEndpoint"]
@@ -165,7 +166,7 @@ class ServerEndpoint(aobject, asyncio.Protocol):
             self._check_pushback()
             data += chunk
 
-        self._log(logging.TRACE, "recv <%s>", data.hex())
+        self._log(logging.TRACE, "recv <%s>", dump_hex(data))
         return data
 
     async def recv_until(self, separator):
@@ -191,7 +192,7 @@ class ServerEndpoint(aobject, asyncio.Protocol):
                 self._check_pushback()
                 self._buffer = None
 
-        self._log(logging.TRACE, "recv <%s%s>", data.hex(), separator.hex())
+        self._log(logging.TRACE, "recv <%s%s>", dump_hex(data), separator.hex())
         return data
 
     async def recv_wait(self):
@@ -202,7 +203,7 @@ class ServerEndpoint(aobject, asyncio.Protocol):
     async def send(self, data):
         data = bytes(data)
         if self._transport is not None and self._send_epoch == self._recv_epoch:
-            self._log(logging.TRACE, "send <%s>", data.hex())
+            self._log(logging.TRACE, "send <%s>", dump_hex(data))
             self._transport.write(data)
             return True
         else:
