@@ -48,11 +48,12 @@ class JTAGOpenOCDSubtarget(Elaboratable):
             m.d.sync += timer.eq(timer - 1)
         with m.Else():
             with m.If(out_fifo.r_rdy):
+                m.d.comb += out_fifo.r_en.eq(1)
                 with m.Switch(out_fifo.r_data):
-                    m.d.comb += out_fifo.r_en.eq(1)
                     # remote_bitbang_write(int tck, int tms, int tdi)
                     with m.Case(*b"01234567"):
                         m.d.sync += Cat(bus.tdi, bus.tms, bus.tck).eq(out_fifo.r_data[:3])
+                        m.d.sync += timer.eq(self.period_cyc - 1)
                     # remote_bitbang_reset(int trst, int srst)
                     with m.Case(*b"rstu"):
                         m.d.sync += Cat(self.srst_o, bus.trst_o).eq(out_fifo.r_data - ord(b"r"))
@@ -68,9 +69,8 @@ class JTAGOpenOCDSubtarget(Elaboratable):
                     with m.Case(*b"Q"):
                         pass
                     with m.Default():
+                        # Hang if an unknown command is received.
                         m.d.comb += out_fifo.r_en.eq(0)
-                with m.If(out_fifo.r_en):
-                    m.d.sync += timer.eq(self.period_cyc - 1)
 
         return m
 
