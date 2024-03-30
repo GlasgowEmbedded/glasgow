@@ -12,11 +12,12 @@ from ..jtag_probe import JTAGProbeBus
 
 
 class JTAGOpenOCDSubtarget(Elaboratable):
-    def __init__(self, pads, out_fifo, in_fifo, period_cyc):
+    def __init__(self, pads, out_fifo, in_fifo, period_cyc, us_cyc):
         self.pads       = pads
         self.out_fifo   = out_fifo
         self.in_fifo    = in_fifo
         self.period_cyc = period_cyc
+        self.us_cyc     = us_cyc
         self.srst_z     = Signal(reset=0)
         self.srst_o     = Signal(reset=0)
 
@@ -43,7 +44,7 @@ class JTAGOpenOCDSubtarget(Elaboratable):
         except:
             pass
 
-        timer = Signal(range(self.period_cyc))
+        timer = Signal(range(max(self.period_cyc, 1000 * self.us_cyc)))
         with m.If(timer != 0):
             m.d.sync += timer.eq(timer - 1)
         with m.Else():
@@ -65,6 +66,11 @@ class JTAGOpenOCDSubtarget(Elaboratable):
                     # remote_bitbang_blink(int on)
                     with m.Case(*b"Bb"):
                         m.d.sync += blink.eq(~out_fifo.r_data[5])
+                    # remote_bitbang_sleep(unsigned int microseconds)
+                    with m.Case(*b"Z"):
+                        m.d.sync += timer.eq(1000 * self.us_cyc - 1)
+                    with m.Case(*b"z"):
+                        m.d.sync += timer.eq(self.us_cyc - 1)
                     # remote_bitbang_quit(void)
                     with m.Case(*b"Q"):
                         pass
@@ -118,6 +124,7 @@ class JTAGOpenOCDApplet(GlasgowApplet):
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             period_cyc=int(target.sys_clk_freq // (args.frequency * 1000)),
+            us_cyc=int(target.sys_clk_freq // 1_000_000),
         ))
 
     async def run(self, device, args):
