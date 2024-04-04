@@ -28,14 +28,14 @@ class SelfTestSubtarget(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        m.d.comb += [pin.oe.eq(pin.io.oe) for pin in self.pins_a if hasattr(pin, "oe")]
+        m.d.comb += [pin.oe.o.eq(pin.io.oe) for pin in self.pins_a if hasattr(pin, "oe")]
         m.d.comb += [
             Cat(pin.io.oe for pin in self.pins_a).eq(self.reg_oe_a),
             Cat(pin.io.o for pin in self.pins_a).eq(self.reg_o_a),
             self.reg_i_a.eq(Cat(pin.io.i for pin in self.pins_a))
         ]
 
-        m.d.comb += [pin.oe.eq(pin.io.oe) for pin in self.pins_b if hasattr(pin, "oe")]
+        m.d.comb += [pin.oe.o.eq(pin.io.oe) for pin in self.pins_b if hasattr(pin, "oe")]
         m.d.comb += [
             Cat(pin.io.oe for pin in self.pins_b).eq(self.reg_oe_b),
             Cat(pin.io.o for pin in self.pins_b).eq(self.reg_o_b),
