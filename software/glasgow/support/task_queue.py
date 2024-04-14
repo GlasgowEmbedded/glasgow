@@ -10,7 +10,7 @@ class TaskQueue:
     """
     A queue of asyncio tasks that can be used for pipelining operations.
 
-    Consider a situation where a small buffer must be emptied with a low latency.Submitting
+    Consider a situation where a small buffer must be emptied with a low latency. Submitting
     a single large read wouldn't meet the latency requirements, and submitting small reads in
     a loop will cause buffer overflows due to the fact that Python's runtime (and probably the OS)
     are not real-time. Submitting many small reads in sequence, and immediately resubmitting
