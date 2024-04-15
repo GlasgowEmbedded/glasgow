@@ -1,6 +1,6 @@
 import logging
 from amaranth import *
-from amaranth.lib import io
+from amaranth.lib import stream, io
 
 from ...platform.generic import GlasgowPlatformPort
 from .. import AccessMultiplexer, AccessMultiplexerInterface
@@ -32,6 +32,11 @@ class _FIFOReadPort(Elaboratable):
         self.r_en   = Signal()
         self.r_rdy  = Signal()
         self.r_data = fifo.r_data
+
+        self.stream = stream.Signature(8).create()
+        self.stream.payload = self.r_data
+        self.stream.valid = self.r_rdy
+        self.stream.ready = self.r_en
 
     def elaborate(self, platform):
         fifo = self._fifo
@@ -71,6 +76,11 @@ class _FIFOWritePort(Elaboratable):
         self.w_rdy  = Signal()
         self.w_data = fifo.w_data
         self.flush  = fifo.flush
+
+        self.stream = stream.Signature(8).flip().create()
+        self.stream.payload = self.w_data
+        self.stream.valid = self.w_en
+        self.stream.ready = self.w_rdy
 
     def elaborate(self, platform):
         fifo = self._fifo
