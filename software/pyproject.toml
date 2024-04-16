@@ -38,7 +38,7 @@ dependencies = [
   "packaging>=23.0",
   # `platformdirs` is used in the bitstream builder to use platform-appropriate cache directories.
   # It uses SemVer.
-  "platformdirs>=3.0.0,<4",
+  "platformdirs>=3.0.0,<5",
   # `fx2` is effectively maintained together with Glasgow. It uses SemVer, and keeps backward
   # compatibility within the 0.x release series.
   "fx2>=0.11,<1",
