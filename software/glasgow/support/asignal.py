@@ -14,7 +14,7 @@ def wait_for_signal(signum, loop=None):
             signal.signal(signum, old_handler)
     future.add_done_callback(callback)
     def handler(signum, frame):
-        loop.call_soon_threadsafe(lambda: future.set_result(None))
+        loop.call_soon_threadsafe(lambda: future.done() or future.set_result(None))
         signal.signal(signum, old_handler)
     old_handler = signal.signal(signum, handler)
     return future
