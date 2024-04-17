@@ -71,8 +71,8 @@ class SWDOpenOCDSubtarget(Elaboratable):
             m.d.sync += timer.eq(timer - 1)
         with m.Else():
             with m.If(out_fifo.r_rdy):
+                m.d.comb += out_fifo.r_en.eq(1)
                 with m.Switch(out_fifo.r_data):
-                    m.d.comb += out_fifo.r_en.eq(1)
                     # remote_bitbang_swdio_drive(int is_output)
                     with m.Case(*b"Oo"):
                         m.d.sync += bus.swdio_z.eq(out_fifo.r_data[5])
@@ -84,6 +84,7 @@ class SWDOpenOCDSubtarget(Elaboratable):
                     # remote_bitbang_swd_write(int swclk, int swdio)
                     with m.Case(*b"defg"):
                         m.d.sync += Cat(bus.swdio_o, bus.swclk).eq(out_fifo.r_data[:2])
+                        m.d.sync += timer.eq(self.period_cyc - 1)
                     # remote_bitbang_reset(int trst, int srst)
                     with m.Case(*b"rstu"):
                         m.d.sync += self.srst_o.eq(out_fifo.r_data - ord(b"r"))
@@ -94,9 +95,8 @@ class SWDOpenOCDSubtarget(Elaboratable):
                     with m.Case(*b"Q"):
                         pass
                     with m.Default():
+                        # Hang if an unknown command is received.
                         m.d.comb += out_fifo.r_en.eq(0)
-                with m.If(out_fifo.r_en):
-                    m.d.sync += timer.eq(self.period_cyc - 1)
 
         return m
 
