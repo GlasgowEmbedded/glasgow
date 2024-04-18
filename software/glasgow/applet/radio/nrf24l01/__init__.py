@@ -475,8 +475,8 @@ class RadioNRF24L01Applet(GlasgowApplet):
                     if en_dpl:
                         length = await nrf24l01_iface.read_rx_payload_length()
                         if length > 32:
-                            self.logger.warn("corrupted packet received with length %d",
-                                             length)
+                            self.logger.warning("corrupted packet received with length %d",
+                                                length)
                             await nrf24l01_iface.flush_rx()
                             continue
                     else:
@@ -500,8 +500,8 @@ class RadioNRF24L01Applet(GlasgowApplet):
             else:
                 length = args.length
             if length > 32:
-                self.logger.warn("packets may be up to %d bytes long, but only %d bytes will "
-                                 "be captured", length, 32)
+                self.logger.warning("packets may be up to %d bytes long, but only %d bytes will "
+                                    "be captured", length, 32)
 
             await nrf24l01_iface.write_register(ADDR_FEATURE,
                 REG_FEATURE(EN_DPL=0, EN_DYN_ACK=0).to_int())

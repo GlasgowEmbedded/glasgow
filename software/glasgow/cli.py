@@ -418,7 +418,7 @@ def _applet(revision, args):
                    .format(applet.required_revision, revision))
         if revision < applet.required_revision:
             if args.override_required_revision:
-                applet.logger.warn(message)
+                applet.logger.warning(message)
             else:
                 raise GlasgowAppletError(message)
         applet.build(target, args)
@@ -646,7 +646,7 @@ async def _main():
             async def run_applet():
                 logger.info("running handler for applet %r", args.applet)
                 if applet.preview:
-                    logger.warn("applet %r is PREVIEW QUALITY and may CORRUPT DATA", args.applet)
+                    logger.warning("applet %r is PREVIEW QUALITY and may CORRUPT DATA", args.applet)
                 try:
                     iface = await applet.run(device, args)
                     if args.action in ("repl", "script"):
@@ -778,7 +778,7 @@ async def _main():
                 new_image[0] = 0xC0
             else:
                 if args.firmware:
-                    logger.warn("using custom firmware from %s", args.firmware.name)
+                    logger.warning("using custom firmware from %s", args.firmware.name)
                     with args.firmware as f:
                         for (addr, chunk) in input_data(f, fmt="ihex"):
                             fx2_config.append(addr, chunk)
@@ -922,7 +922,7 @@ async def _main():
 
     # User interruption
     except KeyboardInterrupt:
-        logger.warn("interrupted")
+        logger.warning("interrupted")
         return 130 # 128 + SIGINT
 
     finally:

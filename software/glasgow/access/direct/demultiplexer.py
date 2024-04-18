@@ -126,13 +126,13 @@ class DirectDemultiplexer(AccessDemultiplexer):
             # (e.g. NAND flash). Such applets can still work on revA/B with appropriate external
             # pull resistors, so we spend some additional effort to allow for that.
             if pull_low:
-                applet.logger.warn("port(s) %s requires external pull-down resistors on pins %s",
-                                   ", ".join(sorted(args.port_spec)),
-                                   ", ".join(map(str, pull_low)))
+                applet.logger.warning("port(s) %s requires external pull-down resistors on pins %s",
+                                      ", ".join(sorted(args.port_spec)),
+                                      ", ".join(map(str, pull_low)))
             if pull_high:
-                applet.logger.warn("port(s) %s requires external pull-up resistors on pins %s",
-                                   ", ".join(sorted(args.port_spec)),
-                                   ", ".join(map(str, pull_high)))
+                applet.logger.warning("port(s) %s requires external pull-up resistors on pins %s",
+                                      ", ".join(sorted(args.port_spec)),
+                                      ", ".join(map(str, pull_high)))
 
         await iface.reset()
         return iface
