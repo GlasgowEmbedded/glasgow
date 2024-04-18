@@ -39,22 +39,11 @@ class OSNetworkInterface:
 
         Calling :meth:`send` twice concurrently on the same interface has undefined behavior.
         """
-        assert len(packets) >= 1
-        loop = asyncio.get_event_loop()
-        future = asyncio.Future()
-        def callback():
-            loop.remove_writer(self._fd)
-            try:
-                for packet in packets:
-                    os.write(self._fd, packet)
-            except BlockingIOError: # filled the send buffer
-                pass # drop the rest
-            except Exception as exc:
-                future.set_exception(exc)
-            else:
-                future.set_result(None)
-        loop.add_writer(self._fd, callback)
-        await future
+        try:
+            for packet in packets:
+                os.write(self._fd, packet)
+        except BlockingIOError: # write until the buffer is full
+            pass
 
     async def recv(self, *, length=65536) -> 'list[bytes | bytearray | memoryview]':
         """"Receive packets.
