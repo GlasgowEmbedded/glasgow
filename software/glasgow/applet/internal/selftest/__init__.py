@@ -151,7 +151,7 @@ class SelfTestApplet(GlasgowApplet):
             self.logger.info("running self-test mode %s", mode)
 
             if mode == "leds":
-                self.logger.warn("power cycle the device to restore LED function")
+                self.logger.warning("power cycle the device to restore LED function")
 
                 led_state = 0b11111111111_00000000000
                 while True:

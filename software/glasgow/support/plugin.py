@@ -117,8 +117,8 @@ class PluginMetadata:
             return True # in-tree
         if os.getenv("GLASGOW_OUT_OF_TREE_APPLETS") == "I-am-okay-with-breaking-changes":
             if dist_name not in cls._out_of_tree_warning_printed_for:
-                logger.warn(f"loading out-of-tree plugin {dist_name!r}; plugin API is currently "
-                            f"unstable and subject to change without warning")
+                logger.warning(f"loading out-of-tree plugin {dist_name!r}; plugin API is "
+                               f"currently unstable and subject to change without warning")
                 cls._out_of_tree_warning_printed_for.add(dist_name)
             return True
         return False

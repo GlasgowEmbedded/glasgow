@@ -333,8 +333,8 @@ class ProgramNRF24Lx1Applet(GlasgowApplet):
                         raise ProgramNRF24Lx1Error("data outside of memory map at {:#06x}"
                                                  .format(memory_area.mem_addr + memory_area.size))
                     if memory_area.spi_addr & 0x10000 and not args.info_page:
-                        self.logger.warn("data provided for info page, but info page programming "
-                                         "is not enabled")
+                        self.logger.warning("data provided for info page, but info page "
+                                            "programming is not enabled")
                         continue
 
                     chunk_spi_addr = (chunk_mem_addr
@@ -374,12 +374,12 @@ class ProgramNRF24Lx1Applet(GlasgowApplet):
                 if args.info_page:
                     await nrf24lx1_iface.write_status(FSR_BIT_INFEN)
                     info_page = await nrf24lx1_iface.read(0x0000, 0x0100)
-                    self.logger.warn("backing up info page to %s", args.info_page)
+                    self.logger.warning("backing up info page to %s", args.info_page)
                     if os.path.isfile(args.info_page):
                         raise ProgramNRF24Lx1Error("info page backup file already exists")
                     with open(args.info_page, "wb") as f:
                         output_data(f, [(0x10000, info_page)])
-                    self.logger.warn("erasing code and data memory, and info page")
+                    self.logger.warning("erasing code and data memory, and info page")
                 else:
                     await check_read_protected()
                     await nrf24lx1_iface.write_status(0)
@@ -404,7 +404,7 @@ class ProgramNRF24Lx1Applet(GlasgowApplet):
                 if await check_info_page(0x23):
                     raise ProgramNRF24Lx1Error("memory read protection is already enabled")
 
-                self.logger.warn("protecting code and data memory from reads")
+                self.logger.warning("protecting code and data memory from reads")
                 await nrf24lx1_iface.write_enable()
                 await nrf24lx1_iface.disable_read()
                 await nrf24lx1_iface.wait_status()
