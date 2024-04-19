@@ -288,7 +288,7 @@ class SensorMousePS2Applet(PS2HostApplet):
         elif ident == ID_MOUSE_5_BUTTON:
             self.logger.info("found 5-button mouse")
         else:
-            self.logger.warn("found unknown mouse with ID %#04x", ident)
+            self.logger.warning("found unknown mouse with ID %#04x", ident)
 
         if args.resolution is not None:
             await mouse_iface.set_resolution(args.resolution)

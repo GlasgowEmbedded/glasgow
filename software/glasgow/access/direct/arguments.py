@@ -84,6 +84,8 @@ class DirectArguments(AccessArguments):
                 help += " (default: %(default)s)"
             else:
                 help += " (default is empty)"
+        if required and default is not None:
+            required = False
 
         opt_name = "--pins-" + name.lower().replace("_", "-")
         parser.add_argument(

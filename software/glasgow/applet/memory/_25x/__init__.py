@@ -429,7 +429,7 @@ class Memory25xApplet(SPIControllerApplet):
                                  long_manufacturer_id, manufacturer_name, long_device_id)
             if short_manufacturer_id in (0x00, 0xff) and long_manufacturer_id in (0x00, 0xff):
                 if legacy_device_id in (0x00, 0xff):
-                    self.logger.warn("no electronic signature detected; device not present?")
+                    self.logger.warning("no electronic signature detected; device not present?")
                 else:
                     self.logger.info("device lacks JEDEC manufacturer/device ID")
                     self.logger.info("electronic signature %#04x",

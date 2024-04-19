@@ -36,11 +36,12 @@ class SWDProbeBus(Elaboratable):
 
 
 class SWDOpenOCDSubtarget(Elaboratable):
-    def __init__(self, pads, out_fifo, in_fifo, period_cyc):
+    def __init__(self, pads, out_fifo, in_fifo, period_cyc, us_cyc):
         self.pads       = pads
         self.out_fifo   = out_fifo
         self.in_fifo    = in_fifo
         self.period_cyc = period_cyc
+        self.us_cyc     = us_cyc
         self.srst_z     = Signal(reset=0)
         self.srst_o     = Signal(reset=0)
 
@@ -66,13 +67,13 @@ class SWDOpenOCDSubtarget(Elaboratable):
         except:
             pass
 
-        timer = Signal(range(self.period_cyc))
+        timer = Signal(range(max(self.period_cyc, 1000 * self.us_cyc)))
         with m.If(timer != 0):
             m.d.sync += timer.eq(timer - 1)
         with m.Else():
             with m.If(out_fifo.r_rdy):
+                m.d.comb += out_fifo.r_en.eq(1)
                 with m.Switch(out_fifo.r_data):
-                    m.d.comb += out_fifo.r_en.eq(1)
                     # remote_bitbang_swdio_drive(int is_output)
                     with m.Case(*b"Oo"):
                         m.d.sync += bus.swdio_z.eq(out_fifo.r_data[5])
@@ -84,19 +85,24 @@ class SWDOpenOCDSubtarget(Elaboratable):
                     # remote_bitbang_swd_write(int swclk, int swdio)
                     with m.Case(*b"defg"):
                         m.d.sync += Cat(bus.swdio_o, bus.swclk).eq(out_fifo.r_data[:2])
+                        m.d.sync += timer.eq(self.period_cyc - 1)
                     # remote_bitbang_reset(int trst, int srst)
                     with m.Case(*b"rstu"):
                         m.d.sync += self.srst_o.eq(out_fifo.r_data - ord(b"r"))
                     # remote_bitbang_blink(int on)
                     with m.Case(*b"Bb"):
                         m.d.sync += blink.eq(~out_fifo.r_data[5])
+                    # remote_bitbang_sleep(unsigned int microseconds)
+                    with m.Case(*b"Z"):
+                        m.d.sync += timer.eq(1000 * self.us_cyc - 1)
+                    with m.Case(*b"z"):
+                        m.d.sync += timer.eq(self.us_cyc - 1)
                     # remote_bitbang_quit(void)
                     with m.Case(*b"Q"):
                         pass
                     with m.Default():
+                        # Hang if an unknown command is received.
                         m.d.comb += out_fifo.r_en.eq(0)
-                with m.If(out_fifo.r_en):
-                    m.d.sync += timer.eq(self.period_cyc - 1)
 
         return m
 
@@ -144,6 +150,7 @@ class SWDOpenOCDApplet(GlasgowApplet):
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             period_cyc=int(target.sys_clk_freq // (args.frequency * 1000)),
+            us_cyc=int(target.sys_clk_freq // 1_000_000),
         ))
 
     async def run(self, device, args):

@@ -105,7 +105,7 @@ class MEC16xxInterface(aobject):
 
         await tap_iface.flush()
 
-        self._logger.warn("after running emergency mass erase, a power cycle may be required on some chips")
+        self._logger.warning("after running emergency mass erase, a power cycle may be required on some chips")
 
     async def reset_quick_halt(self):
         tap_iface = self.lower.lower
@@ -232,8 +232,8 @@ class MEC16xxInterface(aobject):
                 self._log("read Flash_Address=%05x Flash_Data=%08x",
                           address + offset * 4, data_3)
 
-                self._logger.warn("read glitch Flash_Address=%05x Flash_Data=%08x/%08x/%08x",
-                                  address + offset * 4, data_1, data_2, data_3)
+                self._logger.warning("read glitch Flash_Address=%05x Flash_Data=%08x/%08x/%08x",
+                                     address + offset * 4, data_1, data_2, data_3)
 
                 if data_1 == data_2:
                     data = data_1
@@ -545,42 +545,42 @@ class ProgramMEC16xxApplet(DebugARCApplet):
             starting_address = 0
             if flash_status.Boot_Block:
                 if not args.force:
-                    raise MEC16xxError("the flash_status.Boot_Block bit is asserted! this makes the lower 4KiB of flash (a.k.a. the Boot Block) " +
-                                   "inaccessible, and the non-emergency mass-erase is also disabled! If you wish to only access the non-protected " +
-                                   "regions with the current command, use --force. Also, it should still be possible to erase everything with the " +
+                    raise MEC16xxError("the flash_status.Boot_Block bit is asserted! this makes the lower 4KiB of flash (a.k.a. the Boot Block) "
+                                   "inaccessible, and the non-emergency mass-erase is also disabled! If you wish to only access the non-protected "
+                                   "regions with the current command, use --force. Also, it should still be possible to erase everything with the "
                                    "'emergency-erase' command.")
                 else:
                     starting_address = 4096
-                    self.logger.warn("skipping over the first 4KiB of flash (a.k.a. the Boot Block). It will not be erased/read/written. " +
-                                     "If reading, the output will be INCOMPLETE and will contain all 0xFFs")
+                    self.logger.warning("skipping over the first 4KiB of flash (a.k.a. the Boot Block). It will not be erased/read/written. "
+                                        "If reading, the output will be INCOMPLETE and will contain all 0xFFs")
 
             final_bytes_to_skip = 0
             if flash_status.Data_Block:
                 if not args.force:
-                    raise MEC16xxError("the flash_status.Data_Block bit is asserted! this makes the higher 4KiB of flash (a.k.a. the Data Block) " +
-                                   "inaccessible, and the non-emergency mass-erase is also disabled! If you wish to only access the non-protected " +
-                                   "regions with the current command, use --force. Also, it should still be possible to erase everything with the " +
+                    raise MEC16xxError("the flash_status.Data_Block bit is asserted! this makes the higher 4KiB of flash (a.k.a. the Data Block) "
+                                   "inaccessible, and the non-emergency mass-erase is also disabled! If you wish to only access the non-protected "
+                                   "regions with the current command, use --force. Also, it should still be possible to erase everything with the "
                                    "'emergency-erase' command.")
                 else:
                     final_bytes_to_skip = 4096
-                    self.logger.warn("skipping over the last 4KiB of flash (a.k.a. the Data Block). It will not be erased/read/written. " +
-                                     "If reading, the output will be INCOMPLETE and will contain all 0xFFs")
+                    self.logger.warning("skipping over the last 4KiB of flash (a.k.a. the Data Block). It will not be erased/read/written. "
+                                        "If reading, the output will be INCOMPLETE and will contain all 0xFFs")
 
         if args.operation == "read-flash":
             await mec_iface.enable_flash_access(enabled=True)
 
             self.logger.info(f"reading {args.size_bytes} bytes from flash")
             if args.size_bytes < FLASH_SIZE_MAX:
-                self.logger.warn("some MEC16xx devices contain 256KiB of flash, even if the datasheet only states 192KiB is available. " +
-                                 "consider attempting this command with '-s 256K' as well to avoid data loss.")
+                self.logger.warning("some MEC16xx devices contain 256KiB of flash, even if the datasheet only states 192KiB is available. "
+                                    "consider attempting this command with '-s 256K' as well to avoid data loss.")
 
             real_size_bytes = args.size_bytes - starting_address - final_bytes_to_skip
 
             if args.burst:
-                self.logger.warn("beware that burst has been observed to not work correctly in the past on some MEC16xx variants")
+                self.logger.warning("beware that burst has been observed to not work correctly in the past on some MEC16xx variants")
                 words = await mec_iface.read_flash_burst(starting_address, (real_size_bytes + 3) // 4)
             else:
-                self.logger.info("this may take many minutes. consider trying higher jtag clock speeds (e.g. '-f 4000'), and consider trying '--burst'. " +
+                self.logger.info("this may take many minutes. consider trying higher jtag clock speeds (e.g. '-f 4000'), and consider trying '--burst'. "
                                  "beware that burst has been observed to not work correctly in the past on some MEC16xx variants")
                 words = await mec_iface.read_flash(starting_address, (real_size_bytes + 3) // 4)
             await mec_iface.enable_flash_access(enabled=False)
@@ -612,11 +612,11 @@ class ProgramMEC16xxApplet(DebugARCApplet):
             if file_size > flash_size - final_bytes_to_skip:
                 tail = file_bytes[flash_size - final_bytes_to_skip:]
                 if tail != len(tail) * b'\xff':
-                    self.logger.warn("the specified flash image has non-empty Data Block (the final 4KiB). that area will not be written.")
+                    self.logger.warning("the specified flash image has non-empty Data Block (the final 4KiB). that area will not be written.")
             if starting_address:
                 head = file_bytes[:starting_address]
                 if head != len(head) * b'\xff':
-                    self.logger.warn("the specified flash image has non-empty Boot Block (the first 4KiB). that area will not be written.")
+                    self.logger.warning("the specified flash image has non-empty Boot Block (the first 4KiB). that area will not be written.")
             toflash_bytes = file_bytes[starting_address:flash_size - final_bytes_to_skip]
             if len(toflash_bytes) % 4:
                 # Make sure we pad everything to a multiple of 4 byte words
