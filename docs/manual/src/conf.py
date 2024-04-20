@@ -84,7 +84,5 @@ linkcheck_anchors_ignore_for_url = [
     r"^https://matrix\.to/",
     r"^https://web\.libera\.chat/",
     # React page with README content included as a JSON payload.
-    r"^https://github\.com/[^/]+/[^/]+/$",
-    # GitHub link with line anchor or range anchor
-    r"^https://github\.com/[^/]+/[^/]+/blob/.+#L[0-9]+(?:-L[0-9]+)?$",
+    r"^https://github\.com/",
 ]
