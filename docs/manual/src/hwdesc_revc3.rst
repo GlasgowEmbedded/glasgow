@@ -422,7 +422,7 @@ LEDs
 | VIO B | Green  | D14        | NCD0603G1   | Lights when VIO B regulator (U14) is enabled                                                                        |
 +-------+--------+------------+-------------+---------------------------------------------------------------------------------------------------------------------+
 
-The system LEDs (PWR, FX2, ICE, ACT, ERR) are under control of the FX2 firmware, which is responsible for producing the behaviour described above. In the event that the FX2 firmware does not run (e.g. no firmware is present), the LED IO pins default to a high-impedance input state and will either all light dimly or all be off.
+The system LEDs (FX2, ICE, ACT, ERR) are under control of the FX2 firmware, which is responsible for producing the behaviour described above. In the event that the FX2 firmware does not run (e.g. no firmware is present), the LED IO pins default to a high-impedance input state and will either all light dimly or all be off.
 
 The user LEDs (U1-U5) are under control of the gateware. In most cases they go unused and the FPGA defaults the pins to be inputs with weak pullups, which results in the user LEDs lighting dimly.
 
