@@ -507,7 +507,7 @@ def configure_logger(args, term_handler):
         root_logger.setLevel(level)
 
 
-async def _main():
+async def main():
     # Handle log messages emitted during construction of the argument parser (e.g. by the plugin
     # subsystem).
     term_handler = create_logger()
@@ -932,10 +932,11 @@ async def _main():
     return 0
 
 
-def main():
-    loop = asyncio.get_event_loop()
-    exit(loop.run_until_complete(_main()))
+# This entry point is invoked via `project.scripts.glasgow` when installing the package with `pipx`.
+def run_main():
+    exit(asyncio.run(main()))
 
 
+# This entry point is invoked when running `python -m glasgow.cli`.
 if __name__ == "__main__":
-    main()
+    run_main()

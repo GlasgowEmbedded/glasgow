@@ -73,7 +73,7 @@ http = [
 ]
 
 [project.scripts]
-glasgow = "glasgow.cli:main"
+glasgow = "glasgow.cli:run_main"
 
 [project.entry-points."glasgow.applet"]
 selftest = "glasgow.applet.internal.selftest:SelfTestApplet"
