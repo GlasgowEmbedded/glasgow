@@ -34,6 +34,20 @@ class Registers(Elaboratable):
         self.regs_w.append(reg)
         return reg, addr
 
+    def add_existing_ro(self, reg):
+        addr = self.reg_count
+        self.reg_count += 1
+        self.regs_r.append(reg)
+        self.regs_w.append(Signal(name="ro_reg_dummy"))
+        return addr
+
+    def add_existing_rw(self, reg):
+        addr = self.reg_count
+        self.reg_count += 1
+        self.regs_r.append(reg)
+        self.regs_w.append(reg)
+        return addr
+
     def elaborate(self, platform):
         m = Module()
         return m
@@ -56,7 +70,7 @@ class I2CRegisters(Registers):
         if self.reg_count != 0:
             latch_addr = Signal()
             reg_addr   = Signal(range(self.reg_count))
-            reg_data   = Signal(max(len(s) for s in self.regs_r))
+            reg_data   = Signal(max(len(Value.cast(s)) for s in self.regs_r))
 
             m.d.comb += self.i2c_target.data_o.eq(reg_data)
 
