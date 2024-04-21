@@ -25,29 +25,49 @@ class OSNetworkInterface:
             struct.pack("16sH22s", name, LINUX_IFF_TAP | LINUX_IFF_NO_PI, b""))
 
     def fileno(self):
+        """Raw file descriptor.
+
+        The file descriptor may be useful for operations such as :meth:`fcntl.ioctl` or fine-grained
+        buffering that is not achievable with :meth:`send` and :meth:`recv`.
+        """
         return self._fd
 
-    def send(self, packet: 'bytes | bytearray | memoryview') -> asyncio.Future:
-        loop = asyncio.get_event_loop()
-        future = asyncio.Future()
-        def callback():
-            loop.remove_writer(self._fd)
-            try:
-                os.write(self._fd, packet)
-                future.set_result(None)
-            except Exception as exc:
-                future.set_exception(exc)
-        loop.add_writer(self._fd, callback)
-        return future
+    async def send(self, packets: 'list[bytes | bytearray | memoryview]'):
+        """"Send packets.
 
-    def recv(self, *, length=65536) -> asyncio.Future:
+        To improve throughput, :meth:`send` can queue multiple packets.
+
+        Calling :meth:`send` twice concurrently on the same interface has undefined behavior.
+        """
+        try:
+            for packet in packets:
+                os.write(self._fd, packet)
+        except BlockingIOError: # write until the buffer is full
+            pass
+
+    async def recv(self, *, length=65536) -> 'list[bytes | bytearray | memoryview]':
+        """"Receive packets.
+
+        To improve throughput, :meth:`recv` dequeues all available packets. Packets longer than
+        :py:`length` are truncated to that length, without indication of it.
+
+        Calling :meth:`recv` twice concurrently on the same interface has undefined behavior.
+        """
         loop = asyncio.get_event_loop()
         future = asyncio.Future()
         def callback():
             loop.remove_reader(self._fd)
             try:
-                future.set_result(os.read(self._fd, length))
+                packets = []
+                while True:
+                    packets.append(os.read(self._fd, length))
+            except BlockingIOError: # read all of the ones available
+                future.set_result(packets)
             except Exception as exc:
                 future.set_exception(exc)
+            else:
+                future.set_result(packets)
+        # I have benchmarked this and trying to do a speculative `os.read` instead of requiring
+        # the loop to poll the fd at least once doesn't result in any performance improvement.
         loop.add_reader(self._fd, callback)
-        return future
+        return await future
