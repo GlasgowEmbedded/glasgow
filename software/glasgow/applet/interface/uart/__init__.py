@@ -136,7 +136,7 @@ class UARTApplet(GlasgowApplet):
     description = """
     Transmit and receive data via UART.
 
-    Any baud rate is supported. Only 8 start bits and 1 stop bits are supported, with configurable
+    Any baud rate is supported. Only 8 data bits and 1 stop bits are supported, with configurable
     parity.
 
     The automatic baud rate determination algorithm works by locking onto the shortest bit time in
