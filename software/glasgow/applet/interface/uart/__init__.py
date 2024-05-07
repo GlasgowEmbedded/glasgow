@@ -191,6 +191,8 @@ class UARTApplet(GlasgowApplet):
         bit_cyc,    self.__addr_bit_cyc    = target.registers.add_ro(32)
         rx_errors,  self.__addr_rx_errors  = target.registers.add_ro(16)
 
+        self.__has_parity = (args.parity != "none")
+
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(UARTSubtarget(
             pads=iface.get_pads(args, pins=self.__pins),
@@ -272,7 +274,10 @@ class UARTApplet(GlasgowApplet):
                 delta += 1 << 16
             cur_errors = new_errors
             if delta > 0:
-                self.logger.warning("%d frame or parity errors detected", delta)
+                if self.__has_parity:
+                    self.logger.warning("%d frame or parity errors detected", delta)
+                else:
+                    self.logger.warning("%d frame errors detected", delta)
 
             new_bit_cyc = await device.read_register(self.__addr_bit_cyc, width=4)
             if new_bit_cyc != cur_bit_cyc:
