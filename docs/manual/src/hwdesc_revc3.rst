@@ -387,7 +387,7 @@ To use the LVDS connector you must provide ``VIO_AUX``, an IO voltage between 1.
 
 The pins can be used in differential mode (N/P pairs) or in single-ended mode (independent signals on N and P).
 
-No termination resistors are included. You should include termination resistors on your board if you use the LVDS connector.
+No termination resistors are included. You should include termination resistors on your board if you use the LVDS connector. See the Lattice document `FPGA-TN-02213 "Using Differential I/O (LVDS, Sub-LVDS) in iCE40 LP/HX Devices" <https://www.latticesemi.com/view_document?document_id=47960>`__ for details.
 
 .. _revC3-leds:
 
