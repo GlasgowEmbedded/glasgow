@@ -472,4 +472,4 @@ I²C bus addresses
 Recovery
 --------
 
-Two pads can be found on the board marked "RECOVER", next to the FX2 EEPROM (U2). This footprint is R40 in the schematic. To initiate recovery, short these pads together and press the reset button, then remove the short. This temporarily changes the I2C address of the FX2 EEPROM so that it boots without firmware, placing it into a recovery mode.
+Two pads can be found on the board marked "RECOVER", next to the FX2 EEPROM (U2). This footprint is R40 in the schematic. To initiate recovery, short these pads together and press the reset button, then remove the short. This temporarily changes the I2C address of the FX2 EEPROM so that it boots without firmware, placing it into a recovery mode where it enumerates with the default FX2 device descriptor. The ``fx2tool`` utility can then be used to make a backup copy of the FX2 EEPROM, and the ``glasgow factory`` command can be used to re-provision the device configuration block and the firmware
