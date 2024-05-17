@@ -1,9 +1,9 @@
-import os
+import os, time
 is_production = True if os.getenv("DOCS_IS_PRODUCTION", "").lower() in ('1', 'yes', 'true') else False
 
 html_title = project = "Glasgow Interface\u00a0Explorer"
 release = version = ""
-copyright = "2020—2023, Glasgow Interface Explorer contributors"
+copyright = time.strftime("2020—%Y, Glasgow Interface Explorer contributors")
 
 extensions = [
     "myst_parser",
