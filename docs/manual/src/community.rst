@@ -18,6 +18,14 @@ All of our chat channels are bridged together; regardless of which one you choos
 .. _discord: https://1bitsquared.com/pages/chat
 
 
+.. _code-of-conduct:
+
+Code of Conduct
+---------------
+
+All community interactions are covered by our :doc:`Code of Conduct <conduct>`.
+
+
 .. _fediverse:
 
 Fediverse

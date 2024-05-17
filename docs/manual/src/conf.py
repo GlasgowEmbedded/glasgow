@@ -6,6 +6,7 @@ release = version = ""
 copyright = "2020—2023, Glasgow Interface Explorer contributors"
 
 extensions = [
+    "myst_parser",
     "sphinx.ext.todo",
     "sphinx.ext.intersphinx",
     "sphinx_copybutton",

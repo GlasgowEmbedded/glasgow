@@ -1,5 +1,5 @@
-Glasgow Interface Explorer Code of Conduct
-==========================================
+Code of Conduct
+===============
 
 Preface
 -------
