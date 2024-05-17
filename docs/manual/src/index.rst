@@ -13,4 +13,5 @@ Glasgow Interface Explorer manual
     develop/index
     contribute
     community
+    conduct
     license
