@@ -813,6 +813,8 @@ async def main():
                 if await device.read_eeprom("fx2", 0, len(new_image)) != new_image:
                     logger.critical("configuration/firmware programming failed")
                     return 1
+
+                logger.warn("power cycle the device to apply changes")
             else:
                 logger.info("configuration and firmware identical")
 
