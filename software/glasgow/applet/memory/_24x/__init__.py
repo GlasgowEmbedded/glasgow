@@ -218,14 +218,20 @@ class Memory24xApplet(I2CInitiatorApplet):
 
         if args.operation == "verify":
             if args.data is not None:
-                golden_data = args.data
+                gold_data = args.data
             if args.file is not None:
-                golden_data = args.file.read()
+                gold_data = args.file.read()
 
-            actual_data = await m24x_iface.read(args.address, len(golden_data))
-            if actual_data is None:
+            flash_data = await m24x_iface.read(args.address, len(gold_data))
+            if flash_data is None:
                 raise GlasgowAppletError("memory did not acknowledge read")
-            if actual_data == golden_data:
+            if flash_data == gold_data:
                 self.logger.info("verify PASS")
             else:
+                for offset, (gold_byte, flash_byte) in enumerate(zip(gold_data, flash_data)):
+                    if gold_byte != flash_byte:
+                        different_at = args.address + offset
+                        break
+                self.logger.error("first differing byte at %#08x (expected %#04x, actual %#04x)",
+                                  different_at, gold_byte, flash_byte)
                 raise GlasgowAppletError("verify FAIL")
