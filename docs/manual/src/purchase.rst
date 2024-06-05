@@ -30,8 +30,9 @@ The CrowdSupply campaign was fully funded on February 2nd, 2021. The Early Bird 
 
 The campaign was deeply impacted by additional manufacturing challenges such as the COVID-19 pandemic, semiconductor and passive component shortages on top of the more usual and well-known ones. The answers to both of these questions is: **It ships when it ships**.
 
-We do work hard to get more hardware manufactured and shipped as soon as possible. If you want more recent updates than the CrowdSupply published updates, keep an eye on our :ref:`chat channels <community>`. We also have a :ref:`weekly developer meeting <meetings>` where `@esden`_ provides CrowdSupply campaign progress updates.
+We do work hard to get more hardware manufactured and shipped as soon as possible. If you want more recent updates than the CrowdSupply published updates, keep an eye on our :ref:`chat channels <community>`. To see where your order is in the queue, use the `Fulfillment Tracker`_. We also have a :ref:`weekly developer meeting <meetings>` where `@esden`_ provides CrowdSupply campaign progress updates.
 
 Please also note that the efforts to design and support the Glasgow hardware and software and the efforts to manufacture it are separate---the volunteers developing and maintaining the project do not benefit from sales.
 
 .. _@esden: https://chaos.social/@esden
+.. _Fulfillment Tracker: https://glasgow.1bitsquared.com/
