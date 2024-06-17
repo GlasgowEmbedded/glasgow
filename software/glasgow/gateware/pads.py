@@ -1,5 +1,5 @@
 from amaranth import *
-from amaranth.lib.io import Pin
+from amaranth.lib import io
 
 
 __all__ = ['Pads']
@@ -33,7 +33,10 @@ class Pads(Elaboratable):
     """
     def __init__(self, **kwargs):
         for name, pin in kwargs.items():
-            assert isinstance(pin, Pin)
+            if hasattr(pin, "signature"):
+                assert isinstance(pin.signature, io.Buffer.Signature)
+            else:
+                assert isinstance(pin, io.Pin)
 
             pin_name = f"{name}_t"
             if hasattr(self, pin_name):

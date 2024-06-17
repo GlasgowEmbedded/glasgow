@@ -67,9 +67,9 @@ class MemoryPROMBus(Elaboratable):
         ]
 
         if hasattr(pads, "a_clk_t") and hasattr(pads, "a_si_t"):
-            a_clk = Signal(reset=1)
+            a_clk = Signal(init=1)
             a_si  = Signal()
-            a_lat = Signal(reset=0) if hasattr(pads, "a_lat_t") else None
+            a_lat = Signal(init=0) if hasattr(pads, "a_lat_t") else None
             m.d.comb += [
                 pads.a_clk_t.oe.eq(1),
                 pads.a_clk_t.o.eq(a_clk),
@@ -89,9 +89,9 @@ class MemoryPROMBus(Elaboratable):
             sa_latch = Signal(self.a_bits - len(pads.a_t.o))
 
             sh_cyc = math.ceil(platform.default_clk_frequency / self._sh_freq)
-            timer = Signal(range(sh_cyc), reset=sh_cyc - 1)
+            timer = Signal(range(sh_cyc), init=sh_cyc - 1)
             count = Signal(range(len(sa_latch) + 1))
-            first = Signal(reset=1)
+            first = Signal(init=1)
 
             with m.FSM():
                 with m.State("READY"):

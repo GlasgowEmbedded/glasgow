@@ -1,7 +1,6 @@
 import logging
 from amaranth import *
-from amaranth.hdl.cd import ClockDomain
-from amaranth.hdl.rec import Record
+from amaranth.lib import data
 
 from ....gateware.pads import *
 from ....gateware.pll import *
@@ -63,11 +62,7 @@ class VGAOutputSubtarget(Elaboratable):
 
         h_ctr = Signal(range(h_total))
         v_ctr = Signal(range(v_total))
-        pix = Record([
-            ("r", 1),
-            ("g", 1),
-            ("b", 1),
-        ])
+        pix = Signal(data.StructLayout({"r": 1, "g": 1, "b": 1}))
 
         h_en  = Signal()
         v_en  = Signal()

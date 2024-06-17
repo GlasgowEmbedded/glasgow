@@ -401,7 +401,7 @@ class DisplayPDIApplet(GlasgowApplet):
 
         cog_power, self.__addr_cog_power = target.registers.add_rw(1)
         cog_disch, self.__addr_cog_disch = target.registers.add_rw(1)
-        cog_reset, self.__addr_cog_reset = target.registers.add_rw(1, reset=1)
+        cog_reset, self.__addr_cog_reset = target.registers.add_rw(1, init=1)
 
         if hasattr(iface.pads, "pwm_t"):
             cog_pwmen, self.__addr_cog_pwmen = target.registers.add_rw(1)

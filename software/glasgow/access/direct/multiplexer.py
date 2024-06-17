@@ -1,5 +1,6 @@
 import logging
 from amaranth import *
+from amaranth.lib import io
 
 from .. import AccessMultiplexer, AccessMultiplexerInterface
 
@@ -24,8 +25,8 @@ class _FIFOReadPort(Elaboratable):
         self.width = fifo.width
         self.depth = fifo.depth
 
-        self._ctrl_en = Signal(reset=1)
-        self._data_en = Signal(reset=1)
+        self._ctrl_en = Signal(init=1)
+        self._data_en = Signal(init=1)
 
         self.r_en   = Signal()
         self.r_rdy  = Signal()
@@ -62,8 +63,8 @@ class _FIFOWritePort(Elaboratable):
         self.width = fifo.width
         self.depth = fifo.depth
 
-        self._ctrl_en = Signal(reset=1)
-        self._data_en = Signal(reset=1)
+        self._ctrl_en = Signal(init=1)
+        self._data_en = Signal(init=1)
 
         self.w_en   = Signal()
         self.w_rdy  = Signal()
@@ -153,8 +154,7 @@ class DirectMultiplexer(AccessMultiplexer):
 
 
 class DirectMultiplexerInterface(AccessMultiplexerInterface):
-    def __init__(self, applet, analyzer, registers, fx2_crossbar, pipe_num, pins,
-                 throttle):
+    def __init__(self, applet, analyzer, registers, fx2_crossbar, pipe_num, pins, throttle):
         assert throttle in ("full", "fifo", "none")
 
         super().__init__(applet, analyzer)
@@ -167,7 +167,7 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
         self._fifos         = []
         self._pin_tristates = []
 
-        self.reset, self._addr_reset = self._registers.add_rw(1, reset=1)
+        self.reset, self._addr_reset = self._registers.add_rw(1, init=1)
         self.logger.debug("adding reset register at address %#04x", self._addr_reset)
 
     def elaborate(self, platform):
@@ -186,13 +186,15 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
             m.submodules += fifo
 
         for pin_parts, oe, o, i in self._pin_tristates:
+            m.submodules += (io_buffer := io.Buffer("io", pin_parts.io))
             m.d.comb += [
-                pin_parts.io.oe.eq(oe),
-                pin_parts.io.o.eq(o),
-                i.eq(pin_parts.io.i),
+                io_buffer.oe.eq(oe),
+                io_buffer.o.eq(o),
+                i.eq(io_buffer.i),
             ]
             if hasattr(pin_parts, "oe"):
-                m.d.comb += pin_parts.oe.o.eq(oe)
+                m.submodules += (oe_buffer := io.Buffer("o", pin_parts.oe))
+                m.d.comb += oe_buffer.o.eq(oe)
 
         return m
 

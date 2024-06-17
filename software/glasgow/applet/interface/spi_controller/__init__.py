@@ -16,10 +16,10 @@ class SPIControllerBus(Elaboratable):
         self.sck_edge = sck_edge
         self.cs_active = cs_active
 
-        self.oe   = Signal(reset=1)
+        self.oe   = Signal(init=1)
 
-        self.sck  = Signal(reset=sck_idle)
-        self.cs   = Signal(reset=not cs_active)
+        self.sck  = Signal(init=sck_idle)
+        self.cs   = Signal(init=not cs_active)
         self.copi = Signal()
         self.cipo = Signal()
 

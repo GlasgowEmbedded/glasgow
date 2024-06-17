@@ -23,7 +23,7 @@ def simulation_test(case=None, **kwargs):
                 yield from case(self, self.tb)
             if isinstance(self.tb, Elaboratable):
                 sim = Simulator(self.tb)
-                with sim.write_vcd(vcd_file=open("test.vcd", "w")):
+                with sim.write_vcd("test.vcd"):
                     sim.add_clock(1e-8)
                     sim.add_sync_process(setup_wrapper)
                     sim.run()

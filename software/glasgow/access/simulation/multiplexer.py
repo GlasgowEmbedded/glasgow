@@ -99,7 +99,7 @@ class SimulationMultiplexerInterface(AccessMultiplexerInterface):
 
         self.in_fifo = self._make_fifo(
             crossbar_side="read", logic_side="write", cd_logic=clock_domain, depth=depth)
-        self.in_fifo.flush = Signal(reset=auto_flush)
+        self.in_fifo.flush = Signal(init=auto_flush)
         return self.in_fifo
 
     def get_out_fifo(self, depth=512, clock_domain=None):

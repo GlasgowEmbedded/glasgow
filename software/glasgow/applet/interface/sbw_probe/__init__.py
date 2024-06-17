@@ -14,9 +14,9 @@ from ..jtag_probe import JTAGProbeDriver, JTAGProbeInterface
 class SpyBiWireProbeBus(Elaboratable):
     def __init__(self, pads):
         self._pads = pads
-        self.sbwtck  = Signal(reset=0)
-        self.sbwtd_z = Signal(reset=0)
-        self.sbwtd_o = Signal(reset=1)
+        self.sbwtck  = Signal(init=0)
+        self.sbwtd_z = Signal(init=0)
+        self.sbwtd_o = Signal(init=1)
         self.sbwtd_i = Signal()
 
     def elaborate(self, platform):

@@ -2,6 +2,7 @@ import struct
 import logging
 import asyncio
 from amaranth import *
+from amaranth.lib import io
 
 from ....support.bits import *
 from ....support.logging import *
@@ -18,8 +19,8 @@ class JTAGOpenOCDSubtarget(Elaboratable):
         self.in_fifo    = in_fifo
         self.period_cyc = period_cyc
         self.us_cyc     = us_cyc
-        self.srst_z     = Signal(reset=0)
-        self.srst_o     = Signal(reset=0)
+        self.srst_z     = Signal(init=0)
+        self.srst_o     = Signal(init=0)
 
     def elaborate(self, platform):
         m = Module()
@@ -40,7 +41,8 @@ class JTAGOpenOCDSubtarget(Elaboratable):
 
         blink = Signal()
         try:
-            m.d.comb += platform.request("led").o.eq(blink)
+            m.submodules.io_blink = io_blink = io.Buffer("o", platform.request("led", dir="-"))
+            m.d.comb += io_blink.o.eq(blink)
         except:
             pass
 

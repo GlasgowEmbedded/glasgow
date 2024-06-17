@@ -22,14 +22,14 @@ class LinearFeedbackShiftRegister(Elaboratable):
         generated.
     :type reset: int
     """
-    def __init__(self, degree, taps, reset=1):
-        assert reset != 0
+    def __init__(self, degree, taps, init=1):
+        assert init != 0
 
         self.degree = degree
         self.taps   = taps
-        self.reset  = reset
+        self.init   = init
 
-        self.value  = Signal(degree, reset=reset)
+        self.value  = Signal(degree, init=init)
 
     def elaborate(self, platform):
         m = Module()
@@ -41,7 +41,7 @@ class LinearFeedbackShiftRegister(Elaboratable):
 
     def generate(self):
         """Generate every distinct value the LFSR will take."""
-        value = self.reset
+        value = self.init
         mask  = (1 << self.degree) - 1
         while True:
             yield value
@@ -49,5 +49,5 @@ class LinearFeedbackShiftRegister(Elaboratable):
             for tap in self.taps:
                 feedback ^= (value >> (tap - 1)) & 1
             value = ((value << 1) & mask) | feedback
-            if value == self.reset:
+            if value == self.init:
                 break

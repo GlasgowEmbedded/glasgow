@@ -1,6 +1,6 @@
 import unittest
 from amaranth import *
-from amaranth.lib.io import Pin
+from amaranth.lib import io
 
 from glasgow.gateware import simulation_test
 from glasgow.gateware.uart import UART
@@ -8,10 +8,10 @@ from glasgow.gateware.uart import UART
 
 class UARTTestbench(Elaboratable):
     def __init__(self):
-        self.rx_t = Pin(width=1, dir='i')
+        self.rx_t = io.Buffer.Signature('i', 1).create()
         self.rx_i = self.rx_t.i
 
-        self.tx_t = Pin(width=1, dir='oe')
+        self.tx_t = io.Buffer.Signature('o', 1).create()
         self.tx_o = self.tx_t.o
 
         self.bit_cyc = 4

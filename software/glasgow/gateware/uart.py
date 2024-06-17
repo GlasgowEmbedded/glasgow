@@ -23,7 +23,7 @@ class UARTBus(Elaboratable):
         self.has_tx = hasattr(pads, "tx_t")
         if self.has_tx:
             self.tx_t = pads.tx_t
-            self.tx_o = Signal(reset=1)
+            self.tx_o = Signal(init=1)
 
     def elaborate(self, platform):
         m = Module()
@@ -37,9 +37,9 @@ class UARTBus(Elaboratable):
 
         if self.has_rx:
             if self.invert_rx:
-                m.submodules += FFSynchronizer(~self.rx_t.i, self.rx_i, reset=1)
+                m.submodules += FFSynchronizer(~self.rx_t.i, self.rx_i, init=1)
             else:
-                m.submodules += FFSynchronizer(self.rx_t.i, self.rx_i, reset=1)
+                m.submodules += FFSynchronizer(self.rx_t.i, self.rx_i, init=1)
 
         return m
 
@@ -110,7 +110,7 @@ class UART(Elaboratable):
         self.data_bits = data_bits
         self.parity = parity
 
-        self.bit_cyc = Signal(range(self.max_bit_cyc + 1), reset=bit_cyc)
+        self.bit_cyc = Signal(range(self.max_bit_cyc + 1), init=bit_cyc)
 
         self.rx_data = Signal(data_bits)
         self.rx_rdy  = Signal()
