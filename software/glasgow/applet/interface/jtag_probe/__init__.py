@@ -79,12 +79,12 @@ JTAG_TRANSITIONS = {
 class JTAGProbeBus(Elaboratable):
     def __init__(self, pads):
         self._pads = pads
-        self.tck = Signal(reset=1)
-        self.tms = Signal(reset=1)
-        self.tdo = Signal(reset=1)
-        self.tdi = Signal(reset=1)
-        self.trst_z = Signal(reset=0)
-        self.trst_o = Signal(reset=0)
+        self.tck = Signal(init=1)
+        self.tms = Signal(init=1)
+        self.tdo = Signal(init=1)
+        self.tdi = Signal(init=1)
+        self.trst_z = Signal(init=0)
+        self.trst_o = Signal(init=0)
 
     def elaborate(self, platform):
         m = Module()

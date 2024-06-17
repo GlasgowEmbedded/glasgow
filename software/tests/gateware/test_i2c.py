@@ -12,9 +12,9 @@ class I2CTestbench(Elaboratable):
         self.sda_t = Pin(width=1, dir='io')
 
         self.scl_i = self.scl_t.i
-        self.scl_o = Signal(reset=1)
+        self.scl_o = Signal(init=1)
         self.sda_i = self.sda_t.i
-        self.sda_o = Signal(reset=1)
+        self.sda_o = Signal(init=1)
 
         self.period_cyc = 16
 

@@ -34,8 +34,8 @@ class ServoChannel(wiring.Component):
         # the first millisecond is always high (whenever the channel is enabled), the second is
         # an encoding of the position and the rest is always low.
         period_timer = Signal(range(self.period_us * resolution),
-                              reset=self.period_us * resolution - 1)
-        with m.If(period_timer == period_timer.reset):
+                              init=self.period_us * resolution - 1)
+        with m.If(period_timer == period_timer.init):
             m.d.sync += period_timer.eq(0)
             m.d.sync += en_r.eq(self.en)
             m.d.sync += pos_r.eq(self.pos)
@@ -48,7 +48,7 @@ class ServoChannel(wiring.Component):
         pulse_timer = Signal(range(resolution))
         pulse_count = Signal.like(self.pos)
 
-        with m.If(period_timer == period_timer.reset):
+        with m.If(period_timer == period_timer.init):
             m.d.sync += self.out.eq(en_r)
             m.d.sync += pulse_en.eq(1)
 

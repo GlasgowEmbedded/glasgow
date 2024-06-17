@@ -145,7 +145,7 @@
 from amaranth import *
 from amaranth.lib.cdc import FFSynchronizer, ResetSynchronizer
 from amaranth.lib.fifo import FIFOInterface, AsyncFIFO, SyncFIFO, SyncFIFOBuffered
-from amaranth.lib.io import Pin
+from amaranth.lib import io
 
 
 __all__ = ["FX2Crossbar"]
@@ -224,7 +224,7 @@ class _INFIFO(Elaboratable, FIFOInterface):
         self.w_en     = inner.w_en
         self.w_rdy    = inner.w_rdy
 
-        self.flush = Signal(reset=auto_flush)
+        self.flush = Signal(init=auto_flush)
 
         # This is a model of the IN FIFO buffer in the FX2. Keep in mind that it is legal
         # to assert PKTEND together with SLWR, and in that case PKTEND takes priority.
@@ -242,7 +242,7 @@ class _INFIFO(Elaboratable, FIFOInterface):
 
         if self.asynchronous:
             _flush_s = Signal()
-            m.submodules += FFSynchronizer(self.flush, _flush_s, reset=self.auto_flush)
+            m.submodules += FFSynchronizer(self.flush, _flush_s, init=self.auto_flush)
         else:
             _flush_s = self.flush
 
@@ -333,7 +333,7 @@ class _FX2Bus(Elaboratable):
     def __init__(self, pads):
         self.flag = Signal(4)
         self.addr = Signal(2)
-        self.data = Pin(width=8, dir='io')
+        self.data = io.Buffer.Signature('io', 8).create()
         self.sloe = Signal()
         self.slrd = Signal()
         self.slwr = Signal()
@@ -364,25 +364,24 @@ class _FX2Bus(Elaboratable):
         # ratio between input and output buffers.)
         #
         # See https://github.com/GlasgowEmbedded/Glasgow/issues/89 for details.
+        m.submodules.fifoadr = fifoadr = io.FFBuffer("o", self.pads.fifoadr)
+        m.submodules.sloe    = sloe    = io.FFBuffer("o", self.pads.sloe)
+        m.submodules.slrd    = slrd    = io.FFBuffer("o", self.pads.slrd)
+        m.submodules.slwr    = slwr    = io.FFBuffer("o", self.pads.slwr)
+        m.submodules.pktend  = pktend  = io.FFBuffer("o", self.pads.pktend)
+        m.submodules.fd      = fd      = io.DDRBuffer("io", self.pads.fd)
+        m.submodules.flag    = flag    = io.DDRBuffer("i", self.pads.flag)
         m.d.comb += [
-            self.pads.flag.i_clk.eq(ClockSignal()),
-            self.flag.eq(self.pads.flag.i1),
-            self.pads.fifoadr.o_clk.eq(ClockSignal()),
-            self.pads.fifoadr.o.eq(self.addr),
-            self.pads.fd.o_clk.eq(ClockSignal()),
-            self.pads.fd.oe.eq(self.data.oe),
-            self.pads.fd.o0.eq(self.data.o),
-            self.pads.fd.o1.eq(self.data.o),
-            self.pads.fd.i_clk.eq(ClockSignal()),
-            self.data.i.eq(self.pads.fd.i1),
-            self.pads.sloe.o_clk.eq(ClockSignal()),
-            self.pads.sloe.o.eq(~self.sloe),
-            self.pads.slrd.o_clk.eq(ClockSignal()),
-            self.pads.slrd.o.eq(~self.slrd),
-            self.pads.slwr.o_clk.eq(ClockSignal()),
-            self.pads.slwr.o.eq(~self.slwr),
-            self.pads.pktend.o_clk.eq(ClockSignal()),
-            self.pads.pktend.o.eq(~self.pend),
+            fifoadr.o.eq(self.addr),
+            sloe.o.eq(~self.sloe),
+            slrd.o.eq(~self.slrd),
+            slwr.o.eq(~self.slwr),
+            pktend.o.eq(~self.pend),
+            self.data.i.eq(fd.i[1]),
+            fd.o[0].eq(self.data.o),
+            fd.o[1].eq(self.data.o),
+            fd.oe.eq(self.data.oe),
+            self.flag.eq(flag.i[1]),
         ]
 
         # Delay the FX2 bus control signals, taking into account the roundtrip latency.

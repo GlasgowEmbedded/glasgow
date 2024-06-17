@@ -165,7 +165,7 @@ class YamahaCPUBus(Elaboratable):
 
         self.a  = Signal(2)
 
-        self.oe = Signal(reset=1)
+        self.oe = Signal(init=1)
         self.di = Signal(8)
         self.do = Signal(8)
 

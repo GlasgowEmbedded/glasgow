@@ -154,7 +154,7 @@ class MemoryONFISubtarget(Elaboratable):
         length  = Signal(16)
 
         wait_cyc = 3 # currently required for reliable reads
-        timer    = Signal(range(wait_cyc + 2), reset=wait_cyc)
+        timer    = Signal(range(wait_cyc + 2), init=wait_cyc)
 
         with m.FSM() as fsm:
             with m.State("RECV-COMMAND"):

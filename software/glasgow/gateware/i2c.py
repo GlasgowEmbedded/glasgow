@@ -1,6 +1,7 @@
 # I2C reference: https://www.nxp.com/docs/en/user-guide/UM10204.pdf
 
 from amaranth import *
+from amaranth.lib import io
 from amaranth.lib.cdc import FFSynchronizer
 
 
@@ -14,13 +15,13 @@ class I2CBus(Elaboratable):
     Decodes bus conditions (start, stop, sample and setup) and provides synchronization.
     """
     def __init__(self, pads):
-        self.scl_t = pads.scl_t if hasattr(pads, "scl_t") else pads.scl
-        self.sda_t = pads.sda_t if hasattr(pads, "sda_t") else pads.sda
+        self.scl_t = pads.scl_t if hasattr(pads, "scl_t") else io.Buffer("io", pads.scl)
+        self.sda_t = pads.sda_t if hasattr(pads, "sda_t") else io.Buffer("io", pads.sda)
 
         self.scl_i = Signal()
-        self.scl_o = Signal(reset=1)
+        self.scl_o = Signal(init=1)
         self.sda_i = Signal()
-        self.sda_o = Signal(reset=1)
+        self.sda_o = Signal(init=1)
 
         self.sample = Signal(name="bus_sample")
         self.setup  = Signal(name="bus_setup")
@@ -30,8 +31,13 @@ class I2CBus(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        scl_r = Signal(reset=1)
-        sda_r = Signal(reset=1)
+        if isinstance(self.scl_t, io.Buffer):
+            m.submodules.io_scl = self.scl_t
+        if isinstance(self.sda_t, io.Buffer):
+            m.submodules.io_sda = self.sda_t
+
+        scl_r = Signal(init=1)
+        sda_r = Signal(init=1)
 
         m.d.comb += [
             self.scl_t.o.eq(0),
@@ -49,8 +55,8 @@ class I2CBus(Elaboratable):
             sda_r.eq(self.sda_i),
         ]
         m.submodules += [
-            FFSynchronizer(self.scl_t.i, self.scl_i, reset=1),
-            FFSynchronizer(self.sda_t.i, self.sda_i, reset=1),
+            FFSynchronizer(self.scl_t.i, self.scl_i, init=1),
+            FFSynchronizer(self.sda_t.i, self.sda_i, init=1),
         ]
 
         return m
@@ -100,7 +106,7 @@ class I2CInitiator(Elaboratable):
         self.period_cyc = int(period_cyc)
         self.clk_stretch = clk_stretch
 
-        self.busy   = Signal(reset=1)
+        self.busy   = Signal(init=1)
         self.start  = Signal()
         self.stop   = Signal()
         self.read   = Signal()

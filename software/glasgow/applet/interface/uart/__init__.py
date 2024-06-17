@@ -185,7 +185,7 @@ class UARTApplet(GlasgowApplet):
         self.__sys_clk_freq = target.sys_clk_freq
 
         manual_cyc, self.__addr_manual_cyc = target.registers.add_rw(32)
-        auto_cyc,   self.__addr_auto_cyc   = target.registers.add_ro(32, reset=~0)
+        auto_cyc,   self.__addr_auto_cyc   = target.registers.add_ro(32, init=~0)
         use_auto,   self.__addr_use_auto   = target.registers.add_rw(1)
 
         bit_cyc,    self.__addr_bit_cyc    = target.registers.add_ro(32)

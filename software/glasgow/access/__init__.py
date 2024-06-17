@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from amaranth import *
-from amaranth.lib.io import Pin
+from amaranth.lib import io
 import argparse
 
 from ..gateware.pads import Pads
@@ -69,7 +69,7 @@ class AccessMultiplexerInterface(Elaboratable, metaclass=ABCMeta):
         pass
 
     def get_pins(self, pins, name=None):
-        triple = Pin(width=len(pins), dir='io')
+        triple = io.Buffer.Signature("io", len(pins)).create()
         for n, pin in enumerate(pins):
             self.build_pin_tristate(pin, triple.oe, triple.o[n], triple.i[n])
 

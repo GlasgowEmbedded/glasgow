@@ -62,18 +62,18 @@
 import logging
 import asyncio
 from amaranth import *
+from amaranth.lib import data
 from amaranth.lib.cdc import FFSynchronizer
-from amaranth.hdl.rec import Record
 
 from ... import *
 
 
-_frame_layout = [
-    ("start",  1),
-    ("data",   8),
-    ("parity", 1),
-    ("stop",   1),
-]
+_frame_layout = data.StructLayout({
+    "start":  1,
+    "data":   8,
+    "parity": 1,
+    "stop":   1,
+})
 
 def _verify_frame(frame):
     return (
@@ -97,10 +97,10 @@ class PS2Bus(Elaboratable):
 
         self.falling = Signal()
         self.rising  = Signal()
-        self.clock_i = Signal(reset=1)
-        self.clock_o = Signal(reset=1)
-        self.data_i  = Signal(reset=1)
-        self.data_o  = Signal(reset=1)
+        self.clock_i = Signal(init=1)
+        self.clock_o = Signal(init=1)
+        self.data_i  = Signal(init=1)
+        self.data_o  = Signal(init=1)
 
     def elaborate(self, platform):
         m = Module()
@@ -112,12 +112,12 @@ class PS2Bus(Elaboratable):
             self.pads.data_t.oe.eq(~self.data_o),
         ]
         m.submodules += [
-            FFSynchronizer(self.pads.clock_t.i, self.clock_i, reset=1),
-            FFSynchronizer(self.pads.data_t.i,  self.data_i,  reset=1),
+            FFSynchronizer(self.pads.clock_t.i, self.clock_i, init=1),
+            FFSynchronizer(self.pads.data_t.i,  self.data_i,  init=1),
         ]
 
-        clock_s = Signal(reset=1)
-        clock_r = Signal(reset=1)
+        clock_s = Signal(init=1)
+        clock_r = Signal(init=1)
         m.d.sync += [
             clock_s.eq(self.clock_i),
             clock_r.eq(clock_s),
@@ -151,17 +151,17 @@ class PS2HostController(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        frame = Record(_frame_layout)
+        frame = Signal(_frame_layout)
         bitno = self.bitno = Signal(range(12))
         setup = Signal()
         shift = Signal()
         input = Signal()
 
         with m.If(setup):
-            m.d.sync += self.bus.data_o.eq(frame[0])
+            m.d.sync += self.bus.data_o.eq(frame.as_value()[0])
         with m.If(shift):
             m.d.sync += [
-                frame.eq(Cat(frame[1:], input)),
+                frame.eq(Cat(frame.as_value()[1:], input)),
                 bitno.eq(bitno + 1),
             ]
 

@@ -337,7 +337,7 @@ class ProgramM16CApplet(GlasgowApplet):
         }
         max_bit_cyc = max(self.__bit_cyc_for_baud.values())
 
-        bit_cyc, self.__addr_bit_cyc = target.registers.add_rw(24, reset=max_bit_cyc) # slowest
+        bit_cyc, self.__addr_bit_cyc = target.registers.add_rw(24, init=max_bit_cyc) # slowest
         reset,   self.__addr_reset   = target.registers.add_rw(1)
         mode,    self.__addr_mode    = target.registers.add_rw(1)
 
