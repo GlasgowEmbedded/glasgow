@@ -214,9 +214,6 @@ class UARTApplet(GlasgowApplet):
         super().add_run_arguments(parser, access)
 
         parser.add_argument(
-            "--pulls", default=False, action="store_true",
-            help="enable integrated pull-ups or pull-downs (when inverted)")
-        parser.add_argument(
             "-a", "--auto-baud", default=False, action="store_true",
             help="automatically estimate baud rate in response to RX errors")
 
@@ -228,15 +225,14 @@ class UARTApplet(GlasgowApplet):
         await device.write_register(self.__addr_manual_cyc, manual_cyc, width=4)
         await device.write_register(self.__addr_use_auto, 0)
 
-        # Enable pull-ups or pull-downs, if requested.
+        # Enable pull-ups or pull-downs.
         # This reduces the amount of noise received on tristated lines.
-        pulls_high = set()
-        pulls_low = set()
-        if args.pulls:
-            if args.invert_rx:
-                pulls_low = {args.pin_rx}
-            else:
-                pulls_high = {args.pin_rx}
+        if args.invert_rx:
+            pulls_high = set()
+            pulls_low = {args.pin_rx}
+        else:
+            pulls_high = {args.pin_rx}
+            pulls_low = set()
 
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
                                                            pull_high=pulls_high, pull_low=pulls_low)
