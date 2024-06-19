@@ -88,6 +88,7 @@ class ServerEndpoint(aobject, asyncio.Protocol):
             self._log(logging.INFO, "closing old connection")
             self._transport.close()
             self._new_transport = transport
+        self.data_received(b"")
 
     def connection_lost(self, exc):
         peername = self._transport.get_extra_info("peername")
