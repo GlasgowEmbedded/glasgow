@@ -117,3 +117,21 @@ class ServerEndpointTestCase(unittest.TestCase):
     def test_tcp(self):
         asyncio.get_event_loop().run_until_complete(
             self.do_test_tcp())
+
+    async def do_test_server_banner(self):
+        sock = ("tcp", "localhost", 2345)
+        endp = await ServerEndpoint("test_server_banner", logging.getLogger(__name__), sock)
+
+        async def endpoint_task():
+            await endp.recv_wait()
+            await endp.send(b"Hello")
+        asyncio.create_task(endpoint_task())
+
+        conn_rd, _ = await asyncio.open_connection(*sock[1:])
+        r = await conn_rd.read(5)
+        self.assertEqual(r, b"Hello")
+
+    def test_server_banner(self):
+        logging.basicConfig(level=logging.TRACE)
+        asyncio.get_event_loop().run_until_complete(
+            self.do_test_server_banner())
