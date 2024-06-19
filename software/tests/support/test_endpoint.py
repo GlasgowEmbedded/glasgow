@@ -111,8 +111,9 @@ class ServerEndpointTestCase(unittest.TestCase):
         await endp.send(b"XYZ")
         self.assertEqual(await conn_rd.readexactly(3), b"XYZ")
         conn_wr.close()
-        self.assertEqual(await endp.recv(1), None)
+        with self.assertRaises(asyncio.exceptions.CancelledError):
+            await endp.recv(1)
 
     def test_tcp(self):
         asyncio.get_event_loop().run_until_complete(
-            self.do_test_lifecycle())
+            self.do_test_tcp())
