@@ -3,7 +3,13 @@
 #include <fx2i2c.h>
 #include "glasgow.h"
 
-static bool fpga_check_ready() {
+void fpga_init() {
+  OED |=  (1<<PIND_LED_ICE);
+  fpga_is_ready();
+}
+
+// Also sets the LED status, for code size reasons.
+bool fpga_is_ready() {
   if(IOA & (1 << PINA_CDONE)) {
     if (!test_leds)
       IOD |=  (1<<PIND_LED_ICE);
@@ -15,58 +21,63 @@ static bool fpga_check_ready() {
   }
 }
 
-void fpga_init() {
-  OED |=  (1<<PIND_LED_ICE);
-  fpga_check_ready();
-}
-
 void fpga_reset() {
-  // Disable FIFO bus.
-  SYNCDELAY;
-  IFCONFIG &= ~(_IFCFG1|_IFCFG0);
-
-  // Put FPGA in reset.
   switch(glasgow_config.revision) {
     case GLASGOW_REV_A:
     case GLASGOW_REV_B:
+      // Reset the FPGA.
       OED |=  (1<<PIND_CRESET_N_REVAB);
       IOD &= ~(1<<PIND_CRESET_N_REVAB);
-      break;
-
-    case GLASGOW_REV_C0:
-    case GLASGOW_REV_C1:
-    case GLASGOW_REV_C2:
-    case GLASGOW_REV_C3:
-      OEA |=  (1<<PINA_CRESET_N_REVC);
-      IOA &= ~(1<<PINA_CRESET_N_REVC);
-      break;
-  }
-  delay_us(1);
-
-  // Configure config pins while FPGA is in reset.
-  OEA &= ~(1<<PINA_CDONE);
-  OEB |=  (1<<PINB_SCK)|(1<<PINB_SS_N)|(1<<PINB_SI);
-  IOB |=  (1<<PINB_SCK);
-  IOB &= ~(1<<PINB_SS_N);
-
-  // Release FPGA reset.
-  switch(glasgow_config.revision) {
-    case GLASGOW_REV_A:
-    case GLASGOW_REV_B:
+      delay_us(1);
       IOD |=  (1<<PIND_CRESET_N_REVAB);
       break;
 
     case GLASGOW_REV_C0:
     case GLASGOW_REV_C1:
     case GLASGOW_REV_C2:
-    case GLASGOW_REV_C3:
+    case GLASGOW_REV_C3: {
+      // Disable voltage output.
+      // This is necessary because iCE40 FPGAs have pull-ups enabled by default (when unconfigured
+      // and on unused pins), and on revC, a high logic level on the OE pin configures the respective
+      // level shifter as an output.
+      __xdata uint16_t millivolts = 0;
+      iobuf_set_voltage(IO_BUF_ALL, &millivolts);
+
+      // We don't have feedback from the Vio output to know when it has actually discharged.
+      // The device itself has 6 µF of capacitance and a load of 1 kΩ(min), for a t_RC = 6 ms.
+      // A reasonable starting point is 3×t_RC = 18 ms. However, external circuitry powered by
+      // the device can and likely will add some bulk capacitance. 250 ms of delay would be safe
+      // in the worst case of 5 V, 40 uF, no added load. It is also not long enough to become
+      // an annoyance.
+      delay_ms(250);
+
+      // Reset the FPGA now that it's safe to do so.
+      OEA |=  (1<<PINA_CRESET_N_REVC);
+      IOA &= ~(1<<PINA_CRESET_N_REVC);
+      delay_us(1);
       IOA |=  (1<<PINA_CRESET_N_REVC);
       break;
+    }
   }
-  delay_us(1200); // 1200 us for HX8K, 800 us for others
+
+  // Disable FIFO bus. This must be done after resetting the FPGA, or the running applet may do
+  // something weird in its dying gasp after receiving a phantom stream of zero bytes. The USB host
+  // will receive some spurious data, but so it will during configuration anyway.
+  SYNCDELAY;
+  IFCONFIG &= ~(_IFCFG1|_IFCFG0);
+
+  // Enable FPGA configuration interface.
+  OEA &= ~(1<<PINA_CDONE);
+  OEB |=  (1<<PINB_SCK)|(1<<PINB_SS_N)|(1<<PINB_SI);
+  IOB |=  (1<<PINB_SCK);
+  IOB &= ~(1<<PINB_SS_N);
+
+  // Wait for FPGA to initialize. This is specified as 800 us for the UP5K FPGA on revAB, and
+  // 1200 us for the HX8K FPGA on revC.
+  delay_us(1200);
 
   // Update FPGA status.
-  fpga_check_ready();
+  fpga_is_ready();
 }
 
 void fpga_load(__xdata uint8_t *data, uint8_t len) {
@@ -143,11 +154,7 @@ __endasm;
   }
 
   // Update and return FPGA status.
-  return fpga_check_ready();
-}
-
-bool fpga_is_ready() {
-  return fpga_check_ready();
+  return fpga_is_ready();
 }
 
 bool fpga_reg_select(uint8_t addr) {

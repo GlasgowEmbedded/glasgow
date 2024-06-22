@@ -28,7 +28,7 @@ enum {
 
 enum {
   // API compatibility level
-  CUR_API_LEVEL  = 0x02,
+  CUR_API_LEVEL  = 0x03,
 };
 
 // PORTA pins
