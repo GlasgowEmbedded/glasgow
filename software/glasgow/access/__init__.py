@@ -61,17 +61,20 @@ class AccessMultiplexerInterface(Elaboratable, metaclass=ABCMeta):
         return (self.get_in_fifo(**kwargs), self.get_out_fifo(**kwargs))
 
     @abstractmethod
-    def build_pin_tristate(self, pin, oe, o, i):
-        pass
-
-    @abstractmethod
     def get_pin_name(self, pin):
         pass
 
-    def get_pins(self, pins, name=None):
+    @abstractmethod
+    def _build_pad_tristate(self, pin, oe, o, i):
+        pass
+
+    def get_deprecated_pad(self, pins, name=None):
+        if type(pins) is int:
+            pins = [pins]
+
         triple = io.Buffer.Signature("io", len(pins)).create()
         for n, pin in enumerate(pins):
-            self.build_pin_tristate(pin, triple.oe, triple.o[n], triple.i[n])
+            self._build_pad_tristate(pin, triple.oe, triple.o[n], triple.i[n])
 
         if name is None:
             name = "-".join([self.get_pin_name(pins) for pins in pins])
@@ -80,10 +83,7 @@ class AccessMultiplexerInterface(Elaboratable, metaclass=ABCMeta):
 
         return triple
 
-    def get_pin(self, pin, name=None):
-        return self.get_pins([pin], name)
-
-    def get_pads(self, args, pins=[], pin_sets=[]):
+    def get_deprecated_pads(self, args, pins=[], pin_sets=[]):
         pad_args = {}
 
         for pin in pins:
@@ -93,7 +93,7 @@ class AccessMultiplexerInterface(Elaboratable, metaclass=ABCMeta):
             else:
                 self.logger.debug("assigning pin %r to device pin %s",
                     pin, self.get_pin_name(pin_num))
-                pad_args[pin] = self.get_pin(pin_num, name=pin)
+                pad_args[pin] = self.get_deprecated_pad(pin_num, name=pin)
 
         for pin_set in pin_sets:
             pin_nums = getattr(args, f"pin_set_{pin_set}")
@@ -102,7 +102,7 @@ class AccessMultiplexerInterface(Elaboratable, metaclass=ABCMeta):
             else:
                 self.logger.debug("assigning pin set %r to device pins %s",
                     pin_set, ", ".join([self.get_pin_name(pin_num) for pin_num in pin_nums]))
-                pad_args[pin_set] = self.get_pins(pin_nums, name=pin_set)
+                pad_args[pin_set] = self.get_deprecated_pad(pin_nums, name=pin_set)
 
         self.pads = Pads(**pad_args)
         return self.pads

@@ -165,7 +165,7 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
         self._throttle      = throttle
         self._subtargets    = []
         self._fifos         = []
-        self._pin_tristates = []
+        self._pad_tristates = []
 
         self.reset, self._addr_reset = self._registers.add_rw(1, init=1)
         self.logger.debug("adding reset register at address %#04x", self._addr_reset)
@@ -183,7 +183,7 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
 
             m.submodules += fifo
 
-        for pin_parts, oe, o, i in self._pin_tristates:
+        for pin_parts, oe, o, i in self._pad_tristates:
             m.submodules += (io_buffer := io.Buffer("io", pin_parts.io))
             m.d.comb += [
                 io_buffer.oe.eq(oe),
@@ -200,10 +200,10 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
         port, bit, req = self._pins[pin_num]
         return f"{port}{bit}"
 
-    def build_pin_tristate(self, pin_num, oe, o, i):
+    def _build_pad_tristate(self, pin_num, oe, o, i):
         port, bit, req = self._pins[pin_num]
         pin_parts = req(bit)
-        self._pin_tristates.append((pin_parts, oe, o, i))
+        self._pad_tristates.append((pin_parts, oe, o, i))
 
     def get_in_fifo(self, **kwargs):
         fifo = self._fx2_crossbar.get_in_fifo(self._pipe_num, **kwargs, reset=self.reset)

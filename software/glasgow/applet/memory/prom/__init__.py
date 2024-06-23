@@ -533,7 +533,7 @@ class MemoryPROMApplet(GlasgowApplet):
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         bus = MemoryPROMBus(
-            pads=iface.get_pads(args, pins=self.__pins, pin_sets=self.__pin_sets),
+            pads=iface.get_deprecated_pads(args, pins=self.__pins, pin_sets=self.__pin_sets),
             a_bits=args.a_bits,
             sh_freq=args.shift_freq * 1e6,
         )

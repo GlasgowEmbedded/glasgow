@@ -443,7 +443,7 @@ class MemoryONFIApplet(GlasgowApplet):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(MemoryONFISubtarget(
-            pads=iface.get_pads(args, pin_sets=self.pin_sets, pins=self.pins),
+            pads=iface.get_deprecated_pads(args, pin_sets=self.pin_sets, pins=self.pins),
             in_fifo=iface.get_in_fifo(auto_flush=False),
             out_fifo=iface.get_out_fifo(),
         ))

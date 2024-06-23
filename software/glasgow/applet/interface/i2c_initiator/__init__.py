@@ -286,7 +286,7 @@ class I2CInitiatorApplet(GlasgowApplet):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(I2CInitiatorSubtarget(
-            pads=iface.get_pads(args, pins=self.__pins),
+            pads=iface.get_deprecated_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             period_cyc=math.ceil(target.sys_clk_freq / (args.bit_rate * 1000))
