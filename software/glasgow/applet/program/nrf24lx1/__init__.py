@@ -202,7 +202,7 @@ class ProgramNRF24Lx1Applet(GlasgowApplet):
         dut_reset, self.__addr_dut_reset = target.registers.add_rw(1)
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        pads = iface.get_pads(args, pins=self.__pins)
+        pads = iface.get_deprecated_pads(args, pins=self.__pins)
 
         controller = SPIControllerSubtarget(
             pads=pads,

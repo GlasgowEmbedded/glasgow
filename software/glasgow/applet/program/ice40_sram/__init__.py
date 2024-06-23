@@ -87,11 +87,11 @@ class ProgramICE40SRAMApplet(SPIControllerApplet):
     def build_subtarget(self, target, args):
         subtarget = super().build_subtarget(target, args, pins=("sck", "cs", "copi"))
 
-        reset_t = self.mux_interface.get_pin(args.pin_reset)
+        reset_t = self.mux_interface.get_deprecated_pad(args.pin_reset)
         dut_reset, self.__addr_dut_reset = target.registers.add_rw(1)
 
         if args.pin_done is not None:
-            done_t = self.mux_interface.get_pin(args.pin_done)
+            done_t = self.mux_interface.get_deprecated_pad(args.pin_done)
             dut_done, self.__addr_dut_done = target.registers.add_ro(1)
         else:
             done_t = None

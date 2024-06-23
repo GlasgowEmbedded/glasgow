@@ -151,7 +151,7 @@ class VideoHub75OutputApplet(GlasgowApplet):
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(VideoHub75OutputSubtarget(
-            pads=iface.get_pads(args, pins=self.__pins, pin_sets=self.__pin_sets),
+            pads=iface.get_deprecated_pads(args, pins=self.__pins, pin_sets=self.__pin_sets),
             px_width=args.px_width,
             px_height=args.px_height,
             expose_delay=args.expose_delay,

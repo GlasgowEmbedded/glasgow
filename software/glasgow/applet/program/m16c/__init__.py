@@ -343,7 +343,7 @@ class ProgramM16CApplet(GlasgowApplet):
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(ProgramM16CSubtarget(
-            pads=iface.get_pads(args, pins=self.__pins),
+            pads=iface.get_deprecated_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             bit_cyc=bit_cyc,

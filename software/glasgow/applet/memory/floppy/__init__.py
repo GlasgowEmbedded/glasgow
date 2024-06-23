@@ -649,7 +649,7 @@ class MemoryFloppyApplet(GlasgowApplet):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         self._sys_clk_freq = target.sys_clk_freq
         iface.add_subtarget(ShugartFloppySubtarget(
-            pins=iface.get_pads(pins=self.__pins, args=args),
+            pins=iface.get_deprecated_pads(pins=self.__pins, args=args),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
             sys_freq=target.sys_clk_freq,

@@ -167,7 +167,7 @@ class SensorHX711Applet(GlasgowApplet):
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(SensorHX711Subtarget(
-            pads=iface.get_pads(args, pins=self.__pins),
+            pads=iface.get_deprecated_pads(args, pins=self.__pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             # The highest conversion rate supported by this sensor is about 144 Hz, and at 1 MHz,

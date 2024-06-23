@@ -332,7 +332,7 @@ class SPIControllerApplet(GlasgowApplet):
     def build_subtarget(self, target, args, pins=__pins):
         iface = self.mux_interface
         return SPIControllerSubtarget(
-            pads=iface.get_pads(args, pins=pins),
+            pads=iface.get_deprecated_pads(args, pins=pins),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
             period_cyc=self.derive_clock(input_hz=target.sys_clk_freq,

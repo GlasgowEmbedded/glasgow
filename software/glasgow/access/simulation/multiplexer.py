@@ -75,7 +75,7 @@ class SimulationMultiplexerInterface(AccessMultiplexerInterface):
     def get_pin_name(self, pin):
         return str(pin)
 
-    def build_pin_tristate(self, pin, oe, o, i):
+    def _build_pad_tristate(self, pin, oe, o, i):
         pass
 
     def _make_fifo(self, crossbar_side, logic_side, cd_logic, depth, wrapper=lambda x: x):

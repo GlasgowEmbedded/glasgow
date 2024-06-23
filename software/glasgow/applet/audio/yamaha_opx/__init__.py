@@ -1112,7 +1112,7 @@ class AudioYamahaOPxApplet(GlasgowApplet):
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(YamahaOPxSubtarget(
-            pads=iface.get_pads(args, pins=self.__pins, pin_sets=self.__pin_sets),
+            pads=iface.get_deprecated_pads(args, pins=self.__pins, pin_sets=self.__pin_sets),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
             sample_decoder_cls=device_iface_cls.sample_decoder,

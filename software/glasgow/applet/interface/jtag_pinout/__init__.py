@@ -177,7 +177,7 @@ class JTAGPinoutApplet(GlasgowApplet):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(JTAGPinoutSubtarget(
-            pins=[iface.get_pin(pin) for pin in args.pin_set_jtag],
+            pins=[iface.get_deprecated_pad(pin) for pin in args.pin_set_jtag],
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             period_cyc=int(target.sys_clk_freq // (args.frequency * 1000)),
