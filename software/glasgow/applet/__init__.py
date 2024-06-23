@@ -116,7 +116,7 @@ from ..target.hardware import *
 from ..device.simulation import *
 from ..device.hardware import *
 from ..target.toolchain import find_toolchain
-from ..platform.all import GlasgowPlatformRevAB
+from ..platform.rev_ab import GlasgowPlatformRevAB
 
 
 __all__ += ["GlasgowAppletTestCase", "synthesis_test", "applet_simulation_test",

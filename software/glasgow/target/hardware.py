@@ -13,7 +13,6 @@ from amaranth.build import ResourceError
 from ..gateware.i2c import I2CTarget
 from ..gateware.registers import I2CRegisters
 from ..gateware.fx2_crossbar import FX2Crossbar
-from ..platform.all import *
 from .analyzer import GlasgowAnalyzer
 from .toolchain import find_toolchain
 
@@ -27,12 +26,15 @@ logger = logging.getLogger(__name__)
 class GlasgowHardwareTarget(Elaboratable):
     def __init__(self, revision, multiplexer_cls=None, with_analyzer=False):
         if revision in ("A0", "B0"):
+            from ..platform.rev_ab import GlasgowPlatformRevAB
             self.platform = GlasgowPlatformRevAB()
             self.sys_clk_freq = 30e6
         elif revision in "C0":
+            from ..platform.rev_c import GlasgowPlatformRevC0
             self.platform = GlasgowPlatformRevC0()
             self.sys_clk_freq = 48e6
         elif revision in ("C1", "C2", "C3"):
+            from ..platform.rev_c import GlasgowPlatformRevC123
             self.platform = GlasgowPlatformRevC123()
             self.sys_clk_freq = 48e6
         else:
