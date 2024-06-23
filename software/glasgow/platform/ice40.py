@@ -2,29 +2,13 @@ import asyncio
 from amaranth import *
 from amaranth.vendor import LatticeICE40Platform
 
-from ..device.hardware import *
-from ..gateware import GatewareBuildError
+from .generic import GlasgowPlatformGeneric
 
 
 __all__ = ["GlasgowPlatformICE40"]
 
 
-class GlasgowPlatformICE40(LatticeICE40Platform):
-    @property
-    def file_templates(self):
-        # Do not require yosys to be present for toolchain_prepare() to finish.
-        file_templates = dict(super().file_templates)
-        del file_templates["{{name}}.debug.v"]
-        return file_templates
-
-    def toolchain_program(self, products, name):
-        bitstream = products.get(f"{name}.bin")
-        async def do_program():
-            device = GlasgowHardwareDevice()
-            await device.download_bitstream(bitstream)
-            device.close()
-        asyncio.get_event_loop().run_until_complete(do_program())
-
+class GlasgowPlatformICE40(GlasgowPlatformGeneric, LatticeICE40Platform):
     def get_pll(self, pll, simple_feedback=True):
         if not 10e6 <= pll.f_in <= 133e6:
             pll.logger.error("PLL: f_in (%.3f MHz) must be between 10 and 133 MHz",

@@ -75,6 +75,9 @@ class SimulationMultiplexerInterface(AccessMultiplexerInterface):
     def get_pin_name(self, pin):
         return str(pin)
 
+    def get_port(self, pin, *, name):
+        raise NotImplementedError
+
     def _build_pad_tristate(self, pin, oe, o, i):
         pass
 

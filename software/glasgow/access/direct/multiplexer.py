@@ -2,6 +2,7 @@ import logging
 from amaranth import *
 from amaranth.lib import io
 
+from ...platform.generic import GlasgowPlatformPort
 from .. import AccessMultiplexer, AccessMultiplexerInterface
 
 
@@ -197,13 +198,27 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
         return m
 
     def get_pin_name(self, pin_num):
-        port, bit, req = self._pins[pin_num]
+        port, bit, request = self._pins[pin_num]
         return f"{port}{bit}"
 
+    def get_port(self, pin_num, *, name):
+        if pin_num is None:
+            self.logger.debug("not assigning applet port %r to any device pin", name)
+            return None
+        else:
+            port, bit, request = self._pins[pin_num]
+            self.logger.debug("assigning applet port %r to device pin %s",
+                name, self.get_pin_name(pin_num))
+            pin_subports = request(bit)
+            if hasattr(pin_subports, "oe"):
+                return GlasgowPlatformPort(io=pin_subports.io, oe=pin_subports.oe)
+            else:
+                return GlasgowPlatformPort(io=pin_subports.io)
+
     def _build_pad_tristate(self, pin_num, oe, o, i):
-        port, bit, req = self._pins[pin_num]
-        pin_parts = req(bit)
-        self._pad_tristates.append((pin_parts, oe, o, i))
+        port, bit, request = self._pins[pin_num]
+        pin_subports = request(bit)
+        self._pad_tristates.append((pin_subports, oe, o, i))
 
     def get_in_fifo(self, **kwargs):
         fifo = self._fx2_crossbar.get_in_fifo(self._pipe_num, **kwargs, reset=self.reset)
