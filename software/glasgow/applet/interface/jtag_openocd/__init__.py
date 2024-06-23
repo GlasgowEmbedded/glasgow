@@ -110,14 +110,19 @@ class JTAGOpenOCDApplet(GlasgowApplet):
     ::
         glasgow run jtag-openocd tcp:localhost:2222
         openocd -c 'adapter driver remote_bitbang; transport select jtag' \\
-            -c 'remote_bitbang port 2222'
+            -c 'remote_bitbang port 2222' \\
+            -c 'reset_config none'
 
     Usage with Unix domain sockets:
 
     ::
         glasgow run jtag-openocd unix:/tmp/jtag.sock
         openocd -c 'adapter driver remote_bitbang; transport select jtag' \\
-            -c 'remote_bitbang host /tmp/jtag.sock'
+            -c 'remote_bitbang host /tmp/jtag.sock' \\
+            -c 'reset_config none'
+
+    If you use TRST# and/or SRST# pins, the 'reset_config none' option above must be
+    replaced with 'reset_config trst', 'reset_config srst', or 'reset_config trst_and_srst'.
     """
 
     @classmethod
