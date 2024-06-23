@@ -65,6 +65,10 @@ class AccessMultiplexerInterface(Elaboratable, metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def get_port(self, pin, *, name):
+        pass
+
+    @abstractmethod
     def _build_pad_tristate(self, pin, oe, o, i):
         pass
 
