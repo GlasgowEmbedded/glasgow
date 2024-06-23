@@ -148,19 +148,9 @@ class AccessDemultiplexerInterface(metaclass=ABCMeta):
     async def read(self, length=None, *, flush=True):
         pass
 
-    async def read_str(self, *args, encoding="utf-8", **kwargs):
-        result = await self.read(*args, **kwargs)
-        if result is None:
-            return None
-        else:
-            return result.decode(encoding)
-
     @abstractmethod
     async def write(self, data):
         pass
-
-    async def write_str(self, data, *args, encoding="utf-8", **kwargs):
-        await self.write(data.encode(encoding), *args, **kwargs)
 
     @abstractmethod
     async def flush(self, wait=True):
