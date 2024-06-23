@@ -2,14 +2,13 @@ import struct
 import logging
 import asyncio
 from amaranth import *
-from amaranth.lib import io
+from amaranth.lib import io, cdc
 
 from ....support.bits import *
 from ....support.logging import *
 from ....support.endpoint import *
 from ....gateware.pads import *
 from ... import *
-from ..jtag_probe import JTAGProbeBus
 
 
 class JTAGOpenOCDSubtarget(Elaboratable):
@@ -24,23 +23,37 @@ class JTAGOpenOCDSubtarget(Elaboratable):
 
         self.out_fifo   = out_fifo
         self.in_fifo    = in_fifo
+
         self.period_cyc = period_cyc
         self.us_cyc     = us_cyc
 
     def elaborate(self, platform):
         m = Module()
 
+        tck = Signal()
+        tms = Signal()
+        tdi = Signal()
+        tdo = Signal()
+        trst = Signal()
+        srst = Signal()
+
         out_fifo = self.out_fifo
         in_fifo  = self.in_fifo
 
-        m.submodules.bus = bus = JTAGProbeBus(self._tck_port, self._tms_port, self._tdi_port,
-                                              self._tdo_port, self._trst_port)
-        m.d.comb += bus.trst_z.eq(0)
-
-        srst_o = Signal(init=0)
+        m.submodules.tck = tck_buffer = io.Buffer("o", self._tck_port)
+        m.d.comb += tck_buffer.o.eq(tck)
+        m.submodules.tms = tms_buffer = io.Buffer("o", self._tms_port)
+        m.d.comb += tms_buffer.o.eq(tms)
+        m.submodules.tdi = tdi_buffer = io.Buffer("o", self._tdi_port)
+        m.d.comb += tdi_buffer.o.eq(tdi)
+        m.submodules.tdo = tdo_buffer = io.Buffer("i", self._tdo_port)
+        m.submodules += cdc.FFSynchronizer(tdo_buffer.i, tdo)
+        if self._trst_port is not None:
+            m.submodules.trst = trst_buffer = io.Buffer("o", ~self._trst_port)
+            m.d.comb += trst_buffer.o.eq(trst)
         if self._srst_port is not None:
             m.submodules.srst = srst_buffer = io.Buffer("o", ~self._srst_port)
-            m.d.sync += srst_buffer.o.eq(srst_o)
+            m.d.comb += srst_buffer.o.eq(srst)
 
         blink = Signal()
         try:
@@ -58,16 +71,16 @@ class JTAGOpenOCDSubtarget(Elaboratable):
                 with m.Switch(out_fifo.r_data):
                     # remote_bitbang_write(int tck, int tms, int tdi)
                     with m.Case(*b"01234567"):
-                        m.d.sync += Cat(bus.tdi, bus.tms, bus.tck).eq(out_fifo.r_data[:3])
+                        m.d.sync += Cat(tdi, tms, tck).eq(out_fifo.r_data[:3])
                         m.d.sync += timer.eq(self.period_cyc - 1)
                     # remote_bitbang_reset(int trst, int srst)
                     with m.Case(*b"rstu"):
-                        m.d.sync += Cat(srst_o, bus.trst_o).eq(out_fifo.r_data - ord(b"r"))
+                        m.d.sync += Cat(srst, trst).eq(out_fifo.r_data - b"r"[0])
                     # remote_bitbang_sample(void)
                     with m.Case(*b"R"):
                         m.d.comb += out_fifo.r_en.eq(in_fifo.w_rdy)
                         m.d.comb += in_fifo.w_en.eq(1)
-                        m.d.comb += in_fifo.w_data.eq(b"0"[0] | Cat(bus.tdo))
+                        m.d.comb += in_fifo.w_data.eq(b"0"[0] | tdo)
                     # remote_bitbang_blink(int on)
                     with m.Case(*b"Bb"):
                         m.d.sync += blink.eq(~out_fifo.r_data[5])
