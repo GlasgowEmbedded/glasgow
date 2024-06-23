@@ -174,8 +174,6 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
         m = Module()
 
         m.submodules += self._subtargets
-        if self.pads is not None:
-            m.submodules.pads = self.pads
 
         for fifo in self._fifos:
             if self._throttle == "full":

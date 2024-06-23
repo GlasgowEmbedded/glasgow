@@ -65,8 +65,6 @@ class SimulationMultiplexerInterface(AccessMultiplexerInterface):
         m = Module()
 
         m.submodules += self._subtargets
-        if self.pads is not None:
-            m.submodules.pads = self.pads
         if self.in_fifo is not None:
             m.submodules.in_fifo = self.in_fifo
         if self.out_fifo is not None:
