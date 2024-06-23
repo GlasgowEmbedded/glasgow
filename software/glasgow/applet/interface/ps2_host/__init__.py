@@ -414,7 +414,7 @@ class PS2HostApplet(GlasgowApplet):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(PS2HostSubtarget(
-            pads=iface.get_pads(args, pins=self.__pins),
+            pads=iface.get_deprecated_pads(args, pins=self.__pins),
             in_fifo=iface.get_in_fifo(),
             out_fifo=iface.get_out_fifo(),
             inhibit_cyc=int(target.sys_clk_freq * 60e-6),

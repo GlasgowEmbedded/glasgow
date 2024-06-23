@@ -61,7 +61,7 @@ class AnalyzerApplet(GlasgowApplet):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(AnalyzerSubtarget(
-            pads=iface.get_pads(args, pin_sets=("i",)),
+            pads=iface.get_deprecated_pads(args, pin_sets=("i",)),
             in_fifo=iface.get_in_fifo(),
         ))
 

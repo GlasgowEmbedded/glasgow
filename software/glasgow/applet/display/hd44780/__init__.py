@@ -218,7 +218,7 @@ class DisplayHD44780Applet(GlasgowApplet):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(HD44780Subtarget(
-            pads=iface.get_pads(args, pins=("rs", "rw", "e"), pin_sets=("d",)),
+            pads=iface.get_deprecated_pads(args, pins=("rs", "rw", "e"), pin_sets=("d",)),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             sys_clk_freq=target.sys_clk_freq,

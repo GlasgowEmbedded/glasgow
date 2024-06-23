@@ -179,7 +179,7 @@ class SPIFlashromApplet(SPIControllerApplet):
     def build_subtarget(self, target, args):
         subtarget = super().build_subtarget(target, args)
         if args.pin_hold is not None:
-            hold_t = self.mux_interface.get_pin(args.pin_hold)
+            hold_t = self.mux_interface.get_deprecated_pad(args.pin_hold)
         else:
             hold_t = None
         return Memory25xSubtarget(subtarget, hold_t, args.cs_active)

@@ -182,7 +182,7 @@ class VGAOutputApplet(GlasgowApplet):
     def build(self, target, args, test_pattern=True):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(VGAOutputSubtarget(
-            pads=iface.get_pads(args, pins=self.__pins),
+            pads=iface.get_deprecated_pads(args, pins=self.__pins),
             h_front=args.h_front,
             h_sync=args.h_sync,
             h_back=args.h_back,

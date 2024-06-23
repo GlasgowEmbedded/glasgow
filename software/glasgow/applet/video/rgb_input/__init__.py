@@ -158,7 +158,7 @@ class VideoRGBInputApplet(GlasgowApplet):
             rows=args.rows,
             columns=args.columns,
             vblank=args.vblank,
-            pads=iface.get_pads(args, pins=("dck",), pin_sets=("r", "g", "b")),
+            pads=iface.get_deprecated_pads(args, pins=("dck",), pin_sets=("r", "g", "b")),
             in_fifo=iface.get_in_fifo(depth=512 * 30, auto_flush=False),
             sys_clk_freq=target.sys_clk_freq,
         ))

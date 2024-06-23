@@ -168,7 +168,7 @@ class VideoWS2812OutputApplet(GlasgowApplet):
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(VideoWS2812OutputSubtarget(
-            pads=[iface.get_pin(pin) for pin in args.pin_set_out],
+            pads=[iface.get_deprecated_pad(pin) for pin in args.pin_set_out],
             count=args.count,
             pix_in_size=self.pix_in_size,
             pix_out_size=pix_out_size,
