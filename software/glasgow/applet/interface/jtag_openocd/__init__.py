@@ -13,14 +13,19 @@ from ..jtag_probe import JTAGProbeBus
 
 
 class JTAGOpenOCDSubtarget(Elaboratable):
-    def __init__(self, pads, out_fifo, in_fifo, period_cyc, us_cyc):
-        self.pads       = pads
+    def __init__(self, tck_port, tms_port, tdi_port, tdo_port, trst_port, srst_port,
+                 out_fifo, in_fifo, period_cyc, us_cyc):
+        self._tck_port  = tck_port
+        self._tms_port  = tms_port
+        self._tdi_port  = tdi_port
+        self._tdo_port  = tdo_port
+        self._trst_port = trst_port
+        self._srst_port = srst_port
+
         self.out_fifo   = out_fifo
         self.in_fifo    = in_fifo
         self.period_cyc = period_cyc
         self.us_cyc     = us_cyc
-        self.srst_z     = Signal(init=0)
-        self.srst_o     = Signal(init=0)
 
     def elaborate(self, platform):
         m = Module()
@@ -28,16 +33,14 @@ class JTAGOpenOCDSubtarget(Elaboratable):
         out_fifo = self.out_fifo
         in_fifo  = self.in_fifo
 
-        m.submodules.bus = bus = JTAGProbeBus(self.pads)
-        m.d.comb += [
-            bus.trst_z.eq(0),
-            self.srst_z.eq(0),
-        ]
-        if hasattr(self.pads, "srst_t"):
-            m.d.sync += [
-                self.pads.srst_t.oe.eq(~self.srst_z),
-                self.pads.srst_t.o.eq(~self.srst_o)
-            ]
+        m.submodules.bus = bus = JTAGProbeBus(self._tck_port, self._tms_port, self._tdi_port,
+                                              self._tdo_port, self._trst_port)
+        m.d.comb += bus.trst_z.eq(0)
+
+        srst_o = Signal(init=0)
+        if self._srst_port is not None:
+            m.submodules.srst = srst_buffer = io.Buffer("o", ~self._srst_port)
+            m.d.sync += srst_buffer.o.eq(srst_o)
 
         blink = Signal()
         try:
@@ -59,7 +62,7 @@ class JTAGOpenOCDSubtarget(Elaboratable):
                         m.d.sync += timer.eq(self.period_cyc - 1)
                     # remote_bitbang_reset(int trst, int srst)
                     with m.Case(*b"rstu"):
-                        m.d.sync += Cat(self.srst_o, bus.trst_o).eq(out_fifo.r_data - ord(b"r"))
+                        m.d.sync += Cat(srst_o, bus.trst_o).eq(out_fifo.r_data - ord(b"r"))
                     # remote_bitbang_sample(void)
                     with m.Case(*b"R"):
                         m.d.comb += out_fifo.r_en.eq(in_fifo.w_rdy)
@@ -104,8 +107,6 @@ class JTAGOpenOCDApplet(GlasgowApplet):
             -c 'remote_bitbang host /tmp/jtag.sock'
     """
 
-    __pins = ("tck", "tms", "tdi", "tdo", "trst", "srst")
-
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
@@ -122,7 +123,12 @@ class JTAGOpenOCDApplet(GlasgowApplet):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(JTAGOpenOCDSubtarget(
-            pads=iface.get_deprecated_pads(args, pins=self.__pins),
+            tck_port=iface.get_port(args.pin_tck, name="tck"),
+            tms_port=iface.get_port(args.pin_tms, name="tms"),
+            tdi_port=iface.get_port(args.pin_tdi, name="tdi"),
+            tdo_port=iface.get_port(args.pin_tdo, name="tdo"),
+            trst_port=iface.get_port(args.pin_trst, name="trst"),
+            srst_port=iface.get_port(args.pin_srst, name="srst"),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             period_cyc=int(target.sys_clk_freq // (args.frequency * 1000)),

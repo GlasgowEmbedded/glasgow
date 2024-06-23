@@ -24,7 +24,7 @@ import logging
 import argparse
 import enum
 from amaranth import *
-from amaranth.lib.cdc import FFSynchronizer
+from amaranth.lib import io, cdc
 
 from ....support.bits import *
 from ....support.logging import *
@@ -77,8 +77,13 @@ JTAG_TRANSITIONS = {
 
 
 class JTAGProbeBus(Elaboratable):
-    def __init__(self, pads):
-        self._pads = pads
+    def __init__(self, tck_port, tms_port, tdi_port, tdo_port, trst_port):
+        self._tck_port  = tck_port
+        self._tms_port  = tms_port
+        self._tdi_port  = tdi_port
+        self._tdo_port  = tdo_port
+        self._trst_port = trst_port
+
         self.tck = Signal(init=1)
         self.tms = Signal(init=1)
         self.tdo = Signal(init=1)
@@ -88,23 +93,18 @@ class JTAGProbeBus(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        pads = self._pads
-        m.d.comb += [
-            pads.tck_t.oe.eq(1),
-            pads.tck_t.o.eq(self.tck),
-            pads.tms_t.oe.eq(1),
-            pads.tms_t.o.eq(self.tms),
-            pads.tdi_t.oe.eq(1),
-            pads.tdi_t.o.eq(self.tdi),
-        ]
-        m.submodules += [
-            FFSynchronizer(pads.tdo_t.i, self.tdo),
-        ]
-        if hasattr(pads, "trst_t"):
-            m.d.sync += [
-                pads.trst_t.oe.eq(~self.trst_z),
-                pads.trst_t.o.eq(~self.trst_o)
-            ]
+        m.submodules.tck = tck_buffer = io.Buffer("o", self._tck_port)
+        m.d.comb += tck_buffer.o.eq(self.tck)
+        m.submodules.tms = tms_buffer = io.Buffer("o", self._tms_port)
+        m.d.comb += tms_buffer.o.eq(self.tms)
+        m.submodules.tdi = tdi_buffer = io.Buffer("o", self._tdi_port)
+        m.d.comb += tdi_buffer.o.eq(self.tdi)
+        m.submodules.tdo = tdo_buffer = io.Buffer("i", self._tdo_port)
+        m.submodules += cdc.FFSynchronizer(tdo_buffer.i, self.tdo)
+        if self._trst_port is not None:
+            m.submodules.trst = trst_buffer = io.Buffer("o", ~self._trst_port)
+            m.d.comb += trst_buffer.oe.eq(~self.trst_z)
+            m.d.comb += trst_buffer.o.eq(self.trst_o)
         return m
 
 
@@ -292,15 +292,21 @@ class JTAGProbeDriver(Elaboratable):
 
 
 class JTAGProbeSubtarget(Elaboratable):
-    def __init__(self, pads, out_fifo, in_fifo, period_cyc):
-        self._pads       = pads
+    def __init__(self, tck_port, tms_port, tdi_port, tdo_port, trst_port,
+                 out_fifo, in_fifo, period_cyc):
+        self._tck_port   = tck_port
+        self._tms_port   = tms_port
+        self._tdi_port   = tdi_port
+        self._tdo_port   = tdo_port
+        self._trst_port  = trst_port
         self._out_fifo   = out_fifo
         self._in_fifo    = in_fifo
         self._period_cyc = period_cyc
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.bus     = JTAGProbeBus(self._pads)
+        m.submodules.bus     = JTAGProbeBus(
+            self._tck_port, self._tms_port, self._tdi_port, self._tdo_port, self._trst_port)
         m.submodules.adapter = JTAGProbeAdapter(m.submodules.bus, self._period_cyc)
         m.submodules.driver  = JTAGProbeDriver(m.submodules.adapter, self._out_fifo, self._in_fifo)
         return m
@@ -1005,8 +1011,6 @@ class JTAGProbeApplet(GlasgowApplet):
     Identify, test and debug integrated circuits and board assemblies via IEEE 1149.1 JTAG.
     """
 
-    __pins = ("tck", "tms", "tdi", "tdo", "trst")
-
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
@@ -1022,7 +1026,11 @@ class JTAGProbeApplet(GlasgowApplet):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(JTAGProbeSubtarget(
-            pads=iface.get_deprecated_pads(args, pins=self.__pins),
+            tck_port=iface.get_port(args.pin_tck, name="tck"),
+            tms_port=iface.get_port(args.pin_tms, name="tms"),
+            tdi_port=iface.get_port(args.pin_tdi, name="tdi"),
+            tdo_port=iface.get_port(args.pin_tdo, name="tdo"),
+            trst_port=iface.get_port(args.pin_trst, name="trst"),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
             period_cyc=target.sys_clk_freq // (args.frequency * 1000),
