@@ -5,7 +5,7 @@ from amaranth.lib import io
 __all__ = ['Pads']
 
 
-class Pads(Elaboratable):
+class Pads:
     """
     Pad adapter.
 
@@ -43,7 +43,3 @@ class Pads(Elaboratable):
                 raise ValueError("Cannot add {!r} as attribute {}; attribute already exists")
 
             setattr(self, pin_name, pin)
-
-    def elaborate(self, platform):
-        m = Module()
-        return m
