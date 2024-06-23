@@ -109,9 +109,6 @@ class SimulationMultiplexerInterface(AccessMultiplexerInterface):
             crossbar_side="write", logic_side="read", cd_logic=clock_domain, depth=depth)
         return self.out_fifo
 
-    def get_inout_fifo(self, **kwargs):
-        return self.get_in_fifo(**kwargs), self.get_out_fifo(**kwargs)
-
     def add_subtarget(self, subtarget):
         self._subtargets.append(subtarget)
         return subtarget
