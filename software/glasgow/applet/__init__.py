@@ -116,7 +116,7 @@ from ..target.hardware import *
 from ..device.simulation import *
 from ..device.hardware import *
 from ..target.toolchain import find_toolchain
-from ..platform.rev_ab import GlasgowPlatformRevAB
+from ..platform.rev_ab import GlasgowRevABPlatform
 
 
 __all__ += ["GlasgowAppletTestCase", "synthesis_test", "applet_simulation_test",
@@ -293,7 +293,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
             await self.device.download_target(self.target.build_plan())
         else:
             # avoid UnusedElaboratable warning
-            Fragment.get(self.target, GlasgowPlatformRevAB())
+            Fragment.get(self.target, GlasgowRevABPlatform())
 
         return await self.applet.run(self.device, self._parsed_args)
 
