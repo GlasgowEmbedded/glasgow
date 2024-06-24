@@ -1,19 +1,19 @@
-# Organization owners can do cross-cutting changes to the entire repository.
-*                                                       @GlasgowEmbedded/owners
+# Catherine owns everything that's not owned by someone else.
+*                                                       @whitequark
 
-/software/glasgow/applet/video/hub75_output/            @GlasgowEmbedded/owners @attie
-/software/glasgow/applet/video/ws2812_output/           @GlasgowEmbedded/owners @attie
+/software/glasgow/applet/video/hub75_output/            @attie
+/software/glasgow/applet/video/ws2812_output/           @attie
 
-/software/glasgow/arch/xilinx/xc9500.py                 @GlasgowEmbedded/owners @wanda-phi
-/software/glasgow/arch/xilinx/xc9500xl.py               @GlasgowEmbedded/owners @wanda-phi
-/software/glasgow/arch/xilinx/xpla3.py                  @GlasgowEmbedded/owners @wanda-phi
-/software/glasgow/applet/program/xc9500/                @GlasgowEmbedded/owners @wanda-phi
-/software/glasgow/applet/program/xc9500xl/              @GlasgowEmbedded/owners @wanda-phi
-/software/glasgow/applet/program/xpla3/                 @GlasgowEmbedded/owners @wanda-phi
-/software/glasgow/database/xilinx/xc9500.py             @GlasgowEmbedded/owners @wanda-phi
-/software/glasgow/database/xilinx/xc9500xl.py           @GlasgowEmbedded/owners @wanda-phi
-/software/glasgow/database/xilinx/xpla3.py              @GlasgowEmbedded/owners @wanda-phi
+/software/glasgow/arch/xilinx/xc9500.py                 @wanda-phi
+/software/glasgow/arch/xilinx/xc9500xl.py               @wanda-phi
+/software/glasgow/arch/xilinx/xpla3.py                  @wanda-phi
+/software/glasgow/applet/program/xc9500/                @wanda-phi
+/software/glasgow/applet/program/xc9500xl/              @wanda-phi
+/software/glasgow/applet/program/xpla3/                 @wanda-phi
+/software/glasgow/database/xilinx/xc9500.py             @wanda-phi
+/software/glasgow/database/xilinx/xc9500xl.py           @wanda-phi
+/software/glasgow/database/xilinx/xpla3.py              @wanda-phi
 
-/software/glasgow/applet/servo/                         @GlasgowEmbedded/owners @tpwrules
+/software/glasgow/applet/servo/                         @tpwrules
 
-/software/glasgow/applet/interface/spi_flashrom/        @GlasgowEmbedded/owners @neuschaefer
+/software/glasgow/applet/interface/spi_flashrom/        @neuschaefer
