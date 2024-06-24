@@ -3,10 +3,10 @@ from amaranth.build import *
 from .ice40 import *
 
 
-__all__ = ["GlasgowPlatformRevAB"]
+__all__ = ["GlasgowRevABPlatform"]
 
 
-class GlasgowPlatformRevAB(GlasgowPlatformICE40):
+class GlasgowRevABPlatform(GlasgowICE40Platform):
     device      = "iCE40UP5K"
     package     = "SG48"
     default_clk = "clk_if"

@@ -3,10 +3,10 @@ from amaranth.build import *
 from .ice40 import *
 
 
-__all__ = ["GlasgowPlatformRevC0", "GlasgowPlatformRevC123"]
+__all__ = ["GlasgowRevC0Platform", "GlasgowRevC123Platform"]
 
 
-class _GlasgowPlatformRevC(GlasgowPlatformICE40):
+class _GlasgowRevCPlatform(GlasgowICE40Platform):
     device      = "iCE40HX8K"
     package     = "BG121"
     default_clk = "clk_if"
@@ -122,16 +122,16 @@ class _GlasgowPlatformRevC(GlasgowPlatformICE40):
     ]
 
 
-class GlasgowPlatformRevC0(_GlasgowPlatformRevC):
-    resources = _GlasgowPlatformRevC.resources + [
+class GlasgowRevC0Platform(_GlasgowRevCPlatform):
+    resources = _GlasgowRevCPlatform.resources + [
         Resource("port_s", 0,
                  Subsignal("io", Pins("A11")),
                  Attrs(IO_STANDARD="SB_LVCMOS33")),
     ]
 
 
-class GlasgowPlatformRevC123(_GlasgowPlatformRevC):
-    resources = _GlasgowPlatformRevC.resources + [
+class GlasgowRevC123Platform(_GlasgowRevCPlatform):
+    resources = _GlasgowRevCPlatform.resources + [
         Resource("port_s", 0,
                  Subsignal("io", Pins("A11"), Attrs(PULLUP=1)),
                  Subsignal("oe", Pins("B4", dir="o")),

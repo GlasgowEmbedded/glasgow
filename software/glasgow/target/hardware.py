@@ -26,16 +26,16 @@ logger = logging.getLogger(__name__)
 class GlasgowHardwareTarget(Elaboratable):
     def __init__(self, revision, multiplexer_cls=None, with_analyzer=False):
         if revision in ("A0", "B0"):
-            from ..platform.rev_ab import GlasgowPlatformRevAB
-            self.platform = GlasgowPlatformRevAB()
+            from ..platform.rev_ab import GlasgowRevABPlatform
+            self.platform = GlasgowRevABPlatform()
             self.sys_clk_freq = 30e6
         elif revision in "C0":
-            from ..platform.rev_c import GlasgowPlatformRevC0
-            self.platform = GlasgowPlatformRevC0()
+            from ..platform.rev_c import GlasgowRevC0Platform
+            self.platform = GlasgowRevC0Platform()
             self.sys_clk_freq = 48e6
         elif revision in ("C1", "C2", "C3"):
-            from ..platform.rev_c import GlasgowPlatformRevC123
-            self.platform = GlasgowPlatformRevC123()
+            from ..platform.rev_c import GlasgowRevC123Platform
+            self.platform = GlasgowRevC123Platform()
             self.sys_clk_freq = 48e6
         else:
             raise ValueError("Unknown revision")

@@ -2,13 +2,13 @@ import asyncio
 from amaranth import *
 from amaranth.vendor import LatticeICE40Platform
 
-from .generic import GlasgowPlatformGeneric
+from .generic import GlasgowGenericPlatform
 
 
-__all__ = ["GlasgowPlatformICE40"]
+__all__ = ["GlasgowICE40Platform"]
 
 
-class GlasgowPlatformICE40(GlasgowPlatformGeneric, LatticeICE40Platform):
+class GlasgowICE40Platform(GlasgowGenericPlatform, LatticeICE40Platform):
     def get_pll(self, pll, simple_feedback=True):
         if not 10e6 <= pll.f_in <= 133e6:
             pll.logger.error("PLL: f_in (%.3f MHz) must be between 10 and 133 MHz",

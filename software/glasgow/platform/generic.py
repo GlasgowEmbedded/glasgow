@@ -47,7 +47,7 @@ class GlasgowPlatformPort(io.PortLike):
             return NotImplemented
 
 
-class GlasgowPlatformGeneric:
+class GlasgowGenericPlatform:
     @property
     def file_templates(self):
         # Do not require yosys to be present for toolchain_prepare() to finish.
