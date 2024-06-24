@@ -207,18 +207,28 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
 
         return m
 
-    def get_pin_name(self, pin_num):
-        port, bit, request = self._pins[pin_num]
+    def get_pin_name(self, pin):
+        port, bit, request = self._pins[pin]
         return f"{port}{bit}"
 
-    def get_port(self, pin_num, *, name):
-        if pin_num is None:
+    def get_port(self, pin_or_pins, *, name):
+        if pin_or_pins is None:
             self.logger.debug("not assigning applet port %r to any device pin", name)
             return None
+        elif isinstance(pin_or_pins, list):
+            port = None
+            for index, subpin in enumerate(pin_or_pins):
+                subport = self.get_port(subpin, name=f"{name}[{index}]")
+                if port is None:
+                    port  = subport
+                else:
+                    port += subport
+            assert port is not None
+            return port
         else:
-            port, bit, request = self._pins[pin_num]
+            port, bit, request = self._pins[pin_or_pins]
             self.logger.debug("assigning applet port %r to device pin %s",
-                name, self.get_pin_name(pin_num))
+                name, self.get_pin_name(pin_or_pins))
             pin_subports = request(bit)
             if hasattr(pin_subports, "oe"):
                 return GlasgowPlatformPort(io=pin_subports.io, oe=pin_subports.oe)
