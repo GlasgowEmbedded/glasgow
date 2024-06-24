@@ -21,6 +21,9 @@ class PortGroup:
             assert value is None or isinstance(value, io.PortLike)
         object.__setattr__(self, name, value)
 
+    def __getitem__(self, key):
+        return self.__dict__[key]
+
 
 # FIXME: needs to be upstream in Amaranth amaranth-lang/amaranth#1417
 class SimulationPort(io.PortLike):
