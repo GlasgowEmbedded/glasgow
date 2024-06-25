@@ -998,7 +998,7 @@ int main() {
       handle_pending_alert();
 
     // There are few things more frustrating than having your debug tools fail you.
-    // Data-only USB cables are regretfully common. If the device finds itself without
+    // Power-only USB cables are regretfully common. If the device finds itself without
     // an address it should indicate this unusual condition, though in a gentle way
     // because there are legitimate reasons for this to happen (PC in suspend, Glasgow
     // used 'offline', etc).
