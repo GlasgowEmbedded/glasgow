@@ -4,8 +4,8 @@
 [metadata]
 groups = ["default", "builtin-toolchain", "http"]
 strategy = ["cross_platform", "direct_minimal_versions"]
-lock_version = "4.4.1"
-content_hash = "sha256:d96b010a1b5f37ec954e7bbfbe35598ec0373d3f8d01af605dca3f4e25e854b5"
+lock_version = "4.4.2"
+content_hash = "sha256:3e60a62f7f666f8540cbce1d889b38e4dd796825043476255383303b58118f7e"
 
 [[package]]
 name = "aiohttp"
