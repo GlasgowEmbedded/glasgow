@@ -1,7 +1,6 @@
 from amaranth import *
 from amaranth.lib import wiring, io
 
-from ..gateware import GatewareBuildError
 from ..device.hardware import GlasgowHardwareDevice
 
 

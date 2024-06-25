@@ -1,7 +1,9 @@
 import asyncio
 from amaranth import *
+from amaranth.lib.cdc import ResetSynchronizer
 from amaranth.vendor import LatticeICE40Platform
 
+from ..gateware import GatewareBuildError
 from .generic import GlasgowGenericPlatform
 
 
@@ -88,7 +90,10 @@ class GlasgowICE40Platform(GlasgowGenericPlatform, LatticeICE40Platform):
         pll.logger.trace("iCE40 PLL: feedback_path=%s divr=%d divf=%d divq=%d filter_range=%d",
                          feedback_path, divr, divf, divq, filter_range)
 
-        return Instance("SB_PLL40_CORE",
+        m = Module()
+        locked = Signal()
+        m.submodules.reset_sync = ResetSynchronizer(~locked, domain=pll.odomain)
+        m.submodules.pll_core = Instance("SB_PLL40_CORE",
             p_FEEDBACK_PATH=feedback_path,
             p_PLLOUT_SELECT="GENCLK",
             p_DIVR=divr,
@@ -98,5 +103,7 @@ class GlasgowICE40Platform(GlasgowGenericPlatform, LatticeICE40Platform):
             i_REFERENCECLK=ClockSignal(pll.idomain),
             o_PLLOUTCORE=ClockSignal(pll.odomain),
             i_RESETB=~ResetSignal(pll.idomain),
+            o_LOCK=locked,
             i_BYPASS=Const(0),
         )
+        return m
