@@ -77,12 +77,8 @@ JTAG_TRANSITIONS = {
 
 
 class JTAGProbeBus(Elaboratable):
-    def __init__(self, tck_port, tms_port, tdi_port, tdo_port, trst_port):
-        self._tck_port  = tck_port
-        self._tms_port  = tms_port
-        self._tdi_port  = tdi_port
-        self._tdo_port  = tdo_port
-        self._trst_port = trst_port
+    def __init__(self, ports):
+        self._ports = ports
 
         self.tck = Signal(init=1)
         self.tms = Signal(init=1)
@@ -93,16 +89,16 @@ class JTAGProbeBus(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.tck = tck_buffer = io.Buffer("o", self._tck_port)
+        m.submodules.tck = tck_buffer = io.Buffer("o", self._ports.tck)
         m.d.comb += tck_buffer.o.eq(self.tck)
-        m.submodules.tms = tms_buffer = io.Buffer("o", self._tms_port)
+        m.submodules.tms = tms_buffer = io.Buffer("o", self._ports.tms)
         m.d.comb += tms_buffer.o.eq(self.tms)
-        m.submodules.tdi = tdi_buffer = io.Buffer("o", self._tdi_port)
+        m.submodules.tdi = tdi_buffer = io.Buffer("o", self._ports.tdi)
         m.d.comb += tdi_buffer.o.eq(self.tdi)
-        m.submodules.tdo = tdo_buffer = io.Buffer("i", self._tdo_port)
+        m.submodules.tdo = tdo_buffer = io.Buffer("i", self._ports.tdo)
         m.submodules += cdc.FFSynchronizer(tdo_buffer.i, self.tdo)
-        if self._trst_port is not None:
-            m.submodules.trst = trst_buffer = io.Buffer("o", ~self._trst_port)
+        if self._ports.trst is not None:
+            m.submodules.trst = trst_buffer = io.Buffer("o", ~self._ports.trst)
             m.d.comb += trst_buffer.oe.eq(~self.trst_z)
             m.d.comb += trst_buffer.o.eq(self.trst_o)
         return m
@@ -292,21 +288,15 @@ class JTAGProbeDriver(Elaboratable):
 
 
 class JTAGProbeSubtarget(Elaboratable):
-    def __init__(self, tck_port, tms_port, tdi_port, tdo_port, trst_port,
-                 out_fifo, in_fifo, period_cyc):
-        self._tck_port   = tck_port
-        self._tms_port   = tms_port
-        self._tdi_port   = tdi_port
-        self._tdo_port   = tdo_port
-        self._trst_port  = trst_port
+    def __init__(self, ports, out_fifo, in_fifo, period_cyc):
+        self._ports      = ports
         self._out_fifo   = out_fifo
         self._in_fifo    = in_fifo
         self._period_cyc = period_cyc
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.bus     = JTAGProbeBus(
-            self._tck_port, self._tms_port, self._tdi_port, self._tdo_port, self._trst_port)
+        m.submodules.bus     = JTAGProbeBus(self._ports)
         m.submodules.adapter = JTAGProbeAdapter(m.submodules.bus, self._period_cyc)
         m.submodules.driver  = JTAGProbeDriver(m.submodules.adapter, self._out_fifo, self._in_fifo)
         return m
@@ -1026,11 +1016,13 @@ class JTAGProbeApplet(GlasgowApplet):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(JTAGProbeSubtarget(
-            tck_port=iface.get_port(args.pin_tck, name="tck"),
-            tms_port=iface.get_port(args.pin_tms, name="tms"),
-            tdi_port=iface.get_port(args.pin_tdi, name="tdi"),
-            tdo_port=iface.get_port(args.pin_tdo, name="tdo"),
-            trst_port=iface.get_port(args.pin_trst, name="trst"),
+            ports=iface.get_port_group(
+                tck=args.pin_tck,
+                tms=args.pin_tms,
+                tdi=args.pin_tdi,
+                tdo=args.pin_tdo,
+                trst=args.pin_trst,
+            ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
             period_cyc=target.sys_clk_freq // (args.frequency * 1000),
