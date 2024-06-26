@@ -11,7 +11,7 @@ import asyncio
 import argparse
 import statistics
 from amaranth import *
-from amaranth.lib.cdc import FFSynchronizer
+from amaranth.lib import cdc, io
 from amaranth.lib.fifo import SyncFIFOBuffered
 
 from ....support.logging import *
@@ -19,10 +19,10 @@ from ... import *
 
 
 class MemoryPROMBus(Elaboratable):
-    def __init__(self, pads, a_bits, sh_freq):
-        self._pads    = pads
+    def __init__(self, ports, a_bits, sh_freq):
+        self._ports   = ports
         self.a_bits   = a_bits
-        self.dq_bits  = len(pads.dq_t.i)
+        self.dq_bits  = len(ports.dq)
         self._sh_freq = sh_freq
 
         self.ce  = Signal()
@@ -37,56 +37,46 @@ class MemoryPROMBus(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        pads = self._pads
+        ports = self._ports
 
-        if hasattr(pads, "ce_t"):
-            m.d.comb += [
-                pads.ce_t.oe.eq(1),
-                pads.ce_t.o.eq(~self.ce),
-            ]
-        if hasattr(pads, "oe_t"):
-            m.d.comb += [
-                pads.oe_t.oe.eq(1),
-                pads.oe_t.o.eq(~self.oe),
-            ]
-        if hasattr(pads, "we_t"):
-            m.d.comb += [
-                pads.we_t.oe.eq(1),
-                pads.we_t.o.eq(~self.we),
-            ]
+        if ports.ce is not None:
+            m.submodules.ce_buffer = ce_buffer = io.Buffer("o", ~ports.ce)
+            m.d.comb += ce_buffer.o.eq(self.ce)
+        if ports.oe is not None:
+            m.submodules.oe_buffer = oe_buffer = io.Buffer("o", ~ports.oe)
+            m.d.comb += oe_buffer.o.eq(self.oe)
+        if ports.we is not None:
+            m.submodules.we_buffer = we_buffer = io.Buffer("o", ~ports.we)
+            m.d.comb += we_buffer.o.eq(self.we)
 
+        m.submodules.dq_buffer = dq_buffer = io.Buffer("io", ports.dq)
         m.d.comb += [
-            pads.dq_t.oe.eq(~self.oe),
-            pads.dq_t.o.eq(self.d),
+            dq_buffer.oe.eq(~self.oe),
+            dq_buffer.o.eq(self.d),
         ]
-        m.submodules += FFSynchronizer(pads.dq_t.i, self.q)
+        m.submodules += cdc.FFSynchronizer(dq_buffer.i, self.q)
 
-        m.d.comb += [
-            pads.a_t.oe.eq(1),
-            pads.a_t.o.eq(self.a), # directly drive low bits
-        ]
+        if ports.a is not None:
+            m.submodules.a_buffer = a_buffer = io.Buffer("o", ports.a)
+            m.d.comb += a_buffer.o.eq(self.a) # directly drive low bits
 
-        if hasattr(pads, "a_clk_t") and hasattr(pads, "a_si_t"):
+        if ports.a_clk is not None and ports.a_si is not None:
             a_clk = Signal(init=1)
             a_si  = Signal()
-            a_lat = Signal(init=0) if hasattr(pads, "a_lat_t") else None
-            m.d.comb += [
-                pads.a_clk_t.oe.eq(1),
-                pads.a_clk_t.o.eq(a_clk),
-                pads.a_si_t.oe.eq(1),
-                pads.a_si_t.o.eq(a_si),
-            ]
+            a_lat = Signal(init=0) if ports.a_lat is not None else None
+            m.submodules.a_clk_buffer = a_clk_buffer = io.Buffer("o", ports.a_clk)
+            m.d.comb += a_clk_buffer.o.eq(a_clk),
+            m.submodules.a_si_buffer = a_si_buffer = io.Buffer("o", ports.a_si)
+            m.d.comb += a_si_buffer.o.eq(a_si),
             if a_lat is not None:
-                m.d.comb += [
-                    pads.a_lat_t.oe.eq(1),
-                    pads.a_lat_t.o.eq(a_lat)
-                ]
+                m.submodules.a_lat_buffer = a_lat_buffer = io.Buffer("o", ports.a_lat)
+                m.d.comb += a_lat_buffer.o.eq(a_lat)
 
             # "sa" is the sliced|shifted address, referring to the top-most bits
-            sa_input = self.a[len(pads.a_t.o):]
+            sa_input = self.a[len(ports.a):]
             # This represents a buffer of those high address bits,
             # not to be confused with the latch pin.
-            sa_latch = Signal(self.a_bits - len(pads.a_t.o))
+            sa_latch = Signal(self.a_bits - len(ports.a))
 
             sh_cyc = math.ceil(platform.default_clk_frequency / self._sh_freq)
             timer = Signal(range(sh_cyc), init=sh_cyc - 1)
@@ -492,9 +482,6 @@ class MemoryPROMApplet(GlasgowApplet):
     Additionally, for shift registers with latches, specify --pin-a-lat to drive the latch pins.
     """
 
-    __pin_sets = ("dq", "a")
-    __pins = ("a_clk", "a_si", "a_lat", "oe", "we", "ce")
-
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
@@ -533,7 +520,16 @@ class MemoryPROMApplet(GlasgowApplet):
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         bus = MemoryPROMBus(
-            pads=iface.get_deprecated_pads(args, pins=self.__pins, pin_sets=self.__pin_sets),
+            ports=iface.get_port_group(
+                dq=args.pin_set_dq,
+                a=args.pin_set_a,
+                a_clk=args.pin_a_clk,
+                a_si=args.pin_a_si,
+                a_lat=args.pin_a_lat,
+                oe=args.pin_oe,
+                we=args.pin_we,
+                ce=args.pin_ce,
+            ),
             a_bits=args.a_bits,
             sh_freq=args.shift_freq * 1e6,
         )
