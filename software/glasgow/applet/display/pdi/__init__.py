@@ -63,6 +63,7 @@ import argparse
 import asyncio
 from glasgow.support.bits import bitarray
 from amaranth import *
+from amaranth.lib import io
 
 from ...interface.spi_controller import SPIControllerSubtarget, SPIControllerInterface
 from ... import *
@@ -85,9 +86,9 @@ class PDIDisplayError(GlasgowAppletError):
 
 
 class PDIDisplaySubtarget(Elaboratable):
-    def __init__(self, controller, pads, sys_clk_freq, cog_power, cog_disch, cog_reset, cog_pwmen):
+    def __init__(self, controller, ports, sys_clk_freq, cog_power, cog_disch, cog_reset, cog_pwmen):
         self.controller = controller
-        self.pads = pads
+        self.ports = ports
         self.sys_clk_freq = sys_clk_freq
         self.cog_power = cog_power
         self.cog_disch = cog_disch
@@ -99,17 +100,15 @@ class PDIDisplaySubtarget(Elaboratable):
 
         m.submodules.controller = self.controller
 
-        m.d.comb += [
-            # Make sure power and disch are never asserted together, as a safety interlock.
-            self.pads.power_t.oe.eq(1),
-            self.pads.power_t.o.eq(self.cog_power & ~self.cog_disch),
-            self.pads.disch_t.oe.eq(1),
-            self.pads.disch_t.o.eq(self.cog_disch & ~self.cog_power),
-            self.pads.reset_t.oe.eq(1),
-            self.pads.reset_t.o.eq(~self.cog_reset),
-        ]
+        # Make sure power and disch are never asserted together, as a safety interlock.
+        m.submodules.power_buffer = power_buffer = io.Buffer("o", self.ports.power)
+        m.d.comb += power_buffer.o.eq(self.cog_power & ~self.cog_disch),
+        m.submodules.disch_buffer = disch_buffer = io.Buffer("o", self.ports.disch)
+        m.d.comb += disch_buffer.o.eq(self.cog_disch & ~self.cog_power),
+        m.submodules.reset_buffer = reset_buffer = io.Buffer("o", self.ports.reset)
+        m.d.comb += reset_buffer.o.eq(~self.cog_reset)
 
-        if hasattr(self.pads, "pwm_t"):
+        if self.ports.pwm is not None:
             pwm_half  = math.ceil(self.sys_clk_freq / 50e3)
             pwm_timer = Signal(range(pwm_half))
             pwm_phase = Signal()
@@ -121,10 +120,8 @@ class PDIDisplaySubtarget(Elaboratable):
             with m.Else():
                 m.d.sync += pwm_timer.eq(pwm_timer - 1)
 
-            m.d.comb += [
-                self.pads.pwm_t.oe.eq(1),
-                self.pads.pwm_t.o.eq(self.cog_pwmen & pwm_phase),
-            ]
+            m.submodules.pwm_buffer = pwm_buffer = io.Buffer("o", self.ports.pwm)
+            m.d.comb += pwm_buffer.o.eq(self.cog_pwmen & pwm_phase)
 
         return m
 
@@ -375,21 +372,31 @@ class DisplayPDIApplet(GlasgowApplet):
     Circuit. In particular, the G1 COG will not start up without PWM.
     """
 
-    __pins    = ("power", "disch", "reset", "cs", "sck", "cipo", "copi")
-    __pins_g1 = ("pwm",)
-
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        for pin in cls.__pins + cls.__pins_g1:
-            access.add_pin_argument(parser, pin, default=True)
+        access.add_pin_argument(parser, "power", default=True)
+        access.add_pin_argument(parser, "disch", default=True)
+        access.add_pin_argument(parser, "reset", default=True)
+        access.add_pin_argument(parser, "cs", default=True)
+        access.add_pin_argument(parser, "sck", default=True)
+        access.add_pin_argument(parser, "cipo", default=True)
+        access.add_pin_argument(parser, "copi", default=True)
+        access.add_pin_argument(parser, "pwm", required=False)
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
 
+        ports = iface.get_port_group(
+            power=args.pin_power,
+            disch=args.pin_disch,
+            pwm=args.pin_pwm,
+            reset=args.pin_reset,
+        )
+
         controller = SPIControllerSubtarget(
-            pads=iface.get_deprecated_pads(args, pins=self.__pins + self.__pins_g1),
+            pads=iface.get_deprecated_pads(args, pins=("cs", "sck", "cipo", "copi")),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
             period_cyc=math.ceil(target.sys_clk_freq / 5e6),
@@ -403,14 +410,14 @@ class DisplayPDIApplet(GlasgowApplet):
         cog_disch, self.__addr_cog_disch = target.registers.add_rw(1)
         cog_reset, self.__addr_cog_reset = target.registers.add_rw(1, init=1)
 
-        if hasattr(iface.pads, "pwm_t"):
+        if ports.pwm is not None:
             cog_pwmen, self.__addr_cog_pwmen = target.registers.add_rw(1)
         else:
             cog_pwmen = None
 
         subtarget = PDIDisplaySubtarget(
             controller=controller,
-            pads=iface.pads,
+            ports=ports,
             sys_clk_freq=target.sys_clk_freq,
             cog_power=cog_power,
             cog_disch=cog_disch,
