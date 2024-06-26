@@ -304,17 +304,16 @@ import random
 import itertools
 import math
 from amaranth import *
-from amaranth.lib.cdc import FFSynchronizer
+from amaranth.lib import cdc, io
 from amaranth.lib.crc.catalog import CRC16_CCITT_FALSE
 
-from ....gateware.pads import *
 from ... import *
 from .mfm import *
 
 
 class ShugartFloppyBus(Elaboratable):
-    def __init__(self, pins):
-        self.pins = pins
+    def __init__(self, ports):
+        self.ports = ports
 
         self.redwc  = Signal()
         self.index  = Signal()
@@ -336,35 +335,36 @@ class ShugartFloppyBus(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        m.d.comb += [
-            self.pins.redwc_t.oe.eq(1),
-            self.pins.redwc_t.o.eq(~self.redwc),
-            self.pins.motea_t.oe.eq(1),
-            self.pins.motea_t.o.eq(~self.mote[0]),
-            self.pins.drvsb_t.oe.eq(1),
-            self.pins.drvsb_t.o.eq(~self.drvs[1]),
-            self.pins.drvsa_t.oe.eq(1),
-            self.pins.drvsa_t.o.eq(~self.drvs[0]),
-            self.pins.moteb_t.oe.eq(1),
-            self.pins.moteb_t.o.eq(~self.mote[1]),
-            self.pins.dir_t.oe.eq(1),
-            self.pins.dir_t.o.eq(~self.dir),
-            self.pins.step_t.oe.eq(1),
-            self.pins.step_t.o.eq(~self.step),
-            self.pins.wdata_t.oe.eq(1),
-            self.pins.wdata_t.o.eq(~self.wdata),
-            self.pins.wgate_t.oe.eq(1),
-            self.pins.wgate_t.o.eq(~self.wgate),
-            self.pins.side1_t.oe.eq(1),
-            self.pins.side1_t.o.eq(~self.side1),
-        ]
-        m.submodules += [
-            FFSynchronizer(~self.pins.index_t.i, self.index),
-            FFSynchronizer(~self.pins.trk00_t.i, self.trk00),
-            FFSynchronizer(~self.pins.wpt_t.i, self.wpt),
-            FFSynchronizer(~self.pins.rdata_t.i, self.rdata),
-            FFSynchronizer(~self.pins.dskchg_t.i, self.dskchg),
-        ]
+        m.submodules.redwc_buffer = redwc_buffer = io.Buffer("o", ~self.ports.redwc)
+        m.d.comb += redwc_buffer.o.eq(self.redwc)
+        m.submodules.motea_buffer = motea_buffer = io.Buffer("o", ~self.ports.motea)
+        m.d.comb += motea_buffer.o.eq(self.mote[0])
+        m.submodules.drvsb_buffer = drvsb_buffer = io.Buffer("o", ~self.ports.drvsb)
+        m.d.comb += drvsb_buffer.o.eq(self.drvs[1])
+        m.submodules.drvsa_buffer = drvsa_buffer = io.Buffer("o", ~self.ports.drvsa)
+        m.d.comb += drvsa_buffer.o.eq(self.drvs[0])
+        m.submodules.moteb_buffer = moteb_buffer = io.Buffer("o", ~self.ports.moteb)
+        m.d.comb += moteb_buffer.o.eq(self.mote[1])
+        m.submodules.dir_buffer = dir_buffer = io.Buffer("o", ~self.ports.dir)
+        m.d.comb += dir_buffer.o.eq(self.dir)
+        m.submodules.step_buffer = step_buffer = io.Buffer("o", ~self.ports.step)
+        m.d.comb += step_buffer.o.eq(self.step)
+        m.submodules.wdata_buffer = wdata_buffer = io.Buffer("o", ~self.ports.wdata)
+        m.d.comb += wdata_buffer.o.eq(self.wdata)
+        m.submodules.wgate_buffer = wgate_buffer = io.Buffer("o", ~self.ports.wgate)
+        m.d.comb += wgate_buffer.o.eq(self.wgate)
+        m.submodules.side1_buffer = side1_buffer = io.Buffer("o", ~self.ports.side1)
+        m.d.comb += side1_buffer.o.eq(self.side1)
+        m.submodules.index_buffer = index_buffer = io.Buffer("i", ~self.ports.index)
+        m.submodules += cdc.FFSynchronizer(index_buffer.i, self.index),
+        m.submodules.trk00_buffer = trk00_buffer = io.Buffer("i", ~self.ports.trk00)
+        m.submodules += cdc.FFSynchronizer(trk00_buffer.i, self.trk00),
+        m.submodules.wpt_buffer = wpt_buffer = io.Buffer("i", ~self.ports.wpt)
+        m.submodules += cdc.FFSynchronizer(wpt_buffer.i, self.wpt),
+        m.submodules.rdata_buffer = rdata_buffer = io.Buffer("i", ~self.ports.rdata)
+        m.submodules += cdc.FFSynchronizer(rdata_buffer.i, self.rdata),
+        m.submodules.dskchg_buffer = dskchg_buffer = io.Buffer("i", ~self.ports.dskchg)
+        m.submodules += cdc.FFSynchronizer(dskchg_buffer.i, self.dskchg),
 
         index_r = Signal()
         m.d.sync += index_r.eq(self.index)
@@ -387,8 +387,8 @@ CMD_READ_RAW = 0x06
 
 
 class ShugartFloppySubtarget(Elaboratable):
-    def __init__(self, pins, out_fifo, in_fifo, sys_freq):
-        self.bus = ShugartFloppyBus(pins)
+    def __init__(self, ports, out_fifo, in_fifo, sys_freq):
+        self.bus = ShugartFloppyBus(ports)
         self.out_fifo = out_fifo
         self.in_fifo = in_fifo
         self.sys_freq = sys_freq
@@ -635,21 +635,47 @@ class MemoryFloppyApplet(GlasgowApplet):
     # buffering.
     required_revision = "C0"
 
-    __pins = ("index", "motea", "drvsb", "drvsa", "moteb", "dir", "step", "wdata", "wgate",
-              "trk00", "wpt", "rdata", "side1", "dskchg", "redwc")
-
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        for pin in cls.__pins:
-            access.add_pin_argument(parser, pin, default=True)
+        access.add_pin_argument(parser, "index", default=True)
+        access.add_pin_argument(parser, "motea", default=True)
+        access.add_pin_argument(parser, "drvsb", default=True)
+        access.add_pin_argument(parser, "drvsa", default=True)
+        access.add_pin_argument(parser, "moteb", default=True)
+        access.add_pin_argument(parser, "dir", default=True)
+        access.add_pin_argument(parser, "step", default=True)
+        access.add_pin_argument(parser, "wdata", default=True)
+        access.add_pin_argument(parser, "wgate", default=True)
+        access.add_pin_argument(parser, "trk00", default=True)
+        access.add_pin_argument(parser, "wpt", default=True)
+        access.add_pin_argument(parser, "rdata", default=True)
+        access.add_pin_argument(parser, "side1", default=True)
+        access.add_pin_argument(parser, "dskchg", default=True)
+        access.add_pin_argument(parser, "redwc", default=True)
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         self._sys_clk_freq = target.sys_clk_freq
         iface.add_subtarget(ShugartFloppySubtarget(
-            pins=iface.get_deprecated_pads(pins=self.__pins, args=args),
+            ports=iface.get_port_group(
+                index=args.pin_index,
+                motea=args.pin_motea,
+                drvsb=args.pin_drvsb,
+                drvsa=args.pin_drvsa,
+                moteb=args.pin_moteb,
+                dir=args.pin_dir,
+                step=args.pin_step,
+                wdata=args.pin_wdata,
+                wgate=args.pin_wgate,
+                trk00=args.pin_trk00,
+                wpt=args.pin_wpt,
+                rdata=args.pin_rdata,
+                side1=args.pin_side1,
+                dskchg=args.pin_dskchg,
+                redwc=args.pin_redwc,
+            ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
             sys_freq=target.sys_clk_freq,
