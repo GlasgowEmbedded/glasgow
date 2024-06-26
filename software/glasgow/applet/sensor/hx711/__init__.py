@@ -4,7 +4,7 @@
 import logging
 import asyncio
 from amaranth import *
-from amaranth.lib.cdc import FFSynchronizer
+from amaranth.lib import io, cdc
 
 from ... import *
 from ....gateware.clockgen import *
@@ -16,32 +16,27 @@ class HX711Error(GlasgowAppletError):
 
 
 class HX711Bus(Elaboratable):
-    def __init__(self, pads):
-        self.pads = pads
+    def __init__(self, ports):
+        self.ports = ports
         self.clk = Signal()
         self.din = Signal()
         self.osc = Signal()
 
     def elaborate(self, platform):
         m = Module()
-        m.d.comb += [
-            self.pads.clk_t.oe.eq(1),
-            self.pads.clk_t.o.eq(self.clk),
-        ]
-        m.submodules += [
-            FFSynchronizer(self.pads.din_t.i, self.din),
-        ]
-        if hasattr(self.pads, "osc_t"):
-            m.d.comb += [
-                self.pads.osc_t.oe.eq(1),
-                self.pads.osc_t.o.eq(self.osc),
-            ]
+        m.submodules.clk_buffer = clk_buffer = io.Buffer("o", self.ports.clk)
+        m.d.comb += clk_buffer.o.eq(self.clk)
+        m.submodules.din_buffer = din_buffer = io.Buffer("i", self.ports.din)
+        m.submodules += cdc.FFSynchronizer(din_buffer.i, self.din)
+        if self.ports.osc is not None:
+            m.submodules.osc_buffer = osc_buffer = io.Buffer("o", self.ports.osc)
+            m.d.comb += osc_buffer.o.eq(self.osc),
         return m
 
 
 class SensorHX711Subtarget(Elaboratable):
-    def __init__(self, pads, in_fifo, out_fifo, clk_cyc, osc_cyc):
-        self.pads     = pads
+    def __init__(self, ports, in_fifo, out_fifo, clk_cyc, osc_cyc):
+        self.ports    = ports
         self.in_fifo  = in_fifo
         self.out_fifo = out_fifo
         self.clk_cyc  = clk_cyc
@@ -49,7 +44,7 @@ class SensorHX711Subtarget(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.bus = bus = HX711Bus(self.pads)
+        m.submodules.bus = bus = HX711Bus(self.ports)
 
         if self.osc_cyc is not None:
             m.submodules.clkgen = clkgen = ClockGen(self.osc_cyc)
@@ -144,8 +139,6 @@ class SensorHX711Applet(GlasgowApplet):
     approx. 1 Hz to approx. 144 Hz.
     """
 
-    __pins = ("clk", "din", "osc")
-
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
@@ -167,7 +160,11 @@ class SensorHX711Applet(GlasgowApplet):
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(SensorHX711Subtarget(
-            pads=iface.get_deprecated_pads(args, pins=self.__pins),
+            ports=iface.get_port_group(
+                clk=args.pin_clk,
+                din=args.pin_din,
+                osc=args.pin_osc,
+            ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             # The highest conversion rate supported by this sensor is about 144 Hz, and at 1 MHz,
