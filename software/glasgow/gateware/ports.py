@@ -12,5 +12,12 @@ class PortGroup:
     """
     def __init__(self, **kwargs):
         for name, port in kwargs.items():
-            assert port is None or isinstance(port, io.PortLike)
-        self.__dict__.update(kwargs)
+            setattr(self, name, port)
+
+    def __getitem__(self, key):
+        return self.__dict__[key]
+
+    def __setattr__(self, name, value):
+        if not name.startswith("_"):
+            assert value is None or isinstance(value, io.PortLike)
+        object.__setattr__(self, name, value)
