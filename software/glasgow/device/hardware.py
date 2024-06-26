@@ -161,29 +161,33 @@ class GlasgowHardwareDevice:
             handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [0])
             handle.close()
 
+            RE_ENUMERATION_TIMEOUT = 10.0
+
             if usb_context.hasCapability(usb1.CAP_HAS_HOTPLUG):
                 # Hotplug is available; process hotplug events for a while looking for the device
                 # that re-enumerates after firmware upload. We expect two events (one detach and
                 # one attach event), but allow for a bit more than that. (It is not possible to
                 # wait for re-enumeration without some guesswork because USB lacks geographical
                 # addressing.)
+                logger.debug(f"waiting for re-enumeration (hotplug event)")
                 devices_len = len(devices)
-                for event_count in range(5):
-                    usb_context.handleEventsTimeout(1.0)
+                deadline = time.time() + RE_ENUMERATION_TIMEOUT
+                while deadline > time.time():
+                    usb_context.handleEventsTimeout(0.5)
                     if devices_len < len(devices):
-                        # Found it!
-                        break
+                        break # Found it!
                 else:
                     logger.warning("device %03d/%03d did not re-enumerate after firmware upload",
                                    device.getBusNumber(), device.getDeviceAddress())
 
             else:
-                # No hotplug capability (most likely because we're running on Windows); give
-                # the device a bit of time to re-enumerate. (The device disconnects from the bus
-                # for ~1 second, so we should wait a few times that to allow for the variable
-                # OS and platform delays).
-                logger.debug("waiting for re-enumeration")
-                time.sleep(5.0)
+                # No hotplug capability (most likely because we're running on Windows with an older
+                # version of libusb); give the device a bit of time to re-enumerate. The device
+                # disconnects from the bus for ~1 second, so we should wait a few times that
+                # to allow for the variable OS and platform delays. Windows seems particularly slow
+                # with a 5-second timeout being insufficient.
+                logger.debug(f"waiting for re-enumeration (fixed delay)")
+                time.sleep(RE_ENUMERATION_TIMEOUT)
 
                 devices.extend(list(usb_context.getDeviceIterator(skip_on_error=True)))
 
