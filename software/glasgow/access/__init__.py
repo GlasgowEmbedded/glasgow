@@ -3,6 +3,7 @@ from amaranth import *
 from amaranth.lib import io
 import argparse
 
+from ..gateware.ports import PortGroup
 from ..gateware.pads import Pads
 
 
@@ -67,6 +68,11 @@ class AccessMultiplexerInterface(Elaboratable, metaclass=ABCMeta):
     @abstractmethod
     def get_port(self, pin, *, name):
         pass
+
+    def get_port_group(self, **kwargs):
+        return PortGroup(**{
+            name: self.get_port(pin_or_pins, name=name) for name, pin_or_pins in kwargs.items()
+        })
 
     @abstractmethod
     def _build_pad_tristate(self, pin, oe, o, i):

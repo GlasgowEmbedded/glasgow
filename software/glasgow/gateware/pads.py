@@ -6,31 +6,7 @@ __all__ = ['Pads']
 
 
 class Pads:
-    """
-    Pad adapter.
-
-    Provides a common interface to device pads, wrapping either a Migen platform request,
-    or a Glasgow I/O port slice.
-
-    Construct a pad adapter providing pins; name may
-    be specified explicitly with keyword arguments. For each
-    pin with name ``n``, the pad adapter will have an attribute ``n_t`` containing
-    a ``Pin``.
-
-    For example, if a Migen platform file contains the definitions ::
-
-        _io = [
-            ("i2c", 0,
-                Subsignal("scl", Pins("39")),
-                Subsignal("sda", Pins("40")),
-            ),
-            # ...
-        ]
-
-    then a pad adapter constructed as ``Pads(platform.request("i2c"))`` will have
-    attributes ``scl_t`` and ``sda_t`` containing ``Pin`` objects for their respective
-    pins.
-    """
+    """Deprecated in favor of :class:`glasgow.gateware.ports.PortGroup`."""
     def __init__(self, **kwargs):
         for name, pin in kwargs.items():
             if hasattr(pin, "signature"):
