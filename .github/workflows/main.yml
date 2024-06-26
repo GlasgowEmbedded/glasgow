@@ -40,11 +40,11 @@ jobs:
       PDM_LOCKFILE: ${{ matrix.dep-versions == 'minimal' && 'pdm.min.lock' || 'pdm.lock' }}
     steps:
       - name: Check out source code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Cache Glasgow build products
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/GlasgowEmbedded
           key: Glasgow-${{ matrix.python-version }}-${{ matrix.dep-versions }}-${{ hashFiles('./software/**') }}
@@ -53,7 +53,7 @@ jobs:
             Glasgow-${{ matrix.python-version }}-
             Glasgow-
       - name: Set up PDM
-        uses: pdm-project/setup-pdm@v3
+        uses: pdm-project/setup-pdm@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Generate lockfile
@@ -67,7 +67,7 @@ jobs:
         working-directory: ./software
         run: pdm sync
       - name: Cache YoWASP build products
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/YoWASP
           key: YoWASP-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.dep-versions }}-${{ hashFiles('./software/.venv/**/*.wasm') }}
@@ -86,7 +86,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out source code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: recursive
@@ -111,11 +111,11 @@ jobs:
         working-directory: docs/manual
     steps:
       - name: Check out source code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Set up PDM
-        uses: pdm-project/setup-pdm@v3
+        uses: pdm-project/setup-pdm@v4
       - name: Install dependencies
         run: pdm install
       - name: Check for dead links
@@ -125,7 +125,7 @@ jobs:
           DOCS_IS_PRODUCTION: ${{ (github.repository == 'GlasgowEmbedded/glasgow' && github.event.ref == 'refs/heads/main') && 'yes' || 'no' }}
         run: pdm run build
       - name: Upload documentation archive
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: docs
           path: docs/manual/build
@@ -148,10 +148,10 @@ jobs:
       contents: write
     steps:
       - name: Check out source code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - if: ${{ github.repository == 'GlasgowEmbedded/glasgow' && github.event.ref == 'refs/heads/main' }}
         name: Inject documentation from artifact under latest/
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: docs
           path: pages/latest/
@@ -184,7 +184,7 @@ jobs:
           END
       - if: ${{ github.repository != 'GlasgowEmbedded/glasgow' }}
         name: Inject documentation from artifact under {branch}/
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: docs
           path: pages/${{ github.ref_name }}/

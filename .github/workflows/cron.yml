@@ -13,16 +13,16 @@ jobs:
       PDM_LOCKFILE: 'pdm.min.lock'
     steps:
       - name: Check out source code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Set up PDM
-        uses: pdm-project/setup-pdm@v3
+        uses: pdm-project/setup-pdm@v4
       - name: Generate min-versions lockfile
         working-directory: ./software
         run: pdm lock --group :all --strategy direct_minimal_versions
       - name: Submit pull request
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GH_TOKEN }}
           commit-message: 'software: update `pdm.min.lock`.'
