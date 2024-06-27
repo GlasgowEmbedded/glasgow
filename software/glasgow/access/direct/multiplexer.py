@@ -212,10 +212,10 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
         return f"{port}{bit}"
 
     def get_port(self, pin_or_pins, *, name):
-        if pin_or_pins is None:
-            self.logger.debug("not assigning applet port %r to any device pin", name)
-            return None
-        elif isinstance(pin_or_pins, list):
+        if isinstance(pin_or_pins, list):
+            if pin_or_pins == []:
+                self.logger.debug("not assigning applet ports '%s[]' to any device pins", name)
+                return None
             port = None
             for index, subpin in enumerate(pin_or_pins):
                 subport = self.get_port(subpin, name=f"{name}[{index}]")
@@ -226,8 +226,11 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
             assert port is not None
             return port
         else:
+            if pin_or_pins is None:
+                self.logger.debug("not assigning applet port '%s' to any device pin", name)
+                return None
             port, bit, request = self._pins[pin_or_pins]
-            self.logger.debug("assigning applet port %r to device pin %s",
+            self.logger.debug("assigning applet port '%s' to device pin %s",
                 name, self.get_pin_name(pin_or_pins))
             pin_subports = request(bit)
             if hasattr(pin_subports, "oe"):
