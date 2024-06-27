@@ -60,7 +60,7 @@ class XC6SJTAGInterface:
         if byte_reverse:
             bitstream = bitstream.byte_reversed()
         self._log("load size=%d [bits]", len(bitstream))
-        await self.lower.lower.write_ir(IR_CFG_IN)
+        await self.lower.write_ir(IR_CFG_IN)
         await self.lower.write_dr(bitstream)
 
     async def start(self):
