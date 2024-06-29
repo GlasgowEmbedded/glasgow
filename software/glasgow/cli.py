@@ -936,7 +936,7 @@ async def main():
 
 # This entry point is invoked via `project.scripts.glasgow` when installing the package with `pipx`.
 def run_main():
-    exit(asyncio.run(main()))
+    exit(asyncio.new_event_loop().run_until_complete(main()))
 
 
 # This entry point is invoked when running `python -m glasgow.cli`.
