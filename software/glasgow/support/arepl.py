@@ -6,8 +6,10 @@ import errno
 import codeop
 import signal
 import logging
+import pathlib
 import asyncio
 import traceback
+import platformdirs
 try:
     import readline
     import rlcompleter
@@ -43,7 +45,16 @@ class AsyncInteractiveConsole:
             # GNU readline or libedit until a third party added `readline.backend` for 3.13. AAAAAA
 
     def _init_readline(self):
-        self._history_filename = os.path.expanduser("~/.glasgow-history")
+        state_path = platformdirs.user_state_path(
+            "GlasgowEmbedded", appauthor=False, ensure_exists=True)
+        self._history_filename = state_path / "history"
+
+        legacy_history_filename = pathlib.Path.home() / ".glasgow-history"
+        if legacy_history_filename.exists() and not self._history_filename.exists():
+            os.rename(legacy_history_filename, self._history_filename)
+            logger.info(f"migrated REPL history file from {legacy_history_filename} "
+                        f"to {self._history_filename}")
+
         try:
             readline.read_history_file(self._history_filename)
         except FileNotFoundError:
