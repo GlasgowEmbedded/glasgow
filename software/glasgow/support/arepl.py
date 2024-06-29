@@ -7,7 +7,6 @@ import codeop
 import signal
 import logging
 import asyncio
-import builtins
 import traceback
 try:
     import readline
@@ -33,22 +32,37 @@ class AsyncInteractiveConsole:
         if readline is not None:
             self._init_readline()
 
+    @staticmethod
+    def _is_using_libedit():
+        if hasattr(readline, "backend"):
+            return readline.backend == "editline"
+        else:
+            return "libedit" in readline.__doc__
+            # i did not come up with the line above myself.
+            # this is what cpython devs recommended to detect whether `import readline` imports
+            # GNU readline or libedit until a third party added `readline.backend` for 3.13. AAAAAA
+
     def _init_readline(self):
         self._history_filename = os.path.expanduser("~/.glasgow-history")
         try:
             readline.read_history_file(self._history_filename)
+        except FileNotFoundError:
+            pass
         except OSError as exc:
             if exc.errno == errno.EINVAL: # (screaming internally)
-                assert "libedit" in readline.__doc__
-                # i did not come up with the line above myself.
-                # this is what cpython devs recommend to detect whether `import readline` imports
-                # GNU readline or libedit. AAAAAAAAAA
+                assert self._is_using_libedit()
                 with open(self._history_filename, "r") as f:
                     history = f.readlines()
-                assert history[:1] != ["_HiStOrY_V2_"], "History file already converted"
-                backup_filename = f"{self._history_filename}.gnu"
-                with open(backup_filename, "w") as f:
-                    f.writelines(history)
+                assert history[:1] != ["_HiStOrY_V2_"], \
+                    "History file has already been converted"
+                assert not history or any(" " in line for line in history), \
+                    "Pre-conversion history file is expected to contain space characters"
+                backup_filename = f"{self._history_filename}~"
+                if not os.path.exists(backup_filename):
+                    with open(backup_filename, "w") as f:
+                        f.writelines(history)
+                else:
+                    logger.warning(f"history backup {backup_filename} exists, leaving it intact")
                 new_filename = f"{self._history_filename}.new"
                 with open(f"{self._history_filename}.new", "w") as f:
                     f.write("_HiStOrY_V2_\n")
@@ -63,8 +77,6 @@ class AsyncInteractiveConsole:
                                f"to the libedit format; backup saved to {backup_filename}")
                 # meow, why can't libedit do this itself ;_; am sad cat
                 readline.read_history_file(self._history_filename)
-        except FileNotFoundError:
-            pass
 
         completer = rlcompleter.Completer(self.locals)
         readline.parse_and_bind("tab: complete")
@@ -72,6 +84,13 @@ class AsyncInteractiveConsole:
 
     def _save_readline(self):
         readline.set_history_length(1000)
+        if self._is_using_libedit():
+            # without the following, the history saved by the readline module's libedit
+            # implementation is not readable later by the same module. what the fuck?
+            # python/cpython#121160
+            readline.replace_history_item(
+                max(0, readline.get_current_history_length() - readline.get_history_length()),
+                "_HiStOrY_V2_")
         readline.write_history_file(self._history_filename)
 
     async def _run_code(self, code):
