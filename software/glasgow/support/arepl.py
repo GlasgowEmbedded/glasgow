@@ -1,8 +1,11 @@
+import re
 import os
 import sys
 import ast
+import errno
 import codeop
 import signal
+import logging
 import asyncio
 import builtins
 import traceback
@@ -13,6 +16,9 @@ except ModuleNotFoundError:
     readline = None
 
 from .asignal import wait_for_signal
+
+
+logger = logging.getLogger(__loader__.name)
 
 
 class AsyncInteractiveConsole:
@@ -31,6 +37,32 @@ class AsyncInteractiveConsole:
         self._history_filename = os.path.expanduser("~/.glasgow-history")
         try:
             readline.read_history_file(self._history_filename)
+        except OSError as exc:
+            if exc.errno == errno.EINVAL: # (screaming internally)
+                assert "libedit" in readline.__doc__
+                # i did not come up with the line above myself.
+                # this is what cpython devs recommend to detect whether `import readline` imports
+                # GNU readline or libedit. AAAAAAAAAA
+                with open(self._history_filename, "r") as f:
+                    history = f.readlines()
+                assert history[:1] != ["_HiStOrY_V2_"], "History file already converted"
+                backup_filename = f"{self._history_filename}.gnu"
+                with open(backup_filename, "w") as f:
+                    f.writelines(history)
+                new_filename = f"{self._history_filename}.new"
+                with open(f"{self._history_filename}.new", "w") as f:
+                    f.write("_HiStOrY_V2_\n")
+                    f.writelines([
+                        re.sub(r"[ \\]", lambda m: f"\\{ord(m[0]):03o}", line)
+                        for line in history
+                    ])
+                os.rename(new_filename, self._history_filename)
+                logger.warning(f"this Python distribution uses libedit instead of GNU readline, "
+                               f"and their history file formats are not compatible")
+                logger.warning(f"REPL history file has been converted from the GNU readline format "
+                               f"to the libedit format; backup saved to {backup_filename}")
+                # meow, why can't libedit do this itself ;_; am sad cat
+                readline.read_history_file(self._history_filename)
         except FileNotFoundError:
             pass
 
