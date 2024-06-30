@@ -79,6 +79,8 @@ linkcheck_ignore = [
     r"^http://127\.0\.0\.1:8000$",
     # Doesn't like the linkcheck User-Agent.
     r"^https://mouser\.com/",
+    # For unknown reasons, is (mostly) unreachable from GitHub CI runners.
+    r"^https://chaos\.social/",
 ]
 
 linkcheck_anchors_ignore_for_url = [
@@ -87,9 +89,3 @@ linkcheck_anchors_ignore_for_url = [
     # React page with README content included as a JSON payload.
     r"^https://github\.com/[^/]+/[^/]+/$",
 ]
-
-# Defaults to one, which is a bit harsh and results in flakiness. This can be
-# probably bumped up even further if needed, but at some point this might not
-# enough and linkcheck would likely require some changes to work better in a CI
-# scenario (better controlled backoff, a degree of liveness caching, etc).
-linkcheck_retries = 3
