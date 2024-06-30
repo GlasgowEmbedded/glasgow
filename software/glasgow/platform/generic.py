@@ -20,7 +20,7 @@ class GlasgowPlatformPort(io.PortLike):
 
     @property
     def direction(self):
-        return io.Direction.Bidir
+        return self.io_port.direction
 
     def __len__(self):
         return len(self.io_port)
