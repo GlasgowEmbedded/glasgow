@@ -110,6 +110,13 @@ class SVFInterface(SVFEventHandler):
         if not path and state == "RESET":
             await self._enter_state(state)
             return
+        if self.lower.get_state() == JTAGState.UNKNOWN:
+            # The SVF specification doesn't mention whether, at entry, the DUT is assumed to be
+            # in a known state or not, and it looks like some SVF generators assume it is, indeed,
+            # reset; accept that, but warn.
+            self._log("test vector did not reset DUT explicitly, resetting",
+                        level=logging.WARN)
+            await self.lower.enter_test_logic_reset()
         state = getattr(JTAGState, state)
         if path:
             path = [getattr(JTAGState, s) for s in path] + [state]
