@@ -78,6 +78,7 @@ glasgow = "glasgow.cli:run_main"
 [project.entry-points."glasgow.applet"]
 selftest = "glasgow.applet.internal.selftest:SelfTestApplet"
 benchmark = "glasgow.applet.internal.benchmark:BenchmarkApplet"
+flytheflag = "glasgow.applet.internal.flytheflag:FlyTheFlagApplet"
 
 analyzer = "glasgow.applet.interface.analyzer:AnalyzerApplet"
 uart = "glasgow.applet.interface.uart:UARTApplet"
