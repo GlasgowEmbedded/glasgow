@@ -115,6 +115,10 @@ class SWDOpenOCDApplet(GlasgowApplet):
     description = """
     Expose SWD via a socket using the OpenOCD remote bitbang protocol.
 
+    Note: As of 2024-07-10, SWD remote bitbang support is not part of a released version of OpenOCD,
+          so this requires a manual build to work.
+          See https://github.com/GlasgowEmbedded/glasgow/issues/616 for more information.
+
     Usage with TCP sockets:
 
     ::
