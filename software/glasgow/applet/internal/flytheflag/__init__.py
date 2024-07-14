@@ -2,63 +2,72 @@ import logging
 import asyncio
 from amaranth import *
 from amaranth.build.res import ResourceError
+from amaranth.lib import wiring
+from amaranth.lib.wiring import In, Out
 
 from ... import *
 
-class Counter(Elaboratable):
+class Counter(wiring.Component):
     def __init__(self, bits=8):
-        self.bits = bits
-        self.value = Signal(bits, reset=0)
-
-        self.ports = (
-            self.value
-        )
+        super().__init__({
+            "value": Out(bits),
+            "carry": Out(1)
+        })
 
     def elaborate(self, platform):
         m = Module()
-        m.d.sync += self.value.eq(self.value + 1)
+        vinc = self.value + 1
+        m.d.sync += self.carry.eq(vinc >> len(self.value))
+        m.d.sync += self.value.eq(vinc)
         return m
 
+class BufferedPWM(wiring.Component):
+    def __init__(self, counter, bits=None):
+        if bits is None:
+            bits = len(counter.value)
 
-class PWM(Elaboratable):
-    def __init__(self, counter, bits=8, duty=1):
-        self.bits = bits
+        super().__init__({
+            "duty": In(bits),
+            "out": Out(1)
+        })
+
         self.counter = counter;
-        self.idut = Signal(bits, reset=duty)
-        self.duty = Signal(bits, reset=duty)
-        self.out = Signal()
-
-        self.ports = (
-            self.duty,
-            self.out
-        )
+        self.bits = bits
+        self.active_duty = Signal(bits)
 
     def elaborate(self, platform):
         m = Module()
-        counter = self.counter.value[:self.bits]
+        cnt = self.counter.value[:self.bits]
 
-        with m.If(counter == 0):
-            m.d.sync += self.idut.eq(self.duty)
-            with m.If(self.idut):
-                m.d.sync += self.out.eq(1)
-        with m.If(counter == self.idut):
+        with m.If(cnt == self.active_duty):
             m.d.sync += self.out.eq(0)
 
+        with m.If(cnt == 0):
+            adut = self.duty
+            m.d.sync += self.active_duty.eq(adut)
+            m.d.sync += self.out.eq(0)
+            with m.If(adut):
+                m.d.sync += self.out.eq(1)
+
         return m
 
-class VisualPWM(Elaboratable):
-    def __init__(self):
-        self.ind = Signal(8)
-        self.outd = Signal(16)
-        self.ports = (
-            self.ind,
-            self.outd
-        )
+class VisualLUT(wiring.Component):
+    ind: In(8)
+    outd: Out(16)
 
     def elaborate(self, platform):
         m = Module()
+        # This is pwmtable_16 from
+        # https://www.mikrocontroller.net/articles/LED-Fading
+        # It is not a very good match for the glasgow LEDs :/
+        # There's a longish "dead zone" in the low values now,
+        # where atleast I can't see a dang thing.
+        # Maybe 48Mhz is just so fast that the time it takes
+        # to overcome the LED capacitance by the FPGA pin driver on turn-on
+        # makes the effective times even shorter ? *shrug*.
+        # (Also: Yep maybe implement this with a memory, lol.)
         lut = Array([
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3,
+        0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3,
         3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 7,
         7, 7, 8, 8, 8, 9, 9, 10, 10, 10, 11, 11, 12, 12, 13, 13, 14, 15,
         15, 16, 17, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
@@ -82,30 +91,114 @@ class VisualPWM(Elaboratable):
         m.d.sync += self.outd.eq(lut[self.ind[:8]])
         return m
 
+class SineLUT(wiring.Component):
+    def __init__(self, amplirange, inbits):
+        super().__init__({
+            "ind": In(inbits),
+            "outd": Out(amplirange)
+        })
+        self.inbits = inbits
+        self.amplirange = amplirange
+
+    def elaborate(self, platform):
+        m = Module()
+        a = []
+        minv = min(self.amplirange)
+        lenv = len(self.amplirange)
+        print(f"SineLUT {minv}, {lenv}:")
+        r = range(2**self.inbits)
+        for n in r:
+            from math import sin, pi
+            # 0 to pi is positive
+            # pi to 2*pi is negative
+            angle = n/len(r) * (pi*2)
+            v = (sin(angle) + 1.0) / 2 # -1 to 1 -> 0 to 1
+            n = len(self.amplirange)
+            xv = int(v * n) + minv
+            print(v, xv)
+            a.append(xv)
+
+        lut = Array(a)
+        m.d.sync += self.outd.eq(lut[self.ind])
+        return m
+
+
+class FlagSequencer(Elaboratable):
+    def __init__(self, counter, pwmlist):
+        self.lightpos = Signal(signed(8))
+        self.counter = counter
+        self.pwmlist = pwmlist
+        self.sequence = Signal(4) # 5*2 + 2, = 12 states
+        # smaller is faster
+        self.speed = 12
+        self.animcnt = Signal(range(self.speed+1))
+
+        self.sinbits = 8
+        self.sinpos = Signal(self.sinbits)
+        # true max spacing*2, but we just get close to the edge
+        self.posmax = 76
+        self.posmin = -self.posmax;
+
+
+    def elaborate(self, platform):
+        m = Module()
+        m.submodules.visual = visual = VisualLUT()
+        m.submodules.sinelut = sinelut = SineLUT(range(self.posmin,self.posmax+1),self.sinbits)
+        with m.If(self.counter.carry):
+            m.d.sync += self.animcnt.eq(self.animcnt - 1)
+            with m.If(self.animcnt == 0):
+                m.d.sync += self.animcnt.eq(self.speed)
+                m.d.sync += self.sequence.eq(0)
+                m.d.sync += self.sinpos.eq(self.sinpos + 1)
+                m.d.sync += sinelut.ind.eq(self.sinpos)
+
+        v = 0
+        with m.Switch(self.sequence):
+            with m.Case(0):
+                m.d.sync += self.lightpos.eq(sinelut.outd)
+                m.d.sync += self.sequence.eq(1)
+
+            for pwm in self.pwmlist:
+                with m.Case(v*2+1):
+                    # Spacing has an effect on the max "distance",
+                    # thus how dim the dim parts get.
+                    # (and also needs to match up with posmax above)
+                    spacing = 40
+                    pos = Const(v*spacing - (2*spacing))
+                    dist = Mux((self.lightpos - pos) >= 0, self.lightpos - pos, pos - self.lightpos)
+                    bright = 255 - dist
+                    m.d.sync += visual.ind.eq(bright)
+                    m.d.sync += self.sequence.eq((v*2)+2)
+                with m.Case(v*2+2):
+                    m.d.sync += pwm.duty.eq(visual.outd)
+                    m.d.sync += self.sequence.eq((v*2)+3)
+                v += 1
+
+            with m.Default():
+                pass
+
+        return m
+
 
 class FlyTheFlagSubtarget(Elaboratable):
     def __init__(self, applet, target):
         try:
-            self.leds = [target.platform.request("led", n) for n in range(5)]
+            # I do not know if my code has an off-by-one, or if there's something funny about the definitions...
+            xleds = [target.platform.request("led", n) for n in range(5)]
+            self.leds = [xleds[-1]] + xleds[:4]
         except ResourceError:
             self.leds = []
 
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.counter = counter = Counter(27)
+        m.submodules.counter = counter = Counter(16)
+        pwmlist = []
         for n in range(5):
-            m.submodules[f"pwm{n}"] = pwm = PWM(counter,16)
-            m.submodules[f"vpwm{n}"] = vpwm = VisualPWM()
-            daa = Signal(8)
-            m.d.sync += daa.eq((counter.value >> 19) + (51 * n))
-            with m.If(daa > 127):
-                m.d.sync += vpwm.ind.eq((128 | Const(127,8) - daa[:7]))
-            with m.Else():
-                m.d.sync += vpwm.ind.eq(128 | daa)
-            m.d.sync += pwm.duty.eq(vpwm.outd)
+            m.submodules[f"pwm{n}"] = pwm = BufferedPWM(counter,16)
+            pwmlist.append(pwm)
             m.d.comb += self.leds[n].o.eq(pwm.out)
-
+        m.submodules.sequencer = FlagSequencer(counter, pwmlist)
         return m
 
 
