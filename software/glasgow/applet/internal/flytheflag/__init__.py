@@ -105,7 +105,6 @@ class SineLUT(wiring.Component):
         a = []
         minv = min(self.amplirange)
         lenv = len(self.amplirange)
-        print(f"SineLUT {minv}, {lenv}:")
         r = range(2**self.inbits)
         for n in r:
             from math import sin, pi
@@ -115,7 +114,6 @@ class SineLUT(wiring.Component):
             v = (sin(angle) + 1.0) / 2 # -1 to 1 -> 0 to 1
             n = len(self.amplirange)
             xv = int(v * n) + minv
-            print(v, xv)
             a.append(xv)
 
         lut = Array(a)
