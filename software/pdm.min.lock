@@ -3,9 +3,12 @@
 
 [metadata]
 groups = ["default", "builtin-toolchain", "http"]
-strategy = ["cross_platform", "direct_minimal_versions"]
-lock_version = "4.4.2"
+strategy = ["direct_minimal_versions"]
+lock_version = "4.5.0"
 content_hash = "sha256:3e60a62f7f666f8540cbce1d889b38e4dd796825043476255383303b58118f7e"
+
+[[metadata.targets]]
+requires_python = ">=3.9,<3.10.0||>3.10.0,<3.10.1||>3.10.1,<3.10.2||>3.10.2,<4.0"
 
 [[package]]
 name = "aiohttp"
@@ -118,6 +121,7 @@ requires_python = "~=3.8"
 summary = "Amaranth hardware definition language"
 dependencies = [
     "Jinja2~=3.0",
+    "importlib-resources; python_version < \"3.9\"",
     "jschon~=0.11.1",
     "pyvcd<0.5,>=0.2.2",
 ]
@@ -132,6 +136,7 @@ version = "0.10.0.0.post56"
 requires_python = "~=3.5"
 summary = "Specialized WebAssembly build of Yosys used by Amaranth HDL"
 dependencies = [
+    "importlib-resources>=1.4; python_version < \"3.9\"",
     "wasmtime>=1.0",
 ]
 files = [
@@ -143,6 +148,9 @@ name = "async-timeout"
 version = "4.0.3"
 requires_python = ">=3.7"
 summary = "Timeout context manager for asyncio programs"
+dependencies = [
+    "typing-extensions>=3.6.5; python_version < \"3.8\"",
+]
 files = [
     {file = "async-timeout-4.0.3.tar.gz", hash = "sha256:4640d96be84d82d02ed59ea2b7105a0f7b33abe8703703cd0ab0bf87c427522f"},
     {file = "async_timeout-4.0.3-py3-none-any.whl", hash = "sha256:7405140ff1230c310e51dc27b3145b9092d659ce68ff733fb0cefe3ee42be028"},
@@ -153,6 +161,9 @@ name = "attrs"
 version = "23.2.0"
 requires_python = ">=3.7"
 summary = "Classes Without Boilerplate"
+dependencies = [
+    "importlib-metadata; python_version < \"3.8\"",
+]
 files = [
     {file = "attrs-23.2.0-py3-none-any.whl", hash = "sha256:99b87a485a5820b23b879f04c2305b44b951b502fd64be915879d77a7e8fc6f1"},
     {file = "attrs-23.2.0.tar.gz", hash = "sha256:935dc3b529c262f6cf76e50877d35a4bd3c1de194fd41f47a2b7ae8f19971f30"},
@@ -165,6 +176,7 @@ requires_python = ">=3.7"
 summary = "Composable command line interface toolkit"
 dependencies = [
     "colorama; platform_system == \"Windows\"",
+    "importlib-metadata; python_version < \"3.8\"",
 ]
 files = [
     {file = "click-8.1.7-py3-none-any.whl", hash = "sha256:ae74fb96c20a0277a1d615f1e4d73c8414f5a98db8b799a7931d1582f3390c28"},
@@ -443,6 +455,9 @@ name = "platformdirs"
 version = "3.0.0"
 requires_python = ">=3.7"
 summary = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
+dependencies = [
+    "typing-extensions>=4.4; python_version < \"3.8\"",
+]
 files = [
     {file = "platformdirs-3.0.0-py3-none-any.whl", hash = "sha256:b1d5eb14f221506f50d6604a561f4c5786d9e80355219694a1b244bcd96f4567"},
     {file = "platformdirs-3.0.0.tar.gz", hash = "sha256:8a1228abb1ef82d788f74139988b137e78692984ec7b08eaa6c65f1723af28f9"},
@@ -500,6 +515,7 @@ summary = "Yet another URL library"
 dependencies = [
     "idna>=2.0",
     "multidict>=4.0",
+    "typing-extensions>=3.7.4; python_version < \"3.8\"",
 ]
 files = [
     {file = "yarl-1.9.4-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:a8c1df72eb746f4136fe9a2e72b0c9dc1da1cbd23b5372f94b5820ff8ae30e0e"},
@@ -583,6 +599,7 @@ version = "1.42"
 requires_python = "~=3.8"
 summary = "Common runtime for YoWASP packages"
 dependencies = [
+    "importlib-resources; python_version < \"3.9\"",
     "platformdirs~=3.0",
     "wasmtime<15,>=1.0",
 ]
@@ -596,6 +613,7 @@ version = "0.31.0.13.post553"
 summary = "Yosys Open SYnthesis Suite"
 dependencies = [
     "click",
+    "importlib-resources; python_version < \"3.9\"",
     "yowasp-runtime~=1.12",
 ]
 files = [
