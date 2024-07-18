@@ -80,10 +80,11 @@ class GlasgowGenericPlatform:
                 m.submodules.oe = oe_buffer = type(buffer)("o", buffer.port.oe_port,
                                                            **o_domain_kwarg)
                 if buffer.direction in (io.Direction.Output, io.Direction.Bidir):
+                    oe_wide = buffer.oe.replicate(len(buffer.port.oe_port))
                     if isinstance(buffer, (io.Buffer, io.FFBuffer)):
-                        m.d.comb += oe_buffer.o.eq(buffer.oe)
+                        m.d.comb += oe_buffer.o.eq(oe_wide)
                     elif isinstance(buffer, io.DDRBuffer):
-                        m.d.comb += oe_buffer.o.eq(buffer.oe.replicate(2))
+                        m.d.comb += oe_buffer.o.eq(oe_wide.replicate(2))
                     else:
                         raise TypeError(f"I/O buffer {buffer!r} is not supported")
             return m
