@@ -364,12 +364,13 @@ class SPIControllerApplet(GlasgowApplet):
         def hex(arg): return bytes.fromhex(arg)
 
         parser.add_argument(
-            "data", metavar="DATA", type=hex,
+            "data", metavar="DATA", type=hex, nargs="+",
             help="hex bytes to exchange with the device")
 
     async def interact(self, device, args, spi_iface):
-        data = await spi_iface.exchange(args.data)
-        print(data.hex())
+        for octets in args.data:
+            octets = await spi_iface.exchange(octets)
+            print(octets.hex())
 
     @classmethod
     def tests(cls):
