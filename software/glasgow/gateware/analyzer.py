@@ -2,7 +2,6 @@ from functools import reduce
 from collections import OrderedDict
 from amaranth import *
 from amaranth.lib.fifo import FIFOInterface, SyncFIFOBuffered
-from amaranth.lib.coding import PriorityEncoder, PriorityDecoder
 
 
 __all__ = ["EventSource", "EventAnalyzer", "TraceDecodingError", "TraceDecoder"]
@@ -18,6 +17,42 @@ SPECIAL_DONE        =   0b000000
 SPECIAL_OVERRUN     =   0b000001
 SPECIAL_THROTTLE    =   0b000010
 SPECIAL_DETHROTTLE  =   0b000011
+
+
+class _PriorityEncoder(Elaboratable):
+    def __init__(self, width):
+        self.width = width
+
+        self.i = Signal(width)
+        self.o = Signal(range(width))
+        self.n = Signal()
+
+    def elaborate(self, platform):
+        m = Module()
+        for j in reversed(range(self.width)):
+            with m.If(self.i[j]):
+                m.d.comb += self.o.eq(j)
+        m.d.comb += self.n.eq(self.i == 0)
+        return m
+
+
+class _PriorityDecoder(Elaboratable):
+    def __init__(self, width):
+        self.width = width
+
+        self.i = Signal(range(width))
+        self.n = Signal()
+        self.o = Signal(width)
+
+    def elaborate(self, platform):
+        m = Module()
+        with m.Switch(self.i):
+            for j in range(len(self.o)):
+                with m.Case(j):
+                    m.d.comb += self.o.eq(1 << j)
+        with m.If(self.n):
+            m.d.comb += self.o.eq(0)
+        return m
 
 
 class EventSource(Elaboratable):
@@ -197,9 +232,9 @@ class EventAnalyzer(Elaboratable):
 
         # Dequeue events, and serialize events and event data.
         m.submodules.event_encoder = event_encoder = \
-            PriorityEncoder(width=len(self.event_sources))
+            _PriorityEncoder(width=len(self.event_sources))
         m.submodules.event_decoder = event_decoder = \
-            PriorityDecoder(width=len(self.event_sources))
+            _PriorityDecoder(width=len(self.event_sources))
         m.d.comb += event_decoder.i.eq(event_encoder.o)
 
         rep_overrun      = Signal()
