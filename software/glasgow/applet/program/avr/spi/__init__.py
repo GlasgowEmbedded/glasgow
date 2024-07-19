@@ -45,7 +45,7 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
     async def _command(self, byte1, byte2, byte3, byte4):
         command = [byte1, byte2, byte3, byte4]
         self._log("command %s", "{:08b} {:08b} {:08b} {:08b}".format(*command))
-        result = await self.lower.transfer(command)
+        result = await self.lower.exchange(command)
         self._log("result  %s", "{:08b} {:08b} {:08b} {:08b}".format(*result))
         return result
 

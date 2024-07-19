@@ -28,6 +28,6 @@ class SPIControllerAppletTestCase(GlasgowAppletTestCase, applet=SPIControllerApp
         spi_iface = yield from self.run_simulated_applet()
 
         self.assertEqual((yield mux_iface.pads.cs_t.o), 1)
-        result = yield from spi_iface.transfer([0xAA, 0x55, 0x12, 0x34])
+        result = yield from spi_iface.exchange([0xAA, 0x55, 0x12, 0x34])
         self.assertEqual(result, bytearray([0xAA, 0x55, 0x12, 0x34]))
         self.assertEqual((yield mux_iface.pads.cs_t.o), 1)

@@ -90,7 +90,7 @@ class RadioNRF24L01Interface:
     async def poll_rx_status(self, delay=0.010):
         poll_bits = clear_bits = REG_STATUS(RX_DR=1).to_int()
         while True:
-            status_bits, _ = await self.lower.transfer([OP_W_REGISTER|ADDR_STATUS, clear_bits])
+            status_bits, _ = await self.lower.exchange([OP_W_REGISTER|ADDR_STATUS, clear_bits])
             status = REG_STATUS.from_int(status_bits)
             self._log("poll rx status %s", status.bits_repr(omit_zero=True))
             if status_bits & poll_bits:
@@ -127,7 +127,7 @@ class RadioNRF24L01Interface:
         poll_bits  = REG_STATUS(TX_DS=1, MAX_RT=1).to_int()
         clear_bits = REG_STATUS(TX_DS=1).to_int()
         while True:
-            status_bits, _ = await self.lower.transfer([OP_W_REGISTER|ADDR_STATUS, clear_bits])
+            status_bits, _ = await self.lower.exchange([OP_W_REGISTER|ADDR_STATUS, clear_bits])
             status = REG_STATUS.from_int(status_bits)
             self._log("poll rx status %s", status.bits_repr(omit_zero=True))
             if status_bits & poll_bits:

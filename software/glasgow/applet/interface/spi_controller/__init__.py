@@ -240,7 +240,7 @@ class SPIControllerInterface:
             offset += chunk_size
         yield bytes[offset:], hold_ss
 
-    async def transfer(self, data, hold_ss=False):
+    async def exchange(self, data, hold_ss=False):
         try:
             out_data = memoryview(data)
         except TypeError:
@@ -365,10 +365,10 @@ class SPIControllerApplet(GlasgowApplet):
 
         parser.add_argument(
             "data", metavar="DATA", type=hex,
-            help="hex bytes to transfer to the device")
+            help="hex bytes to exchange with the device")
 
     async def interact(self, device, args, spi_iface):
-        data = await spi_iface.transfer(args.data)
+        data = await spi_iface.exchange(args.data)
         print(data.hex())
 
     @classmethod
