@@ -1,6 +1,6 @@
 import unittest
 from amaranth import *
-from amaranth.lib.io import Pin
+from amaranth.lib import io
 
 from glasgow.gateware import simulation_test
 from glasgow.gateware.i2c import I2CInitiator, I2CTarget
@@ -8,8 +8,8 @@ from glasgow.gateware.i2c import I2CInitiator, I2CTarget
 
 class I2CTestbench(Elaboratable):
     def __init__(self):
-        self.scl_t = Pin(width=1, dir='io')
-        self.sda_t = Pin(width=1, dir='io')
+        self.scl_t = io.Buffer.Signature(direction="io", width=1).create()
+        self.sda_t = io.Buffer.Signature(direction="io", width=1).create()
 
         self.scl_i = self.scl_t.i
         self.scl_o = Signal(init=1)
