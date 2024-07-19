@@ -153,7 +153,7 @@ class PDIDisplayInterface:
         await self.device.write_register(self._addr_cog_reset, value)
 
     async def _identify(self):
-        result = await self.lower.transfer([0x71, 0x00])
+        result = await self.lower.exchange([0x71, 0x00])
         cog_id = result[1]
         self._log("cog-id=%#04x", cog_id)
         return cog_id
@@ -177,7 +177,7 @@ class PDIDisplayInterface:
         await self.lower.delay_us(10)
         await self.lower.write([0x70, index])
         await self.lower.delay_us(10)
-        result = await self.lower.transfer([0x73] + [0x00] * length)
+        result = await self.lower.exchange([0x73] + [0x00] * length)
         value  = result[1:]
         self._log("[%02x] => %s", index, value.hex())
         if length == 1:
