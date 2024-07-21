@@ -31,6 +31,7 @@ the programmer and the target, including ~RESET, but excluding power, ground, an
     Described in e.g. AT32UC3L064 datasheet.
 """
 
+import sys
 import logging
 import argparse
 from abc import ABCMeta, abstractmethod
@@ -154,10 +155,37 @@ class ProgramAVRInterface(metaclass=ABCMeta):
 class ProgramAVRApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "program Microchip (Atmel) AVR microcontrollers"
+    description = """
+    Commands that read or write memory contents derive the file format from the filename as follows:
+
+    ::
+        *.bin                   binary; as-is
+        *.hex *.ihx *.ihex      Intel HEX
+        - (stdout)              hex dump when writing to a terminal, binary otherwise
+    """
 
     @classmethod
     def add_interact_arguments(cls, parser):
+        extensions = ", ".join([".bin", ".hex", ".ihx", ".ihex"])
+
         def bits(arg): return int(arg, 2)
+
+        def memory_file(kind, argparse_file):
+            def argument(arg):
+                file = argparse_file(arg)
+                if file.fileno() == sys.stdout.fileno():
+                    fmt = "hex" if file.isatty() else "bin"
+                else:
+                    try:
+                        fmt = autodetect(file)
+                    except ValueError:
+                        raise argparse.ArgumentTypeError(
+                            f"cannot determine format of {kind} file {file.name!r} from extension; "
+                            f"recognized extensions are: {extensions}")
+                return file, fmt
+            return argument
+
+        extension_help = f"(must be '-' or end with: {extensions})"
 
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
@@ -176,11 +204,13 @@ class ProgramAVRApplet(GlasgowApplet):
             "-c", "--calibration", default=False, action="store_true",
             help="display calibration bytes")
         p_read.add_argument(
-            "-p", "--program", metavar="FILE", type=argparse.FileType("wb"),
-            help="write program memory contents to FILE")
+            "-p", "--program", metavar="FILE",
+            type=memory_file("program memory", argparse.FileType("wb")),
+            help=f"write program memory contents to FILE {extension_help}")
         p_read.add_argument(
-            "-e", "--eeprom", metavar="FILE", type=argparse.FileType("wb"),
-            help="write EEPROM contents to FILE")
+            "-e", "--eeprom", metavar="FILE",
+            type=memory_file("EEPROM", argparse.FileType("wb")),
+            help=f"write EEPROM contents to FILE {extension_help}")
 
         p_write_fuses = p_operation.add_parser(
             "write-fuses", help="write and verify device fuses")
@@ -203,24 +233,19 @@ class ProgramAVRApplet(GlasgowApplet):
         p_write_program = p_operation.add_parser(
             "write-program", help="write and verify device program memory")
         p_write_program.add_argument(
-            "file", metavar="FILE", type=argparse.FileType("rb"),
-            help="read program memory contents from FILE")
+            "file", metavar="FILE",
+            type=memory_file("program memory", argparse.FileType("rb")),
+            help=f"read program memory contents from FILE {extension_help}")
 
         p_write_eeprom = p_operation.add_parser(
             "write-eeprom", help="write and verify device EEPROM")
         p_write_eeprom.add_argument(
-            "file", metavar="FILE", type=argparse.FileType("rb"),
-            help="read EEPROM contents from FILE")
+            "file", metavar="FILE",
+            type=memory_file("EEPROM", argparse.FileType("rb")),
+            help=f"read EEPROM contents from FILE {extension_help}")
 
         p_erase = p_operation.add_parser(
             "erase", help="erase device lock bits, program memory, and EEPROM")
-
-    @staticmethod
-    def _check_format(file, kind):
-        try:
-            autodetect(file)
-        except ValueError:
-            raise ProgramAVRError("cannot determine %s file format" % kind)
 
     async def interact(self, device, args, avr_iface):
         await avr_iface.programming_enable()
@@ -263,16 +288,18 @@ class ProgramAVRApplet(GlasgowApplet):
                                  " ".join(["%02x" % b for b in calibration]))
 
             if args.program:
-                self._check_format(args.program, "program memory")
+                program_file, program_fmt = args.program
                 self.logger.info("reading program memory (%d bytes)", device.program_size)
-                output_data(args.program,
-                    await avr_iface.read_program_memory_range(range(device.program_size)))
+                output_data(program_file,
+                    await avr_iface.read_program_memory_range(range(device.program_size)),
+                    program_fmt)
 
             if args.eeprom:
-                self._check_format(args.eeprom, "EEPROM")
+                eeprom_file, eeprom_fmt = args.eeprom
                 self.logger.info("reading EEPROM (%d bytes)", device.eeprom_size)
-                output_data(args.eeprom,
-                    await avr_iface.read_eeprom_range(range(device.eeprom_size)))
+                output_data(eeprom_file,
+                    await avr_iface.read_eeprom_range(range(device.eeprom_size)),
+                    eeprom_fmt)
 
         if args.operation == "write-fuses":
             if args.high and device.fuses_size < 2:
@@ -314,8 +341,8 @@ class ProgramAVRApplet(GlasgowApplet):
             self.logger.info("erasing chip")
             await avr_iface.chip_erase()
 
-            self._check_format(args.file, "program memory")
-            data = input_data(args.file)
+            program_file, program_fmt = args.file
+            data = input_data(program_file, program_fmt)
             self.logger.info("writing program memory (%d bytes)",
                              sum([len(chunk) for address, chunk in data]))
             for address, chunk in data:
@@ -327,8 +354,8 @@ class ProgramAVRApplet(GlasgowApplet):
                                           (address, written.hex(), chunk.hex()))
 
         if args.operation == "write-eeprom":
-            self._check_format(args.file, "EEPROM")
-            data = input_data(args.file)
+            eeprom_file, eeprom_fmt = args.file
+            data = input_data(eeprom_file, eeprom_fmt)
             self.logger.info("writing EEPROM (%d bytes)",
                              sum([len(chunk) for address, chunk in data]))
             for address, chunk in data:

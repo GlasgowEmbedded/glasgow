@@ -200,7 +200,7 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
 class ProgramAVRSPIApplet(ProgramAVRApplet):
     logger = logging.getLogger(__name__)
     help = f"{ProgramAVRApplet.help} via SPI"
-    description = """
+    description = f"""
     Identify, program, and verify Microchip AVR microcontrollers using low-voltage serial (SPI)
     programming.
 
@@ -213,6 +213,8 @@ class ProgramAVRSPIApplet(ProgramAVRApplet):
         CIPO @ * VCC
          SCK * * COPI
         RST# * * GND
+
+    {ProgramAVRApplet.description}
     """
 
     __pins = ("reset", "sck", "cipo", "copi")
