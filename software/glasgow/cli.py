@@ -149,7 +149,10 @@ def get_argparser():
 
             applet_cls = metadata.applet_cls
 
-            if mode == "test" and applet_cls.tests() is None:
+            # Don't do `.tests() is None`, as this has the overhead of importing the tests module
+            # (about 5ms per applet, which adds up). Instead, check if the function was overridden,
+            # as it's pointless to override it just to return `None`.
+            if mode == "test" and applet_cls.tests is GlasgowApplet.tests:
                 continue
             if mode == "tool" and not hasattr(applet_cls, "tool_cls"):
                 continue
