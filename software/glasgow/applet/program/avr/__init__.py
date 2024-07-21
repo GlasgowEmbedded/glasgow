@@ -33,6 +33,7 @@ the programmer and the target, including ~RESET, but excluding power, ground, an
 
 import logging
 import argparse
+import textwrap
 from abc import ABCMeta, abstractmethod
 from fx2.format import autodetect, input_data, output_data
 
@@ -165,7 +166,14 @@ class ProgramAVRApplet(GlasgowApplet):
             "identify", help="identify connected device")
 
         p_read = p_operation.add_parser(
-            "read", help="read device memories")
+            "read", help="read device memories",
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog=textwrap.dedent("""
+            File output format is determined by extension. The following extensions are recognized:
+              .bin          raw binary
+              .hex          raw hex
+              .ihex, .ihx   intel hex
+            """))
         p_read.add_argument(
             "-f", "--fuses", default=False, action="store_true",
             help="display fuse bytes")
@@ -176,11 +184,11 @@ class ProgramAVRApplet(GlasgowApplet):
             "-c", "--calibration", default=False, action="store_true",
             help="display calibration bytes")
         p_read.add_argument(
-            "-p", "--program", metavar="FILE", type=argparse.FileType("wb"),
-            help="write program memory contents to FILE")
+            "-p", "--program", metavar="FILE.bin", type=argparse.FileType("wb"),
+            help="write program memory contents to FILE.bin")
         p_read.add_argument(
-            "-e", "--eeprom", metavar="FILE", type=argparse.FileType("wb"),
-            help="write EEPROM contents to FILE")
+            "-e", "--eeprom", metavar="FILE.bin", type=argparse.FileType("wb"),
+            help="write EEPROM contents to FILE.bin")
 
         p_write_fuses = p_operation.add_parser(
             "write-fuses", help="write and verify device fuses")
@@ -220,7 +228,7 @@ class ProgramAVRApplet(GlasgowApplet):
         try:
             autodetect(file)
         except ValueError:
-            raise ProgramAVRError("cannot determine %s file format" % kind)
+            raise ProgramAVRError("cannot determine %s file format using extension (expected .hex, .ihex, .ihx, or .bin)" % kind)
 
     async def interact(self, device, args, avr_iface):
         await avr_iface.programming_enable()
