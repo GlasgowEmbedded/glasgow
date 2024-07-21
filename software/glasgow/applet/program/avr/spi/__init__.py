@@ -244,9 +244,11 @@ class ProgramAVRSPIApplet(ProgramAVRApplet):
         )
 
         dut_reset, self.__addr_dut_reset = target.registers.add_rw(1)
-        subtarget = ProgramAVRSPISubtarget(controller, iface.pads.reset_t, dut_reset)
-
-        iface.add_subtarget(subtarget)
+        return iface.add_subtarget(ProgramAVRSPISubtarget(
+            controller=controller,
+            reset_t=iface.pads.reset_t,
+            dut_reset=dut_reset
+        ))
 
     async def run_lower(self, cls, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
