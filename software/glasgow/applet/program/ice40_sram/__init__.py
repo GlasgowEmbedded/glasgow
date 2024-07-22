@@ -54,23 +54,21 @@ class ProgramICE40SRAMInterface:
             return True
 
     async def program(self, bitstream):
-        # Pulse reset while setting SS_n low (we use a dummy write to do that)
-        await self.set_reset(True)
-        await self.lower.write([], hold_ss=True)
-        await self.lower.synchronize()
-        await self.set_reset(False)
+        async with self.lower.select():
+            # Pulse reset while holding SSn low
+            await self.lower.synchronize()
+            await self.set_reset(True)
+            await self.set_reset(False)
+            await self.lower.synchronize()
 
-        # Wait at least 1.2ms (spec for 8k devices)
-        await self.lower.delay_us(1200)
+            # Wait at least 1.2ms (spec for 8k devices)
+            await self.lower.delay_us(1200)
 
-        # Write bitstream
-        while len(bitstream) > 0:
-            chunk = bitstream[:255]
-            bitstream = bitstream[255:]
-            await self.lower.write(chunk, hold_ss=True)
+            # Write bitstream
+            await self.lower.write(bitstream)
 
-        # Specs says at least 49 dummy bits. Send 128.
-        await self.lower.write([0] * 16)
+            # Specs says at least 49 dummy bits. Send 128.
+            await self.lower.dummy(128)
 
 
 class ProgramICE40SRAMApplet(SPIControllerApplet):

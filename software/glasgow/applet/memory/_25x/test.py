@@ -10,7 +10,7 @@ class Memory25xAppletTestCase(GlasgowAppletTestCase, applet=Memory25xApplet):
         self.assertBuilds(args=["--pin-sck",  "0", "--pin-cs",   "1",
                                 "--pin-copi", "2", "--pin-cipo", "3"])
 
-    # Flash used for testing: Winbond 25Q32BVSIG
+    # Flash used for testing: Winbond 25Q32FV
     hardware_args = [
         "--voltage",  "3.3",
         "--pin-cs",   "0", "--pin-cipo", "1",
@@ -121,11 +121,10 @@ class Memory25xAppletTestCase(GlasgowAppletTestCase, applet=Memory25xApplet):
         self.assertEqual(await m25x_iface.read(self.dut_page_size * 2 - 6, 12),
                          b"before/after")
 
-    @unittest.skip("seems broken??")
     @applet_hardware_test(setup="setup_flash_data", args=hardware_args)
     async def test_api_erase_program(self, m25x_iface):
         await m25x_iface.write_enable()
         await m25x_iface.erase_program(0, b"Bye  ",
             page_size=0x100, sector_size=self.dut_sector_size)
-        self.assertEqual(await m25x_iface.read(0, 14),
+        self.assertEqual(await m25x_iface.read(0, 13),
                          b"Bye  , world!")

@@ -1,6 +1,7 @@
+import math
 import struct
 import logging
-import math
+import contextlib
 from amaranth import *
 from amaranth.lib.cdc import FFSynchronizer
 
@@ -66,13 +67,13 @@ class SPIControllerBus(Elaboratable):
 
 
 CMD_MASK     = 0b11110000
-CMD_SHIFT    = 0b00000000
-CMD_DELAY    = 0b00010000
-CMD_SYNC     = 0b00100000
+CMD_SELECT   = 0b00000000
+CMD_SHIFT    = 0b00010000
+CMD_DELAY    = 0b00100000
+CMD_SYNC     = 0b00110000
 # CMD_SHIFT
 BIT_DATA_OUT =     0b0001
 BIT_DATA_IN  =     0b0010
-BIT_HOLD_SS  =     0b0100
 
 
 class SPIControllerSubtarget(Elaboratable):
@@ -127,7 +128,9 @@ class SPIControllerSubtarget(Elaboratable):
                 with m.If(self.out_fifo.r_rdy):
                     m.d.comb += self.out_fifo.r_en.eq(1)
                     m.d.sync += cmd.eq(self.out_fifo.r_data)
-                    with m.If((self.out_fifo.r_data & CMD_MASK) == CMD_SYNC):
+                    with m.If((self.out_fifo.r_data & CMD_MASK) == CMD_SELECT):
+                        m.d.sync += self.bus.cs.eq(self.out_fifo.r_data[0] ^ (not self.cs_active))
+                    with m.Elif((self.out_fifo.r_data & CMD_MASK) == CMD_SYNC):
                         m.next = "SYNC"
                     with m.Else():
                         m.next = "RECV-COUNT-1"
@@ -166,10 +169,7 @@ class SPIControllerSubtarget(Elaboratable):
             with m.State("COUNT-CHECK"):
                 with m.If(count == 0):
                     m.next = "RECV-COMMAND"
-                    with m.If((cmd & BIT_HOLD_SS) != 0):
-                        m.d.sync += self.bus.cs.eq(self.cs_active)
                 with m.Else():
-                    m.d.sync += self.bus.cs.eq(self.cs_active)
                     m.next = "RECV-DATA"
 
             with m.State("RECV-DATA"):
@@ -203,8 +203,6 @@ class SPIControllerSubtarget(Elaboratable):
 
                 with m.If(((cmd & BIT_DATA_OUT) != 0) | self.in_fifo.w_rdy):
                     with m.If(count == 0):
-                        with m.If((cmd & BIT_HOLD_SS) == 0):
-                            m.d.sync += self.bus.cs.eq(not self.cs_active)
                         m.next = "RECV-COMMAND"
                     with m.Else():
                         m.next = "RECV-DATA"
@@ -226,74 +224,76 @@ class SPIControllerInterface:
         await self.lower.reset()
 
     @staticmethod
-    def _chunk_count(count, hold_ss, chunk_size=0xffff):
-        while count > chunk_size:
-            yield chunk_size, True
-            count -= chunk_size
-        yield count, hold_ss
+    def _chunked(items, *, count=0xffff):
+        while items:
+            yield items[:count]
+            items = items[count:]
 
-    @staticmethod
-    def _chunk_bytes(bytes, hold_ss, chunk_size=0xffff):
-        offset = 0
-        while len(bytes) - offset > chunk_size:
-            yield bytes[offset:offset + chunk_size], True
-            offset += chunk_size
-        yield bytes[offset:], hold_ss
-
-    async def exchange(self, data, hold_ss=False):
+    @contextlib.asynccontextmanager
+    async def select(self, index=0):
+        assert index == 0, "only one chip is supported"
         try:
-            out_data = memoryview(data)
-        except TypeError:
-            out_data = memoryview(bytes(data))
-        self._log("xfer-out=<%s>", dump_hex(out_data))
-        in_data = []
-        for out_data, hold_ss in self._chunk_bytes(out_data, hold_ss):
+            self._log("select chip=%d", index)
+            await self.lower.write(struct.pack("<B",
+                CMD_SELECT|(1 + index)))
+            yield
+        finally:
+            self._log("deselect")
+            await self.lower.write(struct.pack("<B",
+                CMD_SELECT|0))
+            await self.lower.flush()
+
+    async def exchange(self, octets):
+        self._log("xchg-o=<%s>", dump_hex(octets))
+        for chunk in self._chunked(octets):
             await self.lower.write(struct.pack("<BH",
-                CMD_SHIFT|BIT_DATA_IN|BIT_DATA_OUT|(BIT_HOLD_SS if hold_ss else 0),
-                len(out_data)))
-            await self.lower.write(out_data)
-            in_data.append(await self.lower.read(len(out_data)))
-        in_data = b"".join(in_data)
-        self._log("xfer-in=<%s>", dump_hex(in_data))
-        return in_data
+                CMD_SHIFT|BIT_DATA_IN|BIT_DATA_OUT, len(chunk)))
+            await self.lower.write(chunk)
+        octets = await self.lower.read(len(octets))
+        self._log("xchg-i=<%s>", dump_hex(octets))
+        return octets
 
-    async def read(self, count, hold_ss=False):
-        in_data = []
-        for count, hold_ss in self._chunk_count(count, hold_ss):
+    async def write(self, octets, *, x=1):
+        assert x == 1, "only x1 mode is supported"
+        self._log("write=<%s>", dump_hex(octets))
+        for chunk in self._chunked(octets):
             await self.lower.write(struct.pack("<BH",
-                CMD_SHIFT|BIT_DATA_IN|(BIT_HOLD_SS if hold_ss else 0),
-                count))
-            in_data.append(await self.lower.read(count))
-        in_data = b"".join(in_data)
-        self._log("read-in=<%s>", dump_hex(in_data))
-        return in_data
+                CMD_SHIFT|BIT_DATA_OUT, len(chunk)))
+            await self.lower.write(chunk)
 
-    async def write(self, data, hold_ss=False):
-        try:
-            out_data = memoryview(data)
-        except TypeError:
-            out_data = memoryview(bytes(data))
-        self._log("write-out=<%s>", dump_hex(out_data))
-        for out_data, hold_ss in self._chunk_bytes(out_data, hold_ss):
+    async def read(self, count, *, x=1):
+        assert x == 1, "only x1 mode is supported"
+        for chunk in self._chunked(range(count)):
             await self.lower.write(struct.pack("<BH",
-                CMD_SHIFT|BIT_DATA_OUT|(BIT_HOLD_SS if hold_ss else 0),
-                len(out_data)))
-            await self.lower.write(out_data)
+                CMD_SHIFT|BIT_DATA_IN, len(chunk)))
+        octets = await self.lower.read(count)
+        self._log("read=<%s>", dump_hex(octets))
+        return octets
 
-    async def delay_us(self, delay):
-        self._log("delay=%d us", delay)
-        while delay > 0xffff:
-            await self.lower.write(struct.pack("<BH", CMD_DELAY, 0xffff))
-            delay -= 0xffff
-        await self.lower.write(struct.pack("<BH", CMD_DELAY, delay))
+    async def dummy(self, count):
+        self._log("dummy=%d", count)
+        for chunk in self._chunked(range(count)):
+            assert count % 8 == 0, "only multiples of 8 dummy cycles are supported"
+            await self.lower.write(struct.pack("<BH",
+                CMD_SHIFT, len(chunk) // 8))
 
-    async def delay_ms(self, delay):
-        await self.delay_us(delay * 1000)
+    async def delay_us(self, duration):
+        self._log("delay us=%d", duration)
+        for chunk in self._chunked(range(duration)):
+            await self.lower.write(struct.pack("<BH",
+                CMD_DELAY, len(chunk)))
+
+    async def delay_ms(self, duration):
+        self._log("delay ms=%d", duration)
+        for chunk in self._chunked(range(duration * 1000)):
+            await self.lower.write(struct.pack("<BH",
+                CMD_DELAY, len(chunk)))
 
     async def synchronize(self):
-        self._log("sync")
+        self._log("sync-o")
         await self.lower.write([CMD_SYNC])
         await self.lower.read(1)
+        self._log("sync-i")
 
 
 class SPIControllerApplet(GlasgowApplet):
@@ -369,7 +369,8 @@ class SPIControllerApplet(GlasgowApplet):
 
     async def interact(self, device, args, spi_iface):
         for octets in args.data:
-            octets = await spi_iface.exchange(octets)
+            async with spi_iface.select():
+                octets = await spi_iface.exchange(octets)
             print(octets.hex())
 
     @classmethod
