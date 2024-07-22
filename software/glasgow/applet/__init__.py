@@ -135,6 +135,8 @@ class MockRecorder:
             return {"__class__": "bytes", "hex": obj.hex()}
         if isinstance(obj, bytearray):
             return {"__class__": "bytearray", "hex": obj.hex()}
+        if isinstance(obj, memoryview):
+            return {"__class__": "memoryview", "hex": obj.hex()}
         raise TypeError("%s is not serializable" % type(obj))
 
     def __dump_stanza(self, stanza):
@@ -184,6 +186,8 @@ class MockReplayer:
             return bytes.fromhex(obj["hex"])
         if obj["__class__"] == "bytearray":
             return bytearray.fromhex(obj["hex"])
+        if obj["__class__"] == "memoryview":
+            return memoryview(bytes.fromhex(obj["hex"]))
         assert False
 
     def __load(self):
