@@ -1,3 +1,7 @@
+# Ref: iCE40 Programming and Configuration Technical Note
+# Document Number: FPGA-TN-02001-3.2
+# Accession: G00073
+
 import argparse
 import asyncio
 import logging
