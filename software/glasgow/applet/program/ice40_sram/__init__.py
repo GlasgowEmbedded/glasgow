@@ -44,8 +44,10 @@ class ProgramICE40SRAMInterface:
         await self._device.write_register(self._addr_dut_reset, int(reset))
 
     async def get_done(self):
-        if self._addr_dut_reset is not None:
+        if self._addr_dut_done is not None:
             return await self._device.read_register(self._addr_dut_done)
+        else:
+            return True
 
     async def program(self, bitstream):
         # Pulse reset while setting SS_n low (we use a dummy write to do that)
