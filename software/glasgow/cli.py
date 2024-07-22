@@ -283,7 +283,7 @@ def get_argparser():
             "--prebuilt", default=False, action="store_true",
             help="(advanced) load prebuilt applet bitstream from ./<applet-name.bin>")
         g_run_bitstream.add_argument(
-            "--prebuilt-at", dest="bitstream", metavar="BITSTREAM-FILE",
+            "--prebuilt-at", dest="prebuilt_at", metavar="BITSTREAM-FILE",
             type=argparse.FileType("rb"),
             help="(advanced) load prebuilt applet bitstream from BITSTREAM-FILE")
 
@@ -572,8 +572,8 @@ async def main():
             device.demultiplexer = DirectDemultiplexer(device, target.multiplexer.pipe_count)
             plan = target.build_plan()
 
-            if args.prebuilt or args.bitstream:
-                bitstream_file = args.bitstream or open(f"{args.applet}.bin", "rb")
+            if args.prebuilt or args.prebuilt_at:
+                bitstream_file = args.prebuilt_at or open(f"{args.applet}.bin", "rb")
                 with bitstream_file:
                     await device.download_prebuilt(plan, bitstream_file)
             else:
