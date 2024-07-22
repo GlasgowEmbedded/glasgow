@@ -215,9 +215,12 @@ class ProgramNRF24Lx1Applet(GlasgowApplet):
             cs_active=0,
         )
 
-        subtarget = ProgramNRF24Lx1Subtarget(controller, pads.prog_t, dut_prog, pads.reset_t, dut_reset)
-
-        return iface.add_subtarget(subtarget)
+        return iface.add_subtarget(ProgramNRF24Lx1Subtarget(
+            controller=controller,
+            prog_t=pads.prog_t,
+            dut_prog=dut_prog,
+            reset_t=pads.reset_t,
+            dut_reset=dut_reset))
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
