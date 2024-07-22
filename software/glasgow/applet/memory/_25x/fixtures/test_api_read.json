@@ -1,4 +1,10 @@
-{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "03000000"}], "kwargs": {"hold_ss": true}, "result": null}
-{"method": "read", "async": true, "args": [13], "kwargs": {}, "result": {"__class__": "bytearray", "hex": "48656c6c6f2c20776f726c6421"}}
-{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "03001000"}], "kwargs": {"hold_ss": true}, "result": null}
-{"method": "read", "async": true, "args": [14], "kwargs": {}, "result": {"__class__": "bytearray", "hex": "536f6d65206d6f72652064617461"}}
+{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "03000000"}], "kwargs": {}, "result": null}
+{"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
+{"call": "read", "kind": "asyncmethod", "args": [13], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "48656c6c6f2c20776f726c6421"}}
+{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "03001000"}], "kwargs": {}, "result": null}
+{"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
+{"call": "read", "kind": "asyncmethod", "args": [14], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "536f6d65206d6f72652064617461"}}
+{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}

@@ -1,16 +1,40 @@
-{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "06"}], "kwargs": {"hold_ss": false}, "result": null}
-{"method": "read", "async": true, "args": [0], "kwargs": {}, "result": {"__class__": "bytearray", "hex": ""}}
-{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "06"}], "kwargs": {"hold_ss": false}, "result": null}
-{"method": "read", "async": true, "args": [0], "kwargs": {}, "result": {"__class__": "bytearray", "hex": ""}}
-{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "020001fa6265666f7265"}], "kwargs": {"hold_ss": false}, "result": null}
-{"method": "read", "async": true, "args": [0], "kwargs": {}, "result": {"__class__": "bytearray", "hex": ""}}
-{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "05"}], "kwargs": {"hold_ss": true}, "result": null}
-{"method": "read", "async": true, "args": [1], "kwargs": {}, "result": {"__class__": "bytearray", "hex": "00"}}
-{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "06"}], "kwargs": {"hold_ss": false}, "result": null}
-{"method": "read", "async": true, "args": [0], "kwargs": {}, "result": {"__class__": "bytearray", "hex": ""}}
-{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "020002002f6166746572"}], "kwargs": {"hold_ss": false}, "result": null}
-{"method": "read", "async": true, "args": [0], "kwargs": {}, "result": {"__class__": "bytearray", "hex": ""}}
-{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "05"}], "kwargs": {"hold_ss": true}, "result": null}
-{"method": "read", "async": true, "args": [1], "kwargs": {}, "result": {"__class__": "bytearray", "hex": "00"}}
-{"method": "write", "async": true, "args": [{"__class__": "bytearray", "hex": "030001fa"}], "kwargs": {"hold_ss": true}, "result": null}
-{"method": "read", "async": true, "args": [12], "kwargs": {}, "result": {"__class__": "bytearray", "hex": "6265666f72652f6166746572"}}
+{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
+{"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
+{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
+{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
+{"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
+{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
+{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "020001fa6265666f7265"}], "kwargs": {}, "result": null}
+{"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
+{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
+{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
+{"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
+{"call": "read", "kind": "asyncmethod", "args": [1], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00"}}
+{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
+{"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
+{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
+{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "020002002f6166746572"}], "kwargs": {}, "result": null}
+{"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
+{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
+{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
+{"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
+{"call": "read", "kind": "asyncmethod", "args": [1], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00"}}
+{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "030001fa"}], "kwargs": {}, "result": null}
+{"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
+{"call": "read", "kind": "asyncmethod", "args": [12], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "6265666f72652f6166746572"}}
+{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}

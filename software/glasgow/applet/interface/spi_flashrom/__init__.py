@@ -15,8 +15,9 @@ class SPISerprogInterface:
 
     async def write_read(self, sdata, rlen):
         assert len(sdata) > 0
-        await self.lower.write(sdata, hold_ss=rlen > 0)
-        return await self.lower.read(rlen)
+        async with self.lower.select():
+            await self.lower.write(sdata)
+            return await self.lower.read(rlen)
 
 
 class SerprogCommand(enum.IntEnum):

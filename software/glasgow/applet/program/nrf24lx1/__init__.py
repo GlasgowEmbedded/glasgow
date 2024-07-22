@@ -107,10 +107,10 @@ class ProgramNRF24Lx1Interface:
 
     async def _command(self, cmd, arg=[], ret=0):
         self._log("cmd=%02X arg=<%s> ret=%d", cmd, dump_hex(arg), ret)
-        await self.lower.write(bytearray([cmd, *arg]),
-                               hold_ss=(ret > 0))
-        if ret > 0:
+        async with self.lower.select():
+            await self.lower.write(bytes([cmd, *arg]))
             result = await self.lower.read(ret)
+        if ret > 0:
             self._log("res=<%s>", dump_hex(result))
             return result
 

@@ -51,8 +51,9 @@ class RadioNRF24L01Interface:
 
     async def sync(self):
         self._log("sync")
-        await self.lower.write([OP_NOP])
-        await self.lower.read(1)
+        async with self.lower.select():
+            await self.lower.write([OP_NOP])
+            await self.lower.read(1)
 
     async def enable(self):
         await self.sync()
@@ -70,15 +71,17 @@ class RadioNRF24L01Interface:
 
     async def read_register_wide(self, address, length):
         assert address in range(0x1f)
-        await self.lower.write([OP_R_REGISTER|address], hold_ss=True)
-        value = await self.lower.read(length)
+        async with self.lower.select():
+            await self.lower.write([OP_R_REGISTER|address])
+            value = await self.lower.read(length)
         self._log("read register [%02x]=<%s>", address, dump_hex(value))
         return value
 
     async def write_register_wide(self, address, value):
         assert address in range(0x1f)
         self._log("write register [%02x]=<%s>", address, dump_hex(value))
-        await self.lower.write([OP_W_REGISTER|address, *value])
+        async with self.lower.select():
+            await self.lower.write([OP_W_REGISTER|address, *value])
 
     async def read_register(self, address):
         value, = await self.read_register_wide(address, 1)
@@ -90,7 +93,8 @@ class RadioNRF24L01Interface:
     async def poll_rx_status(self, delay=0.010):
         poll_bits = clear_bits = REG_STATUS(RX_DR=1).to_int()
         while True:
-            status_bits, _ = await self.lower.exchange([OP_W_REGISTER|ADDR_STATUS, clear_bits])
+            async with self.lower.select():
+                status_bits, _ = await self.lower.exchange([OP_W_REGISTER|ADDR_STATUS, clear_bits])
             status = REG_STATUS.from_int(status_bits)
             self._log("poll rx status %s", status.bits_repr(omit_zero=True))
             if status_bits & poll_bits:
@@ -99,20 +103,23 @@ class RadioNRF24L01Interface:
         return status
 
     async def read_rx_payload_length(self):
-        await self.lower.write([OP_R_RX_PL_WID], hold_ss=True)
-        length, = await self.lower.read(1)
+        async with self.lower.select():
+            await self.lower.write([OP_R_RX_PL_WID])
+            length, = await self.lower.read(1)
         self._log("read rx payload length=%d", length)
         return length
 
     async def read_rx_payload(self, length):
-        await self.lower.write([OP_R_RX_PAYLOAD], hold_ss=True)
-        payload = await self.lower.read(length)
+        async with self.lower.select():
+            await self.lower.write([OP_R_RX_PAYLOAD])
+            payload = await self.lower.read(length)
         self._log("read rx payload=<%s>", dump_hex(payload))
         return payload
 
     async def flush_rx(self):
         self._log("flush rx")
-        await self.lower.write([OP_FLUSH_RX])
+        async with self.lower.select():
+            await self.lower.write([OP_FLUSH_RX])
 
     async def flush_rx_all(self):
         while True:
@@ -127,7 +134,8 @@ class RadioNRF24L01Interface:
         poll_bits  = REG_STATUS(TX_DS=1, MAX_RT=1).to_int()
         clear_bits = REG_STATUS(TX_DS=1).to_int()
         while True:
-            status_bits, _ = await self.lower.exchange([OP_W_REGISTER|ADDR_STATUS, clear_bits])
+            async with self.lower.select():
+                status_bits, _ = await self.lower.exchange([OP_W_REGISTER|ADDR_STATUS, clear_bits])
             status = REG_STATUS.from_int(status_bits)
             self._log("poll rx status %s", status.bits_repr(omit_zero=True))
             if status_bits & poll_bits:
@@ -137,18 +145,21 @@ class RadioNRF24L01Interface:
 
     async def write_tx_payload(self, payload, *, ack=True):
         self._log("write tx payload=<%s> ack=%s", dump_hex(payload), "yes" if ack else "no")
-        if ack:
-            await self.lower.write([OP_W_TX_PAYLOAD, *payload])
-        else:
-            await self.lower.write([OP_W_TX_PAYLOAD_NOACK, *payload])
+        async with self.lower.select():
+            if ack:
+                await self.lower.write([OP_W_TX_PAYLOAD, *payload])
+            else:
+                await self.lower.write([OP_W_TX_PAYLOAD_NOACK, *payload])
 
     async def reuse_tx_payload(self):
         self._log("reuse tx payload")
-        await self.lower.write([OP_REUSE_TX_PL])
+        async with self.lower.select():
+            await self.lower.write([OP_REUSE_TX_PL])
 
     async def flush_tx(self):
         self._log("flush tx")
-        await self.lower.write([OP_FLUSH_TX])
+        async with self.lower.select():
+            await self.lower.write([OP_FLUSH_TX])
 
     async def flush_tx_all(self):
         while True:

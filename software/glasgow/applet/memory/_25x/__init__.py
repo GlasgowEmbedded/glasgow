@@ -63,9 +63,10 @@ class Memory25xInterface:
 
         self._log("cmd=%02X arg=<%s> dummy=%d ret=%d", cmd, dump_hex(arg), dummy, ret)
 
-        await self.lower.write(bytearray([cmd, *arg, *[0 for _ in range(dummy)]]),
-                               hold_ss=(ret > 0))
-        result = await self.lower.read(ret)
+        async with self.lower.select():
+            await self.lower.write(bytes([cmd, *arg]))
+            await self.lower.dummy(dummy * 8)
+            result = await self.lower.read(ret)
 
         self._log("result=<%s>", dump_hex(result))
 
