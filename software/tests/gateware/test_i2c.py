@@ -8,12 +8,12 @@ from glasgow.gateware.i2c import I2CInitiator, I2CTarget
 
 class I2CTestbench(Elaboratable):
     def __init__(self):
-        self.scl_t = io.Buffer.Signature(direction="io", width=1).create()
-        self.sda_t = io.Buffer.Signature(direction="io", width=1).create()
+        self.scl = io.SimulationPort("io", 1)
+        self.sda = io.SimulationPort("io", 1)
 
-        self.scl_i = self.scl_t.i
+        self.scl_i = self.scl.i
         self.scl_o = Signal(init=1)
-        self.sda_i = self.sda_t.i
+        self.sda_i = self.sda.i
         self.sda_o = Signal(init=1)
 
         self.period_cyc = 16
@@ -24,8 +24,8 @@ class I2CTestbench(Elaboratable):
         m.submodules.dut = self.dut
 
         m.d.comb += [
-            self.scl_t.i.eq((self.scl_t.o | ~self.scl_t.oe) & self.scl_o),
-            self.sda_t.i.eq((self.sda_t.o | ~self.sda_t.oe) & self.sda_o),
+            self.scl.i.eq((self.scl.o | ~self.scl.oe) & self.scl_o),
+            self.sda.i.eq((self.sda.o | ~self.sda.oe) & self.sda_o),
         ]
 
         return m

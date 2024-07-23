@@ -15,8 +15,7 @@ class I2CBus(Elaboratable):
     Decodes bus conditions (start, stop, sample and setup) and provides synchronization.
     """
     def __init__(self, pads):
-        self.scl_t = pads.scl_t if hasattr(pads, "scl_t") else io.Buffer("io", pads.scl)
-        self.sda_t = pads.sda_t if hasattr(pads, "sda_t") else io.Buffer("io", pads.sda)
+        self.pads = pads
 
         self.scl_i = Signal()
         self.scl_o = Signal(init=1)
@@ -31,19 +30,17 @@ class I2CBus(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        if isinstance(self.scl_t, io.Buffer):
-            m.submodules.io_scl = self.scl_t
-        if isinstance(self.sda_t, io.Buffer):
-            m.submodules.io_sda = self.sda_t
+        m.submodules.io_scl = scl_t = io.Buffer("io", self.pads.scl)
+        m.submodules.io_sda = sda_t = io.Buffer("io", self.pads.sda)
 
         scl_r = Signal(init=1)
         sda_r = Signal(init=1)
 
         m.d.comb += [
-            self.scl_t.o.eq(0),
-            self.scl_t.oe.eq(~self.scl_o),
-            self.sda_t.o.eq(0),
-            self.sda_t.oe.eq(~self.sda_o),
+            scl_t.o.eq(0),
+            scl_t.oe.eq(~self.scl_o),
+            sda_t.o.eq(0),
+            sda_t.oe.eq(~self.sda_o),
 
             self.sample.eq(~scl_r & self.scl_i),
             self.setup.eq(scl_r & ~self.scl_i),
@@ -55,8 +52,8 @@ class I2CBus(Elaboratable):
             sda_r.eq(self.sda_i),
         ]
         m.submodules += [
-            FFSynchronizer(self.scl_t.i, self.scl_i, init=1),
-            FFSynchronizer(self.sda_t.i, self.sda_i, init=1),
+            FFSynchronizer(scl_t.i, self.scl_i, init=1),
+            FFSynchronizer(sda_t.i, self.sda_i, init=1),
         ]
 
         return m
