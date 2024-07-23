@@ -62,7 +62,7 @@ Working with applets
 
 ``glasgow`` is based around the concept of `applets`, with each implementing a particular mode of operation or interface. For example, there are applets such as ``uart``, ``i2c`` and ``spi``---each implementing the gateware (which runs on the FPGA) and software (which runs on the host PC). The Glasgow software framework coordinates building, caching, and operating these applets for you.
 
-A list of available applets can be shown by running ``glasgow run --help``; the list of applets is retrieved from the |pypackage_toml|_.  (:ref:`Running applets from out-of-tree is experimental <applet>`, and not covered in the basic usage instructions.)
+A list of available applets can be shown by running ``glasgow run --help``; the list of applets is retrieved from the |pypackage_toml|_.  (:ref:`Using applets from out-of-tree is experimental <applet>`, and not covered in the basic usage instructions.)
 
 .. |pypackage_toml| replace:: ``glasgow`` package's ``pyproject.toml``
 .. _pypackage_toml: https://github.com/GlasgowEmbedded/glasgow/blob/main/software/pyproject.toml
