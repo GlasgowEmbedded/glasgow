@@ -81,8 +81,8 @@ class SelfTestApplet(GlasgowApplet):
         self.mux_interface_1 = iface_1 = target.multiplexer.claim_interface(self, None)
         self.mux_interface_2 = iface_2 = target.multiplexer.claim_interface(self, None)
 
-        in_fifo_1, out_fifo_1 = iface_1.get_inout_fifo()
-        in_fifo_2, out_fifo_2 = iface_2.get_inout_fifo()
+        in_fifo_1, out_fifo_1 = iface_1.get_in_fifo(), iface_1.get_out_fifo()
+        in_fifo_2, out_fifo_2 = iface_2.get_in_fifo(), iface_2.get_out_fifo()
         m = Module()
         m.d.comb += [
             in_fifo_1.w_data.eq(out_fifo_1.r_data),

@@ -58,9 +58,6 @@ class AccessMultiplexerInterface(Elaboratable, metaclass=ABCMeta):
     def get_in_fifo(self, **kwargs):
         pass
 
-    def get_inout_fifo(self, **kwargs):
-        return (self.get_in_fifo(**kwargs), self.get_out_fifo(**kwargs))
-
     @abstractmethod
     def get_pin_name(self, pin):
         pass
