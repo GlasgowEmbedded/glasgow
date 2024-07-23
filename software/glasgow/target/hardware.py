@@ -77,12 +77,6 @@ class GlasgowHardwareTarget(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        # FIXME: amaranth-lang/amaranth#1402
-        m.domains.sync = ClockDomain()
-        m.submodules.clk_buffer = clk_buffer = io.Buffer("i", platform.request("clk_if", dir="-"))
-        m.d.comb += ClockSignal().eq(clk_buffer.i)
-        platform.add_clock_constraint(clk_buffer.i, platform.default_clk_frequency)
-
         m.submodules.i2c_target = self.i2c_target
         m.submodules.registers = self.registers
         m.submodules.fx2_crossbar = self.fx2_crossbar
