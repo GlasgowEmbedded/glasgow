@@ -1,6 +1,6 @@
 import logging
 from amaranth import *
-from amaranth.lib import enum, wiring
+from amaranth.lib import enum, io, wiring
 from amaranth.lib.wiring import In, Out
 
 from ... import *
@@ -74,17 +74,15 @@ class ControlServoSubtarget(Elaboratable):
         Enable   = 0x01
         SetValue = 0x02
 
-    def __init__(self, pads, out_fifo):
-        self.pads     = pads
+    def __init__(self, ports, out_fifo):
+        self.ports    = ports
         self.out_fifo = out_fifo
 
     def elaborate(self, platform):
         m = Module()
         m.submodules.chan = chan = ServoChannel()
-        m.d.comb += [
-            self.pads.out_t.oe.eq(1),
-            self.pads.out_t.o.eq(chan.out),
-        ]
+        m.submodules.out_buffer = out_buffer = io.Buffer("o", self.ports.out)
+        m.d.comb += out_buffer.o.eq(chan.out)
 
         command   = Signal(self.Command)
         value_low = Signal.like(self.out_fifo.r_data)
@@ -195,7 +193,7 @@ class ControlServoApplet(GlasgowApplet):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(ControlServoSubtarget(
-            pads=iface.get_deprecated_pads(args, pins=("out",)),
+            ports=iface.get_port_group(out=args.pin_out),
             out_fifo=iface.get_out_fifo(),
         ))
 
