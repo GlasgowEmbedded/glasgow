@@ -87,7 +87,7 @@ class UARTAutoBaud(Elaboratable):
 
 class UARTSubtarget(Elaboratable):
     def __init__(self, pads, out_fifo, in_fifo, parity, max_bit_cyc,
-                 manual_cyc, auto_cyc, use_auto, bit_cyc, rx_errors, invert_rx, invert_tx):
+                 manual_cyc, auto_cyc, use_auto, bit_cyc, rx_errors):
         self.out_fifo = out_fifo
         self.in_fifo = in_fifo
         self.manual_cyc = manual_cyc
@@ -96,8 +96,7 @@ class UARTSubtarget(Elaboratable):
         self.bit_cyc = bit_cyc
         self.rx_errors = rx_errors
 
-        self.uart = UART(pads, bit_cyc=max_bit_cyc, parity=parity,
-                         invert_rx=invert_rx, invert_tx=invert_tx)
+        self.uart = UART(pads, bit_cyc=max_bit_cyc, parity=parity)
 
     def elaborate(self, platform):
         m = Module()
@@ -166,12 +165,6 @@ class UARTApplet(GlasgowApplet):
             "--tolerance", metavar="PPM", type=int, default=50000,
             help="verify that actual baud rate is within PPM parts per million of specified"
                  " (default: %(default)s)")
-        parser.add_argument(
-            "--invert-rx", default=False, action="store_true",
-            help="invert the line signal (=idle low) on RX")
-        parser.add_argument(
-            "--invert-tx", default=False, action="store_true",
-            help="invert the line signal (=idle low) on TX")
 
     def build(self, target, args):
         # We support any baud rates, even absurd ones like 60 baud, if you want, but the applet
@@ -204,8 +197,6 @@ class UARTApplet(GlasgowApplet):
             use_auto=use_auto,
             bit_cyc=bit_cyc,
             rx_errors=rx_errors,
-            invert_rx=args.invert_rx,
-            invert_tx=args.invert_tx,
         ))
 
     @classmethod
@@ -224,17 +215,9 @@ class UARTApplet(GlasgowApplet):
         await device.write_register(self.__addr_manual_cyc, manual_cyc, width=4)
         await device.write_register(self.__addr_use_auto, 0)
 
-        # Enable pull-ups or pull-downs.
-        # This reduces the amount of noise received on tristated lines.
-        if args.invert_rx:
-            pulls_high = set()
-            pulls_low = {args.pin_rx}
-        else:
-            pulls_high = {args.pin_rx}
-            pulls_low = set()
-
+        # Pull RX idle to reduce the amount of noise received on undriven lines.
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
-                                                           pull_high=pulls_high, pull_low=pulls_low)
+            pull_high={args.pin_rx})
 
         # Enable auto-baud, if requested.
         if args.auto_baud:
