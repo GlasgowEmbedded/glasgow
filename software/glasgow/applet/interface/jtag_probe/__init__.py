@@ -29,7 +29,6 @@ from amaranth.lib import io, cdc
 from ....support.bits import *
 from ....support.logging import *
 from ....support.arepl import *
-from ....gateware.pads import *
 from ....database.jedec import *
 from ....arch.jtag import *
 from ... import *

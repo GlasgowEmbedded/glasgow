@@ -6,7 +6,6 @@ import argparse
 from amaranth import *
 
 from ....support.endpoint import *
-from ....gateware.pads import *
 from ....gateware.uart import *
 from ... import *
 

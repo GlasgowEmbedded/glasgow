@@ -1,4 +1,5 @@
 from amaranth import *
+from amaranth.lib.io import SimulationPort
 from amaranth.lib.fifo import FIFOInterface, AsyncFIFO, SyncFIFOBuffered
 
 from .. import AccessMultiplexer, AccessMultiplexerInterface
@@ -65,6 +66,9 @@ class SimulationMultiplexerInterface(AccessMultiplexerInterface):
         m = Module()
 
         m.submodules += self._subtargets
+
+        m.submodules += self._deprecated_buffers
+
         if self.in_fifo is not None:
             m.submodules.in_fifo = self.in_fifo
         if self.out_fifo is not None:
@@ -75,11 +79,8 @@ class SimulationMultiplexerInterface(AccessMultiplexerInterface):
     def get_pin_name(self, pin):
         return str(pin)
 
-    def get_port(self, pin, *, name):
-        raise NotImplementedError
-
-    def _build_pad_tristate(self, pin, oe, o, i):
-        pass
+    def get_port_impl(self, pin, *, name):
+        return SimulationPort("io", 1, name=name)
 
     def _make_fifo(self, crossbar_side, logic_side, cd_logic, depth, wrapper=lambda x: x):
         if cd_logic is None:

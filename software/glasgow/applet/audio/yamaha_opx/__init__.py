@@ -149,7 +149,6 @@ from amaranth.lib import data
 from amaranth.lib.cdc import FFSynchronizer
 from urllib.parse import urlparse
 
-from ....gateware.pads import *
 from ....gateware.clockgen import *
 from ....protocol.vgm import *
 from ... import *

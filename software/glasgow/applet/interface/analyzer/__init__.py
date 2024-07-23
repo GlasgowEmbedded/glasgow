@@ -4,7 +4,6 @@ from vcd import VCDWriter
 from amaranth import *
 from amaranth.lib.cdc import FFSynchronizer
 
-from ....gateware.pads import *
 from ....gateware.analyzer import *
 from ... import *
 

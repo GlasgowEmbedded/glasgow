@@ -122,9 +122,9 @@ class VideoHub75OutputApplet(GlasgowApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_set_argument(parser, "rgb1", width=3,          default=(0,1,2))
-        access.add_pin_set_argument(parser, "rgb2", width=3,          default=(3,4,5))
-        access.add_pin_set_argument(parser, "addr", width=range(1,6), default=(8,9,10,11,12))
+        access.add_pin_set_argument(parser, "rgb1", width=3,          default=[0,1,2])
+        access.add_pin_set_argument(parser, "rgb2", width=3,          default=[3,4,5])
+        access.add_pin_set_argument(parser, "addr", width=range(1,6), default=[8,9,10,11,12])
         access.add_pin_argument(parser,     "clk",                    default=13)
         access.add_pin_argument(parser,     "lat",                    default=14)
         access.add_pin_argument(parser,     "oe",                     default=15)

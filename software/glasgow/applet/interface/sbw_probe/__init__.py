@@ -6,7 +6,6 @@ import asyncio
 from amaranth import *
 from amaranth.lib.cdc import FFSynchronizer
 
-from ....gateware.pads import *
 from ... import *
 from ..jtag_probe import JTAGProbeDriver, JTAGProbeInterface
 

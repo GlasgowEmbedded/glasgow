@@ -4,7 +4,6 @@ import enum
 from abc import ABCMeta, abstractmethod
 from amaranth import *
 
-from ....gateware.pads import *
 from ....gateware.i2c import I2CTarget
 from ... import *
 

@@ -2,7 +2,6 @@ import logging
 from amaranth import *
 from amaranth.lib import data
 
-from ....gateware.pads import *
 from ....gateware.pll import *
 from ... import *
 
