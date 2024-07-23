@@ -4,6 +4,7 @@
 import logging
 import asyncio
 from amaranth import *
+from amaranth.lib import io
 from amaranth.lib.cdc import FFSynchronizer
 
 from ... import *
@@ -11,8 +12,8 @@ from ..jtag_probe import JTAGProbeDriver, JTAGProbeInterface
 
 
 class SpyBiWireProbeBus(Elaboratable):
-    def __init__(self, pads):
-        self._pads = pads
+    def __init__(self, ports):
+        self.ports = ports
         self.sbwtck  = Signal(init=0)
         self.sbwtd_z = Signal(init=0)
         self.sbwtd_o = Signal(init=1)
@@ -20,15 +21,15 @@ class SpyBiWireProbeBus(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        pads = self._pads
+        m.submodules.sbwtck_buffer  = sbwtck_buffer  = io.Buffer("o", self.ports.sbwtck)
+        m.submodules.sbwtdio_buffer = sbwtdio_buffer = io.Buffer("io", self.ports.sbwtdio)
         m.d.comb += [
-            pads.sbwtck_t.oe.eq(1),
-            pads.sbwtck_t.o.eq(self.sbwtck),
-            pads.sbwtdio_t.oe.eq(~self.sbwtd_z),
-            pads.sbwtdio_t.o.eq(self.sbwtd_o),
+            sbwtck_buffer.o.eq(self.sbwtck),
+            sbwtdio_buffer.oe.eq(~self.sbwtd_z),
+            sbwtdio_buffer.o.eq(self.sbwtd_o),
         ]
         m.submodules += [
-            FFSynchronizer(pads.sbwtdio_t.i, self.sbwtd_i),
+            FFSynchronizer(sbwtdio_buffer.i, self.sbwtd_i),
         ]
         return m
 
@@ -155,15 +156,15 @@ class SpyBiWireProbeAdapter(Elaboratable):
 
 
 class SpyBiWireProbeSubtarget(Elaboratable):
-    def __init__(self, pads, out_fifo, in_fifo, period_cyc):
-        self._pads       = pads
+    def __init__(self, ports, out_fifo, in_fifo, period_cyc):
+        self._ports      = ports
         self._out_fifo   = out_fifo
         self._in_fifo    = in_fifo
         self._period_cyc = period_cyc
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.bus     = SpyBiWireProbeBus(self._pads)
+        m.submodules.bus     = SpyBiWireProbeBus(self._ports)
         m.submodules.adapter = SpyBiWireProbeAdapter(m.submodules.bus, self._period_cyc)
         m.submodules.driver  = JTAGProbeDriver(m.submodules.adapter, self._out_fifo, self._in_fifo)
         return m
@@ -196,14 +197,12 @@ class SpyBiWireProbeApplet(GlasgowApplet):
     """
     required_revision = "C0"
 
-    __pins = ("sbwtck", "sbwtdio")
-
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        for pin in cls.__pins:
-            access.add_pin_argument(parser, pin, default=True)
+        access.add_pin_argument(parser, "sbwtck", default=True)
+        access.add_pin_argument(parser, "sbwtdio", default=True)
 
         # set up for f_TCLK=350 kHz
         parser.add_argument(
@@ -213,7 +212,10 @@ class SpyBiWireProbeApplet(GlasgowApplet):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(SpyBiWireProbeSubtarget(
-            pads=iface.get_deprecated_pads(args, pins=self.__pins),
+            ports =iface.get_port_group(
+                sbwtck = args.pin_sbwtck,
+                sbwtdio = args.pin_sbwtdio 
+            ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
             period_cyc=target.sys_clk_freq // (args.frequency * 1000),
