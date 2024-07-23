@@ -16,8 +16,8 @@ CMD_READ  = 0x05
 
 
 class I2CInitiatorSubtarget(Elaboratable):
-    def __init__(self, pads, out_fifo, in_fifo, period_cyc):
-        self.pads = pads
+    def __init__(self, ports, out_fifo, in_fifo, period_cyc):
+        self.ports = ports
         self.out_fifo = out_fifo
         self.in_fifo = in_fifo
         self.period_cyc = period_cyc
@@ -25,7 +25,7 @@ class I2CInitiatorSubtarget(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.i2c_initiator = i2c_initiator = I2CInitiator(self.pads, self.period_cyc)
+        m.submodules.i2c_initiator = i2c_initiator = I2CInitiator(self.ports, self.period_cyc)
 
         ###
 
@@ -270,14 +270,12 @@ class I2CInitiatorApplet(GlasgowApplet):
     """
     required_revision = "C0"
 
-    __pins = ("scl", "sda")
-
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        for pin in cls.__pins:
-            access.add_pin_argument(parser, pin, default=True)
+        access.add_pin_argument(parser, "scl", default=True)
+        access.add_pin_argument(parser, "sda", default=True)
 
         parser.add_argument(
             "-b", "--bit-rate", metavar="FREQ", type=int, default=100,
@@ -286,7 +284,7 @@ class I2CInitiatorApplet(GlasgowApplet):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(I2CInitiatorSubtarget(
-            pads=iface.get_deprecated_pads(args, pins=self.__pins),
+            ports=iface.get_port_group(scl=args.pin_scl, sda=args.pin_sda),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             period_cyc=math.ceil(target.sys_clk_freq / (args.bit_rate * 1000))
