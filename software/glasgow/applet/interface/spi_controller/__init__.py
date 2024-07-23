@@ -11,16 +11,15 @@ from ... import *
 
 
 class SPIControllerBus(Elaboratable):
-    def __init__(self, pads, sck_idle, sck_edge, cs_active):
+    def __init__(self, pads, sck_idle, sck_edge):
         self.pads = pads
         self.sck_idle = sck_idle
         self.sck_edge = sck_edge
-        self.cs_active = cs_active
 
         self.oe   = Signal(init=1)
 
         self.sck  = Signal(init=sck_idle)
-        self.cs   = Signal(init=not cs_active)
+        self.cs   = Signal()
         self.copi = Signal()
         self.cipo = Signal()
 
@@ -37,7 +36,7 @@ class SPIControllerBus(Elaboratable):
         if hasattr(self.pads, "cs_t"):
             m.d.comb += [
                 self.pads.cs_t.oe.eq(1),
-                self.pads.cs_t.o.eq(self.cs),
+                self.pads.cs_t.o.eq(~self.cs),
             ]
         if hasattr(self.pads, "copi_t"):
             m.d.comb += [
@@ -78,15 +77,14 @@ BIT_DATA_IN  =     0b0010
 
 class SPIControllerSubtarget(Elaboratable):
     def __init__(self, pads, out_fifo, in_fifo, period_cyc, delay_cyc,
-                 sck_idle, sck_edge, cs_active):
+                 sck_idle, sck_edge):
         self.pads = pads
         self.out_fifo = out_fifo
         self.in_fifo = in_fifo
         self.period_cyc = period_cyc
         self.delay_cyc = delay_cyc
-        self.cs_active = cs_active
 
-        self.bus = SPIControllerBus(pads, sck_idle, sck_edge, cs_active)
+        self.bus = SPIControllerBus(pads, sck_idle, sck_edge)
 
     def elaborate(self, platform):
         m = Module()
@@ -129,7 +127,7 @@ class SPIControllerSubtarget(Elaboratable):
                     m.d.comb += self.out_fifo.r_en.eq(1)
                     m.d.sync += cmd.eq(self.out_fifo.r_data)
                     with m.If((self.out_fifo.r_data & CMD_MASK) == CMD_SELECT):
-                        m.d.sync += self.bus.cs.eq(self.out_fifo.r_data[0] ^ (not self.cs_active))
+                        m.d.sync += self.bus.cs.eq(self.out_fifo.r_data[0])
                     with m.Elif((self.out_fifo.r_data & CMD_MASK) == CMD_SYNC):
                         m.next = "SYNC"
                     with m.Else():
@@ -325,9 +323,6 @@ class SPIControllerApplet(GlasgowApplet):
             "--sck-edge", metavar="EDGE", type=str, choices=["r", "rising", "f", "falling"],
             default="rising",
             help="latch data at clock edge EDGE (default: %(default)s)")
-        parser.add_argument(
-            "--cs-active", metavar="LEVEL", type=int, choices=[0, 1], default=0,
-            help="set active chip select level to LEVEL (default: %(default)s)")
 
     def build_subtarget(self, target, args, pins=__pins):
         iface = self.mux_interface
@@ -346,7 +341,6 @@ class SPIControllerApplet(GlasgowApplet):
                                         clock_name="delay"),
             sck_idle=args.sck_idle,
             sck_edge=args.sck_edge,
-            cs_active=args.cs_active,
         )
 
     def build(self, target, args):

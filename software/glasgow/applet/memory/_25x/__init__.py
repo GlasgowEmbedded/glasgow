@@ -28,17 +28,16 @@ BIT_ERR  = 0b10000000
 
 # This is also used in SPIFlashromApplet.
 class Memory25xSubtarget(Elaboratable):
-    def __init__(self, controller, hold_t, cs_active):
+    def __init__(self, controller, hold_t):
         self.controller = controller
         self.hold_t = hold_t
-        self.cs_active = cs_active
 
     def elaborate(self, platform):
         m = Module()
 
         m.submodules.controller = self.controller
 
-        m.d.comb += self.controller.bus.oe.eq(self.controller.bus.cs == self.cs_active)
+        m.d.comb += self.controller.bus.oe.eq(self.controller.bus.cs == 1)
 
         if self.hold_t is not None:
             m.d.comb += [
@@ -288,7 +287,7 @@ class Memory25xApplet(SPIControllerApplet):
             hold_t = self.mux_interface.get_deprecated_pad(args.pin_hold)
         else:
             hold_t = None
-        return Memory25xSubtarget(subtarget, hold_t, args.cs_active)
+        return Memory25xSubtarget(subtarget, hold_t)
 
     async def run(self, device, args):
         spi_iface = await self.run_lower(Memory25xApplet, device, args)

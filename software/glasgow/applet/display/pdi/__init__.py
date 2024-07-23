@@ -403,7 +403,6 @@ class DisplayPDIApplet(GlasgowApplet):
             delay_cyc=math.ceil(target.sys_clk_freq / 1e6),
             sck_idle=0,
             sck_edge="rising",
-            cs_active=0,
         )
 
         cog_power, self.__addr_cog_power = target.registers.add_rw(1)

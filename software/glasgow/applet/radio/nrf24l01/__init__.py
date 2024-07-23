@@ -230,7 +230,6 @@ class RadioNRF24L01Applet(GlasgowApplet):
             delay_cyc=math.ceil(target.sys_clk_freq / 1e6),
             sck_idle=0,
             sck_edge="rising",
-            cs_active=0,
         )
 
         subtarget = RadioNRF24L01Subtarget(controller, pads.ce_t, dut_ce)
