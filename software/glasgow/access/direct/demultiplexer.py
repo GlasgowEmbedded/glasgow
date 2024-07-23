@@ -98,41 +98,52 @@ class DirectDemultiplexer(AccessDemultiplexer):
         elif hasattr(args, "keep_voltage") and args.keep_voltage:
             applet.logger.info("port voltage unchanged")
 
+        device_pull_low  = set()
+        device_pull_high = set()
+        for pin_arg in pull_low:
+            (device_pull_high if pin_arg.invert else device_pull_low).add(pin_arg.number)
+        for pin_arg in pull_high:
+            (device_pull_low if pin_arg.invert else device_pull_high).add(pin_arg.number)
         if self.device.has_pulls:
             if self.device.revision == "C0":
                 if pull_low or pull_high:
-                    applet.logger.error("Glasgow revC0 has severe restrictions on use of configurable "
-                                        "pull resistors; device may require power cycling")
-                    await self.device.set_pulls(args.port_spec, pull_low, pull_high)
+                    applet.logger.error(
+                        "Glasgow revC0 has severe restrictions on use of configurable "
+                        "pull resistors; device may require power cycling")
+                    await self.device.set_pulls(args.port_spec, device_pull_low, device_pull_high)
                 else:
                     # Don't touch the pulls; they're either in the power-on reset high-Z state, or
                     # they have been touched by the user, and we've warned about that above.
                     pass
 
             elif hasattr(args, "port_spec"):
-                await self.device.set_pulls(args.port_spec, pull_low, pull_high)
-                if pull_low or pull_high:
-                    applet.logger.info("port(s) %s pull resistors configured",
-                                       ", ".join(sorted(args.port_spec)))
-                else:
-                    applet.logger.debug("port(s) %s pull resistors disabled",
-                                        ", ".join(sorted(args.port_spec)))
+                await self.device.set_pulls(args.port_spec, device_pull_low, device_pull_high)
+                device_pull_desc = []
+                if device_pull_high:
+                    device_pull_desc.append(f"pull-up on {', '.join(map(str, device_pull_high))}")
+                if device_pull_low:
+                    device_pull_desc.append(f"pull-down on {', '.join(map(str, device_pull_low))}")
+                if not device_pull_desc:
+                    device_pull_desc.append("disabled")
+                applet.logger.debug("port(s) %s pull resistors: %s",
+                                    ", ".join(sorted(args.port_spec)),
+                                    "; ".join(device_pull_desc))
 
-        elif pull_low or pull_high:
+        elif device_pull_low or device_pull_high:
             # Some applets request pull resistors for bidirectional pins (e.g. I2C). Such applets
             # cannot work on revA/B because of the level shifters and the applet should require
             # an appropriate revision.
             # Some applets, though, request pull resistors for unidirectional, DUT-controlled pins
             # (e.g. NAND flash). Such applets can still work on revA/B with appropriate external
             # pull resistors, so we spend some additional effort to allow for that.
-            if pull_low:
+            if device_pull_low:
                 applet.logger.warning("port(s) %s requires external pull-down resistors on pins %s",
                                       ", ".join(sorted(args.port_spec)),
-                                      ", ".join(map(str, pull_low)))
-            if pull_high:
+                                      ", ".join(map(str, device_pull_low)))
+            if device_pull_high:
                 applet.logger.warning("port(s) %s requires external pull-up resistors on pins %s",
                                       ", ".join(sorted(args.port_spec)),
-                                      ", ".join(map(str, pull_high)))
+                                      ", ".join(map(str, device_pull_high)))
 
         await iface.reset()
         return iface
