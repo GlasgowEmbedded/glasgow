@@ -28,6 +28,11 @@ class GlasgowAppletError(Exception):
     """An exception raised when an applet encounters an error."""
 
 
+# A Glasgow applet is defined by a class; known applets are listed in the
+# `[project.entry-points."glasgow.applet"]` section of the pyproject.toml.
+# Experimentally, Glasgow applets can be "injected" from out-of-tree; see
+# `glasgow/examples/out_of_tree/README.md` for more discussion of this.
+
 class GlasgowApplet(metaclass=ABCMeta):
     preview = False
     help = "applet help missing"
