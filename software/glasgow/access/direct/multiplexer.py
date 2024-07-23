@@ -176,7 +176,6 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
         self._throttle      = throttle
         self._subtargets    = []
         self._fifos         = []
-        self._pad_tristates = []
 
         self.reset, self._addr_reset = self._registers.add_rw(1, init=1)
         self.logger.debug("adding reset register at address %#04x", self._addr_reset)
@@ -186,6 +185,8 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
 
         m.submodules += self._subtargets
 
+        m.submodules += self._deprecated_buffers
+
         for fifo in self._fifos:
             if self._throttle == "full":
                 m.d.comb += fifo._ctrl_en.eq(~self.analyzer.throttle)
@@ -194,54 +195,21 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
 
             m.submodules += fifo
 
-        for pin_parts, oe, o, i in self._pad_tristates:
-            m.submodules += (io_buffer := io.Buffer("io", pin_parts.io))
-            m.d.comb += [
-                io_buffer.oe.eq(oe),
-                io_buffer.o.eq(o),
-                i.eq(io_buffer.i),
-            ]
-            if hasattr(pin_parts, "oe"):
-                m.submodules += (oe_buffer := io.Buffer("o", pin_parts.oe))
-                m.d.comb += oe_buffer.o.eq(oe)
-
         return m
 
     def get_pin_name(self, pin):
         port, bit, request = self._pins[pin]
         return f"{port}{bit}"
 
-    def get_port(self, pin_or_pins, *, name):
-        if isinstance(pin_or_pins, list):
-            if pin_or_pins == []:
-                self.logger.debug("not assigning applet ports '%s[]' to any device pins", name)
-                return None
-            port = None
-            for index, subpin in enumerate(pin_or_pins):
-                subport = self.get_port(subpin, name=f"{name}[{index}]")
-                if port is None:
-                    port  = subport
-                else:
-                    port += subport
-            assert port is not None
-            return port
+    def get_port_impl(self, pin, *, name):
+        port, bit, request = self._pins[pin]
+        self.logger.debug("assigning applet port '%s' to device pin %s",
+            name, self.get_pin_name(pin))
+        pin_components = request(bit)
+        if hasattr(pin_components, "oe"):
+            return GlasgowPlatformPort(io=pin_components.io, oe=pin_components.oe)
         else:
-            if pin_or_pins is None:
-                self.logger.debug("not assigning applet port '%s' to any device pin", name)
-                return None
-            port, bit, request = self._pins[pin_or_pins]
-            self.logger.debug("assigning applet port '%s' to device pin %s",
-                name, self.get_pin_name(pin_or_pins))
-            pin_subports = request(bit)
-            if hasattr(pin_subports, "oe"):
-                return GlasgowPlatformPort(io=pin_subports.io, oe=pin_subports.oe)
-            else:
-                return GlasgowPlatformPort(io=pin_subports.io)
-
-    def _build_pad_tristate(self, pin_num, oe, o, i):
-        port, bit, request = self._pins[pin_num]
-        pin_subports = request(bit)
-        self._pad_tristates.append((pin_subports, oe, o, i))
+            return GlasgowPlatformPort(io=pin_components.io)
 
     def get_in_fifo(self, **kwargs):
         fifo = self._fx2_crossbar.get_in_fifo(self._pipe_num, **kwargs, reset=self.reset)

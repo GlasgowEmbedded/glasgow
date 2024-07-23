@@ -24,7 +24,6 @@ from contextlib import contextmanager
 from amaranth import *
 
 from ....support.logging import *
-from ....gateware.pads import *
 from ....gateware.uart import *
 from ... import *
 

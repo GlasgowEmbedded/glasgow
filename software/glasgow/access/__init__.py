@@ -4,12 +4,15 @@ from amaranth.lib import io
 import argparse
 
 from ..gateware.ports import PortGroup
-from ..gateware.pads import Pads
 
 
 __all__  = ["AccessArguments"]
 __all__ += ["AccessMultiplexer", "AccessMultiplexerInterface"]
 __all__ += ["AccessDemultiplexer", "AccessDemultiplexerInterface"]
+
+
+class _DeprecatedPads:
+    """Deprecated in favor of :class:`glasgow.gateware.ports.PortGroup`."""
 
 
 class AccessArguments(metaclass=ABCMeta):
@@ -48,7 +51,8 @@ class AccessMultiplexerInterface(Elaboratable, metaclass=ABCMeta):
         self.applet   = applet
         self.logger   = applet.logger
         self.analyzer = analyzer
-        self.pads     = None
+
+        self._deprecated_buffers = []
 
     @abstractmethod
     def get_out_fifo(self, **kwargs):
@@ -63,56 +67,56 @@ class AccessMultiplexerInterface(Elaboratable, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_port(self, pin, *, name):
+    def get_port_impl(self, pin, *, name):
         pass
+
+    def get_port(self, pin_or_pins, *, name):
+        if isinstance(pin_or_pins, list):
+            if pin_or_pins == []:
+                self.logger.debug("not assigning applet ports '%s[]' to any device pins", name)
+                return None
+            port = None
+            for index, subpin in enumerate(pin_or_pins):
+                subport = self.get_port(subpin, name=f"{name}[{index}]")
+                if port is None:
+                    port  = subport
+                else:
+                    port += subport
+            assert port is not None
+            return port
+        else:
+            if pin_or_pins is None:
+                self.logger.debug("not assigning applet port '%s' to any device pin", name)
+                return None
+            return self.get_port_impl(pin_or_pins, name=name)
 
     def get_port_group(self, **kwargs):
         return PortGroup(**{
             name: self.get_port(pin_or_pins, name=name) for name, pin_or_pins in kwargs.items()
         })
 
-    @abstractmethod
-    def _build_pad_tristate(self, pin, oe, o, i):
-        pass
-
     def get_deprecated_pad(self, pins, name=None):
-        if type(pins) is int:
-            pins = [pins]
-
-        triple = io.Buffer.Signature("io", len(pins)).create()
-        for n, pin in enumerate(pins):
-            self._build_pad_tristate(pin, triple.oe, triple.o[n], triple.i[n])
-
-        if name is None:
-            name = "-".join([self.get_pin_name(pins) for pins in pins])
+        port = self.get_port(pins, name=name)
+        self._deprecated_buffers.append(buffer := io.Buffer("io", port))
         if self.analyzer:
-            self.analyzer.add_pin_event(self.applet, name, triple)
-
-        return triple
+            if name is None:
+                name = ",".join(self.get_pin_name(pins) for pins in pins)
+            self.analyzer.add_pin_event(self.applet, name, buffer)
+        return buffer
 
     def get_deprecated_pads(self, args, pins=[], pin_sets=[]):
-        pad_args = {}
-
+        pads = _DeprecatedPads()
         for pin in pins:
             pin_num = getattr(args, f"pin_{pin}")
-            if pin_num is None:
-                self.logger.debug("not assigning pin %r to any device pin", pin)
-            else:
-                self.logger.debug("assigning pin %r to device pin %s",
-                    pin, self.get_pin_name(pin_num))
-                pad_args[pin] = self.get_deprecated_pad(pin_num, name=pin)
-
+            if pin_num is not None:
+                setattr(pads, f"{pin}_t", self.get_deprecated_pad(pin_num, name=pin))
         for pin_set in pin_sets:
             pin_nums = getattr(args, f"pin_set_{pin_set}")
-            if pin_nums is None:
-                self.logger.debug("not assigning pin set %r to any device pins", pin_set)
-            else:
-                self.logger.debug("assigning pin set %r to device pins %s",
-                    pin_set, ", ".join([self.get_pin_name(pin_num) for pin_num in pin_nums]))
-                pad_args[pin_set] = self.get_deprecated_pad(pin_nums, name=pin_set)
-
-        self.pads = Pads(**pad_args)
-        return self.pads
+            if pin_nums is not None:
+                setattr(pads, f"{pin_set}_t", self.get_deprecated_pad(pin_nums, name=pin_set))
+        # Horrifically dirty, but the `uart` applet currently depends on this :(
+        self.pads = pads
+        return pads
 
 
 class AccessDemultiplexer(metaclass=ABCMeta):

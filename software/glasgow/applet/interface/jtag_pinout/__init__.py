@@ -9,7 +9,6 @@ from functools import reduce
 from amaranth import *
 from amaranth.lib.cdc import FFSynchronizer
 
-from ....gateware.pads import *
 from ... import *
 
 

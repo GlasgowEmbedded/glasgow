@@ -3,7 +3,6 @@ import asyncio
 from amaranth import *
 
 from ....support.endpoint import *
-from ....gateware.pads import *
 from ....gateware.pll import *
 from ... import *
 

@@ -7,7 +7,6 @@ from amaranth.lib import io, cdc
 from ....support.bits import *
 from ....support.logging import *
 from ....support.endpoint import *
-from ....gateware.pads import *
 from ... import *
 
 
