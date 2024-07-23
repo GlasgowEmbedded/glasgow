@@ -177,6 +177,8 @@ And all off again, followed by a full power-down of the I/O:
 Hopefully this example starts to show you the power you have available.
 
 
+.. _script-usage:
+
 How do I use a script?
 ----------------------
 
