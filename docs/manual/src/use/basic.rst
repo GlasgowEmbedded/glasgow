@@ -152,7 +152,7 @@ Aside from the ``tty`` mode, others are available (``pty``, ``socket``), which a
     $ glasgow run uart -V 3.3 --pin-tx 0 --pin-rx 1 -b 57600 tty
 
 
-SPI Controller
+SPI controller
 ##############
 
 The ``spi-controller`` applet implements an SPI controller, allowing full-duplex transfer to an SPI device. The following command will assert `CS#`, send the five bytes ``03 01 23 5f f5``, and then de-assert `CS#`, before printing the received data to the console.
@@ -163,7 +163,7 @@ The ``spi-controller`` applet implements an SPI controller, allowing full-duplex
         '0301235ff5'
 
 
-I²C Initiator
+I²C initiator
 #############
 
 The ``i2c-initiator`` applet implements an I²C initiator, which facilitates a simple bus scan from the command line, using the on-board pull-up resistors.
