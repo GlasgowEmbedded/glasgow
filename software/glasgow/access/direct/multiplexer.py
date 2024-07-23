@@ -198,18 +198,18 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
         return m
 
     def get_pin_name(self, pin):
-        port, bit, request = self._pins[pin]
+        port, bit, request = self._pins[pin.number]
         return f"{port}{bit}"
 
     def get_port_impl(self, pin, *, name):
-        port, bit, request = self._pins[pin]
-        self.logger.debug("assigning applet port '%s' to device pin %s",
-            name, self.get_pin_name(pin))
+        port, bit, request = self._pins[pin.number]
+        self.logger.debug("assigning applet port '%s' to device pin %s%s",
+            name, self.get_pin_name(pin), " (inverted)" if pin.invert else "")
         pin_components = request(bit)
-        if hasattr(pin_components, "oe"):
-            return GlasgowPlatformPort(io=pin_components.io, oe=pin_components.oe)
-        else:
-            return GlasgowPlatformPort(io=pin_components.io)
+        return GlasgowPlatformPort(
+            io=~pin_components.io if pin.invert else pin_components.io,
+            oe=getattr(pin_components, "oe", None)
+        )
 
     def get_in_fifo(self, **kwargs):
         fifo = self._fx2_crossbar.get_in_fifo(self._pipe_num, **kwargs, reset=self.reset)

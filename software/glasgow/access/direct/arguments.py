@@ -1,7 +1,17 @@
-import functools
 import re
+import functools
+from dataclasses import dataclass
 
 from .. import AccessArguments
+
+
+@dataclass(frozen=True)
+class PinArgument:
+    number: int
+    invert: bool = False
+
+    def __str__(self):
+        return f"{self.number}{'#' if self.invert else ''}"
 
 
 class DirectArguments(AccessArguments):
@@ -34,9 +44,9 @@ class DirectArguments(AccessArguments):
             help="do not change I/O port voltage")
 
     def _mandatory_pin_number(self, arg):
-        if not re.match(r"^[0-9]+$", arg):
+        if not re.match(r"^[0-9]+#?$", arg):
             self._arg_error(f"{arg} is not a valid pin number")
-        return int(arg)
+        return PinArgument(int(arg.replace("#", "")), invert=arg.endswith("#"))
 
     def _optional_pin_number(self, arg):
         if arg == "-":
@@ -46,7 +56,8 @@ class DirectArguments(AccessArguments):
     def _add_pin_argument(self, parser, name, default, required):
         help = f"bind the applet I/O line {name!r} to pin NUM"
         if default is not None:
-            help += " (default: %(default)s)"
+            default = PinArgument(default)
+            help += f" (default: {default})"
 
         if required:
             type = self._mandatory_pin_number
@@ -61,27 +72,31 @@ class DirectArguments(AccessArguments):
 
     def _pin_set(self, width, arg):
         if arg == "":
-            numbers = []
-        elif re.match(r"^[0-9]+:[0-9]+$", arg):
-            first, last = map(int, arg.split(":"))
-            numbers = list(range(first, last + 1))
-        elif re.match(r"^[0-9]+(,[0-9]+)*$", arg):
-            numbers = list(map(int, arg.split(",")))
+            pin_args = []
+        elif re.match(r"^[0-9]+:[0-9]+#?$", arg):
+            first, last = map(int, arg.replace("#", "").split(":"))
+            pin_args = [PinArgument(int(number), invert=arg.endswith("#"))
+                        for number in range(first, last + 1)]
+        elif re.match(r"((^|,)[0-9]+#?)+$", arg):
+            pin_args = [PinArgument(int(number.replace("#", "")), invert=number.endswith("#"))
+                        for number in arg.split(",")]
         else:
             self._arg_error(f"{arg} is not a valid pin number set")
-        if len(numbers) not in width:
+        if len(pin_args) not in width:
             if len(width) == 1:
                 width_desc = str(width[0])
             else:
                 width_desc = f"{width.start}..{width.stop - 1}"
-            self._arg_error(f"set {arg} includes {len(numbers)} pins, but {width_desc} pins are required")
-        return numbers
+            self._arg_error(f"set {arg} includes {len(pin_args)} pins, but "
+                            f"{width_desc} pins are required")
+        return pin_args
 
     def _add_pin_set_argument(self, parser, name, width, default, required):
         help = f"bind the applet I/O lines {name!r} to pins SET"
         if default is not None:
+            default = [PinArgument(number) for number in default]
             if default:
-                help += " (default: %(default)s)"
+                help += f" (default: {', '.join(map(str, default))})"
             else:
                 help += " (default is empty)"
         if required and default is not None:
@@ -113,16 +128,16 @@ class DirectArguments(AccessArguments):
 
     def add_pin_argument(self, parser, name, default=None, required=False):
         if default is True:
-            default = str(self._get_free(self._free_pins))
+            default = self._get_free(self._free_pins)
         self._add_pin_argument(parser, name, default, required)
 
     def add_pin_set_argument(self, parser, name, width, default=None, required=False):
         if isinstance(width, int):
             width = range(width, width + 1)
         if default is True and len(self._free_pins) >= width.start:
-            default = ",".join([str(self._get_free(self._free_pins)) for _ in range(width.start)])
+            default = [self._get_free(self._free_pins) for _ in range(width.start)]
         elif isinstance(default, int) and len(self._free_pins) >= default:
-            default = ",".join([str(self._get_free(self._free_pins)) for _ in range(default)])
+            default = [self._get_free(self._free_pins) for _ in range(default)]
         self._add_pin_set_argument(parser, name, width, default, required)
 
     def add_run_arguments(self, parser):
