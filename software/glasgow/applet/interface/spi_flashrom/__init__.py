@@ -183,7 +183,7 @@ class SPIFlashromApplet(SPIControllerApplet):
             hold_t = self.mux_interface.get_deprecated_pad(args.pin_hold)
         else:
             hold_t = None
-        return Memory25xSubtarget(subtarget, hold_t, args.cs_active)
+        return Memory25xSubtarget(subtarget, hold_t)
 
     async def run(self, device, args):
         spi_iface = await self.run_lower(SPIFlashromApplet, device, args)
