@@ -62,7 +62,7 @@
 import logging
 import asyncio
 from amaranth import *
-from amaranth.lib import data
+from amaranth.lib import data, io
 from amaranth.lib.cdc import FFSynchronizer
 
 from ... import *
@@ -92,8 +92,8 @@ def _prepare_frame(frame, data):
 
 
 class PS2Bus(Elaboratable):
-    def __init__(self, pads):
-        self.pads = pads
+    def __init__(self, ports):
+        self.ports = ports
 
         self.falling = Signal()
         self.rising  = Signal()
@@ -105,15 +105,18 @@ class PS2Bus(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
+        m.submodules.clock_buffer = clock_buffer = io.Buffer("io", self.ports.clock)
+        m.submodules.data_buffer = data_buffer = io.Buffer("io", self.ports.data)
         m.d.comb += [
-            self.pads.clock_t.o.eq(0),
-            self.pads.clock_t.oe.eq(~self.clock_o),
-            self.pads.data_t.o.eq(0),
-            self.pads.data_t.oe.eq(~self.data_o),
+            clock_buffer.o.eq(0),
+            clock_buffer.oe.eq(~self.clock_o),
+            data_buffer.o.eq(0),
+            data_buffer.oe.eq(~self.data_o)
         ]
+
         m.submodules += [
-            FFSynchronizer(self.pads.clock_t.i, self.clock_i, init=1),
-            FFSynchronizer(self.pads.data_t.i,  self.data_i,  init=1),
+            FFSynchronizer(clock_buffer.i, self.clock_i, init=1),
+            FFSynchronizer(data_buffer.i,  self.data_i,  init=1),
         ]
 
         clock_s = Signal(init=1)
@@ -125,11 +128,9 @@ class PS2Bus(Elaboratable):
             self.rising .eq(~clock_r &  clock_s),
         ]
 
-        if hasattr(self.pads, "reset_t"):
-            m.d.comb += [
-                self.pads.reset_t.o.eq(ResetSignal()),
-                self.pads.reset_t.oe.eq(1),
-            ]
+        if self.ports.reset is not None:
+            m.submodules.reset_buffer = reset_buffer = io.Buffer("o", self.ports.reset)
+            m.d.comb += reset_buffer.o.eq(ResetSignal())
 
         return m
 
@@ -224,8 +225,8 @@ class PS2HostController(Elaboratable):
 
 
 class PS2HostSubtarget(Elaboratable):
-    def __init__(self, pads, in_fifo, out_fifo, inhibit_cyc):
-        self.pads = pads
+    def __init__(self, ports, in_fifo, out_fifo, inhibit_cyc):
+        self.ports = ports
         self.in_fifo = in_fifo
         self.out_fifo = out_fifo
         self.inhibit_cyc = inhibit_cyc
@@ -233,7 +234,7 @@ class PS2HostSubtarget(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.bus  = bus  = PS2Bus(self.pads)
+        m.submodules.bus  = bus  = PS2Bus(self.ports)
         m.submodules.ctrl = ctrl = PS2HostController(bus)
 
         timer = Signal(range(self.inhibit_cyc))
@@ -401,8 +402,6 @@ class PS2HostApplet(GlasgowApplet):
     """
     required_revision = "C0"
 
-    __pins = ("clock", "data", "reset")
-
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
@@ -414,7 +413,11 @@ class PS2HostApplet(GlasgowApplet):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(PS2HostSubtarget(
-            pads=iface.get_deprecated_pads(args, pins=self.__pins),
+            ports =iface.get_port_group(
+                clock = args.pin_clock,
+                data = args.pin_data,
+                reset = args.pin_reset
+            ),
             in_fifo=iface.get_in_fifo(),
             out_fifo=iface.get_out_fifo(),
             inhibit_cyc=int(target.sys_clk_freq * 60e-6),
