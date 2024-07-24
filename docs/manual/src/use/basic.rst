@@ -15,7 +15,7 @@ After :ref:`installing <initial-setup>` the Glasgow software, the ``glasgow`` ut
 
 .. note::
 
-  As you build up the ``glasgow`` tool's command line, the `context` changes---for example, the output of each of the following ``--help`` s are all different:
+  As you build up the ``glasgow`` tool's command line, the `context` changes --- for example, the output of each of the following ``--help`` s are all different:
 
   .. code:: console
 
@@ -37,7 +37,7 @@ After :ref:`installing <initial-setup>` the Glasgow software, the ``glasgow`` ut
 Returning Glasgow to a safe state
 #################################
 
-To begin with, use the ``glasgow safe`` command to make sure that the ``glasgow`` utility can communicate with your Glasgow hardware.   The ``glasgow safe`` command sets all I/O to a `safe` state---it disables voltage outputs, and sets all I/O pins to a high impedance state.  Try it with:
+To begin with, use the ``glasgow safe`` command to make sure that the ``glasgow`` utility can communicate with your Glasgow hardware.   The ``glasgow safe`` command sets all I/O to a `safe` state --- it disables voltage outputs, and sets all I/O pins to a high impedance state.  Try it with:
 
 .. code:: console
 
@@ -60,7 +60,7 @@ You can use this command at any time to put your Glasgow hardware into a `safe` 
 Working with applets
 --------------------
 
-``glasgow`` is based around the concept of `applets`, with each implementing a particular mode of operation or interface. For example, there are applets such as ``uart``, ``i2c-initiator``, and ``spi-controller``---each implementing the gateware (which runs on the FPGA) and software (which runs on the host PC). The Glasgow software framework coordinates building, caching, and operating these applets for you.
+``glasgow`` is based around the concept of `applets`, with each implementing a particular mode of operation or interface. For example, there are applets such as ``uart``, ``i2c-initiator``, and ``spi-controller`` --- each implementing the gateware (which runs on the FPGA) and software (which runs on the host PC). The Glasgow software framework coordinates building, caching, and operating these applets for you.
 
 A list of available applets [#applet_sources]_ can be shown by running ``glasgow run --help``.  You can interact with applets from the ``glasgow`` tool in one of four ways:
 
@@ -110,7 +110,7 @@ Putting it together, the following command will run the ``uart`` applet, with an
     I: g.applet.interface.uart: port(s) A, B pull resistors configured
     I: g.applet.interface.uart: socket: listening at tcp:127.0.0.1:4321
 
-As the applet's output suggests, you can connect to TCP port 4321 using a tool of your choice---``nc`` or PuTTY will both work.
+As the applet's output suggests, you can connect to TCP port 4321 using a tool of your choice --- ``nc`` or PuTTY will both work.
 
 
 Specifying port numbers
@@ -136,7 +136,7 @@ UART
 
 The ``uart`` applet provides a basic full-duplex UART interface that can operate at virtually any reasonable baudrate, and also supports automatically detecting the baudrate based on frames sent by the remote device. The transmit and receive signals can also be easily inverted.
 
-By running the applet using the ``tty`` mode, you will be delivered a direct pipe to the UART---characters you enter into the terminal will be transmitted by the Glasgow hardware, and characters received by the Glasgow hardware will appear in the terminal.
+By running the applet using the ``tty`` mode, you will be delivered a direct pipe to the UART --- characters you enter into the terminal will be transmitted by the Glasgow hardware, and characters received by the Glasgow hardware will appear in the terminal.
 
 The baud rate can be set using ``-b 57600``, and automatic baud rate detection can be enabled with ``-a``. Although reliable and particularly convenient for devices that change their baud rate as they boot, this detection mechanism is not perfect, and sometimes you may have to set the baud rate manually.
 
