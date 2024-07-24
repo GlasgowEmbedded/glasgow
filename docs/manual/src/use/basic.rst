@@ -43,7 +43,7 @@ To begin with, use the ``glasgow safe`` command to make sure that the ``glasgow`
 
     $ glasgow safe
 
-.. note:: This command has the same effect as pressing the physical `E-STOP / RESET` button that is present on ``revC3`` and later hardware revisions.
+.. note:: This command has the same effect as pressing the physical `E-STOP / RESET` button that is present on ``revC3`` and later hardware revisions.  You may prefer to get in the habit of using the physical button if you're sitting next to your Glasgow; the button gives you tactile feedback to indicate that the device has entered a safe state, in a way that ``glasgow`` cannot!
 
 You can use this command at any time to put your Glasgow hardware into a `safe` state; if it is successful, it will provide the output:
 
