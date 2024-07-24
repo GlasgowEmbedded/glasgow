@@ -1,14 +1,14 @@
 import logging
 from amaranth import *
-from amaranth.lib import data
+from amaranth.lib import data, io
 
 from ....gateware.pll import *
 from ... import *
 
 
 class VGAOutput(Elaboratable):
-    def __init__(self, pads):
-        self.pads = pads
+    def __init__(self, ports):
+        self.ports = ports
 
         self.hs = Signal()
         self.vs = Signal()
@@ -19,25 +19,26 @@ class VGAOutput(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
+        m.submodules.hs_buffer = hs_buffer = io.Buffer("o", self.ports.hs)
+        m.submodules.vs_buffer = vs_buffer = io.Buffer("o", self.ports.vs)
+        m.submodules.r_buffer  = r_buffer  = io.Buffer("o", self.ports.r)
+        m.submodules.g_buffer  = g_buffer  = io.Buffer("o", self.ports.g)
+        m.submodules.b_buffer  = b_buffer  = io.Buffer("o", self.ports.b)
+
         m.d.comb += [
-            self.pads.hs_t.oe.eq(1),
-            self.pads.hs_t.o.eq(self.hs),
-            self.pads.vs_t.oe.eq(1),
-            self.pads.vs_t.o.eq(self.vs),
-            self.pads.r_t.oe.eq(1),
-            self.pads.r_t.o.eq(self.r),
-            self.pads.g_t.oe.eq(1),
-            self.pads.g_t.o.eq(self.g),
-            self.pads.b_t.oe.eq(1),
-            self.pads.b_t.o.eq(self.b),
+            hs_buffer.o.eq(self.hs),
+            vs_buffer.o.eq(self.vs),
+            r_buffer.o.eq(self.r),
+            g_buffer.o.eq(self.g),
+            b_buffer.o.eq(self.b)
         ]
 
         return m
 
 
 class VGAOutputSubtarget(Elaboratable):
-    def __init__(self, pads, h_front, h_sync, h_back, h_active, v_front, v_sync, v_back, v_active, pix_clk_freq):
-        self.pads = pads
+    def __init__(self, ports, h_front, h_sync, h_back, h_active, v_front, v_sync, v_back, v_active, pix_clk_freq):
+        self.ports = ports
         self.h_front = h_front
         self.h_sync = h_sync
         self.h_back = h_back
@@ -51,7 +52,7 @@ class VGAOutputSubtarget(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.output = output = VGAOutput(self.pads)
+        m.submodules.output = output = VGAOutput(self.ports)
 
         m.domains.pix = cd_pix = ClockDomain()
         m.submodules += PLL(f_in=platform.default_clk_frequency, f_out=self.pix_clk_freq, odomain="pix")
@@ -139,14 +140,15 @@ class VGAOutputApplet(GlasgowApplet):
         * b ---[ 350R ]-- BLUE
     """
 
-    __pins = ("hs", "vs", "r", "g", "b")
-
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        for pin in cls.__pins:
-            access.add_pin_argument(parser, pin, default=True)
+        access.add_pin_argument(parser, "hs", default=True)
+        access.add_pin_argument(parser, "vs", default=True)
+        access.add_pin_argument(parser, "r", default=True)
+        access.add_pin_argument(parser, "g", default=True)
+        access.add_pin_argument(parser, "b", default=True)
 
         parser.add_argument(
             "-p", "--pix-clk-freq", metavar="FREQ", type=float, default=25.175,
@@ -181,7 +183,13 @@ class VGAOutputApplet(GlasgowApplet):
     def build(self, target, args, test_pattern=True):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(VGAOutputSubtarget(
-            pads=iface.get_deprecated_pads(args, pins=self.__pins),
+            ports=iface.get_port_group(
+                hs = args.pin_hs,
+                vs = args.pin_vs,
+                r  = args.pin_r,
+                g  = args.pin_g,
+                b  = args.pin_b
+            ),
             h_front=args.h_front,
             h_sync=args.h_sync,
             h_back=args.h_back,
