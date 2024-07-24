@@ -60,7 +60,7 @@ You can use this command at any time to put your Glasgow hardware into a `safe` 
 Working with applets
 --------------------
 
-``glasgow`` is based around the concept of `applets`, with each implementing a particular mode of operation or interface. For example, there are applets such as ``uart``, ``i2c`` and ``spi``---each implementing the gateware (which runs on the FPGA) and software (which runs on the host PC). The Glasgow software framework coordinates building, caching, and operating these applets for you.
+``glasgow`` is based around the concept of `applets`, with each implementing a particular mode of operation or interface. For example, there are applets such as ``uart``, ``i2c-initiator``, and ``spi-controller``---each implementing the gateware (which runs on the FPGA) and software (which runs on the host PC). The Glasgow software framework coordinates building, caching, and operating these applets for you.
 
 A list of available applets [#applet_sources]_ can be shown by running ``glasgow run --help``.  You can interact with applets from the ``glasgow`` tool in one of four ways:
 
