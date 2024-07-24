@@ -103,14 +103,14 @@ Putting it together, the following command will run the ``uart`` applet, with an
 
 .. code:: console
 
-    $ glasgow run uart -V 3.3 --pin-tx 0 --pin-rx 1 tty
+    $ glasgow run uart -V 3.3 --pin-tx 0 --pin-rx 1 socket tcp:127.0.0.1:4321
     I: g.device.hardware: generating bitstream ID [...]
     I: g.cli: running handler for applet 'uart'
     I: g.applet.interface.uart: port(s) A, B voltage set to 3.3 V
     I: g.applet.interface.uart: port(s) A, B pull resistors configured
-    I: g.applet.interface.uart: running on a TTY; enter `Ctrl+\ q` to quit
+    I: g.applet.interface.uart: socket: listening at tcp:127.0.0.1:4321
 
-As the applet's output suggests, you can press Ctrl-``\`` followed by ``q`` to quit this specific program.
+As the applet's output suggests, you can connect to TCP port 4321 using a tool of your choice---``nc`` or PuTTY will both work.
 
 
 Specifying port numbers
@@ -124,7 +124,7 @@ In some cases, you may want to use ``B3`` without using port A, which can be ach
 
 .. code:: console
 
-    $ glasgow run uart -V 3.3 --port B --pin-tx 3 tty
+    $ glasgow run uart -V 3.3 --port B --pin-tx 3 socket tcp:127.0.0.1:4321
 
 
 Examples
