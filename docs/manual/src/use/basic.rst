@@ -62,12 +62,7 @@ Working with applets
 
 ``glasgow`` is based around the concept of `applets`, with each implementing a particular mode of operation or interface. For example, there are applets such as ``uart``, ``i2c`` and ``spi``---each implementing the gateware (which runs on the FPGA) and software (which runs on the host PC). The Glasgow software framework coordinates building, caching, and operating these applets for you.
 
-A list of available applets can be shown by running ``glasgow run --help``; the list of applets is retrieved from the |pypackage_toml|_.  (:ref:`Using applets from out-of-tree is experimental <applet>`, and not covered in the basic usage instructions.)
-
-.. |pypackage_toml| replace:: ``glasgow`` package's ``pyproject.toml``
-.. _pypackage_toml: https://github.com/GlasgowEmbedded/glasgow/blob/main/software/pyproject.toml
-
-You can interact with applets from the ``glasgow`` tool in one of four ways:
+A list of available applets [#applet_sources]_ can be shown by running ``glasgow run --help``.  You can interact with applets from the ``glasgow`` tool in one of four ways:
 
 * **Running an applet**.  Most applets come with command line programs that perform a specific task related to the gateware that they interface with; ``glasgow run`` ning an applet allows you to invoke one or more of these applet-associated programs.  This usage is described below.
 
@@ -173,3 +168,8 @@ The ``i2c-initiator`` applet implements an I²C initiator, which facilitates a s
     $ glasgow run i2c-initiator -V 3.3 --pulls scan
 
 Using the :ref:`repl or script modes <repl-script>`, it's possible to easily communicate with devices, obeying clock stretching and other factors that are often ignored with bit-banged interfaces.
+
+.. [#applet_sources] In the current Glasgow software, all applets are packaged as part of the Glasgow software distribution; future versions of Glasgow :ref:`may support out-of-tree applets <applet>`.  For the curious, the list of applets is retrieved from the `installed package's metadata <https://packaging.python.org/en/latest/guides/creating-and-discovering-plugins/#using-package-metadata>`_; this list, in turn, comes from the |pyproject_toml|_ file's ``project.entry-points."glasgow.applet"`` section.
+
+.. |pyproject_toml| replace:: ``glasgow`` package's ``pyproject.toml``
+.. _pyproject_toml: https://github.com/GlasgowEmbedded/glasgow/blob/main/software/pyproject.toml
