@@ -13,8 +13,8 @@ from ... import *
 
 # Will eventually live in `..swd_probe`.
 class SWDProbeBus(Elaboratable):
-    def __init__(self, pads):
-        self._pads = pads
+    def __init__(self, ports):
+        self.ports = ports
         self.swclk = Signal(init=1)
         self.swdio_i = Signal()
         self.swdio_o = Signal()
@@ -22,22 +22,22 @@ class SWDProbeBus(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        pads = self._pads
+        m.submodules.swclk = swclk_buffer = io.Buffer("o", self.ports.swclk)
+        m.submodules.swdio = swdio_buffer = io.Buffer("io", self.ports.swdio)
         m.d.comb += [
-            pads.swclk_t.oe.eq(1),
-            pads.swclk_t.o.eq(self.swclk),
-            pads.swdio_t.oe.eq(~self.swdio_z),
-            pads.swdio_t.o.eq(self.swdio_o),
+            swclk_buffer.o.eq(self.swclk),
+            swdio_buffer.oe.eq(~self.swdio_z),
+            swdio_buffer.o.eq(self.swdio_o)
         ]
         m.submodules += [
-            FFSynchronizer(pads.swdio_t.i, self.swdio_i),
+            FFSynchronizer(swdio_buffer.i, self.swdio_i),
         ]
         return m
 
 
 class SWDOpenOCDSubtarget(Elaboratable):
-    def __init__(self, pads, out_fifo, in_fifo, period_cyc, us_cyc):
-        self.pads       = pads
+    def __init__(self, ports, out_fifo, in_fifo, period_cyc, us_cyc):
+        self.ports      = ports
         self.out_fifo   = out_fifo
         self.in_fifo    = in_fifo
         self.period_cyc = period_cyc
@@ -51,14 +51,15 @@ class SWDOpenOCDSubtarget(Elaboratable):
         out_fifo = self.out_fifo
         in_fifo  = self.in_fifo
 
-        m.submodules.bus = bus = SWDProbeBus(self.pads)
+        m.submodules.bus = bus = SWDProbeBus(self.ports)
         m.d.comb += [
             self.srst_z.eq(0),
         ]
-        if hasattr(self.pads, "srst_t"):
+        if self.ports.srst is not None:
+            m.submodules.srst_buffer = srst_buffer = io.Buffer("o")
             m.d.sync += [
-                self.pads.srst_t.oe.eq(~self.srst_z),
-                self.pads.srst_t.o.eq(~self.srst_o)
+                srst_buffer.oe.eq(~self.srst_z),
+                srst_buffer.o.eq(~self.srst_o)
             ]
 
         blink = Signal()
@@ -132,16 +133,14 @@ class SWDOpenOCDApplet(GlasgowApplet):
             -c 'remote_bitbang host /tmp/swd.sock'
     """
 
-    __pins = ("swclk", "swdio", "srst")
-
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        for pin in ("swclk", "swdio"):
-            access.add_pin_argument(parser, pin, default=True)
-        for pin in ("srst",):
-            access.add_pin_argument(parser, pin)
+        access.add_pin_argument(parser, "swclk", default=True)
+        access.add_pin_argument(parser, "swdio", default=True)
+
+        access.add_pin_argument(parser, "srst")
 
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=100,
@@ -150,7 +149,11 @@ class SWDOpenOCDApplet(GlasgowApplet):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(SWDOpenOCDSubtarget(
-            pads=iface.get_deprecated_pads(args, pins=self.__pins),
+            ports=iface.get_port_group(
+                swclk = args.pin_swclk,
+                swdio = args.pin_swdio,
+                srst  = args.pin_srst
+            ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             period_cyc=int(target.sys_clk_freq // (args.frequency * 1000)),
