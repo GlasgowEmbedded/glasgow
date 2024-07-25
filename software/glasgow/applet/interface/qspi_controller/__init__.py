@@ -233,12 +233,13 @@ class QSPIControllerApplet(GlasgowApplet):
     """
 
     @classmethod
-    def add_build_arguments(cls, parser, access):
+    def add_build_arguments(cls, parser, access, *, include_pins=True):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_argument(parser, "sck", default=True)
-        access.add_pin_set_argument(parser, "io", width=4, default=True)
-        access.add_pin_set_argument(parser, "cs", width=1, default=True)
+        if include_pins:
+            access.add_pin_argument(parser, "sck", default=True)
+            access.add_pin_set_argument(parser, "io", width=4, default=True)
+            access.add_pin_set_argument(parser, "cs", width=1, default=True)
 
         # Most devices that advertise QSPI support should work at 1 MHz.
         parser.add_argument(
