@@ -80,6 +80,7 @@ import logging
 import asyncio
 import struct
 from amaranth import *
+from amaranth.lib import io
 from amaranth.lib.cdc import FFSynchronizer
 
 from ....support.logging import *
@@ -99,13 +100,13 @@ CMD_WAIT    = 0x05
 
 
 class MemoryONFIBus(Elaboratable):
-    def __init__(self, pads):
-        self.pads = pads
+    def __init__(self, ports):
+        self.ports = ports
 
         self.doe = Signal()
-        self.do  = Signal.like(pads.io_t.o)
-        self.di  = Signal.like(pads.io_t.i)
-        self.ce  = Signal.like(pads.ce_t.o)
+        self.do  = Signal(len(self.ports.io))
+        self.di  = Signal(len(self.ports.io))
+        self.ce  = Signal(len(self.ports.ce))
         self.cle = Signal()
         self.ale = Signal()
         self.re  = Signal()
@@ -115,31 +116,34 @@ class MemoryONFIBus(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
+        m.submodules.io_buffer  = io_buffer  = io.Buffer("io", self.ports.io)
+        m.submodules.ce_buffer  = ce_buffer  = io.Buffer("o", self.ports.ce)
+        m.submodules.cle_buffer = cle_buffer = io.Buffer("o", self.ports.cle)
+        m.submodules.ale_buffer = ale_buffer = io.Buffer("o", self.ports.ale)
+        m.submodules.re_buffer  = re_buffer  = io.Buffer("o", self.ports.re)
+        m.submodules.we_buffer  = we_buffer  = io.Buffer("o", self.ports.we)
+        m.submodules.rb_buffer  = rb_buffer  = io.Buffer("i", self.ports.r_b)
+
         m.d.comb += [
-            self.pads.io_t.oe.eq(self.doe),
-            self.pads.io_t.o.eq(self.do),
-            self.pads.ce_t.oe.eq(1),
-            self.pads.ce_t.o.eq(~self.ce),
-            self.pads.cle_t.oe.eq(1),
-            self.pads.cle_t.o.eq(self.cle),
-            self.pads.ale_t.oe.eq(1),
-            self.pads.ale_t.o.eq(self.ale),
-            self.pads.re_t.oe.eq(1),
-            self.pads.re_t.o.eq(~self.re),
-            self.pads.we_t.oe.eq(1),
-            self.pads.we_t.o.eq(~self.we),
+            io_buffer.oe.eq(self.doe),
+            io_buffer.o.eq(self.do),
+            ce_buffer.o.eq(~self.ce),
+            cle_buffer.o.eq(self.cle),
+            ale_buffer.o.eq(self.ale),
+            re_buffer.o.eq(~self.re),
+            we_buffer.o.eq(~self.we),
         ]
         m.submodules += [
-            FFSynchronizer(self.pads.io_t.i, self.di),
-            FFSynchronizer(self.pads.r_b_t.i, self.rdy),
+            FFSynchronizer(io_buffer.i, self.di),
+            FFSynchronizer(rb_buffer.i, self.rdy),
         ]
 
         return m
 
 
 class MemoryONFISubtarget(Elaboratable):
-    def __init__(self, pads, in_fifo, out_fifo):
-        self.bus = MemoryONFIBus(pads)
+    def __init__(self, ports, in_fifo, out_fifo):
+        self.bus = MemoryONFIBus(ports)
         self.in_fifo = in_fifo
         self.out_fifo = out_fifo
 
@@ -429,21 +433,30 @@ class MemoryONFIApplet(GlasgowApplet):
         * Cmd 0x60 Addr Row1..3 Cmd 0xD0: Erase (all devices)
         * Cmd 0x80 Addr Col1..2,Row1..3 [Cmd 0x85 Col1..2]+ Cmd 0x10: Page Program (all devices)
     """
-    pin_sets = ("io", "ce")
-    pins = ("cle", "ale", "re", "we", "r_b")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
         access.add_build_arguments(parser)
         access.add_pin_set_argument(parser, "io", 8, default=True)
-        for pin in cls.pins:
-            access.add_pin_argument(parser, pin, default=True)
+        access.add_pin_argument(parser, "cle", default=True)
+        access.add_pin_argument(parser, "ale", default=True)
+        access.add_pin_argument(parser, "re", default=True)
+        access.add_pin_argument(parser, "we", default=True)
+        access.add_pin_argument(parser, "r_b", default=True)
         access.add_pin_set_argument(parser, "ce", range(1, 5), default=2)
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(MemoryONFISubtarget(
-            pads=iface.get_deprecated_pads(args, pin_sets=self.pin_sets, pins=self.pins),
+            ports=iface.get_port_group(
+                io  = args.pin_set_io,
+                cle = args.pin_cle,
+                ale = args.pin_ale,
+                re  = args.pin_re,
+                we  = args.pin_we,
+                r_b = args.pin_r_b,
+                ce  = args.pin_set_ce
+            ),
             in_fifo=iface.get_in_fifo(auto_flush=False),
             out_fifo=iface.get_out_fifo(),
         ))
