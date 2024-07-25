@@ -2,6 +2,7 @@ import logging
 import asyncio
 import argparse
 from amaranth import *
+from amaranth.lib import io
 
 from ....support.endpoint import *
 from ....gateware.clockgen import *
@@ -41,10 +42,10 @@ class SigmaDeltaDACChannel(Elaboratable):
 
 
 class AudioDACSubtarget(Elaboratable):
-    def __init__(self, pads, out_fifo, pulse_cyc, sample_cyc, width, signed):
+    def __init__(self, ports, out_fifo, pulse_cyc, sample_cyc, width, signed):
         assert width in (1, 2)
 
-        self.pads = pads
+        self.ports = ports
         self.out_fifo = out_fifo
         self.pulse_cyc = pulse_cyc
         self.sample_cyc = sample_cyc
@@ -54,9 +55,11 @@ class AudioDACSubtarget(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
+        m.submodules.o_buffer = o_buffer = io.Buffer("o", self.ports.o)
+
         channels = [
             SigmaDeltaDACChannel(output, bits=self.width * 8, signed=self.signed)
-            for output in self.pads.o_t.o
+            for output in o_buffer.o
         ]
         m.submodules += channels
 
@@ -68,9 +71,9 @@ class AudioDACSubtarget(Elaboratable):
 
         with m.FSM():
             with m.State("STANDBY"):
-                m.d.sync += self.pads.o_t.oe.eq(0)
+                m.d.sync += o_buffer.oe.eq(0)
                 with m.If(self.out_fifo.r_rdy):
-                    m.d.sync += self.pads.o_t.oe.eq(1)
+                    m.d.sync += o_buffer.oe.eq(1)
                     m.next = "WAIT"
 
             with m.State("WAIT"):
@@ -145,8 +148,6 @@ class AudioDACApplet(GlasgowApplet):
         $ glasgow run audio-dac --pins-o 0,1 -r 48000 -w 2 -s connect tcp::12345
     """
 
-    __pin_sets = ("o",)
-
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
@@ -183,7 +184,7 @@ class AudioDACApplet(GlasgowApplet):
             # the oscillator on the board is imprecise, and with no additional error.
             max_deviation_ppm=0)
         subtarget = iface.add_subtarget(AudioDACSubtarget(
-            pads=iface.get_deprecated_pads(args, pin_sets=self.__pin_sets),
+            ports=iface.get_port_group(o = args.pin_set_o),
             out_fifo=iface.get_out_fifo(),
             pulse_cyc=pulse_cyc,
             sample_cyc=sample_cyc,
