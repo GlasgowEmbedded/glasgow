@@ -1,17 +1,18 @@
 import logging
 import math
 from amaranth import *
+from amaranth.lib import io
 from amaranth.lib.cdc import FFSynchronizer
 
 from ... import *
 
 
 class VideoRGBInputSubtarget(Elaboratable):
-    def __init__(self, rows, columns, vblank, pads, in_fifo, sys_clk_freq):
+    def __init__(self, rows, columns, vblank, ports, in_fifo, sys_clk_freq):
         self.rows = rows
         self.columns = columns
         self.vblank = vblank
-        self.pads = pads
+        self.ports = ports
         self.in_fifo = in_fifo
         self.sys_clk_freq = sys_clk_freq
 
@@ -22,11 +23,17 @@ class VideoRGBInputSubtarget(Elaboratable):
         gx    = Signal(5)
         bx    = Signal(5)
         dck   = Signal()
+
+        m.submodules.r_buffer   = r_buffer   = io.Buffer("i", self.ports.r)
+        m.submodules.g_buffer   = g_buffer   = io.Buffer("i", self.ports.g)
+        m.submodules.b_buffer   = b_buffer   = io.Buffer("i", self.ports.b)
+        m.submodules.dck_buffer = dck_buffer = io.Buffer("i", self.ports.dck)
+
         m.submodules += [
-            FFSynchronizer(self.pads.r_t.i, rx),
-            FFSynchronizer(self.pads.g_t.i, gx),
-            FFSynchronizer(self.pads.b_t.i, bx),
-            FFSynchronizer(self.pads.dck_t.i, dck)
+            FFSynchronizer(r_buffer.i, rx),
+            FFSynchronizer(g_buffer.i, gx),
+            FFSynchronizer(b_buffer.i, bx),
+            FFSynchronizer(dck_buffer.i, dck)
         ]
 
         dck_r = Signal()
@@ -158,7 +165,12 @@ class VideoRGBInputApplet(GlasgowApplet):
             rows=args.rows,
             columns=args.columns,
             vblank=args.vblank,
-            pads=iface.get_deprecated_pads(args, pins=("dck",), pin_sets=("r", "g", "b")),
+            ports=iface.get_port_group(
+                dck = args.pin_dck,
+                r   = args.pin_set_r,
+                g   = args.pin_set_g,
+                b   = args.pin_set_b
+            ),
             in_fifo=iface.get_in_fifo(depth=512 * 30, auto_flush=False),
             sys_clk_freq=target.sys_clk_freq,
         ))
