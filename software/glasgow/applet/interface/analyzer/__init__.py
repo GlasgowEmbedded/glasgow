@@ -2,6 +2,7 @@ import logging
 import argparse
 from vcd import VCDWriter
 from amaranth import *
+from amaranth.lib import io
 from amaranth.lib.cdc import FFSynchronizer
 
 from ....gateware.analyzer import *
@@ -9,20 +10,21 @@ from ... import *
 
 
 class AnalyzerSubtarget(Elaboratable):
-    def __init__(self, pads, in_fifo):
-        self.pads    = pads
+    def __init__(self, ports, in_fifo):
+        self.ports   = ports
         self.in_fifo = in_fifo
 
         self.analyzer = EventAnalyzer(in_fifo)
-        self.event_source = self.analyzer.add_event_source("pin", "change", len(pads.i_t.i))
+        self.event_source = self.analyzer.add_event_source("pin", "change", len(self.ports.i))
 
     def elaborate(self, platform):
         m = Module()
         m.submodules += self.analyzer
 
-        pins_i = Signal.like(self.pads.i_t.i)
-        pins_r = Signal.like(self.pads.i_t.i)
-        m.submodules += FFSynchronizer(self.pads.i_t.i, pins_i)
+        m.submodules.i_buffer = i_buffer = io.Buffer("i", self.ports.i)
+        pins_i = Signal.like(i_buffer.i)
+        pins_r = Signal.like(i_buffer.i)
+        m.submodules += FFSynchronizer(i_buffer.i, pins_i)
 
         m.d.sync += pins_r.eq(pins_i)
         m.d.comb += [
@@ -60,7 +62,7 @@ class AnalyzerApplet(GlasgowApplet):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(AnalyzerSubtarget(
-            pads=iface.get_deprecated_pads(args, pin_sets=("i",)),
+            ports=iface.get_port_group(i = args.pin_set_i),
             in_fifo=iface.get_in_fifo(),
         ))
 
