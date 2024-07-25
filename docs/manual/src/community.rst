@@ -64,3 +64,4 @@ The Glasgow project has been built by its many `contributors <https://github.com
 * `@electroniceel <https://github.com/electroniceel>`_ improved the hardware for revC2, designed the test jig and is working on advanced protection circuitry
 * `@Attie <https://github.com/attie>`_ improved and refactored many applets, hardware photos
 * `@mwkmwkmwk <https://github.com/mwkmwkmwk>`_ does important maintenance work to keep the codebase in good shape
+* `@isabelburgos <https://github.com/isabelburgos>`_ brought many applets up to date
