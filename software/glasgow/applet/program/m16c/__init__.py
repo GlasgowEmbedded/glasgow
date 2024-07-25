@@ -22,6 +22,7 @@ import asyncio
 import enum
 from contextlib import contextmanager
 from amaranth import *
+from amaranth.lib import io
 
 from ....support.logging import *
 from ....gateware.uart import *
@@ -70,8 +71,8 @@ class M16CBootloaderError(GlasgowAppletError):
 
 
 class ProgramM16CSubtarget(Elaboratable):
-    def __init__(self, pads, out_fifo, in_fifo, bit_cyc, reset, mode, max_bit_cyc):
-        self.pads     = pads
+    def __init__(self, ports, out_fifo, in_fifo, bit_cyc, reset, mode, max_bit_cyc):
+        self.ports    = ports
         self.out_fifo = out_fifo
         self.in_fifo  = in_fifo
 
@@ -79,7 +80,7 @@ class ProgramM16CSubtarget(Elaboratable):
         self.reset    = reset
         self.mode     = mode
 
-        self.uart     = UART(pads, bit_cyc=max_bit_cyc)
+        self.uart     = UART(ports, bit_cyc=max_bit_cyc)
 
     def elaborate(self, platform):
         m = Module()
@@ -97,18 +98,20 @@ class ProgramM16CSubtarget(Elaboratable):
             self.uart.tx_ack.eq(self.out_fifo.r_rdy),
         ]
 
-        if hasattr(self.pads, "reset_t"):
+        if self.ports.reset is not None:
+            m.submodules.reset_buffer = reset_buffer = io.Buffer("o", self.ports.reset)
             m.d.comb += [
                 # Active low reset.
-                self.pads.reset_t.o.eq(0),
-                self.pads.reset_t.oe.eq(self.reset),
+                reset_buffer.o.eq(0),
+                reset_buffer.oe.eq(self.reset),
             ]
 
-        if hasattr(self.pads, "cnvss_t"):
+        if self.ports.cnvss is not None:
+            m.submodules.cnvss_buffer = cnvss_buffer = io.Buffer("o", self.ports.cnvss)
             m.d.comb += [
                 # Active high bootloader enable (CNVSS).
-                self.pads.cnvss_t.o.eq(1),
-                self.pads.cnvss_t.oe.eq(self.mode),
+                cnvss_buffer.o.eq(1),
+                cnvss_buffer.oe.eq(self.mode),
             ]
 
         # There's also active low bootloader enable (MODE), but I'm not sure which chips use that,
@@ -317,8 +320,6 @@ class ProgramM16CApplet(GlasgowApplet):
     Mode 2. Consult the datasheet for details.
     """
 
-    __pins = ("rx", "tx", "reset", "cnvss") # "mode"
-
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
@@ -342,7 +343,12 @@ class ProgramM16CApplet(GlasgowApplet):
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(ProgramM16CSubtarget(
-            pads=iface.get_deprecated_pads(args, pins=self.__pins),
+            ports=iface.get_port_group(
+                rx    = args.pin_rx,
+                tx    = args.pin_tx,
+                reset = args.pin_reset,
+                cnvss = args.pin_cnvss
+            ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             bit_cyc=bit_cyc,
