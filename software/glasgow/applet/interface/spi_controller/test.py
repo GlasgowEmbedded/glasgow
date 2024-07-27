@@ -1,5 +1,6 @@
 import types
 from amaranth import *
+from amaranth.lib import io
 
 from ... import *
 from . import SPIControllerApplet
@@ -14,8 +15,9 @@ class SPIControllerAppletTestCase(GlasgowAppletTestCase, applet=SPIControllerApp
     def setup_loopback(self):
         self.build_simulated_applet()
         mux_iface = self.applet.mux_interface
+        ports = mux_iface._subtargets[0].ports
         m = Module()
-        m.d.comb += mux_iface.pads.cipo_t.i.eq(mux_iface.pads.copi_t.o)
+        m.d.comb += ports.cipo.i.eq(ports.copi.o)
         self.target.add_submodule(m)
 
     @applet_simulation_test("setup_loopback",
@@ -27,7 +29,8 @@ class SPIControllerAppletTestCase(GlasgowAppletTestCase, applet=SPIControllerApp
         mux_iface = self.applet.mux_interface
         spi_iface = yield from self.run_simulated_applet()
 
-        self.assertEqual((yield mux_iface.pads.cs_t.o), 1)
+        ports = mux_iface._subtargets[0].ports
+        self.assertEqual((yield ports.cs.o), 1)
         result = yield from spi_iface.exchange([0xAA, 0x55, 0x12, 0x34])
         self.assertEqual(result, bytearray([0xAA, 0x55, 0x12, 0x34]))
-        self.assertEqual((yield mux_iface.pads.cs_t.o), 1)
+        self.assertEqual((yield ports.cs.o), 1)

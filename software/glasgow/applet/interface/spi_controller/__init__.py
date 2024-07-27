@@ -3,6 +3,7 @@ import struct
 import logging
 import contextlib
 from amaranth import *
+from amaranth.lib import io
 from amaranth.lib.cdc import FFSynchronizer
 
 from ....support.logging import *
@@ -11,8 +12,8 @@ from ... import *
 
 
 class SPIControllerBus(Elaboratable):
-    def __init__(self, pads, sck_idle, sck_edge):
-        self.pads = pads
+    def __init__(self, ports, sck_idle, sck_edge):
+        self.ports = ports
         self.sck_idle = sck_idle
         self.sck_edge = sck_edge
 
@@ -29,22 +30,30 @@ class SPIControllerBus(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
+        m.submodules.sck_buffer = sck_buffer = io.Buffer("o", self.ports.sck)
+
         m.d.comb += [
-            self.pads.sck_t.oe.eq(self.oe),
-            self.pads.sck_t.o.eq(self.sck),
+            sck_buffer.oe.eq(self.oe),
+            sck_buffer.o.eq(self.sck),
         ]
-        if hasattr(self.pads, "cs_t"):
-            m.d.comb += [
-                self.pads.cs_t.oe.eq(1),
-                self.pads.cs_t.o.eq(~self.cs),
-            ]
-        if hasattr(self.pads, "copi_t"):
-            m.d.comb += [
-                self.pads.copi_t.oe.eq(self.oe),
-                self.pads.copi_t.o.eq(self.copi)
-            ]
-        if hasattr(self.pads, "cipo_t"):
-            m.submodules += FFSynchronizer(self.pads.cipo_t.i, self.cipo)
+
+        if hasattr(self.ports, "cs"):
+            if self.ports.cs is not None:
+                m.submodules.cs_buffer = cs_buffer = io.Buffer("o", self.ports.cs)
+                m.d.comb += cs_buffer.o.eq(~self.cs),
+
+        if hasattr(self.ports, "copi"):
+            if self.ports.copi is not None:
+                m.submodules.copi_buffer = copi_buffer = io.Buffer("o", self.ports.copi)
+                m.d.comb += [
+                    copi_buffer.oe.eq(self.oe),
+                    copi_buffer.o.eq(self.copi)
+                ]
+
+        if hasattr(self.ports, "cipo"):
+            if self.ports.cipo is not None:
+                m.submodules.cipo_buffer = cipo_buffer = io.Buffer("i", self.ports.cipo)
+                m.submodules += FFSynchronizer(cipo_buffer.i, self.cipo)
 
         sck_r = Signal()
         m.d.sync += sck_r.eq(self.sck)
@@ -76,15 +85,15 @@ BIT_DATA_IN  =     0b0010
 
 
 class SPIControllerSubtarget(Elaboratable):
-    def __init__(self, pads, out_fifo, in_fifo, period_cyc, delay_cyc,
+    def __init__(self, ports, out_fifo, in_fifo, period_cyc, delay_cyc,
                  sck_idle, sck_edge):
-        self.pads = pads
+        self.ports = ports
         self.out_fifo = out_fifo
         self.in_fifo = in_fifo
         self.period_cyc = period_cyc
         self.delay_cyc = delay_cyc
 
-        self.bus = SPIControllerBus(pads, sck_idle, sck_edge)
+        self.bus = SPIControllerBus(ports, sck_idle, sck_edge)
 
     def elaborate(self, platform):
         m = Module()
@@ -301,8 +310,6 @@ class SPIControllerApplet(GlasgowApplet):
     Initiate transactions on the SPI bus.
     """
 
-    __pins = ("sck", "cs", "copi", "cipo")
-
     @classmethod
     def add_build_arguments(cls, parser, access, omit_pins=False):
         super().add_build_arguments(parser, access)
@@ -324,10 +331,15 @@ class SPIControllerApplet(GlasgowApplet):
             default="rising",
             help="latch data at clock edge EDGE (default: %(default)s)")
 
-    def build_subtarget(self, target, args, pins=__pins):
+    def build_subtarget(self, target, args):
         iface = self.mux_interface
         return SPIControllerSubtarget(
-            pads=iface.get_deprecated_pads(args, pins=pins),
+            ports=iface.get_port_group(
+                sck  = args.pin_sck,
+                cs   = args.pin_cs if hasattr(args, "pin_cs") else None,
+                copi = args.pin_copi if hasattr(args, "pin_copi") else None,
+                cipo = args.pin_cipo if hasattr(args, "pin_cipo") else None
+            ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
             period_cyc=self.derive_clock(input_hz=target.sys_clk_freq,
