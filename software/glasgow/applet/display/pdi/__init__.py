@@ -389,14 +389,18 @@ class DisplayPDIApplet(GlasgowApplet):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
 
         ports = iface.get_port_group(
-            power=args.pin_power,
-            disch=args.pin_disch,
-            pwm=args.pin_pwm,
-            reset=args.pin_reset,
+            power = args.pin_power,
+            disch = args.pin_disch,
+            reset = args.pin_reset,
+            cs    = args.pin_cs,
+            sck   = args.pin_sck,
+            cipo  = args.pin_cipo,
+            copi  = args.pin_copi,
+            pwm   = args.pin_pwm,
         )
 
         controller = SPIControllerSubtarget(
-            pads=iface.get_deprecated_pads(args, pins=("cs", "sck", "cipo", "copi")),
+            ports=ports,
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
             period_cyc=math.ceil(target.sys_clk_freq / 5e6),
