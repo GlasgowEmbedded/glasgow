@@ -6,6 +6,7 @@ import asyncio
 import logging
 import argparse
 from amaranth import *
+from amaranth.lib import io
 
 from ....support.logging import *
 from ....support.bits import *
@@ -20,20 +21,18 @@ class RadioNRF24L01Error(GlasgowAppletError):
 
 
 class RadioNRF24L01Subtarget(Elaboratable):
-    def __init__(self, controller, ce_t, dut_ce):
+    def __init__(self, controller, port_ce, dut_ce):
         self.controller = controller
-        self.ce_t = ce_t
+        self.port_ce = port_ce
         self.dut_ce = dut_ce
 
     def elaborate(self, platform):
         m = Module()
 
         m.submodules.controller = self.controller
-
-        m.d.comb += [
-            self.ce_t.o.eq(self.dut_ce),
-            self.ce_t.oe.eq(1),
-        ]
+        
+        m.submodules.ce_buffer = ce_buffer = io.Buffer("o", self.port_ce)
+        m.d.comb += ce_buffer.o.eq(self.dut_ce)
 
         return m
 
@@ -198,8 +197,6 @@ class RadioNRF24L01Applet(GlasgowApplet):
          CIPO * * IRQ
     """
 
-    __pins = ("ce", "cs", "sck", "copi", "cipo", "irq")
-
     @classmethod
     def add_build_arguments(cls, parser, access):
         access.add_build_arguments(parser)
@@ -220,10 +217,17 @@ class RadioNRF24L01Applet(GlasgowApplet):
         dut_ce, self.__addr_dut_ce = target.registers.add_rw(1)
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        pads = iface.get_deprecated_pads(args, pins=self.__pins)
+        ports=iface.get_port_group(
+                ce   = args.pin_ce,
+                cs   = args.pin_cs,
+                sck  = args.pin_sck,
+                copi = args.pin_copi,
+                cipo = args.pin_cipo,
+                irq  = args.pin_irq
+            )
 
         controller = SPIControllerSubtarget(
-            pads=pads,
+            ports=ports,
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             period_cyc=math.ceil(target.sys_clk_freq / (args.frequency * 1000)),
@@ -232,7 +236,7 @@ class RadioNRF24L01Applet(GlasgowApplet):
             sck_edge="rising",
         )
 
-        subtarget = RadioNRF24L01Subtarget(controller, pads.ce_t, dut_ce)
+        subtarget = RadioNRF24L01Subtarget(controller, ports.ce, dut_ce)
 
         return iface.add_subtarget(subtarget)
 
