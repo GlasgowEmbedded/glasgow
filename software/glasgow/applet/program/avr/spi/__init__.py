@@ -4,6 +4,7 @@
 import math
 import logging
 from amaranth import *
+from amaranth.lib import io
 
 from ....interface.spi_controller import SPIControllerSubtarget, SPIControllerInterface
 from .... import *
@@ -11,20 +12,20 @@ from .. import *
 
 
 class ProgramAVRSPISubtarget(Elaboratable):
-    def __init__(self, controller, reset_t, dut_reset):
+    def __init__(self, controller, port_reset, dut_reset):
         self.controller = controller
-        self.reset_t = reset_t
+        self.port_reset = port_reset
         self.dut_reset = dut_reset
 
     def elaborate(self, platform):
         m = Module()
 
         m.submodules.controller = self.controller
+        m.submodules.reset_buffer = reset_buffer = io.Buffer("o", self.port_reset)
 
         m.d.comb += [
             self.controller.bus.oe.eq(self.dut_reset),
-            self.reset_t.oe.eq(1),
-            self.reset_t.o.eq(~self.dut_reset)
+            reset_buffer.o.eq(~self.dut_reset)
         ]
 
         return m
@@ -217,8 +218,6 @@ class ProgramAVRSPIApplet(ProgramAVRApplet):
     {ProgramAVRApplet.description}
     """
 
-    __pins = ("reset", "sck", "cipo", "copi")
-
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
@@ -234,8 +233,15 @@ class ProgramAVRSPIApplet(ProgramAVRApplet):
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
+        ports=iface.get_port_group(
+                reset = args.pin_reset,
+                sck   = args.pin_sck,
+                cipo  = args.pin_cipo,
+                copi  = args.pin_copi
+            )
+
         controller = SPIControllerSubtarget(
-            pads=iface.get_deprecated_pads(args, pins=self.__pins),
+            ports=ports,
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
             period_cyc=math.ceil(target.sys_clk_freq / (args.frequency * 1000)),
@@ -247,7 +253,7 @@ class ProgramAVRSPIApplet(ProgramAVRApplet):
         dut_reset, self.__addr_dut_reset = target.registers.add_rw(1)
         return iface.add_subtarget(ProgramAVRSPISubtarget(
             controller=controller,
-            reset_t=iface.pads.reset_t,
+            port_reset=ports.reset,
             dut_reset=dut_reset
         ))
 
