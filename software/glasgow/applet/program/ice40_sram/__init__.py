@@ -6,31 +6,35 @@ import argparse
 import asyncio
 import logging
 from amaranth import *
+from amaranth.lib import io
 
 from ...interface.spi_controller import SPIControllerApplet
 from ... import *
 
 
 class ProgramICE40SRAMSubtarget(Elaboratable):
-    def __init__(self, controller, reset_t, dut_reset, done_t, dut_done):
+    def __init__(self, controller, port_reset, dut_reset, port_done, dut_done):
         self.controller = controller
-        self.reset_t = reset_t
-        self.dut_reset = dut_reset
-        self.done_t = done_t
-        self.dut_done = dut_done
+        self.port_reset = port_reset
+        self.dut_reset  = dut_reset
+        self.port_done  = port_done
+        self.dut_done   = dut_done
 
     def elaborate(self, platform):
         m = Module()
 
         m.submodules.controller = self.controller
 
+        m.submodules.reset_buffer = reset_buffer = io.Buffer("o", self.port_reset)
+
         m.d.comb += [
-            self.reset_t.o.eq(0),
-            self.reset_t.oe.eq(self.dut_reset)
+            reset_buffer.o.eq(0),
+            reset_buffer.oe.eq(self.dut_reset)
         ]
 
-        if self.done_t is not None:
-            m.d.comb += self.dut_done.eq(self.done_t.i)
+        if self.port_done is not None:
+            m.submodules.done_buffer = done_buffer = io.Buffer("i", self.port_done)
+            m.d.comb += self.dut_done.eq(done_buffer.i)
 
         return m
 
@@ -89,20 +93,20 @@ class ProgramICE40SRAMApplet(SPIControllerApplet):
         access.add_pin_argument(parser, "done")
 
     def build_subtarget(self, target, args):
-        subtarget = super().build_subtarget(target, args, pins=("sck", "cs", "copi"))
+        subtarget = super().build_subtarget(target, args)
 
-        reset_t = self.mux_interface.get_deprecated_pad(args.pin_reset)
+        port_reset = self.mux_interface.get_port(args.pin_reset, name="reset")
         dut_reset, self.__addr_dut_reset = target.registers.add_rw(1)
 
         if args.pin_done is not None:
-            done_t = self.mux_interface.get_deprecated_pad(args.pin_done)
+            port_done = self.mux_interface.get_port(args.pin_done, name="done")
             dut_done, self.__addr_dut_done = target.registers.add_ro(1)
         else:
-            done_t = None
+            port_done = None
             dut_done = None
             self.__addr_dut_done = None
 
-        return ProgramICE40SRAMSubtarget(subtarget, reset_t, dut_reset, done_t, dut_done)
+        return ProgramICE40SRAMSubtarget(subtarget, port_reset, dut_reset, port_done, dut_done)
 
     @classmethod
     def add_interact_arguments(cls, parser):
