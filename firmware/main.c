@@ -460,8 +460,7 @@ void handle_pending_usb_setup() {
     pending_setup = false;
 
     if(!arg_chip) {
-      STALL_EP0();
-      return;
+      goto stall_ep0_return;
     }
 
     while(arg_len > 0) {
@@ -470,8 +469,7 @@ void handle_pending_usb_setup() {
       if(arg_read) {
         while(EP0CS & _BUSY);
         if(!eeprom_read(arg_chip, arg_addr, EP0BUF, chunk_len, /*double_byte=*/true)) {
-          STALL_EP0();
-          break;
+          goto stall_ep0_return;
         }
         SETUP_EP0_BUF(chunk_len);
       } else {
@@ -479,8 +477,7 @@ void handle_pending_usb_setup() {
         while(EP0CS & _BUSY);
         if(!eeprom_write(arg_chip, arg_addr, EP0BUF, chunk_len, /*double_byte=*/true,
                          page_size, timeout)) {
-          STALL_EP0();
-          break;
+          goto stall_ep0_return;
         }
       }
 
@@ -515,8 +512,7 @@ void handle_pending_usb_setup() {
       }
     }
 
-    STALL_EP0();
-    return;
+    goto stall_ep0_return;
   }
 
   // Device status request
@@ -580,7 +576,7 @@ void handle_pending_usb_setup() {
         while(EP0CS & _BUSY);
         xmemcpy(glasgow_config.bitstream_id, EP0BUF, CONFIG_SIZE_BITSTREAM_ID);
       } else {
-        STALL_EP0();
+        goto stall_ep0_return;
       }
     }
 
@@ -599,7 +595,7 @@ void handle_pending_usb_setup() {
     if(arg_get) {
       while(EP0CS & _BUSY);
       if(!iobuf_get_voltage(arg_mask, (__xdata uint16_t *)EP0BUF)) {
-        STALL_EP0();
+        goto stall_ep0_return;
       } else {
         SETUP_EP0_BUF(2);
       }
@@ -630,7 +626,7 @@ void handle_pending_usb_setup() {
       result = iobuf_measure_voltage_adc081c(arg_mask, (__xdata uint16_t *)EP0BUF);
 
     if(!result) {
-      STALL_EP0();
+      goto stall_ep0_return;
     } else {
       SETUP_EP0_BUF(2);
     }
@@ -657,7 +653,7 @@ void handle_pending_usb_setup() {
         result = iobuf_get_alert_adc081c(arg_mask, (__xdata uint16_t *)EP0BUF, (__xdata uint16_t *)EP0BUF + 1);
 
       if(!result) {
-        STALL_EP0();
+        goto stall_ep0_return;
       } else {
         SETUP_EP0_BUF(4);
       }
@@ -694,7 +690,7 @@ void handle_pending_usb_setup() {
       result = iobuf_poll_alert_adc081c(EP0BUF, /*clear=*/true);
 
     if(!result) {
-      STALL_EP0();
+      goto stall_ep0_return;
     } else {
       SETUP_EP0_BUF(1);
       // Clear the ERR led since we cleared the alert status above
@@ -729,7 +725,7 @@ void handle_pending_usb_setup() {
     if(arg_get) {
       while(EP0CS & _BUSY);
       if(!iobuf_get_voltage_limit(arg_mask, (__xdata uint16_t *)EP0BUF)) {
-        STALL_EP0();
+        goto stall_ep0_return;
       } else {
         SETUP_EP0_BUF(2);
       }
@@ -767,7 +763,7 @@ void handle_pending_usb_setup() {
          !iobuf_get_pull(arg_selector,
                          (__xdata uint8_t *)EP0BUF + 0,
                          (__xdata uint8_t *)EP0BUF + 1)) {
-        STALL_EP0();
+        goto stall_ep0_return;
       } else {
         SETUP_EP0_BUF(2);
       }
@@ -783,6 +779,10 @@ void handle_pending_usb_setup() {
     }
 
     return;
+
+    // Factor out the stall exit to reduce code size.
+stall_ep0_return:
+    STALL_EP0();
   }
 
   // LED test mode request
