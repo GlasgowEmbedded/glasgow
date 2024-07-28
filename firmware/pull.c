@@ -73,3 +73,7 @@ bool iobuf_get_pull(uint8_t selector, __xdata uint8_t *enable, __xdata uint8_t *
   *enable = ~*enable;
   return true;
 }
+
+bool iobuf_get_input(uint8_t selector, __xdata uint8_t *value) {
+  return pull_read(selector, TCA9534_CMD_INPUT_PORT, value);
+}

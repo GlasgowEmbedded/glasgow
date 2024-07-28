@@ -759,13 +759,23 @@ void handle_pending_usb_setup() {
 
     if(arg_get) {
       while(EP0CS & _BUSY);
-      if(glasgow_config.revision < GLASGOW_REV_C0 ||
-         !iobuf_get_pull(arg_selector,
+      if(glasgow_config.revision < GLASGOW_REV_C0) {
+        goto stall_ep0_return;
+      }
+      if (req->wIndex & 0x100) {
+        if (!iobuf_get_input(arg_selector, (__xdata uint8_t *)EP0BUF + 0)) {
+          goto stall_ep0_return;
+        } else {
+          SETUP_EP0_BUF(1);
+        }
+      } else {
+        if (!iobuf_get_pull(arg_selector,
                          (__xdata uint8_t *)EP0BUF + 0,
                          (__xdata uint8_t *)EP0BUF + 1)) {
-        goto stall_ep0_return;
-      } else {
-        SETUP_EP0_BUF(2);
+          goto stall_ep0_return;
+        } else {
+          SETUP_EP0_BUF(2);
+        }
       }
     } else {
       SETUP_EP0_BUF(2);
