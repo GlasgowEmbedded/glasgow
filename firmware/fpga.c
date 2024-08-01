@@ -10,13 +10,13 @@ void fpga_init() {
 
 // Also sets the LED status, for code size reasons.
 bool fpga_is_ready() {
-  if(IOA & (1 << PINA_CDONE)) {
+  if(IO_CDONE) {
     if (!test_leds)
-      IOD |=  (1<<PIND_LED_ICE);
+      IO_LED_ICE = 1;
     return true;
   } else {
     if (!test_leds)
-      IOD &= ~(1<<PIND_LED_ICE);
+      IO_LED_ICE = 0;
     return false;
   }
 }
@@ -27,9 +27,9 @@ void fpga_reset() {
     case GLASGOW_REV_B:
       // Reset the FPGA.
       OED |=  (1<<PIND_CRESET_N_REVAB);
-      IOD &= ~(1<<PIND_CRESET_N_REVAB);
+      IO_CRESET_N_REVAB = 0;
       delay_us(1);
-      IOD |=  (1<<PIND_CRESET_N_REVAB);
+      IO_CRESET_N_REVAB = 1;
       break;
 
     case GLASGOW_REV_C0:
@@ -52,10 +52,10 @@ void fpga_reset() {
       delay_ms(250);
 
       // Reset the FPGA now that it's safe to do so.
-      OEA |=  (1<<PINA_CRESET_N_REVC);
-      IOA &= ~(1<<PINA_CRESET_N_REVC);
+      OEA |= (1<<PINA_CRESET_N_REVC);
+      IO_CRESET_N_REVC = 0;
       delay_us(1);
-      IOA |=  (1<<PINA_CRESET_N_REVC);
+      IO_CRESET_N_REVC = 1;
       break;
     }
   }
@@ -69,8 +69,8 @@ void fpga_reset() {
   // Enable FPGA configuration interface.
   OEA &= ~(1<<PINA_CDONE);
   OEB |=  (1<<PINB_SCK)|(1<<PINB_SS_N)|(1<<PINB_SI);
-  IOB |=  (1<<PINB_SCK);
-  IOB &= ~(1<<PINB_SS_N);
+  IO_SCK = 1;
+  IO_SS_N = 0;
 
   // Wait for FPGA to initialize. This is specified as 800 us for the UP5K FPGA on revAB, and
   // 1200 us for the HX8K FPGA on revC.

@@ -15,17 +15,19 @@ static const struct buffer_desc buffers[] = {
 
 void iobuf_init_dac_ldo() {
   // Configure I/O buffer pins as open-source/open-drain; they have 100k pulls
-  IOD  = IOD & ~((1<<PIND_ENVA)|(1<<PIND_ENVB)) | (1<<PIND_OEQ_N_REVAB);
+  IO_ENVA = 0;
+  IO_ENVB = 0;
+  IO_OEQ_N_REVAB = 1;
   OED |=        ((1<<PIND_ENVA)|(1<<PIND_ENVB)  | (1<<PIND_OEQ_N_REVAB));
 
   // Enable I/O buffers, just existing on revAB
-  IOD &= ~ (1<<PIND_OEQ_N_REVAB);
+  IO_OEQ_N_REVAB = 0;
 }
 
 void iobuf_enable(bool on) {
   // I/O buffers just existing on revAB, pin is unconnected on revC
-  if(on) IOD &= ~(1<<PIND_OEQ_N_REVAB);
-  else   IOD |=  (1<<PIND_OEQ_N_REVAB);
+  if(on) IO_OEQ_N_REVAB = 0;
+  else   IO_OEQ_N_REVAB = 1;
 }
 
 static bool dac_start(uint8_t mask, bool read) {

@@ -323,9 +323,9 @@ static uint8_t status;
 static void update_err_led() {
   if(!test_leds) {
     if(status & (ST_ERROR | ST_ALERT))
-      IOD |=  (1<<PIND_LED_ERR);
+      IO_LED_ERR = 1;
     else
-      IOD &= ~(1<<PIND_LED_ERR);
+      IO_LED_ERR = 0;
   }
 }
 
@@ -881,14 +881,14 @@ void handle_pending_alert() {
 
 void isr_TF2() __interrupt(_INT_TF2) {
   if (!test_leds)
-    IOD &= ~(1<<PIND_LED_ACT);
+    IO_LED_ACT = 0;
   TR2 = false;
   TF2 = false;
 }
 
 static void isr_EPn() __interrupt {
   if (!test_leds)
-    IOD |= (1<<PIND_LED_ACT);
+    IO_LED_ACT = 1;
   // Just let it run, at the maximum reload value we get a pulse width of around 16ms.
   TR2 = true;
   // Clear all EPn IRQs, since we don't really need this IRQ to be fine-grained.
@@ -933,7 +933,7 @@ int main() {
 
   // Set up LEDs.
   OED |= (1<<PIND_LED_FX2)|(1<<PIND_LED_ACT)|(1<<PIND_LED_ERR);
-  IOD |= (1<<PIND_LED_FX2);
+  IO_LED_FX2 = 1;
   IOD &=                 ~((1<<PIND_LED_ACT)|(1<<PIND_LED_ERR));
 
   // Use timer 2 in 16-bit timer mode for ACT LED.
@@ -953,7 +953,7 @@ int main() {
     uint16_t addr = 0;
 
     // Loading the bitstream over I2C can take up to five seconds.
-    IOD |=  (1<<PIND_LED_ACT);
+    IO_LED_ACT = 1;
 
     fpga_reset();
     while(length > 0) {
@@ -984,7 +984,7 @@ int main() {
         latch_status_bit(ST_ERROR);
     }
 
-    IOD &= ~(1<<PIND_LED_ACT);
+    IO_LED_ACT = 0;
   }
 
   // Finally, enumerate.
@@ -1007,14 +1007,14 @@ int main() {
         // If no address is assigned, slowly breathe. (Or, during enumeration, abruptly
         // blink. That's okay though.)
         switch (USBFRAMEH >> 1) {
-          case 0b00: IOD |=  (1<<PIND_LED_FX2); break;
-          case 0b01: IOD ^=  (1<<PIND_LED_FX2); break;
-          case 0b10: IOD &= ~(1<<PIND_LED_FX2); break;
-          case 0b11: IOD ^=  (1<<PIND_LED_FX2); break;
+          case 0b00: IO_LED_FX2 = 1; break;
+          case 0b10: IO_LED_FX2 = 0; break;
+          case 0b01:
+          case 0b11: IO_LED_FX2 ^= 1; break;
         }
       } else {
         // Got plugged in, light up permanently.
-        IOD |= (1<<PIND_LED_FX2);
+        IO_LED_FX2 = 1;
       }
     }
   }
