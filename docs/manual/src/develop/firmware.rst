@@ -61,19 +61,19 @@ The firmware can only be built on a Unix-like system; to develop the firmware on
 
     .. code:: console
 
-        $ sudo apt install -y --no-install-recommends make sdcc
+        $ sudo apt install -y --no-install-recommends make sdcc git python3-usb1
 
 .. tab:: Arch
 
     .. code:: console
 
-        $ sudo pacman -Sy make sdcc
+        $ sudo pacman -Sy make sdcc git python-libusb1
 
 .. tab:: Fedora
 
     .. code:: console
 
-        $ sudo dnf install -y make sdcc
+        $ sudo dnf install -y make sdcc git python3-libusb1
 
 The source code of the chip support library `libfx2`_ used by the firmware is included in the Glasgow repository as a `git submodule`_. Make sure it is checked out at the appropriate revision and compiled:
 
