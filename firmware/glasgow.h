@@ -49,6 +49,30 @@ enum {
 #define PIND_ENVB             6
 #define PIND_OEQ_N_REVAB      7
 
+// Set up aliases for all of the GPIO pins accessible by `setb` and `clr`
+// to reduce code size.
+#define CONCAT(a, b) a ## b
+#define IO_A(number) CONCAT(PA, number)
+#define IO_B(number) CONCAT(PB, number)
+#define IO_D(number) CONCAT(PD, number)
+
+#define IO_ALERT_N        IO_A(PINA_ALERT_N)
+#define IO_CDONE          IO_A(PINA_CDONE)
+#define IO_CRESET_N_REVC  IO_A(PINA_CRESET_N_REVC)
+
+#define IO_SI             IO_B(PINB_SI)
+#define IO_SS_N           IO_B(PINB_SS_N)
+#define IO_SCK            IO_B(PINB_SCK)
+
+#define IO_ENVA           IO_D(PIND_ENVA)
+#define IO_CRESET_N_REVAB IO_D(PIND_CRESET_N_REVAB)
+#define IO_LED_FX2        IO_D(PIND_LED_FX2)
+#define IO_LED_ICE        IO_D(PIND_LED_ICE)
+#define IO_LED_ACT        IO_D(PIND_LED_ACT)
+#define IO_LED_ERR        IO_D(PIND_LED_ERR)
+#define IO_ENVB           IO_D(PIND_ENVB)
+#define IO_OEQ_N_REVAB    IO_D(PIND_OEQ_N_REVAB)
+
 enum {
   // I2C addresses (unshifted)
   I2C_ADDR_FPGA            = 0b0001000,

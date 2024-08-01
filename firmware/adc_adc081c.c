@@ -146,7 +146,7 @@ bool iobuf_get_alert_adc081c(uint8_t selector,
 }
 
 bool iobuf_is_alerted_adc081c() {
-  return !(IOA & (1<<PINA_ALERT_N));
+  return !(IO_ALERT_N);
 }
 
 bool iobuf_poll_alert_adc081c(__xdata uint8_t *mask, bool clear) {
