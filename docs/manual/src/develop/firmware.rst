@@ -73,7 +73,7 @@ The firmware can only be built on a Unix-like system; to develop the firmware on
 
     .. code:: console
 
-        $ sudo dnf install -y make sdcc git python3-libusb1
+        $ sudo dnf install -y make sdcc git python3-libusb1 libusb1
 
 The source code of the chip support library `libfx2`_ used by the firmware is included in the Glasgow repository as a `git submodule`_. Make sure it is checked out at the appropriate revision and compiled:
 
