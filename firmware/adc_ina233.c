@@ -170,10 +170,7 @@ bool iobuf_get_alert_ina233(uint8_t selector,
       if(!i2c_reg8_read(buffer->address, INA233_REG_VIN_UV_WARN_LIMIT, code_bytes, 2))
         return false;
 
-      if (code_bytes[0] == 0 && code_bytes[1] == 0)
-        *low_millivolts = 0;
-      else
-        *low_millivolts = code_bytes_to_millivolts_ina233(code_bytes);
+      *low_millivolts = code_bytes_to_millivolts_ina233(code_bytes);
 
       if(!i2c_reg8_read(buffer->address, INA233_REG_VIN_OV_WARN_LIMIT, code_bytes, 2))
         return false;
