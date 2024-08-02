@@ -408,7 +408,7 @@ uint16_t bitstream_idx;
 
 void handle_pending_usb_setup() {
   __xdata struct usb_req_setup *req = (__xdata struct usb_req_setup *)SETUPDAT;
-  bool req_dir_in = (req->bmRequestType & USB_DIR_IN);
+  register bool req_dir_in = (req->bmRequestType & USB_DIR_IN);
 
   if(req->bmRequestType != (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_IN) &&
      req->bmRequestType != (USB_RECIP_DEVICE|USB_TYPE_VENDOR|USB_DIR_OUT)) {
