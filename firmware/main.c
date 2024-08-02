@@ -779,10 +779,6 @@ void handle_pending_usb_setup() {
     }
 
     return;
-
-    // Factor out the stall exit to reduce code size.
-stall_ep0_return:
-    STALL_EP0();
   }
 
   // LED test mode request
@@ -833,6 +829,8 @@ stall_ep0_return:
     return;
   }
 
+  // Factor out the stall exit to reduce code size.
+stall_ep0_return:
   STALL_EP0();
 }
 
