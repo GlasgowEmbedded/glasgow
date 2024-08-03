@@ -816,6 +816,7 @@ void handle_pending_usb_setup() {
 
   // Factor out the stall exit to reduce code size.
 stall_ep0_return:
+  pending_setup = false;
   STALL_EP0();
 }
 
