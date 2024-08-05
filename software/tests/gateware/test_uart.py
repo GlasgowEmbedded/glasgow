@@ -8,15 +8,12 @@ from glasgow.gateware.uart import UART
 
 class UARTTestbench(Elaboratable):
     def __init__(self):
-        self.rx_t = io.Buffer.Signature('i', 1).create()
-        self.rx_i = self.rx_t.i
-
-        self.tx_t = io.Buffer.Signature('o', 1).create()
-        self.tx_o = self.tx_t.o
+        self.rx = io.SimulationPort("i", 1)
+        self.tx = io.SimulationPort("o", 1)
 
         self.bit_cyc = 4
 
-        self.dut = UART(pads=self, bit_cyc=self.bit_cyc)
+        self.dut = UART(ports=self, bit_cyc=self.bit_cyc)
 
     def elaborate(self, platform):
         return self.dut
@@ -38,7 +35,7 @@ class UARTRXTestCase(unittest.TestCase):
             self.assertTrue(has_err)
 
     def bit(self, tb, bit):
-        yield tb.rx_i.eq(bit)
+        yield tb.rx.i.eq(bit)
         yield from self.cyc(tb)
 
     def start(self, tb):
@@ -111,14 +108,14 @@ class UARTRXTestCase(unittest.TestCase):
         yield from self.start(tb)
         for bit in [1, 1, 1, 1, 1, 1, 1, 1]:
             yield from self.data(tb, bit)
-        yield tb.rx_i.eq(0)
+        yield tb.rx.i.eq(0)
         yield # CDC latency
         yield from self.cyc(tb, err=tb.dut.rx_ferr)
 
     @simulation_test
     def test_rx_ovf(self, tb):
         yield from self.byte(tb, [1, 0, 1, 0, 0, 1, 0, 1])
-        yield tb.rx_i.eq(0)
+        yield tb.rx.i.eq(0)
         yield # CDC latency
         yield
         yield
@@ -144,10 +141,10 @@ class UARTTXTestCase(unittest.TestCase):
 
     def bit(self, tb, bit):
         yield from self.cyc(tb)
-        self.assertEqual((yield tb.tx_o), bit)
+        self.assertEqual((yield tb.tx.o), bit)
 
     def start(self, tb, data):
-        self.assertEqual((yield tb.tx_o), 1)
+        self.assertEqual((yield tb.tx.o), 1)
         self.assertEqual((yield tb.dut.tx_rdy), 1)
         yield tb.dut.tx_data.eq(data)
         yield tb.dut.tx_ack.eq(1)
@@ -155,9 +152,9 @@ class UARTTXTestCase(unittest.TestCase):
         yield tb.dut.tx_ack.eq(0)
         yield
         self.assertEqual((yield tb.dut.tx_rdy), 0)
-        self.assertEqual((yield tb.tx_o), 0)
+        self.assertEqual((yield tb.tx.o), 0)
         yield from self.half_cyc(tb)
-        self.assertEqual((yield tb.tx_o), 0)
+        self.assertEqual((yield tb.tx.o), 0)
 
     def data(self, tb, bit):
         self.assertEqual((yield tb.dut.tx_rdy), 0)

@@ -1,4 +1,5 @@
 from amaranth import *
+from amaranth.lib import io
 from amaranth.lib.cdc import FFSynchronizer
 
 
@@ -11,26 +12,30 @@ class UARTBus(Elaboratable):
 
     Provides synchronization.
     """
-    def __init__(self, pads):
-        self.has_rx = hasattr(pads, "rx_t")
-        if self.has_rx:
-            self.rx_t = pads.rx_t
-            self.rx_i = Signal()
-
-        self.has_tx = hasattr(pads, "tx_t")
-        if self.has_tx:
-            self.tx_t = pads.tx_t
-            self.tx_o = Signal(init=1)
+    def __init__(self, ports):
+        self.ports = ports
+        
+        self.has_rx = self.has_tx = False
+        if hasattr(ports, "rx"):
+            if ports.rx is not None:
+                self.has_rx = True
+                self.rx_i = Signal()
+        
+        if hasattr(ports, "tx"):
+            if ports.tx is not None:
+                self.has_tx = True
+                self.tx_o = Signal(init=1)
 
     def elaborate(self, platform):
         m = Module()
 
         if self.has_tx:
-            m.d.comb += self.tx_t.oe.eq(1)
-            m.d.comb += self.tx_t.o.eq(self.tx_o)
+            m.submodules.tx_buffer = tx_buffer = io.Buffer("o", self.ports.tx)
+            m.d.comb += tx_buffer.o.eq(self.tx_o)
 
         if self.has_rx:
-            m.submodules += FFSynchronizer(self.rx_t.i, self.rx_i, init=1)
+            m.submodules.rx_buffer = rx_buffer = io.Buffer("i", self.ports.rx)
+            m.submodules += FFSynchronizer(rx_buffer.i, self.rx_i, init=1)
 
         return m
 
@@ -85,7 +90,7 @@ class UART(Elaboratable):
         Transmit acknowledgement. If active when ``tx_rdy`` is active, ``tx_rdy`` is reset,
         ``tx_data`` is sampled, and the transmit state machine starts transmitting a frame.
     """
-    def __init__(self, pads, bit_cyc, data_bits=8, parity="none", max_bit_cyc=None):
+    def __init__(self, ports, bit_cyc, data_bits=8, parity="none", max_bit_cyc=None):
         if max_bit_cyc is not None:
             self.max_bit_cyc = max_bit_cyc
         else:
@@ -108,7 +113,7 @@ class UART(Elaboratable):
         self.tx_rdy  = Signal()
         self.tx_ack  = Signal()
 
-        self.bus = UARTBus(pads)
+        self.bus = UARTBus(ports)
 
     def elaborate(self, platform):
         m = Module()
