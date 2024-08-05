@@ -13,7 +13,8 @@ class UARTAppletTestCase(GlasgowAppletTestCase, applet=UARTApplet):
         self.build_simulated_applet()
         mux_iface = self.applet.mux_interface
         m = Module()
-        m.d.comb += mux_iface.pads.rx_t.i.eq(mux_iface.pads.tx_t.o)
+        ports = mux_iface._subtargets[0].ports
+        m.d.comb += ports.rx.i.eq(ports.tx.o)
         self.target.add_submodule(m)
 
     @applet_simulation_test("setup_loopback", ["--baud", "5000000"])

@@ -4,6 +4,7 @@ import logging
 import asyncio
 import argparse
 from amaranth import *
+from amaranth.lib import io
 
 from ....support.endpoint import *
 from ....gateware.uart import *
@@ -86,22 +87,23 @@ class UARTAutoBaud(Elaboratable):
 
 
 class UARTSubtarget(Elaboratable):
-    def __init__(self, pads, out_fifo, in_fifo, parity, max_bit_cyc,
+    def __init__(self, ports, out_fifo, in_fifo, parity, max_bit_cyc,
                  manual_cyc, auto_cyc, use_auto, bit_cyc, rx_errors):
-        self.out_fifo = out_fifo
-        self.in_fifo = in_fifo
+        self.ports      = ports
+        self.out_fifo   = out_fifo
+        self.in_fifo    = in_fifo
         self.manual_cyc = manual_cyc
-        self.auto_cyc = auto_cyc
-        self.use_auto = use_auto
-        self.bit_cyc = bit_cyc
-        self.rx_errors = rx_errors
+        self.auto_cyc   = auto_cyc
+        self.use_auto   = use_auto
+        self.bit_cyc    = bit_cyc
+        self.rx_errors  = rx_errors
 
-        self.uart = UART(pads, bit_cyc=max_bit_cyc, parity=parity)
+        self.uart = UART(ports, bit_cyc=max_bit_cyc, parity=parity)
 
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.uart = uart = self.uart
+        m.submodules.uart      = uart      = self.uart
         m.submodules.auto_baud = auto_baud = UARTAutoBaud(uart, self.auto_cyc)
 
         m.d.comb += uart.bit_cyc.eq(self.bit_cyc)
@@ -145,14 +147,13 @@ class UARTApplet(GlasgowApplet):
     are present in received data.
     """
 
-    __pins = ("rx", "tx")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        for pin in cls.__pins:
-            access.add_pin_argument(parser, pin, default=True)
+        access.add_pin_argument(parser, "rx", default=True)
+        access.add_pin_argument(parser, "tx", default=True)
 
         parser.add_argument(
             "--parity", metavar="PARITY", choices=("none", "zero", "one", "odd", "even"),
@@ -187,7 +188,10 @@ class UARTApplet(GlasgowApplet):
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(UARTSubtarget(
-            pads=iface.get_deprecated_pads(args, pins=self.__pins),
+            ports = iface.get_port_group(
+                rx = args.pin_rx,
+                tx = args.pin_tx
+            ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             parity=args.parity,
