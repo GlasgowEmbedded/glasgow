@@ -8,6 +8,7 @@ import asyncio
 import struct
 from collections import namedtuple
 from amaranth import *
+from amaranth.lib import io
 
 from ... import *
 from ....support.data_logger import DataLogger
@@ -19,14 +20,14 @@ class PMSx003Error(GlasgowAppletError):
 
 
 class PMSx003Subtarget(Elaboratable):
-    def __init__(self, pads, in_fifo, out_fifo):
-        self.pads     = pads
+    def __init__(self, ports, in_fifo, out_fifo):
+        self.ports    = ports
         self.in_fifo  = in_fifo
         self.out_fifo = out_fifo
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.uart = uart = UART(self.pads,
+        m.submodules.uart = uart = UART(self.ports,
             bit_cyc=int(platform.default_clk_frequency // 9600))
         m.d.comb += [
             self.in_fifo.w_data.eq(uart.rx_data),
@@ -88,19 +89,20 @@ class SensorPMSx003Applet(GlasgowApplet):
     This applet has been tested with PMS5003 and PMS7003.
     """
 
-    __pins = ("rx", "tx")
-
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        for pin in cls.__pins:
-            access.add_pin_argument(parser, pin, default=True)
+        access.add_pin_argument(parser, "rx", default=True)
+        access.add_pin_argument(parser, "tx", default=True)
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(PMSx003Subtarget(
-            pads=iface.get_deprecated_pads(args, pins=self.__pins),
+            ports=iface.get_port_group(
+                rx = args.pin_rx,
+                tx = args.pin_tx
+            ),
             in_fifo=iface.get_in_fifo(),
             out_fifo=iface.get_out_fifo(),
         ))
