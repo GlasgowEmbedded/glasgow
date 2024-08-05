@@ -1,6 +1,7 @@
 import logging
 import asyncio
 from amaranth import *
+from amaranth.lib import io
 
 from ....support.endpoint import *
 from ....gateware.pll import *
@@ -8,30 +9,27 @@ from ... import *
 
 
 class VideoWS2812Output(Elaboratable):
-    def __init__(self, pads):
-        self.pads = pads
-        self.out = Signal(len(pads))
+    def __init__(self, ports):
+        self.ports = ports
+        self.out = Signal(len(ports.out))
 
     def elaborate(self, platform):
         m = Module()
 
-        for i, pad in enumerate(self.pads):
-            m.d.comb += [
-                pad.oe.eq(1),
-                pad.o.eq(self.out[i]),
-            ]
+        m.submodules.out_buffer = out_buffer = io.Buffer("o", self.ports.out)
+        m.d.comb += out_buffer.o.eq(self.out)
 
         return m
 
 
 class VideoWS2812OutputSubtarget(Elaboratable):
-    def __init__(self, pads, count, pix_in_size, pix_out_size, pix_format_func, out_fifo):
-        self.pads = pads
-        self.count = count
-        self.pix_in_size = pix_in_size
-        self.pix_out_size = pix_out_size
+    def __init__(self, ports, count, pix_in_size, pix_out_size, pix_format_func, out_fifo):
+        self.ports           = ports
+        self.count           = count
+        self.pix_in_size     = pix_in_size
+        self.pix_out_size    = pix_out_size
         self.pix_format_func = pix_format_func
-        self.out_fifo = out_fifo
+        self.out_fifo        = out_fifo
 
     def elaborate(self, platform):
         # Safe timings:
@@ -50,7 +48,7 @@ class VideoWS2812OutputSubtarget(Elaboratable):
 
         m = Module()
 
-        m.submodules.output = output = VideoWS2812Output(self.pads)
+        m.submodules.output = output = VideoWS2812Output(self.ports)
 
         pix_in_size = self.pix_in_size
         pix_out_size = self.pix_out_size
@@ -60,10 +58,10 @@ class VideoWS2812OutputSubtarget(Elaboratable):
         bit_ctr = Signal(range(pix_out_bpp+1))
         byt_ctr = Signal(range((pix_in_size)+1))
         pix_ctr = Signal(range(self.count+1))
-        word_ctr = Signal(range(max(2, len(self.pads))))
+        word_ctr = Signal(range(max(2, len(self.ports.out))))
 
         pix = Array([ Signal(8) for i in range((pix_in_size) - 1) ])
-        word = Signal(pix_out_bpp * len(self.pads))
+        word = Signal(pix_out_bpp * len(self.ports.out))
 
         with m.FSM():
             with m.State("LOAD"):
@@ -80,7 +78,7 @@ class VideoWS2812OutputSubtarget(Elaboratable):
                     with m.Else():
                         p = self.pix_format_func(*pix, self.out_fifo.r_data)
                         m.d.sync += word.eq(Cat(word[pix_out_bpp:], p))
-                        with m.If(word_ctr < (len(self.pads) - 1)):
+                        with m.If(word_ctr < (len(self.ports.out) - 1)):
                             m.d.sync += [
                                 word_ctr.eq(word_ctr + 1),
                                 byt_ctr.eq(0),
@@ -90,7 +88,7 @@ class VideoWS2812OutputSubtarget(Elaboratable):
 
             with m.State("SEND-WORD"):
                 with m.If(cyc_ctr < t_zero):
-                    m.d.comb += output.out.eq((1 << len(self.pads)) - 1)
+                    m.d.comb += output.out.eq((1 << len(self.ports.out)) - 1)
                     m.d.sync += cyc_ctr.eq(cyc_ctr + 1)
                 with m.Elif(cyc_ctr < t_one):
                     m.d.comb += ( o.eq(word[(pix_out_bpp - 1) + (pix_out_bpp * i)]) for i,o in enumerate(output.out) )
@@ -167,7 +165,7 @@ class VideoWS2812OutputApplet(GlasgowApplet):
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(VideoWS2812OutputSubtarget(
-            pads=[iface.get_deprecated_pad(pin) for pin in args.pin_set_out],
+            ports=iface.get_port_group(out=args.pin_set_out),
             count=args.count,
             pix_in_size=self.pix_in_size,
             pix_out_size=pix_out_size,
