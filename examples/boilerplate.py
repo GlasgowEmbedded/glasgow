@@ -1,18 +1,20 @@
 import logging
 import asyncio
 from amaranth import *
+from amaranth.lib import io
 
 from ... import *
 
 
 class BoilerplateSubtarget(Elaboratable):
-    def __init__(self, pads, in_fifo, out_fifo):
-        self.pads     = pads
+    def __init__(self, ports, in_fifo, out_fifo):
+        self.ports    = ports
         self.in_fifo  = in_fifo
         self.out_fifo = out_fifo
 
     def elaborate(self, platform):
         m = Module()
+
         return m
 
 
@@ -32,19 +34,18 @@ class BoilerplateApplet(GlasgowApplet):
     nothing. Similarly, there is no requirement to use IN or OUT FIFOs, or any pins at all.
     """
 
-    __pins = ()
-
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        for pin in cls.__pins:
-            access.add_pin_argument(parser, pin, default=True)
+        access.add_pin_argument(parser, "example", default=True)
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(BoilerplateSubtarget(
-            pads=iface.get_deprecated_pads(args, pins=self.__pins),
+            ports=iface.get_port_group(
+                example = args.pin_example
+            ),
             in_fifo=iface.get_in_fifo(),
             out_fifo=iface.get_out_fifo(),
         ))
