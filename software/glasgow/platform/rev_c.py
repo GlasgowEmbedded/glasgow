@@ -121,6 +121,48 @@ class _GlasgowRevCPlatform(GlasgowICE40Platform):
                              "F2 -  -  E3 E1 E2 D1 -  -  D2 C1 D3 C2 -  -  C3 B1 C4 B2 -  -  -  "),
     ]
 
+    def add_ram_pak_resources(self):
+        self.add_resources([
+            Resource("hyperram", 0,
+                     Subsignal("reset",
+                               Pins("21", dir="o", invert=True, conn=("lvds", 0)),
+                               Attrs(IO_STANDARD="SB_LVCMOS18")),
+                     Subsignal("cs",
+                               Pins("8", dir="o", invert=True, conn=("lvds", 0)),
+                               Attrs(IO_STANDARD="SB_LVCMOS18")),
+                     Subsignal("ck_p",
+                               Pins("5", dir="o", conn=("lvds", 0)),
+                               Attrs(IO_STANDARD="SB_LVCMOS18")),
+                     Subsignal("ck_n",
+                               Pins("3", dir="o", conn=("lvds", 0)),
+                               Attrs(IO_STANDARD="SB_LVCMOS18")),
+                     Subsignal("rwds",
+                               Pins("10", dir="io", conn=("lvds", 0)),
+                               Attrs(IO_STANDARD="SB_LVCMOS18")),
+                     Subsignal("dq",
+                               Pins("16 15 9 11 14 17 20 22", dir="io", conn=("lvds", 0))),
+                               Attrs(IO_STANDARD="SB_LVCMOS18")),
+            Resource("hyperram", 1,
+                     Subsignal("reset",
+                               Pins("23", dir="o", invert=True, conn=("lvds", 0)),
+                               Attrs(IO_STANDARD="SB_LVCMOS18")),
+                     Subsignal("cs",
+                               Pins("27", dir="o", invert=True, conn=("lvds", 0)),
+                               Attrs(IO_STANDARD="SB_LVCMOS18")),
+                     Subsignal("ck_p",
+                               Pins("28", dir="o", conn=("lvds", 0)),
+                               Attrs(IO_STANDARD="SB_LVCMOS18")),
+                     Subsignal("ck_n",
+                               Pins("26", dir="o", conn=("lvds", 0)),
+                               Attrs(IO_STANDARD="SB_LVCMOS18")),
+                     Subsignal("rwds",
+                               Pins("29", dir="io", conn=("lvds", 0)),
+                               Attrs(IO_STANDARD="SB_LVCMOS18")),
+                     Subsignal("dq",
+                               Pins("35 38 32 34 33 40 39 41", dir="io", conn=("lvds", 0))),
+                               Attrs(IO_STANDARD="SB_LVCMOS18")),
+        ])
+
 
 class GlasgowRevC0Platform(_GlasgowRevCPlatform):
     resources = _GlasgowRevCPlatform.resources + [
