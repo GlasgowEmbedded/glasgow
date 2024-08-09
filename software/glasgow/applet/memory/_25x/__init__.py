@@ -49,10 +49,11 @@ class Memory25xSubtarget(Elaboratable):
 
 
 class Memory25xInterface:
-    def __init__(self, interface, logger):
+    def __init__(self, interface, logger, addressing="3byte"):
         self.lower       = interface
         self._logger     = logger
         self._level      = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+        self.addressing  = addressing
 
     def _log(self, message, *args):
         self._logger.log(self._level, "25x: " + message, *args)
@@ -70,6 +71,11 @@ class Memory25xInterface:
         self._log("result=<%s>", dump_hex(result))
 
         return result
+
+    async def reset(self):
+        self._log("reset")
+        await self._command(0x66)
+        await self._command(0x99)
 
     async def wakeup(self):
         self._log("wakeup")
@@ -95,8 +101,23 @@ class Memory25xInterface:
             await self._command(0x9F, ret=3))
         return (manufacturer_id, device_id)
 
+    async def _prepare_addr(self, addr):
+        if addr >= (1<<24 if self.addressing == "3byte" else 1<<32):
+            raise Memory25xError("Address out of range")
+        if self.addressing == "EN4B":
+            # some devices require WREN before EN4B
+            await self.write_enable()
+            await self._command(0xb7)
+        if self.addressing == "WREAR":
+            ear = addr >> 24
+            await self.write_enable()
+            await self._command(0xc5, arg=bytes([ear]))
+
     def _format_addr(self, addr):
-        return bytes([(addr >> 16) & 0xff, (addr >> 8) & 0xff, addr & 0xff])
+        if self.addressing == "EN4B":
+            return bytes([(addr >> 24) & 0xff, (addr >> 16) & 0xff, (addr >> 8) & 0xff, addr & 0xff])
+        else:
+            return bytes([(addr >> 16) & 0xff, (addr >> 8) & 0xff, addr & 0xff])
 
     async def _read_command(self, address, length, chunk_size, cmd, dummy=0,
                             callback=lambda done, total, status: None):
@@ -106,6 +127,7 @@ class Memory25xInterface:
         data = bytearray()
         while length > len(data):
             callback(len(data), length, f"reading address {address:#08x}")
+            await self._prepare_addr(address)
             chunk    = await self._command(cmd, arg=self._format_addr(address),
                                            dummy=dummy, ret=min(chunk_size, length - len(data)))
             data    += chunk
@@ -161,11 +183,13 @@ class Memory25xInterface:
 
     async def sector_erase(self, address):
         self._log("sector erase addr=%#08x", address)
+        await self._prepare_addr(address)
         await self._command(0x20, arg=self._format_addr(address))
         while await self.write_in_progress(command="SECTOR ERASE"): pass
 
     async def block_erase(self, address):
         self._log("block erase addr=%#08x", address)
+        await self._prepare_addr(address)
         await self._command(0x52, arg=self._format_addr(address))
         while await self.write_in_progress(command="BLOCK ERASE"): pass
 
@@ -177,6 +201,7 @@ class Memory25xInterface:
     async def page_program(self, address, data):
         data = bytes(data)
         self._log("page program addr=%#08x data=<%s>", address, data.hex())
+        await self._prepare_addr(address)
         await self._command(0x02, arg=self._format_addr(address) + data)
         while await self.write_in_progress(command="PAGE PROGRAM"): pass
 
@@ -281,6 +306,13 @@ class Memory25xApplet(SPIControllerApplet):
         access.add_pin_argument(parser, "sck",  default=True, required=True)
         access.add_pin_argument(parser, "hold", default=True)
 
+        parser.add_argument(
+            "--addressing",
+            type=str, choices=["3byte", "EN4B", "WREAR"], default="3byte",
+            help="Use MODE (3byte, EN4B, WREAR) for addressing (default: 3byte)",
+            metavar="MODE",
+        )
+
     def build_subtarget(self, target, args):
         subtarget = super().build_subtarget(target, args)
         if args.pin_hold is not None:
@@ -291,7 +323,7 @@ class Memory25xApplet(SPIControllerApplet):
 
     async def run(self, device, args):
         spi_iface = await self.run_lower(Memory25xApplet, device, args)
-        return Memory25xInterface(spi_iface, self.logger)
+        return Memory25xInterface(spi_iface, self.logger, addressing=args.addressing)
 
     @classmethod
     def add_interact_arguments(cls, parser):
@@ -402,6 +434,7 @@ class Memory25xApplet(SPIControllerApplet):
 
     async def interact(self, device, args, m25x_iface):
         await m25x_iface.wakeup()
+        await m25x_iface.reset()
 
         if args.operation in ("program-page", "program",
                               "erase-sector", "erase-block", "erase-chip",
