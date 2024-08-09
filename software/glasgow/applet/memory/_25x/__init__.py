@@ -11,7 +11,7 @@ from amaranth import *
 from ....support.logging import dump_hex
 from ....database.jedec import *
 from ....protocol.sfdp import *
-from ...interface.spi_controller import SPIControllerApplet
+from ...interface.qspi_controller import QSPIControllerApplet
 from ... import *
 
 
@@ -236,7 +236,7 @@ class Memory25xSFDPParser(SFDPParser):
         return await self._m25x_iface.read_sfdp(offset, length)
 
 
-class Memory25xApplet(SPIControllerApplet):
+class Memory25xApplet(QSPIControllerApplet):
     logger = logging.getLogger(__name__)
     help = "read and write 25-series SPI Flash memories"
     description = """
@@ -272,22 +272,11 @@ class Memory25xApplet(SPIControllerApplet):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        super().add_build_arguments(parser, access, omit_pins=True)
+        super().add_build_arguments(parser, access, include_pins=False)
 
-        access.add_pin_argument(parser, "cs",   default=True, required=True)
-        access.add_pin_argument(parser, "cipo", default=True, required=True)
-        access.add_pin_argument(parser, "wp",   default=True)
-        access.add_pin_argument(parser, "copi", default=True, required=True)
-        access.add_pin_argument(parser, "sck",  default=True, required=True)
-        access.add_pin_argument(parser, "hold", default=True)
-
-    def build_subtarget(self, target, args):
-        subtarget = super().build_subtarget(target, args)
-        if args.pin_hold is not None:
-            hold_t = self.mux_interface.get_deprecated_pad(args.pin_hold)
-        else:
-            hold_t = None
-        return Memory25xSubtarget(subtarget, hold_t)
+        access.add_pin_set_argument(parser, "cs",  width=1, required=True, default=[5])
+        access.add_pin_set_argument(parser, "io",  width=4, required=True, default=[2, 4, 3, 0])
+        access.add_pin_argument(    parser, "sck",          required=True, default=1)
 
     async def run(self, device, args):
         spi_iface = await self.run_lower(Memory25xApplet, device, args)
@@ -456,10 +445,10 @@ class Memory25xApplet(SPIControllerApplet):
         if args.operation in ("read", "fast-read"):
             if args.operation == "read":
                 data = await m25x_iface.read(args.address, args.length,
-                                              callback=self._show_progress)
+                                             callback=self._show_progress)
             if args.operation == "fast-read":
                 data = await m25x_iface.fast_read(args.address, args.length,
-                                                   callback=self._show_progress)
+                                                  callback=self._show_progress)
 
             if args.file:
                 args.file.write(data)
@@ -478,10 +467,10 @@ class Memory25xApplet(SPIControllerApplet):
                 await m25x_iface.page_program(args.address, data)
             if args.operation == "program":
                 await m25x_iface.program(args.address, data, args.page_size,
-                                          callback=self._show_progress)
+                                         callback=self._show_progress)
             if args.operation == "erase-program":
                 await m25x_iface.erase_program(args.address, data, args.sector_size,
-                                                args.page_size, callback=self._show_progress)
+                                               args.page_size, callback=self._show_progress)
 
         if args.operation == "verify":
             if args.data is not None:
