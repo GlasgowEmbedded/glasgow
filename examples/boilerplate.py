@@ -6,18 +6,30 @@ from amaranth.lib import io, stream, wiring
 from ... import *
 
 
-class BoilerplateModule(wiring.Component):
-    data: In(8)
-    enable: Out(1)
-
-    in_stream: In(stream.Signature(signed(8)))
-    out_stream: Out(stream.Signature(signed(8)))
+class BoilerplateCore(wiring.Component):
+    in_stream: In(stream.Signature(8))
+    out_stream: Out(stream.Signature(8))
+    def __init__(self, port_data, port_enable):
+        self.port_data   = port_data
+        self.port_enable = port_enable
     def elaborate(self, platform):
         m = Module()
+
+        ## Instantiate IO buffers for pins/ports
+        m.submodules.data_buffer   = data_buffer   = io.Buffer("i", self.port_data)
+        m.submodules.enable_buffer = enable_buffer = io.Buffer("o", self.port_enable)
+
+        ## Connect IO buffers to corresponding internal signals
+        data   = Signal.like(data_buffer)
+        enable = Signal.like(enable_buffer)
+        wiring.connect(m, data, data_buffer.i)
+        wiring.connect(m, enable, enable_buffer.o)
 
         return m
 
 class BoilerplateSubtarget(wiring.Component):
+    in_stream: In(stream.Signature(8))
+    out_stream: Out(stream.Signature(8))
     def __init__(self, ports, in_fifo, out_fifo):
         self.ports    = ports
         self.in_fifo  = in_fifo
@@ -29,7 +41,7 @@ class BoilerplateSubtarget(wiring.Component):
     #    ┌───────┐               ┌─────────────────┐    
     #    │in_fifo◄───in_stream───┤                 │    
     #    └───────┘               │                 │     
-    #                            │BoilerplateModule│     
+    #                            │      Core       │     
     #   ┌────────┐               │                 │    
     #   │out_fifo├───out_stream──►                 │    
     #   └────────┘               └─────▲───────┬───┘    
@@ -41,25 +53,21 @@ class BoilerplateSubtarget(wiring.Component):
     #                              └──────────────┘     
 
 
-        m.submodules.boilerplate = boilerplate = BoilerplateModule()
+        m.submodules.core = core = BoilerplateCore(self.ports.data, self.ports.enable)
 
-        ## Instantiate IO buffers for pins/ports
-        m.submodules.data_buffer = data_buffer = io.Buffer("i", args.port_data)
-        m.submodules.enable_buffer = enable_buffer = io.Buffer("o", args.port_enable)
+        ## Adapt in/out fifo signals to Stream interface
+        self.out_stream.payload = self.out_fifo.r_data
+        self.out_stream.valid   = self.out_fifo.r_rdy
+        self.out_stream.ready   = self.out_fifo.r_en
 
-        ## Connect IO buffers to corresponding ports of BoilerplateModule
-        wiring.connect(m, boilerplate.data, data_buffer.i)
-        wiring.connect(m, boilerplate.enable, enable_buffer.o)
+        self.in_stream.payload = self.in_fifo.w_data
+        self.in_stream.valid   = self.in_fifo.w_en
+        self.in_stream.ready   = self.in_fifo.w_rdy
 
-        ## Connect BoilerplateModule.in_stream to BoilerplateSubtarget.out_fifo
-        boilerplate.in_stream.payload.eq(self.out_fifo.r_data),
-        boilerplate.in_stream.valid.eq(self.out_fifo.r_rdy),
-        self.out_fifo.r_en.eq(boilerplate.in_stream.ready),
-
-        ## Connect BoilerplateSubtarget.in_fifo to BoilerplateModule.out_stream
-        self.in_fifo.w_data.eq(boilerplate.out_stream.payload),
-        self.in_fifo.w_en.eq(boilerplate.out_stream.valid),
-        boilerplate.out_stream.ready.eq(self.in_fifo.w_rdy),
+        ## Connect BoilerplateCore.in_stream to BoilerplateSubtarget.out_fifo
+        wiring.connect(m, out_stream, core.in_stream)
+        ## Connect BoilerplateSubtarget.in_fifo to BoilerplateCore.out_stream
+        wiring.connect(m, in_stream, core.out_stream)
 
         return m
 
@@ -85,7 +93,7 @@ class BoilerplateApplet(GlasgowApplet):
         super().add_build_arguments(parser, access)
 
         access.add_pin_argument(parser, "enable", default=True)
-        access.add_pin_set_argument(parser, "data", width=8, default=True)
+        access.add_pin_set_argument(parser, "data", width=range(8,16+1), default=True)
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
