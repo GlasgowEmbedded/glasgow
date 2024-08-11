@@ -9,15 +9,14 @@ from ... import *
 class BoilerplateCore(wiring.Component):
     in_stream: In(stream.Signature(8))
     out_stream: Out(stream.Signature(8))
-    def __init__(self, port_data, port_enable):
-        self.port_data   = port_data
-        self.port_enable = port_enable
+    def __init__(self, ports):
+        self.ports = ports
     def elaborate(self, platform):
         m = Module()
 
         ## Instantiate IO buffers for pins/ports
-        m.submodules.data_buffer   = data_buffer   = io.Buffer("i", self.port_data)
-        m.submodules.enable_buffer = enable_buffer = io.Buffer("o", self.port_enable)
+        m.submodules.data_buffer   = data_buffer   = io.Buffer("i", self.ports.data)
+        m.submodules.enable_buffer = enable_buffer = io.Buffer("o", self.ports.enable)
 
         ## Connect IO buffers to corresponding internal signals
         data   = Signal.like(data_buffer)
@@ -28,8 +27,6 @@ class BoilerplateCore(wiring.Component):
         return m
 
 class BoilerplateSubtarget(wiring.Component):
-    in_stream: In(stream.Signature(8))
-    out_stream: Out(stream.Signature(8))
     def __init__(self, ports, in_fifo, out_fifo):
         self.ports    = ports
         self.in_fifo  = in_fifo
@@ -53,21 +50,12 @@ class BoilerplateSubtarget(wiring.Component):
     #                              └──────────────┘     
 
 
-        m.submodules.core = core = BoilerplateCore(self.ports.data, self.ports.enable)
-
-        ## Adapt in/out fifo signals to Stream interface
-        self.out_stream.payload = self.out_fifo.r_data
-        self.out_stream.valid   = self.out_fifo.r_rdy
-        self.out_stream.ready   = self.out_fifo.r_en
-
-        self.in_stream.payload = self.in_fifo.w_data
-        self.in_stream.valid   = self.in_fifo.w_en
-        self.in_stream.ready   = self.in_fifo.w_rdy
+        m.submodules.core = core = BoilerplateCore(self.ports)
 
         ## Connect BoilerplateCore.in_stream to BoilerplateSubtarget.out_fifo
-        wiring.connect(m, out_stream, core.in_stream)
+        wiring.connect(m, self.out_fifo.stream, core.in_stream)
         ## Connect BoilerplateSubtarget.in_fifo to BoilerplateCore.out_stream
-        wiring.connect(m, in_stream, core.out_stream)
+        wiring.connect(m, self.in_fifo.stream, core.out_stream)
 
         return m
 
