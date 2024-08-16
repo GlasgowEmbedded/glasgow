@@ -69,8 +69,8 @@ class ClockGen(Elaboratable):
                 self.clk.eq(~self.clk),
             ]
             m.d.comb += [
-                self.stb_r.eq(~self.clk),
-                self.stb_f.eq(self.clk),
+                self.stb_r.eq(self.clk),
+                self.stb_f.eq(~self.clk),
             ]
 
         if self.cyc >= 3:
