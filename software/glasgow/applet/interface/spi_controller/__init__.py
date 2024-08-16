@@ -350,7 +350,7 @@ class SPIControllerApplet(GlasgowApplet):
                                          min_cyc=4),
             delay_cyc=self.derive_clock(input_hz=target.sys_clk_freq,
                                         output_hz=1e6,
-                                        clock_name="delay"),
+                                        clock_name="delay") - 1,
             sck_idle=args.sck_idle,
             sck_edge=args.sck_edge,
         )

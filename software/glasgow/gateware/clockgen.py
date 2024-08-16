@@ -50,7 +50,10 @@ class ClockGen(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        if self.cyc == 0:
+        if self.cyc <= 0:
+            raise ValueError(f"Invalid output clock period: {self.cyc}")
+
+        if self.cyc == 1:
             # Special case: output frequency equal to input frequency.
             # Implementation: wire.
             m.d.comb += [
@@ -59,7 +62,7 @@ class ClockGen(Elaboratable):
                 self.stb_f.eq(1),
             ]
 
-        if self.cyc == 1:
+        if self.cyc == 2:
             # Special case: output frequency half of input frequency.
             # Implementation: flip-flop.
             m.d.sync += [
@@ -70,7 +73,7 @@ class ClockGen(Elaboratable):
                 self.stb_f.eq(self.clk),
             ]
 
-        if self.cyc >= 2:
+        if self.cyc >= 3:
             # General case.
             # Implementation: counter.
             counter = Signal(range(self.cyc))
@@ -119,8 +122,8 @@ class ClockGen(Elaboratable):
                              "cycles at input frequency {:.3f} kHz"
                              .format(output_hz / 1000, min_cyc, input_hz / 1000))
 
-        cyc = round(input_hz // output_hz) - 1
-        actual_output_hz = input_hz / (cyc + 1)
+        cyc = round(input_hz // output_hz)
+        actual_output_hz = input_hz / cyc
         deviation_ppm = round(1000000 * (actual_output_hz - output_hz) // output_hz)
 
         if max_deviation_ppm is not None and deviation_ppm > max_deviation_ppm:
@@ -148,7 +151,7 @@ class ClockGen(Elaboratable):
                 clock = "clock"
             else:
                 clock = f"clock {clock_name}"
-            if cyc in (0, 1):
+            if cyc in (1, 2):
                 duty = 50
             else:
                 duty = (cyc // 2) / cyc * 100
