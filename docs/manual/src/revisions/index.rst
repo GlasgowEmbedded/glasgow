@@ -10,6 +10,17 @@ The Glasgow hardware evolves over time, with each major milestone called a "revi
 Glasgow hardware revisions use the ``revXN`` format, where ``X`` is a revision letter (advanced alphabetically when major design changes are made) and ``N`` is a stepping number (incremented on any layout or component changes). For example, ``revC0`` is the first stepping of revision C.
 
 
+Technical descriptions
+######################
+
+In-depth technical descriptions are available for certain hardware revisions:
+
+.. toctree::
+    :maxdepth: 1
+
+    revC3
+
+
 .. _revD:
 
 revD

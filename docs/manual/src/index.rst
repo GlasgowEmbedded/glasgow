@@ -5,7 +5,7 @@ Glasgow Interface Explorer manual
     :maxdepth: 2
 
     intro
-    revisions
+    revisions/index
     purchase
     build
     install
