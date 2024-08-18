@@ -441,7 +441,7 @@ I²C bus addresses
 +--------------+------------+----------------+----------------------------------------------------------+
 | Address      | Designator | Part           | Function                                                 |
 +==============+============+================+==========================================================+
-| 101001X [1]_ | U2         | CAT24M01X      | 1Mbit flash memory for ICE40 FPGA                        |
+| 101001X [1]_ | U2         | CAT24M01X      | 1 Mbit flash memory for ICE40 FPGA                       |
 +--------------+------------+----------------+----------------------------------------------------------+
 | 1010001      | U3         | BL24C256A-SFRC | Flash memory for FX2 USB controller                      |
 +--------------+------------+----------------+----------------------------------------------------------+
@@ -459,7 +459,7 @@ I²C bus addresses
 +--------------+------------+----------------+----------------------------------------------------------+
 
 .. [1]
-   The X in this address indicates that the device responds to two addresses (0 or 1 in the last bit position). In this case each address acts as a 512Kbit flash device, providing 1Mbit in total. Refer to the product datasheet for more information.
+   The X in this address indicates that the device responds to two addresses (0 or 1 in the last bit position). In this case each address acts as a 512 Kbit flash device, providing 1 Mbit in total. Refer to the product datasheet for more information.
 
 .. [2]
    PCA6408APW is an SMBus device. The SMBus Alert Response Address (ARA) is 0001100 for both U19 (port A) and U5 (port B).
