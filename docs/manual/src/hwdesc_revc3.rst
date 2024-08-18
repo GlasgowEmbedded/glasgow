@@ -4,6 +4,7 @@ Glasgow revC3 Hardware Description
 This document provides a technical description of the Glasgow revC3
 hardware.
 
+
 .. _revC3-power:
 
 Power
@@ -16,6 +17,7 @@ Some non-standards-compliant USB ports, such as those found on certain powered U
 Since Glasgow draws less than 1.0 A of current at all times, it does not benefit from non-standards-compliant high-current USB ports.
 
 The USB-C connector shield is connected to ground via a 100 nF capacitor and 100 kΩ resistor in parallel. The plated mounting holes in the four corners of the board are grounded.
+
 
 .. _revC3-5v-rail:
 
@@ -92,6 +94,7 @@ The +3.3V rail is used to power the following devices:
 | U32                                    | SN74LVC1T45DCKR  | Logic level translator for SYNC input/output connector. +3.3V powers internal side (VCCA)       |
 +----------------------------------------+------------------+-------------------------------------------------------------------------------------------------+
 
+
 .. _revC3-1v2-rail:
 
 +1.2V rail
@@ -102,6 +105,7 @@ The +1.2V rail is used to power the iCE40 FPGA (VCC and VCCPLL0/1). You can meas
 The +1.2V rail is derived from the +5V rail using a TLV73312PQDRVR linear voltage regulator (U36). The regulator has a maximum output current of 300 mA. The regulator's EN pin is tied directly to the +5V rail. The regulator enters dropout mode when the +5V rail reaches approximately 1.3 V, and enters normal operation once the +5V rail reaches approximately 1.65 V.
 
 The VCCPLL0 and VCCPLL1 supplies are low-pass filtered using a 100 Ω resistor and 4.7 uF capacitor, resulting in a -3 dB cutoff frequency of approximately 340 Hz.
+
 
 .. _revC3-vio-rails:
 
@@ -162,12 +166,14 @@ The VIOB rail is used to power the following devices:
 | U5                                     | PCA6408APW      | I2C I/O expander for programmable pullup/pulldown resistors on port A. VIOB powers IO ports. |
 +----------------------------------------+-----------------+----------------------------------------------------------------------------------------------+
 
+
 .. _revC3-vio-aux:
 
 VIO_AUX
 ~~~~~~~
 
 Ports A and B are the primary connectors which are expected to be used with Glasgow. The LVDS connector is a secondary connector that can be used for special addons that require additional IOs. While the IOs on ports A and B are well-protected against ESD and utilise separate logic level translation with their own VIO rails, the LVDS connector is directly connected to the iCE40 FPGA without any logic level translation or discrete protection, and without a programmable IO voltage. The supply for the IOs exposed on the LVDS connector must be externally provided via VIO_AUX on pin 44. This voltage is directly fed to ``VCCIO_3`` on the FPGA. Voltages between 1.8 V and 3.3 V are supported. See the iCE40HX8K-BG121 datasheet for more information.
+
 
 .. _revC3-decoupling-capacitors:
 
@@ -209,6 +215,7 @@ design.
 | 1.2 V           | 100 nF                |
 +-----------------+-----------------------+
 
+
 .. _revC3-power-on-sequencing:
 
 Power-on sequencing
@@ -226,10 +233,12 @@ The power-on sequence is as follows:
 8. All rails are now at nominal and ``CY_RESET`` is de-asserted, allowing the FX2 USB controller to start operating. The FX2 de-asserts ``FPGA_RESET``, allowing the iCE40 FPGA (U30) to operate.
 9. During power-on, ``ENVA`` and ``ENVB`` are pulled down, disabling the TPS73101DBV adjustable linear regulators (U31, U14) which provide the VIO voltages for ports A and B. The DAC081C081CIMK DACs (U20, U13) provide an adjustable feedback voltage to the regulators. These are programmed over I2C as required to adjust the voltage of the VIO regulators, after which the FX2 can assert ``ENVA`` and/or ``ENVB`` to enable the regulators which, in turn, power the VIO outputs.
 
+
 .. _revC3-connectors:
 
 Connectors
 ----------
+
 
 .. _revC3-port-a-layout:
 
@@ -242,6 +251,7 @@ Port A Connector Layout
 | **VA_SENS** | **PA_IO0** | **PA_IO1** | **PA_IO2** | **PA_IO3** | **PA_IO4** | **PA_IO5** | **PA_IO6** | **PA_IO7** | **NC** |
 +-------------+------------+------------+------------+------------+------------+------------+------------+------------+--------+
 
+
 .. _revC3-port-b-layout:
 
 Port B Connector Layout
@@ -252,6 +262,7 @@ Port B Connector Layout
 +========+============+============+============+============+============+============+============+============+=============+
 | **NC** | **GND**    | **GND**    | **GND**    | **GND**    | **GND**    | **GND**    | **GND**    | **GND**    | **VB_SENS** |
 +--------+------------+------------+------------+------------+------------+------------+------------+------------+-------------+
+
 
 .. _revC3-ports-a-b-pinout:
 
@@ -312,6 +323,7 @@ The SN74LVC1T45DCKR itself provides limited isolation between the FPGA and the I
 
 The VSENSE pin is protected by a CDSOD323-T36S unidirectional TVS diode which helps protect the INA233 ICs against overvoltage.
 
+
 .. _revC3-sync-connector:
 
 SYNC Connector
@@ -322,6 +334,7 @@ The SYNC connector is used to synchronise multiple Glasgows together. As of Marc
 The SYNC pin is weakly pulled up to the +3.3V rail and is buffered by a SN74LVC1T45DCKR bus transceiver. The input-low threshold is 0.8 V and the input-high threshold is 2.0 V, making it directly compatible with 2.5 V, 3.3 V, and 5.0 V logic.
 
 The SYNC pin is protected by a ESD5Z5.0T1G ESD protection diode with a standoff voltage of 5.0 V and a breakdown of 6.2 V, and a 47 Ω series resistor.
+
 
 .. _revC3-lvds-connector:
 
@@ -389,6 +402,7 @@ The pins can be used in differential mode (N/P pairs) or in single-ended mode (i
 
 No termination resistors are included. You should include termination resistors on your board if you use the LVDS connector. See the Lattice document `FPGA-TN-02213 "Using Differential I/O (LVDS, Sub-LVDS) in iCE40 LP/HX Devices" <https://www.latticesemi.com/view_document?document_id=47960>`__ for details.
 
+
 .. _revC3-leds:
 
 LEDs
@@ -426,12 +440,14 @@ The system LEDs (FX2, ICE, ACT, ERR) are under control of the FX2 firmware, whic
 
 The user LEDs (U1-U5) are under control of the gateware. In most cases they go unused and the FPGA defaults the pins to be inputs with weak pullups, which results in the user LEDs lighting dimly.
 
+
 .. _revC3-i2c-bus:
 
 I²C bus
 -------
 
 Glasgow uses I2C internally for controlling the VIO voltages, measuring VIO current and voltage (or an external voltage input), and for communicating with the FX2 and iCE40 EEPROMs. The SDA and SCL signals can be accessed via test points on the front and rear of the board.
+
 
 .. _revC3-i2c-bus-addresses:
 
@@ -469,6 +485,7 @@ I²C bus addresses
 
 .. [4]
    The iCE40HX8K bitstream is actually about 3 KB bigger than 1 Mbit, so the tail end of the bitstream lives in U3 as a workaround.
+
 
 .. _revC3-recovery:
 
