@@ -387,7 +387,7 @@ To use the LVDS connector you must provide ``VIO_AUX``, an IO voltage between 1.
 
 The pins can be used in differential mode (N/P pairs) or in single-ended mode (independent signals on N and P).
 
-No termination resistors are included. You should include termination resistors on your board if you use the LVDS connector.
+No termination resistors are included. You should include termination resistors on your board if you use the LVDS connector. See the Lattice document `FPGA-TN-02213 "Using Differential I/O (LVDS, Sub-LVDS) in iCE40 LP/HX Devices" <https://www.latticesemi.com/view_document?document_id=47960>`__ for details.
 
 .. _revC3-leds:
 
@@ -422,7 +422,7 @@ LEDs
 | VIO B | Green  | D14        | NCD0603G1   | Lights when VIO B regulator (U14) is enabled                                                                        |
 +-------+--------+------------+-------------+---------------------------------------------------------------------------------------------------------------------+
 
-The system LEDs (FX2, ICE, ACT, ERR) are under control of the FX2 firmware, which is responsible for producing the behaviour described above. In the event that the FX2 firmware does not run (e.g. no firmware is present), the LED IO pins default to a high-impedance input state and will either all light dimly or all be off.
+The system LEDs (FX2, ICE, ACT, ERR) are under control of the FX2 firmware, which is responsible for producing the behaviour described above. In the event that the FX2 firmware does not run (e.g. no firmware is present), the LED IO pins default to a high-impedance input state and will all be off.
 
 The user LEDs (U1-U5) are under control of the gateware. In most cases they go unused and the FPGA defaults the pins to be inputs with weak pullups, which results in the user LEDs lighting dimly.
 
@@ -472,4 +472,4 @@ I²C bus addresses
 Recovery
 --------
 
-Two pads can be found on the board marked "RECOVER", next to the FX2 EEPROM (U2). This footprint is R40 in the schematic. To initiate recovery, short these pads together and press the reset button, then remove the short. This temporarily changes the I2C address of the FX2 EEPROM so that it boots without firmware, placing it into a recovery mode.
+Two pads can be found on the board marked "RECOVER", next to the FX2 EEPROM (U2). This footprint is R40 in the schematic. To initiate recovery, short these pads together and press the reset button, then remove the short. This temporarily changes the I2C address of the FX2 EEPROM so that it boots without firmware, placing it into a recovery mode where it enumerates with the default FX2 device descriptor. The ``fx2tool`` utility can then be used to make a backup copy of the FX2 EEPROM, and the ``glasgow factory`` command can be used to re-provision the device configuration block and the firmware
