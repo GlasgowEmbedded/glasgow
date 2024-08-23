@@ -48,7 +48,7 @@ class ISSPHostSubtarget(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        total_bits_counter = Signal(range(max(MAX_SEND_BITS, ZERO_BITS_AFTER_POLL, 8)))
+        total_bits_counter = Signal(range(max(MAX_SEND_BITS, 8)))
         # The 8 in the above max() expression is for the following optimization:
         # This is an optimization to overlay the read_address register with total_bits_counter.
         # total_bits_counter is only used for sending bit vectors (i.e. writes)
@@ -133,7 +133,6 @@ class ISSPHostSubtarget(Elaboratable):
         reg_not_mem = do_poll # same bit of the command byte as do_poll,
                               # but do_poll applies during CMD_SEND_BITS
                               # while reg_not_mem applies during CMD_READ_BYTE
-        do_zero_bits = Signal()
         needs_single_clock_pulse_for_poll = Signal()
         needs_arbitrary_clocks_for_poll = Signal()
         byte = Signal(8)
@@ -155,9 +154,8 @@ class ISSPHostSubtarget(Elaboratable):
                     m.d.sync += (
                         cmd.eq(self._out_fifo.r_data),
                         do_poll.eq(self._out_fifo.r_data[7]),
-                        do_zero_bits.eq(self._out_fifo.r_data[6]),
-                        needs_single_clock_pulse_for_poll.eq(self._out_fifo.r_data[5]),
-                        needs_arbitrary_clocks_for_poll.eq(self._out_fifo.r_data[4]))
+                        needs_single_clock_pulse_for_poll.eq(self._out_fifo.r_data[6]),
+                        needs_arbitrary_clocks_for_poll.eq(self._out_fifo.r_data[5]))
                     m.next = "COMMAND"
             with m.State("COMMAND"):
                 with m.If(cmd == CMD_ASSERT_RESET):
@@ -248,11 +246,6 @@ class ISSPHostSubtarget(Elaboratable):
                             m.d.comb += sdata_oe_nxt.eq(0)
                             m.next = "SEND_BITS_WAIT_IO_DECAY"
                             start_simple_timer(self._io_decay_plus_sample_wait_cyc)
-                        with m.Elif(do_zero_bits):
-                            m.d.sync += total_bits_counter.eq(ZERO_BITS_AFTER_POLL)
-                            m.d.comb += sdata_o_nxt.eq(0)
-                            start_clock_cycle()
-                            m.next = "SEND_BITS_ZERO_AFTER_POLL"
                         with m.Else():
                             m.d.comb += sdata_oe_nxt.eq(0)
                             m.next = "IDLE"
@@ -277,14 +270,7 @@ class ISSPHostSubtarget(Elaboratable):
                 # state with SDATA high for 100ms, other versions say 200ms, For
                 # now we don't implement a time-out.
                 with m.If(sdata_negedge_seen & ~sdata_sync & ~timer_running):
-                    m.d.sync += total_bits_counter.eq(ZERO_BITS_AFTER_POLL)
-                    with m.If(do_zero_bits):
-                        m.d.comb += sdata_o_nxt.eq(0)
-                        m.d.comb += sdata_oe_nxt.eq(1)
-                        start_clock_cycle()
-                        m.next = "SEND_BITS_ZERO_AFTER_POLL"
-                    with m.Else():
-                        m.next = "IDLE"
+                    m.next = "IDLE"
                 with m.Elif(needs_arbitrary_clocks_for_poll & ~sdata_negedge_seen & ~sdata_sync & timer_done):
                     start_clock_cycle()
             with m.State("SEND_BITS_ZERO_AFTER_POLL"):
@@ -410,6 +396,13 @@ class ISSPHostInterface:
         """
         await self.lower.write([CMD_LOW_SCLK])
 
+    async def _send_zero_bits(self, cnt_bits = ZERO_BITS_AFTER_POLL):
+        cnt_enc = cnt_bits - 1
+        cnt_bytes = (cnt_bits + 7)//8
+        zero_blist = [0] * cnt_bytes
+        await self.lower.write([
+            CMD_SEND_BITS, cnt_enc >> 8, cnt_enc & 0xff, *zero_blist])
+
     async def send_bits(self, cnt_bits, value, do_poll=1, do_zero_bits=1, needs_single_clock_pulse_for_poll=1, needs_arbitrary_clocks_for_poll=0):
         """
         Send a vector of up to MAX_SEND_BITS bits, while also optionally performing
@@ -431,10 +424,11 @@ class ISSPHostInterface:
         await self.lower.write([
             (CMD_SEND_BITS |
              (do_poll << 7) |
-             (do_zero_bits << 6) |
-             (needs_single_clock_pulse_for_poll << 5) |
-             (needs_arbitrary_clocks_for_poll << 4)
+             (needs_single_clock_pulse_for_poll << 6) |
+             (needs_arbitrary_clocks_for_poll << 5)
             ), cnt_enc_msb, cnt_enc_lsb, *blist])
+        if do_zero_bits:
+            await self._send_zero_bits()
 
     async def send_bitstring(self, bitstring, do_poll=1, do_zero_bits=1, needs_single_clock_pulse_for_poll=1, needs_arbitrary_clocks_for_poll=0):
         """
@@ -455,10 +449,11 @@ class ISSPHostInterface:
         await self.lower.write([
             (CMD_SEND_BITS |
              (do_poll << 7) |
-             (do_zero_bits << 6) |
-             (needs_single_clock_pulse_for_poll << 5) |
-             (needs_arbitrary_clocks_for_poll << 4)
+             (needs_single_clock_pulse_for_poll << 6) |
+             (needs_arbitrary_clocks_for_poll << 5)
             ), cnt_enc_msb, cnt_enc_lsb, *blist])
+        if do_zero_bits:
+            await self._send_zero_bits()
 
     async def read_bytes(self, address, cnt_bytes=1, reg_not_mem=0):
         """
