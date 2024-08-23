@@ -48,15 +48,13 @@ class ISSPHostSubtarget(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        total_bits_counter = Signal(range(max(MAX_SEND_BITS, ZERO_BITS_AFTER_POLL, 16)))
-        # The 16 in the above max() expression is for the following optimization:
-        # This is an optimization to overlay the following two counters with total_bits_counter.
+        total_bits_counter = Signal(range(max(MAX_SEND_BITS, ZERO_BITS_AFTER_POLL, 8)))
+        # The 8 in the above max() expression is for the following optimization:
+        # This is an optimization to overlay the read_address register with total_bits_counter.
         # total_bits_counter is only used for sending bit vectors (i.e. writes)
-        # starting_address and readwrite_byte_count are only ever used when performing reads.
-        # So these are never ever used at the same time, so putting them in the same flipflops
-        # saves some logic cells
-        starting_address = total_bits_counter[:8]        #starting_address = Signal(8)
-        readwrite_byte_count = total_bits_counter[8:16]  #readwrite_byte_count = Signal(8)
+        # read_address is only ever used when performing reads. So these are never ever used
+        # at the same time, so putting them in the same flipflops saves some logic cells
+        read_address = total_bits_counter[:8]        #read_address = Signal(8)
 
         m.submodules.sclk = sclk_buffer = io.FFBuffer("io", self._ports.sclk)
         sclk_o, sclk_o_nxt = Signal(), Signal()
@@ -182,8 +180,11 @@ class ISSPHostSubtarget(Elaboratable):
                 with m.Elif(cmd == CMD_READ_BYTE):
                     with m.If(self._out_fifo.r_rdy):
                         m.d.comb += self._out_fifo.r_en.eq(1)
-                        m.d.sync += starting_address.eq(self._out_fifo.r_data)
-                        m.next = "READ_BYTES_WAIT_BYTE_COUNT"
+                        m.d.sync += read_address.eq(self._out_fifo.r_data)
+                        m.d.comb += sdata_o_nxt.eq(1)
+                        m.d.comb += sdata_oe_nxt.eq(1)
+                        start_clock_cycle()
+                        m.next = "READ_BYTE_SEND_CMD_BIT_0"
                 with m.Elif(cmd == CMD_WAIT_PENDING):
                     with m.If(self._in_fifo.w_rdy):
                         m.d.comb += self._in_fifo.w_data.eq(0)
@@ -294,15 +295,6 @@ class ISSPHostSubtarget(Elaboratable):
                         m.next = "IDLE"
                     with m.Else():
                         start_clock_cycle()
-            with m.State("READ_BYTES_WAIT_BYTE_COUNT"):
-                with m.If(self._out_fifo.r_rdy):
-                    m.d.comb += self._out_fifo.r_en.eq(1)
-                    m.d.sync += readwrite_byte_count.eq(self._out_fifo.r_data)
-
-                    m.d.comb += sdata_o_nxt.eq(1)
-                    m.d.comb += sdata_oe_nxt.eq(1)
-                    start_clock_cycle()
-                    m.next = "READ_BYTE_SEND_CMD_BIT_0"
             with m.State("READ_BYTE_SEND_CMD_BIT_0"):
                 with m.If(timer_done_oneshot):
                     m.d.comb += sdata_o_nxt.eq(reg_not_mem)
@@ -315,9 +307,9 @@ class ISSPHostSubtarget(Elaboratable):
                     m.next = "READ_BYTE_SEND_CMD_BIT_2"
             with m.State("READ_BYTE_SEND_CMD_BIT_2"):
                 with m.If(timer_done_oneshot):
-                    m.d.comb += sdata_o_nxt.eq(starting_address[7])
+                    m.d.comb += sdata_o_nxt.eq(read_address[7])
                     m.d.sync += bit_in_byte_counter.eq(7)
-                    m.d.sync += byte.eq(starting_address[:7])
+                    m.d.sync += byte.eq(read_address[:7])
                     start_clock_cycle()
                     m.next = "READ_BYTE_SHIFT_ADDRESS"
             with m.State("READ_BYTE_SHIFT_ADDRESS"):
@@ -336,7 +328,6 @@ class ISSPHostSubtarget(Elaboratable):
                     m.next = "READ_BYTE_SHIFT"
             with m.State("READ_BYTE_SHIFT"):
                 with m.If((timer == 0) & (sclk_o) & (bit_in_byte_counter != 7)):
-
                     m.d.comb += do_sample_data.eq(1)
                 with m.If(timer_done_oneshot):
                     start_clock_cycle()
@@ -363,16 +354,8 @@ class ISSPHostSubtarget(Elaboratable):
                     m.d.comb += self._in_fifo.w_data.eq(byte)
                     m.d.comb += self._in_fifo.w_en.eq(1)
 
-                    m.d.sync += starting_address.eq(starting_address + 1)
-                    m.d.sync += readwrite_byte_count.eq(readwrite_byte_count - 1)
-                    with m.If(readwrite_byte_count == 0):
-                        m.d.comb += sdata_oe_nxt.eq(0)
-                        m.next = "IDLE"
-                    with m.Else():
-                        m.d.comb += sdata_o_nxt.eq(1)
-                        m.d.comb += sdata_oe_nxt.eq(1)
-                        start_clock_cycle()
-                        m.next = "READ_BYTE_SEND_CMD_BIT_0"
+                    m.d.comb += sdata_oe_nxt.eq(0)
+                    m.next = "IDLE"
 
         return m
 
@@ -488,7 +471,11 @@ class ISSPHostInterface:
         a lock-up. (The first bus turnaround between address and data bits of 1.5 cycles
         is correctly described)
         """
-        await self.lower.write([CMD_READ_BYTE | (reg_not_mem << 7), address, cnt_bytes - 1])
+        send_bytes = []
+        for offset in range(cnt_bytes):
+            send_bytes.append(CMD_READ_BYTE | (reg_not_mem << 7))
+            send_bytes.append(address + offset)
+        await self.lower.write(send_bytes)
         return list(await self.lower.read(cnt_bytes))
 
     async def write_bytes(self, address, bytes, reg_not_mem=0):
