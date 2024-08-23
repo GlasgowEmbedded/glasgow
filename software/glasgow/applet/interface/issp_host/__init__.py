@@ -12,7 +12,7 @@ assert MAX_SEND_BITS <= 2**16, "must update state machine to be able to send mor
 ZERO_BITS_AFTER_POLL = 40
 # Number of zero bits defined in ISSP programming specification differs.
 # revK says 40 zero bits
-# revH/I says 30 zero bits
+# revI says 30 zero bits
 # Applying more zero bits then necessary is fine. (The spec explicity says that 0 padding after any 22-bit mnemonic is permitted)
 
 CMD_ASSERT_RESET   = 0x01

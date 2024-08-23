@@ -98,8 +98,7 @@ class Psoc1Interface(aobject):
 
     async def set_bank_num(self, number):
         """
-        Not defined in RevK
-        Defined in RevJ
+        Only supported by RevL-covered devices
         """
         assert number >= 0
         assert number <= 3
@@ -266,8 +265,8 @@ class ProgramPsoc1Applet(ISSPHostApplet):
     All commands except for reset-run must receive a valid part number to check against.
     When connecting to an unknown chip, please be aware that there are two groups of chips supported
     by this applet, and their initialization sequence, up to the point where silicon ID can be read
-    differs. One group is chips described by ISSP specs RevK, RevJ, RevL (aka AN2026a and AN2026b),
-    and the other group is described by RevI, RevH (aka AN2026c). If you want to use the "get-silicon-id"
+    differs. One group is chips described by ISSP specs RevK, RevL (aka AN2026a and AN2026b),
+    and the other group is described by RevI (aka AN2026c). If you want to use the "get-silicon-id"
     command to find out what chip you're connected to you may pass a different part number to that
     command as long as it is withing the same group of chips, it should be able to read the Silicon ID.
     If reading the silicon ID succeeds, the console log messages will report the correct part number.
