@@ -49,12 +49,6 @@ class ISSPHostSubtarget(Elaboratable):
         m = Module()
 
         total_bits_counter = Signal(range(max(MAX_SEND_BITS, 8)))
-        # The 8 in the above max() expression is for the following optimization:
-        # This is an optimization to overlay the read_address register with total_bits_counter.
-        # total_bits_counter is only used for sending bit vectors (i.e. writes)
-        # read_address is only ever used when performing reads. So these are never ever used
-        # at the same time, so putting them in the same flipflops saves some logic cells
-        read_address = total_bits_counter[:8]        #read_address = Signal(8)
 
         m.submodules.sclk = sclk_buffer = io.FFBuffer("io", self._ports.sclk)
         sclk_o, sclk_o_nxt = Signal(), Signal()
@@ -178,7 +172,7 @@ class ISSPHostSubtarget(Elaboratable):
                 with m.Elif(cmd == CMD_READ_BYTE):
                     with m.If(self._out_fifo.r_rdy):
                         m.d.comb += self._out_fifo.r_en.eq(1)
-                        m.d.sync += read_address.eq(self._out_fifo.r_data)
+                        m.d.sync += byte.eq(self._out_fifo.r_data)
                         m.d.comb += sdata_o_nxt.eq(1)
                         m.d.comb += sdata_oe_nxt.eq(1)
                         start_clock_cycle()
@@ -293,9 +287,8 @@ class ISSPHostSubtarget(Elaboratable):
                     m.next = "READ_BYTE_SEND_CMD_BIT_2"
             with m.State("READ_BYTE_SEND_CMD_BIT_2"):
                 with m.If(timer_done_oneshot):
-                    m.d.comb += sdata_o_nxt.eq(read_address[7])
+                    m.d.comb += sdata_o_nxt.eq(byte[7])
                     m.d.sync += bit_in_byte_counter.eq(7)
-                    m.d.sync += byte.eq(read_address[:7])
                     start_clock_cycle()
                     m.next = "READ_BYTE_SHIFT_ADDRESS"
             with m.State("READ_BYTE_SHIFT_ADDRESS"):
