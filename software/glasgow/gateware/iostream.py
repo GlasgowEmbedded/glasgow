@@ -85,7 +85,7 @@ class IOStreamer(wiring.Component):
         m = Module()
 
         if self._ratio == 1:
-            buffer_cls, latency = io.FFBuffer, 2
+            buffer_cls, latency = io.FFBuffer, 1
         if self._ratio == 2:
             # FIXME: should this be 2 or 3? the latency differs between i[0] and i[1]
             buffer_cls, latency = io.DDRBuffer, 3
