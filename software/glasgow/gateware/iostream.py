@@ -191,12 +191,15 @@ class IOStreamer(wiring.Component):
         m.d.comb += skid[0].meta.eq(meta)
 
         skid_at = Signal(range(1 + latency))
+
+        with m.If(i_en):
+            for n_shift in range(latency):
+                m.d.sync += skid[n_shift + 1].eq(skid[n_shift])
+
         with m.If(i_en & ~self.i_stream.ready):
             # m.d.sync += Assert(skid_at != latency)
             m.d.sync += skid_at.eq(skid_at + 1)
-            for n_shift in range(latency):
-                m.d.sync += skid[n_shift + 1].eq(skid[n_shift])
-        with m.Elif((skid_at != 0) & self.i_stream.ready):
+        with m.Elif((skid_at != 0) & ~i_en & self.i_stream.ready):
             m.d.sync += skid_at.eq(skid_at - 1)
 
         m.d.comb += self.i_stream.payload.eq(skid[skid_at])

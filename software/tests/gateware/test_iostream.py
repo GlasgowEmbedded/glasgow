@@ -1,4 +1,5 @@
 import unittest
+import random
 from amaranth import *
 from amaranth.sim import Simulator
 from amaranth.lib import io
@@ -291,6 +292,46 @@ class IOStreamTestCase(unittest.TestCase):
             o_valid_bits = "111111111",
             i_en_bits    = "010101010",
             i_ready_bits = "111111111" + ("1"*20))
+
+    def _subtest_sdr_and_ddr_input_sampled_correctly(self, o_valid_bits, i_en_bits, i_ready_bits, timeout_clocks=None):
+        self._subtest_sdr_input_sampled_correctly(o_valid_bits, i_en_bits, i_ready_bits, timeout_clocks)
+        self._subtest_ddr_input_sampled_correctly(o_valid_bits, i_en_bits, i_ready_bits, timeout_clocks)
+
+    def _get_random_bit_string(self, cnt_bits):
+        rint = random.getrandbits(cnt_bits)
+        return f"{{:0{cnt_bits}b}}".format(rint)
+
+    def test_random(self):
+        random.seed(123) # Make the test consistent from run to run
+        repeats = 10
+        cnt_bits = 100
+        for i in range(repeats):
+            self._subtest_sdr_and_ddr_input_sampled_correctly(
+                o_valid_bits = self._get_random_bit_string(cnt_bits),
+                i_en_bits    = self._get_random_bit_string(cnt_bits),
+                i_ready_bits = self._get_random_bit_string(cnt_bits) + "1" * cnt_bits)
+
+    def test_i_ready_low_blocks_when_sampling_inputs(self):
+        try:
+            self._subtest_sdr_input_sampled_correctly(
+                o_valid_bits = "011111111",
+                i_en_bits    = "011111111",
+                i_ready_bits = "")
+        except IOStreamTimeoutError:
+            pass
+        else:
+            assert False, "Testcase should have timed out"
+
+        try:
+            self._subtest_ddr_input_sampled_correctly(
+                o_valid_bits = "011111111",
+                i_en_bits    = "011111111",
+                i_ready_bits = "")
+        except IOStreamTimeoutError:
+            pass
+        else:
+            assert False, "Testcase should have timed out"
+
 
     def test_basic(self):
         ports = PortGroup()
