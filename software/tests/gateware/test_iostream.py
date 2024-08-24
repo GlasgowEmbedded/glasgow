@@ -176,8 +176,8 @@ class IOStreamTestCase(unittest.TestCase):
 
             await ctx.tick()
 
-            assert ctx.get(dut.i_stream.p.port.data.i) == 0b0101, f"{i_stream_p.port.data.i:#06b}"
-            assert ctx.get(dut.i_stream.p.meta) == 0b0101, f"{i_stream_p.meta:#06b}"
+            assert ctx.get(dut.i_stream.p.port.data.i) == 0b0101, f"{ctx.get(dut.i_stream.p.port.data.i):#06b}"
+            assert ctx.get(dut.i_stream.p.meta) == 0b0101, f"{ctx.get(dut.i_stream.p.meta):#06b}"
 
             ctx.set(dut.o_stream.p.meta, 0b1111)
             ctx.set(port.i, 0b1111)
@@ -186,15 +186,15 @@ class IOStreamTestCase(unittest.TestCase):
 
             await ctx.tick().repeat(10)
             # The skid buffer should protect the input stream from changes on the input signal
-            assert ctx.get(dut.i_stream.p.port.data.i) == 0b0101, f"{i_stream_p.port.data.i:#06b}"
-            assert ctx.get(dut.i_stream.p.meta) == 0b0101, f"{i_stream_p.meta:#06b}"
+            assert ctx.get(dut.i_stream.p.port.data.i) == 0b0101, f"{ctx.get(dut.i_stream.p.port.data.i):#06b}"
+            assert ctx.get(dut.i_stream.p.meta) == 0b0101, f"{ctx.get(dut.i_stream.p.meta):#06b}"
 
             ctx.set(dut.i_stream.ready, 1)
 
             await ctx.tick()
 
-            assert ctx.get(dut.i_stream.p.port.data.i) == 0b1111, f"{i_stream_p.port.data.i:#06b}"
-            assert ctx.get(dut.i_stream.p.meta) == 0b1111, f"{i_stream_p.meta:#06b}"
+            assert ctx.get(dut.i_stream.p.port.data.i) == 0b1111, f"{ctx.get(dut.i_stream.p.port.data.i):#06b}"
+            assert ctx.get(dut.i_stream.p.meta) == 0b1111, f"{ctx.get(dut.i_stream.p.meta):#06b}"
 
         sim = Simulator(dut)
         sim.add_clock(1e-6)
