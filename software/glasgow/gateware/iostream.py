@@ -27,6 +27,45 @@ def _map_ioshape(direction, ioshape, fn): # actually filter+map
     })
 
 
+class SimulatableDDRBuffer(io.DDRBuffer):
+    def elaborate(self, platform):
+        if not isinstance(self._port, io.SimulationPort):
+            return super().elaborate(platform)
+
+        # At the time of writing Amaranth DDRBuffer doesn't allow for simulation, this implements
+        # ICE40 semantics for simulation.
+        m = Module()
+
+        m.submodules.io_buffer = io_buffer = io.Buffer(self.direction, self.port)
+
+        if self.direction is not io.Direction.Output:
+            m.domains.i_domain_negedge = ClockDomain("i_domain_negedge", local=True)
+            m.d.comb += ClockSignal("i_domain_negedge").eq(~ClockSignal(self.i_domain))
+            i_ff = Signal(len(self.port), reset_less=True)
+            i_negedge_ff = Signal(len(self.port), reset_less=True)
+            i_final_ff = Signal(data.ArrayLayout(len(self.port), 2), reset_less=True)
+            m.d[self.i_domain] += i_ff.eq(io_buffer.i)
+            m.d["i_domain_negedge"] += i_negedge_ff.eq(io_buffer.i)
+            m.d[self.i_domain] += i_final_ff.eq(Cat(i_ff, i_negedge_ff))
+            m.d.comb += self.i.eq(i_final_ff)
+
+        if self.direction is not io.Direction.Input:
+            m.domains.o_domain_negedge = ClockDomain("o_domain_negedge", local=True)
+            m.d.comb += ClockSignal("o_domain_negedge").eq(~ClockSignal(self.o_domain))
+            o_ff = Signal(len(self.port), reset_less=True)
+            o_negedge_ff = Signal(len(self.port), reset_less=True)
+            oe_ff = Signal(reset_less=True)
+            m.d[self.o_domain] += o_ff.eq(self.o[0])
+            o1_ff = Signal(len(self.port), reset_less=True)
+            m.d[self.o_domain] += o1_ff.eq(self.o[1])
+            m.d["o_domain_negedge"] += o_negedge_ff.eq(o1_ff)
+            m.d[self.o_domain] += oe_ff.eq(self.oe)
+            m.d.comb += io_buffer.o.eq(Mux(ClockSignal(self.o_domain), o_ff, o_negedge_ff))
+            m.d.comb += io_buffer.oe.eq(oe_ff)
+
+        return m
+
+
 class IOStreamer(wiring.Component):
     """I/O buffer to stream adapter.
 
@@ -87,8 +126,7 @@ class IOStreamer(wiring.Component):
         if self._ratio == 1:
             buffer_cls, latency = io.FFBuffer, 1
         if self._ratio == 2:
-            # FIXME: should this be 2 or 3? the latency differs between i[0] and i[1]
-            buffer_cls, latency = io.DDRBuffer, 3
+            buffer_cls, latency = SimulatableDDRBuffer, 2
 
         if isinstance(self._ports, io.PortLike):
             m.submodules.buffer = buffer = buffer_cls("io", self._ports)
