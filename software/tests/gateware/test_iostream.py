@@ -70,7 +70,7 @@ class IOStreamTestCase(unittest.TestCase):
             later, when the sample actually arrives back on i_stream.
             """
             while True:
-                await ctx.posedge(ports.clk_out.o[0])
+                await ctx.changed(ports.clk_out.o)
                 value = ctx.get(ports.data_in.i)
                 expected_sample.append(value)
 
@@ -103,6 +103,7 @@ class IOStreamTestCase(unittest.TestCase):
             await ctx.tick()
 
             expected_samples_count = 0
+            o_bit = 0
 
             for i in range(len(o_valid_bits)):
                 o_valid_bit = 1 if o_valid_bits[i] == "1" else 0
@@ -110,12 +111,13 @@ class IOStreamTestCase(unittest.TestCase):
                 if o_valid_bit:
                     if i_en_bit:
                         expected_samples_count += 1
+                        o_bit ^= 1
                     await stream_put(ctx, dut.o_stream, {
                         "meta": i,
                         "i_en": i_en_bit,
                         "port": {
                             "clk_out": {
-                                "o": i_en_bit,
+                                "o": o_bit,
                             }
                         }
                     })
