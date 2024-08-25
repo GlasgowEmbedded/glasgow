@@ -147,12 +147,22 @@ class ISSPHostSubtarget(Elaboratable):
                 m.d.sync += timer.eq(timer - 1)
 
         def start_clock_cycle():
+            """
+            This will start an sclk clock cycle, first a rising edge is sent,
+            then, when the timer runs out, it will send a falling edge and it
+            will auto-restart itself. When the clock cycle is complete timer_done
+            will go high
+            """
             m.d.sync += timer.eq(self._clock_high_cyc - 1)
             m.d.sync += timer_running.eq(1)
             m.d.sync += timer_mode_clock.eq(1)
             sclk.drive(1)
 
         def start_simple_timer(cycles):
+            """
+            This is used to just implement delays without any action being taken.
+            When the timer expires, it won't restart, and timer_done will go high.
+            """
             assert cycles >= 1
             assert cycles - 1 < self._timer_max_cyc
             m.d.sync += timer.eq(cycles - 1)
