@@ -92,6 +92,7 @@ class ISSPHostSubtarget(Elaboratable):
             m.submodules += cdc.FFSynchronizer(xres_buffer.i, xres_i_sync)
         else:
             xres_i_sync = Const(0)
+            may_be_after_power_cycle = Signal(init=1)
 
         # Use a single timer for various waits
         timer = Signal(range(self._timer_max_cyc))
@@ -156,6 +157,8 @@ class ISSPHostSubtarget(Elaboratable):
                     m.next = "COMMAND"
             with m.State("COMMAND"):
                 with m.If(cmd == CMD_ASSERT_RESET):
+                    if self._ports.xres is None:
+                        m.d.sync += may_be_after_power_cycle.eq(1)
                     m.d.comb += xres_o_nxt.eq(1)
                     m.d.comb += xres_oe_nxt.eq(1)
                     m.next = "IDLE"
@@ -213,12 +216,13 @@ class ISSPHostSubtarget(Elaboratable):
                             m.next = "SEND_BITS_WAIT_DATA"
                     else:
                         # LIMITED support for power-cycle mode:
-                        with m.If(sdata_sync):
+                        with m.If(may_be_after_power_cycle & sdata_sync):
+                            m.d.sync += may_be_after_power_cycle.eq(0)
                             start_simple_timer(self._after_reset_wait_cyc - 1)
-                            m.next = "WAIT_SDATA_LOW_PLUS_TIME"
+                            m.next = "PWR_CYCLE_MODE_WAIT_SDATA_LOW_PLUS_TIME"
                         with m.Else():
                             m.next = "SEND_BITS_WAIT_DATA"
-            with m.State("WAIT_SDATA_LOW_PLUS_TIME"):
+            with m.State("PWR_CYCLE_MODE_WAIT_SDATA_LOW_PLUS_TIME"):
                 with m.If(sdata_sync):
                     start_simple_timer(self._after_reset_wait_cyc - 1)
                 with m.Else():
@@ -366,7 +370,7 @@ class ISSPHostInterface:
 
     async def assert_xres(self):
         """
-        Assert xres (set to 1)
+        Assert xres (set to 1)  (Also, in case we're in power-cycle mode, tell the state machine that we're about to power-cycle)
         """
         await self.lower.write([CMD_ASSERT_RESET])
         await self.wait_pending()

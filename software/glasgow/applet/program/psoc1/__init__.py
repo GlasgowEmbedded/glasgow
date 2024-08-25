@@ -51,10 +51,9 @@ class Psoc1Interface(aobject):
 
     async def initialize_and_get_silicon_id(self, fconfig):
         await self.lower.low_sclk()
-        if self._has_xres:
-            await self.lower.assert_xres()
-            await asyncio.sleep(0.001)
-        else:
+        await self.lower.assert_xres()
+        await asyncio.sleep(0.001)
+        if not self._has_xres:
             self._logger.warn("Warning: Using power-cycle method, because no xres pin has been specified. "+
                               "The power-cycle method is experimental, and doesn't tightly control timing")
             await self._power_cycle()
