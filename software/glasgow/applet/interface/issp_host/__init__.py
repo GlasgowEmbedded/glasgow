@@ -3,7 +3,7 @@ import logging
 import math
 import asyncio
 from amaranth import *
-from amaranth.lib import io, cdc, enum
+from amaranth.lib import io, cdc, enum, data
 from ... import *
 
 MAX_SEND_BITS = 2**16
@@ -15,15 +15,30 @@ ZERO_BITS_AFTER_POLL = 40
 # revI says 30 zero bits
 # Applying more zero bits then necessary is fine. (The spec explicity says that 0 padding after any 22-bit mnemonic is permitted)
 
-class _Command(enum.Enum, shape=4):
-    ASSERT_RESET   = 0x1
-    DEASSERT_RESET = 0x2
-    FLOAT_RESET    = 0x3
-    SEND_BITS      = 0x4
-    READ_BYTE      = 0x5
-    WAIT_PENDING   = 0x6
-    FLOAT_SCLK     = 0x7
-    LOW_SCLK       = 0x8
+class _Command(data.Struct):
+    class Kind(enum.Enum):
+        ASSERT_RESET   = 0x1
+        DEASSERT_RESET = 0x2
+        FLOAT_RESET    = 0x3
+        SEND_BITS      = 0x4
+        READ_BYTE      = 0x5
+        WAIT_PENDING   = 0x6
+        FLOAT_SCLK     = 0x7
+        LOW_SCLK       = 0x8
+
+    kind: Kind
+    params: data.UnionLayout({
+        "send_bits": data.StructLayout({
+            "do_poll": unsigned(1),
+            "needs_single_clock_pulse_for_poll": unsigned(1),
+            "needs_arbitrary_clocks_for_poll": unsigned(1),
+        }),
+        "read_byte": data.StructLayout({
+            "reg_not_mem": unsigned(1),
+        }),
+    })
+
+assert _Command.as_shape().size <= 8, "Command must fit in a byte"
 
 class ISSPHostSubtarget(Elaboratable):
     def __init__(self, ports, out_fifo, in_fifo, period_cyc, io_decay_wait_cyc, after_reset_wait_cyc, sample_before_falling_edge_cyc=1):
@@ -127,13 +142,7 @@ class ISSPHostSubtarget(Elaboratable):
             m.d.sync += timer_running.eq(1)
             m.d.sync += timer_mode_clock.eq(0)
 
-        cmd = Signal(4)
-        do_poll = Signal()
-        reg_not_mem = do_poll # same bit of the command byte as do_poll,
-                              # but do_poll applies during _Command.SEND_BITS
-                              # while reg_not_mem applies during _Command.READ_BYTE
-        needs_single_clock_pulse_for_poll = Signal()
-        needs_arbitrary_clocks_for_poll = Signal()
+        cmd = Signal(_Command)
         byte = Signal(8)
         bit_in_byte_counter = Signal(3)
 
@@ -150,34 +159,30 @@ class ISSPHostSubtarget(Elaboratable):
             with m.State("IDLE"):
                 m.d.comb += o_fifo.ready.eq(1)
                 with m.If(o_fifo.valid):
-                    m.d.sync += (
-                        cmd.eq(o_fifo.payload),
-                        do_poll.eq(o_fifo.payload[7]),
-                        needs_single_clock_pulse_for_poll.eq(o_fifo.payload[6]),
-                        needs_arbitrary_clocks_for_poll.eq(o_fifo.payload[5]))
+                    m.d.sync += cmd.eq(o_fifo.payload)
                     m.next = "COMMAND"
             with m.State("COMMAND"):
-                with m.Switch(cmd):
-                    with m.Case(_Command.ASSERT_RESET):
+                with m.Switch(cmd.kind):
+                    with m.Case(_Command.Kind.ASSERT_RESET):
                         if self._ports.xres is None:
                             m.d.sync += may_be_after_power_cycle.eq(1)
                         m.d.comb += xres_o_nxt.eq(1)
                         m.d.comb += xres_oe_nxt.eq(1)
                         m.next = "IDLE"
-                    with m.Case(_Command.DEASSERT_RESET):
+                    with m.Case(_Command.Kind.DEASSERT_RESET):
                         m.d.comb += xres_o_nxt.eq(0)
                         m.d.comb += xres_oe_nxt.eq(1)
                         m.next = "IDLE"
-                    with m.Case(_Command.FLOAT_RESET):
+                    with m.Case(_Command.Kind.FLOAT_RESET):
                         m.d.comb += xres_o_nxt.eq(0)
                         m.d.comb += xres_oe_nxt.eq(0)
                         m.next = "IDLE"
-                    with m.Case(_Command.SEND_BITS):
+                    with m.Case(_Command.Kind.SEND_BITS):
                         m.d.comb += o_fifo.ready.eq(1)
                         with m.If(o_fifo.valid):
                             m.d.sync += total_bits_counter[8:].eq(o_fifo.payload)
                             m.next = "SEND_BITS_WAIT_CNT_LSB"
-                    with m.Case(_Command.READ_BYTE):
+                    with m.Case(_Command.Kind.READ_BYTE):
                         m.d.comb += o_fifo.ready.eq(1)
                         with m.If(o_fifo.valid):
                             m.d.sync += byte.eq(o_fifo.payload)
@@ -185,16 +190,16 @@ class ISSPHostSubtarget(Elaboratable):
                             m.d.comb += sdata_oe_nxt.eq(1)
                             start_clock_cycle()
                             m.next = "READ_BYTE_SEND_CMD_BIT_0"
-                    with m.Case(_Command.WAIT_PENDING):
+                    with m.Case(_Command.Kind.WAIT_PENDING):
                         m.d.comb += i_fifo.payload.eq(0)
                         m.d.comb += i_fifo.valid.eq(1)
                         with m.If(i_fifo.ready):
                             m.next = "IDLE"
-                    with m.Case(_Command.FLOAT_SCLK):
+                    with m.Case(_Command.Kind.FLOAT_SCLK):
                         m.d.comb += sclk_o_nxt.eq(0)
                         m.d.comb += sclk_oe_nxt.eq(0)
                         m.next = "IDLE"
-                    with m.Case(_Command.LOW_SCLK):
+                    with m.Case(_Command.Kind.LOW_SCLK):
                         m.d.comb += sclk_o_nxt.eq(0)
                         m.d.comb += sclk_oe_nxt.eq(1)
                         m.next = "IDLE"
@@ -250,7 +255,7 @@ class ISSPHostSubtarget(Elaboratable):
                     m.d.sync += total_bits_counter.eq(total_bits_counter - 1)
 
                     with m.If(total_bits_counter == 0):
-                        with m.If(do_poll):
+                        with m.If(cmd.params.send_bits.do_poll):
                             m.d.comb += sdata_oe_nxt.eq(0)
                             m.next = "SEND_BITS_WAIT_IO_DECAY"
                             start_simple_timer(self._io_decay_plus_sample_wait_cyc)
@@ -269,7 +274,7 @@ class ISSPHostSubtarget(Elaboratable):
                         start_clock_cycle()
             with m.State("SEND_BITS_WAIT_IO_DECAY"):
                 with m.If(timer_done_oneshot):
-                    with m.If(needs_single_clock_pulse_for_poll):
+                    with m.If(cmd.params.send_bits.needs_single_clock_pulse_for_poll):
                         start_clock_cycle()
                     m.d.sync += sdata_negedge_seen.eq(0)
                     m.next = "SEND_BITS_WAIT_POLL"
@@ -279,7 +284,7 @@ class ISSPHostSubtarget(Elaboratable):
                 # now we don't implement a time-out.
                 with m.If(sdata_negedge_seen & ~sdata_sync & ~timer_running):
                     m.next = "IDLE"
-                with m.Elif(needs_arbitrary_clocks_for_poll & ~sdata_negedge_seen & ~sdata_sync & timer_done):
+                with m.Elif(cmd.params.send_bits.needs_arbitrary_clocks_for_poll & ~sdata_negedge_seen & ~sdata_sync & timer_done):
                     start_clock_cycle()
             with m.State("SEND_BITS_ZERO_AFTER_POLL"):
                 with m.If(timer_done_oneshot):
@@ -291,7 +296,7 @@ class ISSPHostSubtarget(Elaboratable):
                         start_clock_cycle()
             with m.State("READ_BYTE_SEND_CMD_BIT_0"):
                 with m.If(timer_done_oneshot):
-                    m.d.comb += sdata_o_nxt.eq(reg_not_mem)
+                    m.d.comb += sdata_o_nxt.eq(cmd.params.read_byte.reg_not_mem)
                     start_clock_cycle()
                     m.next = "READ_BYTE_SEND_CMD_BIT_1"
             with m.State("READ_BYTE_SEND_CMD_BIT_1"):
@@ -366,7 +371,7 @@ class ISSPHostInterface:
         and we wait to receive that byte. After we've received it, we know
         that all state-machine commands sent before have finished.
         """
-        await self.lower.write([_Command.WAIT_PENDING.value])
+        await self.lower.write([_Command.Kind.WAIT_PENDING.value])
         await self.lower.flush()
         assert 0 == (await self.lower.read(1))[0]
 
@@ -374,41 +379,41 @@ class ISSPHostInterface:
         """
         Assert xres (set to 1)  (Also, in case we're in power-cycle mode, tell the state machine that we're about to power-cycle)
         """
-        await self.lower.write([_Command.ASSERT_RESET.value])
+        await self.lower.write([_Command.Kind.ASSERT_RESET.value])
         await self.wait_pending()
 
     async def deassert_xres(self):
         """
         Deassert xres (set to 0)
         """
-        await self.lower.write([_Command.DEASSERT_RESET.value])
+        await self.lower.write([_Command.Kind.DEASSERT_RESET.value])
         await self.wait_pending()
 
     async def float_xres(self):
         """
         Float xres if it was previously driven
         """
-        await self.lower.write([_Command.FLOAT_RESET.value])
+        await self.lower.write([_Command.Kind.FLOAT_RESET.value])
         await self.wait_pending()
 
     async def float_sclk(self):
         """
         Float sclk if it was previously driven
         """
-        await self.lower.write([_Command.FLOAT_SCLK.value])
+        await self.lower.write([_Command.Kind.FLOAT_SCLK.value])
 
     async def low_sclk(self):
         """
         Drive sclk with a strong low value
         """
-        await self.lower.write([_Command.LOW_SCLK.value])
+        await self.lower.write([_Command.Kind.LOW_SCLK.value])
 
     async def _send_zero_bits(self, cnt_bits = ZERO_BITS_AFTER_POLL):
         cnt_enc = cnt_bits - 1
         cnt_bytes = (cnt_bits + 7)//8
         zero_blist = [0] * cnt_bytes
         await self.lower.write([
-            _Command.SEND_BITS.value, cnt_enc >> 8, cnt_enc & 0xff, *zero_blist])
+            _Command.Kind.SEND_BITS.value, cnt_enc >> 8, cnt_enc & 0xff, *zero_blist])
 
     async def send_bits(self, cnt_bits, value, do_poll=1, do_zero_bits=1, needs_single_clock_pulse_for_poll=1, needs_arbitrary_clocks_for_poll=0):
         """
@@ -429,10 +434,10 @@ class ISSPHostInterface:
             blist.append(((value << 8) >> bits_left) & 0xff)
             bits_left -= 8
         await self.lower.write([
-            (_Command.SEND_BITS.value |
-             (do_poll << 7) |
-             (needs_single_clock_pulse_for_poll << 6) |
-             (needs_arbitrary_clocks_for_poll << 5)
+            (_Command.Kind.SEND_BITS.value |
+             (do_poll << 4) |
+             (needs_single_clock_pulse_for_poll << 5) |
+             (needs_arbitrary_clocks_for_poll << 6)
             ), cnt_enc_msb, cnt_enc_lsb, *blist])
         if do_zero_bits:
             await self._send_zero_bits()
@@ -454,10 +459,10 @@ class ISSPHostInterface:
                 piece = piece + ("0" * (8 - len(piece)))
             blist.append(int(piece, 2))
         await self.lower.write([
-            (_Command.SEND_BITS.value |
-             (do_poll << 7) |
-             (needs_single_clock_pulse_for_poll << 6) |
-             (needs_arbitrary_clocks_for_poll << 5)
+            (_Command.Kind.SEND_BITS.value |
+             (do_poll << 4) |
+             (needs_single_clock_pulse_for_poll << 5) |
+             (needs_arbitrary_clocks_for_poll << 6)
             ), cnt_enc_msb, cnt_enc_lsb, *blist])
         if do_zero_bits:
             await self._send_zero_bits()
@@ -475,7 +480,7 @@ class ISSPHostInterface:
         """
         send_bytes = []
         for offset in range(cnt_bytes):
-            send_bytes.append(_Command.READ_BYTE.value | (reg_not_mem << 7))
+            send_bytes.append(_Command.Kind.READ_BYTE.value | (reg_not_mem << 4))
             send_bytes.append(address + offset)
         await self.lower.write(send_bytes)
         return list(await self.lower.read(cnt_bytes))
