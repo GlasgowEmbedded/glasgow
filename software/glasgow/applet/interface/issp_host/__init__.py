@@ -40,6 +40,52 @@ class _Command(data.Struct):
 
 assert _Command.as_shape().size <= 8, "Command must fit in a byte"
 
+class PinDriver():
+    def __init__(self, m, ports, name, synchronize_input=False, edge_detect_input=False):
+        self._name = name
+        self.m = m
+        self.buffer = io.FFBuffer("io", ports[name])
+        m.submodules[name] = self.buffer
+        self.o = Signal(name=name + "_o")
+        self.o_nxt = Signal(name=name + "_o_nxt")
+        self.oe = Signal(name=name + "_oe")
+        self.oe_nxt = Signal(name=name + "_oe_nxt")
+
+        # Here are the flipflops that mirror the state of what's in the IO buffer:
+        m.d.sync += (self.o.eq(self.o_nxt),
+                     self.oe.eq(self.oe_nxt))
+
+        # This is the deafult case, the pin will always keep it's previous state, unless modified
+        m.d.comb += (self.o_nxt.eq(self.o),
+                     self.oe_nxt.eq(self.oe))
+
+        # Here we connect up to the buffer:
+        m.d.comb += self.buffer.oe.eq(self.oe_nxt)
+        m.d.comb += self.buffer.o.eq(self.o_nxt)
+
+        if synchronize_input:
+            self.i_sync = Signal(name=name + "_i_sync")
+            synchronizer = cdc.FFSynchronizer(self.buffer.i, self.i_sync)
+            m.submodules[name + "_synchronizer"] = synchronizer
+
+            if edge_detect_input:
+                self.i_sync_ff = Signal(name=name + "i_sync_ff")
+                m.d.sync += self.i_sync_ff.eq(self.i_sync)
+
+
+    def negedge(self):
+        return (self.i_sync == 0) & (self.i_sync_ff == 1)
+
+    def posedge(self):
+        return (self.i_sync == 1) & (self.i_sync_ff == 0)
+
+    def drive(self, value):
+        self.m.d.comb += (self.o_nxt.eq(value),
+                          self.oe_nxt.eq(1))
+
+    def release(self):
+        self.m.d.comb += self.oe_nxt.eq(0)
+
 class ISSPHostSubtarget(Elaboratable):
     def __init__(self, ports, out_fifo, in_fifo, period_cyc, io_decay_wait_cyc, after_reset_wait_cyc, sample_before_falling_edge_cyc=1):
         """
@@ -69,45 +115,16 @@ class ISSPHostSubtarget(Elaboratable):
 
         total_bits_counter = Signal(range(max(MAX_SEND_BITS, 8)))
 
-        m.submodules.sclk = sclk_buffer = io.FFBuffer("io", self._ports.sclk)
-        sclk_o, sclk_o_nxt = Signal(), Signal()
-        sclk_oe, sclk_oe_nxt = Signal(), Signal()
-        m.d.sync += (sclk_o.eq(sclk_o_nxt),
-                     sclk_oe.eq(sclk_oe_nxt))
-        m.d.comb += (sclk_o_nxt.eq(sclk_o),
-                     sclk_oe_nxt.eq(sclk_oe))
-        m.d.comb += sclk_buffer.oe.eq(sclk_oe_nxt)
-        m.d.comb += sclk_buffer.o.eq(sclk_o_nxt)
+        sclk = PinDriver(m, self._ports, "sclk")
+        sdata = PinDriver(m, self._ports, "sdata", synchronize_input=True, edge_detect_input=True)
 
-        m.submodules.sdata = sdata_buffer = io.FFBuffer("io", self._ports.sdata)
+        sdata_negedge_seen = Signal()
+        m.d.sync += sdata_negedge_seen.eq(sdata_negedge_seen | sdata.negedge())
 
-        sdata_sync, sdata_sync_ff, sdata_negedge, sdata_negedge_seen = Signal(), Signal(), Signal(), Signal()
-        m.submodules += cdc.FFSynchronizer(sdata_buffer.i, sdata_sync)
-        m.d.sync += sdata_sync_ff.eq(sdata_sync)
-        m.d.comb += sdata_negedge.eq((sdata_sync == 0) & (sdata_sync_ff == 1))
-        m.d.sync += sdata_negedge_seen.eq(sdata_negedge_seen | sdata_negedge)
-        sdata_o, sdata_o_nxt = Signal(), Signal()
-        sdata_oe, sdata_oe_nxt = Signal(), Signal()
-        m.d.sync += (sdata_o.eq(sdata_o_nxt),
-                     sdata_oe.eq(sdata_oe_nxt))
-        m.d.comb += (sdata_o_nxt.eq(sdata_o),
-                     sdata_oe_nxt.eq(sdata_oe))
-        m.d.comb += (sdata_buffer.o.eq(sdata_o_nxt),
-                     sdata_buffer.oe.eq(sdata_oe_nxt))
-        xres_i_sync = Signal()
-        xres_o, xres_o_nxt = Signal(), Signal()
-        xres_oe, xres_oe_nxt = Signal(), Signal()
-        m.d.sync += (xres_o.eq(xres_o_nxt),
-                     xres_oe.eq(xres_oe_nxt))
-        m.d.comb += (xres_o_nxt.eq(xres_o),
-                     xres_oe_nxt.eq(xres_oe))
-        if self._ports.xres is not None:
-            m.submodules.xres = xres_buffer = io.FFBuffer("io", self._ports.xres)
-            m.d.comb += xres_buffer.oe.eq(xres_oe_nxt)
-            m.d.comb += xres_buffer.o.eq(xres_o_nxt)
-            m.submodules += cdc.FFSynchronizer(xres_buffer.i, xres_i_sync)
+        xres_pin_exists = self._ports.xres is not None
+        if xres_pin_exists:
+            xres = PinDriver(m, self._ports, "xres", synchronize_input=True)
         else:
-            xres_i_sync = Const(0)
             may_be_after_power_cycle = Signal(init=1)
 
         # Use a single timer for various waits
@@ -120,9 +137,9 @@ class ISSPHostSubtarget(Elaboratable):
 
         with m.If(timer_running):
             with m.If(timer == 0):
-                with m.If(sclk_o & timer_mode_clock):
+                with m.If(sclk.o & timer_mode_clock):
                     m.d.sync += timer.eq(self._clock_low_cyc - 1)
-                    m.d.comb += sclk_o_nxt.eq(0)
+                    sclk.drive(0)
                 with m.Else():
                     m.d.sync += timer_running.eq(0)
                     m.d.comb += timer_done_oneshot.eq(1)
@@ -133,7 +150,7 @@ class ISSPHostSubtarget(Elaboratable):
             m.d.sync += timer.eq(self._clock_high_cyc - 1)
             m.d.sync += timer_running.eq(1)
             m.d.sync += timer_mode_clock.eq(1)
-            m.d.comb += sclk_o_nxt.eq(1)
+            sclk.drive(1)
 
         def start_simple_timer(cycles):
             assert cycles >= 1
@@ -153,7 +170,7 @@ class ISSPHostSubtarget(Elaboratable):
             m.d.sync += do_sample_data_delayed_new.eq(do_sample_data_delayed)
             do_sample_data_delayed = do_sample_data_delayed_new
         with m.If(do_sample_data_delayed):
-            m.d.sync += byte.eq((byte << 1) | sdata_sync)
+            m.d.sync += byte.eq((byte << 1) | sdata.i_sync)
 
         with m.FSM():
             with m.State("IDLE"):
@@ -164,18 +181,18 @@ class ISSPHostSubtarget(Elaboratable):
             with m.State("COMMAND"):
                 with m.Switch(cmd.kind):
                     with m.Case(_Command.Kind.ASSERT_RESET):
-                        if self._ports.xres is None:
+                        if xres_pin_exists:
+                            xres.drive(1)
+                        else:
                             m.d.sync += may_be_after_power_cycle.eq(1)
-                        m.d.comb += xres_o_nxt.eq(1)
-                        m.d.comb += xres_oe_nxt.eq(1)
                         m.next = "IDLE"
                     with m.Case(_Command.Kind.DEASSERT_RESET):
-                        m.d.comb += xres_o_nxt.eq(0)
-                        m.d.comb += xres_oe_nxt.eq(1)
+                        if xres_pin_exists:
+                            xres.drive(0)
                         m.next = "IDLE"
                     with m.Case(_Command.Kind.FLOAT_RESET):
-                        m.d.comb += xres_o_nxt.eq(0)
-                        m.d.comb += xres_oe_nxt.eq(0)
+                        if xres_pin_exists:
+                            xres.release()
                         m.next = "IDLE"
                     with m.Case(_Command.Kind.SEND_BITS):
                         m.d.comb += o_fifo.ready.eq(1)
@@ -186,8 +203,7 @@ class ISSPHostSubtarget(Elaboratable):
                         m.d.comb += o_fifo.ready.eq(1)
                         with m.If(o_fifo.valid):
                             m.d.sync += byte.eq(o_fifo.payload)
-                            m.d.comb += sdata_o_nxt.eq(1)
-                            m.d.comb += sdata_oe_nxt.eq(1)
+                            sdata.drive(1)
                             start_clock_cycle()
                             m.next = "READ_BYTE_SEND_CMD_BIT_0"
                     with m.Case(_Command.Kind.WAIT_PENDING):
@@ -196,12 +212,10 @@ class ISSPHostSubtarget(Elaboratable):
                         with m.If(i_fifo.ready):
                             m.next = "IDLE"
                     with m.Case(_Command.Kind.FLOAT_SCLK):
-                        m.d.comb += sclk_o_nxt.eq(0)
-                        m.d.comb += sclk_oe_nxt.eq(0)
+                        sclk.release()
                         m.next = "IDLE"
                     with m.Case(_Command.Kind.LOW_SCLK):
-                        m.d.comb += sclk_o_nxt.eq(0)
-                        m.d.comb += sclk_oe_nxt.eq(1)
+                        sclk.drive(0)
                         m.next = "IDLE"
                     with m.Default():
                         m.next = "IDLE"
@@ -210,12 +224,11 @@ class ISSPHostSubtarget(Elaboratable):
                 with m.If(o_fifo.valid):
                     m.d.sync += total_bits_counter[:8].eq(o_fifo.payload)
 
-                    if self._ports.xres is not None:
-                        m.d.comb += xres_o_nxt.eq(0)
-                        m.d.comb += xres_oe_nxt.eq(1)
+                    if xres_pin_exists:
+                        xres.drive(0)
 
-                        with m.If(((xres_oe == 1) & (xres_o == 1)) |
-                                  ((xres_oe == 0) & (xres_i_sync == 1))):
+                        with m.If(((xres.oe == 1) & (xres.o == 1)) |
+                                  ((xres.oe == 0) & (xres.i_sync == 1))):
                             start_simple_timer(self._after_reset_wait_cyc - 1)
                             # ^^ - 1 to account for the additional cycle to remove the first data byte from the FIFO
                             m.next = "SEND_BITS_WAIT_AFTER_RESET"
@@ -230,7 +243,7 @@ class ISSPHostSubtarget(Elaboratable):
                         with m.Else():
                             m.next = "SEND_BITS_WAIT_DATA"
             with m.State("PWR_CYCLE_MODE_WAIT_SDATA_LOW_PLUS_TIME"):
-                with m.If(sdata_sync):
+                with m.If(sdata.i_sync):
                     start_simple_timer(self._after_reset_wait_cyc - 1)
                 with m.Else():
                     with m.If(timer_done):
@@ -243,30 +256,28 @@ class ISSPHostSubtarget(Elaboratable):
                 with m.If(o_fifo.valid):
                     m.d.sync += bit_in_byte_counter.eq(7)
                     m.d.sync += byte.eq(o_fifo.payload[:7])
-                    m.d.comb += sdata_o_nxt.eq(o_fifo.payload[7])
-                    m.d.comb += sdata_oe_nxt.eq(1)
+                    sdata.drive(o_fifo.payload[7])
                     start_clock_cycle()
                     m.next = "SEND_BITS_SHIFT"
             with m.State("SEND_BITS_SHIFT"):
                 with m.If(timer_done_oneshot):
                     m.d.sync += byte.eq(byte << 1)
-                    m.d.comb += sdata_o_nxt.eq(byte[6])
+                    sdata.drive(byte[6])
                     m.d.sync += bit_in_byte_counter.eq(bit_in_byte_counter - 1)
                     m.d.sync += total_bits_counter.eq(total_bits_counter - 1)
 
                     with m.If(total_bits_counter == 0):
+                        sdata.release()
                         with m.If(cmd.params.send_bits.do_poll):
-                            m.d.comb += sdata_oe_nxt.eq(0)
-                            m.next = "SEND_BITS_WAIT_IO_DECAY"
                             start_simple_timer(self._io_decay_plus_sample_wait_cyc)
+                            m.next = "SEND_BITS_WAIT_IO_DECAY"
                         with m.Else():
-                            m.d.comb += sdata_oe_nxt.eq(0)
                             m.next = "IDLE"
                     with m.Elif(bit_in_byte_counter == 0):
                         m.d.comb += o_fifo.ready.eq(1)
                         with m.If(o_fifo.valid):
                             m.d.sync += byte.eq(o_fifo.payload[:7])
-                            m.d.comb += sdata_o_nxt.eq(o_fifo.payload[7])
+                            sdata.drive(o_fifo.payload[7])
                             start_clock_cycle()
                         with m.Else():
                             m.next = "SEND_BITS_WAIT_DATA"
@@ -282,42 +293,42 @@ class ISSPHostSubtarget(Elaboratable):
                 # Some versions of the ISSP spec say that the chip can be in this
                 # state with SDATA high for 100ms, other versions say 200ms, For
                 # now we don't implement a time-out.
-                with m.If(sdata_negedge_seen & ~sdata_sync & ~timer_running):
+                with m.If(sdata_negedge_seen & ~sdata.i_sync & ~timer_running):
                     m.next = "IDLE"
-                with m.Elif(cmd.params.send_bits.needs_arbitrary_clocks_for_poll & ~sdata_negedge_seen & ~sdata_sync & timer_done):
+                with m.Elif(cmd.params.send_bits.needs_arbitrary_clocks_for_poll & ~sdata_negedge_seen & ~sdata.i_sync & timer_done):
                     start_clock_cycle()
             with m.State("SEND_BITS_ZERO_AFTER_POLL"):
                 with m.If(timer_done_oneshot):
                     m.d.sync += total_bits_counter.eq(total_bits_counter - 1)
                     with m.If(total_bits_counter == 0):
-                        m.d.comb += sdata_oe_nxt.eq(0)
+                        sdata.release()
                         m.next = "IDLE"
                     with m.Else():
                         start_clock_cycle()
             with m.State("READ_BYTE_SEND_CMD_BIT_0"):
                 with m.If(timer_done_oneshot):
-                    m.d.comb += sdata_o_nxt.eq(cmd.params.read_byte.reg_not_mem)
+                    sdata.drive(cmd.params.read_byte.reg_not_mem)
                     start_clock_cycle()
                     m.next = "READ_BYTE_SEND_CMD_BIT_1"
             with m.State("READ_BYTE_SEND_CMD_BIT_1"):
                 with m.If(timer_done_oneshot):
-                    m.d.comb += sdata_o_nxt.eq(1)
+                    sdata.drive(1)
                     start_clock_cycle()
                     m.next = "READ_BYTE_SEND_CMD_BIT_2"
             with m.State("READ_BYTE_SEND_CMD_BIT_2"):
                 with m.If(timer_done_oneshot):
-                    m.d.comb += sdata_o_nxt.eq(byte[7])
+                    sdata.drive(byte[7])
                     m.d.sync += bit_in_byte_counter.eq(7)
                     start_clock_cycle()
                     m.next = "READ_BYTE_SHIFT_ADDRESS"
             with m.State("READ_BYTE_SHIFT_ADDRESS"):
                 with m.If(timer_done_oneshot):
-                    m.d.comb += sdata_o_nxt.eq(byte[6])
+                    sdata.drive(byte[6])
                     m.d.sync += byte.eq(byte << 1)
                     m.d.sync += bit_in_byte_counter.eq(bit_in_byte_counter - 1)
                     start_clock_cycle()
                     with m.If(bit_in_byte_counter == 0):
-                        m.d.comb += sdata_oe_nxt.eq(0)
+                        sdata.release()
                         m.next = "READ_BYTE_WAIT_TURNAROUND_1"
             with m.State("READ_BYTE_WAIT_TURNAROUND_1"):
                 with m.If(timer_done_oneshot):
@@ -325,7 +336,7 @@ class ISSPHostSubtarget(Elaboratable):
                     m.d.sync += bit_in_byte_counter.eq(7)
                     m.next = "READ_BYTE_SHIFT"
             with m.State("READ_BYTE_SHIFT"):
-                with m.If((timer == 0) & (sclk_o) & (bit_in_byte_counter != 7)):
+                with m.If((timer == 0) & (sclk.o) & (bit_in_byte_counter != 7)):
                     m.d.comb += do_sample_data.eq(1)
                 with m.If(timer_done_oneshot):
                     start_clock_cycle()
@@ -334,11 +345,10 @@ class ISSPHostSubtarget(Elaboratable):
                         start_clock_cycle()
                         m.next = "READ_BYTE_WAIT_TURNAROUND_2"
             with m.State("READ_BYTE_WAIT_TURNAROUND_2"):
-                with m.If((timer == 0) & (sclk_o)):
+                with m.If((timer == 0) & (sclk.o)):
                     m.d.comb += do_sample_data.eq(1)
                 with m.If(timer_done_oneshot):
-                    m.d.comb += sdata_o_nxt.eq(1)
-                    m.d.comb += sdata_oe_nxt.eq(1)
+                    sdata.drive(1)
                     # Note: comparing to the ISSP specification it might seem that
                     # we are missing a high-z clock cycle here, however this is
                     # documented incorrectly: final bus turnaround happens between
@@ -351,7 +361,7 @@ class ISSPHostSubtarget(Elaboratable):
                 with m.If(timer_done):
                     m.d.comb += i_fifo.payload.eq(byte)
                     m.d.comb += i_fifo.valid.eq(1)
-                    m.d.comb += sdata_oe_nxt.eq(0)
+                    sdata.release()
                     with m.If(i_fifo.ready):
                         m.next = "IDLE"
 
