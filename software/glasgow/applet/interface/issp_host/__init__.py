@@ -357,6 +357,18 @@ class ISSPHostSubtarget(Elaboratable):
 
         return m
 
+assert Const({"kind": 1}, _Command).as_value().value == 1, "Code below assumes the command kind is at offset zero"
+
+DO_POLL_OFFSET = 4
+NEEDS_SINGLE_CLOCK_PULSE_FOR_POLL_OFFSET = 5
+NEEDS_ARBITRARY_CLOCKS_FOR_POLL_OFFSET = 6
+REG_NOT_MEM_OFFSET = 4
+
+assert Const({"params": {"send_bits": {"do_poll": 1}}}, _Command).as_value().value == 1 << DO_POLL_OFFSET, "Please update the above constants"
+assert Const({"params": {"send_bits": {"needs_single_clock_pulse_for_poll": 1}}}, _Command).as_value().value == 1 << NEEDS_SINGLE_CLOCK_PULSE_FOR_POLL_OFFSET, "Please update the above constants"
+assert Const({"params": {"send_bits": {"needs_arbitrary_clocks_for_poll": 1}}}, _Command).as_value().value == 1 << NEEDS_ARBITRARY_CLOCKS_FOR_POLL_OFFSET, "Please update the above constants"
+assert Const({"params": {"read_byte": {"reg_not_mem": 1}}}, _Command).as_value().value == 1 << REG_NOT_MEM_OFFSET, "Please update the above constants"
+
 class ISSPHostInterface:
     def __init__(self, iface, logger):
         self.lower = iface
@@ -435,9 +447,9 @@ class ISSPHostInterface:
             bits_left -= 8
         await self.lower.write([
             (_Command.Kind.SEND_BITS.value |
-             (do_poll << 4) |
-             (needs_single_clock_pulse_for_poll << 5) |
-             (needs_arbitrary_clocks_for_poll << 6)
+             (do_poll << DO_POLL_OFFSET) |
+             (needs_single_clock_pulse_for_poll << NEEDS_SINGLE_CLOCK_PULSE_FOR_POLL_OFFSET) |
+             (needs_arbitrary_clocks_for_poll << NEEDS_ARBITRARY_CLOCKS_FOR_POLL_OFFSET)
             ), cnt_enc_msb, cnt_enc_lsb, *blist])
         if do_zero_bits:
             await self._send_zero_bits()
@@ -460,9 +472,9 @@ class ISSPHostInterface:
             blist.append(int(piece, 2))
         await self.lower.write([
             (_Command.Kind.SEND_BITS.value |
-             (do_poll << 4) |
-             (needs_single_clock_pulse_for_poll << 5) |
-             (needs_arbitrary_clocks_for_poll << 6)
+             (do_poll << DO_POLL_OFFSET) |
+             (needs_single_clock_pulse_for_poll << NEEDS_SINGLE_CLOCK_PULSE_FOR_POLL_OFFSET) |
+             (needs_arbitrary_clocks_for_poll << NEEDS_ARBITRARY_CLOCKS_FOR_POLL_OFFSET)
             ), cnt_enc_msb, cnt_enc_lsb, *blist])
         if do_zero_bits:
             await self._send_zero_bits()
@@ -480,7 +492,7 @@ class ISSPHostInterface:
         """
         send_bytes = []
         for offset in range(cnt_bytes):
-            send_bytes.append(_Command.Kind.READ_BYTE.value | (reg_not_mem << 4))
+            send_bytes.append(_Command.Kind.READ_BYTE.value | (reg_not_mem << REG_NOT_MEM_OFFSET))
             send_bytes.append(address + offset)
         await self.lower.write(send_bytes)
         return list(await self.lower.read(cnt_bytes))
