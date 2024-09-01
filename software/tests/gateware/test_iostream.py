@@ -7,6 +7,8 @@ from amaranth.lib import io
 from glasgow.gateware.ports import PortGroup
 from glasgow.gateware.iostream import IOStreamer
 
+MAX_SKIDBUFFER_SIZE = 4
+
 async def stream_get(ctx, stream):
     """
     This helper coroutine takes one payload from the stream.
@@ -51,7 +53,7 @@ class IOStreamTimeoutError(Exception):
     pass
 
 class IOStreamTestCase(unittest.TestCase):
-    def _subtest_sdr_input_sampled_correctly(self, o_valid_bits, i_en_bits, i_ready_bits, timeout_clocks=None):
+    def _subtest_sdr_input_sampled_correctly(self, o_valid_bits, i_en_bits, i_ready_bits, timeout_clocks=None, iready_comb_path=False):
         """
         This is a latency-agnostic test, that verifies that the IOStreamer samples the inputs at the same time as the output signals change.
 
@@ -80,6 +82,9 @@ class IOStreamTestCase(unittest.TestCase):
 
         timeout_clocks: The number of clock cycles we expect the testcase to complete. If None (default), then an appropriate amount of clock cycles is
             calculated.
+
+        iready_comb_path: If true, specifies that istream.ready should be controlled combinatorially, and should only go high in response to istream.valid.
+            Stream rules allow logic that is connected to the istream to behave this way.
         """
         ports = PortGroup()
         ports.clk_out = io.SimulationPort("o", 1)
@@ -127,7 +132,7 @@ class IOStreamTestCase(unittest.TestCase):
             """
             nonlocal i_stream_consumer_finished
             for i_ready_bit in i_ready_bits:
-                if i_ready_bit == "1":
+                if i_ready_bit == "1" and (not iready_comb_path or ctx.get(dut.i_stream.valid)):
                     payload = await stream_get_maybe(ctx,dut.i_stream)
                     if payload is not None:
                         actually_sampled.append(payload.port.data_in.i)
@@ -202,7 +207,7 @@ class IOStreamTestCase(unittest.TestCase):
             i_en_bits    = "010101010",
             i_ready_bits = "111111111" + ("1"*20))
 
-    def _subtest_ddr_input_sampled_correctly(self, o_valid_bits, i_en_bits, i_ready_bits, timeout_clocks=None):
+    def _subtest_ddr_input_sampled_correctly(self, o_valid_bits, i_en_bits, i_ready_bits, timeout_clocks=None, iready_comb_path=False):
         """
         This is a latency-agnostic test, that verifies that the IOStreamer samples the inputs at the same time as the output signals change.
 
@@ -232,6 +237,9 @@ class IOStreamTestCase(unittest.TestCase):
 
         timeout_clocks: The number of clock cycles we expect the testcase to complete. If None (default), then an appropriate amount of clock cycles is
             calculated.
+
+        iready_comb_path: If true, specifies that istream.ready should be controlled combinatorially, and should only go high in response to istream.valid.
+            Stream rules allow logic that is connected to the istream to behave this way.
         """
 
         ports = PortGroup()
@@ -287,7 +295,7 @@ class IOStreamTestCase(unittest.TestCase):
             """
             nonlocal i_stream_consumer_finished
             for i_ready_bit in i_ready_bits:
-                if i_ready_bit == "1":
+                if i_ready_bit == "1" and (not iready_comb_path or ctx.get(dut.i_stream.valid)):
                     payload = await stream_get_maybe(ctx,dut.i_stream)
                     if payload is not None:
                         data = payload.port.data_in.i[0], payload.port.data_in.i[1]
@@ -361,9 +369,30 @@ class IOStreamTestCase(unittest.TestCase):
             i_en_bits    = "010101010",
             i_ready_bits = "111111111" + ("1"*20))
 
-    def _subtest_sdr_and_ddr_input_sampled_correctly(self, o_valid_bits, i_en_bits, i_ready_bits, timeout_clocks=None):
-        self._subtest_sdr_input_sampled_correctly(o_valid_bits, i_en_bits, i_ready_bits, timeout_clocks)
-        self._subtest_ddr_input_sampled_correctly(o_valid_bits, i_en_bits, i_ready_bits, timeout_clocks)
+    def _subtest_sdr_and_ddr_input_sampled_correctly(self, o_valid_bits, i_en_bits, i_ready_bits, timeout_clocks=None, iready_comb_path=False):
+        self._subtest_sdr_input_sampled_correctly(o_valid_bits, i_en_bits, i_ready_bits, timeout_clocks, iready_comb_path)
+        self._subtest_ddr_input_sampled_correctly(o_valid_bits, i_en_bits, i_ready_bits, timeout_clocks, iready_comb_path)
+
+    def test_i_ready_low_doesnt_block_when_not_sampling_inputs(self):
+        """
+        This testcase ensures that if i_stream is blocked, we can still perform
+        non-sampling updates, as long as we never try to sample.
+        """
+        self._subtest_sdr_and_ddr_input_sampled_correctly(
+            o_valid_bits = "010101010",
+            i_en_bits    = "000000000",
+            i_ready_bits = "")
+
+    def test_i_ready_low_doesnt_block_when_iready_combinatorial(self):
+        """
+        This testcase ensures that an i_stream consumer, which is following
+        stream rules, and is allowed to generate ready like this:
+        ```m.d.comb += ready.eq(valid)```, will not cause the system to lock up
+        """
+        self._subtest_sdr_and_ddr_input_sampled_correctly(
+            o_valid_bits = "0111100000" + (("0" * MAX_SKIDBUFFER_SIZE) + "0") * 4,
+            i_en_bits    = "0111100000" + (("0" * MAX_SKIDBUFFER_SIZE) + "0") * 4,
+            i_ready_bits = "0000000000" + (("0" * MAX_SKIDBUFFER_SIZE) + "1") * 4, iready_comb_path = True)
 
     def _get_random_bit_string(self, cnt_bits):
         rint = random.getrandbits(cnt_bits)

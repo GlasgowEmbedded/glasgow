@@ -165,15 +165,18 @@ class IOStreamer(wiring.Component):
                 m.d.comb += buffer_parts.oe.eq(latch_parts.oe)
 
         def delay(value, name):
+            delayed_values = []
             for stage in range(latency):
                 next_value = Signal.like(value, name=f"{name}_{stage}")
                 m.d.sync += next_value.eq(value)
                 value = next_value
-            return value
+                delayed_values.append(next_value)
+            return delayed_values
 
-        i_en = delay(self.o_stream.valid & self.o_stream.ready &
-                     self.o_stream.p.i_en, name="i_en")
-        meta = delay(self.o_stream.p.meta, name="meta")
+        i_en_delays = delay(self.o_stream.valid & self.o_stream.ready &
+                            self.o_stream.p.i_en, name="i_en")
+        i_en = i_en_delays[-1]
+        meta = delay(self.o_stream.p.meta, name="meta")[-1]
 
         # This skid buffer is organized as a shift register to avoid any uncertainties associated
         # with the use of an async read memory. On platforms that have LUTRAM, this implementation
@@ -204,7 +207,7 @@ class IOStreamer(wiring.Component):
 
         m.d.comb += self.i_stream.payload.eq(skid[skid_at])
         m.d.comb += self.i_stream.valid.eq(i_en | (skid_at != 0))
-        m.d.comb += self.o_stream.ready.eq(self.i_stream.ready & (skid_at == 0))
+        m.d.comb += self.o_stream.ready.eq(self.i_stream.ready | ~((skid_at!=0) | Cat(*i_en_delays).any()))
 
         return m
 
