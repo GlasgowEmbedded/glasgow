@@ -246,7 +246,7 @@ class ISSPHostSubtarget(Elaboratable):
                             m.next = "SEND_BITS_WAIT_DATA"
                     else:
                         # LIMITED support for power-cycle mode:
-                        with m.If(may_be_after_power_cycle & sdata_sync):
+                        with m.If(may_be_after_power_cycle & sdata.i_sync):
                             m.d.sync += may_be_after_power_cycle.eq(0)
                             start_simple_timer(self._after_reset_wait_cyc - 1)
                             m.next = "PWR_CYCLE_MODE_WAIT_SDATA_LOW_PLUS_TIME"
