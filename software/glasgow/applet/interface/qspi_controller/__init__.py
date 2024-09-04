@@ -231,6 +231,8 @@ class QSPIControllerApplet(GlasgowApplet):
 
     The command line interface only initiates SPI mode transfers. Use the REPL for other modes.
     """
+    # The FPGA on revA/revB is (marginally) too slow for the QSPI contrller core.
+    required_revision = "C0"
 
     @classmethod
     def add_build_arguments(cls, parser, access, *, include_pins=True):
