@@ -147,7 +147,7 @@ class QSPIDeframer(wiring.Component): # meow :3
 
 
 class QSPIController(wiring.Component):
-    def __init__(self, ports, *, chip_count=1, use_ddr_buffers=False):
+    def __init__(self, ports, *, chip_count=1, use_ddr_buffers=False, sample_delay_half_clocks=0):
         assert len(ports.sck) == 1 and ports.sck.direction in (io.Direction.Output, io.Direction.Bidir)
         assert len(ports.io) == 4 and ports.io.direction == io.Direction.Bidir
         assert len(ports.cs) >= 1 and ports.cs.direction in (io.Direction.Output, io.Direction.Bidir)
@@ -162,6 +162,7 @@ class QSPIController(wiring.Component):
         )
         self._ddr = use_ddr_buffers
         self._chip_count = chip_count
+        self._sample_delay_half_clocks = sample_delay_half_clocks
 
         super().__init__({
             "o_octets": In(stream.Signature(data.StructLayout({
@@ -200,7 +201,8 @@ class QSPIController(wiring.Component):
         m.submodules.io_streamer = io_streamer = IOStreamer(ioshape, self._ports, init={
             "sck": {"o": 1, "oe": 1}, # Motorola "Mode 3" with clock idling high
             "cs":  {"o": 0, "oe": 1}, # deselected
-        }, ratio=ratio, meta_layout=QSPIMode)
+        }, ratio=ratio, meta_layout=QSPIMode,
+           sample_delay_half_clocks=self._sample_delay_half_clocks)
         connect(m, io_clocker=io_clocker.o_stream, io_streamer=io_streamer.o_stream)
 
         m.submodules.deframer = deframer = QSPIDeframer()
