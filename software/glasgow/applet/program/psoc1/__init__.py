@@ -178,6 +178,7 @@ class Psoc1Interface(aobject):
             await self.lower.send_bitstring(vectors.ERASE,
                 needs_single_clock_pulse_for_poll=fconfig.needs_single_clock_pulse_for_poll,
                 needs_arbitrary_clocks_for_poll=fconfig.needs_arbitrary_clocks_for_poll)
+        await self.lower.wait_pending()
 
     async def read_block(self, fconfig, block_num):
         if fconfig.has_read_write_setup:
