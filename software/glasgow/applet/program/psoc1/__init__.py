@@ -180,6 +180,15 @@ class Psoc1Interface(aobject):
                 needs_arbitrary_clocks_for_poll=fconfig.needs_arbitrary_clocks_for_poll)
         await self.lower.wait_pending()
 
+    async def block_erase(self, fconfig, block_num):
+        async with SyncEnabledContext(fconfig, self): # TODO: keep if I can implement for revI?
+            await self.set_block_num(block_num)
+
+        await self.lower.send_bitstring(vectors.ERASE_BLOCK,
+            needs_single_clock_pulse_for_poll=fconfig.needs_single_clock_pulse_for_poll,
+            needs_arbitrary_clocks_for_poll=fconfig.needs_arbitrary_clocks_for_poll)
+        await self.lower.wait_pending()
+
     async def read_block(self, fconfig, block_num):
         if fconfig.has_read_write_setup:
             await self.lower.send_bitstring(vectors.READ_WRITE_SETUP, do_poll=0, do_zero_bits=0)
@@ -297,6 +306,21 @@ class ProgramPsoc1Applet(ISSPHostApplet):
         p_bulk_erase.add_argument(
             "-f", "--force", action='store_true',
             help="ignore some errors that can be ignored")
+
+        p_block_erase = p_operation.add_parser(
+            "block-erase", help="erase only some blocks of flash memory")
+        p_block_erase.add_argument(
+            "-p", "--part", metavar="PART_NUMBER", type=str, required=True,
+            help="specify part number to bulk erase")
+        p_block_erase.add_argument(
+            "--first-bank", metavar="FIRST_BANK", type=int, required=False,
+            help="First bank index to erase, if the device has banks. (default: %(default)s)")
+        p_block_erase.add_argument(
+            "--first-block", metavar="FIRST_BLOCK", type=int, required=True,
+            help="First block index to erase")
+        p_block_erase.add_argument(
+            "--block-count", metavar="BLOCK_COUNT", type=int, required=True,
+            help="Block count to erase")
 
         p_read_flash = p_operation.add_parser(
             "read-flash", help="read flash memory and save it to a binary file")
@@ -509,6 +533,45 @@ class ProgramPsoc1Applet(ISSPHostApplet):
             self._check_silicon_id_is_as_expected(args, silicon_id)
             await iface.bulk_erase(fconfig)
             self.logger.info("Executed Bulk Erase")
+            await iface.release_bus()
+        elif args.operation == "block-erase":
+            silicon_id = await iface.initialize_and_get_silicon_id(fconfig)
+            self._check_silicon_id_is_as_expected(args, silicon_id)
+            if fconfig.erase_block_type == 0:
+                raise Psoc1Error("Specified part number does not support block erase, or block erase is not implemented.")
+            if args.first_block >= fconfig.blocks:
+                raise Psoc1Error(f"Starting block number is out of range. Maximum is: {fconfig.blocks - 1}")
+
+            if fconfig.banks == 0:
+                if args.first_bank is not None:
+                    raise Psoc1Error("The specified device doesn't support banks, please leave off --first-bank!")
+                if args.first_block + args.block_count > fconfig.blocks:
+                    raise Psoc1Error(f"Last block of read is out of range, this device only has {fconfig.blocks} blocks")
+            else:
+                if args.first_bank is None:
+                    raise Psoc1Error("The specified device supports banks, you must specify --first-bank!")
+                last_block_bank = args.first_bank + (args.first_block + args.block_count - 1) // fconfig.blocks
+                if last_block_bank >= fconfig.banks:
+                    raise Psoc1Error(f"Last block of read is out of range, this device only has {fconfig.banks} banks, but the last block would be in bank {last_block_bank}")
+
+            current_bank = args.first_bank if fconfig.banks != 0 else 0
+            current_block = args.first_block
+            first = True
+            for block_ofs in range(args.block_count):
+                if fconfig.banks != 0:
+                    if current_block == 0 or first:
+                        first = False
+                        await iface.set_bank_num(current_bank)
+                else:
+                    assert current_bank == 0
+
+                await iface.block_erase(fconfig, current_block)
+
+                current_block += 1
+                if current_block >= fconfig.blocks:
+                    current_block = 0
+                    current_bank += 1
+            self.logger.info("Executed Block Erase")
             await iface.release_bus()
         elif args.operation == "get-security":
             silicon_id = await iface.initialize_and_get_silicon_id(fconfig)

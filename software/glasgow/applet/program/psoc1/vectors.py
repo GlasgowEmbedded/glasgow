@@ -445,198 +445,201 @@ PROGRAM_BLOCK = {
 #          devices, please consider playing with these settings.
 # * secure_bytes_per_bank refers to the number of bytes we should read/write, not to the number of bytes
 #          containing useful security data.
+# * erase_block_type=0 means not supported/not implemented
+# * erase_block_type=1 means use the vector described in RevK/RevL specs
 
 FlashConfig = namedtuple("FlashConfig",
     " ".join(reversed([
-        'read_security_type', #-----------------------------------------------------------------------------+
-        'set_security_type', #---------------------------------------------------------------------------+  |
-        'verify_setup_type', #------------------------------------------------------------------------+  |  |
-        'has_read_status', #-----------------------------------------------------------------------+  |  |  |
-        'has_read_write_setup', #---------------------------------------------------------------+  |  |  |  |
-        'erase_type', #----------------------------------------------------------------------+  |  |  |  |  |
-        'has_sync_en_dis_cmd', #----------------------------------------------------------+  |  |  |  |  |  |
-        'init_type', #-----------------------------------------------------------------+  |  |  |  |  |  |  |
-        'needs_arbitrary_clocks_for_poll', #----------------------------------------+  |  |  |  |  |  |  |  |
-        'needs_single_clock_pulse_for_poll', #-----------------------------------+  |  |  |  |  |  |  |  |  |
-        'checksum_setup_type', #----------------------------------------------+  |  |  |  |  |  |  |  |  |  |
-        'program_block_type', #--------------------------------------------+  |  |  |  |  |  |  |  |  |  |  |
-        'secure_bytes_per_bank', #--------------------------------------+  |  |  |  |  |  |  |  |  |  |  |  |
-        'banks', #--------------------------------------------------+   |  |  |  |  |  |  |  |  |  |  |  |  |
-        'blocks', #----------------------------------------------+  |   |  |  |  |  |  |  |  |  |  |  |  |  |
-        'bytes_per_block', #--------------------------------+    |  |   |  |  |  |  |  |  |  |  |  |  |  |  |
-    ])))  #                                                 |    |  |   |  |  |  |  |  |  |  |  |  |  |  |  |
-          #                                                 |    |  |   |  |  |  |  |  |  |  |  |  |  |  |  |
-flash_config = RegexLookup({ #                              |    |  |   |  |  |  |  V  |  |  |  |  |  |  |  |
-    PartNumberMatcher("CY8C21x12"):           FlashConfig( 64, 128, 0, 64, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1), # RevK # 512 bytes SRAM
-    PartNumberMatcher("CY8C21x23"):           FlashConfig( 64,  64, 0, 64, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1), # RevK # 256 bytes SRAM
-    PartNumberMatcher("CY8C21x34"):           FlashConfig( 64, 128, 0, 64, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1), # RevK # 512 bytes SRAM
-    PartNumberMatcher("CY8C23x33"):           FlashConfig( 64, 128, 0, 64, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1), # RevK # 256 bytes SRAM
+        'erase_block_type', #----------------------------------------------------------------------------------+
+        'read_security_type', #-----------------------------------------------------------------------------+  |
+        'set_security_type', #---------------------------------------------------------------------------+  |  |
+        'verify_setup_type', #------------------------------------------------------------------------+  |  |  |
+        'has_read_status', #-----------------------------------------------------------------------+  |  |  |  |
+        'has_read_write_setup', #---------------------------------------------------------------+  |  |  |  |  |
+        'erase_type', #----------------------------------------------------------------------+  |  |  |  |  |  |
+        'has_sync_en_dis_cmd', #----------------------------------------------------------+  |  |  |  |  |  |  |
+        'init_type', #-----------------------------------------------------------------+  |  |  |  |  |  |  |  |
+        'needs_arbitrary_clocks_for_poll', #----------------------------------------+  |  |  |  |  |  |  |  |  |
+        'needs_single_clock_pulse_for_poll', #-----------------------------------+  |  |  |  |  |  |  |  |  |  |
+        'checksum_setup_type', #----------------------------------------------+  |  |  |  |  |  |  |  |  |  |  |
+        'program_block_type', #--------------------------------------------+  |  |  |  |  |  |  |  |  |  |  |  |
+        'secure_bytes_per_bank', #--------------------------------------+  |  |  |  |  |  |  |  |  |  |  |  |  |
+        'banks', #--------------------------------------------------+   |  |  |  |  |  |  |  |  |  |  |  |  |  |
+        'blocks', #----------------------------------------------+  |   |  |  |  |  |  |  |  |  |  |  |  |  |  |
+        'bytes_per_block', #--------------------------------+    |  |   |  |  |  |  |  |  |  |  |  |  |  |  |  |
+    ])))  #                                                 |    |  |   |  |  |  |  |  |  |  |  |  |  |  |  |  |
+          #                                                 |    |  |   |  |  |  |  |  |  |  |  |  |  |  |  |  |
+flash_config = RegexLookup({ #                              |    |  |   |  |  |  |  V  |  |  |  |  |  |  |  |  |
+    PartNumberMatcher("CY8C21x12"):           FlashConfig( 64, 128, 0, 64, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1), # RevK # 512 bytes SRAM
+    PartNumberMatcher("CY8C21x23"):           FlashConfig( 64,  64, 0, 64, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1), # RevK # 256 bytes SRAM
+    PartNumberMatcher("CY8C21x34"):           FlashConfig( 64, 128, 0, 64, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1), # RevK # 512 bytes SRAM
+    PartNumberMatcher("CY8C23x33"):           FlashConfig( 64, 128, 0, 64, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1), # RevK # 256 bytes SRAM
 
-    PartNumberMatcher("CY8C24x23A"):          FlashConfig( 64,  64, 0, 64, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1), # RevK # 256 bytes SRAM
-    PartNumberMatcher("CY8C27x43"):           FlashConfig( 64, 256, 0, 64, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1), # RevK # 256 bytes SRAM
+    PartNumberMatcher("CY8C24x23A"):          FlashConfig( 64,  64, 0, 64, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1), # RevK # 256 bytes SRAM
+    PartNumberMatcher("CY8C27x43"):           FlashConfig( 64, 256, 0, 64, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1), # RevK # 256 bytes SRAM
     # TODO the assimetry between program_block_type/checksum_setup_type for the above two devices is strange. I think I have one of
     # these two devices, check if it works okay. If it does, remove comment.
 
-    PartNumberMatcher("CY8CTMG110"):          FlashConfig( 64, 128, 0, 64, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1), # RevK # 512 bytes SRAM
-    PartNumberMatcher("CY8CTST110"):          FlashConfig( 64, 128, 0, 64, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1), # RevK # 512 bytes SRAM
+    PartNumberMatcher("CY8CTMG110"):          FlashConfig( 64, 128, 0, 64, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1), # RevK # 512 bytes SRAM
+    PartNumberMatcher("CY8CTST110"):          FlashConfig( 64, 128, 0, 64, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1), # RevK # 512 bytes SRAM
 
-    PartNumberMatcher("CY8C22x45"):           FlashConfig( 64, 128, 2, 32, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2), # RevL # 1K SRAM
-    PartNumberMatcher("CY8C22x45H"):          FlashConfig( 64, 128, 2, 32, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2), # RevL # 1K SRAM
-    PartNumberMatcher("CY8C24x94"):           FlashConfig( 64, 128, 2, 32, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2), # RevL # 1K SRAM
-    PartNumberMatcher("CY8C28xxx"):           FlashConfig( 64, 128, 2, 32, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2), # RevL # 1K SRAM
-    PartNumberMatcher("CY8CTST120"):          FlashConfig( 64, 128, 2, 32, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2), # RevL # 1K SRAM
-    PartNumberMatcher("CY8CTMA120"):          FlashConfig( 64, 128, 2, 32, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2), # RevL # 1K SRAM
-    PartNumberMatcher("CY8CTMG120"):          FlashConfig( 64, 128, 2, 32, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2), # RevL # 1K SRAM
-    PartNumberMatcher("CY7C64215"):           FlashConfig( 64, 128, 2, 32, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2), # RevL # 1K SRAM
-    PartNumberMatcher("CY8C29x66"):           FlashConfig( 64, 128, 4, 32, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2), # RevL # 2K SRAM
-    PartNumberMatcher("CY8C21x45"):           FlashConfig( 64, 128, 1, 32, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2), # RevL # 512 bytes SRAM
+    PartNumberMatcher("CY8C22x45"):           FlashConfig( 64, 128, 2, 32, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1), # RevL # 1K SRAM
+    PartNumberMatcher("CY8C22x45H"):          FlashConfig( 64, 128, 2, 32, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1), # RevL # 1K SRAM
+    PartNumberMatcher("CY8C24x94"):           FlashConfig( 64, 128, 2, 32, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1), # RevL # 1K SRAM
+    PartNumberMatcher("CY8C28xxx"):           FlashConfig( 64, 128, 2, 32, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1), # RevL # 1K SRAM
+    PartNumberMatcher("CY8CTST120"):          FlashConfig( 64, 128, 2, 32, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1), # RevL # 1K SRAM
+    PartNumberMatcher("CY8CTMA120"):          FlashConfig( 64, 128, 2, 32, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1), # RevL # 1K SRAM
+    PartNumberMatcher("CY8CTMG120"):          FlashConfig( 64, 128, 2, 32, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1), # RevL # 1K SRAM
+    PartNumberMatcher("CY7C64215"):           FlashConfig( 64, 128, 2, 32, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1), # RevL # 1K SRAM
+    PartNumberMatcher("CY8C29x66"):           FlashConfig( 64, 128, 4, 32, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1), # RevL # 2K SRAM
+    PartNumberMatcher("CY8C21x45"):           FlashConfig( 64, 128, 1, 32, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1), # RevL # 512 bytes SRAM
 
-    PartNumberMatcher("CY7C60400"):           FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY7C60413"):           FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY7C60445"):           FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY7C60455"):           FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY7C60456"):           FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY7C64300"):           FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY7C64313"):           FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY7C64315"):           FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY7C64316"):           FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY7C64343"):           FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY7C64345"):           FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY7C64355"):           FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY7C64356"):           FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20045-24LKXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20055-24LKXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20055-24SXI"):     FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20066"):           FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20236-24LKXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20246-24LKXI"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20266-24LKXI"):    FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20336-24LQXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20336H-24LQXI"):   FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20346-24LQXI"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20346H-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20366-24LQXI"):    FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20396-24LQXI"):    FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20436-24LQXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20446-24LQXI"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20446H-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20466-24LQXI"):    FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20496-24LQXI"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20536-24PVXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20546-24PVXI"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20566-24PVXI"):    FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20636-24LQXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20646-24LQXI"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20666-24LQXI"):    FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTST200-16LGXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTST200-24LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTST200-32LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTST200-48LTXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTST200-48PVXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG200-00LGXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG200-16LGXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG200-24LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG200-32LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG200-48LTXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG200-48PVXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG201-32LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG201-48LTXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG201-48PVXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20066A"):          FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20236A-24LKXI"):   FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20246A-24LKXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20246AS-24LKXI"):  FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20266A-24LKXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20336A-24LQXI"):   FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20336AN-24LQXI"):  FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20346A-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20346AS-24LQXI"):  FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20366A-24LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20396A-24LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20436A-24LQXI"):   FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20436AN-24LQXI"):  FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20446A-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20446AS-24LQXI"):  FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20446L-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20466A-24LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20466AS-24LQXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20466L-24LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20496A-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20496L-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20536A-24PVXI"):   FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20546A-24PVXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20546L-24PVXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20566A-24PVXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20566L-24PVXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20636A-24LTXI"):   FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20636A-24LQXI"):   FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20636AN-24LTXI"):  FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20646A-24LTXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20646A-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20646AS-24LTXI"):  FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20646L-24LTXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20646L-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20666A-24LTXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20666A-24LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20666AS-24LTXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20666L-24LTXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20666L-24LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20746A-24FDXC"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20766A-24FDXC"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTST200A-16LGXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTST200A-24LQXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTST200A-32LQXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTST200A-48LTXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTST200A-48PVXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTST241-LQI-01"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTST241-LTI-01"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CP8CTST241-FNC-01"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG200A-00LGXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG200A-16LGXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG200A-24LQXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG200A-32LQXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG200A-48LTXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG200AH-48LTXI"): FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG200A-48PVXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG201A-32LQXI"):  FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG201A-48LTXI"):  FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG201A-48PVXI"):  FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG240-LQI-01"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8CTMG240-LTI-01"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CP8CTMG240-FNC-01"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20237-24SXI"):     FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20247-24SXI"):     FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20237-24LKXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20247-24LKXI"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20247S-24LKXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20337-24LQXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20337AN-24LQXI"):  FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20347-24LQXI"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20347S-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20437-24LQXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20437AN-24LQXI"):  FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20447-24LQXI"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20447S-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20467-24LQXI"):    FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20467S-24LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20637-24LQXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20637AN-24LQXI"):  FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20647-24LQXI"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20647S-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20667-24LQXI"):    FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20667S-24LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20747-24FDXC"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C20767-24FDXC"):    FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
+    PartNumberMatcher("CY7C60400"):           FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY7C60413"):           FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY7C60445"):           FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY7C60455"):           FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY7C60456"):           FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY7C64300"):           FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY7C64313"):           FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY7C64315"):           FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY7C64316"):           FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY7C64343"):           FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY7C64345"):           FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY7C64355"):           FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY7C64356"):           FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20045-24LKXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20055-24LKXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20055-24SXI"):     FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20066"):           FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20236-24LKXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20246-24LKXI"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20266-24LKXI"):    FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20336-24LQXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20336H-24LQXI"):   FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20346-24LQXI"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20346H-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20366-24LQXI"):    FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20396-24LQXI"):    FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20436-24LQXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20446-24LQXI"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20446H-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20466-24LQXI"):    FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20496-24LQXI"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20536-24PVXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20546-24PVXI"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20566-24PVXI"):    FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20636-24LQXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20646-24LQXI"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20666-24LQXI"):    FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTST200-16LGXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTST200-24LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTST200-32LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTST200-48LTXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTST200-48PVXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG200-00LGXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG200-16LGXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG200-24LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG200-32LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG200-48LTXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG200-48PVXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG201-32LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG201-48LTXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG201-48PVXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20066A"):          FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20236A-24LKXI"):   FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20246A-24LKXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20246AS-24LKXI"):  FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20266A-24LKXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20336A-24LQXI"):   FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20336AN-24LQXI"):  FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20346A-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20346AS-24LQXI"):  FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20366A-24LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20396A-24LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20436A-24LQXI"):   FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20436AN-24LQXI"):  FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20446A-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20446AS-24LQXI"):  FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20446L-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20466A-24LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20466AS-24LQXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20466L-24LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20496A-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20496L-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20536A-24PVXI"):   FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20546A-24PVXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20546L-24PVXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20566A-24PVXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20566L-24PVXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20636A-24LTXI"):   FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20636A-24LQXI"):   FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20636AN-24LTXI"):  FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20646A-24LTXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20646A-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20646AS-24LTXI"):  FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20646L-24LTXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20646L-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20666A-24LTXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20666A-24LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20666AS-24LTXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20666L-24LTXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20666L-24LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20746A-24FDXC"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20766A-24FDXC"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTST200A-16LGXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTST200A-24LQXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTST200A-32LQXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTST200A-48LTXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTST200A-48PVXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTST241-LQI-01"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTST241-LTI-01"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CP8CTST241-FNC-01"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG200A-00LGXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG200A-16LGXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG200A-24LQXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG200A-32LQXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG200A-48LTXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG200AH-48LTXI"): FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG200A-48PVXI"):  FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG201A-32LQXI"):  FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG201A-48LTXI"):  FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG201A-48PVXI"):  FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG240-LQI-01"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8CTMG240-LTI-01"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CP8CTMG240-FNC-01"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20237-24SXI"):     FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20247-24SXI"):     FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20237-24LKXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20247-24LKXI"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20247S-24LKXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20337-24LQXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20337AN-24LQXI"):  FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20347-24LQXI"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20347S-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20437-24LQXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20437AN-24LQXI"):  FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20447-24LQXI"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20447S-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20467-24LQXI"):    FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20467S-24LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20637-24LQXI"):    FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20637AN-24LQXI"):  FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20647-24LQXI"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20647S-24LQXI"):   FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20667-24LQXI"):    FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20667S-24LQXI"):   FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20747-24FDXC"):    FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C20767-24FDXC"):    FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
 
     # The CY8C24X93 datasheet points towards the AN2026C document, aka RevI, so this device must use the same
     # vectors as other devices from RevI. Flash configuration has been deduced from the TRM:
-    PartNumberMatcher("CY8C24493"):           FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C24693"):           FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C24593"):           FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C24393"):           FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C24293"):           FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C24193"):           FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
-    PartNumberMatcher("CY8C24093"):           FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4), # RevI
+    PartNumberMatcher("CY8C24493"):           FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C24693"):           FlashConfig(128, 256, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C24593"):           FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C24393"):           FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C24293"):           FlashConfig(128, 128, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C24193"):           FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
+    PartNumberMatcher("CY8C24093"):           FlashConfig(128,  64, 0, 64, 2, 3, 0, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0), # RevI
 })
 
 VERIFY_SETUP = {
@@ -742,3 +745,12 @@ CHECKSUM_SETUP = {
 
 READ_WRITE_SETUP = ( # RevI
     "110111101111000000011111011110000000000001111101101000000000001111")
+
+ERASE_BLOCK = ( # RevK, RevL
+    "10011111100010101001111001111111001010110111" +
+    "11011110111000000001111101111011000000000111" +
+    "10011111000001110101111001111100100000011111" +
+    "11011110101000000001111101111010000000011111" +
+    "11011111001001100001111101111101001000000111" +
+    "11011110000000000111111101111100000000000111"
+    "1101111111100010010111")
