@@ -129,8 +129,7 @@ class IOStreamer(wiring.Component):
         if self._ratio == 1:
             buffer_cls, latency = io.FFBuffer, 1 + self._sample_delay_half_clocks // 2
         if self._ratio == 2:
-            # FIXME: should this be 2 or 3? the latency differs between i[0] and i[1]
-            buffer_cls, latency = SimulatableDDRBuffer, 3 + (self._sample_delay_half_clocks // 2) + (self._sample_delay_half_clocks % 2)
+            buffer_cls, latency = SimulatableDDRBuffer, 2 + (self._sample_delay_half_clocks // 2) + (self._sample_delay_half_clocks % 2)
 
         if isinstance(self._ports, io.PortLike):
             m.submodules.buffer = buffer = buffer_cls("io", self._ports)
