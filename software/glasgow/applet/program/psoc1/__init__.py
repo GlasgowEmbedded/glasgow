@@ -307,7 +307,7 @@ class ProgramPsoc1Applet(ISSPHostApplet):
             help="ignore some errors that can be ignored")
         p_read_flash.add_argument(
             "file", metavar="FILE", type=argparse.FileType("wb"),
-            help="write flash binary image to FILE")
+            help="save flash binary image to FILE")
 
         p_get_security = p_operation.add_parser(
             "get-security", help="get security status of the device")
@@ -569,7 +569,7 @@ class ProgramPsoc1Applet(ISSPHostApplet):
                     current_block = 0
                     current_bank += 1
             print("\rReading [100%]\n", end="")
-            self.logger.info(f"Written {fconfig_bytes} bytes to {args.file.name}.")
+            self.logger.info(f"Saved {fconfig_bytes} bytes to {args.file.name}.")
             self.logger.warning(f"Warning: this only returned valid data, if security was disabled!")
             await iface.release_bus()
         elif args.operation in ("program", "verify-full", "verify-checksum"):
