@@ -331,6 +331,15 @@ class ProgramPsoc1Applet(ISSPHostApplet):
             "-f", "--force", action='store_true',
             help="ignore some errors that can be ignored")
         p_read_flash.add_argument(
+            "--first-bank", metavar="FIRST_BANK", type=int, default=0,
+            help="First bank index to read, if the device has banks. (default: %(default)s)")
+        p_read_flash.add_argument(
+            "--first-block", metavar="FIRST_BLOCK", type=int, default=0,
+            help="First block index to read. (default: %(default)s)")
+        p_read_flash.add_argument(
+            "--block-count", metavar="BLOCK_COUNT", type=int, required=False,
+            help="Block count to read (default: read entire device)")
+        p_read_flash.add_argument(
             "file", metavar="FILE", type=argparse.FileType("wb"),
             help="save flash binary image to FILE")
 
@@ -513,6 +522,22 @@ class ProgramPsoc1Applet(ISSPHostApplet):
                 self.logger.info(f"Part number {args.part} has {fconfig_bytes/1024:.1f} KiB flash ({fconfig.bytes_per_block} bytes/block, {fconfig.blocks} blocks).")
         else:
             assert args.operation in ("reset-run",) # only command that doesn't require part number to be specified
+
+        if args.operation in ('block-erase', 'read-flash'):
+            if args.first_block >= fconfig.blocks:
+                raise Psoc1Error(f"Starting block number is out of range. Maximum is: {fconfig.blocks - 1}")
+            if fconfig.banks != 0 and args.first_bank is not None and args.first_bank >= fconfig.banks:
+                raise Psoc1Error(f"Starting bank number is out of range. Maximum is: {fconfig.banks - 1}")
+
+        if args.operation in ('block-erase', 'read-flash') and args.block_count is not None:
+            if fconfig.banks == 0:
+                if args.first_block + args.block_count > fconfig.blocks:
+                    raise Psoc1Error(f"Last block of read is out of range, this device only has {fconfig.blocks} blocks")
+            elif args.first_bank is not None:
+                last_block_bank = args.first_bank + (args.first_block + args.block_count - 1) // fconfig.blocks
+                if last_block_bank >= fconfig.banks:
+                    raise Psoc1Error(f"Last block of read is out of range, this device only has {fconfig.banks} banks, but the last block would be in bank {last_block_bank}")
+
         if args.operation == "get-silicon-id":
             silicon_id = await iface.initialize_and_get_silicon_id(fconfig)
             await iface.release_bus()
@@ -539,20 +564,13 @@ class ProgramPsoc1Applet(ISSPHostApplet):
             self._check_silicon_id_is_as_expected(args, silicon_id)
             if fconfig.erase_block_type == 0:
                 raise Psoc1Error("Specified part number does not support block erase, or block erase is not implemented.")
-            if args.first_block >= fconfig.blocks:
-                raise Psoc1Error(f"Starting block number is out of range. Maximum is: {fconfig.blocks - 1}")
 
             if fconfig.banks == 0:
                 if args.first_bank is not None:
                     raise Psoc1Error("The specified device doesn't support banks, please leave off --first-bank!")
-                if args.first_block + args.block_count > fconfig.blocks:
-                    raise Psoc1Error(f"Last block of read is out of range, this device only has {fconfig.blocks} blocks")
             else:
                 if args.first_bank is None:
                     raise Psoc1Error("The specified device supports banks, you must specify --first-bank!")
-                last_block_bank = args.first_bank + (args.first_block + args.block_count - 1) // fconfig.blocks
-                if last_block_bank >= fconfig.banks:
-                    raise Psoc1Error(f"Last block of read is out of range, this device only has {fconfig.banks} banks, but the last block would be in bank {last_block_bank}")
 
             current_bank = args.first_bank if fconfig.banks != 0 else 0
             current_block = args.first_block
@@ -617,12 +635,18 @@ class ProgramPsoc1Applet(ISSPHostApplet):
             silicon_id = await iface.initialize_and_get_silicon_id(fconfig)
             self._check_silicon_id_is_as_expected(args, silicon_id)
 
-            current_block = 0
-            current_bank = 0
-            for sbyte in range(0, fconfig_bytes, fconfig.bytes_per_block):
-                print(f"\rReading [{sbyte * 100 // fconfig_bytes}%]", end="")
+            current_bank = args.first_bank if fconfig.banks != 0 else 0
+            current_block = args.first_block
+            if args.block_count is None:
+                total_bytes = fconfig_bytes
+            else:
+                total_bytes = args.block_count * fconfig.bytes_per_block
+            first = True
+            for sbyte in range(0, total_bytes, fconfig.bytes_per_block):
+                print(f"\rReading [{sbyte * 100 // total_bytes}%]", end="")
                 if fconfig.banks != 0:
-                    if current_block == 0:
+                    if current_block == 0 or first:
+                        first = False
                         await iface.set_bank_num(current_bank)
                 else:
                     assert current_bank == 0
@@ -633,7 +657,7 @@ class ProgramPsoc1Applet(ISSPHostApplet):
                     current_block = 0
                     current_bank += 1
             print("\rReading [100%]\n", end="")
-            self.logger.info(f"Saved {fconfig_bytes} bytes to {args.file.name}.")
+            self.logger.info(f"Saved {total_bytes} bytes to {args.file.name}.")
             self.logger.warning(f"Warning: this only returned valid data, if security was disabled!")
             await iface.release_bus()
         elif args.operation in ("program", "verify-full", "verify-checksum"):
