@@ -385,6 +385,27 @@ class ProgramPsoc1Applet(ISSPHostApplet):
             "file", metavar="FILE", type=argparse.FileType("rb"),
             help="read flash binary image from FILE")
 
+        p_partial_program = p_operation.add_parser(
+            "partial-program", help="block erase and program parts of the flash memory")
+        p_partial_program.add_argument(
+            "-p", "--part", metavar="PART_NUMBER", type=str, required=True,
+            help="specify part number we're programming")
+        p_partial_program.add_argument(
+            "--no-block-erase", action='store_true',
+            help="skip performing of block erase")
+        p_partial_program.add_argument(
+            "--no-verify", action='store_true',
+            help="skip verification of data bytes written")
+        p_partial_program.add_argument(
+            "--first-bank", metavar="FIRST_BANK", type=int, required=False,
+            help="First bank index to program, if the device has banks. (default: %(default)s)")
+        p_partial_program.add_argument(
+            "--first-block", metavar="FIRST_BLOCK", type=int, required=True,
+            help="First block index to program. (default: %(default)s)")
+        p_partial_program.add_argument(
+            "file", metavar="FILE", type=argparse.FileType("rb"),
+            help="read flash binary image from FILE")
+
         p_verify_full = p_operation.add_parser(
             "verify-full", help="fully verify the flash memory content matches given file (only works if security doesn't prevent flash read)")
         p_verify_full.add_argument(
@@ -523,7 +544,7 @@ class ProgramPsoc1Applet(ISSPHostApplet):
         else:
             assert args.operation in ("reset-run",) # only command that doesn't require part number to be specified
 
-        if args.operation in ('block-erase', 'read-flash'):
+        if args.operation in ('block-erase', 'read-flash', 'partial-program'):
             if args.first_block >= fconfig.blocks:
                 raise Psoc1Error(f"Starting block number is out of range. Maximum is: {fconfig.blocks - 1}")
             if fconfig.banks != 0 and args.first_bank is not None and args.first_bank >= fconfig.banks:
@@ -537,6 +558,14 @@ class ProgramPsoc1Applet(ISSPHostApplet):
                 last_block_bank = args.first_bank + (args.first_block + args.block_count - 1) // fconfig.blocks
                 if last_block_bank >= fconfig.banks:
                     raise Psoc1Error(f"Last block of read is out of range, this device only has {fconfig.banks} banks, but the last block would be in bank {last_block_bank}")
+
+        if args.operation in ('block-erase', 'partial-program'):
+            if fconfig.banks == 0:
+                if args.first_bank is not None:
+                    raise Psoc1Error("The specified device doesn't support banks, please leave off --first-bank!")
+            else:
+                if args.first_bank is None:
+                    raise Psoc1Error("The specified device supports banks, you must specify --first-bank!")
 
         if args.operation == "get-silicon-id":
             silicon_id = await iface.initialize_and_get_silicon_id(fconfig)
@@ -559,37 +588,96 @@ class ProgramPsoc1Applet(ISSPHostApplet):
             await iface.bulk_erase(fconfig)
             self.logger.info("Executed Bulk Erase")
             await iface.release_bus()
-        elif args.operation == "block-erase":
+        elif args.operation in ("block-erase", "partial-program"):
+            if args.operation == "partial-program":
+                databytes = args.file.read()
+                if len(databytes) % fconfig.bytes_per_block != 0:
+                    databytes += b'\x00' * (fconfig.bytes_per_block - (len(databytes) % fconfig.bytes_per_block))
+                    self.logger.warn(f"Input file is not aligned to a block size of {fconfig.bytes_per_block} bytes. Padding with zeros...")
+                block_count = len(databytes) // fconfig.bytes_per_block
+
+                if fconfig.banks == 0:
+                    if args.first_block + block_count > fconfig.blocks:
+                        raise Psoc1Error(f"Trying to program blocks from {args.first_block} to {args.first_block + block_count - 1}, this device only has {fconfig.blocks} blocks!")
+                elif args.first_bank is not None:
+                    last_block_bank = args.first_bank + (args.first_block + block_count - 1) // fconfig.blocks
+                    if last_block_bank >= fconfig.banks:
+                        raise Psoc1Error(f"Last block we're trying to program is out of range, this device only has {fconfig.banks} banks, but the last block would be in bank {last_block_bank}")
+            else:
+                block_count = args.block_count
+
             silicon_id = await iface.initialize_and_get_silicon_id(fconfig)
             self._check_silicon_id_is_as_expected(args, silicon_id)
-            if fconfig.erase_block_type == 0:
-                raise Psoc1Error("Specified part number does not support block erase, or block erase is not implemented.")
-
-            if fconfig.banks == 0:
-                if args.first_bank is not None:
-                    raise Psoc1Error("The specified device doesn't support banks, please leave off --first-bank!")
+            if args.operation == "partial-program" and args.no_block_erase:
+                self.logger.info("Skipping block erase, as requested.")
             else:
-                if args.first_bank is None:
-                    raise Psoc1Error("The specified device supports banks, you must specify --first-bank!")
+                if fconfig.erase_block_type == 0:
+                    if args.operation == "block-erase":
+                        raise Psoc1Error("Specified part number does not support block erase, or block erase is not implemented.")
+                    else:
+                        self.logger.warn("Specified part number does not support block erase, or block erase is not implemented. Continue to attempt programming anyway...")
+                else:
+                    current_bank = args.first_bank if fconfig.banks != 0 else 0
+                    current_block = args.first_block
+                    first = True
+                    for block_ofs in range(block_count):
+                        if fconfig.banks != 0:
+                            if current_block == 0 or first:
+                                first = False
+                                await iface.set_bank_num(current_bank)
+                        else:
+                            assert current_bank == 0
 
-            current_bank = args.first_bank if fconfig.banks != 0 else 0
-            current_block = args.first_block
-            first = True
-            for block_ofs in range(args.block_count):
-                if fconfig.banks != 0:
-                    if current_block == 0 or first:
+                        await iface.block_erase(fconfig, current_block)
+
+                        current_block += 1
+                        if current_block >= fconfig.blocks:
+                            current_block = 0
+                            current_bank += 1
+                    self.logger.info("Executed Block Erase")
+            if args.operation == "partial-program":
+                current_bank = args.first_bank if fconfig.banks != 0 else 0
+                current_block = args.first_block
+                lbytes = block_count * fconfig.bytes_per_block
+                first = True
+                for sbyte in range(0, lbytes, fconfig.bytes_per_block):
+                    print(f"\rProgramming [{sbyte * 100 // lbytes}%]", end="")
+                    if fconfig.banks != 0:
+                        if current_block == 0 or first:
+                            first = False
+                            await iface.set_bank_num(current_bank)
+                    else:
+                        assert current_bank == 0
+                    block = databytes[sbyte: sbyte + fconfig.bytes_per_block]
+                    await iface.write_block(fconfig, current_block, block)
+                    current_block += 1
+                    if current_block >= fconfig.blocks:
+                        current_block = 0
+                        current_bank += 1
+                print("\rProgramming [100%]\n", end="")
+                self.logger.info(f"Programmed {lbytes} bytes.")
+
+            if args.operation == "partial-program" and not args.no_verify:
+                current_bank = args.first_bank if fconfig.banks != 0 else 0
+                current_block = args.first_block
+                first = True
+                for sbyte in range(0, lbytes, fconfig.bytes_per_block):
+                    print(f"\rVerifying [{sbyte * 100 // lbytes}%]", end="")
+                    if fconfig.banks != 0 and (current_block == 0 or first):
                         first = False
                         await iface.set_bank_num(current_bank)
-                else:
-                    assert current_bank == 0
-
-                await iface.block_erase(fconfig, current_block)
-
-                current_block += 1
-                if current_block >= fconfig.blocks:
-                    current_block = 0
-                    current_bank += 1
-            self.logger.info("Executed Block Erase")
+                    block = await iface.read_block(fconfig, current_block)
+                    for i in range(len(block)):
+                        if block[i] != databytes[sbyte + i]:
+                            print("")
+                            self.logger.error(f"Error at offset 0x{sbyte+i:04x}, expected: 0x{databytes[sbyte+i]:02x} got: 0x{block[i]:02x}")
+                            raise Psoc1Error(f"Verification failed!")
+                    current_block += 1
+                    if current_block >= fconfig.blocks:
+                        current_block = 0
+                        current_bank += 1
+                print("\rVerifying [100%]\n", end="")
+                self.logger.info(f"Verified {lbytes} bytes successfully.")
             await iface.release_bus()
         elif args.operation == "get-security":
             silicon_id = await iface.initialize_and_get_silicon_id(fconfig)
