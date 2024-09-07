@@ -216,6 +216,15 @@ class QSPIController(wiring.Component):
             io_streamer.i_stream.ready.eq(deframer.frames.ready),
         ]
 
+        if self._ddr:
+            with m.If(self.divisor == 0):
+                m.d.comb += [
+                    deframer.frames.p.port.io0.i.eq(io_streamer.i_stream.p.port.io0.i[1]),
+                    deframer.frames.p.port.io1.i.eq(io_streamer.i_stream.p.port.io1.i[1]),
+                    deframer.frames.p.port.io2.i.eq(io_streamer.i_stream.p.port.io2.i[1]),
+                    deframer.frames.p.port.io3.i.eq(io_streamer.i_stream.p.port.io3.i[1]),
+                ]
+
         connect(m, deframer=deframer.octets, controller=flipped(self.i_octets))
 
         return m
