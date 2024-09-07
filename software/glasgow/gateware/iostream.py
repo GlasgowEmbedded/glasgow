@@ -264,7 +264,10 @@ class IOClocker(wiring.Component):
             if self._o_ratio == 1:
                 m.d.comb += self.o_stream.p.port[self._clock].o.eq(phase)
             if self._o_ratio == 2:
-                m.d.comb += self.o_stream.p.port[self._clock].o.eq(Cat(~phase, phase))
+                with m.If(self.divisor == 0):
+                    m.d.comb += self.o_stream.p.port[self._clock].o.eq(Cat(~phase, phase))
+                with m.Else():
+                    m.d.comb += self.o_stream.p.port[self._clock].o.eq(Cat(phase, phase))
             m.d.comb += self.o_stream.p.port[self._clock].oe.eq(1)
             # ... while requesting input sampling only for the rising edge. (Interfaces triggering
             # transfers on falling edge will be inverting the clock at the `IOPort` level.)
@@ -282,11 +285,13 @@ class IOClocker(wiring.Component):
                         m.d.comb += self.i_stream.ready.eq(self.o_stream.ready)
 
                     with m.Else(): # Produce a falling edge at the output.
-                        # Whenever DDR output is used, `phase == 1` outputs a low state first and
-                        # a high state second. When `phase == 1` payloads are output back to back
-                        # (in DDR mode only!) this generates a pulse train with data changes
-                        # coinciding with the falling edges. Setting `divisor == 0` in this mode
-                        # allows clocking the peripheral at the `sync` frequency.
+                        # Whenever DDR output is used, with `divisor == 0`, we output a low state
+                        # on the first half of the clock cycle, and a high state on the second half.
+                        # This mode allows clocking the peripheral at the `sync` frequency.
+                        # In this case the signal sampled at the rising edge will be output on i[1]
+                        # (if sample_delay was set to zero)
+                        # In all other cases the signal sampled at the rising edge will be output on i[0]
+                        # (if sample_delay was set to zero)
                         with m.If((self._o_ratio == 2) & (self.divisor == 0)):
                             m.d.comb += phase.eq(1)
                             with m.If(self.o_stream.ready):
