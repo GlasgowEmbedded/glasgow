@@ -118,7 +118,6 @@ class IOStreamTestCase(unittest.TestCase):
             later, when the sample actually arrives back on i_stream.
             """
             while True:
-                # in the case of SDR tests there are no glitches on the clock_out simulation, so we case safely use ctx.changed:
                 _, value = await ctx.changed(ports.clk_out.o).sample(ports.data_in.i)
                 expected_sample.append(value)
 
@@ -276,27 +275,10 @@ class IOStreamTestCase(unittest.TestCase):
             IOStreamer is expected to sample the input signal, so the current state of the data_in port
             becomes one of the expected sampled values. This is saved into expected_sample[] to be compared
             later, when the sample actually arrives back on i_stream.
-            The way we look for the rising edge is a bit hairy, because the current implementation of
-            DDRBufferCanBeSimulated can generate glitches, so we wait DELAY_TO_AVOID_GLITCHES after
-            the clock edge, to make sure any glitches are resolved, and if the clock signal doesn't have
-            the expected value, then we throw away the sampled data, and wait for a clock edge again.
-            Because this is a ddr test, we check both edge of clk_out one after the other.
             """
             while True:
-                DELAY_TO_AVOID_GLITCHES = CLK_PERIOD/10
-
-                while True:
-                    _, value_phase_0 = await ctx.posedge(ports.clk_out.o).sample(ports.data_in.i)
-                    await ctx.delay(DELAY_TO_AVOID_GLITCHES)
-                    if ctx.get(ports.clk_out.o) == 1:
-                        break
-
-                while True:
-                    _, value_phase_1 = await ctx.negedge(ports.clk_out.o).sample(ports.data_in.i)
-                    await ctx.delay(DELAY_TO_AVOID_GLITCHES)
-                    if ctx.get(ports.clk_out.o) == 0:
-                        break
-
+                _, value_phase_0 = await ctx.posedge(ports.clk_out.o).sample(ports.data_in.i)
+                _, value_phase_1 = await ctx.negedge(ports.clk_out.o).sample(ports.data_in.i)
                 expected_sample.append((value_phase_0, value_phase_1))
 
         async def i_stream_consumer_tb(ctx):
