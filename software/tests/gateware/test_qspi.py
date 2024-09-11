@@ -249,13 +249,13 @@ class QSPITestCase(unittest.TestCase):
         with sim.write_vcd("test.vcd"):
             sim.run()
 
-    def test_qspi_controller(self):
+    def subtest_qspi_controller(self, *, use_ddr_buffers:bool, divisor:int):
         ports = PortGroup()
         ports.sck = io.SimulationPort("o",  1)
         ports.io  = io.SimulationPort("io", 4)
         ports.cs  = io.SimulationPort("o",  1)
 
-        dut = QSPIController(ports)
+        dut = QSPIController(ports, use_ddr_buffers=use_ddr_buffers)
 
         async def testbench_controller(ctx):
             async def ctrl_idle():
@@ -286,6 +286,8 @@ class QSPITestCase(unittest.TestCase):
                             assert not ctx.get(dut.o_octets.valid)
                             break
                 return words
+            if divisor is not None:
+                ctx.set(dut.divisor, divisor)
 
             await ctrl_idle()
 
@@ -317,3 +319,21 @@ class QSPITestCase(unittest.TestCase):
         sim.add_testbench(testbench_flash, background=True)
         with sim.write_vcd("test.vcd"):
             sim.run()
+
+    def test_qspi_controller_sdr_div0(self):
+        self.subtest_qspi_controller(use_ddr_buffers=False, divisor=0)
+
+    def test_qspi_controller_sdr_div1(self):
+        self.subtest_qspi_controller(use_ddr_buffers=False, divisor=1)
+
+    def test_qspi_controller_sdr_div2(self):
+        self.subtest_qspi_controller(use_ddr_buffers=False, divisor=2)
+
+    def test_qspi_controller_ddr_div0(self):
+        self.subtest_qspi_controller(use_ddr_buffers=True, divisor=0)
+
+    def test_qspi_controller_ddr_div1(self):
+        self.subtest_qspi_controller(use_ddr_buffers=True, divisor=1)
+
+    def test_qspi_controller_ddr_div2(self):
+        self.subtest_qspi_controller(use_ddr_buffers=True, divisor=2)
