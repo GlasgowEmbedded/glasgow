@@ -1,6 +1,6 @@
 import unittest
 from amaranth import *
-from amaranth.sim import Simulator
+from amaranth.sim import Simulator, BrokenTrigger
 from amaranth.lib import io
 
 from glasgow.gateware.ports import PortGroup
@@ -26,8 +26,11 @@ def simulate_flash(ports, memory=b"nya nya nya nya nyaaaaan"):
         pass
 
     async def watch_cs(cs_o, triggers):
-        *values, cs_o = await triggers.sample(cs_o)
-        if cs_o == 1:
+        try:
+            *values, posedge_cs_o = await triggers.posedge(cs_o)
+        except BrokenTrigger: # Workaround for amaranth bug: https://github.com/amaranth-lang/amaranth/issues/1508
+            raise CSDeasserted # both our original trigger and posedge of cs happened at the same time. We choose to prioritize CS being deasserted.
+        if posedge_cs_o == 1:
             raise CSDeasserted
         return values
 
@@ -108,6 +111,7 @@ def simulate_flash(ports, memory=b"nya nya nya nya nyaaaaan"):
                             await dev_put(ctx, ports, memory[addr], x=4)
                         addr += 1
             except CSDeasserted:
+                await ctx.negedge(ports.cs.o)
                 continue
 
     return testbench
