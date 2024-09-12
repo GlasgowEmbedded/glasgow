@@ -161,6 +161,7 @@ class QSPIController(wiring.Component):
             cs=~ports.cs,
         )
         self._ddr = use_ddr_buffers
+        self._chip_count = chip_count
 
         super().__init__({
             "o_octets": In(stream.Signature(data.StructLayout({
@@ -188,7 +189,7 @@ class QSPIController(wiring.Component):
 
         m = Module()
 
-        m.submodules.enframer = enframer = QSPIEnframer()
+        m.submodules.enframer = enframer = QSPIEnframer(chip_count = self._chip_count)
         connect(m, controller=flipped(self.o_octets), enframer=enframer.octets)
 
         m.submodules.io_clocker = io_clocker = IOClocker(ioshape,
