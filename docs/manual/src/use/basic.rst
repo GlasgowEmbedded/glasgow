@@ -127,6 +127,18 @@ In some cases, you may want to use ``B3`` without using port A, which can be ach
     $ glasgow run uart -V 3.3 --port B --pin-tx 3 socket tcp:127.0.0.1:4321
 
 
+Inverting pins
+##############
+
+Any pin can be inverted via the command-line interface using one of the following syntaxes:
+
+* single pin: ``--pin-x 0#``
+* pin range:  ``--pins-x 0:8#``      (inverts all of them)
+* pin list:   ``--pins-x 0,1#,2#,3`` (inverts only specified pins)
+
+Pull-ups configured for a pin with inversion get converted to pull-downs and vice versa.
+
+
 Examples
 --------
 
