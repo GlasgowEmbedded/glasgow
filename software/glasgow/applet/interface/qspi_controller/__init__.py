@@ -32,8 +32,10 @@ class QSPIControllerSubtarget(Elaboratable):
         m = Module()
 
         m.submodules.qspi = qspi = QSPIController(self._ports, use_ddr_buffers=True,
-                                                  sample_delay_half_clocks = self._sample_delay_half_clocks)
+                                                  max_sample_delay_half_clocks=self._sample_delay_half_clocks,
+                                                  min_divisor=self._divisor)
         m.d.comb += qspi.divisor.eq(self._divisor)
+        m.d.comb += qspi.sample_delay_half_clocks.eq(self._sample_delay_half_clocks)
 
         o_fifo  = self._out_fifo.stream
         i_fifo  = self._in_fifo.stream

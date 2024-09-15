@@ -5,7 +5,7 @@ from amaranth.sim import Simulator
 from amaranth.lib import io
 
 from glasgow.gateware.ports import PortGroup
-from glasgow.gateware.iostream import IOStreamer
+from glasgow.gateware.iostream import IOStreamerTop
 
 MAX_SKIDBUFFER_SIZE = 4
 
@@ -55,7 +55,7 @@ class IOStreamTimeoutError(Exception):
 class IOStreamTestCase(unittest.TestCase):
     def _subtest_sdr_input_sampled_correctly(self, o_valid_bits, i_en_bits, i_ready_bits, timeout_clocks=None, iready_comb_path=False):
         """
-        This is a latency-agnostic test, that verifies that the IOStreamer samples the inputs at the same time as the output signals change.
+        This is a latency-agnostic test, that verifies that the IOStreamerTop samples the inputs at the same time as the output signals change.
 
         o_valid_bits: is a string of "1"s and "0"s. Each character refers to one (or more) clock cycles. "1" means to send a payload,
             and "0" means to leave o_stream idle for 1 clock cycle. When sending a payload o_stream is waited upon if it's not ready, so
@@ -76,7 +76,7 @@ class IOStreamTestCase(unittest.TestCase):
               - back-pressure on i_stream may result in back-pressure on o_stream, never allowing the full o_valid_bits string to be completely played back,
                 and resulting in a timeout.
               - the playback of the o_valid_bits string may complete, however it's possible a number of sample requests that are in flight remain stuck
-                in the IOStreamer, pending for them to be extracted from the i_stream, and that could result in the testcase declaring that the final
+                in the IOStreamerTop, pending for them to be extracted from the i_stream, and that could result in the testcase declaring that the final
                 samples have been lost.
             To make sure a testcase completes, you will see some testcases have a large number of "1"s in this string past the length of o_valid_bits.
 
@@ -93,7 +93,7 @@ class IOStreamTestCase(unittest.TestCase):
         if timeout_clocks is None:
             timeout_clocks = len(o_valid_bits) + len(i_ready_bits) + 20
 
-        dut = IOStreamer({
+        dut = IOStreamerTop({
             "clk_out": ("o", 1),
             "data_in": ("i", 8),
         }, ports, meta_layout=4)
@@ -118,7 +118,7 @@ class IOStreamTestCase(unittest.TestCase):
         async def save_expected_sample_values_tb(ctx):
             """
             This testbench looks at the clk_out port and when it sees a positive or negative edge it knows that
-            IOStreamer is expected to sample the input signal, so the current state of the data_in port
+            IOStreamerTop is expected to sample the input signal, so the current state of the data_in port
             becomes one of the expected sampled values. This is saved into expected_sample[] to be compared
             later, when the sample actually arrives back on i_stream.
             """
@@ -135,7 +135,8 @@ class IOStreamTestCase(unittest.TestCase):
                 if i_ready_bit == "1" and (not iready_comb_path or ctx.get(dut.i_stream.valid)):
                     payload = await stream_get_maybe(ctx,dut.i_stream)
                     if payload is not None:
-                        actually_sampled.append(payload.port.data_in.i)
+                        actually_sampled.append(payload[0].actual.port.data_in.i)
+                        assert payload[0].actual.i_valid
                 else:
                     await ctx.tick()
             i_stream_consumer_finished = True
@@ -168,15 +169,17 @@ class IOStreamTestCase(unittest.TestCase):
                     if i_en_bit:
                         expected_samples_count += 1
                         o_bit ^= 1
-                    await stream_put(ctx, dut.o_stream, {
+                    await stream_put(ctx, dut.o_stream, [{
                         "meta": i,
-                        "i_en": i_en_bit,
-                        "port": {
-                            "clk_out": {
-                                "o": o_bit,
+                        "actual": {
+                            "i_en": i_en_bit,
+                            "port": {
+                                "clk_out": {
+                                    "o": o_bit,
+                                }
                             }
                         }
-                    })
+                    }])
                 else:
                     await ctx.tick()
 
@@ -184,7 +187,7 @@ class IOStreamTestCase(unittest.TestCase):
                 await ctx.tick()
 
             assert len(actually_sampled) == expected_samples_count # This should be checked as well, because a
-            # possible failure mode is if IOStreamer never generates clock edges. We don't want to end up
+            # possible failure mode is if IOStreamerTop never generates clock edges. We don't want to end up
             # comparing two empty lists against eachother.
             assert actually_sampled == expected_sample, (f"Expected [" +
                     ", ".join(f"0x{s:02x}" for s in expected_sample) +
@@ -209,7 +212,7 @@ class IOStreamTestCase(unittest.TestCase):
 
     def _subtest_ddr_input_sampled_correctly(self, o_valid_bits, i_en_bits, i_ready_bits, timeout_clocks=None, iready_comb_path=False):
         """
-        This is a latency-agnostic test, that verifies that the IOStreamer samples the inputs at the same time as the output signals change.
+        This is a latency-agnostic test, that verifies that the IOStreamerTop samples the inputs at the same time as the output signals change.
 
         o_valid_bits: is a string of "1"s and "0"s. Each character refers to one (or more) internal clock cycles. "1" means to send a payload,
             and "0" means to leave o_stream idle for 1 clock cycle. When sending a payload o_stream is waited upon if it's not ready, so
@@ -231,7 +234,7 @@ class IOStreamTestCase(unittest.TestCase):
               - back-pressure on i_stream may result in back-pressure on o_stream, never allowing the full o_valid_bits string to be completely played back,
                 and resulting in a timeout.
               - the playback of the o_valid_bits string may complete, however it's possible a number of sample requests that are in flight remain stuck
-                in the IOStreamer, pending for them to be extracted from the i_stream, and that could result in the testcase declaring that the final
+                in the IOStreamerTop, pending for them to be extracted from the i_stream, and that could result in the testcase declaring that the final
                 samples have been lost.
             To make sure a testcase completes, you will see some testcases have a large number of "1"s in this string past the length of o_valid_bits.
 
@@ -251,7 +254,7 @@ class IOStreamTestCase(unittest.TestCase):
 
         CLK_PERIOD = 1e-6
 
-        dut = IOStreamer({
+        dut = IOStreamerTop({
             "clk_out": ("o", 1),
             "data_in": ("i", 8),
         }, ports, ratio=2, meta_layout=4)
@@ -280,7 +283,7 @@ class IOStreamTestCase(unittest.TestCase):
         async def save_expected_sample_values_tb(ctx):
             """
             This testbench looks at the clk_out port and when it sees a positive edge it knows that
-            IOStreamer is expected to sample the input signal, so the current state of the data_in port
+            IOStreamerTop is expected to sample the input signal, so the current state of the data_in port
             becomes one of the expected sampled values. This is saved into expected_sample[] to be compared
             later, when the sample actually arrives back on i_stream.
             """
@@ -298,7 +301,9 @@ class IOStreamTestCase(unittest.TestCase):
                 if i_ready_bit == "1" and (not iready_comb_path or ctx.get(dut.i_stream.valid)):
                     payload = await stream_get_maybe(ctx,dut.i_stream)
                     if payload is not None:
-                        data = payload.port.data_in.i[0], payload.port.data_in.i[1]
+                        data = payload[0].actual.port.data_in.i, payload[1].actual.port.data_in.i
+                        assert payload[0].actual.i_valid
+                        assert payload[1].actual.i_valid
                         actually_sampled.append(data)
                 else:
                     await ctx.tick()
@@ -329,15 +334,30 @@ class IOStreamTestCase(unittest.TestCase):
                 if o_valid_bit:
                     if i_en_bit:
                         expected_samples_count += 1
-                    await stream_put(ctx, dut.o_stream, {
+                    await stream_put(ctx, dut.o_stream, [
+                    {
                         "meta": i,
-                        "i_en": i_en_bit,
-                        "port": {
-                            "clk_out": {
-                                "o": (i_en_bit, 0),
+                        "actual": {
+                            "i_en": i_en_bit,
+                            "port": {
+                                "clk_out": {
+                                    "o": i_en_bit,
+                                }
                             }
                         }
-                    })
+                    },
+                    {
+                        "meta": i,
+                        "actual": {
+                            "i_en": i_en_bit,
+                            "port": {
+                                "clk_out": {
+                                    "o": 0,
+                                }
+                            }
+                        }
+                    },
+                    ])
                 else:
                     await ctx.tick()
 
@@ -345,7 +365,7 @@ class IOStreamTestCase(unittest.TestCase):
                 await ctx.tick()
 
             assert len(actually_sampled) == expected_samples_count # This should be checked as well, because a
-            # possible failure mode is if IOStreamer never generates clock edges. We don't want to end up
+            # possible failure mode is if IOStreamerTop never generates clock edges. We don't want to end up
             # comparing two empty lists against eachother.
 
             assert actually_sampled == expected_sample, (f"Expected [" +
@@ -434,45 +454,45 @@ class IOStreamTestCase(unittest.TestCase):
         ports = PortGroup()
         ports.data = port = io.SimulationPort("io", 1)
 
-        dut = IOStreamer({
+        dut = IOStreamerTop({
             "data": ("io", 1),
         }, ports, meta_layout=4)
 
         async def testbench(ctx):
             await ctx.tick()
 
-            ctx.set(dut.o_stream.p.port.data.o[0], 1)
-            ctx.set(dut.o_stream.p.port.data.oe, 0)
-            ctx.set(dut.o_stream.p.i_en, 1)
-            ctx.set(dut.o_stream.p.meta, 1)
+            ctx.set(dut.o_stream.p[0].actual.port.data.o, 1)
+            ctx.set(dut.o_stream.p[0].actual.port.data.oe, 0)
+            ctx.set(dut.o_stream.p[0].actual.i_en, 1)
+            ctx.set(dut.o_stream.p[0].meta, 1)
             ctx.set(dut.o_stream.valid, 1)
             ctx.set(dut.i_stream.ready, 1)
             await ctx.tick()
             assert ctx.get(port.o[0]) == 1
             assert ctx.get(port.oe) == 0
             assert ctx.get(dut.i_stream.valid) == 1
-            assert ctx.get(dut.i_stream.p.port.data.i[0]) == 0
-            assert ctx.get(dut.i_stream.p.meta) == 1
+            assert ctx.get(dut.i_stream.p[0].actual.port.data.i[0]) == 0
+            assert ctx.get(dut.i_stream.p[0].meta) == 1
 
-            ctx.set(dut.o_stream.p.port.data.oe, 1)
-            ctx.set(dut.o_stream.p.meta, 2)
+            ctx.set(dut.o_stream.p[0].actual.port.data.oe, 1)
+            ctx.set(dut.o_stream.p[0].meta, 2)
             await ctx.tick()
             assert ctx.get(port.o[0]) == 1
             assert ctx.get(port.oe) == 1
             assert ctx.get(dut.i_stream.valid) == 1
-            assert ctx.get(dut.i_stream.p.port.data.i[0]) == 0
-            assert ctx.get(dut.i_stream.p.meta) == 2
+            assert ctx.get(dut.i_stream.p[0].actual.port.data.i[0]) == 0
+            assert ctx.get(dut.i_stream.p[0].meta) == 2
 
-            ctx.set(dut.o_stream.p.meta, 3)
+            ctx.set(dut.o_stream.p[0].meta, 3)
             await ctx.tick()
             assert ctx.get(port.o[0]) == 1
             assert ctx.get(port.oe) == 1
             assert ctx.get(dut.i_stream.valid) == 1
-            assert ctx.get(dut.i_stream.p.port.data.i[0]) == 1
-            assert ctx.get(dut.i_stream.p.meta) == 3
+            assert ctx.get(dut.i_stream.p[0].actual.port.data.i[0]) == 1
+            assert ctx.get(dut.i_stream.p[0].meta) == 3
 
-            ctx.set(dut.o_stream.p.port.data.o[0], 0)
-            ctx.set(dut.o_stream.p.i_en, 0)
+            ctx.set(dut.o_stream.p[0].actual.port.data.o[0], 0)
+            ctx.set(dut.o_stream.p[0].actual.i_en, 0)
             await ctx.tick()
             assert ctx.get(port.o[0]) == 0
             assert ctx.get(port.oe) == 1
@@ -495,7 +515,7 @@ class IOStreamTestCase(unittest.TestCase):
         ports = PortGroup()
         ports.data = port = io.SimulationPort("io", 4)
 
-        dut = IOStreamer({
+        dut = IOStreamerTop({
             "data": ("io", 4),
         }, ports, meta_layout=4)
 
@@ -504,31 +524,31 @@ class IOStreamTestCase(unittest.TestCase):
 
             ctx.set(dut.i_stream.ready, 1)
             ctx.set(dut.o_stream.valid, 1)
-            ctx.set(dut.o_stream.p.i_en, 1)
-            ctx.set(dut.o_stream.p.meta, 0b0101)
+            ctx.set(dut.o_stream.p[0].actual.i_en, 1)
+            ctx.set(dut.o_stream.p[0].meta, 0b0101)
             ctx.set(port.i, 0b0101)
 
             await ctx.tick()
 
-            assert ctx.get(dut.i_stream.p.port.data.i) == 0b0101, f"{ctx.get(dut.i_stream.p.port.data.i):#06b}"
-            assert ctx.get(dut.i_stream.p.meta) == 0b0101, f"{ctx.get(dut.i_stream.p.meta):#06b}"
+            assert ctx.get(dut.i_stream.p[0].actual.port.data.i) == 0b0101, f"{ctx.get(dut.i_stream.p[0].actual.port.data.i):#06b}"
+            assert ctx.get(dut.i_stream.p[0].meta) == 0b0101, f"{ctx.get(dut.i_stream.p[0].meta):#06b}"
 
-            ctx.set(dut.o_stream.p.meta, 0b1111)
+            ctx.set(dut.o_stream.p[0].meta, 0b1111)
             ctx.set(port.i, 0b1111)
 
             ctx.set(dut.i_stream.ready, 0)
 
             await ctx.tick().repeat(10)
             # The skid buffer should protect the input stream from changes on the input signal
-            assert ctx.get(dut.i_stream.p.port.data.i) == 0b0101, f"{ctx.get(dut.i_stream.p.port.data.i):#06b}"
-            assert ctx.get(dut.i_stream.p.meta) == 0b0101, f"{ctx.get(dut.i_stream.p.meta):#06b}"
+            assert ctx.get(dut.i_stream.p[0].actual.port.data.i) == 0b0101, f"{ctx.get(dut.i_stream.p[0].actual.port.data.i):#06b}"
+            assert ctx.get(dut.i_stream.p[0].meta) == 0b0101, f"{ctx.get(dut.i_stream.p[0].meta):#06b}"
 
             ctx.set(dut.i_stream.ready, 1)
 
             await ctx.tick()
 
-            assert ctx.get(dut.i_stream.p.port.data.i) == 0b1111, f"{ctx.get(dut.i_stream.p.port.data.i):#06b}"
-            assert ctx.get(dut.i_stream.p.meta) == 0b1111, f"{ctx.get(dut.i_stream.p.meta):#06b}"
+            assert ctx.get(dut.i_stream.p[0].actual.port.data.i) == 0b1111, f"{ctx.get(dut.i_stream.p[0].actual.port.data.i):#06b}"
+            assert ctx.get(dut.i_stream.p[0].meta) == 0b1111, f"{ctx.get(dut.i_stream.p[0].meta):#06b}"
 
         sim = Simulator(dut)
         sim.add_clock(1e-6)

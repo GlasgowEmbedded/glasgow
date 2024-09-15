@@ -3,7 +3,7 @@ from amaranth.lib import enum, data, wiring, stream, io
 from amaranth.lib.wiring import In, Out, connect, flipped
 
 from .ports import PortGroup
-from .iostream import IOStreamer, IOClocker
+from .iostream import IOStreamerTop, IOClocker, IOClockerDeframer, MetaLayoutWithTag
 
 
 __all__ = ["QSPIMode", "QSPIEnframer", "QSPIDeframer", "QSPIController"]
@@ -57,43 +57,54 @@ class QSPIEnframer(wiring.Component):
                     m.d.comb += self.octets.ready.eq(cycle == 0)
             m.d.sync += cycle.eq(Mux(self.octets.ready, 0, cycle + 1))
 
-        # When no chip is selected, keep clock in the idle state. The only supported `mode`
-        # in this case is `QSPIMode.Dummy`, which should be used to deassert CS# at the end of
-        # a transfer.
-        m.d.comb += self.frames.p.bypass.eq(self.octets.p.chip == 0)
-        m.d.comb += self.frames.p.port.sck.o.eq(1)  # (for bypass only)
-        m.d.comb += self.frames.p.port.sck.oe.eq(1) # (for bypass only)
+        for lane_index in range(2):
+            m.d.comb += self.frames.p[lane_index].actual.port.sck.oe.eq(1)
+
+        with m.If(self.octets.p.chip == 0):
+            # When no chip is selected, keep clock in the idle state. The only supported `mode`
+            # in this case is `QSPIMode.Dummy`, which should be used to deassert CS# at the end of
+            # a transfer.
+            m.d.comb += self.frames.p[0].actual.port.sck.o.eq(1)
+            m.d.comb += self.frames.p[1].actual.port.sck.o.eq(1)
+        with m.Else():
+            m.d.comb += self.frames.p[0].actual.port.sck.o.eq(0)
+            m.d.comb += self.frames.p[1].actual.port.sck.o.eq(1)
 
         rev_data = self.octets.p.data[::-1] # MSB first
         with m.Switch(self.octets.p.mode):
             with m.Case(QSPIMode.PutX1, QSPIMode.Swap):
-                m.d.comb += self.frames.p.port.io0.o.eq(rev_data.word_select(cycle, 1))
-                m.d.comb += self.frames.p.port.io0.oe.eq(0b1)
-                m.d.comb += self.frames.p.i_en.eq(self.octets.p.mode == QSPIMode.Swap)
+                for lane_index in range(2):
+                    m.d.comb += self.frames.p[lane_index].actual.port.io0.o.eq(rev_data.word_select(cycle, 1))
+                    m.d.comb += self.frames.p[lane_index].actual.port.io0.oe.eq(0b1)
+                m.d.comb += self.frames.p[1].actual.i_en.eq(self.octets.p.mode == QSPIMode.Swap)
             with m.Case(QSPIMode.GetX1):
-                m.d.comb += self.frames.p.port.io0.oe.eq(0b1)
-                m.d.comb += self.frames.p.i_en.eq(1)
+                for lane_index in range(2):
+                    m.d.comb += self.frames.p[lane_index].actual.port.io0.oe.eq(0b1)
+                m.d.comb += self.frames.p[1].actual.i_en.eq(1)
             with m.Case(QSPIMode.PutX2):
-                m.d.comb += Cat(self.frames.p.port.io1.o,
-                                self.frames.p.port.io0.o).eq(rev_data.word_select(cycle, 2))
-                m.d.comb += Cat(self.frames.p.port.io1.oe,
-                                self.frames.p.port.io0.oe).eq(0b11)
+                for lane_index in range(2):
+                    m.d.comb += Cat(self.frames.p[lane_index].actual.port.io1.o,
+                                    self.frames.p[lane_index].actual.port.io0.o).eq(rev_data.word_select(cycle, 2))
+                    m.d.comb += Cat(self.frames.p[lane_index].actual.port.io1.oe,
+                                    self.frames.p[lane_index].actual.port.io0.oe).eq(0b11)
             with m.Case(QSPIMode.GetX2):
-                m.d.comb += self.frames.p.i_en.eq(1)
+                m.d.comb += self.frames.p[1].actual.i_en.eq(1)
             with m.Case(QSPIMode.PutX4):
-                m.d.comb += Cat(self.frames.p.port.io3.o,
-                                self.frames.p.port.io2.o,
-                                self.frames.p.port.io1.o,
-                                self.frames.p.port.io0.o).eq(rev_data.word_select(cycle, 4))
-                m.d.comb += Cat(self.frames.p.port.io3.oe,
-                                self.frames.p.port.io2.oe,
-                                self.frames.p.port.io1.oe,
-                                self.frames.p.port.io0.oe).eq(0b1111)
+                for lane_index in range(2):
+                    m.d.comb += Cat(self.frames.p[lane_index].actual.port.io3.o,
+                                    self.frames.p[lane_index].actual.port.io2.o,
+                                    self.frames.p[lane_index].actual.port.io1.o,
+                                    self.frames.p[lane_index].actual.port.io0.o).eq(rev_data.word_select(cycle, 4))
+                    m.d.comb += Cat(self.frames.p[lane_index].actual.port.io3.oe,
+                                    self.frames.p[lane_index].actual.port.io2.oe,
+                                    self.frames.p[lane_index].actual.port.io1.oe,
+                                    self.frames.p[lane_index].actual.port.io0.oe).eq(0b1111)
             with m.Case(QSPIMode.GetX4):
-                m.d.comb += self.frames.p.i_en.eq(1)
-        m.d.comb += self.frames.p.port.cs.o.eq((1 << self.octets.p.chip)[1:])
-        m.d.comb += self.frames.p.port.cs.oe.eq(1)
-        m.d.comb += self.frames.p.meta.eq(self.octets.p.mode)
+                m.d.comb += self.frames.p[1].actual.i_en.eq(1)
+        for lane_index in range(2):
+            m.d.comb += self.frames.p[lane_index].actual.port.cs.o.eq((1 << self.octets.p.chip)[1:])
+            m.d.comb += self.frames.p[lane_index].actual.port.cs.oe.eq(1)
+        m.d.comb += self.frames.p[1].meta.eq(self.octets.p.mode)
 
         return m
 
@@ -101,7 +112,7 @@ class QSPIEnframer(wiring.Component):
 class QSPIDeframer(wiring.Component): # meow :3
     def __init__(self):
         super().__init__({
-            "frames": In(IOStreamer.i_stream_signature({
+            "frames": In(IOClockerDeframer.o_stream_signature({
                 "io0": ("io", 1),
                 "io1": ("io", 1),
                 "io2": ("io", 1),
@@ -118,7 +129,7 @@ class QSPIDeframer(wiring.Component): # meow :3
         cycle = Signal(range(8))
         m.d.comb += self.frames.ready.eq(~self.octets.valid | self.octets.ready)
         with m.If(self.frames.valid):
-            with m.Switch(self.frames.p.meta):
+            with m.Switch(self.frames.p[1].meta):
                 with m.Case(QSPIMode.GetX1, QSPIMode.Swap):
                     m.d.comb += self.octets.valid.eq(cycle == 7)
                 with m.Case(QSPIMode.GetX2):
@@ -129,17 +140,17 @@ class QSPIDeframer(wiring.Component): # meow :3
                 m.d.sync += cycle.eq(Mux(self.octets.valid, 0, cycle + 1))
 
         data_reg = Signal(8)
-        with m.Switch(self.frames.p.meta):
+        with m.Switch(self.frames.p[1].meta):
             with m.Case(QSPIMode.GetX1, QSPIMode.Swap): # note: samples IO1
-                m.d.comb += self.octets.p.data.eq(Cat(self.frames.p.port.io1.i, data_reg))
+                m.d.comb += self.octets.p.data.eq(Cat(self.frames.p[1].actual.port.io1.i, data_reg))
             with m.Case(QSPIMode.GetX2):
-                m.d.comb += self.octets.p.data.eq(Cat(self.frames.p.port.io0.i,
-                                                      self.frames.p.port.io1.i, data_reg))
+                m.d.comb += self.octets.p.data.eq(Cat(self.frames.p[1].actual.port.io0.i,
+                                                      self.frames.p[1].actual.port.io1.i, data_reg))
             with m.Case(QSPIMode.GetX4):
-                m.d.comb += self.octets.p.data.eq(Cat(self.frames.p.port.io0.i,
-                                                      self.frames.p.port.io1.i,
-                                                      self.frames.p.port.io2.i,
-                                                      self.frames.p.port.io3.i, data_reg))
+                m.d.comb += self.octets.p.data.eq(Cat(self.frames.p[1].actual.port.io0.i,
+                                                      self.frames.p[1].actual.port.io1.i,
+                                                      self.frames.p[1].actual.port.io2.i,
+                                                      self.frames.p[1].actual.port.io3.i, data_reg))
         with m.If(self.frames.valid & self.frames.ready):
             m.d.sync += data_reg.eq(self.octets.p.data)
 
@@ -147,7 +158,7 @@ class QSPIDeframer(wiring.Component): # meow :3
 
 
 class QSPIController(wiring.Component):
-    def __init__(self, ports, *, chip_count=1, use_ddr_buffers=False, sample_delay_half_clocks=0):
+    def __init__(self, ports, *, chip_count=1, use_ddr_buffers=False, divisor_width=16, max_sample_delay_half_clocks=0, min_divisor=0):
         assert len(ports.sck) == 1 and ports.sck.direction in (io.Direction.Output, io.Direction.Bidir)
         assert len(ports.io) == 4 and ports.io.direction == io.Direction.Bidir
         assert len(ports.cs) >= 1 and ports.cs.direction in (io.Direction.Output, io.Direction.Bidir)
@@ -162,7 +173,9 @@ class QSPIController(wiring.Component):
         )
         self._ddr = use_ddr_buffers
         self._chip_count = chip_count
-        self._sample_delay_half_clocks = sample_delay_half_clocks
+        self._divisor_width = divisor_width
+        self._max_sample_delay_half_clocks = max_sample_delay_half_clocks
+        self._min_divisor = min_divisor
 
         super().__init__({
             "o_octets": In(stream.Signature(data.StructLayout({
@@ -174,7 +187,8 @@ class QSPIController(wiring.Component):
                 "data": 8
             }))),
 
-            "divisor": In(16),
+            "divisor": In(divisor_width),
+            "sample_delay_half_clocks": In(range(max_sample_delay_half_clocks + 1))
         })
 
     def elaborate(self, platform):
@@ -194,36 +208,28 @@ class QSPIController(wiring.Component):
         connect(m, controller=flipped(self.o_octets), enframer=enframer.octets)
 
         m.submodules.io_clocker = io_clocker = IOClocker(ioshape,
-            clock="sck", o_ratio=ratio, meta_layout=QSPIMode)
+            o_ratio=ratio, meta_layout=QSPIMode, divisor_width=self._divisor_width)
         connect(m, enframer=enframer.frames, io_clocker=io_clocker.i_stream)
         m.d.comb += io_clocker.divisor.eq(self.divisor)
 
-        m.submodules.io_streamer = io_streamer = IOStreamer(ioshape, self._ports, init={
+        m.submodules.io_streamer = io_streamer = IOStreamerTop(ioshape, self._ports, init={
             "sck": {"o": 1, "oe": 1}, # Motorola "Mode 3" with clock idling high
             "cs":  {"o": 0, "oe": 1}, # deselected
-        }, ratio=ratio, meta_layout=QSPIMode,
-           sample_delay_half_clocks=self._sample_delay_half_clocks)
+        }, ratio=ratio, meta_layout=MetaLayoutWithTag(tag_layout=range(2), meta_layout=QSPIMode),
+           divisor_width=self._divisor_width,
+           max_sample_delay_half_clocks=self._max_sample_delay_half_clocks,
+           min_divisor=self._min_divisor)
         connect(m, io_clocker=io_clocker.o_stream, io_streamer=io_streamer.o_stream)
+        m.d.comb += io_streamer.divisor.eq(self.divisor)
+        m.d.comb += io_streamer.sample_delay_half_clocks.eq(self.sample_delay_half_clocks)
+
+        m.submodules.io_clocker_deframer = io_clocker_deframer = IOClockerDeframer(ioshape,
+            i_ratio=ratio, meta_layout=QSPIMode)
+        connect(m, io_streamer=io_streamer.i_stream, io_clocker_deframer=io_clocker_deframer.i_stream)
+        m.d.comb += io_clocker_deframer.divisor.eq(self.divisor)
 
         m.submodules.deframer = deframer = QSPIDeframer()
-        m.d.comb += [ # connect() wouldn't work if DDR buffers are used
-            deframer.frames.p.port.io0.i.eq(io_streamer.i_stream.p.port.io0.i[0]),
-            deframer.frames.p.port.io1.i.eq(io_streamer.i_stream.p.port.io1.i[0]),
-            deframer.frames.p.port.io2.i.eq(io_streamer.i_stream.p.port.io2.i[0]),
-            deframer.frames.p.port.io3.i.eq(io_streamer.i_stream.p.port.io3.i[0]),
-            deframer.frames.p.meta.eq(io_streamer.i_stream.p.meta),
-            deframer.frames.valid.eq(io_streamer.i_stream.valid),
-            io_streamer.i_stream.ready.eq(deframer.frames.ready),
-        ]
-
-        if self._ddr:
-            with m.If(self.divisor == 0):
-                m.d.comb += [
-                    deframer.frames.p.port.io0.i.eq(io_streamer.i_stream.p.port.io0.i[1]),
-                    deframer.frames.p.port.io1.i.eq(io_streamer.i_stream.p.port.io1.i[1]),
-                    deframer.frames.p.port.io2.i.eq(io_streamer.i_stream.p.port.io2.i[1]),
-                    deframer.frames.p.port.io3.i.eq(io_streamer.i_stream.p.port.io3.i[1]),
-                ]
+        connect(m, io_clocker_deframer=io_clocker_deframer.o_stream, deframer=deframer.frames)
 
         connect(m, deframer=deframer.octets, controller=flipped(self.i_octets))
 

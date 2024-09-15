@@ -181,19 +181,36 @@ class QSPITestCase(unittest.TestCase):
         async def testbench_out(ctx):
             async def bits_get(*, cs, ox, oe, i_en, mode):
                 for cycle, o in enumerate(ox):
-                    expected = {
-                        "bypass": (cs == 0),
-                        "port": {
-                            "sck": {"o":        1, "oe":         1},
-                            "io0": {"o": (o>>0)&1, "oe": (oe>>0)&1},
-                            "io1": {"o": (o>>1)&1, "oe": (oe>>1)&1},
-                            "io2": {"o": (o>>2)&1, "oe": (oe>>2)&1},
-                            "io3": {"o": (o>>3)&1, "oe": (oe>>3)&1},
-                            "cs":  {"o":       cs, "oe":         1},
-                        },
-                        "i_en": i_en,
-                        "meta": mode
-                    }
+                    expected = [
+                            {
+                                "actual": {
+                                    "port": {
+                                        "sck": {"o":      ~cs, "oe":         1},
+                                        "io0": {"o": (o>>0)&1, "oe": (oe>>0)&1},
+                                        "io1": {"o": (o>>1)&1, "oe": (oe>>1)&1},
+                                        "io2": {"o": (o>>2)&1, "oe": (oe>>2)&1},
+                                        "io3": {"o": (o>>3)&1, "oe": (oe>>3)&1},
+                                        "cs":  {"o":       cs, "oe":         1},
+                                    },
+                                    "i_en": 0,
+                                },
+                                "meta": 0,
+                            },
+                            {
+                                "actual": {
+                                    "port": {
+                                        "sck": {"o":        1, "oe":         1},
+                                        "io0": {"o": (o>>0)&1, "oe": (oe>>0)&1},
+                                        "io1": {"o": (o>>1)&1, "oe": (oe>>1)&1},
+                                        "io2": {"o": (o>>2)&1, "oe": (oe>>2)&1},
+                                        "io3": {"o": (o>>3)&1, "oe": (oe>>3)&1},
+                                        "cs":  {"o":       cs, "oe":         1},
+                                    },
+                                    "i_en": i_en,
+                                },
+                                "meta": mode,
+                            },
+                        ]
                     assert (actual := await stream_get(ctx, dut.frames)) == expected, \
                         f"(cycle {cycle}) {actual} != {expected}"
 
@@ -232,15 +249,33 @@ class QSPITestCase(unittest.TestCase):
         async def testbench_in(ctx):
             async def bits_put(*, ix, mode):
                 for cycle, i in enumerate(ix):
-                    await stream_put(ctx, dut.frames, {
-                        "port": {
-                            "io0": {"i": (i>>0)&1},
-                            "io1": {"i": (i>>1)&1},
-                            "io2": {"i": (i>>2)&1},
-                            "io3": {"i": (i>>3)&1},
-                        },
-                        "meta": mode
-                    })
+                    await stream_put(ctx, dut.frames,
+                        [
+                            {
+                                "actual": {
+                                    "port": {
+                                        "io0": {"i": 0},
+                                        "io1": {"i": 0},
+                                        "io2": {"i": 0},
+                                        "io3": {"i": 0},
+                                    },
+                                    "i_valid": 0,
+                                },
+                                "meta": mode
+                            },
+                            {
+                                "actual": {
+                                    "port": {
+                                        "io0": {"i": (i>>0)&1},
+                                        "io1": {"i": (i>>1)&1},
+                                        "io2": {"i": (i>>2)&1},
+                                        "io3": {"i": (i>>3)&1},
+                                    },
+                                    "i_valid": 1,
+                                },
+                                "meta": mode
+                            },
+                        ])
 
             await bits_put(ix=[i<<1 for i in [1,0,1,1,1,0,1,0]], mode=QSPIMode.Swap)
 
@@ -290,7 +325,7 @@ class QSPITestCase(unittest.TestCase):
         ports.io  = io.SimulationPort("io", 4)
         ports.cs  = io.SimulationPort("o",  1)
 
-        dut = QSPIController(ports, use_ddr_buffers=use_ddr_buffers, sample_delay_half_clocks=sample_delay_half_clocks)
+        dut = QSPIController(ports, use_ddr_buffers=use_ddr_buffers, max_sample_delay_half_clocks=sample_delay_half_clocks, min_divisor=divisor)
 
         async def testbench_controller(ctx):
             async def ctrl_idle():
@@ -323,6 +358,7 @@ class QSPITestCase(unittest.TestCase):
                 return words
             if divisor is not None:
                 ctx.set(dut.divisor, divisor)
+            ctx.set(dut.sample_delay_half_clocks, sample_delay_half_clocks)
 
             await ctrl_idle()
 
@@ -430,6 +466,44 @@ class QSPITestCase(unittest.TestCase):
                 self.subtest_qspi_controller(use_ddr_buffers=False,
                                              divisor=0,
                                              roundtrip_time_s=self.QSPI_CONTROLLER_SUBTEST_CLK_PERIOD * (0.99 + 0.5 * (sample_delay_half_clocks - 4)),
+                                             sample_delay_half_clocks = sample_delay_half_clocks)
+            except AssertionError:
+                pass
+            else:
+                assert False, "QSPI controller should have failed with too little turnaround time"
+
+    # The Div10 tests are here to verify the optimized sample_request_delayer:
+    def test_qspi_controller_ddr_div10(self):
+        self.subtest_qspi_controller(use_ddr_buffers=True, divisor=10)
+
+    def test_qspi_controller_needs_sample_delay_ddr_div10_max_turnaround(self):
+        for sample_delay_half_clocks in [7, 8, 9, 10, 20]:
+            divisor = 10
+            self.subtest_qspi_controller(use_ddr_buffers=True,
+                                         divisor=divisor,
+                                         roundtrip_time_s=self.QSPI_CONTROLLER_SUBTEST_CLK_PERIOD * (0.5 * sample_delay_half_clocks) + self.QSPI_CONTROLLER_SUBTEST_CLK_PERIOD * divisor * 2 * 0.49,
+                                         sample_delay_half_clocks=sample_delay_half_clocks)
+
+    def test_qspi_controller_needs_sample_delay_ddr_div10_too_much_turnaround(self):
+        for sample_delay_half_clocks in [7, 8, 9, 10, 20]:
+            try:
+                divisor = 10
+                self.subtest_qspi_controller(use_ddr_buffers=True,
+                                             divisor=divisor,
+                                             roundtrip_time_s=self.QSPI_CONTROLLER_SUBTEST_CLK_PERIOD * (0.5 * sample_delay_half_clocks) + self.QSPI_CONTROLLER_SUBTEST_CLK_PERIOD * divisor * 2 * 0.51,
+                                             sample_delay_half_clocks = sample_delay_half_clocks)
+            except AssertionError:
+                pass
+            else:
+                assert False, "QSPI controller should have failed with too much turnaround time"
+
+    def test_qspi_controller_needs_sample_delay_ddr_div10_too_little_turnaround(self):
+        for sample_delay_half_clocks in [7, 8, 9, 10, 20]:
+            try:
+                divisor = 10
+                self.subtest_qspi_controller(use_ddr_buffers=True,
+                                             divisor=divisor,
+                                             roundtrip_time_s=self.QSPI_CONTROLLER_SUBTEST_CLK_PERIOD * (0.5 * sample_delay_half_clocks) - self.QSPI_CONTROLLER_SUBTEST_CLK_PERIOD * divisor * 2 * 0.51,
                                              sample_delay_half_clocks = sample_delay_half_clocks)
             except AssertionError:
                 pass
