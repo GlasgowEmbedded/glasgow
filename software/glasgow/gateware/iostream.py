@@ -285,7 +285,7 @@ class IOClocker(wiring.Component):
                                 m.d.comb += self.i_stream.ready.eq(1)
                         with m.Else():
                             m.d.comb += phase.eq(0)
-                            with m.If(self.o_stream.ready):
+                            with m.If(self.o_stream.ready & self.i_stream.valid):
                                 m.d.sync += timer.eq(self.divisor)
                                 m.next = "Rising"
 
