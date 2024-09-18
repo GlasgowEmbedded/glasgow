@@ -126,11 +126,11 @@ If these instructions don't work for you, please `file a bug <file-a-bug_>`__ so
 
 .. tab:: macOS
 
-    You will need to have `pipx`_ installed. If you haven't already, install `Homebrew <https://brew.sh/>`_. To install pipx, run:
+    You will need to have `libusb`_ and `pipx`_ installed. If you haven't already, install `Homebrew <https://brew.sh/>`_. To install those packages, run:
 
     .. code:: console
 
-        $ brew install pipx
+        $ brew install libusb pipx
         $ pipx ensurepath
 
     The ``pipx ensurepath`` command may prompt you to reopen the terminal window; do so.
@@ -221,6 +221,7 @@ If these instructions don't work for you, please `file a bug <file-a-bug_>`__ so
 .. _Yosys: https://github.com/YosysHQ/yosys
 .. _nextpnr: https://github.com/YosysHQ/yosys
 .. _icestorm: https://github.com/YosysHQ/icestorm
+.. _libusb: https://libusb.info/
 
 
 Using a system FPGA toolchain
