@@ -470,7 +470,7 @@ class MemoryONFIApplet(GlasgowApplet):
             help="select chip connected to CE# signal CHIP (one of: 1..4, default: 1)")
 
     async def run(self, device, args):
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
+        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args, pull_high={args.pin_r_b})
         onfi_iface = ONFIInterface(iface, self.logger)
 
         # Reset every target, to make sure all of them are in a defined state and aren't driving
