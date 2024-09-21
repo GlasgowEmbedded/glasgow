@@ -459,20 +459,30 @@ class GlasgowHardwareDevice:
 
     async def download_bitstream(self, bitstream, bitstream_id=b"\xff" * 16):
         """Download ``bitstream`` with ID ``bitstream_id`` to FPGA."""
-        # Send consecutive chunks of bitstream.
-        # Sending 0th chunk resets the FPGA.
+        # Send consecutive chunks of bitstream. Sending 0th chunk also clears the FPGA bitstream.
         index = 0
         while index * 1024 < len(bitstream):
             await self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_FPGA_CFG,
                                      0, index, bitstream[index * 1024:(index + 1) * 1024])
             index += 1
-        # Complete configuration by setting bitstream ID.
-        # This starts the FPGA.
+        # Complete configuration by setting bitstream ID. This starts the FPGA.
         try:
             await self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_BITSTREAM_ID,
                                      0, 0, bitstream_id)
         except usb1.USBErrorPipe:
             raise GlasgowDeviceError("FPGA configuration failed")
+        try:
+            # Each bitstream has an I2C register at address 0, which is used to check that the FPGA
+            # has configured properly and that the I2C bus function is intact. A small subset of
+            # production devices manufactured by 1bitSquared fails this check.
+            magic, = await self.control_read(usb1.REQUEST_TYPE_VENDOR, REQ_REGISTER, 0x00, 0, 1)
+        except usb1.USBErrorPipe:
+            magic = 0
+        if magic != 0xa5:
+            raise GlasgowDeviceError(
+                "FPGA health check failed; if you are using a newly manufactured device, "
+                "ask the vendor of the device for return and replacement, else ask for support "
+                "on community channels")
 
     async def download_target(self, plan, *, reload=False):
         if await self.bitstream_id() == plan.bitstream_id and not reload:
