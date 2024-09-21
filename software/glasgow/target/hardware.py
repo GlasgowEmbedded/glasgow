@@ -52,6 +52,11 @@ class GlasgowHardwareTarget(Elaboratable):
         self.i2c_target = I2CTarget(self.platform.request("i2c", dir={"scl": "-", "sda": "-"}))
         self.registers = I2CRegisters(self.i2c_target)
 
+        # Always add a register at address 0x00, to be able to check that the FPGA configuration
+        # succeeded and that I2C communication works.
+        addr_health_check = self.registers.add_existing_ro(0xa5)
+        assert addr_health_check == 0x00
+
         self.fx2_crossbar = FX2Crossbar(self.platform.request("fx2", dir={
             "sloe": "-", "slrd": "-", "slwr": "-", "pktend": "-", "fifoadr": "-",
             "flag": "-", "fd": "-"
