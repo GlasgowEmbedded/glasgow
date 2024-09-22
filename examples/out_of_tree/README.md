@@ -5,7 +5,7 @@ Most applets currently reside in-tree (within the `glasgow` repository or its fo
 To use this feature, first install the out-of-tree applet. With the recommended method of installation (pipx) this can be done with:
 
 ```console
-$ pipx inject glasgow -e ./examples/out_of_tree
+$ pipx inject -e glasgow ./examples/out_of_tree
 ```
 
 Once installed, the applet is runnable provided a special environment variable is set:
