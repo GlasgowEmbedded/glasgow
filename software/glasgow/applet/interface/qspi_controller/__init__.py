@@ -252,10 +252,24 @@ class QSPIControllerApplet(GlasgowApplet):
 
         parser.add_argument(
             "-d", "--sample-delay", metavar="SAMPLE_DELAY", type=int, required=False,
-            help="Specify sample delay in units of half clock-cycles. (Default: 0)")
+            help="Specify sample delay in units of half clock-cycles. (Default: frequency-dependent)")
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
+        divisor=int(target.sys_clk_freq // (args.frequency * 2000))
+        if divisor != 0:
+            actual_frequency = target.sys_clk_freq / divisor / 2
+        else:
+            actual_frequency = target.sys_clk_freq
+        if args.sample_delay is None:
+            if actual_frequency <= 24_000_000.1:
+                sample_delay = 0
+            elif actual_frequency <= 60_000_000.1:
+                sample_delay = 1
+            else:
+                sample_delay = 2
+        else:
+            sample_delay = args.sample_delay
         return iface.add_subtarget(QSPIControllerSubtarget(
             ports=iface.get_port_group(
                 sck=args.pin_sck,
@@ -264,9 +278,9 @@ class QSPIControllerApplet(GlasgowApplet):
             ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
-            divisor=int(target.sys_clk_freq // (args.frequency * 2000)),
+            divisor=divisor,
             us_cycles=int(target.sys_clk_freq // 1_000_000),
-            sample_delay_half_clocks = args.sample_delay,
+            sample_delay_half_clocks = sample_delay,
         ))
 
     async def run(self, device, args):
