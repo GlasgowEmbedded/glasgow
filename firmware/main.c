@@ -409,7 +409,7 @@ bool handle_usb_set_interface(uint8_t interface, uint8_t alt_setting) {
 
 void handle_usb_get_interface(uint8_t interface) {
   EP0BUF[0] = usb_alt_setting[interface];
-  SETUP_EP0_BUF(1);
+  SETUP_EP0_IN_BUF(1);
 }
 
 // This monotonically increasing number ensures that we upload bitstream chunks
@@ -479,9 +479,9 @@ void handle_pending_usb_setup() {
         if(!eeprom_read(arg_chip, arg_addr, EP0BUF, chunk_len, /*double_byte=*/true)) {
           goto stall_ep0_return;
         }
-        SETUP_EP0_BUF(chunk_len);
+        SETUP_EP0_IN_BUF(chunk_len);
       } else {
-        SETUP_EP0_BUF(0);
+        SETUP_EP0_OUT_BUF();
         while(EP0CS & _BUSY);
         // Using a constant page size of 64 bytes because both the ICE and FX2 EEPROMs have a page
         // size of >= 64 bytes, and USB2 control transfer packets are at most 64 bytes.
@@ -490,6 +490,7 @@ void handle_pending_usb_setup() {
                          page_size, timeout)) {
           goto stall_ep0_return;
         }
+        ACK_EP0();
       }
 
       arg_len  -= chunk_len;
@@ -509,13 +510,14 @@ void handle_pending_usb_setup() {
       if(req_dir_in) {
         while(EP0CS & _BUSY);
         if(fpga_reg_read(EP0BUF, arg_len)) {
-          SETUP_EP0_BUF(arg_len);
+          SETUP_EP0_IN_BUF(arg_len);
           return;
         }
       } else {
-        SETUP_EP0_BUF(0);
+        SETUP_EP0_OUT_BUF();
         while(EP0CS & _BUSY);
         fpga_reg_write(EP0BUF, arg_len);
+        ACK_EP0();
         return;
       }
     }
@@ -532,7 +534,7 @@ void handle_pending_usb_setup() {
     while(EP0CS & _BUSY);
     EP0BUF[0] = status |
       (fpga_is_ready() ? ST_FPGA_RDY : 0);
-    SETUP_EP0_BUF(1);
+    SETUP_EP0_IN_BUF(1);
 
     reset_status_bit(ST_ERROR);
 
@@ -555,12 +557,13 @@ void handle_pending_usb_setup() {
     while(arg_len > 0) {
       uint8_t chunk_len = arg_len < 64 ? arg_len : 64;
 
-      SETUP_EP0_BUF(0);
+      SETUP_EP0_OUT_BUF();
       while(EP0CS & _BUSY);
       fpga_load(EP0BUF, chunk_len);
 
       arg_len -= chunk_len;
     }
+    ACK_EP0();
 
     bitstream_idx = arg_idx;
     return;
@@ -574,12 +577,13 @@ void handle_pending_usb_setup() {
     if(req_dir_in) {
       while(EP0CS & _BUSY);
       xmemcpy(EP0BUF, glasgow_config.bitstream_id, CONFIG_SIZE_BITSTREAM_ID);
-      SETUP_EP0_BUF(CONFIG_SIZE_BITSTREAM_ID);
+      SETUP_EP0_IN_BUF(CONFIG_SIZE_BITSTREAM_ID);
     } else {
       if(fpga_start()) {
-        SETUP_EP0_BUF(0);
+        SETUP_EP0_OUT_BUF();
         while(EP0CS & _BUSY);
         xmemcpy(glasgow_config.bitstream_id, EP0BUF, CONFIG_SIZE_BITSTREAM_ID);
+        ACK_EP0();
       } else {
         goto stall_ep0_return;
       }
@@ -599,10 +603,10 @@ void handle_pending_usb_setup() {
       if(!iobuf_get_voltage(arg_mask, (__xdata uint16_t *)EP0BUF)) {
         goto stall_ep0_return;
       } else {
-        SETUP_EP0_BUF(2);
+        SETUP_EP0_IN_BUF(2);
       }
     } else {
-      SETUP_EP0_BUF(2);
+      SETUP_EP0_IN_BUF(2);
       while(EP0CS & _BUSY);
       if(!iobuf_set_voltage(arg_mask, (__xdata uint16_t *)EP0BUF)) {
         latch_status_bit(ST_ERROR);
@@ -630,7 +634,7 @@ void handle_pending_usb_setup() {
     if(!result) {
       goto stall_ep0_return;
     } else {
-      SETUP_EP0_BUF(2);
+      SETUP_EP0_IN_BUF(2);
     }
 
     return;
@@ -654,10 +658,10 @@ void handle_pending_usb_setup() {
       if(!result) {
         goto stall_ep0_return;
       } else {
-        SETUP_EP0_BUF(4);
+        SETUP_EP0_IN_BUF(4);
       }
     } else {
-      SETUP_EP0_BUF(4);
+      SETUP_EP0_IN_BUF(4);
       while(EP0CS & _BUSY);
 
       if(glasgow_config.revision >= GLASGOW_REV_C2)
@@ -691,7 +695,7 @@ void handle_pending_usb_setup() {
     if(!result) {
       goto stall_ep0_return;
     } else {
-      SETUP_EP0_BUF(1);
+      SETUP_EP0_IN_BUF(1);
       // Clear the ERR led since we cleared the alert status above
       reset_status_bit(ST_ALERT);
     }
@@ -723,10 +727,10 @@ void handle_pending_usb_setup() {
       if(!iobuf_get_voltage_limit(arg_mask, (__xdata uint16_t *)EP0BUF)) {
         goto stall_ep0_return;
       } else {
-        SETUP_EP0_BUF(2);
+        SETUP_EP0_IN_BUF(2);
       }
     } else {
-      SETUP_EP0_BUF(2);
+      SETUP_EP0_IN_BUF(2);
       while(EP0CS & _BUSY);
       if(!iobuf_set_voltage_limit(arg_mask, (__xdata uint16_t *)EP0BUF)) {
         latch_status_bit(ST_ERROR);
@@ -758,10 +762,10 @@ void handle_pending_usb_setup() {
                          (__xdata uint8_t *)EP0BUF + 1)) {
         goto stall_ep0_return;
       } else {
-        SETUP_EP0_BUF(2);
+        SETUP_EP0_IN_BUF(2);
       }
     } else {
-      SETUP_EP0_BUF(2);
+      SETUP_EP0_IN_BUF(2);
       while(EP0CS & _BUSY);
       if(glasgow_config.revision < GLASGOW_REV_C0 ||
          !iobuf_set_pull(arg_selector,
@@ -798,7 +802,7 @@ void handle_pending_usb_setup() {
 
     while(EP0CS & _BUSY);
     EP0BUF[0] = CUR_API_LEVEL;
-    SETUP_EP0_BUF(1);
+    SETUP_EP0_IN_BUF(1);
     return;
   }
 
