@@ -80,6 +80,7 @@ selftest = "glasgow.applet.internal.selftest:SelfTestApplet"
 benchmark = "glasgow.applet.internal.benchmark:BenchmarkApplet"
 
 analyzer = "glasgow.applet.interface.analyzer:AnalyzerApplet"
+better-la = "glasgow.applet.interface.better_la:BetterLAApplet"
 uart = "glasgow.applet.interface.uart:UARTApplet"
 spi-controller = "glasgow.applet.interface.spi_controller:SPIControllerApplet"
 spi-flashrom = "glasgow.applet.interface.spi_flashrom:SPIFlashromApplet"
