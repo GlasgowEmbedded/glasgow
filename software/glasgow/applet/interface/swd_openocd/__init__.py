@@ -56,7 +56,7 @@ class SWDOpenOCDSubtarget(Elaboratable):
             self.srst_z.eq(0),
         ]
         if self.ports.srst is not None:
-            m.submodules.srst_buffer = srst_buffer = io.Buffer("o")
+            m.submodules.srst_buffer = srst_buffer = io.Buffer("o", self.ports.srst)
             m.d.sync += [
                 srst_buffer.oe.eq(~self.srst_z),
                 srst_buffer.o.eq(~self.srst_o)
