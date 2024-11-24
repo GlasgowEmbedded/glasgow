@@ -82,6 +82,8 @@ linkcheck_ignore = [
     r"^https://mouser\.com/",
     # For unknown reasons, is (mostly) unreachable from GitHub CI runners.
     r"^https://chaos\.social/",
+    # As above.
+    r"^https://en\.uesp\.net/",
 ]
 
 linkcheck_anchors_ignore_for_url = [
