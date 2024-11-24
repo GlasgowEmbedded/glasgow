@@ -99,7 +99,7 @@ Applets that have ``run`` nable programs often have `subcommands` to specify wha
 
 Applets also can have `build arguments` that specify how the gateware is constructed, and `run arguments` that modify the behavior of the applet as a whole; these are also listed in the ``--help`` output.  A common run argument is ``-V ...``, which sets the I/O voltage, as well as setting the supply output voltage for the selected port(s). Be careful that you set the correct voltage for your connected devices!
 
-Putting it together, the following command will run the ``uart`` applet, with an I/O voltage of 3.3 V, and will configure pin ``A0`` to be `Tx` (Glasgow transmitting), and pin ``A1`` to be `Rx` (Glasgow receiving).  It uses the ``tty`` subcommand to provide output from the UART directly to the console:
+Putting it together, the following command will run the ``uart`` applet, with an I/O voltage of 3.3 V, and will configure pin ``A0`` to be `Tx` (Glasgow transmitting), and pin ``A1`` to be `Rx` (Glasgow receiving).  It uses the ``socket`` subcommand to bridge the UART to a socket:
 
 .. code:: console
 
