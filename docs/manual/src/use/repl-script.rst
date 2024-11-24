@@ -129,7 +129,7 @@ The UART applet also keeps track of some statistics for us:
 WS2812
 ~~~~~~
 
-I've got a `quater of an Adafruit 60 LED ring <https://www.adafruit.com/product/1768>`_... that's 15x WS2812 RGB LEDs.
+I've got a `quarter of an Adafruit 60 LED ring <https://www.adafruit.com/product/1768>`_... that's 15x WS2812 RGB LEDs.
 
 .. note::
 
