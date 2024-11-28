@@ -174,7 +174,7 @@ class AudioDACApplet(GlasgowApplet):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         if args.frequency is None:
-            pulse_cyc = 0
+            pulse_cyc = 1
         else:
             pulse_cyc = self.derive_clock(clock_name="modulation",
                 input_hz=target.sys_clk_freq, output_hz=args.frequency * 1e6)
@@ -182,7 +182,7 @@ class AudioDACApplet(GlasgowApplet):
             input_hz=target.sys_clk_freq, output_hz=args.sample_rate,
             # Drift of sampling clock is extremely bad, so ensure it only happens insofar as
             # the oscillator on the board is imprecise, and with no additional error.
-            max_deviation_ppm=0)
+            max_deviation_ppm=0) - 1
         subtarget = iface.add_subtarget(AudioDACSubtarget(
             ports=iface.get_port_group(o = args.pin_set_o),
             out_fifo=iface.get_out_fifo(),
