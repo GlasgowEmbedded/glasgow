@@ -175,6 +175,7 @@ void iobuf_read_alert_cache_ina233(__xdata uint8_t *mask, bool clear);
 // Pull API
 bool iobuf_set_pull(uint8_t selector, uint8_t enable, uint8_t level);
 bool iobuf_get_pull(uint8_t selector, __xdata uint8_t *enable, __xdata uint8_t *level);
+bool iobuf_get_input(uint8_t selector, __xdata uint8_t *value);
 
 // FIFO API
 void fifo_init();
