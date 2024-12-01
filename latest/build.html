@@ -1,0 +1,376 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="search" title="Search" href="search.html" /><link rel="next" title="Installing &amp; updating" href="install.html" /><link rel="prev" title="Purchasing hardware" href="purchase.html" />
+        <link rel="canonical" href="https://glasgow-embedded.org/latest/build.html" />
+
+    <!-- Generated with Sphinx 7.1.2 and Furo 2023.09.10 -->
+        <title>Building hardware - Glasgow Interface Explorer</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=5f2c338f" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/tabs.css?v=4c969af8" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/fontawesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/solid.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/brands.min.css" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  --color-announcement-background: #56bf62;
+  --color-announcement-text: #094a05;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-announcement-background: #1c4808;
+  --color-announcement-text: #64cc69;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-announcement-background: #1c4808;
+  --color-announcement-text: #64cc69;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<div class="announcement">
+  <aside class="announcement-content">
+     Production units are being shipped by Mouser. <a href='https://crowdsupply.com/1bitsquared/glasgow'>Pre-order yours now!</a> 
+  </aside>
+</div>
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">Glasgow Interface Explorer</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  
+  
+  <span class="sidebar-brand-text">Glasgow Interface Explorer</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="revisions/index.html">Hardware revisions</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Hardware revisions</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="revisions/revC3.html">Technical description (revC3)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="purchase.html">Purchasing hardware</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Building hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installing &amp; updating</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="use/index.html">Using the device</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Using the device</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="use/basic.html">Basic usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="use/repl-script.html">REPL &amp; script operation</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="develop/index.html">Development process</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Development process</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="develop/applet.html">Applets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="develop/docs.html">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="develop/software.html">Software</a></li>
+<li class="toctree-l2"><a class="reference internal" href="develop/firmware.html">Firmware</a></li>
+<li class="toctree-l2"><a class="reference internal" href="develop/hardware.html">Hardware</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="community.html">Community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="conduct.html">Code of Conduct</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/GlasgowEmbedded/glasgow/edit/main/docs/manual/src/build.rst" title="Edit this page">
+    <svg aria-hidden="true" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <path d="M4 20h4l10.5 -10.5a1.5 1.5 0 0 0 -4 -4l-10.5 10.5v4" />
+      <line x1="13.5" y1="6.5" x2="17.5" y2="10.5" />
+    </svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="building-hardware">
+<span id="build"></span><h1>Building hardware<a class="headerlink" href="#building-hardware" title="Permalink to this heading">#</a></h1>
+<p>Pre-assembled Glasgow devices and cases are <a class="reference internal" href="purchase.html#purchasing"><span class="std std-ref">available for purchase</span></a>. Since Glasgow is open hardware, you also have the option of building a device yourself.</p>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>If you manufacture your own devices from the design files in this repository, you must clearly distinguish the PCBs by modifying the silkscreen artwork such that the placeholder manufacturer name and/or logo are replaced with your own contact information.</p>
+<p>If you use the PCBA design files and the BOM that are included in this repository without modifications (other than the modifications required above), the Glasgow project will provide the same degree of support for your device as it does for the CrowdSupply orders (except for repairs under warranty).</p>
+<p>If you modify the design files (which the license allows you to do without restrictions), the Glasgow project will not in general provide support for such devices, and you must not call your modified devices “Glasgow”. You must remove the name “Glasgow” from the PCB silkscreen artwork to ensure that the device is clearly identifiable as being modified from the original source files. You must run <code class="docutils literal notranslate"><span class="pre">glasgow</span> <span class="pre">factory</span></code> with the <code class="docutils literal notranslate"><span class="pre">--using-modified-design-files=yes</span></code> argument when preparing the device, which will appropriately mark the device and change the product name USB descriptor to not include “Glasgow”.</p>
+<p>If you are modifying the BOM to replace passive components with equivalent parts from a different vendor (such as in response to shortages), you may call your modified device “Glasgow”. In addition, exceptions to the rule above can be made after discussing your case with Catherine “whitequark” or Piotr Esden-Tempski.</p>
+</div>
+<section id="assembling-a-device">
+<span id="assembling"></span><h2>Assembling a device<a class="headerlink" href="#assembling-a-device" title="Permalink to this heading">#</a></h2>
+<div class="admonition-todo admonition" id="id1">
+<p class="admonition-title">Todo</p>
+<p>This section is not written yet.</p>
+</div>
+</section>
+<section id="factory-flashing">
+<span id="id2"></span><h2>Factory flashing<a class="headerlink" href="#factory-flashing" title="Permalink to this heading">#</a></h2>
+<p>“Factory flashing” refers to the process of assigning a brand new Glasgow board (that you probably just assembled) a serial number, as well as writing a few critical configuration options that will let the <code class="docutils literal notranslate"><span class="pre">glasgow</span></code> command use this device. Barring severe and unusual EEPROM corruption, this process is performed only once in the lifetime of a device.</p>
+<p>To prepare for factory flashing, follow the <a class="reference internal" href="install.html#initial-setup"><span class="std std-ref">installation steps</span></a>.</p>
+<p>Any board that is being factory flashed must have a blank <code class="docutils literal notranslate"><span class="pre">FX2_MEM</span></code> EEPROM. If the <code class="docutils literal notranslate"><span class="pre">FX2_MEM</span></code> EEPROM is not completely erased (all bytes set to <code class="docutils literal notranslate"><span class="pre">FF</span></code>), the factory flashing process may fail.</p>
+<div class="tab-set docutils">
+<input checked="True" class="tab-input" id="tab-set--0-input--1" name="tab-set--0" type="radio"><label class="tab-label" for="tab-set--0-input--1">Linux</label><div class="tab-content docutils">
+<p>Configure your system to allow unprivileged access for anyone logged in to the physical terminal to any hardware that enumerates as the Cypress FX2 ROM bootloader:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>sudo<span class="w"> </span>cp<span class="w"> </span>config/70-cypress.rules<span class="w"> </span>/etc/udev/rules.d
+<span class="gp">$ </span>sudo<span class="w"> </span>udevadm<span class="w"> </span>control<span class="w"> </span>--reload
+<span class="gp">$ </span>sudo<span class="w"> </span>udevadm<span class="w"> </span>trigger<span class="w"> </span>-v<span class="w"> </span>-c<span class="w"> </span>add<span class="w"> </span>-s<span class="w"> </span>usb<span class="w"> </span>-a<span class="w"> </span><span class="nv">idVendor</span><span class="o">=</span>04b4<span class="w"> </span>-a<span class="w"> </span><span class="nv">idProduct</span><span class="o">=</span><span class="m">8613</span>
+</pre></div>
+</div>
+<p>Note that this rule will allow unprivileged access to any device based on the Cypress FX2 that has a blank EEPROM, and not just the Glasgow hardware specifically.</p>
+<p>Plug in the newly assembled device. At this point, <code class="docutils literal notranslate"><span class="pre">lsusb</span> <span class="pre">-d</span> <span class="pre">04b4:8613</span></code> should list one entry. Note the revision of the board you are factory flashing. If the board has revision <code class="docutils literal notranslate"><span class="pre">C3</span></code>, run:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>glasgow<span class="w"> </span>factory<span class="w"> </span>--rev<span class="w"> </span>C3<span class="w"> </span>--using-modified-design-files<span class="o">=</span>&lt;yes<span class="p">|</span>no&gt;
+</pre></div>
+</div>
+<p>That’s it! After running this command, the device will disconnect from USB and reconnect, and <code class="docutils literal notranslate"><span class="pre">lsusb</span> <span class="pre">-d</span> <span class="pre">20b7:9db1</span></code> will list one entry.</p>
+</div>
+<input class="tab-input" id="tab-set--0-input--2" name="tab-set--0" type="radio"><label class="tab-label" for="tab-set--0-input--2">Windows</label><div class="tab-content docutils">
+<p>The steps are similar to the steps for Linux, but you will need to use Zadig to bind the WinUSB driver to the device, since this will not happen automatically with a device that hasn’t been flashed yet.</p>
+<div class="admonition-todo admonition" id="id3">
+<p class="admonition-title">Todo</p>
+<p>Write a full explanation here.</p>
+</div>
+</div>
+<input class="tab-input" id="tab-set--0-input--3" name="tab-set--0" type="radio"><label class="tab-label" for="tab-set--0-input--3">macOS</label><div class="tab-content docutils">
+<p>Plug in the newly assembled device. At this point, <code class="docutils literal notranslate"><span class="pre">System</span> <span class="pre">Information.app</span></code> should list the FX2 device with Vid <code class="docutils literal notranslate"><span class="pre">04b4</span></code> and Pid <code class="docutils literal notranslate"><span class="pre">8613</span></code>. Note the revision of the board you are factory flashing. If the board has revision <code class="docutils literal notranslate"><span class="pre">C3</span></code>, run:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>glasgow<span class="w"> </span>factory<span class="w"> </span>--rev<span class="w"> </span>C3<span class="w"> </span>--using-modified-design-files<span class="o">=</span>&lt;yes<span class="p">|</span>no&gt;
+</pre></div>
+</div>
+<p>That’s it! After running this command, the device will disconnect from USB and reconnect, and after refreshing (⌘R) the information in <code class="docutils literal notranslate"><span class="pre">System</span> <span class="pre">Information.app</span></code> you should see a new entry with Vid <code class="docutils literal notranslate"><span class="pre">20b7</span></code> and Pid <code class="docutils literal notranslate"><span class="pre">9db1</span></code>.</p>
+</div>
+</div>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="install.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Installing &amp; updating</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="purchase.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Purchasing hardware</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2020—2024, Glasgow Interface Explorer contributors
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            <div class="icons">
+              <a class="muted-link fa-brands fa-solid fa-github fa-2x" href="https://github.com/GlasgowEmbedded/glasgow/" aria-label="GitHub"></a>
+              
+            </div>
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Building hardware</a><ul>
+<li><a class="reference internal" href="#assembling-a-device">Assembling a device</a></li>
+<li><a class="reference internal" href="#factory-flashing">Factory flashing</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=b3ba4146"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/scripts/furo.js?v=32e29ea5"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=50ba5bf0"></script>
+    <script src="_static/tabs.js?v=3ee01567"></script>
+    </body>
+</html>
