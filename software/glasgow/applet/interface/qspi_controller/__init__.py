@@ -19,19 +19,23 @@ class _QSPICommand(enum.Enum, shape=4):
 
 
 class QSPIControllerSubtarget(Elaboratable):
-    def __init__(self, *, ports, out_fifo, in_fifo, divisor, us_cycles):
+    def __init__(self, *, ports, out_fifo, in_fifo, divisor, us_cycles, sample_delay_half_clocks=0):
         self._ports    = ports
         self._out_fifo = out_fifo
         self._in_fifo  = in_fifo
 
         self._divisor   = divisor
         self._us_cycles = us_cycles
+        self._sample_delay_half_clocks = sample_delay_half_clocks
 
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.qspi = qspi = QSPIController(self._ports, use_ddr_buffers=True)
+        m.submodules.qspi = qspi = QSPIController(self._ports, use_ddr_buffers=True,
+                                                  max_sample_delay_half_clocks=self._sample_delay_half_clocks,
+                                                  min_divisor=self._divisor)
         m.d.comb += qspi.divisor.eq(self._divisor)
+        m.d.comb += qspi.sample_delay_half_clocks.eq(self._sample_delay_half_clocks)
 
         o_fifo  = self._out_fifo.stream
         i_fifo  = self._in_fifo.stream
@@ -248,8 +252,26 @@ class QSPIControllerApplet(GlasgowApplet):
             "-f", "--frequency", metavar="FREQ", type=int, default=1000,
             help="set SCK frequency to FREQ kHz (default: %(default)s)")
 
+        parser.add_argument(
+            "-d", "--sample-delay", metavar="SAMPLE_DELAY", type=int, required=False,
+            help="Specify sample delay in units of half clock-cycles. (Default: frequency-dependent)")
+
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
+        divisor=int(target.sys_clk_freq // (args.frequency * 2000))
+        if divisor != 0:
+            actual_frequency = target.sys_clk_freq / divisor / 2
+        else:
+            actual_frequency = target.sys_clk_freq
+        if args.sample_delay is None:
+            if actual_frequency <= 24_000_000.1:
+                sample_delay = 0
+            elif actual_frequency <= 60_000_000.1:
+                sample_delay = 1
+            else:
+                sample_delay = 2
+        else:
+            sample_delay = args.sample_delay
         return iface.add_subtarget(QSPIControllerSubtarget(
             ports=iface.get_port_group(
                 sck=args.pin_sck,
@@ -258,8 +280,9 @@ class QSPIControllerApplet(GlasgowApplet):
             ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
-            divisor=int(target.sys_clk_freq // (args.frequency * 2000)),
+            divisor=divisor,
             us_cycles=int(target.sys_clk_freq // 1_000_000),
+            sample_delay_half_clocks = sample_delay,
         ))
 
     async def run(self, device, args):
