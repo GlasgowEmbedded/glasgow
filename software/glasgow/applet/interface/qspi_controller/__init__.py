@@ -264,9 +264,16 @@ class QSPIControllerApplet(GlasgowApplet):
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
-            # Pull IO2 and IO3 high, since on QSPI flashes these correspond to WP# and HOLD#,
-            # and will interfere with operation in SPI mode. For other devices this is benign.
-            pull_high={args.pin_set_io[2], args.pin_set_io[3]})
+            pull_high={
+                # Pull IO2 and IO3 high, since on QSPI flashes these correspond to WP# and HOLD#,
+                # and will interfere with operation in SPI mode. For other devices this is benign.
+                args.pin_set_io[2], args.pin_set_io[3],
+                # Also pull IO0 and IO1 high. This prevents noise from changing bus state when
+                # the device is not selected (which should be benign but could cause issues with
+                # non-compliant devices). In addition, pulling IO1 up prevents reading garbage data
+                # from devices that do not drive it when selected.
+                args.pin_set_io[0], args.pin_set_io[1],
+            })
         qspi_iface = QSPIControllerInterface(iface, self.logger)
         return qspi_iface
 
