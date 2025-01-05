@@ -168,7 +168,7 @@ class SelfTestApplet(GlasgowApplet):
 
             if mode in ("pins-int", "pins-ext", "pins-pull"):
                 if device.revision >= "C0":
-                    raise GlasgowAppletError(f"mode {mode} is broken on device revision "
+                    raise GlasgowAppletError(f"mode {mode} is not supported on device revision "
                                              f"{device.revision}")
 
                 if mode == "pins-int":
