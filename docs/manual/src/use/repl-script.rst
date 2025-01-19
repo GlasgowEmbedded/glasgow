@@ -47,7 +47,7 @@ As the startup prompt suggests, investigating ``help(iface)`` and ``help(device)
 I²C
 ~~~
 
-For this example, I will be using the `Sparkfun BMP085 <https://www.sparkfun.com/products/retired/9694>`_ (a now-retired breakout for an I²C barometric pressure sensor), which supports 3.3v operation.
+For this example, I will be using the `Sparkfun BMP085 <https://web.archive.org/web/20230206233109/https://www.sparkfun.com/products/retired/9694>`_ (a now-retired breakout for an I²C barometric pressure sensor), which supports 3.3v operation.
 
 .. note::
     I²C busses are implemented using open-drain, meaning that pull-up resistors are `required`... Glasgow's onboard 10kΩ pull-ups can be enabled by passing the ``--pulls`` argument --- while they will generally be enough, they may not suffice for fast or long busses. This particular breakout board has on-board pull-ups already, so it's not necessary to use them.
