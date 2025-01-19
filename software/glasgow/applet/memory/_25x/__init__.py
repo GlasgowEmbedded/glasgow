@@ -251,15 +251,15 @@ class Memory25xApplet(QSPIControllerApplet):
     The pinout of a typical 25-series IC is as follows:
 
     ::
-            16-pin             8-pin
-        HOLD# @ * SCK       CS# @ * VCC
-          VCC * * COPI     CIPO * * HOLD#
-          N/C * * N/C       WP# * * SCK
-          N/C * * N/C       GND * * COPI
-          N/C * * N/C
-          N/C * * N/C
-          CS# * * GND
-         CIPO * * WP#
+                16-pin                     8-pin
+        IO3/HOLD# @ * SCK               CS# @ * VCC
+              VCC * * IO0/COPI     IO1/CIPO * * IO3/HOLD#
+              N/C * * N/C           IO2/WP# * * SCK
+              N/C * * N/C               GND * * IO0/COPI
+              N/C * * N/C
+              N/C * * N/C
+              CS# * * GND
+         IO1/CIPO * * IO2/WP#
 
     The default pin assignment follows the pinouts above in the clockwise direction, making it easy
     to connect the memory with probes or, alternatively, crimp an IDC cable wired to a SOIC clip.
@@ -275,7 +275,8 @@ class Memory25xApplet(QSPIControllerApplet):
         super().add_build_arguments(parser, access, include_pins=False)
 
         access.add_pin_set_argument(parser, "cs",  width=1, required=True, default=[5])
-        access.add_pin_set_argument(parser, "io",  width=4, required=True, default=[2, 4, 3, 0])
+        access.add_pin_set_argument(parser, "io",  width=4, required=True, default=[2, 4, 3, 0],
+                                    help="bind the applet I/O lines io (copi, cipo, wp, hold) to pins SET")
         access.add_pin_argument(    parser, "sck",          required=True, default=1)
 
     async def run(self, device, args):

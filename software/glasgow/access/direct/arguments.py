@@ -53,8 +53,9 @@ class DirectArguments(AccessArguments):
             return None
         return self._mandatory_pin_number(arg)
 
-    def _add_pin_argument(self, parser, name, default, required):
-        help = f"bind the applet I/O line {name!r} to pin NUM"
+    def _add_pin_argument(self, parser, name, default, required, help):
+        if help is None:
+            help = f"bind the applet I/O line {name!r} to pin NUM"
         if default is not None:
             default = PinArgument(default)
             help += f" (default: {default})"
@@ -91,8 +92,9 @@ class DirectArguments(AccessArguments):
                             f"{width_desc} pins are required")
         return pin_args
 
-    def _add_pin_set_argument(self, parser, name, width, default, required):
-        help = f"bind the applet I/O lines {name!r} to pins SET"
+    def _add_pin_set_argument(self, parser, name, width, default, required, help):
+        if help is None:
+            help = f"bind the applet I/O lines {name!r} to pins SET"
         if default is not None:
             default = [PinArgument(number) for number in default]
             if default:
@@ -126,19 +128,19 @@ class DirectArguments(AccessArguments):
     def add_build_arguments(self, parser):
         self._add_port_argument(parser, self._default_port)
 
-    def add_pin_argument(self, parser, name, default=None, required=False):
+    def add_pin_argument(self, parser, name, default=None, required=False, help=None):
         if default is True:
             default = self._get_free(self._free_pins)
-        self._add_pin_argument(parser, name, default, required)
+        self._add_pin_argument(parser, name, default, required, help)
 
-    def add_pin_set_argument(self, parser, name, width, default=None, required=False):
+    def add_pin_set_argument(self, parser, name, width, default=None, required=False, help=None):
         if isinstance(width, int):
             width = range(width, width + 1)
         if default is True and len(self._free_pins) >= width.start:
             default = [self._get_free(self._free_pins) for _ in range(width.start)]
         elif isinstance(default, int) and len(self._free_pins) >= default:
             default = [self._get_free(self._free_pins) for _ in range(default)]
-        self._add_pin_set_argument(parser, name, width, default, required)
+        self._add_pin_set_argument(parser, name, width, default, required, help)
 
     def add_run_arguments(self, parser):
         self._add_port_voltage_arguments(parser, default=None)
