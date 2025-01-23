@@ -15,7 +15,7 @@
       {
         packages = rec {
           glasgow = pkgs.glasgow.overrideAttrs {
-            version = "";
+            version = "0+unstable-memory-24x-emu";
             src = ./.;
           };
           default = glasgow;
