@@ -21,12 +21,8 @@
 
         devShell = pkgs.mkShell {
           packages = with pkgs; [
-            yosys
-            icestorm
-            nextpnr
-
-            sdcc
-
+            # Must come before yosys in this array, so it has precedence
+            # over the propagatedBuildInput python3 from yosys.
             (python3.withPackages (pypkgs: with pypkgs; [
               typing-extensions
               amaranth
@@ -39,6 +35,13 @@
 
               unittestCheckHook
             ]))
+
+            yosys
+            icestorm
+            nextpnr
+
+            sdcc
+
           ];
 
           YOSYS="${lib.getBin pkgs.yosys}/bin/yosys";
