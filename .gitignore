@@ -11,3 +11,9 @@
 /*.bit
 /*.json
 /*.csv
+
+.direnv
+
+# Nix build outputs
+/result
+/result-*
