@@ -95,8 +95,8 @@ class Memory24xEmuSubtarget(Elaboratable):
                 m.d.comb += i2c_target.busy.eq(0)
 
                 with m.If(
-                    incoming_address_byte_index < self.address_width - 1
-                    and i2c_target.write
+                    (incoming_address_byte_index < self.address_width - 1)
+                    & i2c_target.write
                 ):
                     m.d.sync += [
                         incoming_address.eq(incoming_address << 8 | i2c_target.data_i),
