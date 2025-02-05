@@ -14,7 +14,7 @@ class I2CBus(Elaboratable):
 
     Decodes bus conditions (start, stop, sample and setup) and provides synchronization.
     """
-    def __init__(self, pads):
+    def __init__(self, pads, analyzer=None):
         self.pads = pads
 
         self.scl_i = Signal()
@@ -27,11 +27,28 @@ class I2CBus(Elaboratable):
         self.start  = Signal(name="bus_start")
         self.stop   = Signal(name="bus_stop")
 
+        self.scl_t = io.Buffer("io", self.pads.scl)
+        self.sda_t = io.Buffer("io", self.pads.sda)
+
+        if analyzer:
+            analyzer.add_generic_event(None, "i2c-scl_i", self.scl_i)
+            analyzer.add_generic_event(None, "i2c-scl_o", self.scl_o)
+            analyzer.add_generic_event(None, "i2c-sda_i", self.sda_i)
+            analyzer.add_generic_event(None, "i2c-sda_o", self.sda_o)
+
+            analyzer.add_generic_event(None, "i2c-sample", self.sample)
+            analyzer.add_generic_event(None, "i2c-setup", self.setup)
+            analyzer.add_generic_event(None, "i2c-start", self.start)
+            analyzer.add_generic_event(None, "i2c-stop", self.stop)
+
+            analyzer.add_pin_event(None, "i2c-scl_t", self.scl_t)
+            analyzer.add_pin_event(None, "i2c-sda_t", self.sda_t)
+
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.io_scl = scl_t = io.Buffer("io", self.pads.scl)
-        m.submodules.io_sda = sda_t = io.Buffer("io", self.pads.sda)
+        m.submodules.io_scl = scl_t = self.scl_t
+        m.submodules.io_sda = sda_t = self.sda_t
 
         scl_r = Signal(init=1)
         sda_r = Signal(init=1)
@@ -99,7 +116,7 @@ class I2CInitiator(Elaboratable):
     :attr ack_i:
         Acknowledge bit to be transmitted. Latched immediately after ``read`` is asserted.
     """
-    def __init__(self, pads, period_cyc, clk_stretch=True):
+    def __init__(self, pads, period_cyc, clk_stretch=True, analyzer=None):
         self.period_cyc = int(period_cyc)
         self.clk_stretch = clk_stretch
 
@@ -113,7 +130,18 @@ class I2CInitiator(Elaboratable):
         self.data_o = Signal(8)
         self.ack_i  = Signal()
 
-        self.bus = I2CBus(pads)
+        self.bus = I2CBus(pads, analyzer=analyzer)
+
+        if analyzer:
+            analyzer.add_generic_event(None, "i2c-i-busy", self.busy)
+            analyzer.add_generic_event(None, "i2c-i-start", self.start)
+            analyzer.add_generic_event(None, "i2c-i-stop", self.stop)
+            analyzer.add_generic_event(None, "i2c-i-read", self.read)
+            analyzer.add_generic_event(None, "i2c-i-data_i", self.data_i)
+            analyzer.add_generic_event(None, "i2c-i-ack_o", self.ack_o)
+            analyzer.add_generic_event(None, "i2c-i-write", self.write)
+            analyzer.add_generic_event(None, "i2c-i-data_o", self.data_o)
+            analyzer.add_generic_event(None, "i2c-i-ack_i", self.ack_i)
 
     def elaborate(self, platform):
         m = Module()
@@ -287,7 +315,7 @@ class I2CTarget(Elaboratable):
         Data octet to be transmitted to the initiator. Latched immediately after receiving
         a read command.
     """
-    def __init__(self, pads):
+    def __init__(self, pads, analyzer=None):
         self.address = Signal(7)
         self.busy    = Signal() # clock stretching request (experimental, undocumented)
         self.start   = Signal()
@@ -300,7 +328,20 @@ class I2CTarget(Elaboratable):
         self.data_o  = Signal(8)
         self.ack_i   = Signal()
 
-        self.bus = I2CBus(pads)
+        self.bus = I2CBus(pads, analyzer=analyzer)
+
+        if analyzer:
+            analyzer.add_generic_event(None, "i2c-t-address", self.address)
+            analyzer.add_generic_event(None, "i2c-t-busy", self.busy)
+            analyzer.add_generic_event(None, "i2c-t-start", self.start)
+            analyzer.add_generic_event(None, "i2c-t-stop", self.stop)
+            analyzer.add_generic_event(None, "i2c-t-restart", self.restart)
+            analyzer.add_generic_event(None, "i2c-t-write", self.write)
+            analyzer.add_generic_event(None, "i2c-t-data_i", self.data_i)
+            analyzer.add_generic_event(None, "i2c-t-ack_o", self.ack_o)
+            analyzer.add_generic_event(None, "i2c-t-read", self.read)
+            analyzer.add_generic_event(None, "i2c-t-data_o", self.data_o)
+            analyzer.add_generic_event(None, "i2c-t-ack_i", self.ack_i)
 
     def elaborate(self, platform):
         m = Module()

@@ -14,6 +14,7 @@ from ....applet import GlasgowApplet
 from ....device.hardware import GlasgowHardwareDevice
 from ....gateware.i2c import I2CTarget
 from ....gateware.ports import PortGroup
+from ....target.analyzer import GlasgowAnalyzer
 from ....target.hardware import GlasgowHardwareTarget
 
 
@@ -32,6 +33,7 @@ class Memory24xEmuSubtarget(Elaboratable):
         i2c_address: int,
         address_width: int,
         initial_data: bytearray,
+        analyzer: GlasgowAnalyzer = None,
     ):
         self.ports = ports
         self.in_fifo = in_fifo
@@ -39,6 +41,13 @@ class Memory24xEmuSubtarget(Elaboratable):
 
         self.address_width = address_width
         self.initial_data = initial_data
+
+        self.current_address = Signal(8 * self.address_width)
+        self.incoming_write_data = Signal(8)
+        self.incoming_address_byte_index = Signal(range(self.address_width))
+        self.incoming_address = Signal(8 * self.address_width)
+
+        self.i2c_target = I2CTarget(self.ports, analyzer=analyzer)
 
     def elaborate(self, platform):
         m = Module()
@@ -48,13 +57,12 @@ class Memory24xEmuSubtarget(Elaboratable):
         )
         wr_port = memory.write_port()
         rd_port = memory.read_port(domain="comb")
-        current_address = Signal(8 * self.address_width)
         m.d.comb += [
-            wr_port.addr.eq(current_address),
-            rd_port.addr.eq(current_address),
+            wr_port.addr.eq(self.current_address),
+            rd_port.addr.eq(self.current_address),
         ]
 
-        m.submodules.i2c_target = i2c_target = I2CTarget(self.ports)
+        m.submodules.i2c_target = i2c_target = self.i2c_target
         m.d.comb += [
             i2c_target.address.eq(self.i2c_address),
             i2c_target.data_o.eq(rd_port.data),
@@ -62,10 +70,6 @@ class Memory24xEmuSubtarget(Elaboratable):
 
         # TODO: handle invalid command ordering
         with m.FSM():
-            incoming_write_data = Signal(8)
-            incoming_address_byte_index = Signal(range(self.address_width))
-            incoming_address = Signal(8 * self.address_width)
-
             m.d.comb += i2c_target.busy.eq(1)
 
             with m.State("IDLE"):
@@ -79,8 +83,8 @@ class Memory24xEmuSubtarget(Elaboratable):
 
                 with m.If(i2c_target.write):
                     m.d.sync += [
-                        incoming_address.eq(i2c_target.data_i),
-                        incoming_address_byte_index.eq(0),
+                        self.incoming_address.eq(i2c_target.data_i),
+                        self.incoming_address_byte_index.eq(0),
                     ]
                     m.d.comb += i2c_target.ack_o.eq(1)
                     m.next = "RECEIVING-ADDRESS"
@@ -95,31 +99,40 @@ class Memory24xEmuSubtarget(Elaboratable):
                 m.d.comb += i2c_target.busy.eq(0)
 
                 with m.If(
-                    (incoming_address_byte_index < self.address_width - 1)
+                    (self.incoming_address_byte_index < self.address_width - 1)
                     & i2c_target.write
                 ):
                     m.d.sync += [
-                        incoming_address.eq(incoming_address << 8 | i2c_target.data_i),
-                        incoming_address_byte_index.eq(incoming_address_byte_index + 1),
+                        self.incoming_address.eq(
+                            self.incoming_address << 8 | i2c_target.data_i
+                        ),
+                        self.incoming_address_byte_index.eq(
+                            self.incoming_address_byte_index + 1
+                        ),
                     ]
                     m.d.comb += i2c_target.ack_o.eq(1)
                     m.next = "RECEIVING-ADDRESS"
 
                 with m.Elif(i2c_target.write):
                     m.d.sync += [
-                        incoming_write_data.eq(i2c_target.data_i),
-                        current_address.eq(incoming_address % len(self.initial_data)),
+                        self.incoming_write_data.eq(i2c_target.data_i),
+                        self.current_address.eq(
+                            self.incoming_address % len(self.initial_data)
+                        ),
                     ]
                     m.d.comb += i2c_target.ack_o.eq(1)
                     m.next = "BEING-WRITTEN-SEND-EVENT"
 
                 with m.Elif(i2c_target.read):
-                    m.d.sync += current_address.eq(
-                        incoming_address % len(self.initial_data)
+                    m.d.sync += self.current_address.eq(
+                        self.incoming_address % len(self.initial_data)
                     )
                     m.next = "BEING-READ-SEND-EVENT"
 
                 with m.Elif(i2c_target.stop):
+                    m.d.sync += self.current_address.eq(
+                        self.incoming_address % len(self.initial_data)
+                    )
                     m.next = "IDLE"
 
             # --- Reading ---
@@ -133,7 +146,7 @@ class Memory24xEmuSubtarget(Elaboratable):
 
             with m.State("BEING-READ-SEND-ADDRESS"):
                 m.d.comb += [
-                    self.in_fifo.w_data.eq(current_address),
+                    self.in_fifo.w_data.eq(self.current_address),
                     self.in_fifo.w_en.eq(1),
                 ]
                 m.next = "BEING-READ-SEND-DATA"
@@ -143,8 +156,8 @@ class Memory24xEmuSubtarget(Elaboratable):
                     self.in_fifo.w_data.eq(rd_port.data),
                     self.in_fifo.w_en.eq(1),
                 ]
-                m.d.sync += current_address.eq(
-                    (current_address + 1) % len(self.initial_data)
+                m.d.sync += self.current_address.eq(
+                    (self.current_address + 1) % len(self.initial_data)
                 )
                 m.next = "BEING-READ"
 
@@ -166,24 +179,24 @@ class Memory24xEmuSubtarget(Elaboratable):
                     wr_port.en.eq(1),
                 ]
 
-                m.d.sync += wr_port.data.eq(incoming_write_data)
+                m.d.sync += wr_port.data.eq(self.incoming_write_data)
 
                 m.next = "BEING-WRITTEN-SEND-ADDRESS"
 
             with m.State("BEING-WRITTEN-SEND-ADDRESS"):
                 m.d.comb += [
-                    self.in_fifo.w_data.eq(current_address),
+                    self.in_fifo.w_data.eq(self.current_address),
                     self.in_fifo.w_en.eq(1),
                 ]
                 m.next = "BEING-WRITTEN-SEND-DATA"
 
             with m.State("BEING-WRITTEN-SEND-DATA"):
                 m.d.comb += [
-                    self.in_fifo.w_data.eq(incoming_write_data),
+                    self.in_fifo.w_data.eq(self.incoming_write_data),
                     self.in_fifo.w_en.eq(1),
                 ]
-                m.d.sync += current_address.eq(
-                    (current_address + 1) % len(self.initial_data)
+                m.d.sync += self.current_address.eq(
+                    (self.current_address + 1) % len(self.initial_data)
                 )
                 m.next = "BEING-WRITTEN"
 
@@ -191,7 +204,7 @@ class Memory24xEmuSubtarget(Elaboratable):
                 m.d.comb += i2c_target.busy.eq(0)
 
                 with m.If(i2c_target.write):
-                    m.d.sync += incoming_write_data.eq(i2c_target.data_i)
+                    m.d.sync += self.incoming_write_data.eq(i2c_target.data_i)
                     m.d.comb += i2c_target.ack_o.eq(1)
                     m.next = "BEING-WRITTEN-SEND-EVENT"
 
@@ -362,15 +375,44 @@ class Memory24xEmuApplet(GlasgowApplet):
                 "Initial data exceeds specified memory size after applying the offset. Extending size to make it fit"
             )
 
-        iface.add_subtarget(
-            Memory24xEmuSubtarget(
-                ports=iface.get_port_group(scl=args.pin_scl, sda=args.pin_sda),
-                in_fifo=iface.get_in_fifo(),
-                i2c_address=args.i2c_address,
-                address_width=args.address_width,
-                initial_data=init_data,
-            )
+        ports = iface.get_port_group(scl=args.pin_scl, sda=args.pin_sda)
+
+        subtarget = Memory24xEmuSubtarget(
+            ports=ports,
+            in_fifo=iface.get_in_fifo(),
+            i2c_address=args.i2c_address,
+            address_width=args.address_width,
+            initial_data=init_data,
+            analyzer=target.analyzer,
         )
+
+        if target.analyzer:
+            analyzer = target.analyzer
+
+            analyzer.add_generic_event(
+                self,
+                "memory_24x_emu-current_address",
+                subtarget.current_address,
+            )
+            analyzer.add_generic_event(
+                self,
+                "memory_24x_emu-incoming_incoming_write_data",
+                subtarget.incoming_write_data,
+            )
+            if args.address_width > 1:
+                # With an address_width <= 1 the incoming_address_byte_index is a 0-width signal,
+                # because it only requires one state (last and only address byte being received)
+                # The analyzer doesn't like zero width signals ^^
+                analyzer.add_generic_event(
+                    self,
+                    "memory_24x_emu-incoming_address_byte_index",
+                    subtarget.incoming_address_byte_index,
+                )
+            analyzer.add_generic_event(
+                self, "memory_24x_emu-incoming_address", subtarget.incoming_address
+            )
+
+        iface.add_subtarget(subtarget)
 
     @classmethod
     def add_run_arguments(
