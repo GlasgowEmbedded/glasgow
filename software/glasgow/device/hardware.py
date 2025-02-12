@@ -461,9 +461,9 @@ class GlasgowHardwareDevice:
         """Download ``bitstream`` with ID ``bitstream_id`` to FPGA."""
         # Send consecutive chunks of bitstream. Sending 0th chunk also clears the FPGA bitstream.
         index = 0
-        while index * 1024 < len(bitstream):
+        while index * 4096 < len(bitstream):
             await self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_FPGA_CFG,
-                                     0, index, bitstream[index * 1024:(index + 1) * 1024])
+                                     0, index, bitstream[index * 4096:(index + 1) * 4096])
             index += 1
         # Complete configuration by setting bitstream ID. This starts the FPGA.
         try:
