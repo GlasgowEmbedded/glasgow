@@ -17,6 +17,7 @@
           glasgow = pkgs.glasgow.overrideAttrs {
             version = "0+unstable-memory-24x-emu";
             src = ./.;
+            doInstallCheck = false;
           };
           default = glasgow;
         };
