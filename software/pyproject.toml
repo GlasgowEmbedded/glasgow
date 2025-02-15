@@ -78,6 +78,7 @@ glasgow = "glasgow.cli:run_main"
 [project.entry-points."glasgow.applet"]
 selftest = "glasgow.applet.internal.selftest:SelfTestApplet"
 benchmark = "glasgow.applet.internal.benchmark:BenchmarkApplet"
+fixed-throughput = "glasgow.applet.internal.fixed_throughput:FixedThroughputApplet"
 
 analyzer = "glasgow.applet.interface.analyzer:AnalyzerApplet"
 uart = "glasgow.applet.interface.uart:UARTApplet"
