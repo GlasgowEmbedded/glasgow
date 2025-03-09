@@ -76,10 +76,10 @@ class AnalyzerApplet(GlasgowApplet):
         g_pulls = parser.add_mutually_exclusive_group()
         g_pulls.add_argument(
             "--pull-ups", default=False, action="store_true",
-            help="enable pull-ups on all pins which are set")
+            help="enable pull-ups on all pins")
         g_pulls.add_argument(
             "--pull-downs", default=False, action="store_true",
-            help="enable pull-downs on all pins which are set")
+            help="enable pull-downs on all pins")
 
     async def run(self, device, args):
         pull_low  = set()
