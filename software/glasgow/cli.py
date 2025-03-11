@@ -1,5 +1,6 @@
 import os
 import sys
+import gc
 import ast
 import platform
 import logging
@@ -694,6 +695,12 @@ async def main():
             if args.action != "repl":
                 tasks.append(asyncio.ensure_future(wait_for_sigint()))
 
+            # Run a full garbage collection, then move all remaining objects into the permanent
+            # generation. This greatly reduces the amount of work the garbage collector has to do
+            # in a full generation 2 collection while running the applet task.
+            gc.collect()
+            gc.freeze()
+
             done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
             for task in pending:
                 task.cancel()
@@ -708,6 +715,8 @@ async def main():
                 await analyzer_task
 
             await device.demultiplexer.cancel()
+
+            gc.unfreeze()
 
             return applet_task.result()
 
