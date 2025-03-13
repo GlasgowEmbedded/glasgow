@@ -152,12 +152,13 @@ class SPIFlashromApplet(SPIControllerApplet):
     help = "expose SPI via flashrom serprog interface"
     description = """
     Expose SPI via a socket using the flashrom serprog protocol; see https://www.flashrom.org.
+    This applet has the same default pin assignment as the `memory-25x` applet; See its description
+    for details.
 
     Usage:
 
     ::
-        glasgow run spi-flashrom -V 3.3 --pin-cs 0 --pin-cipo 1 --pin-copi 2 --pin-sck 3 \\
-            --freq 4000 tcp::2222
+        glasgow run spi-flashrom -V 3.3 --freq 4000 tcp::2222
         /sbin/flashrom -p serprog:ip=localhost:2222
 
     It is also possible to flash 25-series flash chips using the `memory-25x` applet, which does
