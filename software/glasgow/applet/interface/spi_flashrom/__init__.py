@@ -170,12 +170,12 @@ class SPIFlashromApplet(SPIControllerApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access, omit_pins=True)
 
-        access.add_pin_argument(parser, "cs",   default=True, required=True)
-        access.add_pin_argument(parser, "cipo", default=True, required=True)
-        access.add_pin_argument(parser, "wp",   default=True)
-        access.add_pin_argument(parser, "copi", default=True, required=True)
-        access.add_pin_argument(parser, "sck",  default=True, required=True)
-        access.add_pin_argument(parser, "hold", default=True)
+        access.add_pin_argument(parser, "cs",   default=5, required=True)
+        access.add_pin_argument(parser, "cipo", default=4, required=True)
+        access.add_pin_argument(parser, "wp",   default=3)
+        access.add_pin_argument(parser, "copi", default=2, required=True)
+        access.add_pin_argument(parser, "sck",  default=1, required=True)
+        access.add_pin_argument(parser, "hold", default=0)
 
     def build_subtarget(self, target, args):
         subtarget = super().build_subtarget(target, args)
