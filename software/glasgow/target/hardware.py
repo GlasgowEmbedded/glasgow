@@ -26,18 +26,18 @@ logger = logging.getLogger(__name__)
 
 
 class GlasgowHardwareTarget(Elaboratable):
-    def __init__(self, revision, multiplexer_cls=None, with_analyzer=False):
+    def __init__(self, revision, multiplexer_cls=None, with_analyzer=False, toolchain="prjunnamed"):
         if revision in ("A0", "B0"):
             from ..platform.rev_ab import GlasgowRevABPlatform
-            self.platform = GlasgowRevABPlatform()
+            self.platform = GlasgowRevABPlatform(toolchain=toolchain)
             self.sys_clk_freq = 30e6
         elif revision in "C0":
             from ..platform.rev_c import GlasgowRevC0Platform
-            self.platform = GlasgowRevC0Platform()
+            self.platform = GlasgowRevC0Platform(toolchain=toolchain)
             self.sys_clk_freq = 48e6
         elif revision in ("C1", "C2", "C3"):
             from ..platform.rev_c import GlasgowRevC123Platform
-            self.platform = GlasgowRevC123Platform()
+            self.platform = GlasgowRevC123Platform(toolchain=toolchain)
             self.sys_clk_freq = 48e6
         else:
             raise ValueError("Unknown revision")
@@ -124,7 +124,13 @@ class GlasgowHardwareTarget(Elaboratable):
             "nextpnr_opts": "--placer heap",
         }
         overrides.update(kwargs)
-        return GlasgowBuildPlan(find_toolchain(), self.platform.prepare(self, **overrides))
+        if self.platform.toolchain == "prjunnamed":
+            tools = ("prjunnamed", "nextpnr-ice40", "icepack")
+        elif self.platform.toolchain == "IceStorm":
+            tools = ("yosys", "nextpnr-ice40", "icepack")
+        else:
+            assert False
+        return GlasgowBuildPlan(find_toolchain(tools), self.platform.prepare(self, **overrides))
 
 
 class GlasgowBuildPlan:
@@ -134,7 +140,11 @@ class GlasgowBuildPlan:
         self._bitstream_id = None
 
     @property
-    def rtlil(self):
+    def uir(self):
+        return self.lower.files["top.uir"]
+
+    @property
+    def il(self):
         return self.lower.files["top.il"]
 
     @property
