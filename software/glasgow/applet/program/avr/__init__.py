@@ -250,124 +250,128 @@ class ProgramAVRApplet(GlasgowApplet):
     async def interact(self, device, args, avr_iface):
         await avr_iface.programming_enable()
 
-        signature = await avr_iface.read_signature()
-        device = devices_by_signature[signature]
-        self.logger.info("device signature: %s (%s)",
-            "{:02x} {:02x} {:02x}".format(*signature),
-            "unknown" if device is None else device.name)
+        try:
+            signature = await avr_iface.read_signature()
+            device = devices_by_signature[signature]
+            self.logger.info("device signature: %s (%s)",
+                "{:02x} {:02x} {:02x}".format(*signature),
+                "unknown" if device is None else device.name)
 
-        if device.erase_time is not None:
-            avr_iface.erase_time = device.erase_time
+            if args.operation in (None, "identify"):
+                return
 
-        if args.operation not in (None, "identify") and device is None:
-            raise ProgramAVRError("cannot operate on unknown device")
+            if device is None:
+                raise ProgramAVRError("cannot operate on unknown device")
 
-        if args.operation == "read":
-            if args.fuses:
-                fuses = await avr_iface.read_fuse_range(range(device.fuses_size))
-                if device.fuses_size > 2:
-                    self.logger.info("fuses: low %s high %s extra %s",
-                                     f"{fuses[0]:08b}",
-                                     f"{fuses[1]:08b}",
-                                     f"{fuses[2]:08b}")
-                elif device.fuses_size > 1:
-                    self.logger.info("fuses: low %s high %s",
-                                     f"{fuses[0]:08b}",
-                                     f"{fuses[1]:08b}")
-                else:
-                    self.logger.info("fuse: %s", f"{fuses[0]:08b}")
+            if device.erase_time is not None:
+                avr_iface.erase_time = device.erase_time
 
-            if args.lock_bits:
-                lock_bits = await avr_iface.read_lock_bits()
-                self.logger.info("lock bits: %s", f"{lock_bits:08b}")
+            if args.operation == "read":
+                if args.fuses:
+                    fuses = await avr_iface.read_fuse_range(range(device.fuses_size))
+                    if device.fuses_size > 2:
+                        self.logger.info("fuses: low %s high %s extra %s",
+                                         f"{fuses[0]:08b}",
+                                         f"{fuses[1]:08b}",
+                                         f"{fuses[2]:08b}")
+                    elif device.fuses_size > 1:
+                        self.logger.info("fuses: low %s high %s",
+                                         f"{fuses[0]:08b}",
+                                         f"{fuses[1]:08b}")
+                    else:
+                        self.logger.info("fuse: %s", f"{fuses[0]:08b}")
 
-            if args.calibration:
-                calibration = \
-                    await avr_iface.read_calibration_range(range(device.calibration_size))
-                self.logger.info("calibration bytes: %s",
-                                 " ".join(["%02x" % b for b in calibration]))
+                if args.lock_bits:
+                    lock_bits = await avr_iface.read_lock_bits()
+                    self.logger.info("lock bits: %s", f"{lock_bits:08b}")
 
-            if args.program:
-                program_file, program_fmt = args.program
-                self.logger.info("reading program memory (%d bytes)", device.program_size)
-                output_data(program_file,
-                    await avr_iface.read_program_memory_range(range(device.program_size)),
-                    program_fmt)
+                if args.calibration:
+                    calibration = \
+                        await avr_iface.read_calibration_range(range(device.calibration_size))
+                    self.logger.info("calibration bytes: %s",
+                                     " ".join(["%02x" % b for b in calibration]))
 
-            if args.eeprom:
-                eeprom_file, eeprom_fmt = args.eeprom
-                self.logger.info("reading EEPROM (%d bytes)", device.eeprom_size)
-                output_data(eeprom_file,
-                    await avr_iface.read_eeprom_range(range(device.eeprom_size)),
-                    eeprom_fmt)
+                if args.program:
+                    program_file, program_fmt = args.program
+                    self.logger.info("reading program memory (%d bytes)", device.program_size)
+                    output_data(program_file,
+                        await avr_iface.read_program_memory_range(range(device.program_size)),
+                        program_fmt)
 
-        if args.operation == "write-fuses":
-            if args.high and device.fuses_size < 2:
-                raise ProgramAVRError("device does not have high fuse")
+                if args.eeprom:
+                    eeprom_file, eeprom_fmt = args.eeprom
+                    self.logger.info("reading EEPROM (%d bytes)", device.eeprom_size)
+                    output_data(eeprom_file,
+                        await avr_iface.read_eeprom_range(range(device.eeprom_size)),
+                        eeprom_fmt)
 
-            if args.low:
-                self.logger.info("writing low fuse")
-                await avr_iface.write_fuse(0, args.low)
-                written = await avr_iface.read_fuse(0)
-                if written != args.low:
-                    raise ProgramAVRError("verification of low fuse failed: %s" %
-                                          f"{written:08b} != {args.low:08b}")
+            if args.operation == "write-fuses":
+                if args.high and device.fuses_size < 2:
+                    raise ProgramAVRError("device does not have high fuse")
 
-            if args.high:
-                self.logger.info("writing high fuse")
-                await avr_iface.write_fuse(1, args.high)
-                written = await avr_iface.read_fuse(1)
-                if written != args.high:
-                    raise ProgramAVRError("verification of high fuse failed: %s" %
-                                          f"{written:08b} != {args.high:08b}")
+                if args.low:
+                    self.logger.info("writing low fuse")
+                    await avr_iface.write_fuse(0, args.low)
+                    written = await avr_iface.read_fuse(0)
+                    if written != args.low:
+                        raise ProgramAVRError("verification of low fuse failed: %s" %
+                                              f"{written:08b} != {args.low:08b}")
 
-            if args.extra:
-                self.logger.info("writing extra fuse")
-                await avr_iface.write_fuse(2, args.extra)
-                written = await avr_iface.read_fuse(2)
-                if written != args.extra:
-                    raise ProgramAVRError("verification of extra fuse failed: %s" %
-                                          f"{written:08b} != {args.extra:08b}")
+                if args.high:
+                    self.logger.info("writing high fuse")
+                    await avr_iface.write_fuse(1, args.high)
+                    written = await avr_iface.read_fuse(1)
+                    if written != args.high:
+                        raise ProgramAVRError("verification of high fuse failed: %s" %
+                                              f"{written:08b} != {args.high:08b}")
 
-        if args.operation == "write-lock":
-            self.logger.info("writing lock bits")
-            await avr_iface.write_lock_bits(args.bits)
-            written = await avr_iface.read_lock_bits()
-            if written != args.bits:
-                raise ProgramAVRError("verification of lock bits failed: %s" %
-                                      f"{written:08b} != {args.bits:08b}")
+                if args.extra:
+                    self.logger.info("writing extra fuse")
+                    await avr_iface.write_fuse(2, args.extra)
+                    written = await avr_iface.read_fuse(2)
+                    if written != args.extra:
+                        raise ProgramAVRError("verification of extra fuse failed: %s" %
+                                              f"{written:08b} != {args.extra:08b}")
 
-        if args.operation == "write-program":
-            self.logger.info("erasing chip")
-            await avr_iface.chip_erase()
+            if args.operation == "write-lock":
+                self.logger.info("writing lock bits")
+                await avr_iface.write_lock_bits(args.bits)
+                written = await avr_iface.read_lock_bits()
+                if written != args.bits:
+                    raise ProgramAVRError("verification of lock bits failed: %s" %
+                                          f"{written:08b} != {args.bits:08b}")
 
-            program_file, program_fmt = args.file
-            data = input_data(program_file, program_fmt)
-            self.logger.info("writing program memory (%d bytes)",
-                             sum([len(chunk) for address, chunk in data]))
-            for address, chunk in data:
-                chunk = bytes(chunk)
-                await avr_iface.write_program_memory_range(address, chunk, device.program_page)
-                written = await avr_iface.read_program_memory_range(range(address, address + len(chunk)))
-                if written != chunk:
-                    raise ProgramAVRError("verification failed at address %#06x: %s != %s" %
-                                          (address, written.hex(), chunk.hex()))
+            if args.operation == "write-program":
+                self.logger.info("erasing chip")
+                await avr_iface.chip_erase()
 
-        if args.operation == "write-eeprom":
-            eeprom_file, eeprom_fmt = args.file
-            data = input_data(eeprom_file, eeprom_fmt)
-            self.logger.info("writing EEPROM (%d bytes)",
-                             sum([len(chunk) for address, chunk in data]))
-            for address, chunk in data:
-                chunk = bytes(chunk)
-                await avr_iface.write_eeprom_range(address, chunk, device.eeprom_page)
-                written = await avr_iface.read_eeprom_range(range(address, len(chunk)))
-                if written != chunk:
-                    raise ProgramAVRError("verification failed at address %#06x: %s != %s" %
-                                          (address, written.hex(), chunk.hex()))
+                program_file, program_fmt = args.file
+                data = input_data(program_file, program_fmt)
+                self.logger.info("writing program memory (%d bytes)",
+                                 sum([len(chunk) for address, chunk in data]))
+                for address, chunk in data:
+                    chunk = bytes(chunk)
+                    await avr_iface.write_program_memory_range(address, chunk, device.program_page)
+                    written = await avr_iface.read_program_memory_range(range(address, address + len(chunk)))
+                    if written != chunk:
+                        raise ProgramAVRError("verification failed at address %#06x: %s != %s" %
+                                              (address, written.hex(), chunk.hex()))
 
-        if args.operation == "erase":
-            self.logger.info("erasing device")
-            await avr_iface.chip_erase()
+            if args.operation == "write-eeprom":
+                eeprom_file, eeprom_fmt = args.file
+                data = input_data(eeprom_file, eeprom_fmt)
+                self.logger.info("writing EEPROM (%d bytes)",
+                                 sum([len(chunk) for address, chunk in data]))
+                for address, chunk in data:
+                    chunk = bytes(chunk)
+                    await avr_iface.write_eeprom_range(address, chunk, device.eeprom_page)
+                    written = await avr_iface.read_eeprom_range(range(address, len(chunk)))
+                    if written != chunk:
+                        raise ProgramAVRError("verification failed at address %#06x: %s != %s" %
+                                              (address, written.hex(), chunk.hex()))
 
-        await avr_iface.programming_disable()
+            if args.operation == "erase":
+                self.logger.info("erasing device")
+                await avr_iface.chip_erase()
+        finally:
+            await avr_iface.programming_disable()
