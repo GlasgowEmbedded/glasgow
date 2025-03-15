@@ -22,6 +22,14 @@ from .asignal import wait_for_signal
 logger = logging.getLogger(__loader__.name)
 
 
+# Asyncio internally intercepts `SystemExit` whenever a future raises it and re-raises it from
+# the event loop (!), which breaks our async console. Upsetting. Convert `SystemExit` into our
+# own exception to avoid this behavior.
+class _SystemExitWrapper(Exception):
+    def __init__(self, code):
+        self.code = code
+
+
 class AsyncInteractiveConsole:
     def __init__(self, locals, *, run_callback=None):
         self.locals = {"__name__": "__console__", "sleep": asyncio.sleep, **locals}
@@ -111,13 +119,15 @@ class AsyncInteractiveConsole:
                 await future
             if self.run_callback is not None:
                 await self.run_callback()
-        except (SystemExit, KeyboardInterrupt, asyncio.CancelledError):
+        except (KeyboardInterrupt, asyncio.CancelledError):
             raise
+        except SystemExit as e:
+            raise _SystemExitWrapper(e.code)
         except BaseException as e:
             lines = traceback.format_exception(type(e), e, e.__traceback__)
             print("".join(lines), end="", file=sys.stderr)
 
-    async def _compile_line(self, line, *, filename="<console>", symbol="single"):
+    async def _process_line(self, line, *, filename="<console>", symbol="single"):
         self._buffer.append(line)
         try:
             code = self._compile("\n".join(self._buffer), filename, symbol)
@@ -146,17 +156,19 @@ class AsyncInteractiveConsole:
                     break
                 else:
                     sigint_task = asyncio.ensure_future(wait_for_signal(signal.SIGINT))
-                    compile_task = asyncio.ensure_future(self._compile_line(line))
-                    done, pending = await asyncio.wait([sigint_task, compile_task],
+                    line_task = asyncio.ensure_future(self._process_line(line))
+                    done, pending = await asyncio.wait([sigint_task, line_task],
                         return_when=asyncio.FIRST_COMPLETED)
                     for task in pending:
                         task.cancel()
-                    await compile_task
-            except asyncio.CancelledError:
-                print("\nasyncio.CancelledError", file=sys.stderr)
+                    await line_task
             except KeyboardInterrupt:
                 print("\nKeyboardInterrupt", file=sys.stderr)
                 self._buffer = []
+            except asyncio.CancelledError:
+                print("\nasyncio.CancelledError", file=sys.stderr)
+            except _SystemExitWrapper as e:
+                raise SystemExit(e.code)
             else:
                 if readline is not None:
                     self._save_readline()

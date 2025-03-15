@@ -670,6 +670,8 @@ async def main():
                         if future is not None:
                             await future
 
+                except SystemExit as e:
+                    return e.code
                 except GlasgowAppletError as e:
                     applet.logger.error(str(e))
                     return 1

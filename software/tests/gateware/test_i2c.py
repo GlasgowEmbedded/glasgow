@@ -1,6 +1,7 @@
 import unittest
 from amaranth import *
 from amaranth.lib import io
+from amaranth.sim import Tick
 
 from glasgow.gateware import simulation_test
 from glasgow.gateware.i2c import I2CInitiator, I2CTarget
@@ -35,11 +36,11 @@ class I2CTestbench(Elaboratable):
 
     def half_period(self):
         for _ in range(self.period_cyc // 2):
-            yield
+            yield Tick()
 
     def wait_for(self, fn):
         for _ in range(self.wait_cyc):
-            yield
+            yield Tick()
             if (yield from fn()):
                 return True
         return False
@@ -62,9 +63,9 @@ class I2CInitiatorTestbench(I2CTestbench):
 
     def strobe(self, signal):
         yield signal.eq(1)
-        yield
+        yield Tick()
         yield signal.eq(0)
-        yield
+        yield Tick()
 
     def start(self):
         yield from self.strobe(self.dut.start)
@@ -85,18 +86,18 @@ class I2CInitiatorTestCase(I2CTestCase):
     def setUp(self):
         self.tb = I2CInitiatorTestbench()
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_start(self, tb):
         yield from tb.start()
         yield from self.assertState(tb, "START-SDA-L")
         yield from self.assertCondition(tb, lambda: (yield tb.dut.bus.start))
         self.assertEqual((yield tb.dut.busy), 0)
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_repeated_start(self, tb):
         yield tb.dut.bus.sda_o.eq(0)
-        yield
-        yield
+        yield Tick()
+        yield Tick()
         yield from tb.start()
         yield from self.assertState(tb, "START-SCL-L")
         yield from self.assertCondition(tb, lambda: (yield tb.dut.bus.start))
@@ -106,11 +107,11 @@ class I2CInitiatorTestCase(I2CTestCase):
         yield from tb.start()
         yield from self.assertCondition(tb, lambda: (yield tb.dut.bus.start))
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_stop(self, tb):
         yield tb.dut.bus.sda_o.eq(0)
-        yield
-        yield
+        yield Tick()
+        yield Tick()
         yield from tb.stop()
         yield from self.assertState(tb, "STOP-SDA-H")
         yield from self.assertCondition(tb, lambda: (yield tb.dut.bus.stop))
@@ -123,72 +124,73 @@ class I2CInitiatorTestCase(I2CTestCase):
     def write(self, tb, data, bits, ack):
         yield from tb.write(data)
         for n, bit in enumerate(bits):
-            yield
-            yield
+            yield Tick()
+            yield Tick()
             yield from self.assertState(tb, "WRITE-DATA-SCL-L" if n == 0 else "WRITE-DATA-SDA-N")
             yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 0)
             yield from self.assertState(tb, "WRITE-DATA-SDA-X")
             yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 1)
             self.assertEqual((yield tb.sda_i), bit)
-            yield
+            yield Tick()
         yield from self.tb.half_period()
-        yield
-        yield
+        yield Tick()
+        yield Tick()
         yield from self.assertState(tb, "WRITE-ACK-SCL-L")
         yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 0)
         yield tb.sda_o.eq(not ack)
         yield from self.assertState(tb, "WRITE-ACK-SDA-H")
         yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 1)
+        yield Tick()
         yield tb.sda_o.eq(1)
         self.assertEqual((yield tb.dut.busy), 1)
         yield from self.tb.half_period()
-        yield
-        yield
-        yield
-        yield
+        yield Tick()
+        yield Tick()
+        yield Tick()
+        yield Tick()
         self.assertEqual((yield tb.dut.busy), 0)
         self.assertEqual((yield tb.dut.ack_o), ack)
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_write_ack(self, tb):
         yield tb.dut.bus.sda_o.eq(0)
-        yield
-        yield
+        yield Tick()
+        yield Tick()
         yield from self.write(tb, 0xA5, [1, 0, 1, 0, 0, 1, 0, 1], 1)
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_write_nak(self, tb):
         yield tb.dut.bus.sda_o.eq(0)
-        yield
-        yield
+        yield Tick()
+        yield Tick()
         yield from self.write(tb, 0x5A, [0, 1, 0, 1, 1, 0, 1, 0], 0)
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_write_tx(self, tb):
         yield from self.start(tb)
         yield from self.write(tb, 0x55, [0, 1, 0, 1, 0, 1, 0, 1], 1)
         yield from self.write(tb, 0x33, [0, 0, 1, 1, 0, 0, 1, 1], 0)
         yield from self.stop(tb)
-        yield
-        yield
+        yield Tick()
+        yield Tick()
         self.assertEqual((yield tb.sda_i), 1)
         self.assertEqual((yield tb.scl_i), 1)
 
     def read(self, tb, data, bits, ack):
         yield from tb.read(ack)
         for n, bit in enumerate(bits):
-            yield
-            yield
+            yield Tick()
+            yield Tick()
             yield from self.assertState(tb, "READ-DATA-SCL-L" if n == 0 else "READ-DATA-SDA-N")
             yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 0)
             yield tb.sda_o.eq(bit)
             yield from self.assertState(tb, "READ-DATA-SDA-H")
             yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 1)
-            yield
+            yield Tick()
         yield tb.sda_o.eq(1)
         yield from tb.half_period()
-        yield
-        yield
+        yield Tick()
+        yield Tick()
         yield from self.assertState(tb, "READ-ACK-SCL-L")
         yield from self.assertCondition(tb, lambda: (yield tb.scl_i) == 0)
         yield from self.assertState(tb, "READ-ACK-SDA-X")
@@ -196,35 +198,35 @@ class I2CInitiatorTestCase(I2CTestCase):
         self.assertEqual((yield tb.sda_i), not ack)
         self.assertEqual((yield tb.dut.busy), 1)
         yield from self.tb.half_period()
-        yield
-        yield
-        yield
-        yield
+        yield Tick()
+        yield Tick()
+        yield Tick()
+        yield Tick()
         self.assertEqual((yield tb.dut.busy), 0)
         self.assertEqual((yield tb.dut.data_o), data)
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_read_ack(self, tb):
         yield tb.dut.bus.sda_o.eq(0)
-        yield
-        yield
+        yield Tick()
+        yield Tick()
         yield from self.read(tb, 0xA5, [1, 0, 1, 0, 0, 1, 0, 1], 1)
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_read_nak(self, tb):
         yield tb.dut.bus.sda_o.eq(0)
-        yield
-        yield
+        yield Tick()
+        yield Tick()
         yield from self.read(tb, 0x5A, [0, 1, 0, 1, 1, 0, 1, 0], 0)
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_read_tx(self, tb):
         yield from self.start(tb)
         yield from self.read(tb, 0x55, [0, 1, 0, 1, 0, 1, 0, 1], 1)
         yield from self.read(tb, 0x33, [0, 0, 1, 1, 0, 0, 1, 1], 0)
         yield from self.stop(tb)
-        yield
-        yield
+        yield Tick()
+        yield Tick()
         self.assertEqual((yield tb.sda_i), 1)
         self.assertEqual((yield tb.scl_i), 1)
 
@@ -246,7 +248,7 @@ class I2CTargetTestbench(I2CTestbench):
         assert (yield self.scl_i) == 1
         assert (yield self.sda_i) == 0
         yield self.scl_o.eq(0)
-        yield # tHD;DAT
+        yield Tick() # tHD;DAT
         yield self.sda_o.eq(1)
         yield from self.half_period()
         yield self.scl_o.eq(1)
@@ -255,7 +257,7 @@ class I2CTargetTestbench(I2CTestbench):
 
     def stop(self):
         yield self.scl_o.eq(0)
-        yield # tHD;DAT
+        yield Tick() # tHD;DAT
         yield self.sda_o.eq(0)
         yield from self.half_period()
         yield self.scl_o.eq(1)
@@ -266,7 +268,7 @@ class I2CTargetTestbench(I2CTestbench):
     def write_bit(self, bit):
         assert (yield self.scl_i) == 1
         yield self.scl_o.eq(0)
-        yield # tHD;DAT
+        yield Tick() # tHD;DAT
         yield self.sda_o.eq(bit)
         yield from self.half_period()
         yield self.scl_o.eq(1)
@@ -299,7 +301,7 @@ class I2CTargetTestCase(I2CTestCase):
     def simulationSetUp(self, tb):
         yield tb.dut.address.eq(0b0101000)
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_addr_shift(self, tb):
         yield tb.dut.address.eq(0b1111111)
         yield from self.assertState(tb, "IDLE")
@@ -309,7 +311,7 @@ class I2CTargetTestCase(I2CTestCase):
             yield from tb.write_bit(1)
             yield from self.assertState(tb, "ADDR-SHIFT")
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_addr_stop(self, tb):
         yield from tb.start()
         yield from tb.write_bit(0)
@@ -317,35 +319,37 @@ class I2CTargetTestCase(I2CTestCase):
         yield from tb.stop()
         yield from self.assertState(tb, "IDLE")
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_addr_nak(self, tb):
         yield from tb.start()
         yield from tb.write_octet(0b11110001)
         self.assertEqual((yield from tb.read_bit()), 1)
         yield from self.assertState(tb, "IDLE")
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_addr_r_ack(self, tb):
         yield from tb.start()
         yield from tb.write_octet(0b01010001)
         yield tb.scl_o.eq(0)
         yield from self.assertCondition(tb, lambda: (yield tb.dut.start))
-        yield
+        yield Tick()
         yield from self.assertState(tb, "ADDR-ACK")
         self.assertEqual((yield tb.sda_i), 0)
+        yield Tick()
         yield tb.scl_o.eq(1)
         yield from tb.half_period()
         yield from self.assertState(tb, "READ-SHIFT")
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_addr_w_ack(self, tb):
         yield from tb.start()
         yield from tb.write_octet(0b01010000)
         yield tb.scl_o.eq(0)
         yield from self.assertCondition(tb, lambda: (yield tb.dut.start))
-        yield
+        yield Tick()
         yield from self.assertState(tb, "ADDR-ACK")
         self.assertEqual((yield tb.sda_i), 0)
+        yield Tick()
         yield tb.scl_o.eq(1)
         yield from tb.half_period()
         yield tb.scl_o.eq(0)
@@ -357,17 +361,17 @@ class I2CTargetTestCase(I2CTestCase):
         yield from tb.write_octet(0b01010000 | read)
         self.assertEqual((yield from tb.read_bit()), 0)
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_write_shift(self, tb):
         yield from self.start_addr(tb, read=False)
         yield from tb.write_octet(0b10100101)
         yield tb.scl_o.eq(0)
         yield from self.assertCondition(tb, lambda: (yield tb.dut.write))
         self.assertEqual((yield tb.dut.data_i), 0b10100101)
-        yield
+        yield Tick()
         yield from self.assertState(tb, "WRITE-ACK")
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_read_shift(self, tb):
         yield from tb.start()
         yield from tb.write_octet(0b01010001)
@@ -375,22 +379,23 @@ class I2CTargetTestCase(I2CTestCase):
         yield from tb.half_period()
         self.assertEqual((yield tb.sda_i), 0)
         # this sequence ensures combinatorial feedback works
+        yield Tick()
         yield tb.scl_o.eq(1)
-        yield
-        yield
+        yield Tick()
         yield tb.dut.data_o.eq(0b10100101)
-        yield
+        yield Tick()
         self.assertEqual((yield tb.dut.read), 1)
+        yield Tick()
         yield tb.dut.data_o.eq(0)
-        yield
+        yield Tick()
         self.assertEqual((yield tb.dut.read), 0)
         yield from tb.half_period()
         yield tb.scl_o.eq(1)
         self.assertEqual((yield from tb.read_octet()), 0b10100101)
-        yield
+        yield Tick()
         yield from self.assertState(tb, "READ-ACK")
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_write_stop(self, tb):
         yield from self.start_addr(tb, read=False)
         yield from tb.write_bit(0)
@@ -398,7 +403,7 @@ class I2CTargetTestCase(I2CTestCase):
         yield from tb.stop()
         yield from self.assertState(tb, "IDLE")
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_read_stop(self, tb):
         yield tb.dut.data_o.eq(0b11111111)
         yield from self.start_addr(tb, read=True)
@@ -407,32 +412,32 @@ class I2CTargetTestCase(I2CTestCase):
         yield from tb.stop()
         yield from self.assertState(tb, "IDLE")
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_write_ack(self, tb):
         yield from self.start_addr(tb, read=False)
         yield from tb.write_octet(0b10100101)
         # this sequence ensures combinatorial feedback works
         yield tb.scl_o.eq(0)
-        yield
-        yield
-        yield
+        yield Tick()
+        yield Tick()
+        yield Tick()
         yield tb.dut.ack_o.eq(1)
-        yield
         self.assertEqual((yield tb.dut.write), 1)
+        yield Tick()
         yield tb.dut.ack_o.eq(0)
-        yield
+        yield Tick()
         self.assertEqual((yield tb.dut.write), 0)
         yield from tb.half_period()
         yield tb.scl_o.eq(1)
         self.assertEqual((yield tb.sda_i), 0)
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_write_nak(self, tb):
         yield from self.start_addr(tb, read=False)
         yield from tb.write_octet(0b10100101)
         self.assertEqual((yield from tb.read_bit()), 1)
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_write_ack_stop(self, tb):
         yield from self.start_addr(tb, read=False)
         yield from tb.write_octet(0b10100101)
@@ -444,10 +449,10 @@ class I2CTargetTestCase(I2CTestCase):
         yield from tb.half_period()
         yield tb.sda_o.eq(1)
         yield from self.assertCondition(tb, lambda: (yield tb.dut.stop))
-        yield
+        yield Tick()
         yield from self.assertState(tb, "IDLE")
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_read_ack(self, tb):
         yield tb.dut.data_o.eq(0b10101010)
         yield from self.start_addr(tb, read=True)
@@ -455,7 +460,7 @@ class I2CTargetTestCase(I2CTestCase):
         yield from tb.write_bit(0)
         yield from self.assertState(tb, "READ-SHIFT")
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_read_nak(self, tb):
         yield tb.dut.data_o.eq(0b10100101)
         yield from self.start_addr(tb, read=True)
@@ -463,7 +468,7 @@ class I2CTargetTestCase(I2CTestCase):
         yield from tb.write_bit(0)
         yield from self.assertState(tb, "READ-SHIFT")
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_read_nak_stop(self, tb):
         yield tb.dut.data_o.eq(0b10100101)
         yield from self.start_addr(tb, read=True)
@@ -473,10 +478,10 @@ class I2CTargetTestCase(I2CTestCase):
         yield from self.assertState(tb, "READ-ACK")
         yield tb.scl_o.eq(1)
         yield from self.assertCondition(tb, lambda: (yield tb.dut.stop))
-        yield
+        yield Tick()
         yield from self.assertState(tb, "IDLE")
 
-    @simulation_test
+    @simulation_test(testbench=True)
     def test_read_ack_read(self, tb):
         yield tb.dut.data_o.eq(0b10100101)
         yield from self.start_addr(tb, read=True)

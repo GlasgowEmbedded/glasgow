@@ -152,12 +152,13 @@ class SPIFlashromApplet(SPIControllerApplet):
     help = "expose SPI via flashrom serprog interface"
     description = """
     Expose SPI via a socket using the flashrom serprog protocol; see https://www.flashrom.org.
+    This applet has the same default pin assignment as the `memory-25x` applet; See its description
+    for details.
 
     Usage:
 
     ::
-        glasgow run spi-flashrom -V 3.3 --pin-cs 0 --pin-cipo 1 --pin-copi 2 --pin-sck 3 \\
-            --freq 4000 tcp::2222
+        glasgow run spi-flashrom -V 3.3 --freq 4000 tcp::2222
         /sbin/flashrom -p serprog:ip=localhost:2222
 
     It is also possible to flash 25-series flash chips using the `memory-25x` applet, which does
@@ -170,12 +171,12 @@ class SPIFlashromApplet(SPIControllerApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access, omit_pins=True)
 
-        access.add_pin_argument(parser, "cs",   default=True, required=True)
-        access.add_pin_argument(parser, "cipo", default=True, required=True)
-        access.add_pin_argument(parser, "wp",   default=True)
-        access.add_pin_argument(parser, "copi", default=True, required=True)
-        access.add_pin_argument(parser, "sck",  default=True, required=True)
-        access.add_pin_argument(parser, "hold", default=True)
+        access.add_pin_argument(parser, "cs",   default=5, required=True)
+        access.add_pin_argument(parser, "cipo", default=4, required=True)
+        access.add_pin_argument(parser, "wp",   default=3)
+        access.add_pin_argument(parser, "copi", default=2, required=True)
+        access.add_pin_argument(parser, "sck",  default=1, required=True)
+        access.add_pin_argument(parser, "hold", default=0)
 
     def build_subtarget(self, target, args):
         subtarget = super().build_subtarget(target, args)

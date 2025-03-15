@@ -84,6 +84,8 @@ linkcheck_ignore = [
     r"^https://chaos\.social/",
     # As above.
     r"^https://en\.uesp\.net/",
+    # As above.
+    r"^https://www\.gnu\.org/",
 ]
 
 linkcheck_anchors_ignore_for_url = [
