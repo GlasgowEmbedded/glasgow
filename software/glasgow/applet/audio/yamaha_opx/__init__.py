@@ -184,8 +184,8 @@ class YamahaCPUBus(Elaboratable):
         m.submodules.clk_m_buffer = clk_m_buffer = io.Buffer("o", self.ports.clk_m)
         m.submodules.a_buffer     = a_buffer     = io.Buffer("o", self.ports.a)
         m.submodules.d_buffer     = d_buffer     = io.Buffer("io", self.ports.d)
-        m.submodules.rd_buffer    = rd_buffer    = io.Buffer("io", self.ports.rd)
-        m.submodules.wr_buffer    = wr_buffer    = io.Buffer("io", self.ports.wr)
+        m.submodules.rd_buffer    = rd_buffer    = io.Buffer("o", self.ports.rd)
+        m.submodules.wr_buffer    = wr_buffer    = io.Buffer("o", self.ports.wr)
 
         m.d.comb += [
             clk_m_buffer.o.eq(clkgen.clk),
