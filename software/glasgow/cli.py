@@ -9,6 +9,7 @@ import re
 import asyncio
 import signal
 import unittest
+import contextlib
 import importlib.metadata
 from vcd import VCDWriter
 from datetime import datetime
@@ -510,6 +511,21 @@ def configure_logger(args, term_handler):
         root_logger.setLevel(level)
 
 
+@contextlib.contextmanager
+def with_gc_freeze():
+    if sys.implementation.name == "cpython":
+        # Run a full garbage collection, then move all remaining objects into the permanent
+        # generation. This greatly reduces the amount of work the garbage collector has to do in a
+        # full generation 2 collection while running the applet task.
+        import gc
+        gc.collect()
+        gc.freeze()
+        yield
+        gc.unfreeze()
+    else:
+        yield
+
+
 async def main():
     # Handle log messages emitted during construction of the argument parser (e.g. by the plugin
     # subsystem).
@@ -694,22 +710,23 @@ async def main():
             if args.action != "repl":
                 tasks.append(asyncio.ensure_future(wait_for_sigint()))
 
-            done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-            for task in pending:
-                task.cancel()
-            await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+            with with_gc_freeze():
+                done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+                for task in pending:
+                    task.cancel()
+                await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
 
-            # If the applet task has raised an exception, retrieve it here in case any of the await
-            # statements above will fail; if we don't, asyncio will unnecessarily complain.
-            applet_task.exception()
+                # If the applet task has raised an exception, retrieve it here in case any of the await
+                # statements above will fail; if we don't, asyncio will unnecessarily complain.
+                applet_task.exception()
 
-            if do_trace:
-                await device.write_register(target.analyzer.addr_done, 1)
-                await analyzer_task
+                if do_trace:
+                    await device.write_register(target.analyzer.addr_done, 1)
+                    await analyzer_task
 
-            await device.demultiplexer.cancel()
+                await device.demultiplexer.cancel()
 
-            return applet_task.result()
+                return applet_task.result()
 
         if args.action == "tool":
             tool = GlasgowAppletMetadata.get(args.applet).tool_cls()
