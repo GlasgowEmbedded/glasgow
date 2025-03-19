@@ -18,7 +18,7 @@ def _filter_ioshape(direction, ioshape):
 def _iter_ioshape(direction, ioshape, *args): # actually filter+iter
     for name, item in ioshape.items():
         if _filter_ioshape(direction, ioshape[name]):
-            yield tuple(arg[name] for arg in args)
+            yield (name, *(arg[name] for arg in args))
 
 
 def _map_ioshape(direction, ioshape, fn): # actually filter+map
@@ -106,7 +106,9 @@ class IOStreamer(wiring.Component):
             "meta": meta_layout,
         }))
 
-    def __init__(self, ioshape, ports, /, *, ratio=1, init=None, meta_layout=0):
+    def __init__(self, ioshape, ports, /, *, ratio=1, init=None, meta_layout=0, sample_delay_half_clocks=0):
+        if ratio == 1:
+            assert (sample_delay_half_clocks % 2) == 0
         assert isinstance(ioshape, (int, dict))
         assert ratio in (1, 2)
 
@@ -114,6 +116,7 @@ class IOStreamer(wiring.Component):
         self._ports   = ports
         self._ratio   = ratio
         self._init    = init
+        self._sample_delay_half_clocks = sample_delay_half_clocks
 
         super().__init__({
             "o_stream":  In(self.o_stream_signature(ioshape, ratio=ratio, meta_layout=meta_layout)),
@@ -124,10 +127,9 @@ class IOStreamer(wiring.Component):
         m = Module()
 
         if self._ratio == 1:
-            buffer_cls, latency = io.FFBuffer, 1
+            buffer_cls, latency = io.FFBuffer, 1 + self._sample_delay_half_clocks // 2
         if self._ratio == 2:
-            # FIXME: should this be 2 or 3? the latency differs between i[0] and i[1]
-            buffer_cls, latency = SimulatableDDRBuffer, 3
+            buffer_cls, latency = SimulatableDDRBuffer, 2 + (self._sample_delay_half_clocks // 2) + (self._sample_delay_half_clocks % 2)
 
         if isinstance(self._ports, io.PortLike):
             m.submodules.buffer = buffer = buffer_cls("io", self._ports)
@@ -142,11 +144,11 @@ class IOStreamer(wiring.Component):
             "oe": 1,
         })), init=self._init)
         with m.If(self.o_stream.valid & self.o_stream.ready):
-            for buffer_parts, stream_parts in _iter_ioshape("o", self._ioshape,
+            for _, buffer_parts, stream_parts in _iter_ioshape("o", self._ioshape,
                     buffer, self.o_stream.p.port):
                 m.d.comb += buffer_parts.o.eq(stream_parts.o)
                 m.d.comb += buffer_parts.oe.eq(stream_parts.oe)
-            for latch_parts, stream_parts in _iter_ioshape("o", self._ioshape,
+            for _, latch_parts, stream_parts in _iter_ioshape("o", self._ioshape,
                     o_latch, self.o_stream.p.port):
                 if self._ratio == 1:
                     m.d.sync += latch_parts.o.eq(stream_parts.o)
@@ -154,7 +156,7 @@ class IOStreamer(wiring.Component):
                     m.d.sync += latch_parts.o.eq(stream_parts.o[-1])
                 m.d.sync += latch_parts.oe.eq(stream_parts.oe)
         with m.Else():
-            for buffer_parts, latch_parts in _iter_ioshape("o", self._ioshape,
+            for _, buffer_parts, latch_parts in _iter_ioshape("o", self._ioshape,
                     buffer, o_latch):
                 if self._ratio == 1:
                     m.d.comb += buffer_parts.o.eq(latch_parts.o)
@@ -178,17 +180,26 @@ class IOStreamer(wiring.Component):
         # may be slightly worse than using LUTRAM, and may have to be revisited in the future.
         skid = Array(Signal(self.i_stream.payload.shape(), name=f"skid_{stage}")
                      for stage in range(1 + latency))
-        for skid_parts, buffer_parts in _iter_ioshape("i", self._ioshape, skid[0].port, buffer):
-            m.d.comb += skid_parts.i.eq(buffer_parts.i)
+        for name, skid_parts, buffer_parts in _iter_ioshape("i", self._ioshape, skid[0].port, buffer):
+            if self._sample_delay_half_clocks % 2:
+                m.d.comb += skid_parts.i[1].eq(buffer_parts.i[0])
+                i1_delayed = Signal.like(buffer_parts.i[1], name=f"{name}_i1_delayed")
+                m.d.sync += i1_delayed.eq(buffer_parts.i[1])
+                m.d.comb += skid_parts.i[0].eq(i1_delayed)
+            else:
+                m.d.comb += skid_parts.i.eq(buffer_parts.i)
         m.d.comb += skid[0].meta.eq(meta)
 
         skid_at = Signal(range(1 + latency))
+
+        with m.If(i_en):
+            for n_shift in range(latency):
+                m.d.sync += skid[n_shift + 1].eq(skid[n_shift])
+
         with m.If(i_en & ~self.i_stream.ready):
             # m.d.sync += Assert(skid_at != latency)
             m.d.sync += skid_at.eq(skid_at + 1)
-            for n_shift in range(latency):
-                m.d.sync += skid[n_shift + 1].eq(skid[n_shift])
-        with m.Elif((skid_at != 0) & self.i_stream.ready):
+        with m.Elif((skid_at != 0) & ~i_en & self.i_stream.ready):
             m.d.sync += skid_at.eq(skid_at - 1)
 
         m.d.comb += self.i_stream.payload.eq(skid[skid_at])
@@ -242,7 +253,7 @@ class IOClocker(wiring.Component):
 
         # Forward the inputs to the outputs as-is. This includes the clock; it is overridden below
         # if the clocker is used (not bypassed).
-        for i_parts, o_parts in _iter_ioshape("io", self._ioshape,
+        for _, i_parts, o_parts in _iter_ioshape("io", self._ioshape,
                 self.i_stream.p.port, self.o_stream.p.port):
             m.d.comb += o_parts.o .eq(i_parts.o.replicate(self._o_ratio))
             m.d.comb += o_parts.oe.eq(i_parts.oe)
@@ -256,7 +267,10 @@ class IOClocker(wiring.Component):
             if self._o_ratio == 1:
                 m.d.comb += self.o_stream.p.port[self._clock].o.eq(phase)
             if self._o_ratio == 2:
-                m.d.comb += self.o_stream.p.port[self._clock].o.eq(Cat(~phase, phase))
+                with m.If(self.divisor == 0):
+                    m.d.comb += self.o_stream.p.port[self._clock].o.eq(Cat(~phase, phase))
+                with m.Else():
+                    m.d.comb += self.o_stream.p.port[self._clock].o.eq(Cat(phase, phase))
             m.d.comb += self.o_stream.p.port[self._clock].oe.eq(1)
             # ... while requesting input sampling only for the rising edge. (Interfaces triggering
             # transfers on falling edge will be inverting the clock at the `IOPort` level.)
@@ -274,11 +288,13 @@ class IOClocker(wiring.Component):
                         m.d.comb += self.i_stream.ready.eq(self.o_stream.ready)
 
                     with m.Else(): # Produce a falling edge at the output.
-                        # Whenever DDR output is used, `phase == 1` outputs a low state first and
-                        # a high state second. When `phase == 1` payloads are output back to back
-                        # (in DDR mode only!) this generates a pulse train with data changes
-                        # coinciding with the falling edges. Setting `divisor == 0` in this mode
-                        # allows clocking the peripheral at the `sync` frequency.
+                        # Whenever DDR output is used, with `divisor == 0`, we output a low state
+                        # on the first half of the clock cycle, and a high state on the second half.
+                        # This mode allows clocking the peripheral at the `sync` frequency.
+                        # In this case the signal sampled at the rising edge will be output on i[1]
+                        # (if sample_delay was set to zero)
+                        # In all other cases the signal sampled at the rising edge will be output on i[0]
+                        # (if sample_delay was set to zero)
                         with m.If((self._o_ratio == 2) & (self.divisor == 0)):
                             m.d.comb += phase.eq(1)
                             with m.If(self.o_stream.ready):
