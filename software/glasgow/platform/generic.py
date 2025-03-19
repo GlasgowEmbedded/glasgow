@@ -51,7 +51,10 @@ class GlasgowGenericPlatform:
     def file_templates(self):
         # Do not require yosys to be present for toolchain_prepare() to finish.
         file_templates = dict(super().file_templates)
-        del file_templates["{{name}}.debug.v"]
+        try:
+            del file_templates["{{name}}.debug.v"]
+        except KeyError:
+            pass
         return file_templates
 
     def toolchain_program(self, products, name):
