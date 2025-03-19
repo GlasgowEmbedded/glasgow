@@ -821,10 +821,13 @@ class YamahaOPxWebInterface:
     def __init__(self, logger, opx_iface, set_voltage, allow_urls):
         self._logger    = logger
         self._opx_iface = opx_iface
-        self._lock      = asyncio.Lock()
+
+        self._lock       = asyncio.Lock()
+        self._queue_len  = 0
+        self._queue_cond = asyncio.Condition()
 
         self._set_voltage = set_voltage
-        self._allow_urls = allow_urls
+        self._allow_urls  = allow_urls
 
     async def serve_index(self, request):
         with open(os.path.join(os.path.dirname(__file__), "index.html")) as f:
@@ -834,6 +837,28 @@ class YamahaOPxWebInterface:
             index_html = index_html.replace("{{url_display}}",
                                             "block" if self._allow_urls else "none")
             return aiohttp.web.Response(text=index_html, content_type="text/html")
+
+    async def _update_queue_len(self, delta):
+        await self._queue_cond.acquire()
+        self._queue_len += delta
+        self._queue_cond.notify_all()
+        self._queue_cond.release()
+
+    async def serve_queue(self, request):
+        sock = aiohttp.web.WebSocketResponse()
+        await sock.prepare(request)
+
+        try:
+            while True:
+                await self._queue_cond.acquire()
+                try:
+                    await sock.send_json({"len": self._queue_len})
+                    await self._queue_cond.wait()
+                finally:
+                    self._queue_cond.release()
+
+        except aiohttp.ClientConnectionResetError:
+            pass
 
     async def serve_vgm(self, request):
         sock = aiohttp.web.WebSocketResponse()
@@ -921,6 +946,8 @@ class YamahaOPxWebInterface:
         sample_rate = 1 / vgm_player.sample_time
         self._logger.info("web: %s: sample rate %d", digest, sample_rate)
 
+        await self._update_queue_len(+1)
+
         async with self._lock:
             try:
                 voltage = float(headers["Voltage"])
@@ -928,6 +955,8 @@ class YamahaOPxWebInterface:
                 await self._set_voltage(voltage)
 
             except Exception as error:
+                await self._update_queue_len(-1)
+
                 await sock.close(code=2000, message=str(error))
                 return sock
 
@@ -1000,13 +1029,17 @@ class YamahaOPxWebInterface:
                         fut.cancel()
                 raise
 
+            finally:
+                await self._update_queue_len(-1)
+
             return sock
 
     async def serve(self, endpoint):
         app = aiohttp.web.Application()
         app.add_routes([
-            aiohttp.web.get("/",    self.serve_index),
-            aiohttp.web.get("/vgm", self.serve_vgm),
+            aiohttp.web.get("/",      self.serve_index),
+            aiohttp.web.get("/queue", self.serve_queue),
+            aiohttp.web.get("/vgm",   self.serve_vgm),
         ])
 
         try:
