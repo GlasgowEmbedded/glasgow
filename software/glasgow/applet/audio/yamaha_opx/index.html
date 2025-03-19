@@ -11,7 +11,7 @@
   <p>Upload a <a href="https://vgmrips.net/packs/chips">VGM/VGZ file</a>: <input type="file" id="vgmFile" accept=".vgm,.vgz"></p>
   <p style="display: {{url_display}};">... or provide an URL for it: <input type="url" id="vgmUrl" size="50"></p>
   <p>Control: <input type="button" id="play" value="Play"> <input type="button" id="replay" value="Replay" disabled> <input type="checkbox" id="loop"> <label for="loop">Loop</label> <input type="button" id="exportFull" value="Export full" disabled> <input type="button" id="exportLoop" value="Export loop" disabled></p>
-  <p>Status: <span id="chipStatus">no chip</span>, <span id="pcmStatus">no format</span>, <span id="netStatus">idle</span>, <span id="playStatus">stopped</span>.</p>
+  <p>Status: <span id="chipStatus">no chip</span>, <span id="pcmStatus">no format</span>, <span id="netStatus">idle</span>, <span id="queueLen">??</span> in queue, <span id="playStatus">stopped</span>.</p>
   <p id="errorPane" style="color:red; display:none">Error: <span id="error"></span></p>
 
   <!--
@@ -330,6 +330,7 @@
     var chipStatusSpan = document.getElementById("chipStatus");
     var pcmStatusSpan = document.getElementById("pcmStatus");
     var netStatusSpan = document.getElementById("netStatus");
+    var queueLenSpan = document.getElementById("queueLen");
     var playStatusSpan = document.getElementById("playStatus");
     var errorPane = document.getElementById("errorPane");
     var errorSpan = document.getElementById("error");
@@ -449,5 +450,20 @@
           player.sampleRate, /*bytesPerSample=*/2, player.getLoopSamplesS16LE()));
       }
     };
+
+    function monitorQueueLength() {
+      var socketUrl = new URL("queue", window.location.href);
+      socketUrl.protocol = socketUrl.protocol.replace("http", "ws");
+      var socket = new WebSocket(socketUrl);
+      socket.onmessage = function(event) {
+        var data = JSON.parse(event.data);
+        queueLenSpan.innerText = data.len;
+      }
+      socket.onclose = function(event) {
+        queueLenSpan.innerText = "??";
+        setTimeout(function() {  monitorQueueLength(); }, 1000);
+      }
+    }
+    monitorQueueLength();
   </script>
 </body>
