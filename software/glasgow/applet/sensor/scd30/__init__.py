@@ -172,7 +172,7 @@ class SensorSCD30Applet(I2CInitiatorApplet):
     Measure CO₂ concentration, humidity, and temperature using Sensirion SCD30 sensors
     connected over the I²C interface.
 
-    NOTE: The SCD30 takes some time to start up. Run `glasgow voltage AB 3.3 --no-alert`
+    NOTE: The SCD30 takes some time to start up. Run `glasgow voltage AB 3.3`
     or similar before attempting to interact with it.
     """
 
