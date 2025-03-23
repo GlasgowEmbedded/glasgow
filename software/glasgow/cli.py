@@ -254,8 +254,8 @@ def get_argparser():
         "--tolerance", metavar="PCT", type=float, default=10.0,
         help="raise alert if measured voltage deviates by more than ±PCT%% (default: %(default)s)")
     p_voltage.add_argument(
-        "--no-alert", dest="set_alert", default=True, action="store_false",
-        help="do not raise an alert if Vsense is out of range of Vio")
+        "--alert", dest="set_alert", default=False, action="store_true",
+        help="raise an alert if Vsense is out of range of Vio")
 
     p_safe = subparsers.add_parser(
         "safe", formatter_class=TextHelpFormatter,
