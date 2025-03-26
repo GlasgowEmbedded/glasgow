@@ -1,18 +1,62 @@
 import logging
 import asyncio
 from amaranth import *
+from amaranth.lib import io, stream, wiring
 
 from ... import *
 
 
-class BoilerplateSubtarget(Elaboratable):
-    def __init__(self, pads, in_fifo, out_fifo):
-        self.pads     = pads
+class BoilerplateCore(wiring.Component):
+    in_stream: In(stream.Signature(8))
+    out_stream: Out(stream.Signature(8))
+    def __init__(self, ports):
+        self.ports = ports
+    def elaborate(self, platform):
+        m = Module()
+
+        ## Instantiate IO buffers for pins/ports
+        m.submodules.data_buffer   = data_buffer   = io.Buffer("i", self.ports.data)
+        m.submodules.enable_buffer = enable_buffer = io.Buffer("o", self.ports.enable)
+
+        ## Connect IO buffers to corresponding internal signals
+        data   = Signal.like(data_buffer)
+        enable = Signal.like(enable_buffer)
+        wiring.connect(m, data, data_buffer.i)
+        wiring.connect(m, enable, enable_buffer.o)
+
+        return m
+
+class BoilerplateSubtarget(wiring.Component):
+    def __init__(self, ports, in_fifo, out_fifo):
+        self.ports    = ports
         self.in_fifo  = in_fifo
         self.out_fifo = out_fifo
 
     def elaborate(self, platform):
         m = Module()
+
+    #    ┌───────┐               ┌─────────────────┐    
+    #    │in_fifo◄───in_stream───┤                 │    
+    #    └───────┘               │                 │     
+    #                            │      Core       │     
+    #   ┌────────┐               │                 │    
+    #   │out_fifo├───out_stream──►                 │    
+    #   └────────┘               └─────▲───────┬───┘    
+    #                                  │       │        
+    #                                data    enable     
+    #                                  │       │        
+    #                              ┌───┴───────▼──┐     
+    #                              │    Ports     │     
+    #                              └──────────────┘     
+
+
+        m.submodules.core = core = BoilerplateCore(self.ports)
+
+        ## Connect BoilerplateCore.in_stream to BoilerplateSubtarget.out_fifo
+        wiring.connect(m, self.out_fifo.stream, core.in_stream)
+        ## Connect BoilerplateSubtarget.in_fifo to BoilerplateCore.out_stream
+        wiring.connect(m, self.in_fifo.stream, core.out_stream)
+
         return m
 
 
@@ -32,19 +76,20 @@ class BoilerplateApplet(GlasgowApplet):
     nothing. Similarly, there is no requirement to use IN or OUT FIFOs, or any pins at all.
     """
 
-    __pins = ()
-
     @classmethod
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        for pin in cls.__pins:
-            access.add_pin_argument(parser, pin, default=True)
+        access.add_pin_argument(parser, "enable", default=True)
+        access.add_pin_set_argument(parser, "data", width=range(8,16+1), default=True)
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(BoilerplateSubtarget(
-            pads=iface.get_deprecated_pads(args, pins=self.__pins),
+            ports=iface.get_port_group(
+                enable = args.pin_enable,
+                data = args.pin_set_data
+            ),
             in_fifo=iface.get_in_fifo(),
             out_fifo=iface.get_out_fifo(),
         ))
