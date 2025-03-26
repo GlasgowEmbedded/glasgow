@@ -2,41 +2,42 @@ import logging
 import asyncio
 import argparse
 from amaranth import *
-from amaranth.lib import io
+from amaranth.lib import io, wiring
+from amaranth.lib.wiring import In, Out
 
 from ....support.endpoint import *
 from ....gateware.clockgen import *
 from ... import *
 
 
-class SigmaDeltaDACChannel(Elaboratable):
-    def __init__(self, output, bits, signed):
-        self._output = output
-
+class SigmaDeltaDACChannel(wiring.Component):
+    def __init__(self, bits, signed):
         self.bits   = bits
         self.signed = signed
 
-        self.stb    = Signal()
+        super().__init__({
+            "input":  In(bits), # PCM code (signed or unsigned)
+            "update": In(1),    # update input, for multi-channel synchronization
 
-        self.level  = Signal(bits)
-        self.update = Signal()
+            "output": Out(1),   # PDM pulse train
+            "strobe": In(1),    # strobe input; adds code to accumulator and updates `output`
+        })
 
     def elaborate(self, platform):
         m = Module()
 
-        level_u = Signal(self.bits)
-        if self.signed:
-            m.d.comb += level_u.eq(self.level - (1 << (self.bits - 1)))
-        else:
-            m.d.comb += level_u.eq(self.level)
-
-        accum   = Signal(self.bits)
-        level_r = Signal(self.bits)
-
-        with m.If(self.stb):
-            m.d.sync += Cat(accum, self._output).eq(accum + level_r)
+        # Glasgow has unipolar supply, so signed 0 needs to become Vcc/2.
+        level = Signal(self.bits)
         with m.If(self.update):
-            m.d.sync += level_r.eq(level_u)
+            if self.signed:
+                m.d.sync += level.eq(self.input - (1 << (self.bits - 1)))
+            else:
+                m.d.sync += level.eq(self.input)
+
+        # Carry out from the accumulator generates the PDM pulse train.
+        accum = Signal(self.bits)
+        with m.If(self.strobe):
+            m.d.sync += Cat(accum, self.output).eq(accum + level)
 
         return m
 
@@ -57,15 +58,15 @@ class AudioDACSubtarget(Elaboratable):
 
         m.submodules.o_buffer = o_buffer = io.Buffer("o", self.ports.o)
 
-        channels = [
-            SigmaDeltaDACChannel(output, bits=self.width * 8, signed=self.signed)
-            for output in o_buffer.o
-        ]
-        m.submodules += channels
+        m.submodules += (channels := [
+            SigmaDeltaDACChannel(bits=self.width * 8, signed=self.signed)
+            for _ in range(len(o_buffer.o))
+        ])
+        m.d.comb += o_buffer.o.eq(Cat(channel.output for channel in channels))
 
         m.submodules.clkgen = clkgen = ClockGen(self.pulse_cyc)
         for channel in channels:
-            m.d.comb += channel.stb.eq(clkgen.stb_r)
+            m.d.comb += channel.strobe.eq(clkgen.stb_r)
 
         timer = Signal(range(self.sample_cyc))
 
@@ -92,7 +93,7 @@ class AudioDACSubtarget(Elaboratable):
                     with m.State("CHANNEL-%d-READ-1" % index):
                         m.d.comb += self.out_fifo.r_en.eq(1)
                         with m.If(self.out_fifo.r_rdy):
-                            m.d.sync += channel.level[0:8].eq(self.out_fifo.r_data)
+                            m.d.sync += channel.input[0:8].eq(self.out_fifo.r_data)
                             m.next = next_state
                         with m.Else():
                             m.next = "STANDBY"
@@ -100,14 +101,14 @@ class AudioDACSubtarget(Elaboratable):
                     with m.State("CHANNEL-%d-READ-1" % index):
                         m.d.comb += self.out_fifo.r_en.eq(1)
                         with m.If(self.out_fifo.r_rdy):
-                            m.d.sync += channel.level[0:8].eq(self.out_fifo.r_data)
+                            m.d.sync += channel.input[0:8].eq(self.out_fifo.r_data)
                             m.next = "CHANNEL-%d-READ-2" % index
                         with m.Else():
                             m.next = "STANDBY"
                     with m.State("CHANNEL-%d-READ-2" % index):
                         m.d.comb += self.out_fifo.r_en.eq(1)
                         with m.If(self.out_fifo.r_rdy):
-                            m.d.sync += channel.level[8:16].eq(self.out_fifo.r_data)
+                            m.d.sync += channel.input[8:16].eq(self.out_fifo.r_data)
                             m.next = next_state
                         with m.Else():
                             m.next = "STANDBY"
