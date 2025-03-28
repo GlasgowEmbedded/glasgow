@@ -12,9 +12,9 @@ class GlasgowRevABPlatform(GlasgowICE40Platform):
     default_clk = "clk_if"
     resources   = [
         Resource("clk_fx", 0, Pins("44", dir="i"),
-                 Clock(48e6), Attrs(GLOBAL="1", IO_STANDARD="SB_LVCMOS33")),
+                 Clock(48e6), Attrs(GLOBAL="1", IO_STANDARD="SB_LVCMOS")),
         Resource("clk_if", 0, Pins("20", dir="i"),
-                 Clock(30e6), Attrs(GLOBAL="1", IO_STANDARD="SB_LVCMOS33")),
+                 Clock(30e6), Attrs(GLOBAL="1", IO_STANDARD="SB_LVCMOS")),
 
         Resource("fx2", 0,
             Subsignal("sloe",    Pins("6", dir="o")),
@@ -24,13 +24,13 @@ class GlasgowRevABPlatform(GlasgowICE40Platform):
             Subsignal("fifoadr", Pins("4 3", dir="o")),
             Subsignal("flag",    Pins("11 10 9 48", dir="i")),
             Subsignal("fd",      Pins("19 18 17 16 15 14 13 12", dir="io")),
-            Attrs(IO_STANDARD="SB_LVCMOS33")
+            Attrs(IO_STANDARD="SB_LVCMOS")
         ),
 
         Resource("i2c", 0,
             Subsignal("scl", Pins("39", dir="io")),
             Subsignal("sda", Pins("40", dir="io")),
-            Attrs(IO_STANDARD="SB_LVCMOS33")
+            Attrs(IO_STANDARD="SB_LVCMOS")
         ),
 
         Resource("port_a", 0, Subsignal("io", Pins("45"))),
