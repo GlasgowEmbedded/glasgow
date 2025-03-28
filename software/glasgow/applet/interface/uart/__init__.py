@@ -173,7 +173,7 @@ class UARTApplet(GlasgowApplet):
         # a build argument, even though the applet will never be rebuilt as long as you stay
         # above 9600.
         max_bit_cyc = self.derive_clock(
-            input_hz=target.sys_clk_freq, output_hz=min(9600, args.baud))
+            input_hz=target.sys_clk_freq, output_hz=min(9600, args.baud)) - 1
 
         self.__sys_clk_freq = target.sys_clk_freq
 
@@ -215,7 +215,7 @@ class UARTApplet(GlasgowApplet):
         # Load the manually set baud rate.
         manual_cyc = self.derive_clock(
             input_hz=self.__sys_clk_freq, output_hz=args.baud,
-            min_cyc=2, max_deviation_ppm=args.tolerance)
+            min_cyc=2, max_deviation_ppm=args.tolerance) - 1
         await device.write_register(self.__addr_manual_cyc, manual_cyc, width=4)
         await device.write_register(self.__addr_use_auto, 0)
 

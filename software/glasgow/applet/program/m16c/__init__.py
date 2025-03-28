@@ -332,7 +332,7 @@ class ProgramM16CApplet(GlasgowApplet):
 
     def build(self, target, args):
         self.__bit_cyc_for_baud = {
-            baud: self.derive_clock(input_hz=target.sys_clk_freq, output_hz=baud)
+            baud: self.derive_clock(input_hz=target.sys_clk_freq, output_hz=baud) - 1
             for baud in BAUD_RATES
         }
         max_bit_cyc = max(self.__bit_cyc_for_baud.values())
