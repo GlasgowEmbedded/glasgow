@@ -118,6 +118,37 @@ def create_argparser():
 
 
 def get_argparser():
+    class LazyParser(argparse.ArgumentParser):
+        """This is a lazy ArgumentParser that runs any added build_func(s) just before arguments
+        are parsed"""
+        def __init__(self, *args, **kwargs):
+            self.build_funcs = []
+            super().__init__(*args, **kwargs)
+
+        def add_build_func(self, build_func):
+            self.build_funcs.append(build_func)
+
+        def build(self):
+            for build_func in self.build_funcs:
+                build_func()
+            self.build_funcs.clear()
+
+        def parse_args(self, args=None, namespace=None):
+            self.build()
+            return super().parse_args(args, namespace)
+
+        def parse_known_args(self, args=None, namespace=None):
+            self.build()
+            return super().parse_known_args(args, namespace)
+
+        def parse_intermixed_args(self, args=None, namespace=None):
+            self.build()
+            return super().parse_intermixed_args(args, namespace)
+
+        def parse_known_intermixed_args(self, args=None, namespace=None):
+            self.build()
+            return super().parse_known_intermixed_args(args, namespace)
+
     def add_subparsers(parser, **kwargs):
         if isinstance(parser, argparse._MutuallyExclusiveGroup):
             container = parser._container
@@ -127,16 +158,16 @@ def get_argparser():
                 kwargs['prog'] = formatter.format_help().strip()
 
             parsers_class = parser._pop_action_class(kwargs, 'parsers')
-            subparsers = argparse._SubParsersAction(option_strings=[],
-                                                    parser_class=type(container),
-                                                    **kwargs)
+            kwargs["parser_class"] = type(container)
+            subparsers = argparse._SubParsersAction(option_strings=[], **kwargs)
             parser._add_action(subparsers)
         else:
             subparsers = parser.add_subparsers(**kwargs)
         return subparsers
 
     def add_applet_arg(parser, mode, required=False):
-        subparsers = add_subparsers(parser, dest="applet", metavar="APPLET", required=required)
+        subparsers = add_subparsers(
+            parser, dest="applet", metavar="APPLET", required=required, parser_class=LazyParser)
 
         for handle, metadata in GlasgowAppletMetadata.all().items():
             if not metadata.loadable:
@@ -177,39 +208,44 @@ def get_argparser():
                 handle, help=help, description=description,
                 formatter_class=TextHelpFormatter)
 
-            if mode == "test":
-                p_applet.add_argument(
-                    "tests", metavar="TEST", nargs="*",
-                    help="test cases to run")
+            def p_applet_build_factory(p_applet, handle, applet_cls, mode):
+                # factory function for proper closure
+                def p_applet_build():
+                    if mode == "test":
+                        p_applet.add_argument(
+                            "tests", metavar="TEST", nargs="*",
+                            help="test cases to run")
 
-            if mode in ("build", "interact", "repl", "script"):
-                access_args = DirectArguments(applet_name=handle,
-                                              default_port="AB",
-                                              pin_count=16)
-                if mode in ("interact", "repl", "script"):
-                    g_applet_build = p_applet.add_argument_group("build arguments")
-                    applet_cls.add_build_arguments(g_applet_build, access_args)
-                    g_applet_run = p_applet.add_argument_group("run arguments")
-                    applet_cls.add_run_arguments(g_applet_run, access_args)
-                    if mode == "interact":
-                        # FIXME: this makes it impossible to add subparsers in applets
-                        # g_applet_interact = p_applet.add_argument_group("interact arguments")
-                        # applet.add_interact_arguments(g_applet_interact)
-                        applet_cls.add_interact_arguments(p_applet)
-                    if mode == "repl":
-                        # FIXME: same as above
-                        applet_cls.add_repl_arguments(p_applet)
-                if mode == "build":
-                    applet_cls.add_build_arguments(p_applet, access_args)
+                    if mode in ("build", "interact", "repl", "script"):
+                        access_args = DirectArguments(applet_name=handle,
+                                                    default_port="AB",
+                                                    pin_count=16)
+                        if mode in ("interact", "repl", "script"):
+                            g_applet_build = p_applet.add_argument_group("build arguments")
+                            applet_cls.add_build_arguments(g_applet_build, access_args)
+                            g_applet_run = p_applet.add_argument_group("run arguments")
+                            applet_cls.add_run_arguments(g_applet_run, access_args)
+                            if mode == "interact":
+                                # FIXME: this makes it impossible to add subparsers in applets
+                                # g_applet_interact = p_applet.add_argument_group("interact arguments")
+                                # applet.add_interact_arguments(g_applet_interact)
+                                applet_cls.add_interact_arguments(p_applet)
+                            if mode == "repl":
+                                # FIXME: same as above
+                                applet_cls.add_repl_arguments(p_applet)
+                        if mode == "build":
+                            applet_cls.add_build_arguments(p_applet, access_args)
 
-            if mode == "tool":
-                applet_cls.tool_cls.add_arguments(p_applet)
+                    if mode == "tool":
+                        applet_cls.tool_cls.add_arguments(p_applet)
 
-            if mode in ("repl", "script"):
-                # this will absorb all arguments from the '--' onwards (inclusive), make sure it's
-                # always last... the '--' item that ends up at the front is removed before the list
-                # is passed to the repo / script environment
-                p_applet.add_argument('script_args', nargs=argparse.REMAINDER)
+                    if mode in ("repl", "script"):
+                        # this will absorb all arguments from the '--' onwards (inclusive), make sure it's
+                        # always last... the '--' item that ends up at the front is removed before the list
+                        # is passed to the repo / script environment
+                        p_applet.add_argument('script_args', nargs=argparse.REMAINDER)
+                return p_applet_build
+            p_applet.add_build_func(p_applet_build_factory(p_applet, handle, applet_cls, mode))
 
     parser = create_argparser()
 
@@ -231,7 +267,7 @@ def get_argparser():
         "--serial", metavar="SERIAL", type=serial,
         help="use device with serial number SERIAL")
 
-    subparsers = parser.add_subparsers(dest="action", metavar="COMMAND")
+    subparsers = parser.add_subparsers(dest="action", metavar="COMMAND", parser_class=LazyParser)
     subparsers.required = True
 
     def add_ports_arg(parser):
@@ -247,15 +283,17 @@ def get_argparser():
     p_voltage = subparsers.add_parser(
         "voltage", formatter_class=TextHelpFormatter,
         help="query or set I/O port voltage")
-    add_ports_arg(p_voltage)
-    add_voltage_arg(p_voltage,
-        help="I/O port voltage")
-    p_voltage.add_argument(
-        "--tolerance", metavar="PCT", type=float, default=10.0,
-        help="raise alert if measured voltage deviates by more than ±PCT%% (default: %(default)s)")
-    p_voltage.add_argument(
-        "--alert", dest="set_alert", default=False, action="store_true",
-        help="raise an alert if Vsense is out of range of Vio")
+    def p_voltage_build():
+        add_ports_arg(p_voltage)
+        add_voltage_arg(p_voltage,
+            help="I/O port voltage")
+        p_voltage.add_argument(
+            "--tolerance", metavar="PCT", type=float, default=10.0,
+            help="raise alert if measured voltage deviates by more than ±PCT%% (default: %(default)s)")
+        p_voltage.add_argument(
+            "--alert", dest="set_alert", default=False, action="store_true",
+            help="raise an alert if Vsense is out of range of Vio")
+    p_voltage.add_build_func(p_voltage_build)
 
     p_safe = subparsers.add_parser(
         "safe", formatter_class=TextHelpFormatter,
@@ -264,9 +302,11 @@ def get_argparser():
     p_voltage_limit = subparsers.add_parser(
         "voltage-limit", formatter_class=TextHelpFormatter,
         help="limit I/O port voltage as a safety mechanism")
-    add_ports_arg(p_voltage_limit)
-    add_voltage_arg(p_voltage_limit,
-        help="maximum allowed I/O port voltage")
+    def p_voltage_limit_build():
+        add_ports_arg(p_voltage_limit)
+        add_voltage_arg(p_voltage_limit,
+            help="maximum allowed I/O port voltage")
+    p_voltage_limit.add_build_func(p_voltage_limit_build)
 
     def add_build_args(parser):
         parser.add_argument(
@@ -295,79 +335,91 @@ def get_argparser():
     p_run = subparsers.add_parser(
         "run", formatter_class=TextHelpFormatter,
         help="run an applet and interact through its command-line interface")
-    add_run_args(p_run)
-    add_applet_arg(p_run, mode="interact", required=True)
+    def p_run_build():
+        add_run_args(p_run)
+        add_applet_arg(p_run, mode="interact", required=True)
+    p_run.add_build_func(p_run_build)
 
     p_repl = subparsers.add_parser(
         "repl", formatter_class=TextHelpFormatter,
         help="run an applet and open a REPL to use its programming interface")
-    add_run_args(p_repl)
-    add_applet_arg(p_repl, mode="repl", required=True)
+    def p_repl_build():
+        add_run_args(p_repl)
+        add_applet_arg(p_repl, mode="repl", required=True)
+    p_repl.add_build_func(p_repl_build)
 
     p_script = subparsers.add_parser(
         "script", formatter_class=TextHelpFormatter,
         help="run an applet and execute a script against its programming interface")
-    g_script_source = p_script.add_mutually_exclusive_group(required=True)
-    g_script_source.add_argument(
-        "script_file", metavar="FILENAME", type=argparse.FileType("r"), nargs="?",
-        help="run Python script FILENAME in the applet context")
-    g_script_source.add_argument(
-        "-c", metavar="COMMAND", dest="script_cmd", type=str,
-        help="run Python statement COMMAND in the applet context")
-    add_run_args(p_script)
-    add_applet_arg(p_script, mode="script", required=True)
+    def p_script_build():
+        g_script_source = p_script.add_mutually_exclusive_group(required=True)
+        g_script_source.add_argument(
+            "script_file", metavar="FILENAME", type=argparse.FileType("r"), nargs="?",
+            help="run Python script FILENAME in the applet context")
+        g_script_source.add_argument(
+            "-c", metavar="COMMAND", dest="script_cmd", type=str,
+            help="run Python statement COMMAND in the applet context")
+        add_run_args(p_script)
+        add_applet_arg(p_script, mode="script", required=True)
+    p_script.add_build_func(p_script_build)
 
     p_tool = subparsers.add_parser(
         "tool", formatter_class=TextHelpFormatter,
         help="run an offline tool provided with an applet")
-    add_applet_arg(p_tool, mode="tool", required=True)
+    def p_tool_build():
+        add_applet_arg(p_tool, mode="tool", required=True)
+    p_tool.add_build_func(p_tool_build)
 
     p_flash = subparsers.add_parser(
         "flash", formatter_class=TextHelpFormatter,
         help="program FX2 firmware or applet bitstream into EEPROM")
-    add_build_args(p_flash)
+    def p_flash_build():
+        add_build_args(p_flash)
 
-    g_flash_firmware = p_flash.add_mutually_exclusive_group()
-    g_flash_firmware.add_argument(
-        "--firmware", metavar="FILENAME", type=argparse.FileType("rb"),
-        help="(advanced) read firmware from the specified file")
-    g_flash_firmware.add_argument(
-        "--remove-firmware", default=False, action="store_true",
-        help="remove any firmware present")
+        g_flash_firmware = p_flash.add_mutually_exclusive_group()
+        g_flash_firmware.add_argument(
+            "--firmware", metavar="FILENAME", type=argparse.FileType("rb"),
+            help="(advanced) read firmware from the specified file")
+        g_flash_firmware.add_argument(
+            "--remove-firmware", default=False, action="store_true",
+            help="remove any firmware present")
 
-    g_flash_bitstream = p_flash.add_mutually_exclusive_group()
-    g_flash_bitstream.add_argument(
-        "--bitstream", metavar="FILENAME", type=argparse.FileType("rb"),
-        help="(advanced) read bitstream from the specified file")
-    g_flash_bitstream.add_argument(
-        "--remove-bitstream", default=False, action="store_true",
-        help="remove any bitstream present")
-    add_applet_arg(g_flash_bitstream, mode="build")
+        g_flash_bitstream = p_flash.add_mutually_exclusive_group()
+        g_flash_bitstream.add_argument(
+            "--bitstream", metavar="FILENAME", type=argparse.FileType("rb"),
+            help="(advanced) read bitstream from the specified file")
+        g_flash_bitstream.add_argument(
+            "--remove-bitstream", default=False, action="store_true",
+            help="remove any bitstream present")
+        add_applet_arg(g_flash_bitstream, mode="build")
+    p_flash.add_build_func(p_flash_build)
 
     p_build = subparsers.add_parser(
         "build", formatter_class=TextHelpFormatter,
         help="(advanced) build applet logic and save it as a file")
-    add_build_args(p_build)
+    def p_build_build():
+        add_build_args(p_build)
 
-    p_build.add_argument(
-        "--rev", metavar="REVISION", type=revision, required=True,
-        help="board revision")
-    p_build.add_argument(
-        "--trace", default=False, action="store_true",
-        help="include applet analyzer")
-    p_build.add_argument(
-        "-t", "--type", metavar="TYPE", type=str,
-        choices=["zip", "archive", "il", "rtlil", "bin", "bitstream"], default="bitstream",
-        help="artifact to build (one of: archive rtlil bitstream, default: %(default)s)")
-    p_build.add_argument(
-        "-f", "--filename", metavar="FILENAME", type=str,
-        help="file to save artifact to (default: <applet-name>.{zip,il,bin})")
-    add_applet_arg(p_build, mode="build", required=True)
+        p_build.add_argument(
+            "--rev", metavar="REVISION", type=revision, required=True,
+            help="board revision")
+        p_build.add_argument(
+            "--trace", default=False, action="store_true",
+            help="include applet analyzer")
+        p_build.add_argument(
+            "-t", "--type", metavar="TYPE", type=str,
+            choices=["zip", "archive", "il", "rtlil", "bin", "bitstream"], default="bitstream",
+            help="artifact to build (one of: archive rtlil bitstream, default: %(default)s)")
+        p_build.add_argument(
+            "-f", "--filename", metavar="FILENAME", type=str,
+            help="file to save artifact to (default: <applet-name>.{zip,il,bin})")
+        add_applet_arg(p_build, mode="build", required=True)
+    p_build.add_build_func(p_build_build)
 
     p_test = subparsers.add_parser(
         "test", formatter_class=TextHelpFormatter,
         help="(advanced) test applet logic without target hardware")
-    add_applet_arg(p_test, mode="test", required=True)
+    p_test.add_build_func(lambda: add_applet_arg(p_test, mode="test", required=True))
 
     def factory_serial(arg):
         if re.match(r"^\d{8}T\d{6}Z$", arg):
@@ -384,25 +436,27 @@ def get_argparser():
     p_factory = subparsers.add_parser(
         "factory", formatter_class=TextHelpFormatter,
         help="(advanced) initial device programming")
-    p_factory.add_argument(
-        "--reinitialize", default=False, action="store_true",
-        help="(DANGEROUS) find an already programmed device and reinitialize it")
-    p_factory.add_argument(
-        "--rev", metavar="REVISION", dest="factory_rev", type=revision, required=True,
-        help="board revision")
-    p_factory.add_argument(
-        "--serial", metavar="SERIAL", dest="factory_serial", type=factory_serial,
-        default=datetime.now().strftime("%Y%m%dT%H%M%SZ"),
-        help="serial number in ISO 8601 format (if not specified: %(default)s)")
-    p_factory.add_argument(
-        "--manufacturer", metavar="MFG", dest="factory_manufacturer", type=factory_manufacturer,
-        default="", # the default is implemented in the firmware
-        help="manufacturer string (if not specified: whitequark research)")
-    p_factory.add_argument(
-        "--using-modified-design-files", dest="factory_modified_design", choices=("yes", "no"),
-        required=True, # must be specified explicitly
-        help="whether the design files used to manufacture the PCBA were modified from the ones "
-             "published in the https://github.com/GlasgowEmbedded/glasgow/ repository")
+    def p_factory_build():
+        p_factory.add_argument(
+            "--reinitialize", default=False, action="store_true",
+            help="(DANGEROUS) find an already programmed device and reinitialize it")
+        p_factory.add_argument(
+            "--rev", metavar="REVISION", dest="factory_rev", type=revision, required=True,
+            help="board revision")
+        p_factory.add_argument(
+            "--serial", metavar="SERIAL", dest="factory_serial", type=factory_serial,
+            default=datetime.now().strftime("%Y%m%dT%H%M%SZ"),
+            help="serial number in ISO 8601 format (if not specified: %(default)s)")
+        p_factory.add_argument(
+            "--manufacturer", metavar="MFG", dest="factory_manufacturer", type=factory_manufacturer,
+            default="", # the default is implemented in the firmware
+            help="manufacturer string (if not specified: whitequark research)")
+        p_factory.add_argument(
+            "--using-modified-design-files", dest="factory_modified_design", choices=("yes", "no"),
+            required=True, # must be specified explicitly
+            help="whether the design files used to manufacture the PCBA were modified from the ones "
+                 "published in the https://github.com/GlasgowEmbedded/glasgow/ repository")
+    p_factory.add_build_func(p_factory_build)
 
     p_list = subparsers.add_parser(
         "list", formatter_class=TextHelpFormatter,
