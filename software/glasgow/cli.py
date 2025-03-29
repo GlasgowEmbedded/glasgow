@@ -357,11 +357,12 @@ def get_argparser():
         help="include applet analyzer")
     p_build.add_argument(
         "-t", "--type", metavar="TYPE", type=str,
-        choices=["zip", "archive", "il", "rtlil", "bin", "bitstream"], default="bitstream",
+        choices=["zip", "archive", "uir", "unnamed", "il", "rtlil", "bin", "bitstream"],
+        default="bitstream",
         help="artifact to build (one of: archive rtlil bitstream, default: %(default)s)")
     p_build.add_argument(
         "-f", "--filename", metavar="FILENAME", type=str,
-        help="file to save artifact to (default: <applet-name>.{zip,il,bin})")
+        help="file to save artifact to (default: <applet-name>.{zip,uir,il,bin})")
     add_applet_arg(p_build, mode="build", required=True)
 
     p_test = subparsers.add_parser(
@@ -843,10 +844,14 @@ async def main():
         if args.action == "build":
             target, applet = _applet(args.rev, args)
             plan = target.build_plan()
+            if args.type in ("uir", "unnamed"):
+                logger.info("generating Unnamed IR for applet %r", args.applet)
+                with open(args.filename or args.applet + ".uir", "w") as f:
+                    f.write(plan.uir)
             if args.type in ("il", "rtlil"):
                 logger.info("generating RTLIL for applet %r", args.applet)
                 with open(args.filename or args.applet + ".il", "w") as f:
-                    f.write(plan.rtlil)
+                    f.write(plan.il)
             if args.type in ("zip", "archive"):
                 logger.info("generating archive for applet %r", args.applet)
                 plan.archive(args.filename or args.applet + ".zip")

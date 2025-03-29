@@ -80,6 +80,8 @@ class WasmTool(Tool):
 
     @property
     def python_package(self):
+        if self.name == "prjunnamed":
+            return self.PREFIX + self.name
         if self.name == "yosys" or self.name.startswith("nextpnr-"):
             return self.PREFIX + self.name
         if self.name == "icepack":
@@ -144,7 +146,13 @@ class SystemTool(Tool):
     @property
     def version(self):
         if self.available:
-            if self.name == "yosys":
+            if self.name == "prjunnamed":
+                # prjunnamed git-2e17da8116b4215310ee472677da32f6465a620d
+                raw_version = self.get_output([self.command, "--version"])
+                if matches := re.match(r"prjunnamed (.+)$", raw_version):
+                    return (*matches[1].split("-"),)
+
+            elif self.name == "yosys":
                 # Yosys 0.26+50 (git sha1 ef8ed21a2, ccache clang 11.0.1-2 -O0 -fPIC)
                 raw_version = self.get_output([self.command, "--version"])
                 if matches := re.match(r"^Yosys ([^\s]+) \(git sha1 ([0-9a-f]+)", raw_version):
