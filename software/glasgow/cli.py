@@ -118,6 +118,37 @@ def create_argparser():
 
 
 def get_argparser():
+    class LazyParser(argparse.ArgumentParser):
+        """This is a lazy ArgumentParser that runs any added build_func(s) just before arguments
+        are parsed"""
+        def __init__(self, *args, **kwargs):
+            self.build_funcs = []
+            super().__init__(*args, **kwargs)
+
+        def add_build_func(self, build_func):
+            self.build_funcs.append(build_func)
+
+        def build(self):
+            for build_func in self.build_funcs:
+                build_func()
+            self.build_funcs.clear()
+
+        def parse_args(self, args=None, namespace=None):
+            self.build()
+            return super().parse_args(args, namespace)
+
+        def parse_known_args(self, args=None, namespace=None):
+            self.build()
+            return super().parse_known_args(args, namespace)
+
+        def parse_intermixed_args(self, args=None, namespace=None):
+            self.build()
+            return super().parse_intermixed_args(args, namespace)
+
+        def parse_known_intermixed_args(self, args=None, namespace=None):
+            self.build()
+            return super().parse_known_intermixed_args(args, namespace)
+
     def add_subparsers(parser, **kwargs):
         if isinstance(parser, argparse._MutuallyExclusiveGroup):
             container = parser._container
@@ -127,16 +158,16 @@ def get_argparser():
                 kwargs['prog'] = formatter.format_help().strip()
 
             parsers_class = parser._pop_action_class(kwargs, 'parsers')
-            subparsers = argparse._SubParsersAction(option_strings=[],
-                                                    parser_class=type(container),
-                                                    **kwargs)
+            kwargs["parser_class"] = type(container)
+            subparsers = argparse._SubParsersAction(option_strings=[], **kwargs)
             parser._add_action(subparsers)
         else:
             subparsers = parser.add_subparsers(**kwargs)
         return subparsers
 
     def add_applet_arg(parser, mode, required=False):
-        subparsers = add_subparsers(parser, dest="applet", metavar="APPLET", required=required)
+        subparsers = add_subparsers(
+            parser, dest="applet", metavar="APPLET", required=required, parser_class=LazyParser)
 
         for handle, metadata in GlasgowAppletMetadata.all().items():
             if not metadata.loadable:
@@ -177,39 +208,44 @@ def get_argparser():
                 handle, help=help, description=description,
                 formatter_class=TextHelpFormatter)
 
-            if mode == "test":
-                p_applet.add_argument(
-                    "tests", metavar="TEST", nargs="*",
-                    help="test cases to run")
+            def p_applet_build_factory(p_applet, handle, applet_cls, mode):
+                # factory function for proper closure
+                def p_applet_build():
+                    if mode == "test":
+                        p_applet.add_argument(
+                            "tests", metavar="TEST", nargs="*",
+                            help="test cases to run")
 
-            if mode in ("build", "interact", "repl", "script"):
-                access_args = DirectArguments(applet_name=handle,
-                                              default_port="AB",
-                                              pin_count=16)
-                if mode in ("interact", "repl", "script"):
-                    g_applet_build = p_applet.add_argument_group("build arguments")
-                    applet_cls.add_build_arguments(g_applet_build, access_args)
-                    g_applet_run = p_applet.add_argument_group("run arguments")
-                    applet_cls.add_run_arguments(g_applet_run, access_args)
-                    if mode == "interact":
-                        # FIXME: this makes it impossible to add subparsers in applets
-                        # g_applet_interact = p_applet.add_argument_group("interact arguments")
-                        # applet.add_interact_arguments(g_applet_interact)
-                        applet_cls.add_interact_arguments(p_applet)
-                    if mode == "repl":
-                        # FIXME: same as above
-                        applet_cls.add_repl_arguments(p_applet)
-                if mode == "build":
-                    applet_cls.add_build_arguments(p_applet, access_args)
+                    if mode in ("build", "interact", "repl", "script"):
+                        access_args = DirectArguments(applet_name=handle,
+                                                    default_port="AB",
+                                                    pin_count=16)
+                        if mode in ("interact", "repl", "script"):
+                            g_applet_build = p_applet.add_argument_group("build arguments")
+                            applet_cls.add_build_arguments(g_applet_build, access_args)
+                            g_applet_run = p_applet.add_argument_group("run arguments")
+                            applet_cls.add_run_arguments(g_applet_run, access_args)
+                            if mode == "interact":
+                                # FIXME: this makes it impossible to add subparsers in applets
+                                # g_applet_interact = p_applet.add_argument_group("interact arguments")
+                                # applet.add_interact_arguments(g_applet_interact)
+                                applet_cls.add_interact_arguments(p_applet)
+                            if mode == "repl":
+                                # FIXME: same as above
+                                applet_cls.add_repl_arguments(p_applet)
+                        if mode == "build":
+                            applet_cls.add_build_arguments(p_applet, access_args)
 
-            if mode == "tool":
-                applet_cls.tool_cls.add_arguments(p_applet)
+                    if mode == "tool":
+                        applet_cls.tool_cls.add_arguments(p_applet)
 
-            if mode in ("repl", "script"):
-                # this will absorb all arguments from the '--' onwards (inclusive), make sure it's
-                # always last... the '--' item that ends up at the front is removed before the list
-                # is passed to the repo / script environment
-                p_applet.add_argument('script_args', nargs=argparse.REMAINDER)
+                    if mode in ("repl", "script"):
+                        # this will absorb all arguments from the '--' onwards (inclusive), make sure it's
+                        # always last... the '--' item that ends up at the front is removed before the list
+                        # is passed to the repo / script environment
+                        p_applet.add_argument('script_args', nargs=argparse.REMAINDER)
+                return p_applet_build
+            p_applet.add_build_func(p_applet_build_factory(p_applet, handle, applet_cls, mode))
 
     parser = create_argparser()
 
@@ -231,7 +267,7 @@ def get_argparser():
         "--serial", metavar="SERIAL", type=serial,
         help="use device with serial number SERIAL")
 
-    subparsers = parser.add_subparsers(dest="action", metavar="COMMAND")
+    subparsers = parser.add_subparsers(dest="action", metavar="COMMAND", parser_class=LazyParser)
     subparsers.required = True
 
     def add_ports_arg(parser):
@@ -296,13 +332,13 @@ def get_argparser():
         "run", formatter_class=TextHelpFormatter,
         help="run an applet and interact through its command-line interface")
     add_run_args(p_run)
-    add_applet_arg(p_run, mode="interact", required=True)
+    p_run.add_build_func(lambda: add_applet_arg(p_run, mode="interact", required=True))
 
     p_repl = subparsers.add_parser(
         "repl", formatter_class=TextHelpFormatter,
         help="run an applet and open a REPL to use its programming interface")
     add_run_args(p_repl)
-    add_applet_arg(p_repl, mode="repl", required=True)
+    p_repl.add_build_func(lambda: add_applet_arg(p_repl, mode="repl", required=True))
 
     p_script = subparsers.add_parser(
         "script", formatter_class=TextHelpFormatter,
@@ -315,12 +351,12 @@ def get_argparser():
         "-c", metavar="COMMAND", dest="script_cmd", type=str,
         help="run Python statement COMMAND in the applet context")
     add_run_args(p_script)
-    add_applet_arg(p_script, mode="script", required=True)
+    p_script.add_build_func(lambda: add_applet_arg(p_script, mode="script", required=True))
 
     p_tool = subparsers.add_parser(
         "tool", formatter_class=TextHelpFormatter,
         help="run an offline tool provided with an applet")
-    add_applet_arg(p_tool, mode="tool", required=True)
+    p_tool.add_build_func(lambda: add_applet_arg(p_tool, mode="tool", required=True))
 
     p_flash = subparsers.add_parser(
         "flash", formatter_class=TextHelpFormatter,
@@ -342,7 +378,7 @@ def get_argparser():
     g_flash_bitstream.add_argument(
         "--remove-bitstream", default=False, action="store_true",
         help="remove any bitstream present")
-    add_applet_arg(g_flash_bitstream, mode="build")
+    p_flash.add_build_func(lambda: add_applet_arg(g_flash_bitstream, mode="build"))
 
     p_build = subparsers.add_parser(
         "build", formatter_class=TextHelpFormatter,
@@ -362,12 +398,12 @@ def get_argparser():
     p_build.add_argument(
         "-f", "--filename", metavar="FILENAME", type=str,
         help="file to save artifact to (default: <applet-name>.{zip,il,bin})")
-    add_applet_arg(p_build, mode="build", required=True)
+    p_build.add_build_func(lambda: add_applet_arg(p_build, mode="build", required=True))
 
     p_test = subparsers.add_parser(
         "test", formatter_class=TextHelpFormatter,
         help="(advanced) test applet logic without target hardware")
-    add_applet_arg(p_test, mode="test", required=True)
+    p_test.add_build_func(lambda: add_applet_arg(p_test, mode="test", required=True))
 
     def factory_serial(arg):
         if re.match(r"^\d{8}T\d{6}Z$", arg):
