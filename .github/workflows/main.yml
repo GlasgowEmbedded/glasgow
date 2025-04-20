@@ -94,7 +94,7 @@ jobs:
           ./deploy-firmware.sh
       - name: Check if the checked-in firmware is modified
         id: is_modified
-        uses: tj-actions/changed-files@v44
+        uses: tj-actions/changed-files@v46
         with:
           files: |
             software/glasgow/device/firmware.ihex
