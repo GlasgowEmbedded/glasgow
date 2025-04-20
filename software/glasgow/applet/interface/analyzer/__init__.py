@@ -1,5 +1,6 @@
 import logging
 import argparse
+import re
 from vcd import VCDWriter
 from amaranth import *
 from amaranth.lib import io
@@ -10,9 +11,11 @@ from ... import *
 
 
 class AnalyzerSubtarget(Elaboratable):
-    def __init__(self, ports, in_fifo):
+    def __init__(self, ports, in_fifo, trigger_pattern=None):
         self.ports   = ports
         self.in_fifo = in_fifo
+
+        self.trigger_pattern = trigger_pattern
 
         self.analyzer = EventAnalyzer(in_fifo)
         self.event_source = self.analyzer.add_event_source("pin", "change", len(self.ports.i))
@@ -26,11 +29,25 @@ class AnalyzerSubtarget(Elaboratable):
         pins_r = Signal.like(i_buffer.i)
         m.submodules += FFSynchronizer(i_buffer.i, pins_i)
 
-        m.d.sync += pins_r.eq(pins_i)
-        m.d.comb += [
-            self.event_source.data.eq(pins_i),
-            self.event_source.trigger.eq(pins_i != pins_r)
-        ]
+        trigger = C(1)
+        triggered = Signal()
+        if self.trigger_pattern:
+            assert len(self.trigger_pattern) == len(self.ports.i)
+            for index, state in enumerate(self.trigger_pattern):
+                if state == "1":
+                    trigger &= pins_i[index]
+                elif state == "0":
+                    trigger &= ~pins_i[index]
+
+        m.d.sync += triggered.eq(trigger | triggered)
+
+        with m.If(triggered):
+            m.d.sync += triggered.eq(1)
+            m.d.sync += pins_r.eq(pins_i)
+            m.d.comb += [
+                self.event_source.data.eq(pins_i),
+                self.event_source.trigger.eq(pins_i != pins_r)
+            ]
 
         return m
 
@@ -62,11 +79,23 @@ class AnalyzerApplet(GlasgowApplet):
             "--pin-names", metavar="NAMES", default=None,
             help="optional comma separated list of pin names")
 
+        def bit_pattern(arg):
+            if re.match(r"^[01x]*$", arg):
+                return arg
+            else:
+                raise argparse.ArgumentTypeError(f"{arg} is not a valid bit pattern")
+
+        parser.add_argument(
+            "--trigger", metavar="PATTERN", type=bit_pattern, default=None,
+            help="optional one-shot trigger pattern. e.g. 1xx0"
+        )
+
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(AnalyzerSubtarget(
             ports=iface.get_port_group(i = args.pin_set_i),
             in_fifo=iface.get_in_fifo(),
+            trigger_pattern=args.trigger,
         ))
 
         self._sample_freq = target.sys_clk_freq
