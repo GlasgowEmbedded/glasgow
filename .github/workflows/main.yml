@@ -10,10 +10,8 @@ jobs:
     strategy:
       matrix:
         os-version:
-        - ubuntu-20.04
+        - ubuntu-24.04
         python-version:
-        - '3.9.5' # shipped with 20.04 LTS
-        - '3.9.x' # latest in the 3.9.x branch
         - '3.10.x'
         - '3.11.x'
         - '3.12.x'
@@ -25,11 +23,11 @@ jobs:
         allow-failure:
         - false
         include:
-        - os-version: ubuntu-20.04
+        - os-version: ubuntu-24.04
           python-version: '3.13-dev'
           dep-versions: minimal
           allow-failure: true
-        - os-version: ubuntu-20.04
+        - os-version: ubuntu-24.04
           python-version: '3.13-dev'
           dep-versions: latest
           allow-failure: true
