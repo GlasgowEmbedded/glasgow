@@ -58,6 +58,9 @@ class AnalyzerApplet(GlasgowApplet):
         super().add_build_arguments(parser, access)
 
         access.add_pin_set_argument(parser, "i", width=range(1, 17), default=1)
+        parser.add_argument(
+            "--pin-names", metavar="NAMES", default=None,
+            help="optional comma separated list of pin names")
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
@@ -101,8 +104,16 @@ class AnalyzerApplet(GlasgowApplet):
     async def interact(self, device, args, iface):
         vcd_writer = VCDWriter(args.file, timescale="1 ns", check_values=False)
         signals = []
+
+        names = []
+        if args.pin_names:
+            names = args.pin_names.split(",")
+            assert len(names) == self._event_sources[0].width
+        else:
+            names = [ f"pin[{index}]" for index in range(self._event_sources[0].width) ]
+
         for index in range(self._event_sources[0].width):
-            signals.append(vcd_writer.register_var(scope="glasgow", name=f"pin[{index}]",
+            signals.append(vcd_writer.register_var(scope="glasgow", name=names[index],
                 var_type="wire", size=1, init=0))
 
         try:
