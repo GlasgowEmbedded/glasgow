@@ -157,6 +157,7 @@ class AnalyzerApplet(GlasgowApplet):
 
         try:
             overrun = False
+            timestamp = 0
             trigger_offset = 0
             while not overrun:
                 for cycle, events in await iface.read():
