@@ -171,7 +171,7 @@ class AnalyzerApplet(GlasgowApplet):
                         break
 
                     if "triggered" in events:
-                        offset = timestamp
+                        trigger_offset = timestamp
                         self.logger.info(f"Triggered after {int(timestamp/1e3)}us")
 
                     if "pin" in events: # could be also "throttle"
