@@ -145,6 +145,7 @@ class QSPIControllerInterface:
 
     @contextlib.asynccontextmanager
     async def select(self, index=0):
+        assert self._active is None, "chip already selected"
         assert index in range(8)
         try:
             self._log("select chip=%d", index)
