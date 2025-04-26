@@ -1,14 +1,24 @@
 import logging
 from amaranth import *
-from amaranth.lib import data, io
+from amaranth.lib import enum, data, io
 
 from ....gateware.pll import *
 from ... import *
 
 
+class VGATestPattern(enum.Enum):
+    Quilt = "quilt"
+    Rect  = "rect"
+    Grid  = "grid"
+    Flag  = "flag"
+
+    def __str__(self):
+        return self.value
+
+
 class VGAOutputSubtarget(Elaboratable):
     def __init__(self, ports, h_front, h_sync, h_back, h_active, v_front, v_sync, v_back, v_active,
-                 pix_clk_freq):
+                 pix_clk_freq, test_pattern=VGATestPattern.Quilt):
         self.ports    = ports
 
         self.h_front  = h_front
@@ -21,6 +31,8 @@ class VGAOutputSubtarget(Elaboratable):
         self.v_active = v_active
 
         self.pix_clk_freq = pix_clk_freq
+
+        self.test_pattern = test_pattern
 
     def elaborate(self, platform):
         m = Module()
@@ -36,7 +48,6 @@ class VGAOutputSubtarget(Elaboratable):
 
         h_ctr = Signal(range(self.h_active + self.h_front + self.h_sync + self.h_back))
         v_ctr = Signal(range(self.v_active + self.v_front + self.v_sync + self.v_back))
-        pix = Signal(data.StructLayout({"r": 1, "g": 1, "b": 1}))
 
         h_en  = Signal()
         v_en  = Signal()
@@ -63,22 +74,35 @@ class VGAOutputSubtarget(Elaboratable):
                 m.d.pix += v_en.eq(1)
                 m.d.pix += v_ctr.eq(0)
 
-        with m.If(v_en & h_en):
-            m.d.pix += [
-                r_buf.o.eq(pix.r),
-                g_buf.o.eq(pix.g),
-                b_buf.o.eq(pix.b),
-            ]
-        with m.Else():
-            m.d.pix += [
-                r_buf.o.eq(0),
-                g_buf.o.eq(0),
-                b_buf.o.eq(0),
-            ]
+        pix = Signal(data.StructLayout({"r": 1, "g": 1, "b": 1}))
+        if self.test_pattern == VGATestPattern.Quilt:
+            m.d.comb += pix.eq(h_ctr[5:] + v_ctr[5:])
+        elif self.test_pattern == VGATestPattern.Rect:
+            with m.If(
+                (h_ctr == 0) |
+                (v_ctr == 0) |
+                (h_ctr == self.h_active - 1) |
+                (v_ctr == self.v_active - 1)
+            ):
+                m.d.comb += pix.eq(0b111)
+        elif self.test_pattern == VGATestPattern.Grid:
+            with m.If((h_ctr[:5] == 0) | (v_ctr[:5] == 0)):
+                m.d.comb += pix.eq(0b111)
+        elif self.test_pattern == VGATestPattern.Flag:
+            phase = Signal(range(5))
+            with m.If(0):
+                pass
+            for index in range(5):
+                with m.Elif(v_ctr == index * (self.v_active // 5)):
+                    m.d.pix += phase.eq(index)
+            m.d.comb += pix.eq(Array([0b110, 0b101, 0b111, 0b101, 0b110])[phase])
+        else:
+            assert False
 
-        m.d.comb += \
-            Cat(pix.r, pix.g, pix.b) \
-                .eq(h_ctr[5:] + v_ctr[5:])
+        with m.If(v_en & h_en):
+            m.d.pix += Cat(r_buf.o, g_buf.o, b_buf.o).eq(Cat(pix.r, pix.g, pix.b))
+        with m.Else():
+            m.d.pix += Cat(r_buf.o, g_buf.o, b_buf.o).eq(0)
 
         return m
 
@@ -152,6 +176,11 @@ class VGAOutputApplet(GlasgowApplet):
             "-va", "--v-active", metavar="N", type=int, default=480,
             help="set vertical resolution to N line clocks (default: %(default)s)")
 
+        parser.add_argument(
+            "--pattern", metavar="PATTERN", type=VGATestPattern,
+            choices=list(VGATestPattern), default=VGATestPattern.Quilt,
+            help="use the specific test pattern (choices: %(choices)s, default: %(default)s)")
+
     def build(self, target, args, test_pattern=True):
         h_dots  = args.h_active + args.h_front + args.h_sync + args.h_back
         v_lines = args.v_active + args.v_front + args.v_sync + args.v_back
@@ -186,6 +215,7 @@ class VGAOutputApplet(GlasgowApplet):
             v_back=args.v_back,
             v_active=args.v_active,
             pix_clk_freq=pix_clk_freq,
+            test_pattern=args.pattern,
         ))
         return subtarget
 
