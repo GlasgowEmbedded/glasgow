@@ -128,6 +128,7 @@ class QSPIControllerInterface:
         self.lower   = interface
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+        self._active = None
 
     def _log(self, message, *args):
         self._logger.log(self._level, "QSPI: " + message, *args)
@@ -149,6 +150,7 @@ class QSPIControllerInterface:
             self._log("select chip=%d", index)
             await self.lower.write(struct.pack("<B",
                 (_QSPICommand.Select.value << 4) | (1 + index)))
+            self._active = index
             yield
         finally:
             self._log("deselect")
@@ -156,8 +158,10 @@ class QSPIControllerInterface:
                 (_QSPICommand.Select.value << 4) | 0,
                 (_QSPICommand.Transfer.value << 4) | QSPIMode.Dummy.value, 1))
             await self.lower.flush()
+            self._active = None
 
     async def exchange(self, octets):
+        assert self._active is not None, "no chip selected"
         self._log("xchg-o=<%s>", dump_hex(octets))
         for chunk in self._chunked(octets):
             await self.lower.write(struct.pack("<BH",
@@ -168,6 +172,7 @@ class QSPIControllerInterface:
         return octets
 
     async def write(self, octets, *, x=1):
+        assert self._active is not None, "no chip selected"
         mode = {1: QSPIMode.PutX1, 2: QSPIMode.PutX2, 4: QSPIMode.PutX4}[x]
         self._log("write=<%s>", dump_hex(octets))
         for chunk in self._chunked(octets):
@@ -176,6 +181,7 @@ class QSPIControllerInterface:
             await self.lower.write(chunk)
 
     async def read(self, count, *, x=1):
+        assert self._active is not None, "no chip selected"
         mode = {1: QSPIMode.GetX1, 2: QSPIMode.GetX2, 4: QSPIMode.GetX4}[x]
         for chunk in self._chunked(range(count)):
             await self.lower.write(struct.pack("<BH",
@@ -185,6 +191,7 @@ class QSPIControllerInterface:
         return octets
 
     async def dummy(self, count):
+        # We intentionally allow sending dummy cycles with no chip selected.
         self._log("dummy=%d", count)
         for chunk in self._chunked(range(count)):
             await self.lower.write(struct.pack("<BH",
