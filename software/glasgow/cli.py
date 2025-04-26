@@ -14,6 +14,7 @@ import importlib.metadata
 from vcd import VCDWriter
 from datetime import datetime
 
+from amaranth import UnusedElaboratable
 from fx2 import FX2Config, FX2Device, FX2DeviceError, VID_CYPRESS, PID_FX2
 from fx2.format import input_data, diff_data
 
@@ -968,6 +969,7 @@ async def main():
 
     # Applet-related errors
     except GatewareBuildError as e:
+        UnusedElaboratable._MustUse__silence = True
         applet.logger.error(e)
         return 2
 
