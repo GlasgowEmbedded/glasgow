@@ -37,16 +37,19 @@ class VGAOutput(Elaboratable):
 
 
 class VGAOutputSubtarget(Elaboratable):
-    def __init__(self, ports, h_front, h_sync, h_back, h_active, v_front, v_sync, v_back, v_active, pix_clk_freq):
-        self.ports = ports
-        self.h_front = h_front
-        self.h_sync = h_sync
-        self.h_back = h_back
+    def __init__(self, ports, h_front, h_sync, h_back, h_active, v_front, v_sync, v_back, v_active,
+                 pix_clk_freq):
+        self.ports    = ports
+
+        self.h_front  = h_front
+        self.h_sync   = h_sync
+        self.h_back   = h_back
         self.h_active = h_active
-        self.v_front = v_front
-        self.v_sync = v_sync
-        self.v_back = v_back
-        self.v_active, = v_active,
+        self.v_front  = v_front
+        self.v_sync   = v_sync
+        self.v_back   = v_back
+        self.v_active = v_active
+
         self.pix_clk_freq = pix_clk_freq
 
     def elaborate(self, platform):
@@ -57,49 +60,34 @@ class VGAOutputSubtarget(Elaboratable):
         m.domains.pix = cd_pix = ClockDomain()
         m.submodules += PLL(f_in=platform.default_clk_frequency, f_out=self.pix_clk_freq, odomain="pix")
 
-        h_total = self.h_front + self.h_sync + self.h_back + self.h_active
-        v_total = self.v_front + self.v_sync + self.v_back + self.v_active
-
-        h_ctr = Signal(range(h_total))
-        v_ctr = Signal(range(v_total))
+        h_ctr = Signal(range(self.h_active + self.h_front + self.h_sync + self.h_back))
+        v_ctr = Signal(range(self.v_active + self.v_front + self.v_sync + self.v_back))
         pix = Signal(data.StructLayout({"r": 1, "g": 1, "b": 1}))
 
         h_en  = Signal()
         v_en  = Signal()
-        h_stb = Signal()
-        v_stb = Signal()
 
-        m.d.comb += [
-            h_stb.eq(h_ctr == self.h_active),
-            v_stb.eq(h_stb & (v_ctr == self.v_active)),
-        ]
-
-        with m.If(h_ctr == h_total - 1):
-            with m.If(v_ctr == v_total - 1):
-                m.d.pix += v_ctr.eq(0)
-            with m.Else():
-                m.d.pix += v_ctr.eq(v_ctr + 1)
-            m.d.pix += h_ctr.eq(0)
-        with m.Else():
-            m.d.pix += h_ctr.eq(h_ctr + 1)
-
-        with m.If(h_ctr == 0):
-            m.d.pix += h_en.eq(1)
-        with m.Elif(h_ctr == self.h_active):
+        m.d.pix += h_ctr.eq(h_ctr + 1)
+        with m.If(h_ctr == (self.h_active) - 1):
             m.d.pix += h_en.eq(0)
-        with m.Elif(h_ctr == self.h_active + self.h_front):
+        with m.Elif(h_ctr == (self.h_active + self.h_front) - 1):
             m.d.pix += output.hs.eq(1)
-        with m.Elif(h_ctr == self.h_active + self.h_front + self.h_sync):
+        with m.Elif(h_ctr == (self.h_active + self.h_front + self.h_sync) - 1):
             m.d.pix += output.hs.eq(0)
+        with m.Elif(h_ctr == (self.h_active + self.h_front + self.h_sync + self.h_back) - 1):
+            m.d.pix += h_en.eq(1)
+            m.d.pix += h_ctr.eq(0)
 
-        with m.If(v_ctr == 0):
-            m.d.pix += v_en.eq(1)
-        with m.Elif(v_ctr == self.v_active):
-            m.d.pix += v_en.eq(0)
-        with m.Elif(v_ctr == self.v_active + self.v_front):
-            m.d.pix += output.vs.eq(1)
-        with m.Elif(v_ctr == self.v_active + self.v_front + self.v_sync):
-            m.d.pix += output.vs.eq(0)
+            m.d.pix += v_ctr.eq(v_ctr + 1)
+            with m.If(v_ctr == (self.v_active - 1)):
+                m.d.pix += v_en.eq(0)
+            with m.Elif(v_ctr == (self.v_active + self.v_front - 1)):
+                m.d.pix += output.vs.eq(1)
+            with m.Elif(v_ctr == (self.v_active + self.v_front + self.v_sync - 1)):
+                m.d.pix += output.vs.eq(0)
+            with m.Elif(v_ctr == (self.v_active + self.v_front + self.v_sync + self.v_back - 1)):
+                m.d.pix += v_en.eq(1)
+                m.d.pix += v_ctr.eq(0)
 
         with m.If(v_en & h_en):
             m.d.pix += [
