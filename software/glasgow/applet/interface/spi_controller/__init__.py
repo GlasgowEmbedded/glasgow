@@ -222,6 +222,7 @@ class SPIControllerInterface:
         self.lower   = interface
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+        self._active = None
 
     def _log(self, message, *args):
         self._logger.log(self._level, "SPI: " + message, *args)
@@ -243,14 +244,17 @@ class SPIControllerInterface:
             self._log("select chip=%d", index)
             await self.lower.write(struct.pack("<B",
                 CMD_SELECT|(1 + index)))
+            self._active = index
             yield
         finally:
             self._log("deselect")
             await self.lower.write(struct.pack("<B",
                 CMD_SELECT|0))
             await self.lower.flush()
+            self._active = None
 
     async def exchange(self, octets):
+        assert self._active is not None, "no chip selected"
         self._log("xchg-o=<%s>", dump_hex(octets))
         for chunk in self._chunked(octets):
             await self.lower.write(struct.pack("<BH",
@@ -261,6 +265,7 @@ class SPIControllerInterface:
         return octets
 
     async def write(self, octets, *, x=1):
+        assert self._active is not None, "no chip selected"
         assert x == 1, "only x1 mode is supported"
         self._log("write=<%s>", dump_hex(octets))
         for chunk in self._chunked(octets):
@@ -269,6 +274,7 @@ class SPIControllerInterface:
             await self.lower.write(chunk)
 
     async def read(self, count, *, x=1):
+        assert self._active is not None, "no chip selected"
         assert x == 1, "only x1 mode is supported"
         for chunk in self._chunked(range(count)):
             await self.lower.write(struct.pack("<BH",
@@ -278,6 +284,7 @@ class SPIControllerInterface:
         return octets
 
     async def dummy(self, count):
+        # We intentionally allow sending dummy cycles with no chip selected.
         self._log("dummy=%d", count)
         for chunk in self._chunked(range(count)):
             assert count % 8 == 0, "only multiples of 8 dummy cycles are supported"
