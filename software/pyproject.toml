@@ -45,7 +45,7 @@ dependencies = [
   # `libusb1` is used to communicate with the device, and its API mirrors the stable API/ABI of
   # of the native `libusb1` library. It increases major version when dropping support for older
   # Python versions.
-  "libusb1>=3.1.0",
+  "libusb1>=3.3.0",
   # `pyvcd` is used in the applet analyzer to dump waveform files. It is also a dependency of
   # Amaranth, and the version range here must be compatible with Amaranth's.
   "pyvcd>=0.2,<0.5",
