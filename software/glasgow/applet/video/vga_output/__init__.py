@@ -6,36 +6,6 @@ from ....gateware.pll import *
 from ... import *
 
 
-class VGAOutput(Elaboratable):
-    def __init__(self, ports):
-        self.ports = ports
-
-        self.hs = Signal()
-        self.vs = Signal()
-        self.r  = Signal()
-        self.g  = Signal()
-        self.b  = Signal()
-
-    def elaborate(self, platform):
-        m = Module()
-
-        m.submodules.hs_buffer = hs_buffer = io.Buffer("o", self.ports.hs)
-        m.submodules.vs_buffer = vs_buffer = io.Buffer("o", self.ports.vs)
-        m.submodules.r_buffer  = r_buffer  = io.Buffer("o", self.ports.r)
-        m.submodules.g_buffer  = g_buffer  = io.Buffer("o", self.ports.g)
-        m.submodules.b_buffer  = b_buffer  = io.Buffer("o", self.ports.b)
-
-        m.d.comb += [
-            hs_buffer.o.eq(self.hs),
-            vs_buffer.o.eq(self.vs),
-            r_buffer.o.eq(self.r),
-            g_buffer.o.eq(self.g),
-            b_buffer.o.eq(self.b)
-        ]
-
-        return m
-
-
 class VGAOutputSubtarget(Elaboratable):
     def __init__(self, ports, h_front, h_sync, h_back, h_active, v_front, v_sync, v_back, v_active,
                  pix_clk_freq):
@@ -55,7 +25,11 @@ class VGAOutputSubtarget(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.output = output = VGAOutput(self.ports)
+        m.submodules.hs = hs_buf = io.FFBuffer("o", self.ports.hs)
+        m.submodules.vs = vs_buf = io.FFBuffer("o", self.ports.vs)
+        m.submodules.r  = r_buf  = io.FFBuffer("o", self.ports.r)
+        m.submodules.g  = g_buf  = io.FFBuffer("o", self.ports.g)
+        m.submodules.b  = b_buf  = io.FFBuffer("o", self.ports.b)
 
         m.domains.pix = cd_pix = ClockDomain()
         m.submodules += PLL(f_in=platform.default_clk_frequency, f_out=self.pix_clk_freq, odomain="pix")
@@ -71,9 +45,9 @@ class VGAOutputSubtarget(Elaboratable):
         with m.If(h_ctr == (self.h_active) - 1):
             m.d.pix += h_en.eq(0)
         with m.Elif(h_ctr == (self.h_active + self.h_front) - 1):
-            m.d.pix += output.hs.eq(1)
+            m.d.pix += hs_buf.o.eq(1)
         with m.Elif(h_ctr == (self.h_active + self.h_front + self.h_sync) - 1):
-            m.d.pix += output.hs.eq(0)
+            m.d.pix += hs_buf.o.eq(0)
         with m.Elif(h_ctr == (self.h_active + self.h_front + self.h_sync + self.h_back) - 1):
             m.d.pix += h_en.eq(1)
             m.d.pix += h_ctr.eq(0)
@@ -82,24 +56,24 @@ class VGAOutputSubtarget(Elaboratable):
             with m.If(v_ctr == (self.v_active - 1)):
                 m.d.pix += v_en.eq(0)
             with m.Elif(v_ctr == (self.v_active + self.v_front - 1)):
-                m.d.pix += output.vs.eq(1)
+                m.d.pix += vs_buf.o.eq(1)
             with m.Elif(v_ctr == (self.v_active + self.v_front + self.v_sync - 1)):
-                m.d.pix += output.vs.eq(0)
+                m.d.pix += vs_buf.o.eq(0)
             with m.Elif(v_ctr == (self.v_active + self.v_front + self.v_sync + self.v_back - 1)):
                 m.d.pix += v_en.eq(1)
                 m.d.pix += v_ctr.eq(0)
 
         with m.If(v_en & h_en):
             m.d.pix += [
-                output.r.eq(pix.r),
-                output.g.eq(pix.g),
-                output.b.eq(pix.b),
+                r_buf.o.eq(pix.r),
+                g_buf.o.eq(pix.g),
+                b_buf.o.eq(pix.b),
             ]
         with m.Else():
             m.d.pix += [
-                output.r.eq(0),
-                output.g.eq(0),
-                output.b.eq(0),
+                r_buf.o.eq(0),
+                g_buf.o.eq(0),
+                b_buf.o.eq(0),
             ]
 
         m.d.comb += \
