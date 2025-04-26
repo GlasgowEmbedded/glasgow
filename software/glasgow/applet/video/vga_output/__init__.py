@@ -128,8 +128,12 @@ class VGAOutputApplet(GlasgowApplet):
     description = """
     Output a test pattern on a VGA output.
 
-    To configure this applet for a certain video mode, it is necessary to use a mode line, such as:
-        * 640x480 60 Hz: -p 25.175 -hf 16 -hs 96 -hb 48 -ha 640 -vf 10 -vs 2 -vb 33 -va 480
+    To configure this applet for a certain video mode, it is possible to use a full mode line,
+    such as:
+        * 640x480 @ 60 Hz: -p 25.175 -hf 16 -hs 96 -hb 48 -ha 640 -vf 10 -vs 2 -vb 33 -va 480
+
+    Either the pixel clock or the refresh rate must be specified; the other parameter will be
+    calculated using the mode line.
 
     The VGA interface uses 75 Ohm termination, and the analog signals are referenced to 0.7 V.
     As such, the signals should be connected as follows if port voltage is set to 3.3 V:
@@ -139,6 +143,8 @@ class VGAOutputApplet(GlasgowApplet):
         * g ---[ 350R ]-- GREEN
         * b ---[ 350R ]-- BLUE
     """
+
+    __default_refresh_rate = 60.0
 
     @classmethod
     def add_build_arguments(cls, parser, access):
@@ -150,9 +156,13 @@ class VGAOutputApplet(GlasgowApplet):
         access.add_pin_argument(parser, "g", default=True)
         access.add_pin_argument(parser, "b", default=True)
 
-        parser.add_argument(
-            "-p", "--pix-clk-freq", metavar="FREQ", type=float, default=25.175,
-            help="set pixel clock to FREQ MHz (default: %(default).3f)")
+        p_refresh = parser.add_mutually_exclusive_group()
+        p_refresh.add_argument(
+            "-p", "--pix-clk-freq", metavar="FREQ", type=float,
+            help="set pixel clock to FREQ MHz")
+        p_refresh.add_argument(
+            "-r", "--refresh-rate", metavar="FREQ", type=float,
+            help=f"set refresh rate to FREQ Hz (default: {cls.__default_refresh_rate:.1f})")
 
         parser.add_argument(
             "-hf", "--h-front", metavar="N", type=int, default=16,
@@ -181,6 +191,21 @@ class VGAOutputApplet(GlasgowApplet):
             help="set vertical resolution to N line clocks (default: %(default)s)")
 
     def build(self, target, args, test_pattern=True):
+        h_dots  = args.h_active + args.h_front + args.h_sync + args.h_back
+        v_lines = args.v_active + args.v_front + args.v_sync + args.v_back
+        dots_per_frame = h_dots * v_lines
+        if args.pix_clk_freq is not None:
+            pix_clk_freq = args.pix_clk_freq * 1e6
+            refresh_rate = pix_clk_freq / dots_per_frame
+        else:
+            refresh_rate = args.refresh_rate
+            if refresh_rate is None:
+                refresh_rate = self.__default_refresh_rate
+            pix_clk_freq = refresh_rate * dots_per_frame
+
+        self.logger.info("%dx%d @ %.1f Hz: pixel clock %.3f MHz (ideal)",
+            args.h_active, args.v_active, refresh_rate, pix_clk_freq / 1e6)
+
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(VGAOutputSubtarget(
             ports=iface.get_port_group(
@@ -198,7 +223,7 @@ class VGAOutputApplet(GlasgowApplet):
             v_sync=args.v_sync,
             v_back=args.v_back,
             v_active=args.v_active,
-            pix_clk_freq=args.pix_clk_freq * 1e6,
+            pix_clk_freq=pix_clk_freq,
         ))
         return subtarget
 
