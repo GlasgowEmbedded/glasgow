@@ -185,8 +185,6 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
 
         m.submodules += self._subtargets
 
-        m.submodules += self._deprecated_buffers
-
         for fifo in self._fifos:
             if self._throttle == "full":
                 m.d.comb += fifo._ctrl_en.eq(~self.analyzer.throttle)

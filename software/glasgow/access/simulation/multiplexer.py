@@ -67,8 +67,6 @@ class SimulationMultiplexerInterface(AccessMultiplexerInterface):
 
         m.submodules += self._subtargets
 
-        m.submodules += self._deprecated_buffers
-
         if self.in_fifo is not None:
             m.submodules.in_fifo = self.in_fifo
         if self.out_fifo is not None:
