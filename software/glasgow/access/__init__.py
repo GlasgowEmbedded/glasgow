@@ -11,10 +11,6 @@ __all__ += ["AccessMultiplexer", "AccessMultiplexerInterface"]
 __all__ += ["AccessDemultiplexer", "AccessDemultiplexerInterface"]
 
 
-class _DeprecatedPads:
-    """Deprecated in favor of :class:`glasgow.gateware.ports.PortGroup`."""
-
-
 class AccessArguments(metaclass=ABCMeta):
     def _arg_error(self, message):
         raise argparse.ArgumentTypeError(f"applet {self._applet_name!r}: " + message)
@@ -51,8 +47,6 @@ class AccessMultiplexerInterface(Elaboratable, metaclass=ABCMeta):
         self.applet   = applet
         self.logger   = applet.logger
         self.analyzer = analyzer
-
-        self._deprecated_buffers = []
 
     @abstractmethod
     def get_out_fifo(self, **kwargs):
@@ -94,29 +88,6 @@ class AccessMultiplexerInterface(Elaboratable, metaclass=ABCMeta):
         return PortGroup(**{
             name: self.get_port(pin_or_pins, name=name) for name, pin_or_pins in kwargs.items()
         })
-
-    def get_deprecated_pad(self, pins, name=None):
-        port = self.get_port(pins, name=name)
-        self._deprecated_buffers.append(buffer := io.Buffer("io", port))
-        if self.analyzer:
-            if name is None:
-                name = ",".join(self.get_pin_name(pins) for pins in pins)
-            self.analyzer.add_pin_event(self.applet, name, buffer)
-        return buffer
-
-    def get_deprecated_pads(self, args, pins=[], pin_sets=[]):
-        pads = _DeprecatedPads()
-        for pin in pins:
-            pin_num = getattr(args, f"pin_{pin}")
-            if pin_num is not None:
-                setattr(pads, f"{pin}_t", self.get_deprecated_pad(pin_num, name=pin))
-        for pin_set in pin_sets:
-            pin_nums = getattr(args, f"pin_set_{pin_set}")
-            if pin_nums is not None:
-                setattr(pads, f"{pin_set}_t", self.get_deprecated_pad(pin_nums, name=pin_set))
-        # Horrifically dirty, but the `uart` applet currently depends on this :(
-        self.pads = pads
-        return pads
 
 
 class AccessDemultiplexer(metaclass=ABCMeta):
