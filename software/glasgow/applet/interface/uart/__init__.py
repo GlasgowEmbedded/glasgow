@@ -3,10 +3,12 @@ import sys
 import logging
 import asyncio
 import argparse
+import typing
 from amaranth import *
 from amaranth.lib import io
 
 from ....support.endpoint import *
+from ....support.logging import *
 from ....gateware.uart import *
 from ... import *
 
@@ -130,6 +132,45 @@ class UARTSubtarget(Elaboratable):
         return m
 
 
+class UARTInterface:
+    def __init__(self, interface, logger):
+        self._lower  = interface
+        self._logger = logger
+        self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+
+    def _log(self, message, *args):
+        self._logger.log(self._level, "UART: " + message, *args)
+
+    async def read(self, length: int, *, flush=True) -> memoryview:
+        """Receives one or more bytes from the UART. If ``flush`` is true, transmits any buffered
+        writes before starting to receive."""
+        assert isinstance(length, int) # `None` is a sentinel for `self._lower.read()`
+        self._log("rx len=%d", length)
+        data = await self._lower.read(length)
+        self._log("rx data=<%s>", data)
+        return data
+
+    async def read_until(self, trailer: bytes | typing.Tuple[bytes, ...]) -> memoryview:
+        """Receives bytes from the UART until ``trailer`` is encountered. The return value includes
+        the trailer."""
+        buffer = bytearray()
+        while not buffer.endswith(trailer):
+            buffer += await self.read(1)
+        return memoryview(buffer)
+
+    async def write(self, data: bytes | bytearray | memoryview):
+        """Buffers bytes to be transmitted. Until :meth:`flush` is called, bytes are not guaranteed
+        to be transmitted (they may or may not be)."""
+        data = memoryview(data)
+        self._log("tx data=<%s>", dump_hex(data))
+        await self._lower.write(data)
+
+    async def flush(self):
+        """Transmits all buffered bytes from the UART."""
+        self._log("tx flush")
+        await self._lower.flush()
+
+
 class UARTApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "communicate via UART"
@@ -146,7 +187,6 @@ class UARTApplet(GlasgowApplet):
     baud rate changes, the algorithm is only consulted when frame or (if enabled) parity errors
     are present in received data.
     """
-
 
     @classmethod
     def add_build_arguments(cls, parser, access):
@@ -187,7 +227,7 @@ class UARTApplet(GlasgowApplet):
         self.__has_parity = (args.parity != "none")
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        subtarget = iface.add_subtarget(UARTSubtarget(
+        iface.add_subtarget(UARTSubtarget(
             ports = iface.get_port_group(
                 rx = args.pin_rx,
                 tx = args.pin_tx
@@ -222,6 +262,7 @@ class UARTApplet(GlasgowApplet):
         # Pull RX idle to reduce the amount of noise received on undriven lines.
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
             pull_high={args.pin_rx})
+        iface = UARTInterface(iface, self.logger)
 
         # Enable auto-baud, if requested.
         if args.auto_baud:
@@ -277,7 +318,7 @@ class UARTApplet(GlasgowApplet):
                 dev_fut = asyncio.get_event_loop().run_in_executor(None,
                     lambda: os.read(in_fileno, 1024))
             if uart_fut is None:
-                uart_fut = asyncio.ensure_future(uart.read())
+                uart_fut = asyncio.ensure_future(uart._lower.read())
 
             await asyncio.wait([uart_fut, dev_fut], return_when=asyncio.FIRST_COMPLETED)
 
