@@ -1,32 +1,35 @@
 import asyncio
 import logging
 from amaranth import *
+from amaranth.lib import io
 
 from ...memory._25x import Memory25xInterface, Memory25xApplet
 from ... import *
 
 
 class ProgramICE40FlashSubtarget(Elaboratable):
-    def __init__(self, lower, reset_t, dut_reset, done_t, dut_done):
-        self.lower = lower
-        self.reset_t = reset_t
+    def __init__(self, lower, reset, dut_reset, done, dut_done):
+        self.lower     = lower
+        self.reset     = reset
         self.dut_reset = dut_reset
-        self.done_t = done_t
-        self.dut_done = dut_done
+        self.done      = done
+        self.dut_done  = dut_done
 
     def elaborate(self, platform):
         m = Module()
 
         m.submodules.lower = self.lower
-
-        if self.reset_t is not None:
+        
+        if self.reset is not None:
+            m.submodules.reset_buffer = reset = io.Buffer("o", self.reset)
             m.d.comb += [
-                self.reset_t.o.eq(0),
-                self.reset_t.oe.eq(self.dut_reset),
+                reset.o.eq(0),
+                reset.oe.eq(self.dut_reset),
             ]
 
-        if self.done_t is not None:
-            m.d.comb += self.dut_done.eq(self.done_t.i)
+        if self.done is not None:
+            m.submodules.done_buffer = done = io.Buffer("i", self.done)
+            m.d.comb += self.dut_done.eq(done.i)
 
         return m
 
@@ -72,22 +75,22 @@ class ProgramICE40FlashApplet(Memory25xApplet):
         subtarget = super().build_subtarget(target, args)
 
         if args.pin_reset is not None:
-            reset_t = self.mux_interface.get_deprecated_pad(args.pin_reset)
+            reset = self.mux_interface.get_port(args.pin_reset, name="reset")
             dut_reset, self.__addr_dut_reset = target.registers.add_rw(1)
         else:
-            reset_t = None
+            reset = None
             dut_reset = None
             self.__addr_dut_reset = None
 
         if args.pin_done is not None:
-            done_t = self.mux_interface.get_deprecated_pad(args.pin_done)
+            done = self.mux_interface.get_port(args.pin_done, name="done")
             dut_done, self.__addr_dut_done = target.registers.add_ro(1)
         else:
-            done_t = None
+            done = None
             dut_done = None
             self.__addr_dut_done = None
 
-        return ProgramICE40FlashSubtarget(subtarget, reset_t, dut_reset, done_t, dut_done)
+        return ProgramICE40FlashSubtarget(subtarget, reset, dut_reset, done, dut_done)
 
     async def run(self, device, args):
         m25x_iface = await super().run(device, args)
