@@ -7,6 +7,7 @@ import random
 import struct
 from functools import reduce
 from amaranth import *
+from amaranth.lib import io
 from amaranth.lib.cdc import FFSynchronizer
 
 from ... import *
@@ -21,15 +22,20 @@ CMD_I  = 0x05
 
 
 class JTAGPinoutSubtarget(Elaboratable):
-    def __init__(self, pins, out_fifo, in_fifo, period_cyc):
-        self._pins       = pins
+    def __init__(self, ports, out_fifo, in_fifo, period_cyc):
+        self._ports      = ports
         self._out_fifo   = out_fifo
         self._in_fifo    = in_fifo
         self._period_cyc = period_cyc
 
     def elaborate(self, platform):
         m = Module()
-        pins = self._pins
+
+        pins = []
+        for name, port in vars(self._ports).items():
+            m.submodules[f"{name}_buffer"] = pin = io.Buffer("io", port)
+            pins.append(pin)
+            
         in_fifo  = self._in_fifo
         out_fifo = self._out_fifo
 
@@ -176,7 +182,9 @@ class JTAGPinoutApplet(GlasgowApplet):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(JTAGPinoutSubtarget(
-            pins=[iface.get_deprecated_pad(pin) for pin in args.pin_set_jtag],
+            ports = iface.get_port_group(
+                **{iface.get_pin_name(pin): pin for pin in args.pin_set_jtag}
+            ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             period_cyc=int(target.sys_clk_freq // (args.frequency * 1000)),
