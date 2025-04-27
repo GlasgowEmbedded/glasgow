@@ -15,7 +15,6 @@ jobs:
         - '3.10.x'
         - '3.11.x'
         - '3.12.x'
-        - 'pypy-3.9'
         - 'pypy-3.10'
         dep-versions:
         - minimal
