@@ -106,7 +106,7 @@ class BenchmarkApplet(GlasgowApplet):
 
     def build(self, target, args):
         self.mux_interface = iface = \
-            target.multiplexer.claim_interface(self, args=None, throttle="none")
+            target.multiplexer.claim_interface(self, args=None)
         mode,  self.__addr_mode  = target.registers.add_rw(2)
         error, self.__addr_error = target.registers.add_ro(1)
         count, self.__addr_count = target.registers.add_ro(32)

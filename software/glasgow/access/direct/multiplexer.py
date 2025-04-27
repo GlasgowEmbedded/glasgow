@@ -8,29 +8,15 @@ from .. import AccessMultiplexer, AccessMultiplexerInterface
 
 class _FIFOReadPort(Elaboratable):
     """
-    FIFO read port wrapper with control enable and data enable signals.
-
-    The enable signals are asserted at reset.
-
-    Attributes
-    ----------
-    _ctrl_en : Signal
-        Control enable. Deasserting control enable prevents any reads from the FIFO
-        from happening, but does not change the readable flag.
-    _data_en : Signal
-        Data enable. Deasserting data enable prevents any reads and also deasserts
-        the readable flag.
+    FIFO read port wrapper that exists for historical reasons.
     """
     def __init__(self, fifo):
         self._fifo = fifo
         self.width = fifo.width
         self.depth = fifo.depth
 
-        self._ctrl_en = Signal(init=1)
-        self._data_en = Signal(init=1)
-
-        self.r_en   = Signal()
-        self.r_rdy  = Signal()
+        self.r_en   = fifo.r_en
+        self.r_rdy  = fifo.r_rdy
         self.r_data = fifo.r_data
 
         self.stream = stream.Signature(8).create()
@@ -38,42 +24,18 @@ class _FIFOReadPort(Elaboratable):
         self.stream.valid = self.r_rdy
         self.stream.ready = self.r_en
 
-    def elaborate(self, platform):
-        fifo = self._fifo
-
-        m = Module()
-        m.d.comb += [
-            fifo.r_en .eq(self._ctrl_en & self.r_rdy & self.r_en),
-            self.r_rdy.eq(self._data_en & fifo.r_rdy)
-        ]
-        return m
-
 
 class _FIFOWritePort(Elaboratable):
     """
-    FIFO write port wrapper with control enable and data enable signals.
-
-    The enable signals are asserted at reset.
-
-    Attributes
-    ----------
-    _ctrl_en : Signal
-        Control enable. Deasserting control enable prevents any writes to the FIFO
-        from happening, but does not change the writable flag.
-    _data_en : Signal
-        Data enable. Deasserting data enable prevents any writes and also deasserts
-        the writable flag.
+    FIFO write port wrapper that exists for historical reasons.
     """
     def __init__(self, fifo):
         self._fifo = fifo
         self.width = fifo.width
         self.depth = fifo.depth
 
-        self._ctrl_en = Signal(init=1)
-        self._data_en = Signal(init=1)
-
-        self.w_en   = Signal()
-        self.w_rdy  = Signal()
+        self.w_en   = fifo.w_en
+        self.w_rdy  = fifo.w_rdy
         self.w_data = fifo.w_data
         self.flush  = fifo.flush
 
@@ -81,16 +43,6 @@ class _FIFOWritePort(Elaboratable):
         self.stream.payload = self.w_data
         self.stream.valid = self.w_en
         self.stream.ready = self.w_rdy
-
-    def elaborate(self, platform):
-        fifo = self._fifo
-
-        m = Module()
-        m.d.comb += [
-            fifo.w_en .eq(self._ctrl_en & self.w_rdy & self.w_en),
-            self.w_rdy.eq(self._data_en & fifo.w_rdy)
-        ]
-        return m
 
 
 class DirectMultiplexer(AccessMultiplexer):
@@ -117,7 +69,7 @@ class DirectMultiplexer(AccessMultiplexer):
     def pipe_count(self):
         return self._claimed_pipes
 
-    def claim_interface(self, applet, args, with_analyzer=True, throttle="fifo"):
+    def claim_interface(self, applet, args, with_analyzer=True):
         if self._claimed_pipes == len(self._pipes):
             applet.logger.error("cannot claim pipe: out of pipes")
             return None
@@ -149,7 +101,6 @@ class DirectMultiplexer(AccessMultiplexer):
             analyzer = self._analyzer
         else:
             analyzer = None
-            throttle = "none"
 
         if iface_spec:
             applet.logger.debug("claimed pipe %s and port(s) %s",
@@ -159,21 +110,18 @@ class DirectMultiplexer(AccessMultiplexer):
                                 self._pipes[pipe_num])
 
         iface = DirectMultiplexerInterface(applet, analyzer, self._registers,
-            self._fx2_crossbar, pipe_num, pins, throttle)
+            self._fx2_crossbar, pipe_num, pins)
         self._ifaces.append(iface)
         return iface
 
 
 class DirectMultiplexerInterface(AccessMultiplexerInterface):
-    def __init__(self, applet, analyzer, registers, fx2_crossbar, pipe_num, pins, throttle):
-        assert throttle in ("full", "fifo", "none")
-
+    def __init__(self, applet, analyzer, registers, fx2_crossbar, pipe_num, pins):
         super().__init__(applet, analyzer)
         self._registers     = registers
         self._fx2_crossbar  = fx2_crossbar
         self._pipe_num      = pipe_num
         self._pins          = pins
-        self._throttle      = throttle
         self._subtargets    = []
         self._fifos         = []
 
@@ -183,15 +131,11 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules += self._subtargets
-
-        for fifo in self._fifos:
-            if self._throttle == "full":
-                m.d.comb += fifo._ctrl_en.eq(~self.analyzer.throttle)
-            elif self._throttle == "fifo":
-                m.d.comb += fifo._data_en.eq(~self.analyzer.throttle)
-
-            m.submodules += fifo
+        for subtarget in self._subtargets:
+            # Reset the subtarget simultaneously with the USB-side and FPGA-side FIFOs. This ensures
+            # that when the demultiplexer interface is reset, the gateware and the host software are
+            # synchronized with each other.
+            m.submodules += ResetInserter(self.reset)(subtarget)
 
         return m
 
@@ -213,35 +157,14 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
         fifo = self._fx2_crossbar.get_in_fifo(self._pipe_num, **kwargs, reset=self.reset)
         if self.analyzer:
             self.analyzer.add_in_fifo_event(self.applet, fifo)
-        fifo = _FIFOWritePort(fifo)
-        self._fifos.append(fifo)
-        return fifo
+        return _FIFOWritePort(fifo)
 
     def get_out_fifo(self, **kwargs):
         fifo = self._fx2_crossbar.get_out_fifo(self._pipe_num, **kwargs, reset=self.reset)
         if self.analyzer:
             self.analyzer.add_out_fifo_event(self.applet, fifo)
-        fifo = _FIFOReadPort(fifo)
-        self._fifos.append(fifo)
-        return fifo
+        return _FIFOReadPort(fifo)
 
     def add_subtarget(self, subtarget):
-        if self._throttle == "full":
-            # When in the "full" throttling mode, once the throttle signal is asserted while
-            # the applet asserts `r_en` or `w_en`, the applet will cause spurious reads or writes;
-            # this happens because the FIFO is not in the control enable domain of the applet.
-            #
-            # (This is deliberate; throttling often happens because the analyzer CY7C FIFO is
-            # full, but we might still be able to transfer data between the other FIFOs.)
-            #
-            # Thus, in `elaborate` above, we add the read (for OUT FIFOs) or write
-            # (for IN FIFOs) ports into the applet control enable domain.
-            subtarget = EnableInserter(~self.analyzer.throttle)(subtarget)
-
-        # Reset the subtarget simultaneously with the USB-side and FPGA-side FIFOs. This ensures
-        # that when the demultiplexer interface is reset, the gateware and the host software are
-        # synchronized with each other.
-        subtarget = ResetInserter(self.reset)(subtarget)
-
         self._subtargets.append(subtarget)
         return subtarget
