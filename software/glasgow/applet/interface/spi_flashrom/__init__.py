@@ -2,6 +2,7 @@ import logging
 import asyncio
 import enum
 from amaranth import *
+from amaranth.lib import io
 
 from ... import *
 from ....support.endpoint import *
@@ -181,10 +182,10 @@ class SPIFlashromApplet(SPIControllerApplet):
     def build_subtarget(self, target, args):
         subtarget = super().build_subtarget(target, args)
         if args.pin_hold is not None:
-            hold_t = self.mux_interface.get_deprecated_pad(args.pin_hold)
+            hold = self.mux_interface.get_port(args.pin_hold, name="hold")
         else:
-            hold_t = None
-        return Memory25xSubtarget(subtarget, hold_t)
+            hold = None
+        return Memory25xSubtarget(subtarget, hold)
 
     async def run(self, device, args):
         spi_iface = await self.run_lower(SPIFlashromApplet, device, args)
