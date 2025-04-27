@@ -7,6 +7,7 @@ import struct
 import logging
 import argparse
 from amaranth import *
+from amaranth.lib import io
 
 from ....support.logging import dump_hex
 from ....database.jedec import *
@@ -28,21 +29,22 @@ BIT_ERR  = 0b10000000
 
 # This is also used in SPIFlashromApplet.
 class Memory25xSubtarget(Elaboratable):
-    def __init__(self, controller, hold_t):
+    def __init__(self, controller, hold):
         self.controller = controller
-        self.hold_t = hold_t
+        self.hold = hold
 
     def elaborate(self, platform):
         m = Module()
 
         m.submodules.controller = self.controller
+        m.submodules.hold_buffer = hold = io.Buffer("o", self.hold)
 
         m.d.comb += self.controller.bus.oe.eq(self.controller.bus.cs == 1)
 
-        if self.hold_t is not None:
+        if self.hold is not None:
             m.d.comb += [
-                self.hold_t.oe.eq(1),
-                self.hold_t.o.eq(1),
+                hold.oe.eq(1),
+                hold.o.eq(1),
             ]
 
         return m
