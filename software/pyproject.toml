@@ -102,6 +102,7 @@ memory-floppy = "glasgow.applet.memory.floppy:MemoryFloppyApplet"
 
 debug-arc = "glasgow.applet.debug.arc:DebugARCApplet"
 debug-arm = "glasgow.applet.debug.arm.jtag:DebugARMJTAGApplet"
+debug-arm7 = "glasgow.applet.debug.arm.arm7:DebugARM7Applet"
 debug-mips = "glasgow.applet.debug.mips:DebugMIPSApplet"
 
 program-avr-spi = "glasgow.applet.program.avr.spi:ProgramAVRSPIApplet"
