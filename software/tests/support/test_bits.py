@@ -1,5 +1,7 @@
 import unittest
 
+from amaranth import *
+
 from glasgow.support.bits import bits, bitarray, _byte_len
 
 
@@ -118,6 +120,11 @@ class BitsTestCase(unittest.TestCase):
         self.assertEqual(bytes(bits("")), b"")
         self.assertEqual(bytes(bits("10100101")), b"\xa5")
         self.assertEqual(bytes(bits("110100101")), b"\xa5\x01")
+
+    def test_amaranth(self):
+        cst = Const.cast(bits("00101101"))
+        self.assertEqual(cst.value, 0b00101101)
+        self.assertEqual(len(cst), 8)
 
     def test_repr(self):
         self.assertEqual(repr(bits("")), r"bits('')")
