@@ -4,6 +4,8 @@ import operator
 from collections.abc import Sequence, MutableSequence, Iterable
 from typing_extensions import Self
 
+import amaranth
+
 
 __all__ = ["bits", "bitarray"]
 
@@ -19,7 +21,7 @@ _byterev_lut = bytes(
     for byte in range(0x100)
 )
 
-class _bits_base(Sequence):
+class _bits_base(amaranth.ValueCastable, Sequence):
     __slots__ = ("_len", "_bytes")
 
     @classmethod
@@ -139,6 +141,11 @@ class _bits_base(Sequence):
             return cls.from_iter(value)
         raise TypeError(f"invalid input for {cls.__name__}(): cannot convert from {value.__class__.__name__}")
 
+    # This method only exists because otherwise `ValueCastable.__init__` crashes. All of the actual
+    # work is done in `__new__`.
+    def __init__(self, value=0, length=None):
+        pass
+
     def __len__(self) -> int:
         return self._len
 
@@ -198,6 +205,12 @@ class _bits_base(Sequence):
         If the length of the bit string is not divisible by 8, the last byte will have
         padding bits at MSB with a value of 0."""
         return bytes(self._bytes)
+
+    def shape(self) -> amaranth.Shape:
+        return amaranth.unsigned(len(self))
+
+    def as_value(self) -> amaranth.Const:
+        return amaranth.Const(int(self), len(self))
 
     __int__ = to_int
     __str__ = to_str
@@ -345,6 +358,7 @@ class bits(_bits_base):
 
     def __hash__(self) -> int:
         return hash((self._len, self._bytes))
+
 
 class bitarray(_bits_base, MutableSequence):
     """A mutable bit sequence, like ``bytearray`` but for bits.
