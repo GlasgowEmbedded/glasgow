@@ -5,7 +5,7 @@
 groups = ["default", "builtin-toolchain", "http"]
 strategy = ["direct_minimal_versions"]
 lock_version = "4.5.0"
-content_hash = "sha256:bdedf5bdf6cb947a11575dcfc1b1dafa56faa5f79a76652692524f39e8064aa1"
+content_hash = "sha256:c8b982c26e36a5b0c2bb2fba192ca272ff697ad43ec9adb76e38d7bcb888587f"
 
 [[metadata.targets]]
 requires_python = ">=3.9,<3.10.0||>3.10.0,<3.10.1||>3.10.1,<3.10.2||>3.10.2,<4.0"
@@ -675,12 +675,12 @@ files = [
 
 [[package]]
 name = "pyvcd"
-version = "0.2.3"
-requires_python = ">= 3.6"
+version = "0.4.1"
+requires_python = ">=3.7"
 summary = "Python VCD file support"
 files = [
-    {file = "pyvcd-0.2.3-py2.py3-none-any.whl", hash = "sha256:d4132a03afd353e68fb2a2eb983606603f7e60091198a026fee5fb6da50bbd48"},
-    {file = "pyvcd-0.2.3.tar.gz", hash = "sha256:c0fd7321143e821033f59dd41fc6b0350d1533ddccd4c8fc1d1f76e21cd667de"},
+    {file = "pyvcd-0.4.1-py2.py3-none-any.whl", hash = "sha256:3a4c71d4dce741f1155a2ed11a6278390a0816293068f6162ad9658d20f75578"},
+    {file = "pyvcd-0.4.1.tar.gz", hash = "sha256:dc6275e95a7949b8236086ab2e6d03afede73441243ec5109c9ea89077f3d696"},
 ]
 
 [[package]]
