@@ -112,6 +112,9 @@ def create_argparser():
         "-F", "--filter-log", metavar="FILTER", type=str, action="append",
         help="raise TRACE log messages to INFO if they begin with 'FILTER: '")
     parser.add_argument(
+        "--no-shorten", default=False, action="store_true",
+        help="do not shorten sequences in logs")
+    parser.add_argument(
         "--statistics", dest="show_statistics", default=False, action="store_true",
         help="display performance counters before exiting")
 
@@ -535,7 +538,7 @@ def configure_logger(args, term_handler):
         root_logger.addHandler(file_handler)
 
     level = logging.INFO + args.quiet * 10 - args.verbose * 10
-    if level < 0:
+    if level < 0 or args.no_shorten:
         dump_hex.limit = dump_bin.limit = dump_seq.limit = dump_mapseq.limit = None
 
     if args.log_file or args.filter_log:
