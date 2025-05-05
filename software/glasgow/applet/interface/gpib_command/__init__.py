@@ -126,7 +126,8 @@ class GPIBBus(Elaboratable):
         self.atn_o  = Signal(1, init=1)     # Attention             Any
         self.ren_o  = Signal(1, init=1)     # Remote Enable         Any
 
-        self.direction = Signal()  # Talkng (HIGH) or Listening (LOW)
+        self.talking   = Signal()
+        self.listening = Signal()
 
     def elaborate(self, platform):
         m = Module()
@@ -141,26 +142,17 @@ class GPIBBus(Elaboratable):
         m.submodules.atn_buffer  = atn_buffer  = io.Buffer("o", self.ports.atn)
         m.submodules.ren_buffer  = ren_buffer  = io.Buffer("o", self.ports.ren)
 
-        # To make the rest of this easier to follow, we can break out
-        # the direction into two signals.
-        talking   = Signal()
-        listening = Signal()
-        m.d.comb += [
-            talking.eq(self.direction),
-            listening.eq(~self.direction),
-        ]
-
         # and use that to determine if an output should be enabled.
         # srq is input only, so it does not get an oe signal.
         m.d.comb += [
-            dio_buffer.oe.eq(talking),
-            eoi_buffer.oe.eq(talking),
-            dav_buffer.oe.eq(talking),
-            nrfd_buffer.oe.eq(listening),
-            ndac_buffer.oe.eq(listening),
-            ifc_buffer.oe.eq(talking),
-            atn_buffer.oe.eq(talking),
-            ren_buffer.oe.eq(talking),
+            dio_buffer.oe.eq(self.talking),
+            eoi_buffer.oe.eq(self.talking),
+            dav_buffer.oe.eq(self.talking),
+            nrfd_buffer.oe.eq(self.listening),
+            ndac_buffer.oe.eq(self.listening),
+            ifc_buffer.oe.eq(self.talking),
+            atn_buffer.oe.eq(self.talking),
+            ren_buffer.oe.eq(self.talking),
         ]
 
         # Some lines never change from the controller's perspective.
@@ -171,7 +163,7 @@ class GPIBBus(Elaboratable):
             ren_buffer.o.eq(self.ren_o),
         ]
 
-        with m.If(listening):
+        with m.If(self.listening):
             m.d.comb += [
                 self.dio_i.eq(dio_buffer.i),
                 self.eoi_i.eq(eoi_buffer.i),
@@ -180,7 +172,7 @@ class GPIBBus(Elaboratable):
                 ndac_buffer.o.eq(self.ndac_o),
             ]
 
-        with m.If(talking):
+        with m.If(self.talking):
             m.d.comb += [
                 dio_buffer.o.eq(self.dio_o),
                 eoi_buffer.o.eq(self.eoi_o),
@@ -191,13 +183,12 @@ class GPIBBus(Elaboratable):
 
         return m
 
-class GPIB(Elaboratable):
+class GPIBSubtarget(Elaboratable):
     def __init__(self, ports, in_fifo, out_fifo):
         self.bus = GPIBBus(ports)
         self.in_fifo  = in_fifo
         self.out_fifo = out_fifo
 
-        self.direction   = Signal(1) # Talk = HIGH,  Listen = LOW
         self.status      = Signal(8)
 
     def elaborate(self, platform):
@@ -208,7 +199,6 @@ class GPIB(Elaboratable):
         timer = Signal(range(1 + settle_delay))
 
         m.d.comb += [
-            self.bus.direction.eq(self.direction),
             platform.request("led", 0).o.eq(self.status == 0),
             platform.request("led", 1).o.eq(self.status == 1),
             platform.request("led", 2).o.eq(self.status == 2),
@@ -216,137 +206,135 @@ class GPIB(Elaboratable):
             platform.request("led", 4).o.eq(self.status == 8),
         ]
 
-        with m.If(~self.direction):
-            with m.FSM():
-                with m.State("Listen: Begin"):
-                    m.d.sync += [
-                        self.bus.ndac_o.eq(0),
-                        self.bus.nrfd_o.eq(1),
-                        self.status.eq(8),
-                    ]
-                    with m.If(~self.bus.dav_i):
-                        m.d.comb += self.in_fifo.w_en.eq(1)
-                        m.d.sync += [
-                            self.in_fifo.w_data.eq((self.bus.eoi_i << 1) | 1),
-                            self.status.eq(4),
-                        ]
-                        m.next = "Listen: Wait for control fifo"
+        with m.FSM():
+            l_control = Signal(8)
+            l_data    = Signal(8)
 
-                with m.State("Listen: Wait for control fifo"):
-                    with m.If(self.in_fifo.w_rdy):
-                        m.next = "Listen: Read data lines"
+            ctrl_tx     = Signal()
+            ctrl_eoi    = Signal()
+            ctrl_atn    = Signal()
+            ctrl_ifc    = Signal()
+            ctrl_ren    = Signal()
+            ctrl_listen = Signal()
+            ctrl_talk   = Signal()
 
-                with m.State("Listen: Read data lines"):
-                    m.d.comb += self.in_fifo.w_en.eq(1)
-                    m.d.sync += [
-                        self.in_fifo.w_data.eq(~self.bus.dio_i),
-                        self.bus.nrfd_o.eq(0),
-                        self.status.eq(2),
-                    ]
-                    with m.If(self.in_fifo.w_rdy):
-                        m.d.sync += [
-                            self.bus.ndac_o.eq(1),
-                            self.status.eq(1),
-                        ]
-                        m.next = "Listen: Wait for DAV unasserted"
+            m.d.comb += [
+                ctrl_tx.eq(l_control[0]),
+                ctrl_eoi.eq(l_control[1]),
+                ctrl_atn.eq(l_control[2]),
+                ctrl_ifc.eq(l_control[3]),
+                ctrl_ren.eq(l_control[4]),
+                ctrl_listen.eq(l_control[6]),
+                ctrl_talk.eq(l_control[7]),
+            ]
 
-                with m.State("Listen: Wait for DAV unasserted"):
-                    with m.If(self.bus.dav_i):
-                        m.d.sync += [
-                            self.bus.ndac_o.eq(0),
-                            self.status.eq(0),
-                        ]
-                        m.next = "Listen: Begin"
+            with m.State("Control: Check for data"):
+                m.d.comb += self.out_fifo.r_en.eq(1)
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.sync += l_control.eq(self.out_fifo.r_data)
+                    m.next = "Control: Read data byte"
 
+            with m.State("Control: Read data byte"):
+                m.d.comb += self.out_fifo.r_en.eq(1)
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.sync += l_data.eq(self.out_fifo.r_data)
+                    m.next = "Control: Parse"
 
-        with m.If(self.direction):
-            latched = Signal(8)
-
-            with m.FSM(init="Talk: Initialise"):
-                with m.State("Talk: Initialise"):
-                    m.d.sync += [
-                        self.bus.dio_o.eq(0xFF),
-                        self.bus.eoi_o.eq(1),
-                        self.bus.dav_o.eq(1),
-                        self.bus.ifc_o.eq(1),
-                        self.bus.atn_o.eq(1),
-                        self.bus.ren_o.eq(1),
-                    ]
-                    m.next = "Talk: Await control"
-
-                with m.State("Talk: Await control"):
-                    m.d.sync += self.status.eq(0)
-                    m.d.comb += self.out_fifo.r_en.eq(1)
-                    with m.If(self.out_fifo.r_rdy):
-                        m.d.sync += latched.eq(self.out_fifo.r_data)
-                        m.next = "Talk: Set control lines"
-
-                with m.State("Talk: Set control lines"):
-                    m.d.sync += [
-                        self.bus.ren_o.eq(latched[4]),
-                        self.bus.ifc_o.eq(latched[3]),
-                        self.bus.eoi_o.eq(latched[1]),
-                        self.bus.atn_o.eq(latched[2]),
-                        self.bus.dav_o.eq(1),
-                        self.status.eq(1),
-                    ]
-                    with m.If(latched[0]):
-                        m.next = "Talk: Await bus ready"
-                    with m.If(~latched[0]):
-                        m.next = "Talk: Await control"
-
-                with m.State("Talk: Await bus ready"):
-                    with m.If(~self.bus.ndac_i):
-                        m.next = "Talk: Set data lines"
-
-                with m.State("Talk: Set data lines"):
+            with m.State("Control: Parse"):
+                m.d.sync += [
+                    self.bus.talking.eq(ctrl_talk),
+                    self.bus.listening.eq(ctrl_listen),
+                ]
+                with m.If(ctrl_talk & ctrl_listen):
+                    m.next = "Control: Error"
+                with m.If(ctrl_talk & ~ctrl_listen):
+                    m.d.sync += self.status.eq(1)
+                    m.next = "Talk: Begin"
+                with m.If(ctrl_listen & ~ctrl_talk):
                     m.d.sync += self.status.eq(2)
-                    m.d.comb += self.out_fifo.r_en.eq(1)
-                    with m.If(self.out_fifo.r_rdy):
-                        m.d.sync += [
-                            self.bus.dio_o.eq(~self.out_fifo.r_data),
-                            timer.eq(settle_delay),
-                        ]
-                        m.next = "Talk: Wait for lines to settle"
+                    m.next = "Listen: Begin"
 
-                with m.State("Talk: Wait for lines to settle"):
-                    m.d.sync += timer.eq(timer - 1)
-                    with m.If(timer == 0):
-                        m.next = "Talk: Tell everyone the data is valid"
+            with m.State("Control: Error"):
+                m.d.sync += self.status.eq(0)
 
-                with m.State("Talk: Tell everyone the data is valid"):
-                    with m.If(self.bus.nrfd_i):
-                        m.d.sync += self.status.eq(4)
-                        m.d.sync += self.bus.dav_o.eq(0),
-                        m.next = "Talk: Wait for bus acknowledgement"
+            with m.State("Control: Acknowledge Transmit"):
+                # send a byte back with the MSB set to 1
+                m.next = "Control: Check for data"
 
-                with m.State("Talk: Wait for bus acknowledgement"):
-                    with m.If(self.bus.ndac_i):
-                        m.d.sync += self.status.eq(8)
-                        m.next = "Talk: Await control"
 
-        return m
+            with m.State("Talk: Begin"):
+                m.d.sync += [
+                    self.bus.eoi_o.eq(ctrl_eoi),
+                    self.bus.atn_o.eq(ctrl_atn),
+                    self.bus.ifc_o.eq(ctrl_ifc),
+                    self.bus.ren_o.eq(ctrl_ren),
+                    self.bus.dav_o.eq(1),
+                ]
+                with m.If(~ctrl_tx):
+                    m.next = "Control: Check for data"
+                with m.If(~self.bus.ndac_i & ctrl_tx):
+                    m.d.sync += [
+                        self.bus.dio_o.eq(~l_data),
+                        timer.eq(settle_delay),
+                    ]
+                    m.next = "Talk: DIO Stabalise"
 
-class GPIBSubtarget(Elaboratable):
+            with m.State("Talk: DIO Stabalise"):
+                m.d.sync += timer.eq(timer - 1)
+                with m.If(timer == 0):
+                    m.next = "Talk: NRFD"
 
-    def __init__(self, ports, in_fifo, out_fifo, direction, status):
-        self.ports     = ports
-        self.in_fifo   = in_fifo
-        self.out_fifo  = out_fifo
-        self.direction = direction
-        self.status    = status
+            with m.State("Talk: NRFD"):
+                with m.If(self.bus.nrfd_i):
+                    m.d.sync += self.bus.dav_o.eq(0)
+                    m.next = "Talk: NDAC"
 
-        self.gpib = GPIB(ports, in_fifo, out_fifo)
+            with m.State("Talk: NDAC"):
+                with m.If(self.bus.ndac_i):
+                    m.next = "Control: Acknowledge Transmit"
 
-    def elaborate(self, platform):
-        m = Module()
 
-        m.submodules.gpib = gpib = self.gpib
+            with m.State("Listen: Begin"):
+                m.d.sync += [
+                    self.bus.ndac_o.eq(0),
+                    self.bus.nrfd_o.eq(1),
+                ]
+                with m.If(~self.bus.dav_i):
+                    m.next = "Listen: Management lines"
 
-        m.d.comb += [
-            gpib.direction.eq(self.direction),
-            self.status.eq(gpib.status),
-        ]
+            with m.State("Listen: Management lines"):
+                m.d.sync += [
+                    self.in_fifo.w_data.eq(((~self.bus.eoi_i) << 1) | 1)
+                ]
+                m.next = "Listen: Management lines acknowledge"
+
+            with m.State("Listen: Management lines acknowledge"):
+                m.d.comb += self.in_fifo.w_en.eq(1)
+                with m.If(self.in_fifo.w_rdy):
+                    m.next = "Listen: DIO lines"
+
+            with m.State("Listen: DIO lines"):
+                m.d.sync += [
+                    self.in_fifo.w_data.eq(~self.bus.dio_i),
+                    self.bus.nrfd_o.eq(0),
+                ]
+                m.next = "Listen: DIO lines acknowledge"
+
+            with m.State("Listen: DIO lines acknowledge"):
+                m.d.comb += self.in_fifo.w_en.eq(1)
+                with m.If(self.in_fifo.w_rdy):
+                    m.d.sync += [
+                        self.bus.ndac_o.eq(1),
+                    ]
+                    m.next = "Listen: DAV unassert"
+
+            with m.State("Listen: DAV unassert"):
+                with m.If(self.bus.dav_i):
+                    m.d.sync += [
+                        self.bus.ndac_o.eq(0)
+                    ]
+                    m.next = "Control: Check for data"
+
 
         return m
 
@@ -373,7 +361,6 @@ class GPIBCommandApplet(GlasgowApplet):
         access.add_pin_argument(parser, "ren",  default=11)
 
     def build(self, target, args):
-        direction, self.__addr_direction = target.registers.add_rw(1)
         status,    self.__addr_status    = target.registers.add_ro(8)
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
@@ -390,8 +377,7 @@ class GPIBCommandApplet(GlasgowApplet):
                 ren  = args.pin_ren,
             ),
             in_fifo=iface.get_in_fifo(),
-            out_fifo=iface.get_out_fifo(),
-            direction=direction, status=status
+            out_fifo=iface.get_out_fifo()
         ))
 
         self._sample_freq = target.sys_clk_freq
@@ -430,80 +416,54 @@ class GPIBCommandApplet(GlasgowApplet):
             "--read-eoi", action="store_true",
             help="read until EOI, omit if no response expected")
 
-    async def talk(self, control, data=b""):
+    async def write(self, control, data=bytes([0])):
         await self._device.set_pulls(self._args.port_spec, high={pin.number for pin in self.talk_pull_high})
-        await self._device.write_register(self.__addr_direction, 1)
+        await self._gpib.write(bytes([ x for b in data for x in (control, b) ]))
 
-        if control & 0x01:
-            await self._gpib.write([ x for x in data for x in (control, data) ])
-        else:
-            await self._gpib.write(bytes([control]))
-
-        # for b in data:
-        #     self.logger.trace("in->GPIB: control=%s", bin(control))
-        #     await self._gpib.write(bytes([control]))
-        #     await self._gpib.flush()
-        #     if control & 1:
-        #         self.logger.trace("in->GPIB: data=%s", bin(b))
-        #         await self._gpib.write(bytes([b]))
-        #         await self._gpib.flush()
-
-        # if not (control & 1):
-        #     self.logger.trace("in->GPIB: control=%s", bin(control))
-        #     await self._gpib.write(bytes([control]))
-        #     await self._gpib.flush()
-
-    async def listen(self, gpib, to_eoi=False):
+    async def read(self, gpib, to_eoi=False):
         await self._device.set_pulls(self._args.port_spec, high={pin.number for pin in self.listen_pull_high})
-        await self._device.write_register(self.__addr_direction, 0)
 
-        if to_eoi:
-            eoi = True
-            while eoi:
-                # eoi = await self._device.read_register(self.__addr_eoi_i)
-                status = (await self._gpib.read(1)).tobytes()
-                eoi = not ((status >> 1) & 1)
-                print(eoi)
-                yield (await self._gpib.read(1)).tobytes()
-        else:
+        eoi = True
+        while eoi:
+            await self.write(0b0100_0000)
+            eoi = (await self._gpib.read(1)).tobytes()[0] & 2
             yield (await self._gpib.read(1)).tobytes()
-
-        return
 
     async def interact(self, device, args, gpib):
         self._device = device
         self._args = args
         self._gpib = gpib
 
-        # await device.set_pulls(self._args.port_spec, high={pin.number for pin in self.talk_pull_high})
-        # await self._device.write_register(self.__addr_direction, 1)
-
-        DATA = 0b11111
-        CMD  = 0b11011
-        EOI  = 0b11101
-        #REN  = 0b01110
-        #IFC  = 0b10110
+        LISTEN = 0b0100_0000 # 0x40
+        DATA   = 0b1001_1111 # 0x9F
+        CMD    = 0b1001_1011 # 0x9B
+        EOI    = 0b1001_1101 # 0x9D
+        #REN   = 0b01110
+        #IFC   = 0b10110
 
         if args.command:
-            await self.talk(CMD, bytes([CMD_MTA + args.address]))
-            # await self.talk(DATA, bytes(args.command.encode("ascii")))
-            await self.talk(DATA, b'*')
-            await self.talk(DATA, b'I')
-            await self.talk(DATA, b'D')
-            await self.talk(DATA, b'N')
-            await self.talk(DATA, b'?')
-            await self.talk(DATA & EOI, b'\n')
+            await self.write(CMD, bytes([CMD_MTA + args.address]))
+            await self.write(DATA, bytes(args.command.encode("ascii")))
+            # await self.write(DATA, b'*')
+            # await self.write(DATA, b'I')
+            # await self.write(DATA, b'D')
+            # await self.write(DATA, b'N')
+            # await self.write(DATA, b'?')
+            await self.write(DATA & EOI, b'\n')
+            await self.write(CMD, bytes([CMD_MLA + args.address]))
 
-        time.sleep(0.5)
+        # await self.write(CMD, bytes([CMD_MLA + args.address]))
+        time.sleep(1)
+
+        # time.sleep(0.5)
         if args.read_eoi:
-            async for data in self.listen(True):
+            async for data in self.read(True):
                 sys.stdout.buffer.write(data)
-            # await self.talk(CMD, bytes([CMD_UNL]))
 
         time.sleep(0.1)
 
         # if args.command:
-        #     await self.talk(CMD, bytes([CMD_UNT]))
+        #     await self.write(CMD, bytes([CMD_UNT]))
 
     @classmethod
     def tests(cls):
