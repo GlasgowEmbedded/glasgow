@@ -32,11 +32,6 @@ class GDBRemote(metaclass=ABCMeta):
         """Target triple."""
 
     @abstractmethod
-    def target_register_names(self) -> list[str]:
-        """Names of target registers. Registers returned or accepted by ``target_get_registers()``
-        and ``target_set_registers()`` are returned in the order specified by this function."""
-
-    @abstractmethod
     def target_running(self) -> bool:
         """Whether the target is running. ``True`` if running, ``False`` if halted."""
 
@@ -59,19 +54,19 @@ class GDBRemote(metaclass=ABCMeta):
 
     @abstractmethod
     async def target_get_registers(self) -> list[int]:
-        """Returns the values of all registers, in the order set by ``target_register_names()``."""
+        """Returns the values of all registers, in the order GDB expects them to be in."""
 
     @abstractmethod
     async def target_set_registers(self, values: list[int]):
-        """Updates the values of all registers, in the order set by ``target_register_names()``."""
+        """Updates the values of all registers, in the order GDB expects them to be in."""
 
     @abstractmethod
     async def target_get_register(self, number: int) -> int:
-        """Returns the value of one register, in the order set by ``target_register_names()``."""
+        """Returns the value of one register, with the number GDB uses."""
 
     @abstractmethod
     async def target_set_register(self, number: int, value: int):
-        """Updates the value of one register, in the order set by ``target_register_names()``."""
+        """Updates the value of one register, with the number GDB uses."""
 
     @abstractmethod
     async def target_read_memory(self, address: int, length: int) -> bytes | bytearray | memoryview:
@@ -265,11 +260,8 @@ class GDBRemote(metaclass=ABCMeta):
         # "Get specific register of the target."
         if command.startswith(b"p"):
             number = int(command[1:], 16)
-            if number < len(self.target_register_names()):
-                value  = await self.target_get_register(number)
-                return b"%.*x" % (self.target_word_size() * 2, value)
-            else:
-                return (0, "unrecognized register")
+            value  = await self.target_get_register(number)
+            return b"%.*x" % (self.target_word_size() * 2, value)
 
         # "Set all registers of the target."
         if command.startswith(b"G"):
@@ -283,11 +275,8 @@ class GDBRemote(metaclass=ABCMeta):
         # "Set specific register of the target."
         if command.startswith(b"P"):
             number, value = map(lambda x: int(x, 16), command[1:].split(b"="))
-            if number < len(self.target_register_names()):
-                await self.target_set_register(number, value)
-                return b"OK"
-            else:
-                return (0, "unrecognized register")
+            await self.target_set_register(number, value)
+            return b"OK"
 
         # "Read specified memory range of the target."
         if command.startswith(b"m"):
