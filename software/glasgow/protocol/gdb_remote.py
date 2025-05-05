@@ -251,10 +251,7 @@ class GDBRemote(metaclass=ABCMeta):
         if command == b"g":
             values = bytearray()
             for register in await self.target_get_registers():
-                if register is None:
-                    values += b"xx" * self.target_word_size()
-                else:
-                    values += b"%.*x" % (self.target_word_size() * 2, register)
+                values += b"%.*x" % (self.target_word_size() * 2, register)
             return values
 
         # "Get specific register of the target."
