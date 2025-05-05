@@ -6,7 +6,7 @@ from ...platform.generic import GlasgowPlatformPort
 from .. import AccessMultiplexer, AccessMultiplexerInterface
 
 
-class _FIFOReadPort(Elaboratable):
+class _FIFOReadPort:
     """
     FIFO read port wrapper that exists for historical reasons.
     """
@@ -25,7 +25,7 @@ class _FIFOReadPort(Elaboratable):
         self.stream.ready = self.r_en
 
 
-class _FIFOWritePort(Elaboratable):
+class _FIFOWritePort:
     """
     FIFO write port wrapper that exists for historical reasons.
     """
