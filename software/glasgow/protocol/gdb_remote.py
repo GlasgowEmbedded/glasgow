@@ -255,7 +255,23 @@ class GDBRemote(metaclass=ABCMeta):
 
         # "I support these protocol features. Which protocol features are supported by the stub?"
         if command.startswith(b"qSupported"):
-            return b"qXfer:features:read+"
+            features = [b"vContSupported+", b"qXfer:features:read+"]
+            return b";".join(features)
+
+        # "Which resume actions do you support?"
+        if command == b"vCont?":
+            # Even though we don't actually support `C`, without it, GDB will refuse to use `vCont`.
+            # And if it doesn't use `vCont`, it doesn't use single-stepping either, even though we
+            # make it available under `s`. Something similar happens with `S`, where GDB will use
+            # `vCont`, but will not use single-stepping unless both `s` and `S` are declared to be
+            # available. (Instead, it will attempt to write a software breakpoint to memory without
+            # even checking if the write succeeded.)
+            return b"vCont;c;C;s;S"
+
+        # "Please use a vCont action you don't actually support but have to declare in order for me
+        # to actually do single-stepping."
+        if command.startswith((b"vCont;C", b"vCont;S")):
+            return (97, "unsupported vCont command")
 
         # "Tell me everything you know about the target features (architecture, registers, etc.)"
         if command.startswith(b"qXfer:features:read:"):
@@ -291,10 +307,10 @@ class GDBRemote(metaclass=ABCMeta):
                 await self.target_stop()
 
             # "Target caught signal SIGTRAP."
-            return b"S05"
+            return b"T05thread:0;"
 
         # "Resume target."
-        if command == b"c":
+        if command in (b"c", b"vCont;c"):
             continue_fut  = asyncio.ensure_future(self.target_continue())
             interrupt_fut = asyncio.ensure_future(make_recv_fut())
             await asyncio.wait([continue_fut, interrupt_fut], return_when=asyncio.FIRST_COMPLETED)
@@ -307,12 +323,12 @@ class GDBRemote(metaclass=ABCMeta):
             else:
                 continue_fut.cancel()
                 await self.target_stop()
-            return b"S05"
+            return b"T05thread:0;"
 
         # "Single-step target [but first jump to this address]."
-        if command == b"s":
+        if command == b"s" or command.startswith(b"vCont;s"):
             await self.target_single_step()
-            return b"S05"
+            return b"T05thread:0;"
 
         # "Detach from target."
         if command == b"D":
