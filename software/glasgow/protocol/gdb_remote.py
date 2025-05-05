@@ -32,6 +32,10 @@ class GDBRemote(metaclass=ABCMeta):
         """Target triple."""
 
     @abstractmethod
+    def target_features(self) -> dict[str, bytes]:
+        """Target features. Notable keys include ``target.xml``."""
+
+    @abstractmethod
     def target_running(self) -> bool:
         """Whether the target is running. ``True`` if running, ``False`` if halted."""
 
@@ -118,12 +122,12 @@ class GDBRemote(metaclass=ABCMeta):
                 except ValueError:
                     checksum = -1
                 if sum(command) & 0xff != checksum:
-                    self.gdb_log(logging.ERROR, "invalid checksum for command '%s'", command)
+                    self.gdb_log(logging.ERROR, "invalid checksum for command %r", command)
                 if not no_ack_mode:
                     await endpoint.send(b"+")
 
                 command_asc = command.decode("ascii", errors="replace")
-                self.gdb_log(logging.DEBUG, "recv '%s'", command_asc)
+                self.gdb_log(logging.DEBUG, "recv %r", command_asc)
 
                 if command == b"QStartNoAckMode":
                     no_ack_mode = True
@@ -138,7 +142,7 @@ class GDBRemote(metaclass=ABCMeta):
                     except NotImplementedError as e:
                         response = (98, "not implemented")
                     except GlasgowAppletError as e:
-                        self.gdb_log(logging.ERROR, "command '%s' caused an unrecoverable "
+                        self.gdb_log(logging.ERROR, "command %r caused an unrecoverable "
                                                     "error: %s",
                                      command_asc, str(e))
                         response = (99, str(e))
@@ -146,7 +150,7 @@ class GDBRemote(metaclass=ABCMeta):
 
                 if isinstance(response, tuple):
                     if not command_failed:
-                        self.gdb_log(logging.WARNING, "command '%s' caused an error: %s",
+                        self.gdb_log(logging.WARNING, "command %r caused an error: %s",
                                      command_asc, response[1])
 
                     error_num, error_msg = response
@@ -157,7 +161,7 @@ class GDBRemote(metaclass=ABCMeta):
 
                 while True:
                     response_asc = response.decode("ascii", errors="replace")
-                    self.gdb_log(logging.DEBUG, "send '%s'", response_asc)
+                    self.gdb_log(logging.DEBUG, "send %r", response_asc)
 
                     await endpoint.send(b"$%s#%02x" % (response, sum(response) & 0xff))
                     if no_ack_mode:
@@ -171,7 +175,7 @@ class GDBRemote(metaclass=ABCMeta):
                         elif ack == b"-":
                             continue
                         else:
-                            self.gdb_log(logging.ERROR, "unrecognized acknowledgement '%s'",
+                            self.gdb_log(logging.ERROR, "unrecognized acknowledgement %r",
                                          ack.decode("ascii", errors="replace"))
                             await endpoint.close()
                             return
@@ -184,6 +188,9 @@ class GDBRemote(metaclass=ABCMeta):
             pass
 
     async def _gdb_process(self, command, make_recv_fut):
+        def binary_escape(data):
+            return re.sub(rb"[#$}*]", lambda m: bytes([0x7d, m[0][0] ^ 0x20]), data)
+
         # (lldb) "Send me human-readable error messages."
         if command == b"QEnableErrorStrings":
             self.__error_strings = True
@@ -198,6 +205,24 @@ class GDBRemote(metaclass=ABCMeta):
             ]
             return b"".join(b"%b:%b;" % (key, str(value).encode("ascii"))
                             for key, value in info)
+
+        # "I support these protocol features. Which protocol features are supported by the stub?"
+        if command.startswith(b"qSupported"):
+            return b"qXfer:features:read+"
+
+        # "Tell me everything you know about the target features (architecture, registers, etc.)"
+        if command.startswith(b"qXfer:features:read:"):
+            annex, offset_length = command[20:].decode("ascii").split(":")
+            offset, length = map(lambda x: int(x, 16), offset_length.split(","))
+            if data := self.target_features().get(annex):
+                assert isinstance(data, (bytes, bytearray))
+                hex_chunk = binary_escape(data[offset:offset + length])
+                if offset + length >= len(data):
+                    return b"l" + hex_chunk
+                else:
+                    return b"m" + hex_chunk
+            else:
+                return (1, f"unsupported annex {annex!r}")
 
         # "Am I attached to a new process, or to an existing one?"
         if command == b"qAttached":
