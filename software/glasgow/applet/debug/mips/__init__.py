@@ -666,6 +666,9 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         else:
             assert False
 
+    def target_features(self):
+        return {}
+
     def target_register_names(self):
         reg_names  = [f"${reg}" for reg in range(32)]
         reg_names += ["sr", "lo", "hi", "bad", "cause", "pc"]
