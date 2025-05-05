@@ -724,19 +724,16 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         if await self._pracc_read_word(address) == SDBBP():
             await self._pracc_sync_icache(address)
             self._softw_brkpts[address] = saved_instr
-            return True
         else:
-            return False
+            raise GDBRemoteError("cannot set software breakpoint")
 
     async def target_clear_software_breakpt(self, address):
         self._check_state("clear software breakpoint", "Stopped")
-        if address in self._softw_brkpts:
-            await self._pracc_write_word(address, self._softw_brkpts[address])
-            await self._pracc_sync_icache(address)
-            del self._softw_brkpts[address]
-            return True
-        else:
-            return False
+        if address not in self._softw_brkpts:
+            raise GDBRemoteError("software breakpoint not set")
+        await self._pracc_write_word(address, self._softw_brkpts[address])
+        await self._pracc_sync_icache(address)
+        del self._softw_brkpts[address]
 
     async def target_set_instr_breakpt(self, address):
         self._check_state("set instruction breakpoint", "Stopped")
@@ -746,9 +743,9 @@ class EJTAGDebugInterface(aobject, GDBRemote):
                 await self._pracc_write_word(self._DRSEG_IBMn_addr(index), 0)
                 await self._pracc_write_word(self._DRSEG_IBCn_addr(index), DRSEG_IBC(1).to_int())
                 self._instr_brkpts[index] = address
-                return True
+                return
         else:
-            return False
+            raise GDBRemoteError("out of hardware breakpoints")
 
     async def target_clear_instr_breakpt(self, address):
         self._check_state("clear instruction breakpoint", "Stopped")
@@ -756,9 +753,9 @@ class EJTAGDebugInterface(aobject, GDBRemote):
             if self._instr_brkpts[index] == address:
                 await self._pracc_write_word(self._DRSEG_IBCn_addr(index), 0)
                 self._instr_brkpts[index] = None
-                return True
+                return
         else:
-            return False
+            raise GDBRemoteError("hardware breakpoint not set")
 
     async def target_get_registers(self):
         self._check_state("get registers", "Stopped")
@@ -849,13 +846,7 @@ class DebugMIPSApplet(JTAGProbeApplet):
 
         p_gdb = p_operation.add_parser(
             "gdb", help="start a GDB remote protocol server")
-        p_gdb.add_argument(
-            "-1", "--once", default=False, action="store_true",
-            help="exit when the remote client disconnects")
         ServerEndpoint.add_argument(p_gdb, "gdb_endpoint", default="tcp::1234")
-
-        p_repl = p_operation.add_parser(
-            "repl", help="drop into Python REPL and detach before exit")
 
     async def interact(self, device, args, ejtag_iface):
         if args.operation == "dump-state":
@@ -868,8 +859,9 @@ class DebugMIPSApplet(JTAGProbeApplet):
                 print(f"{name:<3} = {value:08x}")
 
         if args.operation == "gdb":
-            endpoint = await ServerEndpoint("GDB socket", self.logger, args.gdb_endpoint)
-            while args.not once:
+            endpoint = await ServerEndpoint("GDB socket", self.logger, args.gdb_endpoint,
+                deprecated_cancel_on_eof=True)
+            while True:
                 await ejtag_iface.gdb_run(endpoint)
 
                 # Unless we detach from the target here, we might not be able to re-enter

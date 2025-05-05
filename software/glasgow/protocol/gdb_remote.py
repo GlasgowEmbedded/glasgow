@@ -1,12 +1,17 @@
 import re
 import logging
 import asyncio
+import typing
 from abc import ABCMeta, abstractmethod
 
 from ..applet import GlasgowAppletError
 
 
-__all__ = ["GDBRemote"]
+__all__ = ["GDBRemote", "GDBRemoteError"]
+
+
+class GDBRemoteError(Exception):
+    pass
 
 
 class GDBRemote(metaclass=ABCMeta):
@@ -15,80 +20,84 @@ class GDBRemote(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def target_word_size(self):
-        pass
+    def target_word_size(self) -> int:
+        """Target word size, in bytes."""
 
     @abstractmethod
-    def target_endianness(self):
-        pass
+    def target_endianness(self) -> typing.Literal["big", "little"]:
+        """Target endianness; either ``"big"`` or ``"little"``."""
 
     @abstractmethod
-    def target_triple(self):
-        pass
+    def target_triple(self) -> str:
+        """Target triple."""
 
     @abstractmethod
-    def target_register_names(self):
-        pass
+    def target_register_names(self) -> list[str]:
+        """Names of target registers. Registers returned or accepted by ``target_get_registers()``
+        and ``target_set_registers()`` are returned in the order specified by this function."""
 
     @abstractmethod
-    def target_running(self):
-        pass
+    def target_running(self) -> bool:
+        """Whether the target is running. ``True`` if running, ``False`` if halted."""
 
     @abstractmethod
     async def target_stop(self):
-        pass
+        """Stops the target. Only called if ``target_running() == True``."""
 
     @abstractmethod
     async def target_continue(self):
-        pass
+        """Resumes the target. Only called if ``target_running() == False``."""
 
     @abstractmethod
     async def target_single_step(self):
-        pass
+        """Single-steps the target. Only called if ``target_running() == False``."""
 
     @abstractmethod
     async def target_detach(self):
-        pass
+        """Detaches from the target. Typically, this method clears all breakpoints and resumes
+        execution."""
 
     @abstractmethod
-    async def target_get_registers(self):
-        pass
+    async def target_get_registers(self) -> list[int]:
+        """Returns the values of all registers, in the order set by ``target_register_names()``."""
 
     @abstractmethod
-    async def target_set_registers(self, registers):
-        pass
+    async def target_set_registers(self, values: list[int]):
+        """Updates the values of all registers, in the order set by ``target_register_names()``."""
 
     @abstractmethod
-    async def target_get_register(self, number):
-        pass
+    async def target_get_register(self, number: int) -> int:
+        """Returns the value of one register, in the order set by ``target_register_names()``."""
 
     @abstractmethod
-    async def target_set_register(self, number, value):
-        pass
+    async def target_set_register(self, number: int, value: int):
+        """Updates the value of one register, in the order set by ``target_register_names()``."""
 
     @abstractmethod
-    async def target_read_memory(self, address, length):
-        pass
+    async def target_read_memory(self, address: int, length: int) -> bytes | bytearray | memoryview:
+        """Reads system memory."""
 
     @abstractmethod
-    async def target_write_memory(self, address, data):
-        pass
+    async def target_write_memory(self, address: int, data: bytes):
+        """Writes system memory."""
 
     @abstractmethod
-    async def target_set_software_breakpt(self, address):
-        pass
+    async def target_set_software_breakpt(self, address: int):
+        """Sets software breakpoint at given address. This could fail if the memory at this address
+        is not writable."""
 
     @abstractmethod
-    async def target_clear_software_breakpt(self, address):
-        pass
+    async def target_clear_software_breakpt(self, address: int):
+        """Clears software breakpoint previously set at given address."""
 
     @abstractmethod
-    async def target_set_instr_breakpt(self, address):
-        pass
+    async def target_set_instr_breakpt(self, address: int):
+        """Sets hardware breakpoint at given address. This could fail if the amount of available
+        hardware breakpoints is exceeded."""
 
     @abstractmethod
-    async def target_clear_instr_breakpt(self, address):
-        pass
+    async def target_clear_instr_breakpt(self, address: int):
+        """Clears hardware breakpoint previously set at given address."""
 
     async def gdb_run(self, endpoint):
         self.__non_stop = False
@@ -129,6 +138,10 @@ class GDBRemote(metaclass=ABCMeta):
                     try:
                         response = await self._gdb_process(command, lambda: endpoint.recv_wait())
                         command_failed = False
+                    except GDBRemoteError as e:
+                        response = (0, str(e))
+                    except NotImplementedError as e:
+                        response = (98, "not implemented")
                     except GlasgowAppletError as e:
                         self.gdb_log(logging.ERROR, "command '%s' caused an unrecoverable "
                                                     "error: %s",
@@ -139,7 +152,7 @@ class GDBRemote(metaclass=ABCMeta):
                 if isinstance(response, tuple):
                     if not command_failed:
                         self.gdb_log(logging.WARNING, "command '%s' caused an error: %s",
-                                     command_asc, response[4:].decode("ascii"))
+                                     command_asc, response[1])
 
                     error_num, error_msg = response
                     if self.__error_strings:
@@ -292,33 +305,25 @@ class GDBRemote(metaclass=ABCMeta):
         # "Set software breakpoint."
         if command.startswith(b"Z0"):
             address, _kind = map(lambda x: int(x, 16), command[3:].split(b","))
-            if await self.target_set_software_breakpt(address):
-                return b"OK"
-            else:
-                return (0, "cannot set software breakpoint")
+            await self.target_set_software_breakpt(address)
+            return b"OK"
 
         # "Clear software breakpoint."
         if command.startswith(b"z0"):
             address, _kind = map(lambda x: int(x, 16), command[3:].split(b","))
-            if await self.target_clear_software_breakpt(address):
-                return b"OK"
-            else:
-                return (0, "software breakpoint not set")
+            await self.target_clear_software_breakpt(address)
+            return b"OK"
 
         # "Set hardware breakpoint."
         if command.startswith(b"Z1"):
             address, _kind = map(lambda x: int(x, 16), command[3:].split(b","))
-            if await self.target_set_instr_breakpt(address):
-                return b"OK"
-            else:
-                return (0, "out of hardware breakpoints")
+            await self.target_set_instr_breakpt(address)
+            return b"OK"
 
         # "Clear hardware breakpoint."
         if command.startswith(b"z1"):
             address, _kind = map(lambda x: int(x, 16), command[3:].split(b","))
-            if await self.target_clear_instr_breakpt(address):
-                return b"OK"
-            else:
-                return (0, "hardware breakpoint not set")
+            await self.target_clear_instr_breakpt(address)
+            return b"OK"
 
         return b""
