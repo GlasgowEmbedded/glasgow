@@ -1,4 +1,5 @@
 import re
+import sys
 import logging
 import asyncio
 import typing
@@ -113,6 +114,7 @@ class GDBRemote(metaclass=ABCMeta):
     async def gdb_run(self, endpoint):
         self.__non_stop = False
         self.__error_strings = False
+        self.__quirk_byteorder = False
 
         try:
             no_ack_mode = False
@@ -203,6 +205,32 @@ class GDBRemote(metaclass=ABCMeta):
         def binary_escape(data):
             return re.sub(rb"[#$}*]", lambda m: bytes([0x7d, m[0][0] ^ 0x20]), data)
 
+        word_size, byteorder = self.target_word_size(), self.target_endianness()
+
+        if self.__quirk_byteorder:
+            # The GDB server protocol commands `gGpP` are specified as:
+            #
+            #    [...] Each byte of register data is described by two hex digits. The bytes with
+            #    the register are transmitted in target byte order.
+            #
+            # Leaving aside that you must be doing some really good (or bad) drugs for this
+            # way of defining the protocol that mostly uses big-endian hex numbers to look sensible
+            # for you, this is an unambiguous way to do it.
+            #
+            # Unfortunately, LLDB then implements it as (see e.g. the function
+            # `GDBRemoteCommunicationClient::WriteAllRegisters`):
+            #
+            #     StreamString payload;
+            #     payload.PutChar('G');
+            #     payload.PutBytesAsRawHex8(data.data(), data.size(),
+            #                                 endian::InlHostByteOrder(),
+            #                                 endian::InlHostByteOrder());
+            #
+            # So we have to detect LLDB somehow (`qHostInfo` is not used by GDB nor is it likely
+            # to ever be used by GDB) and change the byte order to the one LLDB itself probably
+            # (we can't know for sure) uses. We assume we run on the same host as LLDB.
+            byteorder = sys.byteorder
+
         # (lldb) "Send me human-readable error messages."
         if command == b"QEnableErrorStrings":
             self.__error_strings = True
@@ -210,6 +238,13 @@ class GDBRemote(metaclass=ABCMeta):
 
         # (lldb) "What are the properties of machine the target is running on?"
         if command == b"qHostInfo":
+            if byteorder != sys.byteorder:
+                self.__quirk_byteorder = True
+                self.gdb_log(logging.WARNING,
+                    "enabling workaround for using LLDB with a target of differing endianness; "
+                    "see https://github.com/llvm/llvm-project/issues/138536 for details; "
+                    "expect brokenness")
+
             info = [
                 (b"ptrsize", self.target_word_size()),
                 (b"endian",  self.target_endianness()),
@@ -286,29 +321,30 @@ class GDBRemote(metaclass=ABCMeta):
 
         # "Get all registers of the target."
         if command == b"g":
-            values = bytearray()
-            for register in await self.target_get_registers():
-                values += b"%.*x" % (self.target_word_size() * 2, register)
-            return values
+            response = bytearray()
+            for value in await self.target_get_registers():
+                response += value.to_bytes(word_size, byteorder)
+            return response.hex().encode("ascii")
 
         # "Get specific register of the target."
         if command.startswith(b"p"):
             number = int(command[1:], 16)
             value  = await self.target_get_register(number)
-            return b"%.*x" % (self.target_word_size() * 2, value)
+            return value.to_bytes(word_size, byteorder).hex().encode("ascii")
 
         # "Set all registers of the target."
         if command.startswith(b"G"):
-            values = command[1:]
-            registers = []
-            while values:
-                registers.append(int(values[:self.target_word_size() * 2]))
-                values = values[self.target_word_size() * 2:]
-            await self.target_set_registers(registers)
+            values = []
+            for start in range(len(command[1::word_size * 2])):
+                value = int(command[start:start + word_size * 2], 16).to_bytes(word_size, "big")
+                values.append(int.from_bytes(value, byteorder))
+            await self.target_set_registers(values)
 
         # "Set specific register of the target."
         if command.startswith(b"P"):
-            number, value = map(lambda x: int(x, 16), command[1:].split(b"="))
+            number, value = command[1:].split(b"=")
+            number = int(number, 16)
+            value  = int.from_bytes(int(value, 16).to_bytes(word_size, "big"), byteorder)
             await self.target_set_register(number, value)
             return b"OK"
 
