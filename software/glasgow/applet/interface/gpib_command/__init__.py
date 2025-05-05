@@ -2,6 +2,7 @@ import logging
 import argparse
 import math
 import sys
+import time
 from amaranth import *
 from amaranth.lib import io
 
@@ -66,12 +67,21 @@ line to 5v. Otherwise, the lines voltage should be dictatd by other
 devices on the bus.
 
 Tested against:
-  Tektronix TDS420A
-  Tektronix TDS3014
+  Tektronix TDS420A Oscilloscope
+  Tektronix TDS3014 Oscilloscope
+  Rigol DM3068 Multimeter
+  HP 1630D Logic Analyser
 """
 
-CMD_MLA = 0x40  # My Listen Address
-CMD_MTA = 0x20  # My Talk Address
+CMD_MLA = 0x40  # My Listen Address (+ Address)
+CMD_MTA = 0x20  # My Talk Address (+ Address)
+CMD_PPE = 0x60  # Parallel Poll Enable (+ Secondary Address)
+CMD_PPD = 0x70  # Parallel Poll Disable (+ Secondary Address)
+CMD_UNL = 0x3F  # Unlisten
+CMD_UNT = 0x5F  # Untalk
+CMD_SPE = 0x18  # Serial Poll Enable
+CMD_SPD = 0x19  # Serial Poll Disable
+CMD_LLO = 0x11  # Local Lock Out
 
 class GPIBBus(Elaboratable):
     def __init__(self, ports):
@@ -363,7 +373,7 @@ class GPIBCommandApplet(GlasgowApplet):
 
         parser.add_argument(
             "--address", metavar="ADDRESS", type=check_address, default=0,
-            help="targer GPIB device address")
+            help="target GPIB device address")
         parser.add_argument(
             "--command", metavar="CMD",
             help="command to send to target. listen only if empty")
@@ -405,16 +415,20 @@ class GPIBCommandApplet(GlasgowApplet):
 
         if args.command:
             await self.command(device, args, gpib, bytes([CMD_MTA + args.address]))
+            if args.read_eoi:
+                await self.command(device, args, gpib, bytes([CMD_MLA + args.address]))
             await self.talk(device, args, gpib, bytes(args.command.encode("ascii")))
             await device.write_register(self.__addr_eoi_o, 0)
             await self.talk(device, args, gpib, b'\n')
             await device.write_register(self.__addr_eoi_o, 1)
 
-        await self.command(device, args, gpib, bytes([CMD_MLA + args.address]))
-
         if args.read_eoi:
             async for data in self.listen(device, args, gpib, True):
                 sys.stdout.buffer.write(data)
+            await self.command(device, args, gpib, bytes([CMD_UNL]))
+
+        if args.command:
+            await self.command(device, args, gpib, bytes([CMD_UNT]))
 
     @classmethod
     def tests(cls):
