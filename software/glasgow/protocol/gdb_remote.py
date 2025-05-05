@@ -83,20 +83,32 @@ class GDBRemote(metaclass=ABCMeta):
     @abstractmethod
     async def target_set_software_breakpt(self, address: int, kind: int):
         """Sets software breakpoint at given address. This could fail if the memory at this address
-        is not writable."""
+        is not writable.
+
+        Raises ``NotImplementedError`` if this breakpoint type isn't supported."""
+        raise NotImplementedError
 
     @abstractmethod
     async def target_clear_software_breakpt(self, address: int, kind: int):
-        """Clears software breakpoint previously set at given address."""
+        """Clears software breakpoint previously set at given address.
+
+        Raises ``NotImplementedError`` if this breakpoint type isn't supported."""
+        raise NotImplementedError
 
     @abstractmethod
     async def target_set_instr_breakpt(self, address: int, kind: int):
         """Sets hardware breakpoint at given address. This could fail if the amount of available
-        hardware breakpoints is exceeded."""
+        hardware breakpoints is exceeded.
+
+        Raises ``NotImplementedError`` if this breakpoint type isn't supported."""
+        raise NotImplementedError
 
     @abstractmethod
     async def target_clear_instr_breakpt(self, address: int, kind: int):
-        """Clears hardware breakpoint previously set at given address."""
+        """Clears hardware breakpoint previously set at given address.
+
+        Raises ``NotImplementedError`` if this breakpoint type isn't supported."""
+        raise NotImplementedError
 
     async def gdb_run(self, endpoint):
         self.__non_stop = False
@@ -316,25 +328,37 @@ class GDBRemote(metaclass=ABCMeta):
         # "Set software breakpoint."
         if command.startswith(b"Z0"):
             address, kind = map(lambda x: int(x, 16), command[3:].split(b","))
-            await self.target_set_software_breakpt(address, kind)
-            return b"OK"
+            try:
+                await self.target_set_software_breakpt(address, kind)
+                return b"OK"
+            except NotImplementedError:
+                return b""
 
         # "Clear software breakpoint."
         if command.startswith(b"z0"):
             address, kind = map(lambda x: int(x, 16), command[3:].split(b","))
-            await self.target_clear_software_breakpt(address, kind)
-            return b"OK"
+            try:
+                await self.target_clear_software_breakpt(address, kind)
+                return b"OK"
+            except NotImplementedError:
+                return b""
 
         # "Set hardware breakpoint."
         if command.startswith(b"Z1"):
             address, kind = map(lambda x: int(x, 16), command[3:].split(b","))
-            await self.target_set_instr_breakpt(address, kind)
-            return b"OK"
+            try:
+                await self.target_set_instr_breakpt(address, kind)
+                return b"OK"
+            except NotImplementedError:
+                return b""
 
         # "Clear hardware breakpoint."
         if command.startswith(b"z1"):
             address, kind = map(lambda x: int(x, 16), command[3:].split(b","))
-            await self.target_clear_instr_breakpt(address, kind)
-            return b"OK"
+            try:
+                await self.target_clear_instr_breakpt(address, kind)
+                return b"OK"
+            except NotImplementedError:
+                return b""
 
         return b""
