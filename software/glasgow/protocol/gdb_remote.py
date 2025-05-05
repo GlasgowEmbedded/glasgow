@@ -81,21 +81,21 @@ class GDBRemote(metaclass=ABCMeta):
         """Writes system memory."""
 
     @abstractmethod
-    async def target_set_software_breakpt(self, address: int):
+    async def target_set_software_breakpt(self, address: int, kind: int):
         """Sets software breakpoint at given address. This could fail if the memory at this address
         is not writable."""
 
     @abstractmethod
-    async def target_clear_software_breakpt(self, address: int):
+    async def target_clear_software_breakpt(self, address: int, kind: int):
         """Clears software breakpoint previously set at given address."""
 
     @abstractmethod
-    async def target_set_instr_breakpt(self, address: int):
+    async def target_set_instr_breakpt(self, address: int, kind: int):
         """Sets hardware breakpoint at given address. This could fail if the amount of available
         hardware breakpoints is exceeded."""
 
     @abstractmethod
-    async def target_clear_instr_breakpt(self, address: int):
+    async def target_clear_instr_breakpt(self, address: int, kind: int):
         """Clears hardware breakpoint previously set at given address."""
 
     async def gdb_run(self, endpoint):
@@ -315,26 +315,26 @@ class GDBRemote(metaclass=ABCMeta):
 
         # "Set software breakpoint."
         if command.startswith(b"Z0"):
-            address, _kind = map(lambda x: int(x, 16), command[3:].split(b","))
-            await self.target_set_software_breakpt(address)
+            address, kind = map(lambda x: int(x, 16), command[3:].split(b","))
+            await self.target_set_software_breakpt(address, kind)
             return b"OK"
 
         # "Clear software breakpoint."
         if command.startswith(b"z0"):
-            address, _kind = map(lambda x: int(x, 16), command[3:].split(b","))
-            await self.target_clear_software_breakpt(address)
+            address, kind = map(lambda x: int(x, 16), command[3:].split(b","))
+            await self.target_clear_software_breakpt(address, kind)
             return b"OK"
 
         # "Set hardware breakpoint."
         if command.startswith(b"Z1"):
-            address, _kind = map(lambda x: int(x, 16), command[3:].split(b","))
-            await self.target_set_instr_breakpt(address)
+            address, kind = map(lambda x: int(x, 16), command[3:].split(b","))
+            await self.target_set_instr_breakpt(address, kind)
             return b"OK"
 
         # "Clear hardware breakpoint."
         if command.startswith(b"z1"):
-            address, _kind = map(lambda x: int(x, 16), command[3:].split(b","))
-            await self.target_clear_instr_breakpt(address)
+            address, kind = map(lambda x: int(x, 16), command[3:].split(b","))
+            await self.target_clear_instr_breakpt(address, kind)
             return b"OK"
 
         return b""

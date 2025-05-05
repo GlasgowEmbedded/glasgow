@@ -717,7 +717,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         self._softw_brkpts = {}
         await self._pracc_debug_return()
 
-    async def target_set_software_breakpt(self, address):
+    async def target_set_software_breakpt(self, address, kind):
         self._check_state("set software breakpoint", "Stopped")
         if address in self._softw_brkpts:
             saved_instr = self._softw_brkpts[address]
@@ -730,7 +730,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         else:
             raise GDBRemoteError("cannot set software breakpoint")
 
-    async def target_clear_software_breakpt(self, address):
+    async def target_clear_software_breakpt(self, address, kind):
         self._check_state("clear software breakpoint", "Stopped")
         if address not in self._softw_brkpts:
             raise GDBRemoteError("software breakpoint not set")
@@ -738,7 +738,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         await self._pracc_sync_icache(address)
         del self._softw_brkpts[address]
 
-    async def target_set_instr_breakpt(self, address):
+    async def target_set_instr_breakpt(self, address, kind):
         self._check_state("set instruction breakpoint", "Stopped")
         for index in range(len(self._instr_brkpts)):
             if self._instr_brkpts[index] is None:
@@ -750,7 +750,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         else:
             raise GDBRemoteError("out of hardware breakpoints")
 
-    async def target_clear_instr_breakpt(self, address):
+    async def target_clear_instr_breakpt(self, address, kind):
         self._check_state("clear instruction breakpoint", "Stopped")
         for index in range(len(self._instr_brkpts)):
             if self._instr_brkpts[index] == address:
