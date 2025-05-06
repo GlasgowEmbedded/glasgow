@@ -110,7 +110,7 @@ def create_argparser():
         help="save log messages at highest verbosity to FILE")
     parser.add_argument(
         "-F", "--filter-log", metavar="FILTER", type=str, action="append",
-        help="raise TRACE log messages to DEBUG if they begin with 'FILTER: '")
+        help="raise TRACE log messages to INFO if they begin with 'FILTER: '")
     parser.add_argument(
         "--statistics", dest="show_statistics", default=False, action="store_true",
         help="display performance counters before exiting")
@@ -506,7 +506,7 @@ class SubjectFilter:
         levelno = record.levelno
         for subject in self.subjects:
             if isinstance(record.msg, str) and record.msg.startswith(subject + ": "):
-                levelno = logging.DEBUG
+                levelno = logging.INFO
         return levelno >= self.level
 
 
