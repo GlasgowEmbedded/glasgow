@@ -36,7 +36,8 @@ class ServerEndpoint(aobject, asyncio.Protocol):
             name, metavar=metavar, type=endpoint, nargs=nargs, default=default,
             help=help)
 
-    async def __init__(self, name, logger, sock_addr, queue_size=None):
+    async def __init__(self, name, logger, sock_addr, queue_size=None, *,
+                       deprecated_cancel_on_eof=False):
         assert isinstance(sock_addr, tuple)
 
         self.name    = name
@@ -69,6 +70,12 @@ class ServerEndpoint(aobject, asyncio.Protocol):
         self._pos    = 0
 
         self._read_paused = False
+
+        self._cancel_on_eof = deprecated_cancel_on_eof
+        if self._cancel_on_eof:
+            self._log(logging.WARNING,
+                "ServerEndpoint with cancel-on-EOF behavior is deprecated; please fix this applet "
+                "and submit a pull request (thanks in advance!)")
 
     def _log(self, level, message, *args):
         self._logger.log(level, self.name + ": " + message, *args)
@@ -137,7 +144,10 @@ class ServerEndpoint(aobject, asyncio.Protocol):
             self._buffer = b""
             self._log(logging.TRACE, "recv end-of-stream")
             self._recv_epoch += 1
-            raise asyncio.CancelledError
+            if self._cancel_on_eof:
+                raise asyncio.CancelledError
+            else:
+                raise EOFError
 
     async def recv(self, length=0):
         data = bytearray()

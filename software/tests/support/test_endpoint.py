@@ -68,7 +68,7 @@ class ServerEndpointTestCase(unittest.TestCase):
         self.assertEqual(await conn_rd.readexactly(1), b"Z")
         await endp.close()
         self.assertEqual(await conn_rd.read(1), b"")
-        with self.assertRaises(asyncio.CancelledError):
+        with self.assertRaises(EOFError):
             await endp.recv(1)
         conn_wr.close()
 
@@ -77,12 +77,11 @@ class ServerEndpointTestCase(unittest.TestCase):
         await conn_wr.drain()
         self.assertEqual(await endp.recv(3), b"ABC")
         conn_wr.close()
-        with self.assertRaises(asyncio.CancelledError):
+        with self.assertRaises(EOFError):
             await endp.recv(1)
 
     def test_lifecycle(self):
-        asyncio.get_event_loop().run_until_complete(
-            self.do_test_lifecycle())
+        asyncio.run(self.do_test_lifecycle())
 
     async def do_test_until(self):
         sock = ("unix", f"{tempfile.gettempdir()}/test_until_sock")
@@ -95,10 +94,10 @@ class ServerEndpointTestCase(unittest.TestCase):
         conn_wr.write(b";")
         await conn_wr.drain()
         self.assertEqual(await endp.recv_until(b";"), b"DEF")
+        conn_wr.close()
 
     def test_until(self):
-        asyncio.get_event_loop().run_until_complete(
-            self.do_test_until())
+        asyncio.run(self.do_test_until())
 
     async def do_test_tcp(self):
         sock = ("tcp", "localhost", 9999)
@@ -111,12 +110,11 @@ class ServerEndpointTestCase(unittest.TestCase):
         await endp.send(b"XYZ")
         self.assertEqual(await conn_rd.readexactly(3), b"XYZ")
         conn_wr.close()
-        with self.assertRaises(asyncio.exceptions.CancelledError):
+        with self.assertRaises(EOFError):
             await endp.recv(1)
 
     def test_tcp(self):
-        asyncio.get_event_loop().run_until_complete(
-            self.do_test_tcp())
+        asyncio.run(self.do_test_tcp())
 
     async def do_test_server_banner(self):
         sock = ("tcp", "localhost", 2345)
@@ -127,11 +125,10 @@ class ServerEndpointTestCase(unittest.TestCase):
             await endp.send(b"Hello")
         asyncio.create_task(endpoint_task())
 
-        conn_rd, _ = await asyncio.open_connection(*sock[1:])
-        r = await conn_rd.read(5)
-        self.assertEqual(r, b"Hello")
+        conn_rd, conn_wr = await asyncio.open_connection(*sock[1:])
+        self.assertEqual(await conn_rd.read(5), b"Hello")
+        conn_wr.close()
 
     def test_server_banner(self):
         logging.basicConfig(level=logging.TRACE)
-        asyncio.get_event_loop().run_until_complete(
-            self.do_test_server_banner())
+        asyncio.run(self.do_test_server_banner())

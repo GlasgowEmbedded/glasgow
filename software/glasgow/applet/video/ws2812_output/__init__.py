@@ -194,7 +194,8 @@ class VideoWS2812OutputApplet(GlasgowApplet):
     async def interact(self, device, args, leds):
         frame_size = len(args.pin_set_out) * args.count * self.pix_in_size
         buffer_size = frame_size * args.buffer
-        endpoint = await ServerEndpoint("socket", self.logger, args.endpoint, queue_size=buffer_size)
+        endpoint = await ServerEndpoint("socket", self.logger, args.endpoint, queue_size=buffer_size,
+            deprecated_cancel_on_eof=True)
         while True:
             try:
                 data = await asyncio.shield(endpoint.recv(buffer_size))

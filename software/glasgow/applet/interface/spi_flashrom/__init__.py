@@ -196,7 +196,8 @@ class SPIFlashromApplet(SPIControllerApplet):
         ServerEndpoint.add_argument(parser, "endpoint")
 
     async def interact(self, device, args, iface):
-        endpoint = await ServerEndpoint("socket", self.logger, args.endpoint)
+        endpoint = await ServerEndpoint("socket", self.logger, args.endpoint,
+            deprecated_cancel_on_eof=True)
         async def handle():
             while True:
                 try:
