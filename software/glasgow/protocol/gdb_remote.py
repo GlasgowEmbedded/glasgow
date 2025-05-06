@@ -311,18 +311,21 @@ class GDBRemote(metaclass=ABCMeta):
 
         # "Resume target."
         if command in (b"c", b"vCont;c"):
-            continue_fut  = asyncio.ensure_future(self.target_continue())
+            continue_task = asyncio.create_task(self.target_continue())
             interrupt_fut = asyncio.ensure_future(make_recv_fut())
-            await asyncio.wait([continue_fut, interrupt_fut], return_when=asyncio.FIRST_COMPLETED)
+            await asyncio.wait([continue_task, interrupt_fut], return_when=asyncio.FIRST_COMPLETED)
             if interrupt_fut.done():
+                continue_task.cancel()
                 await interrupt_fut
+                await asyncio.wait([continue_task]) # wait for the cancellation to finish
+                assert continue_task.cancelled()
+                # If we ever implement non-stop mode, then instead of blocking the entire GDB
+                # remote server on continue, we'd wait on the continue future in the background
+                # and notify GDB on completion.
+                await self.target_stop()
             else:
                 interrupt_fut.cancel()
-            if continue_fut.done():
-                await continue_fut
-            else:
-                continue_fut.cancel()
-                await self.target_stop()
+                await continue_task
             return b"T05thread:0;"
 
         # "Single-step target [but first jump to this address]."
