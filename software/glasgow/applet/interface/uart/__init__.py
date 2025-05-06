@@ -386,7 +386,8 @@ class UARTApplet(GlasgowApplet):
         await self._forward(master, master, uart)
 
     async def _interact_socket(self, uart, endpoint):
-        endpoint = await ServerEndpoint("socket", self.logger, endpoint)
+        endpoint = await ServerEndpoint("socket", self.logger, endpoint,
+            deprecated_cancel_on_eof=True)
         async def forward_out():
             while True:
                 try:

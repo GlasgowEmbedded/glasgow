@@ -255,7 +255,8 @@ async def main():
         async def device_write(self, offset, data):
             disk[offset:offset+len(data)] = data
 
-    endpoint = await ServerEndpoint("socket", logger, args.endpoint)
+    endpoint = await ServerEndpoint("socket", logger, args.endpoint,
+        deprecated_cancel_on_eof=True)
     conn = Ramdisk(endpoint, logger, writable=True)
     await conn.handle()
 
