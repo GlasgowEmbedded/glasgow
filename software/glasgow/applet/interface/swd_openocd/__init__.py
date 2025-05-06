@@ -168,27 +168,22 @@ class SWDOpenOCDApplet(GlasgowApplet):
         ServerEndpoint.add_argument(parser, "endpoint")
 
     async def interact(self, device, args, iface):
-        endpoint = await ServerEndpoint("socket", self.logger, args.endpoint,
-            deprecated_cancel_on_eof=True)
+        endpoint = await ServerEndpoint("socket", self.logger, args.endpoint)
         async def forward_out():
             while True:
                 try:
                     data = await endpoint.recv()
-                    await iface.write(data)
-                    await iface.flush()
-                except asyncio.CancelledError:
-                    pass
+                except EOFError:
+                    continue
+                await iface.write(data)
+                await iface.flush()
         async def forward_in():
             while True:
-                try:
-                    data = await iface.read()
-                    await endpoint.send(data)
-                except asyncio.CancelledError:
-                    pass
-        forward_out_fut = asyncio.ensure_future(forward_out())
-        forward_in_fut  = asyncio.ensure_future(forward_in())
-        await asyncio.wait([forward_out_fut, forward_in_fut],
-                           return_when=asyncio.FIRST_EXCEPTION)
+                data = await iface.read()
+                await endpoint.send(data)
+        async with asyncio.TaskGroup() as group:
+            group.create_task(forward_out())
+            group.create_task(forward_in())
 
     @classmethod
     def tests(cls):
