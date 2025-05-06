@@ -111,20 +111,20 @@ class GPIBBus(Elaboratable):
     def __init__(self, ports):
         self.ports = ports
 
-        self.dio_i  = Signal(8, init=0xFF)  # Data Lines            Listen
-        self.dio_o  = Signal(8, init=0xFF)  #                       Talk
-        self.eoi_i  = Signal(1, init=1)     # End or Identify       Listen
-        self.eoi_o  = Signal(1, init=1)     #                       Talk
-        self.dav_i  = Signal(1, init=1)     # Data Valid            Listen
-        self.dav_o  = Signal(1, init=1)     #                       Talk
-        self.nrfd_i = Signal(1, init=1)     # Not Ready For Data    Talk
-        self.nrfd_o = Signal(1, init=1)     #                       Listen
-        self.ndac_i = Signal(1, init=1)     # Not Data Accepted     Talk
-        self.ndac_o = Signal(1, init=1)     #                       Listen
-        self.srq_i  = Signal(1, init=1)     # Service Request       Any
-        self.ifc_o  = Signal(1, init=1)     # Interface Clear       Any
-        self.atn_o  = Signal(1, init=1)     # Attention             Any
-        self.ren_o  = Signal(1, init=1)     # Remote Enable         Any
+        self.dio_i  = Signal(8)  # Data Lines            Listen
+        self.dio_o  = Signal(8)  #                       Talk
+        self.eoi_i  = Signal(1)  # End or Identify       Listen
+        self.eoi_o  = Signal(1)  #                       Talk
+        self.dav_i  = Signal(1)  # Data Valid            Listen
+        self.dav_o  = Signal(1)  #                       Talk
+        self.nrfd_i = Signal(1)  # Not Ready For Data    Talk
+        self.nrfd_o = Signal(1)  #                       Listen
+        self.ndac_i = Signal(1)  # Not Data Accepted     Talk
+        self.ndac_o = Signal(1)  #                       Listen
+        self.srq_i  = Signal(1)  # Service Request       Any
+        self.ifc_o  = Signal(1)  # Interface Clear       Any
+        self.atn_o  = Signal(1)  # Attention             Any
+        self.ren_o  = Signal(1)  # Remote Enable         Any
 
         self.talking   = Signal()
         self.listening = Signal()
@@ -132,15 +132,15 @@ class GPIBBus(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.dio_buffer  = dio_buffer  = io.Buffer("io", self.ports.dio)
-        m.submodules.eoi_buffer  = eoi_buffer  = io.Buffer("io", self.ports.eoi)
-        m.submodules.dav_buffer  = dav_buffer  = io.Buffer("io", self.ports.dav)
-        m.submodules.nrfd_buffer = nrfd_buffer = io.Buffer("io", self.ports.nrfd)
-        m.submodules.ndac_buffer = ndac_buffer = io.Buffer("io", self.ports.ndac)
-        m.submodules.srq_buffer  = srq_buffer  = io.Buffer("i", self.ports.srq)
-        m.submodules.ifc_buffer  = ifc_buffer  = io.Buffer("o", self.ports.ifc)
-        m.submodules.atn_buffer  = atn_buffer  = io.Buffer("o", self.ports.atn)
-        m.submodules.ren_buffer  = ren_buffer  = io.Buffer("o", self.ports.ren)
+        m.submodules.dio_buffer  = dio_buffer  = io.Buffer("io", ~self.ports.dio)
+        m.submodules.eoi_buffer  = eoi_buffer  = io.Buffer("io", ~self.ports.eoi)
+        m.submodules.dav_buffer  = dav_buffer  = io.Buffer("io", ~self.ports.dav)
+        m.submodules.nrfd_buffer = nrfd_buffer = io.Buffer("io", ~self.ports.nrfd)
+        m.submodules.ndac_buffer = ndac_buffer = io.Buffer("io", ~self.ports.ndac)
+        m.submodules.srq_buffer  = srq_buffer  = io.Buffer("i",  ~self.ports.srq)
+        m.submodules.ifc_buffer  = ifc_buffer  = io.Buffer("o",  ~self.ports.ifc)
+        m.submodules.atn_buffer  = atn_buffer  = io.Buffer("o",  ~self.ports.atn)
+        m.submodules.ren_buffer  = ren_buffer  = io.Buffer("o",  ~self.ports.ren)
 
         # and use that to determine if an output should be enabled.
         # srq is input only, so it does not get an oe signal.
@@ -153,33 +153,24 @@ class GPIBBus(Elaboratable):
             ifc_buffer.oe.eq(self.talking),
             atn_buffer.oe.eq(self.talking),
             ren_buffer.oe.eq(self.talking),
-        ]
 
-        # Some lines never change from the controller's perspective.
-        m.d.comb += [
             self.srq_i.eq(srq_buffer.i),
             ifc_buffer.o.eq(self.ifc_o),
             atn_buffer.o.eq(self.atn_o),
             ren_buffer.o.eq(self.ren_o),
+
+            self.dio_i.eq(dio_buffer.i),
+            self.eoi_i.eq(eoi_buffer.i),
+            self.dav_i.eq(dav_buffer.i),
+            nrfd_buffer.o.eq(self.nrfd_o),
+            ndac_buffer.o.eq(self.ndac_o),
+
+            dio_buffer.o.eq(self.dio_o),
+            eoi_buffer.o.eq(self.eoi_o),
+            dav_buffer.o.eq(self.dav_o),
+            self.nrfd_i.eq(nrfd_buffer.i),
+            self.ndac_i.eq(ndac_buffer.i),
         ]
-
-        with m.If(self.listening):
-            m.d.comb += [
-                self.dio_i.eq(dio_buffer.i),
-                self.eoi_i.eq(eoi_buffer.i),
-                self.dav_i.eq(dav_buffer.i),
-                nrfd_buffer.o.eq(self.nrfd_o),
-                ndac_buffer.o.eq(self.ndac_o),
-            ]
-
-        with m.If(self.talking):
-            m.d.comb += [
-                dio_buffer.o.eq(self.dio_o),
-                eoi_buffer.o.eq(self.eoi_o),
-                dav_buffer.o.eq(self.dav_o),
-                self.nrfd_i.eq(nrfd_buffer.i),
-                self.ndac_i.eq(ndac_buffer.i),
-            ]
 
         return m
 
@@ -230,7 +221,7 @@ class GPIBSubtarget(Elaboratable):
 
             with m.State("Control: Check for data"):
                 m.d.comb += self.out_fifo.r_en.eq(1)
-                with m.If(self.out_fifo.r_rdy):
+                with m.If(~self.out_fifo.r_rdy):
                     m.d.sync += l_control.eq(self.out_fifo.r_data)
                     m.next = "Control: Read data byte"
 
@@ -272,9 +263,9 @@ class GPIBSubtarget(Elaboratable):
                 ]
                 with m.If(~ctrl_tx):
                     m.next = "Control: Check for data"
-                with m.If(~self.bus.ndac_i & ctrl_tx):
+                with m.If(self.bus.ndac_i & ctrl_tx):
                     m.d.sync += [
-                        self.bus.dio_o.eq(~l_data),
+                        self.bus.dio_o.eq(l_data),
                         timer.eq(settle_delay),
                     ]
                     m.next = "Talk: DIO Stabalise"
@@ -285,8 +276,8 @@ class GPIBSubtarget(Elaboratable):
                     m.next = "Talk: NRFD"
 
             with m.State("Talk: NRFD"):
-                with m.If(self.bus.nrfd_i):
-                    m.d.sync += self.bus.dav_o.eq(0)
+                with m.If(~self.bus.nrfd_i):
+                    m.d.sync += self.bus.dav_o.eq(1)
                     m.next = "Talk: NDAC"
 
             with m.State("Talk: NDAC"):
@@ -296,15 +287,15 @@ class GPIBSubtarget(Elaboratable):
 
             with m.State("Listen: Begin"):
                 m.d.sync += [
-                    self.bus.ndac_o.eq(0),
-                    self.bus.nrfd_o.eq(1),
+                    self.bus.ndac_o.eq(1),
+                    self.bus.nrfd_o.eq(0),
                 ]
-                with m.If(~self.bus.dav_i):
+                with m.If(self.bus.dav_i):
                     m.next = "Listen: Management lines"
 
             with m.State("Listen: Management lines"):
                 m.d.sync += [
-                    self.in_fifo.w_data.eq(((~self.bus.eoi_i) << 1) | 1)
+                    self.in_fifo.w_data.eq((self.bus.eoi_i << 1) | 1)
                 ]
                 m.next = "Listen: Management lines acknowledge"
 
@@ -315,8 +306,8 @@ class GPIBSubtarget(Elaboratable):
 
             with m.State("Listen: DIO lines"):
                 m.d.sync += [
-                    self.in_fifo.w_data.eq(~self.bus.dio_i),
-                    self.bus.nrfd_o.eq(0),
+                    self.in_fifo.w_data.eq(self.bus.dio_i),
+                    self.bus.nrfd_o.eq(1),
                 ]
                 m.next = "Listen: DIO lines acknowledge"
 
@@ -324,14 +315,14 @@ class GPIBSubtarget(Elaboratable):
                 m.d.comb += self.in_fifo.w_en.eq(1)
                 with m.If(self.in_fifo.w_rdy):
                     m.d.sync += [
-                        self.bus.ndac_o.eq(1),
+                        self.bus.ndac_o.eq(0),
                     ]
                     m.next = "Listen: DAV unassert"
 
             with m.State("Listen: DAV unassert"):
-                with m.If(self.bus.dav_i):
+                with m.If(~self.bus.dav_i):
                     m.d.sync += [
-                        self.bus.ndac_o.eq(0)
+                        self.bus.ndac_o.eq(1)
                     ]
                     m.next = "Control: Check for data"
 
