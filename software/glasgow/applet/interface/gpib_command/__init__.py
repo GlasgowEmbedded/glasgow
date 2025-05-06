@@ -3,6 +3,7 @@ import argparse
 import math
 import sys
 import time
+import asyncio
 from enum import IntEnum
 from amaranth import *
 from amaranth.lib import io
@@ -123,6 +124,16 @@ class GPIBMessage(IntEnum):
     Command        = 0b1000_0101 # Command byte
     InterfaceClear = 0b1000_1000 # Instruct all devices reset their state (e.g. clear errors)
 
+    _Acknowledge   = 0b1000_0000 # Internal - acknowledge that data has been sent
+
+class GPIBStatus(IntEnum):
+    Idle    = 0
+    Control = 1
+    Talk    = 2
+    Listen  = 3
+    Unknown = 8
+    Error   = 16
+
 class GPIBBus(Elaboratable):
     def __init__(self, ports):
         self.ports = ports
@@ -191,12 +202,11 @@ class GPIBBus(Elaboratable):
         return m
 
 class GPIBSubtarget(Elaboratable):
-    def __init__(self, ports, in_fifo, out_fifo):
+    def __init__(self, ports, in_fifo, out_fifo, status):
         self.bus = GPIBBus(ports)
         self.in_fifo  = in_fifo
         self.out_fifo = out_fifo
-
-        self.status      = Signal(8)
+        self.status   = status
 
     def elaborate(self, platform):
         m = Module()
@@ -235,13 +245,15 @@ class GPIBSubtarget(Elaboratable):
                 ctrl_talk.eq(l_control[7]),
             ]
 
-            with m.State("Control: Check for data"):
+            with m.State("Control: Begin"):
+                m.d.sync += self.status.eq(GPIBStatus.Idle)
                 m.d.comb += self.out_fifo.r_en.eq(1)
                 with m.If(self.out_fifo.r_rdy):
                     m.d.sync += l_control.eq(self.out_fifo.r_data)
-                    m.next = "Control: Read data byte"
+                    m.next = "Control: Read data"
 
-            with m.State("Control: Read data byte"):
+            with m.State("Control: Read data"):
+                m.d.sync += self.status.eq(GPIBStatus.Control)
                 m.d.comb += self.out_fifo.r_en.eq(1)
                 with m.If(self.out_fifo.r_rdy):
                     m.d.sync += l_data.eq(self.out_fifo.r_data)
@@ -255,18 +267,14 @@ class GPIBSubtarget(Elaboratable):
                 with m.If(ctrl_talk & ctrl_listen):
                     m.next = "Control: Error"
                 with m.If(ctrl_talk & ~ctrl_listen):
-                    m.d.sync += self.status.eq(1)
+                    m.d.sync += self.status.eq(GPIBStatus.Talk)
                     m.next = "Talk: Begin"
                 with m.If(ctrl_listen & ~ctrl_talk):
-                    m.d.sync += self.status.eq(2)
+                    m.d.sync += self.status.eq(GPIBStatus.Listen)
                     m.next = "Listen: Begin"
 
             with m.State("Control: Error"):
-                m.d.sync += self.status.eq(0)
-
-            with m.State("Control: Acknowledge Transmit"):
-                # send a byte back with the MSB set to 1
-                m.next = "Control: Check for data"
+                m.d.sync += self.status.eq(GPIBStatus.Error)
 
 
             with m.State("Talk: Begin"):
@@ -278,7 +286,7 @@ class GPIBSubtarget(Elaboratable):
                     self.bus.dav_o.eq(0),
                 ]
                 with m.If(~ctrl_tx):
-                    m.next = "Control: Check for data"
+                    m.next = "Talk: FIFO Acknowledge"
                 with m.If(self.bus.ndac_i & ctrl_tx):
                     m.d.sync += [
                         self.bus.dio_o.eq(l_data),
@@ -298,13 +306,20 @@ class GPIBSubtarget(Elaboratable):
 
             with m.State("Talk: NDAC"):
                 with m.If(~self.bus.ndac_i):
-                    m.next = "Control: Acknowledge Transmit"
+                    m.d.sync += self.bus.dav_o.eq(0)
+                    m.next = "Talk: FIFO Acknowledge"
 
+            with m.State("Talk: FIFO Acknowledge"):
+                m.d.comb += self.in_fifo.w_en.eq(1)
+                with m.If(self.in_fifo.w_rdy):
+                    m.d.sync += self.in_fifo.w_data.eq(GPIBMessage._Acknowledge)
+                    m.next = "Control: Begin"
 
             with m.State("Listen: Begin"):
                 m.d.sync += [
                     self.bus.ndac_o.eq(1),
                     self.bus.nrfd_o.eq(0),
+                    self.bus.atn_o.eq(0),
                 ]
                 with m.If(self.bus.dav_i):
                     m.next = "Listen: Management lines"
@@ -338,9 +353,9 @@ class GPIBSubtarget(Elaboratable):
             with m.State("Listen: DAV unassert"):
                 with m.If(~self.bus.dav_i):
                     m.d.sync += [
-                        self.bus.ndac_o.eq(1)
+                        self.bus.ndac_o.eq(1),
                     ]
-                    m.next = "Control: Check for data"
+                    m.next = "Control: Begin"
 
 
         return m
@@ -384,7 +399,8 @@ class GPIBCommandApplet(GlasgowApplet):
                 ren  = args.pin_ren,
             ),
             in_fifo=iface.get_in_fifo(),
-            out_fifo=iface.get_out_fifo()
+            out_fifo=iface.get_out_fifo(),
+            status=status
         ))
 
         self._sample_freq = target.sys_clk_freq
@@ -425,16 +441,28 @@ class GPIBCommandApplet(GlasgowApplet):
 
     async def write(self, control, data=bytes([0])):
         await self._device.set_pulls(self._args.port_spec, high={pin.number for pin in self.talk_pull_high})
-        await self._gpib.write(bytes([ x for b in data for x in (control, b) ]))
+
+        for b in data:
+            await self._gpib.write(bytes([control]))
+            await self._gpib.write(bytes([b]))
+            ack = (await self._gpib.read(1))[0]
+            assert GPIBMessage(ack) == GPIBMessage._Acknowledge
 
     async def read(self, gpib, to_eoi=False):
         await self._device.set_pulls(self._args.port_spec, high={pin.number for pin in self.listen_pull_high})
 
         eoi = False
         while not eoi:
-            await self.write(GPIBMessage.Listen)
+            await self._gpib.write(bytes([GPIBMessage.Listen]))
+            await self._gpib.write(bytes([0]))
+            await self._gpib.flush()
+
             eoi = (await self._gpib.read(1)).tobytes()[0] & 2
-            yield (await self._gpib.read(1)).tobytes()
+            data = (await self._gpib.read(1)).tobytes()
+            yield data
+
+    async def bus_status(self):
+        return GPIBStatus(await self._device.read_register(self.__addr_status))
 
     async def interact(self, device, args, gpib):
         self._device = device
@@ -447,11 +475,13 @@ class GPIBCommandApplet(GlasgowApplet):
             await self.write(GPIBMessage.DataEOI, b'\n')
             await self.write(GPIBMessage.Command, bytes([GPIBCommand.MLA + args.address]))
 
-        time.sleep(1)
-
         if args.read_eoi:
             async for data in self.read(True):
                 sys.stdout.buffer.write(data)
+                sys.stdout.buffer.flush()
+
+
+
 
     @classmethod
     def tests(cls):
