@@ -3,6 +3,7 @@ import argparse
 import math
 import sys
 import time
+from enum import IntEnum
 from amaranth import *
 from amaranth.lib import io
 
@@ -97,15 +98,30 @@ The applet has been tested with the following pieces of test equipment:
   HP 1630D Logic Analyser
 """
 
-CMD_MLA = 0x40  # My Listen Address (+ Address)
-CMD_MTA = 0x20  # My Talk Address (+ Address)
-CMD_PPE = 0x60  # Parallel Poll Enable (+ Secondary Address)
-CMD_PPD = 0x70  # Parallel Poll Disable (+ Secondary Address)
-CMD_UNL = 0x3F  # Unlisten
-CMD_UNT = 0x5F  # Untalk
-CMD_SPE = 0x18  # Serial Poll Enable
-CMD_SPD = 0x19  # Serial Poll Disable
-CMD_LLO = 0x11  # Local Lock Out
+
+
+class GPIBCommand(IntEnum):
+    # When the bus is in command mode, these commands can be sent to
+    # all devices on the bus. For example, to instruct device 10 to
+    # listen to you, you would send MTA + 10.
+    MLA = 0x40  # My Listen Address (+ Address)
+    MTA = 0x20  # My Talk Address (+ Address)
+    PPE = 0x60  # Parallel Poll Enable (+ Secondary Address)
+    PPD = 0x70  # Parallel Poll Disable (+ Secondary Address)
+    UNL = 0x3F  # Unlisten
+    UNT = 0x5F  # Untalk
+    SPE = 0x18  # Serial Poll Enable
+    SPD = 0x19  # Serial Poll Disable
+    LLO = 0x11  # Local Lock Out
+
+class GPIBMessage(IntEnum):
+    # These are sent prior to any data/commands being sent, and
+    # dictate how the controller should handle the data.
+    Listen         = 0b0100_0000 # Listen mode, request byte
+    Data           = 0b1000_0001 # Normal data byte
+    DataEOI        = 0b1000_0011 # Last data byte
+    Command        = 0b1000_0101 # Command byte
+    InterfaceClear = 0b1000_1000 # Instruct all devices reset their state (e.g. clear errors)
 
 class GPIBBus(Elaboratable):
     def __init__(self, ports):
@@ -416,7 +432,7 @@ class GPIBCommandApplet(GlasgowApplet):
 
         eoi = True
         while eoi:
-            await self.write(0b0100_0000)
+            await self.write(GPIBMessage.Listen)
             eoi = (await self._gpib.read(1)).tobytes()[0] & 2
             yield (await self._gpib.read(1)).tobytes()
 
@@ -425,36 +441,17 @@ class GPIBCommandApplet(GlasgowApplet):
         self._args = args
         self._gpib = gpib
 
-        LISTEN = 0b0100_0000 # 0x40
-        DATA   = 0b1001_1111 # 0x9F
-        CMD    = 0b1001_1011 # 0x9B
-        EOI    = 0b1001_1101 # 0x9D
-        #REN   = 0b01110
-        #IFC   = 0b10110
-
         if args.command:
-            await self.write(CMD, bytes([CMD_MTA + args.address]))
-            await self.write(DATA, bytes(args.command.encode("ascii")))
-            # await self.write(DATA, b'*')
-            # await self.write(DATA, b'I')
-            # await self.write(DATA, b'D')
-            # await self.write(DATA, b'N')
-            # await self.write(DATA, b'?')
-            await self.write(DATA & EOI, b'\n')
-            await self.write(CMD, bytes([CMD_MLA + args.address]))
+            await self.write(GPIBMessage.Command, bytes([GPIBCommand.MTA + args.address]))
+            await self.write(GPIBMessage.Data, bytes(args.command.encode("ascii")))
+            await self.write(GPIBMessage.DataEOI & EOI, b'\n')
+            await self.write(GPIBMessage.Command, bytes([GPIBCommand.MLA + args.address]))
 
-        # await self.write(CMD, bytes([CMD_MLA + args.address]))
         time.sleep(1)
 
-        # time.sleep(0.5)
         if args.read_eoi:
             async for data in self.read(True):
                 sys.stdout.buffer.write(data)
-
-        time.sleep(0.1)
-
-        # if args.command:
-        #     await self.write(CMD, bytes([CMD_UNT]))
 
     @classmethod
     def tests(cls):
