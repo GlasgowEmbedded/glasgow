@@ -237,7 +237,7 @@ class GPIBSubtarget(Elaboratable):
 
             with m.State("Control: Check for data"):
                 m.d.comb += self.out_fifo.r_en.eq(1)
-                with m.If(~self.out_fifo.r_rdy):
+                with m.If(self.out_fifo.r_rdy):
                     m.d.sync += l_control.eq(self.out_fifo.r_data)
                     m.next = "Control: Read data byte"
 
@@ -275,7 +275,7 @@ class GPIBSubtarget(Elaboratable):
                     self.bus.atn_o.eq(ctrl_atn),
                     self.bus.ifc_o.eq(ctrl_ifc),
                     self.bus.ren_o.eq(ctrl_ren),
-                    self.bus.dav_o.eq(1),
+                    self.bus.dav_o.eq(0),
                 ]
                 with m.If(~ctrl_tx):
                     m.next = "Control: Check for data"
@@ -297,7 +297,7 @@ class GPIBSubtarget(Elaboratable):
                     m.next = "Talk: NDAC"
 
             with m.State("Talk: NDAC"):
-                with m.If(self.bus.ndac_i):
+                with m.If(~self.bus.ndac_i):
                     m.next = "Control: Acknowledge Transmit"
 
 
@@ -430,8 +430,8 @@ class GPIBCommandApplet(GlasgowApplet):
     async def read(self, gpib, to_eoi=False):
         await self._device.set_pulls(self._args.port_spec, high={pin.number for pin in self.listen_pull_high})
 
-        eoi = True
-        while eoi:
+        eoi = False
+        while not eoi:
             await self.write(GPIBMessage.Listen)
             eoi = (await self._gpib.read(1)).tobytes()[0] & 2
             yield (await self._gpib.read(1)).tobytes()
@@ -444,7 +444,7 @@ class GPIBCommandApplet(GlasgowApplet):
         if args.command:
             await self.write(GPIBMessage.Command, bytes([GPIBCommand.MTA + args.address]))
             await self.write(GPIBMessage.Data, bytes(args.command.encode("ascii")))
-            await self.write(GPIBMessage.DataEOI & EOI, b'\n')
+            await self.write(GPIBMessage.DataEOI, b'\n')
             await self.write(GPIBMessage.Command, bytes([GPIBCommand.MLA + args.address]))
 
         time.sleep(1)
