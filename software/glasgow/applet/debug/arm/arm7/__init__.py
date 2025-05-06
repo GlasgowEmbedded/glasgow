@@ -82,11 +82,13 @@ class DebugARM7Error(GlasgowAppletError):
 class DebugARM7Opcode(enum.Enum, shape=3):
     GET_REG  = 0b000
     SET_REG  = 0b001
-    POLL_ACK = 0b110
 
     GET_BUS  = 0b010
     PUT_BUS  = 0b011
+
     RESTART  = 0b101
+    POLL_ACK = 0b110
+    CANCEL   = 0b100 # (does nothing unless sent directly after POLL_ACK)
 
     GET_ID   = 0b111
 
@@ -178,6 +180,9 @@ class DebugARM7Sequencer(wiring.Component):
                     with m.Case(DebugARM7Opcode.RESTART):
                         m.next = "Set IR RESTART"
 
+                    with m.Case(DebugARM7Opcode.CANCEL):
+                        m.next = "Fetch command"
+
                     with m.Case(DebugARM7Opcode.GET_ID):
                         m.next = "Set IR IDCODE"
 
@@ -231,15 +236,25 @@ class DebugARM7Sequencer(wiring.Component):
                     m.next = "Check for TRANS[1] & DBGACK"
 
             with m.State("Check for TRANS[1] & DBGACK"):
-                m.d.comb += probe_o_buffered.ready.eq(1)
                 with m.If(probe_o_buffered.valid):
-                    dbgsta = probe_o_buffered.p.data
                     # The only way to determine whether the memory access has completed is
                     # to examine the state of both TRANS[1:0] and DBGACK. When both are HIGH,
                     # the access has completed.
-                    with m.If(dbgsta[3] & dbgsta[0]):
+                    dbgsta = probe_o_buffered.p.data
+                    completed = dbgsta[3] & dbgsta[0]
+                    # Certain polls are cancellable by queueing another command. Such polls
+                    # always return a response (on both completion and cancellation), unlike
+                    # normal polls which do not.
+                    cancellable = header[0]
+                    cancelled = self.i_stream.valid & \
+                        (self.i_stream.payload[5:] == DebugARM7Opcode.CANCEL)
+                    with m.If(cancellable & (completed | cancelled)):
+                        m.next = "Send data"
+                    with m.Elif(completed):
+                        m.d.comb += probe_o_buffered.ready.eq(1)
                         m.next = "Fetch command"
                     with m.Else():
+                        m.d.comb += probe_o_buffered.ready.eq(1)
                         m.next = "Poll for TRANS[1] & DBGACK"
 
             with m.State("Set IR RESTART"):
@@ -799,6 +814,32 @@ class DebugARM7Interface(GDBRemote):
     def _is_halted(self):
         return self._context is not None
 
+    # Unlike all other functions in this file, this one can be cancelled without losing sync
+    # with the gateware. This makes the implementation extremely complex.
+    async def _debug_wait(self):
+        self._log("debug wait")
+        # first, make sure the command buffer is empty.
+        await self._lower.flush()
+        # submit a cancellable wait; this is not a cancellation point due to the flush above.
+        await self._exec([(DebugARM7Opcode.POLL_ACK.value << 5) | 1])
+        # this command will always return a response; start a task to read it.
+        result_task = asyncio.create_task(self._read(1))
+        # the next try..finally statement is where cancellation is actually allowed to occur.
+        try:
+            # wait for a response, without letting the read task itself be cancelled.
+            await asyncio.shield(result_task)
+        except asyncio.CancelledError:
+            # if *this* task was cancelled, send the cancel opcode to interrupt the gateware.
+            self._log("  cancel")
+            await self._lower.write([DebugARM7Opcode.CANCEL.value << 5])
+            await self._lower.flush()
+            # either way, wait for the result anyway. note that this function isn't safe to cancel
+            # twice, which doesn't happen with GDBRemote but may happen otherwise. if the following
+            # wait doesn't complete, the command/response stream could desynchronize.
+            await asyncio.shield(result_task)
+            # continue cancellation
+            raise
+
     async def _debug_request(self, use_dbgrq=False):
         assert not self._is_halted
         if use_dbgrq:
@@ -826,12 +867,6 @@ class DebugARM7Interface(GDBRemote):
                 txn.eice_set(EICE_Reg.W0_DATA_MSK, old_w0_data_msk)
                 txn.eice_set(EICE_Reg.W0_CTRL_MSK, old_w0_ctrl_msk)
                 txn.eice_set(EICE_Reg.W0_CTRL_VAL, old_w0_ctrl_val)
-
-    async def _debug_halt_pending(self):
-        assert not self._is_halted
-        async with self.queue() as txn:
-            dbgsta = txn.eice_get(EICE_Reg.DBGSTA)
-        return dbgsta.DBGACK
 
     async def _debug_enter(self, is_dbgrq=False):
         assert not self._is_halted
@@ -946,6 +981,11 @@ class DebugARM7Interface(GDBRemote):
         # and debug probe implementation errors.
         self._context = None
 
+    async def _debug_resume(self):
+        assert self._is_halted
+        await self._apply_watchpts()
+        await self._debug_exit()
+
     # Public API / GDB remote implementation
 
     def gdb_log(self, level, message, *args):
@@ -999,7 +1039,11 @@ class DebugARM7Interface(GDBRemote):
 
     async def target_stop(self):
         assert not self._is_halted
-        if await self._debug_halt_pending(): # core halted on breakpoint already?
+        async with self.queue() as txn:
+            txn.watchpt_clear(0) # clear watchpoints first to avoid a TOCTTOU race below
+            txn.watchpt_clear(1)
+            dbgsta = txn.eice_get(EICE_Reg.DBGSTA)
+        if dbgsta.DBGACK: # core halted on breakpoint already?
             await self._debug_enter(is_dbgrq=False)
         else: # no, request core to halt
             use_dbgrq = False # see note in `_debug_request()`
@@ -1007,13 +1051,9 @@ class DebugARM7Interface(GDBRemote):
             await self._debug_enter(is_dbgrq=use_dbgrq)
 
     async def target_continue(self):
-        assert self._is_halted
-        await self._apply_watchpts()
-        await asyncio.shield(self._debug_exit())
-        while not self._is_halted:
-            if await self._debug_halt_pending():
-                await asyncio.shield(self._debug_enter(is_dbgrq=False))
-            await asyncio.sleep(0.5) # XXX
+        await asyncio.shield(self._debug_resume())
+        await self._debug_wait()
+        await asyncio.shield(self._debug_enter(is_dbgrq=False))
 
     async def target_single_step(self):
         assert self._is_halted
@@ -1043,8 +1083,7 @@ class DebugARM7Interface(GDBRemote):
     async def target_detach(self):
         assert self._is_halted
         await self._clear_all_breakpts()
-        await self._apply_watchpts()
-        await self._debug_exit()
+        await self._debug_resume()
 
     class GDBRegister(enum.IntEnum):
         # Upsettingly, GDB has no conception of banked registers on this target. However, it
