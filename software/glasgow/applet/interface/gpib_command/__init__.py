@@ -136,9 +136,12 @@ class GPIBStatus(enum.Enum, shape=8):
     Error   = 16
 
 
-class GPIBBus(Elaboratable):
-    def __init__(self, ports):
-        self.ports = ports
+class GPIBSubtarget(Elaboratable):
+    def __init__(self, ports, in_fifo, out_fifo, status):
+        self.ports    = ports
+        self.in_fifo  = in_fifo
+        self.out_fifo = out_fifo
+        self.status   = status
 
         self.dio_i  = Signal(8)  # Data Lines            Listen
         self.dio_o  = Signal(8)  #                       Talk
@@ -201,20 +204,6 @@ class GPIBBus(Elaboratable):
             ren_buffer.o.eq(self.ren_o),
         ]
 
-        return m
-
-
-class GPIBSubtarget(Elaboratable):
-    def __init__(self, ports, in_fifo, out_fifo, status):
-        self.bus = GPIBBus(ports)
-        self.in_fifo  = in_fifo
-        self.out_fifo = out_fifo
-        self.status   = status
-
-    def elaborate(self, platform):
-        m = Module()
-
-        m.submodules.bus = self.bus
         settle_delay = math.ceil(platform.default_clk_frequency * 1e-6)
         timer = Signal(range(1 + settle_delay))
 
@@ -256,8 +245,8 @@ class GPIBSubtarget(Elaboratable):
 
             with m.State("Control: Parse"):
                 m.d.sync += [
-                    self.bus.talking.eq(l_control.talk),
-                    self.bus.listening.eq(l_control.listen),
+                    self.talking.eq(l_control.talk),
+                    self.listening.eq(l_control.listen),
                 ]
                 with m.If(l_control.talk & l_control.listen):
                     m.next = "Control: Error"
@@ -289,17 +278,17 @@ class GPIBSubtarget(Elaboratable):
 
             with m.State("Talk: Begin"):
                 m.d.sync += [
-                    self.bus.eoi_o.eq(l_control.eoi),
-                    self.bus.atn_o.eq(l_control.atn),
-                    self.bus.ifc_o.eq(l_control.ifc),
-                    self.bus.ren_o.eq(l_control.ren),
-                    self.bus.dav_o.eq(0),
+                    self.eoi_o.eq(l_control.eoi),
+                    self.atn_o.eq(l_control.atn),
+                    self.ifc_o.eq(l_control.ifc),
+                    self.ren_o.eq(l_control.ren),
+                    self.dav_o.eq(0),
                 ]
                 with m.If(~l_control.tx):
                     m.next = "Control: Acknowledge"
-                with m.If(self.bus.ndac_i & l_control.tx):
+                with m.If(self.ndac_i & l_control.tx):
                     m.d.sync += [
-                        self.bus.dio_o.eq(l_data),
+                        self.dio_o.eq(l_data),
                         timer.eq(settle_delay),
                     ]
                     m.next = "Talk: DIO Stabalise"
@@ -310,28 +299,28 @@ class GPIBSubtarget(Elaboratable):
                     m.next = "Talk: NRFD"
 
             with m.State("Talk: NRFD"):
-                with m.If(~self.bus.nrfd_i):
-                    m.d.sync += self.bus.dav_o.eq(1)
+                with m.If(~self.nrfd_i):
+                    m.d.sync += self.dav_o.eq(1)
                     m.next = "Talk: NDAC"
 
             with m.State("Talk: NDAC"):
-                with m.If(~self.bus.ndac_i):
-                    m.d.sync += self.bus.dav_o.eq(0)
+                with m.If(~self.ndac_i):
+                    m.d.sync += self.dav_o.eq(0)
                     m.next = "Control: Acknowledge"
 
             with m.State("Listen: Begin"):
                 m.d.sync += [
-                    self.bus.ndac_o.eq(1),
-                    self.bus.nrfd_o.eq(0),
-                    self.bus.atn_o.eq(0),
+                    self.ndac_o.eq(1),
+                    self.nrfd_o.eq(0),
+                    self.atn_o.eq(0),
                 ]
-                with m.If(self.bus.dav_i):
+                with m.If(self.dav_i):
                     m.next = "Listen: Management lines"
 
             with m.State("Listen: Management lines"):
                 m.d.comb += [
                     self.in_fifo.w_en.eq(1),
-                    self.in_fifo.w_data.eq(Cat(1, self.bus.eoi_i))
+                    self.in_fifo.w_data.eq(Cat(1, self.eoi_i))
                 ]
                 with m.If(self.in_fifo.w_rdy):
                     m.next = "Listen: DIO lines"
@@ -339,15 +328,15 @@ class GPIBSubtarget(Elaboratable):
             with m.State("Listen: DIO lines"):
                 m.d.comb += [
                     self.in_fifo.w_en.eq(1),
-                    self.in_fifo.w_data.eq(self.bus.dio_i),
+                    self.in_fifo.w_data.eq(self.dio_i),
                 ]
                 with m.If(self.in_fifo.w_rdy):
-                    m.d.sync += self.bus.nrfd_o.eq(0)
+                    m.d.sync += self.nrfd_o.eq(0)
                     m.next = "Listen: DAV unassert"
 
             with m.State("Listen: DAV unassert"):
-                with m.If(self.bus.dav_i):
-                    m.d.sync += self.bus.ndac_o.eq(0)
+                with m.If(self.dav_i):
+                    m.d.sync += self.ndac_o.eq(0)
                     m.next = "Control: Begin"
 
         return m
