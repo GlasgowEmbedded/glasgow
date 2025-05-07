@@ -2,8 +2,6 @@ import logging
 import argparse
 import math
 import sys
-import time
-import asyncio
 from enum import IntEnum
 from amaranth import *
 from amaranth.lib import io, data, cdc, wiring, enum
@@ -68,29 +66,6 @@ When a line is marked as an input, it should passively pull up the
 line to 5v. Otherwise, the lines voltage should be dictatd by other
 devices on the bus.
 
-INTERFACE
-
-In order to accommodate the additional control signals, each word
-transmitted requires two bytes. Control lines can be toggled by only
-sending one byte.
-
-During transmission, the first byte sent to the FIFO will determine
-which bus management lines should be set. If the least significant bit
-(TX) is high, the next byte will be the word which gets transmitted.
-
-     BIT     Description
-      0      Expect another byte, the word to transmit over the bus.
-      1      Raise EOI
-      2      Raise ATN
-      3      Raise IFC
-      4      Raise REN
-
-During receiving, the
-
-
-
-TESTING
-
 The applet has been tested with the following pieces of test equipment:
 
   Tektronix TDS420A Oscilloscope
@@ -100,7 +75,7 @@ The applet has been tested with the following pieces of test equipment:
 """
 
 
-class GPIBCommand(enum.IntEnum, shape=8):
+class GPIBCommand(enum.Enum, shape=8):
     # When the bus is in command mode, these commands can be sent to
     # all devices on the bus. For example, to instruct device 10 to
     # listen to you, you would send MTA + 10.
@@ -224,8 +199,7 @@ class GPIBSubtarget(Elaboratable):
             "reserv": 1,
             "listen": 1,
             "talk":   1,
-        })
-                           )
+        }))
         l_data    = Signal(8)
 
         with m.FSM():
@@ -342,6 +316,40 @@ class GPIBSubtarget(Elaboratable):
         return m
 
 
+class GPIBControllerInterface:
+    def __init__(self, interface, logger, port_spec, listen_pull_high, talk_pull_high):
+        self.interface = interface
+        self.logger = logger
+
+        self.port_spec = port_spec
+        self.listen_pull_high = listen_pull_high
+        self.talk_pull_high = talk_pull_high
+
+    async def write(self, message: GPIBMessage, data=bytes([0])):
+        await self.interface.device.set_pulls(self.port_spec, high={pin.number for pin in self.talk_pull_high})
+
+        for b in data:
+            await self.interface.write(bytes([message.value]))
+            await self.interface.write(bytes([b]))
+            ack = (await self.interface.read(1))[0]
+            assert GPIBMessage(ack) == GPIBMessage._Acknowledge
+
+    async def read(self, to_eoi=True):
+        await self.device.set_pulls(self.port_spec, high={pin.number for pin in self.listen_pull_high})
+
+        eoi = False
+        while not eoi:
+            await self.interface.write(bytes([GPIBMessage.Listen]))
+            await self.interface.write(bytes([0]))
+            await self.interface.flush()
+
+            eoi = bool((await self.interface.read(1)).tobytes()[0] & 2)
+            if not to_eoi:
+                eoi = True
+
+            yield (await self.interface.read(1)).tobytes()
+
+
 class GPIBCommandApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "talk to a gpib device"
@@ -393,11 +401,15 @@ class GPIBCommandApplet(GlasgowApplet):
 
 
     async def run(self, device, args):
-        self.listen_pull_high = {*args.pin_set_dio, args.pin_eoi, args.pin_dav}
-        self.talk_pull_high   = {args.pin_nrfd, args.pin_ndac, args.pin_srq}
-
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        return iface
+        gpib_interface = GPIBControllerInterface(
+            interface=iface,
+            logger=self.logger,
+            port_spec=args.port_spec,
+            listen_pull_high={*args.pin_set_dio, args.pin_eoi, args.pin_dav},
+            talk_pull_high={args.pin_nrfd, args.pin_ndac, args.pin_srq}
+        )
+        return gpib_interface
 
     @classmethod
     def add_interact_arguments(cls, parser):
@@ -417,47 +429,16 @@ class GPIBCommandApplet(GlasgowApplet):
             "--read-eoi", action="store_true",
             help="read until EOI, omit if no response expected")
 
-    async def write(self, control, data=bytes([0])):
-        await self._device.set_pulls(self._args.port_spec, high={pin.number for pin in self.talk_pull_high})
-
-        for b in data:
-            await self._gpib.write(bytes([control]))
-            await self._gpib.write(bytes([b]))
-            ack = (await self._gpib.read(1))[0]
-            assert GPIBMessage(ack) == GPIBMessage._Acknowledge
-
-    async def read(self, gpib, to_eoi=False):
-        await self._device.set_pulls(self._args.port_spec, high={pin.number for pin in self.listen_pull_high})
-
-        eoi = False
-        while not eoi:
-            await self._gpib.write(bytes([GPIBMessage.Listen]))
-            await self._gpib.write(bytes([0]))
-            await self._gpib.flush()
-
-            eoi = bool((await self._gpib.read(1)).tobytes()[0] & 2)
-            # if not to_eoi:
-                # eoi = True
-
-            yield (await self._gpib.read(1)).tobytes()
-
-    async def bus_status(self):
-        return GPIBStatus(await self._device.read_register(self.__addr_status))
-
-    async def interact(self, device, args, gpib):
-        self._device = device
-        self._args = args
-        self._gpib = gpib
-
+    async def interact(self, device, args, iface):
         if args.command:
-            await self.write(GPIBMessage.Command, bytes([GPIBCommand.MTA + args.address]))
-            await self.write(GPIBMessage.Data, bytes(args.command.encode("ascii")))
-            await self.write(GPIBMessage.DataEOI, b'\n')
-            await self.write(GPIBMessage.Command, bytes([GPIBCommand.UNT]))
+            await iface.write(GPIBMessage.Command, bytes([GPIBCommand.MTA.value | address]))
+            await iface.write(GPIBMessage.Data, bytes(command.encode("ascii")))
+            await iface.write(GPIBMessage.DataEOI, b'\n')
+            await iface.write(GPIBMessage.Command, bytes([GPIBCommand.UNT.value]))
 
         if args.read_eoi:
-            await self.write(GPIBMessage.Command, bytes([GPIBCommand.MLA + args.address]))
-            async for data in self.read(True):
+            await gpib.write(GPIBMessage.Command, bytes([GPIBCommand.MLA.value | args.address]))
+            async for data in gpib.read(True):
                 sys.stdout.buffer.write(data)
                 sys.stdout.buffer.flush()
 
@@ -465,4 +446,3 @@ class GPIBCommandApplet(GlasgowApplet):
     def tests(cls):
         from . import test
         return test.GPIBCommandAppletTestCase
-
