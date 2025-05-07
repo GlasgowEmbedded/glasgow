@@ -1,4 +1,6 @@
 import re
+import os
+import ast
 import sys
 import logging
 import asyncio
@@ -114,6 +116,7 @@ class GDBRemote(metaclass=ABCMeta):
     async def gdb_run(self, endpoint):
         self.__error_strings = None
         self.__quirk_byteorder = False
+        self.__eval_environment = getattr(self, "_GDBRemote__eval_environment", {"iface": self})
 
         try:
             no_ack_mode = False
@@ -419,5 +422,32 @@ class GDBRemote(metaclass=ABCMeta):
                 return b"OK"
             except NotImplementedError:
                 return b""
+
+        # "Execute this code."
+        if command.startswith(b"qRcmd,"):
+            enable_env_var, enable_env_value = "GLASGOW_GDB_MONITOR", "unsafe"
+            if os.environ.get(enable_env_var) != enable_env_value:
+                return (95,
+                    f"to enable Python support in GDB monitor command, set "
+                    f"{enable_env_var}={enable_env_value} in the GDB server environment"
+                )
+
+            code = bytes.fromhex(command[6:].decode("ascii")).decode("ascii")
+            try:
+                try: # As far as I can tell, there's no better way to do this.
+                    code = compile(code, "<gdb monitor command>", "eval",
+                        flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+                except SyntaxError:
+                    code = compile(code, "<gdb monitor command>", "exec",
+                        flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+                result = eval(code, self.__eval_environment, self.__eval_environment)
+                if asyncio.iscoroutine(result):
+                    result = await result
+                if result is None:
+                    return b"OK"
+                else:
+                    return f"{result!r}\n".encode("ascii").hex().encode("ascii")
+            except Exception as e:
+                return (96, str(e))
 
         return b""
