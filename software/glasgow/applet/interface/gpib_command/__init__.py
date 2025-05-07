@@ -170,22 +170,13 @@ class GPIBBus(Elaboratable):
         m.submodules.atn_buffer  = atn_buffer  = io.Buffer("o",  ~self.ports.atn)
         m.submodules.ren_buffer  = ren_buffer  = io.Buffer("o",  ~self.ports.ren)
 
-        # m.submodules += [
-        #     FFSynchronizer(dio_buffer.i,  self.dio_i),
-        #     FFSynchronizer(eoi_buffer.i,  self.eoi_i),
-        #     FFSynchronizer(dav_buffer.i,  self.dav_i),
-        #     FFSynchronizer(nrfd_buffer.i, self.nrfd_i),
-        #     FFSynchronizer(ndac_buffer.i, self.ndac_i),
-        #     FFSynchronizer(srq_buffer.i, self.srq_i),
-        # ]
-
-        m.d.comb += [
-            self.dio_i.eq(dio_buffer.i),
-            self.eoi_i.eq(eoi_buffer.i),
-            self.dav_i.eq(dav_buffer.i),
-            self.nrfd_i.eq(nrfd_buffer.i),
-            self.ndac_i.eq(ndac_buffer.i),
-            self.srq_i.eq(srq_buffer.i),
+        m.submodules += [
+            FFSynchronizer(dio_buffer.i,  self.dio_i),
+            FFSynchronizer(eoi_buffer.i,  self.eoi_i),
+            FFSynchronizer(dav_buffer.i,  self.dav_i),
+            FFSynchronizer(nrfd_buffer.i, self.nrfd_i),
+            FFSynchronizer(ndac_buffer.i, self.ndac_i),
+            FFSynchronizer(srq_buffer.i, self.srq_i),
         ]
 
         m.d.comb += [
