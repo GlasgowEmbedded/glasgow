@@ -404,16 +404,18 @@ class UARTApplet(GlasgowApplet):
             group.create_task(forward_in())
 
     async def interact(self, device, args, uart):
-        asyncio.create_task(self._monitor_errors(device))
-
-        if args.operation is None:
-            await self._interact_tty(uart, stream=False)
-        if args.operation == "tty":
-            await self._interact_tty(uart, args.stream)
-        if args.operation == "pty":
-            await self._interact_pty(uart)
-        if args.operation == "socket":
-            await self._interact_socket(uart, args.endpoint)
+        monitor_task = asyncio.create_task(self._monitor_errors(device))
+        try:
+            if args.operation is None:
+                await self._interact_tty(uart, stream=False)
+            if args.operation == "tty":
+                await self._interact_tty(uart, args.stream)
+            if args.operation == "pty":
+                await self._interact_pty(uart)
+            if args.operation == "socket":
+                await self._interact_socket(uart, args.endpoint)
+        finally:
+            monitor_task.cancel()
 
     @classmethod
     def tests(cls):
