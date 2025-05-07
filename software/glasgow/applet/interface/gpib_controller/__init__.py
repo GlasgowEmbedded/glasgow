@@ -60,8 +60,6 @@ listening or talking.
 | Listen || IN   | IN  | IN  | OUT  | OUT  | OUT | IN  | OUT | OUT |
 +--------++------+-----+-----+------+------+-----+-----+-----+-----+
 
-All lines use active low signalling. It probably would have made sense to invert the pins.
-
 When a line is marked as an input, it should passively pull up the
 line to 5v. Otherwise, the lines voltage should be dictatd by other
 devices on the bus.
@@ -334,20 +332,68 @@ class GPIBControllerInterface:
             ack = (await self.interface.read(1))[0]
             assert GPIBMessage(ack) == GPIBMessage._Acknowledge
 
-    async def read(self, to_eoi=True):
-        await self.device.set_pulls(self.port_spec, high={pin.number for pin in self.listen_pull_high})
+    async def read(self, *, to_eoi=True):
+        await self.interface.device.set_pulls(self.port_spec, high={pin.number for pin in self.listen_pull_high})
 
         eoi = False
         while not eoi:
             await self.interface.write(bytes([GPIBMessage.Listen.value]))
             await self.interface.write(bytes([0]))
-            await self.interface.flush()
 
-            eoi = bool((await self.interface.read(1)).tobytes()[0] & 2)
+            eoi = bool((await self.interface.read(1))[0] & 2)
             if not to_eoi:
                 eoi = True
 
-            yield (await self.interface.read(1)).tobytes()
+            yield (await self.interface.read(1))
+
+    async def send_to(self, address, data):
+        await self.cmd_talk(address)
+        await self.write(GPIBMessage.Data, data)
+        await self.write(GPIBMessage.DataEOI, b'\n')
+        await self.cmd_untalk()
+
+    async def read_from(self, address, *, to_eoi=True):
+        await self.cmd_listen(address)
+        all = bytes([])
+        async for data in self.read(to_eoi=to_eoi):
+            all += data
+
+        return all
+
+    async def iter_from(self, address, *, to_eoi=True):
+        await self.cmd_listen(address)
+        async for data in self.read(to_eoi=to_eoi):
+            yield data
+
+    async def cmd_talk(self, address):
+        await self.write(GPIBMessage.Command, bytes([GPIBCommand.MTA.value | address]))
+
+    async def cmd_untalk(self):
+        await self.write(GPIBMessage.Command, bytes([GPIBCommand.UNT.value]))
+
+    async def cmd_listen(self, address):
+        await self.write(GPIBMessage.Command, bytes([GPIBCommand.MLA.value | address]))
+
+    async def cmd_unlisten(self):
+        await self.write(GPIBMessage.Command, bytes([GPIBCommand.UNL.value]))
+
+    async def cmd_ppe(self, address):
+        await self.write(GPIBMessage.Command, bytes([GPIBCommand.PPE.value | address]))
+
+    async def cmd_ppd(self, address):
+        await self.write(GPIBMessage.Command, bytes([GPIBCommand.PPD.value | address]))
+
+    async def cmd_spe(self):
+        await self.write(GPIBMessage.Command, bytes([GPIBCommand.SPE.value]))
+
+    async def cmd_spd(self):
+        await self.write(GPIBMessage.Command, bytes([GPIBCommand.SPD.value]))
+
+    async def cmd_llo(self):
+        await self.write(GPIBMessage.Command, bytes([GPIBCommand.LLO.value]))
+
+    async def ifc(self):
+        await self.write(GPIBMessage.InterfaceClear)
 
 
 class GPIBControllerApplet(GlasgowApplet):
@@ -430,14 +476,10 @@ class GPIBControllerApplet(GlasgowApplet):
 
     async def interact(self, device, args, iface):
         if args.command:
-            await iface.write(GPIBMessage.Command, bytes([GPIBCommand.MTA.value | args.address]))
-            await iface.write(GPIBMessage.Data, bytes(command.encode("ascii")))
-            await iface.write(GPIBMessage.DataEOI, b'\n')
-            await iface.write(GPIBMessage.Command, bytes([GPIBCommand.UNT.value]))
+            await iface.send_to(args.address, args.command.encode("ascii"))
 
         if args.read_eoi:
-            await iface.write(GPIBMessage.Command, bytes([GPIBCommand.MLA.value | args.address]))
-            async for data in iface.read(True):
+            async for data in iface.iter_from(args.address, to_eoi=True):
                 sys.stdout.buffer.write(data)
                 sys.stdout.buffer.flush()
 
