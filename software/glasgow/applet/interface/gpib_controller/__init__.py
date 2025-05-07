@@ -399,7 +399,6 @@ class GPIBControllerApplet(GlasgowApplet):
     def add_run_arguments(cls, parser, access):
         super().add_run_arguments(parser, access)
 
-
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
         gpib_interface = GPIBControllerInterface(
@@ -437,8 +436,8 @@ class GPIBControllerApplet(GlasgowApplet):
             await iface.write(GPIBMessage.Command, bytes([GPIBCommand.UNT.value]))
 
         if args.read_eoi:
-            await gpib.write(GPIBMessage.Command, bytes([GPIBCommand.MLA.value | args.address]))
-            async for data in gpib.read(True):
+            await iface.write(GPIBMessage.Command, bytes([GPIBCommand.MLA.value | args.address]))
+            async for data in iface.read(True):
                 sys.stdout.buffer.write(data)
                 sys.stdout.buffer.flush()
 
