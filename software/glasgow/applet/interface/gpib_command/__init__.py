@@ -225,35 +225,35 @@ class GPIBSubtarget(Elaboratable):
         ]
 
         with m.FSM():
-            # l_control = Signal(data.StructLayout({
-            #     "tx":     1,
-            #     "eoi":    1,
-            #     "atn":    1,
-            #     "ifc":    1,
-            #     "ren":    1,
-            #     "listen": 1,
-            #     "talk":   1,
-            # }))
+            l_control = Signal(data.StructLayout({
+                "tx":     1,
+                "eoi":    1,
+                "atn":    1,
+                "ifc":    1,
+                "ren":    1,
+                "listen": 1,
+                "talk":   1,
+            }))
             l_data    = Signal(8)
 
-            l_control = Signal(8)
-            ctrl_tx     = Signal()
-            ctrl_eoi    = Signal()
-            ctrl_atn    = Signal()
-            ctrl_ifc    = Signal()
-            ctrl_ren    = Signal()
-            ctrl_listen = Signal()
-            ctrl_talk   = Signal()
+            # l_control = Signal(8)
+            # ctrl_tx     = Signal()
+            # ctrl_eoi    = Signal()
+            # ctrl_atn    = Signal()
+            # ctrl_ifc    = Signal()
+            # ctrl_ren    = Signal()
+            # ctrl_listen = Signal()
+            # ctrl_talk   = Signal()
 
-            m.d.comb += [
-                ctrl_tx.eq(l_control[0]),
-                ctrl_eoi.eq(l_control[1]),
-                ctrl_atn.eq(l_control[2]),
-                ctrl_ifc.eq(l_control[3]),
-                ctrl_ren.eq(l_control[4]),
-                ctrl_listen.eq(l_control[6]),
-                ctrl_talk.eq(l_control[7]),
-            ]
+            # m.d.comb += [
+            #     ctrl_tx.eq(l_control[0]),
+            #     ctrl_eoi.eq(l_control[1]),
+            #     ctrl_atn.eq(l_control[2]),
+            #     ctrl_ifc.eq(l_control[3]),
+            #     ctrl_ren.eq(l_control[4]),
+            #     ctrl_listen.eq(l_control[6]),
+            #     ctrl_talk.eq(l_control[7]),
+            # ]
 
             with m.State("Control: Begin"):
                 m.d.sync += self.status.eq(GPIBStatus.Idle)
@@ -271,17 +271,17 @@ class GPIBSubtarget(Elaboratable):
 
             with m.State("Control: Parse"):
                 m.d.sync += [
-                    self.bus.talking.eq(ctrl_talk),
-                    self.bus.listening.eq(ctrl_listen),
+                    self.bus.talking.eq(l_control.talk),
+                    self.bus.listening.eq(l_control.listen),
                 ]
-                with m.If(ctrl_talk & ctrl_listen):
+                with m.If(l_control.talk & l_control.listen):
                     m.next = "Control: Error"
-                with m.If(~ctrl_talk & ~ctrl_listen):
+                with m.If(~l_control.talk & ~l_control.listen):
                     m.next = "Control: Begin"
-                with m.If(ctrl_talk & ~ctrl_listen):
+                with m.If(l_control.talk & ~l_control.listen):
                     m.d.sync += self.status.eq(GPIBStatus.Talk)
                     m.next = "Talk: Begin"
-                with m.If(ctrl_listen & ~ctrl_talk):
+                with m.If(l_control.listen & ~l_control.talk):
                     m.d.sync += self.status.eq(GPIBStatus.Listen)
                     m.next = "Listen: Begin"
 
@@ -304,15 +304,15 @@ class GPIBSubtarget(Elaboratable):
 
             with m.State("Talk: Begin"):
                 m.d.sync += [
-                    self.bus.eoi_o.eq(ctrl_eoi),
-                    self.bus.atn_o.eq(ctrl_atn),
-                    self.bus.ifc_o.eq(ctrl_ifc),
-                    self.bus.ren_o.eq(ctrl_ren),
+                    self.bus.eoi_o.eq(l_control.eoi),
+                    self.bus.atn_o.eq(l_control.atn),
+                    self.bus.ifc_o.eq(l_control.ifc),
+                    self.bus.ren_o.eq(l_control.ren),
                     self.bus.dav_o.eq(0),
                 ]
-                with m.If(~ctrl_tx):
+                with m.If(~l_control.tx):
                     m.next = "Control: Acknowledge"
-                with m.If(self.bus.ndac_i & ctrl_tx):
+                with m.If(self.bus.ndac_i & l_control.tx):
                     m.d.sync += [
                         self.bus.dio_o.eq(l_data),
                         timer.eq(settle_delay),
