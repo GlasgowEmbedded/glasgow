@@ -185,9 +185,9 @@ class GPIBBus(Elaboratable):
             dav_buffer.oe.eq(self.talking),
             nrfd_buffer.oe.eq(self.listening),
             ndac_buffer.oe.eq(self.listening),
-            ifc_buffer.oe.eq(self.talking), # todo these three should probably be 1, test that...
-            atn_buffer.oe.eq(self.talking),
-            ren_buffer.oe.eq(self.talking),
+            ifc_buffer.oe.eq(1),
+            atn_buffer.oe.eq(1),
+            ren_buffer.oe.eq(1),
         ]
         m.d.comb += [
             dio_buffer.o.eq(self.dio_o),
