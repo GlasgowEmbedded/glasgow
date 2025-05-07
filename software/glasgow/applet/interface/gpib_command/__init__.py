@@ -6,8 +6,7 @@ import time
 import asyncio
 from enum import IntEnum
 from amaranth import *
-from amaranth.lib import io, data
-from amaranth.lib.cdc import FFSynchronizer
+from amaranth.lib import io, data, cdc, wiring
 
 from ... import *
 
@@ -101,7 +100,6 @@ The applet has been tested with the following pieces of test equipment:
 """
 
 
-
 class GPIBCommand(IntEnum):
     # When the bus is in command mode, these commands can be sent to
     # all devices on the bus. For example, to instruct device 10 to
@@ -116,6 +114,7 @@ class GPIBCommand(IntEnum):
     SPD = 0x19  # Serial Poll Disable
     LLO = 0x11  # Local Lock Out
 
+
 class GPIBMessage(IntEnum):
     # These are sent prior to any data/commands being sent, and
     # dictate how the controller should handle the data.
@@ -127,6 +126,7 @@ class GPIBMessage(IntEnum):
 
     _Acknowledge   = 0b1000_0000 # Internal - acknowledge that data has been sent
 
+
 class GPIBStatus(IntEnum):
     Idle    = 0
     Control = 1
@@ -134,6 +134,7 @@ class GPIBStatus(IntEnum):
     Listen  = 3
     Unknown = 8
     Error   = 16
+
 
 class GPIBBus(Elaboratable):
     def __init__(self, ports):
@@ -171,12 +172,12 @@ class GPIBBus(Elaboratable):
         m.submodules.ren_buffer  = ren_buffer  = io.Buffer("o",  ~self.ports.ren)
 
         m.submodules += [
-            FFSynchronizer(dio_buffer.i,  self.dio_i),
-            FFSynchronizer(eoi_buffer.i,  self.eoi_i),
-            FFSynchronizer(dav_buffer.i,  self.dav_i),
-            FFSynchronizer(nrfd_buffer.i, self.nrfd_i),
-            FFSynchronizer(ndac_buffer.i, self.ndac_i),
-            FFSynchronizer(srq_buffer.i, self.srq_i),
+            cdc.FFSynchronizer(dio_buffer.i,  self.dio_i),
+            cdc.FFSynchronizer(eoi_buffer.i,  self.eoi_i),
+            cdc.FFSynchronizer(dav_buffer.i,  self.dav_i),
+            cdc.FFSynchronizer(nrfd_buffer.i, self.nrfd_i),
+            cdc.FFSynchronizer(ndac_buffer.i, self.ndac_i),
+            cdc.FFSynchronizer(srq_buffer.i, self.srq_i),
         ]
 
         m.d.comb += [
@@ -202,6 +203,7 @@ class GPIBBus(Elaboratable):
 
         return m
 
+
 class GPIBSubtarget(Elaboratable):
     def __init__(self, ports, in_fifo, out_fifo, status):
         self.bus = GPIBBus(ports)
@@ -224,37 +226,20 @@ class GPIBSubtarget(Elaboratable):
             platform.request("led", 4).o.eq(self.status == 8),
         ]
 
+        l_control = Signal(data.StructLayout({
+            "tx":     1,
+            "eoi":    1,
+            "atn":    1,
+            "ifc":    1,
+            "ren":    1,
+            "ignore": 1,
+            "listen": 1,
+            "talk":   1,
+        })
+                           )
+        l_data    = Signal(8)
+
         with m.FSM():
-            l_control = Signal(data.StructLayout({
-                "tx":     1,
-                "eoi":    1,
-                "atn":    1,
-                "ifc":    1,
-                "ren":    1,
-                "listen": 1,
-                "talk":   1,
-            }))
-            l_data    = Signal(8)
-
-            # l_control = Signal(8)
-            # ctrl_tx     = Signal()
-            # ctrl_eoi    = Signal()
-            # ctrl_atn    = Signal()
-            # ctrl_ifc    = Signal()
-            # ctrl_ren    = Signal()
-            # ctrl_listen = Signal()
-            # ctrl_talk   = Signal()
-
-            # m.d.comb += [
-            #     ctrl_tx.eq(l_control[0]),
-            #     ctrl_eoi.eq(l_control[1]),
-            #     ctrl_atn.eq(l_control[2]),
-            #     ctrl_ifc.eq(l_control[3]),
-            #     ctrl_ren.eq(l_control[4]),
-            #     ctrl_listen.eq(l_control[6]),
-            #     ctrl_talk.eq(l_control[7]),
-            # ]
-
             with m.State("Control: Begin"):
                 m.d.sync += self.status.eq(GPIBStatus.Idle)
                 m.d.comb += self.out_fifo.r_en.eq(1)
@@ -365,8 +350,8 @@ class GPIBSubtarget(Elaboratable):
                     m.d.sync += self.bus.ndac_o.eq(0)
                     m.next = "Control: Begin"
 
-
         return m
+
 
 class GPIBCommandApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
@@ -491,3 +476,4 @@ class GPIBCommandApplet(GlasgowApplet):
     def tests(cls):
         from . import test
         return test.GPIBCommandAppletTestCase
+
