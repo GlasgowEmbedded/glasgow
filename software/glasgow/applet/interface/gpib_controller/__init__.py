@@ -90,7 +90,7 @@ class GPIBCommand(enum.Enum, shape=8):
     LLO = 0x11  # Local Lock Out
 
 
-class GPIBMessage(enum.IntEnum, shape=8):
+class GPIBMessage(enum.Enum, shape=8):
     # These are sent prior to any data/commands being sent, and
     # dictate how the controller should handle the data.
     Listen         = 0b0100_0000 # Listen mode, request byte
@@ -155,7 +155,7 @@ class GPIBSubtarget(Elaboratable):
             cdc.FFSynchronizer(dav_buffer.i,  self.dav_i),
             cdc.FFSynchronizer(nrfd_buffer.i, self.nrfd_i),
             cdc.FFSynchronizer(ndac_buffer.i, self.ndac_i),
-            cdc.FFSynchronizer(srq_buffer.i, self.srq_i),
+            cdc.FFSynchronizer(srq_buffer.i,  self.srq_i),
         ]
 
         m.d.comb += [
@@ -339,7 +339,7 @@ class GPIBControllerInterface:
 
         eoi = False
         while not eoi:
-            await self.interface.write(bytes([GPIBMessage.Listen]))
+            await self.interface.write(bytes([GPIBMessage.Listen.value]))
             await self.interface.write(bytes([0]))
             await self.interface.flush()
 
