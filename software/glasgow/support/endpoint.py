@@ -201,7 +201,7 @@ class ServerEndpoint(aobject, asyncio.Protocol):
 
     async def send(self, data):
         data = bytes(data)
-        if self._send_epoch == self._recv_epoch:
+        if self._transport is not None and self._send_epoch == self._recv_epoch:
             self._log(logging.TRACE, "send <%s>", data.hex())
             self._transport.write(data)
             return True
