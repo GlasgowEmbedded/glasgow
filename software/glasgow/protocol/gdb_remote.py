@@ -112,8 +112,7 @@ class GDBRemote(metaclass=ABCMeta):
         raise NotImplementedError
 
     async def gdb_run(self, endpoint):
-        self.__non_stop = False
-        self.__error_strings = False
+        self.__error_strings = None
         self.__quirk_byteorder = False
 
         try:
@@ -168,10 +167,12 @@ class GDBRemote(metaclass=ABCMeta):
                                      command_asc, response[1])
 
                     error_num, error_msg = response
-                    if self.__error_strings:
-                        response = f"E{error_num:02d};{error_msg}".encode("ascii")
+                    if self.__error_strings == "lldb":
+                        response = f"E{error_num:02x};{error_msg}".encode("ascii")
+                    elif self.__error_strings == "gdb":
+                        response = f"E.{error_msg}".encode("ascii")
                     else:
-                        response = f"E{error_num:02d}".encode("ascii")
+                        response = f"E{error_num:02x}".encode("ascii")
 
                 while True:
                     response_asc = response.decode("ascii", errors="replace")
@@ -233,7 +234,7 @@ class GDBRemote(metaclass=ABCMeta):
 
         # (lldb) "Send me human-readable error messages."
         if command == b"QEnableErrorStrings":
-            self.__error_strings = True
+            self.__error_strings = "lldb"
             return b"OK"
 
         # (lldb) "What are the properties of machine the target is running on?"
@@ -255,8 +256,11 @@ class GDBRemote(metaclass=ABCMeta):
 
         # "I support these protocol features. Which protocol features are supported by the stub?"
         if command.startswith(b"qSupported"):
-            features = [b"vContSupported+", b"qXfer:features:read+"]
-            return b";".join(features)
+            gdb_features = command[11:].split(b";")
+            if b"error-message+" in gdb_features:
+                self.__error_strings = "gdb"
+            stub_features = [b"vContSupported+", b"qXfer:features:read+"]
+            return b";".join(stub_features)
 
         # "Which resume actions do you support?"
         if command == b"vCont?":
