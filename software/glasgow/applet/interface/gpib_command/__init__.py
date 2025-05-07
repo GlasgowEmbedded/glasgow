@@ -6,7 +6,7 @@ import time
 import asyncio
 from enum import IntEnum
 from amaranth import *
-from amaranth.lib import io, data, cdc, wiring
+from amaranth.lib import io, data, cdc, wiring, enum
 
 from ... import *
 
@@ -100,7 +100,7 @@ The applet has been tested with the following pieces of test equipment:
 """
 
 
-class GPIBCommand(IntEnum):
+class GPIBCommand(enum.IntEnum, shape=8):
     # When the bus is in command mode, these commands can be sent to
     # all devices on the bus. For example, to instruct device 10 to
     # listen to you, you would send MTA + 10.
@@ -115,7 +115,7 @@ class GPIBCommand(IntEnum):
     LLO = 0x11  # Local Lock Out
 
 
-class GPIBMessage(IntEnum):
+class GPIBMessage(enum.IntEnum, shape=8):
     # These are sent prior to any data/commands being sent, and
     # dictate how the controller should handle the data.
     Listen         = 0b0100_0000 # Listen mode, request byte
@@ -127,7 +127,7 @@ class GPIBMessage(IntEnum):
     _Acknowledge   = 0b1000_0000 # Internal - acknowledge that data has been sent
 
 
-class GPIBStatus(IntEnum):
+class GPIBStatus(enum.Enum, shape=8):
     Idle    = 0
     Control = 1
     Talk    = 2
@@ -232,7 +232,7 @@ class GPIBSubtarget(Elaboratable):
             "atn":    1,
             "ifc":    1,
             "ren":    1,
-            "ignore": 1,
+            "reserv": 1,
             "listen": 1,
             "talk":   1,
         })
