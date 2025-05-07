@@ -36,6 +36,7 @@ devices = [
     ATtiny("26",   (0x1e, 0x91, 0x09), program_size=2048,  program_page=32,  eeprom_size=128, erase_time=15),
     ATtiny("45",   (0x1e, 0x92, 0x06), program_size=2048,  program_page=64,  eeprom_size=256),
     ATtiny("85",   (0x1e, 0x93, 0x0B), program_size=4096,  program_page=64,  eeprom_size=512),
+    ATtiny("1634", (0x1e, 0x94, 0x12), program_size=16384, program_page=32,  eeprom_size=256),
     # ATmega series
     ATmega("8",    (0x1e, 0x93, 0x07), program_size=8192,  program_page=64,  eeprom_size=512, erase_time=15),
     ATmega("48",   (0x1e, 0x92, 0x05), program_size=4096,  program_page=64,  eeprom_size=256),
