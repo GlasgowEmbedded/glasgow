@@ -386,27 +386,22 @@ class UARTApplet(GlasgowApplet):
         await self._forward(master, master, uart)
 
     async def _interact_socket(self, uart, endpoint):
-        endpoint = await ServerEndpoint("socket", self.logger, endpoint,
-            deprecated_cancel_on_eof=True)
+        endpoint = await ServerEndpoint("socket", self.logger, endpoint)
         async def forward_out():
             while True:
                 try:
-                    data = await asyncio.shield(endpoint.recv())
-                except asyncio.CancelledError:
+                    data = await endpoint.recv()
+                except EOFError:
                     continue
                 await uart.write(data)
                 await uart.flush()
         async def forward_in():
             while True:
-                data = await uart.read()
-                try:
-                    await asyncio.shield(endpoint.send(data))
-                except asyncio.CancelledError:
-                    continue
-        forward_out_fut = asyncio.ensure_future(forward_out())
-        forward_in_fut  = asyncio.ensure_future(forward_in())
-        await asyncio.wait([forward_out_fut, forward_in_fut],
-                           return_when=asyncio.FIRST_EXCEPTION)
+                data = await uart._lower.read()
+                await endpoint.send(data)
+        async with asyncio.TaskGroup() as group:
+            group.create_task(forward_out())
+            group.create_task(forward_in())
 
     async def interact(self, device, args, uart):
         asyncio.create_task(self._monitor_errors(device))
