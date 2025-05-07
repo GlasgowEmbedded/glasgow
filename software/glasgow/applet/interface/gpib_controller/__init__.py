@@ -350,7 +350,7 @@ class GPIBControllerInterface:
             yield (await self.interface.read(1)).tobytes()
 
 
-class GPIBCommandApplet(GlasgowApplet):
+class GPIBControllerApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "talk to a gpib device"
     description = """
@@ -431,7 +431,7 @@ class GPIBCommandApplet(GlasgowApplet):
 
     async def interact(self, device, args, iface):
         if args.command:
-            await iface.write(GPIBMessage.Command, bytes([GPIBCommand.MTA.value | address]))
+            await iface.write(GPIBMessage.Command, bytes([GPIBCommand.MTA.value | args.address]))
             await iface.write(GPIBMessage.Data, bytes(command.encode("ascii")))
             await iface.write(GPIBMessage.DataEOI, b'\n')
             await iface.write(GPIBMessage.Command, bytes([GPIBCommand.UNT.value]))
@@ -445,4 +445,4 @@ class GPIBCommandApplet(GlasgowApplet):
     @classmethod
     def tests(cls):
         from . import test
-        return test.GPIBCommandAppletTestCase
+        return test.GPIBControllerAppletTestCase
