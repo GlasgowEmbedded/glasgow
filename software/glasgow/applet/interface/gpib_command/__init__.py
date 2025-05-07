@@ -6,7 +6,8 @@ import time
 import asyncio
 from enum import IntEnum
 from amaranth import *
-from amaranth.lib import io
+from amaranth.lib import io, data
+from amaranth.lib.cdc import FFSynchronizer
 
 from ... import *
 
@@ -169,34 +170,43 @@ class GPIBBus(Elaboratable):
         m.submodules.atn_buffer  = atn_buffer  = io.Buffer("o",  ~self.ports.atn)
         m.submodules.ren_buffer  = ren_buffer  = io.Buffer("o",  ~self.ports.ren)
 
-        # and use that to determine if an output should be enabled.
-        # srq is input only, so it does not get an oe signal.
+        # m.submodules += [
+        #     FFSynchronizer(dio_buffer.i,  self.dio_i),
+        #     FFSynchronizer(eoi_buffer.i,  self.eoi_i),
+        #     FFSynchronizer(dav_buffer.i,  self.dav_i),
+        #     FFSynchronizer(nrfd_buffer.i, self.nrfd_i),
+        #     FFSynchronizer(ndac_buffer.i, self.ndac_i),
+        #     FFSynchronizer(srq_buffer.i, self.srq_i),
+        # ]
+
+        m.d.comb += [
+            self.dio_i.eq(dio_buffer.i),
+            self.eoi_i.eq(eoi_buffer.i),
+            self.dav_i.eq(dav_buffer.i),
+            self.nrfd_i.eq(nrfd_buffer.i),
+            self.ndac_i.eq(ndac_buffer.i),
+            self.srq_i.eq(srq_buffer.i),
+        ]
+
         m.d.comb += [
             dio_buffer.oe.eq(self.talking),
             eoi_buffer.oe.eq(self.talking),
             dav_buffer.oe.eq(self.talking),
             nrfd_buffer.oe.eq(self.listening),
             ndac_buffer.oe.eq(self.listening),
-            ifc_buffer.oe.eq(self.talking),
+            ifc_buffer.oe.eq(self.talking), # todo these three should probably be 1, test that...
             atn_buffer.oe.eq(self.talking),
             ren_buffer.oe.eq(self.talking),
-
-            self.srq_i.eq(srq_buffer.i),
-            ifc_buffer.o.eq(self.ifc_o),
-            atn_buffer.o.eq(self.atn_o),
-            ren_buffer.o.eq(self.ren_o),
-
-            self.dio_i.eq(dio_buffer.i),
-            self.eoi_i.eq(eoi_buffer.i),
-            self.dav_i.eq(dav_buffer.i),
-            nrfd_buffer.o.eq(self.nrfd_o),
-            ndac_buffer.o.eq(self.ndac_o),
-
+        ]
+        m.d.comb += [
             dio_buffer.o.eq(self.dio_o),
             eoi_buffer.o.eq(self.eoi_o),
             dav_buffer.o.eq(self.dav_o),
-            self.nrfd_i.eq(nrfd_buffer.i),
-            self.ndac_i.eq(ndac_buffer.i),
+            nrfd_buffer.o.eq(self.nrfd_o),
+            ndac_buffer.o.eq(self.ndac_o),
+            ifc_buffer.o.eq(self.ifc_o),
+            atn_buffer.o.eq(self.atn_o),
+            ren_buffer.o.eq(self.ren_o),
         ]
 
         return m
@@ -224,9 +234,18 @@ class GPIBSubtarget(Elaboratable):
         ]
 
         with m.FSM():
-            l_control = Signal(8)
+            # l_control = Signal(data.StructLayout({
+            #     "tx":     1,
+            #     "eoi":    1,
+            #     "atn":    1,
+            #     "ifc":    1,
+            #     "ren":    1,
+            #     "listen": 1,
+            #     "talk":   1,
+            # }))
             l_data    = Signal(8)
 
+            l_control = Signal(8)
             ctrl_tx     = Signal()
             ctrl_eoi    = Signal()
             ctrl_atn    = Signal()
@@ -266,6 +285,8 @@ class GPIBSubtarget(Elaboratable):
                 ]
                 with m.If(ctrl_talk & ctrl_listen):
                     m.next = "Control: Error"
+                with m.If(~ctrl_talk & ~ctrl_listen):
+                    m.next = "Control: Begin"
                 with m.If(ctrl_talk & ~ctrl_listen):
                     m.d.sync += self.status.eq(GPIBStatus.Talk)
                     m.next = "Talk: Begin"
@@ -276,6 +297,19 @@ class GPIBSubtarget(Elaboratable):
             with m.State("Control: Error"):
                 m.d.sync += self.status.eq(GPIBStatus.Error)
 
+            with m.State("Control: Acknowledge"):
+                # Some messages, such as GPIBMessage.Talk, expect an
+                # acknowledgement once the operation has completed. In
+                # the case of Talk, this ensures that the write
+                # operation is blocking, thus preventing the pull up
+                # resistor configuration from changing
+                # mid-transaction.
+                m.d.comb += [
+                    self.in_fifo.w_en.eq(1),
+                    self.in_fifo.w_data.eq(GPIBMessage._Acknowledge),
+                ]
+                with m.If(self.in_fifo.w_rdy):
+                    m.next = "Control: Begin"
 
             with m.State("Talk: Begin"):
                 m.d.sync += [
@@ -286,7 +320,7 @@ class GPIBSubtarget(Elaboratable):
                     self.bus.dav_o.eq(0),
                 ]
                 with m.If(~ctrl_tx):
-                    m.next = "Talk: FIFO Acknowledge"
+                    m.next = "Control: Acknowledge"
                 with m.If(self.bus.ndac_i & ctrl_tx):
                     m.d.sync += [
                         self.bus.dio_o.eq(l_data),
@@ -307,13 +341,7 @@ class GPIBSubtarget(Elaboratable):
             with m.State("Talk: NDAC"):
                 with m.If(~self.bus.ndac_i):
                     m.d.sync += self.bus.dav_o.eq(0)
-                    m.next = "Talk: FIFO Acknowledge"
-
-            with m.State("Talk: FIFO Acknowledge"):
-                m.d.comb += self.in_fifo.w_en.eq(1)
-                with m.If(self.in_fifo.w_rdy):
-                    m.d.sync += self.in_fifo.w_data.eq(GPIBMessage._Acknowledge)
-                    m.next = "Control: Begin"
+                    m.next = "Control: Acknowledge"
 
             with m.State("Listen: Begin"):
                 m.d.sync += [
@@ -325,36 +353,25 @@ class GPIBSubtarget(Elaboratable):
                     m.next = "Listen: Management lines"
 
             with m.State("Listen: Management lines"):
-                m.d.sync += [
-                    self.in_fifo.w_data.eq((self.bus.eoi_i << 1) | 1)
+                m.d.comb += [
+                    self.in_fifo.w_en.eq(1),
+                    self.in_fifo.w_data.eq(Cat(1, self.bus.eoi_i))
                 ]
-                m.next = "Listen: Management lines acknowledge"
-
-            with m.State("Listen: Management lines acknowledge"):
-                m.d.comb += self.in_fifo.w_en.eq(1)
                 with m.If(self.in_fifo.w_rdy):
                     m.next = "Listen: DIO lines"
 
             with m.State("Listen: DIO lines"):
-                m.d.sync += [
+                m.d.comb += [
+                    self.in_fifo.w_en.eq(1),
                     self.in_fifo.w_data.eq(self.bus.dio_i),
-                    self.bus.nrfd_o.eq(1),
                 ]
-                m.next = "Listen: DIO lines acknowledge"
-
-            with m.State("Listen: DIO lines acknowledge"):
-                m.d.comb += self.in_fifo.w_en.eq(1)
                 with m.If(self.in_fifo.w_rdy):
-                    m.d.sync += [
-                        self.bus.ndac_o.eq(0),
-                    ]
+                    m.d.sync += self.bus.nrfd_o.eq(0)
                     m.next = "Listen: DAV unassert"
 
             with m.State("Listen: DAV unassert"):
-                with m.If(~self.bus.dav_i):
-                    m.d.sync += [
-                        self.bus.ndac_o.eq(1),
-                    ]
+                with m.If(self.bus.dav_i):
+                    m.d.sync += self.bus.ndac_o.eq(0)
                     m.next = "Control: Begin"
 
 
@@ -411,12 +428,8 @@ class GPIBCommandApplet(GlasgowApplet):
 
 
     async def run(self, device, args):
-        self.listen_pull_high = default_pull_high = set(args.pin_set_dio).union({
-            args.pin_eoi, args.pin_dav
-        })
-        self.talk_pull_high   = set().union({
-            args.pin_nrfd, args.pin_ndac,  args.pin_srq
-        })
+        self.listen_pull_high = {*args.pin_set_dio, args.pin_eoi, args.pin_dav}
+        self.talk_pull_high   = {args.pin_nrfd, args.pin_ndac, args.pin_srq}
 
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
         return iface
@@ -457,9 +470,11 @@ class GPIBCommandApplet(GlasgowApplet):
             await self._gpib.write(bytes([0]))
             await self._gpib.flush()
 
-            eoi = (await self._gpib.read(1)).tobytes()[0] & 2
-            data = (await self._gpib.read(1)).tobytes()
-            yield data
+            eoi = bool((await self._gpib.read(1)).tobytes()[0] & 2)
+            # if not to_eoi:
+                # eoi = True
+
+            yield (await self._gpib.read(1)).tobytes()
 
     async def bus_status(self):
         return GPIBStatus(await self._device.read_register(self.__addr_status))
@@ -473,15 +488,13 @@ class GPIBCommandApplet(GlasgowApplet):
             await self.write(GPIBMessage.Command, bytes([GPIBCommand.MTA + args.address]))
             await self.write(GPIBMessage.Data, bytes(args.command.encode("ascii")))
             await self.write(GPIBMessage.DataEOI, b'\n')
-            await self.write(GPIBMessage.Command, bytes([GPIBCommand.MLA + args.address]))
+            await self.write(GPIBMessage.Command, bytes([GPIBCommand.UNT]))
 
         if args.read_eoi:
+            await self.write(GPIBMessage.Command, bytes([GPIBCommand.MLA + args.address]))
             async for data in self.read(True):
                 sys.stdout.buffer.write(data)
                 sys.stdout.buffer.flush()
-
-
-
 
     @classmethod
     def tests(cls):
