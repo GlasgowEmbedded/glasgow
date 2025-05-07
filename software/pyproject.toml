@@ -96,7 +96,7 @@ ps2-host = "glasgow.applet.interface.ps2_host:PS2HostApplet"
 qspi-controller = "glasgow.applet.interface.qspi_controller:QSPIControllerApplet"
 sbw-probe = "glasgow.applet.interface.sbw_probe:SpyBiWireProbeApplet"
 swd-openocd = "glasgow.applet.interface.swd_openocd:SWDOpenOCDApplet"
-gpib-command = "glasgow.applet.interface.gpib_command:GPIBCommandApplet"
+gpib-controller = "glasgow.applet.interface.gpib_controller:GPIBControllerApplet"
 
 memory-24x = "glasgow.applet.memory._24x:Memory24xApplet"
 memory-25x = "glasgow.applet.memory._25x:Memory25xApplet"
