@@ -172,7 +172,7 @@ class GDBRemote(metaclass=ABCMeta):
                     await endpoint.close()
                     return
 
-        except asyncio.CancelledError:
+        except EOFError:
             pass
 
     async def _gdb_process(self, command, make_recv_fut):

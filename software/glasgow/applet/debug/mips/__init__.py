@@ -868,9 +868,8 @@ class DebugMIPSApplet(JTAGProbeApplet):
                 print(f"{name:<3} = {value:08x}")
 
         if args.operation == "gdb":
-            endpoint = await ServerEndpoint("GDB socket", self.logger, args.gdb_endpoint,
-                deprecated_cancel_on_eof=True)
-            while not args.once:
+            endpoint = await ServerEndpoint("GDB socket", self.logger, args.gdb_endpoint)
+            while args.not once:
                 await ejtag_iface.gdb_run(endpoint)
 
                 # Unless we detach from the target here, we might not be able to re-enter
