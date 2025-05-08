@@ -209,11 +209,17 @@ class GPIBSubtarget(Elaboratable):
                     m.next = "Control: Read data"
 
             with m.State("Control: Read data"):
-                m.d.sync += self.status.eq(GPIBStatus.Control)
-                m.d.comb += self.out_fifo.r_en.eq(1)
-                with m.If(self.out_fifo.r_rdy):
-                    m.d.sync += l_data.eq(self.out_fifo.r_data)
+                # If it's listen, we do not have to modify any data
+                # lines, so there's no point in expecting a second
+                # byte.
+                with m.If(l_control.listen):
                     m.next = "Control: Parse"
+                with m.Else():
+                    m.d.sync += self.status.eq(GPIBStatus.Control)
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    with m.If(self.out_fifo.r_rdy):
+                        m.d.sync += l_data.eq(self.out_fifo.r_data)
+                        m.next = "Control: Parse"
 
             with m.State("Control: Parse"):
                 m.d.sync += [
@@ -338,7 +344,6 @@ class GPIBControllerInterface:
         eoi = False
         while not eoi:
             await self.interface.write(bytes([GPIBMessage.Listen.value]))
-            await self.interface.write(bytes([0]))
 
             eoi = bool((await self.interface.read(1))[0] & 2)
             if not to_eoi:
@@ -357,7 +362,6 @@ class GPIBControllerInterface:
         all = bytes([])
         async for data in self.read(to_eoi=to_eoi):
             all += data
-
         return all
 
     async def iter_from(self, address, *, to_eoi=True):
