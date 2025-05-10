@@ -10,6 +10,7 @@ from amaranth import *
 from ..support.arepl import *
 from ..support.plugin import *
 from ..gateware.clockgen import *
+from ..legacy import DeprecatedDemultiplexer, DeprecatedMultiplexer
 
 
 __all__ = [
@@ -265,14 +266,12 @@ import inspect
 import json
 from amaranth.sim import *
 
-from ..simulation import *
-from ..hardware import *
-from ..simulation.target import *
-from ..hardware.target import *
-from ..simulation.device import *
-from ..hardware.device import *
+from ..simulation.assembly import SimulationAssembly
+from ..hardware.assembly import HardwareAssembly
+from ..hardware.device import GlasgowDevice
 from ..hardware.toolchain import find_toolchain
 from ..hardware.platform.rev_ab import GlasgowRevABPlatform
+from ..legacy import DeprecatedTarget, DeprecatedDevice
 
 
 __all__ += ["GlasgowAppletTestCase", "synthesis_test", "applet_simulation_test",
@@ -415,15 +414,12 @@ class GlasgowAppletTestCase(unittest.TestCase):
     def setUp(self):
         self.applet = self.applet_cls()
 
-    def assertBuilds(self, access="direct", args=[]):
-        if access == "direct":
-            target = GlasgowHardwareTarget(revision=self.applet_cls.required_revision,
-                                           multiplexer_cls=DirectMultiplexer)
-            access_args = GlasgowAppletArguments("applet", "AB", 16)
-        else:
-            raise NotImplementedError
+    def assertBuilds(self, args=[]):
+        assembly = HardwareAssembly(revision=self.applet_cls.required_revision)
+        target = DeprecatedTarget(assembly)
 
         parser = argparse.ArgumentParser()
+        access_args = GlasgowAppletArguments("applet", "AB", 16)
         self.applet.add_build_arguments(parser, access_args)
 
         try:
@@ -441,15 +437,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
         if interact:
             self.applet.add_interact_arguments(parser)
         self._parsed_args = parser.parse_args(args)
-
-    def _prepare_simulation_target(self):
-        self.target = GlasgowSimulationTarget(multiplexer_cls=SimulationMultiplexer)
-
-        self.device = GlasgowSimulationDevice(self.target)
-        self.device.demultiplexer = SimulationDemultiplexer(self.device)
-
-    def build_simulated_applet(self):
-        self.applet.build(self.target, self._parsed_args)
+        return self._parsed_args
 
     async def run_simulated_applet(self):
         return await self.applet.run(self.device, self._parsed_args)
@@ -459,15 +447,15 @@ class GlasgowAppletTestCase(unittest.TestCase):
 
         if mode == "record":
             self.device = None # in case the next line raises
-            self.device = GlasgowHardwareDevice()
-            self.device.demultiplexer = DirectDemultiplexer(self.device, pipe_count=1)
+            self.device = GlasgowDevice()
+            self.device.demultiplexer = DeprecatedDemultiplexer(self.device, pipe_count=1)
             revision = self.device.revision
         else:
             self.device = None
             revision = "A0"
 
-        self.target = GlasgowHardwareTarget(revision=revision,
-                                            multiplexer_cls=DirectMultiplexer)
+        self.assembly = HardwareAssembly(revision=revision)
+        self.target = DeprecatedTarget(self.assembly)
         self.applet.build(self.target, self._parsed_args)
 
         self._recording = False
@@ -490,9 +478,6 @@ class GlasgowAppletTestCase(unittest.TestCase):
     async def run_hardware_applet(self, mode):
         if mode == "record":
             await self.device.download_target(self.target.build_plan())
-        else:
-            # avoid UnusedElaboratable warning
-            Fragment.get(self.target, GlasgowRevABPlatform())
 
         return await self.applet.run(self.device, self._parsed_args)
 
@@ -506,21 +491,21 @@ def applet_simulation_test(setup, args=[]):
     def decorator(case):
         @functools.wraps(case)
         def wrapper(self):
+            assembly = SimulationAssembly()
+
             access_args = GlasgowAppletArguments("applet", "AB", 16)
-            self._prepare_applet_args(args, access_args)
-            self._prepare_simulation_target()
+            parsed_args = self._prepare_applet_args(args, access_args)
 
-            getattr(self, setup)()
-            @types.coroutine
-            def run():
-                yield from case(self)
+            target = DeprecatedTarget(assembly)
+            device = DeprecatedDevice(target)
+            device.demultiplexer = DeprecatedDemultiplexer(device, 1)
 
-            sim = Simulator(self.target)
-            sim.add_clock(1e-9)
-            sim.add_sync_process(run)
+            getattr(self, setup)(target, parsed_args)
+
+            async def launch(ctx):
+                await case(self, device, parsed_args, ctx)
             vcd_name = f"{case.__name__}.vcd"
-            with sim.write_vcd(vcd_name):
-                sim.run()
+            assembly.run(launch, vcd_file=vcd_name)
             os.remove(vcd_name)
 
         return wrapper

@@ -121,6 +121,14 @@ class _GlasgowRevCPlatform(GlasgowICE40Platform):
                              "F2 -  -  E3 E1 E2 D1 -  -  D2 C1 D3 C2 -  -  C3 B1 C4 B2 -  -  -  "),
     ]
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._init_glasgow_pins(
+            ("A", "port_a", range(8)),
+            ("B", "port_b", range(8)),
+            ("S", "port_s", range(1)),
+        )
+
 
 class GlasgowRevC0Platform(_GlasgowRevCPlatform):
     resources = _GlasgowRevCPlatform.resources + [

@@ -10,6 +10,7 @@ from amaranth.lib import io, wiring
 from .... import *
 from .....gateware.ports import PortGroup
 from .....gateware.stream import *
+from .....legacy import DeprecatedDemultiplexer
 from . import DebugARM7Applet, DebugARM7Sequencer
 
 
@@ -218,29 +219,30 @@ class DebugARM7AppletTestCase(GlasgowAppletTestCase, applet=DebugARM7Applet):
         await iface.target_single_step()
         assert_r0_r15(0x14, 0x50)
 
-
     def run_on_hardware(self, test_case, **test_kwargs):
-        from glasgow.hardware.device import GlasgowHardwareDevice
-        from glasgow.hardware.target import GlasgowHardwareTarget
-        from glasgow.hardware import DirectMultiplexer, DirectDemultiplexer, DirectArguments
+        from glasgow.hardware.assembly import HardwareAssembly
+        from glasgow.hardware.device import GlasgowDevice
+        from glasgow.applet import GlasgowAppletArguments
+        from glasgow.legacy import DeprecatedTarget
 
         applet = self.applet_cls()
 
         parser = argparse.ArgumentParser()
-        access_args = DirectArguments(applet_name="debug-arm7", default_port="AB", pin_count=16)
+        access_args = GlasgowAppletArguments("debug-arm7", "AB", 16)
         applet.add_build_arguments(parser, access_args)
         applet.add_run_arguments(parser, access_args)
         parsed_args = parser.parse_args(self.hardware_args)
 
-        device = GlasgowHardwareDevice(serial="C3-20230730T144135Z")
-        device.demultiplexer = DirectDemultiplexer(device, pipe_count=1)
-        target = GlasgowHardwareTarget(revision=device.revision, multiplexer_cls=DirectMultiplexer)
+        device = GlasgowDevice()
+        device.demultiplexer = DeprecatedDemultiplexer(device, pipe_count=1)
+        assembly = HardwareAssembly(device=device)
+        target = DeprecatedTarget(assembly)
         applet.build(target, parsed_args)
 
         async def run_test_async():
-            await device.download_target(target.build_plan())
-            iface = await applet.run(device, parsed_args)
-            await test_case(iface, **test_kwargs)
+            async with assembly.start():
+                iface = await applet.run(device, parsed_args)
+                await test_case(iface, **test_kwargs)
 
         try:
             exn = None

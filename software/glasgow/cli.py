@@ -22,13 +22,13 @@ from . import __version__
 from .support.logging import *
 from .support.asignal import *
 from .support.plugin import PluginRequirementsUnmet, PluginLoadError
-from .gateware import GatewareBuildError
-from .device import GlasgowDeviceError
-from .hardware.config import GlasgowHardwareConfig
+from .hardware.device import GlasgowDeviceError, GlasgowDevice, GlasgowDeviceConfig
+from .hardware.device import VID_QIHW, PID_GLASGOW
 from .hardware.toolchain import ToolchainNotFound
-from .hardware.target import GlasgowHardwareTarget
-from .hardware.device import VID_QIHW, PID_GLASGOW, GlasgowHardwareDevice
-from .hardware import DirectMultiplexer, DirectDemultiplexer
+from .hardware.build_plan import GatewareBuildError
+from .hardware.assembly import HardwareAssembly
+from .legacy import DeprecatedTarget, DeprecatedMultiplexer
+from .legacy import DeprecatedDevice, DeprecatedDemultiplexer
 from .applet import *
 
 
@@ -444,8 +444,8 @@ def get_argparser():
 
 # The name of this function appears in Verilog output, so keep it tidy.
 def _applet(revision, args):
-    target = GlasgowHardwareTarget(revision=revision,
-                                   multiplexer_cls=DirectMultiplexer)
+    assembly = HardwareAssembly(revision=revision)
+    target = DeprecatedTarget(assembly)
     applet = GlasgowAppletMetadata.get(args.applet).applet_cls()
     try:
         message = ("applet requires device rev{}+, rev{} found"
@@ -455,12 +455,13 @@ def _applet(revision, args):
                 applet.logger.warning(message)
             else:
                 raise GlasgowAppletError(message)
-        applet.build(target, args)
+        with assembly.add_applet(applet, logger=applet.logger):
+            applet.build(target, args)
     except GlasgowAppletError as e:
         applet.logger.error(e)
         logger.error("failed to build subtarget for applet %r", args.applet)
         raise SystemExit()
-    return target, applet
+    return applet, assembly, target
 
 
 class TerminalFormatter(logging.Formatter):
@@ -567,7 +568,7 @@ async def main():
     device = None
     try:
         if args.action not in ("build", "test", "tool", "factory", "list"):
-            device = GlasgowHardwareDevice(args.serial)
+            device = GlasgowDevice(args.serial)
 
         if args.action == "voltage":
             if args.voltage is not None:
@@ -614,16 +615,18 @@ async def main():
                       .format(port, vio, vlimit))
 
         if args.action in ("run", "repl", "script"):
-            target, applet = _applet(device.revision, args)
-            device.demultiplexer = DirectDemultiplexer(device, target.multiplexer.pipe_count)
-            plan = target.build_plan()
+            applet, assembly, target = _applet(device.revision, args)
 
             if args.prebuilt or args.prebuilt_at:
                 bitstream_file = args.prebuilt_at or open(f"{args.applet}.bin", "rb")
                 with bitstream_file:
-                    await device.download_prebuilt(plan, bitstream_file)
+                    await assembly.start(device, _bitstrema_file=bitstream_file)
             else:
-                await device.download_target(plan, reload=args.reload)
+                await assembly.start(device, reload_bitstream=args.reload)
+
+            if target:
+                device = DeprecatedDevice(target)
+                device.demultiplexer = DeprecatedDemultiplexer(device, target.multiplexer.pipe_count)
 
             async def run_applet():
                 logger.info("running handler for applet %r", args.applet)
@@ -657,9 +660,9 @@ async def main():
                 except asyncio.CancelledError:
                     return 130 # 128 + SIGINT
                 finally:
-                    await device.demultiplexer.flush()
+                    await assembly.flush()
                     if args.show_statistics:
-                        device.demultiplexer.statistics()
+                        assembly.statistics()
 
             async def wait_for_sigint():
                 await wait_for_signal(signal.SIGINT)
@@ -676,7 +679,7 @@ async def main():
                     task.cancel()
                 await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
 
-                await device.demultiplexer.cancel()
+                await assembly.stop()
 
                 return applet_task.result()
 
@@ -690,15 +693,15 @@ async def main():
 
         if args.action == "flash":
             logger.info("reading device configuration")
-            header = await device.read_eeprom("fx2", 0, 8 + 4 + GlasgowHardwareConfig.size)
+            header = await device.read_eeprom("fx2", 0, 8 + 4 + GlasgowDeviceConfig.size)
             header[0] = 0xC2 # see below
 
             fx2_config = FX2Config.decode(header, partial=True)
             if (len(fx2_config.firmware) != 1 or
-                    fx2_config.firmware[0][0] != 0x4000 - GlasgowHardwareConfig.size or
-                    len(fx2_config.firmware[0][1]) != GlasgowHardwareConfig.size):
+                    fx2_config.firmware[0][0] != 0x4000 - GlasgowDeviceConfig.size or
+                    len(fx2_config.firmware[0][1]) != GlasgowDeviceConfig.size):
                 raise SystemExit("Unrecognized or corrupted configuration block")
-            glasgow_config = GlasgowHardwareConfig.decode(fx2_config.firmware[0][1])
+            glasgow_config = GlasgowDeviceConfig.decode(fx2_config.firmware[0][1])
 
             logger.info("device has serial %s-%s",
                         glasgow_config.revision, glasgow_config.serial)
@@ -726,8 +729,8 @@ async def main():
                     glasgow_config.bitstream_id   = new_bitstream_id
             elif args.applet:
                 logger.info("generating bitstream for applet %s", args.applet)
-                target, applet = _applet(device.revision, args)
-                plan = target.build_plan()
+                applet, assembly, _multiplexer = _applet(device.revision, args)
+                plan = assembly.artifact()
                 new_bitstream_id = plan.bitstream_id
                 new_bitstream    = plan.get_bitstream()
 
@@ -740,7 +743,7 @@ async def main():
                 glasgow_config.bitstream_size = len(new_bitstream)
                 glasgow_config.bitstream_id   = new_bitstream_id
 
-            fx2_config.firmware[0] = (0x4000 - GlasgowHardwareConfig.size, glasgow_config.encode())
+            fx2_config.firmware[0] = (0x4000 - GlasgowDeviceConfig.size, glasgow_config.encode())
 
             if args.remove_firmware:
                 logger.info("removing firmware")
@@ -758,7 +761,7 @@ async def main():
                             fx2_config.append(addr, chunk)
                 else:
                     logger.info("using built-in firmware")
-                    for (addr, chunk) in GlasgowHardwareDevice.firmware_data():
+                    for (addr, chunk) in GlasgowDevice.firmware_data():
                         fx2_config.append(addr, chunk)
                 fx2_config.disconnect = True
                 new_image = fx2_config.encode()
@@ -793,7 +796,7 @@ async def main():
                 logger.info("configuration and firmware identical")
 
         if args.action == "build":
-            target, applet = _applet(args.rev, args)
+            applet, assembly, target = _applet(args.rev, args)
             plan = target.build_plan()
             if args.type in ("il", "rtlil"):
                 logger.info("generating RTLIL for applet %r", args.applet)
@@ -836,11 +839,11 @@ async def main():
                 logger.error(f"--serial is not supported for factory flashing")
                 return 1
 
-            device_id = GlasgowHardwareConfig.encode_revision(args.factory_rev)
-            glasgow_config = GlasgowHardwareConfig(args.factory_rev, args.factory_serial,
+            device_id = GlasgowDeviceConfig.encode_revision(args.factory_rev)
+            glasgow_config = GlasgowDeviceConfig(args.factory_rev, args.factory_serial,
                                            manufacturer=args.factory_manufacturer,
                                            modified_design=(args.factory_modified_design != "no"))
-            firmware_data = GlasgowHardwareDevice.firmware_data()
+            firmware_data = GlasgowDevice.firmware_data()
 
             if args.reinitialize:
                 vid, pid = VID_QIHW, PID_GLASGOW
@@ -873,7 +876,7 @@ async def main():
             logger.warning("power cycle the device to finish the operation")
 
         if args.action == "list":
-            for serial in sorted(GlasgowHardwareDevice.enumerate_serials()):
+            for serial in sorted(GlasgowDevice.enumerate_serials()):
                 print(serial)
             return 0
 

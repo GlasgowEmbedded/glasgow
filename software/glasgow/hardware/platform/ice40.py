@@ -3,14 +3,14 @@ from amaranth import *
 from amaranth.lib.cdc import ResetSynchronizer
 from amaranth.vendor import LatticeICE40Platform
 
-from ...gateware import GatewareBuildError
-from . import GlasgowGenericPlatform
+from ..build_plan import GatewareBuildError
+from . import GlasgowPlatform
 
 
 __all__ = ["GlasgowICE40Platform"]
 
 
-class GlasgowICE40Platform(GlasgowGenericPlatform, LatticeICE40Platform):
+class GlasgowICE40Platform(GlasgowPlatform, LatticeICE40Platform):
     def get_pll(self, pll, simple_feedback=True):
         if not 10e6 <= pll.f_in <= 133e6:
             pll.logger.error("PLL: f_in (%.3f MHz) must be between 10 and 133 MHz",

@@ -2,7 +2,7 @@ from amaranth import *
 from amaranth.lib import wiring, io
 
 
-__all__ = ["GlasgowPlatformPort", "GlasgowGenericPlatform"]
+__all__ = ["GlasgowPlatformPort", "GlasgowPlatform"]
 
 
 class GlasgowPlatformPort(io.PortLike):
@@ -47,7 +47,16 @@ class GlasgowPlatformPort(io.PortLike):
             return NotImplemented
 
 
-class GlasgowGenericPlatform:
+class GlasgowPlatform:
+    def _init_glasgow_pins(self, *clauses):
+        self.glasgow_pins = {}
+        for glasgow_prefix, amaranth_prefix, numbers in clauses:
+            for number in numbers:
+                port_name = f"{glasgow_prefix}{number}" if len(numbers) > 1 else glasgow_prefix
+                pin_parts = self.request(amaranth_prefix, number, dir={"io": "-", "oe": "-"})
+                self.glasgow_pins[port_name] = GlasgowPlatformPort(
+                    io=pin_parts.io, oe=getattr(pin_parts, "oe", None))
+
     @property
     def file_templates(self):
         # Do not require yosys to be present for toolchain_prepare() to finish.
@@ -58,8 +67,8 @@ class GlasgowGenericPlatform:
     def toolchain_program(self, products, name):
         bitstream = products.get(f"{name}.bin")
         async def do_program():
-            from ..device import GlasgowHardwareDevice
-            device = GlasgowHardwareDevice()
+            from ..device import GlasgowDevice
+            device = GlasgowDevice()
             await device.download_bitstream(bitstream)
             device.close()
         asyncio.get_event_loop().run_until_complete(do_program())
