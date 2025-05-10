@@ -21,7 +21,8 @@ class SPIControllerAppletTestCase(GlasgowAppletTestCase, applet=SPIControllerApp
         self.target.add_submodule(m)
 
     @applet_simulation_test("setup_loopback",
-                            ["--pin-sck",  "0", "--pin-cs", "1",
+                            ["--keep-voltage",
+                             "--pin-sck",  "0", "--pin-cs", "1",
                              "--pin-copi", "2", "--pin-cipo",   "3",
                              "--frequency", "5000"])
     @types.coroutine

@@ -17,7 +17,7 @@ class UARTAppletTestCase(GlasgowAppletTestCase, applet=UARTApplet):
         m.d.comb += ports.rx.i.eq(ports.tx.o)
         self.target.add_submodule(m)
 
-    @applet_simulation_test("setup_loopback", ["--baud", "5000000"])
+    @applet_simulation_test("setup_loopback", ["--keep-voltage", "--baud", "5000000"])
     async def test_loopback(self):
         uart_iface = await self.run_simulated_applet()
         await uart_iface.write(bytes([0xAA, 0x55]))
