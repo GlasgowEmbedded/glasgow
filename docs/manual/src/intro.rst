@@ -106,6 +106,10 @@ Implementing reliable, high-performance USB communication is not trivial—packe
 
 Debugging applets can be hard, especially if bidirectional communication over the same wires is involved. Glasgow provides a built-in cycle-accurate logic analyzer that can relate the I/O pin level and direction changes to commands and responses received and sent by the applet. The logic analyzer compresses waveforms and can pause the applet if its buffer is about to overflow.
 
+.. caution::
+
+   The built-in logic analyzer has been removed from the codebase pending internal architecture improvements. It will be reinstated once a high-quality implementation becomes feasible.
+
 .. _Python 3: https://www.python.org/
 .. _Amaranth: https://github.com/amaranth-lang/amaranth/
 .. _asyncio: https://docs.python.org/3/library/asyncio.html

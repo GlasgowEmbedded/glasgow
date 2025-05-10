@@ -15,7 +15,6 @@ from ..gateware import GatewareBuildError
 from ..gateware.i2c import I2CTarget
 from ..gateware.registers import I2CRegisters
 from ..gateware.fx2_crossbar import FX2Crossbar
-from .analyzer import GlasgowAnalyzer
 from .toolchain import find_toolchain
 
 
@@ -26,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class GlasgowHardwareTarget(Elaboratable):
-    def __init__(self, revision, multiplexer_cls=None, with_analyzer=False):
+    def __init__(self, revision, multiplexer_cls=None):
         if revision in ("A0", "B0"):
             from ..platform.rev_ab import GlasgowRevABPlatform
             self.platform = GlasgowRevABPlatform()
@@ -68,16 +67,10 @@ class GlasgowHardwareTarget(Elaboratable):
         }
 
         if multiplexer_cls:
-            pipes = "PQ"
             self.multiplexer = multiplexer_cls(ports=self.ports, pipes="PQ",
                 registers=self.registers, fx2_crossbar=self.fx2_crossbar)
         else:
             self.multiplexer = None
-
-        if with_analyzer:
-            self.analyzer = GlasgowAnalyzer(self.registers, self.multiplexer)
-        else:
-            self.analyzer = None
 
     def elaborate(self, platform):
         m = Module()
@@ -87,9 +80,6 @@ class GlasgowHardwareTarget(Elaboratable):
         m.submodules.fx2_crossbar = self.fx2_crossbar
         if self.multiplexer is not None:
             m.submodules.multiplexer = self.multiplexer
-        if self.analyzer is not None:
-            self.analyzer._finalize_pin_events()
-            m.submodules.analyzer = self.analyzer
         m.submodules += self._submodules
 
         m.d.comb += self.i2c_target.address.eq(0b0001000)
