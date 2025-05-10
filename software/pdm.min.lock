@@ -5,7 +5,7 @@
 groups = ["default", "builtin-toolchain", "http"]
 strategy = ["direct_minimal_versions"]
 lock_version = "4.5.0"
-content_hash = "sha256:115de8eeca7102ac00bc73eb740007f9e7b0688c5f6fd0cc3551fc17b512bb19"
+content_hash = "sha256:cef4f52a7a1fc43d0272cc019de927d5dd08bcbc90a74450a66ff12b0c780e0a"
 
 [[metadata.targets]]
 requires_python = "~=3.11"
@@ -134,6 +134,21 @@ dependencies = [
 files = [
     {file = "click-8.2.0-py3-none-any.whl", hash = "sha256:6b303f0b2aa85f1cb4e5303078fadcbcd4e476f114fab9b5007005711839325c"},
     {file = "click-8.2.0.tar.gz", hash = "sha256:f5452aeddd9988eefa20f90f05ab66f17fce1ee2a36907fd30b05bbb5953814d"},
+]
+
+[[package]]
+name = "cobs"
+version = "1.2.1"
+requires_python = ">=3.6"
+summary = "Consistent Overhead Byte Stuffing (COBS)"
+files = [
+    {file = "cobs-1.2.1-cp311-cp311-win32.whl", hash = "sha256:f6ab84b1c975e144a83e11c454066e282374e776a1a79eedd06d0151297ae2f3"},
+    {file = "cobs-1.2.1-cp311-cp311-win_amd64.whl", hash = "sha256:046933f36200f4163abd938adcb1500c1a7a394955ce20c9e3ebb79e78eabfdf"},
+    {file = "cobs-1.2.1-cp312-cp312-win32.whl", hash = "sha256:141107fb3b764772f6db6a52af8158457e00e499f75e3794cb67ea11444839c5"},
+    {file = "cobs-1.2.1-cp312-cp312-win_amd64.whl", hash = "sha256:cb02967314f0db41bf04bc475e4963c079912884586003c8290d82cd0f07d621"},
+    {file = "cobs-1.2.1-cp313-cp313-win32.whl", hash = "sha256:5857c85de70f244648d2a5ee1f28e2aa9313752ebd44c8089343c086dd184a77"},
+    {file = "cobs-1.2.1-cp313-cp313-win_amd64.whl", hash = "sha256:3431da8248d91c241ad98ceb08df00824574421132e42359cd31080a1e13bf24"},
+    {file = "cobs-1.2.1.tar.gz", hash = "sha256:2af7f8791cde1ae7c6b936f5d0c35fe29feb10de25f79c15b0af0d6729783cc0"},
 ]
 
 [[package]]
