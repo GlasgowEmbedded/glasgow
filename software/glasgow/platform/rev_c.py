@@ -112,7 +112,7 @@ class _GlasgowRevCPlatform(GlasgowICE40Platform):
 
         # On revC, these balls are shared with B6 and B7, respectively.
         # Since the default pin state is a weak pullup, we need to tristate them explicitly.
-        Resource("unused", 0, Pins("A6 B5", dir="oe"), Attrs(IO_STANDARD="SB_LVCMOS")),
+        Resource("unused", 0, Pins("A6 B5", dir="io"), Attrs(IO_STANDARD="SB_LVCMOS")),
     ]
     connectors  = [
         #                     1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22

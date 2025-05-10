@@ -41,11 +41,6 @@ class GlasgowHardwareTarget(Elaboratable):
         else:
             raise ValueError("Unknown revision")
 
-        try:
-            self.platform.request("unused", dir="-")
-        except ResourceError:
-            pass
-
         self._submodules = []
 
         self.i2c_target = I2CTarget(self.platform.request("i2c", dir={"scl": "-", "sda": "-"}))
@@ -85,15 +80,22 @@ class GlasgowHardwareTarget(Elaboratable):
         m.d.comb += self.i2c_target.address.eq(0b0001000)
 
         unused_pins = []
-        for width, req in self.ports.values():
-            for n in range(width):
+        for width, request in self.ports.values():
+            for idx in range(width):
                 try:
-                    unused_pins.append(req(n))
+                    unused_pins.append(request(idx))
                 except ResourceError:
                     pass
-        for unused_pin in unused_pins:
+        for idx, unused_pin in enumerate(unused_pins):
             if hasattr(unused_pin, "oe"):
-                m.submodules += io.Buffer("o", unused_pin.oe)
+                m.submodules[f"unused_pin_{idx}"] = io.Buffer("o", unused_pin.oe)
+
+        try:
+            # See note in `rev_c.py`.
+            unused_balls = self.platform.request("unused", dir="-")
+            m.submodules[f"unused_balls"] = io.Buffer("io", unused_balls)
+        except ResourceError:
+            pass
 
         return m
 
