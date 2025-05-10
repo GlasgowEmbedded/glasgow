@@ -15,7 +15,7 @@ class SPIControllerAppletTestCase(GlasgowAppletTestCase, applet=SPIControllerApp
     def setup_loopback(self):
         self.build_simulated_applet()
         mux_iface = self.applet.mux_interface
-        ports = mux_iface._subtargets[0].ports
+        ports = mux_iface.subtarget.ports
         m = Module()
         m.d.comb += ports.cipo.i.eq(ports.copi.o)
         self.target.add_submodule(m)
@@ -29,7 +29,7 @@ class SPIControllerAppletTestCase(GlasgowAppletTestCase, applet=SPIControllerApp
         mux_iface = self.applet.mux_interface
         spi_iface = yield from self.run_simulated_applet()
 
-        ports = mux_iface._subtargets[0].ports
+        ports = mux_iface.subtarget.ports
         self.assertEqual((yield ports.cs.o), 1)
         select_cm = spi_iface.select()
         yield from select_cm.__aenter__() # no `async with` in applet simulation tests :(

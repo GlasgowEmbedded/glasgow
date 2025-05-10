@@ -13,7 +13,7 @@ class UARTAppletTestCase(GlasgowAppletTestCase, applet=UARTApplet):
         self.build_simulated_applet()
         mux_iface = self.applet.mux_interface
         m = Module()
-        ports = mux_iface._subtargets[0].ports
+        ports = mux_iface.subtarget.ports
         m.d.comb += ports.rx.i.eq(ports.tx.o)
         self.target.add_submodule(m)
 
