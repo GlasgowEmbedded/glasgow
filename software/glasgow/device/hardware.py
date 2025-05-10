@@ -648,9 +648,9 @@ class GlasgowHardwareDevice:
             port_enable = 0
             port_value  = 0
             for port_bit in range(0, 8):
-                if index * 8 + port_bit in low | high:
+                if port_bit in low | high:
                     port_enable |= 1 << port_bit
-                if index * 8 + port_bit in high:
+                if port_bit in high:
                     port_value  |= 1 << port_bit
             await self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_PULL,
                 0, self._iobuf_spec_to_mask(port, one=True),
