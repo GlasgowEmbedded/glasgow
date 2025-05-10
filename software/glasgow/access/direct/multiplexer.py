@@ -11,18 +11,11 @@ class _FIFOReadPort:
     FIFO read port wrapper that exists for historical reasons.
     """
     def __init__(self, fifo):
-        self._fifo = fifo
-        self.width = fifo.width
-        self.depth = fifo.depth
+        self.stream = fifo.r
 
-        self.r_en   = fifo.r_en
-        self.r_rdy  = fifo.r_rdy
-        self.r_data = fifo.r_data
-
-        self.stream = stream.Signature(8).create()
-        self.stream.payload = self.r_data
-        self.stream.valid = self.r_rdy
-        self.stream.ready = self.r_en
+        self.r_data = fifo.r.payload
+        self.r_rdy  = fifo.r.valid
+        self.r_en   = fifo.r.ready
 
 
 class _FIFOWritePort:
@@ -30,19 +23,12 @@ class _FIFOWritePort:
     FIFO write port wrapper that exists for historical reasons.
     """
     def __init__(self, fifo):
-        self._fifo = fifo
-        self.width = fifo.width
-        self.depth = fifo.depth
+        self.stream = fifo.w
 
-        self.w_en   = fifo.w_en
-        self.w_rdy  = fifo.w_rdy
-        self.w_data = fifo.w_data
+        self.w_data = fifo.w.payload
+        self.w_en   = fifo.w.valid
+        self.w_rdy  = fifo.w.ready
         self.flush  = fifo.flush
-
-        self.stream = stream.Signature(8).flip().create()
-        self.stream.payload = self.w_data
-        self.stream.valid = self.w_en
-        self.stream.ready = self.w_rdy
 
 
 class DirectMultiplexer(AccessMultiplexer):

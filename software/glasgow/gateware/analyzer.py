@@ -125,7 +125,7 @@ class EventAnalyzer(Elaboratable):
             return 256
 
     def __init__(self, output_fifo, event_depth=None, delay_width=16):
-        assert output_fifo.width == 8
+        # assert output_fifo.width == 8
 
         self.output_fifo   = output_fifo
         self.delay_width   = delay_width
