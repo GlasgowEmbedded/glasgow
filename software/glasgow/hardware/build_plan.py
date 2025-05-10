@@ -1,3 +1,4 @@
+from typing import Optional, BinaryIO
 import os
 import logging
 import hashlib
@@ -7,8 +8,9 @@ import shutil
 import subprocess
 
 import platformdirs
+from amaranth.build.run import BuildPlan
 
-from ..gateware import GatewareBuildError
+from .toolchain import Toolchain
 
 
 __all__ = ["GlasgowBuildPlan"]
@@ -17,44 +19,52 @@ __all__ = ["GlasgowBuildPlan"]
 logger = logging.getLogger(__name__)
 
 
+class GatewareBuildError(Exception):
+    pass
+
+
 class GlasgowBuildPlan:
-    def __init__(self, toolchain, inner):
-        self.toolchain = toolchain
-        self.inner = inner
-        self._bitstream_id = None
+    def __init__(self, inner: BuildPlan, toolchain: Toolchain):
+        self._inner     = inner
+        self._toolchain = toolchain
+
+        hasher = hashlib.blake2s()
+        hasher.update(self._inner.digest())
+        hasher.update(self._toolchain.identifier)
+        self._bitstream_id = hasher.digest()[:16]
 
     @property
-    def rtlil(self):
-        return self.inner.files["top.il"]
+    def rtlil(self) -> str:
+        return self._inner.files["top.il"]
+
+    def archive(self, file: os.PathLike | BinaryIO):
+        self._inner.archive(file)
 
     @property
-    def bitstream_id(self):
-        if self._bitstream_id is None:
-            hasher = hashlib.blake2s()
-            hasher.update(self.toolchain.identifier)
-            hasher.update(self.inner.digest())
-            self._bitstream_id = hasher.digest()[:16]
+    def toolchain(self) -> Toolchain:
+        return self._toolchain
+
+    @property
+    def bitstream_id(self) -> bytes:
         return self._bitstream_id
-
-    def archive(self, filename):
-        self.inner.archive(filename)
 
     # this function is only public for paranoid people who don't trust our excellent cache system.
     # it's very unlikely to fail, but people are rightfully distrustful of cache systems, so
     # be sympathetic to that.
-    def execute(self, build_dir=None, *, debug=False):
+    def execute(self, build_dir: Optional[os.PathLike] = None, *,
+                debug = False) -> tuple[bytes, bytes]:
         if build_dir is None:
             build_dir = tempfile.mkdtemp(prefix="glasgow_")
         try:
             # copied from `BuildPlan.execute_local`, which was inlined into this function because
             # Glasgow has unique (caching) needs. see the comment in that function for details.
-            self.inner.extract(build_dir)
+            self._inner.extract(build_dir)
             if os.name == 'nt':
-                args = ["cmd", "/c", f"call {self.inner.script}.bat"]
+                args = ["cmd", "/c", f"call {self._inner.script}.bat"]
             else:
-                args = ["sh", f"{self.inner.script}.sh"]
+                args = ["sh", f"{self._inner.script}.sh"]
 
-            environ = self.toolchain.env_vars
+            environ = self._toolchain.env_vars
             if os.name == 'nt':
                 # Windows has some environment variables that are required by the OS runtime:
                 # - SYSTEMROOT: required for child Python processes to initialize properly
@@ -95,7 +105,7 @@ class GlasgowBuildPlan:
                 shutil.rmtree(build_dir)
         return bitstream_data, stdout_data
 
-    def get_bitstream(self, *, debug=False):
+    def get_bitstream(self, *, debug=False) -> bytes:
         # locate the caches in the platform-appropriate cache directory; bitstreams aren't large,
         # but it is good etiquette to indicate to the OS that they can be wiped without concern
         cache_path = platformdirs.user_cache_path("GlasgowEmbedded", appauthor=False)

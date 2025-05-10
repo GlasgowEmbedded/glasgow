@@ -11,12 +11,10 @@ from fx2 import REQ_RAM, REG_CPUCS
 from fx2.format import input_data
 
 from ..support.logging import *
-from ..device import GlasgowDeviceError
-from .config import GlasgowHardwareConfig
 from . import quirks
 
 
-__all__ = ["GlasgowHardwareDevice"]
+__all__ = ["GlasgowDevice"]
 
 
 logger = logging.getLogger(__name__)
@@ -74,7 +72,11 @@ class _PollerThread(threading.Thread):
         self.join()
 
 
-class GlasgowHardwareDevice:
+class GlasgowDeviceError(Exception):
+    """An exception raised on a communication error."""
+
+
+class GlasgowDevice:
     @classmethod
     def firmware_file(cls):
         return importlib.resources.files(__package__).joinpath("firmware.ihex")
@@ -104,7 +106,7 @@ class GlasgowHardwareDevice:
             device = devices.pop()
 
             if device.getVendorID() == VID_QIHW and device.getProductID() == PID_GLASGOW:
-                revision  = GlasgowHardwareConfig.decode_revision(device.getbcdDevice() & 0xFF)
+                revision  = GlasgowDeviceConfig.decode_revision(device.getbcdDevice() & 0xFF)
                 api_level = device.getbcdDevice() >> 8
             else:
                 continue
@@ -222,7 +224,7 @@ class GlasgowHardwareDevice:
         self.usb_context = usb_context
         self.usb_poller = _PollerThread(self.usb_context)
         self.usb_poller.start()
-        self.usb_handle = usb_device.open()
+        self.usb_handle : usb1.USBDeviceHandle = usb_device.open()
         try:
             self.usb_handle.setAutoDetachKernelDriver(True)
         except usb1.USBErrorNotSupported:
@@ -691,3 +693,120 @@ class GlasgowHardwareDevice:
             await self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_REGISTER, addr, 0, value)
         except usb1.USBErrorPipe:
             await self._register_error(addr)
+
+
+class GlasgowDeviceConfig:
+    """
+    Glasgow EEPROM configuration data.
+
+    :ivar int size:
+        Total size of configuration block (currently 64).
+
+    :ivar str[1] revision:
+        Revision letter, ``A``-``Z``.
+
+    :ivar str[16] serial:
+        Serial number, in ISO 8601 format.
+
+    :ivar int bitstream_size:
+        Size of bitstream flashed to ICE_MEM, or 0 if there isn't one.
+
+    :ivar bytes[16] bitstream_id:
+        Opaque string that uniquely identifies bitstream functionality,
+        but not necessarily any particular routing and placement.
+        Only meaningful if ``bitstream_size`` is set.
+
+    :ivar int[2] voltage_limit:
+        Maximum allowed I/O port voltage, in millivolts.
+
+    :ivar str[22] manufacturer:
+        Manufacturer string.
+
+    :ivar bool modified_design:
+        Modified from the original design files. This flag must be set if the PCBA has been modified
+        from the design files published in https://github.com/GlasgowEmbedded/glasgow/ in any way
+        except those exempted in https://glasgow-embedded.org/latest/build.html. It will be set when
+        running `glasgow factory --using-modified-design-files=yes`.
+    """
+    size = 64
+    _encoding = "<B16sI16s2H22sb"
+
+    _FLAG_MODIFIED_DESIGN = 0b00000001
+
+    def __init__(self, revision, serial, bitstream_size=0, bitstream_id=b"\x00"*16,
+                 voltage_limit=None, manufacturer="", modified_design=False):
+        self.revision = revision
+        self.serial   = serial
+        self.bitstream_size = bitstream_size
+        self.bitstream_id   = bitstream_id
+        self.voltage_limit  = [5500, 5500] if voltage_limit is None else voltage_limit
+        self.manufacturer   = manufacturer
+        self.modified_design = bool(modified_design)
+
+    @staticmethod
+    def encode_revision(string):
+        """
+        Encode the human readable revision to the revision byte as used in the firmware.
+
+        The revision byte encodes the letter ``X`` and digit ``N`` in ``revXN`` in the high and
+        low nibble respectively. The high nibble is the letter (1 means ``A``) and the low nibble
+        is the digit.
+        """
+        if re.match(r"^[A-Z][0-9]$", string):
+            major, minor = string
+            return ((ord(major) - ord("A") + 1) << 4) | (ord(minor) - ord("0"))
+        else:
+            raise ValueError(f"invalid revision string {string!r}")
+
+    @staticmethod
+    def decode_revision(value):
+        """
+        Decode the revision byte as used in the firmware to the human readable revision.
+
+        This inverts the transformation done by :meth:`encode_revision`.
+        """
+        major, minor = (value & 0xF0) >> 4, value & 0x0F
+        if major == 0:
+            return chr(ord("A") + minor - 1) + "0"
+        elif minor in range(10):
+            return chr(ord("A") + major - 1) + chr(ord("0") + minor)
+        else:
+            raise ValueError(f"invalid revision value {value:#04x}")
+
+    def encode(self):
+        """
+        Convert configuration to a byte array that can be loaded into memory or EEPROM.
+        """
+        data = struct.pack(self._encoding,
+                           self.encode_revision(self.revision),
+                           self.serial.encode("ascii"),
+                           self.bitstream_size,
+                           self.bitstream_id,
+                           self.voltage_limit[0],
+                           self.voltage_limit[1],
+                           self.manufacturer.encode("ascii"),
+                           (self._FLAG_MODIFIED_DESIGN if self.modified_design else 0))
+        return data.ljust(self.size, b"\x00")
+
+    @classmethod
+    def decode(cls, data):
+        """
+        Parse configuration from a byte array loaded from memory or EEPROM.
+
+        Returns :class:`GlasgowConfiguration` or raises :class:`ValueError` if
+        the byte array does not contain a valid configuration.
+        """
+        if len(data) != cls.size:
+            raise ValueError("Incorrect configuration length")
+
+        voltage_limit = [0, 0]
+        revision, serial, bitstream_size, bitstream_id, \
+            voltage_limit[0], voltage_limit[1], manufacturer, flags = \
+            struct.unpack_from(cls._encoding, data, 0)
+        return cls(cls.decode_revision(revision),
+                   serial.decode("ascii"),
+                   bitstream_size,
+                   bitstream_id,
+                   voltage_limit,
+                   manufacturer.decode("ascii"),
+                   flags & cls._FLAG_MODIFIED_DESIGN)

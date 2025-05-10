@@ -1,6 +1,7 @@
 import logging
 import asyncio
 from amaranth import *
+from amaranth.lib import io
 from amaranth.build.res import ResourceError
 
 from ... import *
@@ -18,8 +19,8 @@ class SelfTestSubtarget(Elaboratable):
 
         self.reg_leds, applet.addr_leds = target.registers.add_rw(5)
 
-        self.pins_a = [target.platform.request("port_a", n) for n in range(8)]
-        self.pins_b = [target.platform.request("port_b", n) for n in range(8)]
+        self.pins_a = [target.platform.glasgow_pins.pop(f"A{n}") for n in range(8)]
+        self.pins_b = [target.platform.glasgow_pins.pop(f"B{n}") for n in range(8)]
         try:
             self.leds = [target.platform.request("led", n) for n in range(5)]
         except ResourceError:
@@ -28,19 +29,17 @@ class SelfTestSubtarget(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        m.d.comb += [pin.oe.o.eq(pin.io.oe) for pin in self.pins_a if hasattr(pin, "oe")]
-        m.d.comb += [
-            Cat(pin.io.oe for pin in self.pins_a).eq(self.reg_oe_a),
-            Cat(pin.io.o for pin in self.pins_a).eq(self.reg_o_a),
-            self.reg_i_a.eq(Cat(pin.io.i for pin in self.pins_a))
-        ]
+        for idx, pin in enumerate(self.pins_a):
+            m.submodules[f"buffer_a{idx}"] = buffer = io.Buffer("io", pin)
+            m.d.comb += buffer.oe.eq(self.reg_oe_a[idx])
+            m.d.comb += buffer.o.eq(self.reg_o_a[idx])
+            m.d.comb += self.reg_i_a[idx].eq(buffer.i)
 
-        m.d.comb += [pin.oe.o.eq(pin.io.oe) for pin in self.pins_b if hasattr(pin, "oe")]
-        m.d.comb += [
-            Cat(pin.io.oe for pin in self.pins_b).eq(self.reg_oe_b),
-            Cat(pin.io.o for pin in self.pins_b).eq(self.reg_o_b),
-            self.reg_i_b.eq(Cat(pin.io.i for pin in self.pins_b))
-        ]
+        for idx, pin in enumerate(self.pins_b):
+            m.submodules[f"buffer_b{idx}"] = buffer = io.Buffer("io", pin)
+            m.d.comb += buffer.oe.eq(self.reg_oe_b[idx])
+            m.d.comb += buffer.o.eq(self.reg_o_b[idx])
+            m.d.comb += self.reg_i_b[idx].eq(buffer.i)
 
         m.d.comb += Cat(pin.o for pin in self.leds).eq(self.reg_leds)
 
@@ -266,20 +265,20 @@ class SelfTestApplet(GlasgowApplet):
                 data_1 = b"The quick brown fox jumps over the lazy dog.\x55\xaa"
                 data_2 = bytes(reversed(data_1))
 
-                for iface, data, ep_out, ep_in in (
-                    (iface_1, data_1, "EP2OUT", "EP6IN"),
-                    (iface_2, data_2, "EP4OUT", "EP8IN"),
+                for iface_out, ep_out, iface_in, ep_in, data in (
+                    (iface_1, "EP2OUT", iface_1, "EP6IN", data_1),
+                    (iface_2, "EP4OUT", iface_2, "EP8IN", data_2),
                 ):
                     try:
-                        await iface.write(data)
-                        await asyncio.wait_for(iface.flush(), timeout=0.1)
+                        await iface_out.write(data)
+                        await asyncio.wait_for(iface_out.flush(), timeout=0.1)
                     except asyncio.TimeoutError:
                         passed = False
                         report.append((mode, f"USB {ep_out} timeout"))
                         continue
 
                     try:
-                        received = await asyncio.wait_for(iface.read(len(data)), timeout=0.1)
+                        received = await asyncio.wait_for(iface_in.read(len(data)), timeout=0.1)
                     except asyncio.TimeoutError:
                         passed = False
                         report.append((mode, f"USB {ep_in} timeout"))

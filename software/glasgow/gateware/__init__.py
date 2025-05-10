@@ -1,14 +1,9 @@
 import functools
-import os
 from amaranth import Elaboratable
 from amaranth.sim import Simulator
 
 
-__all__ = ["GatewareBuildError", "simulation_test"]
-
-
-class GatewareBuildError(Exception):
-    pass
+__all__ = ["simulation_test"]
 
 
 def simulation_test(case=None, testbench=False, **kwargs):

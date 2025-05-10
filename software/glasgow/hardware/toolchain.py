@@ -12,7 +12,7 @@ import sysconfig
 from ..support.lazy import lazy
 
 
-__all__ = ["ToolchainNotFound", "find_toolchain"]
+__all__ = ["ToolchainNotFound", "Toolchain", "find_toolchain"]
 
 
 logger = logging.getLogger(__name__)

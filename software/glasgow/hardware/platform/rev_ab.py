@@ -52,7 +52,15 @@ class GlasgowRevABPlatform(GlasgowICE40Platform):
         Resource("port_b", 7, Subsignal("io", Pins("21"))),
 
         # On revA/B, this pin is open-drain only.
-        Resource("port_s", 0, Pins("41")),
+        Resource("port_s", 0, Subsignal("io", Pins("41"))),
     ]
     connectors  = [
     ]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._init_glasgow_pins(
+            ("A", "port_a", range(8)),
+            ("B", "port_b", range(8)),
+            ("S", "port_s", range(1)),
+        )
