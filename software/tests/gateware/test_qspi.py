@@ -1,4 +1,5 @@
 import unittest
+from collections import deque
 from amaranth import *
 from amaranth.sim import Simulator, BrokenTrigger
 from amaranth.lib import io
@@ -21,9 +22,12 @@ async def stream_put(ctx, stream, payload):
     ctx.set(stream.valid, 0)
 
 
-def simulate_flash(ports, memory=b"nya nya nya nya nyaaaaan"):
+def simulate_flash(ports, memory=b"nya nya nya nya nyaaaaan", roundtrip_time_s=0):
     class CSDeasserted(Exception):
         pass
+
+    delayed_roundtrip_set = deque()
+    trigger_delayed_set = Signal()
 
     async def watch_cs(cs_o, triggers):
         try:
@@ -71,20 +75,46 @@ def simulate_flash(ports, memory=b"nya nya nya nya nyaaaaan"):
         for _ in range(0, 8, x):
             if ctx.get(sck.o):
                 await watch_cs(cs.o, ctx.negedge(sck.o))
+
+            if roundtrip_time_s == 0:
+                if x == 1:
+                    ctx.set(Cat(io1.i), (word >> 7))
+                if x == 2:
+                    ctx.set(Cat(io0.i, io1.i), (word >> 6))
+                if x == 4:
+                    ctx.set(Cat(io0.i, io1.i, io2.i, io3.i), (word >> 4))
+            else:
+                delayed_roundtrip_set.append((ctx._engine.now + roundtrip_time_s * 1e15, x, word))
+                ctx.set(trigger_delayed_set, 1 ^ ctx.get(trigger_delayed_set))
+
             if x == 1:
-                ctx.set(Cat(io1.i), (word >> 7))
                 word = (word << 1) & 0xff
             if x == 2:
-                ctx.set(Cat(io0.i, io1.i), (word >> 6))
                 word = (word << 2) & 0xff
             if x == 4:
-                ctx.set(Cat(io0.i, io1.i, io2.i, io3.i), (word >> 4))
                 word = (word << 4) & 0xff
             _, io0_oe, io1_oe, io2_oe, io3_oe = \
                 await watch_cs(cs.o, ctx.posedge(sck.o).sample(io0.oe, io1.oe, io2.oe, io3.oe))
             assert (io0_oe, io1_oe, io2_oe, io3_oe) == (x == 1, 0, 0, 0)
 
-    async def testbench(ctx):
+    async def delayed_set_testbench(ctx):
+        io0, io1, io2, io3 = ports.io
+        while True:
+            await ctx.changed(trigger_delayed_set)
+            while delayed_roundtrip_set:
+                attime, x, word = delayed_roundtrip_set.popleft()
+                if attime >= ctx._engine.now:
+                    await ctx.delay((attime - ctx._engine.now) * 1e-15)
+                    if x == 1:
+                        ctx.set(Cat(io1.i), (word >> 7))
+                    if x == 2:
+                        ctx.set(Cat(io0.i, io1.i), (word >> 6))
+                    if x == 4:
+                        ctx.set(Cat(io0.i, io1.i, io2.i, io3.i), (word >> 4))
+                else:
+                    assert False, "Error: trying to change signal in the past?"
+
+    async def main_flash_testbench(ctx):
         await ctx.negedge(ports.cs.o)
         while True:
             try:
@@ -114,7 +144,7 @@ def simulate_flash(ports, memory=b"nya nya nya nya nyaaaaan"):
                 await ctx.negedge(ports.cs.o)
                 continue
 
-    return testbench
+    return main_flash_testbench, delayed_set_testbench
 
 
 class QSPITestCase(unittest.TestCase):
@@ -253,13 +283,14 @@ class QSPITestCase(unittest.TestCase):
         with sim.write_vcd("test.vcd"):
             sim.run()
 
-    def subtest_qspi_controller(self, *, use_ddr_buffers:bool, divisor:int):
+    QSPI_CONTROLLER_SUBTEST_CLK_PERIOD = 1e-6
+    def subtest_qspi_controller(self, *, use_ddr_buffers:bool, divisor:int, roundtrip_time_s:float=0, sample_delay_half_clocks:int=0):
         ports = PortGroup()
         ports.sck = io.SimulationPort("o",  1)
         ports.io  = io.SimulationPort("io", 4)
         ports.cs  = io.SimulationPort("o",  1)
 
-        dut = QSPIController(ports, use_ddr_buffers=use_ddr_buffers)
+        dut = QSPIController(ports, use_ddr_buffers=use_ddr_buffers, sample_delay_half_clocks=sample_delay_half_clocks)
 
         async def testbench_controller(ctx):
             async def ctrl_idle():
@@ -315,12 +346,13 @@ class QSPITestCase(unittest.TestCase):
 
             await ctrl_idle()
 
-        testbench_flash = simulate_flash(ports, memory=b"nya nya awa!nya nyaaaaan")
+        testbench_flash = simulate_flash(ports, memory=b"nya nya awa!nya nyaaaaan", roundtrip_time_s=roundtrip_time_s)
 
         sim = Simulator(dut)
-        sim.add_clock(1e-6)
+        sim.add_clock(self.QSPI_CONTROLLER_SUBTEST_CLK_PERIOD)
         sim.add_testbench(testbench_controller)
-        sim.add_testbench(testbench_flash, background=True)
+        for sub_testbench in testbench_flash:
+            sim.add_testbench(sub_testbench, background=True)
         with sim.write_vcd("test.vcd"):
             sim.run()
 
@@ -341,3 +373,65 @@ class QSPITestCase(unittest.TestCase):
 
     def test_qspi_controller_ddr_div2(self):
         self.subtest_qspi_controller(use_ddr_buffers=True, divisor=2)
+
+    def test_qspi_controller_needs_sample_delay_ddr_div0_max_turnaround(self):
+        for sample_delay_half_clocks in range(5):
+            self.subtest_qspi_controller(use_ddr_buffers=True,
+                                         divisor=0,
+                                         roundtrip_time_s=self.QSPI_CONTROLLER_SUBTEST_CLK_PERIOD * (0.49 + 0.5 * sample_delay_half_clocks),
+                                         sample_delay_half_clocks=sample_delay_half_clocks)
+
+    def test_qspi_controller_needs_sample_delay_ddr_div0_too_much_turnaround(self):
+        for sample_delay_half_clocks in range(5):
+            try:
+                self.subtest_qspi_controller(use_ddr_buffers=True,
+                                             divisor=0,
+                                             roundtrip_time_s=self.QSPI_CONTROLLER_SUBTEST_CLK_PERIOD * (0.51 + 0.5 * sample_delay_half_clocks),
+                                             sample_delay_half_clocks = sample_delay_half_clocks)
+            except AssertionError:
+                pass
+            else:
+                assert False, "QSPI controller should have failed with too much turnaround time"
+
+    def test_qspi_controller_needs_sample_delay_ddr_div0_too_little_turnaround(self):
+        for sample_delay_half_clocks in range(2, 5):
+            try:
+                self.subtest_qspi_controller(use_ddr_buffers=True,
+                                             divisor=0,
+                                             roundtrip_time_s=self.QSPI_CONTROLLER_SUBTEST_CLK_PERIOD * (0.49 + 0.5 * (sample_delay_half_clocks - 2)),
+                                             sample_delay_half_clocks = sample_delay_half_clocks)
+            except AssertionError:
+                pass
+            else:
+                assert False, "QSPI controller should have failed with too little turnaround time"
+
+    def test_qspi_controller_needs_sample_delay_sdr_div0_max_turnaround(self):
+        for sample_delay_half_clocks in range(0, 9, 2):
+            self.subtest_qspi_controller(use_ddr_buffers=False,
+                                         divisor=0,
+                                         roundtrip_time_s=self.QSPI_CONTROLLER_SUBTEST_CLK_PERIOD * (0.99 + (0.5 * sample_delay_half_clocks)),
+                                         sample_delay_half_clocks=sample_delay_half_clocks)
+
+    def test_qspi_controller_needs_sample_delay_sdr_div0_too_much_turnaround(self):
+        for sample_delay_half_clocks in range(0, 9, 2):
+            try:
+                self.subtest_qspi_controller(use_ddr_buffers=False,
+                                             divisor=0,
+                                             roundtrip_time_s=self.QSPI_CONTROLLER_SUBTEST_CLK_PERIOD * (1.01 + (0.5 * sample_delay_half_clocks)),
+                                             sample_delay_half_clocks = sample_delay_half_clocks)
+            except AssertionError:
+                pass
+            else:
+                assert False, "QSPI controller should have failed with too much turnaround time"
+
+    def test_qspi_controller_needs_sample_delay_sdr_div0_too_little_turnaround(self):
+        for sample_delay_half_clocks in range(4, 9, 2):
+            try:
+                self.subtest_qspi_controller(use_ddr_buffers=False,
+                                             divisor=0,
+                                             roundtrip_time_s=self.QSPI_CONTROLLER_SUBTEST_CLK_PERIOD * (0.99 + 0.5 * (sample_delay_half_clocks - 4)),
+                                             sample_delay_half_clocks = sample_delay_half_clocks)
+            except AssertionError:
+                pass
+            else:
+                assert False, "QSPI controller should have failed with too little turnaround time"
