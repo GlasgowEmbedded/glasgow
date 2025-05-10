@@ -31,19 +31,14 @@ class SimulationMultiplexer(AccessMultiplexer):
         m.submodules += self._ifaces
         return m
 
-    def set_analyzer(self, analyzer):
-        assert False
-
-    def claim_interface(self, applet, args, with_analyzer=False):
-        assert not with_analyzer
-
+    def claim_interface(self, applet, args):
         self._ifaces.append(iface := SimulationMultiplexerInterface(applet))
         return iface
 
 
 class SimulationMultiplexerInterface(AccessMultiplexerInterface):
     def __init__(self, applet):
-        super().__init__(applet, analyzer=None)
+        super().__init__(applet)
 
         self.in_fifo   = None
         self.out_fifo  = None

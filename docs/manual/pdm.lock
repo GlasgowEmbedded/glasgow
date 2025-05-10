@@ -3,9 +3,12 @@
 
 [metadata]
 groups = ["default"]
-strategy = ["cross_platform"]
-lock_version = "4.4.1"
-content_hash = "sha256:6ca848a5f11cd67e536de1b188ad2bc8e035755fe9bbda7f007339b56cdfd917"
+strategy = []
+lock_version = "4.5.0"
+content_hash = "sha256:81156eb84854106f28c92c9e312e195c6bf2494db4208598f5cff2a367bd56c7"
+
+[[metadata.targets]]
+requires_python = "~=3.8"
 
 [[package]]
 name = "alabaster"
@@ -200,6 +203,7 @@ version = "6.8.0"
 requires_python = ">=3.8"
 summary = "Read metadata from Python packages"
 dependencies = [
+    "typing-extensions>=3.6.4; python_version < \"3.8\"",
     "zipp>=0.5",
 ]
 files = [
@@ -227,6 +231,7 @@ summary = "Python LiveReload is an awesome tool for web developers"
 dependencies = [
     "six",
     "tornado; python_version > \"2.7\"",
+    "tornado<6; python_version == \"2.7\"",
 ]
 files = [
     {file = "livereload-2.6.3-py2.py3-none-any.whl", hash = "sha256:ad4ac6f53b2d62bb6ce1a5e6e96f1f00976a32348afedcb4b6d68df2a1d346e4"},

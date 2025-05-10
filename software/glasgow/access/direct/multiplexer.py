@@ -42,7 +42,6 @@ class DirectMultiplexer(AccessMultiplexer):
         self._claimed_ports = set()
         self._pipes         = pipes
         self._claimed_pipes = 0
-        self._analyzer      = None
         self._registers     = registers
         self._fx2_crossbar  = fx2_crossbar
         self._ifaces        = []
@@ -52,15 +51,11 @@ class DirectMultiplexer(AccessMultiplexer):
         m.submodules += self._ifaces
         return m
 
-    def set_analyzer(self, analyzer):
-        assert self._analyzer is None
-        self._analyzer = analyzer
-
     @property
     def pipe_count(self):
         return self._claimed_pipes
 
-    def claim_interface(self, applet, args, with_analyzer=True):
+    def claim_interface(self, applet, args):
         if self._claimed_pipes == len(self._pipes):
             applet.logger.error("cannot claim pipe: out of pipes")
             return None
@@ -88,11 +83,6 @@ class DirectMultiplexer(AccessMultiplexer):
         else:
             iface_spec = []
 
-        if with_analyzer and self._analyzer:
-            analyzer = self._analyzer
-        else:
-            analyzer = None
-
         if iface_spec:
             applet.logger.debug("claimed pipe %s and port(s) %s",
                                 self._pipes[pipe_num], ", ".join(sorted(iface_spec)))
@@ -101,13 +91,13 @@ class DirectMultiplexer(AccessMultiplexer):
                                 self._pipes[pipe_num])
 
         self._ifaces.append(iface := DirectMultiplexerInterface(
-            applet, analyzer, self._registers, self._fx2_crossbar, pipe_num, pins))
+            applet, self._registers, self._fx2_crossbar, pipe_num, pins))
         return iface
 
 
 class DirectMultiplexerInterface(AccessMultiplexerInterface):
-    def __init__(self, applet, analyzer, registers, fx2_crossbar, pipe_num, pins):
-        super().__init__(applet, analyzer)
+    def __init__(self, applet, registers, fx2_crossbar, pipe_num, pins):
+        super().__init__(applet)
         self._registers     = registers
         self._fx2_crossbar  = fx2_crossbar
         self._pipe_num      = pipe_num
@@ -166,16 +156,12 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
         assert self._in_port is None, "only one IN FIFO can be requested"
 
         self._in_port = _FIFOWritePort(depth, auto_flush)
-        if self.analyzer:
-            self.analyzer.add_in_fifo_event(self.applet, self._in_port)
         return self._in_port
 
     def get_out_fifo(self, depth=512):
         assert self._out_port is None, "only one OUT FIFO can be requested"
 
         self._out_port = _FIFOReadPort(depth)
-        if self.analyzer:
-            self.analyzer.add_out_fifo_event(self.applet, self._out_port)
         return self._out_port
 
     def add_subtarget(self, subtarget):

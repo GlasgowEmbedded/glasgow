@@ -34,19 +34,14 @@ class AccessArguments(metaclass=ABCMeta):
 
 class AccessMultiplexer(Elaboratable, metaclass=ABCMeta):
     @abstractmethod
-    def set_analyzer(self, analyzer):
-        pass
-
-    @abstractmethod
-    def claim_interface(self, applet, args, with_analyzer=True):
+    def claim_interface(self, applet, args):
         pass
 
 
 class AccessMultiplexerInterface(Elaboratable, metaclass=ABCMeta):
-    def __init__(self, applet, analyzer):
-        self.applet   = applet
-        self.logger   = applet.logger
-        self.analyzer = analyzer
+    def __init__(self, applet):
+        self.applet = applet
+        self.logger = applet.logger
 
     @abstractmethod
     def get_out_fifo(self, **kwargs):
