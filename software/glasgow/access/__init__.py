@@ -1,35 +1,14 @@
 from abc import ABCMeta, abstractmethod
 from amaranth import *
 from amaranth.lib import io
-import argparse
 
 from ..gateware.ports import PortGroup
 
 
-__all__  = ["AccessArguments"]
-__all__ += ["AccessMultiplexer", "AccessMultiplexerInterface"]
-__all__ += ["AccessDemultiplexer", "AccessDemultiplexerInterface"]
-
-
-class AccessArguments(metaclass=ABCMeta):
-    def _arg_error(self, message):
-        raise argparse.ArgumentTypeError(f"applet {self._applet_name!r}: " + message)
-
-    @abstractmethod
-    def add_build_arguments(self, parser):
-        pass
-
-    @abstractmethod
-    def add_run_arguments(self, parser):
-        pass
-
-    @abstractmethod
-    def add_pin_argument(self, parser, name, default=None, required=False):
-        pass
-
-    @abstractmethod
-    def add_pin_set_argument(self, parser, name, width, default=None, required=False):
-        pass
+__all__ = [
+    "AccessMultiplexer", "AccessMultiplexerInterface",
+    "AccessDemultiplexer", "AccessDemultiplexerInterface"
+]
 
 
 class AccessMultiplexer(Elaboratable, metaclass=ABCMeta):
