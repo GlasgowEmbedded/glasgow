@@ -1,8 +1,9 @@
 import logging
 from amaranth import *
-from amaranth.lib import stream, io
+from amaranth.lib import wiring, stream
 
 from ...platform.generic import GlasgowPlatformPort
+from ...gateware.stream import StreamFIFO
 from .. import AccessMultiplexer, AccessMultiplexerInterface
 
 
@@ -10,25 +11,29 @@ class _FIFOReadPort:
     """
     FIFO read port wrapper that exists for historical reasons.
     """
-    def __init__(self, fifo):
-        self.stream = fifo.r
+    def __init__(self, depth):
+        self.depth  = depth
 
-        self.r_data = fifo.r.payload
-        self.r_rdy  = fifo.r.valid
-        self.r_en   = fifo.r.ready
+        self.stream = stream.Signature(8).create()
+
+        self.r_data = self.stream.payload
+        self.r_rdy  = self.stream.valid
+        self.r_en   = self.stream.ready
 
 
 class _FIFOWritePort:
     """
     FIFO write port wrapper that exists for historical reasons.
     """
-    def __init__(self, fifo):
-        self.stream = fifo.w
+    def __init__(self, depth, auto_flush):
+        self.depth  = depth
 
-        self.w_data = fifo.w.payload
-        self.w_en   = fifo.w.valid
-        self.w_rdy  = fifo.w.ready
-        self.flush  = fifo.flush
+        self.stream = stream.Signature(8).flip().create()
+
+        self.w_data = self.stream.payload
+        self.w_en   = self.stream.valid
+        self.w_rdy  = self.stream.ready
+        self.flush  = Signal(init=auto_flush)
 
 
 class DirectMultiplexer(AccessMultiplexer):
@@ -95,9 +100,8 @@ class DirectMultiplexer(AccessMultiplexer):
             applet.logger.debug("claimed pipe %s",
                                 self._pipes[pipe_num])
 
-        iface = DirectMultiplexerInterface(applet, analyzer, self._registers,
-            self._fx2_crossbar, pipe_num, pins)
-        self._ifaces.append(iface)
+        self._ifaces.append(iface := DirectMultiplexerInterface(
+            applet, analyzer, self._registers, self._fx2_crossbar, pipe_num, pins))
         return iface
 
 
@@ -108,8 +112,9 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
         self._fx2_crossbar  = fx2_crossbar
         self._pipe_num      = pipe_num
         self._pins          = pins
-        self._subtargets    = []
-        self._fifos         = []
+        self._subtarget     = None
+        self._in_port       = None
+        self._out_port      = None
 
         self.reset, self._addr_reset = self._registers.add_rw(1, init=1)
         self.logger.debug("adding reset register at address %#04x", self._addr_reset)
@@ -117,11 +122,29 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
     def elaborate(self, platform):
         m = Module()
 
-        for subtarget in self._subtargets:
-            # Reset the subtarget simultaneously with the USB-side and FPGA-side FIFOs. This ensures
-            # that when the demultiplexer interface is reset, the gateware and the host software are
-            # synchronized with each other.
-            m.submodules += ResetInserter(self.reset)(subtarget)
+        # Reset the subtarget simultaneously with the USB-side and FPGA-side FIFOs. This ensures
+        # that when the demultiplexer interface is reset, the gateware and the host software are
+        # synchronized with each other.
+
+        if self._subtarget:
+            m.submodules.subtarget = ResetInserter(self.reset)(self._subtarget)
+
+        if self._in_port:
+            m.submodules.in_fifo = in_fifo = ResetInserter(self.reset)(
+                StreamFIFO(shape=8, depth=self._in_port.depth))
+            in_ep = self._fx2_crossbar.in_eps[self._pipe_num]
+            m.d.comb += in_ep.reset.eq(self.reset)
+            wiring.connect(m, in_fifo.w, wiring.flipped(self._in_port.stream))
+            wiring.connect(m, in_ep.data, in_fifo.r)
+            m.d.comb += in_ep.flush.eq(self._in_port.flush)
+
+        if self._out_port:
+            m.submodules.out_fifo = out_fifo = ResetInserter(self.reset)(
+                StreamFIFO(shape=8, depth=self._out_port.depth))
+            out_ep = self._fx2_crossbar.out_eps[self._pipe_num]
+            m.d.comb += out_ep.reset.eq(self.reset)
+            wiring.connect(m, out_fifo.w, out_ep.data)
+            wiring.connect(m, wiring.flipped(self._out_port.stream), out_fifo.r)
 
         return m
 
@@ -139,18 +162,24 @@ class DirectMultiplexerInterface(AccessMultiplexerInterface):
             oe=getattr(pin_components, "oe", None)
         )
 
-    def get_in_fifo(self, **kwargs):
-        fifo = self._fx2_crossbar.get_in_fifo(self._pipe_num, **kwargs, reset=self.reset)
-        if self.analyzer:
-            self.analyzer.add_in_fifo_event(self.applet, fifo)
-        return _FIFOWritePort(fifo)
+    def get_in_fifo(self, depth=512, auto_flush=True):
+        assert self._in_port is None, "only one IN FIFO can be requested"
 
-    def get_out_fifo(self, **kwargs):
-        fifo = self._fx2_crossbar.get_out_fifo(self._pipe_num, **kwargs, reset=self.reset)
+        self._in_port = _FIFOWritePort(depth, auto_flush)
         if self.analyzer:
-            self.analyzer.add_out_fifo_event(self.applet, fifo)
-        return _FIFOReadPort(fifo)
+            self.analyzer.add_in_fifo_event(self.applet, self._in_port)
+        return self._in_port
+
+    def get_out_fifo(self, depth=512):
+        assert self._out_port is None, "only one OUT FIFO can be requested"
+
+        self._out_port = _FIFOReadPort(depth)
+        if self.analyzer:
+            self.analyzer.add_out_fifo_event(self.applet, self._out_port)
+        return self._out_port
 
     def add_subtarget(self, subtarget):
-        self._subtargets.append(subtarget)
+        assert self._subtarget is None, "only one subtarget can be added"
+
+        self._subtarget = subtarget
         return subtarget
