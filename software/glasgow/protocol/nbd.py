@@ -160,7 +160,7 @@ class NBDServer:
                 await self._send_info(option)
                 await self._send_option(option, NBD_REP_ACK, struct.pack('>I', option))
             else:
-                self._logger.warn(f"client requested unknown option {option}")
+                self._logger.warning(f"client requested unknown option {option}")
                 await self._send_option(option, NBD_REP_ERR_UNSUP)
 
     async def _send_info(self, option):

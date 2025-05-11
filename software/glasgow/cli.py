@@ -788,7 +788,7 @@ async def main():
                     logger.critical("configuration/firmware programming failed")
                     return 1
 
-                logger.warn("power cycle the device to apply changes")
+                logger.warning("power cycle the device to apply changes")
             else:
                 logger.info("configuration and firmware identical")
 
