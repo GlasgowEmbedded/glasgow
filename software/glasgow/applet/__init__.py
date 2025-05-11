@@ -1,9 +1,10 @@
 import re
 import argparse
 import functools
-from dataclasses import dataclass
 from abc import ABCMeta, abstractmethod
+from dataclasses import dataclass
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
+
 from amaranth import *
 
 from ..support.arepl import *
@@ -264,14 +265,14 @@ import inspect
 import json
 from amaranth.sim import *
 
-from ..access.simulation import *
-from ..access.direct import *
-from ..target.simulation import *
-from ..target.hardware import *
-from ..device.simulation import *
-from ..device.hardware import *
-from ..target.toolchain import find_toolchain
-from ..platform.rev_ab import GlasgowRevABPlatform
+from ..simulation import *
+from ..hardware import *
+from ..simulation.target import *
+from ..hardware.target import *
+from ..simulation.device import *
+from ..hardware.device import *
+from ..hardware.toolchain import find_toolchain
+from ..hardware.platform.rev_ab import GlasgowRevABPlatform
 
 
 __all__ += ["GlasgowAppletTestCase", "synthesis_test", "applet_simulation_test",

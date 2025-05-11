@@ -48,6 +48,6 @@ make -C vendor/libfx2/firmware/library all MODELS=medium
 make -C firmware all
 
 # Deploy the artifact.
-cp firmware/glasgow.ihex software/glasgow/device/firmware.ihex
+cp firmware/glasgow.ihex software/glasgow/hardware/firmware.ihex
 
 END

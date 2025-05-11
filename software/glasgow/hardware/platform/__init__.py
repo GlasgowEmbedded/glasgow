@@ -1,7 +1,8 @@
 from amaranth import *
 from amaranth.lib import wiring, io
 
-from ..device.hardware import GlasgowHardwareDevice
+
+__all__ = ["GlasgowPlatformPort", "GlasgowGenericPlatform"]
 
 
 class GlasgowPlatformPort(io.PortLike):
@@ -57,6 +58,7 @@ class GlasgowGenericPlatform:
     def toolchain_program(self, products, name):
         bitstream = products.get(f"{name}.bin")
         async def do_program():
+            from ..device import GlasgowHardwareDevice
             device = GlasgowHardwareDevice()
             await device.download_bitstream(bitstream)
             device.close()

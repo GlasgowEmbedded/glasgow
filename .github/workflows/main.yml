@@ -96,10 +96,10 @@ jobs:
         uses: tj-actions/changed-files@v46
         with:
           files: |
-            software/glasgow/device/firmware.ihex
+            software/glasgow/hardware/firmware.ihex
       - name: Verify firmware matches checked-in version
         if: steps.is_modified.outputs.any_changed == 'true'
-        run: git diff --exit-code --text software/glasgow/device/firmware.ihex
+        run: git diff --exit-code --text software/glasgow/hardware/firmware.ihex
 
   build-manual:
     runs-on: ubuntu-latest

@@ -26,7 +26,7 @@ The FX2 firmware is considered an integral component of the Glasgow software/har
 
 The Glasgow hardware includes an EEPROM labelled "FX2_MEM" that stores the factory provisioning information (revision, serial number, etc) as well as the FX2 firmware. In most cases, this EEPROM would have a firmware stored in it at all times (as done by the ``glasgow flash`` command, unless requested otherwise), but this is only an optimization: if the software stack discovers a device plugged in without firmware it will automatically load the firwmare, and if it discovers that the firmware is too old (or too new) to be compatible, it will reload a compatible version of the firmware to RAM (without affecting the stored version).
 
-To ensure that a compatible version of the firmware is available at all times, a built artifact (an Intel HEX file) is checked into the repository as ``software/glasgow/device/firmware.ihex`` and included in the built artifacts (Python wheels) of the Glasgow software. Whenever necessary, this data file is requested via :mod:`importlib.resources` and loaded or flashed. At the moment, whenever the firmware source code is changed, this file is manually built on a developer's machine and committed to the repository.
+To ensure that a compatible version of the firmware is available at all times, a built artifact (an Intel HEX file) is checked into the repository as ``software/glasgow/hardware/firmware.ihex`` and included in the built artifacts (Python wheels) of the Glasgow software. Whenever necessary, this data file is requested via :mod:`importlib.resources` and loaded or flashed. At the moment, whenever the firmware source code is changed, this file is manually built on a developer's machine and committed to the repository.
 
 Currently, the firmware is written to be compatible with every version of the Glasgow hardware ever designed. This simplifies firmware management and to some extent development, eliminating the need for conditional compilation. It is possible that, as functionality is added, this approach will become infeasible and several versions of the firmware will be concurrently built.
 
@@ -128,7 +128,7 @@ Once a modified firmware is deployed, the Glasgow software stack will load this 
 
 .. important::
 
-    When submitting a pull request that changes the firmware source code, be sure to update the built binary artifact, ``software/glasgow/device/firmware.ihex``, in a separate commit that is the very last one in your pull request. (The built binary artifact includes the git revision of the latest modification of the source code in the ``firmware/`` subtree, and it cannot be self-referential.)
+    When submitting a pull request that changes the firmware source code, be sure to update the built binary artifact, ``software/glasgow/hardware/firmware.ihex``, in a separate commit that is the very last one in your pull request. (The built binary artifact includes the git revision of the latest modification of the source code in the ``firmware/`` subtree, and it cannot be self-referential.)
 
     Our continuous integration system will rebuild the firmware from source code and prevent the pull request from being merged unless the freshly built firmware is bit-for-bit identical to the firmware checked into the repository. This automated process ensures that the checked-in binary artifact is trustworthy and reproducible.
 

@@ -1,10 +1,11 @@
 import logging
+
 from amaranth import *
 from amaranth.lib import wiring, stream
 
-from ...platform.generic import GlasgowPlatformPort
-from ...gateware.stream import StreamFIFO
-from .. import AccessMultiplexer, AccessMultiplexerInterface
+from .platform import GlasgowPlatformPort
+from ..gateware.stream import StreamFIFO
+from ..access import AccessMultiplexer, AccessMultiplexerInterface
 
 
 class _FIFOReadPort:

@@ -1,8 +1,8 @@
 from amaranth import *
 from amaranth.lib import io
 
-from ...gateware.stream import StreamFIFO
-from .. import AccessMultiplexer, AccessMultiplexerInterface
+from ..gateware.stream import StreamFIFO
+from ..access import AccessMultiplexer, AccessMultiplexerInterface
 
 
 class _FIFOReadPort:
