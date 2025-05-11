@@ -1,8 +1,9 @@
 import types
+
 from amaranth import *
 
-from ...support.logging import *
-from .. import AccessDemultiplexer, AccessDemultiplexerInterface
+from ..support.logging import *
+from ..access import AccessDemultiplexer, AccessDemultiplexerInterface
 
 
 class SimulationDemultiplexer(AccessDemultiplexer):

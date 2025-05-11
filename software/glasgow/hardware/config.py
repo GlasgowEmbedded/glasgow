@@ -2,10 +2,10 @@ import struct
 import re
 
 
-__all__ = ["GlasgowConfig"]
+__all__ = ["GlasgowHardwareConfig"]
 
 
-class GlasgowConfig:
+class GlasgowHardwareConfig:
     """
     Glasgow EEPROM configuration data.
 

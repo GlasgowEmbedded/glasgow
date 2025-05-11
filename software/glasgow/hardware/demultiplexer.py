@@ -1,11 +1,12 @@
 import math
-import usb1
 import asyncio
 
-from ...support.logging import *
-from ...support.chunked_fifo import *
-from ...support.task_queue import *
-from .. import AccessDemultiplexer, AccessDemultiplexerInterface
+import usb1
+
+from ..support.logging import *
+from ..support.chunked_fifo import *
+from ..support.task_queue import *
+from ..access import AccessDemultiplexer, AccessDemultiplexerInterface
 
 
 # On Linux, the total amount of in-flight USB requests for the entire system is limited

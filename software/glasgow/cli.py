@@ -1,19 +1,19 @@
+import re
 import os
 import sys
 import ast
-import platform
 import logging
-import argparse
-import textwrap
-import re
+import contextlib
 import asyncio
 import signal
+import argparse
+import textwrap
+import platform
 import unittest
-import contextlib
 import importlib.metadata
-from vcd import VCDWriter
 from datetime import datetime
 
+from vcd import VCDWriter
 from amaranth import UnusedElaboratable
 from fx2 import FX2Config, FX2Device, FX2DeviceError, VID_CYPRESS, PID_FX2
 from fx2.format import input_data, diff_data
@@ -22,13 +22,13 @@ from . import __version__
 from .support.logging import *
 from .support.asignal import *
 from .support.plugin import PluginRequirementsUnmet, PluginLoadError
-from .device import GlasgowDeviceError
-from .device.config import GlasgowConfig
-from .target.toolchain import ToolchainNotFound
-from .target.hardware import GlasgowHardwareTarget
 from .gateware import GatewareBuildError
-from .device.hardware import VID_QIHW, PID_GLASGOW, GlasgowHardwareDevice
-from .access.direct import *
+from .device import GlasgowDeviceError
+from .hardware.config import GlasgowHardwareConfig
+from .hardware.toolchain import ToolchainNotFound
+from .hardware.target import GlasgowHardwareTarget
+from .hardware.device import VID_QIHW, PID_GLASGOW, GlasgowHardwareDevice
+from .hardware import DirectMultiplexer, DirectDemultiplexer
 from .applet import *
 
 
@@ -690,15 +690,15 @@ async def main():
 
         if args.action == "flash":
             logger.info("reading device configuration")
-            header = await device.read_eeprom("fx2", 0, 8 + 4 + GlasgowConfig.size)
+            header = await device.read_eeprom("fx2", 0, 8 + 4 + GlasgowHardwareConfig.size)
             header[0] = 0xC2 # see below
 
             fx2_config = FX2Config.decode(header, partial=True)
             if (len(fx2_config.firmware) != 1 or
-                    fx2_config.firmware[0][0] != 0x4000 - GlasgowConfig.size or
-                    len(fx2_config.firmware[0][1]) != GlasgowConfig.size):
+                    fx2_config.firmware[0][0] != 0x4000 - GlasgowHardwareConfig.size or
+                    len(fx2_config.firmware[0][1]) != GlasgowHardwareConfig.size):
                 raise SystemExit("Unrecognized or corrupted configuration block")
-            glasgow_config = GlasgowConfig.decode(fx2_config.firmware[0][1])
+            glasgow_config = GlasgowHardwareConfig.decode(fx2_config.firmware[0][1])
 
             logger.info("device has serial %s-%s",
                         glasgow_config.revision, glasgow_config.serial)
@@ -740,7 +740,7 @@ async def main():
                 glasgow_config.bitstream_size = len(new_bitstream)
                 glasgow_config.bitstream_id   = new_bitstream_id
 
-            fx2_config.firmware[0] = (0x4000 - GlasgowConfig.size, glasgow_config.encode())
+            fx2_config.firmware[0] = (0x4000 - GlasgowHardwareConfig.size, glasgow_config.encode())
 
             if args.remove_firmware:
                 logger.info("removing firmware")
@@ -836,8 +836,8 @@ async def main():
                 logger.error(f"--serial is not supported for factory flashing")
                 return 1
 
-            device_id = GlasgowConfig.encode_revision(args.factory_rev)
-            glasgow_config = GlasgowConfig(args.factory_rev, args.factory_serial,
+            device_id = GlasgowHardwareConfig.encode_revision(args.factory_rev)
+            glasgow_config = GlasgowHardwareConfig(args.factory_rev, args.factory_serial,
                                            manufacturer=args.factory_manufacturer,
                                            modified_design=(args.factory_modified_design != "no"))
             firmware_data = GlasgowHardwareDevice.firmware_data()

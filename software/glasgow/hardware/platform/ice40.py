@@ -3,8 +3,8 @@ from amaranth import *
 from amaranth.lib.cdc import ResetSynchronizer
 from amaranth.vendor import LatticeICE40Platform
 
-from ..gateware import GatewareBuildError
-from .generic import GlasgowGenericPlatform
+from ...gateware import GatewareBuildError
+from . import GlasgowGenericPlatform
 
 
 __all__ = ["GlasgowICE40Platform"]

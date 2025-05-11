@@ -2,16 +2,18 @@ import re
 import time
 import struct
 import logging
-import usb1
 import asyncio
 import threading
 import importlib.resources
+
+import usb1
 from fx2 import REQ_RAM, REG_CPUCS
 from fx2.format import input_data
 
 from ..support.logging import *
-from . import GlasgowDeviceError, quirks
-from .config import GlasgowConfig
+from ..device import GlasgowDeviceError
+from .config import GlasgowHardwareConfig
+from . import quirks
 
 
 __all__ = ["GlasgowHardwareDevice"]
@@ -102,7 +104,7 @@ class GlasgowHardwareDevice:
             device = devices.pop()
 
             if device.getVendorID() == VID_QIHW and device.getProductID() == PID_GLASGOW:
-                revision  = GlasgowConfig.decode_revision(device.getbcdDevice() & 0xFF)
+                revision  = GlasgowHardwareConfig.decode_revision(device.getbcdDevice() & 0xFF)
                 api_level = device.getbcdDevice() >> 8
             else:
                 continue

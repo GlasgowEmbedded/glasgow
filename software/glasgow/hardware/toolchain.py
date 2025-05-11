@@ -1,13 +1,14 @@
 from abc import ABCMeta, abstractmethod
+import re
 import os
 import sys
-import hashlib
-import importlib.metadata
-import shutil
-import sysconfig
 import logging
+import hashlib
+import shutil
 import subprocess
-import re
+import importlib.metadata
+import sysconfig
+
 from ..support.lazy import lazy
 
 

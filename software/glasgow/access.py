@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from amaranth import *
 from amaranth.lib import io
 
-from ..gateware.ports import PortGroup
+from .gateware.ports import PortGroup
 
 
 __all__ = [

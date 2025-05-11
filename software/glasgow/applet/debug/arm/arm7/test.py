@@ -220,9 +220,9 @@ class DebugARM7AppletTestCase(GlasgowAppletTestCase, applet=DebugARM7Applet):
 
 
     def run_on_hardware(self, test_case, **test_kwargs):
-        from glasgow.device.hardware import GlasgowHardwareDevice
-        from glasgow.target.hardware import GlasgowHardwareTarget
-        from glasgow.access.direct import DirectMultiplexer, DirectDemultiplexer, DirectArguments
+        from glasgow.hardware.device import GlasgowHardwareDevice
+        from glasgow.hardware.target import GlasgowHardwareTarget
+        from glasgow.hardware import DirectMultiplexer, DirectDemultiplexer, DirectArguments
 
         applet = self.applet_cls()
 
