@@ -19,7 +19,7 @@ classifiers = [
 ]
 
 # See the source of `support.plugin` for reasoning behind this constraint.
-requires-python = "~=3.9, !=3.10.0, !=3.10.1, !=3.10.2"
+requires-python = "~=3.10, !=3.10.0, !=3.10.1, !=3.10.2"
 
 # Glasgow has only a few carefully chosen dependencies. The rationale for having them, as well as
 # the rationale for the particular version constraint, is explained below, and should be kept
