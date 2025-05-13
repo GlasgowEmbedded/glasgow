@@ -137,7 +137,7 @@ class AudioDACApplet(GlasgowApplet):
     For example, to play an ogg file:
 
         $ sox samples.ogg -c 2 -r 48000 samples.u16
-        $ glasgow run audio-dac --pins-o 0,1 -r 48000 -w 2 -u play samples.u16
+        $ glasgow run audio-dac --o 0,1 -r 48000 -w 2 -u play samples.u16
 
     To use the DAC as a PulseAudio sink, add the following line to default.pa:
 
@@ -146,7 +146,7 @@ class AudioDACApplet(GlasgowApplet):
 
     Then run:
 
-        $ glasgow run audio-dac --pins-o 0,1 -r 48000 -w 2 -s connect tcp::12345
+        $ glasgow run audio-dac --o 0,1 -r 48000 -w 2 -s connect tcp::12345
     """
 
     @classmethod

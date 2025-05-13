@@ -12,9 +12,9 @@ class Memory25xAppletTestCase(GlasgowAppletTestCase, applet=Memory25xApplet):
     # Flash used for testing: Winbond 25Q32FV
     hardware_args = [
         "--voltage", "3.3",
-        "--pin-sck", "0",
-        "--pins-io", "1:4",
-        "--pins-cs", "5",
+        "--sck", "0",
+        "--io", "1:4",
+        "--cs", "5",
     ]
     dut_ids = (0xef, 0x15, 0x4016)
     dut_page_size   = 0x100
