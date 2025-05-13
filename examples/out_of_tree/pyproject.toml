@@ -5,7 +5,7 @@ description = "Example out-of-tree applet for the Glasgow Interface Explorer"
 authors = [{name = "Glasgow Interface Explorer contributors"}]
 license = {text = "0BSD OR Apache-2.0"}
 
-requires-python = "~=3.9"
+requires-python = "~=3.10"
 dependencies = ["glasgow"]
 
 [project.entry-points."glasgow.applet"]
