@@ -35,7 +35,7 @@ class JTAGPinoutSubtarget(Elaboratable):
         for name, port in vars(self._ports).items():
             m.submodules[f"{name}_buffer"] = pin = io.Buffer("io", port)
             pins.append(pin)
-            
+
         in_fifo  = self._in_fifo
         out_fifo = self._out_fifo
 
@@ -173,7 +173,7 @@ class JTAGPinoutApplet(GlasgowApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_set_argument(parser, "jtag", width=range(4, 17), required=True)
+        access.add_pin_set_argument(parser, "pins", width=range(4, 17), required=True)
 
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=10,
@@ -183,18 +183,18 @@ class JTAGPinoutApplet(GlasgowApplet):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(JTAGPinoutSubtarget(
             ports = iface.get_port_group(
-                **{iface.get_pin_name(pin): pin for pin in args.pin_set_jtag}
+                **{iface.get_pin_name(pin): pin for pin in args.pin_set_pins}
             ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             period_cyc=int(target.sys_clk_freq // (args.frequency * 1000)),
         ))
 
-        self.bits  = set(range(len(args.pin_set_jtag)))
+        self.bits  = set(range(len(args.pin_set_pins)))
         self.pins  = {bit: pin
-                      for bit, pin in enumerate(args.pin_set_jtag)}
+                      for bit, pin in enumerate(args.pin_set_pins)}
         self.names = {bit: self.mux_interface.get_pin_name(pin)
-                      for bit, pin in enumerate(args.pin_set_jtag)}
+                      for bit, pin in enumerate(args.pin_set_pins)}
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
@@ -445,12 +445,12 @@ class JTAGPinoutApplet(GlasgowApplet):
             if args.port_spec != "AB":
                 probe_args += ["--port", args.port_spec]
 
-            probe_args += ["--pin-tck", str(self.pins[bit_tck])]
-            probe_args += ["--pin-tms", str(self.pins[bit_tms])]
-            probe_args += ["--pin-tdi", str(self.pins[bit_tdi])]
-            probe_args += ["--pin-tdo", str(self.pins[bit_tdo])]
+            probe_args += ["--tck", str(self.pins[bit_tck])]
+            probe_args += ["--tms", str(self.pins[bit_tms])]
+            probe_args += ["--tdi", str(self.pins[bit_tdi])]
+            probe_args += ["--tdo", str(self.pins[bit_tdo])]
             if bit_trst is not None:
-                probe_args += ["--pin-trst", str(self.pins[bit_trst])]
+                probe_args += ["--trst", str(self.pins[bit_trst])]
 
             self.logger.info("use `%s` as arguments", " ".join(probe_args))
 

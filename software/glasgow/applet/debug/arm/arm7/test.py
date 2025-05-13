@@ -16,7 +16,7 @@ from . import DebugARM7Applet, DebugARM7Sequencer
 
 class DebugARM7AppletTestCase(GlasgowAppletTestCase, applet=DebugARM7Applet):
     # DUT used for testing: Yamaha SWLL (from PSS-A50 keyboard)
-    hardware_args = "-e big -V 3.3 --pin-tck 8 --pin-tms 1 --pin-tdi 0 --pin-tdo 4 --pin-trst 15".split()
+    hardware_args = "-e big -V 3.3 --tck 8 --tms 1 --tdi 0 --tdo 4 --trst 15".split()
     ram_addr = 0x2ff00
 
     def test_sequencer(self):

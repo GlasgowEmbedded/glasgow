@@ -476,10 +476,10 @@ class MemoryPROMApplet(GlasgowApplet):
     To handle the large amount of address lines used by parallel memories, this applet supports
     two kinds of addressing: direct and indirect. The full address word (specified with
     the --a-bits option) is split into low and high parts. The low part is presented directly on
-    the IO pins (specified with the --pins-a option). The high part is presented through
-    a SIPO shift register (clock and data input specified with the --pin-a-clk and --pin-a-si
-    options respectively), such as a chain of 74HC164 ICs of the appropriate length.
-    Additionally, for shift registers with latches, specify --pin-a-lat to drive the latch pins.
+    the IO pins (specified with the --a option). The high part is presented through a SIPO shift
+    register (clock and data input specified with the --a-clk and --a-si options respectively),
+    such as a chain of 74HC164 ICs of the appropriate length. Additionally, for shift registers
+    with latches, specify --a-lat to drive the latch pins.
     """
 
     @classmethod
@@ -488,9 +488,9 @@ class MemoryPROMApplet(GlasgowApplet):
 
         access.add_pin_set_argument(parser, "dq", width=range(1, 16), default=8)
         access.add_pin_set_argument(parser, "a",  width=range(0, 24), default=0)
-        access.add_pin_argument(parser, "a-clk")
-        access.add_pin_argument(parser, "a-si")
-        access.add_pin_argument(parser, "a-lat")
+        access.add_pin_argument(parser, "a_clk")
+        access.add_pin_argument(parser, "a_si")
+        access.add_pin_argument(parser, "a_lat")
         access.add_pin_argument(parser, "oe")
         access.add_pin_argument(parser, "we")
         access.add_pin_argument(parser, "ce")

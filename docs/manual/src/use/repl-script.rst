@@ -137,7 +137,7 @@ I've got a `quarter of an Adafruit 60 LED ring <https://www.adafruit.com/product
 
 .. code:: console
 
-    $ glasgow repl video-ws2812-output -V 5 -c 15 -b 1 -f RGB-xBRG --pins-out 0
+    $ glasgow repl video-ws2812-output -V 5 -c 15 -b 1 -f RGB-xBRG --out 0
     I: g.device.hardware: device already has bitstream ID d8987a037e451abe4ffa1b6f76fd1116
     I: g.cli: running handler for applet 'video-ws2812-output'
     I: g.applet.video.ws2812_output: port(s) A, B voltage set to 5.0 V

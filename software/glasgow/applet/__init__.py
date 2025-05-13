@@ -136,15 +136,16 @@ class GlasgowAppletArguments:
             "--keep-voltage", action="store_true", default=False,
             help="do not change I/O port voltage")
 
-    def _mandatory_pin_number(self, arg):
-        if not re.match(r"^[0-9]+#?$", arg):
+    def _mandatory_pin_argument(self, arg):
+        if m := re.match(r"^[0-9]+#?$", arg):
+            return PinArgument(int(arg.replace("#", "")), invert=arg.endswith("#"))
+        else:
             self._arg_error(f"{arg} is not a valid pin number")
-        return PinArgument(int(arg.replace("#", "")), invert=arg.endswith("#"))
 
-    def _optional_pin_number(self, arg):
+    def _optional_pin_argument(self, arg):
         if arg == "-":
             return None
-        return self._mandatory_pin_number(arg)
+        return self._mandatory_pin_argument(arg)
 
     def _add_pin_argument(self, parser, name, default, required, help):
         if help is None:
@@ -154,15 +155,22 @@ class GlasgowAppletArguments:
             help += f" (default: {default})"
 
         if required:
-            type = self._mandatory_pin_number
+            type = self._mandatory_pin_argument
             if default is not None:
                 required = False
         else:
-            type = self._optional_pin_number
+            type = self._optional_pin_argument
 
-        opt_name = "--pin-" + name.lower().replace("_", "-")
+        opt_name = "--" + name.lower().replace("_", "-")
         parser.add_argument(
-            opt_name, metavar="NUM", type=type, default=default, required=required, help=help)
+            opt_name, dest=f"pin_{name}", metavar="NUM",
+            type=type, default=default, required=required, help=help)
+
+        deprecated_opt_name = "--pin-" + name.lower().replace("_", "-")
+        parser.add_argument(
+            deprecated_opt_name, dest=f"pin_{name}", metavar="NUM",
+            type=lambda arg: self._arg_error(f"use {opt_name} {arg} instead"),
+            help=argparse.SUPPRESS)
 
     def _pin_set(self, width, arg):
         if arg == "":
@@ -197,11 +205,17 @@ class GlasgowAppletArguments:
         if required and default is not None:
             required = False
 
-        opt_name = "--pins-" + name.lower().replace("_", "-")
+        opt_name = "--" + name.lower().replace("_", "-")
         parser.add_argument(
             opt_name, dest=f"pin_set_{name}", metavar="SET",
             type=functools.partial(self._pin_set, width), default=default, required=required,
             help=help)
+
+        deprecated_opt_name = "--pins-" + name.lower().replace("_", "-")
+        parser.add_argument(
+            deprecated_opt_name, dest=f"pin_set_{name}", metavar="SET",
+            type=lambda arg: self._arg_error(f"use {opt_name} {arg} instead"),
+            help=argparse.SUPPRESS)
 
     # Second, define a stateful interface that has features like automatically assigning
     # default pin numbers.
