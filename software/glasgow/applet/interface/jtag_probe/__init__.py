@@ -1016,11 +1016,11 @@ class JTAGProbeApplet(GlasgowApplet):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(JTAGProbeSubtarget(
             ports=iface.get_port_group(
-                tck=args.pin_tck,
-                tms=args.pin_tms,
-                tdi=args.pin_tdi,
-                tdo=args.pin_tdo,
-                trst=args.pin_trst,
+                tck=args.tck,
+                tms=args.tms,
+                tdi=args.tdi,
+                tdo=args.tdo,
+                trst=args.trst,
             ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
@@ -1060,7 +1060,7 @@ class JTAGProbeApplet(GlasgowApplet):
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        jtag_iface = JTAGProbeInterface(iface, self.logger, has_trst=args.pin_trst is not None)
+        jtag_iface = JTAGProbeInterface(iface, self.logger, has_trst=args.trst is not None)
         jtag_iface.scan_ir_max_length = args.scan_ir_max_length
         jtag_iface.scan_dr_max_length = args.scan_dr_max_length
         return jtag_iface

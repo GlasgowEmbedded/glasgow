@@ -218,10 +218,10 @@ class DisplayHD44780Applet(GlasgowApplet):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(HD44780Subtarget(
             ports=iface.get_port_group(
-                rs=args.pin_rs,
-                rw=args.pin_rw,
-                e=args.pin_e,
-                d=args.pin_set_d,
+                rs=args.rs,
+                rw=args.rw,
+                e=args.e,
+                d=args.d,
             ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),

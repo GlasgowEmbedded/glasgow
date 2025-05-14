@@ -183,18 +183,18 @@ class JTAGPinoutApplet(GlasgowApplet):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(JTAGPinoutSubtarget(
             ports = iface.get_port_group(
-                **{iface.get_pin_name(pin): pin for pin in args.pin_set_pins}
+                **{iface.get_pin_name(pin): pin for pin in args.pins}
             ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             period_cyc=int(target.sys_clk_freq // (args.frequency * 1000)),
         ))
 
-        self.bits  = set(range(len(args.pin_set_pins)))
+        self.bits  = set(range(len(args.pins)))
         self.pins  = {bit: pin
-                      for bit, pin in enumerate(args.pin_set_pins)}
+                      for bit, pin in enumerate(args.pins)}
         self.names = {bit: self.mux_interface.get_pin_name(pin)
-                      for bit, pin in enumerate(args.pin_set_pins)}
+                      for bit, pin in enumerate(args.pins)}
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)

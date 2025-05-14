@@ -81,7 +81,7 @@ class SimulationAssembly(AbstractAssembly):
     def add_port(self, pin_or_pins, *, name) -> io.PortLike:
         match pin_or_pins:
             case list() as pins:
-                port = io.SimulationPort("io", len(pins), name)
+                port = io.SimulationPort("io", len(pins), name=name)
                 for port_bit, pin in zip(port, pins):
                     self._pins[pin] = port_bit
             case pin:

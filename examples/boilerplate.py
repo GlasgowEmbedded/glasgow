@@ -80,8 +80,8 @@ class BoilerplateApplet(GlasgowApplet):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(BoilerplateSubtarget(
             ports=iface.get_port_group(
-                clk  = args.pin_clk,
-                data = args.pin_set_data,
+                clk  = args.clk,
+                data = args.data,
             ),
             in_fifo=iface.get_in_fifo(),
             out_fifo=iface.get_out_fifo(),

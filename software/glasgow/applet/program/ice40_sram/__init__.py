@@ -95,11 +95,11 @@ class ProgramICE40SRAMApplet(SPIControllerApplet):
     def build_subtarget(self, target, args):
         subtarget = super().build_subtarget(target, args)
 
-        port_reset = self.mux_interface.get_port(args.pin_reset, name="reset")
+        port_reset = self.mux_interface.get_port(args.reset, name="reset")
         dut_reset, self.__addr_dut_reset = target.registers.add_rw(1)
 
-        if args.pin_done is not None:
-            port_done = self.mux_interface.get_port(args.pin_done, name="done")
+        if args.done is not None:
+            port_done = self.mux_interface.get_port(args.done, name="done")
             dut_done, self.__addr_dut_done = target.registers.add_ro(1)
         else:
             port_done = None
@@ -123,7 +123,7 @@ class ProgramICE40SRAMApplet(SPIControllerApplet):
         bitstream = args.bitstream.read()
         await ice40_iface.program(bitstream)
 
-        if args.pin_done is not None:
+        if args.done is not None:
             for _ in range(200):    # Wait up to 2s
                 await asyncio.sleep(0.010)  # Poll every 10 ms
                 done = await ice40_iface.get_done()

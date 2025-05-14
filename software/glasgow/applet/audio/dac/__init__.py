@@ -185,7 +185,7 @@ class AudioDACApplet(GlasgowApplet):
             # the oscillator on the board is imprecise, and with no additional error.
             max_deviation_ppm=0)
         subtarget = iface.add_subtarget(AudioDACSubtarget(
-            ports=iface.get_port_group(o = args.pin_set_o),
+            ports=iface.get_port_group(o = args.o),
             out_fifo=iface.get_out_fifo(),
             pulse_cyc=pulse_cyc,
             sample_cyc=sample_cyc,

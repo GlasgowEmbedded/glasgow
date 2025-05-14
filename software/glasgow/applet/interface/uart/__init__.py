@@ -229,8 +229,8 @@ class UARTApplet(GlasgowApplet):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(UARTSubtarget(
             ports = iface.get_port_group(
-                rx = args.pin_rx,
-                tx = args.pin_tx
+                rx = args.rx,
+                tx = args.tx
             ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
@@ -261,7 +261,7 @@ class UARTApplet(GlasgowApplet):
 
         # Pull RX idle to reduce the amount of noise received on undriven lines.
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
-            pull_high={args.pin_rx})
+            pull_high={args.rx})
         iface = UARTInterface(iface, self.logger)
 
         # Enable auto-baud, if requested.

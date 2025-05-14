@@ -163,12 +163,12 @@ class GlasgowAppletArguments:
 
         opt_name = "--" + name.lower().replace("_", "-")
         parser.add_argument(
-            opt_name, dest=f"pin_{name}", metavar="NUM",
+            opt_name, dest=name, metavar="NUM",
             type=type, default=default, required=required, help=help)
 
         deprecated_opt_name = "--pin-" + name.lower().replace("_", "-")
         parser.add_argument(
-            deprecated_opt_name, dest=f"pin_{name}", metavar="NUM",
+            deprecated_opt_name, dest=name, metavar="NUM",
             type=lambda arg: self._arg_error(f"use {opt_name} {arg} instead"),
             help=argparse.SUPPRESS)
 
@@ -207,13 +207,13 @@ class GlasgowAppletArguments:
 
         opt_name = "--" + name.lower().replace("_", "-")
         parser.add_argument(
-            opt_name, dest=f"pin_set_{name}", metavar="SET",
+            opt_name, dest=name, metavar="SET",
             type=functools.partial(self._pin_set, width), default=default, required=required,
             help=help)
 
         deprecated_opt_name = "--pins-" + name.lower().replace("_", "-")
         parser.add_argument(
-            deprecated_opt_name, dest=f"pin_set_{name}", metavar="SET",
+            deprecated_opt_name, dest=name, metavar="SET",
             type=lambda arg: self._arg_error(f"use {opt_name} {arg} instead"),
             help=argparse.SUPPRESS)
 

@@ -203,7 +203,7 @@ Of course you're also able to setup ``argparse`` or do whatever argument parsing
     I: g.applet.interface.i2c_initiator: port(s) A, B voltage set to 3.3 V
     I: g.applet.interface.i2c_initiator: dropping to REPL; use 'help(iface)' to see available APIs
     >>> args
-    Namespace(verbose=0, quiet=0, log_file=None, filter_log=None, show_statistics=False, serial=None, action='repl', override_required_revision=False, reload=False, prebuilt=False, bitstream=None, trace=None, applet='i2c-initiator', port_spec='AB', pin_scl=0, pin_sda=1, bit_rate=100, voltage=3.3, mirror_voltage=False, keep_voltage=False, pulls=True, script_args=['test', 'me'])
+    Namespace(verbose=0, quiet=0, log_file=None, filter_log=None, show_statistics=False, serial=None, action='repl', override_required_revision=False, reload=False, prebuilt=False, bitstream=None, trace=None, applet='i2c-initiator', port_spec='AB', scl=0, sda=1, bit_rate=100, voltage=3.3, mirror_voltage=False, keep_voltage=False, pulls=True, script_args=['test', 'me'])
     >>> args.script_args
     ['test', 'me']
     >>>

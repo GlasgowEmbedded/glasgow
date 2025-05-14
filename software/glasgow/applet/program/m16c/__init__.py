@@ -344,10 +344,10 @@ class ProgramM16CApplet(GlasgowApplet):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(ProgramM16CSubtarget(
             ports=iface.get_port_group(
-                rx    = args.pin_rx,
-                tx    = args.pin_tx,
-                reset = args.pin_reset,
-                cnvss = args.pin_cnvss
+                rx    = args.rx,
+                tx    = args.tx,
+                reset = args.reset,
+                cnvss = args.cnvss
             ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),

@@ -150,9 +150,9 @@ class SWDOpenOCDApplet(GlasgowApplet):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(SWDOpenOCDSubtarget(
             ports=iface.get_port_group(
-                swclk = args.pin_swclk,
-                swdio = args.pin_swdio,
-                srst  = args.pin_srst
+                swclk = args.swclk,
+                swdio = args.swdio,
+                srst  = args.srst
             ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),

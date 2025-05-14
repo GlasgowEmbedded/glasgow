@@ -30,7 +30,7 @@ class RadioNRF24L01Subtarget(Elaboratable):
         m = Module()
 
         m.submodules.controller = self.controller
-        
+
         m.submodules.ce_buffer = ce_buffer = io.Buffer("o", self.port_ce)
         m.d.comb += ce_buffer.o.eq(self.dut_ce)
 
@@ -218,12 +218,12 @@ class RadioNRF24L01Applet(GlasgowApplet):
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         ports=iface.get_port_group(
-                ce   = args.pin_ce,
-                cs   = args.pin_cs,
-                sck  = args.pin_sck,
-                copi = args.pin_copi,
-                cipo = args.pin_cipo,
-                irq  = args.pin_irq
+                ce   = args.ce,
+                cs   = args.cs,
+                sck  = args.sck,
+                copi = args.copi,
+                cipo = args.cipo,
+                irq  = args.irq
             )
 
         controller = SPIControllerSubtarget(
