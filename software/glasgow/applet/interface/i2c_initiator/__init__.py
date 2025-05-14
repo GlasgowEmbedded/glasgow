@@ -273,8 +273,8 @@ class I2CInitiatorApplet(GlasgowApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_argument(parser, "scl", default=True)
-        access.add_pin_argument(parser, "sda", default=True)
+        access.add_pins_argument(parser, "scl", default=True)
+        access.add_pins_argument(parser, "sda", default=True)
 
         parser.add_argument(
             "-b", "--bit-rate", metavar="FREQ", type=int, default=100,

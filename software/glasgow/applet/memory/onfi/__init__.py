@@ -437,13 +437,13 @@ class MemoryONFIApplet(GlasgowApplet):
     @classmethod
     def add_build_arguments(cls, parser, access):
         access.add_build_arguments(parser)
-        access.add_pin_set_argument(parser, "io", 8, default=True)
-        access.add_pin_argument(parser, "cle", default=True)
-        access.add_pin_argument(parser, "ale", default=True)
-        access.add_pin_argument(parser, "re", default=True)
-        access.add_pin_argument(parser, "we", default=True)
-        access.add_pin_argument(parser, "r_b", default=True)
-        access.add_pin_set_argument(parser, "ce", range(1, 5), default=2)
+        access.add_pins_argument(parser, "io", 8, default=True)
+        access.add_pins_argument(parser, "cle", default=True)
+        access.add_pins_argument(parser, "ale", default=True)
+        access.add_pins_argument(parser, "re", default=True)
+        access.add_pins_argument(parser, "we", default=True)
+        access.add_pins_argument(parser, "r_b", default=True)
+        access.add_pins_argument(parser, "ce", range(1, 5), default=2)
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)

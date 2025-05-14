@@ -201,8 +201,8 @@ class SpyBiWireProbeApplet(GlasgowApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_argument(parser, "sbwtck", default=True)
-        access.add_pin_argument(parser, "sbwtdio", default=True)
+        access.add_pins_argument(parser, "sbwtck", default=True)
+        access.add_pins_argument(parser, "sbwtdio", default=True)
 
         # set up for f_TCLK=350 kHz
         parser.add_argument(

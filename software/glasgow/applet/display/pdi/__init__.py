@@ -376,14 +376,14 @@ class DisplayPDIApplet(GlasgowApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_argument(parser, "power", default=True)
-        access.add_pin_argument(parser, "disch", default=True)
-        access.add_pin_argument(parser, "reset", default=True)
-        access.add_pin_argument(parser, "cs", default=True)
-        access.add_pin_argument(parser, "sck", default=True)
-        access.add_pin_argument(parser, "cipo", default=True)
-        access.add_pin_argument(parser, "copi", default=True)
-        access.add_pin_argument(parser, "pwm", required=False)
+        access.add_pins_argument(parser, "power", default=True)
+        access.add_pins_argument(parser, "disch", default=True)
+        access.add_pins_argument(parser, "reset", default=True)
+        access.add_pins_argument(parser, "cs", default=True)
+        access.add_pins_argument(parser, "sck", default=True)
+        access.add_pins_argument(parser, "cipo", default=True)
+        access.add_pins_argument(parser, "copi", default=True)
+        access.add_pins_argument(parser, "pwm", required=False)
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)

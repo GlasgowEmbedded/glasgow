@@ -1005,8 +1005,8 @@ class JTAGProbeApplet(GlasgowApplet):
         super().add_build_arguments(parser, access)
 
         for pin in ("tck", "tms", "tdi", "tdo"):
-            access.add_pin_argument(parser, pin, default=True)
-        access.add_pin_argument(parser, "trst")
+            access.add_pins_argument(parser, pin, default=True)
+        access.add_pins_argument(parser, "trst")
 
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=100,

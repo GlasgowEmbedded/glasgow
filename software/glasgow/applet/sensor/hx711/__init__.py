@@ -147,9 +147,9 @@ class SensorHX711Applet(GlasgowApplet):
             "-f", "--frequency", metavar="FREQ", type=float,
             help="set oscillator frequency to FREQ MHz")
 
-        access.add_pin_argument(parser, "clk", default=True)
-        access.add_pin_argument(parser, "din", default=True)
-        access.add_pin_argument(parser, "osc", required=False)
+        access.add_pins_argument(parser, "clk", default=True)
+        access.add_pins_argument(parser, "din", default=True)
+        access.add_pins_argument(parser, "osc", required=False)
 
     def build(self, target, args):
         if args.frequency is None:

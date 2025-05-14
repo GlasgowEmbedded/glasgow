@@ -136,11 +136,11 @@ class VGAOutputApplet(GlasgowApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_argument(parser, "hs", default=True)
-        access.add_pin_argument(parser, "vs", default=True)
-        access.add_pin_argument(parser, "r", default=True)
-        access.add_pin_argument(parser, "g", default=True)
-        access.add_pin_argument(parser, "b", default=True)
+        access.add_pins_argument(parser, "hs", default=True)
+        access.add_pins_argument(parser, "vs", default=True)
+        access.add_pins_argument(parser, "r", default=True)
+        access.add_pins_argument(parser, "g", default=True)
+        access.add_pins_argument(parser, "b", default=True)
 
         p_refresh = parser.add_mutually_exclusive_group()
         p_refresh.add_argument(

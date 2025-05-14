@@ -148,10 +148,10 @@ class VideoRGBInputApplet(GlasgowApplet):
     @classmethod
     def add_build_arguments(cls, parser, access):
         access.add_build_arguments(parser)
-        access.add_pin_set_argument(parser, "r", width=5)
-        access.add_pin_set_argument(parser, "g", width=5)
-        access.add_pin_set_argument(parser, "b", width=5)
-        access.add_pin_argument(parser, "dck")
+        access.add_pins_argument(parser, "r", width=5)
+        access.add_pins_argument(parser, "g", width=5)
+        access.add_pins_argument(parser, "b", width=5)
+        access.add_pins_argument(parser, "dck")
         parser.add_argument("--rows", type=int,
             help="LCD row count")
         parser.add_argument("--columns", type=int,

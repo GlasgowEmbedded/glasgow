@@ -136,66 +136,38 @@ class GlasgowAppletArguments:
             "--keep-voltage", action="store_true", default=False,
             help="do not change I/O port voltage")
 
-    def _mandatory_pin_argument(self, arg):
-        if m := re.match(r"^[0-9]+#?$", arg):
-            return PinArgument(int(arg.replace("#", "")), invert=arg.endswith("#"))
-        else:
-            self._arg_error(f"{arg} is not a valid pin number")
-
-    def _optional_pin_argument(self, arg):
+    def _pins_arg_type(self, width, arg):
         if arg == "-":
-            return None
-        return self._mandatory_pin_argument(arg)
-
-    def _add_pin_argument(self, parser, name, default, required, help):
-        if help is None:
-            help = f"bind the applet I/O line {name!r} to pin NUM"
-        if default is not None:
-            default = PinArgument(default)
-            help += f" (default: {default})"
-
-        if required:
-            type = self._mandatory_pin_argument
-            if default is not None:
-                required = False
-        else:
-            type = self._optional_pin_argument
-
-        opt_name = "--" + name.lower().replace("_", "-")
-        parser.add_argument(
-            opt_name, dest=name, metavar="NUM",
-            type=type, default=default, required=required, help=help)
-
-        deprecated_opt_name = "--pin-" + name.lower().replace("_", "-")
-        parser.add_argument(
-            deprecated_opt_name, dest=name, metavar="NUM",
-            type=lambda arg: self._arg_error(f"use {opt_name} {arg} instead"),
-            help=argparse.SUPPRESS)
-
-    def _pin_set(self, width, arg):
-        if arg == "":
-            pin_args = []
+            result = []
         elif re.match(r"^[0-9]+:[0-9]+#?$", arg):
             first, last = map(int, arg.replace("#", "").split(":"))
-            pin_args = [PinArgument(int(number), invert=arg.endswith("#"))
+            result = [PinArgument(int(number), invert=arg.endswith("#"))
                         for number in range(first, last + 1)]
         elif re.match(r"((^|,)[0-9]+#?)+$", arg):
-            pin_args = [PinArgument(int(number.replace("#", "")), invert=number.endswith("#"))
+            result = [PinArgument(int(number.replace("#", "")), invert=number.endswith("#"))
                         for number in arg.split(",")]
         else:
-            self._arg_error(f"{arg} is not a valid pin number set")
-        if len(pin_args) not in width:
+            self._arg_error(f"{arg!r} is not a valid pin designator")
+        if len(result) not in width:
             if len(width) == 1:
-                width_desc = str(width[0])
+                width_desc = f"{width.start}"
             else:
                 width_desc = f"{width.start}..{width.stop - 1}"
-            self._arg_error(f"set {arg} includes {len(pin_args)} pins, but "
-                            f"{width_desc} pins are required")
-        return pin_args
+            self._arg_error(
+                f"{arg!r} designates {len(result)} pins, but {width_desc} pins are required")
+        if width == range(1, 2):
+            result = result[0]
+        return result
 
-    def _add_pin_set_argument(self, parser, name, width, default, required, help):
+    def _add_pins_argument(self, parser, name, width, default, required, help):
+        if width == range(1, 2):
+            metavar = "PIN"
+            default_help = f"bind the applet I/O line {name!r} to {metavar}"
+        else:
+            metavar = "PINS"
+            default_help = f"bind the applet I/O lines {name!r} to {metavar}"
         if help is None:
-            help = f"bind the applet I/O lines {name!r} to pins SET"
+            help = default_help
         if default is not None:
             default = [PinArgument(number) for number in default]
             if default:
@@ -204,16 +176,24 @@ class GlasgowAppletArguments:
                 help += " (default is empty)"
         if required and default is not None:
             required = False
+        if default is not None and width == range(1, 2):
+            default = default[0]
 
         opt_name = "--" + name.lower().replace("_", "-")
         parser.add_argument(
-            opt_name, dest=name, metavar="SET",
-            type=functools.partial(self._pin_set, width), default=default, required=required,
+            opt_name, dest=name, metavar=metavar,
+            type=functools.partial(self._pins_arg_type, width),default=default, required=required,
             help=help)
+
+        deprecated_opt_name = "--pin-" + name.lower().replace("_", "-")
+        parser.add_argument(
+            deprecated_opt_name, dest=name, metavar=metavar,
+            type=lambda arg: self._arg_error(f"use {opt_name} {arg} instead"),
+            help=argparse.SUPPRESS)
 
         deprecated_opt_name = "--pins-" + name.lower().replace("_", "-")
         parser.add_argument(
-            deprecated_opt_name, dest=name, metavar="SET",
+            deprecated_opt_name, dest=name, metavar=metavar,
             type=lambda arg: self._arg_error(f"use {opt_name} {arg} instead"),
             help=argparse.SUPPRESS)
 
@@ -232,22 +212,19 @@ class GlasgowAppletArguments:
             free_list.remove(result)
             return result
 
-    def add_build_arguments(self, parser):
-        self._add_port_argument(parser, self._default_port)
-
-    def add_pin_argument(self, parser, name, default=None, required=False, help=None):
-        if default is True:
-            default = self._get_free(self._free_pins)
-        self._add_pin_argument(parser, name, default, required, help)
-
-    def add_pin_set_argument(self, parser, name, width, default=None, required=False, help=None):
-        if isinstance(width, int):
+    def add_pins_argument(self, parser, name, width=1, default=None, required=False, help=None):
+        if type(width) is int:
             width = range(width, width + 1)
+            if type(default) is int:
+                default = [default]
         if default is True and len(self._free_pins) >= width.start:
             default = [self._get_free(self._free_pins) for _ in range(width.start)]
-        elif isinstance(default, int) and len(self._free_pins) >= default:
+        elif type(default) is int and len(self._free_pins) >= default:
             default = [self._get_free(self._free_pins) for _ in range(default)]
-        self._add_pin_set_argument(parser, name, width, default, required, help)
+        self._add_pins_argument(parser, name, width, default, required, help)
+
+    def add_build_arguments(self, parser):
+        self._add_port_argument(parser, self._default_port)
 
     def add_run_arguments(self, parser):
         self._add_port_voltage_arguments(parser, default=None)

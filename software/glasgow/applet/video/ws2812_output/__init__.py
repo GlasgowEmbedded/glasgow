@@ -152,7 +152,7 @@ class VideoWS2812OutputApplet(GlasgowApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_set_argument(parser, "out", width=range(1, 17), required=True)
+        access.add_pins_argument(parser, "out", width=range(1, 17), required=True)
         parser.add_argument(
             "-c", "--count", metavar="N", type=int, required=True,
             help="set the number of LEDs per string")

@@ -173,7 +173,7 @@ class JTAGPinoutApplet(GlasgowApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_set_argument(parser, "pins", width=range(4, 17), required=True)
+        access.add_pins_argument(parser, "pins", width=range(4, 17), required=True)
 
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=10,

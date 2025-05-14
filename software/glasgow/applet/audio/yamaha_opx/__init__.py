@@ -1107,16 +1107,16 @@ class AudioYamahaOPxApplet(GlasgowApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_set_argument(parser, "d", width=8, default=True)
-        access.add_pin_set_argument(parser, "a", width=range(1, 3), default=2)
-        access.add_pin_argument(parser, "wr", default=True)
-        access.add_pin_argument(parser, "rd", default=True)
-        access.add_pin_argument(parser, "clk_m", default=True)
-        access.add_pin_argument(parser, "sh", default=True)
-        access.add_pin_argument(parser, "mo", default=True)
-        access.add_pin_argument(parser, "clk_sy", default=True)
-        access.add_pin_argument(parser, "cs", required=False)
-        access.add_pin_argument(parser, "ic", required=False)
+        access.add_pins_argument(parser, "d", width=8, default=True)
+        access.add_pins_argument(parser, "a", width=range(1, 3), default=2)
+        access.add_pins_argument(parser, "wr", default=True)
+        access.add_pins_argument(parser, "rd", default=True)
+        access.add_pins_argument(parser, "clk_m", default=True)
+        access.add_pins_argument(parser, "sh", default=True)
+        access.add_pins_argument(parser, "mo", default=True)
+        access.add_pins_argument(parser, "clk_sy", default=True)
+        access.add_pins_argument(parser, "cs", required=False)
+        access.add_pins_argument(parser, "ic", required=False)
 
         parser.add_argument(
             "-d", "--device", metavar="DEVICE", choices=["OPL", "OPL2", "OPL3", "OPM"],

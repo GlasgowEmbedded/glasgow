@@ -86,11 +86,11 @@ class ProgramICE40SRAMApplet(SPIControllerApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access, omit_pins=True)
 
-        access.add_pin_argument(parser, "sck",   required=True)
-        access.add_pin_argument(parser, "cs",    required=True)
-        access.add_pin_argument(parser, "copi",  required=True)
-        access.add_pin_argument(parser, "reset", required=True)
-        access.add_pin_argument(parser, "done")
+        access.add_pins_argument(parser, "sck",   required=True)
+        access.add_pins_argument(parser, "cs",    required=True)
+        access.add_pins_argument(parser, "copi",  required=True)
+        access.add_pins_argument(parser, "reset", required=True)
+        access.add_pins_argument(parser, "done")
 
     def build_subtarget(self, target, args):
         subtarget = super().build_subtarget(target, args)

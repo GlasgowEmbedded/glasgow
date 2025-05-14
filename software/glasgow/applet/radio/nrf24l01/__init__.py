@@ -202,12 +202,12 @@ class RadioNRF24L01Applet(GlasgowApplet):
         access.add_build_arguments(parser)
 
         # Order matches the pin order, in clockwise direction.
-        access.add_pin_argument(parser, "ce",   default=True)
-        access.add_pin_argument(parser, "cs",   default=True)
-        access.add_pin_argument(parser, "sck",  default=True)
-        access.add_pin_argument(parser, "copi", default=True)
-        access.add_pin_argument(parser, "cipo", default=True)
-        access.add_pin_argument(parser, "irq",  default=True)
+        access.add_pins_argument(parser, "ce",   default=True)
+        access.add_pins_argument(parser, "cs",   default=True)
+        access.add_pins_argument(parser, "sck",  default=True)
+        access.add_pins_argument(parser, "copi", default=True)
+        access.add_pins_argument(parser, "cipo", default=True)
+        access.add_pins_argument(parser, "irq",  default=True)
 
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=1000,

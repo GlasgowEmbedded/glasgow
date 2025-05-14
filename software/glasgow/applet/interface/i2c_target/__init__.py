@@ -209,8 +209,8 @@ class I2CTargetApplet(GlasgowApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_argument(parser, "scl", default=True)
-        access.add_pin_argument(parser, "sda", default=True)
+        access.add_pins_argument(parser, "scl", default=True)
+        access.add_pins_argument(parser, "sda", default=True)
 
         def i2c_address(arg):
             return int(arg, 0)
