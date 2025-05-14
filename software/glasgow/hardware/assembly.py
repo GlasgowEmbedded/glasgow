@@ -248,6 +248,8 @@ class HardwareOutPipe(AbstractOutPipe):
 
     @property
     def writable(self) -> Optional[int]:
+        if self._out_buffer_size is None:
+            return None
         return self._out_buffer_size - self._out_inflight
 
     async def send(self, data):
