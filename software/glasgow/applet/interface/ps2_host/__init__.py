@@ -406,9 +406,9 @@ class PS2HostApplet(GlasgowApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_argument(parser, "clock", default=True)
-        access.add_pin_argument(parser, "data", default=True)
-        access.add_pin_argument(parser, "reset")
+        access.add_pins_argument(parser, "clock", default=True)
+        access.add_pins_argument(parser, "data", default=True)
+        access.add_pins_argument(parser, "reset")
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)

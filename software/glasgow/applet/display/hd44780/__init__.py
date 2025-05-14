@@ -209,10 +209,10 @@ class DisplayHD44780Applet(GlasgowApplet):
     @classmethod
     def add_build_arguments(cls, parser, access):
         access.add_build_arguments(parser)
-        access.add_pin_argument(parser, "rs", default=True)
-        access.add_pin_argument(parser, "rw", default=True)
-        access.add_pin_argument(parser, "e", default=True)
-        access.add_pin_set_argument(parser, "d", width=4, default=True)
+        access.add_pins_argument(parser, "rs", default=True)
+        access.add_pins_argument(parser, "rw", default=True)
+        access.add_pins_argument(parser, "e", default=True)
+        access.add_pins_argument(parser, "d", width=4, default=True)
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)

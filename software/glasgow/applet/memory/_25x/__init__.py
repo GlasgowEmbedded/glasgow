@@ -276,10 +276,10 @@ class Memory25xApplet(QSPIControllerApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access, include_pins=False)
 
-        access.add_pin_set_argument(parser, "cs",  width=1, required=True, default=[5])
-        access.add_pin_set_argument(parser, "io",  width=4, required=True, default=[2, 4, 3, 0],
-                                    help="bind the applet I/O lines io (copi, cipo, wp, hold) to pins SET")
-        access.add_pin_argument(    parser, "sck",          required=True, default=1)
+        access.add_pins_argument(parser, "cs",  width=1, required=True, default=[5])
+        access.add_pins_argument(parser, "io",  width=4, required=True, default=[2, 4, 3, 0],
+                                 help="bind the applet I/O lines 'copi', 'cipo', 'wp', 'hold' to PINS")
+        access.add_pins_argument(parser, "sck",          required=True, default=1)
 
     async def run(self, device, args):
         spi_iface = await self.run_lower(Memory25xApplet, device, args)

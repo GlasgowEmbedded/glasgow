@@ -73,8 +73,8 @@ class BoilerplateApplet(GlasgowApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_argument(parser, "clk", default=True)
-        access.add_pin_set_argument(parser, "data", width=4, default=True)
+        access.add_pins_argument(parser, "clk", default=True)
+        access.add_pins_argument(parser, "data", width=4, default=True)
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)

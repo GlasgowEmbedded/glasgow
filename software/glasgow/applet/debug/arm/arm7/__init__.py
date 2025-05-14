@@ -1327,11 +1327,11 @@ class DebugARM7Applet(GlasgowApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_argument(parser, "tck", default=True)
-        access.add_pin_argument(parser, "tms", default=True)
-        access.add_pin_argument(parser, "tdo", default=True)
-        access.add_pin_argument(parser, "tdi", default=True)
-        access.add_pin_argument(parser, "trst")
+        access.add_pins_argument(parser, "tck", default=True)
+        access.add_pins_argument(parser, "tms", default=True)
+        access.add_pins_argument(parser, "tdo", default=True)
+        access.add_pins_argument(parser, "tdi", default=True)
+        access.add_pins_argument(parser, "trst")
 
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=1000,

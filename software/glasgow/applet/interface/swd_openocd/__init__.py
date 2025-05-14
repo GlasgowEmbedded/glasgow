@@ -137,10 +137,10 @@ class SWDOpenOCDApplet(GlasgowApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_argument(parser, "swclk", default=True)
-        access.add_pin_argument(parser, "swdio", default=True)
+        access.add_pins_argument(parser, "swclk", default=True)
+        access.add_pins_argument(parser, "swdio", default=True)
 
-        access.add_pin_argument(parser, "srst")
+        access.add_pins_argument(parser, "srst")
 
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=100,

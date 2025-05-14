@@ -486,14 +486,14 @@ class MemoryPROMApplet(GlasgowApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_set_argument(parser, "dq", width=range(1, 16), default=8)
-        access.add_pin_set_argument(parser, "a",  width=range(0, 24), default=0)
-        access.add_pin_argument(parser, "a_clk")
-        access.add_pin_argument(parser, "a_si")
-        access.add_pin_argument(parser, "a_lat")
-        access.add_pin_argument(parser, "oe")
-        access.add_pin_argument(parser, "we")
-        access.add_pin_argument(parser, "ce")
+        access.add_pins_argument(parser, "dq", width=range(1, 16), default=8)
+        access.add_pins_argument(parser, "a",  width=range(0, 24), default=0)
+        access.add_pins_argument(parser, "a_clk")
+        access.add_pins_argument(parser, "a_si")
+        access.add_pins_argument(parser, "a_lat")
+        access.add_pins_argument(parser, "oe")
+        access.add_pins_argument(parser, "we")
+        access.add_pins_argument(parser, "ce")
 
         parser.add_argument(
             "--a-bits", metavar="COUNT", type=int,

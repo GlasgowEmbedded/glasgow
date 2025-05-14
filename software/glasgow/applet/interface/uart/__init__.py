@@ -192,8 +192,8 @@ class UARTApplet(GlasgowApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_argument(parser, "rx", default=True)
-        access.add_pin_argument(parser, "tx", default=True)
+        access.add_pins_argument(parser, "rx", default=True)
+        access.add_pins_argument(parser, "tx", default=True)
 
         parser.add_argument(
             "--parity", metavar="PARITY", choices=("none", "zero", "one", "odd", "even"),

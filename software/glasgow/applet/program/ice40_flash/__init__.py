@@ -68,8 +68,8 @@ class ProgramICE40FlashApplet(Memory25xApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_argument(parser, "reset")
-        access.add_pin_argument(parser, "done")
+        access.add_pins_argument(parser, "reset")
+        access.add_pins_argument(parser, "done")
 
     def build_subtarget(self, target, args):
         subtarget = super().build_subtarget(target, args)

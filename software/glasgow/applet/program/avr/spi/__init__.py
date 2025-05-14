@@ -222,10 +222,10 @@ class ProgramAVRSPIApplet(ProgramAVRApplet):
     def add_build_arguments(cls, parser, access):
         super().add_build_arguments(parser, access)
 
-        access.add_pin_argument(parser, "reset", default=True)
-        access.add_pin_argument(parser, "sck",   default=True)
-        access.add_pin_argument(parser, "cipo",  default=True)
-        access.add_pin_argument(parser, "copi",  default=True)
+        access.add_pins_argument(parser, "reset", default=True)
+        access.add_pins_argument(parser, "sck",   default=True)
+        access.add_pins_argument(parser, "cipo",  default=True)
+        access.add_pins_argument(parser, "copi",  default=True)
 
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=100,

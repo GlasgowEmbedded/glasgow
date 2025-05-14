@@ -323,10 +323,10 @@ class SPIControllerApplet(GlasgowApplet):
         super().add_build_arguments(parser, access)
 
         if not omit_pins:
-            access.add_pin_argument(parser, "sck", required=True)
-            access.add_pin_argument(parser, "cs")
-            access.add_pin_argument(parser, "copi")
-            access.add_pin_argument(parser, "cipo")
+            access.add_pins_argument(parser, "sck", required=True)
+            access.add_pins_argument(parser, "cs")
+            access.add_pins_argument(parser, "copi")
+            access.add_pins_argument(parser, "cipo")
 
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=100,
