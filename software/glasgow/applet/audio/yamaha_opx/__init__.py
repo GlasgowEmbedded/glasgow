@@ -1269,7 +1269,7 @@ class AudioYamahaOPxApplet(GlasgowApplet):
 
         if args.operation == "web":
             async def set_voltage(voltage):
-                await device.set_voltage(args.port_spec, voltage)
+                await device.set_voltage("AB", voltage)
             web_iface = YamahaOPxWebInterface(self.logger, opx_iface, set_voltage, args.allow_urls)
             await web_iface.serve(args.endpoint)
 
