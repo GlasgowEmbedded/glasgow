@@ -13,7 +13,7 @@ class UARTAppletTestCase(GlasgowAppletTestCase, applet=UARTApplet):
         self.applet.build(target, args)
         target.assembly.connect_pins("A0", "A1")
 
-    @applet_simulation_test("setup_loopback", ["--keep-voltage", "--baud", "9600"])
+    @applet_simulation_test("setup_loopback", ["--baud", "9600"])
     async def test_loopback(self, device, args, ctx):
         uart_iface = await self.applet.run(device, args)
         await uart_iface.write(bytes([0xAA, 0x55]))

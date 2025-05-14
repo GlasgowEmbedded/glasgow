@@ -180,17 +180,15 @@ class DeprecatedDemultiplexer:
         iface = DeprecatedDemultiplexerInterface(self.device, applet, mux_interface, **kwargs)
         self._interfaces.append(iface)
 
-        if hasattr(args, "mirror_voltage") and args.mirror_voltage:
-            for port in args.port_spec:
-                await self.device.mirror_voltage(port)
-                applet.logger.info("port %s voltage set to %.1f V",
-                                   port, await self.device.get_voltage(port))
-        elif hasattr(args, "voltage") and args.voltage is not None:
-            await self.device.set_voltage(args.port_spec, args.voltage)
-            applet.logger.info("port(s) %s voltage set to %.1f V",
-                               ", ".join(sorted(args.port_spec)), args.voltage)
-        elif hasattr(args, "keep_voltage") and args.keep_voltage:
-            applet.logger.info("port voltage unchanged")
+        for voltage_arg in getattr(args, "voltage", []):
+            if voltage_arg.sense is not None:
+                voltage = await self.device.mirror_voltage(voltage_arg.ports, voltage_arg.sense)
+                applet.logger.info("port(s) %s voltage set to %.1f V (sensed on port %s)",
+                    voltage_arg.ports, voltage, voltage_arg.sense)
+            else:
+                await self.device.set_voltage(voltage_arg.ports, voltage_arg.value)
+                applet.logger.info("port(s) %s voltage set to %.1f V",
+                    ", ".join(sorted(voltage_arg.ports)), voltage_arg.value)
 
         device_pull_low  = set()
         device_pull_high = set()
