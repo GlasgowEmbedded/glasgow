@@ -9,16 +9,16 @@ from . import SPIControllerApplet
 class SPIControllerAppletTestCase(GlasgowAppletTestCase, applet=SPIControllerApplet):
     @synthesis_test
     def test_build(self):
-        self.assertBuilds(args=["--sck",  "0", "--cs",   "1",
-                                "--copi", "2", "--cipo", "3"])
+        self.assertBuilds(args=["--sck",  "A0", "--cs",   "A1",
+                                "--copi", "A2", "--cipo", "A3"])
 
     def setup_loopback(self, target, parsed_args):
         self.applet.build(target, parsed_args)
         target.assembly.connect_pins("A2", "A3")
 
     @applet_simulation_test("setup_loopback",
-                            ["--sck",  "0", "--cs", "1",
-                             "--copi", "2", "--cipo",   "3",
+                            ["--sck",  "A0", "--cs",   "A1",
+                             "--copi", "A2", "--cipo", "A3",
                              "--frequency", "10"])
     async def test_loopback(self, device, parsed_args, ctx):
         spi_iface = await self.applet.run(device, parsed_args)

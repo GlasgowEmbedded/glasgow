@@ -110,7 +110,7 @@ Putting it together, the following command will run the ``uart`` applet, with an
 
 .. code:: console
 
-    $ glasgow run uart -V 3.3 --tx 0 --rx 1 socket tcp:127.0.0.1:4321
+    $ glasgow run uart -V 3.3 --tx A0 --rx A1 socket tcp:127.0.0.1:4321
     I: g.device.hardware: generating bitstream ID [...]
     I: g.cli: running handler for applet 'uart'
     I: g.applet.interface.uart: port(s) A, B voltage set to 3.3 V
@@ -120,28 +120,14 @@ Putting it together, the following command will run the ``uart`` applet, with an
 As the applet's output suggests, you can connect to TCP port 4321 using a tool of your choice --- ``nc`` or PuTTY will both work.
 
 
-Specifying port numbers
-#######################
-
-The ``revC`` hardware has two ports (A and B), each of which have 8× I/O pins. When running the ``glasgow`` utility, you will see A reference to a ``--port`` argument, along with pin arguments as defined by each applet (e.g.: ``--tx`` for UART).
-
-By default, the `port` will be set to ``AB``, which results in all 16× I/O pins being available for use, numbered 0 to 15... e.g: "`pin 0`" is ``A0``, "`pin 7`" is ``A7``, "`pin 8`" is ``B0``, and so on.
-
-In some cases, you may want to use ``B3`` without using port A, which can be achieved using the following:
-
-.. code:: console
-
-    $ glasgow run uart -V 3.3 --port B --tx 3 socket tcp:127.0.0.1:4321
-
-
 Inverting pins
 ##############
 
 Any pin can be inverted via the command-line interface using one of the following syntaxes:
 
-* single pin: ``--x 0#``
-* pin range:  ``--x 0:8#``      (inverts all of them)
-* pin list:   ``--x 0,1#,2#,3`` (inverts only specified pins)
+* single pin: ``--x A0#``
+* pin range:  ``--x A0:7#``         (inverts the entire range)
+* pin list:   ``--x A0,A1#,A2#,A3`` (inverts only specified pins)
 
 Pull-ups configured for a pin with inversion get converted to pull-downs and vice versa.
 
@@ -163,7 +149,7 @@ Aside from the ``tty`` mode, others are available (``pty``, ``socket``), which a
 
 .. code:: console
 
-    $ glasgow run uart -V 3.3 --tx 0 --rx 1 -b 57600 tty
+    $ glasgow run uart -V 3.3 --tx A0 --rx A1 -b 57600 tty
 
 
 SPI controller
@@ -173,7 +159,7 @@ The ``spi-controller`` applet implements an SPI controller, allowing full-duplex
 
 .. code:: console
 
-    $ glasgow run spi-controller -V 3.3 --sck 0 --cs 1 --copi 2 --cipo 3 \
+    $ glasgow run spi-controller -V 3.3 --sck A0 --cs A1 --copi A2 --cipo A3 \
         '0301235ff5'
 
 

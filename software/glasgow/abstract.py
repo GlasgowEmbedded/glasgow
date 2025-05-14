@@ -77,7 +77,7 @@ class AbstractAssembly(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def add_port(self, pin_or_pins, *, name) -> io.PortLike:
+    def add_port(self, pin_name) -> io.PortLike:
         pass
 
     def add_port_group(self, **ports) -> PortGroup:
