@@ -406,6 +406,7 @@ class HardwareAssembly(AbstractAssembly):
     def add_submodule(self, elaboratable, *, name=None) -> Elaboratable:
         assert self._artifact is None, "cannot add a submodule to a sealed assembly"
         self._modules.append((elaboratable, name))
+        elaboratable._MustUse__used = True
         return elaboratable
 
     def add_port(self, pin_or_pins, *, name) -> io.PortLike:
