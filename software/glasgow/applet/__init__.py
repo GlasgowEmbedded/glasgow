@@ -140,20 +140,6 @@ class GlasgowAppletArguments:
 
     # First, define some state-less methods that just add arguments to an argparse instance.
 
-    def _port_spec(self, arg):
-        if not re.match(r"^[A-Z]+$", arg):
-            self._arg_error(f"{arg} is not a valid port specification")
-        return arg
-
-    def _add_port_argument(self, parser, default):
-        help = "bind the applet to port SPEC"
-        if default is not None:
-            help += " (default: %(default)s)"
-
-        parser.add_argument(
-            "--port", dest="port_spec", metavar="SPEC", type=self._port_spec,
-            default=default, help=help)
-
     def _add_voltage_arguments(self, parser):
         parser.add_argument(
             "-V", "--voltage", metavar="SPEC",
@@ -224,9 +210,8 @@ class GlasgowAppletArguments:
     # Second, define a stateful interface that has features like automatically assigning
     # default pin numbers.
 
-    def __init__(self, applet_name, default_port, pin_count):
+    def __init__(self, applet_name, pin_count):
         self._applet_name  = applet_name
-        self._default_port = default_port
         self._free_pins    = list(range(pin_count))
 
     @staticmethod
@@ -248,7 +233,7 @@ class GlasgowAppletArguments:
         self._add_pins_argument(parser, name, width, default, required, help)
 
     def add_build_arguments(self, parser):
-        self._add_port_argument(parser, self._default_port)
+        pass
 
     def add_run_arguments(self, parser):
         self._add_voltage_arguments(parser)
@@ -434,7 +419,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
         target = DeprecatedTarget(assembly)
 
         parser = argparse.ArgumentParser()
-        access_args = GlasgowAppletArguments("applet", "AB", 16)
+        access_args = GlasgowAppletArguments("applet", pin_count=16)
         self.applet.add_build_arguments(parser, access_args)
 
         try:
@@ -508,7 +493,7 @@ def applet_simulation_test(setup, args=[]):
         def wrapper(self):
             assembly = SimulationAssembly()
 
-            access_args = GlasgowAppletArguments("applet", "AB", 16)
+            access_args = GlasgowAppletArguments("applet", pin_count=16)
             parsed_args = self._prepare_applet_args(args, access_args)
 
             target = DeprecatedTarget(assembly)
@@ -543,7 +528,7 @@ def applet_hardware_test(setup="run_hardware_applet", args=[]):
                 mode = "record"
 
             try:
-                access_args = GlasgowAppletArguments(self.applet, default_port="AB", pin_count=16)
+                access_args = GlasgowAppletArguments(self.applet, pin_count=16)
                 self._prepare_applet_args(args, access_args)
                 self._prepare_hardware_target(self, fixture, mode)
 

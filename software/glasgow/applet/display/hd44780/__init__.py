@@ -238,9 +238,9 @@ class DisplayHD44780Applet(GlasgowApplet):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args=None)
 
         if args.reset:
-            await device.set_voltage(args.port_spec, 0.0)
+            await device.set_voltage("AB", 0.0)
             await asyncio.sleep(0.3)
-        await device.set_voltage(args.port_spec, 5.0)
+        await device.set_voltage("AB", 5.0)
         await asyncio.sleep(0.040) # wait 40ms after reset
 
         # TODO: abstract this away into a HD44780Interface

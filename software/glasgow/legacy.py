@@ -93,9 +93,8 @@ class DeprecatedMultiplexer:
 
     def claim_interface(self, applet, args):
         pins = []
-        if hasattr(args, "port_spec"):
-            for port in args.port_spec:
-                pins += [f"{port}{number}" for number in range(8)]
+        for port in "AB":
+            pins += [f"{port}{number}" for number in range(8)]
 
         interface = DeprecatedMultiplexerInterface(
             applet, self.assembly, pins, len(self._interfaces))
@@ -206,14 +205,14 @@ class DeprecatedDemultiplexer:
                     applet.logger.error(
                         "Glasgow revC0 has severe restrictions on use of configurable "
                         "pull resistors; device may require power cycling")
-                    await self.device.set_pulls(args.port_spec, device_pull_low, device_pull_high)
+                    await self.device.set_pulls("AB", device_pull_low, device_pull_high)
                 else:
                     # Don't touch the pulls; they're either in the power-on reset high-Z state, or
                     # they have been touched by the user, and we've warned about that above.
                     pass
 
-            elif hasattr(args, "port_spec"):
-                await self.device.set_pulls(args.port_spec, device_pull_low, device_pull_high)
+            else:
+                await self.device.set_pulls("AB", device_pull_low, device_pull_high)
                 device_pull_desc = []
                 if device_pull_high:
                     device_pull_desc.append(f"pull-up on {', '.join(map(str, device_pull_high))}")
@@ -222,7 +221,7 @@ class DeprecatedDemultiplexer:
                 if not device_pull_desc:
                     device_pull_desc.append("disabled")
                 applet.logger.debug("port(s) %s pull resistors: %s",
-                                    ", ".join(sorted(args.port_spec)),
+                                    ", ".join(sorted("AB")),
                                     "; ".join(device_pull_desc))
 
         elif device_pull_low or device_pull_high:
@@ -234,11 +233,11 @@ class DeprecatedDemultiplexer:
             # pull resistors, so we spend some additional effort to allow for that.
             if device_pull_low:
                 applet.logger.warning("port(s) %s requires external pull-down resistors on pins %s",
-                                      ", ".join(sorted(args.port_spec)),
+                                      ", ".join(sorted("AB")),
                                       ", ".join(map(str, device_pull_low)))
             if device_pull_high:
                 applet.logger.warning("port(s) %s requires external pull-up resistors on pins %s",
-                                      ", ".join(sorted(args.port_spec)),
+                                      ", ".join(sorted("AB")),
                                       ", ".join(map(str, device_pull_high)))
 
         return iface

@@ -760,7 +760,7 @@ class MemoryPROMApplet(GlasgowApplet):
             step_num = 0
             while True:
                 self.logger.info("step %d (%.2f V)", step_num, voltage)
-                await device.set_voltage(args.port_spec, voltage)
+                await device.set_voltage("AB", voltage)
 
                 initial_data = await prom_iface.read(0, depth)
                 for sample_num in range(args.samples):
@@ -792,7 +792,7 @@ class MemoryPROMApplet(GlasgowApplet):
             step_num = 0
             while True:
                 self.logger.info("step %d (%.2f V)", step_num, voltage)
-                await device.set_voltage(args.port_spec, voltage)
+                await device.set_voltage("AB", voltage)
 
                 popcounts = []
                 for sample_num in range(args.samples):

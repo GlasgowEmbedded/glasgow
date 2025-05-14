@@ -434,20 +434,14 @@ class JTAGPinoutApplet(GlasgowApplet):
                 self.logger.info("JTAG interface without reset detected")
 
             probe_args = ["jtag-probe"]
-
-            if args.port_spec != "AB":
-                probe_args += ["--port", args.port_spec]
-
             if args.voltage:
                 probe_args += ["-V", ",".join(map(str, args.voltage))]
-
             probe_args += ["--tck", str(self.pins[bit_tck])]
             probe_args += ["--tms", str(self.pins[bit_tms])]
             probe_args += ["--tdi", str(self.pins[bit_tdi])]
             probe_args += ["--tdo", str(self.pins[bit_tdo])]
             if bit_trst is not None:
                 probe_args += ["--trst", str(self.pins[bit_trst])]
-
             self.logger.info("use `%s` as arguments", " ".join(probe_args))
 
         else:
