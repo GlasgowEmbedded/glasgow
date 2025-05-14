@@ -4,6 +4,7 @@ import functools
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
+from typing import Optional
 
 from amaranth import *
 
@@ -127,116 +128,143 @@ class VoltArgument:
 
 @dataclass(frozen=True)
 class PinArgument:
-    number: int
+    port:   str
+    pin:    int
     invert: bool = False
 
+    @classmethod
+    def from_str(cls, value) -> list['PinArgument']:
+        result = []
+        for clause in value.split(","):
+            if clause == "-":
+                pass
+            elif m := re.match(r"^([A-Z])([0-9]+)(#)?$", clause):
+                port, pin, invert = m.group(1), int(m.group(2)), bool(m.group(3))
+                result.append(cls(port=port, pin=pin, invert=invert))
+            elif m := re.match(r"^([A-Z])([0-9]+):([0-9]+)(#)?$", clause):
+                port, pin_first, pin_last, invert = \
+                    m.group(1), int(m.group(2)), int(m.group(3)), bool(m.group(4))
+                if pin_last >= pin_first:
+                    for pin in range(pin_first, pin_last + 1, +1):
+                        result.append(cls(port=port, pin=pin, invert=invert))
+                else:
+                    for pin in range(pin_first, pin_last - 1, -1):
+                        result.append(cls(port=port, pin=pin, invert=invert))
+            else:
+                raise ValueError(f"{clause!r} is not a valid pin argument")
+        return result
+
+    @property
+    def _legacy_number(self):
+        match self.port:
+            case "A": return 0 + self.pin
+            case "B": return 8 + self.pin
+            case _: assert False
+
     def __str__(self):
-        return f"{self.number}{'#' if self.invert else ''}"
+        return f"{self.port}{self.pin}{'#' if self.invert else ''}"
 
 
 class GlasgowAppletArguments:
+    def __init__(self, applet_name, pin_count):
+        self._applet_name  = applet_name
+        self._free_pins    = "A0 A1 A2 A3 A4 A5 A6 A7 B0 B1 B2 B3 B4 B5 B6 B7".split()
+
     def _arg_error(self, message):
         raise argparse.ArgumentTypeError(f"applet {self._applet_name!r}: " + message)
 
-    # First, define some state-less methods that just add arguments to an argparse instance.
+    def add_pins_argument(self, parser, name, width=None, default=None, required=False, help=None):
+        def get_free_pin():
+            if len(self._free_pins) > 0:
+                result = self._free_pins[0]
+                del self._free_pins[0]
+                return PinArgument.from_str(result)[0]
 
-    def _add_voltage_arguments(self, parser):
-        parser.add_argument(
-            "-V", "--voltage", metavar="SPEC",
-            type=VoltArgument.from_str, default=[], action="extend",
-            help="configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')")
+        if width is None:
+            match default:
+                case None:
+                    pass
+                case True:
+                    default = get_free_pin()
+                case _:
+                    default = PinArgument.from_str(default)[0]
 
-    def _pins_arg_type(self, width, arg):
-        if arg == "-":
-            result = []
-        elif re.match(r"^[0-9]+:[0-9]+#?$", arg):
-            first, last = map(int, arg.replace("#", "").split(":"))
-            result = [PinArgument(int(number), invert=arg.endswith("#"))
-                        for number in range(first, last + 1)]
-        elif re.match(r"((^|,)[0-9]+#?)+$", arg):
-            result = [PinArgument(int(number.replace("#", "")), invert=number.endswith("#"))
-                        for number in arg.split(",")]
-        else:
-            self._arg_error(f"{arg!r} is not a valid pin designator")
-        if len(result) not in width:
-            if len(width) == 1:
-                width_desc = f"{width.start}"
-            else:
-                width_desc = f"{width.start}..{width.stop - 1}"
-            self._arg_error(
-                f"{arg!r} designates {len(result)} pins, but {width_desc} pins are required")
-        if width == range(1, 2):
-            result = result[0]
-        return result
-
-    def _add_pins_argument(self, parser, name, width, default, required, help):
-        if width == range(1, 2):
             metavar = "PIN"
-            default_help = f"bind the applet I/O line {name!r} to {metavar}"
-        else:
-            metavar = "PINS"
-            default_help = f"bind the applet I/O lines {name!r} to {metavar}"
-        if help is None:
-            help = default_help
-        if default is not None:
-            default = [PinArgument(number) for number in default]
+            if help is None:
+                help = f"bind the applet I/O line {name!r} to {metavar}"
             if default:
-                help += f" (default: {', '.join(map(str, default))})"
+                help += f" (default: {default})"
+
+            def pin_arg(arg):
+                try:
+                    result = PinArgument.from_str(arg)
+                except ValueError as e:
+                    self._arg_error(str(e))
+                if required:
+                    if len(result) != 1:
+                        self._arg_error(f"expected a single pin, got {len(result)} pins")
+                    return result[0]
+                else:
+                    if len(result) not in (0, 1):
+                        self._arg_error(f"expected zero or one pins, got {len(result)} pins")
+                    if result:
+                        return result[0]
+
+        else:
+            if type(width) is int:
+                width = range(width, width + 1)
+
+            match default:
+                case None:
+                    pass
+                case True:
+                    default = []
+                    while len(default) < width.start:
+                        if pin := get_free_pin():
+                            default.append(pin)
+                        else:
+                            break
+                case int():
+                    default = [get_free_pin() for _ in range(default)]
+                case _:
+                    default = PinArgument.from_str(default)
+
+            metavar = "PINS"
+            if help is None:
+                help = f"bind the applet I/O lines {name!r} to {metavar}"
+            if default:
+                help += f" (default: {','.join(str(pin) for pin in default)})"
             else:
                 help += " (default is empty)"
+
+            def pin_arg(arg):
+                try:
+                    result = PinArgument.from_str(arg)
+                except ValueError as e:
+                    self._arg_error(str(e))
+                if len(result) not in width:
+                    if len(width) == 1:
+                        width_desc = f"{width.start}"
+                    else:
+                        width_desc = f"{width.start}..{width.stop - 1}"
+                    self._arg_error(f"expected {width_desc} pins, got {len(result)} pins")
+                return result
+
         if required and default is not None:
             required = False
-        if default is not None and width == range(1, 2):
-            default = default[0]
 
-        opt_name = "--" + name.lower().replace("_", "-")
         parser.add_argument(
-            opt_name, dest=name, metavar=metavar,
-            type=functools.partial(self._pins_arg_type, width),default=default, required=required,
-            help=help)
-
-        deprecated_opt_name = "--pin-" + name.lower().replace("_", "-")
-        parser.add_argument(
-            deprecated_opt_name, dest=name, metavar=metavar,
-            type=lambda arg: self._arg_error(f"use {opt_name} {arg} instead"),
-            help=argparse.SUPPRESS)
-
-        deprecated_opt_name = "--pins-" + name.lower().replace("_", "-")
-        parser.add_argument(
-            deprecated_opt_name, dest=name, metavar=metavar,
-            type=lambda arg: self._arg_error(f"use {opt_name} {arg} instead"),
-            help=argparse.SUPPRESS)
-
-    # Second, define a stateful interface that has features like automatically assigning
-    # default pin numbers.
-
-    def __init__(self, applet_name, pin_count):
-        self._applet_name  = applet_name
-        self._free_pins    = list(range(pin_count))
-
-    @staticmethod
-    def _get_free(free_list):
-        if len(free_list) > 0:
-            result = free_list[0]
-            free_list.remove(result)
-            return result
-
-    def add_pins_argument(self, parser, name, width=1, default=None, required=False, help=None):
-        if type(width) is int:
-            width = range(width, width + 1)
-            if type(default) is int:
-                default = [default]
-        if default is True and len(self._free_pins) >= width.start:
-            default = [self._get_free(self._free_pins) for _ in range(width.start)]
-        elif type(default) is int and len(self._free_pins) >= default:
-            default = [self._get_free(self._free_pins) for _ in range(default)]
-        self._add_pins_argument(parser, name, width, default, required, help)
+            f"--{name.lower().replace('_', '-')}", dest=name, metavar=metavar,
+            type=pin_arg, default=default, required=required, help=help)
 
     def add_build_arguments(self, parser):
         pass
 
     def add_run_arguments(self, parser):
-        self._add_voltage_arguments(parser)
+        parser.add_argument(
+            "-V", "--voltage", metavar="SPEC",
+            type=VoltArgument.from_str, default=[], action="extend",
+            help="configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')")
 
 
 class GlasgowAppletTool:

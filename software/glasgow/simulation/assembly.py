@@ -78,22 +78,16 @@ class SimulationAssembly(AbstractAssembly):
     def add_applet(self, applet: Any, *, logger: logging.Logger) -> Generator[None, None, None]:
         yield
 
-    def add_port(self, pin_or_pins, *, name) -> io.PortLike:
-        match pin_or_pins:
-            case list() as pins:
-                port = io.SimulationPort("io", len(pins), name=name)
-                for port_bit, pin in zip(port, pins):
-                    self._pins[pin] = port_bit
-            case pin:
-                port = io.SimulationPort("io", 1, name=name)
-                self._pins[pin] = port
+    def add_port(self, pin_name) -> io.PortLike:
+        port = io.SimulationPort("io", 1, name=pin_name)
+        self._pins[pin_name] = port
         return port
 
-    def get_pin(self, name):
-        return self._pins[name]
+    def get_pin(self, pin_name):
+        return self._pins[pin_name]
 
-    def connect_pins(self, *names):
-        self._jumpers.append(names)
+    def connect_pins(self, *pin_names):
+        self._jumpers.append(pin_names)
 
     def add_in_pipe(self, in_stream, *, in_flush=C(1),
                     fifo_depth=None, buffer_size=None) -> AbstractInPipe:

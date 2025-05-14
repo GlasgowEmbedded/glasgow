@@ -409,24 +409,10 @@ class HardwareAssembly(AbstractAssembly):
         elaboratable._MustUse__used = True
         return elaboratable
 
-    def add_port(self, pin_or_pins, *, name) -> io.PortLike:
+    def add_port(self, pin_name) -> io.PortLike:
         assert self._artifact is None, "cannot add a port to a sealed assembly"
-        match pin_or_pins:
-            case None | []:
-                return None
-            case list() as pin_names:
-                port = None
-                for index, pin_name in enumerate(pin_names):
-                    port_bit = self.add_port(pin_name, name=f"{name}[{index}]")
-                    if port is None:
-                        port  = port_bit
-                    else:
-                        port += port_bit
-                return port
-            case str() as pin_name:
-                return self._platform.glasgow_pins.pop(pin_name)
-            case _:
-                raise TypeError(f"object {pin_or_pins!r} is not a pin or pin list")
+        assert pin_name in self._platform.glasgow_pins, f"unknown or already used pin {pin_name}"
+        return self._platform.glasgow_pins.pop(pin_name)
 
     def add_ro_register(self, signal) -> AbstractRORegister:
         assert self._artifact is None, "cannot add a register to a sealed assembly"

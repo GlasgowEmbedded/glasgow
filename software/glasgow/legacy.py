@@ -115,22 +115,27 @@ class DeprecatedMultiplexerInterface:
     def add_subtarget(self, subtarget):
         return self.assembly.add_submodule(subtarget)
 
-    def get_pin_name(self, pin):
-        return self._pins[pin.number]
+    def get_port(self, pins, *, name=None):
+        def get_port(pin_arg, *, name):
+            port = self.assembly.add_port(f"{pin_arg.port}{pin_arg.pin}")
+            return ~port if pin_arg.invert else port
 
-    def get_port(self, pin_or_pins, *, name):
-        match pin_or_pins:
-            case None | []:
+        match pins:
+            case None:
                 return None
-            case list() as pins:
-                return self.assembly.add_port([self._pins[pin.number] for pin in pins], name=name)
+            case list():
+                port = None
+                for index, pin in enumerate(pins):
+                    if port is None:
+                        port  = get_port(pin, name=f"{name}[{index}]")
+                    else:
+                        port += get_port(pin, name=f"{name}[{index}]")
+                return port
             case pin:
-                return self.assembly.add_port(self._pins[pin.number], name=name)
+                return get_port(pin, name=name)
 
     def get_port_group(self, **kwargs):
-        return PortGroup(**{
-            name: self.get_port(pin_or_pins, name=name) for name, pin_or_pins in kwargs.items()
-        })
+        return PortGroup(**{name: self.get_port(pins, name=name) for name, pins in kwargs.items()})
 
     def get_in_fifo(self, depth=512, *, auto_flush=True):
         assert self._in_pipe is None
@@ -192,9 +197,9 @@ class DeprecatedDemultiplexer:
         device_pull_low  = set()
         device_pull_high = set()
         for pin_arg in pull_low:
-            (device_pull_high if pin_arg.invert else device_pull_low).add(pin_arg.number)
+            (device_pull_high if pin_arg.invert else device_pull_low).add(pin_arg._legacy_number)
         for pin_arg in pull_high:
-            (device_pull_low if pin_arg.invert else device_pull_high).add(pin_arg.number)
+            (device_pull_low if pin_arg.invert else device_pull_high).add(pin_arg._legacy_number)
 
         if not hasattr(self.device, "has_pulls"): # simulation device
             pass
