@@ -97,7 +97,14 @@ Applets that have ``run`` nable programs often have `subcommands` to specify wha
       ENDPOINT    listen at ENDPOINT, either unix:PATH or tcp:HOST:PORT
     [...]
 
-Applets also can have `build arguments` that specify how the gateware is constructed, and `run arguments` that modify the behavior of the applet as a whole; these are also listed in the ``--help`` output.  A common run argument is ``-V ...``, which sets the I/O voltage, as well as setting the supply output voltage for the selected port(s). Be careful that you set the correct voltage for your connected devices!
+Applets also can have `build arguments` that specify how the gateware is constructed, and `run arguments` that modify the behavior of the applet as a whole; these are also listed in the ``--help`` output.
+
+A common run argument is ``-V ...``, which sets the I/O voltage, as well as setting the supply output voltage. Be careful that you set the correct voltage for your connected devices! The following are the possible syntaxes for configuring voltage:
+
+* all ports:        ``-V 3.3``
+* one port:         ``-V A=3.3``
+* several ports:    ``-V A=3.3,B=5.0`` or ``-V A=3.3 -V B=5.0``
+* sense and repeat: ``-V A=SA`` or ``-V AB=SA``
 
 Putting it together, the following command will run the ``uart`` applet, with an I/O voltage of 3.3 V, and will configure pin ``A0`` to be `Tx` (Glasgow transmitting), and pin ``A1`` to be `Rx` (Glasgow receiving).  It uses the ``socket`` subcommand to bridge the UART to a socket:
 

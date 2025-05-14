@@ -17,8 +17,7 @@ class SPIControllerAppletTestCase(GlasgowAppletTestCase, applet=SPIControllerApp
         target.assembly.connect_pins("A2", "A3")
 
     @applet_simulation_test("setup_loopback",
-                            ["--keep-voltage",
-                             "--sck",  "0", "--cs", "1",
+                            ["--sck",  "0", "--cs", "1",
                              "--copi", "2", "--cipo",   "3",
                              "--frequency", "10"])
     async def test_loopback(self, device, parsed_args, ctx):

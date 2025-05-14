@@ -611,8 +611,10 @@ class GlasgowDevice:
         high_volts = volts * (1 + tolerance)
         await self.set_alert(spec, low_volts, high_volts)
 
-    async def mirror_voltage(self, spec, tolerance=0.05):
-        voltage = await self.measure_voltage(spec)
+    async def mirror_voltage(self, spec, sense=None, *, tolerance=0.05):
+        if sense is None:
+            sense = spec
+        voltage = await self.measure_voltage(sense)
         if voltage < 1.8 * (1 - tolerance):
             raise GlasgowDeviceError("I/O port {} voltage ({} V) too low"
                                      .format(spec, voltage))
@@ -621,6 +623,7 @@ class GlasgowDevice:
                                      .format(spec, voltage))
         await self.set_voltage(spec, voltage)
         await self.set_alert_tolerance(spec, voltage, tolerance=0.05)
+        return voltage
 
     async def get_alert(self, spec):
         try:

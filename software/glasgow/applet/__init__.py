@@ -96,6 +96,36 @@ class GlasgowApplet(metaclass=ABCMeta):
 
 
 @dataclass(frozen=True)
+class VoltArgument:
+    ports: str          # e.g. "A" or "AB"
+    value: float = None # e.g. 5.0 or 3.3 for that many volts
+    sense: str   = None # e.g. "A" for measuring voltage on S input of port A
+
+    @classmethod
+    def from_str(cls, value) -> list['VoltArgument']:
+        result = []
+        for clause in value.split(","):
+            if m := re.match(r"^([0-9]+(\.[0-9]+)?)$", value):
+                volts = float(m.group(1))
+                result.append(VoltArgument(ports="AB", value=volts))
+            elif m := re.match(r"^([A-Z]+)=([0-9]+(\.[0-9]+)?)$", value):
+                ports, volts = m.group(1), float(m.group(2))
+                result.append(VoltArgument(ports=ports, value=volts))
+            elif m := re.match(r"^([A-Z]+)=S([A-Z])$", value):
+                ports, sense = m.group(1), m.group(2)
+                result.append(VoltArgument(ports=ports, sense=sense))
+            else:
+                raise ValueError(f"{clause!r} is not a valid voltage argument")
+        return result
+
+    def __str__(self):
+        if self.sense is not None:
+            return f"{self.ports}=S{self.sense}"
+        else:
+            return f"{self.ports}={self.value:.2f}"
+
+
+@dataclass(frozen=True)
 class PinArgument:
     number: int
     invert: bool = False
@@ -124,17 +154,11 @@ class GlasgowAppletArguments:
             "--port", dest="port_spec", metavar="SPEC", type=self._port_spec,
             default=default, help=help)
 
-    def _add_port_voltage_arguments(self, parser, default):
-        g_voltage = parser.add_mutually_exclusive_group(required=True)
-        g_voltage.add_argument(
-            "-V", "--voltage", metavar="VOLTS", type=float, nargs="?", default=default,
-            help="set I/O port voltage explicitly")
-        g_voltage.add_argument(
-            "-M", "--mirror-voltage", action="store_true", default=False,
-            help="sense and mirror I/O port voltage")
-        g_voltage.add_argument(
-            "--keep-voltage", action="store_true", default=False,
-            help="do not change I/O port voltage")
+    def _add_voltage_arguments(self, parser):
+        parser.add_argument(
+            "-V", "--voltage", metavar="SPEC",
+            type=VoltArgument.from_str, default=[], action="extend",
+            help="configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')")
 
     def _pins_arg_type(self, width, arg):
         if arg == "-":
@@ -227,7 +251,7 @@ class GlasgowAppletArguments:
         self._add_port_argument(parser, self._default_port)
 
     def add_run_arguments(self, parser):
-        self._add_port_voltage_arguments(parser, default=None)
+        self._add_voltage_arguments(parser)
 
 
 class GlasgowAppletTool:
