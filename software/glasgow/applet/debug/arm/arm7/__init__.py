@@ -1341,11 +1341,11 @@ class DebugARM7Applet(GlasgowApplet):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(DebugARM7Subtarget(
             ports=iface.get_port_group(
-                tck =args.pin_tck,
-                tms =args.pin_tms,
-                tdo =args.pin_tdo,
-                tdi =args.pin_tdi,
-                trst=args.pin_trst,
+                tck =args.tck,
+                tms =args.tms,
+                tdo =args.tdo,
+                tdi =args.tdi,
+                trst=args.trst,
             ),
             in_fifo=iface.get_in_fifo(auto_flush=False),
             out_fifo=iface.get_out_fifo(),

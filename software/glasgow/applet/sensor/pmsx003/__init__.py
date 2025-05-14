@@ -100,8 +100,8 @@ class SensorPMSx003Applet(GlasgowApplet):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(PMSx003Subtarget(
             ports=iface.get_port_group(
-                rx = args.pin_rx,
-                tx = args.pin_tx
+                rx = args.rx,
+                tx = args.tx
             ),
             in_fifo=iface.get_in_fifo(),
             out_fifo=iface.get_out_fifo(),

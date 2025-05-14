@@ -514,21 +514,21 @@ class MemoryPROMApplet(GlasgowApplet):
 
     def build(self, target, args):
         if args.a_bits is None:
-            args.a_bits = len(args.pin_set_a)
+            args.a_bits = len(args.a)
         if args.write_cycle is None:
             args.write_cycle = args.read_cycle
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         bus = MemoryPROMBus(
             ports=iface.get_port_group(
-                dq=args.pin_set_dq,
-                a=args.pin_set_a,
-                a_clk=args.pin_a_clk,
-                a_si=args.pin_a_si,
-                a_lat=args.pin_a_lat,
-                oe=args.pin_oe,
-                we=args.pin_we,
-                ce=args.pin_ce,
+                dq=args.dq,
+                a=args.a,
+                a_clk=args.a_clk,
+                a_si=args.a_si,
+                a_lat=args.a_lat,
+                oe=args.oe,
+                we=args.we,
+                ce=args.ce,
             ),
             a_bits=args.a_bits,
             sh_freq=args.shift_freq * 1e6,
@@ -544,7 +544,7 @@ class MemoryPROMApplet(GlasgowApplet):
 
     async def run(self, device, args):
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        return MemoryPROMInterface(iface, self.logger, args.a_bits, len(args.pin_set_dq))
+        return MemoryPROMInterface(iface, self.logger, args.a_bits, len(args.dq))
 
     @classmethod
     def add_interact_arguments(cls, parser):
@@ -661,7 +661,7 @@ class MemoryPROMApplet(GlasgowApplet):
 
     async def interact(self, device, args, prom_iface):
         a_bits  = args.a_bits
-        dq_bits = len(args.pin_set_dq)
+        dq_bits = len(args.dq)
         depth   = 1 << a_bits
 
         if args.operation == "read":

@@ -166,10 +166,10 @@ class VideoRGBInputApplet(GlasgowApplet):
             columns=args.columns,
             vblank=args.vblank,
             ports=iface.get_port_group(
-                dck = args.pin_dck,
-                r   = args.pin_set_r,
-                g   = args.pin_set_g,
-                b   = args.pin_set_b
+                dck = args.dck,
+                r   = args.r,
+                g   = args.g,
+                b   = args.b
             ),
             in_fifo=iface.get_in_fifo(depth=512 * 30, auto_flush=False),
             sys_clk_freq=target.sys_clk_freq,

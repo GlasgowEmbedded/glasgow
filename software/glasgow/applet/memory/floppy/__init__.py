@@ -660,21 +660,21 @@ class MemoryFloppyApplet(GlasgowApplet):
         self._sys_clk_freq = target.sys_clk_freq
         iface.add_subtarget(ShugartFloppySubtarget(
             ports=iface.get_port_group(
-                index=args.pin_index,
-                motea=args.pin_motea,
-                drvsb=args.pin_drvsb,
-                drvsa=args.pin_drvsa,
-                moteb=args.pin_moteb,
-                dir=args.pin_dir,
-                step=args.pin_step,
-                wdata=args.pin_wdata,
-                wgate=args.pin_wgate,
-                trk00=args.pin_trk00,
-                wpt=args.pin_wpt,
-                rdata=args.pin_rdata,
-                side1=args.pin_side1,
-                dskchg=args.pin_dskchg,
-                redwc=args.pin_redwc,
+                index=args.index,
+                motea=args.motea,
+                drvsb=args.drvsb,
+                drvsa=args.drvsa,
+                moteb=args.moteb,
+                dir=args.dir,
+                step=args.step,
+                wdata=args.wdata,
+                wgate=args.wgate,
+                trk00=args.trk00,
+                wpt=args.wpt,
+                rdata=args.rdata,
+                side1=args.side1,
+                dskchg=args.dskchg,
+                redwc=args.redwc,
             ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
@@ -692,7 +692,7 @@ class MemoryFloppyApplet(GlasgowApplet):
     async def run(self, device, args):
         pulls = set()
         if args.pulls:
-            pulls = {args.pin_index, args.pin_trk00, args.pin_wpt, args.pin_rdata, args.pin_dskchg}
+            pulls = {args.index, args.trk00, args.wpt, args.rdata, args.dskchg}
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
                                                            pull_high=pulls)
         return ShugartFloppyInterface(iface, self.logger, self._sys_clk_freq)

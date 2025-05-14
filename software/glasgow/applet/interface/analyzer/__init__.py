@@ -65,7 +65,7 @@ class AnalyzerApplet(GlasgowApplet):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(AnalyzerSubtarget(
-            ports=iface.get_port_group(i = args.pin_set_i),
+            ports=iface.get_port_group(i = args.i),
             in_fifo=iface.get_in_fifo(),
         ))
 
@@ -88,9 +88,9 @@ class AnalyzerApplet(GlasgowApplet):
         pull_low  = set()
         pull_high = set()
         if args.pull_ups:
-            pull_high = set(args.pin_set_i)
+            pull_high = set(args.i)
         if args.pull_downs:
-            pull_low = set(args.pin_set_i)
+            pull_low = set(args.i)
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
                                                            pull_low=pull_low, pull_high=pull_high)
         return AnalyzerInterface(iface, self._event_sources)
@@ -106,8 +106,8 @@ class AnalyzerApplet(GlasgowApplet):
         signals = []
 
         names = []
-        if args.pin_names:
-            names = args.pin_names.split(",")
+        if args.names:
+            names = args.names.split(",")
             assert len(names) == self._event_sources[0].width
         else:
             names = [ f"pin[{index}]" for index in range(self._event_sources[0].width) ]

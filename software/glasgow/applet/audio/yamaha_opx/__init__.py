@@ -1144,16 +1144,16 @@ class AudioYamahaOPxApplet(GlasgowApplet):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(YamahaOPxSubtarget(
             ports=iface.get_port_group(
-                d      = args.pin_set_d,
-                a      = args.pin_set_a,
-                wr     = args.pin_wr,
-                rd     = args.pin_rd,
-                clk_m  = args.pin_clk_m,
-                sh     = args.pin_sh,
-                mo     = args.pin_mo,
-                clk_sy = args.pin_clk_sy,
-                cs     = args.pin_cs,
-                ic     = args.pin_ic
+                d      = args.d,
+                a      = args.a,
+                wr     = args.wr,
+                rd     = args.rd,
+                clk_m  = args.clk_m,
+                sh     = args.sh,
+                mo     = args.mo,
+                clk_sy = args.clk_sy,
+                cs     = args.cs,
+                ic     = args.ic
             ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),

@@ -343,10 +343,10 @@ class SPIControllerApplet(GlasgowApplet):
         iface = self.mux_interface
         return SPIControllerSubtarget(
             ports=iface.get_port_group(
-                sck  = args.pin_sck,
-                cs   = args.pin_cs if hasattr(args, "pin_cs") else None,
-                copi = args.pin_copi if hasattr(args, "pin_copi") else None,
-                cipo = args.pin_cipo if hasattr(args, "pin_cipo") else None
+                sck  = args.sck,
+                cs   = args.cs if hasattr(args, "cs") else None,
+                copi = args.copi if hasattr(args, "copi") else None,
+                cipo = args.cipo if hasattr(args, "cipo") else None
             ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),

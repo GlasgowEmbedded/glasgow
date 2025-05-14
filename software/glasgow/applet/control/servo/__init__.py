@@ -193,7 +193,7 @@ class ControlServoApplet(GlasgowApplet):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(ControlServoSubtarget(
-            ports=iface.get_port_group(out=args.pin_out),
+            ports=iface.get_port_group(out=args.out),
             out_fifo=iface.get_out_fifo(),
         ))
 

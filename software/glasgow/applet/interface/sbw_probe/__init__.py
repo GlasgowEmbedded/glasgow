@@ -213,8 +213,8 @@ class SpyBiWireProbeApplet(GlasgowApplet):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(SpyBiWireProbeSubtarget(
             ports =iface.get_port_group(
-                sbwtck = args.pin_sbwtck,
-                sbwtdio = args.pin_sbwtdio 
+                sbwtck = args.sbwtck,
+                sbwtdio = args.sbwtdio
             ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),

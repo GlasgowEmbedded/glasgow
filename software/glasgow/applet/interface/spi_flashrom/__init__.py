@@ -181,8 +181,8 @@ class SPIFlashromApplet(SPIControllerApplet):
 
     def build_subtarget(self, target, args):
         subtarget = super().build_subtarget(target, args)
-        if args.pin_hold is not None:
-            hold = self.mux_interface.get_port(args.pin_hold, name="hold")
+        if args.hold is not None:
+            hold = self.mux_interface.get_port(args.hold, name="hold")
         else:
             hold = None
         return Memory25xSubtarget(subtarget, hold)

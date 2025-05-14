@@ -19,7 +19,7 @@ class ProgramICE40FlashSubtarget(Elaboratable):
         m = Module()
 
         m.submodules.lower = self.lower
-        
+
         if self.reset is not None:
             m.submodules.reset_buffer = reset = io.Buffer("o", self.reset)
             m.d.comb += [
@@ -74,16 +74,16 @@ class ProgramICE40FlashApplet(Memory25xApplet):
     def build_subtarget(self, target, args):
         subtarget = super().build_subtarget(target, args)
 
-        if args.pin_reset is not None:
-            reset = self.mux_interface.get_port(args.pin_reset, name="reset")
+        if args.reset is not None:
+            reset = self.mux_interface.get_port(args.reset, name="reset")
             dut_reset, self.__addr_dut_reset = target.registers.add_rw(1)
         else:
             reset = None
             dut_reset = None
             self.__addr_dut_reset = None
 
-        if args.pin_done is not None:
-            done = self.mux_interface.get_port(args.pin_done, name="done")
+        if args.done is not None:
+            done = self.mux_interface.get_port(args.done, name="done")
             dut_done, self.__addr_dut_done = target.registers.add_ro(1)
         else:
             done = None
@@ -102,7 +102,7 @@ class ProgramICE40FlashApplet(Memory25xApplet):
         await super().interact(device, args, ice40_iface.lower)
         await ice40_iface.set_reset(False)
 
-        if args.pin_done is not None:
+        if args.done is not None:
             for _ in range(200):    # Wait up to 2s
                 await asyncio.sleep(0.010)  # Poll every 10 ms
                 done = await ice40_iface.get_done()

@@ -283,7 +283,7 @@ class I2CInitiatorApplet(GlasgowApplet):
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         iface.add_subtarget(I2CInitiatorSubtarget(
-            ports=iface.get_port_group(scl=args.pin_scl, sda=args.pin_sda),
+            ports=iface.get_port_group(scl=args.scl, sda=args.sda),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(),
             period_cyc=math.ceil(target.sys_clk_freq / (args.bit_rate * 1000))
@@ -300,7 +300,7 @@ class I2CInitiatorApplet(GlasgowApplet):
     async def run(self, device, args):
         pulls = set()
         if args.pulls:
-            pulls = {args.pin_scl, args.pin_sda}
+            pulls = {args.scl, args.sda}
         iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
                                                            pull_high=pulls)
         i2c_iface = I2CInitiatorInterface(iface, self.logger)

@@ -261,9 +261,9 @@ class QSPIControllerApplet(GlasgowApplet):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         return iface.add_subtarget(QSPIControllerSubtarget(
             ports=iface.get_port_group(
-                sck=args.pin_sck,
-                io=args.pin_set_io,
-                cs=args.pin_set_cs,
+                sck=args.sck,
+                io=args.io,
+                cs=args.cs,
             ),
             out_fifo=iface.get_out_fifo(),
             in_fifo=iface.get_in_fifo(auto_flush=False),
@@ -276,12 +276,12 @@ class QSPIControllerApplet(GlasgowApplet):
             pull_high={
                 # Pull IO2 and IO3 high, since on QSPI flashes these correspond to WP# and HOLD#,
                 # and will interfere with operation in SPI mode. For other devices this is benign.
-                args.pin_set_io[2], args.pin_set_io[3],
+                args.io[2], args.io[3],
                 # Also pull IO0 and IO1 high. This prevents noise from changing bus state when
                 # the device is not selected (which should be benign but could cause issues with
                 # non-compliant devices). In addition, pulling IO1 up prevents reading garbage data
                 # from devices that do not drive it when selected.
-                args.pin_set_io[0], args.pin_set_io[1],
+                args.io[0], args.io[1],
             })
         qspi_iface = QSPIControllerInterface(iface, self.logger)
         return qspi_iface
