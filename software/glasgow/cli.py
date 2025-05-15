@@ -220,7 +220,7 @@ def get_argparser():
                             help="test cases to run")
 
                     if mode in ("build", "interact", "repl", "script"):
-                        access_args = GlasgowAppletArguments(applet_name=handle, pin_count=16)
+                        access_args = GlasgowAppletArguments(applet_name=handle)
                         if mode in ("interact", "repl", "script"):
                             g_applet_build = p_applet.add_argument_group("build arguments")
                             applet_cls.add_build_arguments(g_applet_build, access_args)

@@ -228,7 +228,7 @@ class DebugARM7AppletTestCase(GlasgowAppletTestCase, applet=DebugARM7Applet):
         applet = self.applet_cls()
 
         parser = argparse.ArgumentParser()
-        access_args = GlasgowAppletArguments("debug-arm7", pin_count=16)
+        access_args = GlasgowAppletArguments("debug-arm7")
         applet.add_build_arguments(parser, access_args)
         applet.add_run_arguments(parser, access_args)
         parsed_args = parser.parse_args(self.hardware_args)
