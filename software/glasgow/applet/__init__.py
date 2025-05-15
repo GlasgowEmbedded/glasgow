@@ -257,14 +257,17 @@ class GlasgowAppletArguments:
             f"--{name.lower().replace('_', '-')}", dest=name, metavar=metavar,
             type=pin_arg, default=default, required=required, help=help)
 
-    def add_build_arguments(self, parser):
-        pass
-
-    def add_run_arguments(self, parser):
+    def add_voltage_argument(self, parser):
         parser.add_argument(
             "-V", "--voltage", metavar="SPEC",
             type=VoltArgument.from_str, default=[], action="extend",
             help="configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')")
+
+    def add_build_arguments(self, parser):
+        pass
+
+    def add_run_arguments(self, parser):
+        self.add_voltage_argument(parser)
 
 
 class GlasgowAppletTool:
