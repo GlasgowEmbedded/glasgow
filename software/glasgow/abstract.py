@@ -81,9 +81,7 @@ class AbstractAssembly(metaclass=ABCMeta):
         pass
 
     def add_port_group(self, **ports) -> PortGroup:
-        return PortGroup(**{
-            name: self.add_port(pin_or_pins, name=name) for name, pin_or_pins in ports.items()
-        })
+        return PortGroup(**{name: self.add_port(pin_name) for name, pin_name in ports.items()})
 
     @abstractmethod
     def add_ro_register(self, signal) -> AbstractRORegister:
