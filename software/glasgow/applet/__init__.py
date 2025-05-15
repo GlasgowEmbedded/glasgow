@@ -166,7 +166,7 @@ class PinArgument:
 
 
 class GlasgowAppletArguments:
-    def __init__(self, applet_name, pin_count):
+    def __init__(self, applet_name):
         self._applet_name  = applet_name
         self._free_pins    = "A0 A1 A2 A3 A4 A5 A6 A7 B0 B1 B2 B3 B4 B5 B6 B7".split()
 
@@ -450,7 +450,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
         target = DeprecatedTarget(assembly)
 
         parser = argparse.ArgumentParser()
-        access_args = GlasgowAppletArguments("applet", pin_count=16)
+        access_args = GlasgowAppletArguments("applet")
         self.applet.add_build_arguments(parser, access_args)
 
         try:
@@ -524,7 +524,7 @@ def applet_simulation_test(setup, args=[]):
         def wrapper(self):
             assembly = SimulationAssembly()
 
-            access_args = GlasgowAppletArguments("applet", pin_count=16)
+            access_args = GlasgowAppletArguments("applet")
             parsed_args = self._prepare_applet_args(args, access_args)
 
             target = DeprecatedTarget(assembly)
@@ -559,7 +559,7 @@ def applet_hardware_test(setup="run_hardware_applet", args=[]):
                 mode = "record"
 
             try:
-                access_args = GlasgowAppletArguments(self.applet, pin_count=16)
+                access_args = GlasgowAppletArguments(self.applet)
                 self._prepare_applet_args(args, access_args)
                 self._prepare_hardware_target(self, fixture, mode)
 
