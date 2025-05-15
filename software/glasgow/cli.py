@@ -75,17 +75,16 @@ class TextHelpFormatter(argparse.HelpFormatter):
 
 def version_info():
     glasgow_version = __version__
-    python_version = '.'.join(map(str, sys.version_info[:3]))
+    python_version = ".".join(map(str, sys.version_info[:3]))
     python_implementation = platform.python_implementation()
     python_platform = platform.platform()
     freedesktop_os_name = ""
-    if hasattr(platform, "freedesktop_os_release"): # TODO(py3.9): present in 3.10+
-        try:
-            freedesktop_os_release = platform.freedesktop_os_release()
-            if "PRETTY_NAME" in freedesktop_os_release:
-                freedesktop_os_name = f" {freedesktop_os_release['PRETTY_NAME']}"
-        except OSError:
-            pass
+    try:
+        freedesktop_os_release = platform.freedesktop_os_release()
+        if "PRETTY_NAME" in freedesktop_os_release:
+            freedesktop_os_name = f" {freedesktop_os_release['PRETTY_NAME']}"
+    except OSError:
+        pass
     return (
         f"Glasgow {glasgow_version} "
         f"({python_implementation} {python_version} on {python_platform}{freedesktop_os_name})"
