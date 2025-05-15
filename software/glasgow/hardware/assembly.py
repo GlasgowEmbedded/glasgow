@@ -369,8 +369,8 @@ class HardwareAssembly(AbstractAssembly):
             self._device    = None
             self._revision  = revision
         else:
-            raise ValueError(
-                f"creating a hardware assembly requires providing either a device or a revision")
+            self._device    = GlasgowDevice()
+            self._revision  = self._device.revision
 
         self._platform      = self._create_platform(self._revision)
         self._modules       = [] # (elaboratable, name)
