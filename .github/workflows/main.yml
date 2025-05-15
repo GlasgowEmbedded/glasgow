@@ -12,10 +12,9 @@ jobs:
         os-version:
         - ubuntu-24.04
         python-version:
-        - '3.10.x'
         - '3.11.x'
         - '3.12.x'
-        - 'pypy-3.10'
+        - 'pypy-3.11'
         dep-versions:
         - minimal
         - latest
