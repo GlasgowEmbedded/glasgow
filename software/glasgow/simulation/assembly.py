@@ -182,6 +182,9 @@ class SimulationAssembly(AbstractAssembly):
     def run(self, fn, *, vcd_file=None, gtkw_file=None):
         m = Module()
 
+        dummy = Signal()
+        m.d.sync += dummy.eq(0) # make sure the domain exists
+
         for jumper in self._jumpers:
             net = Signal(name=f"jumper_{'_'.join(jumper)}")
             pins = [self._pins[name] for name in jumper]

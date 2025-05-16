@@ -223,13 +223,16 @@ def get_argparser():
                         if mode in ("interact", "repl", "script"):
                             g_applet_build = p_applet.add_argument_group("build arguments")
                             applet_cls.add_build_arguments(g_applet_build, access_args)
-                            g_applet_run = p_applet.add_argument_group("run arguments")
-                            applet_cls.add_run_arguments(g_applet_run, access_args)
-                            if mode == "interact":
-                                # FIXME: this makes it impossible to add subparsers in applets
-                                # g_applet_interact = p_applet.add_argument_group("interact arguments")
-                                # applet.add_interact_arguments(g_applet_interact)
-                                applet_cls.add_interact_arguments(p_applet)
+                            if issubclass(applet_cls, GlasgowAppletV2):
+                                g_applet_setup = p_applet.add_argument_group("setup arguments")
+                                applet_cls.add_setup_arguments(g_applet_setup)
+                                if mode == "interact":
+                                    applet_cls.add_run_arguments(p_applet)
+                            else:
+                                g_applet_run = p_applet.add_argument_group("run arguments")
+                                applet_cls.add_run_arguments(g_applet_run, access_args)
+                                if mode == "interact":
+                                    applet_cls.add_interact_arguments(p_applet)
                             if mode == "repl":
                                 # FIXME: same as above
                                 applet_cls.add_repl_arguments(p_applet)
@@ -442,24 +445,29 @@ def get_argparser():
 
 # The name of this function appears in Verilog output, so keep it tidy.
 def _applet(revision, args):
-    assembly = HardwareAssembly(revision=revision)
-    target = DeprecatedTarget(assembly)
-    applet = GlasgowAppletMetadata.get(args.applet).applet_cls()
     try:
-        message = ("applet requires device rev{}+, rev{} found"
-                   .format(applet.required_revision, revision))
+        assembly = HardwareAssembly(revision=revision)
+        applet = GlasgowAppletMetadata.get(args.applet).applet_cls(assembly)
         if revision < applet.required_revision:
+            message = f"applet requires device rev{applet.required_revision}+, rev{revision} found"
             if args.override_required_revision:
                 applet.logger.warning(message)
             else:
                 raise GlasgowAppletError(message)
+
         with assembly.add_applet(applet, logger=applet.logger):
-            applet.build(target, args)
+            match applet:
+                case GlasgowAppletV2():
+                    applet.build(args)
+                    return applet, assembly, None
+                case GlasgowApplet():
+                    target = DeprecatedTarget(assembly)
+                    applet.build(target, args)
+                    return applet, assembly, target
     except GlasgowAppletError as e:
         applet.logger.error(e)
         logger.error("failed to build subtarget for applet %r", args.applet)
         raise SystemExit()
-    return applet, assembly, target
 
 
 class TerminalFormatter(logging.Formatter):
@@ -627,28 +635,50 @@ async def main():
                 device.demultiplexer = DeprecatedDemultiplexer(device, target.multiplexer.pipe_count)
 
             async def run_applet():
+                if args.action in ("repl", "script"):
+                    if len(args.script_args) > 0 and args.script_args[0] == "--":
+                        args.script_args = args.script_args[1:]
+
                 logger.info("running handler for applet %r", args.applet)
                 if applet.preview:
                     logger.warning("applet %r is PREVIEW QUALITY and may CORRUPT DATA", args.applet)
                 try:
-                    iface = await applet.run(device, args)
-                    if args.action in ("repl", "script"):
-                        if len(args.script_args) > 0 and args.script_args[0] == "--":
-                            args.script_args = args.script_args[1:]
-                    if args.action == "run":
-                        return await applet.interact(device, args, iface)
-                    elif args.action == "repl":
-                        await applet.repl(device, args, iface)
-                    elif args.action == "script":
-                        if args.script_file:
-                            code = compile(args.script_file.read(), filename=args.script_file.name,
-                                mode="exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
-                        else:
-                            code = compile(args.script_cmd, filename="<command>",
-                                mode="exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
-                        future = eval(code, {"iface":iface, "device":device, "args":args})
-                        if future is not None:
-                            await future
+                    match applet:
+                        case GlasgowAppletV2():
+                            await applet.setup(args)
+                            if args.action == "run":
+                                return await applet.run(args)
+                            elif args.action == "repl":
+                                await applet.repl(args)
+                            elif args.action == "script":
+                                if args.script_file:
+                                    script_code = args.script_file.read()
+                                    script_name = args.script_file.name
+                                else:
+                                    script_code = args.script_cmd
+                                    script_name = "<command>"
+                                code = compile(script_code, filename=script_name, mode="exec",
+                                    flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+                                await applet.script(args, code)
+
+                        case GlasgowApplet():
+                            iface = await applet.run(device, args)
+                            if args.action == "run":
+                                return await applet.interact(device, args, iface)
+                            elif args.action == "repl":
+                                await applet.repl(device, args, iface)
+                            elif args.action == "script":
+                                if args.script_file:
+                                    code = compile(args.script_file.read(),
+                                        filename=args.script_file.name,
+                                        mode="exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+                                else:
+                                    code = compile(args.script_cmd,
+                                        filename="<command>",
+                                        mode="exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+                                future = eval(code, {"iface":iface, "device":device, "args":args})
+                                if future is not None:
+                                    await future
 
                 except SystemExit as e:
                     return e.code
@@ -795,7 +825,7 @@ async def main():
 
         if args.action == "build":
             applet, assembly, target = _applet(args.rev, args)
-            plan = target.build_plan()
+            plan = assembly.artifact()
             if args.type in ("il", "rtlil"):
                 logger.info("generating RTLIL for applet %r", args.applet)
                 with open(args.filename or args.applet + ".il", "w") as f:
@@ -811,7 +841,7 @@ async def main():
 
         if args.action == "test":
             logger.info("testing applet %r", args.applet)
-            applet = GlasgowAppletMetadata.get(args.applet).applet_cls()
+            applet_cls = GlasgowAppletMetadata.get(args.applet).applet_cls
             loader = unittest.TestLoader()
             stream = unittest.runner._WritelnDecorator(sys.stderr)
             result = unittest.TextTestResult(stream=stream, descriptions=True, verbosity=2)
@@ -821,11 +851,11 @@ async def main():
                 result.stream.write("\n")
             result.startTest = startTest
             if args.tests == []:
-                suite = loader.loadTestsFromTestCase(applet.tests())
+                suite = loader.loadTestsFromTestCase(applet_cls.tests())
                 suite.run(result)
             else:
                 for test in args.tests:
-                    suite = loader.loadTestsFromName(test, module=applet.tests())
+                    suite = loader.loadTestsFromName(test, module=applet_cls.tests())
                     suite.run(result)
             if not result.wasSuccessful():
                 for _, traceback in result.errors + result.failures:
