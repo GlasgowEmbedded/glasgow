@@ -1,22 +1,20 @@
 import os
-import asyncio
-import argparse
-import threading
 import unittest
+
 from amaranth import *
 from amaranth.sim import Simulator
 from amaranth.lib import io, wiring
 
-from .... import *
 from .....gateware.ports import PortGroup
-from .....gateware.stream import *
-from .....legacy import DeprecatedDemultiplexer
+from .....gateware.stream import stream_get, stream_put
+from .....hardware.assembly import HardwareAssembly
+from .... import *
 from . import DebugARM7Applet, DebugARM7Sequencer
 
 
-class DebugARM7AppletTestCase(GlasgowAppletTestCase, applet=DebugARM7Applet):
+class DebugARM7AppletTestCase(GlasgowAppletV2TestCase, applet=DebugARM7Applet):
     # DUT used for testing: Yamaha SWLL (from PSS-A50 keyboard)
-    hardware_args = "-e big -V 3.3 --tck 8 --tms 1 --tdi 0 --tdo 4 --trst 15".split()
+    hardware_args = "-e big -V A=3.30,B=5.00 --tck A1 --tms A3 --tdi A2 --tdo A4 --trst A0"
     ram_addr = 0x2ff00
 
     def test_sequencer(self):
@@ -25,6 +23,7 @@ class DebugARM7AppletTestCase(GlasgowAppletTestCase, applet=DebugARM7Applet):
         ports.tms  = io.SimulationPort("o", 1, name="tms")
         ports.tdi  = io.SimulationPort("o", 1, name="tdi")
         ports.tdo  = io.SimulationPort("i", 1, name="tdo")
+        ports.trst = None
 
         dut = DebugARM7Sequencer(ports)
 
@@ -219,48 +218,13 @@ class DebugARM7AppletTestCase(GlasgowAppletTestCase, applet=DebugARM7Applet):
         await iface.target_single_step()
         assert_r0_r15(0x14, 0x50)
 
-    def run_on_hardware(self, test_case, **test_kwargs):
-        from glasgow.hardware.assembly import HardwareAssembly
-        from glasgow.hardware.device import GlasgowDevice
-        from glasgow.applet import GlasgowAppletArguments
-        from glasgow.legacy import DeprecatedTarget
-
-        applet = self.applet_cls()
-
-        parser = argparse.ArgumentParser()
-        access_args = GlasgowAppletArguments("debug-arm7")
-        applet.add_build_arguments(parser, access_args)
-        applet.add_run_arguments(parser, access_args)
-        parsed_args = parser.parse_args(self.hardware_args)
-
-        device = GlasgowDevice()
-        device.demultiplexer = DeprecatedDemultiplexer(device, pipe_count=1)
-        assembly = HardwareAssembly(device=device)
-        target = DeprecatedTarget(assembly)
-        applet.build(target, parsed_args)
-
-        async def run_test_async():
-            async with assembly.start():
-                iface = await applet.run(device, parsed_args)
-                await test_case(iface, **test_kwargs)
-
-        try:
-            exn = None
-            def run_test():
-                nonlocal exn
-                loop = asyncio.new_event_loop()
-                try:
-                    loop.run_until_complete(run_test_async())
-                except Exception as e:
-                    exn = e
-                finally:
-                    loop.run_until_complete(device.demultiplexer.cancel())
-                    loop.close()
-
-            thread = threading.Thread(target=run_test)
-            thread.start()
-            thread.join()
-            if exn is not None:
-                raise exn
-        finally:
-            device.close()
+    @async_test
+    async def run_on_hardware(self, test_case, **test_kwargs):
+        parsed_args = self._parse_args(self.hardware_args)
+        assembly = HardwareAssembly()
+        applet = self.applet_cls(assembly)
+        with assembly.add_applet(applet, logger=applet.logger):
+            applet.build(parsed_args)
+        async with assembly:
+            await applet.setup(parsed_args)
+            await test_case(applet.arm_iface, **test_kwargs)
