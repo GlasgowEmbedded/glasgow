@@ -2,6 +2,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Any, Optional, Generator
 from dataclasses import dataclass
 import re
+import enum
 import logging
 
 from amaranth import *
@@ -11,18 +12,34 @@ from .gateware.ports import PortGroup
 
 
 __all__ = [
-    "GlasgowPin",
+    "GlasgowPort", "GlasgowPin",
     "AbstractRORegister", "AbstractRWRegister",
     "AbstractInPipe", "AbstractOutPipe", "AbstractInOutPipe",
     "AbstractAssembly"
 ]
 
 
+class GlasgowPort(enum.Enum):
+    A = "A"
+    B = "B"
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}.{self.name}"
+
+    def __str__(self):
+        return self.value
+
+
 @dataclass(frozen=True)
 class GlasgowPin:
-    port:   str
+    port:   GlasgowPort
     number: int
     invert: bool = False
+
+    def __init__(self, port: GlasgowPort, number: int, *, invert=False):
+        object.__setattr__(self, "port", GlasgowPort(port))
+        object.__setattr__(self, "number", int(number))
+        object.__setattr__(self, "invert", bool(invert))
 
     @classmethod
     def parse(cls, value) -> list['GlasgowPin']:
@@ -31,11 +48,11 @@ class GlasgowPin:
             if clause == "-":
                 pass
             elif m := re.match(r"^([A-Z])([0-9]+)(#)?$", clause):
-                port, number, invert = m.group(1), int(m.group(2)), bool(m.group(3))
+                port, number, invert = GlasgowPort(m.group(1)), int(m.group(2)), bool(m.group(3))
                 result.append(cls(port=port, number=number, invert=invert))
             elif m := re.match(r"^([A-Z])([0-9]+):([0-9]+)(#)?$", clause):
                 port, pin_first, pin_last, invert = \
-                    m.group(1), int(m.group(2)), int(m.group(3)), bool(m.group(4))
+                    GlasgowPort(m.group(1)), int(m.group(2)), int(m.group(3)), bool(m.group(4))
                 if pin_last >= pin_first:
                     for number in range(pin_first, pin_last + 1, +1):
                         result.append(cls(port=port, number=number, invert=invert))
@@ -49,8 +66,8 @@ class GlasgowPin:
     @property
     def _legacy_number(self):
         match self.port:
-            case "A": return 0 + self.number
-            case "B": return 8 + self.number
+            case GlasgowPort.A: return 0 + self.number
+            case GlasgowPort.B: return 8 + self.number
             case _: assert False
 
     def __str__(self):
