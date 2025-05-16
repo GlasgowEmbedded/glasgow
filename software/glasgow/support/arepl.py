@@ -3,6 +3,7 @@ import os
 import sys
 import ast
 import errno
+import types
 import codeop
 import signal
 import logging
@@ -112,13 +113,21 @@ class AsyncInteractiveConsole:
                 "_HiStOrY_V2_")
         readline.write_history_file(self._history_filename)
 
+    def _print_result(self, result):
+        match result:
+            case memoryview():
+                print(f"memoryview({bytes(result)!r})")
+            case _:
+                print(f"{result!r}")
+
     async def _run_code(self, code):
         try:
-            future = eval(code, self.locals)
-            if asyncio.iscoroutine(future):
-                await future
+            result = eval(code, self.locals)
+            if type(result) is types.CoroutineType and result.cr_code == code:
+                result = await result
             if self.run_callback is not None:
                 await self.run_callback()
+            self._print_result(result)
         except (KeyboardInterrupt, asyncio.CancelledError):
             raise
         except SystemExit as e:
@@ -127,10 +136,14 @@ class AsyncInteractiveConsole:
             lines = traceback.format_exception(type(e), e, e.__traceback__)
             print("".join(lines), end="", file=sys.stderr)
 
-    async def _process_line(self, line, *, filename="<console>", symbol="single"):
+    async def _process_line(self, line, *, filename="<console>"):
         self._buffer.append(line)
         try:
-            code = self._compile("\n".join(self._buffer), filename, symbol)
+            source = "\n".join(self._buffer)
+            try:
+                code = self._compile(source, filename, "eval")
+            except SyntaxError:
+                code = self._compile(source, filename, "exec")
         except (OverflowError, SyntaxError, ValueError) as e:
             self._buffer = []
             lines = traceback.format_exception_only(type(e), e)
