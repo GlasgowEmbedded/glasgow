@@ -107,13 +107,13 @@ class VoltArgument:
     def parse(cls, value) -> list['VoltArgument']:
         result = []
         for clause in value.split(","):
-            if m := re.match(r"^([0-9]+(\.[0-9]+)?)$", value):
+            if m := re.match(r"^([0-9]+(\.[0-9]+)?)$", clause):
                 volts = float(m.group(1))
                 result.append(VoltArgument(ports="AB", value=volts))
-            elif m := re.match(r"^([A-Z]+)=([0-9]+(\.[0-9]+)?)$", value):
+            elif m := re.match(r"^([A-Z]+)=([0-9]+(\.[0-9]+)?)$", clause):
                 ports, volts = m.group(1), float(m.group(2))
                 result.append(VoltArgument(ports=ports, value=volts))
-            elif m := re.match(r"^([A-Z]+)=S([A-Z])$", value):
+            elif m := re.match(r"^([A-Z]+)=S([A-Z])$", clause):
                 ports, sense = m.group(1), m.group(2)
                 result.append(VoltArgument(ports=ports, sense=sense))
             else:
