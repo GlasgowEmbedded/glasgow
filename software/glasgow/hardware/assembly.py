@@ -409,9 +409,11 @@ class HardwareAssembly(AbstractAssembly):
         elaboratable._MustUse__used = True
         return elaboratable
 
-    def add_port(self, pin_name) -> io.PortLike:
+    def add_platform_pin(self, pin_name: str, port_name: str) -> io.PortLike:
         assert self._artifact is None, "cannot add a port to a sealed assembly"
+        # TODO: make this a proper error and not an assertion
         assert pin_name in self._platform.glasgow_pins, f"unknown or already used pin {pin_name}"
+        (self._scope_logger or logger).debug(f"assigning pin {port_name!r} to {pin_name}")
         return self._platform.glasgow_pins.pop(pin_name)
 
     def add_ro_register(self, signal) -> AbstractRORegister:
