@@ -156,8 +156,9 @@ class GlasgowAppletArguments:
                             default.append(pin)
                         else:
                             break
+                    default = tuple(default)
                 case int():
-                    default = [get_free_pin() for _ in range(default)]
+                    default = tuple(get_free_pin() for _ in range(default))
                 case _:
                     default = GlasgowPin.parse(default)
 

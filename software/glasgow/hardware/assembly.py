@@ -1,5 +1,6 @@
 from typing import Any, Optional, Generator
 from collections.abc import Mapping
+from collections import defaultdict
 from contextlib import contextmanager, asynccontextmanager
 import asyncio
 import logging
@@ -380,6 +381,7 @@ class HardwareAssembly(AbstractAssembly):
         self._out_streams   = [] # (out_stream, fifo_depth)
         self._pipes         = [] # in_pipe|out_pipe|inout_pipe
         self._voltages      = {} # {port: vio}
+        self._pulls         = {} # {(port, number): state}
 
         self._scope         = None
         self._scope_logger  = None
@@ -466,6 +468,20 @@ class HardwareAssembly(AbstractAssembly):
                 vio = GlasgowVio(vio)
             (self._scope_logger or logger).debug("setting port %s voltage to %s V", port, vio)
             self._voltages[port] = vio
+
+    def use_pulls(self, pulls: Mapping[GlasgowPin | tuple[GlasgowPin], PullState | str]):
+        for pins, state in pulls.items():
+            if isinstance(pins, GlasgowPin):
+                pins = [pins]
+            if isinstance(state, str):
+                state = PullState(state)
+            for pin in pins:
+                if pin.invert:
+                    state = ~state
+                if state.enabled():
+                    (self._scope_logger or logger).debug("pulling pin %s%s %s%s",
+                        pin.port, pin.number, state, " (inverted)" if pin.invert else "")
+                self._pulls[pin.port, pin.number] = state
 
     def artifact(self):
         if self._artifact is not None:
@@ -563,6 +579,19 @@ class HardwareAssembly(AbstractAssembly):
             if vio.value is not None:
                 await self.device.set_voltage(port, vio.value)
                 logger.info("port %s voltage set to %.1f V", port, vio.value)
+
+        port_pulls = defaultdict(lambda: (set(), set()))
+        for (port, number), state in self._pulls.items():
+            low, high = port_pulls[port]
+            match state:
+                case PullState.Low:  low .add(number)
+                case PullState.High: high.add(number)
+        for port, (low, high) in port_pulls.items():
+            voltage = await self.device.get_voltage(str(port))
+            if voltage == 0.0:
+                logger.error("cannot configure pulls for port %s: Vio is off", port)
+                continue
+            await self.device.set_pulls(str(port), low, high)
 
     @property
     def _iface_count(self):
