@@ -76,7 +76,7 @@ class SimulationAssembly(AbstractAssembly):
         return 1/1000000
 
     @contextmanager
-    def add_applet(self, applet: Any, *, logger: logging.Logger) -> Generator[None, None, None]:
+    def add_applet(self, applet: Any) -> Generator[None, None, None]:
         yield
 
     def add_platform_pin(self, pin_name: str, port_name: str) -> io.PortLike:

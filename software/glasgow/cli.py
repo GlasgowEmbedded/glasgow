@@ -455,7 +455,7 @@ def _applet(revision, args):
             else:
                 raise GlasgowAppletError(message)
 
-        with assembly.add_applet(applet, logger=applet.logger):
+        with assembly.add_applet(applet):
             match applet:
                 case GlasgowAppletV2():
                     applet.build(args)

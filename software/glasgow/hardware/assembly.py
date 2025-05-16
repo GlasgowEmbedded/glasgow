@@ -398,10 +398,10 @@ class HardwareAssembly(AbstractAssembly):
                 return 1/48e6
 
     @contextmanager
-    def add_applet(self, applet: Any, *, logger: logging.Logger) -> Generator[None, None, None]:
+    def add_applet(self, applet: Any) -> Generator[None, None, None]:
         assert self._scope is None
 
-        self._scope, self._scope_logger = applet, logger
+        self._scope, self._scope_logger = applet, applet.logger
         try:
             yield
         finally:
