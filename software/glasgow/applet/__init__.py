@@ -1,4 +1,6 @@
 import re
+import shlex
+import unittest
 import argparse
 import functools
 from abc import ABCMeta, abstractmethod
@@ -8,17 +10,25 @@ from typing import Optional
 
 from amaranth import *
 
-from ..support.arepl import *
-from ..support.plugin import *
+from ..support.arepl import AsyncInteractiveConsole
+from ..support.plugin import PluginMetadata
+from ..abstract import GlasgowPin, AbstractAssembly
+from ..hardware.device import GlasgowDevice
 from ..gateware.clockgen import *
 from ..abstract import GlasgowVio, GlasgowPin
 from ..legacy import DeprecatedDemultiplexer, DeprecatedMultiplexer
 
 
 __all__ = [
-    "GlasgowAppletMetadata", "GlasgowAppletError", "GlasgowApplet", "GlasgowAppletArguments",
-    "GlasgowAppletTool"
+    "GlasgowAppletMetadata", "GlasgowAppletError",
+    "GlasgowApplet", "GlasgowAppletV2", "GlasgowAppletArguments",
+    "GlasgowAppletTool",
+    "GlasgowAppletV2TestCase", "async_test", "applet_v2_simulation_test",
 ]
+
+
+class GlasgowAppletError(Exception):
+    """An exception raised when an applet encounters an error."""
 
 
 class GlasgowAppletMetadata(PluginMetadata):
@@ -35,66 +45,6 @@ class GlasgowAppletMetadata(PluginMetadata):
 
 class GlasgowAppletError(Exception):
     """An exception raised when an applet encounters an error."""
-
-
-# A Glasgow applet is defined by a class; known applets are taken from a
-# list of entry points in package metadata.  (In the Glasgow package, they
-# are enumerated in the `[project.entry-points."glasgow.applet"]` section of
-# the pyproject.toml.
-
-class GlasgowApplet(metaclass=ABCMeta):
-    preview = False
-    help = "applet help missing"
-    description = "applet description missing"
-    required_revision = "A0"
-
-    @classmethod
-    def add_build_arguments(cls, parser, access):
-        access.add_build_arguments(parser)
-
-    def derive_clock(self, *args, clock_name=None, **kwargs):
-        try:
-            return ClockGen.derive(*args, **kwargs, logger=self.logger, clock_name=clock_name)
-        except ValueError as e:
-            if clock_name is None:
-                raise GlasgowAppletError(e)
-            else:
-                raise GlasgowAppletError(f"clock {clock_name}: {e}")
-
-    @abstractmethod
-    def build(self, target):
-        pass
-
-    @classmethod
-    def add_run_arguments(cls, parser, access):
-        access.add_run_arguments(parser)
-
-    async def run_lower(self, cls, device, args, **kwargs):
-        return await super(cls, self).run(device, args, **kwargs)
-
-    @abstractmethod
-    async def run(self, device, args):
-        pass
-
-    @classmethod
-    def add_interact_arguments(cls, parser):
-        pass
-
-    async def interact(self, device, args, iface):
-        raise GlasgowAppletError("This applet can only be used in REPL mode.")
-
-    @classmethod
-    def add_repl_arguments(cls, parser):
-        pass
-
-    async def repl(self, device, args, iface):
-        self.logger.info("dropping to REPL; use 'help(iface)' to see available APIs")
-        await AsyncInteractiveConsole(locals={"device":device, "iface":iface, "args":args},
-            run_callback=device.demultiplexer.flush).interact()
-
-    @classmethod
-    def tests(cls):
-        return None
 
 
 class GlasgowAppletArguments:
@@ -204,6 +154,231 @@ class GlasgowAppletArguments:
         self.add_voltage_argument(parser)
 
 
+# A Glasgow applet is defined by a class; known applets are taken from a
+# list of entry points in package metadata.  (In the Glasgow package, they
+# are enumerated in the `[project.entry-points."glasgow.applet"]` section of
+# the pyproject.toml.
+
+class GlasgowApplet(metaclass=ABCMeta):
+    preview = False
+    help = "applet help missing"
+    description = "applet description missing"
+    required_revision = "A0"
+
+    def __init__(self, assembly):
+        pass
+
+    @classmethod
+    def add_build_arguments(cls, parser, access):
+        access.add_build_arguments(parser)
+
+    def derive_clock(self, *args, clock_name=None, **kwargs):
+        try:
+            return ClockGen.derive(*args, **kwargs, logger=self.logger, clock_name=clock_name)
+        except ValueError as e:
+            if clock_name is None:
+                raise GlasgowAppletError(e)
+            else:
+                raise GlasgowAppletError(f"clock {clock_name}: {e}")
+
+    @abstractmethod
+    def build(self, target, args):
+        pass
+
+    @classmethod
+    def add_run_arguments(cls, parser, access):
+        access.add_run_arguments(parser)
+
+    async def run_lower(self, cls, device, args, **kwargs):
+        return await super(cls, self).run(device, args, **kwargs)
+
+    @abstractmethod
+    async def run(self, device, args):
+        pass
+
+    @classmethod
+    def add_interact_arguments(cls, parser):
+        pass
+
+    async def interact(self, device, args, iface):
+        raise GlasgowAppletError("This applet can only be used in REPL mode.")
+
+    @classmethod
+    def add_repl_arguments(cls, parser):
+        pass
+
+    async def repl(self, device, args, iface):
+        self.logger.info("dropping to REPL; use 'help(iface)' to see available APIs")
+        await AsyncInteractiveConsole(locals={"device":device, "iface":iface, "args":args},
+            run_callback=device.demultiplexer.flush).interact()
+
+    @classmethod
+    def tests(cls):
+        return None
+
+
+class GlasgowAppletV2(metaclass=ABCMeta):
+    preview = False
+    help = "applet help missing"
+    description = "applet description missing"
+    required_revision = "A0"
+
+    def __init__(self, assembly):
+        self._assembly = assembly
+
+    @property
+    def assembly(self) -> AbstractAssembly:
+        return self._assembly
+
+    @property
+    def device(self) -> GlasgowDevice:
+        return self._assembly.device
+
+    @classmethod
+    def add_build_arguments(cls, parser, access):
+        access.add_voltage_argument(parser)
+
+    def derive_clock(self, *args, clock_name=None, **kwargs):
+        try:
+            return ClockGen.derive(*args, **kwargs, logger=self.logger, clock_name=clock_name)
+        except ValueError as e:
+            if clock_name is None:
+                raise GlasgowAppletError(e)
+            else:
+                raise GlasgowAppletError(f"clock {clock_name}: {e}")
+
+    @abstractmethod
+    def build(self, args):
+        self.assembly.use_voltage(args.voltage)
+
+    @classmethod
+    def add_setup_arguments(cls, parser):
+        pass
+
+    async def setup(self, args):
+        pass
+
+    @classmethod
+    def add_run_arguments(cls, parser):
+        pass
+
+    async def run(self, args):
+        raise GlasgowAppletError("This applet can only be used in REPL mode.")
+
+    @classmethod
+    def add_repl_arguments(cls, parser):
+        pass
+
+    @property
+    def _iface_attrs(self):
+        for attr in dir(self):
+            if attr.endswith("iface"):
+                yield attr
+
+    def _code_locals(self, args):
+        return {
+            "asyncio": asyncio,
+            "self": self,
+            "args": args,
+            "device": self.device,
+            **{attr: getattr(self, attr) for attr in self._iface_attrs}
+        }
+
+    async def repl(self, args):
+        self.logger.info("dropping to REPL; use %s to see available APIs",
+            ", ".join(f"'help({attr})'" for attr in self._iface_attrs))
+        await AsyncInteractiveConsole(
+            locals=self._code_locals(args),
+            run_callback=self.assembly.flush
+        ).interact()
+
+    async def script(self, args, code):
+        result = eval(code, self._code_locals(args))
+        if asyncio.iscoroutine(result):
+            await result
+
+    @classmethod
+    def tests(cls):
+        return None
+
+
+class GlasgowAppletV2TestCase(unittest.TestCase):
+    def __init_subclass__(cls, applet, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        cls.applet_cls = applet
+
+    @classmethod
+    def _parse_args(cls, args, *, mode=None):
+        access = GlasgowAppletArguments("applet")
+        parser = argparse.ArgumentParser()
+        cls.applet_cls.add_build_arguments(parser, access)
+        if mode != "build":
+            cls.applet_cls.add_setup_arguments(parser)
+        match mode:
+            case "run":
+                cls.applet_cls.add_run_arguments(parser)
+            case "repl":
+                cls.applet_cls.add_repl_arguments(parser)
+        match args:
+            case None:
+                return parser.parse_args([])
+            case list():
+                return parser.parse_args(args)
+            case str():
+                return parser.parse_args(shlex.split(args))
+            case _:
+                assert False
+
+    def assertBuilds(self, args=None, *, revision=None):
+        parsed_args = self._parse_args(args, mode="build")
+        assembly = HardwareAssembly(revision=revision or self.applet_cls.required_revision)
+        applet = self.applet_cls(assembly)
+        with assembly.add_applet(applet, logger=applet.logger):
+            applet.build(parsed_args)
+        assembly.artifact().get_bitstream()
+
+
+def applet_v2_simulation_test(*, prepare=None, args=None):
+    def decorator(case):
+        @functools.wraps(case)
+        def wrapper(self):
+            parsed_args = self._parse_args(args)
+            assembly = SimulationAssembly()
+            if prepare is not None:
+                prepare(self, assembly)
+            applet = self.applet_cls(assembly)
+            applet.build(parsed_args)
+            async def launch(ctx):
+                await applet.setup(parsed_args)
+                await case(self, applet, ctx)
+            assembly.run(launch)
+        return wrapper
+    return decorator
+
+
+def async_test(case):
+    @functools.wraps(case)
+    def wrapper(*args, **kwargs):
+        thread_exn = None
+        def run_case():
+            nonlocal thread_exn
+            loop = asyncio.new_event_loop()
+            try:
+                loop.run_until_complete(case(*args, **kwargs))
+            except Exception as exn:
+                thread_exn = exn
+            finally:
+                loop.close()
+
+        thread = threading.Thread(target=run_case)
+        thread.start()
+        thread.join()
+        if thread_exn is not None:
+            raise thread_exn
+    return wrapper
+
+
 class GlasgowAppletTool:
     def __init_subclass__(cls, applet, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -222,6 +397,7 @@ class GlasgowAppletTool:
 # -------------------------------------------------------------------------------------------------
 
 import os
+import sys
 import unittest
 import functools
 import asyncio
@@ -377,7 +553,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
         cls.applet_cls  = applet
 
     def setUp(self):
-        self.applet = self.applet_cls()
+        self.applet = self.applet_cls(None)
 
     def assertBuilds(self, args=[]):
         assembly = HardwareAssembly(revision=self.applet_cls.required_revision)
