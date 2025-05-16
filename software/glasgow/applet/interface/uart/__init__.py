@@ -2,18 +2,19 @@ import os
 import sys
 import logging
 import asyncio
-import argparse
 import typing
 from amaranth import *
-from amaranth.lib import io
+from amaranth.lib import wiring, stream, io
+from amaranth.lib.wiring import In, Out
 
-from ....support.endpoint import *
-from ....support.logging import *
-from ....gateware.uart import *
-from ... import *
+from ....support.arepl import AsyncInteractiveConsole
+from ....support.logging import dump_hex
+from ....support.endpoint import ServerEndpoint
+from ....gateware.uart import UART
+from ... import GlasgowAppletV2
 
 
-class UARTAutoBaud(Elaboratable):
+class UARTAutoBaud(wiring.Component):
     """
     Automatic UART baud rate determination.
 
@@ -38,32 +39,35 @@ class UARTAutoBaud(Elaboratable):
     Such an algorithm can be left running unattended and with no configuration, and only be
     consulted when frame errors are detected.
     """
-    def __init__(self, uart, auto_cyc, seq_size=32):
-        self.uart = uart
-        self.auto_cyc = auto_cyc
+
+    rx:  In(1)
+    cyc: Out(20)
+
+    def __init__(self, seq_size=32):
         self.seq_size = seq_size
+
+        super().__init__()
 
     def elaborate(self, platform):
         m = Module()
 
         # Edge detector
-        rx_i = self.uart.bus.rx_i
         rx_r = Signal()
         edge = Signal()
 
-        m.d.sync += rx_r.eq(rx_i)
-        m.d.comb += edge.eq(rx_i != rx_r)
+        m.d.sync += rx_r.eq(self.rx)
+        m.d.comb += edge.eq(self.rx != rx_r)
 
         # Training state machine
         seq_count = Signal(range(self.seq_size))
-        cyc_count = Signal.like(self.uart.bit_cyc)
-        cyc_latch = Signal.like(self.uart.bit_cyc)
+        cyc_count = Signal.like(self.cyc)
+        cyc_latch = Signal.like(self.cyc)
 
         with m.FSM():
             with m.State("EDGE"):
                 with m.If(seq_count == (self.seq_size - 1)):
                     m.d.sync += [
-                        self.auto_cyc.eq(cyc_latch),
+                        self.cyc.eq(cyc_latch),
                         cyc_latch.eq(~0),
                         seq_count.eq(0),
                     ]
@@ -88,90 +92,167 @@ class UARTAutoBaud(Elaboratable):
         return m
 
 
-class UARTSubtarget(Elaboratable):
-    def __init__(self, ports, out_fifo, in_fifo, parity, max_bit_cyc,
-                 manual_cyc, auto_cyc, use_auto, bit_cyc, rx_errors):
-        self.ports      = ports
-        self.out_fifo   = out_fifo
-        self.in_fifo    = in_fifo
-        self.manual_cyc = manual_cyc
-        self.auto_cyc   = auto_cyc
-        self.use_auto   = use_auto
-        self.bit_cyc    = bit_cyc
-        self.rx_errors  = rx_errors
+class UARTComponent(wiring.Component):
+    i_stream:   In(stream.Signature(8))
+    o_stream:   Out(stream.Signature(8))
 
-        self.uart = UART(ports, bit_cyc=max_bit_cyc, parity=parity)
+    use_auto:   In(1)
+    manual_cyc: In(20)
+    auto_cyc:   Out(20)
+
+    bit_cyc:    Out(20)
+    rx_errors:  Out(16)
+
+    def __init__(self, ports, *, parity: str):
+        self.ports  = ports
+        self.parity = parity
+
+        super().__init__()
 
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.uart      = uart      = self.uart
-        m.submodules.auto_baud = auto_baud = UARTAutoBaud(uart, self.auto_cyc)
+        # TODO: `uart.bit_cyc` is only used to set the width of the register; the actual initial
+        # value is zero (same as `self.bit_cyc`); this is a footgun and should be fixed by rewriting
+        # the UART to use lib.wiring
+        m.submodules.uart = uart = UART(self.ports,
+            bit_cyc=(1 << len(self.manual_cyc)) - 1,
+            parity=self.parity)
+        m.submodules.auto_baud = auto_baud = UARTAutoBaud()
 
-        m.d.comb += uart.bit_cyc.eq(self.bit_cyc)
+        m.d.comb += auto_baud.rx.eq(uart.bus.rx_i)
+        m.d.comb += self.auto_cyc.eq(auto_baud.cyc)
+
         with m.If(self.use_auto):
-            with m.If((uart.rx_ferr | uart.rx_perr) & (self.auto_cyc != ~0)):
-                m.d.sync += self.bit_cyc.eq(self.auto_cyc)
+            with m.If((uart.rx_ferr | uart.rx_perr) & (self.auto_cyc > 2)):
+                m.d.sync += uart.bit_cyc.eq(self.auto_cyc)
         with m.Else():
-            m.d.sync += self.bit_cyc.eq(self.manual_cyc)
+            m.d.sync += uart.bit_cyc.eq(self.manual_cyc)
+        m.d.comb += self.bit_cyc.eq(uart.bit_cyc)
 
-        m.d.comb += [
-            self.in_fifo.w_data.eq(uart.rx_data),
-            self.in_fifo.w_en.eq(uart.rx_rdy),
-            uart.rx_ack.eq(self.in_fifo.w_rdy)
-        ]
         with m.If(uart.rx_ferr | uart.rx_perr):
             m.d.sync += self.rx_errors.eq(self.rx_errors + 1)
 
         m.d.comb += [
-            uart.tx_data.eq(self.out_fifo.r_data),
-            self.out_fifo.r_en.eq(uart.tx_rdy),
-            uart.tx_ack.eq(self.out_fifo.r_rdy),
+            uart.tx_data.eq(self.i_stream.payload),
+            uart.tx_ack.eq(self.i_stream.valid),
+            self.i_stream.ready.eq(uart.tx_rdy),
+            self.o_stream.payload.eq(uart.rx_data),
+            self.o_stream.valid.eq(uart.rx_rdy),
+            uart.rx_ack.eq(self.o_stream.ready),
         ]
 
         return m
 
 
 class UARTInterface:
-    def __init__(self, interface, logger):
-        self._lower  = interface
+    def __init__(self, logger, assembly, *, rx, tx, parity="none"):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+
+        ports = assembly.add_port_group(rx=rx, tx=tx)
+        assembly.use_pulls({rx: "high"})
+        component = assembly.add_submodule(UARTComponent(ports, parity=parity))
+        self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
+        self._use_auto   = assembly.add_rw_register(component.use_auto)
+        self._manual_cyc = assembly.add_rw_register(component.manual_cyc)
+        self._auto_cyc   = assembly.add_ro_register(component.auto_cyc)
+        self._bit_cyc    = assembly.add_ro_register(component.bit_cyc)
+        self._rx_errors  = assembly.add_ro_register(component.rx_errors)
+        self._sys_clk_period = assembly.sys_clk_period
 
     def _log(self, message, *args):
         self._logger.log(self._level, "UART: " + message, *args)
 
+    async def get_baud(self):
+        """Returns the baud rate used by the UART, whether manually or automatically configured."""
+        bit_cyc = await self._bit_cyc
+        if bit_cyc > 0:
+            return 1 / ((await self._bit_cyc) * self._sys_clk_period)
+        else:
+            return 0 # shouldn't happen, but sometimes does
+
+    async def set_baud(self, baud):
+        """Configures baud rate to ``baud`` bits per second, overriding any automatically detected
+        baud rate."""
+        manual_cyc = round(1 / (baud * self._sys_clk_period))
+        if manual_cyc < 2:
+            raise GlasgowAppletError(f"baud rate {baud} is too high")
+        await self._manual_cyc.set(manual_cyc)
+        await self._use_auto.set(0)
+
+    async def use_auto_baud(self):
+        """Configures UART to automatically determine baud rate from incoming bit stream."""
+        await self._use_auto.set(1)
+
     async def read(self, length: int, *, flush=True) -> memoryview:
-        """Receives one or more bytes from the UART. If ``flush`` is true, transmits any buffered
+        """Reads one or more bytes from the UART. If ``flush`` is true, transmits any buffered
         writes before starting to receive."""
-        assert isinstance(length, int) # `None` is a sentinel for `self._lower.read()`
         self._log("rx len=%d", length)
-        data = await self._lower.read(length)
-        self._log("rx data=<%s>", data)
+        if flush:
+            await self.flush()
+        data = await self._pipe.recv(length)
+        self._log("rx data=<%s>", dump_hex(data))
+        return data
+
+    async def read_all(self, *, flush=True) -> memoryview:
+        """Reads all buffered bytes from the UART, but no less than one byte. If ``flush`` is
+        true, transmits any buffered writes before starting to read."""
+        self._log("rx all")
+        if flush:
+            await self.flush()
+        if not self._pipe.readable:
+            data = await self._pipe.recv(1)
+        else:
+            data = await self._pipe.recv(self._pipe.readable)
+        self._log("rx data=<%s>", dump_hex(data))
         return data
 
     async def read_until(self, trailer: bytes | typing.Tuple[bytes, ...]) -> memoryview:
-        """Receives bytes from the UART until ``trailer`` is encountered. The return value includes
+        """Reads bytes from the UART until ``trailer``, which can be a single byte sequence
+        or a choice of multiple byte sequences, is encountered. The return value includes
         the trailer."""
         buffer = bytearray()
         while not buffer.endswith(trailer):
             buffer += await self.read(1)
         return memoryview(buffer)
 
-    async def write(self, data: bytes | bytearray | memoryview):
+    async def write(self, data: bytes | bytearray | memoryview, *, flush=False):
         """Buffers bytes to be transmitted. Until :meth:`flush` is called, bytes are not guaranteed
         to be transmitted (they may or may not be)."""
         data = memoryview(data)
         self._log("tx data=<%s>", dump_hex(data))
-        await self._lower.write(data)
+        await self._pipe.send(data)
+        if flush:
+            await self.flush()
 
     async def flush(self):
         """Transmits all buffered bytes from the UART."""
         self._log("tx flush")
-        await self._lower.flush()
+        await self._pipe.flush()
+
+    async def monitor(self, *, interval=1.0):
+        """Logs receive errors and automatic baud rate changes."""
+        cur_errors = 0
+        cur_baud = await self.get_baud()
+        while True:
+            new_errors = await self._rx_errors
+            delta = new_errors - cur_errors
+            if new_errors < cur_errors:
+                delta += 1 << 16
+            if delta > 0:
+                self._logger.warning("%d receive errors detected", delta)
+            cur_errors = new_errors
+
+            new_baud = await self.get_baud()
+            if new_baud != cur_baud:
+                self._logger.info("switched to %d baud", await self.get_baud())
+            cur_baud = new_baud
+
+            await asyncio.sleep(interval)
 
 
-class UARTApplet(GlasgowApplet):
+class UARTApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "communicate via UART"
     description = """
@@ -190,88 +271,35 @@ class UARTApplet(GlasgowApplet):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        super().add_build_arguments(parser, access)
-
+        access.add_voltage_argument(parser)
         access.add_pins_argument(parser, "rx", default=True)
         access.add_pins_argument(parser, "tx", default=True)
-
         parser.add_argument(
-            "--parity", metavar="PARITY", choices=("none", "zero", "one", "odd", "even"),
-            default="none",
+            "--parity", metavar="PARITY",
+            choices=("none", "zero", "one", "odd", "even"), default="none",
             help="send and receive parity bit as PARITY (default: %(default)s)")
+
+    def build(self, args):
+        self.assembly.use_voltage(args.voltage)
+        self.uart_iface = UARTInterface(self.logger, self.assembly,
+            rx=args.rx, tx=args.tx, parity=args.parity)
+
+    @classmethod
+    def add_setup_arguments(cls, parser):
         parser.add_argument(
             "-b", "--baud", metavar="RATE", type=int, default=115200,
             help="set baud rate to RATE bits per second (default: %(default)s)")
         parser.add_argument(
-            "--tolerance", metavar="PPM", type=int, default=50000,
-            help="verify that actual baud rate is within PPM parts per million of specified"
-                 " (default: %(default)s)")
-
-    def build(self, target, args):
-        # We support any baud rates, even absurd ones like 60 baud, if you want, but the applet
-        # will have to be rebuilt for anything slower than 9600. This is why the baud rate is
-        # a build argument, even though the applet will never be rebuilt as long as you stay
-        # above 9600.
-        max_bit_cyc = self.derive_clock(
-            input_hz=target.sys_clk_freq, output_hz=min(9600, args.baud))
-
-        self.__sys_clk_freq = target.sys_clk_freq
-
-        manual_cyc, self.__addr_manual_cyc = target.registers.add_rw(32)
-        auto_cyc,   self.__addr_auto_cyc   = target.registers.add_ro(32, init=~0)
-        use_auto,   self.__addr_use_auto   = target.registers.add_rw(1)
-
-        bit_cyc,    self.__addr_bit_cyc    = target.registers.add_ro(32)
-        rx_errors,  self.__addr_rx_errors  = target.registers.add_ro(16)
-
-        self.__has_parity = (args.parity != "none")
-
-        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        iface.add_subtarget(UARTSubtarget(
-            ports = iface.get_port_group(
-                rx = args.rx,
-                tx = args.tx
-            ),
-            out_fifo=iface.get_out_fifo(),
-            in_fifo=iface.get_in_fifo(),
-            parity=args.parity,
-            max_bit_cyc=max_bit_cyc,
-            manual_cyc=manual_cyc,
-            auto_cyc=auto_cyc,
-            use_auto=use_auto,
-            bit_cyc=bit_cyc,
-            rx_errors=rx_errors,
-        ))
-
-    @classmethod
-    def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
-
-        parser.add_argument(
             "-a", "--auto-baud", default=False, action="store_true",
             help="automatically estimate baud rate in response to RX errors")
 
-    async def run(self, device, args):
-        # Load the manually set baud rate.
-        manual_cyc = self.derive_clock(
-            input_hz=self.__sys_clk_freq, output_hz=args.baud,
-            min_cyc=2, max_deviation_ppm=args.tolerance)
-        await device.write_register(self.__addr_manual_cyc, manual_cyc, width=4)
-        await device.write_register(self.__addr_use_auto, 0)
-
-        # Pull RX idle to reduce the amount of noise received on undriven lines.
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
-            pull_high={args.rx})
-        iface = UARTInterface(iface, self.logger)
-
-        # Enable auto-baud, if requested.
+    async def setup(self, args):
+        await self.uart_iface.set_baud(args.baud)
         if args.auto_baud:
-            await device.write_register(self.__addr_use_auto, 1)
-
-        return iface
+            await self.uart_iface.use_auto_baud()
 
     @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
         p_tty = p_operation.add_parser(
@@ -287,73 +315,41 @@ class UARTApplet(GlasgowApplet):
             "socket", help="connect UART to a socket")
         ServerEndpoint.add_argument(p_socket, "endpoint")
 
-    async def _monitor_errors(self, device):
-        cur_bit_cyc = await device.read_register(self.__addr_bit_cyc, width=4)
-        cur_errors  = 0
-        while True:
-            new_errors = await device.read_register(self.__addr_rx_errors, width=2)
-            delta = new_errors - cur_errors
-            if new_errors < cur_errors:
-                delta += 1 << 16
-            cur_errors = new_errors
-            if delta > 0:
-                if self.__has_parity:
-                    self.logger.warning("%d frame or parity errors detected", delta)
-                else:
-                    self.logger.warning("%d frame errors detected", delta)
-
-            new_bit_cyc = await device.read_register(self.__addr_bit_cyc, width=4)
-            if new_bit_cyc != cur_bit_cyc:
-                self.logger.info("switched to %d baud",
-                                 self.__sys_clk_freq // (new_bit_cyc + 1))
-            cur_bit_cyc = new_bit_cyc
-
-            await asyncio.sleep(1)
-
-    async def _forward(self, in_fileno, out_fileno, uart, quit_sequence=False, stream=False):
-        quit = 0
-        dev_fut = uart_fut = None
-        while True:
-            if dev_fut is None:
-                dev_fut = asyncio.get_event_loop().run_in_executor(None,
+    async def _forward_fd(self, args, in_fileno, out_fileno, quit_sequence=False):
+        async def forward_out():
+            quit = 0
+            while True:
+                data = await asyncio.get_event_loop().run_in_executor(None,
                     lambda: os.read(in_fileno, 1024))
-            if uart_fut is None:
-                uart_fut = asyncio.ensure_future(uart._lower.read())
-
-            await asyncio.wait([uart_fut, dev_fut], return_when=asyncio.FIRST_COMPLETED)
-
-            if dev_fut.done():
-                data = await dev_fut
-                dev_fut = None
-
-                if not data and not stream:
-                    break
+                if len(data) == 0 and not args.stream:
+                    raise EOFError
 
                 if os.isatty(in_fileno):
                     if quit == 0 and data == b"\034":
                         quit = 1
                         continue
                     elif quit == 1 and data == b"q":
-                        break
+                        raise EOFError
                     else:
                         quit = 0
 
-                self.logger.trace("in->UART: <%s>", data.hex())
-                await uart.write(data)
-                await uart.flush()
+                await self.uart_iface.write(data, flush=True)
 
-            if uart_fut.done():
-                data = await uart_fut
-                uart_fut = None
+        async def forward_in():
+            while True:
+                data = await self.uart_iface.read_all(flush=False)
+                await asyncio.get_event_loop().run_in_executor(None,
+                    lambda: os.write(out_fileno, data))
 
-                self.logger.trace("UART->out: <%s>", data.hex())
-                os.write(out_fileno, data)
+        try:
+            async with asyncio.TaskGroup() as group:
+                group.create_task(self.uart_iface.monitor())
+                group.create_task(forward_out())
+                group.create_task(forward_in())
+        except* EOFError:
+            pass
 
-        for fut in [uart_fut, dev_fut]:
-            if fut is not None and not fut.done():
-                fut.cancel()
-
-    async def _interact_tty(self, uart, stream):
+    async def _run_tty(self, args):
         in_fileno  = sys.stdin.fileno()
         out_fileno = sys.stdout.fileno()
 
@@ -374,48 +370,52 @@ class UARTApplet(GlasgowApplet):
 
             self.logger.info("running on a TTY; enter `Ctrl+\\ q` to quit")
 
-        await self._forward(in_fileno, out_fileno, uart,
-                            quit_sequence=True, stream=stream)
+        await self._forward_fd(args, in_fileno, out_fileno, quit_sequence=True)
 
-    async def _interact_pty(self, uart):
+    async def _run_pty(self, args):
         import pty
 
         master, slave = pty.openpty()
         print(os.ttyname(slave))
 
-        await self._forward(master, master, uart)
+        await self._forward_fd(args, in_fileno=master, out_fileno=master)
 
-    async def _interact_socket(self, uart, endpoint):
-        endpoint = await ServerEndpoint("socket", self.logger, endpoint)
+    async def _run_socket(self, args):
+        endpoint = await ServerEndpoint("socket", self.logger, args.endpoint)
+
         async def forward_out():
             while True:
                 try:
                     data = await endpoint.recv()
                 except EOFError:
                     continue
-                await uart.write(data)
-                await uart.flush()
+                await self.uart_iface.write(data, flush=True)
+
         async def forward_in():
             while True:
-                data = await uart._lower.read()
+                data = await self.uart_iface.read_all(flush=False)
                 await endpoint.send(data)
+
         async with asyncio.TaskGroup() as group:
+            group.create_task(self.uart_iface.monitor())
             group.create_task(forward_out())
             group.create_task(forward_in())
 
-    async def interact(self, device, args, uart):
-        monitor_task = asyncio.create_task(self._monitor_errors(device))
-        try:
-            if args.operation is None:
-                await self._interact_tty(uart, stream=False)
-            if args.operation == "tty":
-                await self._interact_tty(uart, args.stream)
-            if args.operation == "pty":
-                await self._interact_pty(uart)
-            if args.operation == "socket":
-                await self._interact_socket(uart, args.endpoint)
-        finally:
-            monitor_task.cancel()
+    async def run(self, args):
+        match args.operation:
+            case "tty" | None:
+                await self._run_tty(args)
+            case "pty":
+                await self._run_pty(args)
+            case "socket":
+                await self._run_socket(args)
+
+    async def repl(self, args):
+        self.logger.info("dropping to REPL; use 'help(iface)' to see available APIs")
+        await AsyncInteractiveConsole(
+            locals={"iface": self.uart_iface},
+            run_callback=self.assembly.flush
+        ).interact()
 
     @classmethod
     def tests(cls):
