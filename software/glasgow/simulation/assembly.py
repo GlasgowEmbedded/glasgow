@@ -162,6 +162,17 @@ class SimulationAssembly(AbstractAssembly):
                 vio = GlasgowVio(vio)
             pass # TODO: log?
 
+    def use_pulls(self, pulls: Mapping[GlasgowPin | tuple[GlasgowPin], PullState | str]):
+        for pin, state in pulls.items():
+            if isinstance(pins, GlasgowPin):
+                pins = [pins]
+            if isinstance(state, str):
+                state = PullState(state)
+            for pin in pins:
+                if pin.invert:
+                    state = ~state
+                pass # TODO: use for default input state?
+
     @property
     def _context(self):
         if self.__context is None:

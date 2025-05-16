@@ -13,11 +13,32 @@ from .gateware.ports import PortGroup
 
 
 __all__ = [
-    "GlasgowPort", "GlasgowVio", "GlasgowPin",
+    "PullState", "GlasgowPort", "GlasgowVio", "GlasgowPin",
     "AbstractRORegister", "AbstractRWRegister",
     "AbstractInPipe", "AbstractOutPipe", "AbstractInOutPipe",
     "AbstractAssembly"
 ]
+
+
+class PullState(enum.Enum):
+    Float = "float"
+    High  = "high"
+    Low   = "low"
+
+    def enabled(self):
+        return self != self.Float
+
+    def __invert__(self):
+        match self:
+            case self.Float: return self
+            case self.High:  return self.Low
+            case self.Low:   return self.High
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}.{self.name}"
+
+    def __str__(self):
+        return self.value
 
 
 class GlasgowPort(enum.Enum):
@@ -81,7 +102,7 @@ class GlasgowPin:
         object.__setattr__(self, "invert", bool(invert))
 
     @classmethod
-    def parse(cls, value) -> list['GlasgowPin']:
+    def parse(cls, value) -> tuple['GlasgowPin']:
         result = []
         for clause in value.split(","):
             if clause == "-":
@@ -100,7 +121,7 @@ class GlasgowPin:
                         result.append(cls(port=port, number=number, invert=invert))
             else:
                 raise ValueError(f"{clause!r} is not a valid pin")
-        return result
+        return tuple(result)
 
     @property
     def _legacy_number(self):
@@ -178,13 +199,13 @@ class AbstractAssembly(metaclass=ABCMeta):
     def add_platform_pin(self, pin_name: str, port_name: str) -> io.PortLike:
         pass
 
-    def add_port(self, pins: GlasgowPin | list[GlasgowPin] | str | None, name: str) -> io.PortLike:
+    def add_port(self, pins: GlasgowPin | tuple[GlasgowPin] | str | None, name: str) -> io.PortLike:
         match pins:
             case None:
                 return None
             case str():
                 return self.add_port(GlasgowPin.parse(pins), name)
-            case list():
+            case tuple():
                 port = None
                 for idx, pin in enumerate(pins):
                     pin_port = self.add_port(pin, f"{name}[{idx}]")
@@ -228,4 +249,8 @@ class AbstractAssembly(metaclass=ABCMeta):
 
     @abstractmethod
     def use_voltage(self, ports: Mapping[GlasgowPort, GlasgowVio | float]):
+        pass
+
+    @abstractmethod
+    def use_pulls(self, pulls: Mapping[GlasgowPin | tuple[GlasgowPin], PullState | str]):
         pass
