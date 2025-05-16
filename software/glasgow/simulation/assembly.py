@@ -1,4 +1,5 @@
 from typing import Any, Optional, Generator
+from collections.abc import Mapping
 from contextlib import contextmanager
 import logging
 
@@ -153,6 +154,13 @@ class SimulationAssembly(AbstractAssembly):
 
     def add_testbench(self, constructor, *, background=False):
         self._benches.append((constructor, background))
+
+    def use_voltage(self, ports: Mapping[GlasgowPort, GlasgowVio | float]):
+        for port, vio in ports.items():
+            port = GlasgowPort(port)
+            if isinstance(vio, float):
+                vio = GlasgowVio(vio)
+            pass # TODO: log?
 
     @property
     def _context(self):

@@ -658,7 +658,7 @@ async def main():
                 except asyncio.CancelledError:
                     return 130 # 128 + SIGINT
                 finally:
-                    await assembly.flush()
+                    await assembly.flush_pipes()
                     if args.show_statistics:
                         assembly.statistics()
 

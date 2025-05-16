@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from typing import Any, Optional, Generator
+from collections.abc import Mapping
 from dataclasses import dataclass
 import re
 import enum
@@ -12,7 +13,7 @@ from .gateware.ports import PortGroup
 
 
 __all__ = [
-    "GlasgowPort", "GlasgowPin",
+    "GlasgowPort", "GlasgowVio", "GlasgowPin",
     "AbstractRORegister", "AbstractRWRegister",
     "AbstractInPipe", "AbstractOutPipe", "AbstractInOutPipe",
     "AbstractAssembly"
@@ -28,6 +29,44 @@ class GlasgowPort(enum.Enum):
 
     def __str__(self):
         return self.value
+
+
+@dataclass(frozen=True)
+class GlasgowVio:
+    value: Optional[float]       = None
+    sense: Optional[GlasgowPort] = None
+
+    def __init__(self, value:Optional[float]=None, *, sense:Optional[GlasgowPort]=None):
+        if value is None and sense is None or value is not None and sense is not None:
+            raise ValueError("exactly one of voltage value or a port to be sensed may be present")
+        object.__setattr__(self, "value", float(value) if value is not None else None)
+        object.__setattr__(self, "sense", GlasgowPort(sense) if sense is not None else None)
+
+    @classmethod
+    def parse(cls, value, *, all_ports="AB") -> dict[GlasgowPort, 'GlasgowVio']:
+        result = {}
+        for clause in value.split(","):
+            if m := re.match(r"^([0-9]+(\.[0-9]+)?)$", clause):
+                volts = float(m.group(1))
+                for port in all_ports:
+                    result[GlasgowPort(port)] = GlasgowVio(value=volts)
+            elif m := re.match(r"^([A-Z]+)=([0-9]+(\.[0-9]+)?)$", clause):
+                ports, volts = m.group(1), float(m.group(2))
+                for port in ports:
+                    result[GlasgowPort(port)] = GlasgowVio(value=volts)
+            elif m := re.match(r"^([A-Z]+)=S([A-Z])$", clause):
+                ports, sense = m.group(1), m.group(2)
+                for port in ports:
+                    result[GlasgowPort(port)] = GlasgowVio(sense=sense)
+            else:
+                raise ValueError(f"{clause!r} is not a valid voltage argument")
+        return result
+
+    def __str__(self):
+        if self.sense is not None:
+            return f"S{self.sense}"
+        if self.value is not None:
+            return f"{self.value:.2f}"
 
 
 @dataclass(frozen=True)
@@ -185,4 +224,8 @@ class AbstractAssembly(metaclass=ABCMeta):
     def add_inout_pipe(self, in_stream, out_stream, *, in_flush=C(1),
                        in_fifo_depth=None, in_buffer_size=None,
                        out_fifo_depth=None, out_buffer_size=None) -> AbstractInOutPipe:
+        pass
+
+    @abstractmethod
+    def use_voltage(self, ports: Mapping[GlasgowPort, GlasgowVio | float]):
         pass
