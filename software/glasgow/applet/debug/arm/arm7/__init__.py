@@ -7,8 +7,8 @@
 # Accession: G00095
 
 # Things you wish ARM told you about this core (more explicitly or at all):
-#  * The bit order in the scan chain 1 is backwards. This is technically documented (read p. 5-34)
-#    _very carefully_, but not in a way that anybody would notice.
+#  * The bit order in the scan chain 1 is backwards. This is technically documented (read p. 5-34
+#    _very carefully_), but not in a way that anybody would notice.
 #  * The bit order in the data field of the scan chain 2 is documented backwards, but is not.
 #  * If you interrupt the core with DBGRQ, you have to drop DBGRQ before it'll do anything.
 #  * DBGACK can be set without DBGRQ. It is because DBGACK does a double duty as the signal that
@@ -72,7 +72,7 @@ from .....database.jedec import *
 from .....gateware.stream import StreamBuffer
 from .....gateware.jtag import probe as jtag_probe
 from .....protocol.gdb_remote import *
-from .... import *
+from .... import GlasgowAppletError, GlasgowAppletV2
 
 
 class DebugARM7Error(GlasgowAppletError):
@@ -96,8 +96,9 @@ class DebugARM7Opcode(enum.Enum, shape=3):
 class DebugARM7Sequencer(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
-    divisor: In(8)
-    flush: Out(1)
+    o_flush:  Out(1)
+
+    divisor:  In(8)
 
     def __init__(self, ports):
         self._ports = ports
@@ -106,6 +107,10 @@ class DebugARM7Sequencer(wiring.Component):
 
     def elaborate(self, platform):
         m = Module()
+
+        if self._ports.trst:
+            m.submodules.trst_buffer = trst_buffer = io.Buffer("o", self._ports.trst)
+            m.d.comb += trst_buffer.o.eq(1)
 
         m.submodules.probe = probe = jtag_probe.Sequencer(self._ports, width=38)
         m.d.comb += probe.divisor.eq(self.divisor)
@@ -155,7 +160,7 @@ class DebugARM7Sequencer(wiring.Component):
                         with m.Default():
                             m.next = "Run command"
                 with m.Else():
-                    m.d.comb += self.flush.eq(1)
+                    m.d.comb += self.o_flush.eq(1)
 
             with m.State("Fetch data"):
                 i_offset = Signal(2)
@@ -290,29 +295,6 @@ class DebugARM7Sequencer(wiring.Component):
             with m.State("Run test"):
                 with probe_command(jtag_probe.Command.RunTest, bits()):
                     m.next = "Fetch command"
-
-        return m
-
-
-class DebugARM7Subtarget(Elaboratable):
-    def __init__(self, ports, in_fifo, out_fifo, divisor):
-        self._ports    = ports
-        self._in_fifo  = in_fifo
-        self._out_fifo = out_fifo
-        self._divisor  = divisor
-
-    def elaborate(self, platform):
-        m = Module()
-
-        if self._ports.trst:
-            m.submodules.trst_buffer = trst_buffer = io.Buffer("o", self._ports.trst)
-            m.d.comb += trst_buffer.o.eq(1)
-
-        m.submodules.sequencer = sequencer = DebugARM7Sequencer(self._ports)
-        wiring.connect(m, self._out_fifo.stream, sequencer.i_stream)
-        wiring.connect(m, self._in_fifo.stream,  sequencer.o_stream)
-        m.d.comb += self._in_fifo.flush.eq(sequencer.flush)
-        m.d.comb += sequencer.divisor.eq(self._divisor)
 
         return m
 
@@ -769,10 +751,16 @@ class DebugARM7Interface(GDBRemote):
             return self in (self.SOFT_THUMB, self.HARD_THUMB)
 
 
-    def __init__(self, interface, logger, endian):
-        self._lower  = interface
+    def __init__(self, logger, assembly, *, tck, tms, tdo, tdi, trst=None, endian):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+
+        ports = assembly.add_port_group(tck=tck, tms=tms, tdo=tdo, tdi=tdi, trst=trst)
+        component = assembly.add_submodule(DebugARM7Sequencer(ports))
+        self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream,
+            in_flush=component.o_flush)
+        self._divisor = assembly.add_rw_register(component.divisor)
+        self._sys_clk_period = assembly.sys_clk_period
 
         assert endian in ("big", "little")
         self._endian   = endian
@@ -782,13 +770,22 @@ class DebugARM7Interface(GDBRemote):
     def _log(self, message, *args):
         self._logger.log(self._level, "ARM7: " + message, *args)
 
+    async def get_tck_freq(self):
+        divisor = await self._divisor
+        return int(1 / (2 * (divisor + 1) * self._sys_clk_period))
+
+    async def set_tck_freq(self, frequency):
+        await self._divisor.set(
+            max(int(1 / (2 * self._sys_clk_period * frequency) - 1), 0))
+
     async def _exec(self, buffer):
         self._log("  exec")
-        await self._lower.write(buffer)
+        await self._pipe.send(buffer)
 
     async def _read(self, count):
+        await self._pipe.flush()
         words = array.array("I")
-        words.frombytes(await self._lower.read(4 * count))
+        words.frombytes(await self._pipe.recv(4 * count))
         if sys.byteorder == "big":
             words.byteswap()
         self._log("  read [%s]", dump_mapseq(", ", lambda value: f"{value:08x}", words))
@@ -802,7 +799,7 @@ class DebugARM7Interface(GDBRemote):
         if transaction._to_read:
             transaction._results = await self._read(transaction._to_read)
         else:
-            await self._lower.flush(wait=False)
+            await self._pipe.flush(_wait=False)
 
     async def identify(self):
         async with self.queue() as txn:
@@ -819,7 +816,7 @@ class DebugARM7Interface(GDBRemote):
     async def _debug_wait(self):
         self._log("debug wait")
         # first, make sure the command buffer is empty.
-        await self._lower.flush()
+        await self._pipe.flush()
         # submit a cancellable wait; this is not a cancellation point due to the flush above.
         await self._exec([(DebugARM7Opcode.POLL_ACK.value << 5) | 1])
         # this command will always return a response; start a task to read it.
@@ -831,8 +828,8 @@ class DebugARM7Interface(GDBRemote):
         except asyncio.CancelledError:
             # if *this* task was cancelled, send the cancel opcode to interrupt the gateware.
             self._log("  cancel")
-            await self._lower.write([DebugARM7Opcode.CANCEL.value << 5])
-            await self._lower.flush()
+            await self._pipe.send([DebugARM7Opcode.CANCEL.value << 5])
+            await self._pipe.flush()
             # either way, wait for the result anyway. note that this function isn't safe to cancel
             # twice, which doesn't happen with GDBRemote but may happen otherwise. if the following
             # wait doesn't complete, the command/response stream could desynchronize.
@@ -1305,7 +1302,7 @@ class DebugARM7Interface(GDBRemote):
             case _: raise NotImplementedError(f"unsupported breakpoint kind {kind}")
 
 
-class DebugARM7Applet(GlasgowApplet):
+class DebugARM7Applet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "debug ARM7TDMI processors via JTAG"
     description = """
@@ -1325,55 +1322,43 @@ class DebugARM7Applet(GlasgowApplet):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        super().add_build_arguments(parser, access)
-
+        access.add_voltage_argument(parser)
         access.add_pins_argument(parser, "tck", default=True)
         access.add_pins_argument(parser, "tms", default=True)
         access.add_pins_argument(parser, "tdo", default=True)
         access.add_pins_argument(parser, "tdi", default=True)
         access.add_pins_argument(parser, "trst")
-
-        parser.add_argument(
-            "-f", "--frequency", metavar="FREQ", type=int, default=1000,
-            help="set TCK frequency to FREQ kHz (default: %(default)s)")
-
-    def build(self, target, args):
-        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        iface.add_subtarget(DebugARM7Subtarget(
-            ports=iface.get_port_group(
-                tck =args.tck,
-                tms =args.tms,
-                tdo =args.tdo,
-                tdi =args.tdi,
-                trst=args.trst,
-            ),
-            in_fifo=iface.get_in_fifo(auto_flush=False),
-            out_fifo=iface.get_out_fifo(),
-            divisor=max(int(target.sys_clk_freq // (2 * args.frequency * 1000) - 1), 0),
-        ))
-
-    @classmethod
-    def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
-
         parser.add_argument(
             "-e", "--endian", metavar="ENDIAN", choices=("big", "little"), default="little",
             help="target endianness (default: %(default)s)")
 
-    async def run(self, device, args):
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        arm_iface = DebugARM7Interface(iface, self.logger, args.endian)
+    def build(self, args):
+        self.assembly.use_voltage(args.voltage)
+        self.arm_iface = DebugARM7Interface(self.logger, self.assembly,
+            tck =args.tck,
+            tms =args.tms,
+            tdo =args.tdo,
+            tdi =args.tdi,
+            trst=args.trst,
+            endian=args.endian)
 
-        idcode = await arm_iface.identify()
+    @classmethod
+    def add_setup_arguments(cls, parser):
+        parser.add_argument(
+            "-f", "--frequency", metavar="FREQ", type=int, default=1000,
+            help="set TCK frequency to FREQ kHz (default: %(default)s)")
+
+    async def setup(self, args):
+        await self.arm_iface.set_tck_freq(args.frequency * 1000)
+
+        idcode = await self.arm_iface.identify()
         self.logger.info("detected TAP with IDCODE=%08x", idcode.to_int())
         mfg_name = jedec_mfg_name_from_bank_num(idcode.mfg_id >> 7, idcode.mfg_id & 0x7f)
         self.logger.info("manufacturer=%#05x (%s) part=%#06x version=%#03x",
             idcode.mfg_id, mfg_name or "unknown", idcode.part_id, idcode.version)
 
-        return arm_iface
-
     @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         def address(arg):
             return int(arg, 0)
         def length(arg):
@@ -1400,17 +1385,17 @@ class DebugARM7Applet(GlasgowApplet):
             "gdb", help="start a GDB remote protocol server")
         ServerEndpoint.add_argument(p_gdb, "gdb_endpoint", default="tcp::1234")
 
-    async def interact(self, device, args, arm_iface: DebugARM7Interface):
+    async def run(self, args):
         match args.operation:
             case "dump-state":
-                await arm_iface.target_stop()
-                print(arm_iface.target_context)
-                await arm_iface.target_detach()
+                await self.arm_iface.target_stop()
+                print(self.arm_iface.target_context)
+                await self.arm_iface.target_detach()
 
             case "dump-memory":
-                await arm_iface.target_stop()
-                data = await arm_iface.target_read_memory(args.address, args.length)
-                await arm_iface.target_detach()
+                await self.arm_iface.target_stop()
+                data = await self.arm_iface.target_read_memory(args.address, args.length)
+                await self.arm_iface.target_detach()
                 if args.file:
                     args.file.write(data)
                 else:
@@ -1419,14 +1404,15 @@ class DebugARM7Applet(GlasgowApplet):
             case "gdb":
                 endpoint = await ServerEndpoint("GDB socket", self.logger, args.gdb_endpoint)
                 while True:
-                    await arm_iface.gdb_run(endpoint)
-                    if not arm_iface.target_running():
-                        await arm_iface.target_detach()
+                    await self.arm_iface.gdb_run(endpoint)
+                    if not self.arm_iface.target_running():
+                        await self.arm_iface.target_detach()
 
-    async def repl(self, device, args, arm_iface):
-        await super().repl(device, args, arm_iface)
-        if not arm_iface.target_running():
-            await arm_iface.target_detach()
+    async def repl(self, args):
+        await super().repl(args)
+
+        if not self.arm_iface.target_running():
+            await self.arm_iface.target_detach()
 
     @classmethod
     def tests(cls):
