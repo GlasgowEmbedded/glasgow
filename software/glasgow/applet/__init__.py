@@ -11,7 +11,7 @@ from amaranth import *
 from ..support.arepl import *
 from ..support.plugin import *
 from ..gateware.clockgen import *
-from ..abstract import GlasgowPin
+from ..abstract import GlasgowVio, GlasgowPin
 from ..legacy import DeprecatedDemultiplexer, DeprecatedMultiplexer
 
 
@@ -95,36 +95,6 @@ class GlasgowApplet(metaclass=ABCMeta):
     @classmethod
     def tests(cls):
         return None
-
-
-@dataclass(frozen=True)
-class VoltArgument:
-    ports: str          # e.g. "A" or "AB"
-    value: float = None # e.g. 5.0 or 3.3 for that many volts
-    sense: str   = None # e.g. "A" for measuring voltage on S input of port A
-
-    @classmethod
-    def parse(cls, value) -> list['VoltArgument']:
-        result = []
-        for clause in value.split(","):
-            if m := re.match(r"^([0-9]+(\.[0-9]+)?)$", clause):
-                volts = float(m.group(1))
-                result.append(VoltArgument(ports="AB", value=volts))
-            elif m := re.match(r"^([A-Z]+)=([0-9]+(\.[0-9]+)?)$", clause):
-                ports, volts = m.group(1), float(m.group(2))
-                result.append(VoltArgument(ports=ports, value=volts))
-            elif m := re.match(r"^([A-Z]+)=S([A-Z])$", clause):
-                ports, sense = m.group(1), m.group(2)
-                result.append(VoltArgument(ports=ports, sense=sense))
-            else:
-                raise ValueError(f"{clause!r} is not a valid voltage argument")
-        return result
-
-    def __str__(self):
-        if self.sense is not None:
-            return f"{self.ports}=S{self.sense}"
-        else:
-            return f"{self.ports}={self.value:.2f}"
 
 
 class GlasgowAppletArguments:
@@ -220,9 +190,10 @@ class GlasgowAppletArguments:
             type=pin_arg, default=default, required=required, help=help)
 
     def add_voltage_argument(self, parser):
+        def voltage_arg(arg):
+            return GlasgowVio.parse(arg)
         parser.add_argument(
-            "-V", "--voltage", metavar="SPEC",
-            type=VoltArgument.parse, default=[], action="extend",
+            "-V", "--voltage", metavar="SPEC", type=voltage_arg, default={},
             help="configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')")
 
     def add_build_arguments(self, parser):

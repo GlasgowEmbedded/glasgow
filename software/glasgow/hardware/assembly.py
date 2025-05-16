@@ -1,4 +1,5 @@
 from typing import Any, Optional, Generator
+from collections.abc import Mapping
 from contextlib import contextmanager, asynccontextmanager
 import asyncio
 import logging
@@ -378,6 +379,7 @@ class HardwareAssembly(AbstractAssembly):
         self._in_streams    = [] # (in_stream, in_flush, fifo_depth)
         self._out_streams   = [] # (out_stream, fifo_depth)
         self._pipes         = [] # in_pipe|out_pipe|inout_pipe
+        self._voltages      = {} # {port: vio}
 
         self._scope         = None
         self._scope_logger  = None
@@ -457,11 +459,13 @@ class HardwareAssembly(AbstractAssembly):
         self._pipes.append(inout_pipe)
         return inout_pipe
 
-    @property
-    def device(self):
-        if not self._running:
-            raise Exception("runtime features may be used only while a bitstream is loaded")
-        return self._device
+    def use_voltage(self, ports: Mapping[GlasgowPort, GlasgowVio | float]):
+        for port, vio in ports.items():
+            port = GlasgowPort(port)
+            if isinstance(vio, float):
+                vio = GlasgowVio(vio)
+            (self._scope_logger or logger).debug("setting port %s voltage to %s V", port, vio)
+            self._voltages[port] = vio
 
     def artifact(self):
         if self._artifact is not None:
@@ -545,6 +549,22 @@ class HardwareAssembly(AbstractAssembly):
         return self._artifact
 
     @property
+    def device(self):
+        if not self._running:
+            raise Exception("runtime features may be used only while a bitstream is loaded")
+        return self._device
+
+    async def configure_ports(self):
+        for port, vio in self._voltages.items():
+            if vio.sense is not None:
+                sensed = await self.device.mirror_voltage(port, vio.sense)
+                logger.info(
+                    "port %s voltage set to %.1f V (sensed on port %s)", port, sensed, vio.sense)
+            if vio.value is not None:
+                await self.device.set_voltage(port, vio.value)
+                logger.info("port %s voltage set to %.1f V", port, vio.value)
+
+    @property
     def _iface_count(self):
         # TODO: this isn't really accurate, but requires rework of the firmware to fix
         return max(len(self._in_streams), len(self._out_streams))
@@ -608,10 +628,11 @@ class HardwareAssembly(AbstractAssembly):
         else:
             await self._device.download_target(self.artifact(), reload=reload_bitstream)
 
-        self._running = True # can access `self.device` since this point
-        await self.reset()
+        self._running = True # can access `self.device` after this point
+        await self.configure_ports()
+        await self.reset_pipes()
 
-    async def reset(self):
+    async def reset_pipes(self):
         logger.trace("asserting reset")
         await self.device.write_register(self._GLOBAL_RESET_ADDR, 1)
 
@@ -626,7 +647,7 @@ class HardwareAssembly(AbstractAssembly):
         logger.trace("deasserting reset")
         await self.device.write_register(self._GLOBAL_RESET_ADDR, 0)
 
-    async def flush(self):
+    async def flush_pipes(self):
         for pipe in self._pipes:
             if isinstance(pipe, HardwareOutPipe):
                 await pipe.flush()
@@ -642,7 +663,7 @@ class HardwareAssembly(AbstractAssembly):
 
     async def __aexit__(self, exc_type, exc_value, traceback):
         if exc_type is None:
-            await self.flush()
+            await self.flush_pipes()
         await self.stop()
 
     def statistics(self):
