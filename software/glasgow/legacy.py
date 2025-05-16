@@ -116,26 +116,10 @@ class DeprecatedMultiplexerInterface:
         return self.assembly.add_submodule(subtarget)
 
     def get_port(self, pins, *, name=None):
-        def get_port(pin_arg, *, name):
-            port = self.assembly.add_port(f"{pin_arg.port}{pin_arg.pin}")
-            return ~port if pin_arg.invert else port
-
-        match pins:
-            case None:
-                return None
-            case list():
-                port = None
-                for index, pin in enumerate(pins):
-                    if port is None:
-                        port  = get_port(pin, name=f"{name}[{index}]")
-                    else:
-                        port += get_port(pin, name=f"{name}[{index}]")
-                return port
-            case pin:
-                return get_port(pin, name=name)
+        return self.assembly.add_port(pins, name=name)
 
     def get_port_group(self, **kwargs):
-        return PortGroup(**{name: self.get_port(pins, name=name) for name, pins in kwargs.items()})
+        return self.assembly.add_port_group(**kwargs)
 
     def get_in_fifo(self, depth=512, *, auto_flush=True):
         assert self._in_pipe is None

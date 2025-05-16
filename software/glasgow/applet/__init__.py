@@ -11,6 +11,7 @@ from amaranth import *
 from ..support.arepl import *
 from ..support.plugin import *
 from ..gateware.clockgen import *
+from ..abstract import GlasgowPin
 from ..legacy import DeprecatedDemultiplexer, DeprecatedMultiplexer
 
 
@@ -103,7 +104,7 @@ class VoltArgument:
     sense: str   = None # e.g. "A" for measuring voltage on S input of port A
 
     @classmethod
-    def from_str(cls, value) -> list['VoltArgument']:
+    def parse(cls, value) -> list['VoltArgument']:
         result = []
         for clause in value.split(","):
             if m := re.match(r"^([0-9]+(\.[0-9]+)?)$", value):
@@ -126,45 +127,6 @@ class VoltArgument:
             return f"{self.ports}={self.value:.2f}"
 
 
-@dataclass(frozen=True)
-class PinArgument:
-    port:   str
-    pin:    int
-    invert: bool = False
-
-    @classmethod
-    def from_str(cls, value) -> list['PinArgument']:
-        result = []
-        for clause in value.split(","):
-            if clause == "-":
-                pass
-            elif m := re.match(r"^([A-Z])([0-9]+)(#)?$", clause):
-                port, pin, invert = m.group(1), int(m.group(2)), bool(m.group(3))
-                result.append(cls(port=port, pin=pin, invert=invert))
-            elif m := re.match(r"^([A-Z])([0-9]+):([0-9]+)(#)?$", clause):
-                port, pin_first, pin_last, invert = \
-                    m.group(1), int(m.group(2)), int(m.group(3)), bool(m.group(4))
-                if pin_last >= pin_first:
-                    for pin in range(pin_first, pin_last + 1, +1):
-                        result.append(cls(port=port, pin=pin, invert=invert))
-                else:
-                    for pin in range(pin_first, pin_last - 1, -1):
-                        result.append(cls(port=port, pin=pin, invert=invert))
-            else:
-                raise ValueError(f"{clause!r} is not a valid pin argument")
-        return result
-
-    @property
-    def _legacy_number(self):
-        match self.port:
-            case "A": return 0 + self.pin
-            case "B": return 8 + self.pin
-            case _: assert False
-
-    def __str__(self):
-        return f"{self.port}{self.pin}{'#' if self.invert else ''}"
-
-
 class GlasgowAppletArguments:
     def __init__(self, applet_name):
         self._applet_name  = applet_name
@@ -178,7 +140,7 @@ class GlasgowAppletArguments:
             if len(self._free_pins) > 0:
                 result = self._free_pins[0]
                 del self._free_pins[0]
-                return PinArgument.from_str(result)[0]
+                return GlasgowPin.parse(result)[0]
 
         if width is None:
             match default:
@@ -187,7 +149,7 @@ class GlasgowAppletArguments:
                 case True:
                     default = get_free_pin()
                 case _:
-                    default = PinArgument.from_str(default)[0]
+                    default = GlasgowPin.parse(default)[0]
 
             metavar = "PIN"
             if help is None:
@@ -197,7 +159,7 @@ class GlasgowAppletArguments:
 
             def pin_arg(arg):
                 try:
-                    result = PinArgument.from_str(arg)
+                    result = GlasgowPin.parse(arg)
                 except ValueError as e:
                     self._arg_error(str(e))
                 if required:
@@ -227,7 +189,7 @@ class GlasgowAppletArguments:
                 case int():
                     default = [get_free_pin() for _ in range(default)]
                 case _:
-                    default = PinArgument.from_str(default)
+                    default = GlasgowPin.parse(default)
 
             metavar = "PINS"
             if help is None:
@@ -239,7 +201,7 @@ class GlasgowAppletArguments:
 
             def pin_arg(arg):
                 try:
-                    result = PinArgument.from_str(arg)
+                    result = GlasgowPin.parse(arg)
                 except ValueError as e:
                     self._arg_error(str(e))
                 if len(result) not in width:
@@ -260,7 +222,7 @@ class GlasgowAppletArguments:
     def add_voltage_argument(self, parser):
         parser.add_argument(
             "-V", "--voltage", metavar="SPEC",
-            type=VoltArgument.from_str, default=[], action="extend",
+            type=VoltArgument.parse, default=[], action="extend",
             help="configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')")
 
     def add_build_arguments(self, parser):
