@@ -188,7 +188,7 @@ class AbstractAssembly(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def add_applet(self, applet: Any, *, logger: logging.Logger) -> Generator[None, None, None]:
+    def add_applet(self, applet: Any) -> Generator[None, None, None]:
         pass
 
     @abstractmethod

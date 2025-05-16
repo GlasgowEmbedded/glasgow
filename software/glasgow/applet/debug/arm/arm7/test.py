@@ -223,7 +223,7 @@ class DebugARM7AppletTestCase(GlasgowAppletV2TestCase, applet=DebugARM7Applet):
         parsed_args = self._parse_args(self.hardware_args)
         assembly = HardwareAssembly()
         applet = self.applet_cls(assembly)
-        with assembly.add_applet(applet, logger=applet.logger):
+        with assembly.add_applet(applet):
             applet.build(parsed_args)
         async with assembly:
             await applet.setup(parsed_args)

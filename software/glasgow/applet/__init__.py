@@ -334,7 +334,7 @@ class GlasgowAppletV2TestCase(unittest.TestCase):
         parsed_args = self._parse_args(args, mode="build")
         assembly = HardwareAssembly(revision=revision or self.applet_cls.required_revision)
         applet = self.applet_cls(assembly)
-        with assembly.add_applet(applet, logger=applet.logger):
+        with assembly.add_applet(applet):
             applet.build(parsed_args)
         assembly.artifact().get_bitstream()
 
