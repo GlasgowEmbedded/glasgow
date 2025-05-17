@@ -289,7 +289,7 @@ class GlasgowAppletV2(metaclass=ABCMeta):
             ", ".join(f"'help({attr})'" for attr in self._iface_attrs))
         await AsyncInteractiveConsole(
             locals=self._code_locals(args),
-            run_callback=self.assembly.flush
+            run_callback=self.assembly.flush_pipes
         ).interact()
 
     async def script(self, args, code):

@@ -83,6 +83,7 @@ benchmark = "glasgow.applet.internal.benchmark:BenchmarkApplet"
 
 analyzer = "glasgow.applet.interface.analyzer:AnalyzerApplet"
 uart = "glasgow.applet.interface.uart:UARTApplet"
+spi-analyzer = "glasgow.applet.interface.spi_analyzer:SPIAnalyzerApplet"
 spi-controller = "glasgow.applet.interface.spi_controller:SPIControllerApplet"
 spi-flashrom = "glasgow.applet.interface.spi_flashrom:SPIFlashromApplet"
 i2c-initiator = "glasgow.applet.interface.i2c_initiator:I2CInitiatorApplet"
