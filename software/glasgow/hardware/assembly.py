@@ -639,14 +639,17 @@ class HardwareAssembly(AbstractAssembly):
             for endpoint in active_setting.iterEndpoints():
                 ep_address = endpoint.getAddress()
                 packet_size = endpoint.getMaxPacketSize()
-                if ep_address & usb1.ENDPOINT_DIR_MASK == usb1.ENDPOINT_IN:
-                    next_in_pipe = next(in_pipe_iter)
-                    next_in_pipe._in_ep_address = ep_address
-                    next_in_pipe._in_packet_size = packet_size
-                if ep_address & usb1.ENDPOINT_DIR_MASK == usb1.ENDPOINT_OUT:
-                    next_out_pipe = next(out_pipe_iter)
-                    next_out_pipe._out_ep_address = ep_address
-                    next_out_pipe._out_packet_size = packet_size
+                try:
+                    if ep_address & usb1.ENDPOINT_DIR_MASK == usb1.ENDPOINT_IN:
+                        next_in_pipe = next(in_pipe_iter)
+                        next_in_pipe._in_ep_address = ep_address
+                        next_in_pipe._in_packet_size = packet_size
+                    if ep_address & usb1.ENDPOINT_DIR_MASK == usb1.ENDPOINT_OUT:
+                        next_out_pipe = next(out_pipe_iter)
+                        next_out_pipe._out_ep_address = ep_address
+                        next_out_pipe._out_packet_size = packet_size
+                except StopIteration:
+                    pass
         assert len(list(in_pipe_iter)) == 0 and len(list(out_pipe_iter)) == 0
 
         for index in range(self._iface_count):
