@@ -1,1 +1,5 @@
+# In a typical systemd-based installation, the following two caveats apply:
+#  * The name of this file, when installed, must lexicographically precede `71-seat.rules`.
+#  * The `uaccess` tag means "accessible to anyone physically at the terminal", not
+#    "any local user". The device will not be accessible in an SSH session, for example.
 SUBSYSTEM=="usb", ATTRS{idVendor}=="20b7", ATTRS{idProduct}=="9db1", TAG+="uaccess"
