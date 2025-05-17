@@ -163,7 +163,7 @@ class SimulationAssembly(AbstractAssembly):
             pass # TODO: log?
 
     def use_pulls(self, pulls: Mapping[GlasgowPin | tuple[GlasgowPin], PullState | str]):
-        for pin, state in pulls.items():
+        for pins, state in pulls.items():
             if isinstance(pins, GlasgowPin):
                 pins = [pins]
             if isinstance(state, str):
