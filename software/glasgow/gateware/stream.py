@@ -52,7 +52,6 @@ class StreamFIFO(wiring.Component):
                 "w": In(stream.Signature(shape)),
                 "r": Out(stream.Signature(shape)),
                 "level": Out(range(depth + 1))
-
             })
         else:
             super().__init__({
