@@ -247,8 +247,10 @@ class DeprecatedDemultiplexerInterface:
         self.logger = applet.logger
 
         self._mux_interface = mux_interface
-        self._mux_interface._in_pipe._in_buffer_size   = read_buffer_size
-        self._mux_interface._out_pipe._out_buffer_size = write_buffer_size
+        if self._mux_interface._in_pipe is not None:
+            self._mux_interface._in_pipe._in_buffer_size   = read_buffer_size
+        if self._mux_interface._out_pipe is not None:
+            self._mux_interface._out_pipe._out_buffer_size = write_buffer_size
 
     async def reset(self):
         # Note that this will reset the ~entire FPGA. This is OK, since the legacy interface
@@ -257,7 +259,8 @@ class DeprecatedDemultiplexerInterface:
 
     async def read(self, length=None, *, flush=True):
         if flush:
-            await self._mux_interface._out_pipe.flush()
+            if self._mux_interface._out_pipe is not None:
+                await self._mux_interface._out_pipe.flush()
         if length is None:
             length = self._mux_interface._in_pipe.readable or 1
         return await self._mux_interface._in_pipe.recv(length)
