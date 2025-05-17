@@ -280,9 +280,10 @@ class UARTApplet(GlasgowAppletV2):
             help="send and receive parity bit as PARITY (default: %(default)s)")
 
     def build(self, args):
-        self.assembly.use_voltage(args.voltage)
-        self.uart_iface = UARTInterface(self.logger, self.assembly,
-            rx=args.rx, tx=args.tx, parity=args.parity)
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            self.uart_iface = UARTInterface(self.logger, self.assembly,
+                rx=args.rx, tx=args.tx, parity=args.parity)
 
     @classmethod
     def add_setup_arguments(cls, parser):
