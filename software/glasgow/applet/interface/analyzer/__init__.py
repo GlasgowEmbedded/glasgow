@@ -59,7 +59,7 @@ class AnalyzerApplet(GlasgowApplet):
 
         access.add_pins_argument(parser, "i", width=range(1, 17), default=1)
         parser.add_argument(
-            "--pin-names", metavar="NAMES", default=None,
+            "--pin-names", metavar="NAMES", dest="names", default=None,
             help="optional comma separated list of pin names")
 
     def build(self, target, args):
