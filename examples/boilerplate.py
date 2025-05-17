@@ -85,9 +85,10 @@ class BoilerplateApplet(GlasgowAppletV2):
         access.add_pins_argument(parser, "data", width=4, default=True)
 
     def build(self, args):
-        self.assembly.use_voltage(args.voltage)
-        self.boilerplate_iface = BoilerplateInterface(self.logger, self.assembly,
-            clk=args.clk, data=args.data)
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            self.boilerplate_iface = BoilerplateInterface(self.logger, self.assembly,
+                clk=args.clk, data=args.data)
 
     @classmethod
     def add_setup_arguments(cls, parser):

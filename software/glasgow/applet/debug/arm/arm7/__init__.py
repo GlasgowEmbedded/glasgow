@@ -1333,14 +1333,15 @@ class DebugARM7Applet(GlasgowAppletV2):
             help="target endianness (default: %(default)s)")
 
     def build(self, args):
-        self.assembly.use_voltage(args.voltage)
-        self.arm_iface = DebugARM7Interface(self.logger, self.assembly,
-            tck =args.tck,
-            tms =args.tms,
-            tdo =args.tdo,
-            tdi =args.tdi,
-            trst=args.trst,
-            endian=args.endian)
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            self.arm_iface = DebugARM7Interface(self.logger, self.assembly,
+                tck =args.tck,
+                tms =args.tms,
+                tdo =args.tdo,
+                tdi =args.tdi,
+                trst=args.trst,
+                endian=args.endian)
 
     @classmethod
     def add_setup_arguments(cls, parser):

@@ -455,15 +455,15 @@ def _applet(revision, args):
             else:
                 raise GlasgowAppletError(message)
 
-        with assembly.add_applet(applet):
-            match applet:
-                case GlasgowAppletV2():
-                    applet.build(args)
-                    return applet, assembly, None
-                case GlasgowApplet():
-                    target = DeprecatedTarget(assembly)
+        match applet:
+            case GlasgowAppletV2():
+                applet.build(args)
+                return applet, assembly, None
+            case GlasgowApplet():
+                target = DeprecatedTarget(assembly)
+                with assembly.add_applet(applet):
                     applet.build(target, args)
-                    return applet, assembly, target
+                return applet, assembly, target
     except GlasgowAppletError as e:
         applet.logger.error(e)
         logger.error("failed to build subtarget for applet %r", args.applet)
