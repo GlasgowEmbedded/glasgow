@@ -612,7 +612,7 @@ class HardwareAssembly(AbstractAssembly):
             raise Exception("no device provided")
 
         for config in self._device.usb_handle.getDevice().iterConfigurations():
-            if config.getNumInterfaces() == self._iface_count:
+            if config.getNumInterfaces() >= self._iface_count:
                 try:
                     # Neither WinUSB, nor libusbK, nor libusb0 allow selecting any configuration
                     # that is not the 1st one. This is a limitation of the KMDF USB target.
