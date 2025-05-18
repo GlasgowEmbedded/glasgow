@@ -261,6 +261,8 @@ class DeprecatedDemultiplexerInterface:
         if flush:
             if self._mux_interface._out_pipe is not None:
                 await self._mux_interface._out_pipe.flush()
+        if length == 0:
+            return memoryview(b"")
         if length is None:
             length = self._mux_interface._in_pipe.readable or 1
         return await self._mux_interface._in_pipe.recv(length)
