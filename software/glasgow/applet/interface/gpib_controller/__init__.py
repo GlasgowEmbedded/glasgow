@@ -146,15 +146,15 @@ class GPIBComponent(wiring.Component):
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.dio_buffer  = dio_buffer  = io.Buffer("io", self.ports.dio)
-        m.submodules.eoi_buffer  = eoi_buffer  = io.Buffer("io", self.ports.eoi)
-        m.submodules.dav_buffer  = dav_buffer  = io.Buffer("io", self.ports.dav)
-        m.submodules.nrfd_buffer = nrfd_buffer = io.Buffer("io", self.ports.nrfd)
-        m.submodules.ndac_buffer = ndac_buffer = io.Buffer("io", self.ports.ndac)
-        m.submodules.srq_buffer  = srq_buffer  = io.Buffer("i",  self.ports.srq)
-        m.submodules.ifc_buffer  = ifc_buffer  = io.Buffer("o",  self.ports.ifc)
-        m.submodules.atn_buffer  = atn_buffer  = io.Buffer("o",  self.ports.atn)
-        m.submodules.ren_buffer  = ren_buffer  = io.Buffer("o",  self.ports.ren)
+        m.submodules.dio_buffer  = dio_buffer  = io.Buffer("io", ~self.ports.dio)
+        m.submodules.eoi_buffer  = eoi_buffer  = io.Buffer("io", ~self.ports.eoi)
+        m.submodules.dav_buffer  = dav_buffer  = io.Buffer("io", ~self.ports.dav)
+        m.submodules.nrfd_buffer = nrfd_buffer = io.Buffer("io", ~self.ports.nrfd)
+        m.submodules.ndac_buffer = ndac_buffer = io.Buffer("io", ~self.ports.ndac)
+        m.submodules.srq_buffer  = srq_buffer  = io.Buffer("i",  ~self.ports.srq)
+        m.submodules.ifc_buffer  = ifc_buffer  = io.Buffer("o",  ~self.ports.ifc)
+        m.submodules.atn_buffer  = atn_buffer  = io.Buffer("o",  ~self.ports.atn)
+        m.submodules.ren_buffer  = ren_buffer  = io.Buffer("o",  ~self.ports.ren)
 
         m.submodules += [
             cdc.FFSynchronizer(dio_buffer.i,  self.dio_i),
@@ -190,13 +190,13 @@ class GPIBComponent(wiring.Component):
         settle_delay = 1000
         timer = Signal(range(1 + settle_delay))
 
-        # m.d.comb += [
-        #     platform.request("led", 0).o.eq(self.status == 0),
-        #     platform.request("led", 1).o.eq(self.status == 1),
-        #     platform.request("led", 2).o.eq(self.status == 2),
-        #     platform.request("led", 3).o.eq(self.status == 4),
-        #     platform.request("led", 4).o.eq(self.status == 8),
-        # ]
+        m.d.comb += [
+            platform.request("led", 0).o.eq(self.status == 0),
+            platform.request("led", 1).o.eq(self.status == 1),
+            platform.request("led", 2).o.eq(self.status == 2),
+            platform.request("led", 3).o.eq(self.status == 4),
+            platform.request("led", 4).o.eq(self.status == 8),
+        ]
 
         l_control = Signal(data.StructLayout({
             "tx":     1,
@@ -353,37 +353,44 @@ class GPIBControllerInterface:
 
     async def write(self, message: GPIBMessage, data=bytes([0])):
         self.assembly.use_pulls({
-            self._dio:  "high",
-            self._eoi:  "high",
-            self._dav:  "high",
-
-        })
-        await self.assembly.configure_ports()
-
-        for b in data:
-            await self._pipe.send(bytes([message.value]))
-            await self._pipe.send(bytes([b]))
-            ack = (await self._pipe.recv(1))[0]
-            assert GPIBMessage(ack) == GPIBMessage._Acknowledge
-
-    async def read(self, *, to_eoi=True):
-        self.assembly.use_pulls({
-
+            self._dio:  "float",
+            self._eoi:  "float",
+            self._dav:  "float",
             self._nrfd: "high",
             self._ndac: "high",
             self._srq:  "high",
         })
         await self.assembly.configure_ports()
 
+        for b in data:
+            await self._pipe.send(bytes([message.value]))
+            await self._pipe.send(bytes([b]))
+            await self._pipe.flush()
+            ack = (await self._pipe.recv(1))[0]
+            assert GPIBMessage(ack) == GPIBMessage._Acknowledge
+
+    async def read(self, *, to_eoi=True):
+        self.assembly.use_pulls({
+            self._dio:  "high",
+            self._eoi:  "high",
+            self._dav:  "high",
+            self._nrfd: "float",
+            self._ndac: "float",
+            self._srq:  "float",
+
+        })
+        await self.assembly.configure_ports()
+
         eoi = False
         while not eoi:
             await self._pipe.send(bytes([GPIBMessage.Listen.value]))
+            await self._pipe.flush()
 
             eoi = bool((await self._pipe.recv(1))[0] & 2)
             if not to_eoi:
                 eoi = True
 
-            yield (await self.interface.recv(1))
+            yield (await self._pipe.recv(1))
 
     async def send_to(self, address, data):
         await self.cmd_talk(address)
@@ -394,13 +401,13 @@ class GPIBControllerInterface:
     async def read_from(self, address, *, to_eoi=True):
         await self.cmd_listen(address)
         all = bytes([])
-        async for data in self.recv(to_eoi=to_eoi):
+        async for data in self.read(to_eoi=to_eoi):
             all += data
         return all
 
     async def iter_from(self, address, *, to_eoi=True):
         await self.cmd_listen(address)
-        async for data in self.recv(to_eoi=to_eoi):
+        async for data in self.read(to_eoi=to_eoi):
             yield data
 
     async def cmd_talk(self, address):
