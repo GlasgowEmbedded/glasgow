@@ -213,13 +213,15 @@ class SimulationAssembly(AbstractAssembly):
 
         sim = Simulator(m)
         sim.add_clock(self.sys_clk_period)
-        for constructor, background in self._benches:
-            sim.add_testbench(constructor, background=background)
 
         async def wrap_fn(ctx):
             self.__context = ctx
             await fn(ctx)
         sim.add_testbench(wrap_fn)
+
+        # Add other testbenches second, so that they can depend on the context being available.
+        for constructor, background in self._benches:
+            sim.add_testbench(constructor, background=background)
 
         try:
             assert self.__context is None
