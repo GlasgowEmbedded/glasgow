@@ -46,7 +46,9 @@ What can I do with Glasgow?
 
   * automatically determine and follow the baud rate of device under test
 
-* initiate transactions via SPI or I²C
+* initiate SPI or I²C transactions
+
+* analyze SPI transactions at up to 100 MHz
 
 * read and write 24-series I²C EEPROMs
 
@@ -67,6 +69,8 @@ What can I do with Glasgow?
 * automatically determine unknown JTAG pinout
 
 * play back JTAG SVF files
+
+* debug ARM7TDMI processors via JTAG
 
 * debug ARC processors via JTAG
 
