@@ -2,14 +2,11 @@ import logging
 import argparse
 import math
 import sys
-from enum import IntEnum
+
 from amaranth import *
-from amaranth.lib import io, data, cdc, wiring, enum
-from amaranth.lib import wiring, stream, io
+from amaranth.lib import io, data, cdc, wiring, stream, enum
 from amaranth.lib.wiring import In, Out
 
-
-# from ... import *
 from ... import GlasgowAppletV2
 
 """
@@ -119,9 +116,6 @@ class GPIBComponent(wiring.Component):
 
     def __init__(self, ports):
         self.ports    = ports
-        # self.status   = status
-
-        self.status = Signal(8)
 
         self.dio_i  = Signal(8)  # Data Lines            Listen
         self.dio_o  = Signal(8)  #                       Talk
@@ -140,6 +134,8 @@ class GPIBComponent(wiring.Component):
 
         self.talking   = Signal()
         self.listening = Signal()
+
+        self.status    = Signal(8)
 
         super().__init__()
 
@@ -191,11 +187,11 @@ class GPIBComponent(wiring.Component):
         timer = Signal(range(1 + settle_delay))
 
         m.d.comb += [
-            platform.request("led", 0).o.eq(self.status == 0),
-            platform.request("led", 1).o.eq(self.status == 1),
-            platform.request("led", 2).o.eq(self.status == 2),
-            platform.request("led", 3).o.eq(self.status == 4),
-            platform.request("led", 4).o.eq(self.status == 8),
+           platform.request("led", 0).o.eq(self.status == 0),
+           platform.request("led", 1).o.eq(self.status == 1),
+           platform.request("led", 2).o.eq(self.status == 2),
+           platform.request("led", 3).o.eq(self.status == 4),
+           platform.request("led", 4).o.eq(self.status == 8),
         ]
 
         l_control = Signal(data.StructLayout({
@@ -346,6 +342,7 @@ class GPIBControllerInterface:
         ports = assembly.add_port_group(dio=dio, eoi=eoi, dav=dav, nrfd=nrfd,
             ndac=ndac, srq=srq, ifc=ifc, atn=atn, ren=ren)
         component = assembly.add_submodule(GPIBComponent(ports))
+        self._status = assembly.add_ro_register(component.status)
         self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
 
         self._sys_clk_period = assembly.sys_clk_period
