@@ -469,12 +469,16 @@ class HardwareAssembly(AbstractAssembly):
             (self._scope_logger or logger).debug("setting port %s voltage to %s V", port, vio)
             self._voltages[port] = vio
 
-    def use_pulls(self, pulls: Mapping[GlasgowPin | tuple[GlasgowPin], PullState | str]):
+    def use_pulls(self, pulls: Mapping[GlasgowPin | tuple[GlasgowPin] | str, PullState | str]):
         for pins, state in pulls.items():
-            if isinstance(pins, GlasgowPin):
-                pins = [pins]
-            if isinstance(state, str):
-                state = PullState(state)
+            match pins:
+                case str():
+                    pins = GlasgowPin.parse(pins)
+                case GlasgowPin():
+                    pins = [pins]
+            match state:
+                case str():
+                    state = PullState(state)
             for pin in pins:
                 if pin.invert:
                     state = ~state

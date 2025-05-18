@@ -252,5 +252,9 @@ class AbstractAssembly(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def use_pulls(self, pulls: Mapping[GlasgowPin | tuple[GlasgowPin], PullState | str]):
+    def use_pulls(self, pulls: Mapping[GlasgowPin | tuple[GlasgowPin] | str, PullState | str]):
+        pass
+
+    @abstractmethod
+    async def configure_ports(self):
         pass

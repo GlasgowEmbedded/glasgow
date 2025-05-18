@@ -164,14 +164,21 @@ class SimulationAssembly(AbstractAssembly):
 
     def use_pulls(self, pulls: Mapping[GlasgowPin | tuple[GlasgowPin], PullState | str]):
         for pins, state in pulls.items():
-            if isinstance(pins, GlasgowPin):
-                pins = [pins]
-            if isinstance(state, str):
-                state = PullState(state)
+            match pins:
+                case str():
+                    pins = GlasgowPin.parse(pins)
+                case GlasgowPin():
+                    pins = [pins]
+            match state:
+                case str():
+                    state = PullState(state)
             for pin in pins:
                 if pin.invert:
                     state = ~state
-                pass # TODO: use for default input state?
+                pass # TODO: record?
+
+    async def configure_ports(self):
+        pass # TODO: log and use pull state for default pin state?
 
     @property
     def _context(self):
