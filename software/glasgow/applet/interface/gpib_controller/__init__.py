@@ -187,11 +187,11 @@ class GPIBComponent(wiring.Component):
         timer = Signal(range(1 + settle_delay))
 
         m.d.comb += [
-           platform.request("led", 0).o.eq(self.status == 0),
-           platform.request("led", 1).o.eq(self.status == 1),
-           platform.request("led", 2).o.eq(self.status == 2),
-           platform.request("led", 3).o.eq(self.status == 4),
-           platform.request("led", 4).o.eq(self.status == 8),
+           # platform.request("led", 0).o.eq(self.status == 0),
+           # platform.request("led", 1).o.eq(self.status == 1),
+           # platform.request("led", 2).o.eq(self.status == 2),
+           # platform.request("led", 3).o.eq(self.status == 4),
+           # platform.request("led", 4).o.eq(self.status == 8),
         ]
 
         l_control = Signal(data.StructLayout({
