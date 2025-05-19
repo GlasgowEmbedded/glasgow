@@ -1,20 +1,21 @@
+from typing import Optional
+from abc import ABCMeta, abstractmethod
+from dataclasses import dataclass
 import re
 import shlex
 import unittest
 import argparse
 import functools
-from abc import ABCMeta, abstractmethod
-from dataclasses import dataclass
-from contextlib import AbstractAsyncContextManager, asynccontextmanager
-from typing import Optional
+import asyncio
 
 from amaranth import *
 
 from ..support.arepl import AsyncInteractiveConsole
 from ..support.plugin import PluginMetadata
 from ..abstract import GlasgowPin, AbstractAssembly
+from ..hardware.toolchain import find_toolchain
 from ..hardware.device import GlasgowDevice
-from ..gateware.clockgen import *
+from ..gateware.clockgen import ClockGen
 from ..abstract import GlasgowVio, GlasgowPin
 from ..legacy import DeprecatedDemultiplexer, DeprecatedMultiplexer
 
@@ -23,7 +24,7 @@ __all__ = [
     "GlasgowAppletError",
     "GlasgowAppletMetadata", "GlasgowApplet", "GlasgowAppletV2", "GlasgowAppletArguments",
     "GlasgowAppletToolMetadata", "GlasgowAppletTool",
-    "GlasgowAppletV2TestCase", "async_test", "applet_v2_simulation_test",
+    "GlasgowAppletV2TestCase", "async_test", "applet_v2_simulation_test", "applet_v2_hardware_test",
 ]
 
 
@@ -342,7 +343,7 @@ def applet_v2_simulation_test(*, prepare=None, args=None):
             assembly = SimulationAssembly()
             if prepare is not None:
                 prepare(self, assembly)
-            applet = self.applet_cls(assembly)
+            applet: GlasgowAppletV2 = self.applet_cls(assembly)
             applet.build(parsed_args)
             async def launch(ctx):
                 await applet.setup(parsed_args)
@@ -350,6 +351,56 @@ def applet_v2_simulation_test(*, prepare=None, args=None):
             assembly.run(launch)
         return wrapper
     return decorator
+
+
+def applet_v2_hardware_test(*, prepare=None, args=None, mock):
+    def decorator(case):
+        @functools.wraps(case)
+        @async_test
+        async def wrapper(self):
+            *mock_path, mock_attr = mock.split(".")
+            parsed_args = self._parse_args(args)
+            fixture_path = os.path.join(
+                os.path.dirname(case.__code__.co_filename), "fixtures",
+                case.__name__ + ".json")
+            if not os.path.exists(fixture_path):
+                # Record mode
+                device = GlasgowDevice()
+                assembly = HardwareAssembly(device=device)
+                applet: GlasgowAppletV2 = self.applet_cls(assembly)
+                applet.build(parsed_args)
+                async with assembly:
+                    os.makedirs(os.path.dirname(fixture_path), exist_ok=True)
+                    with open(f"{fixture_path}.new", "w") as fixture:
+                        await applet.setup(parsed_args)
+                        if prepare is not None:
+                            await prepare(self, assembly)
+                        mock_obj = applet
+                        for attr in mock_path:
+                            mock_obj = getattr(mock_obj, attr)
+                        setattr(mock_obj, mock_attr,
+                            MockRecorder(self, fixture, getattr(mock_obj, mock_attr)))
+                        await case(self, applet)
+                    os.rename(f"{fixture_path}.new", fixture_path)
+                device.close()
+            else:
+                # Replay mode
+                assembly = HardwareAssembly(revision=self.applet_cls.required_revision)
+                applet: GlasgowAppletV2 = self.applet_cls(assembly)
+                applet.build(parsed_args)
+                with open(fixture_path, "r") as fixture:
+                    mock_obj = applet
+                    for attr in mock_path:
+                        mock_obj = getattr(mock_obj, attr)
+                    setattr(mock_obj, mock_attr, MockReplayer(self, fixture))
+                    await case(self, applet)
+        return wrapper
+    return decorator
+
+
+def synthesis_test(case):
+    synthesis_available = find_toolchain(quiet=True) is not None
+    return unittest.skipUnless(synthesis_available, "synthesis not available")(case)
 
 
 def async_test(case):
@@ -400,153 +451,19 @@ class GlasgowAppletTool:
 # -------------------------------------------------------------------------------------------------
 
 import os
-import sys
-import unittest
-import functools
-import asyncio
-import types
 import threading
-import inspect
-import json
 from amaranth.sim import *
 
+from ..support.mock import MockRecorder, MockReplayer
 from ..simulation.assembly import SimulationAssembly
 from ..hardware.assembly import HardwareAssembly
 from ..hardware.device import GlasgowDevice
-from ..hardware.toolchain import find_toolchain
 from ..hardware.platform.rev_ab import GlasgowRevABPlatform
 from ..legacy import DeprecatedTarget, DeprecatedDevice
 
 
 __all__ += ["GlasgowAppletTestCase", "synthesis_test", "applet_simulation_test",
             "applet_hardware_test"]
-
-
-class MockRecorder:
-    def __init__(self, case, mocked, fixture):
-        self.__case    = case
-        self.__mocked  = mocked
-        self.__fixture = fixture
-
-    @staticmethod
-    def __dump_object(obj):
-        if isinstance(obj, bytes):
-            return {"__class__": "bytes", "hex": obj.hex()}
-        if isinstance(obj, bytearray):
-            return {"__class__": "bytearray", "hex": obj.hex()}
-        if isinstance(obj, memoryview):
-            return {"__class__": "memoryview", "hex": obj.hex()}
-        raise TypeError("%s is not serializable" % type(obj))
-
-    def __dump_stanza(self, stanza):
-        if not self.__case._recording:
-            return
-        json.dump(fp=self.__fixture, default=self.__dump_object, obj=stanza)
-        self.__fixture.write("\n")
-
-    def __dump_method(self, call, kind, args, kwargs, result):
-        self.__dump_stanza({
-            "call":   call,
-            "kind":   kind,
-            "args":   args,
-            "kwargs": kwargs,
-            "result": result
-        })
-
-    def __getattr__(self, attr):
-        mocked = getattr(self.__mocked, attr)
-        if inspect.ismethod(mocked):
-            def wrapper(*args, **kwargs):
-                result = mocked(*args, **kwargs)
-                if isinstance(result, AbstractAsyncContextManager):
-                    @asynccontextmanager
-                    async def cmgr_wrapper():
-                        value = await result.__aenter__()
-                        self.__dump_method(attr, "asynccontext.enter", (), {}, value)
-                        try:
-                            yield value
-                        finally:
-                            exc_type, exc_value, traceback = sys.exc_info()
-                            self.__dump_method(attr, "asynccontext.exit", (exc_value,), {}, None)
-                            await result.__aexit__(exc_type, exc_value, traceback)
-                    return cmgr_wrapper()
-                elif inspect.isawaitable(result):
-                    async def coro_wrapper():
-                        coro_result = await result
-                        self.__dump_method(attr, "asyncmethod", args, kwargs, coro_result)
-                        return coro_result
-                    return coro_wrapper()
-                else:
-                    self.__dump_method(attr, "method", args, kwargs, result)
-                    return result
-            return wrapper
-
-        return mocked
-
-
-class MockReplayer:
-    def __init__(self, case, fixture):
-        self.__case    = case
-        self.__fixture = fixture
-
-    @staticmethod
-    def __load_object(obj):
-        if "__class__" not in obj:
-            return obj
-        if obj["__class__"] == "bytes":
-            return bytes.fromhex(obj["hex"])
-        if obj["__class__"] == "bytearray":
-            return bytearray.fromhex(obj["hex"])
-        if obj["__class__"] == "memoryview":
-            return memoryview(bytes.fromhex(obj["hex"]))
-        assert False
-
-    def __load(self):
-        json_str = self.__fixture.readline()
-        return json.loads(s=json_str, object_hook=self.__load_object)
-
-    @staticmethod
-    def __upgrade(stanza):
-        """Upgrade an object to the latest schema."""
-        if "method" in stanza:
-            stanza["call"] = stanza.pop("method")
-            if stanza.pop("async"):
-                stanza["kind"] = "asyncmethod"
-            else:
-                stanza["kind"] = "method"
-        return stanza
-
-    def __getattr__(self, attr):
-        stanza = self.__upgrade(self.__load())
-        self.__case.assertEqual(attr, stanza["call"])
-        if stanza["kind"] == "asynccontext.enter":
-            @asynccontextmanager
-            async def mock():
-                assert () == tuple(stanza["args"])
-                assert {} == stanza["kwargs"]
-                try:
-                    yield stanza["result"]
-                finally:
-                    exc_type, exc_value, traceback = sys.exc_info()
-                    exit_stanza = self.__load()
-                    self.__case.assertEqual(attr, exit_stanza["call"])
-                    self.__case.assertEqual("asynccontext.exit", exit_stanza["kind"])
-                    self.__case.assertEqual((exc_value,), tuple(exit_stanza["args"]))
-                    assert {} == exit_stanza["kwargs"]
-                    assert None == exit_stanza["result"]
-        elif stanza["kind"] == "asyncmethod":
-            async def mock(*args, **kwargs):
-                self.__case.assertEqual(args, tuple(stanza["args"]))
-                self.__case.assertEqual(kwargs, stanza["kwargs"])
-                return stanza["result"]
-        elif stanza["kind"] == "method":
-            def mock(*args, **kwargs):
-                self.__case.assertEqual(args, tuple(stanza["args"]))
-                self.__case.assertEqual(kwargs, stanza["kwargs"])
-                return stanza["result"]
-        else:
-            assert False, f"unknown stanza {stanza['kind']}"
-        return mock
 
 
 class GlasgowAppletTestCase(unittest.TestCase):
@@ -610,7 +527,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
         async def run_lower(cls, device, args):
             if mode == "record":
                 lower_iface = await old_run_lower(cls, device, args)
-                recorder = MockRecorder(case, lower_iface, fixture)
+                recorder = MockRecorder(case,  fixture, lower_iface)
                 self._recorders.append(recorder)
                 return recorder
 
@@ -624,11 +541,6 @@ class GlasgowAppletTestCase(unittest.TestCase):
             await self.device.download_target(self.target.build_plan())
 
         return await self.applet.run(self.device, self._parsed_args)
-
-
-def synthesis_test(case):
-    synthesis_available = find_toolchain(quiet=True) is not None
-    return unittest.skipUnless(synthesis_available, "synthesis not available")(case)
 
 
 def applet_simulation_test(setup, args=[]):

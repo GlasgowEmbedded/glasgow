@@ -1,7 +1,6 @@
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "03000000"}], "kwargs": {}, "result": null}
@@ -11,12 +10,10 @@
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "20000000"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
@@ -176,12 +173,10 @@
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "0200000042796520202c20776f726c6421ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
@@ -196,12 +191,10 @@
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "02000100ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
@@ -216,12 +209,10 @@
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "02000200ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
@@ -236,12 +227,10 @@
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "02000300ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
@@ -256,12 +245,10 @@
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "02000400ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
@@ -276,12 +263,10 @@
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "02000500ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
@@ -296,12 +281,10 @@
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "02000600ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
@@ -316,12 +299,10 @@
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "02000700ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
@@ -336,12 +317,10 @@
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "02000800ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
@@ -356,12 +335,10 @@
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "02000900ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
@@ -376,12 +353,10 @@
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "02000a00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
@@ -396,12 +371,10 @@
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "02000b00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
@@ -416,12 +389,10 @@
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "02000c00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
@@ -436,12 +407,10 @@
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "02000d00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
@@ -456,12 +425,10 @@
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "02000e00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
@@ -476,12 +443,10 @@
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "02000f00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}

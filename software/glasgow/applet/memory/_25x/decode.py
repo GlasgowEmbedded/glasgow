@@ -75,7 +75,7 @@ class Memory25xAbstractTrace(metaclass=ABCMeta):
     @abstractmethod
     def read_quad(self, count: Optional[int] = None) -> memoryview:
         """Reads ``count`` bytes (or until the end of trace) by sampling IO0/IO1/IO2/IO3
-        (COPI/CIPO/WP#/HOLD) lines."""
+        (COPI/CIPO/WP#/HOLD#) lines."""
 
 
 class Memory25xSPITrace(Memory25xAbstractTrace):
@@ -332,10 +332,11 @@ class Memory25xAppletTool(GlasgowAppletTool, applet=Memory25xApplet):
 
     The expected capture file format is the same as ones used by `spi-analyzer` and `qspi-analyzer`
     applets. Specifically, one of the following Comma-Separated Value line formats is expected:
-      * "<COPI>,<CIPO>", where <COPI> and <CIPO> are hexadecimal byte sequences with each eight
-          bits corresponding to samples of COPI and CIPO, respectively (from MSB to LSB).
-      * "<DATA>", where <DATA> is a hexadecimal nibble sequence with each four bits corresponding
-          to samples of HOLD, WP#, CIPO, COPI (from MSB to LSB).
+
+    * ``<COPI>,<CIPO>``, where <COPI> and <CIPO> are hexadecimal byte sequences with each eight
+      bits corresponding to samples of COPI and CIPO, respectively (from MSB to LSB).
+    * ``<DATA>``, where <DATA> is a hexadecimal nibble sequence with each four bits corresponding
+      to samples of HOLD#, WP#, CIPO, COPI (from MSB to LSB).
 
     The extracted data can be saved as pairs of data files and mask files, where the mask file
     contains a 1 bit for every bit in the data file that has been observed in a transaction,

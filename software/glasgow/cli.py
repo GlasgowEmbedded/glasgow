@@ -70,6 +70,7 @@ class TextHelpFormatter(argparse.HelpFormatter):
             return text
 
         text = textwrap.dedent(text).strip()
+        text = text.replace("::\n\n", "::\n")
         return re.sub(r"((?!\n\n)(?!\n\s+(?:\*|\$|\d+\.)).)+(\n*)?", filler, text, flags=re.S)
 
 
@@ -640,7 +641,7 @@ async def main():
             if args.prebuilt or args.prebuilt_at:
                 bitstream_file = args.prebuilt_at or open(f"{args.applet}.bin", "rb")
                 with bitstream_file:
-                    await assembly.start(device, _bitstrema_file=bitstream_file)
+                    await assembly.start(device, _bitstream_file=bitstream_file)
             else:
                 await assembly.start(device, reload_bitstream=args.reload)
 

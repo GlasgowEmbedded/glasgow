@@ -1,0 +1,2 @@
+{"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "aa55"}], "kwargs": {}, "result": null}
+{"call": "read", "kind": "asyncmethod", "args": [2], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "aa55"}}
