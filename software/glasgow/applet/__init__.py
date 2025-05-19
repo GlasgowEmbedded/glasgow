@@ -20,9 +20,9 @@ from ..legacy import DeprecatedDemultiplexer, DeprecatedMultiplexer
 
 
 __all__ = [
-    "GlasgowAppletMetadata", "GlasgowAppletError",
-    "GlasgowApplet", "GlasgowAppletV2", "GlasgowAppletArguments",
-    "GlasgowAppletTool",
+    "GlasgowAppletError",
+    "GlasgowAppletMetadata", "GlasgowApplet", "GlasgowAppletV2", "GlasgowAppletArguments",
+    "GlasgowAppletToolMetadata", "GlasgowAppletTool",
     "GlasgowAppletV2TestCase", "async_test", "applet_v2_simulation_test",
 ]
 
@@ -33,18 +33,6 @@ class GlasgowAppletError(Exception):
 
 class GlasgowAppletMetadata(PluginMetadata):
     GROUP_NAME = "glasgow.applet"
-
-    @property
-    def applet_cls(self):
-        return self.load()
-
-    @property
-    def tool_cls(self):
-        return self.load().tool_cls
-
-
-class GlasgowAppletError(Exception):
-    """An exception raised when an applet encounters an error."""
 
 
 class GlasgowAppletArguments:
@@ -386,13 +374,15 @@ def async_test(case):
     return wrapper
 
 
+class GlasgowAppletToolMetadata(PluginMetadata):
+    GROUP_NAME = "glasgow.applet.tool"
+
+
 class GlasgowAppletTool:
     def __init_subclass__(cls, applet, **kwargs):
         super().__init_subclass__(**kwargs)
 
-        applet.tool_cls = cls
-        cls.applet_cls  = applet
-        cls.logger      = applet.logger
+        cls.logger = applet.logger
 
     @classmethod
     def add_arguments(cls, parser):
@@ -400,6 +390,12 @@ class GlasgowAppletTool:
 
     async def run(self, args):
         pass
+
+    @classmethod
+    def _get_argparser_for_sphinx(cls, name):
+        parser = argparse.ArgumentParser(name, description=cls.description)
+        cls.add_arguments(parser)
+        return parser
 
 # -------------------------------------------------------------------------------------------------
 

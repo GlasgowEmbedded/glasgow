@@ -146,6 +146,14 @@ video-ws2812-output = "glasgow.applet.video.ws2812_output:VideoWS2812OutputApple
 
 radio-nrf24l01 = "glasgow.applet.radio.nrf24l01:RadioNRF24L01Applet"
 
+[project.entry-points."glasgow.applet.tool"]
+memory-25x = "glasgow.applet.memory._25x.decode:Memory25xAppletTool"
+memory-prom = "glasgow.applet.memory.prom:MemoryPROMAppletTool"
+memory-floppy = "glasgow.applet.memory.floppy:MemoryFloppyAppletTool"
+
+program-xc9500 = "glasgow.applet.program.xc9500:ProgramXC9500AppletTool"
+program-xc9500xl = "glasgow.applet.program.xc9500xl:ProgramXC9500XLAppletTool"
+
 [project.urls]
 "Documentation" = "https://glasgow-embedded.org/"
 "Source Code" = "https://github.com/GlasgowEmbedded/glasgow"
