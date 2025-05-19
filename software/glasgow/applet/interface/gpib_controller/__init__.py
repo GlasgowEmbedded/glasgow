@@ -183,7 +183,7 @@ class GPIBComponent(wiring.Component):
         ]
 
         # settle_delay = math.ceil(platform.default_clk_frequency * 1e-6)
-        settle_delay = 1000
+        settle_delay = 5
         timer = Signal(range(1 + settle_delay))
 
         m.d.comb += [
@@ -208,7 +208,11 @@ class GPIBComponent(wiring.Component):
 
         with m.FSM():
             with m.State("Control: Begin"):
-                m.d.sync += self.status.eq(GPIBStatus.Idle)
+                m.d.comb += Print("Control")
+                m.d.sync += [
+                    self.status.eq(GPIBStatus.Idle),
+                    self.dav_o.eq(0),
+                ]
                 m.d.comb += self.i_stream.ready.eq(1)
                 with m.If(self.i_stream.valid):
                     m.d.sync += l_control.eq(self.i_stream.payload)
@@ -254,10 +258,12 @@ class GPIBComponent(wiring.Component):
                 # resistor configuration from changing
                 # mid-transaction.
                 m.d.comb += [
-                    self.o_stream.valid.eq(1),
                     self.o_stream.payload.eq(GPIBMessage._Acknowledge),
+                    self.o_stream.valid.eq(1),
+                    Print("awaiting acknowledge ready")
                 ]
                 with m.If(self.o_stream.ready):
+                    m.d.comb += Print("acknowledge ready")
                     m.next = "Control: Begin"
 
             with m.State("Talk: Begin"):
@@ -316,11 +322,12 @@ class GPIBComponent(wiring.Component):
                 ]
                 with m.If(self.o_stream.ready):
                     m.d.sync += self.nrfd_o.eq(0)
-                    m.next = "Listen: DAV unassert"
+                    m.next = "Listen: DAV assert"
 
-            with m.State("Listen: DAV unassert"):
+            with m.State("Listen: DAV assert"):
                 with m.If(self.dav_i):
                     m.d.sync += self.ndac_o.eq(0)
+                    m.d.sync += self.nrfd_o.eq(0)
                     m.next = "Control: Begin"
 
         return m
@@ -361,10 +368,13 @@ class GPIBControllerInterface:
 
         for b in data:
             await self._pipe.send(bytes([message.value]))
+            print("sent:", message)
             await self._pipe.send(bytes([b]))
-            await self._pipe.flush()
-            ack = (await self._pipe.recv(1))[0]
-            assert GPIBMessage(ack) == GPIBMessage._Acknowledge
+            print("sent:", b)
+
+            ack = await self._pipe.recv(1)
+            print(ack)
+            assert GPIBMessage(ack[0]) == GPIBMessage._Acknowledge
 
     async def read(self, *, to_eoi=True):
         self.assembly.use_pulls({
@@ -380,13 +390,13 @@ class GPIBControllerInterface:
         eoi = False
         while not eoi:
             await self._pipe.send(bytes([GPIBMessage.Listen.value]))
-            await self._pipe.flush()
 
             eoi = bool((await self._pipe.recv(1))[0] & 2)
             if not to_eoi:
                 eoi = True
 
             yield (await self._pipe.recv(1))
+
 
     async def send_to(self, address, data):
         await self.cmd_talk(address)
