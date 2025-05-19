@@ -237,8 +237,9 @@ class SPIAnalyzerApplet(GlasgowAppletV2):
     every signal wire (at the very least, CS# and SCK wires) with a ground wire connected to
     ground at both ends, otherwise the captured data will likely be nonsense.
 
-    If your DUT is a 25-series SPI Flash memory and quad-IO commands are in use, you should
-    use the `qspi-analyzer` applet instead.
+    If your DUT is a 25-series SPI Flash memory, use the `tool memory-25x` to extract data
+    from capture files. If quad-IO commands are in use, use the `qspi-analyzer` applet to
+    capture data.
     """
     # May work on revA/B with a looser clock constraint on SCK.
     required_revision = "C0"

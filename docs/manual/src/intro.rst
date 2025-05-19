@@ -56,6 +56,8 @@ What can I do with Glasgow?
 
   * determine memory parameters via SFDP
 
+  * extract data and SFDP information from SPI transaction captures
+
 * read and write ONFI-compatible Flash memories
 
   * determine memory parameters via ONFI parameter page

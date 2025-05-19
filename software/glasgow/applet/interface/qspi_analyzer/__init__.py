@@ -232,6 +232,10 @@ class QSPIAnalyzerApplet(GlasgowAppletV2):
 
     Both quad-IO and dual-IO captures are supported. If only IO0 and IO1 pins are provided,
     the capture proceeds as if IO2 and IO3 were fixed at 0.
+
+    If your DUT is a 25-series SPI Flash memory, use the `tool memory-25x` to extract data
+    from capture files. If quad-IO commands are not in use, the `spi-analyzer` applet can
+    reduce the likelihood of an overflow.
     """
     # May work on revA/B with a looser clock constraint on SCK.
     required_revision = "C0"

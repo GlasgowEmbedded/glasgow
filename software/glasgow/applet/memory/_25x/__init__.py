@@ -7,7 +7,7 @@ import struct
 import logging
 import argparse
 from amaranth import *
-from amaranth.lib import io
+from amaranth.lib import enum, io
 
 from ....support.logging import dump_hex
 from ....database.jedec import *
@@ -18,6 +18,11 @@ from ... import *
 
 class Memory25xError(GlasgowAppletError):
     pass
+
+
+class Memory25xAddrMode(enum.Enum):
+    ThreeByte = enum.auto()
+    FourByte  = enum.auto()
 
 
 BIT_WIP  = 0b00000001
@@ -509,3 +514,7 @@ class Memory25xApplet(QSPIControllerApplet):
     def tests(cls):
         from . import test
         return test.Memory25xAppletTestCase
+
+
+# FIXME: after redesign of the tool system this won't be needed
+from . import decode as _
