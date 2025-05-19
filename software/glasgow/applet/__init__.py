@@ -301,6 +301,14 @@ class GlasgowAppletV2(metaclass=ABCMeta):
     def tests(cls):
         return None
 
+    @classmethod
+    def _get_argparser_for_sphinx(cls, name):
+        parser = argparse.ArgumentParser(name, description=cls.description)
+        cls.add_build_arguments(parser, GlasgowAppletArguments(name))
+        cls.add_setup_arguments(parser)
+        cls.add_run_arguments(parser)
+        return parser
+
 
 class GlasgowAppletV2TestCase(unittest.TestCase):
     def __init_subclass__(cls, applet, **kwargs):

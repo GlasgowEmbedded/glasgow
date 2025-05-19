@@ -1,5 +1,8 @@
-import os, time
+import sys, os.path, time
 is_production = True if os.getenv("DOCS_IS_PRODUCTION", "").lower() in ('1', 'yes', 'true') else False
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "software"))
+import glasgow
 
 html_title = project = "Glasgow Interface\u00a0Explorer"
 release = version = ""
@@ -9,8 +12,10 @@ extensions = [
     "myst_parser",
     "sphinx.ext.todo",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.autodoc",
     "sphinx_copybutton",
     "sphinx_inline_tabs",
+    "sphinxcontrib.autoprogram",
 ]
 
 todo_include_todos = True
