@@ -7,6 +7,7 @@
 #
 # Currently, only JESD216 (initial revision) is implemented.
 
+from typing import Iterator
 from abc import ABCMeta, abstractmethod
 import struct
 
@@ -119,7 +120,7 @@ class SFDPTable(_JEDECRevisionMixin):
         self.parameter = parameter
 
     @property
-    def vendor_name(self):
+    def vendor_name(self) -> str:
         if self.vendor_id == 0x00:
             vendor_name = "JEDEC"
         else:
@@ -129,13 +130,28 @@ class SFDPTable(_JEDECRevisionMixin):
         return vendor_name
 
     @property
-    def table_name(self):
+    def table_name(self) -> str:
         return f"Unknown Table {self.table_id:#04x}"
 
-    def __str__(self):
+    def description(self, index=None) -> list[str]:
+        header  = f"SFDP table"
+        if index is not None:
+            header += f" #{index}"
+        header += f": {self.vendor_name}, {self.table_name}"
+        header += f", {self.version[0]}.{self.version[1]}"
+        if self.vendor_id == 0x00: # JEDEC
+            header += f" ({self.jedec_revision})"
+        lines = [header]
+        if any(self):
+            key_width = max(len(key) for key, value in self) + 1
+            for key, value in self:
+                lines.append(f"  {key:{key_width}}: {value}")
+        return lines
+
+    def __str__(self) -> str:
         return f"{self.vendor_name}, {self.table_name}"
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[tuple[str, str]]:
         return iter(())
 
 
@@ -228,10 +244,10 @@ class SFDPJEDECFlashParametersTable(SFDPTable):
             raise ValueError(f"cannot parse {str(self)}: {str(e)}") from None
 
     @property
-    def table_name(self):
+    def table_name(self) -> str:
         return "Flash Parameter Table"
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[tuple[str, str]]:
         properties = {}
         properties["density (Mebibits)"]  = f"{self.density >> 20}"
         properties["density (Mebibytes)"] = f"{self.density >> 23}"
@@ -255,10 +271,6 @@ class SFDPJEDECFlashParametersTable(SFDPTable):
 
 
 class SFDPParser(_JEDECRevisionMixin, aobject, metaclass=ABCMeta):
-    @abstractmethod
-    async def read(self, offset, length):
-        pass
-
     async def __init__(self):
         sfdp_header = await self.read(0, 8)
         signature, ver_minor, ver_major, num_param_headers, _ = \
@@ -282,8 +294,21 @@ class SFDPParser(_JEDECRevisionMixin, aobject, metaclass=ABCMeta):
             table = SFDPTable(vendor_id, table_id, (rev_major, rev_minor), parameter)
             self.tables.append(table)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.tables)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[SFDPTable]:
         return iter(self.tables)
+
+    def description(self) -> list[str]:
+        lines = []
+        for index, table in enumerate(self):
+            lines.extend(table.description(index))
+        return lines
+
+    def __str__(self) -> str:
+        return f"SFDP {self.version[0]}.{self.version[1]} ({self.jedec_revision})"
+
+    @abstractmethod
+    async def read(self, offset: int, length: int):
+        pass

@@ -429,19 +429,9 @@ class Memory25xApplet(QSPIControllerApplet):
 
             try:
                 sfdp = await Memory25xSFDPParser(m25x_iface)
-                self.logger.info("device has valid SFDP %d.%d (%s) descriptor",
-                                 *sfdp.version, sfdp.jedec_revision)
-                for index, table in enumerate(sfdp):
-                    if table.vendor_id == 0x00: # JEDEC
-                        self.logger.info("  SFDP table #%d: %s %d.%d (%s)",
-                                         index, table, *table.version, table.jedec_revision)
-                    else:
-                        self.logger.info("  SFDP table #%d: %s %d.%d",
-                                         index, table, *table.version)
-                    if any(table):
-                        key_width = max(len(k) for k, v in table) + 1
-                        for key, value in table:
-                            self.logger.info("    %-*s: %s", key_width, key, value)
+                self.logger.info(f"device has valid {sfdp} descriptor")
+                for line in sfdp.description():
+                    self.logger.info(f"  {line}")
             except ValueError as e:
                 self.logger.info("device does not have valid SFDP data: %s", str(e))
 
