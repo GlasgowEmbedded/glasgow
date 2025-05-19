@@ -55,7 +55,7 @@ logger = logging.getLogger(__name__)
 #
 # To deal with this, use requests of at most 1024 EP buffer sizes (512 KiB with the FX2) as
 # an arbitrary cutoff, and hope for the best.
-_max_packets_per_ep = 1024
+_max_packets_per_ep = 4096
 
 # USB has the limitation that all transactions are host-initiated. Therefore, if we do not queue
 # reads for the IN endpoints quickly enough, the HC will not even poll the device, and the buffer
@@ -77,11 +77,11 @@ _max_packets_per_ep = 1024
 # To try and balance these effects, we choose a medium buffer size that should work well with most
 # applications. It's possible that this will need to become customizable later, but for now
 # a single fixed value works.
-_packets_per_xfer = 32
+_packets_per_xfer = 128
 
 # Queue as many transfers as we can, but no more than 16, as the returns beyond that point
 # are diminishing.
-_xfers_per_queue = min(16, _max_packets_per_ep // _packets_per_xfer)
+_xfers_per_queue = min(32, _max_packets_per_ep // _packets_per_xfer)
 
 
 class HardwareRORegister(AbstractRORegister):
