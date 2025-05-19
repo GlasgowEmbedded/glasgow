@@ -126,18 +126,19 @@ class QSPIAnalyzerComponent(wiring.Component):
 
     overflow: Out(1)
 
-    def __init__(self, ports):
-        self.ports = ports
+    def __init__(self, ports, buffer_size: int):
+        self._ports = ports
+        self._buffer_size = buffer_size
 
         super().__init__()
 
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.frontend = frontend = QSPIAnalyzerFrontend(self.ports)
-        m.submodules.encoder  = encoder  = COBSEncoder(fifo_depth=512) # one BRAM on iCE40
-
+        m.submodules.encoder = encoder = COBSEncoder(fifo_depth=self._buffer_size)
         wiring.connect(m, wiring.flipped(self.o_stream), encoder.o)
+
+        m.submodules.frontend = frontend = QSPIAnalyzerFrontend(self._ports)
 
         idle  = Signal(init=1)
         epoch = Signal()
@@ -178,12 +179,12 @@ class QSPIAnalyzerComponent(wiring.Component):
 
 
 class QSPIAnalyzerInterface:
-    def __init__(self, logger, assembly, *, cs, sck, io):
+    def __init__(self, logger, assembly, *, cs, sck, io, buffer_size=512):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
         ports = assembly.add_port_group(cs=cs, sck=sck, io=io)
-        component = assembly.add_submodule(QSPIAnalyzerComponent(ports))
+        component = assembly.add_submodule(QSPIAnalyzerComponent(ports, buffer_size))
         # Use only a minimal interface FIFO; most of the buffering is done in the COBS encoder.
         self._pipe = assembly.add_in_pipe(
             component.o_stream, in_flush=component.o_flush, fifo_depth=4)
@@ -233,7 +234,7 @@ class QSPIAnalyzerApplet(GlasgowAppletV2):
     Both quad-IO and dual-IO captures are supported. If only IO0 and IO1 pins are provided,
     the capture proceeds as if IO2 and IO3 were fixed at 0.
     """
-    # May work on revA/B with a looser clock constraint on SCK.
+    # May work on revA/B with a looser clock constraint on SCK and less RAM.
     required_revision = "C0"
 
     @classmethod
@@ -243,13 +244,17 @@ class QSPIAnalyzerApplet(GlasgowAppletV2):
         access.add_pins_argument(parser, "sck", required=True, default=True)
         access.add_pins_argument(parser, "io",  required=True, width=range(2, 6, 2), default=4,
             help="bind the applet I/O lines 'copi', 'cipo', 'wp', 'hold' to PINS")
+        parser.add_argument(
+            "--buffer-size", metavar="BYTES", type=int, default=16384,
+            help="set FPGA trace buffer size to BYTES (must be power of 2, default: %(default)s)")
 
     def build(self, args):
         with self.assembly.add_applet(self):
             self.assembly.use_voltage(args.voltage)
             self.assembly.use_pulls({args.cs: "high", args.sck: "low", args.io: "high"})
             self.qspi_analyzer_iface = QSPIAnalyzerInterface(self.logger, self.assembly,
-                cs=args.cs, sck=args.sck, io=args.io)
+                cs=args.cs, sck=args.sck, io=args.io,
+                buffer_size=args.buffer_size)
 
     @classmethod
     def add_run_arguments(cls, parser):
