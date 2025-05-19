@@ -1,11 +1,12 @@
 [project]
-requires-python = "~=3.8"
+requires-python = "~=3.11"
 dependencies = [
     "sphinx",
     "myst-parser",
     "sphinx-autobuild",
     "sphinx-inline-tabs",
     "sphinx-copybutton",
+    "sphinxcontrib-autoprogram",
     # If you change the version of Furo, check out the repository, apply the following patch
     # to `src/furo/assets/styles/variables/_layout.scss`:
     #   -$sidebar-width: 15em;
@@ -13,6 +14,7 @@ dependencies = [
     # then rebuild it and place the build product `src/furo/theme/furo/static/styles/furo.css`
     # into `docs/manual/src/_static/styles/furo.css`.
     "furo",
+    "glasgow @ file:///${PROJECT_ROOT}/../../software"
 ]
 
 [tool.pdm.scripts]

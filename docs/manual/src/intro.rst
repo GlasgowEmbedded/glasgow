@@ -42,13 +42,13 @@ The Glasgow software is a set of building blocks designed to eliminate incidenta
 What can I do with Glasgow?
 ---------------------------
 
-* communicate via UART
+* communicate via :ref:`UART <applet.interface.uart>`
 
   * automatically determine and follow the baud rate of device under test
 
 * initiate SPI, QSPI, or I²C transactions
 
-* analyze SPI and QSPI transactions at up to 96 MHz
+* analyze :ref:`SPI <applet.interface.spi_analyzer>` and :ref:`QSPI <applet.interface.qspi_analyzer>` transactions at up to ~100 MHz
 
 * read and write 24-series I²C EEPROMs
 
@@ -70,7 +70,7 @@ What can I do with Glasgow?
 
 * play back JTAG SVF files
 
-* debug ARM7TDMI processors via JTAG
+* debug :ref:`ARM7TDMI <applet.debug.arm.arm7>` processors via JTAG
 
 * debug ARC processors via JTAG
 

@@ -10,6 +10,7 @@ Glasgow Interface Explorer manual
     build
     install
     use/index
+    applets/index
     develop/index
     contribute
     community
