@@ -46,9 +46,9 @@ What can I do with Glasgow?
 
   * automatically determine and follow the baud rate of device under test
 
-* initiate SPI or I²C transactions
+* initiate SPI, QSPI, or I²C transactions
 
-* analyze SPI transactions at up to 100 MHz
+* analyze SPI and QSPI transactions at up to 96 MHz
 
 * read and write 24-series I²C EEPROMs
 
