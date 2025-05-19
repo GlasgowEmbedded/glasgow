@@ -1,4 +1,4 @@
-import sys, os.path, time
+import sys, os, os.path
 is_production = True if os.getenv("DOCS_IS_PRODUCTION", "").lower() in ('1', 'yes', 'true') else False
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "software"))
@@ -6,7 +6,7 @@ import glasgow
 
 html_title = project = "Glasgow Interface\u00a0Explorer"
 release = version = ""
-copyright = time.strftime("2020—%Y, Glasgow Interface Explorer contributors")
+copyright = "2020—%Y, Glasgow Interface Explorer contributors"
 
 extensions = [
     "myst_parser",

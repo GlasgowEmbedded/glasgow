@@ -1,7 +1,7 @@
 [project]
 requires-python = "~=3.11"
 dependencies = [
-    "sphinx",
+    "sphinx>=8.1",
     "myst-parser",
     "sphinx-autobuild",
     "sphinx-inline-tabs",
@@ -13,7 +13,7 @@ dependencies = [
     #   +$sidebar-width: 16em;
     # then rebuild it and place the build product `src/furo/theme/furo/static/styles/furo.css`
     # into `docs/manual/src/_static/styles/furo.css`.
-    "furo",
+    "furo==2024.8.6",
     "glasgow @ file:///${PROJECT_ROOT}/../../software"
 ]
 
