@@ -65,11 +65,7 @@ class SPIAnalyzerFrontend(wiring.Component):
         m.d.comb += cd_fifo.clk.eq(sck_buffer.i)
 
         m.submodules.fifo = fifo = StreamFIFO(
-            shape=data.StructLayout({
-                "copi": self._word_width,
-                "cipo": self._word_width,
-                "epoch": 1
-            }),
+            shape=self.stream.p.shape(),
             depth=4, # CDC only, no buffering
             w_domain="fifo",
             r_domain="sync"
@@ -240,6 +236,9 @@ class SPIAnalyzerApplet(GlasgowAppletV2):
     Signal integrity is exceptionally important for this applet. When using flywires, twist
     every signal wire (at the very least, CS# and SCK wires) with a ground wire connected to
     ground at both ends, otherwise the captured data will likely be nonsense.
+
+    If your DUT is a 25-series SPI Flash memory and quad-IO commands are in use, you should
+    use the `qspi-analyzer` applet instead.
     """
     # May work on revA/B with a looser clock constraint on SCK.
     required_revision = "C0"

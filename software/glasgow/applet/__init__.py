@@ -129,7 +129,7 @@ class GlasgowAppletArguments:
                     if len(width) == 1:
                         width_desc = f"{width.start}"
                     else:
-                        width_desc = f"{width.start}..{width.stop - 1}"
+                        width_desc = f"{width.start}..{width.stop - width.step}"
                     self._arg_error(f"expected {width_desc} pins, got {len(result)} pins")
                 return result
 
