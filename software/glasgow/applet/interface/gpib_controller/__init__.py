@@ -374,7 +374,6 @@ class GPIBControllerInterface:
             self._nrfd: "float",
             self._ndac: "float",
             self._srq:  "float",
-
         })
         await self.assembly.configure_ports()
 
