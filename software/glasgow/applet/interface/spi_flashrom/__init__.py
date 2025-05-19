@@ -7,7 +7,6 @@ from amaranth.lib import io
 from ... import *
 from ....support.endpoint import *
 from ...interface.spi_controller import SPIControllerApplet
-from ...memory._25x import Memory25xSubtarget
 
 
 class SPISerprogInterface:
@@ -148,6 +147,28 @@ class SerprogCommandHandler:
             await self.nak()
 
 
+class SPIFlashromSubtarget(Elaboratable):
+    def __init__(self, controller, hold):
+        self.controller = controller
+        self.hold = hold
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.controller = self.controller
+        m.submodules.hold_buffer = hold = io.Buffer("o", self.hold)
+
+        m.d.comb += self.controller.bus.oe.eq(self.controller.bus.cs == 1)
+
+        if self.hold is not None:
+            m.d.comb += [
+                hold.oe.eq(1),
+                hold.o.eq(1),
+            ]
+
+        return m
+
+
 class SPIFlashromApplet(SPIControllerApplet):
     logger = logging.getLogger(__name__)
     help = "expose SPI via flashrom serprog interface"
@@ -185,7 +206,7 @@ class SPIFlashromApplet(SPIControllerApplet):
             hold = self.mux_interface.get_port(args.hold, name="hold")
         else:
             hold = None
-        return Memory25xSubtarget(subtarget, hold)
+        return SPIFlashromSubtarget(subtarget, hold)
 
     async def run(self, device, args):
         spi_iface = await self.run_lower(SPIFlashromApplet, device, args)

@@ -219,7 +219,7 @@ class QSPIAnalyzerApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "analyze QSPI transactions"
     description = """
-    Capture transactions on the QSPI bus.
+    Capture transactions on the extended variant of the SPI bus with four I/O channels.
 
     QSPI data is captured in a clock domain driven by the SCK pin and reset by the CS# pin.
     This approach enables capturing data at very high SCK frequencies (up to 96 MHz), but

@@ -18,6 +18,8 @@ extensions = [
     "sphinxcontrib.autoprogram",
 ]
 
+highlight_language = "text"
+
 todo_include_todos = True
 todo_emit_warnings = True
 

@@ -46,17 +46,17 @@ What can I do with Glasgow?
 
   * automatically determine and follow the baud rate of device under test
 
-* initiate SPI, QSPI, or I²C transactions
+* initiate SPI, :ref:`QSPI <applet.interface.qspi_controller>`, or I²C transactions
 
 * analyze :ref:`SPI <applet.interface.spi_analyzer>` and :ref:`QSPI <applet.interface.qspi_analyzer>` transactions at up to ~100 MHz
 
 * read and write 24-series I²C EEPROMs
 
-* read and write 25-series SPI Flash memories
+* read and write :ref:`25-series SPI Flash <applet.memory._25x>` memories
 
   * determine memory parameters via SFDP
 
-  * extract data and SFDP information from SPI transaction captures
+  * :ref:`extract data and SFDP information <applet.memory._25x.tool>` from SPI transaction captures
 
 * read and write ONFI-compatible Flash memories
 

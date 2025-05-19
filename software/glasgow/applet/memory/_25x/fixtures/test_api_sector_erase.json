@@ -1,12 +1,10 @@
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "20000000"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
@@ -171,12 +169,10 @@
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "20001000"}], "kwargs": {}, "result": null}
 {"call": "dummy", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": null}
-{"call": "read", "kind": "asyncmethod", "args": [0], "kwargs": {}, "result": {"__class__": "memoryview", "hex": ""}}
 {"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
 {"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}

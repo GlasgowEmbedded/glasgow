@@ -8,4 +8,6 @@ Applet index
 .. toctree::
 
     interface/index
+    memory/index
+    program/index
     debug/index
