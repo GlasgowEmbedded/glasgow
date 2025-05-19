@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = []
 lock_version = "4.5.0"
-content_hash = "sha256:a26547db8894996d6f3b0cfee75fbb9d1f90a2277e77ce3a5944a8093b6325ef"
+content_hash = "sha256:c02a09b781e52245b355c837b33baeeb3277d9e8a2bb24e2418660b2f2a84456"
 
 [[metadata.targets]]
 requires_python = "~=3.11"
@@ -589,20 +589,6 @@ dependencies = [
 files = [
     {file = "sphinx-7.1.2-py3-none-any.whl", hash = "sha256:d170a81825b2fcacb6dfd5a0d7f578a053e45d3f2b153fecc948c37344eb4cbe"},
     {file = "sphinx-7.1.2.tar.gz", hash = "sha256:780f4d32f1d7d1126576e0e5ecc19dc32ab76cd24e950228dcf7b1f6d3d9e22f"},
-]
-
-[[package]]
-name = "sphinx-argparse"
-version = "0.5.2"
-requires_python = ">=3.10"
-summary = "A sphinx extension that automatically documents argparse commands and options"
-dependencies = [
-    "docutils>=0.19",
-    "sphinx>=5.1.0",
-]
-files = [
-    {file = "sphinx_argparse-0.5.2-py3-none-any.whl", hash = "sha256:d771b906c36d26dee669dbdbb5605c558d9440247a5608b810f7fa6e26ab1fd3"},
-    {file = "sphinx_argparse-0.5.2.tar.gz", hash = "sha256:e5352f8fa894b6fb6fda0498ba28a9f8d435971ef4bbc1a6c9c6414e7644f032"},
 ]
 
 [[package]]

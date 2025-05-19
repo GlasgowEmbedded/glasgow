@@ -514,7 +514,3 @@ class Memory25xApplet(QSPIControllerApplet):
     def tests(cls):
         from . import test
         return test.Memory25xAppletTestCase
-
-
-# FIXME: after redesign of the tool system this won't be needed
-from . import decode as _

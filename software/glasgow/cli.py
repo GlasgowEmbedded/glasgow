@@ -167,36 +167,32 @@ def get_argparser():
             subparsers = parser.add_subparsers(**kwargs)
         return subparsers
 
-    def add_applet_arg(parser, mode, required=False):
+    def add_stub_parser(subparsers, handle, metadata):
+        # fantastically cursed
+        p_stub = subparsers.add_parser(
+            handle, help=metadata.synopsis, description=metadata.description,
+            formatter_class=TextHelpFormatter, prefix_chars='\0', add_help=False)
+        p_stub.add_argument("args", nargs="...", help=argparse.SUPPRESS)
+        p_stub.add_argument("help", nargs="?", default=p_stub.format_help())
+
+    def add_applet_arg(parser, mode, *, required=False):
         subparsers = add_subparsers(
             parser, dest="applet", metavar="APPLET", required=required, parser_class=LazyParser)
 
         for handle, metadata in GlasgowAppletMetadata.all().items():
             if not metadata.loadable:
-                # fantastically cursed
-                p_applet = subparsers.add_parser(
-                    handle, help=metadata.synopsis, description=metadata.description,
-                    formatter_class=TextHelpFormatter, prefix_chars='\0', add_help=False)
-                p_applet.add_argument("args", nargs="...", help=argparse.SUPPRESS)
-                p_applet.add_argument("help", nargs="?", default=p_applet.format_help())
+                add_stub_parser(subparsers, handle, metadata)
                 continue
-
-            applet_cls = metadata.applet_cls
+            applet_cls = metadata.load()
 
             # Don't do `.tests() is None`, as this has the overhead of importing the tests module
             # (about 5ms per applet, which adds up). Instead, check if the function was overridden,
             # as it's pointless to override it just to return `None`.
             if mode == "test" and applet_cls.tests is GlasgowApplet.tests:
                 continue
-            if mode == "tool" and not hasattr(applet_cls, "tool_cls"):
-                continue
 
-            if mode == "tool":
-                help        = applet_cls.tool_cls.help
-                description = applet_cls.tool_cls.description
-            else:
-                help        = applet_cls.help
-                description = applet_cls.description
+            help        = applet_cls.help
+            description = applet_cls.description
             if applet_cls.preview:
                 help += " (PREVIEW QUALITY APPLET)"
                 description = "    This applet is PREVIEW QUALITY and may CORRUPT DATA or " \
@@ -249,6 +245,24 @@ def get_argparser():
                         p_applet.add_argument('script_args', nargs=argparse.REMAINDER)
                 return p_applet_build
             p_applet.add_build_func(p_applet_build_factory(p_applet, handle, applet_cls, mode))
+
+    def add_applet_tool_arg(parser, *, required=False):
+        subparsers = add_subparsers(
+            parser, dest="tool", metavar="TOOL", required=required, parser_class=LazyParser)
+
+        for handle, metadata in GlasgowAppletToolMetadata.all().items():
+            if not metadata.loadable:
+                add_stub_parser(subparsers, handle, metadata)
+                continue
+            tool_cls = metadata.load()
+
+            help        = tool_cls.help
+            description = tool_cls.description
+
+            p_applet = subparsers.add_parser(
+                handle, help=help, description=description,
+                formatter_class=TextHelpFormatter)
+            p_applet.add_build_func(lambda: tool_cls.add_arguments(p_applet))
 
     parser = create_argparser()
 
@@ -355,7 +369,7 @@ def get_argparser():
     p_tool = subparsers.add_parser(
         "tool", formatter_class=TextHelpFormatter,
         help="run an offline tool provided with an applet")
-    p_tool.add_build_func(lambda: add_applet_arg(p_tool, mode="tool", required=True))
+    p_tool.add_build_func(lambda: add_applet_tool_arg(p_tool, required=True))
 
     p_flash = subparsers.add_parser(
         "flash", formatter_class=TextHelpFormatter,
@@ -447,7 +461,7 @@ def get_argparser():
 def _applet(revision, args):
     try:
         assembly = HardwareAssembly(revision=revision)
-        applet = GlasgowAppletMetadata.get(args.applet).applet_cls(assembly)
+        applet = GlasgowAppletMetadata.get(args.applet).load()(assembly)
         if revision < applet.required_revision:
             message = f"applet requires device rev{applet.required_revision}+, rev{revision} found"
             if args.override_required_revision:
@@ -712,7 +726,7 @@ async def main():
                 return applet_task.result()
 
         if args.action == "tool":
-            tool = GlasgowAppletMetadata.get(args.applet).tool_cls()
+            tool = GlasgowAppletToolMetadata.get(args.tool).load()
             try:
                 return await tool.run(args)
             except GlasgowAppletError as e:
@@ -841,7 +855,7 @@ async def main():
 
         if args.action == "test":
             logger.info("testing applet %r", args.applet)
-            applet_cls = GlasgowAppletMetadata.get(args.applet).applet_cls
+            applet_cls = GlasgowAppletMetadata.get(args.applet).load()
             loader = unittest.TestLoader()
             stream = unittest.runner._WritelnDecorator(sys.stderr)
             result = unittest.TextTestResult(stream=stream, descriptions=True, verbosity=2)
