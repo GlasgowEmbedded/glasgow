@@ -431,7 +431,7 @@ class JTAGPinoutApplet(GlasgowApplet):
 
             probe_args = ["jtag-probe"]
             if args.voltage:
-                probe_args += ["-V", ",".join(map(str, args.voltage))]
+                probe_args += ["-V", ",".join(f"{port}={vio}" for port, vio in args.voltage.items())]
             probe_args += ["--tck", str(self.pins[bit_tck])]
             probe_args += ["--tms", str(self.pins[bit_tms])]
             probe_args += ["--tdi", str(self.pins[bit_tdi])]
