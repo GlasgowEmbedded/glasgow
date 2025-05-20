@@ -78,6 +78,10 @@ numpy = [
   "matplotlib~=3.10"
 ]
 
+uinput = [
+  "python-uinput>=1.0.1",
+]
+
 [project.scripts]
 glasgow = "glasgow.cli:run_main"
 
