@@ -1,12 +1,11 @@
-import struct
 import logging
 import asyncio
 from amaranth import *
 from amaranth.lib import wiring, stream, io, cdc
 from amaranth.lib.wiring import In, Out
 
-from ....support.endpoint import ServerEndpoint
-from ... import GlasgowAppletV2
+from glasgow.support.endpoint import ServerEndpoint
+from glasgow.applet import GlasgowAppletV2
 
 
 __all__ = []
