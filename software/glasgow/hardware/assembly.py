@@ -581,7 +581,7 @@ class HardwareAssembly(AbstractAssembly):
     async def configure_ports(self):
         for port, vio in self._voltages.items():
             if vio.sense is not None:
-                sensed = await self.device.mirror_voltage(port, vio.sense)
+                sensed = await self.device.mirror_voltage(port, str(vio.sense))
                 logger.info(
                     "port %s voltage set to %.1f V (sensed on port %s)", port, sensed, vio.sense)
             if vio.value is not None:
