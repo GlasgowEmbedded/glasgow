@@ -1,11 +1,12 @@
 .. _applet.interface:
 
-Interface applets
-=================
+I/O interfaces
+==============
 
 .. automodule:: glasgow.applet.interface
 
 .. toctree::
+    :maxdepth: 2
 
     uart
     spi_analyzer
