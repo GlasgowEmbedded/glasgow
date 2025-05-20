@@ -11,3 +11,4 @@ Interface applets
     spi_analyzer
     qspi_analyzer
     qspi_controller
+    jtag_openocd
