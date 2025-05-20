@@ -251,19 +251,21 @@ def get_argparser():
         subparsers = add_subparsers(
             parser, dest="tool", metavar="TOOL", required=required, parser_class=LazyParser)
 
+        def p_tool_build_factory(p_tool, tool_cls):
+            def p_tool_build():
+                tool_cls.add_arguments(p_tool)
+            return p_tool_build
+
         for handle, metadata in GlasgowAppletToolMetadata.all().items():
             if not metadata.loadable:
                 add_stub_parser(subparsers, handle, metadata)
                 continue
+
             tool_cls = metadata.load()
-
-            help        = tool_cls.help
-            description = tool_cls.description
-
-            p_applet = subparsers.add_parser(
-                handle, help=help, description=description,
+            p_tool = subparsers.add_parser(
+                handle, help=tool_cls.help, description=tool_cls.description,
                 formatter_class=TextHelpFormatter)
-            p_applet.add_build_func(lambda: tool_cls.add_arguments(p_applet))
+            p_tool.add_build_func(p_tool_build_factory(p_tool, tool_cls))
 
     parser = create_argparser()
 
@@ -794,7 +796,7 @@ async def main():
                     pass
 
         if args.action == "tool":
-            tool = GlasgowAppletToolMetadata.get(args.tool).load()
+            tool = GlasgowAppletToolMetadata.get(args.tool).load()()
             try:
                 return await tool.run(args)
             except GlasgowAppletError as e:
