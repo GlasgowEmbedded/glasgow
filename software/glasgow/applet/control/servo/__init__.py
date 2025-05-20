@@ -1,12 +1,13 @@
 import logging
+
 from amaranth import *
-from amaranth.lib import enum, io, wiring
+from amaranth.lib import enum, io, wiring, stream
 from amaranth.lib.wiring import In, Out
 
-from ... import *
+from glasgow.applet import GlasgowAppletV2
 
 
-__all__ = ["ControlServoSubtarget", "ControlServoInterface", "ControlServoApplet"]
+__all__ = ["ControlServoComponent", "ControlServoInterface"]
 
 
 class ServoChannel(wiring.Component):
@@ -68,29 +69,33 @@ class ServoChannel(wiring.Component):
         return m
 
 
-class ControlServoSubtarget(Elaboratable):
+class ControlServoComponent(wiring.Component):
+    i_stream: In(stream.Signature(8))
+
     class Command(enum.Enum):
         Disable  = 0x00
         Enable   = 0x01
         SetValue = 0x02
 
-    def __init__(self, ports, out_fifo):
-        self.ports    = ports
-        self.out_fifo = out_fifo
+    def __init__(self, ports):
+        self.ports = ports
+
+        super().__init__()
 
     def elaborate(self, platform):
         m = Module()
+
         m.submodules.chan = chan = ServoChannel()
         m.submodules.out_buffer = out_buffer = io.Buffer("o", self.ports.out)
         m.d.comb += out_buffer.o.eq(chan.out)
 
         command   = Signal(self.Command)
-        value_low = Signal.like(self.out_fifo.r_data)
+        value_low = Signal.like(self.i_stream.payload)
         with m.FSM():
             with m.State("ReadCommand"):
-                m.d.comb += self.out_fifo.r_en.eq(1)
-                with m.If(self.out_fifo.r_rdy):
-                    m.d.sync += command.eq(self.out_fifo.r_data)
+                m.d.comb += self.i_stream.ready.eq(1)
+                with m.If(self.i_stream.valid):
+                    m.d.sync += command.eq(self.i_stream.payload)
                     m.next = "HandleCommand"
 
             with m.State("HandleCommand"):
@@ -101,25 +106,28 @@ class ControlServoSubtarget(Elaboratable):
                     m.d.sync += chan.en.eq(1)
                     m.next = "ReadCommand"
                 with m.If(command == self.Command.SetValue):
-                    m.d.comb += self.out_fifo.r_en.eq(1)
-                    with m.If(self.out_fifo.r_rdy):
-                        m.d.sync += value_low.eq(self.out_fifo.r_data)
+                    m.d.comb += self.i_stream.ready.eq(1)
+                    with m.If(self.i_stream.valid):
+                        m.d.sync += value_low.eq(self.i_stream.payload)
                         m.next = "ReadPositionHigh"
 
             with m.State("ReadPositionHigh"):
-                m.d.comb += self.out_fifo.r_en.eq(1)
-                with m.If(self.out_fifo.r_rdy):
-                    m.d.sync += chan.pos.eq(Cat(value_low, self.out_fifo.r_data))
+                m.d.comb += self.i_stream.ready.eq(1)
+                with m.If(self.i_stream.valid):
+                    m.d.sync += chan.pos.eq(Cat(value_low, self.i_stream.payload))
                     m.next = "ReadCommand"
 
         return m
 
 
 class ControlServoInterface:
-    def __init__(self, interface, logger):
-        self.lower   = interface
+    def __init__(self, logger, assembly, *, out):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+
+        ports = assembly.add_port_group(out=out)
+        component = assembly.add_submodule(ControlServoComponent(ports))
+        self._pipe = assembly.add_out_pipe(component.i_stream)
 
     def _log(self, message, *args):
         self._logger.log(self._level, "servo: " + message, *args)
@@ -131,11 +139,11 @@ class ControlServoInterface:
         """
         if is_enabled:
             self._log("enable")
-            await self.lower.write([ControlServoSubtarget.Command.Enable.value])
+            await self._pipe.send([ControlServoComponent.Command.Enable.value])
         else:
             self._log("disable")
-            await self.lower.write([ControlServoSubtarget.Command.Disable.value])
-        await self.lower.flush()
+            await self._pipe.send([ControlServoComponent.Command.Disable.value])
+        await self._pipe.flush()
 
     async def disable(self):
         """Disable the servo.
@@ -158,16 +166,16 @@ class ControlServoInterface:
         assert 1000 <= value <= 2000, "Position out of [1000, 2000] range"
 
         self._log(f"value={value}")
-        await self.lower.write([
-            ControlServoSubtarget.Command.SetValue.value,
+        await self._pipe.send([
+            ControlServoComponent.Command.SetValue.value,
             *value.to_bytes(2, byteorder="little")
         ])
-        await self.lower.flush()
+        await self._pipe.flush()
 
         await self.enable()
 
 
-class ControlServoApplet(GlasgowApplet):
+class ControlServoApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "control RC servomotors and ESCs"
     description = """
@@ -186,20 +194,13 @@ class ControlServoApplet(GlasgowApplet):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        super().add_build_arguments(parser, access)
+        access.add_voltage_argument(parser)
+        access.add_pins_argument(parser, "out", required=True, default=True)
 
-        access.add_pins_argument(parser, "out", default=True)
-
-    def build(self, target, args):
-        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        iface.add_subtarget(ControlServoSubtarget(
-            ports=iface.get_port_group(out=args.out),
-            out_fifo=iface.get_out_fifo(),
-        ))
-
-    async def run(self, device, args):
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        return ControlServoInterface(iface, self.logger)
+    def build(self, args):
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            self.servo_iface = ControlServoInterface(self.logger, self.assembly, out=args.out)
 
     @classmethod
     def tests(cls):
