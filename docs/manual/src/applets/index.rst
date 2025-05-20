@@ -8,6 +8,7 @@ Applet index
 .. toctree::
     :maxdepth: 2
 
+    control/index
     interface/index
     memory/index
     program/index
