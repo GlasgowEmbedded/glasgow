@@ -1,9 +1,11 @@
 from typing import Optional, BinaryIO
 from abc import ABCMeta, abstractmethod
 import enum
+import struct
 import logging
 import argparse
 
+from glasgow.database.jedec import jedec_mfg_name_from_bytes
 from glasgow.support.logging import dump_hex
 from glasgow.protocol.sfdp import SFDPParser, SFDPJEDECFlashParametersTable
 from glasgow.applet import GlasgowAppletTool
@@ -175,19 +177,24 @@ class MemoryImageSFDPParser(SFDPParser):
 
 class Memory25xDecoder:
     def __init__(self, logger: Optional[logging.Logger] = None):
-        self._logger  = logger
+        self._logger   = logger
 
-        self._data    = MemoryImage()
-        self._sfdp    = MemoryImage(256)
-        self._unknown = set()
+        self._jedec_id = None
+        self._data     = MemoryImage()
+        self._sfdp     = MemoryImage(256)
+        self._unknown  = set()
 
-        self._index   = 0
-        self._write   = False
-        self._mode    = Memory25xAddrMode.ThreeByte
+        self._index    = 0
+        self._write    = False
+        self._mode     = Memory25xAddrMode.ThreeByte
 
     def _log(self, message, *args, level=logging.DEBUG):
         if self._logger:
             self._logger.log(level, f"25x decode: [{self._index}] " + message, *args)
+
+    @property
+    def jedec_id(self) -> Optional[tuple[int, int]]:
+        return self._jedec_id
 
     @property
     def data(self) -> MemoryImage:
@@ -259,6 +266,11 @@ class Memory25xDecoder:
                     data = trace.read_cipo()
                     self._log("  data=%s", dump_hex(data))
                     self._sfdp.write(addr, data)
+
+                case 0x9F:
+                    self._log(f"{cmd=:02X} (Read JEDEC ID)")
+                    mfg_id, device_id = struct.unpack(">BH", trace.read_cipo(3))
+                    self._jedec_id = (mfg_id, device_id)
 
                 case 0xB7:
                     self._log(f"{cmd=:02X} (Enter 4-Byte Address Mode)")
@@ -386,6 +398,14 @@ class Memory25xAppletTool(GlasgowAppletTool, applet=Memory25xApplet):
         if decoder.unknown:
             self.logger.warning("unknown commands encountered: %s",
                 ", ".join(f"{cmd:02X}" for cmd in decoder.unknown))
+
+        if decoder.jedec_id is not None:
+            mfg_id, device_id = decoder.jedec_id
+            mfg_name = jedec_mfg_name_from_bytes([mfg_id]) or "unknown"
+            self.logger.info(
+                f"JEDEC manufacturer {mfg_id:#04x} ({mfg_name}) device {device_id:#06x}")
+        else:
+            self.logger.info("capture does not have JEDEC device ID")
 
         try:
             sfdp = await MemoryImageSFDPParser(decoder.sfdp)
