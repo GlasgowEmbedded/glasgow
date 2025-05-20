@@ -235,6 +235,11 @@ class Memory25xDecoder:
                     self._log(f"{cmd=:02X} (Write Disable)")
                     self._write = False
 
+                case 0x05:
+                    self._log(f"{cmd=:02X} (Read Status Register)")
+                    # We don't do anything with the value; this could be used to verify whether
+                    # preceding writes have completed or not.
+
                 case 0x06:
                     self._log(f"{cmd=:02X} (Write Enable)")
                     self._write = True
