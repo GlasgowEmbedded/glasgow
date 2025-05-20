@@ -4,11 +4,12 @@
 
 import logging
 import asyncio
+
 from amaranth import *
 from amaranth.lib import enum, data, wiring, stream, io
 from amaranth.lib.wiring import In, Out
 
-from .. import *
+from glasgow.applet import GlasgowAppletV2
 
 
 class BoilerplateComponent(wiring.Component):
