@@ -17,3 +17,4 @@ I/O interfaces
     jtag_xvc
     swd_probe
     probe_rs
+    ps2_host
