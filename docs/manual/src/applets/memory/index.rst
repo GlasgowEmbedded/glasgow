@@ -1,10 +1,11 @@
 .. _applet.memory:
 
-Memory applets
-==============
+Memory manipulation
+===================
 
 .. automodule:: glasgow.applet.memory
 
 .. toctree::
+    :maxdepth: 2
 
     25x
