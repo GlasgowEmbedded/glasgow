@@ -16,12 +16,25 @@ __all__ = ["MemoryImage", "Memory25xDecoder"]
 
 
 class MemoryImage:
-    def __init__(self, size=0):
+    def __init__(self, size=None, *, wrap=None):
+        self._wrap = wrap
+        if wrap is not None:
+            assert size is None
+            size = wrap
+        elif size is None:
+            size = 0
         self._data = bytearray(size)
         self._mask = bytearray(size)
 
     def __len__(self):
         return len(self._data)
+
+    def __bool__(self):
+        try:
+            self._mask.index(b"\xff")
+            return True
+        except ValueError:
+            return False
 
     @property
     def data(self) -> memoryview:
@@ -42,12 +55,19 @@ class MemoryImage:
         return self.data[addr:addr + size]
 
     def write(self, addr: int, chunk: bytes | bytearray | memoryview):
-        extra_len = addr + len(chunk) - len(self.data)
-        if extra_len > 0:
-            self._data.extend(bytearray(extra_len))
-            self._mask.extend(bytearray(extra_len))
-        self._data[addr:addr + len(chunk)] = chunk
-        self._mask[addr:addr + len(chunk)] = b"\xff" * len(chunk)
+        if self._wrap is None:
+            extra_len = addr + len(chunk) - len(self.data)
+            if extra_len > 0:
+                self._data.extend(bytearray(extra_len))
+                self._mask.extend(bytearray(extra_len))
+            self._data[addr:addr + len(chunk)] = chunk
+            self._mask[addr:addr + len(chunk)] = b"\xff" * len(chunk)
+        else:
+            # This is very slow, but currenly is only used for very small images.
+            for offset, byte in enumerate(chunk):
+                byte_addr = (addr + offset) % self._wrap
+                self._data[byte_addr] = byte
+                self._mask[byte_addr] = 0xff
 
     def save(self, data_file: Optional[BinaryIO], mask_file: Optional[BinaryIO] = None):
         if data_file is not None:
@@ -182,6 +202,7 @@ class Memory25xDecoder:
         self._jedec_id = None
         self._data     = MemoryImage()
         self._sfdp     = MemoryImage(256)
+        self._uid      = MemoryImage(wrap=16)
         self._unknown  = set()
 
         self._index    = 0
@@ -203,6 +224,10 @@ class Memory25xDecoder:
     @property
     def sfdp(self) -> MemoryImage:
         return self._sfdp
+
+    @property
+    def uid(self) -> MemoryImage:
+        return self._uid
 
     @property
     def unknown(self) -> set[int]:
@@ -258,6 +283,14 @@ class Memory25xDecoder:
                     data = trace.read_cipo()
                     self._log("  data=%s", dump_hex(data))
                     self._data.write(addr, data)
+
+                case 0x4B:
+                    self._log(f"{cmd=:02X} (Read Unique ID)")
+                    addr = self._decode_addr(trace, Memory25xAddrMode.ThreeByte)
+                    _    = trace.read_cipo(1)
+                    data = trace.read_cipo()
+                    self._log("  data=%s", dump_hex(data))
+                    self._uid.write(addr, data)
 
                 case 0x5A:
                     self._log(f"{cmd=:02X} (Read SFDP)")
@@ -380,6 +413,13 @@ class Memory25xAppletTool(GlasgowAppletTool, applet=Memory25xApplet):
             "--sfdp-mask", dest="sfdp_mask_file", metavar="MASK-FILE", type=argparse.FileType("wb"),
             help="write SFDP data presence mask to MASK-FILE")
 
+        parser.add_argument(
+            "--uid", dest="uid_file", metavar="DATA-FILE", type=argparse.FileType("wb"),
+            help="write extracted UID data to DATA-FILE")
+        parser.add_argument(
+            "--uid-mask", dest="uid_mask_file", metavar="MASK-FILE", type=argparse.FileType("wb"),
+            help="write UID data presence mask to MASK-FILE")
+
     async def run(self, args):
         decoder = Memory25xDecoder(self.logger)
 
@@ -409,7 +449,7 @@ class Memory25xAppletTool(GlasgowAppletTool, applet=Memory25xApplet):
 
         try:
             sfdp = await MemoryImageSFDPParser(decoder.sfdp)
-            self.logger.info(f"capture has valid {sfdp} descriptor")
+            self.logger.info(f"capture contains valid {sfdp} descriptor")
             for line in sfdp.description():
                 self.logger.info(f"  {line}")
 
@@ -420,5 +460,9 @@ class Memory25xAppletTool(GlasgowAppletTool, applet=Memory25xApplet):
         except ValueError as exn:
             self.logger.info(f"capture does not have valid SFDP data: {exn}")
 
+        if decoder.uid:
+            self.logger.info("capture contains UID")
+
         decoder.data.save(args.data_file, args.data_mask_file)
         decoder.sfdp.save(args.sfdp_file, args.sfdp_mask_file)
+        decoder.uid.save(args.uid_file, args.uid_mask_file)
