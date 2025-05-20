@@ -390,6 +390,10 @@ class HardwareAssembly(AbstractAssembly):
         self._running       = False
 
     @property
+    def revision(self) -> str:
+        return self._revision
+
+    @property
     def sys_clk_period(self) -> float:
         match self._revision:
             case "A0" | "B0":

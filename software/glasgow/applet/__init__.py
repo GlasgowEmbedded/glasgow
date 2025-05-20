@@ -154,8 +154,13 @@ class GlasgowApplet(metaclass=ABCMeta):
     description = "applet description missing"
     required_revision = "A0"
 
-    def __init__(self, assembly):
-        pass
+    def __init__(self, assembly: AbstractAssembly):
+        if isinstance(assembly, HardwareAssembly):
+            if assembly.revision < self.required_revision:
+                self.logger.warning(f"applet requires a rev{self.required_revision}+ device, "
+                                    f"use on a rev{assembly.revision} device is unsupported")
+            if self.preview:
+                self.logger.warning(f"applet is PREVIEW QUALITY and may CORRUPT DATA")
 
     @classmethod
     def add_build_arguments(cls, parser, access):
@@ -212,8 +217,15 @@ class GlasgowAppletV2(metaclass=ABCMeta):
     description = "applet description missing"
     required_revision = "A0"
 
-    def __init__(self, assembly):
+    def __init__(self, assembly: AbstractAssembly):
         self._assembly = assembly
+
+        if isinstance(assembly, HardwareAssembly):
+            if assembly.revision < self.required_revision:
+                self.logger.warning(f"applet requires a rev{self.required_revision}+ device, "
+                                    f"use on a rev{assembly.revision} device is unsupported")
+            if self.preview:
+                self.logger.warning(f"applet is PREVIEW QUALITY and may CORRUPT DATA")
 
     @property
     def assembly(self) -> AbstractAssembly:
@@ -473,11 +485,11 @@ class GlasgowAppletTestCase(unittest.TestCase):
         cls.applet_cls  = applet
 
     def setUp(self):
-        self.applet = self.applet_cls(None)
+        self.assembly = HardwareAssembly(revision=self.applet_cls.required_revision)
+        self.applet = self.applet_cls(self.assembly)
 
     def assertBuilds(self, args=[]):
-        assembly = HardwareAssembly(revision=self.applet_cls.required_revision)
-        target = DeprecatedTarget(assembly)
+        target = DeprecatedTarget(self.assembly)
 
         parser = argparse.ArgumentParser()
         access_args = GlasgowAppletArguments("applet")
