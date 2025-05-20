@@ -93,7 +93,7 @@ def version_info():
 
 
 def create_argparser():
-    parser = argparse.ArgumentParser(formatter_class=TextHelpFormatter)
+    parser = argparse.ArgumentParser(formatter_class=TextHelpFormatter, fromfile_prefix_chars="@")
 
     parser.add_argument(
         "-V", "--version", action="version", version=version_info(),
