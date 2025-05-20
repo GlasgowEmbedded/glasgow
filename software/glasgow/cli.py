@@ -322,14 +322,7 @@ def get_argparser():
     add_voltage_arg(p_voltage_limit,
         help="maximum allowed I/O port voltage")
 
-    def add_build_args(parser):
-        parser.add_argument(
-            "--override-required-revision", default=False, action="store_true",
-            help="(advanced) override applet revision requirement")
-
     def add_run_args(parser):
-        add_build_args(parser)
-
         g_run_bitstream = parser.add_mutually_exclusive_group()
         g_run_bitstream.add_argument(
             "--reload", default=False, action="store_true",
@@ -367,6 +360,13 @@ def get_argparser():
     add_run_args(p_script)
     p_script.add_build_func(lambda: add_applet_arg(p_script, mode="script", required=True))
 
+    p_multi = subparsers.add_parser(
+        "multi", formatter_class=TextHelpFormatter,
+        help="(experimental) run multiple applets simultaneously")
+    p_multi.add_argument(
+        "rest", metavar="ARGS", nargs=argparse.REMAINDER,
+        help="applet name and arguments for each applet, separated by ++ arguments")
+
     p_tool = subparsers.add_parser(
         "tool", formatter_class=TextHelpFormatter,
         help="run an offline tool provided with an applet")
@@ -375,7 +375,6 @@ def get_argparser():
     p_flash = subparsers.add_parser(
         "flash", formatter_class=TextHelpFormatter,
         help="program FX2 firmware or applet bitstream into EEPROM")
-    add_build_args(p_flash)
 
     g_flash_firmware = p_flash.add_mutually_exclusive_group()
     g_flash_firmware.add_argument(
@@ -397,8 +396,6 @@ def get_argparser():
     p_build = subparsers.add_parser(
         "build", formatter_class=TextHelpFormatter,
         help="(advanced) build applet logic and save it as a file")
-    add_build_args(p_build)
-
     p_build.add_argument(
         "--rev", metavar="REVISION", type=revision, required=True,
         help="board revision")
@@ -459,29 +456,21 @@ def get_argparser():
 
 
 # The name of this function appears in Verilog output, so keep it tidy.
-def _applet(revision, args):
+def _applet(assembly, args):
     try:
-        assembly = HardwareAssembly(revision=revision)
-        applet = GlasgowAppletMetadata.get(args.applet).load()(assembly)
-        if revision < applet.required_revision:
-            message = f"applet requires device rev{applet.required_revision}+, rev{revision} found"
-            if args.override_required_revision:
-                applet.logger.warning(message)
-            else:
-                raise GlasgowAppletError(message)
-
-        match applet:
+        applet_cls = GlasgowAppletMetadata.get(args.applet).load()
+        match applet := applet_cls(assembly):
             case GlasgowAppletV2():
                 applet.build(args)
-                return applet, assembly, None
+                return applet, None
             case GlasgowApplet():
                 target = DeprecatedTarget(assembly)
                 with assembly.add_applet(applet):
                     applet.build(target, args)
-                return applet, assembly, target
+                return applet, target
     except GlasgowAppletError as e:
         applet.logger.error(e)
-        logger.error("failed to build subtarget for applet %r", args.applet)
+        logger.error("failed to build applet %r", args.applet)
         raise SystemExit()
 
 
@@ -538,6 +527,7 @@ def create_logger():
     root_logger.addHandler(term_handler)
     return term_handler
 
+
 def configure_logger(args, term_handler):
     root_logger = logging.getLogger()
 
@@ -564,7 +554,7 @@ def configure_logger(args, term_handler):
 
 
 @contextlib.contextmanager
-def with_gc_freeze():
+def gc_freeze():
     if sys.implementation.name == "cpython":
         # Run a full garbage collection, then move all remaining objects into the permanent
         # generation. This greatly reduces the amount of work the garbage collector has to do in a
@@ -576,6 +566,17 @@ def with_gc_freeze():
         gc.unfreeze()
     else:
         yield
+
+
+class SIGINTCaught(Exception):
+    """This exception is necessary because asyncio recognizes both SystemExit and
+    KeyboardInterrupt and treats them specially in a way we don't need."""
+
+
+async def wait_for_sigint():
+    await wait_for_signal(signal.SIGINT)
+    logger.debug("Ctrl+C pressed, terminating")
+    raise SIGINTCaught
 
 
 async def main():
@@ -590,6 +591,7 @@ async def main():
     try:
         if args.action not in ("build", "test", "tool", "factory", "list"):
             device = GlasgowDevice(args.serial)
+            assembly = HardwareAssembly(device=device)
 
         if args.action == "voltage":
             if args.voltage is not None:
@@ -636,7 +638,7 @@ async def main():
                       .format(port, vio, vlimit))
 
         if args.action in ("run", "repl", "script"):
-            applet, assembly, target = _applet(device.revision, args)
+            applet, target = _applet(assembly, args)
 
             if args.prebuilt or args.prebuilt_at:
                 bitstream_file = args.prebuilt_at or open(f"{args.applet}.bin", "rb")
@@ -702,29 +704,94 @@ async def main():
                     return 1
                 except asyncio.CancelledError:
                     return 130 # 128 + SIGINT
-                finally:
-                    await assembly.flush_pipes()
-                    if args.show_statistics:
-                        assembly.statistics()
 
-            async def wait_for_sigint():
-                await wait_for_signal(signal.SIGINT)
-                logger.debug("Ctrl+C pressed, terminating")
+            with gc_freeze():
+                async with asyncio.TaskGroup() as group:
+                    applet_task = group.create_task(run_applet())
 
-            tasks = []
-            tasks.append(applet_task := asyncio.ensure_future(run_applet()))
-            if args.action != "repl":
-                tasks.append(asyncio.ensure_future(wait_for_sigint()))
+                    if args.action != "repl":
+                        sigint_task = group.create_task(wait_for_sigint())
+                        await asyncio.wait([applet_task])
+                        sigint_task.cancel()
 
-            with with_gc_freeze():
-                done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-                for task in pending:
-                    task.cancel()
-                await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+            await assembly.stop()
+            if args.show_statistics:
+                assembly.statistics()
 
-                await assembly.stop()
+            return applet_task.result()
 
-                return applet_task.result()
+        if args.action == "multi":
+            assembly = HardwareAssembly(device=device)
+            applets = []
+            while args.rest:
+                try:
+                    split_at = args.rest.index("++")
+                except ValueError:
+                    split_at = len(args.rest)
+                applet_cmdline, args.rest = args.rest[:split_at], args.rest[split_at + 1:]
+                if len(applet_cmdline) < 1:
+                    logger.error(f"no applet name specified for applet #{len(applets) + 1}")
+                    return
+
+                applet_name, *applet_args = applet_cmdline
+                try:
+                    applet_parser = argparse.ArgumentParser()
+                    def argparse_exit(self, status=0, message=None):
+                        if status: raise
+                    applet_parser.exit = argparse_exit
+
+                    applet_cls = GlasgowAppletMetadata.get(applet_name).load()
+                    if not issubclass(applet_cls, GlasgowAppletV2):
+                        logger.error(f"applet {applet_name!r} must be migrated to V2 API first")
+                        return 1
+
+                    applet_cls.add_build_arguments(applet_parser,
+                        GlasgowAppletArguments(applet_name))
+                    applet_cls.add_setup_arguments(applet_parser)
+                    applet_cls.add_run_arguments(applet_parser)
+                    applet_parsed_args = applet_parser.parse_args(applet_args)
+
+                    applet = applet_cls(assembly)
+                    applet.build(applet_parsed_args)
+                    applets.append((applet, applet_name, applet_parsed_args))
+
+                except argparse.ArgumentError as exn:
+                    logger.error(f"error for applet #{len(applets) + 1} {applet_name!r}:")
+                    logger.error("%s", exn)
+                    return 1
+
+                except:
+                    logger.error(f"error building applet #{len(applets) + 1} {applet_name!r}:")
+                    raise
+
+            async with assembly:
+                for index, (applet, applet_name, applet_parsed_args) in enumerate(applets):
+                    try:
+                        await applet.setup(applet_parsed_args)
+                    except:
+                        logger.error(f"error setting up applet #{index + 1} {applet_name!r}:")
+                        raise
+
+                try:
+                    async def applet_task(applet, applet_parsed_args):
+                        await applet.run(applet_parsed_args)
+                        logger.info(f"applet #{index + 1} {applet_name!r} has finished running")
+
+                    with gc_freeze():
+                        async with asyncio.TaskGroup() as group:
+                            applet_tasks = []
+                            for applet, applet_name, applet_parsed_args in applets:
+                                applet_tasks.append(group.create_task(
+                                    applet_task(applet, applet_parsed_args),
+                                    name=f"{applet_name}#{index + 1}"
+                                ))
+
+                            sigint_task = group.create_task(wait_for_sigint())
+                            await asyncio.wait(applet_tasks)
+                            sigint_task.cancel()
+
+                except* SIGINTCaught:
+                    pass
 
         if args.action == "tool":
             tool = GlasgowAppletToolMetadata.get(args.tool).load()
@@ -772,7 +839,8 @@ async def main():
                     glasgow_config.bitstream_id   = new_bitstream_id
             elif args.applet:
                 logger.info("generating bitstream for applet %s", args.applet)
-                applet, assembly, _multiplexer = _applet(device.revision, args)
+                assembly = HardwareAssembly(revision=args.rev)
+                applet, _multiplexer = _applet(assembly, args)
                 plan = assembly.artifact()
                 new_bitstream_id = plan.bitstream_id
                 new_bitstream    = plan.get_bitstream()
@@ -839,7 +907,8 @@ async def main():
                 logger.info("configuration and firmware identical")
 
         if args.action == "build":
-            applet, assembly, target = _applet(args.rev, args)
+            assembly = HardwareAssembly(revision=args.rev)
+            applet, target = _applet(assembly, args)
             plan = assembly.artifact()
             if args.type in ("il", "rtlil"):
                 logger.info("generating RTLIL for applet %r", args.applet)

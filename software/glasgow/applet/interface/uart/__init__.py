@@ -355,7 +355,7 @@ class UARTApplet(GlasgowAppletV2):
         out_fileno = sys.stdout.fileno()
 
         if os.isatty(in_fileno) and os.name != "nt":
-            import atexit, termios
+            import termios
 
             old_stdin_attrs = termios.tcgetattr(sys.stdin)
             [iflag, oflag, cflag, lflag, ispeed, ospeed, cc] = old_stdin_attrs
@@ -365,13 +365,14 @@ class UARTApplet(GlasgowAppletV2):
             new_stdin_attrs = [iflag, oflag, cflag, lflag, ispeed, ospeed, cc]
             termios.tcsetattr(in_fileno, termios.TCSADRAIN, new_stdin_attrs)
 
-            @atexit.register
-            def restore_stdin_attrs():
+            self.logger.info("running on a TTY; enter `Ctrl+\\ q` to quit")
+            try:
+                await self._forward_fd(args, in_fileno, out_fileno, quit_sequence=True)
+            finally:
                 termios.tcsetattr(in_fileno, termios.TCSADRAIN, old_stdin_attrs)
 
-            self.logger.info("running on a TTY; enter `Ctrl+\\ q` to quit")
-
-        await self._forward_fd(args, in_fileno, out_fileno, quit_sequence=True)
+        else:
+            await self._forward_fd(args, in_fileno, out_fileno)
 
     async def _run_pty(self, args):
         import pty
