@@ -369,8 +369,8 @@ class HardwareInOutPipe(HardwareInPipe, HardwareOutPipe, AbstractInOutPipe):
 
     async def reset(self):
         self._logger.trace(f"IN/OUT pipe {self._in_interface}/{self._out_interface}: reset")
-        await self._stop(self)
-        await self._start(self)
+        await self._stop()
+        await self._start()
 
 
 class HardwareAssembly(AbstractAssembly):
