@@ -707,14 +707,17 @@ async def main():
                 except asyncio.CancelledError:
                     return 130 # 128 + SIGINT
 
-            with gc_freeze():
-                async with asyncio.TaskGroup() as group:
-                    applet_task = group.create_task(run_applet())
+            try:
+                with gc_freeze():
+                    async with asyncio.TaskGroup() as group:
+                        applet_task = group.create_task(run_applet())
 
-                    if args.action != "repl":
-                        sigint_task = group.create_task(wait_for_sigint())
-                        await asyncio.wait([applet_task])
-                        sigint_task.cancel()
+                        if args.action != "repl":
+                            sigint_task = group.create_task(wait_for_sigint())
+                            await asyncio.wait([applet_task])
+                            sigint_task.cancel()
+            except* SIGINTCaught:
+                pass
 
             await assembly.stop()
             if args.show_statistics:
