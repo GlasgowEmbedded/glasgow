@@ -5,10 +5,13 @@ import array
 import time
 import statistics
 import enum
-from amaranth import *
 
-from ....gateware.lfsr import *
-from ... import *
+from amaranth import *
+from amaranth.lib import wiring, stream
+from amaranth.lib.wiring import In, Out
+
+from glasgow.gateware.lfsr import LinearFeedbackShiftRegister
+from glasgow.applet import GlasgowAppletV2
 
 
 class Mode(enum.Enum):
@@ -17,16 +20,18 @@ class Mode(enum.Enum):
     LOOPBACK = 3
 
 
-class BenchmarkSubtarget(Elaboratable):
-    def __init__(self, reg_mode, reg_error, reg_count, in_fifo, out_fifo):
-        self.reg_mode  = reg_mode
-        self.reg_error = reg_error
-        self.reg_count = reg_count
+class BenchmarkComponent(wiring.Component):
+    i_stream: In(stream.Signature(8))
+    o_stream: Out(stream.Signature(8))
+    o_flush:  Out(1)
+    mode:     In(Mode)
+    error:    Out(1)
+    count:    Out(32)
 
-        self.in_fifo  = in_fifo
-        self.out_fifo = out_fifo
-
+    def __init__(self):
         self.lfsr = LinearFeedbackShiftRegister(degree=16, taps=(16, 15, 13, 4))
+
+        super().__init__()
 
     def elaborate(self, platform):
         m = Module()
@@ -34,12 +39,12 @@ class BenchmarkSubtarget(Elaboratable):
         lfsr_en   = Signal()
         lfsr_word = Signal(8)
         m.submodules.lfsr = lfsr = EnableInserter(lfsr_en)(self.lfsr)
-        m.d.comb += lfsr_word.eq(self.lfsr.value.word_select(self.reg_count & 1, width=8))
+        m.d.comb += lfsr_word.eq(self.lfsr.value.word_select(self.count & 1, width=8))
 
         with m.FSM():
             with m.State("MODE"):
-                m.d.sync += self.reg_count.eq(0)
-                with m.Switch(self.reg_mode):
+                m.d.sync += self.count.eq(0)
+                with m.Switch(self.mode):
                     with m.Case(Mode.SOURCE):
                         m.next = "SOURCE"
                     with m.Case(Mode.SINK):
@@ -48,41 +53,43 @@ class BenchmarkSubtarget(Elaboratable):
                         m.next = "LOOPBACK"
 
             with m.State("SOURCE"):
-                with m.If(self.in_fifo.w_rdy):
+                m.d.comb += [
+                    self.o_stream.payload.eq(lfsr_word),
+                    self.o_stream.valid.eq(1),
+                ]
+                with m.If(self.o_stream.ready):
                     m.d.comb += [
-                        self.in_fifo.w_data.eq(lfsr_word),
-                        self.in_fifo.w_en.eq(1),
-                        lfsr_en.eq(self.reg_count & 1),
+                        lfsr_en.eq(self.count & 1),
                     ]
-                    m.d.sync += self.reg_count.eq(self.reg_count + 1)
+                    m.d.sync += self.count.eq(self.count + 1)
 
             with m.State("SINK"):
-                with m.If(self.out_fifo.r_rdy):
-                    with m.If(self.out_fifo.r_data != lfsr_word):
-                        m.d.sync += self.reg_error.eq(1)
+                with m.If(self.i_stream.valid):
+                    with m.If(self.i_stream.payload != lfsr_word):
+                        m.d.sync += self.error.eq(1)
                     m.d.comb += [
-                        self.out_fifo.r_en.eq(1),
-                        lfsr_en.eq(self.reg_count & 1),
+                        self.i_stream.ready.eq(1),
+                        lfsr_en.eq(self.count & 1),
                     ]
-                    m.d.sync += self.reg_count.eq(self.reg_count + 1)
+                    m.d.sync += self.count.eq(self.count + 1)
 
             with m.State("LOOPBACK"):
-                m.d.comb += self.in_fifo.w_data.eq(self.out_fifo.r_data)
-                with m.If(self.in_fifo.w_rdy & self.out_fifo.r_rdy):
-                    m.d.comb += [
-                        self.in_fifo.w_en.eq(1),
-                        self.out_fifo.r_en.eq(1),
-                    ]
-                    m.d.sync += self.reg_count.eq(self.reg_count + 1)
+                m.d.comb += [
+                    self.o_stream.payload.eq(self.i_stream.payload),
+                    self.o_stream.valid.eq(self.i_stream.valid),
+                    self.i_stream.ready.eq(self.o_stream.ready),
+                ]
+                with m.If(self.o_stream.ready & self.o_stream.valid):
+                    m.d.sync += self.count.eq(self.count + 1)
                 with m.Else():
                     m.d.comb += [
-                        self.in_fifo.flush.eq(1),
+                        self.o_flush.eq(1),
                     ]
 
         return m
 
 
-class BenchmarkApplet(GlasgowApplet):
+class BenchmarkApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "evaluate communication performance"
     description = """
@@ -104,26 +111,23 @@ class BenchmarkApplet(GlasgowApplet):
 
     __all_modes = ["source", "sink", "loopback", "latency"]
 
-    def build(self, target, args):
-        self.mux_interface = iface = \
-            target.multiplexer.claim_interface(self, args=None)
-        mode,  self.__addr_mode  = target.registers.add_rw(2)
-        error, self.__addr_error = target.registers.add_ro(1)
-        count, self.__addr_count = target.registers.add_ro(32)
-        subtarget = iface.add_subtarget(BenchmarkSubtarget(
-            reg_mode=mode, reg_error=error, reg_count=count,
-            in_fifo=iface.get_in_fifo(auto_flush=False),
-            out_fifo=iface.get_out_fifo(),
-        ))
+    def build(self, args):
+        with self.assembly.add_applet(self):
+            component = self.assembly.add_submodule(BenchmarkComponent())
+            self._pipe = self.assembly.add_inout_pipe(
+                component.o_stream, component.i_stream, in_flush=component.o_flush)
+            self._mode = self.assembly.add_rw_register(component.mode)
+            self._error = self.assembly.add_ro_register(component.error)
+            self._count = self.assembly.add_ro_register(component.count)
 
         sequence = array.array("H")
-        sequence.extend(subtarget.lfsr.generate())
+        sequence.extend(component.lfsr.generate())
         if struct.pack("H", 0x1234) != struct.pack("<H", 0x1234):
             sequence.byteswap()
         self._sequence = sequence.tobytes()
 
     @classmethod
-    def add_run_arguments(cls, parser, access):
+    def add_run_arguments(cls, parser):
         parser.add_argument(
             "-c", "--count", metavar="COUNT", type=int, default=1 << 23,
             help="transfer COUNT bytes (default: %(default)s)")
@@ -132,10 +136,7 @@ class BenchmarkApplet(GlasgowApplet):
             dest="modes", metavar="MODE", type=str, nargs="*", choices=[[]] + cls.__all_modes,
             help="run benchmark mode MODE (default: {})".format(" ".join(cls.__all_modes)))
 
-    async def run(self, device, args):
-        return await device.demultiplexer.claim_interface(self, self.mux_interface, args=None)
-
-    async def interact(self, device, args, iface):
+    async def run(self, args):
         golden = bytearray()
         while len(golden) < args.count:
             golden += self._sequence[:args.count - len(golden)]
@@ -145,7 +146,7 @@ class BenchmarkApplet(GlasgowApplet):
         async def counter():
             while True:
                 await asyncio.sleep(0.1)
-                count = await device.read_register(self.__addr_count, width=4)
+                count = await self._count
                 self.logger.debug("transferred %#x/%#x", count, args.count)
 
         for mode in args.modes or self.__all_modes:
@@ -153,12 +154,12 @@ class BenchmarkApplet(GlasgowApplet):
                              mode, len(golden) / (1 << 20))
 
             if mode == "source":
-                await device.write_register(self.__addr_mode, Mode.SOURCE.value)
-                await iface.reset()
+                await self._mode.set(Mode.SOURCE.value)
+                await self._pipe.reset()
 
                 counter_fut = asyncio.ensure_future(counter())
                 begin  = time.time()
-                actual = await iface.read(len(golden))
+                actual = await self._pipe.recv(len(golden))
                 end    = time.time()
                 length = len(golden)
                 counter_fut.cancel()
@@ -167,28 +168,29 @@ class BenchmarkApplet(GlasgowApplet):
                 count = None
 
             if mode == "sink":
-                await device.write_register(self.__addr_mode, Mode.SINK.value)
-                await iface.reset()
+                await self._mode.set(Mode.SINK.value)
+                await self._pipe.reset()
 
                 counter_fut = asyncio.ensure_future(counter())
                 begin  = time.time()
-                await iface.write(golden)
-                await iface.flush()
+                await self._pipe.send(golden)
+                await self._pipe.flush()
                 end    = time.time()
                 length = len(golden)
                 counter_fut.cancel()
 
-                error = bool(await device.read_register(self.__addr_error))
-                count = await device.read_register(self.__addr_count, width=4)
+                error = bool(await self._error)
+                count = await self._count
 
             if mode == "loopback":
-                await device.write_register(self.__addr_mode, Mode.LOOPBACK.value)
-                await iface.reset()
+                await self._mode.set(Mode.LOOPBACK.value)
+                await self._pipe.reset()
                 counter_fut = asyncio.ensure_future(counter())
 
                 begin  = time.time()
-                await iface.write(golden)
-                actual = await iface.read(len(golden))
+                await self._pipe.send(golden)
+                await self._pipe.flush()
+                actual = await self._pipe.recv(len(golden))
                 end    = time.time()
                 length = len(golden) * 2
                 counter_fut.cancel()
@@ -202,14 +204,15 @@ class BenchmarkApplet(GlasgowApplet):
                 error = False
                 roundtriptime = []
 
-                await device.write_register(self.__addr_mode, Mode.LOOPBACK.value)
-                await iface.reset()
+                await self._mode.set(Mode.LOOPBACK.value)
+                await self._pipe.reset()
                 counter_fut = asyncio.ensure_future(counter())
 
                 while count < args.count:
                     begin = time.perf_counter()
-                    await iface.write(packetmax)
-                    actual = await iface.read(len(packetmax))
+                    await self._pipe.send(packetmax)
+                    await self._pipe.flush()
+                    actual = await self._pipe.recv(len(packetmax))
                     end = time.perf_counter()
 
                     # calculate roundtrip time in µs
