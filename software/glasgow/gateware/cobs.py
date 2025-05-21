@@ -93,9 +93,10 @@ class Encoder(wiring.Component):
                         stage(self.i.p.data)
 
             with m.State("End"):
-                write(w_addr, 0x00)
-                m.d.sync += w_addr.eq(w_addr + 1)
-                m.next = "Data"
+                with m.If(~full):
+                    write(w_addr, 0x00)
+                    m.d.sync += w_addr.eq(w_addr + 1)
+                    m.next = "Data"
 
         m.d.comb += self.o.valid.eq(~empty)
         m.d.comb += self.o.payload.eq(r_port.data)
