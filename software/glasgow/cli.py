@@ -659,8 +659,6 @@ async def main():
                         args.script_args = args.script_args[1:]
 
                 logger.info("running handler for applet %r", args.applet)
-                if applet.preview:
-                    logger.warning("applet %r is PREVIEW QUALITY and may CORRUPT DATA", args.applet)
                 try:
                     match applet:
                         case GlasgowAppletV2():
