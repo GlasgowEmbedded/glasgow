@@ -3,6 +3,8 @@
 #include <fx2i2c.h>
 #include "glasgow.h"
 
+__xdata uint8_t fpga_reg_pipe_rst;
+
 void fpga_init() {
   OED |=  (1<<PIND_LED_ICE);
   fpga_is_ready();
@@ -153,7 +155,10 @@ __endasm;
       break;
   }
 
-  // Update and return FPGA status.
+  // Synchronize pipe reset status.
+  fpga_reg_pipe_rst = 0b1111;
+
+  // Check FPGA status.
   return fpga_is_ready();
 }
 
@@ -191,4 +196,24 @@ bool fpga_reg_write(__xdata const uint8_t *value, uint8_t length) {
 fail:
   i2c_stop();
   return false;
+}
+
+bool fpga_pipe_rst(uint8_t set, uint8_t clr) {
+  if (set) {
+    fpga_reg_pipe_rst |= set;
+    if (!fpga_reg_select(FPGA_REG_PIPE_RST))
+      return false;
+    if (!fpga_reg_write(&fpga_reg_pipe_rst, 1))
+      return false;
+  }
+
+  if (clr) {
+    fpga_reg_pipe_rst &= ~clr;
+    if (!fpga_reg_select(FPGA_REG_PIPE_RST))
+      return false;
+    if (!fpga_reg_write(&fpga_reg_pipe_rst, 1))
+      return false;
+  }
+
+  return true;
 }

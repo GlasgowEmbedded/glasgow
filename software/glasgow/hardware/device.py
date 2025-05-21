@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 VID_QIHW         = 0x20b7
 PID_GLASGOW      = 0x9db1
 
-CUR_API_LEVEL    = 0x03
+CUR_API_LEVEL    = 0x04
 
 REQ_EEPROM       = 0x10
 REQ_FPGA_CFG     = 0x11
