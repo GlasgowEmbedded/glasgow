@@ -13,3 +13,4 @@ Applet index
     memory/index
     program/index
     debug/index
+    internal/index
