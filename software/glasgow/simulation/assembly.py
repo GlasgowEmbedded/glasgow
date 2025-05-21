@@ -47,6 +47,10 @@ class SimulationPipe(AbstractInOutPipe):
             clk_hit, rst_hit = await self._parent._context.tick()
             assert not rst_hit
 
+    async def reset(self):
+        self._i_buffer.clear()
+        self._o_buffer.clear()
+
 
 class SimulationRORegister(AbstractRORegister):
     def __init__(self, parent, signal):

@@ -159,6 +159,10 @@ class AbstractInPipe(metaclass=ABCMeta):
     async def recv(self, length) -> memoryview:
         pass
 
+    @abstractmethod
+    async def reset(self):
+        pass
+
 
 class AbstractOutPipe(metaclass=ABCMeta):
     @property
@@ -172,6 +176,10 @@ class AbstractOutPipe(metaclass=ABCMeta):
 
     @abstractmethod
     async def flush(self):
+        pass
+
+    @abstractmethod
+    async def reset(self):
         pass
 
 

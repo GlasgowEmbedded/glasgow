@@ -44,7 +44,7 @@ usb_desc_device_qualifier_c usb_device_qualifier = {
   .bNumConfigurations   = 0,
 };
 
-#define USB_INTERFACE(bInterfaceNumber_, bAlternateSetting_, bNumEndpoints_, iInterface_) \
+#define USB_INTERFACE(bInterfaceNumber_, bAlternateSetting_, bNumEndpoints_)              \
   {                                                                                       \
     .bLength              = sizeof(struct usb_desc_interface),                            \
     .bDescriptorType      = USB_DESC_INTERFACE,                                           \
@@ -54,24 +54,25 @@ usb_desc_device_qualifier_c usb_device_qualifier = {
     .bInterfaceClass      = USB_IFACE_CLASS_VENDOR,                                       \
     .bInterfaceSubClass   = USB_IFACE_SUBCLASS_VENDOR,                                    \
     .bInterfaceProtocol   = USB_IFACE_PROTOCOL_VENDOR,                                    \
-    .iInterface           = iInterface_,                                                  \
+    .iInterface           = 0,                                                            \
   }
 
 usb_desc_interface_c usb_interface_0_disabled =
-  USB_INTERFACE(/*bInterfaceNumber=*/0, /*bAlternateSetting=*/0, /*bNumEndpoints=*/0,
-                /*iInterface=*/6);
-usb_desc_interface_c usb_interface_0_double =
-  USB_INTERFACE(/*bInterfaceNumber=*/0, /*bAlternateSetting=*/1, /*bNumEndpoints=*/2,
-                /*iInterface=*/7);
-usb_desc_interface_c usb_interface_0_quad =
-  USB_INTERFACE(/*bInterfaceNumber=*/0, /*bAlternateSetting=*/1, /*bNumEndpoints=*/2,
-                /*iInterface=*/8);
+  USB_INTERFACE(/*bInterfaceNumber=*/0, /*bAlternateSetting=*/0, /*bNumEndpoints=*/0);
+usb_desc_interface_c usb_interface_0_enabled =
+  USB_INTERFACE(/*bInterfaceNumber=*/0, /*bAlternateSetting=*/1, /*bNumEndpoints=*/1);
 usb_desc_interface_c usb_interface_1_disabled =
-  USB_INTERFACE(/*bInterfaceNumber=*/1, /*bAlternateSetting=*/0, /*bNumEndpoints=*/0,
-                /*iInterface=*/6);
-usb_desc_interface_c usb_interface_1_double =
-  USB_INTERFACE(/*bInterfaceNumber=*/1, /*bAlternateSetting=*/1, /*bNumEndpoints=*/2,
-                /*iInterface=*/7);
+  USB_INTERFACE(/*bInterfaceNumber=*/1, /*bAlternateSetting=*/0, /*bNumEndpoints=*/0);
+usb_desc_interface_c usb_interface_1_enabled =
+  USB_INTERFACE(/*bInterfaceNumber=*/1, /*bAlternateSetting=*/1, /*bNumEndpoints=*/1);
+usb_desc_interface_c usb_interface_2_disabled =
+  USB_INTERFACE(/*bInterfaceNumber=*/2, /*bAlternateSetting=*/0, /*bNumEndpoints=*/0);
+usb_desc_interface_c usb_interface_2_enabled =
+  USB_INTERFACE(/*bInterfaceNumber=*/2, /*bAlternateSetting=*/1, /*bNumEndpoints=*/1);
+usb_desc_interface_c usb_interface_3_disabled =
+  USB_INTERFACE(/*bInterfaceNumber=*/3, /*bAlternateSetting=*/0, /*bNumEndpoints=*/0);
+usb_desc_interface_c usb_interface_3_enabled =
+  USB_INTERFACE(/*bInterfaceNumber=*/3, /*bAlternateSetting=*/1, /*bNumEndpoints=*/1);
 
 #define USB_BULK_ENDPOINT(bEndpointAddress_)                                              \
   {                                                                                       \
@@ -96,20 +97,24 @@ usb_configuration_c usb_config_2_pipes = {
   {
     .bLength              = sizeof(struct usb_desc_configuration),
     .bDescriptorType      = USB_DESC_CONFIGURATION,
-    .bNumInterfaces       = 2,
+    .bNumInterfaces       = 4,
     .bConfigurationValue  = 1,
-    .iConfiguration       = 4,
+    .iConfiguration       = 0,
     .bmAttributes         = USB_ATTR_RESERVED_1,
     .bMaxPower            = 250,
   },
   {
     { .interface  = &usb_interface_0_disabled },
-    { .interface  = &usb_interface_0_double   },
+    { .interface  = &usb_interface_0_enabled  },
     { .endpoint   = &usb_endpoint_2_out       },
-    { .endpoint   = &usb_endpoint_6_in        },
     { .interface  = &usb_interface_1_disabled },
-    { .interface  = &usb_interface_1_double   },
+    { .interface  = &usb_interface_1_enabled  },
     { .endpoint   = &usb_endpoint_4_out       },
+    { .interface  = &usb_interface_2_disabled },
+    { .interface  = &usb_interface_2_enabled  },
+    { .endpoint   = &usb_endpoint_6_in        },
+    { .interface  = &usb_interface_3_disabled },
+    { .interface  = &usb_interface_3_enabled  },
     { .endpoint   = &usb_endpoint_8_in        },
     { 0 }
   }
@@ -119,16 +124,18 @@ usb_configuration_c usb_config_1_pipe = {
   {
     .bLength              = sizeof(struct usb_desc_configuration),
     .bDescriptorType      = USB_DESC_CONFIGURATION,
-    .bNumInterfaces       = 1,
+    .bNumInterfaces       = 2,
     .bConfigurationValue  = 2,
-    .iConfiguration       = 5,
+    .iConfiguration       = 0,
     .bmAttributes         = USB_ATTR_RESERVED_1,
     .bMaxPower            = 250,
   },
   {
     { .interface  = &usb_interface_0_disabled },
-    { .interface  = &usb_interface_0_quad     },
+    { .interface  = &usb_interface_0_enabled  },
     { .endpoint   = &usb_endpoint_2_out       },
+    { .interface  = &usb_interface_1_disabled },
+    { .interface  = &usb_interface_1_enabled  },
     { .endpoint   = &usb_endpoint_6_in        },
     { 0 }
   }
@@ -152,13 +159,6 @@ usb_ascii_string_c usb_strings[] = {
   [0] = "whitequark research\0\0\0", // CONFIG_SIZE_MANUFACTURER characters long
   [1] = "Glasgow Interface Explorer (git " GIT_REVISION ")",
   [2] = "XX-XXXXXXXXXXXXXXXX",
-  // Configurations
-  [3] = "Pipe P at {2x512B EP2OUT/EP6IN}, Q at {2x512B EP4OUT/EP8IN}",
-  [4] = "Pipe P at {4x512B EP2OUT/EP6IN}",
-  // Interfaces
-  [5] = "Disabled",
-  [6] = "Double-buffered 512B",
-  [7] = "Quad-buffered 512B",
 };
 
 usb_descriptor_set_c usb_descriptor_set = {
@@ -379,16 +379,22 @@ bool handle_usb_set_configuration(uint8_t config_value) {
 
 bool handle_usb_set_interface(uint8_t interface, uint8_t alt_setting) {
   bool two_ep;
+  uint8_t ep_mask;
 
   switch(usb_config_value) {
-    case 1: two_ep = false; break;
-    case 2: two_ep = true;  break;
+    case 1: two_ep = false; ep_mask = 1 <<      interface;  break;
+    case 2: two_ep = true;  ep_mask = 1 << (2 * interface); break;
     default: return false;
   }
 
+  if (!fpga_pipe_rst(/*set=*/ep_mask, /*clr=*/0))
+    return false;
+
+  fifo_reset(two_ep, ep_mask);
+
   if(alt_setting == 1) {
-    // The interface is being (re)activated, so reset the FIFOs.
-    fifo_reset(two_ep, (1 << interface));
+    if (!fpga_pipe_rst(/*set=*/0, /*clr=*/ep_mask))
+      return false;
   }
 
   usb_alt_setting[interface] = alt_setting;

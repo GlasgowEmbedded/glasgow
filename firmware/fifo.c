@@ -69,18 +69,18 @@ void fifo_configure(bool two_ep) {
   EP8CFG = ep48valid|_DIR|_TYPE1; // IN BULK 512B
 
   // Reset and configure endpoints.
-  fifo_reset(two_ep, two_ep ? 0x1 : 0x3);
+  fifo_reset(two_ep, two_ep ? 0b0101 : 0b1111);
 
   // Enable FIFOs.
   SYNCDELAY;
   FIFORESET = 0;
 }
 
-void fifo_reset(bool two_ep, uint8_t interfaces) {
+void fifo_reset(bool two_ep, uint8_t ep_mask) {
   // For the following code, note that for FIFORESET and OUTPKTEND to do anything,
   // the endpoints *must* be in manual mode (_AUTOIN/_AUTOOUT bits cleared).
 
-  if(interfaces & (1 << 0)) {
+  if(ep_mask & 0b0001) {
     // Reset EP2OUT.
     SYNCDELAY;
     EP2FIFOCFG = 0;
@@ -98,17 +98,9 @@ void fifo_reset(bool two_ep, uint8_t interfaces) {
     }
     SYNCDELAY;
     EP2FIFOCFG = _AUTOOUT;
-
-    // Reset EP6IN.
-    SYNCDELAY;
-    EP6FIFOCFG = 0;
-    SYNCDELAY;
-    FIFORESET |= 6;
-    SYNCDELAY;
-    EP6FIFOCFG = _ZEROLENIN;
   }
 
-  if(interfaces & (1 << 1)) {
+  if(ep_mask & 0b0010) {
     // Reset EP4OUT.
     SYNCDELAY;
     EP4FIFOCFG = 0;
@@ -120,7 +112,19 @@ void fifo_reset(bool two_ep, uint8_t interfaces) {
     OUTPKTEND = _SKIP|4;
     SYNCDELAY;
     EP4FIFOCFG = _AUTOOUT;
+  }
 
+  if(ep_mask & 0b0100) {
+    // Reset EP6IN.
+    SYNCDELAY;
+    EP6FIFOCFG = 0;
+    SYNCDELAY;
+    FIFORESET |= 6;
+    SYNCDELAY;
+    EP6FIFOCFG = _ZEROLENIN;
+  }
+
+  if(ep_mask & 0b1000) {
     // Reset EP8IN.
     SYNCDELAY;
     EP8FIFOCFG = 0;
