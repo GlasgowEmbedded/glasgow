@@ -2,42 +2,43 @@
 # Accession: G00018
 
 import logging
-import asyncio
 import random
 import struct
 from functools import reduce
+
 from amaranth import *
-from amaranth.lib import io
-from amaranth.lib.cdc import FFSynchronizer
+from amaranth.lib import io, wiring, stream, cdc, enum
+from amaranth.lib.wiring import In, Out
 
-from ... import *
-
-
-CMD_W  = 0x00
-CMD_OE = 0x01
-CMD_O  = 0x02
-CMD_L  = 0x03
-CMD_H  = 0x04
-CMD_I  = 0x05
+from glasgow.applet import GlasgowAppletV2
 
 
-class JTAGPinoutSubtarget(Elaboratable):
-    def __init__(self, ports, out_fifo, in_fifo, period_cyc):
+class JTAGPinoutCommand(enum.Enum, shape=8):
+    Wait  = 0x00
+    SetOE = 0x01
+    SetO  = 0x02
+    SetO0 = 0x03
+    SetO1 = 0x04
+    GetI  = 0x05
+
+
+class JTAGPinoutComponent(wiring.Component):
+    i_stream: In(stream.Signature(8))
+    o_stream: Out(stream.Signature(8))
+
+    def __init__(self, ports, period_cyc):
         self._ports      = ports
-        self._out_fifo   = out_fifo
-        self._in_fifo    = in_fifo
         self._period_cyc = period_cyc
+
+        super().__init__()
 
     def elaborate(self, platform):
         m = Module()
 
         pins = []
-        for name, port in vars(self._ports).items():
-            m.submodules[f"{name}_buffer"] = pin = io.Buffer("io", port)
+        for i, port in enumerate(self._ports.pins):
+            m.submodules[f"pins{i}_buffer"] = pin = io.Buffer("io", port)
             pins.append(pin)
-
-        in_fifo  = self._in_fifo
-        out_fifo = self._out_fifo
 
         jtag_oe = Signal(len(pins))
         jtag_o  = Signal(len(pins))
@@ -46,45 +47,45 @@ class JTAGPinoutSubtarget(Elaboratable):
             Cat(pin.oe for pin in pins).eq(jtag_oe),
             Cat(pin.o  for pin in pins).eq(jtag_o),
         ]
-        m.submodules += FFSynchronizer(Cat(pin.i for pin in pins), jtag_i)
+        m.submodules += cdc.FFSynchronizer(Cat(pin.i for pin in pins), jtag_i)
 
         timer = Signal(range(self._period_cyc))
-        cmd   = Signal(8)
+        cmd   = Signal(JTAGPinoutCommand)
         data  = Signal(16)
 
         with m.FSM():
             with m.State("RECV-COMMAND"):
-                with m.If(out_fifo.r_rdy):
-                    m.d.comb += out_fifo.r_en.eq(1)
-                    m.d.sync += cmd.eq(out_fifo.r_data)
-                    with m.If(out_fifo.r_data == CMD_W):
+                with m.If(self.i_stream.valid):
+                    m.d.comb += self.i_stream.ready.eq(1)
+                    m.d.sync += cmd.eq(self.i_stream.payload)
+                    with m.If(self.i_stream.payload == JTAGPinoutCommand.Wait):
                         m.d.sync += timer.eq(self._period_cyc - 1)
                         m.next = "WAIT"
-                    with m.Elif(out_fifo.r_data == CMD_I):
+                    with m.Elif(self.i_stream.payload == JTAGPinoutCommand.GetI):
                         m.next = "SAMPLE"
                     with m.Else():
                         m.next = "RECV-DATA-1"
 
             with m.State("RECV-DATA-1"):
-                with m.If(out_fifo.r_rdy):
-                    m.d.comb += out_fifo.r_en.eq(1)
-                    m.d.sync += data[0:8].eq(out_fifo.r_data)
+                with m.If(self.i_stream.valid):
+                    m.d.comb += self.i_stream.ready.eq(1)
+                    m.d.sync += data[0:8].eq(self.i_stream.payload)
                     m.next = "RECV-DATA-2"
 
             with m.State("RECV-DATA-2"):
-                with m.If(out_fifo.r_rdy):
-                    m.d.comb += out_fifo.r_en.eq(1)
-                    m.d.sync += data[8:16].eq(out_fifo.r_data)
+                with m.If(self.i_stream.valid):
+                    m.d.comb += self.i_stream.ready.eq(1)
+                    m.d.sync += data[8:16].eq(self.i_stream.payload)
                     m.next = "DRIVE"
 
             with m.State("DRIVE"):
-                with m.If(cmd == CMD_OE):
+                with m.If(cmd == JTAGPinoutCommand.SetOE):
                     m.d.sync += jtag_oe.eq(data)
-                with m.Elif(cmd == CMD_O):
+                with m.Elif(cmd == JTAGPinoutCommand.SetO):
                     m.d.sync += jtag_o.eq( data)
-                with m.Elif(cmd == CMD_L):
+                with m.Elif(cmd == JTAGPinoutCommand.SetO0):
                     m.d.sync += jtag_o.eq(~data & jtag_o)
-                with m.Elif(cmd == CMD_H):
+                with m.Elif(cmd == JTAGPinoutCommand.SetO1):
                     m.d.sync += jtag_o.eq( data | jtag_o)
                 m.next = "RECV-COMMAND"
 
@@ -99,70 +100,76 @@ class JTAGPinoutSubtarget(Elaboratable):
                 m.next = "SEND-DATA-1"
 
             with m.State("SEND-DATA-1"):
-                with m.If(in_fifo.w_rdy):
-                    m.d.comb += in_fifo.w_en.eq(1)
-                    m.d.comb += in_fifo.w_data.eq(data[0:8])
+                m.d.comb += self.o_stream.valid.eq(1)
+                m.d.comb += self.o_stream.payload.eq(data[0:8])
+                with m.If(self.o_stream.ready):
                     m.next = "SEND-DATA-2"
 
             with m.State("SEND-DATA-2"):
-                with m.If(in_fifo.w_rdy):
-                    m.d.comb += in_fifo.w_en.eq(1)
-                    m.d.comb += in_fifo.w_data.eq(data[8:16])
+                m.d.comb += self.o_stream.valid.eq(1)
+                m.d.comb += self.o_stream.payload.eq(data[8:16])
+                with m.If(self.o_stream.ready):
                     m.next = "RECV-COMMAND"
 
         return m
 
 
 class JTAGPinoutInterface:
-    def __init__(self, interface, logger):
-        self._lower  = interface
+    def __init__(self, logger, assembly, *, pins, frequency):
         self._logger = logger
         self._level  = logging.TRACE
+
+        ports = assembly.add_port_group(pins=pins)
+        component = assembly.add_submodule(JTAGPinoutComponent(ports,
+            period_cyc=round(1 / (assembly.sys_clk_period * frequency)),
+        ))
+        self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
 
     def _log(self, message, *args):
         self._logger.log(self._level, "JTAG: " + message, *args)
 
     async def _cmd(self, cmd):
-        await self._lower.write([cmd])
+        await self._pipe.send([cmd.value])
 
     async def _arg(self, arg):
-        await self._lower.write(struct.pack("<H", arg))
+        await self._pipe.send(struct.pack("<H", arg))
 
     async def _ret(self):
-        return struct.unpack("<H", await self._lower.read(2))[0]
+        return struct.unpack("<H", await self._pipe.recv(2))[0]
 
     async def wait(self):
         self._log("wait")
-        await self._cmd(CMD_W)
+        await self._cmd(JTAGPinoutCommand.Wait)
 
     async def set_oe(self, word):
         self._log("set oe=%s", f"{word:016b}")
-        await self._cmd(CMD_OE)
+        await self._cmd(JTAGPinoutCommand.SetOE)
         await self._arg(word)
 
     async def set_o(self, word):
         self._log("set o= %s", f"{word:016b}")
-        await self._cmd(CMD_O)
+        await self._cmd(JTAGPinoutCommand.SetO)
         await self._arg(word)
 
     async def set_o_1(self, word):
         self._log("set h= %s", f"{word:016b}")
-        await self._cmd(CMD_H)
+        await self._cmd(JTAGPinoutCommand.SetO1)
         await self._arg(word)
 
     async def set_o_0(self, word):
         self._log("set l= %s", f"{word:016b}")
-        await self._cmd(CMD_L)
+        await self._cmd(JTAGPinoutCommand.SetO0)
         await self._arg(word)
 
     async def get_i(self):
-        await self._cmd(CMD_I)
+        await self._cmd(JTAGPinoutCommand.GetI)
+        await self._pipe.flush()
         word = await self._ret()
         self._log("get i= %s", f"{word:016b}")
         return word
 
 
-class JTAGPinoutApplet(GlasgowApplet):
+class JTAGPinoutApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "automatically determine JTAG pinout"
     description = """
@@ -171,7 +178,7 @@ class JTAGPinoutApplet(GlasgowApplet):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        super().add_build_arguments(parser, access)
+        access.add_voltage_argument(parser)
 
         access.add_pins_argument(parser, "pins", width=range(4, 17), required=True)
 
@@ -179,22 +186,15 @@ class JTAGPinoutApplet(GlasgowApplet):
             "-f", "--frequency", metavar="FREQ", type=int, default=10,
             help="set clock period to FREQ kHz (default: %(default)s)")
 
-    def build(self, target, args):
-        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        iface.add_subtarget(JTAGPinoutSubtarget(
-            ports=iface.get_port_group(**{str(pin): pin for pin in args.pins}),
-            out_fifo=iface.get_out_fifo(),
-            in_fifo=iface.get_in_fifo(),
-            period_cyc=int(target.sys_clk_freq // (args.frequency * 1000)),
-        ))
+    def build(self, args):
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            self.jtag_iface = JTAGPinoutInterface(self.logger, self.assembly,
+                pins=args.pins, frequency=args.frequency * 1000)
 
         self.bits  = set(range(len(args.pins)))
         self.pins  = {bit: pin      for bit, pin in enumerate(args.pins)}
         self.names = {bit: str(pin) for bit, pin in enumerate(args.pins)}
-
-    async def run(self, device, args):
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        return JTAGPinoutInterface(iface, self.logger)
 
     @staticmethod
     def _to_word(bits):
@@ -204,18 +204,18 @@ class JTAGPinoutApplet(GlasgowApplet):
     def _from_word(word):
         return {bit for bit in range(word.bit_length()) if word & (1 << bit)}
 
-    async def _detect_pulls(self, iface):
+    async def _detect_pulls(self):
         each = self._to_word(self.bits)
         none = self._to_word(set())
 
         results = []
         for bits in (each, none):
-            await iface.set_o (bits)
-            await iface.set_oe(each)
-            await iface.wait()
-            await iface.set_oe(none)
-            await iface.wait()
-            results.append(await iface.get_i())
+            await self.jtag_iface.set_o (bits)
+            await self.jtag_iface.set_oe(each)
+            await self.jtag_iface.wait()
+            await self.jtag_iface.set_oe(none)
+            await self.jtag_iface.wait()
+            results.append(await self.jtag_iface.get_i())
         after_low, after_high = results
 
         high_z_bits    = self._from_word(~after_low &  after_high)
@@ -223,56 +223,56 @@ class JTAGPinoutApplet(GlasgowApplet):
         pull_down_bits = self._from_word(~after_low & ~after_high & each)
         return high_z_bits, pull_up_bits, pull_down_bits
 
-    async def _strobe_tck(self, iface, tck):
-        await iface.set_o_0(tck)
-        await iface.wait()
-        await iface.set_o_1(tck)
-        await iface.wait()
+    async def _strobe_tck(self, tck):
+        await self.jtag_iface.set_o_0(tck)
+        await self.jtag_iface.wait()
+        await self.jtag_iface.set_o_1(tck)
+        await self.jtag_iface.wait()
 
-    async def _strobe_tck_input(self, iface, tck):
-        await iface.set_o_0(tck)
-        await iface.wait()
-        word = await iface.get_i()
-        await iface.set_o_1(tck)
-        await iface.wait()
+    async def _strobe_tck_input(self, tck):
+        await self.jtag_iface.set_o_0(tck)
+        await self.jtag_iface.wait()
+        word = await self.jtag_iface.get_i()
+        await self.jtag_iface.set_o_1(tck)
+        await self.jtag_iface.wait()
         return word
 
-    async def _enter_shift_ir(self, iface, *, tck, tms, tdi, trst=0, assert_trst=False):
-        await iface.set_o (tck|tms|tdi|trst)
-        await iface.set_oe(tck|tms|tdi|trst)
-        await iface.wait()
+    async def _enter_shift_ir(self, *, tck, tms, tdi, trst=0, assert_trst=False):
+        await self.jtag_iface.set_o (tck|tms|tdi|trst)
+        await self.jtag_iface.set_oe(tck|tms|tdi|trst)
+        await self.jtag_iface.wait()
         # Pulse or assert TRST
-        await iface.set_o_0(trst); await iface.wait()
+        await self.jtag_iface.set_o_0(trst); await self.jtag_iface.wait()
         if not assert_trst:
-            await iface.set_o_1(trst); await iface.wait()
+            await self.jtag_iface.set_o_1(trst); await self.jtag_iface.wait()
         # Enter Test-Logic-Reset
-        await iface.set_o_1(tms)
+        await self.jtag_iface.set_o_1(tms)
         for _ in range(5):
-            await self._strobe_tck(iface, tck)
+            await self._strobe_tck(tck)
         # Enter Run-Test/Idle
-        await iface.set_o_0(tms)
-        await self._strobe_tck(iface, tck)
+        await self.jtag_iface.set_o_0(tms)
+        await self._strobe_tck(tck)
         # Enter Shift-IR
-        await iface.set_o_1(tms); await self._strobe_tck(iface, tck)
-        await iface.set_o_1(tms); await self._strobe_tck(iface, tck)
-        await iface.set_o_0(tms); await self._strobe_tck(iface, tck)
-        await iface.set_o_0(tms); await self._strobe_tck(iface, tck)
+        await self.jtag_iface.set_o_1(tms); await self._strobe_tck(tck)
+        await self.jtag_iface.set_o_1(tms); await self._strobe_tck(tck)
+        await self.jtag_iface.set_o_0(tms); await self._strobe_tck(tck)
+        await self.jtag_iface.set_o_0(tms); await self._strobe_tck(tck)
 
-    async def _detect_tdo(self, iface, *, tck, tms, trst=0, assert_trst=False):
-        await self._enter_shift_ir(iface, tck=tck, tms=tms, tdi=0, trst=trst,
+    async def _detect_tdo(self, *, tck, tms, trst=0, assert_trst=False):
+        await self._enter_shift_ir(tck=tck, tms=tms, tdi=0, trst=trst,
                                    assert_trst=assert_trst)
 
         # Shift IR
-        ir_0 = await self._strobe_tck_input(iface, tck)
-        ir_1 = await self._strobe_tck_input(iface, tck)
+        ir_0 = await self._strobe_tck_input(tck)
+        ir_1 = await self._strobe_tck_input(tck)
         # Release the bus
-        await iface.set_oe(0)
+        await self.jtag_iface.set_oe(0)
 
         tdo_bits = self._from_word(ir_0 & ~ir_1)
         return set(tdo_bits)
 
-    async def _detect_tdi(self, iface, *, tck, tms, tdi, tdo, trst=0):
-        await self._enter_shift_ir(iface, tck=tck, tms=tms, tdi=tdi, trst=trst)
+    async def _detect_tdi(self, *, tck, tms, tdi, tdo, trst=0):
+        await self._enter_shift_ir(tck=tck, tms=tms, tdi=tdi, trst=trst)
 
         pat_bits   = 32
         flush_bits = 64
@@ -282,15 +282,15 @@ class JTAGPinoutApplet(GlasgowApplet):
         # Shift IR
         for bit in range(pat_bits):
             if pattern & (1 << bit):
-                await iface.set_o_1(tdi)
+                await self.jtag_iface.set_o_1(tdi)
             else:
-                await iface.set_o_0(tdi)
-            result.append(await self._strobe_tck_input(iface, tck))
-        await iface.set_o_1(tdi)
+                await self.jtag_iface.set_o_0(tdi)
+            result.append(await self._strobe_tck_input(tck))
+        await self.jtag_iface.set_o_1(tdi)
         for bit in range(flush_bits):
-            result.append(await self._strobe_tck_input(iface, tck))
+            result.append(await self._strobe_tck_input(tck))
         # Release the bus
-        await iface.set_oe(0)
+        await self.jtag_iface.set_oe(0)
 
         for ir_len in range(flush_bits):
             corr_result = [result[ir_len + bit] if pattern & (1 << bit) else ~result[ir_len + bit]
@@ -298,12 +298,12 @@ class JTAGPinoutApplet(GlasgowApplet):
             if reduce(lambda x, y: x&y, corr_result) & tdo:
                 return ir_len
 
-    async def interact(self, device, args, iface):
+    async def run(self, args):
         def bits_to_str(pins):
             return ", ".join(self.names[pin] for pin in pins)
 
         self.logger.info("detecting pull resistors")
-        high_z_bits, pull_up_bits, pull_down_bits = await self._detect_pulls(iface)
+        high_z_bits, pull_up_bits, pull_down_bits = await self._detect_pulls()
         if high_z_bits:
             self.logger.info("high-Z: %s", bits_to_str(high_z_bits))
         if pull_up_bits:
@@ -342,7 +342,7 @@ class JTAGPinoutApplet(GlasgowApplet):
                 for bit_tms in data_bits - {bit_tck}:
                     self.logger.debug("trying TCK=%s TMS=%s",
                         self.names[bit_tck], self.names[bit_tms])
-                    tdo_bits = await self._detect_tdo(iface,
+                    tdo_bits = await self._detect_tdo(
                         tck=1 << bit_tck, tms=1 << bit_tms,
                         trst=0 if bit_trst is None else 1 << bit_trst)
                     for bit_tdo in tdo_bits - {bit_tck, bit_tms}:
@@ -362,7 +362,7 @@ class JTAGPinoutApplet(GlasgowApplet):
                     self.logger.debug("trying TCK=%s TMS=%s TDI=%s TDO=%s",
                         self.names[bit_tck], self.names[bit_tms],
                         self.names[bit_tdi], self.names[bit_tdo])
-                    ir_len = await self._detect_tdi(iface,
+                    ir_len = await self._detect_tdi(
                         tck=1 << bit_tck, tms=1 << bit_tms, tdi=1 << bit_tdi, tdo=1 << bit_tdo,
                         trst=0 if bit_trst is None else 1 << bit_trst)
                     if ir_len is None or ir_len < 2:
@@ -399,10 +399,10 @@ class JTAGPinoutApplet(GlasgowApplet):
                         self.names[bit_tck], self.names[bit_tms],
                         self.names[bit_tdi], self.names[bit_tdo],
                         self.names[bit_trst])
-                    tdo_bits_1 = await self._detect_tdo(iface,
+                    tdo_bits_1 = await self._detect_tdo(
                         tck=1 << bit_tck, tms=1 << bit_tms, trst=1 << bit_trst,
                         assert_trst=True)
-                    tdo_bits_0 = await self._detect_tdo(iface,
+                    tdo_bits_0 = await self._detect_tdo(
                         tck=1 << bit_tck, tms=1 << bit_tms, trst=1 << bit_trst,
                         assert_trst=False)
                     if bit_tdo in tdo_bits_0 and bit_tdo not in tdo_bits_1:

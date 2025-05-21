@@ -12,5 +12,6 @@ I/O interfaces
     spi_analyzer
     qspi_analyzer
     qspi_controller
+    jtag_pinout
     jtag_openocd
     swd_openocd
