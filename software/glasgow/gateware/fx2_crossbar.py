@@ -219,11 +219,10 @@ class _OUTFIFO(wiring.Component):
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.skid = skid = StreamFIFO(shape=8, depth=self._skid_depth, buffered=False)
+        m.submodules.skid = skid = StreamFIFO(shape=8, depth=self._skid_depth, buffered=True)
 
         m.d.comb += skid.w.payload.eq(self.w.payload)
         m.d.comb += skid.w.valid.eq(self.w.valid & ~self.r.ready)
-        m.d.comb += self.w.ready.eq(self.r.ready)
         with m.If(skid.r.valid):
             connect(m, flipped(self.r), skid.r)
         with m.Else():
