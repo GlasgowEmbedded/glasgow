@@ -14,4 +14,5 @@ I/O interfaces
     qspi_controller
     jtag_pinout
     jtag_openocd
+    jtag_xvc
     swd_openocd
