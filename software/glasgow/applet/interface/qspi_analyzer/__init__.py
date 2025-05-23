@@ -234,6 +234,11 @@ class QSPIAnalyzerApplet(GlasgowAppletV2):
     Both quad-IO and dual-IO captures are supported. If only IO0 and IO1 pins are provided,
     the capture proceeds as if IO2 and IO3 were fixed at 0.
 
+    The capture file format is Comma Separated Values, in the following line format:
+
+    * ``<DATA>``, where <DATA> is a hexadecimal nibble sequence with each four bits corresponding
+      to samples of HOLD#, WP#, CIPO, COPI (from MSB to LSB).
+
     If your DUT is a 25-series SPI Flash memory, use the `tool memory-25x` to extract data
     from capture files. If quad-IO commands are not in use, the `spi-analyzer` applet can
     reduce the likelihood of an overflow.
