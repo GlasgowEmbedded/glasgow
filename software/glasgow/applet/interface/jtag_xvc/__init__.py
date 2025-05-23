@@ -219,7 +219,14 @@ class JTAGXVCApplet(GlasgowAppletV2):
     def add_run_arguments(cls, parser):
         ServerEndpoint.add_argument(parser, "endpoint", default="tcp:localhost:2542")
 
+        parser.add_argument(
+            "-f", "--frequency", metavar="FREQ", type=int, default=1000,
+            help="override TCK frequency to always be FREQ kHz (default: %(default)s)")
+
     async def run(self, args):
+        if args.frequency:
+            await self.xvc_iface.set_tck_period(round(1e6 / args.frequency))
+
         endpoint = await ServerEndpoint("socket", self.logger, args.endpoint)
         while True:
             command = await endpoint.recv_until(b":")
@@ -231,7 +238,8 @@ class JTAGXVCApplet(GlasgowAppletV2):
                 case b"settck":
                     tck_period, = struct.unpack("<L", await endpoint.recv(4))
                     self.logger.debug(f"  tck-i={tck_period}")
-                    await self.xvc_iface.set_tck_period(tck_period)
+                    if not args.frequency:
+                        await self.xvc_iface.set_tck_period(tck_period)
                     tck_period = round(await self.xvc_iface.get_tck_period())
                     self.logger.debug(f"  tck-o={tck_period}")
                     await endpoint.send(struct.pack("<L", tck_period))
