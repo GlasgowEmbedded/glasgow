@@ -28,6 +28,7 @@ class SPIAnalyzerFrontend(wiring.Component):
 
         super().__init__({
             "stream": Out(stream.Signature(data.StructLayout({
+                "chip":  range(len(self._ports.cs)),
                 "copi":  self._word_width,
                 "cipo":  self._word_width,
                 "epoch": 1
@@ -53,7 +54,7 @@ class SPIAnalyzerFrontend(wiring.Component):
         # only limited by the FPGA fabric performance (compared to an approach that uses
         # a sampling clock), but introduces timing hazards.
         m.domains.spi = cd_spi = ClockDomain(async_reset=True, local=True)
-        m.submodules.spi_rst_sync = cdc.ResetSynchronizer(cs_buffer.i, domain="spi")
+        m.submodules.spi_rst_sync = cdc.ResetSynchronizer(cs_buffer.i.all(), domain="spi")
         m.d.comb += cd_spi.clk.eq(sck_buffer.i)
 
         # The FIFO contents must not be reset even if the FIFO writer is reset. This creates
@@ -70,6 +71,10 @@ class SPIAnalyzerFrontend(wiring.Component):
             w_domain="fifo",
             r_domain="sync"
         )
+
+        for index, chip in enumerate(cs_buffer.i):
+            with m.If(~chip):
+                m.d.comb += fifo.w.p.chip.eq(index)
 
         copi_shreg = Signal(self._word_width)
         cipo_shreg = Signal(self._word_width)
@@ -105,7 +110,7 @@ class SPIAnalyzerFrontend(wiring.Component):
         # the frontend; it is only used to avoid the last transfer being stuck in the encoder
         # indefinitely because there is no end marker. Back-to-back transfers may not ever cause
         # the `complete` output to be asserted.
-        m.submodules.cs_sync = cdc.FFSynchronizer(cs_buffer.i, cs_sync)
+        m.submodules.cs_sync = cdc.FFSynchronizer(cs_buffer.i.all(), cs_sync)
         with m.If(cs_sync & ~fifo.r.valid):
             m.d.comb += self.complete.eq(1)
 
@@ -137,34 +142,15 @@ class SPIAnalyzerComponent(wiring.Component):
 
         m.submodules.frontend = frontend = SPIAnalyzerFrontend(self._ports)
 
-        idle  = Signal(init=1)
         epoch = Signal()
         timer = Signal(20)
         with m.FSM():
-            with m.State("COPI"):
+            with m.State("Idle"):
                 with m.If(frontend.stream.valid):
-                    with m.If(frontend.stream.p.epoch != epoch):
-                        m.d.comb += encoder.i.p.end.eq(1)
-                        m.d.comb += encoder.i.valid.eq(1)
-                        with m.If(encoder.i.ready):
-                            m.d.sync += idle.eq(1)
-                            m.d.sync += epoch.eq(frontend.stream.p.epoch)
-                    with m.Else():
-                        m.d.comb += encoder.i.p.data.eq(frontend.stream.p.copi)
-                        m.d.comb += encoder.i.valid.eq(1)
-                        with m.If(encoder.i.ready):
-                            m.d.sync += idle.eq(0)
-                            # FIXME: not the most elegant approach to make the timeout shorter
-                            # during simulation
-                            m.d.sync += timer.eq(1000 if platform is None else ~0)
-                            m.next = "CIPO"
-                with m.Elif(frontend.complete & ~idle):
-                    m.d.comb += encoder.i.p.end.eq(1)
+                    m.d.comb += encoder.i.p.data.eq(frontend.stream.p.chip)
                     m.d.comb += encoder.i.valid.eq(1)
                     with m.If(encoder.i.ready):
-                        m.d.sync += idle.eq(1)
-                        m.d.sync += epoch.eq(~epoch)
-
+                        m.next = "COPI"
                 # FIXME: this timeout should be a part of the common FX2 logic
                 with m.Else():
                     with m.If(timer == 0):
@@ -172,12 +158,34 @@ class SPIAnalyzerComponent(wiring.Component):
                     with m.Else():
                         m.d.sync += timer.eq(timer - 1)
 
+            with m.State("COPI"):
+                with m.If(frontend.stream.valid):
+                    with m.If(frontend.stream.p.epoch != epoch):
+                        m.next = "End"
+                    with m.Else():
+                        m.d.comb += encoder.i.p.data.eq(frontend.stream.p.copi)
+                        m.d.comb += encoder.i.valid.eq(1)
+                        with m.If(encoder.i.ready):
+                            m.next = "CIPO"
+                with m.Elif(frontend.complete):
+                    m.next = "End"
+
             with m.State("CIPO"):
                 m.d.comb += encoder.i.p.data.eq(frontend.stream.p.cipo)
                 m.d.comb += encoder.i.valid.eq(1)
                 with m.If(encoder.i.ready):
                     m.d.comb += frontend.stream.ready.eq(1)
                     m.next = "COPI"
+
+            with m.State("End"):
+                m.d.comb += encoder.i.p.end.eq(1)
+                m.d.comb += encoder.i.valid.eq(1)
+                with m.If(encoder.i.ready):
+                    m.d.sync += epoch.eq(~epoch)
+                    # FIXME: not the most elegant approach to make the timeout shorter
+                    # during simulation
+                    m.d.sync += timer.eq(1000 if platform is None else ~0)
+                    m.next = "Idle"
 
         m.d.comb += self.overflow.eq(frontend.overflow)
 
@@ -217,9 +225,10 @@ class SPIAnalyzerInterface:
 
     async def capture(self) -> tuple[bytes, bytes]:
         packet = await self._recv_packet()
-        copi_data, cipo_data = packet[0::2], packet[1::2]
-        self._log("capture copi=<%s> cipo=<%s>", dump_hex(copi_data), dump_hex(cipo_data))
-        return (copi_data, cipo_data)
+        chip, copi_data, cipo_data = packet[0], packet[1::2], packet[2::2]
+        self._log("capture chip=%d copi=<%s> cipo=<%s>",
+            chip, dump_hex(copi_data), dump_hex(cipo_data))
+        return (chip, copi_data, cipo_data)
 
 
 class SPIAnalyzerApplet(GlasgowAppletV2):
@@ -248,7 +257,7 @@ class SPIAnalyzerApplet(GlasgowAppletV2):
     @classmethod
     def add_build_arguments(cls, parser, access):
         access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "cs",   required=True, default=True)
+        access.add_pins_argument(parser, "cs",   required=True, default=True, width=range(1, 257))
         access.add_pins_argument(parser, "sck",  required=True, default=True)
         access.add_pins_argument(parser, "copi", required=True, default=True)
         access.add_pins_argument(parser, "cipo", required=True, default=True)
@@ -280,8 +289,11 @@ class SPIAnalyzerApplet(GlasgowAppletV2):
             pass # pipe, tty/pty, etc
 
         while True:
-            copi_data, cipo_data = await self.spi_analyzer_iface.capture()
-            args.file.write(f"{copi_data.hex()},{cipo_data.hex()}\n")
+            chip, copi_data, cipo_data = await self.spi_analyzer_iface.capture()
+            if len(args.cs) == 1:
+                args.file.write(f"{copi_data.hex()},{cipo_data.hex()}\n")
+            else:
+                args.file.write(f"{chip},{copi_data.hex()},{cipo_data.hex()}\n")
             args.file.flush()
 
     @classmethod
