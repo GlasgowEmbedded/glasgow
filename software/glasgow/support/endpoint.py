@@ -140,7 +140,10 @@ class ServerEndpoint(aobject, asyncio.Protocol):
     async def _refill(self):
         self._future = future = asyncio.Future()
         self._check_future()
-        self._buffer = await future
+        try:
+            self._buffer = await future
+        except BrokenPipeError:
+            self._buffer = None
         if self._buffer is None:
             self._buffer = b""
             self._log(logging.TRACE, "recv end-of-stream")
