@@ -204,7 +204,7 @@ class AbstractAssembly(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def add_platform_pin(self, pin_name: str, port_name: str) -> io.PortLike:
+    def add_platform_pin(self, pin: GlasgowPin, port_name: str) -> io.PortLike:
         pass
 
     def add_port(self, pins: GlasgowPin | tuple[GlasgowPin] | str | None, name: str) -> io.PortLike:
@@ -222,9 +222,8 @@ class AbstractAssembly(metaclass=ABCMeta):
                     else:
                         port += pin_port
                 return port
-            case GlasgowPin(port, number, invert):
-                port = self.add_platform_pin(f"{port}{number}", name)
-                return ~port if invert else port
+            case GlasgowPin() as pin:
+                return self.add_platform_pin(pin, name)
             case _:
                 raise TypeError(f"cannot add a port for object {pins!r}")
 

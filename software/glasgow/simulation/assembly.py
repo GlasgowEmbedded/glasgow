@@ -83,7 +83,8 @@ class SimulationAssembly(AbstractAssembly):
     def add_applet(self, applet: Any) -> Generator[None, None, None]:
         yield
 
-    def add_platform_pin(self, pin_name: str, port_name: str) -> io.PortLike:
+    def add_platform_pin(self, pin: GlasgowPin, port_name: str) -> io.PortLike:
+        pin_name = f"{pin.port}{pin.number}"
         port = io.SimulationPort("io", 1, name=pin_name)
         self._pins[pin_name] = port
         return port
