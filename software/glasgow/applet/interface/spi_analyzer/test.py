@@ -51,10 +51,10 @@ class SPIAnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=SPIAnalyzerApple
 
         async def stream_testbench(ctx):
             words = [
-                {"chip": 0, "copi": 0b01100001, "cipo": 0b11110011, "epoch": 0},
-                {"chip": 0, "copi": 0b00000001, "cipo": 0b00000011, "epoch": 1},
-                {"chip": 0, "copi": 0b00000010, "cipo": 0b00000100, "epoch": 1},
-                {"chip": 0, "copi": 0b00010000, "cipo": 0b00010000, "epoch": 0},
+                {"chip": 0, "copi": 0b01100001, "cipo": 0b11110011, "start": 1},
+                {"chip": 0, "copi": 0b00000001, "cipo": 0b00000011, "start": 1},
+                {"chip": 0, "copi": 0b00000010, "cipo": 0b00000100, "start": 0},
+                {"chip": 0, "copi": 0b00010000, "cipo": 0b00010000, "start": 1},
             ]
             for word in words:
                 self.assertEqual(word, (await stream_get(ctx, dut.stream)))
