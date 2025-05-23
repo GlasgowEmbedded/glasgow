@@ -31,7 +31,7 @@ class SPIAnalyzerFrontend(wiring.Component):
                 "chip":  range(len(self._ports.cs)),
                 "copi":  self._word_width,
                 "cipo":  self._word_width,
-                "epoch": 1
+                "start": 1
             }))),
             "complete": Out(1), # FIFO empty and CS# deasserted
             "overflow": Out(1),
@@ -84,16 +84,11 @@ class SPIAnalyzerFrontend(wiring.Component):
         m.d.comb += fifo.w.p.cipo.eq(Cat(cipo_buffer.i, cipo_shreg))
 
         start = Signal(init=1)
-        epoch = Signal(reset_less=True, init=1)
         count = Signal(range(self._word_width), init=2) # 2 is the ResetSynchronizer latency
+        m.d.comb += fifo.w.p.start.eq(start)
         with m.If(count == self._word_width - 1):
             m.d.comb += fifo.w.valid.eq(1)
-            with m.If(start):
-                m.d.spi += start.eq(0)
-                m.d.spi += epoch.eq(~epoch)
-                m.d.comb += fifo.w.p.epoch.eq(~epoch)
-            with m.Else():
-                m.d.comb += fifo.w.p.epoch.eq(epoch)
+            m.d.spi += start.eq(0)
             m.d.spi += count.eq(0)
         with m.Else():
             m.d.spi += count.eq(count + 1)
@@ -142,7 +137,7 @@ class SPIAnalyzerComponent(wiring.Component):
 
         m.submodules.frontend = frontend = SPIAnalyzerFrontend(self._ports)
 
-        epoch = Signal()
+        idle  = Signal(init=1)
         timer = Signal(20)
         with m.FSM():
             with m.State("Idle"):
@@ -160,12 +155,13 @@ class SPIAnalyzerComponent(wiring.Component):
 
             with m.State("COPI"):
                 with m.If(frontend.stream.valid):
-                    with m.If(frontend.stream.p.epoch != epoch):
+                    with m.If(frontend.stream.p.start & ~idle):
                         m.next = "End"
                     with m.Else():
                         m.d.comb += encoder.i.p.data.eq(frontend.stream.p.copi)
                         m.d.comb += encoder.i.valid.eq(1)
                         with m.If(encoder.i.ready):
+                            m.d.sync += idle.eq(0)
                             m.next = "CIPO"
                 with m.Elif(frontend.complete):
                     m.next = "End"
@@ -181,7 +177,7 @@ class SPIAnalyzerComponent(wiring.Component):
                 m.d.comb += encoder.i.p.end.eq(1)
                 m.d.comb += encoder.i.valid.eq(1)
                 with m.If(encoder.i.ready):
-                    m.d.sync += epoch.eq(~epoch)
+                    m.d.sync += idle.eq(1)
                     # FIXME: not the most elegant approach to make the timeout shorter
                     # during simulation
                     m.d.sync += timer.eq(1000 if platform is None else ~0)
