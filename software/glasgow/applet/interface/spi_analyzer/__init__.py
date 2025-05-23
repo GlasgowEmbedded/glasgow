@@ -247,6 +247,15 @@ class SPIAnalyzerApplet(GlasgowAppletV2):
     every signal wire (at the very least, CS# and SCK wires) with a ground wire connected to
     ground at both ends, otherwise the captured data will likely be nonsense.
 
+    The capture file format is Comma Separated Values, in one of the following line formats:
+
+    * ``<COPI>,<CIPO>``, where <COPI> and <CIPO> are hexadecimal byte sequences with each eight
+      bits corresponding to samples of COPI and CIPO, respectively (from MSB to LSB); this format
+      is used if one CS# pin is provided.
+
+    * ``<CS>,<COPI>,<CIPO>``, where <CS> is a 0-based CS# pin index and <COPI> and <CIPO> are
+      the same as above; this format is used if multiple CS# pins are provided.
+
     If your DUT is a 25-series SPI Flash memory, use the `tool memory-25x` to extract data
     from capture files. If quad-IO commands are in use, use the `qspi-analyzer` applet to
     capture data.
