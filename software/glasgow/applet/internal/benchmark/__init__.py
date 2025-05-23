@@ -111,6 +111,10 @@ class BenchmarkApplet(GlasgowAppletV2):
 
     __all_modes = ["source", "sink", "loopback", "latency"]
 
+    @classmethod
+    def add_build_arguments(cls, parser, access):
+        pass
+
     def build(self, args):
         with self.assembly.add_applet(self):
             component = self.assembly.add_submodule(BenchmarkComponent())
