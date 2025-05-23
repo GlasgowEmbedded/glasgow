@@ -96,17 +96,17 @@ class BenchmarkApplet(GlasgowAppletV2):
     Evaluate performance of the host communication link.
 
     Benchmark modes:
-        * source: device emits an endless stream of data via one FIFO, host validates
-          (simulates a logic analyzer subtarget)
-        * sink: host emits an endless stream of data via one FIFO, device validates
-          (simulates an I2S protocol subtarget)
-        * loopback: host emits an endless stream of data via one FIFOs, device mirrors it all back,
-          host validates
-          (simulates an SPI protocol subtarget)
-        * latency: host sends one packet, device sends it back, time until the packet is received back
-          on the host is measured
-          (simulates cases where a transaction with the DUT relies on feedback from the host;
-          also useful for comparing different usb stacks or usb data paths like hubs or network bridges)
+
+    * source: device emits an endless stream of data via one FIFO, host validates
+      (simulates a logic analyzer subtarget)
+    * sink: host emits an endless stream of data via one FIFO, device validates
+      (simulates an I2S protocol subtarget)
+    * loopback: host emits an endless stream of data via one FIFOs, device mirrors it all back,
+      host validates (simulates an SPI protocol subtarget)
+    * latency: host sends one packet, device sends it back, time until the packet is received back
+      on the host is measured (simulates cases where a transaction with the DUT relies on feedback
+      from the host; also useful for comparing different usb stacks or usb data paths like hubs or
+      network bridges)
     """
 
     __all_modes = ["source", "sink", "loopback", "latency"]
