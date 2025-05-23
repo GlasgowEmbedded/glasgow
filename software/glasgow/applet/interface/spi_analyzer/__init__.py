@@ -273,10 +273,7 @@ class SPIAnalyzerApplet(GlasgowAppletV2):
     def build(self, args):
         with self.assembly.add_applet(self):
             self.assembly.use_voltage(args.voltage)
-            self.assembly.use_pulls({
-                args.cs:   "high", args.sck:  "low",
-                args.copi: "high", args.cipo: "high"
-            })
+            self.assembly.use_pulls({args.cs: "high"})
             self.spi_analyzer_iface = SPIAnalyzerInterface(self.logger, self.assembly,
                 cs=args.cs, sck=args.sck, copi=args.copi, cipo=args.cipo,
                 buffer_size=args.buffer_size)

@@ -260,7 +260,7 @@ class QSPIAnalyzerApplet(GlasgowAppletV2):
     def build(self, args):
         with self.assembly.add_applet(self):
             self.assembly.use_voltage(args.voltage)
-            self.assembly.use_pulls({args.cs: "high", args.sck: "low", args.io: "high"})
+            self.assembly.use_pulls({args.cs: "high"})
             self.qspi_analyzer_iface = QSPIAnalyzerInterface(self.logger, self.assembly,
                 cs=args.cs, sck=args.sck, io=args.io,
                 buffer_size=args.buffer_size)
