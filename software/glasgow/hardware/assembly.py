@@ -448,12 +448,16 @@ class HardwareAssembly(AbstractAssembly):
             self._applet = None
             self._domain = None
 
-    def add_platform_pin(self, pin_name: str, port_name: str) -> io.PortLike:
+    def add_platform_pin(self, pin: GlasgowPin, port_name: str) -> io.PortLike:
         assert self._artifact is None, "cannot add a port to a sealed assembly"
         # TODO: make this a proper error and not an assertion
+        pin_name = f"{pin.port}{pin.number}"
         assert pin_name in self._platform.glasgow_pins, f"unknown or already used pin {pin_name}"
         self._logger.debug(f"assigning pin {port_name!r} to {pin_name}")
-        return self._platform.glasgow_pins.pop(pin_name)
+        if (pin.port, pin.number) not in self._pulls:
+            self._pulls[pin.port, pin.number] = PullState.Float
+        port = self._platform.glasgow_pins.pop(pin_name)
+        return ~port if pin.invert else port
 
     def add_submodule(self, elaboratable, *, name=None) -> Elaboratable:
         assert self._artifact is None, "cannot add a submodule to a sealed assembly"
