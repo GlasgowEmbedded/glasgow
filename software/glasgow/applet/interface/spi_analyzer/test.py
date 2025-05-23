@@ -51,10 +51,10 @@ class SPIAnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=SPIAnalyzerApple
 
         async def stream_testbench(ctx):
             words = [
-                {"copi": 0b01100001, "cipo": 0b11110011, "epoch": 0},
-                {"copi": 0b00000001, "cipo": 0b00000011, "epoch": 1},
-                {"copi": 0b00000010, "cipo": 0b00000100, "epoch": 1},
-                {"copi": 0b00010000, "cipo": 0b00010000, "epoch": 0},
+                {"chip": 0, "copi": 0b01100001, "cipo": 0b11110011, "epoch": 0},
+                {"chip": 0, "copi": 0b00000001, "cipo": 0b00000011, "epoch": 1},
+                {"chip": 0, "copi": 0b00000010, "cipo": 0b00000100, "epoch": 1},
+                {"chip": 0, "copi": 0b00010000, "cipo": 0b00010000, "epoch": 0},
             ]
             for word in words:
                 self.assertEqual(word, (await stream_get(ctx, dut.stream)))
@@ -85,7 +85,8 @@ class SPIAnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=SPIAnalyzerApple
                 (bytes([0b00010000]),             bytes([0b00010000])),
             ]
             for copi_expect, cipo_expect in data:
-                copi_data, cipo_data = await iface.capture()
+                chip, copi_data, cipo_data = await iface.capture()
+                self.assertEqual(chip, 0)
                 self.assertEqual(copi_data, copi_expect)
                 self.assertEqual(cipo_data, cipo_expect)
 
