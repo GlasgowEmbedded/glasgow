@@ -1,0 +1,513 @@
+import logging
+import argparse
+import math
+import sys
+
+from amaranth import *
+from amaranth.lib import io, data, cdc, wiring, stream, enum
+from amaranth.lib.wiring import In, Out
+
+from ... import GlasgowAppletV2
+
+"""
+GPIB / IEEE-488 is a 16 line bus, with a single controller (in this case, the
+controller will be the Glasgow). The bus can be in one of two modes, depending
+on the ATN line (active low). When ATN is low, all other devices on the bus
+must listen to the controller. When high, only the addressed device needs to
+listen.
+
+The sixteen lines can be broken into three groups. These are the data lines (x8),
+the bus management lines (x5) and the handshake lines (x3).
+
+  *** DATA LINES  ***
+  DIOx   - There are eight data I/O lines.
+
+  *** BUS MANAGEMENT LINES ***
+  ATN    - Attention
+           This dictates whether we are in command or data mode.
+  EOI    - End-or-Identify
+           Any device on the bus can use this to signal the end of binary data, or
+           to delimit textual data.
+  IFC    - Interface Clear
+           Allows the controller to instruct all devices on the bus to reset their
+           bus function to the initial state.
+  SRQ    - Service Request
+           All devices, aside from the controller, can use this line to indicate to
+           the controller that something has finished, or that an error has occured.
+           When this line is pulled low by a device, the controller should poll to
+           find out which device is asking for service and what they want.
+  REN    - Remote Enable
+
+  *** HANDSHAKE LINES ***
+  DAV    - Data Valid
+           A device pulls this line high when it is sending data.
+  NRFD   - Not Ready for Data
+           A device pulls this line height when data hasn't been fully received yet.
+  NDAC   - Not Data Accepted
+           A device is not ready to receive data yet.
+
+The NRFD and NDAC lines limit the speed that the bus can run - this
+will be determined by the slowest device on the bus. The talker will
+pull these lines high, through a resistor. Each listener will pin them
+to ground until they are ready for the next step.
+
+Whether the ports are inputs or outputs is dictated by whether the device is
+listening or talking.
+
++--------++------+-----+-----+------+------+--*--+--*--+--*--+--*--+
+| Action || DIOx | EOI | DAV | NRFD | NDAC | IFC | SRQ | ATN | REN |
++--------++------+-----+-----+------+------+-----+-----+-----+-----+
+| Talk   || OUT  | OUT | OUT | IN   | IN   | OUT | IN  | OUT | OUT |
+| Listen || IN   | IN  | IN  | OUT  | OUT  | OUT | IN  | OUT | OUT |
++--------++------+-----+-----+------+------+-----+-----+-----+-----+
+
+When a line is marked as an input, it should passively pull up the
+line to 5v. Otherwise, the lines voltage should be dictatd by other
+devices on the bus.
+
+The applet has been tested with the following pieces of test equipment:
+
+  Tektronix TDS420A Oscilloscope
+  Tektronix TDS3014 Oscilloscope
+  Rigol DM3068 Multimeter
+  HP 1630D Logic Analyser
+"""
+
+
+class GPIBCommand(enum.Enum, shape=8):
+    # When the bus is in command mode, these commands can be sent to
+    # all devices on the bus. For example, to instruct device 10 to
+    # listen to you, you would send MTA + 10.
+    MLA = 0x40  # My Listen Address (+ Address)
+    MTA = 0x20  # My Talk Address (+ Address)
+    PPE = 0x60  # Parallel Poll Enable (+ Secondary Address)
+    PPD = 0x70  # Parallel Poll Disable (+ Secondary Address)
+    UNL = 0x3F  # Unlisten
+    UNT = 0x5F  # Untalk
+    SPE = 0x18  # Serial Poll Enable
+    SPD = 0x19  # Serial Poll Disable
+    LLO = 0x11  # Local Lock Out
+
+
+class GPIBMessage(enum.Enum, shape=8):
+    # These are sent prior to any data/commands being sent, and
+    # dictate how the controller should handle the data.
+    Listen         = 0b0100_0000 # Listen mode, request byte
+    Data           = 0b1000_0001 # Normal data byte
+    DataEOI        = 0b1000_0011 # Last data byte
+    Command        = 0b1000_0101 # Command byte
+    InterfaceClear = 0b1000_1000 # Instruct all devices reset their state (e.g. clear errors)
+
+    _Acknowledge   = 0b1000_0000 # Internal - acknowledge that data has been sent
+
+
+class GPIBStatus(enum.Enum, shape=8):
+    Idle    = 0
+    Control = 1
+    Talk    = 2
+    Listen  = 3
+    Unknown = 8
+    Error   = 16
+
+
+class GPIBComponent(wiring.Component):
+    i_stream: In(stream.Signature(8))
+    o_stream: Out(stream.Signature(8))
+
+    def __init__(self, ports):
+        self.ports    = ports
+
+        self.dio_i  = Signal(8)  # Data Lines            Listen
+        self.dio_o  = Signal(8)  #                       Talk
+        self.eoi_i  = Signal(1)  # End or Identify       Listen
+        self.eoi_o  = Signal(1)  #                       Talk
+        self.dav_i  = Signal(1)  # Data Valid            Listen
+        self.dav_o  = Signal(1)  #                       Talk
+        self.nrfd_i = Signal(1)  # Not Ready For Data    Talk
+        self.nrfd_o = Signal(1)  #                       Listen
+        self.ndac_i = Signal(1)  # Not Data Accepted     Talk
+        self.ndac_o = Signal(1)  #                       Listen
+        self.srq_i  = Signal(1)  # Service Request       Any
+        self.ifc_o  = Signal(1)  # Interface Clear       Any
+        self.atn_o  = Signal(1)  # Attention             Any
+        self.ren_o  = Signal(1)  # Remote Enable         Any
+
+        self.talking   = Signal()
+        self.listening = Signal()
+
+        self.status    = Signal(8)
+
+        super().__init__()
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.dio_buffer  = dio_buffer  = io.Buffer("io", ~self.ports.dio)
+        m.submodules.eoi_buffer  = eoi_buffer  = io.Buffer("io", ~self.ports.eoi)
+        m.submodules.dav_buffer  = dav_buffer  = io.Buffer("io", ~self.ports.dav)
+        m.submodules.nrfd_buffer = nrfd_buffer = io.Buffer("io", ~self.ports.nrfd)
+        m.submodules.ndac_buffer = ndac_buffer = io.Buffer("io", ~self.ports.ndac)
+        m.submodules.srq_buffer  = srq_buffer  = io.Buffer("i",  ~self.ports.srq)
+        m.submodules.ifc_buffer  = ifc_buffer  = io.Buffer("o",  ~self.ports.ifc)
+        m.submodules.atn_buffer  = atn_buffer  = io.Buffer("o",  ~self.ports.atn)
+        m.submodules.ren_buffer  = ren_buffer  = io.Buffer("o",  ~self.ports.ren)
+
+        m.submodules += [
+            cdc.FFSynchronizer(dio_buffer.i,  self.dio_i),
+            cdc.FFSynchronizer(eoi_buffer.i,  self.eoi_i),
+            cdc.FFSynchronizer(dav_buffer.i,  self.dav_i),
+            cdc.FFSynchronizer(nrfd_buffer.i, self.nrfd_i),
+            cdc.FFSynchronizer(ndac_buffer.i, self.ndac_i),
+            cdc.FFSynchronizer(srq_buffer.i,  self.srq_i),
+        ]
+
+        m.d.comb += [
+            dio_buffer.oe.eq(self.talking),
+            eoi_buffer.oe.eq(self.talking),
+            dav_buffer.oe.eq(self.talking),
+            nrfd_buffer.oe.eq(self.listening),
+            ndac_buffer.oe.eq(self.listening),
+            ifc_buffer.oe.eq(1),
+            atn_buffer.oe.eq(1),
+            ren_buffer.oe.eq(1),
+        ]
+        m.d.comb += [
+            dio_buffer.o.eq(self.dio_o),
+            eoi_buffer.o.eq(self.eoi_o),
+            dav_buffer.o.eq(self.dav_o),
+            nrfd_buffer.o.eq(self.nrfd_o),
+            ndac_buffer.o.eq(self.ndac_o),
+            ifc_buffer.o.eq(self.ifc_o),
+            atn_buffer.o.eq(self.atn_o),
+            ren_buffer.o.eq(self.ren_o),
+        ]
+
+        # settle_delay = math.ceil(platform.default_clk_frequency * 1e-6)
+        settle_delay = 5
+        timer = Signal(range(1 + settle_delay))
+
+        m.d.comb += [
+           # platform.request("led", 0).o.eq(self.status == 0),
+           # platform.request("led", 1).o.eq(self.status == 1),
+           # platform.request("led", 2).o.eq(self.status == 2),
+           # platform.request("led", 3).o.eq(self.status == 4),
+           # platform.request("led", 4).o.eq(self.status == 8),
+        ]
+
+        l_control = Signal(data.StructLayout({
+            "tx":     1,
+            "eoi":    1,
+            "atn":    1,
+            "ifc":    1,
+            "ren":    1,
+            "reserv": 1,
+            "listen": 1,
+            "talk":   1,
+        }))
+        l_data    = Signal(8)
+
+        with m.FSM():
+            with m.State("Control: Begin"):
+                m.d.comb += Print("Control")
+                m.d.sync += [
+                    self.status.eq(GPIBStatus.Idle),
+                    self.dav_o.eq(0),
+                ]
+                m.d.comb += self.i_stream.ready.eq(1)
+                with m.If(self.i_stream.valid):
+                    m.d.sync += l_control.eq(self.i_stream.payload)
+                    m.next = "Control: Read data"
+
+            with m.State("Control: Read data"):
+                # If it's listen, we do not have to modify any data
+                # lines, so there's no point in expecting a second
+                # byte.
+                with m.If(l_control.listen):
+                    m.next = "Control: Parse"
+                with m.Else():
+                    m.d.sync += self.status.eq(GPIBStatus.Control)
+                    m.d.comb += self.i_stream.ready.eq(1)
+                    with m.If(self.i_stream.valid):
+                        m.d.sync += l_data.eq(self.i_stream.payload)
+                        m.next = "Control: Parse"
+
+            with m.State("Control: Parse"):
+                m.d.sync += [
+                    self.talking.eq(l_control.talk),
+                    self.listening.eq(l_control.listen),
+                ]
+                with m.If(l_control.talk & l_control.listen):
+                    m.next = "Control: Error"
+                with m.If(~l_control.talk & ~l_control.listen):
+                    m.next = "Control: Begin"
+                with m.If(l_control.talk & ~l_control.listen):
+                    m.d.sync += self.status.eq(GPIBStatus.Talk)
+                    m.next = "Talk: Begin"
+                with m.If(l_control.listen & ~l_control.talk):
+                    m.d.sync += self.status.eq(GPIBStatus.Listen)
+                    m.next = "Listen: Begin"
+
+            with m.State("Control: Error"):
+                m.d.sync += self.status.eq(GPIBStatus.Error)
+
+            with m.State("Control: Acknowledge"):
+                # Some messages, such as GPIBMessage.Talk, expect an
+                # acknowledgement once the operation has completed. In
+                # the case of Talk, this ensures that the write
+                # operation is blocking, thus preventing the pull up
+                # resistor configuration from changing
+                # mid-transaction.
+                m.d.comb += [
+                    self.o_stream.payload.eq(GPIBMessage._Acknowledge),
+                    self.o_stream.valid.eq(1),
+                    Print("awaiting acknowledge ready")
+                ]
+                with m.If(self.o_stream.ready):
+                    m.d.comb += Print("acknowledge ready")
+                    m.next = "Control: Begin"
+
+            with m.State("Talk: Begin"):
+                m.d.sync += [
+                    self.eoi_o.eq(l_control.eoi),
+                    self.atn_o.eq(l_control.atn),
+                    self.ifc_o.eq(l_control.ifc),
+                    self.ren_o.eq(l_control.ren),
+                    self.dav_o.eq(0),
+                ]
+                with m.If(~l_control.tx):
+                    m.next = "Control: Acknowledge"
+                with m.If(self.ndac_i & l_control.tx):
+                    m.d.sync += [
+                        self.dio_o.eq(l_data),
+                        timer.eq(settle_delay),
+                    ]
+                    m.next = "Talk: DIO Stabalise"
+
+            with m.State("Talk: DIO Stabalise"):
+                m.d.sync += timer.eq(timer - 1)
+                with m.If(timer == 0):
+                    m.next = "Talk: NRFD"
+
+            with m.State("Talk: NRFD"):
+                with m.If(~self.nrfd_i):
+                    m.d.sync += self.dav_o.eq(1)
+                    m.next = "Talk: NDAC"
+
+            with m.State("Talk: NDAC"):
+                with m.If(~self.ndac_i):
+                    m.d.sync += self.dav_o.eq(0)
+                    m.next = "Control: Acknowledge"
+
+            with m.State("Listen: Begin"):
+                m.d.sync += [
+                    self.ndac_o.eq(1),
+                    self.nrfd_o.eq(0),
+                    self.atn_o.eq(0),
+                ]
+                with m.If(self.dav_i):
+                    m.next = "Listen: Management lines"
+
+            with m.State("Listen: Management lines"):
+                m.d.comb += [
+                    self.o_stream.valid.eq(1),
+                    self.o_stream.payload.eq(Cat(1, self.eoi_i)),
+                ]
+                with m.If(self.o_stream.ready):
+                    m.next = "Listen: DIO lines"
+
+            with m.State("Listen: DIO lines"):
+                m.d.comb += [
+                    self.o_stream.valid.eq(1),
+                    self.o_stream.payload.eq(self.dio_i),
+                ]
+                with m.If(self.o_stream.ready):
+                    m.d.sync += self.nrfd_o.eq(0)
+                    m.next = "Listen: DAV assert"
+
+            with m.State("Listen: DAV assert"):
+                with m.If(self.dav_i):
+                    m.d.sync += self.ndac_o.eq(0)
+                    m.d.sync += self.nrfd_o.eq(0)
+                    m.next = "Control: Begin"
+
+        return m
+
+
+class GPIBControllerInterface:
+    def __init__(self, logger, assembly, *, dio, eoi, dav, nrfd, ndac, srq, ifc, atn, ren):
+        self.logger = logger
+        self.assembly = assembly
+
+        # These are used for pull ups, so we need them later.
+        self._dio  = dio
+        self._eoi  = eoi
+        self._dav  = dav
+        self._nrfd = nrfd
+        self._ndac = ndac
+        self._srq  = srq
+
+        ports = assembly.add_port_group(dio=dio, eoi=eoi, dav=dav, nrfd=nrfd,
+            ndac=ndac, srq=srq, ifc=ifc, atn=atn, ren=ren)
+        component = assembly.add_submodule(GPIBComponent(ports))
+        self._status = assembly.add_ro_register(component.status)
+        self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
+
+        self._sys_clk_period = assembly.sys_clk_period
+
+
+    async def write(self, message: GPIBMessage, data=bytes([0])):
+        self.assembly.use_pulls({
+            self._dio:  "float",
+            self._eoi:  "float",
+            self._dav:  "float",
+            self._nrfd: "high",
+            self._ndac: "high",
+            self._srq:  "high",
+        })
+        await self.assembly.configure_ports()
+
+        for b in data:
+            await self._pipe.send(bytes([message.value]))
+            print("sent:", message)
+            await self._pipe.send(bytes([b]))
+            print("sent:", b)
+
+            ack = await self._pipe.recv(1)
+            print(ack)
+            assert GPIBMessage(ack[0]) == GPIBMessage._Acknowledge
+
+    async def read(self, *, to_eoi=True):
+        self.assembly.use_pulls({
+            self._dio:  "high",
+            self._eoi:  "high",
+            self._dav:  "high",
+            self._nrfd: "float",
+            self._ndac: "float",
+            self._srq:  "float",
+        })
+        await self.assembly.configure_ports()
+
+        eoi = False
+        while not eoi:
+            await self._pipe.send(bytes([GPIBMessage.Listen.value]))
+
+            eoi = bool((await self._pipe.recv(1))[0] & 2)
+            if not to_eoi:
+                eoi = True
+
+            yield (await self._pipe.recv(1))
+
+
+    async def send_to(self, address, data):
+        await self.cmd_talk(address)
+        await self.write(GPIBMessage.Data, data)
+        await self.write(GPIBMessage.DataEOI, b'\n')
+        await self.cmd_untalk()
+
+    async def read_from(self, address, *, to_eoi=True):
+        await self.cmd_listen(address)
+        all = bytes([])
+        async for data in self.read(to_eoi=to_eoi):
+            all += data
+        return all
+
+    async def iter_from(self, address, *, to_eoi=True):
+        await self.cmd_listen(address)
+        async for data in self.read(to_eoi=to_eoi):
+            yield data
+
+    async def cmd_talk(self, address):
+        await self.write(GPIBMessage.Command, bytes([GPIBCommand.MTA.value | address]))
+
+    async def cmd_untalk(self):
+        await self.write(GPIBMessage.Command, bytes([GPIBCommand.UNT.value]))
+
+    async def cmd_listen(self, address):
+        await self.write(GPIBMessage.Command, bytes([GPIBCommand.MLA.value | address]))
+
+    async def cmd_unlisten(self):
+        await self.write(GPIBMessage.Command, bytes([GPIBCommand.UNL.value]))
+
+    async def cmd_ppe(self, address):
+        await self.write(GPIBMessage.Command, bytes([GPIBCommand.PPE.value | address]))
+
+    async def cmd_ppd(self, address):
+        await self.write(GPIBMessage.Command, bytes([GPIBCommand.PPD.value | address]))
+
+    async def cmd_spe(self):
+        await self.write(GPIBMessage.Command, bytes([GPIBCommand.SPE.value]))
+
+    async def cmd_spd(self):
+        await self.write(GPIBMessage.Command, bytes([GPIBCommand.SPD.value]))
+
+    async def cmd_llo(self):
+        await self.write(GPIBMessage.Command, bytes([GPIBCommand.LLO.value]))
+
+    async def ifc(self):
+        await self.write(GPIBMessage.InterfaceClear)
+
+
+class GPIBControllerApplet(GlasgowAppletV2):
+    logger = logging.getLogger(__name__)
+    help = "talk to a gpib device"
+    description = """
+    Talk to a GPIB device
+    """
+    required_revision = "C0"
+
+    @classmethod
+    def add_build_arguments(cls, parser, access):
+        super().add_build_arguments(parser, access)
+
+        access.add_pins_argument(parser, "dio", width=8, default="A0,A1,A2,A3,B7,B6,B5,B4")
+        access.add_pins_argument(parser, "eoi",  default="A4")
+        access.add_pins_argument(parser, "dav",  default="A5")
+        access.add_pins_argument(parser, "nrfd", default="A6")
+        access.add_pins_argument(parser, "ndac", default="A7")
+        access.add_pins_argument(parser, "srq",  default="B1")
+        access.add_pins_argument(parser, "ifc",  default="B2")
+        access.add_pins_argument(parser, "atn",  default="B0")
+        access.add_pins_argument(parser, "ren",  default="B3")
+
+    def build(self, args):
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            self.gpib_iface = GPIBControllerInterface(self.logger, self.assembly,
+                dio=args.dio, eoi=args.eoi, dav=args.dav, nrfd=args.nrfd, ndac=args.ndac,
+                srq=args.srq, ifc=args.ifc, atn=args.atn, ren=args.ren)
+
+    @classmethod
+    def add_run_arguments(cls, parser):
+        super().add_run_arguments(parser)
+
+    @classmethod
+    def add_setup_arguments(cls, parser):
+        def check_address(value):
+            address = int(value)
+            if address < 0 or address > 30:
+                raise argparse.ArgumentTypeError("%s is not a correct GPIB address." % address)
+            return address
+
+        parser.add_argument(
+            "--address", metavar="ADDRESS", type=check_address, default=0,
+            help="target GPIB device address")
+        parser.add_argument(
+            "--command", metavar="CMD",
+            help="command to send to target. listen only if empty")
+        parser.add_argument(
+            "--read-eoi", action="store_true",
+            help="read until EOI, omit if no response expected")
+
+    async def run(self, args):
+        if args.command:
+            await self.gpib_iface.send_to(args.address, args.command.encode("ascii"))
+
+        if args.read_eoi:
+            async for data in self.gpib_iface.iter_from(args.address, to_eoi=True):
+                sys.stdout.buffer.write(data)
+                sys.stdout.buffer.flush()
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.GPIBControllerAppletTestCase
