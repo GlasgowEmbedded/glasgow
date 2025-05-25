@@ -7,7 +7,7 @@ import asyncio
 import typing
 from abc import ABCMeta, abstractmethod
 
-from ..applet import GlasgowAppletError
+from glasgow.applet import GlasgowAppletError
 
 
 __all__ = ["GDBRemote", "GDBRemoteError"]
