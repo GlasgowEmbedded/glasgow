@@ -2,7 +2,7 @@
 # Document Number: DS00002339A
 # Accession: G00005
 
-from ...support.bitstruct import *
+from glasgow.support.bitstruct import bitstruct
 
 
 __all__ = [

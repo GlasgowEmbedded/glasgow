@@ -18,11 +18,14 @@
 
 import logging
 
-from ....arch.jtag import *
-from ....arch.arc import *
-from ....database.arc import *
-from ...interface.jtag_probe import JTAGProbeApplet
-from ... import *
+from glasgow.arch.jtag import DR_IDCODE
+from glasgow.arch.arc import *
+from glasgow.database.arc import devices
+from glasgow.applet import GlasgowAppletError
+from glasgow.applet.interface.jtag_probe import JTAGProbeApplet
+
+
+__all__ = ["ARCDebugError", "ARCDebugInterface", "DebugARCApplet"]
 
 
 class ARCDebugError(GlasgowAppletError):
@@ -152,22 +155,14 @@ class DebugARCApplet(JTAGProbeApplet):
     """.format(
         devices="\n".join(f"        * {x.name}" for x in devices.values())
     )
+    requires_tap = True
 
-    @classmethod
-    def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
-        super().add_run_tap_arguments(parser)
+    async def setup(self, args):
+        await super().setup(args)
+        self.arc_iface = ARCDebugInterface(self.tap_iface, self.logger)
 
-    async def run(self, device, args):
-        tap_iface = await self.run_tap(DebugARCApplet, device, args)
-        return ARCDebugInterface(tap_iface, self.logger)
-
-    @classmethod
-    def add_interact_arguments(cls, parser):
-        pass
-
-    async def interact(self, device, args, arc_iface):
-        idcode, device = await arc_iface.identify()
+    async def run(self, args):
+        idcode, device = await self.arc_iface.identify()
         if device is None:
             raise GlasgowAppletError(
                 f"cannot operate on unknown device with IDCODE={idcode.to_int():08x}")

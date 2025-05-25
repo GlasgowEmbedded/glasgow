@@ -4,9 +4,9 @@
 
 from abc import ABCMeta, abstractmethod
 
-from ....database.jedec import *
-from ....arch.arm.dap import *
-from ... import *
+from glasgow.database.jedec import jedec_mfg_name_from_bank_num
+from glasgow.arch.arm.dap import *
+from glasgow.applet import GlasgowAppletError
 
 
 __all__ = ["ARMDPInterface", "ARMAPTransactionError", "DebugARMAppletMixin"]
@@ -81,16 +81,12 @@ class ARMDPInterface(metaclass=ABCMeta):
 
 
 class DebugARMAppletMixin:
-    @classmethod
-    def add_interact_arguments(cls, parser):
-        pass
-
-    async def interact(self, device, args, dp_iface):
-        await dp_iface.set_debug_power(True)
+    async def run(self, args):
+        await self.dp_iface.set_debug_power(True)
 
         for ap_index in range(256):
             try:
-                ap_idr = AP_IDR.from_int(await dp_iface.read_ap_reg(ap_index, AP_IDR_addr))
+                ap_idr = AP_IDR.from_int(await self.dp_iface.read_ap_reg(ap_index, AP_IDR_addr))
             except ARMAPTransactionError:
                 # There's an AP at this index but it doesn't work.
                 self.logger.error("AP #%d: IDR read error", ap_index)

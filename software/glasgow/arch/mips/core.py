@@ -5,7 +5,7 @@
 
 from collections import defaultdict
 
-from ...support.bitstruct import *
+from glasgow.support.bitstruct import bitstruct
 
 
 __all__ = [

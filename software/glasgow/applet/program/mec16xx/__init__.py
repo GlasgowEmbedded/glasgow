@@ -12,11 +12,11 @@ import struct
 import asyncio
 import textwrap
 
-from ....support.aobject import *
-from ....arch.arc import *
-from ....arch.arc.mec16xx import *
-from ...debug.arc import DebugARCApplet
-from ... import *
+from glasgow.support.aobject import aobject
+from glasgow.arch.arc import *
+from glasgow.arch.arc.mec16xx import *
+from glasgow.applet.debug.arc import DebugARCApplet
+from glasgow.applet import GlasgowAppletError
 
 
 FLASH_SIZE_MAX = 0x40_000
@@ -433,12 +433,12 @@ class ProgramMEC16xxApplet(DebugARCApplet):
     to read 256KiB flash image, and analyzing the content.
     """
 
-    async def run(self, device, args):
-        arc_iface = await super().run(device, args)
-        return await MEC16xxInterface(arc_iface, self.logger)
+    async def setup(self, args):
+        await super().setup(args)
+        self.mec_iface = await MEC16xxInterface(self.arc_iface, self.logger)
 
     @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         def password(arg):
             try:
                 value = int(arg, 0)
@@ -551,14 +551,14 @@ class ProgramMEC16xxApplet(DebugARCApplet):
             "test-lock-boot-block",
             help="temporarily lock boot block, for testing purposes")
 
-    async def interact(self, device, args, mec_iface):
+    async def run(self, args):
         if args.operation in ["read-flash", "erase-flash", "write-flash"]:
             if args.force and args.size_bytes is None:
                 raise MEC16xxError(
                     f"must also specify --size-bytes when using {args.operation} --force")
 
             flash_status = Flash_Status.from_int(
-                await mec_iface.lower.read(Flash_Status_addr, space="memory"))
+                await self.mec_iface.lower.read(Flash_Status_addr, space="memory"))
 
             starting_address = 0
             if flash_status.Boot_Block:
@@ -593,7 +593,7 @@ class ProgramMEC16xxApplet(DebugARCApplet):
                         "and will contain all 0xFFs")
 
         if args.operation == "read-flash":
-            await mec_iface.enable_flash_access(enabled=True)
+            await self.mec_iface.enable_flash_access(enabled=True)
 
             self.logger.info(f"reading {args.size_bytes} bytes from flash")
             if args.size_bytes < FLASH_SIZE_MAX:
@@ -608,15 +608,16 @@ class ProgramMEC16xxApplet(DebugARCApplet):
                 self.logger.warning(
                     "beware that burst has been observed to not work correctly "
                     "in the past on some MEC16xx variants")
-                words = await mec_iface.read_flash_burst(
+                words = await self.mec_iface.read_flash_burst(
                     starting_address, (real_size_bytes + 3) // 4)
             else:
                 self.logger.info(
                     "this may take many minutes. consider trying higher jtag clock speeds "
                     "(e.g. '-f 4000'), and consider trying '--burst'. beware that burst has been "
                     "observed to not work correctly in the past on some MEC16xx variants")
-                words = await mec_iface.read_flash(starting_address, (real_size_bytes + 3) // 4)
-            await mec_iface.enable_flash_access(enabled=False)
+                words = await self.mec_iface.read_flash(
+                    starting_address, (real_size_bytes + 3) // 4)
+            await self.mec_iface.enable_flash_access(enabled=False)
 
             bytes_left = real_size_bytes
             args.file.write(starting_address * b"\xff")
@@ -626,13 +627,13 @@ class ProgramMEC16xxApplet(DebugARCApplet):
             args.file.write(final_bytes_to_skip * b"\xff")
 
         if args.operation == "erase-flash":
-            await mec_iface.enable_flash_access(enabled=True)
+            await self.mec_iface.enable_flash_access(enabled=True)
             if starting_address or final_bytes_to_skip:
-                await mec_iface.erase_flash_range(
+                await self.mec_iface.erase_flash_range(
                     starting_address, args.size_bytes - starting_address - final_bytes_to_skip)
             else:
-                await mec_iface.erase_flash()
-            await mec_iface.enable_flash_access(enabled=False)
+                await self.mec_iface.erase_flash()
+            await self.mec_iface.enable_flash_access(enabled=False)
 
         if args.operation == "write-flash":
             file_bytes = args.file.read()
@@ -665,7 +666,7 @@ class ProgramMEC16xxApplet(DebugARCApplet):
                 toflash_bytes += (4 - (len(toflash_bytes) % 4)) * b"\xff"
             words = [word[0] for word in struct.iter_unpack("<L", toflash_bytes)]
 
-            await mec_iface.enable_flash_access(enabled=True)
+            await self.mec_iface.enable_flash_access(enabled=True)
             if starting_address or final_bytes_to_skip:
                 flash_accessible_size = args.size_bytes - starting_address - final_bytes_to_skip
                 self.logger.info(
@@ -674,7 +675,7 @@ class ProgramMEC16xxApplet(DebugARCApplet):
                     self.logger.info(
                         "unprotected flash locations beyond the size of the image being written "
                         "will be left in the erased uninitialized state of 0xff")
-                await mec_iface.erase_flash_range(starting_address, flash_accessible_size)
+                await self.mec_iface.erase_flash_range(starting_address, flash_accessible_size)
             else:
                 self.logger.info(
                     f"erasing the entire flash, and writing {len(toflash_bytes)} bytes into it")
@@ -682,19 +683,19 @@ class ProgramMEC16xxApplet(DebugARCApplet):
                     self.logger.info(
                         "flash locations beyond the size of the image being written will be left "
                         "in the erased uninitialized state of 0xff")
-                await mec_iface.erase_flash()
-            await mec_iface.program_flash(starting_address, words)
-            await mec_iface.enable_flash_access(enabled=False)
+                await self.mec_iface.erase_flash()
+            await self.mec_iface.program_flash(starting_address, words)
+            await self.mec_iface.enable_flash_access(enabled=False)
 
         if args.operation == "emergency-erase":
-            await mec_iface.emergency_mass_erase()
+            await self.mec_iface.emergency_mass_erase()
 
         if args.operation == "read-eeprom":
-            data = bytes(await mec_iface.read_eeprom())
+            data = bytes(await self.mec_iface.read_eeprom())
             args.file.write(data)
 
         if args.operation == "erase-eeprom":
-            await mec_iface.erase_eeprom()
+            await self.mec_iface.erase_eeprom()
 
         if args.operation == "write-eeprom":
             data = args.file.read()
@@ -702,28 +703,28 @@ class ProgramMEC16xxApplet(DebugARCApplet):
                 raise MEC16xxError(
                     f"Error: given eeprom file size ({len(data)} bytes) is different from "
                     f"the physical EEPROM size ({EEPROM_SIZE} bytes)")
-            await mec_iface.erase_eeprom()
-            await mec_iface.program_eeprom(0, data)
+            await self.mec_iface.erase_eeprom()
+            await self.mec_iface.program_eeprom(0, data)
 
         if args.operation == "unlock-eeprom":
-            await mec_iface.unlock_eeprom(args.password)
+            await self.mec_iface.unlock_eeprom(args.password)
 
         if args.operation == "reset-quick-halt":
-            await mec_iface.reset_quick_halt()
+            await self.mec_iface.reset_quick_halt()
 
         if args.operation == "test-lock-data-block":
-            await mec_iface.test_lock_data_block()
+            await self.mec_iface.test_lock_data_block()
 
         if args.operation == "test-lock-boot-block":
-            await mec_iface.test_lock_boot_block()
+            await self.mec_iface.test_lock_boot_block()
 
         if args.operation in ("security-status", "reset-quick-halt", "test-lock-data-block",
                               "test-lock-boot-block"):
             flash_status = Flash_Status.from_int(
-                await mec_iface.lower.read(Flash_Status_addr, space="memory"))
+                await self.mec_iface.lower.read(Flash_Status_addr, space="memory"))
 
             self.logger.info(textwrap.dedent(f"""
                 Security status:
                 Boot_Block = {flash_status.Boot_Block}
                 Data_Block = {flash_status.Data_Block}
-                EEPROM_Block = {await mec_iface.is_eeprom_blocked()}"""))
+                EEPROM_Block = {await self.mec_iface.is_eeprom_blocked()}"""))

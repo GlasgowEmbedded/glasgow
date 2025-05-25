@@ -101,7 +101,7 @@ class DebugARM7Sequencer(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
 
-    divisor:  In(8)
+    divisor:  In(16)
 
     def __init__(self, ports):
         self._ports = ports

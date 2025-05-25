@@ -20,8 +20,8 @@
 # of configuring from an external source. Because of this, while polling the status of INIT_B in
 # the captured IR, it is necessary to shift in one of those opcodes.
 
-from ...support.bits import *
-from ...support.bitstruct import *
+from glasgow.support.bits import bits
+from glasgow.support.bitstruct import bitstruct
 
 
 __all__ = [

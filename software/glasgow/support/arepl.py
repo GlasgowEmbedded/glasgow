@@ -25,6 +25,9 @@ except ModuleNotFoundError:
 from .asignal import wait_for_signal
 
 
+__all__ = ["AsyncInteractiveConsole"]
+
+
 logger = logging.getLogger(__loader__.name)
 
 

@@ -2,8 +2,8 @@
 # Document Number: 5117-014
 # Accession: G00004
 
-from ...support.bits import *
-from ...support.bitstruct import *
+from glasgow.support.bits import bits
+from glasgow.support.bitstruct import bitstruct
 
 
 __all__ = [

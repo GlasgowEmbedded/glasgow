@@ -6,8 +6,8 @@
 #
 # The industry has defined a number of custom JTAG transport layers, such as cJTAG, Spy-Bi-Wire,
 # and so on. As long as these comprise a straightforward serialization of the four JTAG signals,
-# it is possible to reuse most of this applet by defining a TransportLayerProbeAdapter, with
-# the same interface as JTAGProbeAdapter.
+# it is possible to reuse most of this applet by defining a TransportLayerProbeController, with
+# the same interface as jtag.probe.Controller.
 #
 # Sideband signals
 # ----------------
@@ -22,16 +22,20 @@
 import struct
 import logging
 import argparse
-import enum
 from amaranth import *
-from amaranth.lib import io, cdc
+from amaranth.lib import io, wiring, stream, enum
+from amaranth.lib.wiring import In, Out, flipped, connect
 
-from ....support.bits import *
-from ....support.logging import *
-from ....support.arepl import *
-from ....database.jedec import *
-from ....arch.jtag import *
-from ... import *
+from glasgow.support.bits import bits
+from glasgow.support.logging import dump_bin
+from glasgow.database.jedec import jedec_mfg_name_from_bank_num
+from glasgow.arch.jtag import DR_IDCODE
+from glasgow.gateware.jtag.probe import Controller, Mode
+from glasgow.applet import GlasgowAppletV2, GlasgowAppletError
+
+
+__all__ = ["JTAGProbeDriver", "JTAGState", "JTAGProbeError", "JTAGProbeStateTransitionError",
+           "BaseJTAGProbeInterface", "JTAGProbeInterface", "TAPInterface", "JTAGProbeApplet"]
 
 
 class JTAGState(enum.StrEnum):
@@ -75,229 +79,229 @@ JTAG_TRANSITIONS = {
 }
 
 
-class JTAGProbeBus(Elaboratable):
-    def __init__(self, ports):
-        self._ports = ports
-
-        self.tck = Signal(init=1)
-        self.tms = Signal(init=1)
-        self.tdo = Signal(init=1)
-        self.tdi = Signal(init=1)
-        self.trst_z = Signal(init=0)
-        self.trst_o = Signal(init=0)
-
-    def elaborate(self, platform):
-        m = Module()
-        m.submodules.tck = tck_buffer = io.Buffer("o", self._ports.tck)
-        m.d.comb += tck_buffer.o.eq(self.tck)
-        m.submodules.tms = tms_buffer = io.Buffer("o", self._ports.tms)
-        m.d.comb += tms_buffer.o.eq(self.tms)
-        m.submodules.tdi = tdi_buffer = io.Buffer("o", self._ports.tdi)
-        m.d.comb += tdi_buffer.o.eq(self.tdi)
-        m.submodules.tdo = tdo_buffer = io.Buffer("i", self._ports.tdo)
-        m.submodules += cdc.FFSynchronizer(tdo_buffer.i, self.tdo)
-        if self._ports.trst is not None:
-            m.submodules.trst = trst_buffer = io.Buffer("o", ~self._ports.trst)
-            m.d.comb += trst_buffer.oe.eq(~self.trst_z)
-            m.d.comb += trst_buffer.o.eq(self.trst_o)
-        return m
-
-
 BIT_AUX_TRST_Z  = 0b01
 BIT_AUX_TRST_O  = 0b10
 
 
-class JTAGProbeAdapter(Elaboratable):
-    def __init__(self, bus, period_cyc):
-        self.bus = bus
-        self._period_cyc = period_cyc
-
-        self.stb = Signal()
-        self.rdy = Signal()
-
-        self.tms = Signal()
-        self.tdo = Signal()
-        self.tdi = Signal()
-        self.aux_i = C(0)
-        self.aux_o = Cat(bus.trst_z, bus.trst_o)
-
-    def elaborate(self, platform):
-        m = Module()
-        half_cyc = int(self._period_cyc // 2)
-        timer    = Signal(range(half_cyc+1))
-
-        with m.FSM() as fsm:
-            with m.State("TCK-H"):
-                m.d.comb += self.bus.tck.eq(1)
-                with m.If(timer != 0):
-                    m.d.sync += timer.eq(timer - 1)
-                with m.Else():
-                    with m.If(self.stb):
-                        m.d.sync += [
-                            timer   .eq(half_cyc - 1),
-                            self.bus.tms .eq(self.tms),
-                            self.bus.tdi .eq(self.tdi),
-                        ]
-                        m.next = "TCK-L"
-                    with m.Else():
-                        m.d.comb += self.rdy.eq(1)
-            with m.State("TCK-L"):
-                m.d.comb += self.bus.tck.eq(0)
-                with m.If(timer != 0):
-                    m.d.sync += timer.eq(timer - 1)
-                with m.Else():
-                    m.d.sync += [
-                        timer   .eq(half_cyc - 1),
-                        self.tdo.eq(self.bus.tdo),
-                    ]
-                    m.next = "TCK-H"
-        return m
+class JTAGCommand(enum.Enum, shape=4):
+    RunTCK      = 0
+    ShiftTDI    = 1
+    ShiftTDO    = 2
+    ShiftTDIO   = 3
+    ShiftTMS    = 4
+    Sync        = 5
+    Delay       = 6
+    DelayRunTCK = 7
+    GetAux      = 8
+    SetAux      = 9
 
 
-CMD_MASK       = 0b11110000
-CMD_SHIFT_TMS  = 0b00000000
-CMD_SHIFT_TDIO = 0b00010000
-CMD_GET_AUX    = 0b10000000
-CMD_SET_AUX    = 0b10010000
-# CMD_SHIFT_{TMS,TDIO}
-BIT_DATA_OUT   =     0b0001
-BIT_DATA_IN    =     0b0010
-BIT_LAST       =     0b0100
-# CMD_SHIFT_TMS
-BIT_TDI        =     0b1000
+CMD_BIT_LAST = 1 << 4
 
 
-class JTAGProbeDriver(Elaboratable):
-    def __init__(self, adapter, out_fifo, in_fifo):
-        self.adapter = adapter
-        self._out_fifo = out_fifo
-        self._in_fifo = in_fifo
+class JTAGProbeDriver(wiring.Component):
+    i_stream: In(stream.Signature(8))
+    o_stream: Out(stream.Signature(8))
+    o_flush:  Out(1)
+
+    o_words:  Out(Controller.i_words_signature(8))
+    i_words:  In(Controller.o_words_signature(8))
+
+    aux_o:    Out(8)
+    aux_i:    In(8)
+
+    def __init__(self, *, us_cycles):
+        self._us_cycles = us_cycles
+
+        super().__init__()
 
     def elaborate(self, platform):
         m = Module()
-        cmd     = Signal(8)
-        count   = Signal(16)
-        bitno   = Signal(3)
-        align   = Signal(3)
-        shreg_o = Signal(8)
-        shreg_i = Signal(8)
+
+        cmd     = Signal(JTAGCommand)
+        last    = Signal()
+        i_count = Signal(16)
+        o_count = Signal(16)
+        timer   = Signal(range(self._us_cycles))
 
         with m.FSM() as fsm:
             with m.State("RECV-COMMAND"):
-                m.d.comb += self._in_fifo.flush.eq(1)
-                with m.If(self._out_fifo.r_rdy):
-                    m.d.comb += self._out_fifo.r_en.eq(1)
-                    m.d.sync += cmd.eq(self._out_fifo.r_data)
-                    m.next = "COMMAND"
-
-            with m.State("COMMAND"):
-                with m.If(((cmd & CMD_MASK) == CMD_SHIFT_TMS) |
-                    ((cmd & CMD_MASK) == CMD_SHIFT_TDIO)):
-                    m.next = "RECV-COUNT-1"
-                with m.Elif((cmd & CMD_MASK) == CMD_GET_AUX):
-                    m.next = "SEND-AUX"
-                with m.Elif((cmd & CMD_MASK) == CMD_SET_AUX):
-                    m.next = "RECV-AUX"
+                m.d.comb += self.o_flush.eq(1)
+                with m.If(self.i_stream.valid):
+                    m.d.sync += cmd.eq(self.i_stream.payload[:4])
+                    m.d.sync += last.eq(self.i_stream.payload[4])
+                    with m.Switch(self.i_stream.payload[:4]):
+                        with m.Case(
+                                JTAGCommand.RunTCK,
+                                JTAGCommand.ShiftTDI,
+                                JTAGCommand.ShiftTDO,
+                                JTAGCommand.ShiftTDIO,
+                                JTAGCommand.ShiftTMS,
+                                JTAGCommand.Delay,
+                                JTAGCommand.DelayRunTCK):
+                            m.d.comb += self.i_stream.ready.eq(1)
+                            m.next = "RECV-COUNT-1"
+                        with m.Case(JTAGCommand.GetAux):
+                            m.d.comb += self.i_stream.ready.eq(1)
+                            m.next = "SEND-AUX"
+                        with m.Case(JTAGCommand.SetAux):
+                            m.d.comb += self.i_stream.ready.eq(1)
+                            m.next = "RECV-AUX"
+                        with m.Case(JTAGCommand.Sync):
+                            m.d.comb += self.i_stream.ready.eq(1)
+                            m.next = "SYNC"
 
             with m.State("SEND-AUX"):
-                with m.If(self._in_fifo.w_rdy):
-                    m.d.comb += [
-                        self._in_fifo.w_en.eq(1),
-                        self._in_fifo.w_data.eq(self.adapter.aux_i),
-                    ]
+                m.d.comb += [
+                    self.o_stream.valid.eq(1),
+                    self.o_stream.payload.eq(self.aux_i),
+                ]
+                with m.If(self.o_stream.ready):
                     m.next = "RECV-COMMAND"
 
             with m.State("RECV-AUX"):
-                with m.If(self._out_fifo.r_rdy):
-                    m.d.comb += self._out_fifo.r_en.eq(1)
-                    m.d.sync += self.adapter.aux_o.eq(self._out_fifo.r_data)
+                m.d.comb += self.i_stream.ready.eq(1)
+                with m.If(self.i_stream.valid):
+                    m.d.sync += self.aux_o.eq(self.i_stream.payload)
                     m.next = "RECV-COMMAND"
 
             with m.State("RECV-COUNT-1"):
-                with m.If(self._out_fifo.r_rdy):
-                    m.d.comb += self._out_fifo.r_en.eq(1)
-                    m.d.sync += count[0:8].eq(self._out_fifo.r_data)
+                m.d.comb += self.i_stream.ready.eq(1)
+                with m.If(self.i_stream.valid):
+                    m.d.sync += i_count[0:8].eq(self.i_stream.payload)
+                    m.d.sync += o_count[0:8].eq(self.i_stream.payload)
                     m.next = "RECV-COUNT-2"
 
             with m.State("RECV-COUNT-2"):
-                with m.If(self._out_fifo.r_rdy):
-                    m.d.comb += self._out_fifo.r_en.eq(1)
-                    m.d.sync += count[8:16].eq(self._out_fifo.r_data)
-                    m.next = "RECV-BITS"
+                m.d.comb += self.i_stream.ready.eq(1)
+                with m.If(self.i_stream.valid):
+                    m.d.sync += i_count[8:16].eq(self.i_stream.payload)
+                    m.d.sync += o_count[8:16].eq(self.i_stream.payload)
+                    with m.Switch(cmd):
+                        with m.Case(JTAGCommand.Delay, JTAGCommand.DelayRunTCK):
+                            m.next = "DELAY"
+                        with m.Default():
+                            m.next = "SHIFT"
 
-            with m.State("RECV-BITS"):
-                with m.If(count == 0):
-                    m.next = "RECV-COMMAND"
-                with m.Else():
-                    with m.If(count > 8):
-                        m.d.sync += bitno.eq(0)
+            with m.State("SHIFT"):
+                has_tms_tdi = (
+                    (cmd == JTAGCommand.ShiftTMS) |
+                    (cmd == JTAGCommand.ShiftTDI) |
+                    (cmd == JTAGCommand.ShiftTDIO)
+                )
+                has_tdo = (
+                    (cmd == JTAGCommand.ShiftTDO) |
+                    (cmd == JTAGCommand.ShiftTDIO)
+                )
+                with m.If(o_count != 0):
+                    with m.If(cmd == JTAGCommand.ShiftTMS):
+                        m.d.comb += self.o_words.p.mode.eq(Mode.ShiftTMS)
+                    with m.Elif(has_tdo):
+                        m.d.comb += self.o_words.p.mode.eq(Mode.ShiftTDIO)
                     with m.Else():
-                        m.d.sync += [
-                            align.eq(8 - count[:3]),
-                            bitno.eq(8 - count[:3]),
+                        m.d.comb += self.o_words.p.mode.eq(Mode.ShiftTDI)
+
+                    shift_out = Signal()
+
+                    with m.If(has_tms_tdi):
+                        m.d.comb += [
+                            shift_out.eq(self.i_stream.valid),
+                            self.o_words.p.data.eq(self.i_stream.payload),
+                            self.i_stream.ready.eq(self.o_words.ready),
                         ]
-                    with m.If(cmd & BIT_DATA_OUT):
-                        with m.If(self._out_fifo.r_rdy):
-                            m.d.comb += self._out_fifo.r_en.eq(1)
-                            m.d.sync += shreg_o.eq(self._out_fifo.r_data)
-                            m.next = "SHIFT-SETUP"
                     with m.Else():
-                        m.d.sync += shreg_o.eq(0b11111111)
-                        m.next = "SHIFT-SETUP"
+                        m.d.comb += [
+                            shift_out.eq(1),
+                            self.o_words.p.data.eq(0xff),
+                        ]
 
-            with m.State("SHIFT-SETUP"):
-                m.d.sync += self.adapter.stb.eq(1)
-                with m.If((cmd & CMD_MASK) == CMD_SHIFT_TMS):
-                    m.d.sync += self.adapter.tms.eq(shreg_o[0])
-                    m.d.sync += self.adapter.tdi.eq((cmd & BIT_TDI) != 0)
-                with m.Else():
-                    m.d.sync += self.adapter.tms.eq(0)
-                    with m.If(cmd & BIT_LAST):
-                        m.d.sync += self.adapter.tms.eq(count == 1)
-                    m.d.sync += self.adapter.tdi.eq(shreg_o[0])
-                m.d.sync += [
-                    shreg_o.eq(Cat(shreg_o[1:], 1)),
-                    count.eq(count - 1),
-                    bitno.eq(bitno + 1),
-                ]
-                m.next = "SHIFT-CAPTURE"
-
-            with m.State("SHIFT-CAPTURE"):
-                m.d.sync += self.adapter.stb.eq(0)
-                with m.If(self.adapter.rdy):
-                    m.d.sync += shreg_i.eq(Cat(shreg_i[1:], self.adapter.tdo))
-                    with m.If(bitno == 0):
-                        m.next = "SEND-BITS"
-                    with m.Else():
-                        m.next = "SHIFT-SETUP"
-
-            with m.State("SEND-BITS"):
-                with m.If(cmd & BIT_DATA_IN):
-                    with m.If(self._in_fifo.w_rdy):
-                        m.d.comb += self._in_fifo.w_en.eq(1)
-                        with m.If(count == 0):
-                            m.d.comb += self._in_fifo.w_data.eq(shreg_i >> align)
+                    with m.If(shift_out):
+                        m.d.comb += self.o_words.valid.eq(1)
+                        with m.If(o_count > 8):
+                            m.d.comb += self.o_words.p.size.eq(8)
+                            with m.If(self.o_words.ready):
+                                m.d.sync += o_count.eq(o_count - 8)
                         with m.Else():
-                            m.d.comb += self._in_fifo.w_data.eq(shreg_i)
-                        m.next = "RECV-BITS"
+                            m.d.comb += [
+                                self.o_words.p.size.eq(o_count),
+                                self.o_words.p.last.eq(last),
+                            ]
+                            with m.If(self.o_words.ready):
+                                m.d.sync += o_count.eq(0)
+
+                with m.If(has_tdo):
+                    with m.If(i_count != 0):
+                        m.d.comb += [
+                            self.o_stream.payload.eq(self.i_words.p.data),
+                            self.o_stream.valid.eq(self.i_words.valid),
+                            self.i_words.ready.eq(self.o_stream.ready),
+                        ]
+                        with m.If(self.o_stream.valid & self.o_stream.ready):
+                            with m.If(i_count > 8):
+                                m.d.sync += i_count.eq(i_count - 8)
+                            with m.Else():
+                                m.d.sync += i_count.eq(0)
+
+                with m.If((o_count == 0) & ((i_count == 0) | ~has_tdo)):
+                    m.next = "RECV-COMMAND"
+
+            with m.State("DELAY"):
+                with m.If(cmd == JTAGCommand.DelayRunTCK):
+                    m.d.comb += [
+                        self.o_words.valid.eq(1),
+                        self.o_words.p.mode.eq(Mode.ShiftTDI),
+                        self.o_words.p.size.eq(1),
+                        self.o_words.p.data.eq(0xff),
+                    ]
+                with m.If(timer == 0):
+                    with m.If(i_count == 0):
+                        with m.If((cmd == JTAGCommand.Delay) | self.o_words.ready):
+                            m.next = "RECV-COMMAND"
+                    with m.Else():
+                        m.d.sync += i_count.eq(i_count - 1)
+                        m.d.sync += timer.eq(self._us_cycles - 1)
                 with m.Else():
-                    m.next = "RECV-BITS"
+                    m.d.sync += timer.eq(timer - 1)
+
+            with m.State("SYNC"):
+                m.d.comb += self.o_stream.valid.eq(1)
+                with m.If(self.o_stream.ready):
+                    m.next = "RECV-COMMAND"
 
         return m
 
 
-class JTAGProbeSubtarget(Elaboratable):
-    def __init__(self, ports, out_fifo, in_fifo, period_cyc):
-        self._ports      = ports
-        self._out_fifo   = out_fifo
-        self._in_fifo    = in_fifo
-        self._period_cyc = period_cyc
+class JTAGProbeComponent(wiring.Component):
+    i_stream: In(stream.Signature(8))
+    o_stream: Out(stream.Signature(8))
+    o_flush:  Out(1)
+    divisor:  In(16)
+
+    def __init__(self, ports, *, us_cycles):
+        self._ports     = ports
+        self._us_cycles = us_cycles
+
+        super().__init__()
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.bus     = JTAGProbeBus(self._ports)
-        m.submodules.adapter = JTAGProbeAdapter(m.submodules.bus, self._period_cyc)
-        m.submodules.driver  = JTAGProbeDriver(m.submodules.adapter, self._out_fifo, self._in_fifo)
+
+        m.submodules.controller = controller = Controller(self._ports, width=8)
+        m.submodules.driver     = driver     = JTAGProbeDriver(us_cycles=self._us_cycles)
+
+        connect(m, flipped(self.i_stream), driver.i_stream)
+        connect(m, flipped(self.o_stream), driver.o_stream)
+        m.d.comb += self.o_flush.eq(driver.o_flush)
+
+        connect(m, driver.o_words, controller.i_words)
+        connect(m, driver.i_words, controller.o_words)
+        m.d.comb += controller.divisor.eq(self.divisor)
+
+        if self._ports.trst is not None:
+            m.submodules.trst = trst_buffer = io.Buffer("o", ~self._ports.trst)
+            m.d.comb += trst_buffer.oe.eq(~driver.aux_o[0])
+            m.d.comb += trst_buffer.o.eq(driver.aux_o[1])
+
         return m
 
 
@@ -312,14 +316,15 @@ class JTAGProbeStateTransitionError(JTAGProbeError):
         self.new_state = new_state
 
 
-class JTAGProbeInterface:
+class BaseJTAGProbeInterface:
     scan_ir_max_length = 128
     scan_dr_max_length = 1024
 
-    def __init__(self, interface, logger, has_trst=False, __name__=__name__):
-        self.lower   = interface
+    def __init__(self, logger, pipe, *, has_trst=False):
         self._logger = logger
-        self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+        self._level  = (logging.DEBUG if self._logger.name == self.__class__.__module__ else
+                        logging.TRACE)
+        self._pipe = pipe
 
         self.has_trst    = has_trst
         self._state      = JTAGState.UNKNOWN
@@ -335,17 +340,16 @@ class JTAGProbeInterface:
 
     async def flush(self):
         self._log_l("flush")
-        await self.lower.flush()
+        await self._pipe.flush()
 
     async def set_aux(self, value):
         self._log_l("set aux=%s", format(value, "08b"))
-        await self.lower.write(struct.pack("<BB",
-            CMD_SET_AUX, value))
+        await self._pipe.send(struct.pack("<BB", JTAGCommand.SetAux.value, value))
 
     async def get_aux(self):
-        await self.lower.write(struct.pack("<B",
-            CMD_GET_AUX))
-        value, = await self.lower.read(1)
+        await self._pipe.send(struct.pack("<B", JTAGCommand.GetAux.value))
+        await self._pipe.flush()
+        value, = await self._pipe.recv(1)
         self._log_l("get aux=%s", format(value, "08b"))
         return value
 
@@ -359,12 +363,11 @@ class JTAGProbeInterface:
             self._log_l("set trst=%d", active)
             await self.set_aux(BIT_AUX_TRST_O if active else 0)
 
-    async def shift_tms(self, tms_bits, tdi=False):
+    async def shift_tms(self, tms_bits):
         tms_bits = bits(tms_bits)
         self._log_l("shift tms=<%s>", dump_bin(tms_bits))
-        await self.lower.write(struct.pack("<BH",
-            CMD_SHIFT_TMS|BIT_DATA_OUT|(BIT_TDI if tdi else 0), len(tms_bits)))
-        await self.lower.write(tms_bits)
+        await self._pipe.send(struct.pack("<BH", JTAGCommand.ShiftTMS.value, len(tms_bits)))
+        await self._pipe.send(tms_bits)
 
     def _shift_last(self, last):
         if last:
@@ -393,8 +396,9 @@ class JTAGProbeInterface:
 
     async def _shift_dummy(self, count, last=False):
         for count, chunk_last in self._chunk_count(count, last):
-            await self.lower.write(struct.pack("<BH",
-                CMD_SHIFT_TDIO|(BIT_LAST if chunk_last else 0), count))
+            await self._pipe.send(struct.pack("<BH",
+                JTAGCommand.RunTCK.value | (CMD_BIT_LAST if chunk_last else 0),
+                count))
 
     async def shift_tdio(self, tdi_bits, *, prefix=0, suffix=0, last=True):
         assert self._state in (JTAGState.IRSHIFT, JTAGState.DRSHIFT)
@@ -403,12 +407,13 @@ class JTAGProbeInterface:
         self._log_l("shift tdio-i=%d,<%s>,%d", prefix, dump_bin(tdi_bits), suffix)
         await self._shift_dummy(prefix)
         for tdi_bits, chunk_last in self._chunk_bits(tdi_bits, last and suffix == 0):
-            await self.lower.write(struct.pack("<BH",
-                CMD_SHIFT_TDIO|BIT_DATA_IN|BIT_DATA_OUT|(BIT_LAST if chunk_last else 0),
+            await self._pipe.send(struct.pack("<BH",
+                JTAGCommand.ShiftTDIO.value | (CMD_BIT_LAST if chunk_last else 0),
                 len(tdi_bits)))
             tdi_bytes = bytes(tdi_bits)
-            await self.lower.write(tdi_bytes)
-            tdo_bytes = await self.lower.read(len(tdi_bytes))
+            await self._pipe.send(tdi_bytes)
+            await self._pipe.flush()
+            tdo_bytes = await self._pipe.recv(len(tdi_bytes))
             tdo_bits += bits(tdo_bytes, len(tdi_bits))
         await self._shift_dummy(suffix, last)
         self._log_l("shift tdio-o=%d,<%s>,%d", prefix, dump_bin(tdo_bits), suffix)
@@ -421,11 +426,11 @@ class JTAGProbeInterface:
         self._log_l("shift tdi=%d,<%s>,%d", prefix, dump_bin(tdi_bits), suffix)
         await self._shift_dummy(prefix)
         for tdi_bits, chunk_last in self._chunk_bits(tdi_bits, last and suffix == 0):
-            await self.lower.write(struct.pack("<BH",
-                CMD_SHIFT_TDIO|BIT_DATA_OUT|(BIT_LAST if chunk_last else 0),
+            await self._pipe.send(struct.pack("<BH",
+                JTAGCommand.ShiftTDI.value | (CMD_BIT_LAST if chunk_last else 0),
                 len(tdi_bits)))
             tdi_bytes = bytes(tdi_bits)
-            await self.lower.write(tdi_bytes)
+            await self._pipe.send(tdi_bytes)
         await self._shift_dummy(suffix, last)
         self._shift_last(last)
 
@@ -434,10 +439,11 @@ class JTAGProbeInterface:
         tdo_bits = bits()
         await self._shift_dummy(prefix)
         for count, chunk_last in self._chunk_count(count, last and suffix == 0):
-            await self.lower.write(struct.pack("<BH",
-                CMD_SHIFT_TDIO|BIT_DATA_IN|(BIT_LAST if chunk_last else 0),
+            await self._pipe.send(struct.pack("<BH",
+                JTAGCommand.ShiftTDO.value | (CMD_BIT_LAST if chunk_last else 0),
                 count))
-            tdo_bytes = await self.lower.read((count + 7) // 8)
+            await self._pipe.flush()
+            tdo_bytes = await self._pipe.recv((count + 7) // 8)
             tdo_bits += bits(tdo_bytes, count)
         await self._shift_dummy(suffix, last)
         self._log_l("shift tdo=%d,<%s>,%d", prefix, dump_bin(tdo_bits), suffix)
@@ -448,8 +454,34 @@ class JTAGProbeInterface:
         assert self._state in (JTAGState.IDLE, JTAGState.IRPAUSE, JTAGState.DRPAUSE)
         self._log_l("pulse tck count=%d", count)
         for count, _last in self._chunk_count(count, last=True):
-            await self.lower.write(struct.pack("<BH",
-                CMD_SHIFT_TDIO, count))
+            await self._pipe.send(struct.pack("<BH", JTAGCommand.RunTCK.value, count))
+
+    async def delay_us(self, duration: int):
+        self._log_l("delay us=%d", duration)
+        for count, _last in self._chunk_count(duration, last=True):
+            await self._pipe.send(struct.pack("<BH", JTAGCommand.Delay.value, count))
+
+    async def delay_ms(self, duration: int):
+        self._log_l("delay ms=%d", duration)
+        for count, _last in self._chunk_count(duration * 1000, last=True):
+            await self._pipe.send(struct.pack("<BH", JTAGCommand.Delay.value, count))
+
+    async def delay_pulse_tck_us(self, duration: int):
+        self._log_l("delay pulse tck us=%d", duration)
+        for count, _last in self._chunk_count(duration, last=True):
+            await self._pipe.send(struct.pack("<BH", JTAGCommand.DelayRunTCK.value, count))
+
+    async def delay_pulse_tck_ms(self, duration: int):
+        self._log_l("delay pulse tck ms=%d", duration)
+        for count, _last in self._chunk_count(duration * 1000, last=True):
+            await self._pipe.send(struct.pack("<BH", JTAGCommand.DelayRunTCK.value, count))
+
+    async def synchronize(self):
+        self._log_l("sync-o")
+        await self._pipe.send(struct.pack("<B", JTAGCommand.Sync.value))
+        await self._pipe.flush()
+        await self._pipe.recv(1)
+        self._log_l("sync-i")
 
     # State machine transitions
 
@@ -636,6 +668,16 @@ class JTAGProbeInterface:
         self._log_h("run-test/idle count=%d", count)
         await self.enter_run_test_idle()
         await self.pulse_tck(count)
+
+    async def run_test_idle_us(self, duration):
+        self._log_h("run-test/idle us=%d", duration)
+        await self.enter_run_test_idle()
+        await self.delay_pulse_tck_us(duration)
+
+    async def run_test_idle_ms(self, duration):
+        self._log_h("run-test/idle ms=%d", duration)
+        await self.enter_run_test_idle()
+        await self.delay_pulse_tck_ms(duration)
 
     async def exchange_ir(self, data, *, prefix=0, suffix=0):
         data = bits(data)
@@ -913,6 +955,23 @@ class JTAGProbeInterface:
         return TAPInterface.from_layout(self, ir_layout, index=index)
 
 
+class JTAGProbeInterface(BaseJTAGProbeInterface):
+    def __init__(self, logger, assembly, *, tck, tms, tdi, tdo, trst):
+        ports = assembly.add_port_group(tck=tck, tms=tms, tdi=tdi, tdo=tdo, trst=trst)
+        component = assembly.add_submodule(JTAGProbeComponent(ports,
+            us_cycles=int(1 / (assembly.sys_clk_period * 1_000_000))))
+        pipe = assembly.add_inout_pipe(
+            component.o_stream, component.i_stream, in_flush=component.o_flush)
+        self._clock = assembly.add_clock_divisor(component.divisor,
+            ref_period=assembly.sys_clk_period * 2, name="tck")
+
+        super().__init__(logger, pipe, has_trst=trst is not None)
+
+    @property
+    def clock(self):
+        return self._clock
+
+
 class TAPInterface:
     @classmethod
     def from_layout(cls, lower, ir_layout, *, index):
@@ -935,11 +994,26 @@ class TAPInterface:
     async def flush(self):
         await self.lower.flush()
 
+    async def synchronize(self):
+        await self.lower.synchronize()
+
+    async def delay_us(self, duration):
+        await self.lower.delay_us(duration)
+
+    async def delay_ms(self, duration):
+        await self.lower.delay_ms(duration)
+
     async def test_reset(self):
         await self.lower.test_reset()
 
     async def run_test_idle(self, count):
         await self.lower.run_test_idle(count)
+
+    async def run_test_idle_us(self, duration):
+        await self.lower.run_test_idle_us(duration)
+
+    async def run_test_idle_ms(self, duration):
+        await self.lower.run_test_idle_ms(duration)
 
     async def exchange_ir(self, data):
         data = bits(data)
@@ -993,44 +1067,41 @@ class TAPInterface:
         return length - self._dr_prefix - self._dr_suffix
 
 
-class JTAGProbeApplet(GlasgowApplet):
+class JTAGProbeApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "test integrated circuits via IEEE 1149.1 JTAG"
     description = """
     Identify, test and debug integrated circuits and board assemblies via IEEE 1149.1 JTAG.
     """
+    required_revision = "C0"
+
+    # To be overriden in derived applets.  If false, the applet operates on an entire JTAG chain
+    # and only `jtag_iface` is present.  If true, TAP selection arguments are added in the setup
+    # phase, user is required to provide them as necessary to uniquely specify a TAP,
+    # and `tap_iface` is present.
+    requires_tap = False
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        super().add_build_arguments(parser, access)
+        access.add_voltage_argument(parser)
 
-        for pin in ("tck", "tms", "tdi", "tdo"):
-            access.add_pins_argument(parser, pin, default=True)
+        access.add_pins_argument(parser, "tck", default=True)
+        access.add_pins_argument(parser, "tms", default=True)
+        access.add_pins_argument(parser, "tdi", default=True)
+        access.add_pins_argument(parser, "tdo", default=True)
         access.add_pins_argument(parser, "trst")
 
+    def build(self, args):
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            self.jtag_iface = JTAGProbeInterface(self.logger, self.assembly,
+                tck=args.tck, tms=args.tms, tdi=args.tdi, tdo=args.tdo, trst=args.trst)
+
+    @classmethod
+    def add_setup_arguments(cls, parser):
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=100,
             help="set TCK frequency to FREQ kHz (default: %(default)s)")
-
-    def build(self, target, args):
-        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        iface.add_subtarget(JTAGProbeSubtarget(
-            ports=iface.get_port_group(
-                tck=args.tck,
-                tms=args.tms,
-                tdi=args.tdi,
-                tdo=args.tdo,
-                trst=args.trst,
-            ),
-            out_fifo=iface.get_out_fifo(),
-            in_fifo=iface.get_in_fifo(auto_flush=False),
-            period_cyc=target.sys_clk_freq // (args.frequency * 1000),
-        ))
-
-    @classmethod
-    def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
-
         parser.add_argument(
             "--scan-ir-max-length", metavar="LENGTH", type=int,
             default=JTAGProbeInterface.scan_ir_max_length,
@@ -1058,37 +1129,36 @@ class JTAGProbeApplet(GlasgowApplet):
             "--ir-lengths", metavar="IR-LENGTH,...", default=None, type=ir_lengths,
             help="set IR lengths of each TAP to corresponding IR-LENGTH (default: autodetect)")
 
-    async def run(self, device, args):
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        jtag_iface = JTAGProbeInterface(iface, self.logger, has_trst=args.trst is not None)
-        jtag_iface.scan_ir_max_length = args.scan_ir_max_length
-        jtag_iface.scan_dr_max_length = args.scan_dr_max_length
-        return jtag_iface
+        if cls.requires_tap:
+            parser.add_argument(
+                "--tap-index", metavar="INDEX", type=int,
+                help="select TAP #INDEX for communication (default: select only TAP)")
+
+    async def setup(self, args):
+        self.jtag_iface.scan_ir_max_length = args.scan_ir_max_length
+        self.jtag_iface.scan_dr_max_length = args.scan_dr_max_length
+        await self.jtag_iface.clock.set_frequency(args.frequency * 1000)
+
+        if self.requires_tap:
+            dr_value, ir_value = await self.jtag_iface.scan_reset_dr_ir()
+            idcodes = self.jtag_iface.interrogate_dr(dr_value)
+            ir_layout = self.jtag_iface.interrogate_ir(ir_value,
+                tap_count=len(idcodes), ir_lengths=args.ir_lengths)
+
+            tap_index = args.tap_index
+            if tap_index is None:
+                if len(idcodes) > 1:
+                    raise JTAGProbeError("multiple TAPs found; "
+                                         "select one using the --tap-index argument")
+                else:
+                    tap_index = 0
+            self.tap_iface = TAPInterface.from_layout(self.jtag_iface, ir_layout, index=tap_index)
 
     @classmethod
-    def add_run_tap_arguments(cls, parser):
-        parser.add_argument(
-            "--tap-index", metavar="INDEX", type=int,
-            help="select TAP #INDEX for communication (default: select only TAP)")
+    def add_run_arguments(cls, parser):
+        if cls.run is not JTAGProbeApplet.run:
+            return
 
-    async def run_tap(self, cls, device, args):
-        jtag_iface = await self.run_lower(cls, device, args)
-
-        dr_value, ir_value = await jtag_iface.scan_reset_dr_ir()
-        idcodes = jtag_iface.interrogate_dr(dr_value)
-        ir_layout = jtag_iface.interrogate_ir(ir_value,
-            tap_count=len(idcodes), ir_lengths=args.ir_lengths)
-
-        tap_index = args.tap_index
-        if tap_index is None:
-            if len(idcodes) > 1:
-                raise JTAGProbeError("multiple TAPs found; use explicit --tap-index")
-            else:
-                tap_index = 0
-        return TAPInterface.from_layout(jtag_iface, ir_layout, index=tap_index)
-
-    @classmethod
-    def add_interact_arguments(cls, parser):
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
         p_scan = p_operation.add_parser(
@@ -1132,19 +1202,19 @@ class JTAGProbeApplet(GlasgowApplet):
             "tap_indexes", metavar="INDEX", type=int, nargs="+",
             help="enumerate IR values for TAP(s) #INDEX")
 
-    async def interact(self, device, args, jtag_iface):
-        dr_value, ir_value = await jtag_iface.scan_reset_dr_ir()
+    async def run(self, args):
+        dr_value, ir_value = await self.jtag_iface.scan_reset_dr_ir()
         self.logger.info("shifted %d-bit DR=<%s>", len(dr_value), dump_bin(dr_value))
         self.logger.info("shifted %d-bit IR=<%s>", len(ir_value), dump_bin(ir_value))
 
-        idcodes = jtag_iface.interrogate_dr(dr_value)
+        idcodes = self.jtag_iface.interrogate_dr(dr_value)
         if len(idcodes) == 0:
             self.logger.warning("DR interrogation discovered no TAPs")
             return
         self.logger.info("discovered %d TAPs", len(idcodes))
 
         if args.operation in (None, "scan"):
-            ir_layout = jtag_iface.interrogate_ir(ir_value,
+            ir_layout = self.jtag_iface.interrogate_ir(ir_value,
                 tap_count=len(idcodes), ir_lengths=args.ir_lengths, check=False)
             if not ir_layout:
                 self.logger.warning("IR interrogation failed")
@@ -1166,13 +1236,13 @@ class JTAGProbeApplet(GlasgowApplet):
                                      idcode.mfg_id, mfg_name, idcode.part_id, idcode.version)
 
         if args.operation == "enumerate-ir":
-            ir_layout = jtag_iface.interrogate_ir(ir_value,
+            ir_layout = self.jtag_iface.interrogate_ir(ir_value,
                 tap_count=len(idcodes), ir_lengths=args.ir_lengths)
             for tap_index in args.tap_indexes:
                 ir_length = ir_layout[tap_index]
                 self.logger.info("TAP #%d: IR[%d]", tap_index, ir_length)
 
-                tap_iface = TAPInterface.from_layout(jtag_iface, ir_layout, index=tap_index)
+                tap_iface = TAPInterface.from_layout(self.jtag_iface, ir_layout, index=tap_index)
                 for ir_value in range(0, (1 << ir_length)):
                     ir_value = bits(ir_value, ir_length)
                     await tap_iface.test_reset()
@@ -1201,24 +1271,16 @@ class JTAGProbeApplet(GlasgowApplet):
             "--tap-index", metavar="INDEX", type=int,
             help="select TAP #INDEX instead of the full chain")
 
-    async def repl(self, device, args, jtag_iface):
+    async def repl(self, args):
         # See explanation in add_repl_arguments().
         if type(self) is not JTAGProbeApplet:
-            await super().repl(device, args, jtag_iface)
+            return await super().repl(args)
 
-        if args.tap_index is None:
-            iface = jtag_iface
-            self.logger.info("dropping to REPL for JTAG chain; "
-                             "use 'help(iface)' to see available APIs")
-        else:
-            iface = await jtag_iface.select_tap(args.tap_index, ir_lengths=args.ir_lengths)
-            self.logger.info("dropping to REPL for TAP #%d; "
-                             "use 'help(iface)' to see available APIs",
-                             args.tap_index)
-        await AsyncInteractiveConsole(
-            locals={"iface":iface},
-            run_callback=jtag_iface.flush
-        ).interact()
+        if args.tap_index is not None:
+            self.tap_iface = await self.jtag_iface.select_tap(args.tap_index,
+                                                              ir_lengths=args.ir_lengths)
+
+        return await super().repl(args)
 
     @classmethod
     def tests(cls):

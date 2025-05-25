@@ -224,18 +224,17 @@
 import struct
 import logging
 import argparse
-import math
 import re
 from enum import Enum, auto
 
-from ....arch.jtag import *
-from ....arch.xilinx.xc9500xl import *
-from ....support.bits import *
-from ....support.logging import *
-from ....database.xilinx.xc9500xl import *
-from ...interface.jtag_probe import JTAGProbeApplet
-from ....protocol.jesd3 import *
-from ... import *
+from glasgow.arch.jtag import *
+from glasgow.arch.xilinx.xc9500xl import *
+from glasgow.support.bits import bits, bitarray
+from glasgow.support.logging import dump_bin
+from glasgow.database.xilinx.xc9500xl import *
+from glasgow.applet.interface.jtag_probe import JTAGProbeApplet
+from glasgow.protocol.jesd3 import JESD3Parser, JESD3Emitter, JESD3ParsingError
+from glasgow.applet import GlasgowAppletError, GlasgowAppletTool
 
 
 class XC9500XLBitstream:
@@ -318,11 +317,10 @@ class XC9500XLError(GlasgowAppletError):
 
 
 class XC9500XLInterface:
-    def __init__(self, interface, logger, frequency):
+    def __init__(self, interface, logger):
         self.lower   = interface
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
-        self._frequency = frequency
 
     def _log(self, message, *args):
         self._logger.log(self._level, "XC9500XL: " + message, *args)
@@ -337,7 +335,7 @@ class XC9500XLInterface:
         if device is None:
             xc95xx_iface = None
         else:
-            xc95xx_iface = XC95xxXLInterface(self.lower, self._logger, self._frequency, device)
+            xc95xx_iface = XC95xxXLInterface(self.lower, self._logger, device)
         return idcode, device, xc95xx_iface
 
     async def read_usercode(self):
@@ -348,17 +346,13 @@ class XC9500XLInterface:
 
 
 class XC95xxXLInterface:
-    def __init__(self, interface, logger, frequency, device):
+    def __init__(self, interface, logger, device):
         self.lower   = interface
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
-        self._frequency = frequency
         self.device  = device
         self.DR_ISDATA = DR_ISDATA(device.fbs)
         self.DR_ISCONFIGURATION = DR_ISCONFIGURATION(device.fbs)
-
-    def _time_us(self, time):
-        return math.ceil(time * self._frequency / 1_000_000)
 
     def _log(self, message, *args):
         self._logger.log(self._level, "XC95xxXL: " + message, *args)
@@ -371,7 +365,7 @@ class XC95xxXLInterface:
     async def programming_disable(self):
         self._log("programming disable")
         await self.lower.write_ir(IR_ISPEX)
-        await self.lower.run_test_idle(self._time_us(WAIT_ISPEX))
+        await self.lower.run_test_idle_us(WAIT_ISPEX)
         await self.lower.write_ir(IR_BYPASS)
         await self.lower.run_test_idle(1)
 
@@ -381,7 +375,7 @@ class XC95xxXLInterface:
         isaddr = DR_ISADDRESS(control=CTRL_START, address=0)
         await self.lower.write_dr(isaddr.to_bits())
 
-        await self.lower.run_test_idle(self._time_us(WAIT_BLANK_CHECK))
+        await self.lower.run_test_idle_us(WAIT_BLANK_CHECK)
 
         isaddr = DR_ISADDRESS(control=CTRL_OK, address=0)
         isaddr_bits = await self.lower.exchange_dr(isaddr.to_bits())
@@ -454,7 +448,7 @@ class XC95xxXLInterface:
         isaddr = DR_ISADDRESS(control=CTRL_START, address=0)
         await self.lower.write_dr(isaddr.to_bits())
 
-        await self.lower.run_test_idle(self._time_us(WAIT_ERASE))
+        await self.lower.run_test_idle_us(WAIT_ERASE)
 
         isaddr = DR_ISADDRESS(control=CTRL_OK, address=0)
         isaddr_bits = await self.lower.exchange_dr(isaddr.to_bits())
@@ -497,7 +491,7 @@ class XC95xxXLInterface:
                             elif res.control != CTRL_OK:
                                 raise XC9500XLError(
                                     f"fast programming failed {res.bits_repr()} at row {prev_row}")
-                await self.lower.run_test_idle(self._time_us(WAIT_PROGRAM))
+                await self.lower.run_test_idle_us(WAIT_PROGRAM)
                 prev_row = row
 
             res = await self._dr_isdata(CTRL_OK)
@@ -522,7 +516,7 @@ class XC95xxXLInterface:
                         elif res.control != CTRL_OK:
                             raise XC9500XLError(
                                 f"programming failed {res.bits_repr()} at row {prev_row}")
-                await self.lower.run_test_idle(self._time_us(WAIT_PROGRAM))
+                await self.lower.run_test_idle_us(WAIT_PROGRAM)
                 prev_row = row
 
             res = await self._dr_isconfiguration(CTRL_OK, 0)
@@ -563,14 +557,14 @@ class XC95xxXLInterface:
                     CTRL_START if col == BS_COLS - 1 else CTRL_OK,
                     data=word)
 
-        await self.lower.run_test_idle(self._time_us(WAIT_PROGRAM))
+        await self.lower.run_test_idle_us(WAIT_PROGRAM)
 
         if fast:
             res = await self._dr_isdata(CTRL_OK)
         else:
             res = await self._dr_isconfiguration(CTRL_OK, 0)
         if res.control != CTRL_OK:
-            raise XC9500XLError(f"programming protection and DONE bits failed {isaddr.bits_repr()}")
+            raise XC9500XLError(f"programming protection and DONE bits failed {res.bits_repr()}")
 
 
 class ProgramXC9500XLApplet(JTAGProbeApplet):
@@ -594,18 +588,14 @@ class ProgramXC9500XLApplet(JTAGProbeApplet):
     """.format(
         devices="\n".join(f"        * {device.name}" for device in devices)
     )
+    requires_tap = True
+
+    async def setup(self, args):
+        await super().setup(args)
+        self.xc9500_iface = XC9500XLInterface(self.tap_iface, self.logger)
 
     @classmethod
-    def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
-        super().add_run_tap_arguments(parser)
-
-    async def run(self, device, args):
-        tap_iface = await self.run_tap(ProgramXC9500XLApplet, device, args)
-        return XC9500XLInterface(tap_iface, self.logger, args.frequency * 1000)
-
-    @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         parser.add_argument(
             "--slow", default=False, action="store_true",
             help="use slower but potentially more robust algorithms, where applicable")
@@ -651,8 +641,8 @@ class ProgramXC9500XLApplet(JTAGProbeApplet):
             "--override", default=False, action="store_true",
             help="override write-protection")
 
-    async def interact(self, device, args, xc9500_iface):
-        idcode, xc9500_device, xc95xx_iface = await xc9500_iface.identify()
+    async def run(self, args):
+        idcode, xc9500_device, xc95xx_iface = await self.xc9500_iface.identify()
         if xc9500_device is None:
             raise GlasgowAppletError(
                 f"cannot operate on unknown device with IDCODE={idcode.to_int():#10x}")
@@ -660,7 +650,7 @@ class ProgramXC9500XLApplet(JTAGProbeApplet):
         self.logger.info("found %s rev=%d",
                          xc9500_device.name, idcode.version)
 
-        usercode = await xc9500_iface.read_usercode()
+        usercode = await self.xc9500_iface.read_usercode()
         self.logger.info("USERCODE=%s (%s)",
                          usercode.hex(),
                          re.sub(rb"[^\x20-\x7e]", b"?", usercode).decode("ascii"))

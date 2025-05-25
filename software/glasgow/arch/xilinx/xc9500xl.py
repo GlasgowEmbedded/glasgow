@@ -2,8 +2,8 @@
 # Accession: G00015
 # Ref: reverse engineering by whitequark
 
-from ...support.bits import *
-from ...support.bitstruct import *
+from glasgow.support.bits import bits
+from glasgow.support.bitstruct import bitstruct
 
 
 __all__ = [
