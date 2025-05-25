@@ -70,7 +70,7 @@ builtin-toolchain = [
 
 # The rest of the optional dependences belong to plugins (applets, loggers, etc.)
 http = [
-  "aiohttp>=3.9.0",
+  "aiohttp>=3.9.0,<3.12.0", # aiohttp 3.12.0 doesn't install on Python 3.11 for some reason
   "aiohttp-remotes>=1.2,<2",
 ]
 numpy = [
