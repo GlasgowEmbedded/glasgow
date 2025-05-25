@@ -6,7 +6,7 @@
 import re
 from abc import ABCMeta, abstractmethod
 
-from ..support.bits import *
+from glasgow.support.bits import bits
 
 
 __all__ = ["SVFParser", "SVFEventHandler"]

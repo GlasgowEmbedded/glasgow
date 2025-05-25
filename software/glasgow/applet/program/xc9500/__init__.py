@@ -5,16 +5,15 @@ import logging
 import argparse
 import math
 import re
-from enum import Enum, auto
 
-from ....arch.jtag import *
-from ....arch.xilinx.xc9500 import *
-from ....support.bits import *
-from ....support.logging import *
-from ....database.xilinx.xc9500 import *
-from ...interface.jtag_probe import JTAGProbeApplet
-from ....protocol.jesd3 import *
-from ... import *
+from glasgow.arch.jtag import *
+from glasgow.arch.xilinx.xc9500 import *
+from glasgow.support.bits import bits, bitarray
+from glasgow.support.logging import dump_bin
+from glasgow.database.xilinx.xc9500 import *
+from glasgow.applet.interface.jtag_probe import JTAGProbeApplet
+from glasgow.protocol.jesd3 import JESD3Parser, JESD3Emitter, JESD3ParsingError
+from glasgow.applet import GlasgowAppletError, GlasgowAppletTool
 
 
 class XC9500Bitstream:
@@ -133,11 +132,10 @@ class XC9500Error(GlasgowAppletError):
 
 
 class XC9500Interface:
-    def __init__(self, interface, logger, frequency):
+    def __init__(self, interface, logger):
         self.lower   = interface
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
-        self._frequency = frequency
 
     def _log(self, message, *args):
         self._logger.log(self._level, "XC9500: " + message, *args)
@@ -152,7 +150,7 @@ class XC9500Interface:
         if device is None:
             xc95xx_iface = None
         else:
-            xc95xx_iface = XC95xxInterface(self.lower, self._logger, self._frequency, device)
+            xc95xx_iface = XC95xxInterface(self.lower, self._logger, device)
         return idcode, device, xc95xx_iface
 
     async def read_usercode(self):
@@ -163,16 +161,12 @@ class XC9500Interface:
 
 
 class XC95xxInterface:
-    def __init__(self, interface, logger, frequency, device):
+    def __init__(self, interface, logger, device):
         self.lower   = interface
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
-        self._frequency = frequency
         self.device  = device
         self.DR_ISPENABLE = DR_ISPENABLE(device.fbs)
-
-    def _time_us(self, time):
-        return math.ceil(time * self._frequency / 1_000_000)
 
     def _log(self, message, *args):
         self._logger.log(self._level, "XC95xx: " + message, *args)
@@ -187,7 +181,7 @@ class XC95xxInterface:
     async def programming_disable(self):
         self._log("programming disable")
         await self.lower.write_ir(IR_ISPEX)
-        await self.lower.run_test_idle(self._time_us(WAIT_ISPEX))
+        await self.lower.run_test_idle_us(WAIT_ISPEX)
         await self.lower.write_ir(IR_BYPASS)
         await self.lower.run_test_idle(1)
 
@@ -245,13 +239,13 @@ class XC95xxInterface:
         await self.lower.write_ir(IR_FERASE)
         for fb in range(self.device.fbs):
             await self._dr_isconfiguration(CTRL_START, fb << 13)
-            await self.lower.run_test_idle(self._time_us(WAIT_ERASE))
+            await self.lower.run_test_idle_us(WAIT_ERASE)
             res = await self._dr_isconfiguration(CTRL_START, fb << 13 | 0x1000)
             if res.control == CTRL_WPROT:
                 raise XC9500Error("erase failed: device is write protected")
             elif res.control != CTRL_OK:
                 raise XC9500Error(f"erase failed {res.bits_repr()}")
-            await self.lower.run_test_idle(self._time_us(WAIT_ERASE))
+            await self.lower.run_test_idle_us(WAIT_ERASE)
             res = await self._dr_isconfiguration(CTRL_OK, 0)
             if res.control == CTRL_WPROT:
                 raise XC9500Error("erase failed: device is write protected")
@@ -263,13 +257,13 @@ class XC95xxInterface:
 
         await self.lower.write_ir(IR_FBULK)
         await self._dr_isconfiguration(CTRL_START, 0)
-        await self.lower.run_test_idle(self._time_us(WAIT_ERASE))
+        await self.lower.run_test_idle_us(WAIT_ERASE)
         res = await self._dr_isconfiguration(CTRL_START, 0x1000)
         if res.control == CTRL_WPROT:
             raise XC9500Error("bulk erase failed: device is write protected")
         elif res.control != CTRL_OK:
             raise XC9500Error(f"bulk erase failed {res.bits_repr()}")
-        await self.lower.run_test_idle(self._time_us(WAIT_ERASE))
+        await self.lower.run_test_idle_us(WAIT_ERASE)
         res = await self._dr_isconfiguration(CTRL_OK, 0)
         if res.control == CTRL_WPROT:
             raise XC9500Error("bulk erase failed: device is write protected")
@@ -300,7 +294,7 @@ class XC95xxInterface:
                             raise XC9500Error("fast programming failed: device is write protected")
                         elif res.control != CTRL_OK:
                             raise XC9500Error(f"fast programming failed {res.bits_repr()} at {prev_coords}")
-                await self.lower.run_test_idle(self._time_us(WAIT_PROGRAM))
+                await self.lower.run_test_idle_us(WAIT_PROGRAM)
                 prev_coords = coords
 
             res = await self._dr_isdata(CTRL_OK)
@@ -320,7 +314,7 @@ class XC95xxInterface:
                         raise XC9500Error("programming failed: device is write protected")
                     elif res.control != CTRL_OK:
                         raise XC9500Error(f"programming failed {res.bits_repr()} at row {prev_coords}")
-                await self.lower.run_test_idle(self._time_us(WAIT_PROGRAM))
+                await self.lower.run_test_idle_us(WAIT_PROGRAM)
                 prev_coords = coords
 
             res = await self._dr_isconfiguration(CTRL_OK, 0)
@@ -338,7 +332,7 @@ class XC95xxInterface:
         if not bits:
             # Nothing to do.
             return
-        
+
         self._log("program protection bits")
         await self.lower.write_ir(IR_FPGM)
         for fb in range(self.device.fbs):
@@ -348,10 +342,10 @@ class XC95xxInterface:
                 byte = bs.fbs[fb][row][col]
                 byte &= ~(1 << bit)
                 await self._dr_isconfiguration(CTRL_START, addr, byte)
-                await self.lower.run_test_idle(self._time_us(WAIT_PROGRAM))
+                await self.lower.run_test_idle_us(WAIT_PROGRAM)
                 res = await self._dr_isconfiguration(CTRL_OK, 0)
                 if res.control != CTRL_OK:
-                    raise XC9500Error(f"programming protection bits failed {isaddr.bits_repr()}")
+                    raise XC9500Error(f"programming protection bits failed {res.bits_repr()}")
 
 
 class ProgramXC9500Applet(JTAGProbeApplet):
@@ -374,18 +368,14 @@ class ProgramXC9500Applet(JTAGProbeApplet):
     """.format(
         devices="\n".join(f"        * {device.name}" for device in devices)
     )
+    requires_tap = True
+
+    async def setup(self, args):
+        await super().setup(args)
+        self.xc9500_iface = XC9500Interface(self.tap_iface, self.logger)
 
     @classmethod
-    def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
-        super().add_run_tap_arguments(parser)
-
-    async def run(self, device, args):
-        tap_iface = await self.run_tap(ProgramXC9500Applet, device, args)
-        return XC9500Interface(tap_iface, self.logger, args.frequency * 1000)
-
-    @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         parser.add_argument(
             "--slow", default=False, action="store_true",
             help="use slower but potentially more robust algorithms, where applicable")
@@ -431,8 +421,8 @@ class ProgramXC9500Applet(JTAGProbeApplet):
             "--override", default=False, action="store_true",
             help="override write-protection")
 
-    async def interact(self, device, args, xc9500_iface):
-        idcode, xc9500_device, xc95xx_iface = await xc9500_iface.identify()
+    async def run(self, args):
+        idcode, xc9500_device, xc95xx_iface = await self.xc9500_iface.identify()
         if xc9500_device is None:
             raise GlasgowAppletError("cannot operate on unknown device with IDCODE=%#10x"
                                      % idcode.to_int())
@@ -440,7 +430,7 @@ class ProgramXC9500Applet(JTAGProbeApplet):
         self.logger.info("found %s rev=%d",
                          xc9500_device.name, idcode.version)
 
-        usercode = await xc9500_iface.read_usercode()
+        usercode = await self.xc9500_iface.read_usercode()
         self.logger.info("USERCODE=%s (%s)",
                          usercode.hex(),
                          re.sub(rb"[^\x20-\x7e]", b"?", usercode).decode("ascii"))
