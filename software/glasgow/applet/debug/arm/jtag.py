@@ -4,12 +4,11 @@
 
 import logging
 
-from ....support.aobject import *
-from ....arch.jtag import *
-from ....arch.arm.jtag import *
-from ....arch.arm.dap.dp import *
-from ...interface.jtag_probe import JTAGProbeApplet
-from . import *
+from glasgow.support.aobject import aobject
+from glasgow.arch.arm.jtag.coresight import *
+from glasgow.arch.arm.dap.dp import *
+from glasgow.applet.interface.jtag_probe import JTAGProbeApplet
+from . import ARMDPInterface, ARMAPTransactionError, DebugARMAppletMixin
 
 
 class ARMJTAGDPInterface(ARMDPInterface, aobject):
@@ -175,12 +174,8 @@ class DebugARMJTAGApplet(DebugARMAppletMixin, JTAGProbeApplet):
     description = """
     Debug ARM processors with CoreSight support via the JTAG interface.
     """
+    requires_tap = True
 
-    @classmethod
-    def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
-        super().add_run_tap_arguments(parser)
-
-    async def run(self, device, args):
-        tap_iface = await self.run_tap(DebugARMJTAGApplet, device, args)
-        return await ARMJTAGDPInterface(tap_iface, self.logger)
+    async def setup(self, args):
+        await super().setup(args)
+        self.dp_iface = await ARMJTAGDPInterface(self.tap_iface, self.logger)

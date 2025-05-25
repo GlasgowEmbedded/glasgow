@@ -4,7 +4,7 @@ import logging
 import re
 from collections import deque
 
-from .aobject import *
+from .aobject import aobject
 from .logging import dump_hex
 from ..abstract import AbstractInOutPipe
 

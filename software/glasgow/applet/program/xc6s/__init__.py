@@ -10,12 +10,12 @@
 import logging
 import argparse
 
-from ... import *
-from ....arch.jtag import *
-from ....arch.xilinx.xc6s import *
-from ....database.xilinx.xc6s import *
-from ....support.bits import *
-from ...interface.jtag_probe import JTAGProbeApplet
+from glasgow.arch.jtag import DR_IDCODE
+from glasgow.arch.xilinx.xc6s import *
+from glasgow.database.xilinx.xc6s import *
+from glasgow.support.bits import bits
+from glasgow.applet.interface.jtag_probe import JTAGProbeApplet
+from glasgow.applet import GlasgowAppletError
 
 
 class XC6SJTAGError(GlasgowAppletError):
@@ -81,24 +81,20 @@ class ProgramXC6SApplet(JTAGProbeApplet):
     description = """
     Program Xilinx Spartan-6 FPGAs via the JTAG interface.
     """
+    requires_tap = True
+
+    async def setup(self, args):
+        await super().setup(args)
+        self.xc6s_iface = XC6SJTAGInterface(self.tap_iface, self.logger)
 
     @classmethod
-    def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
-        super().add_run_tap_arguments(parser)
-
-    async def run(self, device, args):
-        tap_iface = await self.run_tap(ProgramXC6SApplet, device, args)
-        return XC6SJTAGInterface(tap_iface, self.logger)
-
-    @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         parser.add_argument(
             "bit_file", metavar="BIT-FILE", type=argparse.FileType("rb"), nargs="?",
             help="load bitstream from .bin file BIT-FILE")
 
-    async def interact(self, device, args, xc6s_iface):
-        idcode, xc6s_device = await xc6s_iface.identify()
+    async def run(self, args):
+        idcode, xc6s_device = await self.xc6s_iface.identify()
         if xc6s_device is None:
             raise XC6SJTAGError(
                 f"cannot operate on unknown device with IDCODE={idcode.to_int():#10x}")
@@ -106,6 +102,6 @@ class ProgramXC6SApplet(JTAGProbeApplet):
 
         if args.bit_file:
             self.logger.info("configuring from %r", args.bit_file.name)
-            await xc6s_iface.reconfigure()
-            await xc6s_iface.load_bitstream(args.bit_file.read())
-            await xc6s_iface.start()
+            await self.xc6s_iface.reconfigure()
+            await self.xc6s_iface.load_bitstream(args.bit_file.read())
+            await self.xc6s_iface.start()

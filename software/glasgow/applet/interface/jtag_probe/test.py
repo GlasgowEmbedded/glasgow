@@ -1,13 +1,13 @@
 import unittest
 
-from ....support.bits import *
-from ... import *
-from . import JTAGProbeApplet, JTAGProbeInterface, JTAGProbeError
+from glasgow.support.bits import *
+from glasgow.applet import GlasgowAppletV2TestCase, synthesis_test
+from . import JTAGProbeApplet, BaseJTAGProbeInterface, JTAGProbeError
 
 
 class JTAGInterrogationTestCase(unittest.TestCase):
     def setUp(self):
-        self.iface = JTAGProbeInterface(interface=None, logger=JTAGProbeApplet.logger)
+        self.iface = BaseJTAGProbeInterface(pipe=None, logger=JTAGProbeApplet.logger)
 
     def test_dr_empty(self):
         self.assertEqual(self.iface.interrogate_dr(bits("")), [])
@@ -125,7 +125,7 @@ class JTAGInterrogationTestCase(unittest.TestCase):
                          [3, 5])
 
 
-class JTAGProbeAppletTestCase(GlasgowAppletTestCase, applet=JTAGProbeApplet):
+class JTAGProbeAppletTestCase(GlasgowAppletV2TestCase, applet=JTAGProbeApplet):
     @synthesis_test
     def test_build(self):
         self.assertBuilds()

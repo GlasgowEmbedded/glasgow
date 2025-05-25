@@ -6,11 +6,10 @@
 import logging
 import argparse
 
-from ....arch.jtag import *
-from ....support.bits import *
-from ....support.logging import *
-from ....protocol.jtag_svf import *
-from ... import *
+from glasgow.support.bits import bits
+from glasgow.support.logging import dump_bin
+from glasgow.protocol.jtag_svf import SVFParser, SVFEventHandler
+from glasgow.applet import GlasgowAppletError
 from ..jtag_probe import JTAGState, JTAGProbeApplet, JTAGProbeStateTransitionError
 
 
@@ -47,7 +46,6 @@ class SVFInterface(SVFEventHandler):
         self.lower   = interface
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
-        self._frequency = frequency
 
         self._endir  = "IDLE"
         self._enddr  = "IDLE"
@@ -56,6 +54,9 @@ class SVFInterface(SVFEventHandler):
         self._tir    = SVFOperation()
         self._hdr    = SVFOperation()
         self._tdr    = SVFOperation()
+
+        self._frequency = frequency
+        self._base_frequency = frequency
 
     def _log(self, message, *args, level=None):
         self._logger.log(self._level if level is None else level, "SVF: " + message, *args)
@@ -83,10 +84,10 @@ class SVFInterface(SVFEventHandler):
                 await self._enter_state(state)
 
     async def svf_frequency(self, frequency):
-        if frequency is not None and frequency < self._frequency:
-            raise SVFError(
-                f"FREQUENCY command requires a lower frequency ({frequency / 1e3:.3f} kHz) "
-                f"than the applet is configured for ({self._frequency / 1e3:.3f} kHz)")
+        if frequency is None:
+            frequency = self._base_frequency
+        await self.lower.clock.set_frequency(frequency)
+        self._frequency = await self.lower.clock.get_frequency()
 
     async def svf_trst(self, mode):
         if self.lower.has_trst:
@@ -274,30 +275,29 @@ class JTAGSVFApplet(JTAGProbeApplet):
 
     This applet currently does not implement some SVF features:
         * PIOMAP and PIO are not supported;
-        * Explicit state path may not be specified for STATE;
         * The SCK clock in RUNTEST is not supported.
 
     If any commands requiring these features are encountered, the applet terminates itself.
     """
 
-    async def run(self, device, args):
-        jtag_iface = await self.run_lower(JTAGSVFApplet, device, args)
-        return SVFInterface(jtag_iface, self.logger, args.frequency * 1000)
+    async def setup(self, args):
+        await super().setup(args)
+        self.svf_iface = SVFInterface(self.jtag_iface, self.logger, args.frequency * 1000)
 
     @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         parser.add_argument(
             "svf_file", metavar="SVF-FILE", type=argparse.FileType("r"),
             help="test vector to play")
 
-    async def interact(self, device, args, svf_iface):
-        svf_parser = SVFParser(args.svf_file.read(), svf_iface)
+    async def run(self, args):
+        svf_parser = SVFParser(args.svf_file.read(), self.svf_iface)
         while True:
             coro = svf_parser.parse_command()
             if not coro: break
 
             for line in svf_parser.last_command().split("\n"):
                 line = line.strip()
-                if line: svf_iface._log(line)
+                if line: self.svf_iface._log(line)
 
             await coro

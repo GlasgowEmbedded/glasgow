@@ -1,7 +1,7 @@
 # Ref: IEEE Std 1149.1-2001
 # Accession: G00018
 
-from ..support.bitstruct import *
+from glasgow.support.bitstruct import bitstruct
 
 
 __all__ = [

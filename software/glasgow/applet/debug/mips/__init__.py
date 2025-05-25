@@ -6,14 +6,13 @@ import struct
 import logging
 import asyncio
 
-from ....support.aobject import *
-from ....support.endpoint import *
-from ....support.bits import *
-from ....support.arepl import *
-from ....arch.mips import *
-from ....protocol.gdb_remote import *
-from ...interface.jtag_probe import JTAGProbeApplet
-from ... import *
+from glasgow.support.aobject import aobject
+from glasgow.support.endpoint import ServerEndpoint
+from glasgow.support.bits import bits
+from glasgow.arch.mips import *
+from glasgow.protocol.gdb_remote import GDBRemote, GDBRemoteError
+from glasgow.applet.interface.jtag_probe import JTAGProbeApplet
+from glasgow.applet import GlasgowAppletError
 
 
 class EJTAGError(GlasgowAppletError):
@@ -826,18 +825,14 @@ class DebugMIPSApplet(JTAGProbeApplet):
     Other configurations might or might not work. In particular, it certainly does not currently
     work on little-endian CPUs. Sorry about that.
     """
+    requires_tap = True
+
+    async def setup(self, args):
+        await super().setup(args)
+        self.ejtag_iface = await EJTAGDebugInterface(self.tap_iface, self.logger)
 
     @classmethod
-    def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
-        super().add_run_tap_arguments(parser)
-
-    async def run(self, device, args):
-        tap_iface = await self.run_tap(DebugMIPSApplet, device, args)
-        return await EJTAGDebugInterface(tap_iface, self.logger)
-
-    @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_dump_state = p_operation.add_parser(
@@ -847,13 +842,13 @@ class DebugMIPSApplet(JTAGProbeApplet):
             "gdb", help="start a GDB remote protocol server")
         ServerEndpoint.add_argument(p_gdb, "gdb_endpoint", default="tcp::1234")
 
-    async def interact(self, device, args, ejtag_iface):
+    async def run(self, args):
         if args.operation == "dump-state":
-            await ejtag_iface.target_stop()
-            reg_values = await ejtag_iface.target_get_registers()
-            await ejtag_iface.target_detach()
+            await self.ejtag_iface.target_stop()
+            reg_values = await self.ejtag_iface.target_get_registers()
+            await self.ejtag_iface.target_detach()
 
-            reg_names = ejtag_iface.target_register_names()
+            reg_names = self.ejtag_iface.target_register_names()
             for name, value in zip(reg_names, reg_values):
                 print(f"{name:<3} = {value:08x}")
 
@@ -861,17 +856,17 @@ class DebugMIPSApplet(JTAGProbeApplet):
             endpoint = await ServerEndpoint("GDB socket", self.logger, args.gdb_endpoint,
                 deprecated_cancel_on_eof=True)
             while True:
-                await ejtag_iface.gdb_run(endpoint)
+                await self.ejtag_iface.gdb_run(endpoint)
 
                 # Unless we detach from the target here, we might not be able to re-enter
                 # the debug mode, because EJTAG TAP reset appears to irreversibly destroy
                 # some state necessary for PrAcc to continue working.
-                if ejtag_iface.target_attached():
-                    await ejtag_iface.target_detach()
+                if self.ejtag_iface.target_attached():
+                    await self.ejtag_iface.target_detach()
 
-    async def repl(self, device, args, ejtag_iface):
-        await super().repl(device, args, ejtag_iface)
+    async def repl(self, args):
+        await super().repl(args)
 
         # Same reason as above.
-        if ejtag_iface.target_attached():
-            await ejtag_iface.target_detach()
+        if self.ejtag_iface.target_attached():
+            await self.ejtag_iface.target_detach()

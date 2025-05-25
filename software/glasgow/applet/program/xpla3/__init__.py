@@ -5,14 +5,13 @@ import argparse
 import re
 import math
 
-from ....arch.jtag import *
-from ....arch.xilinx.xpla3 import *
-from ....support.bits import *
-from ....support.logging import *
-from ....database.xilinx.xpla3 import *
-from ...interface.jtag_probe import JTAGProbeApplet
-from ....protocol.jesd3 import *
-from ... import *
+from glasgow.arch.jtag import *
+from glasgow.arch.xilinx.xpla3 import *
+from glasgow.support.bits import bits, bitarray
+from glasgow.database.xilinx.xpla3 import *
+from glasgow.applet.interface.jtag_probe import JTAGProbeApplet
+from glasgow.protocol.jesd3 import JESD3Parser, JESD3Emitter, JESD3ParsingError
+from glasgow.applet import GlasgowAppletError
 
 
 def jed_bits(device):
@@ -243,7 +242,6 @@ class XPLA3Interface:
                     await self.lower.run_test_idle(self._time_us(100))
                 else:
                     await self.lower.run_test_idle(self._time_us(10000))
-        return bs
 
     async def program_read_protect(self):
         self._log("program read protect")
@@ -276,18 +274,14 @@ class ProgramXPLA3Applet(JTAGProbeApplet):
     """.format(
         devices="\n".join(f"        * {device.name}" for device in devices)
     )
+    requires_tap = True
+
+    async def setup(self, args):
+        await super().setup(args)
+        self.xpla3_iface = XPLA3Interface(self.tap_iface, self.logger, args.frequency * 1000)
 
     @classmethod
-    def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
-        super().add_run_tap_arguments(parser)
-
-    async def run(self, device, args):
-        tap_iface = await self.run_tap(ProgramXPLA3Applet, device, args)
-        return XPLA3Interface(tap_iface, self.logger, args.frequency * 1000)
-
-    @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
         p_read = p_operation.add_parser(
@@ -354,8 +348,8 @@ class ProgramXPLA3Applet(JTAGProbeApplet):
         p_erase = p_operation.add_parser(
             "erase", help="erase bitstream from the device")
 
-    async def interact(self, device, args, iface):
-        idcode, device = await iface.identify()
+    async def run(self, args):
+        idcode, device = await self.xpla3_iface.identify()
         if device is None:
             raise GlasgowAppletError(
                 f"cannot operate on unknown device with IDCODE={idcode.to_int():#10x}")
@@ -363,14 +357,14 @@ class ProgramXPLA3Applet(JTAGProbeApplet):
         self.logger.info("found %s rev=%d",
                          device.name, idcode.version)
 
-        await iface.isp_enable(True)
-        ues = await iface.read_ues()
+        await self.xpla3_iface.isp_enable(True)
+        ues = await self.xpla3_iface.read_ues()
         ues_ascii = re.sub(rb"[^\x20-\x7e]", b"?", ues).decode("ascii")
         self.logger.info(f"UES={ues.hex()} ({ues_ascii})")
-        await iface.lower.run_test_idle(1)
-        await iface.isp_disable()
+        await self.xpla3_iface.lower.run_test_idle(1)
+        await self.xpla3_iface.isp_disable()
 
-        await iface.lower.run_test_idle(1)
+        await self.xpla3_iface.lower.run_test_idle(1)
         try:
             if args.operation in ("program", "program-sram", "verify", "verify-sram"):
                 try:
@@ -382,8 +376,9 @@ class ProgramXPLA3Applet(JTAGProbeApplet):
                 bs = XPLA3Bitstream.from_fuses(parser.fuse, device)
 
             if args.operation in ("read", "read-sram", "verify", "verify-sram"):
-                await iface.isp_enable(args.otf)
-                read_bs = await iface.read(args.operation in ("read-sram", "verify-sram"))
+                await self.xpla3_iface.isp_enable(args.otf)
+                read_bs = await self.xpla3_iface.read(
+                    args.operation in ("read-sram", "verify-sram"))
                 read_fuses = read_bs.to_fuses()
 
             if args.operation in ("read", "read-sram"):
@@ -395,9 +390,9 @@ class ProgramXPLA3Applet(JTAGProbeApplet):
                 read_bs.verify(bs)
 
             if args.operation == "erase":
-                await iface.isp_enable(False)
-                await iface.erase()
-                await iface.isp_init()
+                await self.xpla3_iface.isp_enable(False)
+                await self.xpla3_iface.erase()
+                await self.xpla3_iface.isp_init()
 
             if args.operation in ("program", "program-sram"):
                 sram = args.operation == "program-sram"
@@ -408,24 +403,24 @@ class ProgramXPLA3Applet(JTAGProbeApplet):
                     if args.ues_hex is not None:
                         bs.set_ues(args.ues_hex)
 
-                await iface.isp_enable(False if sram else args.otf)
+                await self.xpla3_iface.isp_enable(False if sram else args.otf)
 
                 if not sram and args.erase:
-                    await iface.erase()
-                    await iface.isp_init()
+                    await self.xpla3_iface.erase()
+                    await self.xpla3_iface.isp_init()
 
-                await iface.program(bs, sram=sram)
+                await self.xpla3_iface.program(bs, sram=sram)
 
                 if args.verify:
-                    read_bs = await iface.read(sram)
+                    read_bs = await self.xpla3_iface.read(sram)
                     read_bs.verify(bs)
 
                 if not sram and args.read_protect:
-                    await iface.program_read_protect()
+                    await self.xpla3_iface.program_read_protect()
 
                 if not sram:
-                    await iface.isp_init()
+                    await self.xpla3_iface.isp_init()
 
         finally:
-            await iface.lower.run_test_idle(1)
-            await iface.isp_disable()
+            await self.xpla3_iface.lower.run_test_idle(1)
+            await self.xpla3_iface.isp_disable()

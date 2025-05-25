@@ -3,7 +3,7 @@
 # Ref: linux/arch/arc/include/asm/arcregs.h
 # Accession: G00017
 
-from ...support.bitstruct import *
+from glasgow.support.bitstruct import bitstruct
 
 
 __all__ = [
