@@ -416,7 +416,7 @@ class UARTApplet(GlasgowAppletV2):
         self.logger.info("dropping to REPL; use 'help(iface)' to see available APIs")
         await AsyncInteractiveConsole(
             locals={"iface": self.uart_iface},
-            run_callback=self.assembly.flush
+            run_callback=self.assembly.flush_pipes
         ).interact()
 
     @classmethod
