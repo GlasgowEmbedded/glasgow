@@ -26,18 +26,13 @@ class ShiftIn(enum.Enum, shape=unsigned(1)):
 class Enframer(wiring.Component):
     def __init__(self, *, width):
         super().__init__({
-            "words": In(stream.Signature(data.StructLayout({
-                "mode": Mode,
-                "size": range(width + 1),
-                "data": width,
-                "last": 1,
-            }))),
+            "words": In(Controller.i_words_signature(width)),
             "frames": Out(IOStreamer.o_stream_signature({
                 "tck": ("o", 1),
                 "tms": ("o", 1),
                 "tdi": ("o", 1),
             }, meta_layout=ShiftIn)),
-            "divisor": In(8),
+            "divisor": In(16),
         })
 
     def elaborate(self, platform):
@@ -91,10 +86,7 @@ class Deframer(wiring.Component):
             "frames": In(IOStreamer.i_stream_signature({
                 "tdo": ("i", 1),
             }, meta_layout=ShiftIn)),
-            "words": Out(stream.Signature(data.StructLayout({
-                "size": range(width + 1),
-                "data": width,
-            }))),
+            "words": Out(Controller.o_words_signature(width)),
         })
 
     def elaborate(self, platform):
@@ -122,6 +114,22 @@ class Deframer(wiring.Component):
 
 
 class Controller(wiring.Component):
+    @classmethod
+    def i_words_signature(cls, width):
+        return stream.Signature(data.StructLayout({
+            "mode": Mode,
+            "size": range(width + 1),
+            "data": width,
+            "last": 1,
+        }))
+
+    @classmethod
+    def o_words_signature(cls, width):
+        return stream.Signature(data.StructLayout({
+            "size": range(width + 1),
+            "data": width,
+        }))
+
     def __init__(self, ports, *, width):
         self._ports = PortGroup(
             tck=ports.tck,
@@ -132,17 +140,9 @@ class Controller(wiring.Component):
         self._width = width
 
         super().__init__({
-            "i_words": In(stream.Signature(data.StructLayout({
-                "mode": Mode,
-                "size": range(width + 1),
-                "data": width,
-                "last": 1,
-            }))),
-            "o_words": Out(stream.Signature(data.StructLayout({
-                "size": range(width + 1),
-                "data": width,
-            }))),
-            "divisor": In(8),
+            "i_words": In(self.i_words_signature(width)),
+            "o_words": Out(self.o_words_signature(width)),
+            "divisor": In(16),
         })
 
     def elaborate(self, platform):
@@ -197,29 +197,21 @@ class Sequencer(wiring.Component):
     is completed by the sequencer.
     """
 
-    @classmethod
-    def i_stream_payload(self, width):
-        return data.StructLayout({
-            "cmd":  Command,
-            "size": range(width + 1),
-            "data": width,
-        })
-
-    @classmethod
-    def o_stream_payload(self, width):
-        return data.StructLayout({
-            "size": range(width + 1),
-            "data": width,
-        })
-
     def __init__(self, ports, *, width):
         self._ports = ports
         self._width = width
 
         super().__init__({
-            "i_stream": In(stream.Signature(self.i_stream_payload(width))),
-            "o_stream": Out(stream.Signature(self.o_stream_payload(width))),
-            "divisor": In(8),
+            "i_stream": In(stream.Signature(data.StructLayout({
+                "cmd":  Command,
+                "size": range(width + 1),
+                "data": width,
+            }))),
+            "o_stream": Out(stream.Signature(data.StructLayout({
+                "size": range(width + 1),
+                "data": width,
+            }))),
+            "divisor": In(16),
         })
 
     def elaborate(self, platform):

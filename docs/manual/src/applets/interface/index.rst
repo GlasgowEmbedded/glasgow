@@ -13,6 +13,9 @@ I/O interfaces
     qspi_analyzer
     qspi_controller
     jtag_pinout
+    jtag_probe
     jtag_openocd
     jtag_xvc
+    jtag_svf
     swd_openocd
+    sbw_probe
