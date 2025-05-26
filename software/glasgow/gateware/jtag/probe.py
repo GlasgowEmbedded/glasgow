@@ -115,6 +115,7 @@ class Deframer(wiring.Component):
                 m.d.comb += self.words.valid.eq(1)
                 with m.If(self.words.ready):
                     m.d.sync += offset.eq(0)
+                    m.d.sync += self.words.p.data.eq(0)
                     m.next = "More"
 
         return m
