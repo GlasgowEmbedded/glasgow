@@ -352,7 +352,7 @@ def applet_v2_simulation_test(*, prepare=None, args=None):
             async def launch(ctx):
                 await applet.setup(parsed_args)
                 await case(self, applet, ctx)
-            assembly.run(launch)
+            assembly.run(launch, vcd_file=f"{case.__name__}.vcd")
         return wrapper
     return decorator
 
