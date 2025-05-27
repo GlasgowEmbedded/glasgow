@@ -15,4 +15,5 @@ I/O interfaces
     jtag_pinout
     jtag_openocd
     jtag_xvc
+    swd_probe
     swd_openocd
