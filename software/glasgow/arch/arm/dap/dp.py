@@ -28,7 +28,8 @@ __all__ = [
 DP_DPIDR_addr = 0x00 # R/O
 
 DP_DPIDR = bitstruct("DP_DPIDR", 32, [
-    ("DESIGNER",       12),
+    (None,              1), # always 1
+    ("DESIGNER",       11),
     ("VERSION",         4),
     ("MIN",             1),
     (None,              3),
