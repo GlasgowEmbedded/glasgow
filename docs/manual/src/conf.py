@@ -93,6 +93,8 @@ linkcheck_ignore = [
     r"^https://en\.uesp\.net/",
     # As above.
     r"^https://www\.gnu\.org/",
+    # Part of applet option help.
+    r"^tcp:",
 ]
 
 linkcheck_anchors_ignore_for_url = [

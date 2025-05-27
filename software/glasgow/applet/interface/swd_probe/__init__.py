@@ -2,6 +2,10 @@
 # Accession: G00097
 # Document Number: IHI0031E
 
+# The wire protocol of this applet is incorporated by reference into the protocol of the `probe-rs`
+# applet. Be careful when making changes to it; any breaking changes must update `probe-rs` as
+# instructed in the comment there.
+
 from typing import Optional, AsyncIterator
 import logging
 import struct
@@ -289,10 +293,12 @@ class SWDProbeInterface:
 
 class SWDProbeApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
-    help = "debug and program Arm microcontrollers via SWD"
+    help = "access Arm microcontrollers via SWD"
     description = """
     At the moment, this applet does not include any high-level functionality. It only offers
     very low-level access to the target via the REPL or script interface.
+
+    Use the `probe-rs` applet to debug and program Arm microcontrollers.
     """
     required_revision = "C0"
 
