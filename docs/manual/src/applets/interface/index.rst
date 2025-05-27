@@ -16,3 +16,4 @@ I/O interfaces
     jtag_openocd
     jtag_xvc
     swd_openocd
+    ps2_host
