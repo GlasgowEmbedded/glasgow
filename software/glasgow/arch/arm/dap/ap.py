@@ -2,7 +2,7 @@
 # Document Number: IHI0031C
 # Accession: G00027
 
-from enum import IntEnum
+from enum import Enum
 
 from ....support.bitstruct import *
 
@@ -26,16 +26,18 @@ AP_IDR = bitstruct("AP_IDR", 32, [
 ])
 
 
-class AP_IDR_CLASS(IntEnum):
+class AP_IDR_CLASS(Enum):
     NONE    = 0b0000
     COM_AP  = 0b0001
     MEM_AP  = 0b1000
 
     def __str__(self):
-        if self == self.NONE:
-            return "none"
-        if self == self.COM_AP:
-            return "COM-AP"
-        if self == self.MEM_AP:
-            return "MEM-AP"
-        assert False
+        match self:
+            case self.NONE:
+                return "none"
+            case self.COM_AP:
+                return "COM-AP"
+            case self.MEM_AP:
+                return "MEM-AP"
+            case _:
+                return f"{self.value:#06b}"
