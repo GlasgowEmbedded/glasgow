@@ -3,7 +3,17 @@ from amaranth.lib import wiring, stream, fifo
 from amaranth.lib.wiring import In, Out
 
 
-__all__ = ["stream_get", "stream_put", "StreamBuffer", "StreamFIFO"]
+__all__ = [
+    "stream_put", "stream_get", "stream_assert"
+    "StreamBuffer", "StreamFIFO"
+]
+
+
+async def stream_put(ctx, stream, payload):
+    ctx.set(stream.payload, payload)
+    ctx.set(stream.valid, 1)
+    await ctx.tick().until(stream.ready)
+    ctx.set(stream.valid, 0)
 
 
 async def stream_get(ctx, stream):
@@ -13,11 +23,11 @@ async def stream_get(ctx, stream):
     return payload
 
 
-async def stream_put(ctx, stream, payload):
-    ctx.set(stream.payload, payload)
-    ctx.set(stream.valid, 1)
-    await ctx.tick().until(stream.ready)
-    ctx.set(stream.valid, 0)
+async def stream_assert(ctx, stream, expected):
+    value = await stream_get(ctx, stream)
+    for key, expected_value in expected.items():
+        assert value[key] == expected_value, \
+            f"payload.{key}: {value[key]!r} != {expected_value!r}"
 
 
 class StreamBuffer(wiring.Component):

@@ -5,25 +5,12 @@ from amaranth.sim import Simulator
 from amaranth.lib import io, wiring
 
 from glasgow.gateware.ports import PortGroup
+from glasgow.gateware.stream import stream_get, stream_put, stream_assert
 from glasgow.gateware.jtag import probe as jtag_probe, tap as jtag_tap
 
 
 def bits(*args):
     return sum(bit * (1 << place) for place, bit in enumerate(args))
-
-
-async def stream_get(ctx, stream):
-    ctx.set(stream.ready, 1)
-    payload, = await ctx.tick().sample(stream.payload).until(stream.valid)
-    ctx.set(stream.ready, 0)
-    return payload
-
-
-async def stream_put(ctx, stream, payload):
-    ctx.set(stream.payload, payload)
-    ctx.set(stream.valid, 1)
-    await ctx.tick().until(stream.ready)
-    ctx.set(stream.valid, 0)
 
 
 class TAPToplevel(Elaboratable):
@@ -119,12 +106,12 @@ class ProbeTestCase(unittest.TestCase):
                 {"mode": jtag_probe.Mode.ShiftTMS,  "size": 5, "data": bits(1,0)})
 
         async def o_testbench(ctx):
-            assert await stream_get(ctx, probe.o_words) == {
+            await stream_assert(ctx, probe.o_words, {
                 "size": 2, "data": 0b01
-            }
-            assert await stream_get(ctx, probe.o_words) == {
+            })
+            await stream_assert(ctx, probe.o_words, {
                 "size": 32, "data": 0b0011_1111000011110000_00001010100_1
-            }
+            })
 
         sim = Simulator(m)
         sim.add_clock(1e-6)
