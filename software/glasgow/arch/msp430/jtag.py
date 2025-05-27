@@ -1,8 +1,8 @@
 # Ref: MSP430™ Programming With the JTAG Interface
 # Accession: G00038
 
-from ...support.bits import *
-from ...support.bitstruct import *
+from glasgow.support.bits import bits
+from glasgow.support.bitstruct import bitstruct
 
 
 __all__ = [
