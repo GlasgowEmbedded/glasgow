@@ -19,15 +19,15 @@ class BoilerplateComponent(wiring.Component):
     loopback_en: In(1)
 
     def __init__(self, ports):
-        self.ports = ports
+        self._ports = ports
 
         super().__init__()
 
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.clk_buffer  = clk_buffer  = io.Buffer("o",  self.ports.clk)
-        m.submodules.data_buffer = data_buffer = io.Buffer("io", self.ports.data)
+        m.submodules.clk_buffer  = clk_buffer  = io.Buffer("o",  self._ports.clk)
+        m.submodules.data_buffer = data_buffer = io.Buffer("io", self._ports.data)
 
         # ... FPGA-side implementation goes here, for example:
 
