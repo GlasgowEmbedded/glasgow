@@ -163,6 +163,10 @@ class AbstractInPipe(metaclass=ABCMeta):
     async def reset(self):
         pass
 
+    @abstractmethod
+    async def detach(self) -> tuple[int, None]:
+        pass
+
 
 class AbstractOutPipe(metaclass=ABCMeta):
     @property
@@ -182,9 +186,15 @@ class AbstractOutPipe(metaclass=ABCMeta):
     async def reset(self):
         pass
 
+    @abstractmethod
+    async def detach(self) -> tuple[None, int]:
+        pass
+
 
 class AbstractInOutPipe(AbstractInPipe, AbstractOutPipe):
-    pass
+    @abstractmethod
+    async def detach(self) -> tuple[int, int]:
+        pass
 
 
 class AbstractAssembly(metaclass=ABCMeta):
