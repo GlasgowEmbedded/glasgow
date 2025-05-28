@@ -151,21 +151,7 @@ class JTAGOpenOCDApplet(GlasgowAppletV2):
 
     async def run(self, args):
         endpoint = await ServerEndpoint("socket", self.logger, args.endpoint)
-        async def forward_out():
-            while True:
-                try:
-                    data = await endpoint.recv()
-                except EOFError:
-                    continue
-                await self.__pipe.send(data)
-                await self.__pipe.flush()
-        async def forward_in():
-            while True:
-                data = await self.__pipe.recv(self.__pipe.readable or 1)
-                await endpoint.send(data)
-        async with asyncio.TaskGroup() as group:
-            group.create_task(forward_out())
-            group.create_task(forward_in())
+        await endpoint.attach_to_pipe(self.__pipe)
 
     @classmethod
     def tests(cls):
