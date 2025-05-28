@@ -194,6 +194,7 @@ class SWDProbeInterface:
         """Perform a line reset sequence."""
         self._log("line-reset")
         await self._send_sequence(SWJ_line_reset_seq)
+        self._select = None
 
     async def jtag_to_swd(self):
         """Perform a JTAG-to-SWD switch sequence."""
@@ -261,7 +262,6 @@ class SWDProbeInterface:
         return await self._raw_write(ap_ndp=1, addr=reg & 0xf, data=data)
 
     async def initialize(self) -> DP_DPIDR:
-        self._select = None
         await self.jtag_to_swd()
         await self.line_reset()
         dpidr = DP_DPIDR.from_int(await self.dp_read(reg=DP_DPIDR_addr))
