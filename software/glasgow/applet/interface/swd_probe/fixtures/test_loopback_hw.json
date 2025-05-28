@@ -1,0 +1,36 @@
+{"call": "send", "kind": "asyncmethod", "args": [[32]], "kwargs": {}, "result": null}
+{"call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "ffffffff"}], "kwargs": {}, "result": null}
+{"call": "send", "kind": "asyncmethod", "args": [[32]], "kwargs": {}, "result": null}
+{"call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "ffff7b9e"}], "kwargs": {}, "result": null}
+{"call": "send", "kind": "asyncmethod", "args": [[34]], "kwargs": {}, "result": null}
+{"call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "03000000"}], "kwargs": {}, "result": null}
+{"call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"call": "send", "kind": "asyncmethod", "args": [[32]], "kwargs": {}, "result": null}
+{"call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "ffffffff"}], "kwargs": {}, "result": null}
+{"call": "send", "kind": "asyncmethod", "args": [[52]], "kwargs": {}, "result": null}
+{"call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "ffff0300"}], "kwargs": {}, "result": null}
+{"call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"call": "send", "kind": "asyncmethod", "args": [[2]], "kwargs": {}, "result": null}
+{"call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"call": "recv", "kind": "asyncmethod", "args": [1], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "01"}}
+{"call": "recv", "kind": "asyncmethod", "args": [4], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "7714c10b"}}
+{"call": "send", "kind": "asyncmethod", "args": [[0]], "kwargs": {}, "result": null}
+{"call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "1e000000"}], "kwargs": {}, "result": null}
+{"call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"call": "recv", "kind": "asyncmethod", "args": [1], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "11"}}
+{"call": "send", "kind": "asyncmethod", "args": [[8]], "kwargs": {}, "result": null}
+{"call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "00000000"}], "kwargs": {}, "result": null}
+{"call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"call": "recv", "kind": "asyncmethod", "args": [1], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "11"}}
+{"call": "send", "kind": "asyncmethod", "args": [[4]], "kwargs": {}, "result": null}
+{"call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "00000010"}], "kwargs": {}, "result": null}
+{"call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"call": "recv", "kind": "asyncmethod", "args": [1], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "11"}}
+{"call": "send", "kind": "asyncmethod", "args": [[8]], "kwargs": {}, "result": null}
+{"call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "00000000"}], "kwargs": {}, "result": null}
+{"call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"call": "recv", "kind": "asyncmethod", "args": [1], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "11"}}
+{"call": "send", "kind": "asyncmethod", "args": [[6]], "kwargs": {}, "result": null}
+{"call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"call": "recv", "kind": "asyncmethod", "args": [1], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "01"}}
+{"call": "recv", "kind": "asyncmethod", "args": [4], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "40000030"}}

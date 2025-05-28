@@ -286,7 +286,6 @@ class SWDProbeInterface:
 class SWDProbeApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "debug and program Arm microcontrollers via SWD"
-    preview = True
     description = """
     At the moment, this applet does not include any high-level functionality. It only offers
     very low-level access to the target via the REPL or script interface.
