@@ -6,6 +6,7 @@ from collections import deque
 
 from .aobject import *
 from .logging import dump_hex
+from ..abstract import AbstractInOutPipe
 
 
 __all__ = ["ServerEndpoint", "ClientEndpoint"]
@@ -216,6 +217,23 @@ class ServerEndpoint(aobject, asyncio.Protocol):
     async def close(self):
         if self._transport:
             self._transport.close()
+
+    async def attach_to_pipe(self, inout_pipe: AbstractInOutPipe):
+        async def forward_out():
+            while True:
+                try:
+                    data = await self.recv()
+                except EOFError:
+                    continue
+                await inout_pipe.send(data)
+                await inout_pipe.flush()
+        async def forward_in():
+            while True:
+                data = await inout_pipe.recv(inout_pipe.readable or 1)
+                await self.send(data)
+        async with asyncio.TaskGroup() as group:
+            group.create_task(forward_out())
+            group.create_task(forward_in())
 
 
 class ClientEndpoint(aobject, asyncio.Protocol):
