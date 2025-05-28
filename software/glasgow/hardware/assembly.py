@@ -116,6 +116,7 @@ class HardwareInPipe(AbstractInPipe):
         self._in_ep_address     = None
         self._in_packet_size    = None
 
+        self._in_running        = False
         self._in_buffer_size    = buffer_size
         self._in_pushback       = asyncio.Condition()
         self._in_tasks          = TaskQueue()
@@ -123,18 +124,23 @@ class HardwareInPipe(AbstractInPipe):
         self._in_stalls         = 0
 
     async def _start(self):
+        assert not self._in_running
         self._logger.trace(f"IN pipe {self._in_interface}: starting")
         self._parent.device.usb_handle.claimInterface(self._in_interface)
         self._parent.device.usb_handle.setInterfaceAltSetting(self._in_interface, 1)
         for _ in range(_xfers_per_queue):
             self._in_tasks.submit(self._in_task())
+        self._in_running = True
 
     async def _stop(self):
+        if not self._in_running:
+            return
         self._logger.trace(f"IN pipe {self._in_interface}: stopping")
         await self._in_tasks.cancel()
         self._in_buffer.clear()
         self._parent.device.usb_handle.setInterfaceAltSetting(self._in_interface, 0)
         self._parent.device.usb_handle.releaseInterface(self._in_interface)
+        self._in_running = False
 
     async def _in_task(self):
         if self._in_buffer_size is not None:
@@ -188,6 +194,11 @@ class HardwareInPipe(AbstractInPipe):
         await self._stop()
         await self._start()
 
+    async def detach(self) -> tuple[int, None]:
+        self._logger.trace(f"IN pipe {self._in_interface}: detaching")
+        await self._stop()
+        return self._in_interface, None
+
     def statistics(self):
         self._logger.info(f"IN pipe {self._in_interface} statistics:")
         self._logger.info("  total   : %d B",   self._in_buffer.total_read_bytes)
@@ -205,6 +216,7 @@ class HardwareOutPipe(AbstractOutPipe):
         self._out_ep_address    = None
         self._out_packet_size   = None
 
+        self._out_running       = False
         self._out_buffer_size   = buffer_size
         self._out_inflight      = 0
         self._out_tasks         = TaskQueue()
@@ -212,16 +224,21 @@ class HardwareOutPipe(AbstractOutPipe):
         self._out_stalls        = 0
 
     async def _start(self):
+        assert not self._out_running
         self._logger.trace(f"OUT pipe {self._out_interface}: starting")
         self._parent.device.usb_handle.claimInterface(self._out_interface)
         self._parent.device.usb_handle.setInterfaceAltSetting(self._out_interface, 1)
+        self._out_running = True
 
     async def _stop(self):
+        if not self._out_running:
+            return
         self._logger.trace(f"OUT pipe {self._out_interface}: clearing")
         await self._out_tasks.cancel()
         self._out_buffer.clear()
         self._parent.device.usb_handle.setInterfaceAltSetting(self._out_interface, 0)
         self._parent.device.usb_handle.releaseInterface(self._out_interface)
+        self._out_running = False
 
     def _out_slice(self):
         # Fast path: read as much contiguous data as possible, up to our transfer size.
@@ -342,6 +359,11 @@ class HardwareOutPipe(AbstractOutPipe):
         await self._stop()
         await self._start()
 
+    async def detach(self) -> tuple[None, int]:
+        self._logger.trace(f"OUT pipe {self._out_interface}: detaching")
+        await self._stop()
+        return None, self._out_interface
+
     def statistics(self):
         self._logger.info(f"OUT pipe {self._out_interface} statistics:")
         self._logger.info("  total   : %d B",   self._out_buffer.total_written_bytes)
@@ -371,6 +393,11 @@ class HardwareInOutPipe(HardwareInPipe, HardwareOutPipe, AbstractInOutPipe):
         self._logger.trace(f"IN/OUT pipe {self._in_interface}/{self._out_interface}: reset")
         await self._stop()
         await self._start()
+
+    async def detach(self) -> tuple[int, int]:
+        self._logger.trace(f"IN/OUT pipe {self._in_interface}/{self._out_interface}: detaching")
+        await self._stop()
+        return self._in_interface, self._out_interface
 
 
 class HardwareAssembly(AbstractAssembly):

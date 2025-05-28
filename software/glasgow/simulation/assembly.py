@@ -51,6 +51,9 @@ class SimulationPipe(AbstractInOutPipe):
         self._i_buffer.clear()
         self._o_buffer.clear()
 
+    async def detach(self) -> tuple[int, int]:
+        raise NotImplementedError
+
 
 class SimulationRORegister(AbstractRORegister):
     def __init__(self, parent, signal):
