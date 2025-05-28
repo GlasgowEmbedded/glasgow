@@ -32,7 +32,7 @@ class SWDTarget:
         while await self.get(ctx) == 1:
             count += 1
         assert await self.get(ctx) == 0
-        assert count >= 50
+        assert count >= 50, f"runt line reset ({count} cycles)"
 
     async def assert_packet(self, ctx, *, ap_ndp: int, r_nw: int, addr: int):
         assert await self.get(ctx) == 1, "start"
@@ -195,7 +195,14 @@ class FaultScenario(Scenario):
         })
 
         await stream_put(ctx, self.dut.i_words, {
-            "type": Request.Reset,
+            "type": Request.Sequence,
+            "len":  32,
+            "data": 0xffffffff,
+        })
+        await stream_put(ctx, self.dut.i_words, {
+            "type": Request.Sequence,
+            "len":  20,
+            "data": 0x3ffff,
         })
 
         await stream_put(ctx, self.dut.i_words, {
@@ -258,7 +265,14 @@ class ControllerScenario(Scenario):
 
     async def i_testbench(self, ctx):
         await stream_put(ctx, self.dut.i_stream, {
-            "cmd": Command.Reset,
+            "cmd":  Command.Sequence,
+            "len":  32,
+            "data": 0xffffffff,
+        })
+        await stream_put(ctx, self.dut.i_stream, {
+            "cmd":  Command.Sequence,
+            "len":  20,
+            "data": 0x3ffff,
         })
         await stream_put(ctx, self.dut.i_stream, {
             "hdr":  {"ap_ndp": 0, "r_nw": 1, "addr": 0x0}
@@ -365,6 +379,39 @@ class ControllerScenario(Scenario):
         await self.tgt.assert_wdata(ctx, 0x01010102)
 
 
+class JTAGToSWDScenario(Scenario):
+    dut_cls = Controller
+
+    async def i_testbench(self, ctx):
+        await stream_put(ctx, self.dut.i_stream, {
+            "cmd":  Command.Sequence,
+            "len":  16,
+            "data": 0xE79E,
+        })
+
+    async def o_testbench(self, ctx):
+        pass
+
+    async def t_testbench(self, ctx):
+        # 0111 1001 1110 0111
+        assert await self.tgt.get(ctx) == 0
+        assert await self.tgt.get(ctx) == 1
+        assert await self.tgt.get(ctx) == 1
+        assert await self.tgt.get(ctx) == 1
+        assert await self.tgt.get(ctx) == 1
+        assert await self.tgt.get(ctx) == 0
+        assert await self.tgt.get(ctx) == 0
+        assert await self.tgt.get(ctx) == 1
+        assert await self.tgt.get(ctx) == 1
+        assert await self.tgt.get(ctx) == 1
+        assert await self.tgt.get(ctx) == 1
+        assert await self.tgt.get(ctx) == 0
+        assert await self.tgt.get(ctx) == 0
+        assert await self.tgt.get(ctx) == 1
+        assert await self.tgt.get(ctx) == 1
+        assert await self.tgt.get(ctx) == 1
+
+
 class SWDTestCase(unittest.TestCase):
     def test_read_dpidr(self):
         ReadDPIDRScenario().run()
@@ -380,3 +427,6 @@ class SWDTestCase(unittest.TestCase):
 
     def test_controller(self):
         ControllerScenario().run()
+
+    def test_jtag_to_swd(self):
+        JTAGToSWDScenario().run()
