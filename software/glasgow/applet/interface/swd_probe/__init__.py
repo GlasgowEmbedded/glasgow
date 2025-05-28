@@ -291,6 +291,7 @@ class SWDProbeApplet(GlasgowAppletV2):
     At the moment, this applet does not include any high-level functionality. It only offers
     very low-level access to the target via the REPL or script interface.
     """
+    required_revision = "C0"
 
     @classmethod
     def add_build_arguments(cls, parser, access):
