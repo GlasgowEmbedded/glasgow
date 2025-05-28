@@ -1,3 +1,7 @@
+# Ref: Arm Debug Interface Architecture Specification ADIv5.0 to ADIv5.2, Issue E
+# Accession: G00097
+# Document Number: IHI0031E
+
 from typing import Optional, AsyncIterator
 import logging
 import struct
@@ -6,6 +10,8 @@ from amaranth import *
 from amaranth.lib import enum, data, wiring, stream, io
 from amaranth.lib.wiring import In, Out
 
+from glasgow.support.bits import bits
+from glasgow.arch.arm.swj import *
 from glasgow.arch.arm.dap import *
 from glasgow.database.jedec import jedec_mfg_name_from_bank_num
 from glasgow.gateware import swd_probe as probe
@@ -29,18 +35,25 @@ class SWDProbeException(GlasgowAppletError):
 
 
 class SWDCommand(data.Struct):
-    ap_ndp: 1
-    r_nw:   1
-    addr23: 2
-    cmd:    probe.Command
-    _:      3
+    arg: data.UnionLayout({
+        "transfer": data.StructLayout({
+            "ap_ndp":   1,
+            "r_nw":     1,
+            "addr23":   2,
+        }),
+        "sequence": data.StructLayout({
+            "len":      5, # encoding 0 means 32 bits long
+        }),
+    })
+    cmd: probe.Command
+    _:   2
 
 
 class SWDResponse(data.Struct):
-    ack:    probe.Ack
-    _1:     1
-    rsp:    probe.Response
-    _2:     2
+    ack: probe.Ack
+    _1:  1
+    rsp: probe.Response
+    _2:  2
 
 
 class SWDProbeComponent(wiring.Component):
@@ -66,14 +79,18 @@ class SWDProbeComponent(wiring.Component):
             with m.State("Command"):
                 i_command = SWDCommand(self.i_stream.payload)
                 m.d.sync += [
-                    ctrl.i_stream.p.hdr.ap_ndp.eq(i_command.ap_ndp),
-                    ctrl.i_stream.p.hdr.r_nw.eq(i_command.r_nw),
-                    ctrl.i_stream.p.hdr.addr[2:4].eq(i_command.addr23),
+                    ctrl.i_stream.p.len.eq(i_command.arg.sequence.len),
+                    ctrl.i_stream.p.hdr.ap_ndp.eq(i_command.arg.transfer.ap_ndp),
+                    ctrl.i_stream.p.hdr.r_nw.eq(i_command.arg.transfer.r_nw),
+                    ctrl.i_stream.p.hdr.addr[2:4].eq(i_command.arg.transfer.addr23),
                     ctrl.i_stream.p.cmd.eq(i_command.cmd),
                 ]
                 m.d.comb += self.i_stream.ready.eq(1)
                 with m.If(self.i_stream.valid):
-                    with m.If((i_command.cmd == probe.Command.Transfer) & (i_command.r_nw == 0)):
+                    with m.If(i_command.cmd == probe.Command.Sequence):
+                        m.next = "Data"
+                    with m.Elif((i_command.cmd == probe.Command.Transfer) &
+                            (i_command.arg.transfer.r_nw == 0)):
                         m.next = "Data"
                     with m.Else():
                         m.next = "Execute"
@@ -150,6 +167,18 @@ class SWDProbeInterface:
     async def _send_command(self, **kwargs):
         await self._pipe.send([SWDCommand.const(kwargs).as_value().value])
 
+    async def _send_sequence(self, sequence: bits):
+        for start in range(0, len(sequence), 32):
+            chunk = sequence[start:start + 32]
+            await self._send_command(cmd=probe.Command.Sequence,
+                arg={"sequence": {"len": len(chunk)}})
+            await self._pipe.send(struct.pack("<L", chunk.to_int()))
+        await self._pipe.flush()
+
+    async def _send_transfer(self, **kwargs):
+        await self._send_command(cmd=probe.Command.Transfer,
+            arg={"transfer": kwargs})
+
     async def _recv_ack(self):
         await self._pipe.flush()
         response = data.Const(SWDResponse, (await self._pipe.recv(1))[0])
@@ -164,13 +193,16 @@ class SWDProbeInterface:
     async def line_reset(self):
         """Perform a line reset sequence."""
         self._log("line-reset")
-        await self._send_command(cmd=probe.Command.Reset)
-        await self._pipe.flush()
+        await self._send_sequence(SWJ_line_reset_seq)
+
+    async def jtag_to_swd(self):
+        """Perform a JTAG-to-SWD switch sequence."""
+        self._log("jtag-to-swd")
+        await self._send_sequence(SWJ_jtag_to_swd_switch_seq)
 
     async def _raw_read(self, *, ap_ndp: bool, addr: int) -> int:
         assert addr in range(0, 0x10, 4)
-        await self._send_command(cmd=probe.Command.Transfer,
-            ap_ndp=ap_ndp, r_nw=1, addr23=addr >> 2)
+        await self._send_transfer(ap_ndp=ap_ndp, r_nw=1, addr23=addr >> 2)
         try:
             await self._recv_ack()
             data, = struct.unpack("<L", await self._pipe.recv(4))
@@ -182,8 +214,7 @@ class SWDProbeInterface:
 
     async def _raw_write(self, *, ap_ndp: bool, addr: int, data: int):
         assert addr in range(0, 0x10, 4)
-        await self._send_command(cmd=probe.Command.Transfer,
-            ap_ndp=ap_ndp, r_nw=0, addr23=addr >> 2)
+        await self._send_transfer(ap_ndp=ap_ndp, r_nw=0, addr23=addr >> 2)
         await self._pipe.send(struct.pack("<L", data))
         try:
             await self._recv_ack()
@@ -231,7 +262,7 @@ class SWDProbeInterface:
 
     async def initialize(self) -> DP_DPIDR:
         self._select = None
-        await self.line_reset()
+        await self.jtag_to_swd()
         await self.line_reset()
         dpidr = DP_DPIDR.from_int(await self.dp_read(reg=DP_DPIDR_addr))
         await self.dp_write(reg=DP_ABORT_addr,

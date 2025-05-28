@@ -18,7 +18,7 @@ __all__ = [
 
 
 class Request(enum.Enum, shape=3):
-    Reset  = 0
+    Sequence = 0
     Header = 1
     DataWr = 2
     DataRd = 3
@@ -52,7 +52,8 @@ class Ack(enum.Enum, shape=3):
 class Enframer(wiring.Component):
     words: In(stream.Signature(data.StructLayout({
         "type": Request,
-        "hdr":  Header,
+        "len":  range(32), # `type == Request.Sequence` only
+        "hdr":  Header,    # `type == Request.Header` only
         "data": 32
     })))
     frames: Out(IOStreamer.o_stream_signature({
@@ -64,19 +65,21 @@ class Enframer(wiring.Component):
     def elaborate(self, platform):
         m = Module()
 
-        max_seq_len = 52
+        max_seq_len = 34
 
         seq_o  = Signal(max_seq_len)
         seq_oe = Signal(max_seq_len)
         seq_ie = Signal(max_seq_len)
-        length = Signal(range(max_seq_len))
+        length = Signal(range(max_seq_len + 1))
 
         with m.Switch(self.words.p.type):
-            with m.Case(Request.Reset):
-                m.d.comb += seq_o[0:50].eq(~0)
-                m.d.comb += seq_o[50:52].eq(0)
-                m.d.comb += seq_oe[0:52].eq(~0)
-                m.d.comb += length.eq(52)
+            with m.Case(Request.Sequence):
+                m.d.comb += seq_o[0:32].eq(self.words.p.data)
+                m.d.comb += seq_oe[0:32].eq(~0)
+                with m.If(self.words.p.len == 0):
+                    m.d.comb += length.eq(32)
+                with m.Else():
+                    m.d.comb += length.eq(self.words.p.len)
 
             with m.Case(Request.Header):
                 m.d.comb += seq_o[0].eq(1) # start
@@ -180,7 +183,8 @@ class Deframer(wiring.Component):
 class Driver(wiring.Component):
     i_words: In(stream.Signature(data.StructLayout({
         "type": Request,
-        "hdr":  Header,
+        "len":  range(32), # `type == Request.Sequence` only
+        "hdr":  Header,    # `type == Request.Header` only
         "data": 32
     })))
     o_words: Out(stream.Signature(data.StructLayout({
@@ -220,7 +224,7 @@ class Driver(wiring.Component):
 
 class Command(enum.Enum, shape=1):
     Transfer = 0
-    Reset    = 1
+    Sequence = 1
 
 
 class Response(enum.Enum, shape=2):
@@ -232,7 +236,8 @@ class Response(enum.Enum, shape=2):
 class Controller(wiring.Component):
     i_stream: In(stream.Signature(data.StructLayout({
         "cmd":  Command,
-        "hdr":  Header,
+        "hdr":  Header,    # `cmd == Command.Transfer` only
+        "len":  range(32), # `cmd == Command.Sequence` only
         "data": 32
     })))
     o_stream: Out(stream.Signature(data.StructLayout({
@@ -257,6 +262,7 @@ class Controller(wiring.Component):
         m.submodules.o_buffer = o_buffer = StreamBuffer(driver.o_words.p.shape())
         wiring.connect(m, o_buffer.i, driver.o_words)
 
+        m.d.comb += driver.i_words.p.len.eq(self.i_stream.p.len)
         m.d.comb += driver.i_words.p.hdr.eq(self.i_stream.p.hdr)
         m.d.comb += driver.i_words.p.data.eq(self.i_stream.p.data)
 
@@ -266,8 +272,8 @@ class Controller(wiring.Component):
             with m.State("Command"):
                 with m.If(self.i_stream.valid):
                     m.d.comb += driver.i_words.valid.eq(1)
-                    with m.If(self.i_stream.p.cmd == Command.Reset):
-                        m.d.comb += driver.i_words.p.type.eq(Request.Reset)
+                    with m.If(self.i_stream.p.cmd == Command.Sequence):
+                        m.d.comb += driver.i_words.p.type.eq(Request.Sequence)
                         m.d.comb += self.i_stream.ready.eq(driver.i_words.ready)
                     with m.Else():
                         m.d.comb += driver.i_words.p.type.eq(Request.Header)
