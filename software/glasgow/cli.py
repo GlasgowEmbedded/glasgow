@@ -776,16 +776,17 @@ async def main():
                         raise
 
                 try:
-                    async def applet_task(applet, applet_parsed_args):
+                    async def applet_task(index, applet, applet_name, applet_parsed_args):
                         await applet.run(applet_parsed_args)
                         logger.info(f"applet #{index + 1} {applet_name!r} has finished running")
 
                     with gc_freeze():
                         async with asyncio.TaskGroup() as group:
                             applet_tasks = []
-                            for applet, applet_name, applet_parsed_args in applets:
+                            for index, (applet, applet_name, applet_parsed_args) in \
+                                    enumerate(applets):
                                 applet_tasks.append(group.create_task(
-                                    applet_task(applet, applet_parsed_args),
+                                    applet_task(index, applet, applet_name, applet_parsed_args),
                                     name=f"{applet_name}#{index + 1}"
                                 ))
 
