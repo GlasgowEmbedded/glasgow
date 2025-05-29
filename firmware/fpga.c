@@ -199,6 +199,9 @@ fail:
 }
 
 bool fpga_pipe_rst(uint8_t set, uint8_t clr) {
+  if (!fpga_is_ready())
+    return true;
+
   if (set) {
     fpga_reg_pipe_rst |= set;
     if (!fpga_reg_select(FPGA_REG_PIPE_RST))
