@@ -93,7 +93,7 @@ usb_desc_endpoint_c usb_endpoint_6_in =
 usb_desc_endpoint_c usb_endpoint_8_in =
   USB_BULK_ENDPOINT(/*bEndpointAddress=*/8|USB_DIR_IN );
 
-usb_configuration_c usb_config_2_pipes = {
+usb_configuration_c usb_config_4_pipes = {
   {
     .bLength              = sizeof(struct usb_desc_configuration),
     .bDescriptorType      = USB_DESC_CONFIGURATION,
@@ -120,7 +120,7 @@ usb_configuration_c usb_config_2_pipes = {
   }
 };
 
-usb_configuration_c usb_config_1_pipe = {
+usb_configuration_c usb_config_2_pipes = {
   {
     .bLength              = sizeof(struct usb_desc_configuration),
     .bDescriptorType      = USB_DESC_CONFIGURATION,
@@ -147,8 +147,8 @@ __code const struct usb_configuration *__code const usb_configs[] = {
 #else
 usb_configuration_set_c usb_configs[] = {
 #endif
+  &usb_config_4_pipes,
   &usb_config_2_pipes,
-  &usb_config_1_pipe,
 };
 
 // This replaces the beginning of "Glasgow Interface Explorer" in the string table below if
