@@ -142,7 +142,7 @@ class ServerEndpoint(aobject, asyncio.Protocol):
         self._check_future()
         try:
             self._buffer = await future
-        except BrokenPipeError:
+        except (BrokenPipeError, ConnectionResetError):
             self._buffer = None
         if self._buffer is None:
             self._buffer = b""
