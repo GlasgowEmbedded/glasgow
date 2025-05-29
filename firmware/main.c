@@ -359,7 +359,7 @@ void handle_usb_setup(__xdata struct usb_req_setup *req) {
   }
 }
 
-uint8_t usb_alt_setting[2];
+uint8_t usb_alt_setting[4];
 
 bool handle_usb_set_configuration(uint8_t config_value) {
   switch(config_value) {
@@ -372,6 +372,10 @@ bool handle_usb_set_configuration(uint8_t config_value) {
   usb_config_value = config_value;
   usb_alt_setting[0] = 0;
   usb_alt_setting[1] = 0;
+  usb_alt_setting[2] = 0;
+  usb_alt_setting[3] = 0;
+
+  fpga_pipe_rst(/*set=*/0xf, /*clr=*/0);
 
   usb_reset_data_toggles(&usb_descriptor_set, /*interface=*/0xff, /*alt_setting=*/0xff);
   return true;
