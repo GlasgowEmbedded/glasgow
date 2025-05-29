@@ -739,8 +739,10 @@ async def main():
                 applet_name, *applet_args = applet_cmdline
                 try:
                     applet_parser = argparse.ArgumentParser()
-                    def argparse_exit(self, status=0, message=None):
-                        if status: raise
+                    def argparse_exit(status=0, message=None):
+                        if message:
+                            logger.error(message.rstrip("\n"))
+                        exit(status)
                     applet_parser.exit = argparse_exit
 
                     applet_cls = GlasgowAppletMetadata.get(applet_name).load()
@@ -762,6 +764,9 @@ async def main():
                     logger.error(f"error for applet #{len(applets) + 1} {applet_name!r}:")
                     logger.error("%s", exn)
                     return 1
+
+                except SystemExit:
+                    raise
 
                 except:
                     logger.error(f"error building applet #{len(applets) + 1} {applet_name!r}:")
