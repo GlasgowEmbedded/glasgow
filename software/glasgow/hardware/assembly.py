@@ -609,10 +609,13 @@ class HardwareAssembly(AbstractAssembly):
 
         for idx, (in_ep, (domain, in_stream, in_flush, depth)) in \
                 enumerate(zip(fx2_crossbar.in_eps, self._in_streams)):
-            m.submodules[f"in_fifo_{idx}"] = in_fifo = ResetInserter(in_ep.reset)(
-                StreamFIFO(shape=8, depth=self.DEFAULT_FIFO_DEPTH if depth is None else depth))
-            wiring.connect(m, in_fifo.w, in_stream)
-            wiring.connect(m, in_ep.data, in_fifo.r)
+            if depth == 0:
+                wiring.connect(m, in_ep.data, in_stream)
+            else:
+                m.submodules[f"in_fifo_{idx}"] = in_fifo = ResetInserter(in_ep.reset)(
+                    StreamFIFO(shape=8, depth=self.DEFAULT_FIFO_DEPTH if depth is None else depth))
+                wiring.connect(m, in_fifo.w, in_stream)
+                wiring.connect(m, in_ep.data, in_fifo.r)
             m.d.comb += in_ep.flush.eq(in_flush)
             m.d.comb += in_ep.reset.eq(pipe_rst[2 + idx])
             if domain is not None:
@@ -621,10 +624,13 @@ class HardwareAssembly(AbstractAssembly):
 
         for idx, (out_ep, (domain, out_stream, depth)) in \
                 enumerate(zip(fx2_crossbar.out_eps, self._out_streams)):
-            m.submodules[f"out_fifo_{idx}"] = out_fifo = ResetInserter(out_ep.reset)(
-                StreamFIFO(shape=8, depth=self.DEFAULT_FIFO_DEPTH if depth is None else depth))
-            wiring.connect(m, out_fifo.w, out_ep.data)
-            wiring.connect(m, out_stream, out_fifo.r)
+            if depth == 0:
+                wiring.connect(m, out_stream, out_ep.data)
+            else:
+                m.submodules[f"out_fifo_{idx}"] = out_fifo = ResetInserter(out_ep.reset)(
+                    StreamFIFO(shape=8, depth=self.DEFAULT_FIFO_DEPTH if depth is None else depth))
+                wiring.connect(m, out_fifo.w, out_ep.data)
+                wiring.connect(m, out_stream, out_fifo.r)
             m.d.comb += out_ep.reset.eq(pipe_rst[idx])
             if domain is not None:
                 with m.If(out_ep.reset):

@@ -187,7 +187,7 @@ class QSPIAnalyzerInterface:
         component = assembly.add_submodule(QSPIAnalyzerComponent(ports, buffer_size))
         # Use only a minimal interface FIFO; most of the buffering is done in the COBS encoder.
         self._pipe = assembly.add_in_pipe(
-            component.o_stream, in_flush=component.o_flush, fifo_depth=4)
+            component.o_stream, in_flush=component.o_flush, fifo_depth=0)
         self._overflow = assembly.add_ro_register(component.overflow)
 
         self._buffer  = bytearray()
