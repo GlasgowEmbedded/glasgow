@@ -128,6 +128,7 @@ program-xc9500 = "glasgow.applet.program.xc9500:ProgramXC9500Applet"
 program-xc9500xl = "glasgow.applet.program.xc9500xl:ProgramXC9500XLApplet"
 program-xpla3 = "glasgow.applet.program.xpla3:ProgramXPLA3Applet"
 
+control-gpio = "glasgow.applet.control.gpio:ControlGPIOApplet"
 control-servo = "glasgow.applet.control.servo:ControlServoApplet"
 control-si535x = "glasgow.applet.control.si535x:ControlSi535xApplet"
 control-tps6598x = "glasgow.applet.control.tps6598x:ControlTPS6598xApplet"
