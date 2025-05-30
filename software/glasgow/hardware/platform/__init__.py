@@ -6,10 +6,11 @@ __all__ = ["GlasgowPlatformPort", "GlasgowPlatform"]
 
 
 class GlasgowPlatformPort(io.PortLike):
-    def __init__(self, *, io, oe=None):
+    def __init__(self, *, io, oe=None, direction=None):
         assert oe is None or len(io) == len(oe)
         self._io_port = io
         self._oe_port = oe
+        self._direction = direction
 
     @property
     def io_port(self):
@@ -21,27 +22,42 @@ class GlasgowPlatformPort(io.PortLike):
 
     @property
     def direction(self):
-        return self.io_port.direction
+        return self._direction or self.io_port.direction
+
+    def with_direction(self, direction):
+        direction = io.Direction(direction)
+        match self.direction, direction:
+            case [io.Direction.Bidir, _]: pass
+            case [io.Direction.Output, io.Direction.Output]: pass
+            case [io.Direction.Input,  io.Direction.Input]:  pass
+            case _:
+                raise TypeError(f"Cannot downcast {self.direction} pin into {direction}")
+        return GlasgowPlatformPort(io=self.io_port, oe=self.oe_port, direction=direction)
 
     def __len__(self):
         return len(self.io_port)
 
     def __invert__(self):
-        return GlasgowPlatformPort(io=~self.io_port, oe=self.oe_port)
+        return GlasgowPlatformPort(io=~self.io_port, oe=self.oe_port,
+                                   direction=self._direction)
 
     def __getitem__(self, key):
         if self.oe_port is None:
-            return GlasgowPlatformPort(io=self.io_port[key])
+            return GlasgowPlatformPort(io=self.io_port[key],
+                                       direction=self._direction)
         else:
-            return GlasgowPlatformPort(io=self.io_port[key], oe=self.oe_port[key])
+            return GlasgowPlatformPort(io=self.io_port[key], oe=self.oe_port[key],
+                                       direction=self._direction)
 
     def __add__(self, other):
         if type(other) is GlasgowPlatformPort:
             if self.oe_port is None and other.oe_port is None:
-                return GlasgowPlatformPort(io=self.io_port + other.io_port)
+                return GlasgowPlatformPort(io=self.io_port + other.io_port,
+                                           direction=self._direction)
             elif self.oe_port is not None and other.oe_port is not None:
                 return GlasgowPlatformPort(io=self.io_port + other.io_port,
-                                           oe=self.oe_port + other.oe_port)
+                                           oe=self.oe_port + other.oe_port,
+                                           direction=self._direction)
             assert False
         else:
             return NotImplemented
