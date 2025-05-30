@@ -5,7 +5,7 @@ from amaranth.lib.wiring import In, Out
 
 __all__ = [
     "stream_put", "stream_get", "stream_assert"
-    "StreamBuffer", "StreamFIFO", "SkidBuffer",
+    "StreamBuffer", "Queue", "AsyncQueue", "SkidBuffer",
 ]
 
 
@@ -49,52 +49,67 @@ class StreamBuffer(wiring.Component):
         return m
 
 
-class StreamFIFO(wiring.Component):
-    def __init__(self, *, shape, depth, w_domain="sync", r_domain="sync", buffered=True):
+class Queue(wiring.Component):
+    def __init__(self, *, shape, depth, buffered=True):
         self._shape = shape
         self._depth = depth
-        self._w_domain = w_domain
-        self._r_domain = r_domain
         self._buffered = buffered
 
-        if w_domain == r_domain:
-            super().__init__({
-                "w": In(stream.Signature(shape)),
-                "r": Out(stream.Signature(shape)),
-                "level": Out(range(depth + 1))
-            })
-        else:
-            super().__init__({
-                "w": In(stream.Signature(shape)),
-                "r": Out(stream.Signature(shape)),
-            })
+        super().__init__({
+            "i": In(stream.Signature(shape)),
+            "o": Out(stream.Signature(shape)),
+            "level": Out(range(depth + 1))
+        })
 
     def elaborate(self, platform):
         m = Module()
 
-        if self._r_domain == self._w_domain:
-            fifo_cls = fifo.SyncFIFOBuffered if self._buffered else fifo.SyncFIFO
-            m.submodules.inner = inner = DomainRenamer(self._r_domain)(fifo_cls(
-                width=Shape.cast(self._shape).width,
-                depth=self._depth
-            ))
-            m.d.comb += self.level.eq(inner.level)
-        else:
-            fifo_cls = fifo.AsyncFIFOBuffered if self._buffered else fifo.AsyncFIFO
-            m.submodules.inner = inner = fifo_cls(
-                width=Shape.cast(self._shape).width,
-                depth=self._depth,
-                w_domain=self._w_domain,
-                r_domain=self._r_domain,
-            )
-
+        fifo_cls = fifo.SyncFIFOBuffered if self._buffered else fifo.SyncFIFO
+        m.submodules.inner = inner = fifo_cls(
+            width=Shape.cast(self._shape).width,
+            depth=self._depth
+        )
         m.d.comb += [
-            inner.w_data.eq(self.w.payload),
-            inner.w_en.eq(self.w.valid),
-            self.w.ready.eq(inner.w_rdy),
-            self.r.payload.eq(inner.r_data),
-            self.r.valid.eq(inner.r_rdy),
-            inner.r_en.eq(self.r.ready),
+            inner.w_data.eq(self.i.payload),
+            inner.w_en.eq(self.i.valid),
+            self.i.ready.eq(inner.w_rdy),
+            self.o.payload.eq(inner.r_data),
+            self.o.valid.eq(inner.r_rdy),
+            inner.r_en.eq(self.o.ready),
+            self.level.eq(inner.level),
+        ]
+
+        return m
+
+
+class AsyncQueue(wiring.Component):
+    def __init__(self, *, shape, depth, i_domain="sync", o_domain="sync"):
+        self._shape = shape
+        self._depth = depth
+        self._i_domain = i_domain
+        self._o_domain = o_domain
+
+        super().__init__({
+            "i": In(stream.Signature(shape)),
+            "o": Out(stream.Signature(shape)),
+        })
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.inner = inner = fifo.AsyncFIFO(
+            width=Shape.cast(self._shape).width,
+            depth=self._depth,
+            w_domain=self._i_domain,
+            r_domain=self._o_domain,
+        )
+        m.d.comb += [
+            inner.w_data.eq(self.i.payload),
+            inner.w_en.eq(self.i.valid),
+            self.i.ready.eq(inner.w_rdy),
+            self.o.payload.eq(inner.r_data),
+            self.o.valid.eq(inner.r_rdy),
+            inner.r_en.eq(self.o.ready),
         ]
 
         return m
@@ -113,12 +128,12 @@ class SkidBuffer(wiring.Component):
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.skid = skid = StreamFIFO(shape=self._shape, depth=self._depth, buffered=False)
+        m.submodules.skid = skid = Queue(shape=self._shape, depth=self._depth, buffered=False)
 
-        m.d.comb += skid.w.payload.eq(self.i.payload)
-        m.d.comb += skid.w.valid.eq(self.i.valid & (~self.o.ready | skid.r.valid))
-        with m.If(skid.r.valid):
-            wiring.connect(m, wiring.flipped(self.o), skid.r)
+        m.d.comb += skid.i.payload.eq(self.i.payload)
+        m.d.comb += skid.i.valid.eq(self.i.valid & (~self.o.ready | skid.o.valid))
+        with m.If(skid.o.valid):
+            wiring.connect(m, wiring.flipped(self.o), skid.o)
         with m.Else():
             wiring.connect(m, wiring.flipped(self.o), wiring.flipped(self.i))
 
