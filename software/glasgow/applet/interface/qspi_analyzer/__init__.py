@@ -8,7 +8,7 @@ from amaranth.lib.wiring import In, Out
 from cobs.cobs import decode as cobs_decode
 
 from glasgow.support.logging import dump_hex
-from glasgow.gateware.stream import StreamFIFO
+from glasgow.gateware.stream import AsyncQueue
 from glasgow.gateware.cobs import Encoder as COBSEncoder
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
@@ -65,42 +65,42 @@ class QSPIAnalyzerFrontend(wiring.Component):
         m.domains.fifo = cd_fifo = ClockDomain(reset_less=True, local=True)
         m.d.comb += cd_fifo.clk.eq(sck_buffer.i)
 
-        m.submodules.fifo = fifo = StreamFIFO(
+        m.submodules.fifo = fifo = AsyncQueue(
             shape=self.stream.p.shape(),
             depth=4, # CDC only, no buffering
-            w_domain="fifo",
-            r_domain="sync"
+            i_domain="fifo",
+            o_domain="sync"
         )
 
         shreg = Signal(8)
         match len(io_buffer.i):
             case 4:
                 m.d.fifo += shreg.eq(Cat(io_buffer.i, shreg))
-                m.d.comb += fifo.w.p.data.eq(Cat(io_buffer.i, shreg))
+                m.d.comb += fifo.i.p.data.eq(Cat(io_buffer.i, shreg))
             case 2:
                 m.d.fifo += shreg.eq(Cat(io_buffer.i, C(0, 2), shreg))
-                m.d.comb += fifo.w.p.data.eq(Cat(io_buffer.i, C(0, 2), shreg))
+                m.d.comb += fifo.i.p.data.eq(Cat(io_buffer.i, C(0, 2), shreg))
 
         start = Signal(init=1)
         epoch = Signal(reset_less=True, init=1)
         count = Signal(range(2))
         with m.If(count == 1):
-            m.d.comb += fifo.w.valid.eq(1)
+            m.d.comb += fifo.i.valid.eq(1)
             with m.If(start):
                 m.d.qspi += start.eq(0)
                 m.d.qspi += epoch.eq(~epoch)
-                m.d.comb += fifo.w.p.epoch.eq(~epoch)
+                m.d.comb += fifo.i.p.epoch.eq(~epoch)
             with m.Else():
-                m.d.comb += fifo.w.p.epoch.eq(epoch)
+                m.d.comb += fifo.i.p.epoch.eq(epoch)
             m.d.qspi += count.eq(0)
         with m.Else():
             m.d.qspi += count.eq(count + 1)
 
         overflow_qspi  = Signal()
-        with m.If(fifo.w.valid & ~fifo.w.ready):
+        with m.If(fifo.i.valid & ~fifo.i.ready):
             m.d.qspi += overflow_qspi.eq(1)
 
-        wiring.connect(m, wiring.flipped(self.stream), fifo.r)
+        wiring.connect(m, wiring.flipped(self.stream), fifo.o)
 
         cs_sync = Signal()
         # Note that the async FIFO write-to-read latency, and the latency of this synchronizer,
@@ -109,7 +109,7 @@ class QSPIAnalyzerFrontend(wiring.Component):
         # indefinitely because there is no end marker. Back-to-back transfers may not ever cause
         # the `complete` output to be asserted.
         m.submodules.cs_sync = cdc.FFSynchronizer(cs_buffer.i, cs_sync)
-        with m.If(cs_sync & ~fifo.r.valid):
+        with m.If(cs_sync & ~fifo.o.valid):
             m.d.comb += self.complete.eq(1)
 
         overflow_sync = Signal()
@@ -185,7 +185,7 @@ class QSPIAnalyzerInterface:
 
         ports = assembly.add_port_group(cs=cs, sck=sck, io=io)
         component = assembly.add_submodule(QSPIAnalyzerComponent(ports, buffer_size))
-        # Use only a minimal interface FIFO; most of the buffering is done in the COBS encoder.
+        # Don't use an interface FIFO; the input buffering is done in the COBS encoder.
         self._pipe = assembly.add_in_pipe(
             component.o_stream, in_flush=component.o_flush, fifo_depth=0)
         self._overflow = assembly.add_ro_register(component.overflow)

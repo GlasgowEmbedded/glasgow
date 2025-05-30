@@ -17,7 +17,7 @@ from ..support.chunked_fifo import ChunkedFIFO
 from ..gateware.i2c import I2CTarget
 from ..gateware.registers import I2CRegisters
 from ..gateware.fx2_crossbar import FX2Crossbar
-from ..gateware.stream import StreamFIFO
+from ..gateware.stream import Queue
 from ..abstract import *
 from .platform import GlasgowPlatformPort
 from .platform.rev_ab import GlasgowRevABPlatform
@@ -617,9 +617,9 @@ class HardwareAssembly(AbstractAssembly):
                 wiring.connect(m, in_ep.data, in_stream)
             else:
                 m.submodules[f"in_fifo_{idx}"] = in_fifo = ResetInserter(in_ep.reset)(
-                    StreamFIFO(shape=8, depth=self.DEFAULT_FIFO_DEPTH if depth is None else depth))
-                wiring.connect(m, in_fifo.w, in_stream)
-                wiring.connect(m, in_ep.data, in_fifo.r)
+                    Queue(shape=8, depth=self.DEFAULT_FIFO_DEPTH if depth is None else depth))
+                wiring.connect(m, in_fifo.i, in_stream)
+                wiring.connect(m, in_ep.data, in_fifo.o)
             m.d.comb += in_ep.flush.eq(in_flush)
             m.d.comb += in_ep.reset.eq(pipe_rst[2 + idx])
             if domain is not None:
@@ -632,9 +632,9 @@ class HardwareAssembly(AbstractAssembly):
                 wiring.connect(m, out_stream, out_ep.data)
             else:
                 m.submodules[f"out_fifo_{idx}"] = out_fifo = ResetInserter(out_ep.reset)(
-                    StreamFIFO(shape=8, depth=self.DEFAULT_FIFO_DEPTH if depth is None else depth))
-                wiring.connect(m, out_fifo.w, out_ep.data)
-                wiring.connect(m, out_stream, out_fifo.r)
+                    Queue(shape=8, depth=self.DEFAULT_FIFO_DEPTH if depth is None else depth))
+                wiring.connect(m, out_fifo.i, out_ep.data)
+                wiring.connect(m, out_stream, out_fifo.o)
             m.d.comb += out_ep.reset.eq(pipe_rst[idx])
             if domain is not None:
                 with m.If(out_ep.reset):

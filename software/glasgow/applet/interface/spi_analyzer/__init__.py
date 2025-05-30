@@ -8,7 +8,7 @@ from amaranth.lib.wiring import In, Out
 from cobs.cobs import decode as cobs_decode
 
 from glasgow.support.logging import dump_hex
-from glasgow.gateware.stream import StreamFIFO
+from glasgow.gateware.stream import AsyncQueue
 from glasgow.gateware.cobs import Encoder as COBSEncoder
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
@@ -65,39 +65,39 @@ class SPIAnalyzerFrontend(wiring.Component):
         m.domains.fifo = cd_fifo = ClockDomain(reset_less=True, local=True)
         m.d.comb += cd_fifo.clk.eq(sck_buffer.i)
 
-        m.submodules.fifo = fifo = StreamFIFO(
+        m.submodules.fifo = fifo = AsyncQueue(
             shape=self.stream.p.shape(),
             depth=4, # CDC only, no buffering
-            w_domain="fifo",
-            r_domain="sync"
+            i_domain="fifo",
+            o_domain="sync"
         )
 
         for index, chip in enumerate(cs_buffer.i):
             with m.If(~chip):
-                m.d.comb += fifo.w.p.chip.eq(index)
+                m.d.comb += fifo.i.p.chip.eq(index)
 
         copi_shreg = Signal(self._word_width)
         cipo_shreg = Signal(self._word_width)
         m.d.fifo += copi_shreg.eq(Cat(copi_buffer.i, copi_shreg))
         m.d.fifo += cipo_shreg.eq(Cat(cipo_buffer.i, cipo_shreg))
-        m.d.comb += fifo.w.p.copi.eq(Cat(copi_buffer.i, copi_shreg))
-        m.d.comb += fifo.w.p.cipo.eq(Cat(cipo_buffer.i, cipo_shreg))
+        m.d.comb += fifo.i.p.copi.eq(Cat(copi_buffer.i, copi_shreg))
+        m.d.comb += fifo.i.p.cipo.eq(Cat(cipo_buffer.i, cipo_shreg))
 
         start = Signal(init=1)
         count = Signal(range(self._word_width), init=2) # 2 is the ResetSynchronizer latency
-        m.d.comb += fifo.w.p.start.eq(start)
+        m.d.comb += fifo.i.p.start.eq(start)
         with m.If(count == self._word_width - 1):
-            m.d.comb += fifo.w.valid.eq(1)
+            m.d.comb += fifo.i.valid.eq(1)
             m.d.spi += start.eq(0)
             m.d.spi += count.eq(0)
         with m.Else():
             m.d.spi += count.eq(count + 1)
 
         overflow_spi  = Signal()
-        with m.If(fifo.w.valid & ~fifo.w.ready):
+        with m.If(fifo.i.valid & ~fifo.i.ready):
             m.d.spi += overflow_spi.eq(1)
 
-        wiring.connect(m, wiring.flipped(self.stream), fifo.r)
+        wiring.connect(m, wiring.flipped(self.stream), fifo.o)
 
         cs_sync = Signal()
         # Note that the async FIFO write-to-read latency, and the latency of this synchronizer,
@@ -106,7 +106,7 @@ class SPIAnalyzerFrontend(wiring.Component):
         # indefinitely because there is no end marker. Back-to-back transfers may not ever cause
         # the `complete` output to be asserted.
         m.submodules.cs_sync = cdc.FFSynchronizer(cs_buffer.i.all(), cs_sync)
-        with m.If(cs_sync & ~fifo.r.valid):
+        with m.If(cs_sync & ~fifo.o.valid):
             m.d.comb += self.complete.eq(1)
 
         overflow_sync = Signal()
@@ -195,7 +195,7 @@ class SPIAnalyzerInterface:
 
         ports = assembly.add_port_group(cs=cs, sck=sck, copi=copi, cipo=cipo)
         component = assembly.add_submodule(SPIAnalyzerComponent(ports, buffer_size))
-        # Use only a minimal interface FIFO; most of the buffering is done in the COBS encoder.
+        # Don't use an interface FIFO; the input buffering is done in the COBS encoder.
         self._pipe = assembly.add_in_pipe(
             component.o_stream, in_flush=component.o_flush, fifo_depth=0)
         self._overflow = assembly.add_ro_register(component.overflow)
