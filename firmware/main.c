@@ -486,12 +486,13 @@ void handle_pending_usb_setup() {
         }
         SETUP_EP0_BUF(chunk_len);
       } else {
-        SETUP_EP0_BUF(0);
+        SETUP_EP0_OUT_BUF();
         while(EP0CS & _BUSY);
         if(!eeprom_write(arg_chip, arg_addr, EP0BUF, chunk_len, /*double_byte=*/true,
                          page_size, timeout)) {
           goto stall_ep0_return;
         }
+        ACK_EP0();
       }
 
       arg_len  -= chunk_len;
@@ -515,9 +516,10 @@ void handle_pending_usb_setup() {
           return;
         }
       } else {
-        SETUP_EP0_BUF(0);
+        SETUP_EP0_OUT_BUF();
         while(EP0CS & _BUSY);
         fpga_reg_write(EP0BUF, arg_len);
+        ACK_EP0();
         return;
       }
     }
@@ -557,12 +559,13 @@ void handle_pending_usb_setup() {
     while(arg_len > 0) {
       uint8_t chunk_len = arg_len < 64 ? arg_len : 64;
 
-      SETUP_EP0_BUF(0);
+      SETUP_EP0_OUT_BUF();
       while(EP0CS & _BUSY);
       fpga_load(EP0BUF, chunk_len);
 
       arg_len -= chunk_len;
     }
+    ACK_EP0();
 
     bitstream_idx = arg_idx;
     return;
@@ -579,9 +582,10 @@ void handle_pending_usb_setup() {
       SETUP_EP0_BUF(CONFIG_SIZE_BITSTREAM_ID);
     } else {
       if(fpga_start()) {
-        SETUP_EP0_BUF(0);
+        SETUP_EP0_OUT_BUF();
         while(EP0CS & _BUSY);
         xmemcpy(glasgow_config.bitstream_id, EP0BUF, CONFIG_SIZE_BITSTREAM_ID);
+        ACK_EP0();
       } else {
         goto stall_ep0_return;
       }
