@@ -229,35 +229,38 @@ class JTAGXVCApplet(GlasgowAppletV2):
 
         endpoint = await ServerEndpoint("socket", self.logger, args.endpoint)
         while True:
-            command = await endpoint.recv_until(b":")
-            self.logger.debug(f"cmd={command.decode('ascii')}")
-            match command:
-                case b"getinfo":
-                    await endpoint.send(f"xvcServer_v1.0:{65535 // 8}\n".encode("ascii"))
+            try:
+                command = await endpoint.recv_until(b":")
+                self.logger.debug(f"cmd={command.decode('ascii')}")
+                match command:
+                    case b"getinfo":
+                        await endpoint.send(f"xvcServer_v1.0:{65535 // 8}\n".encode("ascii"))
 
-                case b"settck":
-                    tck_period, = struct.unpack("<L", await endpoint.recv(4))
-                    self.logger.debug(f"  tck-i={tck_period}")
-                    if args.frequency is None:
-                        await self.xvc_iface.set_tck_period(tck_period)
-                    tck_period = round(await self.xvc_iface.get_tck_period())
-                    self.logger.debug(f"  tck-o={tck_period}")
-                    await endpoint.send(struct.pack("<L", tck_period))
+                    case b"settck":
+                        tck_period, = struct.unpack("<L", await endpoint.recv(4))
+                        self.logger.debug(f"  tck-i={tck_period}")
+                        if args.frequency is None:
+                            await self.xvc_iface.set_tck_period(tck_period)
+                        tck_period = round(await self.xvc_iface.get_tck_period())
+                        self.logger.debug(f"  tck-o={tck_period}")
+                        await endpoint.send(struct.pack("<L", tck_period))
 
-                case b"shift":
-                    bit_count, = struct.unpack("<L", await endpoint.recv(4))
-                    self.logger.debug(f"  count={bit_count}")
-                    byte_count = (bit_count + 7) // 8
-                    tms_bytes = await endpoint.recv(byte_count)
-                    self.logger.debug("  tms=<%s>", dump_hex(tms_bytes))
-                    tdi_bytes = await endpoint.recv(byte_count)
-                    self.logger.debug("  tdi=<%s>", dump_hex(tdi_bytes))
-                    tdo_bytes = await self.xvc_iface.shift(bit_count, tms_bytes, tdi_bytes)
-                    self.logger.debug("  tdo=<%s>", dump_hex(tdo_bytes))
-                    await endpoint.send(tdo_bytes)
+                    case b"shift":
+                        bit_count, = struct.unpack("<L", await endpoint.recv(4))
+                        self.logger.debug(f"  count={bit_count}")
+                        byte_count = (bit_count + 7) // 8
+                        tms_bytes = await endpoint.recv(byte_count)
+                        self.logger.debug("  tms=<%s>", dump_hex(tms_bytes))
+                        tdi_bytes = await endpoint.recv(byte_count)
+                        self.logger.debug("  tdi=<%s>", dump_hex(tdi_bytes))
+                        tdo_bytes = await self.xvc_iface.shift(bit_count, tms_bytes, tdi_bytes)
+                        self.logger.debug("  tdo=<%s>", dump_hex(tdo_bytes))
+                        await endpoint.send(tdo_bytes)
 
-                case command:
-                    raise GlasgowAppletError(f"unrecognized command {command!r}")
+                    case command:
+                        raise GlasgowAppletError(f"unrecognized command {command!r}")
+            except EOFError:
+                pass
 
     @classmethod
     def tests(cls):
