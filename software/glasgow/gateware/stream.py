@@ -5,7 +5,7 @@ from amaranth.lib.wiring import In, Out
 
 __all__ = [
     "stream_put", "stream_get", "stream_assert"
-    "StreamBuffer", "StreamFIFO"
+    "StreamBuffer", "StreamFIFO", "SkidBuffer",
 ]
 
 
@@ -96,5 +96,30 @@ class StreamFIFO(wiring.Component):
             self.r.valid.eq(inner.r_rdy),
             inner.r_en.eq(self.r.ready),
         ]
+
+        return m
+
+
+class SkidBuffer(wiring.Component):
+    def __init__(self, shape, depth):
+        self._shape = shape
+        self._depth = depth
+
+        super().__init__({
+            "i": In(stream.Signature(shape)),
+            "o": Out(stream.Signature(shape)),
+        })
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.skid = skid = StreamFIFO(shape=self._shape, depth=self._depth, buffered=False)
+
+        m.d.comb += skid.w.payload.eq(self.i.payload)
+        m.d.comb += skid.w.valid.eq(self.i.valid & (~self.o.ready | skid.r.valid))
+        with m.If(skid.r.valid):
+            wiring.connect(m, wiring.flipped(self.o), skid.r)
+        with m.Else():
+            wiring.connect(m, wiring.flipped(self.o), wiring.flipped(self.i))
 
         return m

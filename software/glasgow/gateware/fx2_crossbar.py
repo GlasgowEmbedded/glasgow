@@ -146,7 +146,7 @@ from amaranth import *
 from amaranth.lib import wiring, stream, io
 from amaranth.lib.wiring import In, Out, connect, flipped
 
-from .stream import StreamFIFO
+from .stream import SkidBuffer
 
 
 __all__ = ["FX2Crossbar"]
@@ -219,14 +219,9 @@ class _OUTFIFO(wiring.Component):
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.skid = skid = StreamFIFO(shape=8, depth=self._skid_depth, buffered=False)
-
-        m.d.comb += skid.w.payload.eq(self.w.payload)
-        m.d.comb += skid.w.valid.eq(self.w.valid & (~self.r.ready | skid.r.valid))
-        with m.If(skid.r.valid):
-            connect(m, flipped(self.r), skid.r)
-        with m.Else():
-            connect(m, flipped(self.r), flipped(self.w))
+        m.submodules.skid = skid = SkidBuffer(shape=8, depth=self._skid_depth)
+        connect(m, skid.i, flipped(self.w))
+        connect(m, flipped(self.r), skid.o)
 
         return m
 
