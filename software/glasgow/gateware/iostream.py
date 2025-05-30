@@ -133,7 +133,7 @@ class IOStreamer(wiring.Component):
             m.submodules.buffer = buffer = buffer_cls("io", self._ports)
         if isinstance(self._ports, PortGroup):
             buffer = {}
-            for name, sub_port in self._ports.__dict__.items():
+            for name, sub_port in self._ports:
                 direction, _width = self._ioshape[name]
                 m.submodules[f"buffer_{name}"] = buffer[name] = buffer_cls(direction, sub_port)
 
