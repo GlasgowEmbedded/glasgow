@@ -194,10 +194,10 @@ class ProbeRsApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "debug and program Arm microcontrollers via probe-rs"
     description = """
-    Expose SWD via a socket that can be used with `probe-rs <https://probe.rs>`_.
+    Expose SWD via a socket that can be used with `probe-rs <https://probe.rs>`_. JTAG debugging
+    is not supported (yet).
 
-    This applet is experimental. Currently, it only supports SWD and requires building
-    `a fork of probe-rs <https://github.com/whitequark/probe-rs>`_.
+    This applet is experimental. Currently, to use it you must build probe-rs from git.
     """
     required_revision = "C0"
 
