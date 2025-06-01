@@ -66,7 +66,7 @@ if is_production:
         },
         "announcement":
             "Production units are being shipped by Mouser. "
-            "<a href='https://crowdsupply.com/1bitsquared/glasgow'>Pre-order yours now!</a>"
+            "<a href='https://crowdsupply.com/1bitsquared/glasgow'>Order yours now!</a>"
     })
 else:
     html_theme_options.update({
