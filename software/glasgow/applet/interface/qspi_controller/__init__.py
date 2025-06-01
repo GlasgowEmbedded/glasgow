@@ -8,7 +8,6 @@ from amaranth.lib import enum, data, wiring, stream, io
 from amaranth.lib.wiring import In, Out, connect, flipped
 
 from glasgow.support.logging import dump_hex
-from glasgow.gateware.iostream import IOStreamer
 from glasgow.gateware.qspi import QSPIMode, QSPIController
 from glasgow.applet import GlasgowAppletV2
 
