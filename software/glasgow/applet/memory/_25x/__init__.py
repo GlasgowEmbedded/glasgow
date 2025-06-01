@@ -283,7 +283,7 @@ class Memory25xApplet(GlasgowAppletV2):
             help="set SCK frequency to FREQ kHz (default: %(default)s)")
 
     async def setup(self, args):
-        await self.m25x_iface.qspi.set_sck_freq(args.frequency * 1000)
+        await self.m25x_iface.qspi.clock.set_frequency(args.frequency * 1000)
 
     @classmethod
     def add_run_arguments(cls, parser):
