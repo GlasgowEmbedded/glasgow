@@ -6,7 +6,7 @@ from amaranth.lib import io, wiring
 
 from glasgow.gateware.ports import PortGroup
 from glasgow.gateware.stream import stream_get, stream_put, stream_assert
-from glasgow.gateware.swd_probe import *
+from glasgow.gateware.swd import *
 
 
 class SWDTarget:
@@ -19,13 +19,12 @@ class SWDTarget:
     async def get(self, ctx):
         _, bit_o, bit_oe = await ctx.posedge(self.ports.swclk.o) \
             .sample(self.ports.swdio.o, self.ports.swdio.oe)
-        # assert bit_oe == 1, "get() on undriven bus"
+        assert bit_oe == 1, "get() on undriven bus"
         return bit_o
 
     async def put(self, ctx, bit):
-        await ctx.negedge(self.ports.swclk.o)
-        ctx.set(self.ports.swdio.i, bit)
         await ctx.posedge(self.ports.swclk.o)
+        ctx.set(self.ports.swdio.i, bit)
 
     async def assert_reset(self, ctx):
         count = 0
@@ -44,7 +43,6 @@ class SWDTarget:
         assert await self.get(ctx) == parity
         assert await self.get(ctx) == 0, "stop"
         assert await self.get(ctx) == 1, "park"
-        await self.nop(ctx)
 
     async def ack(self, ctx, ack: Ack, *, error=False):
         await self.put(ctx, ((ack.value >> 0) & 1) ^ error)
@@ -53,7 +51,7 @@ class SWDTarget:
 
     async def assert_wdata(self, ctx, data: int):
         value = 0
-        await self.nop(ctx)
+        await self.turnaround(ctx)
         for offset in range(32):
             value |= await self.get(ctx) << offset
         parity = await self.get(ctx)
@@ -64,6 +62,10 @@ class SWDTarget:
         for offset in range(32):
             await self.put(ctx, (data >> offset) & 1)
         await self.put(ctx, (format(data, "b").count("1") & 1) ^ error)
+        await self.turnaround(ctx)
+
+    async def turnaround(self, ctx):
+        await self.nop(ctx)
         await self.nop(ctx)
 
 
@@ -79,13 +81,22 @@ class Scenario:
         self.tgt = SWDTarget(self.ports)
 
     def run(self):
-        sim = Simulator(self.dut)
-        sim.add_clock(1e-6)
-        sim.add_testbench(self.i_testbench)
-        sim.add_testbench(self.o_testbench)
-        sim.add_testbench(self.t_testbench)
-        with sim.write_vcd("swd_scenario.vcd"):
-            sim.run()
+        for divisor in (0, 1, 2, 3):
+            async def d_testbench(ctx):
+                ctx.set(self.dut.divisor, divisor)
+
+            sim = Simulator(self.dut)
+            sim.add_clock(1e-6)
+            sim.add_testbench(d_testbench)
+            sim.add_testbench(self.i_testbench)
+            sim.add_testbench(self.o_testbench)
+            sim.add_testbench(self.t_testbench)
+            try:
+                with sim.write_vcd("swd_scenario.vcd"):
+                    sim.run()
+            except Exception as exn:
+                exn.args = (str(exn) + f", divisor {divisor}",)
+                raise exn
 
 
 class ReadDPIDRScenario(Scenario):
@@ -175,7 +186,7 @@ class WaitScenario(Scenario):
     async def t_testbench(self, ctx):
         await self.tgt.assert_packet(ctx, ap_ndp=1, r_nw=0, addr=0xC)
         await self.tgt.ack(ctx, Ack.WAIT)
-        await self.tgt.nop(ctx)
+        await self.tgt.turnaround(ctx)
 
         await self.tgt.assert_packet(ctx, ap_ndp=1, r_nw=0, addr=0xC)
         await self.tgt.ack(ctx, Ack.OK)
@@ -248,7 +259,7 @@ class FaultScenario(Scenario):
     async def t_testbench(self, ctx):
         await self.tgt.assert_packet(ctx, ap_ndp=1, r_nw=1, addr=0xC)
         await self.tgt.ack(ctx, Ack.FAULT)
-        await self.tgt.nop(ctx)
+        await self.tgt.turnaround(ctx)
         await self.tgt.assert_reset(ctx)
 
         await self.tgt.assert_packet(ctx, ap_ndp=0, r_nw=1, addr=0x0)
@@ -353,11 +364,11 @@ class ControllerScenario(Scenario):
 
         await self.tgt.assert_packet(ctx, ap_ndp=1, r_nw=1, addr=0xC)
         await self.tgt.ack(ctx, Ack.WAIT)
-        await self.tgt.nop(ctx)
+        await self.tgt.turnaround(ctx)
 
         await self.tgt.assert_packet(ctx, ap_ndp=1, r_nw=1, addr=0xC)
         await self.tgt.ack(ctx, Ack.WAIT)
-        await self.tgt.nop(ctx)
+        await self.tgt.turnaround(ctx)
 
         await self.tgt.assert_packet(ctx, ap_ndp=1, r_nw=1, addr=0xC)
         await self.tgt.ack(ctx, Ack.OK)
@@ -365,7 +376,7 @@ class ControllerScenario(Scenario):
 
         await self.tgt.assert_packet(ctx, ap_ndp=1, r_nw=1, addr=0x4)
         await self.tgt.ack(ctx, Ack.FAULT)
-        await self.tgt.nop(ctx)
+        await self.tgt.turnaround(ctx)
 
         await self.tgt.assert_packet(ctx, ap_ndp=1, r_nw=1, addr=0x4)
         await self.tgt.ack(ctx, Ack.OK)
@@ -373,6 +384,7 @@ class ControllerScenario(Scenario):
 
         await self.tgt.assert_packet(ctx, ap_ndp=1, r_nw=1, addr=0x4)
         await self.tgt.ack(ctx, Ack.OK, error=True)
+        await self.tgt.nop(ctx)
 
         await self.tgt.assert_packet(ctx, ap_ndp=1, r_nw=0, addr=0xC)
         await self.tgt.ack(ctx, Ack.OK)

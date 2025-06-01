@@ -11,14 +11,14 @@ import logging
 import struct
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io
+from amaranth.lib import enum, data, wiring, stream, io, cdc
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support.bits import bits
 from glasgow.arch.arm.swj import *
 from glasgow.arch.arm.dap import *
 from glasgow.database.jedec import jedec_mfg_name_from_bank_num
-from glasgow.gateware import swd_probe as probe
+from glasgow.gateware import swd
 from glasgow.abstract import AbstractAssembly
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
@@ -49,14 +49,14 @@ class SWDCommand(data.Struct):
             "len":      5, # encoding 0 means 32 bits long
         }),
     })
-    cmd: probe.Command
+    cmd: swd.Command
     _:   2
 
 
 class SWDResponse(data.Struct):
-    ack: probe.Ack
+    ack: swd.Ack
     _1:  1
-    rsp: probe.Response
+    rsp: swd.Response
     _2:  2
 
 
@@ -68,15 +68,19 @@ class SWDProbeComponent(wiring.Component):
     divisor: In(16)
     timeout: In(16, init=~0)
 
-    def __init__(self, ports):
-        self._ports = ports
+    def __init__(self, ports, *, offset=None):
+        self._ports  = ports
+        self._offset = offset
 
         super().__init__()
 
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.ctrl = ctrl = probe.Controller(self._ports)
+        m.submodules.ctrl = ctrl = swd.Controller(self._ports,
+            # Offset sampling by ~10 ns to compensate for 10..15 ns of roundtrip delay caused by
+            # the level shifters (5 ns each) and FPGA clock-to-out (5 ns).
+            offset=1 if self._offset is None else self._offset)
         m.d.comb += ctrl.divisor.eq(self.divisor)
         m.d.comb += ctrl.timeout.eq(self.timeout)
 
@@ -92,9 +96,9 @@ class SWDProbeComponent(wiring.Component):
                 ]
                 m.d.comb += self.i_stream.ready.eq(1)
                 with m.If(self.i_stream.valid):
-                    with m.If(i_command.cmd == probe.Command.Sequence):
+                    with m.If(i_command.cmd == swd.Command.Sequence):
                         m.next = "Data"
-                    with m.Elif((i_command.cmd == probe.Command.Transfer) &
+                    with m.Elif((i_command.cmd == swd.Command.Transfer) &
                             (i_command.arg.transfer.r_nw == 0)):
                         m.next = "Data"
                     with m.Else():
@@ -124,7 +128,7 @@ class SWDProbeComponent(wiring.Component):
                     self.o_stream.valid.eq(ctrl.o_stream.valid),
                 ]
                 with m.If(ctrl.o_stream.valid & self.o_stream.ready):
-                    with m.If(o_response.rsp == probe.Response.Data):
+                    with m.If(o_response.rsp == swd.Response.Data):
                         m.next = "Data"
                     with m.Else():
                         m.d.comb += ctrl.o_stream.ready.eq(1)
@@ -156,7 +160,7 @@ class SWDProbeInterface:
         self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream,
             in_flush=component.o_flush)
         self._clock = assembly.add_clock_divisor(component.divisor,
-            ref_period=assembly.sys_clk_period * 2, name="swclk")
+            ref_period=assembly.sys_clk_period, name="swclk")
         self._timeout = assembly.add_rw_register(component.timeout)
 
         self._select = None
@@ -174,25 +178,25 @@ class SWDProbeInterface:
     async def _send_sequence(self, sequence: bits):
         for start in range(0, len(sequence), 32):
             chunk = sequence[start:start + 32]
-            await self._send_command(cmd=probe.Command.Sequence,
+            await self._send_command(cmd=swd.Command.Sequence,
                 arg={"sequence": {"len": len(chunk)}})
             await self._pipe.send(struct.pack("<L", chunk.to_int()))
         await self._pipe.flush()
 
     async def _send_transfer(self, **kwargs):
-        await self._send_command(cmd=probe.Command.Transfer,
+        await self._send_command(cmd=swd.Command.Transfer,
             arg={"transfer": kwargs})
 
     async def _recv_ack(self):
         await self._pipe.flush()
         response = data.Const(SWDResponse, (await self._pipe.recv(1))[0])
-        if response.rsp == probe.Response.Error:
+        if response.rsp == swd.Response.Error:
             raise SWDProbeException("communication error", kind=SWDProbeException.Kind.Error)
-        if response.ack == probe.Ack.FAULT:
+        if response.ack == swd.Ack.FAULT:
             raise SWDProbeException("transaction fault", kind=SWDProbeException.Kind.Fault)
-        if response.ack == probe.Ack.WAIT:
+        if response.ack == swd.Ack.WAIT:
             raise SWDProbeException("wait timeout", kind=SWDProbeException.Kind.Timeout)
-        assert response.ack == probe.Ack.OK
+        assert response.ack == swd.Ack.OK
 
     async def line_reset(self):
         """Perform a line reset sequence."""
