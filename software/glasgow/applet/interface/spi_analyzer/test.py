@@ -7,7 +7,7 @@ from amaranth.sim import Simulator
 from glasgow.simulation.assembly import SimulationAssembly
 from glasgow.gateware.ports import PortGroup
 from glasgow.gateware.stream import StreamFIFO, stream_get, stream_put
-from glasgow.applet import GlasgowAppletV2TestCase, synthesis_test, applet_v2_simulation_test
+from glasgow.applet import GlasgowAppletV2TestCase, synthesis_test
 from . import SPIAnalyzerFrontend, SPIAnalyzerComponent, SPIAnalyzerInterface, SPIAnalyzerApplet
 
 
