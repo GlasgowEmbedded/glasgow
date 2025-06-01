@@ -3,7 +3,7 @@ from amaranth.lib import enum, data, wiring, stream, io
 from amaranth.lib.wiring import In, Out, connect, flipped
 
 from .ports import PortGroup
-from .iostream2 import IOStreamer
+from .iostream import IOStreamer
 
 
 __all__ = ["Mode", "Enframer", "Deframer", "Controller"]

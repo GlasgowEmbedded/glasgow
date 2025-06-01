@@ -8,7 +8,7 @@ from amaranth.lib.wiring import In, Out, connect, flipped
 
 from glasgow.gateware.ports import PortGroup
 from glasgow.gateware.stream import StreamBuffer
-from glasgow.gateware.iostream2 import IOStreamer
+from glasgow.gateware.iostream import IOStreamer
 
 
 __all__ = [

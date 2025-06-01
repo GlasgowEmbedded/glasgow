@@ -9,7 +9,7 @@ from amaranth.lib.wiring import In, Out
 from glasgow.support.logging import dump_hex
 from glasgow.support.endpoint import ServerEndpoint
 from glasgow.gateware.stream import StreamBuffer
-from glasgow.gateware.iostream2 import IOStreamer
+from glasgow.gateware.iostream import IOStreamer
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
