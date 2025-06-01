@@ -6,7 +6,7 @@ from amaranth.lib import enum, data, wiring, stream, io, cdc
 from amaranth.lib.wiring import In, Out, connect, flipped
 
 from glasgow.gateware.ports import PortGroup
-from glasgow.gateware.iostream import IOStreamer
+from glasgow.gateware.iostream2 import IOStreamer
 
 
 __all__ = ["Mode", "Controller"]
@@ -18,13 +18,14 @@ class Mode(enum.Enum, shape=unsigned(2)):
     ShiftTDIO = 2
 
 
-class ShiftIn(enum.Enum, shape=unsigned(1)):
-    More = 0
-    Last = 1
+class Sample(enum.Enum, shape=unsigned(2)):
+    Idle = 0
+    More = 1
+    Last = 2
 
 
 class Enframer(wiring.Component):
-    def __init__(self, *, width):
+    def __init__(self, ports, *, width):
         super().__init__({
             "words": In(stream.Signature(data.StructLayout({
                 "mode": Mode,
@@ -32,11 +33,7 @@ class Enframer(wiring.Component):
                 "data": width,
                 "last": 1,
             }))),
-            "frames": Out(IOStreamer.o_stream_signature({
-                "tck": ("o", 1),
-                "tms": ("o", 1),
-                "tdi": ("o", 1),
-            }, meta_layout=ShiftIn)),
+            "frames": Out(IOStreamer.i_signature(ports, meta_layout=Sample)),
             "divisor": In(8),
         })
 
@@ -66,31 +63,30 @@ class Enframer(wiring.Component):
             # is left floating during operations where it should not matter.
             m.d.comb += self.frames.p.port.tdi.o.eq(1)
 
-        m.d.comb += self.frames.p.meta.eq(Mux(last, ShiftIn.Last, ShiftIn.More))
-        with m.If(self.words.p.mode == Mode.ShiftTDIO):
-            m.d.comb += self.frames.p.i_en.eq(phase & (timer == 0))
+        with m.If((self.words.p.mode == Mode.ShiftTDIO) & phase & (timer == 0)):
+            m.d.comb += self.frames.p.meta.eq(Mux(last, Sample.Last, Sample.More))
 
         m.d.comb += self.frames.valid.eq(self.words.valid)
         with m.If(self.frames.valid & self.frames.ready):
-            m.d.sync += timer.eq(timer + 1)
             with m.If(timer == self.divisor):
-                m.d.sync += timer.eq(0)
                 m.d.sync += phase.eq(~phase)
                 with m.If(phase):
-                    m.d.sync += offset.eq(offset + 1)
                     with m.If(last):
-                        m.d.sync += offset.eq(0)
                         m.d.comb += self.words.ready.eq(1)
+                        m.d.sync += offset.eq(0)
+                    with m.Else():
+                        m.d.sync += offset.eq(offset + 1)
+                m.d.sync += timer.eq(0)
+            with m.Else():
+                m.d.sync += timer.eq(timer + 1)
 
         return m
 
 
 class Deframer(wiring.Component):
-    def __init__(self, *, width):
+    def __init__(self, ports, *, width):
         super().__init__({
-            "frames": In(IOStreamer.i_stream_signature({
-                "tdo": ("i", 1),
-            }, meta_layout=ShiftIn)),
+            "frames": In(IOStreamer.o_signature(ports, meta_layout=Sample)),
             "words": Out(stream.Signature(data.StructLayout({
                 "size": range(width + 1),
                 "data": width,
@@ -104,11 +100,11 @@ class Deframer(wiring.Component):
 
         with m.FSM():
             with m.State("More"):
-                m.d.sync += self.words.p.data.bit_select(offset, 1).eq(self.frames.p.port.tdo.i)
                 m.d.comb += self.frames.ready.eq(1)
-                with m.If(self.frames.valid):
+                with m.If(self.frames.valid & (self.frames.p.meta != Sample.Idle)):
+                    m.d.sync += self.words.p.data.bit_select(offset, 1).eq(self.frames.p.port.tdo.i)
                     m.d.sync += offset.eq(offset + 1)
-                    with m.If(self.frames.p.meta == ShiftIn.Last):
+                    with m.If(self.frames.p.meta == Sample.Last):
                         m.next = "Last"
 
             with m.State("Last"):
@@ -124,10 +120,10 @@ class Deframer(wiring.Component):
 class Controller(wiring.Component):
     def __init__(self, ports, *, width):
         self._ports = PortGroup(
-            tck=ports.tck,
-            tms=ports.tms,
-            tdi=ports.tdi,
-            tdo=ports.tdo,
+            tck=ports.tck.with_direction("o"),
+            tms=ports.tms.with_direction("o"),
+            tdi=ports.tdi.with_direction("o"),
+            tdo=ports.tdo.with_direction("i"),
         )
         self._width = width
 
@@ -146,26 +142,19 @@ class Controller(wiring.Component):
         })
 
     def elaborate(self, platform):
-        ioshape = {
-            "tck": ("o", 1),
-            "tms": ("o", 1),
-            "tdi": ("o", 1),
-            "tdo": ("i", 1),
-        }
-
         m = Module()
 
-        m.submodules.enframer = enframer = Enframer(width=self._width)
-        connect(m, controller=flipped(self.i_words), enframer=enframer.words)
+        m.submodules.enframer = enframer = Enframer(self._ports, width=self._width)
+        connect(m, enframer=enframer.words, controller=flipped(self.i_words))
         m.d.comb += enframer.divisor.eq(self.divisor)
 
-        m.submodules.io_streamer = io_streamer = IOStreamer(ioshape, self._ports, meta_layout=ShiftIn)
-        connect(m, enframer=enframer.frames, io_streamer=io_streamer.o_stream)
+        m.submodules.io_streamer = io_streamer = IOStreamer(self._ports, meta_layout=Sample)
+        connect(m, io_streamer=io_streamer.i, enframer=enframer.frames)
 
-        m.submodules.deframer = deframer = Deframer(width=self._width)
-        connect(m, io_streamer=io_streamer.i_stream, deframer=deframer.frames)
+        m.submodules.deframer = deframer = Deframer(self._ports, width=self._width)
+        connect(m, deframer=deframer.frames, io_streamer=io_streamer.o)
 
-        connect(m, deframer=deframer.words, controller=flipped(self.o_words))
+        connect(m, controller=flipped(self.o_words), deframer=deframer.words)
 
         return m
 

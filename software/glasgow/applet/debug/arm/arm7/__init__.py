@@ -65,6 +65,7 @@ from .....support.lazy import *
 from .....support.bits import *
 from .....support.logging import *
 from .....support.endpoint import ServerEndpoint
+from .....abstract import AbstractAssembly
 from .....arch.jtag import *
 from .....arch.arm.jtag.arm7 import *
 from .....arch.arm.instr import *
@@ -73,6 +74,9 @@ from .....gateware.stream import StreamBuffer
 from .....gateware.jtag import probe as jtag_probe
 from .....protocol.gdb_remote import *
 from .... import GlasgowAppletError, GlasgowAppletV2
+
+
+__all__ = []
 
 
 class DebugARM7Error(GlasgowAppletError):
@@ -751,7 +755,8 @@ class DebugARM7Interface(GDBRemote):
             return self in (self.SOFT_THUMB, self.HARD_THUMB)
 
 
-    def __init__(self, logger, assembly, *, tck, tms, tdo, tdi, trst=None, endian):
+    def __init__(self, logger, assembly: AbstractAssembly, *,
+                 tck, tms, tdo, tdi, trst=None, endian):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
@@ -759,8 +764,8 @@ class DebugARM7Interface(GDBRemote):
         component = assembly.add_submodule(DebugARM7Sequencer(ports))
         self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream,
             in_flush=component.o_flush)
-        self._divisor = assembly.add_rw_register(component.divisor)
-        self._sys_clk_period = assembly.sys_clk_period
+        self._clock = assembly.add_clock_divisor(component.divisor,
+            ref_period=assembly.sys_clk_period * 2, name="tck")
 
         assert endian in ("big", "little")
         self._endian   = endian
@@ -770,13 +775,9 @@ class DebugARM7Interface(GDBRemote):
     def _log(self, message, *args):
         self._logger.log(self._level, "ARM7: " + message, *args)
 
-    async def get_tck_freq(self):
-        divisor = await self._divisor
-        return int(1 / (2 * (divisor + 1) * self._sys_clk_period))
-
-    async def set_tck_freq(self, frequency):
-        await self._divisor.set(
-            max(int(1 / (2 * self._sys_clk_period * frequency) - 1), 0))
+    @property
+    def clock(self):
+        return self._clock
 
     async def _exec(self, buffer):
         self._log("  exec")
@@ -1350,7 +1351,7 @@ class DebugARM7Applet(GlasgowAppletV2):
             help="set TCK frequency to FREQ kHz (default: %(default)s)")
 
     async def setup(self, args):
-        await self.arm_iface.set_tck_freq(args.frequency * 1000)
+        await self.arm_iface.clock.set_frequency(args.frequency * 1000)
 
         idcode = await self.arm_iface.identify()
         self.logger.info("detected TAP with IDCODE=%08x", idcode.to_int())
