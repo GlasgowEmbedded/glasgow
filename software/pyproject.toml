@@ -102,7 +102,6 @@ qspi-analyzer = "glasgow.applet.interface.qspi_analyzer:QSPIAnalyzerApplet"
 qspi-controller = "glasgow.applet.interface.qspi_controller:QSPIControllerApplet"
 sbw-probe = "glasgow.applet.interface.sbw_probe:SpyBiWireProbeApplet"
 swd-probe = "glasgow.applet.interface.swd_probe:SWDProbeApplet"
-swd-openocd = "glasgow.applet.interface.swd_openocd:SWDOpenOCDApplet"
 probe-rs = "glasgow.applet.interface.probe_rs:ProbeRsApplet"
 
 memory-24x = "glasgow.applet.memory._24x:Memory24xApplet"
