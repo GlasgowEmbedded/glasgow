@@ -435,7 +435,7 @@ class HardwareAssembly(AbstractAssembly):
             self._revision  = self._device.revision
 
         self._platform      = self._create_platform(self._revision)
-        self._registers     = [] # (register, signal)
+        self._registers     = [] # (register, signal, domain)
         self._domains       = [] # domain
         self._modules       = [] # (domain, elaboratable, name)
         self._in_streams    = [] # (domain, in_stream, in_flush, fifo_depth)
@@ -500,14 +500,14 @@ class HardwareAssembly(AbstractAssembly):
         assert self._artifact is None, "cannot add a register to a sealed assembly"
         register = HardwareRORegister(self._logger, self,
             address=2 + len(self._registers), shape=signal.shape(), name=signal.name)
-        self._registers.append((register, signal))
+        self._registers.append((register, signal, self._domain))
         return register
 
     def add_rw_register(self, signal) -> AbstractRWRegister:
         assert self._artifact is None, "cannot add a register to a sealed assembly"
         register = HardwareRWRegister(self._logger, self,
             address=2 + len(self._registers), shape=signal.shape(), name=signal.name)
-        self._registers.append((register, signal))
+        self._registers.append((register, signal, self._domain))
         return register
 
     def add_in_pipe(self, in_stream, *, in_flush=C(1),
@@ -602,9 +602,9 @@ class HardwareAssembly(AbstractAssembly):
             else:
                 m.submodules[name] = DomainRenamer(domain.name)(elaboratable)
 
-        for register, signal in self._registers:
+        for register, signal, domain in self._registers:
             if isinstance(register, HardwareRWRegister):
-                register_addr = i2c_registers.add_existing_rw(Value.cast(signal))
+                register_addr = i2c_registers.add_existing_rw(Value.cast(signal), domain=domain)
             elif isinstance(register, HardwareRORegister):
                 register_addr = i2c_registers.add_existing_ro(Value.cast(signal))
             assert register_addr == register._address
