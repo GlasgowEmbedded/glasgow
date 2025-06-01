@@ -63,6 +63,10 @@ class SimulationRORegister(AbstractRORegister):
     async def get(self):
         return self._parent._context.get(self._signal)
 
+    @property
+    def shape(self):
+        return self._signal.shape()
+
 
 class SimulationRWRegister(SimulationRORegister, AbstractRWRegister):
     async def set(self, value):
