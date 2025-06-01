@@ -158,8 +158,8 @@ class BenchmarkApplet(GlasgowAppletV2):
                              mode, len(golden) / (1 << 20))
 
             if mode == "source":
-                await self._mode.set(Mode.SOURCE.value)
                 await self._pipe.reset()
+                await self._mode.set(Mode.SOURCE.value)
 
                 counter_fut = asyncio.ensure_future(counter())
                 begin  = time.time()
@@ -172,8 +172,8 @@ class BenchmarkApplet(GlasgowAppletV2):
                 count = None
 
             if mode == "sink":
-                await self._mode.set(Mode.SINK.value)
                 await self._pipe.reset()
+                await self._mode.set(Mode.SINK.value)
 
                 counter_fut = asyncio.ensure_future(counter())
                 begin  = time.time()
@@ -187,8 +187,8 @@ class BenchmarkApplet(GlasgowAppletV2):
                 count = await self._count
 
             if mode == "loopback":
-                await self._mode.set(Mode.LOOPBACK.value)
                 await self._pipe.reset()
+                await self._mode.set(Mode.LOOPBACK.value)
                 counter_fut = asyncio.ensure_future(counter())
 
                 begin  = time.time()
@@ -208,8 +208,8 @@ class BenchmarkApplet(GlasgowAppletV2):
                 error = False
                 roundtriptime = []
 
-                await self._mode.set(Mode.LOOPBACK.value)
                 await self._pipe.reset()
+                await self._mode.set(Mode.LOOPBACK.value)
                 counter_fut = asyncio.ensure_future(counter())
 
                 while count < args.count:
