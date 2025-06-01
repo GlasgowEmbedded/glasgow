@@ -16,5 +16,4 @@ I/O interfaces
     jtag_openocd
     jtag_xvc
     swd_probe
-    swd_openocd
     probe_rs
