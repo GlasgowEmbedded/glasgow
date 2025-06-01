@@ -9,7 +9,7 @@ class SWDProbeAppletTestCase(GlasgowAppletV2TestCase, applet=SWDProbeApplet):
     def test_build(self):
         self.assertBuilds()
 
-    @applet_v2_simulation_test()
+    @applet_v2_simulation_test(args="--freq 100")
     async def test_read_dpidr_floating(self, applet, ctx):
         try:
             await applet.swd_iface.initialize()

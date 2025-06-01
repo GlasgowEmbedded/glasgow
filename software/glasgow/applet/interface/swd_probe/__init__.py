@@ -155,22 +155,18 @@ class SWDProbeInterface:
         component = assembly.add_submodule(SWDProbeComponent(ports))
         self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream,
             in_flush=component.o_flush)
-        self._divisor = assembly.add_rw_register(component.divisor)
+        self._clock = assembly.add_clock_divisor(component.divisor,
+            ref_period=assembly.sys_clk_period * 2, name="swclk")
         self._timeout = assembly.add_rw_register(component.timeout)
-        self._sys_clk_period = assembly.sys_clk_period
 
         self._select = None
 
     def _log(self, message, *args):
         self._logger.log(self._level, "SWD: " + message, *args)
 
-    async def get_swclk_freq(self):
-        divisor = await self._divisor
-        return int(1 / (2 * (divisor + 1) * self._sys_clk_period))
-
-    async def set_swclk_freq(self, frequency):
-        await self._divisor.set(
-            max(int(1 / (2 * self._sys_clk_period * frequency) - 1), 0))
+    @property
+    def clock(self):
+        return self._clock
 
     async def _send_command(self, **kwargs):
         await self._pipe.send([SWDCommand.const(kwargs).as_value().value])
@@ -321,7 +317,7 @@ class SWDProbeApplet(GlasgowAppletV2):
             help="set SWCLK frequency to FREQ kHz (default: %(default)s)")
 
     async def setup(self, args):
-        await self.swd_iface.set_swclk_freq(args.frequency * 1000)
+        await self.swd_iface.clock.set_frequency(args.frequency * 1000)
 
     async def run(self, args):
         dpidr = await self.swd_iface.initialize()
