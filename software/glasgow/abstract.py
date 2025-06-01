@@ -142,6 +142,11 @@ class AbstractRORegister(metaclass=ABCMeta):
     def __await__(self):
         return self.get().__await__()
 
+    @property
+    @abstractmethod
+    def shape(self) -> Shape:
+        pass
+
 
 class AbstractRWRegister(AbstractRORegister):
     @abstractmethod

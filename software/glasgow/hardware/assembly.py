@@ -99,6 +99,10 @@ class HardwareRORegister(AbstractRORegister):
             value = self._shape.from_bits(value)
         return value
 
+    @property
+    def shape(self):
+        return self._shape
+
 
 class HardwareRWRegister(HardwareRORegister, AbstractRWRegister):
     async def set(self, value):
