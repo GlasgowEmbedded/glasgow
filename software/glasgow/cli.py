@@ -22,6 +22,7 @@ from . import __version__
 from .support.logging import *
 from .support.asignal import *
 from .support.plugin import PluginRequirementsUnmet, PluginLoadError
+from .abstract import ClockingError
 from .hardware.device import GlasgowDeviceError, GlasgowDevice, GlasgowDeviceConfig
 from .hardware.device import VID_QIHW, PID_GLASGOW
 from .hardware.toolchain import ToolchainNotFound
@@ -699,7 +700,7 @@ async def main():
 
                 except SystemExit as e:
                     return e.code
-                except GlasgowAppletError as e:
+                except (ClockingError, GlasgowAppletError) as e:
                     applet.logger.error(str(e))
                     return 1
                 except asyncio.CancelledError:
@@ -806,7 +807,7 @@ async def main():
             tool = GlasgowAppletToolMetadata.get(args.tool).load()()
             try:
                 return await tool.run(args)
-            except GlasgowAppletError as e:
+            except (ClockingError, GlasgowAppletError) as e:
                 tool.logger.error(e)
                 return 1
 

@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 import re
 import enum
+import math
 import logging
 
 from amaranth import *
@@ -13,11 +14,16 @@ from .gateware.ports import PortGroup
 
 
 __all__ = [
+    "ClockingError",
     "PullState", "GlasgowPort", "GlasgowVio", "GlasgowPin",
-    "AbstractRORegister", "AbstractRWRegister",
+    "AbstractRORegister", "AbstractRWRegister", "ClockDivisor",
     "AbstractInPipe", "AbstractOutPipe", "AbstractInOutPipe",
     "AbstractAssembly"
 ]
+
+
+class ClockingError(Exception):
+    pass
 
 
 class PullState(enum.Enum):
@@ -135,6 +141,11 @@ class GlasgowPin:
 
 
 class AbstractRORegister(metaclass=ABCMeta):
+    @property
+    @abstractmethod
+    def shape(self) -> Shape:
+        pass
+
     @abstractmethod
     async def get(self) -> Any:
         pass
@@ -142,16 +153,51 @@ class AbstractRORegister(metaclass=ABCMeta):
     def __await__(self):
         return self.get().__await__()
 
-    @property
-    @abstractmethod
-    def shape(self) -> Shape:
-        pass
-
 
 class AbstractRWRegister(AbstractRORegister):
     @abstractmethod
     async def set(self, value: Any):
         pass
+
+
+class ClockDivisor:
+    # This wrapper assumes the divisor register has no "dead codes", i.e. 0 corresponds to
+    # the output period being the same as the reference period, 1 to reference period divided
+    # by 2, 2 to reference period divided by 3, and so on.
+
+    def __init__(self, logger: logging.Logger, register: AbstractRWRegister, *,
+                 ref_period: float, tolerance: float, name: str):
+        self._logger     = logger
+        self._register   = register
+        self._ref_period = ref_period
+        self._tolerance  = tolerance
+        self._name       = name
+
+    async def get_frequency(self) -> int:
+        divisor = await self._register.get()
+        return math.ceil(1 / ((divisor + 1) * self._ref_period))
+
+    async def set_frequency(self, requested: int):
+        if requested <= 0:
+            raise ClockingError(
+                f"requested frequency {requested / 1e6:.6f} MHz for clock {self._name!r} "
+                f"is zero or negative")
+
+        divisor = max(math.ceil(1 / (self._ref_period * requested) - 1), 0)
+        if divisor.bit_length() > self._register.shape.width:
+            minimum = 1 / ((1 << self._register.shape.width) * self._ref_period)
+            raise ClockingError(
+                f"requested frequency {requested / 1e6:.6f} MHz for clock "
+                f"{self._name!r} is below minimum achievable {minimum / 1e6:.6f} MHz")
+
+        actual = math.ceil(1 / ((divisor + 1) * self._ref_period))
+        if abs(requested - actual) / requested < self._tolerance:
+            level = logging.DEBUG
+        else:
+            level = logging.WARNING
+        self._logger.log(level, "setting clock %r frequency to %.6f MHz (requested %.6f MHz)",
+            self._name, actual / 1e6, requested / 1e6)
+        await self._register.set(divisor)
 
 
 class AbstractInPipe(metaclass=ABCMeta):
@@ -252,6 +298,15 @@ class AbstractAssembly(metaclass=ABCMeta):
     @abstractmethod
     def add_rw_register(self, signal) -> AbstractRWRegister:
         pass
+
+    def add_clock_divisor(self, signal, ref_period: float, *, tolerance: Optional[float] = None,
+                          name: str) -> ClockDivisor:
+        if not isinstance(signal.shape(), Shape):
+            raise TypeError(f"signal must have a plain shape, not {signal.shape()!r}")
+        if tolerance is None:
+            tolerance = 1e-2 # assume the clock doesn't need to be very accurate and 1% is enough
+        return ClockDivisor(self._logger, self.add_rw_register(signal),
+                            ref_period=ref_period, tolerance=tolerance, name=name)
 
     @abstractmethod
     def add_in_pipe(self, in_stream, *, in_flush=C(1),

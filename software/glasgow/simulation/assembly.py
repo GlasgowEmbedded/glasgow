@@ -14,6 +14,9 @@ from ..abstract import *
 __all__ = ["SimulationPipe", "SimulationRegister", "SimulationAssembly"]
 
 
+logger = logging.getLogger(__name__)
+
+
 class SimulationPipe(AbstractInOutPipe):
     def __init__(self, parent, *, i_buffer, o_buffer):
         self._parent   = parent
@@ -75,6 +78,7 @@ class SimulationRWRegister(SimulationRORegister, AbstractRWRegister):
 
 class SimulationAssembly(AbstractAssembly):
     def __init__(self):
+        self._logger   = logger
         self._pins     = {} # {name: io.PortLike}
         self._modules  = [] # (elaboratable, name)
         self._benches  = [] # (constructor, background)
@@ -88,7 +92,11 @@ class SimulationAssembly(AbstractAssembly):
 
     @contextmanager
     def add_applet(self, applet: Any) -> Generator[None, None, None]:
-        yield
+        self._logger = applet.logger
+        try:
+            yield
+        finally:
+            self._logger = logger
 
     def add_platform_pin(self, pin: GlasgowPin, port_name: str) -> io.PortLike:
         pin_name = f"{pin.port}{pin.number}"

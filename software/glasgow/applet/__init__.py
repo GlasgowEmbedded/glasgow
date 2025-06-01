@@ -77,15 +77,6 @@ class GlasgowAppletV2(metaclass=ABCMeta):
     def add_build_arguments(cls, parser, access):
         access.add_voltage_argument(parser)
 
-    def derive_clock(self, *args, clock_name=None, **kwargs):
-        try:
-            return ClockGen.derive(*args, **kwargs, logger=self.logger, clock_name=clock_name)
-        except ValueError as e:
-            if clock_name is None:
-                raise GlasgowAppletError(e)
-            else:
-                raise GlasgowAppletError(f"clock {clock_name}: {e}")
-
     @abstractmethod
     def build(self, args):
         self.assembly.use_voltage(args.voltage)
