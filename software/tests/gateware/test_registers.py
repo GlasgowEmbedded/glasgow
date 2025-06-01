@@ -58,9 +58,10 @@ class I2CRegistersTestCase(unittest.TestCase):
         self.assertEqual((yield from tb.i2c.read_bit()), 0)
         yield from tb.i2c.write_octet(0b10100101)
         self.assertEqual((yield from tb.i2c.read_bit()), 0)
+        self.assertEqual((yield tb.dut.regs_r[self.tb.addr_rw_8]), 0)
+        yield from tb.i2c.stop()
         self.assertEqual((yield tb.dut.regs_r[self.tb.addr_rw_8]), 0b10100101)
         self.assertEqual((yield tb.dut.regs_r[self.tb.addr_dummy]), 0b00000000)
-        yield from tb.i2c.stop()
 
     @simulation_test
     def test_data_read_8(self, tb):
@@ -86,10 +87,12 @@ class I2CRegistersTestCase(unittest.TestCase):
         self.assertEqual((yield from tb.i2c.read_bit()), 0)
         yield from tb.i2c.write_octet(0b11110000)
         self.assertEqual((yield from tb.i2c.read_bit()), 0)
+        self.assertEqual((yield tb.dut.regs_r[self.tb.addr_rw_16]), 0)
         yield from tb.i2c.write_octet(0b10100101)
         self.assertEqual((yield from tb.i2c.read_bit()), 0)
-        self.assertEqual((yield tb.dut.regs_r[self.tb.addr_rw_16]), 0b1111000010100101)
+        self.assertEqual((yield tb.dut.regs_r[self.tb.addr_rw_16]), 0)
         yield from tb.i2c.stop()
+        self.assertEqual((yield tb.dut.regs_r[self.tb.addr_rw_16]), 0b1111000010100101)
 
     @simulation_test
     def test_data_read_16(self, tb):
@@ -117,10 +120,12 @@ class I2CRegistersTestCase(unittest.TestCase):
         self.assertEqual((yield from tb.i2c.read_bit()), 0)
         yield from tb.i2c.write_octet(0b00001110)
         self.assertEqual((yield from tb.i2c.read_bit()), 0)
+        self.assertEqual((yield tb.dut.regs_r[self.tb.addr_rw_12]), 0)
         yield from tb.i2c.write_octet(0b10100101)
         self.assertEqual((yield from tb.i2c.read_bit()), 0)
-        self.assertEqual((yield tb.dut.regs_r[self.tb.addr_rw_12]), 0b111010100101)
+        self.assertEqual((yield tb.dut.regs_r[self.tb.addr_rw_12]), 0)
         yield from tb.i2c.stop()
+        self.assertEqual((yield tb.dut.regs_r[self.tb.addr_rw_12]), 0b111010100101)
 
     @simulation_test
     def test_data_read_12(self, tb):

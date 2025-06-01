@@ -71,11 +71,13 @@ class I2CRegisters(Registers):
             latch_addr = Signal()
             reg_addr   = Signal(range(self.reg_count))
             reg_data   = Signal(max(len(Value.cast(s)) for s in self.regs_r))
+            reg_update = Signal()
 
             m.d.comb += self.i2c_target.data_o.eq(reg_data)
 
             with m.If(self.i2c_target.start):
                 m.d.sync += latch_addr.eq(1)
+                m.d.sync += reg_update.eq(0)
 
             with m.If(self.i2c_target.write):
                 m.d.sync += latch_addr.eq(0)
@@ -83,18 +85,19 @@ class I2CRegisters(Registers):
                 with m.If(latch_addr):
                     with m.If(self.i2c_target.data_i < self.reg_count):
                         m.d.comb += self.i2c_target.ack_o.eq(1)
-                    m.d.sync += [
-                        reg_addr.eq(self.i2c_target.data_i),
-                        reg_data.eq(self.regs_r[self.i2c_target.data_i]),
-                    ]
+                    m.d.sync += reg_addr.eq(self.i2c_target.data_i)
+                    m.d.sync += reg_data.eq(self.regs_r[self.i2c_target.data_i])
+
                 with m.Else():
                     m.d.comb += self.i2c_target.ack_o.eq(1)
-                    m.d.sync += [
-                        reg_data.eq(Cat(self.i2c_target.data_i, reg_data)),
-                        self.regs_w[reg_addr].eq(Cat(self.i2c_target.data_i, reg_data)),
-                    ]
+                    m.d.sync += reg_data.eq(Cat(self.i2c_target.data_i, reg_data))
+                    m.d.sync += reg_update.eq(1)
 
             with m.If(self.i2c_target.read):
                 m.d.sync += reg_data.eq(reg_data >> 8)
+
+            with m.If(self.i2c_target.stop):
+                with m.If(reg_update):
+                    m.d.sync += self.regs_w[reg_addr].eq(reg_data)
 
         return m
