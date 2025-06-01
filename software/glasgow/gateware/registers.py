@@ -15,6 +15,7 @@ class Registers(Elaboratable):
         self.reg_count = 0
         self.regs_r = Array()
         self.regs_w = Array()
+        self.regs_rst = []
 
     def _add_reg(self, *args, **kwargs):
         reg  = Signal(*args, **kwargs, src_loc_at=2)
@@ -28,10 +29,12 @@ class Registers(Elaboratable):
         self.regs_w.append(Signal(name="ro_reg_dummy"))
         return reg, addr
 
-    def add_rw(self, *args, **kwargs):
+    def add_rw(self, *args, domain=None, **kwargs):
         reg, addr = self._add_reg(*args, **kwargs)
         self.regs_r.append(reg)
         self.regs_w.append(reg)
+        if domain is not None and domain.rst is not None and not reg.reset_less:
+            self.regs_rst.append((reg, domain.rst))
         return reg, addr
 
     def add_existing_ro(self, reg):
@@ -41,11 +44,13 @@ class Registers(Elaboratable):
         self.regs_w.append(Signal(name="ro_reg_dummy"))
         return addr
 
-    def add_existing_rw(self, reg):
+    def add_existing_rw(self, reg, *, domain=None):
         addr = self.reg_count
         self.reg_count += 1
         self.regs_r.append(reg)
         self.regs_w.append(reg)
+        if domain is not None and domain.rst is not None and not reg.reset_less:
+            self.regs_rst.append((reg, domain.rst))
         return addr
 
     def elaborate(self, platform):
@@ -99,5 +104,9 @@ class I2CRegisters(Registers):
             with m.If(self.i2c_target.stop):
                 with m.If(reg_update):
                     m.d.sync += self.regs_w[reg_addr].eq(reg_data)
+
+            for reg, reg_rst in self.regs_rst:
+                with m.If(reg_rst):
+                    m.d.sync += reg.eq(reg.init)
 
         return m
