@@ -9,11 +9,17 @@ from amaranth.lib.wiring import In, Out
 from glasgow.support.logging import dump_hex
 from glasgow.support.endpoint import ServerEndpoint
 from glasgow.gateware.stream import StreamBuffer
-from glasgow.gateware.iostream import IOStreamer
+from glasgow.gateware.iostream2 import IOStreamer
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
 __all__ = ["JTAGXVCComponent"]
+
+
+class _ShiftIn(enum.Enum, shape=unsigned(2)):
+    Idle = 0
+    More = 1
+    Last = 2
 
 
 class JTAGXVCProbe(wiring.Component):
@@ -33,33 +39,26 @@ class JTAGXVCProbe(wiring.Component):
         super().__init__()
 
     def elaborate(self, platform):
-        ioshape = {
-            "tck": ("o", 1),
-            "tms": ("o", 1),
-            "tdi": ("o", 1),
-            "tdo": ("i", 1),
-        }
-
         m = Module()
 
-        m.submodules.io_streamer = io_streamer = IOStreamer(ioshape, self._ports, meta_layout=1)
+        m.submodules.io_streamer = io_streamer = IOStreamer(self._ports, meta_layout=_ShiftIn)
 
         timer = Signal.like(self.divisor)
         phase = Signal(5)
         last  = (phase + 1 == Cat(0, self.i_stream.p.len))
         m.d.comb += [
-            io_streamer.o_stream.p.port.tck.oe.eq(1),
-            io_streamer.o_stream.p.port.tck.o.eq(phase[0]),
-            io_streamer.o_stream.p.port.tms.oe.eq(1),
-            io_streamer.o_stream.p.port.tms.o.eq(self.i_stream.p.tms.bit_select(phase[1:], 1)),
-            io_streamer.o_stream.p.port.tdi.oe.eq(1),
-            io_streamer.o_stream.p.port.tdi.o.eq(self.i_stream.p.tdi.bit_select(phase[1:], 1)),
-            io_streamer.o_stream.p.i_en.eq(phase[0] & (timer == 0)),
-            io_streamer.o_stream.p.meta.eq(last),
+            io_streamer.i.p.port.tck.oe.eq(1),
+            io_streamer.i.p.port.tck.o.eq(phase[0]),
+            io_streamer.i.p.port.tms.oe.eq(1),
+            io_streamer.i.p.port.tms.o.eq(self.i_stream.p.tms.bit_select(phase[1:], 1)),
+            io_streamer.i.p.port.tdi.oe.eq(1),
+            io_streamer.i.p.port.tdi.o.eq(self.i_stream.p.tdi.bit_select(phase[1:], 1)),
         ]
+        with m.If(phase[0] & (timer == 0)):
+            m.d.comb += io_streamer.i.p.meta.eq(Mux(last, _ShiftIn.Last, _ShiftIn.More)),
 
-        m.d.comb += io_streamer.o_stream.valid.eq(self.i_stream.valid)
-        with m.If(self.i_stream.valid & io_streamer.o_stream.ready):
+        m.d.comb += io_streamer.i.valid.eq(self.i_stream.valid)
+        with m.If(self.i_stream.valid & io_streamer.i.ready):
             with m.If(timer == self.divisor):
                 m.d.sync += timer.eq(0)
                 with m.If(last):
@@ -73,11 +72,13 @@ class JTAGXVCProbe(wiring.Component):
         count = Signal(4)
         with m.FSM():
             with m.State("More"):
-                m.d.sync += self.o_stream.p.tdo.bit_select(count, 1).eq(io_streamer.i_stream.p.port.tdo.i)
-                m.d.comb += io_streamer.i_stream.ready.eq(1)
-                with m.If(io_streamer.i_stream.valid):
+                m.d.comb += io_streamer.o.ready.eq(1)
+                with m.If(io_streamer.o.valid &
+                        (io_streamer.o.p.meta != _ShiftIn.Idle)):
                     m.d.sync += count.eq(count + 1)
-                    with m.If(io_streamer.i_stream.p.meta):
+                    m.d.sync += self.o_stream.p.tdo.bit_select(count, 1).eq(
+                        io_streamer.o.p.port.tdo.i)
+                    with m.If(io_streamer.o.p.meta == _ShiftIn.Last):
                         m.next = "Last"
 
             with m.State("Last"):
