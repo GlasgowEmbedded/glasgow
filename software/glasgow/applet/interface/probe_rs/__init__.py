@@ -32,14 +32,17 @@ class ProbeRsTarget(enum.Enum, shape=8):
 
 class ProbeRsCommand(enum.Enum, shape=8):
     Identify    = 0x00
-    GetDivisor  = 0x10
-    SetDivisor  = 0x20
-    AssertReset = 0x30
-    ClearReset  = 0x31
+
+    GetRefClock = 0x10
+    GetDivisor  = 0x11
+    SetDivisor  = 0x12
+
+    AssertReset = 0x20
+    ClearReset  = 0x21
 
 
 class ProbeRsRootTarget(wiring.Component):
-    IDENTIFIER = b"probe-rs,v00"
+    IDENTIFIER = b"probe-rs,v01"
 
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
@@ -47,6 +50,11 @@ class ProbeRsRootTarget(wiring.Component):
 
     divisor:  Out(16)
     dut_rst:  Out(1)
+
+    def __init__(self, *, ref_clock):
+        self._ref_clock = ref_clock
+
+        super().__init__()
 
     def elaborate(self, platform):
         m = Module()
@@ -58,6 +66,8 @@ class ProbeRsRootTarget(wiring.Component):
                     with m.Switch(self.i_stream.payload):
                         with m.Case(ProbeRsCommand.Identify):
                             m.next = "Identify"
+                        with m.Case(ProbeRsCommand.GetRefClock):
+                            m.next = "Get Reference Clock"
                         with m.Case(ProbeRsCommand.GetDivisor):
                             m.next = "Get Divisor"
                         with m.Case(ProbeRsCommand.SetDivisor):
@@ -83,6 +93,16 @@ class ProbeRsRootTarget(wiring.Component):
                         m.next = "Command"
                     with m.Else():
                         m.d.sync += offset.eq(offset + 1)
+
+            with m.State("Get Reference Clock"):
+                offset = Signal(range(4))
+
+                m.d.comb += self.o_stream.payload.eq(C(self._ref_clock, 32).word_select(offset, 8))
+                m.d.comb += self.o_stream.valid.eq(1)
+                with m.If(self.o_stream.ready):
+                    m.d.sync += offset.eq(offset + 1)
+                    with m.If(offset == 3):
+                        m.next = "Command"
 
             with m.State("Get Divisor"):
                 offset = Signal(range(2))
@@ -112,8 +132,9 @@ class ProbeRsComponent(wiring.Component):
     o_stream: Out(stream.Signature(8))
     o_flush:  Out(1)
 
-    def __init__(self, ports):
-        self._ports = ports
+    def __init__(self, ports, *, ref_clock):
+        self._ports     = ports
+        self._ref_clock = ref_clock
 
         super().__init__()
 
@@ -126,7 +147,7 @@ class ProbeRsComponent(wiring.Component):
         m.submodules.cobs_encoder = cobs_encoder = cobs.Encoder(fifo_depth=512)
         wiring.connect(m, wiring.flipped(self.o_stream), cobs_encoder.o)
 
-        m.submodules.root_target = root_target = ProbeRsRootTarget()
+        m.submodules.root_target = root_target = ProbeRsRootTarget(ref_clock=self._ref_clock)
         m.submodules.swd_target  = swd_target  = SWDProbeComponent(self._ports)
         m.d.comb += swd_target.divisor.eq(root_target.divisor)
 
@@ -193,11 +214,12 @@ class ProbeRsComponent(wiring.Component):
 class ProbeRsApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "debug and program Arm microcontrollers via probe-rs"
-    description = """
+    description = f"""
     Expose SWD via a socket that can be used with `probe-rs <https://probe.rs>`_. JTAG debugging
     is not supported (yet).
 
-    This applet is experimental. Currently, to use it you must build probe-rs from git.
+    This applet is experimental. Currently, to use it you must build probe-rs from git. The current
+    protocol version is ``{ProbeRsRootTarget.IDENTIFIER.decode("ascii")}``.
     """
     required_revision = "C0"
 
@@ -214,7 +236,8 @@ class ProbeRsApplet(GlasgowAppletV2):
             if args.srst:
                 self.assembly.use_pulls({args.srst: "high"})
             ports = self.assembly.add_port_group(swclk=args.swclk, swdio=args.swdio, srst=args.srst)
-            component = self.assembly.add_submodule(ProbeRsComponent(ports))
+            component = self.assembly.add_submodule(ProbeRsComponent(ports,
+                ref_clock=int(1 / self.assembly.sys_clk_period)))
             self.__pipe = self.assembly.add_inout_pipe(component.o_stream, component.i_stream,
                 in_flush=component.o_flush, in_fifo_depth=0)
 

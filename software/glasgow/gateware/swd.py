@@ -3,12 +3,12 @@
 # Document Number: IHI0031E
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io, cdc
+from amaranth.lib import enum, data, wiring, stream, io
 from amaranth.lib.wiring import In, Out, connect, flipped
 
 from glasgow.gateware.ports import PortGroup
 from glasgow.gateware.stream import StreamBuffer
-from glasgow.gateware.iostream import IOStreamer
+from glasgow.gateware.iostream2 import IOStreamer
 
 
 __all__ = [
@@ -49,18 +49,23 @@ class Ack(enum.Enum, shape=3):
     FAULT = 0b100
 
 
+class Sample(data.Struct):
+    type: Request
+    half: 1
+
+
 class Enframer(wiring.Component):
-    words: In(stream.Signature(data.StructLayout({
-        "type": Request,
-        "len":  range(32), # `type == Request.Sequence` only
-        "hdr":  Header,    # `type == Request.Header` only
-        "data": 32
-    })))
-    frames: Out(IOStreamer.o_stream_signature({
-        "swclk": ("o",  1),
-        "swdio": ("io", 1),
-    }, meta_layout=Request))
-    divisor: In(16)
+    def __init__(self, ports):
+        super().__init__({
+            "words":  In(stream.Signature(data.StructLayout({
+                "type": Request,
+                "len":  range(32), # `type == Request.Sequence` only
+                "hdr":  Header,    # `type == Request.Header` only
+                "data": 32
+            }))),
+            "frames":  Out(IOStreamer.i_signature(ports, ratio=2, meta_layout=Sample)),
+            "divisor": In(16)
+        })
 
     def elaborate(self, platform):
         m = Module()
@@ -105,25 +110,27 @@ class Enframer(wiring.Component):
                 m.d.comb += length.eq(1)
 
         timer = Signal.like(self.divisor)
-        phase = Signal(len(length) + 1)
+        bitno = Signal.like(length)
         m.d.comb += [
-            self.frames.p.port.swclk.o.eq(phase[0]),
+            self.frames.p.port.swclk.o[0].eq(timer * 2 >  self.divisor),
+            self.frames.p.port.swclk.o[1].eq(timer * 2 >= self.divisor),
             self.frames.p.port.swclk.oe.eq(1),
-            self.frames.p.port.swdio.o.eq(seq_o.bit_select(phase[1:], 1)),
-            self.frames.p.port.swdio.oe.eq(seq_oe.bit_select(phase[1:], 1)),
-            self.frames.p.i_en.eq(seq_ie.bit_select(phase[1:], 1) & phase[0] & (timer == 0)),
-            self.frames.p.meta.eq(self.words.p.type),
+            self.frames.p.port.swdio.o.eq(seq_o.bit_select(bitno, 1).replicate(2)),
+            self.frames.p.port.swdio.oe.eq(seq_oe.bit_select(bitno, 1)),
         ]
+        with m.If(seq_ie.bit_select(bitno, 1) & (timer == (self.divisor + 1) >> 1)):
+            m.d.comb += self.frames.p.meta.type.eq(self.words.p.type)
+            m.d.comb += self.frames.p.meta.half.eq(~self.divisor[0])
 
         m.d.comb += self.frames.valid.eq(self.words.valid)
         with m.If(self.frames.valid & self.frames.ready):
             with m.If(timer == self.divisor):
-                m.d.sync += timer.eq(0)
-                with m.If(phase == Cat(1, length - 1)):
-                    m.d.sync += phase.eq(0)
+                with m.If(bitno == length - 1):
                     m.d.comb += self.words.ready.eq(1)
+                    m.d.sync += bitno.eq(0)
                 with m.Else():
-                    m.d.sync += phase.eq(phase + 1)
+                    m.d.sync += bitno.eq(bitno + 1)
+                m.d.sync += timer.eq(0)
             with m.Else():
                 m.d.sync += timer.eq(timer + 1)
 
@@ -131,20 +138,20 @@ class Enframer(wiring.Component):
 
 
 class Deframer(wiring.Component):
-    frames: In(IOStreamer.i_stream_signature({
-        "swclk": ("o",  1),
-        "swdio": ("io", 1),
-    }, meta_layout=Request))
-    words: Out(stream.Signature(data.StructLayout({
-        "type": Result,
-        "ack":  Ack,
-        "data": 32,
-    })))
+    def __init__(self, ports):
+        super().__init__({
+            "frames": In(IOStreamer.o_signature(ports, ratio=2, meta_layout=Sample)),
+            "words":  Out(stream.Signature(data.StructLayout({
+                "type": Result,
+                "ack":  Ack,
+                "data": 32,
+            })))
+        })
 
     def elaborate(self, platform):
         m = Module()
 
-        p_meta = Signal.like(self.frames.p.meta)
+        p_type = Signal(Request)
         buffer = Signal(33)
         count  = Signal(range(len(buffer) + 1))
 
@@ -152,23 +159,26 @@ class Deframer(wiring.Component):
         m.d.comb += self.words.p.data.eq(buffer[:32])
 
         m.d.comb += self.words.p.type.eq(Result.Error)
-        with m.If(p_meta == Request.Header):
+        with m.If(p_type == Request.Header):
             with m.If(self.words.p.ack.as_value().matches(Ack.OK, Ack.WAIT, Ack.FAULT)):
                 m.d.comb += self.words.p.type.eq(Result.Ack)
-        with m.If(p_meta == Request.DataRd):
+        with m.If(p_type == Request.DataRd):
             with m.If(buffer[:32].xor() == buffer[32]):
                 m.d.comb += self.words.p.type.eq(Result.Data)
 
         with m.FSM():
             with m.State("More"):
                 m.d.comb += self.frames.ready.eq(1)
-                with m.If(self.frames.valid):
-                    m.d.sync += p_meta.eq(self.frames.p.meta)
-                    m.d.sync += buffer.eq(Cat(buffer[1:], self.frames.p.port.swdio.i))
+                with m.If(self.frames.valid &
+                        ((self.frames.p.meta.type == Request.Header) |
+                         (self.frames.p.meta.type == Request.DataRd))):
                     m.d.sync += count.eq(count + 1)
-                    with m.If((self.frames.p.meta == Request.Header) & (count == 3 - 1)):
+                    m.d.sync += buffer.eq(Cat(buffer[1:],
+                        self.frames.p.port.swdio.i[self.frames.p.meta.half]))
+                    m.d.sync += p_type.eq(self.frames.p.meta.type)
+                    with m.If((self.frames.p.meta.type == Request.Header) & (count == 3 - 1)):
                         m.next = "Done"
-                    with m.Elif((self.frames.p.meta == Request.DataRd) & (count == 33 - 1)):
+                    with m.Elif((self.frames.p.meta.type == Request.DataRd) & (count == 33 - 1)):
                         m.next = "Done"
 
             with m.State("Done"):
@@ -194,30 +204,30 @@ class Driver(wiring.Component):
     })))
     divisor: In(16)
 
-    def __init__(self, ports):
-        self._ports = PortGroup(swclk=ports.swclk, swdio=ports.swdio)
+    def __init__(self, ports, *, offset=0):
+        self._ports  = PortGroup(
+            swclk=ports.swclk.with_direction("o"),
+            swdio=ports.swdio.with_direction("io"),
+        )
+        self._offset = offset
 
         super().__init__()
 
     def elaborate(self, platform):
-        ioshape = {
-            "swclk": ("o",  1),
-            "swdio": ("io", 1),
-        }
-
         m = Module()
 
-        m.submodules.enframer = enframer = Enframer()
-        connect(m, controller=flipped(self.i_words), enframer=enframer.words)
+        m.submodules.enframer = enframer = Enframer(self._ports)
+        connect(m, enframer=enframer.words, driver=flipped(self.i_words))
         m.d.comb += enframer.divisor.eq(self.divisor)
 
-        m.submodules.io_streamer = io_streamer = IOStreamer(ioshape, self._ports, meta_layout=Request)
-        connect(m, enframer=enframer.frames, io_streamer=io_streamer.o_stream)
+        m.submodules.io_streamer = io_streamer = \
+            IOStreamer(self._ports, ratio=2, offset=self._offset, meta_layout=Sample)
+        connect(m, io_streamer=io_streamer.i, enframer=enframer.frames)
 
-        m.submodules.deframer = deframer = Deframer()
-        connect(m, io_streamer=io_streamer.i_stream, deframer=deframer.frames)
+        m.submodules.deframer = deframer = Deframer(self._ports)
+        connect(m, deframer=deframer.frames, io_streamer=io_streamer.o)
 
-        connect(m, deframer=deframer.words, controller=flipped(self.o_words))
+        connect(m, driver=flipped(self.o_words), deframer=deframer.words)
 
         return m
 
@@ -248,15 +258,16 @@ class Controller(wiring.Component):
     divisor: In(16)
     timeout: In(16, init=~0) # how many times to retry in response to WAIT
 
-    def __init__(self, ports):
-        self._ports = ports
+    def __init__(self, ports, *, offset=0):
+        self._ports  = ports
+        self._offset = offset
 
         super().__init__()
 
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.driver = driver = Driver(self._ports)
+        m.submodules.driver = driver = Driver(self._ports, offset=self._offset)
         m.d.comb += driver.divisor.eq(self.divisor)
 
         m.submodules.o_buffer = o_buffer = StreamBuffer(driver.o_words.p.shape())
