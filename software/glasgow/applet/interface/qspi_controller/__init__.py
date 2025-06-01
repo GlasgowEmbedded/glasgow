@@ -8,7 +8,8 @@ from amaranth.lib import enum, data, wiring, stream, io
 from amaranth.lib.wiring import In, Out, connect, flipped
 
 from glasgow.support.logging import dump_hex
-from glasgow.gateware.qspi import QSPIMode, QSPIController
+from glasgow.gateware import qspi
+from glasgow.abstract import AbstractAssembly, ClockDivisor
 from glasgow.applet import GlasgowAppletV2
 
 
@@ -29,8 +30,9 @@ class QSPIControllerComponent(wiring.Component):
 
     divisor:  In(16)
 
-    def __init__(self, ports, *, us_cycles):
+    def __init__(self, ports, *, offset=None, us_cycles):
         self._ports     = ports
+        self._offset    = offset
         self._us_cycles = us_cycles
 
         super().__init__()
@@ -38,16 +40,19 @@ class QSPIControllerComponent(wiring.Component):
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.qspi = qspi = QSPIController(self._ports, use_ddr_buffers=True)
-        m.d.comb += qspi.divisor.eq(self.divisor)
+        m.submodules.ctrl = ctrl = qspi.Controller(self._ports,
+            # Offset sampling by ~10 ns to compensate for 10..15 ns of roundtrip delay caused by
+            # the level shifters (5 ns each) and FPGA clock-to-out (5 ns).
+            offset=1 if self._offset is None else self._offset)
+        m.d.comb += ctrl.divisor.eq(self.divisor)
 
         command = Signal(QSPICommand)
         chip    = Signal(range(1 + len(self._ports.cs)))
-        mode    = Signal(QSPIMode)
-        is_put  = mode.as_value().matches(QSPIMode.PutX1, QSPIMode.PutX2, QSPIMode.PutX4,
-                                          QSPIMode.Swap)
-        is_get  = mode.as_value().matches(QSPIMode.GetX1, QSPIMode.GetX2, QSPIMode.GetX4,
-                                          QSPIMode.Swap) # FIXME: amaranth-lang/amaranth#1462
+        mode    = Signal(qspi.Mode)
+        is_put  = mode.as_value().matches(qspi.Mode.PutX1, qspi.Mode.PutX2, qspi.Mode.PutX4,
+                                          qspi.Mode.Swap)
+        is_get  = mode.as_value().matches(qspi.Mode.GetX1, qspi.Mode.GetX2, qspi.Mode.GetX4,
+                                          qspi.Mode.Swap) # FIXME: amaranth-lang/amaranth#1462
         o_count = Signal(16)
         i_count = Signal(16)
         timer   = Signal(range(self._us_cycles))
@@ -89,24 +94,24 @@ class QSPIControllerComponent(wiring.Component):
 
             with m.State("Transfer"):
                 m.d.comb += [
-                    qspi.o_octets.p.chip.eq(chip),
-                    qspi.o_octets.p.mode.eq(mode),
-                    qspi.o_octets.p.data.eq(self.i_stream.payload),
-                    self.o_stream.payload.eq(qspi.i_octets.p.data),
+                    ctrl.i_stream.p.chip.eq(chip),
+                    ctrl.i_stream.p.mode.eq(mode),
+                    ctrl.i_stream.p.data.eq(self.i_stream.payload),
+                    self.o_stream.payload.eq(ctrl.o_stream.p.data),
                 ]
                 with m.If(o_count != 0):
                     with m.If(is_put):
-                        m.d.comb += qspi.o_octets.valid.eq(self.i_stream.valid)
-                        m.d.comb += self.i_stream.ready.eq(qspi.o_octets.ready)
+                        m.d.comb += ctrl.i_stream.valid.eq(self.i_stream.valid)
+                        m.d.comb += self.i_stream.ready.eq(ctrl.i_stream.ready)
                     with m.Else():
-                        m.d.comb += qspi.o_octets.valid.eq(1)
-                    with m.If(qspi.o_octets.valid & qspi.o_octets.ready):
+                        m.d.comb += ctrl.i_stream.valid.eq(1)
+                    with m.If(ctrl.i_stream.valid & ctrl.i_stream.ready):
                         m.d.sync += o_count.eq(o_count - 1)
                 with m.If(i_count != 0):
                     with m.If(is_get):
-                        m.d.comb += self.o_stream.valid.eq(qspi.i_octets.valid)
-                        m.d.comb += qspi.i_octets.ready.eq(self.o_stream.ready)
-                        with m.If(qspi.i_octets.valid & qspi.i_octets.ready):
+                        m.d.comb += self.o_stream.valid.eq(ctrl.o_stream.valid)
+                        m.d.comb += ctrl.o_stream.ready.eq(self.o_stream.ready)
+                        with m.If(ctrl.o_stream.valid & ctrl.o_stream.ready):
                             m.d.sync += i_count.eq(i_count - 1)
                 with m.If((o_count == 0) & ((i_count == 0) | ~is_get)):
                     m.next = "Read-Command"
@@ -129,7 +134,7 @@ class QSPIControllerComponent(wiring.Component):
 
 
 class QSPIControllerInterface:
-    def __init__(self, logger, assembly, *, cs, sck, io):
+    def __init__(self, logger, assembly: AbstractAssembly, *, cs, sck, io):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
@@ -139,23 +144,17 @@ class QSPIControllerInterface:
             us_cycles=int(1 / (assembly.sys_clk_period * 1_000_000))))
         self._pipe = assembly.add_inout_pipe(
             component.o_stream, component.i_stream, in_flush=component.o_flush)
-        self._divisor = assembly.add_rw_register(component.divisor)
-        self._sys_clk_period = assembly.sys_clk_period
+        self._clock = assembly.add_clock_divisor(component.divisor,
+            ref_period=assembly.sys_clk_period, name="sck")
 
         self._active = None
 
     def _log(self, message, *args):
         self._logger.log(self._level, "QSPI: " + message, *args)
 
-    async def get_sck_freq(self) -> int:
-        divisor = await self._divisor
-        if divisor == 0:
-            return round(1 / self._sys_clk_period)
-        else:
-            return round(1 / (2 * divisor * self._sys_clk_period))
-
-    async def set_sck_freq(self, frequency: int):
-        await self._divisor.set(round(1 / (2 * self._sys_clk_period * frequency)))
+    @property
+    def clock(self) -> ClockDivisor:
+        return self._clock
 
     @staticmethod
     def _chunked(items, *, count=0xffff):
@@ -177,7 +176,7 @@ class QSPIControllerInterface:
             self._log("deselect")
             await self._pipe.send(struct.pack("<BBH",
                 (QSPICommand.Select.value << 4) | 0,
-                (QSPICommand.Transfer.value << 4) | QSPIMode.Dummy.value, 1))
+                (QSPICommand.Transfer.value << 4) | qspi.Mode.Dummy.value, 1))
             await self._pipe.flush()
             self._active = None
 
@@ -186,7 +185,7 @@ class QSPIControllerInterface:
         self._log("xchg-o=<%s>", dump_hex(octets))
         for chunk in self._chunked(octets):
             await self._pipe.send(struct.pack("<BH",
-                (QSPICommand.Transfer.value << 4) | QSPIMode.Swap.value, len(chunk)))
+                (QSPICommand.Transfer.value << 4) | qspi.Mode.Swap.value, len(chunk)))
             await self._pipe.send(chunk)
         await self._pipe.flush()
         octets = await self._pipe.recv(len(octets))
@@ -195,7 +194,7 @@ class QSPIControllerInterface:
 
     async def write(self, octets: bytes | bytearray | memoryview, *, x: Literal[1, 2, 4] = 1):
         assert self._active is not None, "no chip selected"
-        mode = {1: QSPIMode.PutX1, 2: QSPIMode.PutX2, 4: QSPIMode.PutX4}[x]
+        mode = {1: qspi.Mode.PutX1, 2: qspi.Mode.PutX2, 4: qspi.Mode.PutX4}[x]
         self._log("write=<%s>", dump_hex(octets))
         for chunk in self._chunked(octets):
             await self._pipe.send(struct.pack("<BH",
@@ -204,7 +203,7 @@ class QSPIControllerInterface:
 
     async def read(self, count, *, x: Literal[1, 2, 4] = 1):
         assert self._active is not None, "no chip selected"
-        mode = {1: QSPIMode.GetX1, 2: QSPIMode.GetX2, 4: QSPIMode.GetX4}[x]
+        mode = {1: qspi.Mode.GetX1, 2: qspi.Mode.GetX2, 4: qspi.Mode.GetX4}[x]
         for chunk in self._chunked(range(count)):
             await self._pipe.send(struct.pack("<BH",
                 (QSPICommand.Transfer.value << 4) | mode.value, len(chunk)))
@@ -218,7 +217,7 @@ class QSPIControllerInterface:
         self._log("dummy=%d", count)
         for chunk in self._chunked(range(count)):
             await self._pipe.send(struct.pack("<BH",
-                (QSPICommand.Transfer.value << 4) | QSPIMode.Dummy.value, len(chunk)))
+                (QSPICommand.Transfer.value << 4) | qspi.Mode.Dummy.value, len(chunk)))
 
     async def delay_us(self, duration: int):
         self._log("delay us=%d", duration)
@@ -287,7 +286,7 @@ class QSPIControllerApplet(GlasgowAppletV2):
             help="set SCK frequency to FREQ kHz (default: %(default)s)")
 
     async def setup(self, args):
-        await self.qspi_iface.set_sck_freq(args.frequency * 1000)
+        await self.qspi_iface.clock.set_frequency(args.frequency * 1000)
 
     @classmethod
     def add_run_arguments(cls, parser):

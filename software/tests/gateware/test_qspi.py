@@ -4,21 +4,8 @@ from amaranth.sim import Simulator, BrokenTrigger
 from amaranth.lib import io
 
 from glasgow.gateware.ports import PortGroup
+from glasgow.gateware.stream import stream_get, stream_put
 from glasgow.gateware.qspi import *
-
-
-async def stream_get(ctx, stream):
-    ctx.set(stream.ready, 1)
-    payload, = await ctx.tick().sample(stream.payload).until(stream.valid)
-    ctx.set(stream.ready, 0)
-    return payload
-
-
-async def stream_put(ctx, stream, payload):
-    ctx.set(stream.payload, payload)
-    ctx.set(stream.valid, 1)
-    await ctx.tick().until(stream.ready)
-    ctx.set(stream.valid, 0)
 
 
 def simulate_flash(ports, memory=b"nya nya nya nya nyaaaaan"):
@@ -28,8 +15,10 @@ def simulate_flash(ports, memory=b"nya nya nya nya nyaaaaan"):
     async def watch_cs(cs_o, triggers):
         try:
             *values, posedge_cs_o = await triggers.posedge(cs_o)
-        except BrokenTrigger: # Workaround for amaranth bug: https://github.com/amaranth-lang/amaranth/issues/1508
-            raise CSDeasserted # both our original trigger and posedge of cs happened at the same time. We choose to prioritize CS being deasserted.
+        except BrokenTrigger: # Workaround for amaranth-lang/amaranth#1508
+            # Both our original trigger and posedge of cs happened at the same time.
+            # Prioritize CS being deasserted.
+            raise CSDeasserted
         if posedge_cs_o == 1:
             raise CSDeasserted
         return values
@@ -117,77 +106,87 @@ def simulate_flash(ports, memory=b"nya nya nya nya nyaaaaan"):
     return testbench
 
 
-class QSPITestCase(unittest.TestCase):
+class QSPIFramingTestCase(unittest.TestCase):
+    def setUp(self):
+        self.ports = PortGroup()
+        self.ports.cs  = io.SimulationPort("o",  1)
+        self.ports.sck = io.SimulationPort("o",  1)
+        self.ports.io0 = io.SimulationPort("io", 1)
+        self.ports.io1 = io.SimulationPort("io", 1)
+        self.ports.io2 = io.SimulationPort("io", 1)
+        self.ports.io3 = io.SimulationPort("io", 1)
+
     def test_qspi_enframer(self):
-        dut = QSPIEnframer()
+        dut = Enframer(self.ports)
 
         async def testbench_in(ctx):
             async def data_put(*, chip, data, mode):
                 await stream_put(ctx, dut.octets, {"chip": chip, "data": data, "mode": mode})
 
-            await data_put(chip=1, data=0xBA, mode=QSPIMode.Swap)
+            await data_put(chip=1, data=0xBA, mode=Mode.Swap)
 
-            await data_put(chip=1, data=0xAA, mode=QSPIMode.PutX1)
-            await data_put(chip=1, data=0x55, mode=QSPIMode.PutX1)
-            await data_put(chip=1, data=0xC1, mode=QSPIMode.PutX1)
+            await data_put(chip=1, data=0xAA, mode=Mode.PutX1)
+            await data_put(chip=1, data=0x55, mode=Mode.PutX1)
+            await data_put(chip=1, data=0xC1, mode=Mode.PutX1)
 
-            await data_put(chip=1, data=0xAA, mode=QSPIMode.PutX2)
-            await data_put(chip=1, data=0x55, mode=QSPIMode.PutX2)
-            await data_put(chip=1, data=0xC1, mode=QSPIMode.PutX2)
+            await data_put(chip=1, data=0xAA, mode=Mode.PutX2)
+            await data_put(chip=1, data=0x55, mode=Mode.PutX2)
+            await data_put(chip=1, data=0xC1, mode=Mode.PutX2)
 
-            await data_put(chip=1, data=0xAA, mode=QSPIMode.PutX4)
-            await data_put(chip=1, data=0x55, mode=QSPIMode.PutX4)
-            await data_put(chip=1, data=0xC1, mode=QSPIMode.PutX4)
+            await data_put(chip=1, data=0xAA, mode=Mode.PutX4)
+            await data_put(chip=1, data=0x55, mode=Mode.PutX4)
+            await data_put(chip=1, data=0xC1, mode=Mode.PutX4)
 
             for _ in range(6):
-                await data_put(chip=1, data=0, mode=QSPIMode.Dummy)
+                await data_put(chip=1, data=0, mode=Mode.Dummy)
 
-            await data_put(chip=1, data=0, mode=QSPIMode.GetX1)
-            await data_put(chip=1, data=0, mode=QSPIMode.GetX2)
-            await data_put(chip=1, data=0, mode=QSPIMode.GetX4)
+            await data_put(chip=1, data=0, mode=Mode.GetX1)
+            await data_put(chip=1, data=0, mode=Mode.GetX2)
+            await data_put(chip=1, data=0, mode=Mode.GetX4)
 
-            await data_put(chip=0, data=0, mode=QSPIMode.Dummy)
+            await data_put(chip=0, data=0, mode=Mode.Dummy)
 
         async def testbench_out(ctx):
-            async def bits_get(*, cs, ox, oe, i_en, mode):
+            async def bits_get(*, cs, ox, oe, mode):
                 for cycle, o in enumerate(ox):
                     expected = {
-                        "bypass": (cs == 0),
                         "port": {
-                            "sck": {"o":        1, "oe":         1},
-                            "io0": {"o": (o>>0)&1, "oe": (oe>>0)&1},
-                            "io1": {"o": (o>>1)&1, "oe": (oe>>1)&1},
-                            "io2": {"o": (o>>2)&1, "oe": (oe>>2)&1},
-                            "io3": {"o": (o>>3)&1, "oe": (oe>>3)&1},
-                            "cs":  {"o":       cs, "oe":         1},
+                            "cs":  {"o": [      cs,       cs], "oe":         1},
+                            "sck": {"o": [       0,       cs], "oe":         1},
+                            "io0": {"o": [(o>>0)&1, (o>>0)&1], "oe": (oe>>0)&1},
+                            "io1": {"o": [(o>>1)&1, (o>>1)&1], "oe": (oe>>1)&1},
+                            "io2": {"o": [(o>>2)&1, (o>>2)&1], "oe": (oe>>2)&1},
+                            "io3": {"o": [(o>>3)&1, (o>>3)&1], "oe": (oe>>3)&1},
                         },
-                        "i_en": i_en,
-                        "meta": mode
+                        "meta": {
+                            "mode": mode,
+                            "half": 0 if mode == Mode.Dummy else 1
+                        }
                     }
                     assert (actual := await stream_get(ctx, dut.frames)) == expected, \
                         f"(cycle {cycle}) {actual} != {expected}"
 
-            await bits_get(cs=1, ox=[1,0,1,1,1,0,1,0], oe=1, i_en=1, mode=QSPIMode.Swap)
+            await bits_get(cs=1, ox=[1,0,1,1,1,0,1,0], oe=1, mode=Mode.Swap)
 
-            await bits_get(cs=1, ox=[1,0,1,0,1,0,1,0], oe=1, i_en=0, mode=QSPIMode.PutX1)
-            await bits_get(cs=1, ox=[0,1,0,1,0,1,0,1], oe=1, i_en=0, mode=QSPIMode.PutX1)
-            await bits_get(cs=1, ox=[1,1,0,0,0,0,0,1], oe=1, i_en=0, mode=QSPIMode.PutX1)
+            await bits_get(cs=1, ox=[1,0,1,0,1,0,1,0], oe=1, mode=Mode.Dummy)
+            await bits_get(cs=1, ox=[0,1,0,1,0,1,0,1], oe=1, mode=Mode.Dummy)
+            await bits_get(cs=1, ox=[1,1,0,0,0,0,0,1], oe=1, mode=Mode.Dummy)
 
-            await bits_get(cs=1, ox=[0b10,0b10,0b10,0b10], oe=0b11, i_en=0, mode=QSPIMode.PutX2)
-            await bits_get(cs=1, ox=[0b01,0b01,0b01,0b01], oe=0b11, i_en=0, mode=QSPIMode.PutX2)
-            await bits_get(cs=1, ox=[0b11,0b00,0b00,0b01], oe=0b11, i_en=0, mode=QSPIMode.PutX2)
+            await bits_get(cs=1, ox=[0b10,0b10,0b10,0b10], oe=0b11, mode=Mode.Dummy)
+            await bits_get(cs=1, ox=[0b01,0b01,0b01,0b01], oe=0b11, mode=Mode.Dummy)
+            await bits_get(cs=1, ox=[0b11,0b00,0b00,0b01], oe=0b11, mode=Mode.Dummy)
 
-            await bits_get(cs=1, ox=[0b1010,0b1010], oe=0b1111, i_en=0, mode=QSPIMode.PutX4)
-            await bits_get(cs=1, ox=[0b0101,0b0101], oe=0b1111, i_en=0, mode=QSPIMode.PutX4)
-            await bits_get(cs=1, ox=[0b1100,0b0001], oe=0b1111, i_en=0, mode=QSPIMode.PutX4)
+            await bits_get(cs=1, ox=[0b1010,0b1010], oe=0b1111, mode=Mode.Dummy)
+            await bits_get(cs=1, ox=[0b0101,0b0101], oe=0b1111, mode=Mode.Dummy)
+            await bits_get(cs=1, ox=[0b1100,0b0001], oe=0b1111, mode=Mode.Dummy)
 
-            await bits_get(cs=1, ox=[0,0,0,0,0,0], oe=0, i_en=0, mode=QSPIMode.Dummy)
+            await bits_get(cs=1, ox=[0,0,0,0,0,0], oe=0, mode=Mode.Dummy)
 
-            await bits_get(cs=1, ox=[0,0,0,0,0,0,0,0], oe=1, i_en=1, mode=QSPIMode.GetX1)
-            await bits_get(cs=1, ox=[0,0,0,0],         oe=0, i_en=1, mode=QSPIMode.GetX2)
-            await bits_get(cs=1, ox=[0,0],             oe=0, i_en=1, mode=QSPIMode.GetX4)
+            await bits_get(cs=1, ox=[0,0,0,0,0,0,0,0], oe=1, mode=Mode.GetX1)
+            await bits_get(cs=1, ox=[0,0,0,0],         oe=0, mode=Mode.GetX2)
+            await bits_get(cs=1, ox=[0,0],             oe=0, mode=Mode.GetX4)
 
-            await bits_get(cs=0, ox=[0], oe=0, i_en=0, mode=QSPIMode.Dummy)
+            await bits_get(cs=0, ox=[0], oe=0, mode=Mode.Dummy)
 
         sim = Simulator(dut)
         sim.add_clock(1e-6)
@@ -197,34 +196,37 @@ class QSPITestCase(unittest.TestCase):
             sim.run()
 
     def test_qspi_deframer(self):
-        dut = QSPIDeframer()
+        dut = Deframer(self.ports)
 
         async def testbench_in(ctx):
             async def bits_put(*, ix, mode):
                 for cycle, i in enumerate(ix):
                     await stream_put(ctx, dut.frames, {
                         "port": {
-                            "io0": {"i": (i>>0)&1},
-                            "io1": {"i": (i>>1)&1},
-                            "io2": {"i": (i>>2)&1},
-                            "io3": {"i": (i>>3)&1},
+                            "io0": {"i": [0, (i>>0)&1]},
+                            "io1": {"i": [0, (i>>1)&1]},
+                            "io2": {"i": [0, (i>>2)&1]},
+                            "io3": {"i": [0, (i>>3)&1]},
                         },
-                        "meta": mode
+                        "meta": {
+                            "mode": mode,
+                            "half": 1
+                        }
                     })
 
-            await bits_put(ix=[i<<1 for i in [1,0,1,1,1,0,1,0]], mode=QSPIMode.Swap)
+            await bits_put(ix=[i<<1 for i in [1,0,1,1,1,0,1,0]], mode=Mode.Swap)
 
-            await bits_put(ix=[i<<1 for i in [1,0,1,0,1,0,1,0]], mode=QSPIMode.GetX1)
-            await bits_put(ix=[i<<1 for i in [0,1,0,1,0,1,0,1]], mode=QSPIMode.GetX1)
-            await bits_put(ix=[i<<1 for i in [1,1,0,0,0,0,0,1]], mode=QSPIMode.GetX1)
+            await bits_put(ix=[i<<1 for i in [1,0,1,0,1,0,1,0]], mode=Mode.GetX1)
+            await bits_put(ix=[i<<1 for i in [0,1,0,1,0,1,0,1]], mode=Mode.GetX1)
+            await bits_put(ix=[i<<1 for i in [1,1,0,0,0,0,0,1]], mode=Mode.GetX1)
 
-            await bits_put(ix=[0b10,0b10,0b10,0b10], mode=QSPIMode.GetX2)
-            await bits_put(ix=[0b01,0b01,0b01,0b01], mode=QSPIMode.GetX2)
-            await bits_put(ix=[0b11,0b00,0b00,0b01], mode=QSPIMode.GetX2)
+            await bits_put(ix=[0b10,0b10,0b10,0b10], mode=Mode.GetX2)
+            await bits_put(ix=[0b01,0b01,0b01,0b01], mode=Mode.GetX2)
+            await bits_put(ix=[0b11,0b00,0b00,0b01], mode=Mode.GetX2)
 
-            await bits_put(ix=[0b1010,0b1010], mode=QSPIMode.GetX4)
-            await bits_put(ix=[0b0101,0b0101], mode=QSPIMode.GetX4)
-            await bits_put(ix=[0b1100,0b0001], mode=QSPIMode.GetX4)
+            await bits_put(ix=[0b1010,0b1010], mode=Mode.GetX4)
+            await bits_put(ix=[0b0101,0b0101], mode=Mode.GetX4)
+            await bits_put(ix=[0b1100,0b0001], mode=Mode.GetX4)
 
         async def testbench_out(ctx):
             async def data_get(*, data):
@@ -253,41 +255,43 @@ class QSPITestCase(unittest.TestCase):
         with sim.write_vcd("test.vcd"):
             sim.run()
 
-    def subtest_qspi_controller(self, *, use_ddr_buffers:bool, divisor:int):
+
+class QSPIIntegrationTestCase(unittest.TestCase):
+    def subtest_qspi_controller(self, *, divisor: int):
         ports = PortGroup()
+        ports.cs  = io.SimulationPort("o",  1)
         ports.sck = io.SimulationPort("o",  1)
         ports.io  = io.SimulationPort("io", 4)
-        ports.cs  = io.SimulationPort("o",  1)
 
-        dut = QSPIController(ports, use_ddr_buffers=use_ddr_buffers)
+        dut = Controller(ports)
 
         async def testbench_controller(ctx):
             async def ctrl_idle():
-                await stream_put(ctx, dut.o_octets, {"chip": 0, "data": 0, "mode": QSPIMode.Dummy})
+                await stream_put(ctx, dut.i_stream, {"chip": 0, "data": 0, "mode": Mode.Dummy})
 
             async def ctrl_put(*, mode, data=0):
-                await stream_put(ctx, dut.o_octets, {"chip": 1, "data": data, "mode": mode})
+                await stream_put(ctx, dut.i_stream, {"chip": 1, "data": data, "mode": mode})
 
             async def ctrl_get(*, mode, count=1):
-                ctx.set(dut.o_octets.p.chip, 1)
-                ctx.set(dut.o_octets.p.mode, mode)
-                ctx.set(dut.o_octets.valid, 1)
-                ctx.set(dut.i_octets.ready, 1)
+                ctx.set(dut.i_stream.p.chip, 1)
+                ctx.set(dut.i_stream.p.mode, mode)
+                ctx.set(dut.i_stream.valid, 1)
+                ctx.set(dut.o_stream.ready, 1)
                 words = bytearray()
                 o_count = i_count = 0
                 while True:
-                    _, _, o_octets_ready, i_octets_valid, i_octets_p_data = \
+                    _, _, o_stream_ready, i_stream_valid, i_stream_p_data = \
                         await ctx.tick().sample(
-                            dut.o_octets.ready, dut.i_octets.valid, dut.i_octets.p.data)
-                    if o_octets_ready:
+                            dut.i_stream.ready, dut.o_stream.valid, dut.o_stream.p.data)
+                    if o_stream_ready:
                         o_count += 1
                         if o_count == count:
-                            ctx.set(dut.o_octets.valid, 0)
-                    if i_octets_valid:
-                        words.append(i_octets_p_data)
+                            ctx.set(dut.i_stream.valid, 0)
+                    if i_stream_valid:
+                        words.append(i_stream_p_data)
                         if len(words) == count:
-                            ctx.set(dut.i_octets.ready, 0)
-                            assert not ctx.get(dut.o_octets.valid)
+                            ctx.set(dut.o_stream.ready, 0)
+                            assert not ctx.get(dut.i_stream.valid)
                             break
                 return words
             if divisor is not None:
@@ -295,23 +299,23 @@ class QSPITestCase(unittest.TestCase):
 
             await ctrl_idle()
 
-            await ctrl_put(mode=QSPIMode.PutX1, data=0x0B)
-            await ctrl_put(mode=QSPIMode.PutX1, data=0x00)
-            await ctrl_put(mode=QSPIMode.PutX1, data=0x00)
-            await ctrl_put(mode=QSPIMode.PutX1, data=0x08)
+            await ctrl_put(mode=Mode.PutX1, data=0x0B)
+            await ctrl_put(mode=Mode.PutX1, data=0x00)
+            await ctrl_put(mode=Mode.PutX1, data=0x00)
+            await ctrl_put(mode=Mode.PutX1, data=0x08)
             for _ in range(8):
-                await ctrl_put(mode=QSPIMode.Dummy)
-            assert (data := await ctrl_get(mode=QSPIMode.GetX1, count=4)) == b"awa!", data
+                await ctrl_put(mode=Mode.Dummy)
+            assert (data := await ctrl_get(mode=Mode.GetX1, count=4)) == b"awa!", data
 
             await ctrl_idle()
 
-            await ctrl_put(mode=QSPIMode.PutX1, data=0x6B)
-            await ctrl_put(mode=QSPIMode.PutX1, data=0x00)
-            await ctrl_put(mode=QSPIMode.PutX1, data=0x00)
-            await ctrl_put(mode=QSPIMode.PutX1, data=0x10)
+            await ctrl_put(mode=Mode.PutX1, data=0x6B)
+            await ctrl_put(mode=Mode.PutX1, data=0x00)
+            await ctrl_put(mode=Mode.PutX1, data=0x00)
+            await ctrl_put(mode=Mode.PutX1, data=0x10)
             for _ in range(4):
-                await ctrl_put(mode=QSPIMode.Dummy)
-            assert (data := await ctrl_get(mode=QSPIMode.GetX4, count=8)) == b"nyaaaaan", data
+                await ctrl_put(mode=Mode.Dummy)
+            assert (data := await ctrl_get(mode=Mode.GetX4, count=8)) == b"nyaaaaan", data
 
             await ctrl_idle()
 
@@ -324,20 +328,14 @@ class QSPITestCase(unittest.TestCase):
         with sim.write_vcd("test.vcd"):
             sim.run()
 
-    def test_qspi_controller_sdr_div0(self):
-        self.subtest_qspi_controller(use_ddr_buffers=False, divisor=0)
+    def test_qspi_controller_div0(self):
+        self.subtest_qspi_controller(divisor=0)
 
-    def test_qspi_controller_sdr_div1(self):
-        self.subtest_qspi_controller(use_ddr_buffers=False, divisor=1)
+    def test_qspi_controller_div1(self):
+        self.subtest_qspi_controller(divisor=1)
 
-    def test_qspi_controller_sdr_div2(self):
-        self.subtest_qspi_controller(use_ddr_buffers=False, divisor=2)
+    def test_qspi_controller_div2(self):
+        self.subtest_qspi_controller(divisor=2)
 
-    def test_qspi_controller_ddr_div0(self):
-        self.subtest_qspi_controller(use_ddr_buffers=True, divisor=0)
-
-    def test_qspi_controller_ddr_div1(self):
-        self.subtest_qspi_controller(use_ddr_buffers=True, divisor=1)
-
-    def test_qspi_controller_ddr_div2(self):
-        self.subtest_qspi_controller(use_ddr_buffers=True, divisor=2)
+    def test_qspi_controller_div3(self):
+        self.subtest_qspi_controller(divisor=2)
