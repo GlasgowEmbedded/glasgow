@@ -42,6 +42,8 @@ The Glasgow software is a set of building blocks designed to eliminate incidenta
 What can I do with Glasgow?
 ---------------------------
 
+* control pins as :ref:`GPIO <applet.control.gpio>`
+
 * communicate via :ref:`UART <applet.interface.uart>`
 
   * automatically measure and adjust baud rate
