@@ -93,7 +93,7 @@ class GlasgowAppletV2(metaclass=ABCMeta):
         pass
 
     async def run(self, args):
-        raise GlasgowAppletError("This applet can only be used in REPL mode.")
+        raise GlasgowAppletError("this applet can only be used in REPL mode")
 
     @classmethod
     def add_repl_arguments(cls, parser):
