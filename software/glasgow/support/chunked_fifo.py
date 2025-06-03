@@ -75,6 +75,39 @@ class ChunkedFIFO:
         self._rtotal += len(result)
         return result
 
+    def read_until(self, delimiter: bytes) -> memoryview:
+        """
+        Dequeue bytes up to and and including ``delimiter`` (if any). If ``delimiter`` is not
+        found, dequeue the maximum possible contiguous amount of bytes (at least one).
+
+        Regardless of what was written into the FIFO, ``read_until`` always returns a ``memoryview``
+        object.
+        """
+        assert len(delimiter) == 1
+
+        if self._chunk is None:
+            if not self._queue:
+                return memoryview(b"")
+
+            self._chunk  = self._queue.popleft()
+            self._offset = 0
+
+        try:
+            # This copies `self._chunk`, but it is unavoidable: `memoryview` can't be searched.
+            index = self._chunk.tobytes().index(delimiter, self._offset)
+            result = self._chunk[self._offset:index + len(delimiter)]
+        except ValueError:
+            result = self._chunk[self._offset:]
+
+        if self._offset + len(result) == len(self._chunk):
+            self._chunk = None
+        else:
+            self._offset += len(result)
+
+        self._length -= len(result)
+        self._rtotal += len(result)
+        return result
+
     def __bool__(self):
         """Check whether there are any bytes in the FIFO."""
         return bool(self._queue) or self._chunk is not None

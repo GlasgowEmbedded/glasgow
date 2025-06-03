@@ -74,3 +74,13 @@ class ChunkedFIFOTestCase(unittest.TestCase):
         self.fifo.write(bits("1010"))
         self.assertEqual(len(self.fifo), 1)
         self.assertEqual(self.fifo.read(1), b"\x0a")
+
+    def test_until(self):
+        self.fifo.write(b"ABC\0DE\0F")
+        self.fifo.write(b"G")
+        self.fifo.write(b"H\0")
+        self.assertEqual(self.fifo.read_until(b"\0"), b"ABC\0")
+        self.assertEqual(self.fifo.read_until(b"\0"), b"DE\0")
+        self.assertEqual(self.fifo.read_until(b"\0"), b"F")
+        self.assertEqual(self.fifo.read_until(b"\0"), b"G")
+        self.assertEqual(self.fifo.read_until(b"\0"), b"H\0")

@@ -211,6 +211,10 @@ class AbstractInPipe(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    async def recv_until(self, delimiter: bytes) -> bytes:
+        pass
+
+    @abstractmethod
     async def reset(self):
         pass
 

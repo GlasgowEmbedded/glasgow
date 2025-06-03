@@ -34,7 +34,18 @@ class SimulationPipe(AbstractInOutPipe):
             assert not rst_hit
         data = self._i_buffer[:length]
         del self._i_buffer[:length]
-        return data
+        return memoryview(data)
+
+    async def recv_until(self, delimiter: bytes) -> bytes:
+        assert self._i_buffer is not None, "recv_until() called on an out pipe"
+        assert len(delimiter) >= 1
+        while delimiter not in self._i_buffer:
+            clk_hit, rst_hit = await self._parent._context.tick()
+            assert not rst_hit
+        length = self._i_buffer.index(delimiter) + len(delimiter)
+        data = self._i_buffer[:length]
+        del self._i_buffer[:length]
+        return bytes(data)
 
     @property
     def writable(self) -> Optional[int]:
