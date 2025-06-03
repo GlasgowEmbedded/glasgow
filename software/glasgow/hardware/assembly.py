@@ -163,7 +163,7 @@ class HardwareInPipe(AbstractInPipe):
     def readable(self) -> int:
         return len(self._in_buffer)
 
-    async def recv(self, length):
+    async def recv(self, length) -> memoryview:
         assert length > 0
 
         # Return exactly the requested length.
@@ -190,6 +190,31 @@ class HardwareInPipe(AbstractInPipe):
             # Always return a memoryview object, to avoid hard to detect edge cases downstream.
             result = memoryview(b"".join(chunks))
 
+        self._logger.trace(f"IN pipe {self._in_interface}: read <%s>", dump_hex(result))
+        return result
+
+    async def recv_until(self, delimiter) -> bytes:
+        assert len(delimiter) >= 1
+
+        self._logger.trace(f"IN pipe {self._in_interface}: need <%s> delimiter",
+            dump_hex(delimiter))
+
+        chunks = []
+        while True:
+            while len(self._in_buffer) == 0:
+                self._in_stalls += 1
+                assert self._in_tasks
+                await self._in_tasks.wait_one()
+
+            async with self._in_pushback:
+                chunk = self._in_buffer.read_until(delimiter)
+                self._in_pushback.notify_all()
+
+            chunks.append(chunk)
+            if chunk[-len(delimiter):] == delimiter:
+                break
+
+        result = b"".join(chunks)
         self._logger.trace(f"IN pipe {self._in_interface}: read <%s>", dump_hex(result))
         return result
 

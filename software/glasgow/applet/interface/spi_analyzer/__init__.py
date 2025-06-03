@@ -10,6 +10,7 @@ from cobs.cobs import decode as cobs_decode
 from glasgow.support.logging import dump_hex
 from glasgow.gateware.stream import AsyncQueue
 from glasgow.gateware.cobs import Encoder as COBSEncoder
+from glasgow.abstract import AbstractAssembly, GlasgowPin
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
@@ -189,7 +190,9 @@ class SPIAnalyzerComponent(wiring.Component):
 
 
 class SPIAnalyzerInterface:
-    def __init__(self, logger, assembly, *, cs, sck, copi, cipo, buffer_size=512):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
+                 cs: GlasgowPin, sck: GlasgowPin, copi: GlasgowPin, cipo: GlasgowPin,
+                 buffer_size=512):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
@@ -206,21 +209,8 @@ class SPIAnalyzerInterface:
     def _log(self, message, *args):
         self._logger.log(self._level, "SPI analyzer: " + message, *args)
 
-    async def _recv_packet(self) -> bytes:
-        while not self._packets:
-            if self._pipe.readable == 0 and await self._overflow:
-                raise SPIAnalyzerOverflow("overflow")
-
-            self._buffer += await self._pipe.recv(self._pipe.readable or 1)
-            if b"\x00" in self._buffer:
-                *self._packets, self._buffer = self._buffer.split(b"\x00")
-
-        packet = self._packets[0]
-        del self._packets[0]
-        return cobs_decode(packet)
-
     async def capture(self) -> tuple[bytes, bytes]:
-        packet = await self._recv_packet()
+        packet = cobs_decode((await self._pipe.recv_until(b"\0"))[:-1])
         chip, copi_data, cipo_data = packet[0], packet[1::2], packet[2::2]
         self._log("capture chip=%d copi=<%s> cipo=<%s>",
             chip, dump_hex(copi_data), dump_hex(cipo_data))

@@ -10,6 +10,7 @@ from cobs.cobs import decode as cobs_decode
 from glasgow.support.logging import dump_hex
 from glasgow.gateware.stream import AsyncQueue
 from glasgow.gateware.cobs import Encoder as COBSEncoder
+from glasgow.abstract import AbstractAssembly, GlasgowPin
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
@@ -179,7 +180,8 @@ class QSPIAnalyzerComponent(wiring.Component):
 
 
 class QSPIAnalyzerInterface:
-    def __init__(self, logger, assembly, *, cs, sck, io, buffer_size=512):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
+                 cs: GlasgowPin, sck: GlasgowPin, io: GlasgowPin, buffer_size=512):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
@@ -190,27 +192,14 @@ class QSPIAnalyzerInterface:
             component.o_stream, in_flush=component.o_flush, fifo_depth=0)
         self._overflow = assembly.add_ro_register(component.overflow)
 
-        self._buffer  = bytearray()
-        self._packets = []
-
     def _log(self, message, *args):
         self._logger.log(self._level, "QSPI analyzer: " + message, *args)
 
-    async def _recv_packet(self) -> bytes:
-        while not self._packets:
-            if self._pipe.readable == 0 and await self._overflow:
-                raise QSPIAnalyzerOverflow("overflow")
-
-            self._buffer += await self._pipe.recv(self._pipe.readable or 1)
-            if b"\x00" in self._buffer:
-                *self._packets, self._buffer = self._buffer.split(b"\x00")
-
-        packet = self._packets[0]
-        del self._packets[0]
-        return cobs_decode(packet)
-
     async def capture(self) -> tuple[bytes, bytes]:
-        data = await self._recv_packet()
+        if await self._overflow:
+            raise QSPIAnalyzerOverflow("overflow")
+
+        data = cobs_decode((await self._pipe.recv_until(b"\0"))[:-1])
         self._log("capture data=<%s>", dump_hex(data))
         return data
 
