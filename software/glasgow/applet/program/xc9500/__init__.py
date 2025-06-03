@@ -5,16 +5,15 @@ import logging
 import argparse
 import math
 import re
-from enum import Enum, auto
 
-from ....arch.jtag import *
-from ....arch.xilinx.xc9500 import *
-from ....support.bits import *
-from ....support.logging import *
-from ....database.xilinx.xc9500 import *
-from ...interface.jtag_probe import JTAGProbeApplet
-from ....protocol.jesd3 import *
-from ... import *
+from glasgow.arch.jtag import *
+from glasgow.arch.xilinx.xc9500 import *
+from glasgow.support.bits import bits, bitarray
+from glasgow.support.logging import dump_bin
+from glasgow.database.xilinx.xc9500 import *
+from glasgow.applet.interface.jtag_probe import JTAGProbeApplet
+from glasgow.protocol.jesd3 import JESD3Parser, JESD3Emitter, JESD3ParsingError
+from glasgow.applet import GlasgowAppletError, GlasgowAppletTool
 
 
 class XC9500Bitstream:
@@ -338,7 +337,7 @@ class XC95xxInterface:
         if not bits:
             # Nothing to do.
             return
-        
+
         self._log("program protection bits")
         await self.lower.write_ir(IR_FPGM)
         for fb in range(self.device.fbs):
@@ -351,7 +350,7 @@ class XC95xxInterface:
                 await self.lower.run_test_idle(self._time_us(WAIT_PROGRAM))
                 res = await self._dr_isconfiguration(CTRL_OK, 0)
                 if res.control != CTRL_OK:
-                    raise XC9500Error(f"programming protection bits failed {isaddr.bits_repr()}")
+                    raise XC9500Error(f"programming protection bits failed {res.bits_repr()}")
 
 
 class ProgramXC9500Applet(JTAGProbeApplet):
@@ -374,18 +373,14 @@ class ProgramXC9500Applet(JTAGProbeApplet):
     """.format(
         devices="\n".join(f"        * {device.name}" for device in devices)
     )
+    requires_tap = True
+
+    async def setup(self, args):
+        await super().setup(args)
+        self.xc9500_iface = XC9500Interface(self.tap_iface, self.logger, args.frequency * 1000)
 
     @classmethod
-    def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
-        super().add_run_tap_arguments(parser)
-
-    async def run(self, device, args):
-        tap_iface = await self.run_tap(ProgramXC9500Applet, device, args)
-        return XC9500Interface(tap_iface, self.logger, args.frequency * 1000)
-
-    @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         parser.add_argument(
             "--slow", default=False, action="store_true",
             help="use slower but potentially more robust algorithms, where applicable")
@@ -431,8 +426,8 @@ class ProgramXC9500Applet(JTAGProbeApplet):
             "--override", default=False, action="store_true",
             help="override write-protection")
 
-    async def interact(self, device, args, xc9500_iface):
-        idcode, xc9500_device, xc95xx_iface = await xc9500_iface.identify()
+    async def run(self, args):
+        idcode, xc9500_device, xc95xx_iface = await self.xc9500_iface.identify()
         if xc9500_device is None:
             raise GlasgowAppletError("cannot operate on unknown device with IDCODE=%#10x"
                                      % idcode.to_int())
@@ -440,7 +435,7 @@ class ProgramXC9500Applet(JTAGProbeApplet):
         self.logger.info("found %s rev=%d",
                          xc9500_device.name, idcode.version)
 
-        usercode = await xc9500_iface.read_usercode()
+        usercode = await self.xc9500_iface.read_usercode()
         self.logger.info("USERCODE=%s (%s)",
                          usercode.hex(),
                          re.sub(rb"[^\x20-\x7e]", b"?", usercode).decode("ascii"))

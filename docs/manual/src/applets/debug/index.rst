@@ -8,4 +8,7 @@ MCU debugging
 .. toctree::
     :maxdepth: 2
 
+    arc
+    arm
     arm7
+    mips
