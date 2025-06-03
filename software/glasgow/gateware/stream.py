@@ -170,6 +170,7 @@ class PacketQueue(wiring.Component):
                 "data":  data_shape,
                 "first": 1,
                 "last":  1,
+                "end":   1,
             }))),
             "o": Out(stream.Signature(data.StructLayout({
                 "data":  data_shape,
@@ -196,9 +197,14 @@ class PacketQueue(wiring.Component):
         write_incr  = incr(data_write.addr, self._data_depth)
 
         m.d.comb += data_write.data.eq(self.i.p.data)
-        m.d.comb += size_queue.i.payload.eq(write_count)
         with m.If(self.i.valid):
-            with m.If(self.i.p.first & (write_count != 0)):
+            with m.If(self.i.p.end & (write_count != 0)):
+                m.d.comb += self.i.ready.eq(size_queue.i.ready)
+                m.d.comb += size_queue.i.valid.eq(1)
+                m.d.comb += size_queue.i.payload.eq(write_count - 1)
+                m.d.sync += write_first.eq(data_write.addr)
+                m.d.sync += write_count.eq(0)
+            with m.Elif(self.i.p.first & (write_count != 0)):
                 m.d.sync += data_write.addr.eq(write_first)
                 m.d.sync += write_count.eq(0)
             with m.Elif(~self.i.p.last | size_queue.i.ready):
@@ -207,6 +213,7 @@ class PacketQueue(wiring.Component):
                     m.d.comb += data_write.en.eq(1)
                     with m.If(self.i.p.last):
                         m.d.comb += size_queue.i.valid.eq(1)
+                        m.d.comb += size_queue.i.payload.eq(write_count)
                         m.d.sync += write_first.eq(write_incr)
                         m.d.sync += data_write.addr.eq(write_incr)
                         m.d.sync += write_count.eq(0)
