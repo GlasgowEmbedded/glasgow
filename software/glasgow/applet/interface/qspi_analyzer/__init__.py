@@ -5,11 +5,10 @@ import argparse
 from amaranth import *
 from amaranth.lib import enum, data, wiring, stream, io, cdc
 from amaranth.lib.wiring import In, Out
-from cobs.cobs import decode as cobs_decode
 
 from glasgow.support.logging import dump_hex
 from glasgow.gateware.stream import AsyncQueue
-from glasgow.gateware.cobs import Encoder as COBSEncoder
+from glasgow.gateware import cobs
 from glasgow.abstract import AbstractAssembly, GlasgowPin
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
@@ -136,7 +135,7 @@ class QSPIAnalyzerComponent(wiring.Component):
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.encoder = encoder = COBSEncoder(fifo_depth=self._buffer_size)
+        m.submodules.encoder = encoder = cobs.Encoder(fifo_depth=self._buffer_size)
         wiring.connect(m, wiring.flipped(self.o_stream), encoder.o)
 
         m.submodules.frontend = frontend = QSPIAnalyzerFrontend(self._ports)
@@ -199,7 +198,7 @@ class QSPIAnalyzerInterface:
         if await self._overflow:
             raise QSPIAnalyzerOverflow("overflow")
 
-        data = cobs_decode((await self._pipe.recv_until(b"\0"))[:-1])
+        data = cobs.decode((await self._pipe.recv_until(b"\0"))[:-1])
         self._log("capture data=<%s>", dump_hex(data))
         return data
 

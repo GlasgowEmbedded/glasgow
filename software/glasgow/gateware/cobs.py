@@ -1,11 +1,18 @@
 from amaranth import *
 from amaranth.lib import data, wiring, memory, stream
 from amaranth.lib.stream import In, Out
+from cobs import cobs
 
 from .stream import StreamBuffer
 
 
-__all__ = ["Encoder", "Decoder"]
+__all__ = ["Encoder", "Decoder", "encode", "decode"]
+
+
+# Re-export from the `cobs` PyPI package.
+encode = cobs.encode
+decode = cobs.decode
+DecodeError = cobs.DecodeError
 
 
 class Encoder(wiring.Component):

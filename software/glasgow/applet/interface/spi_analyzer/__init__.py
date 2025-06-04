@@ -5,11 +5,10 @@ import argparse
 from amaranth import *
 from amaranth.lib import enum, data, wiring, stream, io, cdc
 from amaranth.lib.wiring import In, Out
-from cobs.cobs import decode as cobs_decode
 
 from glasgow.support.logging import dump_hex
 from glasgow.gateware.stream import AsyncQueue
-from glasgow.gateware.cobs import Encoder as COBSEncoder
+from glasgow.gateware import cobs
 from glasgow.abstract import AbstractAssembly, GlasgowPin
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
@@ -133,7 +132,7 @@ class SPIAnalyzerComponent(wiring.Component):
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.encoder  = encoder  = COBSEncoder(fifo_depth=self._buffer_size)
+        m.submodules.encoder  = encoder  = cobs.Encoder(fifo_depth=self._buffer_size)
         wiring.connect(m, wiring.flipped(self.o_stream), encoder.o)
 
         m.submodules.frontend = frontend = SPIAnalyzerFrontend(self._ports)
@@ -210,7 +209,7 @@ class SPIAnalyzerInterface:
         self._logger.log(self._level, "SPI analyzer: " + message, *args)
 
     async def capture(self) -> tuple[bytes, bytes]:
-        packet = cobs_decode((await self._pipe.recv_until(b"\0"))[:-1])
+        packet = cobs.decode((await self._pipe.recv_until(b"\0"))[:-1])
         chip, copi_data, cipo_data = packet[0], packet[1::2], packet[2::2]
         self._log("capture chip=%d copi=<%s> cipo=<%s>",
             chip, dump_hex(copi_data), dump_hex(cipo_data))
