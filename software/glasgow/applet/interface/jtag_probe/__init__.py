@@ -1089,7 +1089,7 @@ class JTAGProbeApplet(GlasgowApplet):
 
     @classmethod
     def add_interact_arguments(cls, parser):
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
         p_scan = p_operation.add_parser(
             "scan", help="scan JTAG chain and attempt to identify devices",
@@ -1143,7 +1143,7 @@ class JTAGProbeApplet(GlasgowApplet):
             return
         self.logger.info("discovered %d TAPs", len(idcodes))
 
-        if args.operation == "scan":
+        if args.operation in (None, "scan"):
             ir_layout = jtag_iface.interrogate_ir(ir_value,
                 tap_count=len(idcodes), ir_lengths=args.ir_lengths, check=False)
             if not ir_layout:
