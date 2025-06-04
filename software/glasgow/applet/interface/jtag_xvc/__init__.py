@@ -33,15 +33,21 @@ class JTAGXVCProbe(wiring.Component):
     })))
     divisor:  In(16)
 
-    def __init__(self, ports):
-        self._ports = ports
+    def __init__(self, ports, *, offset=None):
+        self._ports  = ports
+        self._offset = offset
 
         super().__init__()
 
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.io_streamer = io_streamer = IOStreamer(self._ports, meta_layout=_ShiftIn)
+        m.submodules.io_streamer = io_streamer = \
+            IOStreamer(self._ports, meta_layout=_ShiftIn,
+                # Offset sampling by ~10 ns to compensate for 10..15 ns of roundtrip delay caused by
+                # the level shifters (5 ns each) and FPGA clock-to-out (5 ns).
+                offset=1 if self._offset is None else self._offset
+            )
 
         timer = Signal.like(self.divisor)
         phase = Signal(5)
