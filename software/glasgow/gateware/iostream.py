@@ -49,10 +49,15 @@ class SimulatableDDRBuffer(io.DDRBuffer):
 
 
 class StreamIOBuffer(wiring.Component):
-    def __init__(self, ports, *, ratio, offset, meta_layout):
-        self._ports  = ports
-        self._ratio  = ratio
-        self._offset = offset
+    def __init__(self, ports, *, ratio=1, offset=0, meta_layout=0,
+                 i_domain="sync", o_domain="sync"):
+        assert i_domain == o_domain or meta_layout == 0
+
+        self._ports    = ports
+        self._ratio    = ratio
+        self._offset   = offset
+        self._i_domain = i_domain
+        self._o_domain = o_domain
 
         super().__init__({
             "i": In(stream.Signature(data.StructLayout({
@@ -98,7 +103,13 @@ class StreamIOBuffer(wiring.Component):
             case 2: buffer_cls = SimulatableDDRBuffer
 
         for name, port in self._ports:
-            m.submodules[name] = buffer = buffer_cls(port.direction, port)
+            i_domain = o_domain = None
+            if port.direction in (io.Direction.Input, io.Direction.Bidir):
+                i_domain = self._i_domain
+            if port.direction in (io.Direction.Output, io.Direction.Bidir):
+                o_domain = self._o_domain
+            m.submodules[name] = buffer = buffer_cls(port.direction, port,
+                i_domain=i_domain, o_domain=o_domain)
             if port.direction in (io.Direction.Output, io.Direction.Bidir):
                 m.d.comb += buffer.o.eq(self.i.p.port[name].o)
                 m.d.comb += buffer.oe.eq(self.i.p.port[name].oe)
@@ -109,7 +120,7 @@ class StreamIOBuffer(wiring.Component):
                     case 2, offset if offset % self._ratio == 0:
                         m.d.comb += self.o.p.port[name].i.eq(buffer.i)
                     case 2, offset if offset % self._ratio == 1:
-                        m.d.sync += self.o.p.port[name].i[0].eq(buffer.i[1])
+                        m.d[self._i_domain] += self.o.p.port[name].i[0].eq(buffer.i[1])
                         m.d.comb += self.o.p.port[name].i[1].eq(buffer.i[0])
                     case _, _:
                         raise NotImplementedError(
