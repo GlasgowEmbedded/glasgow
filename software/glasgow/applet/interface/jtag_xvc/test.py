@@ -67,7 +67,7 @@ class JTAGXVCAppletTestCase(GlasgowAppletV2TestCase, applet=JTAGXVCApplet):
 
         m = Module()
         m.submodules.tap   = tap   = TAPToplevel(tap_ports)
-        m.submodules.probe = probe = JTAGXVCProbe(probe_ports)
+        m.submodules.probe = probe = JTAGXVCProbe(probe_ports, offset=0)
         m.d.comb += [
             tap_ports.tck.i.eq(probe_ports.tck.o),
             tap_ports.tms.i.eq(probe_ports.tms.o),
