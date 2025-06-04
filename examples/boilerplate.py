@@ -9,7 +9,7 @@ from amaranth import *
 from amaranth.lib import enum, data, wiring, stream, io
 from amaranth.lib.wiring import In, Out
 
-from glasgow.abstract import AbstractAssembly
+from glasgow.abstract import AbstractAssembly, GlasgowPin
 from glasgow.applet import GlasgowAppletV2
 
 
@@ -42,7 +42,8 @@ class BoilerplateComponent(wiring.Component):
 
 
 class BoilerplateInterface:
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *, clk, data):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
+                 clk: GlasgowPin, data: GlasgowPin):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
