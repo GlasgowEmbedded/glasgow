@@ -14,7 +14,7 @@ def ref_encode(data_i: bytes) -> bytes:
     return b"\0".join(cobs.encode(chunk) if chunk else b"" for chunk in data_i.split(b"$"))
 
 
-def rtl_encode(data_i: bytes, dollar=True) -> bytes:
+def rtl_encode(data_i: bytes, fifo_depth: int = 256, o_delay: int = 0, dollar = True) -> bytes:
     dut = Encoder()
 
     async def testbench_i(ctx):
@@ -32,6 +32,8 @@ def rtl_encode(data_i: bytes, dollar=True) -> bytes:
 
     data_o = bytearray()
     async def testbench_o(ctx):
+        if o_delay:
+            await ctx.tick().repeat(o_delay)
         ctx.set(dut.o.ready, 1)
         empty_for = 0
         while empty_for < len(data_i) + 3:
@@ -109,6 +111,10 @@ class COBSEncoderTest(unittest.TestCase):
 
     def test_vmlinuz(self):
         assert rtl_encode(vmlinuz, dollar=False) == cobs.encode(vmlinuz) + b"\0"
+
+    def test_full(self):
+        data = b"\0" * 256 + b"$"
+        assert rtl_encode(data, o_delay=300) == ref_encode(data)
 
 
 class COBSDecoderTest(unittest.TestCase):

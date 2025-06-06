@@ -66,15 +66,17 @@ class Encoder(wiring.Component):
 
         w_addr = Signal.like(w_port.addr)
         r_addr = Signal.like(r_port.addr)
-        empty  = (w_addr == r_addr)
-        full   = (w_addr == r_addr - 1)
+        staged = Signal(8, init=1)
+
+        empty  = Signal()
+        full   = Signal()
+        m.d.comb += empty.eq(r_addr == w_addr)
+        m.d.comb += full.eq(r_addr == (w_addr + staged)[:len(r_addr)])
 
         def write(at, data):
             m.d.comb += w_port.addr.eq(at)
             m.d.comb += w_port.data.eq(data)
             m.d.comb += w_port.en.eq(1)
-
-        staged = Signal(8, init=1)
 
         def stage(data):
             write(w_addr + staged, data)
