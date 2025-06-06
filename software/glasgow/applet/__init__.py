@@ -336,10 +336,10 @@ def applet_v2_simulation_test(*, prepare=None, args=None):
         def wrapper(self):
             parsed_args = self._parse_args(args)
             assembly = SimulationAssembly()
-            if prepare is not None:
-                prepare(self, assembly)
             applet: GlasgowAppletV2 = self.applet_cls(assembly)
             applet.build(parsed_args)
+            if prepare is not None:
+                prepare(self, assembly)
             async def launch(ctx):
                 await applet.setup(parsed_args)
                 await case(self, applet, ctx)
