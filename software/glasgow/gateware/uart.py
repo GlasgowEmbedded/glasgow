@@ -126,12 +126,13 @@ class UART(Elaboratable):
             elif kind == "one":
                 return C(1, 1)
             else:
-                bits, _ = sig.shape()
-                even_parity = sum([sig[b] for b in range(bits)]) & 1
+                # odd or even parity includes the parity bit; since `xor()`
+                # calculates odd parity, invert that to get its expected value
+                parity_bit = ~sig.xor()
                 if kind == "odd":
-                    return ~even_parity
+                    return parity_bit
                 elif kind == "even":
-                    return even_parity
+                    return ~parity_bit
                 else:
                     assert False
 
