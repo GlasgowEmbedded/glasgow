@@ -13,7 +13,7 @@ def dump_hex(data):
             data = memoryview(data)
         except TypeError:
             data = memoryview(bytes(data))
-        if dump_hex.limit is None or len(data) < dump_hex.limit:
+        if dump_hex.limit is None or len(data) <= dump_hex.limit:
             return data.hex()
         else:
             return "{}... ({} bytes total)".format(
@@ -26,7 +26,7 @@ dump_hex.limit = 64
 def dump_bin(data):
     def to_bin(data):
         data = bits(data)
-        if dump_bin.limit is None or len(data) < dump_bin.limit:
+        if dump_bin.limit is None or len(data) <= dump_bin.limit:
             return str(data)[::-1]
         else:
             return "{}... ({} bits total)".format(
@@ -46,7 +46,7 @@ def dump_seq(joiner, data):
             except AttributeError:
                 data_length = None
         if dump_seq.limit is None or (data_length is not None and
-                                      data_length < dump_seq.limit):
+                                      data_length <= dump_seq.limit):
             return joiner.join(data)
         else:
             return "{}... ({} elements total)".format(
@@ -67,7 +67,7 @@ def dump_mapseq(joiner, mapper, data):
             except AttributeError:
                 data_length = None
         if dump_mapseq.limit is None or (data_length is not None and
-                                         data_length < dump_mapseq.limit):
+                                         data_length <= dump_mapseq.limit):
             return joiner.join(map(mapper, data))
         else:
             return "{}... ({} elements total)".format(
