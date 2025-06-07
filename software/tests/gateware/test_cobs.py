@@ -1,13 +1,10 @@
 import unittest
+
 from amaranth import *
-from amaranth.hdl import Assume
-from amaranth.lib import wiring, memory
 from amaranth.sim import Simulator
-from amaranth.back import rtlil
+from cobs import cobs
 
 from glasgow.gateware.cobs import *
-
-from cobs import cobs
 
 
 def ref_encode(data_i: bytes) -> bytes:
