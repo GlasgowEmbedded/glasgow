@@ -1,7 +1,8 @@
 from typing import Any, Optional, Generator
 from collections.abc import Mapping
 from collections import defaultdict
-from contextlib import contextmanager, asynccontextmanager
+from contextlib import contextmanager
+import os
 import asyncio
 import logging
 
@@ -19,7 +20,6 @@ from ..gateware.registers import I2CRegisters
 from ..gateware.fx2_crossbar import FX2Crossbar
 from ..gateware.stream import Queue
 from ..abstract import *
-from .platform import GlasgowPlatformPort
 from .platform.rev_ab import GlasgowRevABPlatform
 from .platform.rev_c import GlasgowRevC0Platform, GlasgowRevC123Platform
 from .toolchain import find_toolchain
@@ -111,6 +111,12 @@ class HardwareRWRegister(HardwareRORegister, AbstractRWRegister):
         await self._parent.device.write_register(self._address, value, self._width)
 
 
+def _check_detach():
+    # See the comment in `HardwareAssembly.start()`.
+    if os.name == "nt":
+        raise NotImplementedError("pipe detaching is not supported on Windows due to WinUSB limitations")
+
+
 class HardwareInPipe(AbstractInPipe):
     def __init__(self, logger, parent, *, buffer_size=None):
         self._logger            = logger
@@ -127,10 +133,12 @@ class HardwareInPipe(AbstractInPipe):
         self._in_buffer         = ChunkedFIFO()
         self._in_stalls         = 0
 
+    def _attach(self):
+        self._parent.device.usb_handle.claimInterface(self._in_interface)
+
     async def _start(self):
         assert not self._in_running
         self._logger.trace(f"IN pipe {self._in_interface}: starting")
-        self._parent.device.usb_handle.claimInterface(self._in_interface)
         self._parent.device.usb_handle.setInterfaceAltSetting(self._in_interface, 1)
         for _ in range(_xfers_per_queue):
             self._in_tasks.submit(self._in_task())
@@ -143,7 +151,6 @@ class HardwareInPipe(AbstractInPipe):
         await self._in_tasks.cancel()
         self._in_buffer.clear()
         self._parent.device.usb_handle.setInterfaceAltSetting(self._in_interface, 0)
-        self._parent.device.usb_handle.releaseInterface(self._in_interface)
         self._in_running = False
 
     async def _in_task(self):
@@ -225,7 +232,9 @@ class HardwareInPipe(AbstractInPipe):
 
     async def detach(self) -> tuple[int, None]:
         self._logger.trace(f"IN pipe {self._in_interface}: detaching")
+        _check_detach()
         await self._stop()
+        self._parent.device.usb_handle.releaseInterface(self._in_interface)
         return self._in_interface, None
 
     def statistics(self):
@@ -252,10 +261,12 @@ class HardwareOutPipe(AbstractOutPipe):
         self._out_buffer        = ChunkedFIFO()
         self._out_stalls        = 0
 
+    def _attach(self):
+        self._parent.device.usb_handle.claimInterface(self._out_interface)
+
     async def _start(self):
         assert not self._out_running
         self._logger.trace(f"OUT pipe {self._out_interface}: starting")
-        self._parent.device.usb_handle.claimInterface(self._out_interface)
         self._parent.device.usb_handle.setInterfaceAltSetting(self._out_interface, 1)
         self._out_running = True
 
@@ -266,7 +277,6 @@ class HardwareOutPipe(AbstractOutPipe):
         await self._out_tasks.cancel()
         self._out_buffer.clear()
         self._parent.device.usb_handle.setInterfaceAltSetting(self._out_interface, 0)
-        self._parent.device.usb_handle.releaseInterface(self._out_interface)
         self._out_running = False
 
     def _out_slice(self):
@@ -390,7 +400,9 @@ class HardwareOutPipe(AbstractOutPipe):
 
     async def detach(self) -> tuple[None, int]:
         self._logger.trace(f"OUT pipe {self._out_interface}: detaching")
+        _check_detach()
         await self._stop()
+        self._parent.device.usb_handle.releaseInterface(self._out_interface)
         return None, self._out_interface
 
     def statistics(self):
@@ -410,6 +422,10 @@ class HardwareInOutPipe(HardwareInPipe, HardwareOutPipe, AbstractInOutPipe):
         HardwareInPipe.statistics(self)
         HardwareOutPipe.statistics(self)
 
+    def _attach(self):
+        HardwareInPipe._attach(self)
+        HardwareOutPipe._attach(self)
+
     async def _start(self):
         await HardwareInPipe._start(self)
         await HardwareOutPipe._start(self)
@@ -425,6 +441,7 @@ class HardwareInOutPipe(HardwareInPipe, HardwareOutPipe, AbstractInOutPipe):
 
     async def detach(self) -> tuple[int, int]:
         self._logger.trace(f"IN/OUT pipe {self._in_interface}/{self._out_interface}: detaching")
+        _check_detach()
         await self._stop()
         return self._in_interface, self._out_interface
 
@@ -783,8 +800,17 @@ class HardwareAssembly(AbstractAssembly):
 
         self._running = True # can access `self.device` after this point
 
-        await self.configure_ports()
+        # Claim all of the interfaces first. On Linux it doesn't matter when this is done, but
+        # on Windows claiming an interface resets all of the other configured interfaces.
+        #
+        # This also means that currently an applet calling `.detach()` will break all of
+        # the other applets, but since the only user of this API, `probe-rs`, isn't able to
+        # attach to the device directly on Windows anyway (due to an nusb bug), this is probably
+        # okay for now.
+        for pipe in self._pipes:
+            pipe._attach()
 
+        await self.configure_ports()
         for pipe in self._pipes:
             await pipe._start()
 
