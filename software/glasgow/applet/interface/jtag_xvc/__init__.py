@@ -228,7 +228,7 @@ class JTAGXVCApplet(GlasgowAppletV2):
 
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=None,
-            help="override TCK frequency to always be FREQ kHz (default: %(default)s)")
+            help="override TCK frequency to always be FREQ kHz (default: configured by client)")
 
     async def run(self, args):
         if args.frequency is not None:
