@@ -316,13 +316,13 @@ class UARTApplet(GlasgowAppletV2):
             "socket", help="connect UART to a socket")
         ServerEndpoint.add_argument(p_socket, "endpoint")
 
-    async def _forward_fd(self, args, in_fileno, out_fileno, quit_sequence=False):
+    async def _forward_fd(self, in_fileno, out_fileno, *, stream=False):
         async def forward_out():
             quit = 0
             while True:
                 data = await asyncio.get_event_loop().run_in_executor(None,
                     lambda: os.read(in_fileno, 1024))
-                if len(data) == 0 and not args.stream:
+                if len(data) == 0 and not stream:
                     raise EOFError
 
                 if os.isatty(in_fileno):
@@ -350,7 +350,7 @@ class UARTApplet(GlasgowAppletV2):
         except* EOFError:
             pass
 
-    async def _run_tty(self, args):
+    async def _run_tty(self, *, stream):
         in_fileno  = sys.stdin.fileno()
         out_fileno = sys.stdout.fileno()
 
@@ -367,23 +367,23 @@ class UARTApplet(GlasgowAppletV2):
 
             self.logger.info("running on a TTY; enter `Ctrl+\\ q` to quit")
             try:
-                await self._forward_fd(args, in_fileno, out_fileno, quit_sequence=True)
+                await self._forward_fd(in_fileno, out_fileno, stream=stream)
             finally:
                 termios.tcsetattr(in_fileno, termios.TCSADRAIN, old_stdin_attrs)
 
         else:
-            await self._forward_fd(args, in_fileno, out_fileno)
+            await self._forward_fd(in_fileno, out_fileno, stream=stream)
 
-    async def _run_pty(self, args):
+    async def _run_pty(self):
         import pty
 
-        master, slave = pty.openpty()
-        print(os.ttyname(slave))
+        primary, secondary = pty.openpty()
+        print(os.ttyname(secondary))
 
-        await self._forward_fd(args, in_fileno=master, out_fileno=master)
+        await self._forward_fd(in_fileno=primary, out_fileno=primary)
 
-    async def _run_socket(self, args):
-        endpoint = await ServerEndpoint("socket", self.logger, args.endpoint)
+    async def _run_socket(self, sock_addr):
+        endpoint = await ServerEndpoint("socket", self.logger, sock_addr)
 
         async def forward_out():
             while True:
@@ -405,12 +405,14 @@ class UARTApplet(GlasgowAppletV2):
 
     async def run(self, args):
         match args.operation:
-            case "tty" | None:
-                await self._run_tty(args)
+            case None:
+                await self._run_tty(stream=False)
+            case "tty":
+                await self._run_tty(stream=args.stream)
             case "pty":
-                await self._run_pty(args)
+                await self._run_pty()
             case "socket":
-                await self._run_socket(args)
+                await self._run_socket(args.endpoint)
 
     async def repl(self, args):
         self.logger.info("dropping to REPL; use 'help(iface)' to see available APIs")
