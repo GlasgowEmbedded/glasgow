@@ -262,7 +262,19 @@ class SWDProbeInterface:
     async def ap_read(self, ap: int, reg: int) -> int:
         """Read AP register, switching the AP and AP bank if necessary."""
         await self._select_ap_addr(ap, reg)
-        return await self._raw_read(ap_ndp=1, addr=reg & 0xf)
+        await self._raw_read(ap_ndp=1, addr=reg & 0xf)
+        return await self.dp_read(DP_RDBUFF_addr)
+
+    async def ap_read_block(self, ap: int, reg: int, count: int) -> list[int]:
+        """Read AP register ``count`` times, switching the AP and AP bank if necessary."""
+        assert count >= 1
+        await self._select_ap_addr(ap, reg)
+        await self._raw_read(ap_ndp=1, addr=reg & 0xf)
+        results = []
+        for _ in range(count - 1):
+            results.append(await self._raw_read(ap_ndp=1, addr=reg & 0xf))
+        results.append(await self.dp_read(DP_RDBUFF_addr))
+        return results
 
     async def ap_write(self, ap: int, reg: int, data: int):
         """Write AP register, switching the AP and AP bank if necessary."""
@@ -284,8 +296,7 @@ class SWDProbeInterface:
 
     async def iter_aps(self) -> AsyncIterator[tuple[int, AP_IDR]]:
         for ap in range(0, 0x100):
-            await self.ap_read(ap, AP_IDR_addr)
-            apidr = AP_IDR.from_int(await self.dp_read(DP_RDBUFF_addr))
+            apidr = AP_IDR.from_int(await self.ap_read(ap, AP_IDR_addr))
             if apidr.to_int() == 0:
                 break
             yield ap, apidr
