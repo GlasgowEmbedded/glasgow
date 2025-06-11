@@ -17,5 +17,5 @@ class SWDProbeAppletTestCase(GlasgowAppletV2TestCase, applet=SWDProbeApplet):
             assert exn.kind == SWDProbeException.Kind.Error
 
     @applet_v2_hardware_test(args="-V 3.3", mock="swd_iface._pipe")
-    async def test_loopback_hw(self, applet):
+    async def test_identify(self, applet):
         await applet.swd_iface.initialize()
