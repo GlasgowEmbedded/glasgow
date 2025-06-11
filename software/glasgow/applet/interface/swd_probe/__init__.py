@@ -348,6 +348,11 @@ class SWDProbeApplet(GlasgowAppletV2):
             mfg_name = jedec_mfg_name_from_bank_num(apidr.DESIGNER >> 7, apidr.DESIGNER & 0x7f)
             self.logger.info("    designer=%#05x (%s) revision=%#03x",
                 apidr.DESIGNER, mfg_name or "unknown", apidr.REVISION)
+            match ap_class:
+                case AP_IDR_CLASS.MEM_AP:
+                    base = MEM_AP_BASE.from_int(await self.swd_iface.ap_read(ap, MEM_AP_BASE_addr))
+                    if base.P:
+                        self.logger.info("    baseaddr=%#010x", base.BASEADDR << 16)
 
     @classmethod
     def tests(cls):
