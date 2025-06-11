@@ -7,6 +7,8 @@
 # instructed in the comment there.
 
 from typing import Optional, AsyncIterator
+import sys
+import argparse
 import logging
 import struct
 
@@ -242,6 +244,7 @@ class SWDProbeInterface:
         if select != self._select:
             self._log(f"select {select.bits_repr()}")
             await self._raw_write(ap_ndp=0, addr=DP_SELECT_addr, data=select.to_int())
+            self._select = select
 
     async def _select_dp_addr(self, addr: int):
         if addr & 0xf == 0x4: # banked
@@ -335,6 +338,44 @@ class SWDProbeApplet(GlasgowAppletV2):
     async def setup(self, args):
         await self.swd_iface.clock.set_frequency(args.frequency * 1000)
 
+    @classmethod
+    def add_run_arguments(cls, parser):
+        def address(arg):
+            value = int(arg, 0)
+            if value & 0x3:
+                raise argparse.ArgumentTypeError("address must be word-aligned")
+            return value
+        def length(arg):
+            value = int(arg, 0)
+            if value & 0x3:
+                raise argparse.ArgumentTypeError("length must be word-aligned")
+            return value
+
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
+
+        p_dump_memory = p_operation.add_parser(
+            "dump-memory", help="read memory via a MEM-AP")
+        p_dump_memory.add_argument(
+            "address", metavar="ADDRESS", type=address,
+            help="start at ADDRESS")
+        p_dump_memory.add_argument(
+            "length", metavar="LENGTH", type=length,
+            help="dump LENGTH bytes")
+        p_dump_memory.add_argument(
+            "-f", "--file", metavar="FILENAME", type=argparse.FileType("wb"),
+            help="dump contents to FILENAME")
+        p_dump_memory.add_argument(
+            "--ap", metavar="INDEX", default=0,
+            help="access memory via MEM-AP #INDEX")
+
+    @staticmethod
+    def _show_progress(done, total):
+        if sys.stdout.isatty():
+            sys.stdout.write("\r\033[0K")
+            if done < total:
+                sys.stdout.write(f"{done}/{total} bytes done")
+            sys.stdout.flush()
+
     async def run(self, args):
         dpidr = await self.swd_iface.initialize()
         self.logger.info("DP: %sDPv%d DPIDR=%#010x",
@@ -343,17 +384,43 @@ class SWDProbeApplet(GlasgowAppletV2):
         self.logger.info("  designer=%#05x (%s) partno=%#04x revision=%#03x",
             dpidr.DESIGNER, mfg_name or "unknown", dpidr.PARTNO, dpidr.REVISION)
 
-        async for ap, apidr in self.swd_iface.iter_aps():
-            ap_class = AP_IDR_CLASS(apidr.CLASS)
-            self.logger.info("  AP #%d: %s APIDR=%#010x", ap, ap_class, apidr.to_int())
-            mfg_name = jedec_mfg_name_from_bank_num(apidr.DESIGNER >> 7, apidr.DESIGNER & 0x7f)
-            self.logger.info("    designer=%#05x (%s) revision=%#03x",
-                apidr.DESIGNER, mfg_name or "unknown", apidr.REVISION)
-            match ap_class:
-                case AP_IDR_CLASS.MEM_AP:
-                    base = MEM_AP_BASE.from_int(await self.swd_iface.ap_read(ap, MEM_AP_BASE_addr))
-                    if base.P:
-                        self.logger.info("    baseaddr=%#010x", base.BASEADDR << 16)
+        match args.operation:
+            case None:
+                async for ap, apidr in self.swd_iface.iter_aps():
+                    ap_class = AP_IDR_CLASS(apidr.CLASS)
+                    self.logger.info("  AP #%d: %s APIDR=%#010x", ap, ap_class, apidr.to_int())
+                    mfg_name = jedec_mfg_name_from_bank_num(
+                        apidr.DESIGNER >> 7, apidr.DESIGNER & 0x7f)
+                    self.logger.info("    designer=%#05x (%s) revision=%#03x",
+                        apidr.DESIGNER, mfg_name or "unknown", apidr.REVISION)
+                    if ap_class == AP_IDR_CLASS.MEM_AP:
+                        base = MEM_AP_BASE.from_int(
+                            await self.swd_iface.ap_read(ap, MEM_AP_BASE_addr))
+                        if base.P:
+                            self.logger.info("    baseaddr=%#010x", base.BASEADDR << 16)
+
+            case "dump-memory":
+                ap_cfg = MEM_AP_CFG.from_int(await self.swd_iface.ap_read(args.ap, MEM_AP_CFG_addr))
+
+                data = []
+                addr = args.address
+                last = args.address + args.length
+                await self.swd_iface.ap_write(args.ap, MEM_AP_CSW_addr,
+                    MEM_AP_CSW(AddrInc=1, Size=2).to_int())
+                while addr < last:
+                    await self.swd_iface.ap_write(args.ap, MEM_AP_TAR_addr, addr)
+                    block = await self.swd_iface.ap_read_block(args.ap, MEM_AP_DRW_addr,
+                        min(0x100, (last - addr) >> 2))
+                    data += block
+                    addr += len(block) << 2
+                    self._show_progress(len(data) << 2, args.length)
+
+                image = b"".join(word.to_bytes(4, "big" if ap_cfg.BE else "little")
+                                 for word in data)
+                if args.file:
+                    args.file.write(image)
+                else:
+                    print(image.hex())
 
     @classmethod
     def tests(cls):
