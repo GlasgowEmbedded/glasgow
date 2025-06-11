@@ -240,6 +240,7 @@ class SWDProbeInterface:
             for field, value in kwargs.items():
                 setattr(select, field, value)
         if select != self._select:
+            self._log(f"select {select.bits_repr()}")
             await self._raw_write(ap_ndp=0, addr=DP_SELECT_addr, data=select.to_int())
 
     async def _select_dp_addr(self, addr: int):
