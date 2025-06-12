@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import Any, Optional, Generator
+from typing import Any, Literal, Optional, Generator
 from collections.abc import Mapping
 from dataclasses import dataclass
 import re
@@ -166,37 +166,45 @@ class ClockDivisor:
     # by 2, 2 to reference period divided by 3, and so on.
 
     def __init__(self, logger: logging.Logger, register: AbstractRWRegister, *,
-                 ref_period: float, tolerance: float, name: str):
+                 ref_period: float, tolerance: float, round_mode: Literal["floor", "nearest"],
+                 name: str):
         self._logger     = logger
         self._register   = register
         self._ref_period = ref_period
         self._tolerance  = tolerance
+        self._round_mode = round_mode
         self._name       = name
+
+    def _round(self, value: float):
+        match self._round_mode:
+            case "floor":   return math.ceil(value)
+            case "nearest": return round(value)
+            case _:         assert False
 
     async def get_frequency(self) -> int:
         divisor = await self._register.get()
-        return math.ceil(1 / ((divisor + 1) * self._ref_period))
+        return self._round(1 / ((divisor + 1) * self._ref_period))
 
     async def set_frequency(self, requested: int):
         if requested <= 0:
             raise ClockingError(
-                f"requested frequency {requested / 1e6:.6f} MHz for clock {self._name!r} "
+                f"requested frequency {requested / 1e3:.3f} kHz for clock {self._name!r} "
                 f"is zero or negative")
 
-        divisor = max(math.ceil(1 / (self._ref_period * requested) - 1), 0)
+        divisor = max(self._round(1 / (self._ref_period * requested) - 1), 0)
         if divisor.bit_length() > self._register.shape.width:
             minimum = 1 / ((1 << self._register.shape.width) * self._ref_period)
             raise ClockingError(
-                f"requested frequency {requested / 1e6:.6f} MHz for clock "
-                f"{self._name!r} is below minimum achievable {minimum / 1e6:.6f} MHz")
+                f"requested frequency {requested / 1e3:.3f} kHz for clock "
+                f"{self._name!r} is below minimum achievable {minimum / 1e3:.3f} kHz")
 
-        actual = math.ceil(1 / ((divisor + 1) * self._ref_period))
+        actual = self._round(1 / ((divisor + 1) * self._ref_period))
         if abs(requested - actual) / requested < self._tolerance:
             level = logging.DEBUG
         else:
             level = logging.WARNING
-        self._logger.log(level, "setting clock %r frequency to %.6f MHz (requested %.6f MHz)",
-            self._name, actual / 1e6, requested / 1e6)
+        self._logger.log(level, "setting clock %r frequency to %.3f kHz (requested %.3f kHz)",
+            self._name, actual / 1e3, requested / 1e3)
         await self._register.set(divisor)
 
 
@@ -304,13 +312,15 @@ class AbstractAssembly(metaclass=ABCMeta):
         pass
 
     def add_clock_divisor(self, signal, ref_period: float, *, tolerance: Optional[float] = None,
+                          round_mode: Literal["floor", "nearest"] = "floor",
                           name: str) -> ClockDivisor:
         if not isinstance(signal.shape(), Shape):
             raise TypeError(f"signal must have a plain shape, not {signal.shape()!r}")
         if tolerance is None:
             tolerance = 1e-2 # assume the clock doesn't need to be very accurate and 1% is enough
         return ClockDivisor(self._logger, self.add_rw_register(signal),
-                            ref_period=ref_period, tolerance=tolerance, name=name)
+                            ref_period=ref_period, tolerance=tolerance, round_mode=round_mode,
+                            name=name)
 
     @abstractmethod
     def add_in_pipe(self, in_stream, *, in_flush=C(1),
