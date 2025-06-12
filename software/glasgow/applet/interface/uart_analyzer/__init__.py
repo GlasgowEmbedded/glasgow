@@ -33,19 +33,19 @@ class UARTAnalyzerMessage(data.Struct):
 
 
 class UARTAnalyzerComponent(wiring.Component):
-    o_stream: Out(stream.Signature(8))
-    o_flush:  Out(1)
-
-    period:   In(20)
-    overflow: Out(1)
-
     def __init__(self, port, parity):
         assert len(port) <= 64
 
         self._port   = port
         self._parity = parity
 
-        super().__init__()
+        super().__init__({
+            "o_stream": Out(stream.Signature(8)),
+            "o_flush":  Out(1),
+
+            "periods":  In(20).array(len(port)),
+            "overflow": Out(1),
+        })
 
     def elaborate(self, platform):
         m = Module()
@@ -53,8 +53,8 @@ class UARTAnalyzerComponent(wiring.Component):
         channels = []
         for index, pin in enumerate(self._port):
             m.submodules[f"ch{index}"] = uart = UART(PortGroup(rx=pin),
-                bit_cyc=(1 << len(self.period)) - 1, parity=self._parity)
-            m.d.comb += uart.bit_cyc.eq(self.period + 1)
+                bit_cyc=(1 << len(self.periods[index])) - 1, parity=self._parity)
+            m.d.comb += uart.bit_cyc.eq(self.periods[index] + 1)
             channels.append(uart)
 
         m.submodules.queue = queue = Queue(shape=UARTAnalyzerMessage, depth=512)
@@ -108,18 +108,21 @@ class UARTAnalyzerInterface:
         port = assembly.add_port(self._pins, name="uart")
         component = assembly.add_submodule(UARTAnalyzerComponent(port, parity=parity))
         self._pipe = assembly.add_in_pipe(component.o_stream, in_flush=component.o_flush)
-        self._period = assembly.add_clock_divisor(component.period,
-            ref_period=assembly.sys_clk_period, round_mode="nearest", name="baud")
+        self._periods = [assembly.add_clock_divisor(period, ref_period=assembly.sys_clk_period,
+                            round_mode="nearest", name="baud")
+                         for period in component.periods]
         self._overflow = assembly.add_ro_register(component.overflow)
 
     def _log(self, message, *args):
         self._logger.log(self._level, "UART analyzer: " + message, *args)
 
-    @property
-    def baud(self) -> ClockDivisor:
-        return self._period
+    def baud(self, channel: str) -> ClockDivisor:
+        """Clock divisor for ``channel``. Raises ``ValueError`` if no such channel exists."""
+        return self._periods[self._channels.index(channel)]
 
     async def capture(self) -> list[tuple[str, bytearray | UARTAnalyzerError]]:
+        """Captures a sequence of messages: (channel, data) or (channel, error) pairs."""
+
         if await self._overflow:
             raise GlasgowAppletError("overflow")
 
@@ -191,10 +194,17 @@ class UARTAnalyzerApplet(GlasgowAppletV2):
     def add_setup_arguments(cls, parser):
         parser.add_argument(
             "-b", "--baud", metavar="RATE", type=int, default=115200,
-            help="set baud rate to RATE bits per second (default: %(default)s)")
+            help="set RX and TX baud rates to RATE bits per second (default: %(default)s)")
+        parser.add_argument(
+            "--rx-baud", metavar="RATE", type=int, default=0,
+            help="set RX baud rate to RATE bits per second (default: same as --baud)")
+        parser.add_argument(
+            "--tx-baud", metavar="RATE", type=int, default=0,
+            help="set TX baud rate to RATE bits per second (default: same as --baud)")
 
     async def setup(self, args):
-        await self.uart_analyzer_iface.baud.set_frequency(args.baud)
+        await self.uart_analyzer_iface.baud("rx").set_frequency(args.rx_baud or args.baud)
+        await self.uart_analyzer_iface.baud("tx").set_frequency(args.tx_baud or args.baud)
 
     @classmethod
     def add_run_arguments(cls, parser):
