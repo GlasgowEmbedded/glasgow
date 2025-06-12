@@ -9,9 +9,10 @@ I/O interfaces
     :maxdepth: 2
 
     uart
+    uart_analyzer
     spi_analyzer
-    qspi_analyzer
     qspi_controller
+    qspi_analyzer
     jtag_pinout
     jtag_openocd
     jtag_xvc
