@@ -28,16 +28,20 @@ class UARTAnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=UARTAnalyzerApp
         await ctx.tick().repeat(20)
         await self.tx_uart.write(b"tx")
 
-        self.assertEqual(("rx", ord("R")), await applet.uart_analyzer_iface.capture())
-        self.assertEqual(("tx", ord("t")), await applet.uart_analyzer_iface.capture())
-        self.assertEqual(("rx", ord("X")), await applet.uart_analyzer_iface.capture())
-        self.assertEqual(("tx", ord("x")), await applet.uart_analyzer_iface.capture())
+        await ctx.tick().repeat(500)
+        self.assertEqual(await applet.uart_analyzer_iface.capture(), [
+            ("rx", b"R"),
+            ("tx", b"t"),
+            ("rx", b"X"),
+            ("tx", b"x"),
+        ])
 
         await self.rx_uart.set_baud(30000)
         await self.rx_uart.write(b"U")
-        self.assertEqual(("rx", 0xC7),
-                         await applet.uart_analyzer_iface.capture())
-        self.assertEqual(("rx", UARTAnalyzerError.Frame),
-                         await applet.uart_analyzer_iface.capture())
-        self.assertEqual(("rx", 0xC3),
-                         await applet.uart_analyzer_iface.capture())
+
+        await ctx.tick().repeat(500)
+        self.assertEqual(await applet.uart_analyzer_iface.capture(), [
+            ("rx", b"\xC7"),
+            ("rx", UARTAnalyzerError.Frame),
+            ("rx", b"\xC3"),
+        ])
