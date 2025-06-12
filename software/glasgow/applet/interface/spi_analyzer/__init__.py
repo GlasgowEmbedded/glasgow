@@ -202,9 +202,6 @@ class SPIAnalyzerInterface:
             component.o_stream, in_flush=component.o_flush, fifo_depth=0)
         self._overflow = assembly.add_ro_register(component.overflow)
 
-        self._buffer  = bytearray()
-        self._packets = []
-
     def _log(self, message, *args):
         self._logger.log(self._level, "SPI analyzer: " + message, *args)
 
