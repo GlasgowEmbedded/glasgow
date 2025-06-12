@@ -118,17 +118,36 @@ class UARTAnalyzerInterface:
     def baud(self) -> ClockDivisor:
         return self._period
 
-    async def capture(self) -> tuple[str, int | UARTAnalyzerError]:
+    async def capture(self) -> list[tuple[str, bytearray | UARTAnalyzerError]]:
         if await self._overflow:
             raise GlasgowAppletError("overflow")
-        message = UARTAnalyzerMessage.from_bits(int.from_bytes(await self._pipe.recv(2), "little"))
-        channel = self._channels[message.channel]
-        if message.error == UARTAnalyzerError.Good:
+
+        results = []
+
+        def add_data(channel, data):
             self._log(f"chan={channel} data={message.data:02x}")
-            return channel, message.data
-        else:
+            match results:
+                case [*_, (last_channel, bytearray() as last_data)] if channel == last_channel:
+                    last_data.append(data)
+                case _:
+                    results.append((channel, bytearray([data])))
+
+        def add_error(channel, error):
             self._log(f"chan={channel} err={message.error.name}")
-            return channel, message.error
+            results.append((channel, error))
+
+        size = 2
+        data = await self._pipe.recv((self._pipe.readable - (self._pipe.readable % size)) or size)
+        for start in range(len(data))[::size]:
+            message = UARTAnalyzerMessage.from_bits(
+                int.from_bytes(data[start:start + size], "little"))
+            channel = self._channels[message.channel]
+            if message.error == UARTAnalyzerError.Good:
+                add_data(channel, message.data)
+            else:
+                add_error(channel, message.error)
+
+        return results
 
 
 class UARTAnalyzerApplet(GlasgowAppletV2):
@@ -140,7 +159,8 @@ class UARTAnalyzerApplet(GlasgowAppletV2):
 
     The capture file format is Comma Separated Values, in the following line formats:
 
-    * ``<CH>,<DATA>``, where <CH> is ``rx`` or ``tx``, and <DATA> is an 8-bit hexadecimal value.
+    * ``<CH>,<DATA>``, where <CH> is ``rx`` or ``tx``, and <DATA> is a sequence of 8-bit
+      hexadecimal values.
     * ``<CH>,#F``, where <CH> is the same as above, to indicate a frame error on this channel.
     * ``<CH>,#P``, where <CH> is the same as above, to indicate a parity error on this channel.
     """
@@ -183,16 +203,16 @@ class UARTAnalyzerApplet(GlasgowAppletV2):
             pass # pipe, tty/pty, etc
 
         while True:
-            channel, data = await self.uart_analyzer_iface.capture()
-            match data:
-                case int():
-                    args.file.write(f"{channel},{data:02x}\n")
-                case UARTAnalyzerError.Frame:
-                    args.file.write(f"{channel},#F\n")
-                case UARTAnalyzerError.Parity:
-                    args.file.write(f"{channel},#P\n")
-                case _:
-                    assert False
+            for channel, data in await self.uart_analyzer_iface.capture():
+                match data:
+                    case bytearray():
+                        args.file.write(f"{channel},{data.hex()}\n")
+                    case UARTAnalyzerError.Frame:
+                        args.file.write(f"{channel},#F\n")
+                    case UARTAnalyzerError.Parity:
+                        args.file.write(f"{channel},#P\n")
+                    case _:
+                        assert False
             args.file.flush()
 
     @classmethod
