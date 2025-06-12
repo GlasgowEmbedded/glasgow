@@ -1,5 +1,6 @@
 from typing import Literal, Optional
 from functools import reduce
+import re
 import sys
 import logging
 import asyncio
@@ -159,8 +160,13 @@ class UARTAnalyzerApplet(GlasgowAppletV2):
 
     The capture file format is Comma Separated Values, in the following line formats:
 
-    * ``<CH>,<DATA>``, where <CH> is ``rx`` or ``tx``, and <DATA> is a sequence of 8-bit
-      hexadecimal values.
+    * ``<CH>,<HEX-DATA>``, where <CH> is ``rx`` or ``tx``, and <HEX-DATA> is a sequence of 8-bit
+      hexadecimal values. (Unless ``--ascii`` is used.)
+    * ``<CH>,"<ASC-DATA>"``, where <CH> is the same as above, and <ASC-DATA> is a sequence of
+      ASCII characters or escape sequences. Characters 0x00, 0x09, 0x0A, 0x0D, 0x22, 0x5C are
+      escaped as ``\\0``, ``\\t``, ``\\n``, ``\\r``, ``\\x22``, ``\\\\``, and all other characters
+      not in the range 0x20..0x7E (inclusive) are escaped as ``\\x<HEX>``, where <HEX> is two
+      hexadecimal digits. (If ``--ascii`` is used.)
     * ``<CH>,#F``, where <CH> is the same as above, to indicate a frame error on this channel.
     * ``<CH>,#P``, where <CH> is the same as above, to indicate a parity error on this channel.
     """
@@ -195,6 +201,9 @@ class UARTAnalyzerApplet(GlasgowAppletV2):
         parser.add_argument("file", metavar="FILE",
             type=argparse.FileType("w"), nargs="?", default=sys.stdout,
             help="save communications to FILE as comma separated values")
+        parser.add_argument(
+            "--ascii", "-A", default=False, action="store_true",
+            help="format output data as ASCII with escape sequences")
 
     async def run(self, args):
         try:
@@ -202,11 +211,25 @@ class UARTAnalyzerApplet(GlasgowAppletV2):
         except OSError:
             pass # pipe, tty/pty, etc
 
+        if args.ascii:
+            def escape_data(data: bytearray):
+                data = data.replace(b"\\", b"\\\\")
+                data = data.replace(b"\0", b"\\0")
+                data = data.replace(b"\t", b"\\t")
+                data = data.replace(b"\r", b"\\r")
+                data = data.replace(b"\n", b"\\n")
+                data = re.sub(rb"\"|[^\x20-\x7e]", lambda m: b"\\x" + m[0].hex().encode("ascii"),
+                              data)
+                return f'"{data.decode("ascii")}"'
+        else:
+            def escape_data(data: bytearray):
+                return data.hex()
+
         while True:
             for channel, data in await self.uart_analyzer_iface.capture():
                 match data:
                     case bytearray():
-                        args.file.write(f"{channel},{data.hex()}\n")
+                        args.file.write(f"{channel},{escape_data(data)}\n")
                     case UARTAnalyzerError.Frame:
                         args.file.write(f"{channel},#F\n")
                     case UARTAnalyzerError.Parity:
