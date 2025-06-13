@@ -415,17 +415,17 @@ class ProgramMEC16xxApplet(DebugARCApplet):
 
     There are two types of erase operations that can be performed:
 
-        * Emergency erase: It erases both the flash and eeprom (if the device has an eeprom),
-          using a special JTAG sequence, which may work even in the case of boot code
-          corruption
-        * Non-emergency erase: (see commands erase-flash and erase-eeprom). This uses normal
-          flash or eeprom controller commands to perform the erase, but if the target is
-          protected, then it might fail.
+    * Emergency erase: It erases both the flash and eeprom (if the device has an eeprom),
+        using a special JTAG sequence, which may work even in the case of boot code
+        corruption
+    * Non-emergency erase: (see commands erase-flash and erase-eeprom). This uses normal
+        flash or eeprom controller commands to perform the erase, but if the target is
+        protected, then it might fail.
 
     Typical flash sizes:
 
-        * 192KiB: MEC1609(i), MEC1618(i), MEC1632, MEC1633
-        * 256KiB: MEC1663
+    * 192KiB: MEC1609(i), MEC1618(i), MEC1632, MEC1633
+    * 256KiB: MEC1663
 
     To avoid data loss when the flash size is not known for certain, we recommend attempting
     to read 256KiB flash image, and analyzing the content.

@@ -55,12 +55,16 @@ class TextHelpFormatter(argparse.HelpFormatter):
             if text.startswith("::"):
                 return text[2:]
 
-            list_match = re.match(r"(\s*)(\*.+)", text, flags=re.S)
-            if list_match:
-                text = re.sub(r"(\S)\s+(\S)", r"\1 \2", list_match[2])
-                text = textwrap.fill(text, width,
-                                     initial_indent=indent + "  ",
-                                     subsequent_indent=indent + "    ")
+            if text.startswith("*"):
+                items = re.findall(r"^\*(?:(?!^\*).)+", text, flags=re.S|re.M)
+                text = ""
+                for item in items:
+                    item = re.sub(r"(\S)\s+(\S)", r"\1 \2", item)
+                    item = textwrap.fill(item, width,
+                                         initial_indent=indent + "  ",
+                                         subsequent_indent=indent + "    ")
+                    text += item + "\n"
+                return text + "\n"
             else:
                 text = textwrap.fill(text, width,
                                      initial_indent=indent,
