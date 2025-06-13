@@ -318,7 +318,6 @@ class Memory25xDecoder:
                     addr = self._decode_addr(trace, self._mode, x=1)
                     _    = trace.read_copi(2)
                     data = trace.read_dual()
-                    assert mode == 0, f"mode bits ({mode:08b}) not implemented"
                     self._log("  data=%s", dump_hex(data))
                     self._data.write(addr, data)
 
@@ -327,7 +326,6 @@ class Memory25xDecoder:
                     addr = self._decode_addr(trace, self._mode, x=1)
                     _    = trace.read_copi(2)
                     data = trace.read_quad()
-                    assert mode == 0, f"mode bits ({mode:08b}) not implemented"
                     self._log("  data=%s", dump_hex(data))
                     self._data.write(addr, data)
 
