@@ -418,20 +418,20 @@ class MemoryONFIApplet(GlasgowApplet):
     The NAND Flash command set is not standardized in practice. This applet uses the following
     commands when identifying the memory:
 
-        * Cmd 0xFF: Reset (all devices)
-        * Cmd 0x90 Addr 0x00: Read ID, JEDEC Manufacturer and Device (all devices)
-        * Cmd 0x90 Addr 0x20: Read ID, ONFI Signature (ONFI and some non-ONFI devices)
-        * Cmd 0xEC: Read Parameter Page (ONFI only)
+    * Cmd 0xFF: Reset (all devices)
+    * Cmd 0x90 Addr 0x00: Read ID, JEDEC Manufacturer and Device (all devices)
+    * Cmd 0x90 Addr 0x20: Read ID, ONFI Signature (ONFI and some non-ONFI devices)
+    * Cmd 0xEC: Read Parameter Page (ONFI only)
 
     If the memory doesn't respond or gives invalid response to ONFI commands, it can still be
     used, but the array parameters need to be specified explicitly.
 
     The applet use the following commands while reading and writing data:
 
-        * Cmd 0x70: Read Status (all devices)
-        * Cmd 0x00 Addr Col1..2,Row1..3 Cmd 0x30: Read (all devices)
-        * Cmd 0x60 Addr Row1..3 Cmd 0xD0: Erase (all devices)
-        * Cmd 0x80 Addr Col1..2,Row1..3 [Cmd 0x85 Col1..2]+ Cmd 0x10: Page Program (all devices)
+    * Cmd 0x70: Read Status (all devices)
+    * Cmd 0x00 Addr Col1..2,Row1..3 Cmd 0x30: Read (all devices)
+    * Cmd 0x60 Addr Row1..3 Cmd 0xD0: Erase (all devices)
+    * Cmd 0x80 Addr Col1..2,Row1..3 [Cmd 0x85 Col1..2]+ Cmd 0x10: Page Program (all devices)
     """
 
     @classmethod

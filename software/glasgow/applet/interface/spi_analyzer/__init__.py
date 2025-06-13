@@ -234,7 +234,6 @@ class SPIAnalyzerApplet(GlasgowAppletV2):
     * ``<COPI>,<CIPO>``, where <COPI> and <CIPO> are hexadecimal byte sequences with each eight
       bits corresponding to samples of COPI and CIPO, respectively (from MSB to LSB); this format
       is used if one CS# pin is provided.
-
     * ``<CS>,<COPI>,<CIPO>``, where <CS> is a 0-based CS# pin index and <COPI> and <CIPO> are
       the same as above; this format is used if multiple CS# pins are provided.
 

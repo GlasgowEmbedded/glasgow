@@ -385,7 +385,6 @@ class Memory25xAppletTool(GlasgowAppletTool, applet=Memory25xApplet):
 
     * ``<COPI>,<CIPO>``, where <COPI> and <CIPO> are hexadecimal byte sequences with each eight
       bits corresponding to samples of COPI and CIPO, respectively (from MSB to LSB).
-
     * ``<DATA>``, where <DATA> is a hexadecimal nibble sequence with each four bits corresponding
       to samples of HOLD#, WP#, CIPO, COPI (from MSB to LSB).
 
@@ -396,20 +395,20 @@ class Memory25xAppletTool(GlasgowAppletTool, applet=Memory25xApplet):
     The list below details every command that is recognized by this tool. If your capture includes
     commands not currently recognized, please open an issue with a capture file attached.
 
-    * 03h (Read Data)\n
-    * 04h (Write Disable)\n
-    * 05h (Read Status Register)\n
-    * 06h (Write Enable)\n
-    * 0Bh (Fast Read)\n
-    * 4Bh (Read Unique ID)\n
-    * 5Ah (Read SFDP)\n
-    * 9Fh (Read JEDEC ID)\n
-    * B7h (Enter 4-Byte Address Mode)\n
-    * E9h (Exit 4-Byte Address Mode)\n
-    * 3Bh (Dual Output Fast Read)\n
-    * 6Bh (Quad Output Fast Read)\n
-    * BBh (Dual I/O Fast Read)\n
-    * EBh (Quad I/O Fast Read)\n
+    * 03h (Read Data)
+    * 04h (Write Disable)
+    * 05h (Read Status Register)
+    * 06h (Write Enable)
+    * 0Bh (Fast Read)
+    * 4Bh (Read Unique ID)
+    * 5Ah (Read SFDP)
+    * 9Fh (Read JEDEC ID)
+    * B7h (Enter 4-Byte Address Mode)
+    * E9h (Exit 4-Byte Address Mode)
+    * 3Bh (Dual Output Fast Read)
+    * 6Bh (Quad Output Fast Read)
+    * BBh (Dual I/O Fast Read)
+    * EBh (Quad I/O Fast Read)
     """
 
     @classmethod

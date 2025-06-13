@@ -624,9 +624,9 @@ class MemoryFloppyApplet(GlasgowApplet):
     splitting the FDC ribbon cable such that two 20-pin IDC connectors may be crimped onto it
     for easy connection as follows:
 
-        * Conductors 1-7 are unused (cut off the cable);
-        * Conductors 8-23 are crimped to connect to pins 3-18 of connector A;
-        * Conductors 24-34 are crimped to connect to pins 3-14 of connector B.
+    * Conductors 1-7 are unused (cut off the cable);
+    * Conductors 8-23 are crimped to connect to pins 3-18 of connector A;
+    * Conductors 24-34 are crimped to connect to pins 3-14 of connector B.
 
     If desired, conductors 2-3 may be crimped to connect to pins 15-16 of connector B to connect
     the REDWC pin as well.
@@ -753,10 +753,10 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
     the necessary geometry, and all areas that were not recovered from the raw image are filled
     with the following repeating byte patterns:
 
-        * <FA11> for sectors completely missing from the raw image;
-        * <DEAD> for sectors whose header was found but data was corrupted;
-        * <BAAD> for sectors that were marked as "deleted" (i.e. bad blocks) in the raw image,
-          and no decoding was attempted.
+    * <FA11> for sectors completely missing from the raw image;
+    * <DEAD> for sectors whose header was found but data was corrupted;
+    * <BAAD> for sectors that were marked as "deleted" (i.e. bad blocks) in the raw image,
+        and no decoding was attempted.
 
     ("Deleted" sectors are not currently recognized.)
     """
