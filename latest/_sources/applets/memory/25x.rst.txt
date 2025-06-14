@@ -1,0 +1,12 @@
+``memory-25x``
+==============
+
+.. _applet.memory._25x:
+
+.. autoprogram:: glasgow.applet.memory._25x:Memory25xApplet._get_argparser_for_sphinx("memory-25x")
+    :prog: glasgow run memory-25x
+
+.. _applet.memory._25x.tool:
+
+.. autoprogram:: glasgow.applet.memory._25x.decode:Memory25xAppletTool._get_argparser_for_sphinx("memory-25x")
+    :prog: glasgow tool memory-25x
