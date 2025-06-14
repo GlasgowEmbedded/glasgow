@@ -48,6 +48,8 @@ What can I do with Glasgow?
 
   * automatically measure and adjust baud rate
 
+* analyze :ref:`UART <applet.interface.uart_analyzer>` transactions
+
 * initiate SPI, :ref:`QSPI <applet.interface.qspi_controller>`, or I²C transactions
 
 * analyze :ref:`SPI <applet.interface.spi_analyzer>` and :ref:`QSPI <applet.interface.qspi_analyzer>` transactions at up to ~100 MHz
