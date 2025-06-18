@@ -19,12 +19,15 @@
 #
 # See also the note on the i8042 controller in the ps2-host applet.
 
-from collections import namedtuple
+from dataclasses import dataclass
 import logging
 import asyncio
 
-from ... import *
-from ...interface.ps2_host import PS2HostApplet
+from glasgow.applet import GlasgowAppletV2, GlasgowAppletError
+from ...interface.ps2_host import PS2HostApplet, PS2HostInterface
+
+
+__all__ = ["SensorMousePS2Interface", "SensorMousePS2Report", "SensorMousePS2Error"]
 
 
 CMD_RESET               = 0xff
@@ -65,9 +68,18 @@ REP_4TH_BUTTON          = 0b01_0000
 REP_5TH_BUTTON          = 0b10_0000
 
 
-SensorMousePS2Report = namedtuple("SensorMousePS2Report",
-    ("left", "right", "middle", "button_4", "button_5",
-     "offset_x", "offset_y", "offset_z", "overflow_x", "overflow_y"))
+@dataclass
+class SensorMousePS2Report:
+    left:       bool = False
+    right:      bool = False
+    middle:     bool = False
+    button_4:   bool = False
+    button_5:   bool = False
+    offset_x:   int  = 0
+    offset_y:   int  = 0
+    offset_z:   int  = 0
+    overflow_x: bool = False
+    overflow_y: bool = False
 
 
 class SensorMousePS2Error(GlasgowAppletError):
@@ -75,16 +87,17 @@ class SensorMousePS2Error(GlasgowAppletError):
 
 
 class SensorMousePS2Interface:
-    def __init__(self, interface, logger):
-        self.lower   = interface
+    def __init__(self, logger, assembly, *, clock, data, reset):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+
+        self.ps2 = PS2HostInterface(logger, assembly, clock=clock, data=data, reset=reset)
 
     def _log(self, message, *args):
         self._logger.log(self._level, "PS/2 Mouse: " + message, *args)
 
     async def reset(self):
-        bat_result, = await self.lower.send_command(CMD_RESET, ret=1)
+        bat_result, = await self.ps2.send_command(CMD_RESET, ret=1)
         self._log("reset bat-result=%02x", bat_result)
         if bat_result == 0xaa:
             pass # passed
@@ -95,7 +108,7 @@ class SensorMousePS2Interface:
                                       .format(bat_result))
 
     async def identify(self):
-        ident, = await self.lower.send_command(CMD_GET_DEVICE_ID, ret=1)
+        ident, = await self.ps2.send_command(CMD_GET_DEVICE_ID, ret=1)
         self._log("ident=%02x", ident)
         return ident
 
@@ -114,36 +127,36 @@ class SensorMousePS2Interface:
     async def set_reporting(self, enabled=True):
         self._log("reporting=%s", "on" if enabled else "off")
         if enabled:
-            await self.lower.send_command(CMD_ENABLE_REPORTING)
+            await self.ps2.send_command(CMD_ENABLE_REPORTING)
         else:
-            await self.lower.send_command(CMD_DISABLE_REPORTING)
+            await self.ps2.send_command(CMD_DISABLE_REPORTING)
 
     async def set_sample_rate(self, rate):
         assert rate in ARG_SAMPLE_RATES
         self._log("sample-rate=%d [report/s]", rate)
-        await self.lower.send_command(CMD_SET_SAMPLE_RATE)
-        await self.lower.send_command(rate)
+        await self.ps2.send_command(CMD_SET_SAMPLE_RATE)
+        await self.ps2.send_command(rate)
 
     async def set_remote_mode(self):
         self._log("mode=remote")
-        await self.lower.send_command(CMD_SET_REMOTE_MODE)
+        await self.ps2.send_command(CMD_SET_REMOTE_MODE)
 
     async def set_stream_mode(self):
         self._log("mode=stream")
-        await self.lower.send_command(CMD_SET_STREAM_MODE)
+        await self.ps2.send_command(CMD_SET_STREAM_MODE)
 
     async def set_resolution(self, resolution):
         assert resolution in ARG_RESOLUTIONS
         self._log("resolution=%d [count/mm]", resolution)
-        await self.lower.send_command(CMD_SET_RESOLUTION)
-        await self.lower.send_command(ARG_RESOLUTIONS.index(resolution))
+        await self.ps2.send_command(CMD_SET_RESOLUTION)
+        await self.ps2.send_command(ARG_RESOLUTIONS.index(resolution))
 
     async def set_autospeed(self, enabled):
         self._log("autospeed=%s", "on" if enabled else "off")
         if enabled:
-            await self.lower.send_command(CMD_ENABLE_AUTOSPEED)
+            await self.ps2.send_command(CMD_ENABLE_AUTOSPEED)
         else:
-            await self.lower.send_command(CMD_DISABLE_AUTOSPEED)
+            await self.ps2.send_command(CMD_DISABLE_AUTOSPEED)
 
     def _size_report(self, ident):
         if ident == ID_MOUSE_STANDARD:
@@ -193,14 +206,14 @@ class SensorMousePS2Interface:
     async def request_report(self, ident=None):
         if ident is None:
             ident = await self.identify()
-        packet = await self.lower.send_command(CMD_READ_DATA, ret=self._size_report(ident))
+        packet = await self.ps2.send_command(CMD_READ_DATA, ret=self._size_report(ident))
         return self._decode_report(ident, packet)
 
     async def request_report(self, ident=None):
         if ident is None:
             ident = await self.identify()
         size = self._size_report(ident)
-        packet = await self.lower.send_command(CMD_READ_DATA, ret=size)
+        packet = await self.ps2.send_command(CMD_READ_DATA, ret=size)
         return self._decode_report(ident, packet)
 
     async def stream_reports(self, ident=None):
@@ -211,11 +224,11 @@ class SensorMousePS2Interface:
         size = self._size_report(ident)
         more = True
         while more or more is None:
-            packet = await self.lower.recv_packet(size)
+            packet = await self.ps2.recv_packet(size)
             more = (yield self._decode_report(ident, packet))
 
 
-class SensorMousePS2Applet(PS2HostApplet):
+class SensorMousePS2Applet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "receive axis and button information from PS/2 mice"
     description = """
@@ -223,16 +236,26 @@ class SensorMousePS2Applet(PS2HostApplet):
     may be logged or forwarded to the desktop on Linux.
 
     This applet has additional Python dependencies:
-        * uinput (optional, required for Linux desktop forwarding)
-    """
 
-    async def run(self, device, args):
-        ps2_iface = await self.run_lower(SensorMousePS2Applet, device, args)
-        mouse_iface = SensorMousePS2Interface(ps2_iface, self.logger)
-        return mouse_iface
+    * uinput (optional, required for Linux desktop forwarding)
+    """
+    required_revision = PS2HostApplet.required_revision
 
     @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_build_arguments(cls, parser, access):
+        access.add_voltage_argument(parser)
+        access.add_pins_argument(parser, "clock", default=True)
+        access.add_pins_argument(parser, "data", default=True)
+        access.add_pins_argument(parser, "reset")
+
+    def build(self, args):
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            self.mouse_iface = SensorMousePS2Interface(self.logger, self.assembly,
+                clock=args.clock, data=args.data, reset=args.reset)
+
+    @classmethod
+    def add_run_arguments(cls, parser):
         parser.add_argument(
             "--no-reset", dest="reset", default=True, action="store_false",
             help="do not send the reset command before initialization (does not affect reset pin)")
@@ -242,10 +265,12 @@ class SensorMousePS2Applet(PS2HostApplet):
 
         parser.add_argument(
             "-r", "--resolution", metavar="RES", type=int, choices=ARG_RESOLUTIONS,
-            help="set resolution to RES counts/mm (one of: %(choices)s)")
+            help="set resolution to RES counts/mm "
+                 f"(one of: {', '.join(str(v) for v in ARG_RESOLUTIONS)})")
         parser.add_argument(
             "-s", "--sample-rate", metavar="RATE", type=int, choices=ARG_SAMPLE_RATES,
-            help="set sample rate to RATE reports/s (one of: %(choices)s)")
+            help="set sample rate to RATE reports/s "
+                 f"(one of: {', '.join(str(v) for v in ARG_SAMPLE_RATES)})")
         parser.add_argument(
             "-a", "--acceleration", dest="acceleration", default=None, action="store_true",
             help="enable acceleration (also known as autospeed and scaling)")
@@ -267,14 +292,14 @@ class SensorMousePS2Applet(PS2HostApplet):
             "-y", "--invert-y", default=1, action="store_const", const=-1,
             help="invert Y axis offsets")
 
-    async def interact(self, device, args, mouse_iface):
+    async def run(self, args):
         async def initialize():
             if args.reset:
-                await mouse_iface.reset()
+                await self.mouse_iface.reset()
             if args.probe:
-                return await mouse_iface.probe()
+                return await self.mouse_iface.probe()
             else:
-                return await mouse_iface.identify()
+                return await self.mouse_iface.identify()
 
         try:
             ident = await asyncio.wait_for(initialize(), timeout=1)
@@ -291,14 +316,14 @@ class SensorMousePS2Applet(PS2HostApplet):
             self.logger.warning("found unknown mouse with ID %#04x", ident)
 
         if args.resolution is not None:
-            await mouse_iface.set_resolution(args.resolution)
+            await self.mouse_iface.set_resolution(args.resolution)
         if args.sample_rate is not None:
-            await mouse_iface.set_sample_rate(args.sample_rate)
+            await self.mouse_iface.set_sample_rate(args.sample_rate)
         if args.acceleration is not None:
-            await mouse_iface.set_autospeed(args.acceleration)
+            await self.mouse_iface.set_autospeed(args.acceleration)
 
         if args.operation == "stream-log":
-            async for report in mouse_iface.stream_reports(ident):
+            async for report in self.mouse_iface.stream_reports(ident):
                 overflow = report.overflow_x or report.overflow_y
                 self.logger.log(logging.WARN if overflow else logging.INFO,
                     "btn=%s%s%s%s%s x=%+4d%s y=%+4d%s z=%+2d",
@@ -327,7 +352,7 @@ class SensorMousePS2Applet(PS2HostApplet):
                 uinput.REL_WHEEL,
             ])
 
-            async for report in mouse_iface.stream_reports(ident):
+            async for report in self.mouse_iface.stream_reports(ident):
                 device.emit(uinput.BTN_LEFT,   report.left,     syn=False)
                 device.emit(uinput.BTN_MIDDLE, report.middle,   syn=False)
                 device.emit(uinput.BTN_RIGHT,  report.right,    syn=False)
