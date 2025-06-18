@@ -14,7 +14,7 @@ class I2CBus(Elaboratable):
 
     Decodes bus conditions (start, stop, sample and setup) and provides synchronization.
     """
-    def __init__(self, pads):
+    def __init__(self, pads, analyzer=None):
         self.pads = pads
 
         self.scl_i = Signal()
@@ -27,11 +27,28 @@ class I2CBus(Elaboratable):
         self.start  = Signal(name="bus_start")
         self.stop   = Signal(name="bus_stop")
 
+        self.scl_t = io.Buffer("io", self.pads.scl)
+        self.sda_t = io.Buffer("io", self.pads.sda)
+
+        if analyzer:
+            analyzer.add_generic_event(None, "i2c-scl_i", self.scl_i)
+            analyzer.add_generic_event(None, "i2c-scl_o", self.scl_o)
+            analyzer.add_generic_event(None, "i2c-sda_i", self.sda_i)
+            analyzer.add_generic_event(None, "i2c-sda_o", self.sda_o)
+
+            analyzer.add_generic_event(None, "i2c-sample", self.sample)
+            analyzer.add_generic_event(None, "i2c-setup", self.setup)
+            analyzer.add_generic_event(None, "i2c-start", self.start)
+            analyzer.add_generic_event(None, "i2c-stop", self.stop)
+
+            analyzer.add_pin_event(None, "i2c-scl_t", self.scl_t)
+            analyzer.add_pin_event(None, "i2c-sda_t", self.sda_t)
+
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.io_scl = scl_t = io.Buffer("io", self.pads.scl)
-        m.submodules.io_sda = sda_t = io.Buffer("io", self.pads.sda)
+        m.submodules.io_scl = scl_t = self.scl_t
+        m.submodules.io_sda = sda_t = self.sda_t
 
         scl_r = Signal(init=1)
         sda_r = Signal(init=1)
@@ -99,7 +116,7 @@ class I2CInitiator(Elaboratable):
     :attr ack_i:
         Acknowledge bit to be transmitted. Latched immediately after ``read`` is asserted.
     """
-    def __init__(self, pads, period_cyc, clk_stretch=True):
+    def __init__(self, pads, period_cyc, clk_stretch=True, analyzer=None):
         self.period_cyc = int(period_cyc)
         self.clk_stretch = clk_stretch
 
@@ -113,7 +130,18 @@ class I2CInitiator(Elaboratable):
         self.data_o = Signal(8)
         self.ack_i  = Signal()
 
-        self.bus = I2CBus(pads)
+        self.bus = I2CBus(pads, analyzer=analyzer)
+
+        if analyzer:
+            analyzer.add_generic_event(None, "i2c-i-busy", self.busy)
+            analyzer.add_generic_event(None, "i2c-i-start", self.start)
+            analyzer.add_generic_event(None, "i2c-i-stop", self.stop)
+            analyzer.add_generic_event(None, "i2c-i-read", self.read)
+            analyzer.add_generic_event(None, "i2c-i-data_i", self.data_i)
+            analyzer.add_generic_event(None, "i2c-i-ack_o", self.ack_o)
+            analyzer.add_generic_event(None, "i2c-i-write", self.write)
+            analyzer.add_generic_event(None, "i2c-i-data_o", self.data_o)
+            analyzer.add_generic_event(None, "i2c-i-ack_i", self.ack_i)
 
     def elaborate(self, platform):
         m = Module()
@@ -265,6 +293,14 @@ class I2CTarget(Elaboratable):
 
     :attr address:
         The 7-bit address the target will respond to.
+    :attr address_mask:
+        Address bits to mask when checking if a command is meant for this target.
+        For regular I2C targets, this should be all ones.
+        For e.g. a 24x-series EEPROM that uses the last 3 address bit for its own purposes,
+        set this to 0b111_1000. This way only the first 4 address bits are matched against.
+    :attr address_i:
+        The 7-bit address received from the initiator after the last start strobe.
+        Valid as soon as ``start`` becomes high, until the next stop/restart strobe.
     :attr start:
         Start strobe. Active for one cycle immediately after acknowledging address.
     :attr stop:
@@ -287,8 +323,10 @@ class I2CTarget(Elaboratable):
         Data octet to be transmitted to the initiator. Latched immediately after receiving
         a read command.
     """
-    def __init__(self, pads):
+    def __init__(self, pads, analyzer=None):
         self.address = Signal(7)
+        self.address_mask = Signal(7, init=0b111_1111)
+        self.address_i = Signal(7)
         self.busy    = Signal() # clock stretching request (experimental, undocumented)
         self.start   = Signal()
         self.stop    = Signal()
@@ -300,7 +338,22 @@ class I2CTarget(Elaboratable):
         self.data_o  = Signal(8)
         self.ack_i   = Signal()
 
-        self.bus = I2CBus(pads)
+        self.bus = I2CBus(pads, analyzer=analyzer)
+
+        if analyzer:
+            analyzer.add_generic_event(None, "i2c-t-address", self.address)
+            analyzer.add_generic_event(None, "i2c-t-address_mask", self.address_mask)
+            analyzer.add_generic_event(None, "i2c-t-address_i", self.address_i)
+            analyzer.add_generic_event(None, "i2c-t-busy", self.busy)
+            analyzer.add_generic_event(None, "i2c-t-start", self.start)
+            analyzer.add_generic_event(None, "i2c-t-stop", self.stop)
+            analyzer.add_generic_event(None, "i2c-t-restart", self.restart)
+            analyzer.add_generic_event(None, "i2c-t-write", self.write)
+            analyzer.add_generic_event(None, "i2c-t-data_i", self.data_i)
+            analyzer.add_generic_event(None, "i2c-t-ack_o", self.ack_o)
+            analyzer.add_generic_event(None, "i2c-t-read", self.read)
+            analyzer.add_generic_event(None, "i2c-t-data_o", self.data_o)
+            analyzer.add_generic_event(None, "i2c-t-ack_i", self.ack_i)
 
     def elaborate(self, platform):
         m = Module()
@@ -334,13 +387,20 @@ class I2CTarget(Elaboratable):
                 with m.Elif(self.bus.setup):
                     m.d.sync += bitno.eq(bitno + 1)
                     with m.If(bitno == 7):
-                        with m.If(shreg_i[1:] == self.address):
-                            m.d.comb += self.start.eq(1)
-                            m.d.sync += self.bus.sda_o.eq(0)
+                        with m.If(
+                            (shreg_i[1:] & self.address_mask)
+                            == (self.address & self.address_mask)
+                        ):
+                            m.d.sync += [
+                                self.address_i.eq(shreg_i[1:]),
+                                self.start.eq(1),
+                                self.bus.sda_o.eq(0),
+                            ]
                             m.next = "ADDR-ACK"
                         with m.Else():
                             m.next = "IDLE"
             with m.State("ADDR-ACK"):
+                m.d.sync += self.start.eq(0)
                 with m.If(self.bus.stop):
                     m.d.comb += self.stop.eq(1)
                     m.next = "IDLE"
