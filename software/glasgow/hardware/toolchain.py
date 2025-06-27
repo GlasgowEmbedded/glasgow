@@ -105,7 +105,17 @@ class WasmTool(Tool):
             # will not be true when Glasgow is running from a pipx virtual environment (which isn't
             # activated when the `glasgow` script is run). Also, our build environment does not
             # even *have* PATH.
-            return os.path.join(sysconfig.get_path('scripts'), basename)
+            match os.name:
+                case "nt":
+                    schemes = ["nt_venv", "nt_user", "nt"]
+                case "posix":
+                    schemes = ["posix_venv", "posix_user", "posix_home", "posix_prefix"]
+            for scheme in schemes:
+                script_path  = os.path.join(sysconfig.get_path("scripts", scheme), basename)
+                script_path += sysconfig.get_config_var('EXE')
+                if os.path.exists(script_path):
+                    return script_path
+            raise FileNotFoundError(f"script {basename!r} not found; this is an issue with your installation")
 
     @property
     def version(self):
