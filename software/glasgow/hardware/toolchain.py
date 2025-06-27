@@ -1,3 +1,4 @@
+from typing import Iterator
 from abc import ABCMeta, abstractmethod
 import re
 import os
@@ -27,14 +28,14 @@ class Tool(metaclass=ABCMeta):
         self.name = str(name)
 
     @property
-    def env_var_name(self):
+    def env_var_name(self) -> str:
         """Name of environment variable used by Amaranth to configure tool location."""
         # Identical to amaranth._toolchain.tool_env_var.
         return self.name.upper().replace("-", "_").replace("+", "X")
 
     @property
     @abstractmethod
-    def command(self):
+    def command(self) -> list[str]:
         """Command name for invoking the tool.
 
         Full path to the executable that can be used to run the tool, or ``None`` if the tool
@@ -44,7 +45,7 @@ class Tool(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def available(self):
+    def available(self) -> bool:
         """Tool availability.
 
         ``True`` if the tool is installed, ``False`` otherwise. Installed binary may still not
@@ -54,7 +55,7 @@ class Tool(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def version(self):
+    def version(self) -> tuple[int, ...]:
         """Tool version number.
 
         ``None`` if version number could not be determined, or a tool-specific tuple if it could.
@@ -63,7 +64,7 @@ class Tool(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def identifier(self):
+    def identifier(self) -> bytes:
         """Unique tool identifier.
 
         Returns an array of 16 bytes that uniquely identifies the behavior of this particular tool
@@ -71,7 +72,7 @@ class Tool(metaclass=ABCMeta):
         its data files.
         """
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.__class__.__module__}.{self.__class__.__name__} {self.name}>"
 
 
@@ -80,7 +81,7 @@ class WasmTool(Tool):
     PREFIX = "yowasp-"
 
     @property
-    def python_package(self):
+    def python_package(self) -> str:
         if self.name == "yosys" or self.name.startswith("nextpnr-"):
             return self.PREFIX + self.name
         if self.name == "icepack":
@@ -90,7 +91,7 @@ class WasmTool(Tool):
         raise NotImplementedError(f"Python package for tool {self.name} is not known")
 
     @property
-    def available(self):
+    def available(self) -> bool:
         try:
             importlib.metadata.metadata(self.python_package)
             return True
@@ -98,7 +99,7 @@ class WasmTool(Tool):
             return False
 
     @property
-    def command(self):
+    def command(self) -> list[str]:
         if self.available:
             basename = self.PREFIX + self.name
             # We cannot assume that the command is on PATH and accessible by its basename. This
@@ -118,7 +119,7 @@ class WasmTool(Tool):
             raise FileNotFoundError(f"script {basename!r} not found; this is an issue with your installation")
 
     @property
-    def version(self):
+    def version(self) -> tuple[int, ...]:
         if self.available:
             # Running Wasm tools for the first time can incur a significant delay, so use
             # the version from the Python package metadata (which is guaranteed to be the same).
@@ -126,7 +127,7 @@ class WasmTool(Tool):
             return (*importlib.metadata.version(self.python_package).split("."),)
 
     @property
-    def identifier(self):
+    def identifier(self) -> bytes:
         if self.available:
             hasher = hashlib.blake2s()
             for file_entry in importlib.metadata.files(self.python_package):
@@ -138,22 +139,22 @@ class WasmTool(Tool):
 
 class SystemTool(Tool):
     @staticmethod
-    def get_output(args):
+    def get_output(args: list[str]) -> str:
         return subprocess.run(args,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             encoding="utf-8").stdout.strip()
 
     @property
-    def available(self):
+    def available(self) -> bool:
         return self.command is not None
 
     @property
-    def command(self):
+    def command(self) -> list[str]:
         return shutil.which(os.environ.get(self.env_var_name, self.name))
 
     @property
-    def version(self):
+    def version(self) -> tuple[int, ...]:
         if self.available:
             if self.name == "yosys":
                 # Yosys 0.26+50 (git sha1 ef8ed21a2, ccache clang 11.0.1-2 -O0 -fPIC)
@@ -206,7 +207,7 @@ class SystemTool(Tool):
 
     # To the Nix person who replaces this with something more sensible: please message @whitequark
     @property
-    def identifier(self):
+    def identifier(self) -> bytes:
         if self.available:
             if self._identifier_cache is None:
                 hasher = hashlib.blake2s()
@@ -224,7 +225,7 @@ class Toolchain:
         self.tools = list(tools)
 
     @property
-    def available(self):
+    def available(self) -> bool:
         """Toolchain availability.
 
         ``True`` if every tool is available, ``False`` otherwise.
@@ -232,7 +233,7 @@ class Toolchain:
         return all(tool.available for tool in self.tools)
 
     @property
-    def missing(self):
+    def missing(self) -> Iterator[str]:
         """Tools that are missing from the toolchain.
 
         An iterator that yields the name of every tool whose version could not be determined,
@@ -241,7 +242,7 @@ class Toolchain:
         return (tool.name for tool in self.tools if not tool.available or tool.version is None)
 
     @property
-    def env_vars(self):
+    def env_vars(self) -> dict[str, str]:
         """Environment variables to bring the toolchain in scope.
 
         An environment dictionary that includes entries for every of the tools included in this
@@ -254,7 +255,7 @@ class Toolchain:
         return {tool.env_var_name: tool.command for tool in self.tools}
 
     @property
-    def versions(self):
+    def versions(self) -> dict[str, tuple[int, ...]]:
         """Versions of tools.
 
         A dictionary that maps names of tools to their versions.
@@ -262,7 +263,7 @@ class Toolchain:
         return {tool.name: tool.version for tool in self.tools}
 
     @property
-    def identifier(self):
+    def identifier(self) -> bytes:
         """Unique toolchain identifier.
 
         Returns an array of 16 bytes that uniquely identifies this particular collection of tools,
@@ -275,11 +276,11 @@ class Toolchain:
             hasher.update(tool.identifier)
         return hasher.digest()[:16]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return ", ".join(f"{name} {'.'.join(ver or ('(unavailable)',))}"
                          for name, ver in self.versions.items())
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (f"<{self.__class__.__module__}.{self.__class__.__name__} " +
                 " ".join(f"{tool.command}=={'.'.join(tool.version or ('unavailable',))}"
                          for tool in self.tools) +
