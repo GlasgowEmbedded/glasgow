@@ -69,7 +69,8 @@ class GlasgowBuildPlan:
                 # Windows has some environment variables that are required by the OS runtime:
                 # - SYSTEMROOT: required for child Python processes to initialize properly
                 # - PROCESSOR_ARCHITECTURE: required for YoWASP (used by wasmtime)
-                for var in ("PROCESSOR_ARCHITECTURE", "SYSTEMROOT"):
+                # - APPDATA: required for YoWASP (used by pip executable stub)
+                for var in ("PROCESSOR_ARCHITECTURE", "SYSTEMROOT", "APPDATA"):
                     environ[var] = os.environ[var]
 
             # collect stdout (so that it can be reproduced if a log for a cached bitstream is
