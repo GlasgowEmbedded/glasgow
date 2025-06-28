@@ -108,7 +108,7 @@ class GlasgowPin:
         object.__setattr__(self, "invert", bool(invert))
 
     @classmethod
-    def parse(cls, value) -> tuple['GlasgowPin']:
+    def parse(cls, value: str) -> tuple["GlasgowPin"]:
         result = []
         for clause in value.split(","):
             if clause == "-":
@@ -339,12 +339,32 @@ class AbstractAssembly(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def use_voltage(self, ports: Mapping[GlasgowPort, GlasgowVio | float]):
+    def set_port_voltage(self, port: GlasgowPort, vio: GlasgowVio):
         pass
 
     @abstractmethod
-    def use_pulls(self, pulls: Mapping[GlasgowPin | tuple[GlasgowPin] | str, PullState | str]):
+    def set_pin_pull(self, pin: GlasgowPin, statee: PullState):
         pass
+
+    def use_voltage(self, ports: Mapping[GlasgowPort | str, GlasgowVio | float]):
+        for port, vio in ports.items():
+            port = GlasgowPort(port)
+            if isinstance(vio, float):
+                vio = GlasgowVio(vio)
+            self.set_port_voltage(port, vio)
+
+    def use_pulls(self, pulls: Mapping[tuple[GlasgowPin] | GlasgowPin | str, PullState | str]):
+        for pins, state in pulls.items():
+            match pins:
+                case GlasgowPin():
+                    pins = [pins]
+                case str():
+                    pins = GlasgowPin.parse(pins)
+            match state:
+                case str():
+                    state = PullState(state)
+            for pin in pins:
+                self.set_pin_pull(pin, state)
 
     @abstractmethod
     async def configure_ports(self):

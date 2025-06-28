@@ -579,31 +579,17 @@ class HardwareAssembly(AbstractAssembly):
         self._pipes.append(inout_pipe)
         return inout_pipe
 
-    def use_voltage(self, ports: Mapping[GlasgowPort, GlasgowVio | float]):
-        for port, vio in ports.items():
-            port = GlasgowPort(port)
-            if isinstance(vio, float):
-                vio = GlasgowVio(vio)
-            self._logger.debug("setting port %s voltage to %s V", port, vio)
-            self._voltages[port] = vio
+    def set_port_voltage(self, port: GlasgowPort, vio: GlasgowVio):
+        self._logger.debug("setting port %s voltage to %s V", port, vio)
+        self._voltages[port] = vio
 
-    def use_pulls(self, pulls: Mapping[GlasgowPin | tuple[GlasgowPin] | str, PullState | str]):
-        for pins, state in pulls.items():
-            match pins:
-                case str():
-                    pins = GlasgowPin.parse(pins)
-                case GlasgowPin():
-                    pins = [pins]
-            match state:
-                case str():
-                    state = PullState(state)
-            for pin in pins:
-                if pin.invert:
-                    state = ~state
-                if state.enabled():
-                    self._logger.debug("pulling pin %s%s %s%s",
-                        pin.port, pin.number, state, " (inverted)" if pin.invert else "")
-                self._pulls[pin.port, pin.number] = state
+    def set_pin_pull(self, pin: GlasgowPin, state: PullState):
+        if pin.invert:
+            state = ~state
+        if state.enabled():
+            self._logger.debug("pulling pin %s%s %s%s",
+                pin.port, pin.number, state, " (was inverted)" if pin.invert else "")
+        self._pulls[pin.port, pin.number] = state
 
     def artifact(self):
         if self._artifact is not None:

@@ -186,27 +186,11 @@ class SimulationAssembly(AbstractAssembly):
     def add_testbench(self, constructor, *, background=False):
         self._benches.append((constructor, background))
 
-    def use_voltage(self, ports: Mapping[GlasgowPort, GlasgowVio | float]):
-        for port, vio in ports.items():
-            port = GlasgowPort(port)
-            if isinstance(vio, float):
-                vio = GlasgowVio(vio)
-            pass # TODO: log?
+    def set_port_voltage(self, port: GlasgowPort, vio: GlasgowVio):
+        pass
 
-    def use_pulls(self, pulls: Mapping[GlasgowPin | tuple[GlasgowPin], PullState | str]):
-        for pins, state in pulls.items():
-            match pins:
-                case str():
-                    pins = GlasgowPin.parse(pins)
-                case GlasgowPin():
-                    pins = [pins]
-            match state:
-                case str():
-                    state = PullState(state)
-            for pin in pins:
-                if pin.invert:
-                    state = ~state
-                pass # TODO: record?
+    def set_pin_pull(self, pin: GlasgowPin, state: PullState):
+        pass # TODO: record pull state?
 
     async def configure_ports(self):
         pass # TODO: log and use pull state for default pin state?
