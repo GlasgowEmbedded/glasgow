@@ -359,7 +359,7 @@ def get_argparser():
         help="run an applet and execute a script against its programming interface")
     g_script_source = p_script.add_mutually_exclusive_group(required=True)
     g_script_source.add_argument(
-        "script_file", metavar="FILENAME", type=argparse.FileType("r"), nargs="?",
+        "script_file", metavar="FILENAME", type=argparse.FileType("r", encoding="utf-8"), nargs="?",
         help="run Python script FILENAME in the applet context")
     g_script_source.add_argument(
         "-c", metavar="COMMAND", dest="script_cmd", type=str,
