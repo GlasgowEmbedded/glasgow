@@ -201,7 +201,7 @@ class QSPIControllerInterface:
                 (QSPICommand.Transfer.value << 4) | mode.value, len(chunk)))
             await self._pipe.send(chunk)
 
-    async def read(self, count, *, x: Literal[1, 2, 4] = 1):
+    async def read(self, count: int, *, x: Literal[1, 2, 4] = 1) -> memoryview:
         assert self._active is not None, "no chip selected"
         mode = {1: qspi.Mode.GetX1, 2: qspi.Mode.GetX2, 4: qspi.Mode.GetX4}[x]
         for chunk in self._chunked(range(count)):
@@ -267,10 +267,10 @@ class QSPIControllerApplet(GlasgowAppletV2):
     @classmethod
     def add_build_arguments(cls, parser, access):
         access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "sck", default=True)
-        access.add_pins_argument(parser, "io",  default=True, width=4,
+        access.add_pins_argument(parser, "sck", default=True, required=True)
+        access.add_pins_argument(parser, "io",  default=True, required=True, width=4,
             help="bind the applet I/O lines 'copi', 'cipo', 'io2', 'io3' to PINS")
-        access.add_pins_argument(parser, "cs",  default=True)
+        access.add_pins_argument(parser, "cs",  default=True, required=True)
 
     def build(self, args):
         with self.assembly.add_applet(self):

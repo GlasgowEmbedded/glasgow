@@ -6,7 +6,7 @@ from amaranth.lib import io
 
 from ... import *
 from ....support.endpoint import *
-from ...interface.spi_controller import SPIControllerApplet
+from ...interface.spi_controller_deprecated import SPIControllerApplet
 
 
 class SPISerprogInterface:

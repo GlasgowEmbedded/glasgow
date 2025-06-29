@@ -1,235 +1,156 @@
-import math
-import struct
-import logging
 import contextlib
+import logging
+import struct
+
 from amaranth import *
-from amaranth.lib import io
-from amaranth.lib.cdc import FFSynchronizer
+from amaranth.lib import enum, data, wiring, stream, io
+from amaranth.lib.wiring import In, Out, connect, flipped
 
-from ....support.logging import *
-from ....gateware.clockgen import *
-from ... import *
+from glasgow.support.logging import dump_hex
+from glasgow.gateware import spi
+from glasgow.abstract import AbstractAssembly, ClockDivisor
+from glasgow.applet import GlasgowAppletV2
 
 
-class SPIControllerBus(Elaboratable):
-    def __init__(self, ports, sck_idle, sck_edge):
-        self.ports = ports
-        self.sck_idle = sck_idle
-        self.sck_edge = sck_edge
+__all__ = ["SPIControllerComponent", "SPIControllerInterface"]
 
-        self.oe   = Signal(init=1)
 
-        self.sck  = Signal(init=sck_idle)
-        self.cs   = Signal()
-        self.copi = Signal()
-        self.cipo = Signal()
+class SPICommand(enum.Enum, shape=4):
+    Select   = 0
+    Transfer = 1
+    Delay    = 2
+    Sync     = 3
 
-        self.setup = Signal()
-        self.latch = Signal()
+
+class SPIControllerComponent(wiring.Component):
+    i_stream: In(stream.Signature(8))
+    o_stream: Out(stream.Signature(8))
+    o_flush:  Out(1)
+
+    divisor:  In(16)
+
+    def __init__(self, ports, *, offset=None, us_cycles):
+        self._ports     = ports
+        self._offset    = offset
+        self._us_cycles = us_cycles
+
+        super().__init__()
 
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.sck_buffer = sck_buffer = io.Buffer("o", self.ports.sck)
+        m.submodules.ctrl = ctrl = spi.Controller(self._ports,
+            # Offset sampling by ~10 ns to compensate for 10..15 ns of roundtrip delay caused by
+            # the level shifters (5 ns each) and FPGA clock-to-out (5 ns).
+            offset=1 if self._offset is None else self._offset)
+        m.d.comb += ctrl.divisor.eq(self.divisor)
 
-        m.d.comb += [
-            sck_buffer.oe.eq(self.oe),
-            sck_buffer.o.eq(self.sck),
-        ]
+        command = Signal(SPICommand)
+        chip    = Signal(range(1 + len(self._ports.cs)))
+        mode    = Signal(spi.Mode)
+        is_put  = mode.as_value().matches(spi.Mode.Put, spi.Mode.Swap)
+        is_get  = mode.as_value().matches(spi.Mode.Get, spi.Mode.Swap) # FIXME: amaranth-lang/amaranth#1462
+        o_count = Signal(16)
+        i_count = Signal(16)
+        timer   = Signal(range(self._us_cycles))
+        with m.FSM():
+            with m.State("Read-Command"):
+                m.d.comb += self.o_flush.eq(1)
+                m.d.comb += self.i_stream.ready.eq(1)
+                with m.If(self.i_stream.valid):
+                    m.d.sync += command.eq(self.i_stream.payload[4:])
+                    with m.Switch(self.i_stream.payload[4:]):
+                        with m.Case(SPICommand.Select):
+                            m.d.sync += chip.eq(self.i_stream.payload[:4])
+                            m.next = "Read-Command"
+                        with m.Case(SPICommand.Transfer):
+                            m.d.sync += mode.eq(self.i_stream.payload[:4])
+                            m.next = "Read-Count-0:8"
+                        with m.Case(SPICommand.Delay):
+                            m.next = "Read-Count-0:8"
+                        with m.Case(SPICommand.Sync):
+                            m.next = "Sync"
 
-        if hasattr(self.ports, "cs"):
-            if self.ports.cs is not None:
-                m.submodules.cs_buffer = cs_buffer = io.Buffer("o", self.ports.cs)
-                m.d.comb += cs_buffer.o.eq(~self.cs),
+            with m.State("Read-Count-0:8"):
+                m.d.comb += self.i_stream.ready.eq(1)
+                with m.If(self.i_stream.valid):
+                    m.d.sync += o_count[0:8].eq(self.i_stream.payload)
+                    m.d.sync += i_count[0:8].eq(self.i_stream.payload)
+                    m.next = "Read-Count-8:16"
 
-        if hasattr(self.ports, "copi"):
-            if self.ports.copi is not None:
-                m.submodules.copi_buffer = copi_buffer = io.Buffer("o", self.ports.copi)
+            with m.State("Read-Count-8:16"):
+                m.d.comb += self.i_stream.ready.eq(1)
+                with m.If(self.i_stream.valid):
+                    m.d.sync += o_count[8:16].eq(self.i_stream.payload)
+                    m.d.sync += i_count[8:16].eq(self.i_stream.payload)
+                    with m.Switch(command):
+                        with m.Case(SPICommand.Transfer):
+                            m.next = "Transfer"
+                        with m.Case(SPICommand.Delay):
+                            m.next = "Delay"
+
+            with m.State("Transfer"):
                 m.d.comb += [
-                    copi_buffer.oe.eq(self.oe),
-                    copi_buffer.o.eq(self.copi)
+                    ctrl.i_stream.p.chip.eq(chip),
+                    ctrl.i_stream.p.mode.eq(mode),
+                    ctrl.i_stream.p.data.eq(self.i_stream.payload),
+                    self.o_stream.payload.eq(ctrl.o_stream.p.data),
                 ]
-
-        if hasattr(self.ports, "cipo"):
-            if self.ports.cipo is not None:
-                m.submodules.cipo_buffer = cipo_buffer = io.Buffer("i", self.ports.cipo)
-                m.submodules += FFSynchronizer(cipo_buffer.i, self.cipo)
-
-        sck_r = Signal()
-        m.d.sync += sck_r.eq(self.sck)
-
-        if self.sck_edge in ("r", "rising"):
-            m.d.comb += [
-                self.setup.eq( sck_r & ~self.sck),
-                self.latch.eq(~sck_r &  self.sck),
-            ]
-        elif self.sck_edge in ("f", "falling"):
-            m.d.comb += [
-                self.setup.eq(~sck_r &  self.sck),
-                self.latch.eq( sck_r & ~self.sck),
-            ]
-        else:
-            assert False
-
-        return m
-
-
-CMD_MASK     = 0b11110000
-CMD_SELECT   = 0b00000000
-CMD_SHIFT    = 0b00010000
-CMD_DELAY    = 0b00100000
-CMD_SYNC     = 0b00110000
-# CMD_SHIFT
-BIT_DATA_OUT =     0b0001
-BIT_DATA_IN  =     0b0010
-
-
-class SPIControllerSubtarget(Elaboratable):
-    def __init__(self, ports, out_fifo, in_fifo, period_cyc, delay_cyc,
-                 sck_idle, sck_edge):
-        self.ports = ports
-        self.out_fifo = out_fifo
-        self.in_fifo = in_fifo
-        self.period_cyc = period_cyc
-        self.delay_cyc = delay_cyc
-
-        self.bus = SPIControllerBus(ports, sck_idle, sck_edge)
-
-    def elaborate(self, platform):
-        m = Module()
-
-        m.submodules.bus = self.bus
-
-        ###
-
-        clkgen_reset = Signal()
-        m.submodules.clkgen = clkgen = ResetInserter(clkgen_reset)(ClockGen(self.period_cyc))
-
-        timer    = Signal(range(self.delay_cyc))
-        timer_en = Signal()
-
-        with m.If(timer != 0):
-            m.d.sync += timer.eq(timer - 1)
-        with m.Elif(timer_en):
-            m.d.sync += timer.eq(self.delay_cyc - 1)
-
-        shreg_o = Signal(8)
-        shreg_i = Signal(8)
-        m.d.comb += [
-            self.bus.sck.eq(clkgen.clk),
-            self.bus.copi.eq(shreg_o[-1]),
-        ]
-
-        with m.If(self.bus.setup):
-            m.d.sync += shreg_o.eq(Cat(C(0, 1), shreg_o))
-        with m.Elif(self.bus.latch):
-            m.d.sync += shreg_i.eq(Cat(self.bus.cipo, shreg_i))
-
-        cmd   = Signal(8)
-        count = Signal(16)
-        bitno = Signal(range(8 + 1))
-
-        with m.FSM() as fsm:
-            with m.State("RECV-COMMAND"):
-                m.d.comb += self.in_fifo.flush.eq(1)
-                with m.If(self.out_fifo.r_rdy):
-                    m.d.comb += self.out_fifo.r_en.eq(1)
-                    m.d.sync += cmd.eq(self.out_fifo.r_data)
-                    with m.If((self.out_fifo.r_data & CMD_MASK) == CMD_SELECT):
-                        m.d.sync += self.bus.cs.eq(self.out_fifo.r_data[0])
-                    with m.Elif((self.out_fifo.r_data & CMD_MASK) == CMD_SYNC):
-                        m.next = "SYNC"
+                with m.If(o_count != 0):
+                    with m.If(is_put):
+                        m.d.comb += ctrl.i_stream.valid.eq(self.i_stream.valid)
+                        m.d.comb += self.i_stream.ready.eq(ctrl.i_stream.ready)
                     with m.Else():
-                        m.next = "RECV-COUNT-1"
+                        m.d.comb += ctrl.i_stream.valid.eq(1)
+                    with m.If(ctrl.i_stream.valid & ctrl.i_stream.ready):
+                        m.d.sync += o_count.eq(o_count - 1)
+                with m.If(i_count != 0):
+                    with m.If(is_get):
+                        m.d.comb += self.o_stream.valid.eq(ctrl.o_stream.valid)
+                        m.d.comb += ctrl.o_stream.ready.eq(self.o_stream.ready)
+                        with m.If(ctrl.o_stream.valid & ctrl.o_stream.ready):
+                            m.d.sync += i_count.eq(i_count - 1)
+                with m.If((o_count == 0) & ((i_count == 0) | ~is_get)):
+                    m.next = "Read-Command"
 
-            with m.State("SYNC"):
-                with m.If(self.in_fifo.w_rdy):
-                    m.d.comb += [
-                        self.in_fifo.w_en.eq(1),
-                        self.in_fifo.w_data.eq(0),
-                    ]
-                    m.next = "RECV-COMMAND"
-
-            with m.State("RECV-COUNT-1"):
-                with m.If(self.out_fifo.r_rdy):
-                    m.d.comb += self.out_fifo.r_en.eq(1)
-                    m.d.sync += count[0:8].eq(self.out_fifo.r_data)
-                    m.next = "RECV-COUNT-2"
-
-            with m.State("RECV-COUNT-2"):
-                with m.If(self.out_fifo.r_rdy):
-                    m.d.comb += self.out_fifo.r_en.eq(1)
-                    m.d.sync += count[8:16].eq(self.out_fifo.r_data)
-                    with m.If((cmd & CMD_MASK) == CMD_DELAY):
-                        m.next = "DELAY"
-                    with m.Else():
-                        m.next = "COUNT-CHECK"
-
-            with m.State("DELAY"):
-                with m.If(timer == 0):
-                    with m.If(count == 0):
-                        m.next = "RECV-COMMAND"
-                    with m.Else():
-                        m.d.sync += count.eq(count - 1)
-                        m.d.comb += timer_en.eq(1)
-
-            with m.State("COUNT-CHECK"):
-                with m.If(count == 0):
-                    m.next = "RECV-COMMAND"
+            with m.State("Delay"):
+                with m.If(i_count == 0):
+                    m.next = "Read-Command"
+                with m.Elif(timer == 0):
+                    m.d.sync += i_count.eq(i_count - 1)
+                    m.d.sync += timer.eq(self._us_cycles - 1)
                 with m.Else():
-                    m.next = "RECV-DATA"
+                    m.d.sync += timer.eq(timer - 1)
 
-            with m.State("RECV-DATA"):
-                with m.If((cmd & BIT_DATA_OUT) != 0):
-                    m.d.comb += self.out_fifo.r_en.eq(1)
-                    m.d.sync += shreg_o.eq(self.out_fifo.r_data)
-                with m.Else():
-                    m.d.sync += shreg_o.eq(0)
-
-                with m.If(((cmd & BIT_DATA_IN) != 0) | self.out_fifo.r_rdy):
-                    m.d.sync += [
-                        count.eq(count - 1),
-                        bitno.eq(8),
-                    ]
-                    m.next = "TRANSFER"
-
-            m.d.comb += clkgen_reset.eq(~fsm.ongoing("TRANSFER"))
-            with m.State("TRANSFER"):
-                with m.If(clkgen.stb_r):
-                    m.d.sync += bitno.eq(bitno - 1)
-                with m.Elif(clkgen.stb_f):
-                    with m.If(bitno == 0):
-                        m.next = "SEND-DATA"
-
-            with m.State("SEND-DATA"):
-                with m.If((cmd & BIT_DATA_IN) != 0):
-                    m.d.comb += [
-                        self.in_fifo.w_data.eq(shreg_i),
-                        self.in_fifo.w_en.eq(1),
-                    ]
-
-                with m.If(((cmd & BIT_DATA_OUT) != 0) | self.in_fifo.w_rdy):
-                    with m.If(count == 0):
-                        m.next = "RECV-COMMAND"
-                    with m.Else():
-                        m.next = "RECV-DATA"
+            with m.State("Sync"):
+                m.d.comb += self.o_stream.valid.eq(1)
+                with m.If(self.o_stream.ready):
+                    m.next = "Read-Command"
 
         return m
 
 
 class SPIControllerInterface:
-    def __init__(self, interface, logger):
-        self.lower   = interface
+    def __init__(self, logger, assembly: AbstractAssembly, *, cs, sck, copi, cipo):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+
+        ports = assembly.add_port_group(cs=cs, sck=sck, copi=copi, cipo=cipo)
+        component = assembly.add_submodule(SPIControllerComponent(ports,
+            us_cycles=int(1 / (assembly.sys_clk_period * 1_000_000))))
+        self._pipe = assembly.add_inout_pipe(
+            component.o_stream, component.i_stream, in_flush=component.o_flush)
+        self._clock = assembly.add_clock_divisor(component.divisor,
+            ref_period=assembly.sys_clk_period, name="sck")
+
         self._active = None
 
     def _log(self, message, *args):
         self._logger.log(self._level, "SPI: " + message, *args)
 
-    async def reset(self):
-        self._log("reset")
-        await self.lower.reset()
+    @property
+    def clock(self) -> ClockDivisor:
+        return self._clock
 
     @staticmethod
     def _chunked(items, *, count=0xffff):
@@ -240,151 +161,123 @@ class SPIControllerInterface:
     @contextlib.asynccontextmanager
     async def select(self, index=0):
         assert self._active is None, "chip already selected"
-        assert index == 0, "only one chip is supported"
+        assert index in range(8)
         try:
             self._log("select chip=%d", index)
-            await self.lower.write(struct.pack("<B",
-                CMD_SELECT|(1 + index)))
+            await self._pipe.send(struct.pack("<B",
+                (SPICommand.Select.value << 4) | (1 + index)))
             self._active = index
             yield
         finally:
             self._log("deselect")
-            await self.lower.write(struct.pack("<B",
-                CMD_SELECT|0))
-            await self.lower.flush()
+            await self._pipe.send(struct.pack("<BBH",
+                (SPICommand.Select.value << 4) | 0,
+                (SPICommand.Transfer.value << 4) | spi.Mode.Dummy.value, 1))
+            await self._pipe.flush()
             self._active = None
 
-    async def exchange(self, octets):
+    async def exchange(self, octets: bytes | bytearray | memoryview) -> memoryview:
         assert self._active is not None, "no chip selected"
         self._log("xchg-o=<%s>", dump_hex(octets))
         for chunk in self._chunked(octets):
-            await self.lower.write(struct.pack("<BH",
-                CMD_SHIFT|BIT_DATA_IN|BIT_DATA_OUT, len(chunk)))
-            await self.lower.write(chunk)
-        octets = await self.lower.read(len(octets))
+            await self._pipe.send(struct.pack("<BH",
+                (SPICommand.Transfer.value << 4) | spi.Mode.Swap.value, len(chunk)))
+            await self._pipe.send(chunk)
+        await self._pipe.flush()
+        octets = await self._pipe.recv(len(octets))
         self._log("xchg-i=<%s>", dump_hex(octets))
         return octets
 
-    async def write(self, octets, *, x=1):
+    async def write(self, octets: bytes | bytearray | memoryview):
         assert self._active is not None, "no chip selected"
-        assert x == 1, "only x1 mode is supported"
         self._log("write=<%s>", dump_hex(octets))
         for chunk in self._chunked(octets):
-            await self.lower.write(struct.pack("<BH",
-                CMD_SHIFT|BIT_DATA_OUT, len(chunk)))
-            await self.lower.write(chunk)
+            await self._pipe.send(struct.pack("<BH",
+                (SPICommand.Transfer.value << 4) | spi.Mode.PutX1.value, len(chunk)))
+            await self._pipe.send(chunk)
 
-    async def read(self, count, *, x=1):
+    async def read(self, count: int) -> memoryview:
         assert self._active is not None, "no chip selected"
-        assert x == 1, "only x1 mode is supported"
         for chunk in self._chunked(range(count)):
-            await self.lower.write(struct.pack("<BH",
-                CMD_SHIFT|BIT_DATA_IN, len(chunk)))
-        octets = await self.lower.read(count)
+            await self._pipe.send(struct.pack("<BH",
+                (SPICommand.Transfer.value << 4) | spi.Mode.GetX1.value, len(chunk)))
+        await self._pipe.flush()
+        octets = await self._pipe.recv(count)
         self._log("read=<%s>", dump_hex(octets))
         return octets
 
-    async def dummy(self, count):
+    async def dummy(self, count: int):
         # We intentionally allow sending dummy cycles with no chip selected.
         self._log("dummy=%d", count)
         for chunk in self._chunked(range(count)):
-            assert count % 8 == 0, "only multiples of 8 dummy cycles are supported"
-            await self.lower.write(struct.pack("<BH",
-                CMD_SHIFT, len(chunk) // 8))
+            await self._pipe.send(struct.pack("<BH",
+                (SPICommand.Transfer.value << 4) | spi.Mode.Dummy.value, len(chunk)))
 
-    async def delay_us(self, duration):
+    async def delay_us(self, duration: int):
         self._log("delay us=%d", duration)
         for chunk in self._chunked(range(duration)):
-            await self.lower.write(struct.pack("<BH",
-                CMD_DELAY, len(chunk)))
+            await self._pipe.send(struct.pack("<BH",
+                (SPICommand.Delay.value << 4), len(chunk)))
 
-    async def delay_ms(self, duration):
+    async def delay_ms(self, duration: int):
         self._log("delay ms=%d", duration)
         for chunk in self._chunked(range(duration * 1000)):
-            await self.lower.write(struct.pack("<BH",
-                CMD_DELAY, len(chunk)))
+            await self._pipe.send(struct.pack("<BH",
+                (SPICommand.Delay.value << 4), len(chunk)))
 
     async def synchronize(self):
         self._log("sync-o")
-        await self.lower.write([CMD_SYNC])
-        await self.lower.read(1)
+        await self._pipe.send(struct.pack("<B",
+            (SPICommand.Sync.value << 4)))
+        await self._pipe.flush()
+        await self._pipe.recv(1)
         self._log("sync-i")
 
 
-class SPIControllerApplet(GlasgowApplet):
+class SPIControllerApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "initiate SPI transactions"
     description = """
     Initiate transactions on the SPI bus.
+
+    Currently, only SPI mode 3 (CPOL=1, CPHA=1) is supported.
     """
 
     @classmethod
-    def add_build_arguments(cls, parser, access, omit_pins=False):
-        super().add_build_arguments(parser, access)
+    def add_build_arguments(cls, parser, access):
+        access.add_voltage_argument(parser)
+        access.add_pins_argument(parser, "sck",  default=True, required=True)
+        access.add_pins_argument(parser, "copi", default=True, required=True)
+        access.add_pins_argument(parser, "cipo", default=True, required=True)
+        access.add_pins_argument(parser, "cs",   default=True, required=True)
 
-        if not omit_pins:
-            access.add_pins_argument(parser, "sck", required=True)
-            access.add_pins_argument(parser, "cs")
-            access.add_pins_argument(parser, "copi")
-            access.add_pins_argument(parser, "cipo")
-
-        parser.add_argument(
-            "-f", "--frequency", metavar="FREQ", type=int, default=100,
-            help="set SPI clock frequency to FREQ kHz (default: %(default)s)")
-        parser.add_argument(
-            "--sck-idle", metavar="LEVEL", type=int, choices=[0, 1], default=0,
-            help="set idle clock level to LEVEL (default: %(default)s)")
-        parser.add_argument(
-            "--sck-edge", metavar="EDGE", type=str, choices=["r", "rising", "f", "falling"],
-            default="rising",
-            help="latch data at clock edge EDGE (default: %(default)s)")
-
-    def build_subtarget(self, target, args):
-        iface = self.mux_interface
-        return SPIControllerSubtarget(
-            ports=iface.get_port_group(
-                sck  = args.sck,
-                cs   = args.cs if hasattr(args, "cs") else None,
-                copi = args.copi if hasattr(args, "copi") else None,
-                cipo = args.cipo if hasattr(args, "cipo") else None
-            ),
-            out_fifo=iface.get_out_fifo(),
-            in_fifo=iface.get_in_fifo(auto_flush=False),
-            period_cyc=self.derive_clock(input_hz=target.sys_clk_freq,
-                                         output_hz=args.frequency * 1000,
-                                         clock_name="sck",
-                                         # 2 cyc MultiReg delay from SCK to CIPO requires a 4 cyc
-                                         # period with current implementation of SERDES
-                                         min_cyc=4),
-            delay_cyc=self.derive_clock(input_hz=target.sys_clk_freq,
-                                        output_hz=1e6,
-                                        clock_name="delay"),
-            sck_idle=args.sck_idle,
-            sck_edge=args.sck_edge,
-        )
-
-    def build(self, target, args):
-        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        controller = self.build_subtarget(target, args)
-        return iface.add_subtarget(controller)
-
-    async def run(self, device, args):
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        spi_iface = SPIControllerInterface(iface, self.logger)
-        return spi_iface
+    def build(self, args):
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            self.spi_iface = SPIControllerInterface(self.logger, self.assembly,
+                cs=args.cs, sck=args.sck, copi=args.copi, cipo=args.cipo)
 
     @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_setup_arguments(cls, parser):
+        parser.add_argument(
+            "-f", "--frequency", metavar="FREQ", type=int, default=100,
+            help="set SCK frequency to FREQ kHz (default: %(default)s)")
+
+    async def setup(self, args):
+        await self.spi_iface.clock.set_frequency(args.frequency * 1000)
+
+    @classmethod
+    def add_run_arguments(cls, parser):
         def hex(arg): return bytes.fromhex(arg)
 
         parser.add_argument(
             "data", metavar="DATA", type=hex, nargs="+",
             help="hex bytes to exchange with the device")
 
-    async def interact(self, device, args, spi_iface):
+    async def run(self, args):
         for octets in args.data:
-            async with spi_iface.select():
-                octets = await spi_iface.exchange(octets)
+            async with self.spi_iface.select():
+                octets = await self.spi_iface.exchange(octets)
             print(octets.hex())
 
     @classmethod

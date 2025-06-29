@@ -6,7 +6,7 @@ import logging
 from amaranth import *
 from amaranth.lib import io
 
-from ....interface.spi_controller import SPIControllerSubtarget, SPIControllerInterface
+from ....interface.spi_controller_deprecated import SPIControllerSubtarget, SPIControllerInterface
 from .... import *
 from .. import *
 

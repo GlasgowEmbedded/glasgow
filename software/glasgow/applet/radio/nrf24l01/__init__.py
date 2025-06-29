@@ -12,7 +12,7 @@ from ....support.logging import *
 from ....support.bits import *
 from ....arch.nrf24l import *
 from ....arch.nrf24l.rf import *
-from ...interface.spi_controller import SPIControllerSubtarget, SPIControllerInterface
+from ...interface.spi_controller_deprecated import SPIControllerSubtarget, SPIControllerInterface
 from ... import *
 
 
