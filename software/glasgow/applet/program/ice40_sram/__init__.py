@@ -8,7 +8,7 @@ import logging
 from amaranth import *
 from amaranth.lib import io
 
-from ...interface.spi_controller import SPIControllerApplet
+from ...interface.spi_controller_deprecated import SPIControllerApplet
 from ... import *
 
 

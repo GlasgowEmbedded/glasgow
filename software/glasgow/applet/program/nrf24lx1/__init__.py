@@ -13,7 +13,7 @@ from amaranth.lib import io
 from fx2.format import input_data, output_data
 
 from ....support.logging import dump_hex
-from ...interface.spi_controller import SPIControllerSubtarget, SPIControllerInterface
+from ...interface.spi_controller_deprecated import SPIControllerSubtarget, SPIControllerInterface
 from ... import *
 
 

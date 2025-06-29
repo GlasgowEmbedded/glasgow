@@ -10,6 +10,7 @@ I/O interfaces
 
     uart
     uart_analyzer
+    spi_controller
     spi_analyzer
     qspi_controller
     qspi_analyzer
