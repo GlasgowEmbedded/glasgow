@@ -23,12 +23,16 @@ If these instructions don't work for you, please `file a bug <file-a-bug_>`__ so
             $ sudo apt install -y --no-install-recommends git pipx
             $ pipx ensurepath
 
+        The ``pipx ensurepath`` command may prompt you to reopen the terminal window; do so.
+
     .. tab:: Arch
 
         .. code:: console
 
             $ sudo pacman -Sy git python-pipx
             $ pipx ensurepath
+
+        The ``pipx ensurepath`` command may prompt you to reopen the terminal window; do so.
 
     .. tab:: Fedora
 
@@ -37,7 +41,21 @@ If these instructions don't work for you, please `file a bug <file-a-bug_>`__ so
             $ sudo dnf install -y git pipx
             $ pipx ensurepath
 
-    The ``pipx ensurepath`` command may prompt you to reopen the terminal window; do so.
+        The ``pipx ensurepath`` command may prompt you to reopen the terminal window; do so.
+
+    .. tab:: Alpine
+
+        .. code:: console
+
+            $ doas apk add alpine-conf git pipx py3-libusb1
+            $ export PATH=$PATH:$HOME/.local/bin
+            $ echo 'export PATH=$PATH:$HOME/.local/bin' >>$HOME/.profile
+
+        These instructions assume that `Eudev <https://wiki.alpinelinux.org/wiki/Eudev>`_ is used as the device manager. To install Eudev, run:
+
+        .. code:: console
+
+            $ doas setup-devd udev
 
     Navigate to a convenient working directory and download the source code:
 
