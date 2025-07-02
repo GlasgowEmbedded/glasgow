@@ -13,7 +13,7 @@ All of our chat channels are bridged together; regardless of which one you choos
 
 .. _issues: https://github.com/GlasgowEmbedded/glasgow/issues
 .. _irc: https://web.libera.chat/#glasgow
-.. _irclogs: https://libera.irclog.whitequark.org/glasgow
+.. _irclogs: https://libera.catirclogs.org/glasgow
 .. _matrix: https://matrix.to/#/#glasgow-interface-explorer:matrix.org
 .. _discord: https://1bitsquared.com/pages/chat
 

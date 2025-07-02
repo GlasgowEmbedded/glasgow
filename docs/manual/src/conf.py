@@ -103,3 +103,8 @@ linkcheck_anchors_ignore_for_url = [
     # GitHub is a React-based SPA; even README content is included as a JSON payload.
     r"^https://github\.com/",
 ]
+
+# Attempt to keep linkcheck times manageable.
+linkcheck_retries = 5
+linkcheck_timeout = 5
+linkcheck_workers = 50
