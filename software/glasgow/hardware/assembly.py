@@ -526,7 +526,7 @@ class HardwareAssembly(AbstractAssembly):
         # TODO: make this a proper error and not an assertion
         pin_name = f"{pin.port}{pin.number}"
         assert pin_name in self._platform.glasgow_pins, f"unknown or already used pin {pin_name}"
-        self._logger.debug(f"assigning pin {port_name!r} to {pin_name}")
+        self._logger.debug("assigning pin %s to %s%s", port_name, pin_name, " (inverted)" if pin.invert else "")
         if (pin.port, pin.number) not in self._pulls:
             self._pulls[pin.port, pin.number] = PullState.Float
         port = self._platform.glasgow_pins.pop(pin_name)
