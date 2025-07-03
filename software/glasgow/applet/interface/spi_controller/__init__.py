@@ -1,3 +1,4 @@
+from typing import Optional
 import contextlib
 import logging
 import struct
@@ -8,7 +9,7 @@ from amaranth.lib.wiring import In, Out, connect, flipped
 
 from glasgow.support.logging import dump_hex
 from glasgow.gateware import spi
-from glasgow.abstract import AbstractAssembly, ClockDivisor
+from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
 from glasgow.applet import GlasgowAppletV2
 
 
@@ -38,6 +39,11 @@ class SPIControllerComponent(wiring.Component):
 
     def elaborate(self, platform):
         m = Module()
+
+        if self._ports.copi is None:
+            self._ports.copi = io.SimulationPort("o", 1)
+        if self._ports.cipo is None:
+            self._ports.cipo = io.SimulationPort("i", 1)
 
         m.submodules.ctrl = ctrl = spi.Controller(self._ports,
             # Offset sampling by ~10 ns to compensate for 10..15 ns of roundtrip delay caused by
@@ -131,7 +137,9 @@ class SPIControllerComponent(wiring.Component):
 
 
 class SPIControllerInterface:
-    def __init__(self, logger, assembly: AbstractAssembly, *, cs, sck, copi, cipo):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
+                 cs: GlasgowPin, sck: GlasgowPin, copi: Optional[GlasgowPin] = None,
+                 cipo: Optional[GlasgowPin] = None):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
@@ -246,10 +254,10 @@ class SPIControllerApplet(GlasgowAppletV2):
     @classmethod
     def add_build_arguments(cls, parser, access):
         access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "sck",  default=True, required=True)
-        access.add_pins_argument(parser, "copi", default=True, required=True)
-        access.add_pins_argument(parser, "cipo", default=True, required=True)
         access.add_pins_argument(parser, "cs",   default=True, required=True)
+        access.add_pins_argument(parser, "sck",  default=True, required=True)
+        access.add_pins_argument(parser, "copi", default=True)
+        access.add_pins_argument(parser, "cipo", default=True)
 
     def build(self, args):
         with self.assembly.add_applet(self):

@@ -115,5 +115,11 @@ class GlasgowPlatform:
                     else:
                         raise TypeError(f"I/O buffer {buffer!r} is not supported")
             return m
+        elif isinstance(buffer.port, io.SimulationPort):
+            # FIXME: This shouldn't be ignored in principle, but currently we don't expect
+            # simulation ports to be used on real hardware. Once amaranth-lang/rfcs#78 is
+            # implemented, we could delegate to the built-in method, and this functionality
+            # will just work.
+            return Module()
         else:
             return super().get_io_buffer(buffer)
