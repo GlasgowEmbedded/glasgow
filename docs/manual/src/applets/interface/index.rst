@@ -19,3 +19,4 @@ I/O interfaces
     jtag_xvc
     swd_probe
     probe_rs
+    spi_flashrom
