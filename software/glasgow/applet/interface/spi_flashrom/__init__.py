@@ -99,39 +99,43 @@ class SPIFlashromApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "expose SPI via flashrom serprog interface"
     description = """
-    Expose SPI via a socket using the flashrom serprog protocol; see https://www.flashrom.org.
-    This applet has the same default pin assignment as the `memory-25x` applet; See its description
+    Expose SPI via a socket using the flashrom serprog protocol; see https://flashrom.org.
+
+    This applet has the same default pin assignment as the `memory-25x` applet; see its description
     for details.
 
     Usage:
 
     ::
+
         glasgow run spi-flashrom -V 3.3 --freq 4000 tcp::2222
         /sbin/flashrom -p serprog:ip=localhost:2222
 
     It is also possible to flash 25-series flash chips using the `memory-25x` applet, which does
-    not require a third-party tool.
-    The advantage of using the `spi-flashrom` applet is that flashrom offers compatibility with
-    a wider variety of devices, some of which may not be supported by the `memory-25x` applet.
+    not require a third-party tool. The advantage of using the `spi-flashrom` applet is that
+    flashrom offers compatibility with a wider variety of devices, some of which may not be
+    supported by the `memory-25x` applet.
     """
 
     @classmethod
     def add_build_arguments(cls, parser, access):
         access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "cs",   default=True, required=True)
-        access.add_pins_argument(parser, "sck",  default=True, required=True)
-        access.add_pins_argument(parser, "copi", default=True, required=True)
-        access.add_pins_argument(parser, "cipo", default=True, required=True)
-        access.add_pins_argument(parser, "wp",   default=True)
-        access.add_pins_argument(parser, "hold", default=True)
+        access.add_pins_argument(parser, "cs",   default="A5", required=True)
+        access.add_pins_argument(parser, "sck",  default="A1", required=True)
+        access.add_pins_argument(parser, "copi", default="A2", required=True)
+        access.add_pins_argument(parser, "cipo", default="A4", required=True)
+        access.add_pins_argument(parser, "wp",   default="A3")
+        access.add_pins_argument(parser, "hold", default="A0")
 
     def build(self, args):
         with self.assembly.add_applet(self):
             self.assembly.use_voltage(args.voltage)
             self.spi_iface = SPIControllerInterface(self.logger, self.assembly,
                 cs=args.cs, sck=args.sck, copi=args.copi, cipo=args.cipo)
-            self.assembly.use_pulls({~args.wp:   "low"})
-            self.assembly.use_pulls({~args.hold: "low"})
+            if args.wp:
+                self.assembly.use_pulls({~args.wp:   "low"})
+            if args.hold:
+                self.assembly.use_pulls({~args.hold: "low"})
 
     @classmethod
     def add_setup_arguments(cls, parser):
@@ -153,3 +157,8 @@ class SPIFlashromApplet(GlasgowAppletV2):
                 await SerprogCommandHandler(self.logger, self.spi_iface, endpoint).handle_cmd()
             except EOFError:
                 pass
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.SPIFlashromAppletTestCase
