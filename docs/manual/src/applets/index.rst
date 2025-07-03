@@ -13,4 +13,5 @@ Applet index
     program/index
     debug/index
     control/index
+    sensor/index
     internal/index
