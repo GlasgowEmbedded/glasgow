@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import Any, Literal, Optional, Generator
+from typing import Self, Any, Literal, Optional, Generator
 from collections.abc import Mapping
 from dataclasses import dataclass
 import re
@@ -135,6 +135,9 @@ class GlasgowPin:
             case GlasgowPort.A: return 0 + self.number
             case GlasgowPort.B: return 8 + self.number
             case _: assert False
+
+    def __invert__(self) -> Self:
+        return GlasgowPin(self.port, self.number, invert=not self.invert)
 
     def __str__(self):
         return f"{self.port}{self.number}{'#' if self.invert else ''}"
