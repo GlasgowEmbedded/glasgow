@@ -193,14 +193,14 @@ class SPIControllerInterface:
         self._log("write=<%s>", dump_hex(octets))
         for chunk in self._chunked(octets):
             await self._pipe.send(struct.pack("<BH",
-                (SPICommand.Transfer.value << 4) | spi.Mode.PutX1.value, len(chunk)))
+                (SPICommand.Transfer.value << 4) | spi.Mode.Put.value, len(chunk)))
             await self._pipe.send(chunk)
 
     async def read(self, count: int) -> memoryview:
         assert self._active is not None, "no chip selected"
         for chunk in self._chunked(range(count)):
             await self._pipe.send(struct.pack("<BH",
-                (SPICommand.Transfer.value << 4) | spi.Mode.GetX1.value, len(chunk)))
+                (SPICommand.Transfer.value << 4) | spi.Mode.Get.value, len(chunk)))
         await self._pipe.flush()
         octets = await self._pipe.recv(count)
         self._log("read=<%s>", dump_hex(octets))

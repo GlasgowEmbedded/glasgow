@@ -1,66 +1,12 @@
 import logging
-import asyncio
-import enum
-from amaranth import *
-from amaranth.lib import io
 
-from ... import *
-from ....support.endpoint import *
-from ...interface.spi_controller_deprecated import SPIControllerApplet
+from glasgow.applet import GlasgowAppletV2
+from glasgow.support.endpoint import ServerEndpoint
+from glasgow.protocol.flashrom import SerprogBus, SerprogCommand
+from glasgow.applet.interface.spi_controller import SPIControllerInterface
 
 
-class SPISerprogInterface:
-    def __init__(self, interface):
-        self.lower = interface
-
-    async def write_read(self, sdata, rlen):
-        assert len(sdata) > 0
-        async with self.lower.select():
-            await self.lower.write(sdata)
-            return await self.lower.read(rlen)
-
-
-class SerprogCommand(enum.IntEnum):
-    """
-    Serprog commands and responses, based on:
-
-    - https://review.coreboot.org/plugins/gitiles/flashrom/+/refs/tags/v1.0.2/serprog.h
-    - https://review.coreboot.org/plugins/gitiles/flashrom/+/refs/tags/v1.0.2/Documentation/serprog-protocol.txt
-    """
-    ACK               = 0x06
-    NAK               = 0x15
-    CMD_NOP           = 0x00    # No operation
-    CMD_Q_IFACE       = 0x01    # Query interface version
-    CMD_Q_CMDMAP      = 0x02    # Query supported commands bitmap
-    CMD_Q_PGMNAME     = 0x03    # Query programmer name
-    CMD_Q_SERBUF      = 0x04    # Query Serial Buffer Size
-    CMD_Q_BUSTYPE     = 0x05    # Query supported bustypes
-    CMD_Q_CHIPSIZE    = 0x06    # Query supported chipsize (2^n format)
-    CMD_Q_OPBUF       = 0x07    # Query operation buffer size
-    CMD_Q_WRNMAXLEN   = 0x08    # Query Write to opbuf: Write-N maximum length
-    CMD_R_BYTE        = 0x09    # Read a single byte
-    CMD_R_NBYTES      = 0x0A    # Read n bytes
-    CMD_O_INIT        = 0x0B    # Initialize operation buffer
-    CMD_O_WRITEB      = 0x0C    # Write opbuf: Write byte with address
-    CMD_O_WRITEN      = 0x0D    # Write to opbuf: Write-N
-    CMD_O_DELAY       = 0x0E    # Write opbuf: udelay
-    CMD_O_EXEC        = 0x0F    # Execute operation buffer
-    CMD_SYNCNOP       = 0x10    # Special no-operation that returns NAK+ACK
-    CMD_Q_RDNMAXLEN   = 0x11    # Query read-n maximum length
-    CMD_S_BUSTYPE     = 0x12    # Set used bustype(s).
-    CMD_O_SPIOP       = 0x13    # Perform SPI operation.
-    CMD_S_SPI_FREQ    = 0x14    # Set SPI clock frequency
-    CMD_S_PIN_STATE   = 0x15    # Enable/disable output drivers
-
-
-class SerprogBus(enum.IntEnum):
-    """
-    Bus types supported by the serprog protocol.
-    """
-    PARALLEL = (1 << 0)
-    LPC = (1 << 1)
-    FHW = (1 << 2)
-    SPI = (1 << 3)
+__all__ = []
 
 
 class SerprogCommandHandler:
@@ -79,10 +25,11 @@ class SerprogCommandHandler:
     PROGNAME = b'Glasgow serprog\0'
     assert len(PROGNAME) == 16
 
-    def __init__(self, interface, endpoint, logger):
-        self.interface = interface
-        self.endpoint  = endpoint
+    def __init__(self, logger: logging.Logger, spi_iface: SPIControllerInterface,
+                 endpoint: ServerEndpoint):
         self.logger    = logger
+        self.spi_iface = spi_iface
+        self.endpoint  = endpoint
 
     async def get_u8(self):
         data, = await self.endpoint.recv(1)
@@ -90,13 +37,13 @@ class SerprogCommandHandler:
 
     async def get_u24(self):
         data = await self.endpoint.recv(3)
-        return int.from_bytes(data, byteorder='little')
+        return int.from_bytes(data, byteorder="little")
 
     async def put_u8(self, value):
         await self.endpoint.send([value])
 
     async def put_u16(self, value):
-        await self.endpoint.send(value.to_bytes(length=2, byteorder='little'))
+        await self.endpoint.send(value.to_bytes(length=2, byteorder="little"))
 
     async def ack(self):
         await self.put_u8(SerprogCommand.ACK)
@@ -139,37 +86,16 @@ class SerprogCommandHandler:
             rlen = await self.get_u24()
             await self.ack()
             sdata = await self.endpoint.recv(slen)
-            assert len(sdata) == slen
-            rdata = await self.interface.write_read(sdata, rlen)
+            async with self.spi_iface.select():
+                await self.spi_iface.write(sdata)
+                rdata = await self.spi_iface.read(rlen)
             await self.endpoint.send(rdata)
         else:
             self.logger.warning(f"Unhandled command {cmd:#04x}")
             await self.nak()
 
 
-class SPIFlashromSubtarget(Elaboratable):
-    def __init__(self, controller, hold):
-        self.controller = controller
-        self.hold = hold
-
-    def elaborate(self, platform):
-        m = Module()
-
-        m.submodules.controller = self.controller
-        m.submodules.hold_buffer = hold = io.Buffer("o", self.hold)
-
-        m.d.comb += self.controller.bus.oe.eq(self.controller.bus.cs == 1)
-
-        if self.hold is not None:
-            m.d.comb += [
-                hold.oe.eq(1),
-                hold.o.eq(1),
-            ]
-
-        return m
-
-
-class SPIFlashromApplet(SPIControllerApplet):
+class SPIFlashromApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "expose SPI via flashrom serprog interface"
     description = """
@@ -191,41 +117,39 @@ class SPIFlashromApplet(SPIControllerApplet):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        super().add_build_arguments(parser, access, omit_pins=True)
+        access.add_voltage_argument(parser)
+        access.add_pins_argument(parser, "cs",   default=True, required=True)
+        access.add_pins_argument(parser, "sck",  default=True, required=True)
+        access.add_pins_argument(parser, "copi", default=True, required=True)
+        access.add_pins_argument(parser, "cipo", default=True, required=True)
+        access.add_pins_argument(parser, "wp",   default=True)
+        access.add_pins_argument(parser, "hold", default=True)
 
-        access.add_pins_argument(parser, "cs",   default="A5", required=True)
-        access.add_pins_argument(parser, "cipo", default="A4", required=True)
-        access.add_pins_argument(parser, "wp",   default="A3")
-        access.add_pins_argument(parser, "copi", default="A2", required=True)
-        access.add_pins_argument(parser, "sck",  default="A1", required=True)
-        access.add_pins_argument(parser, "hold", default="A0")
-
-    def build_subtarget(self, target, args):
-        subtarget = super().build_subtarget(target, args)
-        if args.hold is not None:
-            hold = self.mux_interface.get_port(args.hold, name="hold")
-        else:
-            hold = None
-        return SPIFlashromSubtarget(subtarget, hold)
-
-    async def run(self, device, args):
-        spi_iface = await self.run_lower(SPIFlashromApplet, device, args)
-        return SPISerprogInterface(spi_iface)
+    def build(self, args):
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            self.spi_iface = SPIControllerInterface(self.logger, self.assembly,
+                cs=args.cs, sck=args.sck, copi=args.copi, cipo=args.cipo)
+            self.assembly.use_pulls({~args.wp:   "low"})
+            self.assembly.use_pulls({~args.hold: "low"})
 
     @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_setup_arguments(cls, parser):
+        parser.add_argument(
+            "-f", "--frequency", metavar="FREQ", type=int, default=100,
+            help="set SCK frequency to FREQ kHz (default: %(default)s)")
+
+    async def setup(self, args):
+        await self.spi_iface.clock.set_frequency(args.frequency * 1000)
+
+    @classmethod
+    def add_run_arguments(cls, parser):
         ServerEndpoint.add_argument(parser, "endpoint")
 
-    async def interact(self, device, args, iface):
-        endpoint = await ServerEndpoint("socket", self.logger, args.endpoint,
-            deprecated_cancel_on_eof=True)
-        async def handle():
-            while True:
-                try:
-                    handler = SerprogCommandHandler(iface, endpoint, self.logger)
-                    await handler.handle_cmd()
-                except asyncio.CancelledError:
-                    pass
-        handle_fut = asyncio.ensure_future(handle())
-        # This `asyncio.wait()` call is necessary for ^C to be handled correctly.
-        await asyncio.wait([handle_fut], return_when=asyncio.FIRST_EXCEPTION)
+    async def run(self, args):
+        endpoint = await ServerEndpoint("socket", self.logger, args.endpoint)
+        while True:
+            try:
+                await SerprogCommandHandler(self.logger, self.spi_iface, endpoint).handle_cmd()
+            except EOFError:
+                pass
