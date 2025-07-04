@@ -255,7 +255,7 @@ class Memory25xApplet(GlasgowAppletV2):
     The default pin assignment follows the pinouts above in the clockwise direction, making it easy
     to connect the memory with probes or, alternatively, crimp an IDC cable wired to a SOIC clip.
 
-    It is also possible to flash 25-series flash chips using the `flashrom` applet, which
+    It is also possible to flash 25-series flash chips using the `spi-flashrom` applet, which
     requires a third-party tool `flashrom`. The advantage of using the `flashrom` applet is that
     flashrom offers compatibility with a wider variety of devices, some of which may not be
     supported by the `memory-25x` applet.
