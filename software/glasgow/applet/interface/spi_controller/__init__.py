@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Literal
 import contextlib
 import logging
 import struct
@@ -139,7 +139,9 @@ class SPIControllerComponent(wiring.Component):
 class SPIControllerInterface:
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
                  cs: GlasgowPin, sck: GlasgowPin, copi: Optional[GlasgowPin] = None,
-                 cipo: Optional[GlasgowPin] = None):
+                 cipo: Optional[GlasgowPin] = None, mode: Literal[0, 1, 2, 3]):
+        assert mode == 3, "Only Mode 3 is supported at the moment"
+
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
@@ -259,11 +261,16 @@ class SPIControllerApplet(GlasgowAppletV2):
         access.add_pins_argument(parser, "copi", default=True)
         access.add_pins_argument(parser, "cipo", default=True)
 
+        parser.add_argument(
+            "-m", "--mode", metavar="MODE", choices=(0, 1, 2, 3), default=3,
+            help="configure clock phase and idle state according to MODE (default: %(default)s)")
+
     def build(self, args):
         with self.assembly.add_applet(self):
             self.assembly.use_voltage(args.voltage)
             self.spi_iface = SPIControllerInterface(self.logger, self.assembly,
-                cs=args.cs, sck=args.sck, copi=args.copi, cipo=args.cipo)
+                cs=args.cs, sck=args.sck, copi=args.copi, cipo=args.cipo,
+                mode=args.mode)
 
     @classmethod
     def add_setup_arguments(cls, parser):
