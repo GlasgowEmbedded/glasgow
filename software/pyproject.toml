@@ -101,7 +101,7 @@ qspi-controller = "glasgow.applet.interface.qspi_controller:QSPIControllerApplet
 sbw-probe = "glasgow.applet.interface.sbw_probe:SpyBiWireProbeApplet"
 swd-probe = "glasgow.applet.interface.swd_probe:SWDProbeApplet"
 
-flashrom = "glasgow.applet.bridge.flashrom:FlashromApplet"
+spi-flashrom = "glasgow.applet.bridge.flashrom:SPIFlashromApplet"
 jtag-openocd = "glasgow.applet.bridge.jtag_openocd:JTAGOpenOCDApplet"
 jtag-xvc = "glasgow.applet.bridge.jtag_xvc:JTAGXVCApplet"
 probe-rs = "glasgow.applet.bridge.probe_rs:ProbeRsApplet"
