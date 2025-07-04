@@ -78,6 +78,9 @@ class Enframer(wiring.Component):
         with m.If(self.octets.p.chip):
             m.d.comb += self.frames.p.port.sck.o[0].eq(timer * 2 >  self.divisor)
             m.d.comb += self.frames.p.port.sck.o[1].eq(timer * 2 >= self.divisor)
+        with m.Else():
+            for n in range(2):
+                m.d.comb += self.frames.p.port.sck.o[n].eq(1)
         m.d.comb += self.frames.p.port.sck.oe.eq(1)
 
         with m.If(timer == (self.divisor + 1) >> 1):

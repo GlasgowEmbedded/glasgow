@@ -105,10 +105,14 @@ class SPIFramingTestCase(unittest.TestCase):
         async def testbench_out(ctx):
             async def bits_get(*, cs, ox, oe, mode):
                 for cycle, o in enumerate(ox):
+                    if cs:
+                        sck_o = [0,1]
+                    else:
+                        sck_o = [1,1]
                     expected = {
                         "port": {
                             "cs":   {"o": [cs,cs], "oe":  1},
-                            "sck":  {"o": [ 0,cs], "oe":  1},
+                            "sck":  {"o": sck_o,   "oe":  1},
                             "copi": {"o": [ o, o], "oe": oe},
                             "cipo": {"o": [ 0, 0], "oe":  0},
                         },
