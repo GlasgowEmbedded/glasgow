@@ -1,134 +1,142 @@
 # Reference: https://infocenter.nordicsemi.com/pdf/nRF24LE1_PS_v1.6.pdf
 # Accession: G00035
 
-import os
-import math
+from dataclasses import dataclass
 import asyncio
 import logging
 import argparse
 import struct
-from collections import namedtuple
-from amaranth import *
-from amaranth.lib import io
+import enum
+import os
+
 from fx2.format import input_data, output_data
 
-from ....support.logging import dump_hex
-from ...interface.spi_controller_deprecated import SPIControllerSubtarget, SPIControllerInterface
-from ... import *
+from glasgow.support.logging import dump_hex
+from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
+from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
+from glasgow.applet.interface.spi_controller import SPIControllerInterface
+from glasgow.applet.control.gpio import GPIOInterface
+
+
+__all__ = ["ProgramNRF24Lx1Error", "ProgramNRF24Lx1Interface"]
 
 
 class ProgramNRF24Lx1Error(GlasgowAppletError):
     pass
 
 
-_MemoryArea = namedtuple("_MemoryArea", ("name", "mem_addr", "spi_addr", "size"))
+@dataclass
+class _MemoryArea:
+    name: str
+    mem_addr: int
+    spi_addr: int
+    size: int
 
 
-_nrf24le1_map = [
-    _MemoryArea(name="code",    mem_addr= 0x0000, spi_addr= 0x0000, size=0x4000),
-    _MemoryArea(name="NV data", mem_addr= 0xFC00, spi_addr= 0x4400, size=0x0400),
-    _MemoryArea(name="info",    mem_addr=0x10000, spi_addr=0x10000, size=0x0200),
-]
-
-_nrf24lu1p_32k_map = [
-    _MemoryArea(name="code",    mem_addr= 0x0000, spi_addr= 0x0000, size=0x7C00),
-    _MemoryArea(name="NV data", mem_addr= 0x7C00, spi_addr= 0x7C00, size=0x0400),
-    _MemoryArea(name="info",    mem_addr=0x10000, spi_addr=0x10000, size=0x0200),
-]
-
-_nrf24lu1p_16k_map = [
-    _MemoryArea(name="code",    mem_addr= 0x0000, spi_addr= 0x0000, size=0x3C00),
-    _MemoryArea(name="NV data", mem_addr= 0x7C00, spi_addr= 0x7C00, size=0x0400),
-    _MemoryArea(name="info",    mem_addr=0x10000, spi_addr=0x10000, size=0x0200),
-]
+@dataclass
+class _Device:
+    memory_map: list[_MemoryArea]
+    buffer_size: int
 
 
-FSR_BIT_ENDEBUG = 0b10000000
-FSR_BIT_STP     = 0b01000000
-FSR_BIT_WEN     = 0b00100000
-FSR_BIT_RDYN    = 0b00010000
-FSR_BIT_INFEN   = 0b00001000
-FSR_BIT_RDISMB  = 0b00000100
+_devices = {
+    "LE1": _Device(
+        memory_map=[
+            _MemoryArea(name="code",    mem_addr= 0x0000, spi_addr= 0x0000, size=0x4000),
+            _MemoryArea(name="NV data", mem_addr= 0xFC00, spi_addr= 0x4400, size=0x0400),
+            _MemoryArea(name="info",    mem_addr=0x10000, spi_addr=0x10000, size=0x0200),
+        ],
+        buffer_size=512,
+    ),
+    "LU1p32k": _Device(
+        memory_map=[
+            _MemoryArea(name="code",    mem_addr= 0x0000, spi_addr= 0x0000, size=0x7C00),
+            _MemoryArea(name="NV data", mem_addr= 0x7C00, spi_addr= 0x7C00, size=0x0400),
+            _MemoryArea(name="info",    mem_addr=0x10000, spi_addr=0x10000, size=0x0200),
+        ],
+        buffer_size=256,
+    ),
+    "LU1p16k": _Device(
+        memory_map=[
+            _MemoryArea(name="code",    mem_addr= 0x0000, spi_addr= 0x0000, size=0x3C00),
+            _MemoryArea(name="NV data", mem_addr= 0x7C00, spi_addr= 0x7C00, size=0x0400),
+            _MemoryArea(name="info",    mem_addr=0x10000, spi_addr=0x10000, size=0x0200),
+        ],
+        buffer_size=256,
+    )
+}
 
 
-class ProgramNRF24Lx1Subtarget(Elaboratable):
-    def __init__(self, controller, port_prog, dut_prog, port_reset, dut_reset):
-        self.controller = controller
-        self.port_prog  = port_prog
-        self.dut_prog   = dut_prog
-        self.port_reset = port_reset
-        self.dut_reset  = dut_reset
-
-    def elaborate(self, platform):
-        m = Module()
-
-        m.submodules.controller = self.controller
-
-        m.submodules.prog_buffer  = prog_buffer  = io.Buffer("o", self.port_prog)
-        m.submodules.reset_buffer = reset_buffer = io.Buffer("o", self.port_reset)
-        m.d.comb += [
-            prog_buffer.o.eq(self.dut_prog),
-            reset_buffer.o.eq(~self.dut_reset),
-            self.controller.bus.oe.eq(self.dut_prog),
-        ]
-
-        return m
+class _FlashStatus(enum.IntFlag):
+    ENDEBUG = 0b10000000
+    STP     = 0b01000000
+    WEN     = 0b00100000
+    RDYN    = 0b00010000
+    INFEN   = 0b00001000
+    RDISMB  = 0b00000100
 
 
 class ProgramNRF24Lx1Interface:
-    def __init__(self, interface, logger, device, addr_dut_prog, addr_dut_reset):
-        self.lower   = interface
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
+                 cs: GlasgowPin, sck: GlasgowPin, copi: GlasgowPin, cipo: GlasgowPin,
+                 prog: GlasgowPin, reset: GlasgowPin):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
-        self._device = device
-        self._addr_dut_prog  = addr_dut_prog
-        self._addr_dut_reset = addr_dut_reset
+
+        self._spi_iface = SPIControllerInterface(logger, assembly,
+            cs=cs, sck=sck, copi=copi, cipo=cipo, mode=0)
+        self._prog_iface = GPIOInterface(logger, assembly, pins=(prog,))
+        self._reset_iface = GPIOInterface(logger, assembly, pins=(~reset,))
 
     def _log(self, message, *args):
         self._logger.log(self._level, "nRF24Lx1: " + message, *args)
 
+    @property
+    def clock(self) -> ClockDivisor:
+        return self._spi_iface.clock
+
     async def _reset(self):
-        await self._device.write_register(self._addr_dut_reset, 1)
-        await asyncio.sleep(0.001) # 0.1 us
-        await self._device.write_register(self._addr_dut_reset, 0)
+        await self._reset_iface.output(0, True)
+        await asyncio.sleep(0.001) # spec requires 0.1 us
+        await self._reset_iface.output(0, False)
 
     async def reset_program(self):
         self._log("reset mode=program")
-        await self.lower.synchronize()
-        await self._device.write_register(self._addr_dut_prog, 1)
+        await self._spi_iface.synchronize()
+        await self._prog_iface.output(0, True)
         await self._reset()
-        await self.lower.synchronize()
-        await self.lower.delay_us(1500)
+        await self._spi_iface.synchronize()
+        await self._spi_iface.delay_us(1500)
 
     async def reset_application(self):
         self._log("reset mode=application")
-        await self.lower.synchronize()
-        await self._device.write_register(self._addr_dut_prog, 0)
+        await self._spi_iface.synchronize()
+        await self._prog_iface.output(0, False)
         await self._reset()
 
-    async def _command(self, cmd, arg=[], ret=0):
-        self._log("cmd=%02X arg=<%s> ret=%d", cmd, dump_hex(arg), ret)
-        async with self.lower.select():
-            await self.lower.write(bytes([cmd, *arg]))
-            result = await self.lower.read(ret)
-        if ret > 0:
-            self._log("res=<%s>", dump_hex(result))
-            return result
-        else:
-            return None
+    async def _command(self, cmd: int, arg: list[int] = [], ret: int = 0) -> memoryview | None:
+        async with self._spi_iface.select():
+            await self._spi_iface.write(bytes([cmd, *arg]))
+            if ret > 0:
+                result = await self._spi_iface.read(ret)
+                self._log("cmd=%02X arg=<%s> res=<%s>", cmd, dump_hex(arg), dump_hex(result))
+                return result
+            else:
+                self._log("cmd=%02X arg=<%s>", cmd, dump_hex(arg))
+                return None
 
-    async def read_status(self):
+    async def read_status(self) -> _FlashStatus:
         status, = await self._command(0x05, ret=1)
-        self._log("read status=%s", f"{status:#010b}")
-        return status
+        self._log(f"read status={status:#010b}")
+        return _FlashStatus(status)
 
-    async def write_status(self, status):
-        self._log("write status=%s", f"{status:#010b}")
+    async def write_status(self, status: _FlashStatus):
+        self._log(f"write status={status:#010b}")
         await self._command(0x01, arg=[status])
 
     async def wait_status(self):
         self._log("wait status")
-        while await self.read_status() & FSR_BIT_WEN: pass
+        while await self.read_status() & _FlashStatus.WEN: pass
 
     async def write_enable(self):
         self._log("write enable")
@@ -138,22 +146,22 @@ class ProgramNRF24Lx1Interface:
         self._log("write disable")
         await self._command(0x04)
 
-    async def check_presence(self):
+    async def check_presence(self) -> bool:
         await self.write_enable()
-        present = (await self.read_status() & FSR_BIT_WEN) != 0
+        present = bool(await self.read_status() & _FlashStatus.WEN)
         if present:
             await self.write_disable()
         return present
 
-    async def read(self, address, length):
+    async def read(self, address: int, length: int) -> memoryview:
         self._log("read address=%#06x length=%#06x", address, length)
         return await self._command(0x03, arg=struct.pack(">H", address), ret=length)
 
-    async def program(self, address, data):
+    async def program(self, address: int, data: bytes | bytearray | memoryview):
         self._log("program address=%#06x length=%#06x", address, len(data))
         await self._command(0x02, arg=struct.pack(">H", address) + bytes(data))
 
-    async def erase_page(self, page):
+    async def erase_page(self, page: int):
         self._log("erase page=%#04x", page)
         await self._command(0x52, arg=[page])
 
@@ -161,7 +169,7 @@ class ProgramNRF24Lx1Interface:
         self._log("erase all")
         await self._command(0x62)
 
-    async def read_unprotected_pages(self):
+    async def read_unprotected_pages(self) -> int:
         pages, = await self._command(0x89, ret=1)
         self._log("read unprotected pages=%#04x", pages)
         return pages
@@ -175,71 +183,48 @@ class ProgramNRF24Lx1Interface:
         await self._command(0x86)
 
 
-class ProgramNRF24Lx1Applet(GlasgowApplet):
+class ProgramNRF24Lx1Applet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "program nRF24LE1 and nRF24LU1+ RF microcontrollers"
     description = """
     Program the non-volatile memory of nRF24LE1 and nRF24LU1+ microcontrollers.
     """
+    required_revision = "C0"
+    nrf24lx1_iface: ProgramNRF24Lx1Interface
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_build_arguments(parser)
-
+        access.add_voltage_argument(parser)
         # Order matches the pin order, in clockwise direction.
-        access.add_pins_argument(parser, "prog",  default=True)
-        access.add_pins_argument(parser, "sck",   default=True)
-        access.add_pins_argument(parser, "copi",  default=True)
-        access.add_pins_argument(parser, "cipo",  default=True)
-        access.add_pins_argument(parser, "cs",    default=True)
-        access.add_pins_argument(parser, "reset", default=True)
+        access.add_pins_argument(parser, "prog",  default=True, required=True)
+        access.add_pins_argument(parser, "sck",   default=True, required=True)
+        access.add_pins_argument(parser, "copi",  default=True, required=True)
+        access.add_pins_argument(parser, "cipo",  default=True, required=True)
+        access.add_pins_argument(parser, "cs",    default=True, required=True)
+        access.add_pins_argument(parser, "reset", default=True, required=True)
 
+    def build(self, args):
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            self.nrf24lx1_iface = ProgramNRF24Lx1Interface(self.logger, self.assembly,
+                cs=args.cs, sck=args.sck, copi=args.copi, cipo=args.cipo,
+                prog=args.prog, reset=args.reset)
+
+    @classmethod
+    def add_setup_arguments(cls, parser):
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=1000,
             help="set SPI frequency to FREQ kHz (default: %(default)s)")
 
-    def build(self, target, args):
-        dut_prog,  self.__addr_dut_prog  = target.registers.add_rw(1)
-        dut_reset, self.__addr_dut_reset = target.registers.add_rw(1)
-
-        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        ports = iface.get_port_group(
-            prog  = args.prog,
-            sck   = args.sck,
-            copi  = args.copi,
-            cipo  = args.cipo,
-            cs    = args.cs,
-            reset = args.reset
-        )
-
-        controller = SPIControllerSubtarget(
-            ports=ports,
-            out_fifo=iface.get_out_fifo(),
-            in_fifo=iface.get_in_fifo(auto_flush=True),
-            period_cyc=math.ceil(target.sys_clk_freq / (args.frequency * 1000)),
-            delay_cyc=math.ceil(target.sys_clk_freq / 1e6),
-            sck_idle=0,
-            sck_edge="rising",
-        )
-
-        subtarget = ProgramNRF24Lx1Subtarget(
-            controller, ports.prog, dut_prog, ports.reset, dut_reset)
-
-        return iface.add_subtarget(subtarget)
-
-    async def run(self, device, args):
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        spi_iface = SPIControllerInterface(iface, self.logger)
-        nrf24lx1_iface = ProgramNRF24Lx1Interface(spi_iface, self.logger, device,
-                                                  self.__addr_dut_prog, self.__addr_dut_reset)
-        return nrf24lx1_iface
+    async def setup(self, args):
+        await self.nrf24lx1_iface.clock.set_frequency(args.frequency * 1000)
 
     @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         parser.add_argument(
             "-d", "--device", metavar="DEVICE", required=True,
-            choices=("LE1", "LU1p16k", "LU1p32k"),
-            help="type of device to program (one of: %(choices)s)")
+            choices=list(_devices.keys()),
+            help=f"type of device to program (one of: {', '.join(_devices.keys())})")
 
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
@@ -270,34 +255,26 @@ class ProgramNRF24Lx1Applet(GlasgowApplet):
         p_enable_debug = p_operation.add_parser(
             "enable-debug", help="enable MCU hardare debugging features")
 
-    async def interact(self, device, args, nrf24lx1_iface):
+    async def run(self, args):
+        device = _devices[args.device]
         page_size = 512
-        if args.device == "LE1":
-            memory_map  = _nrf24le1_map
-            buffer_size = 512
-        elif args.device == "LU1p32k":
-            memory_map  = _nrf24lu1p_32k_map
-            buffer_size = 256
-        elif args.device == "LU1p16k":
-            memory_map  = _nrf24lu1p_16k_map
-            buffer_size = 256
-        else:
-            assert False
+        memory_map = device.memory_map
+        buffer_size = device.buffer_size
 
         try:
-            await nrf24lx1_iface.reset_program()
+            await self.nrf24lx1_iface.reset_program()
 
-            if not await nrf24lx1_iface.check_presence():
+            if not await self.nrf24lx1_iface.check_presence():
                 raise ProgramNRF24Lx1Error("MCU is not present")
 
             async def check_info_page(address):
-                old_status = await nrf24lx1_iface.read_status()
+                old_status = await self.nrf24lx1_iface.read_status()
                 try:
-                    await nrf24lx1_iface.write_status(FSR_BIT_INFEN)
-                    fuse, = await nrf24lx1_iface.read(address, 1)
+                    await self.nrf24lx1_iface.write_status(_FlashStatus.INFEN)
+                    fuse, = await self.nrf24lx1_iface.read(address, 1)
                     return fuse != 0xff
                 finally:
-                    await nrf24lx1_iface.write_status(old_status)
+                    await self.nrf24lx1_iface.write_status(old_status)
 
             async def check_read_protected():
                 if await check_info_page(0x23):
@@ -310,10 +287,10 @@ class ProgramNRF24Lx1Applet(GlasgowApplet):
                 for memory_area in memory_map:
                     self.logger.info("reading %s memory", memory_area.name)
                     if memory_area.spi_addr & 0x10000:
-                        await nrf24lx1_iface.write_status(FSR_BIT_INFEN)
+                        await self.nrf24lx1_iface.write_status(_FlashStatus.INFEN)
                     else:
-                        await nrf24lx1_iface.write_status(0)
-                    area_data = await nrf24lx1_iface.read(memory_area.spi_addr & 0xffff,
+                        await self.nrf24lx1_iface.write_status(0)
+                    area_data = await self.nrf24lx1_iface.read(memory_area.spi_addr & 0xffff,
                                                           memory_area.size)
                     chunks.append((memory_area.mem_addr, area_data))
                 output_data(args.file, chunks, fmt="ihex")
@@ -333,7 +310,7 @@ class ProgramNRF24Lx1Applet(GlasgowApplet):
                             f"data outside of memory map at {chunk_mem_addr:#06x}")
                     while chunk_mem_addr >= memory_area.mem_addr + memory_area.size:
                         area_index += 1
-                        if area_index >= len(memory_area):
+                        if area_index >= memory_area.size:
                             raise ProgramNRF24Lx1Error(
                                 f"data outside of memory map at {chunk_mem_addr:#06x}")
                         memory_area = memory_map[area_index]
@@ -351,10 +328,10 @@ class ProgramNRF24Lx1Applet(GlasgowApplet):
                                       + memory_area.spi_addr) & 0xffff
                     if memory_area.spi_addr & 0x10000:
                         level = logging.WARNING
-                        await nrf24lx1_iface.write_status(FSR_BIT_INFEN)
+                        await self.nrf24lx1_iface.write_status(_FlashStatus.INFEN)
                     else:
                         level = logging.INFO
-                        await nrf24lx1_iface.write_status(0)
+                        await self.nrf24lx1_iface.write_status(0)
 
                     overwrite_pages = set(range(
                         (chunk_spi_addr // page_size),
@@ -365,24 +342,24 @@ class ProgramNRF24Lx1Applet(GlasgowApplet):
                             page_addr = (memory_area.spi_addr & 0x10000) | (page * page_size)
                             self.logger.log(level, "erasing %s memory at %#06x+%#06x",
                                             memory_area.name, page_addr, page_size)
-                            await nrf24lx1_iface.write_enable()
-                            await nrf24lx1_iface.erase_page(page)
-                            await nrf24lx1_iface.wait_status()
+                            await self.nrf24lx1_iface.write_enable()
+                            await self.nrf24lx1_iface.erase_page(page)
+                            await self.nrf24lx1_iface.wait_status()
                         erased_pages.update(need_erase_pages)
 
                     self.logger.log(level, "programming %s memory at %#06x+%#06x",
                                     memory_area.name, chunk_mem_addr, len(chunk_data))
                     while len(chunk_data) > 0:
-                        await nrf24lx1_iface.write_enable()
-                        await nrf24lx1_iface.program(chunk_spi_addr, chunk_data[:buffer_size])
-                        await nrf24lx1_iface.wait_status()
+                        await self.nrf24lx1_iface.write_enable()
+                        await self.nrf24lx1_iface.program(chunk_spi_addr, chunk_data[:buffer_size])
+                        await self.nrf24lx1_iface.wait_status()
                         chunk_data  = chunk_data[buffer_size:]
                         chunk_spi_addr += buffer_size
 
             if args.operation == "erase":
                 if args.info_page:
-                    await nrf24lx1_iface.write_status(FSR_BIT_INFEN)
-                    info_page = await nrf24lx1_iface.read(0x0000, 0x0100)
+                    await self.nrf24lx1_iface.write_status(_FlashStatus.INFEN)
+                    info_page = await self.nrf24lx1_iface.read(0x0000, 0x0100)
                     self.logger.warning("backing up info page to %s", args.info_page)
                     if os.path.isfile(args.info_page):
                         raise ProgramNRF24Lx1Error("info page backup file already exists")
@@ -391,17 +368,17 @@ class ProgramNRF24Lx1Applet(GlasgowApplet):
                     self.logger.warning("erasing code and data memory, and info page")
                 else:
                     await check_read_protected()
-                    await nrf24lx1_iface.write_status(0)
+                    await self.nrf24lx1_iface.write_status(0)
                     self.logger.info("erasing code and data memory")
                 try:
-                    await nrf24lx1_iface.write_enable()
-                    await nrf24lx1_iface.erase_all()
-                    await nrf24lx1_iface.wait_status()
+                    await self.nrf24lx1_iface.write_enable()
+                    await self.nrf24lx1_iface.erase_all()
+                    await self.nrf24lx1_iface.wait_status()
                     if args.info_page:
                         self.logger.info("restoring info page DSYS area")
-                        await nrf24lx1_iface.write_enable()
-                        await nrf24lx1_iface.program(0, info_page[:32]) # DSYS only
-                        await nrf24lx1_iface.wait_status()
+                        await self.nrf24lx1_iface.write_enable()
+                        await self.nrf24lx1_iface.program(0, info_page[:32]) # DSYS only
+                        await self.nrf24lx1_iface.wait_status()
                 except:
                     if args.info_page:
                         self.logger.error("IMPORTANT: programming failed; restore DSYS manually "
@@ -414,21 +391,21 @@ class ProgramNRF24Lx1Applet(GlasgowApplet):
                     raise ProgramNRF24Lx1Error("memory read protection is already enabled")
 
                 self.logger.warning("protecting code and data memory from reads")
-                await nrf24lx1_iface.write_enable()
-                await nrf24lx1_iface.disable_read()
-                await nrf24lx1_iface.wait_status()
+                await self.nrf24lx1_iface.write_enable()
+                await self.nrf24lx1_iface.disable_read()
+                await self.nrf24lx1_iface.wait_status()
 
             if args.operation == "enable-debug":
                 if await check_info_page(0x24):
                     raise ProgramNRF24Lx1Error("hardware debugging features already enabled")
 
                 self.logger.info("enabling hardware debugging features")
-                await nrf24lx1_iface.write_enable()
-                await nrf24lx1_iface.enable_debug()
-                await nrf24lx1_iface.wait_status()
+                await self.nrf24lx1_iface.write_enable()
+                await self.nrf24lx1_iface.enable_debug()
+                await self.nrf24lx1_iface.wait_status()
 
         finally:
-            await nrf24lx1_iface.reset_application()
+            await self.nrf24lx1_iface.reset_application()
 
     @classmethod
     def tests(cls):

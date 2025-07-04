@@ -1,0 +1,22 @@
+{"self": "nrf24lx1_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "nrf24lx1_iface._spi_iface", "call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
+{"self": "nrf24lx1_iface._spi_iface", "call": "read", "kind": "asyncmethod", "args": [1], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00"}}
+{"self": "nrf24lx1_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "nrf24lx1_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "nrf24lx1_iface._spi_iface", "call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "0108"}], "kwargs": {}, "result": null}
+{"self": "nrf24lx1_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "nrf24lx1_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "nrf24lx1_iface._spi_iface", "call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "05"}], "kwargs": {}, "result": null}
+{"self": "nrf24lx1_iface._spi_iface", "call": "read", "kind": "asyncmethod", "args": [1], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "08"}}
+{"self": "nrf24lx1_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "nrf24lx1_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "nrf24lx1_iface._spi_iface", "call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "030000"}], "kwargs": {}, "result": null}
+{"self": "nrf24lx1_iface._spi_iface", "call": "read", "kind": "asyncmethod", "args": [512], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "5a5a434d5432383318140a9dec6b85b526b1500e09ffffffff82ffffffff0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}}
+{"self": "nrf24lx1_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "nrf24lx1_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "nrf24lx1_iface._spi_iface", "call": "write", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "0100"}], "kwargs": {}, "result": null}
+{"self": "nrf24lx1_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "nrf24lx1_iface._spi_iface", "call": "synchronize", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "nrf24lx1_iface._prog_iface", "call": "output", "kind": "asyncmethod", "args": [0, false], "kwargs": {}, "result": null}
+{"self": "nrf24lx1_iface._reset_iface", "call": "output", "kind": "asyncmethod", "args": [0, true], "kwargs": {}, "result": null}
+{"self": "nrf24lx1_iface._reset_iface", "call": "output", "kind": "asyncmethod", "args": [0, false], "kwargs": {}, "result": null}
