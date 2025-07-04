@@ -10,3 +10,4 @@ MCU/FPGA programming
 
     ice40_sram
     ice40_flash
+    nrf24lx1
