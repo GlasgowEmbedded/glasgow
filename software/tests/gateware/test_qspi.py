@@ -149,10 +149,14 @@ class QSPIFramingTestCase(unittest.TestCase):
         async def testbench_out(ctx):
             async def bits_get(*, cs, ox, oe, mode):
                 for cycle, o in enumerate(ox):
+                    if cs:
+                        sck_o = [0,1]
+                    else:
+                        sck_o = [1,1]
                     expected = {
                         "port": {
                             "cs":  {"o": [      cs,       cs], "oe":         1},
-                            "sck": {"o": [       0,       cs], "oe":         1},
+                            "sck": {"o":                sck_o, "oe":         1},
                             "io0": {"o": [(o>>0)&1, (o>>0)&1], "oe": (oe>>0)&1},
                             "io1": {"o": [(o>>1)&1, (o>>1)&1], "oe": (oe>>1)&1},
                             "io2": {"o": [(o>>2)&1, (o>>2)&1], "oe": (oe>>2)&1},
