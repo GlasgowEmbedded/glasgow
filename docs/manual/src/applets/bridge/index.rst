@@ -9,4 +9,6 @@ External tools
     :maxdepth: 2
 
     flashrom
+    jtag_openocd
+    jtag_xvc
     probe_rs
