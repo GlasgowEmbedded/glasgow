@@ -16,3 +16,4 @@ MCU/FPGA programming
     xc9500xl
     xpla3
     mec16xx
+    nrf24lx1
