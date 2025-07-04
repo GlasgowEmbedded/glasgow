@@ -86,11 +86,11 @@ What can I do with Glasgow?
 
   * program and verify XC9500XL CPLDs via JTAG
 
-  * :ref:`expose JTAG to Vivado <applet.interface.jtag_xvc>`
+  * :ref:`expose JTAG to Vivado <applet.bridge.jtag_xvc>`
 
 * probe Arm Cortex processors via :ref:`SWD <applet.interface.swd_probe>`
 
-  * :ref:`debug Arm Cortex processors <applet.interface.probe_rs>` via `probe-rs <https://probe.rs>`_
+  * :ref:`debug Arm Cortex processors <applet.bridge.probe_rs>` via `probe-rs <https://probe.rs>`_
 
 * communicate using nRF24L01(+) radios
 

@@ -15,8 +15,4 @@ I/O interfaces
     qspi_controller
     qspi_analyzer
     jtag_pinout
-    jtag_openocd
-    jtag_xvc
     swd_probe
-    probe_rs
-    spi_flashrom
