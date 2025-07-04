@@ -1,10 +1,10 @@
 from amaranth import *
 
 from glasgow.applet import GlasgowAppletV2TestCase, synthesis_test
-from . import SPIFlashromApplet
+from . import FlashromApplet
 
 
-class SPIFlashromAppletTestCase(GlasgowAppletV2TestCase, applet=SPIFlashromApplet):
+class FlashromAppletTestCase(GlasgowAppletV2TestCase, applet=FlashromApplet):
     @synthesis_test
     def test_build(self):
         self.assertBuilds()
