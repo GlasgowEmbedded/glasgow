@@ -167,8 +167,13 @@ class GlasgowAppletArguments:
             metavar = "PIN"
             if help is None:
                 help = f"bind the applet I/O line {name!r} to {metavar}"
+            help += f" ("
             if default:
-                help += f" (default: {default})"
+                help += f"default: '{default}', "
+            if required:
+                help += f"required)"
+            else:
+                help += f"optional)"
 
             def pin_arg(arg):
                 try:
@@ -208,10 +213,13 @@ class GlasgowAppletArguments:
             metavar = "PINS"
             if help is None:
                 help = f"bind the applet I/O lines {name!r} to {metavar}"
+            help += f" ("
             if default:
-                help += f" (default: {','.join(str(pin) for pin in default)})"
+                help += f"default: '{','.join(str(pin) for pin in default)}', "
+            if required:
+                help += f"required)"
             else:
-                help += " (default is empty)"
+                help += f"optional)"
 
             def pin_arg(arg):
                 try:
