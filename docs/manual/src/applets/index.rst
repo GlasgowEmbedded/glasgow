@@ -13,4 +13,5 @@ Applet index
     program/index
     debug/index
     control/index
+    bridge/index
     internal/index

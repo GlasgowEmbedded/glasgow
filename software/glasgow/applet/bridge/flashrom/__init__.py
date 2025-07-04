@@ -95,7 +95,7 @@ class SerprogCommandHandler:
             await self.nak()
 
 
-class SPIFlashromApplet(GlasgowAppletV2):
+class FlashromApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "expose SPI via flashrom serprog interface"
     description = """
@@ -108,11 +108,11 @@ class SPIFlashromApplet(GlasgowAppletV2):
 
     ::
 
-        glasgow run spi-flashrom -V 3.3 --freq 4000 tcp::2222
+        glasgow run flashrom -V 3.3 --freq 4000 tcp::2222
         /sbin/flashrom -p serprog:ip=localhost:2222
 
     It is also possible to flash 25-series flash chips using the `memory-25x` applet, which does
-    not require a third-party tool. The advantage of using the `spi-flashrom` applet is that
+    not require a third-party tool. The advantage of using the `flashrom` applet is that
     flashrom offers compatibility with a wider variety of devices, some of which may not be
     supported by the `memory-25x` applet.
     """
@@ -161,4 +161,4 @@ class SPIFlashromApplet(GlasgowAppletV2):
     @classmethod
     def tests(cls):
         from . import test
-        return test.SPIFlashromAppletTestCase
+        return test.FlashromAppletTestCase
