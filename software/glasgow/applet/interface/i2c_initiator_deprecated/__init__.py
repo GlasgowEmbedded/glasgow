@@ -2,9 +2,6 @@ import argparse
 import logging
 import math
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io
-from amaranth.lib.wiring import In, Out
-from glasgow.abstract import AbstractAssembly, GlasgowPin, PullState
 
 from ....gateware.i2c import I2CInitiator
 from ... import *
@@ -17,19 +14,17 @@ CMD_WRITE = 0x04
 CMD_READ  = 0x05
 
 
-class I2CInitiatorComponent(wiring.Component):
-    i_stream: In(stream.Signature(8))
-    o_stream: Out(stream.Signature(8))
-
-    def __init__(self, ports, period_cyc):
-        self._ports = ports
-        self._period_cyc = period_cyc
-        super().__init__()
+class I2CInitiatorSubtarget(Elaboratable):
+    def __init__(self, ports, out_fifo, in_fifo, period_cyc):
+        self.ports = ports
+        self.out_fifo = out_fifo
+        self.in_fifo = in_fifo
+        self.period_cyc = period_cyc
 
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.i2c_initiator = i2c_initiator = I2CInitiator(self._ports, self._period_cyc)
+        m.submodules.i2c_initiator = i2c_initiator = I2CInitiator(self.ports, self.period_cyc)
 
         ###
 
@@ -38,9 +33,9 @@ class I2CInitiatorComponent(wiring.Component):
 
         with m.FSM():
             with m.State("IDLE"):
-                with m.If(~i2c_initiator.busy & self.i_stream.valid):
-                    m.d.comb += self.i_stream.ready.eq(1)
-                    m.d.sync += cmd.eq(self.i_stream.payload)
+                with m.If(~i2c_initiator.busy & self.out_fifo.r_rdy):
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    m.d.sync += cmd.eq(self.out_fifo.r_data)
                     m.next = "COMMAND"
 
             with m.State("COMMAND"):
@@ -66,21 +61,21 @@ class I2CInitiatorComponent(wiring.Component):
                     m.next = "IDLE"
 
             with m.State("COUNT-MSB"):
-                with m.If(self.i_stream.valid):
-                    m.d.comb += self.i_stream.ready.eq(1)
-                    m.d.sync += count.eq(self.i_stream.payload << 8)
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    m.d.sync += count.eq(self.out_fifo.r_data << 8)
                     m.next = "COUNT-LSB"
             with m.State("COUNT-LSB"):
-                with m.If(self.i_stream.valid):
-                    m.d.comb += self.i_stream.ready.eq(1)
-                    m.d.sync += count.eq(count | self.i_stream.payload)
+                with m.If(self.out_fifo.r_rdy):
+                    m.d.comb += self.out_fifo.r_en.eq(1)
+                    m.d.sync += count.eq(count | self.out_fifo.r_data)
                     m.next = "IDLE"
 
             with m.State("WRITE-FIRST"):
-                with m.If(self.i_stream.valid):
+                with m.If(self.out_fifo.r_rdy):
                     m.d.comb += [
-                        self.i_stream.ready.eq(1),
-                        i2c_initiator.data_i.eq(self.i_stream.payload),
+                        self.out_fifo.r_en.eq(1),
+                        i2c_initiator.data_i.eq(self.out_fifo.r_data),
                         i2c_initiator.write.eq(1),
                     ]
                     m.next = "WRITE"
@@ -90,17 +85,17 @@ class I2CInitiatorComponent(wiring.Component):
                         m.d.sync += count.eq(count - 1)
                     with m.If((count == 1) | ~i2c_initiator.ack_o):
                         m.next = "REPORT"
-                    with m.Elif(self.i_stream.valid):
+                    with m.Elif(self.out_fifo.r_rdy):
                         m.d.comb += [
-                            self.i_stream.ready.eq(1),
-                            i2c_initiator.data_i.eq(self.i_stream.payload),
+                            self.out_fifo.r_en.eq(1),
+                            i2c_initiator.data_i.eq(self.out_fifo.r_data),
                             i2c_initiator.write.eq(1),
                         ]
             with m.State("REPORT"):
-                with m.If(self.o_stream.ready):
+                with m.If(self.in_fifo.w_rdy):
                     m.d.comb += [
-                        self.o_stream.payload.eq(count),
-                        self.o_stream.valid.eq(1),
+                        self.in_fifo.w_data.eq(count),
+                        self.in_fifo.w_en.eq(1),
                     ]
                     m.d.sync += count.eq(0)
                     m.next = "IDLE"
@@ -114,10 +109,10 @@ class I2CInitiatorComponent(wiring.Component):
                 m.next = "READ"
             with m.State("READ"):
                 with m.If(~i2c_initiator.busy):
-                    with m.If(self.o_stream.ready):
+                    with m.If(self.in_fifo.w_rdy):
                         m.d.comb += [
-                            self.o_stream.payload.eq(i2c_initiator.data_o),
-                            self.o_stream.valid.eq(1),
+                            self.in_fifo.w_data.eq(i2c_initiator.data_o),
+                            self.in_fifo.w_en.eq(1),
                         ]
                         with m.If(count == 0):
                             m.next = "IDLE"
@@ -132,42 +127,38 @@ class I2CInitiatorComponent(wiring.Component):
 
 
 class I2CInitiatorInterface:
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 scl: GlasgowPin, sda: GlasgowPin, period_cyc):
+    def __init__(self, interface, logger):
+        self.lower   = interface
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
-        ports = assembly.add_port_group(scl=scl, sda=sda)
-        component = assembly.add_submodule(I2CInitiatorComponent(ports, period_cyc))
-        self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
-
     async def reset(self):
         self._logger.debug("I2C: reset")
-        await self._pipe.reset()
+        await self.lower.reset()
 
     async def _cmd_start(self):
-        await self._pipe.send([CMD_START])
+        await self.lower.write([CMD_START])
 
     async def _cmd_stop(self):
-        await self._pipe.send([CMD_STOP])
+        await self.lower.write([CMD_STOP])
 
     async def _cmd_count(self, count):
         assert count < 0xffff
         msb = (count >> 8) & 0xff
         lsb = (count >> 0) & 0xff
-        await self._pipe.send([CMD_COUNT, msb, lsb])
+        await self.lower.write([CMD_COUNT, msb, lsb])
 
     async def _cmd_write(self):
-        await self._pipe.send([CMD_WRITE])
+        await self.lower.write([CMD_WRITE])
 
     async def _data_write(self, data):
-        await self._pipe.send(data)
+        await self.lower.write(data)
 
     async def _cmd_read(self):
-        await self._pipe.send([CMD_READ])
+        await self.lower.write([CMD_READ])
 
     async def _data_read(self, size):
-        return await self._pipe.recv(size)
+        return await self.lower.read(size)
 
     async def write(self, addr, data, stop=False):
         data = bytes(data)
@@ -185,7 +176,6 @@ class I2CInitiatorInterface:
         await self._data_write([(addr << 1) | 0])
         await self._data_write(data)
         if stop: await self._cmd_stop()
-        await self._pipe.flush()
 
         unacked, = await self._data_read(1)
         acked = len(data) - unacked
@@ -203,6 +193,7 @@ class I2CInitiatorInterface:
         else:
             self._logger.log(self._level, "I2C: start addr=%s read=%d",
                              bin(addr), size)
+
         await self._cmd_start()
         await self._cmd_count(1)
         await self._cmd_write()
@@ -210,7 +201,6 @@ class I2CInitiatorInterface:
         await self._cmd_count(size)
         await self._cmd_read()
         if stop: await self._cmd_stop()
-        await self._pipe.flush()
 
         unacked, = await self._data_read(1)
         data = await self._data_read(size)
@@ -269,7 +259,7 @@ class I2CInitiatorInterface:
         return found
 
 
-class I2CInitiatorApplet(GlasgowAppletV2):
+class I2CInitiatorApplet(GlasgowApplet):
     logger = logging.getLogger(__name__)
     help = "initiate I²C transactions"
     description = """
@@ -281,34 +271,43 @@ class I2CInitiatorApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
+        super().add_build_arguments(parser, access)
+
         access.add_pins_argument(parser, "scl", default=True)
         access.add_pins_argument(parser, "sda", default=True)
 
         parser.add_argument(
             "-b", "--bit-rate", metavar="FREQ", type=int, default=100,
             help="set I2C bit rate to FREQ kHz (default: %(default)s)")
+
+    def build(self, target, args):
+        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
+        iface.add_subtarget(I2CInitiatorSubtarget(
+            ports=iface.get_port_group(scl=args.scl, sda=args.sda),
+            out_fifo=iface.get_out_fifo(),
+            in_fifo=iface.get_in_fifo(),
+            period_cyc=math.ceil(target.sys_clk_freq / (args.bit_rate * 1000))
+        ))
+
+    @classmethod
+    def add_run_arguments(cls, parser, access):
+        super().add_run_arguments(parser, access)
+
         parser.add_argument(
             "--pulls", default=False, action="store_true",
             help="enable integrated pull-ups")
 
-    def build(self, args):
-        with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.i2c_iface = I2CInitiatorInterface(self.logger, self.assembly,
-                scl=args.scl, sda=args.sda, period_cyc=math.ceil(1 / (self.assembly.sys_clk_period * args.bit_rate * 1000)))
-            if args.pulls:
-                self.assembly.use_pulls({args.scl: "high", args.sda: "high"})
+    async def run(self, device, args):
+        pulls = set()
+        if args.pulls:
+            pulls = {args.scl, args.sda}
+        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
+                                                           pull_high=pulls)
+        i2c_iface = I2CInitiatorInterface(iface, self.logger)
+        return i2c_iface
 
     @classmethod
-    def add_setup_arguments(cls, parser):
-        pass
-
-    async def setup(self, args):
-        pass
-
-    @classmethod
-    def add_run_arguments(cls, parser):
+    def add_interact_arguments(cls, parser):
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_scan = p_operation.add_parser(
@@ -326,19 +325,19 @@ class I2CInitiatorApplet(GlasgowAppletV2):
             "--device-id", "-i", action="store_true", default=False,
             help="read device ID from devices responding to scan")
 
-    async def run(self, args):
+    async def interact(self, device, args, i2c_iface):
         if args.operation == "scan":
             # read/write is the default option
             if not args.read and not args.write:
                 args.read  = True
                 args.write = True
 
-            found_addrs = await self.i2c_iface.scan(read=args.read, write=args.write)
+            found_addrs = await i2c_iface.scan(read=args.read, write=args.write)
             for addr in sorted(found_addrs):
                 self.logger.info("scan found address %s",
                                     f"{addr:#09b}")
                 if args.device_id:
-                    device_id = await self.i2c_iface.device_id(addr)
+                    device_id = await i2c_iface.device_id(addr)
                     if device_id is None:
                         self.logger.warning("device %s did not acknowledge Device ID", bin(addr))
                     else:
