@@ -107,6 +107,7 @@ jtag-xvc = "glasgow.applet.bridge.jtag_xvc:JTAGXVCApplet"
 probe-rs = "glasgow.applet.bridge.probe_rs:ProbeRsApplet"
 
 memory-24x = "glasgow.applet.memory._24x:Memory24xApplet"
+memory-24x-emu = "glasgow.applet.memory._24x_emu:Memory24xEmuApplet"
 memory-25x = "glasgow.applet.memory._25x:Memory25xApplet"
 memory-onfi = "glasgow.applet.memory.onfi:MemoryONFIApplet"
 memory-prom = "glasgow.applet.memory.prom:MemoryPROMApplet"
