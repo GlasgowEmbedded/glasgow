@@ -6,7 +6,7 @@ import asyncio
 
 from ....support.data_logger import DataLogger
 from ... import *
-from ...interface.i2c_initiator import I2CInitiatorApplet
+from ...interface.i2c_initiator_deprecated import I2CInitiatorApplet
 
 
 REG_CONFIG      = 0x00 # 16-bit rw
