@@ -33,17 +33,9 @@ class I2CInitiatorComponent(wiring.Component):
 
         ###
 
-        leds = [platform.request("led", n) for n in range(5)]
-
         cmd   = Signal(8)
         count = Signal(16)
 
-        m.d.comb += leds[0].o.eq(cmd[0])
-        m.d.comb += leds[1].o.eq(cmd[1])
-        m.d.comb += leds[2].o.eq(cmd[2])
-        m.d.comb += leds[3].o.eq(cmd[3])
-        m.d.comb += leds[4].o.eq(cmd[4])
-        
         with m.FSM():
             with m.State("IDLE"):
                 with m.If(~i2c_initiator.busy & self.i_stream.valid):
@@ -303,11 +295,10 @@ class I2CInitiatorApplet(GlasgowAppletV2):
     def build(self, args):
         with self.assembly.add_applet(self):
             self.assembly.use_voltage(args.voltage)
-            self.i2c_initiator_iface = I2CInitiatorInterface(self.logger, self.assembly,
+            self.i2c_iface = I2CInitiatorInterface(self.logger, self.assembly,
                 scl=args.scl, sda=args.sda, period_cyc=math.ceil(1 / (self.assembly.sys_clk_period * args.bit_rate * 1000)))
             if args.pulls:
-                self.assembly.set_pin_pull(args.scl, PullState.High)
-                self.assembly.set_pin_pull(args.sda, PullState.High)
+                self._assembly.use_pulls({args.scl: "high", args.sda: "high"})
 
     @classmethod
     def add_setup_arguments(cls, parser):
@@ -342,12 +333,12 @@ class I2CInitiatorApplet(GlasgowAppletV2):
                 args.read  = True
                 args.write = True
 
-            found_addrs = await self.i2c_initiator_iface.scan(read=args.read, write=args.write)
+            found_addrs = await self.i2c_iface.scan(read=args.read, write=args.write)
             for addr in sorted(found_addrs):
                 self.logger.info("scan found address %s",
                                     f"{addr:#09b}")
                 if args.device_id:
-                    device_id = await self.i2c_initiator_iface.device_id(addr)
+                    device_id = await self.i2c_iface.device_id(addr)
                     if device_id is None:
                         self.logger.warning("device %s did not acknowledge Device ID", bin(addr))
                     else:
