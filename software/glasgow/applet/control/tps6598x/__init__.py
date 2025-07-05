@@ -1,7 +1,7 @@
 import logging
 import asyncio
 
-from ...interface.i2c_initiator import I2CInitiatorApplet
+from ...interface.i2c_initiator_deprecated import I2CInitiatorApplet
 from ... import *
 
 

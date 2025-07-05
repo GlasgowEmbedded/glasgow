@@ -1,6 +1,8 @@
 from functools import reduce
 from collections import OrderedDict
 from amaranth import *
+from amaranth.lib import enum, data, wiring, stream, io
+from amaranth.lib.wiring import In, Out
 from amaranth.lib.fifo import FIFOInterface, SyncFIFOBuffered
 
 
