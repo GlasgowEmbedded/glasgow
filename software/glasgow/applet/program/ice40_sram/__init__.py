@@ -8,9 +8,9 @@ import asyncio
 import logging
 
 from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
-from glasgow.applet import GlasgowAppletV2
 from glasgow.applet.interface.spi_controller import SPIControllerInterface
 from glasgow.applet.control.gpio import GPIOInterface
+from glasgow.applet import GlasgowAppletV2
 
 
 __all__ = ["ProgramICE40SRAMInterface"]
