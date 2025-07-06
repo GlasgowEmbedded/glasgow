@@ -1,17 +1,18 @@
+from typing import Literal, Optional, Tuple
 import os
 import sys
 import logging
 import asyncio
-import typing
 from amaranth import *
 from amaranth.lib import wiring, stream, io
 from amaranth.lib.wiring import In, Out
 
-from ....support.arepl import AsyncInteractiveConsole
-from ....support.logging import dump_hex
-from ....support.endpoint import ServerEndpoint
-from ....gateware.uart import UART
-from ... import GlasgowAppletV2
+from glasgow.support.arepl import AsyncInteractiveConsole
+from glasgow.support.logging import dump_hex
+from glasgow.support.endpoint import ServerEndpoint
+from glasgow.gateware.uart import UART
+from glasgow.abstract import AbstractAssembly, GlasgowPin
+from glasgow.applet import GlasgowAppletV2
 
 
 class UARTAutoBaud(wiring.Component):
@@ -99,9 +100,10 @@ class UARTComponent(wiring.Component):
     use_auto:   In(1)
     manual_cyc: In(20)
     auto_cyc:   Out(20)
-
     bit_cyc:    Out(20)
-    rx_errors:  Out(16)
+
+    rx_errors:   Out(16)
+    rx_overflow: Out(16)
 
     def __init__(self, ports, *, parity: str):
         self.ports  = ports
@@ -133,6 +135,9 @@ class UARTComponent(wiring.Component):
         with m.If(uart.rx_ferr | uart.rx_perr):
             m.d.sync += self.rx_errors.eq(self.rx_errors + 1)
 
+        with m.If(uart.rx_ovf):
+            m.d.sync += self.rx_overflow.eq(self.rx_overflow + 1)
+
         m.d.comb += [
             uart.tx_data.eq(self.i_stream.payload),
             uart.tx_ack.eq(self.i_stream.valid),
@@ -146,7 +151,9 @@ class UARTComponent(wiring.Component):
 
 
 class UARTInterface:
-    def __init__(self, logger, assembly, *, rx, tx, parity="none"):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
+                 rx: Optional[GlasgowPin], tx: Optional[GlasgowPin],
+                 parity: Literal["none", "zero", "one", "odd", "even"] = "none"):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
@@ -158,7 +165,8 @@ class UARTInterface:
         self._manual_cyc = assembly.add_rw_register(component.manual_cyc)
         self._auto_cyc   = assembly.add_ro_register(component.auto_cyc)
         self._bit_cyc    = assembly.add_ro_register(component.bit_cyc)
-        self._rx_errors  = assembly.add_ro_register(component.rx_errors)
+        self._rx_errors   = assembly.add_ro_register(component.rx_errors)
+        self._rx_overflow = assembly.add_ro_register(component.rx_overflow)
         self._sys_clk_period = assembly.sys_clk_period
 
     def _log(self, message, *args):
@@ -208,7 +216,7 @@ class UARTInterface:
         self._log("rx data=<%s>", dump_hex(data))
         return data
 
-    async def read_until(self, trailer: bytes | typing.Tuple[bytes, ...]) -> memoryview:
+    async def read_until(self, trailer: bytes | Tuple[bytes, ...]) -> memoryview:
         """Reads bytes from the UART until ``trailer``, which can be a single byte sequence
         or a choice of multiple byte sequences, is encountered. The return value includes
         the trailer."""
@@ -233,21 +241,28 @@ class UARTInterface:
 
     async def monitor(self, *, interval=1.0):
         """Logs receive errors and automatic baud rate changes."""
-        cur_errors = 0
-        cur_baud = await self.get_baud()
-        while True:
-            new_errors = await self._rx_errors
-            delta = new_errors - cur_errors
-            if new_errors < cur_errors:
-                delta += 1 << 16
-            if delta > 0:
-                self._logger.warning("%d receive errors detected", delta)
-            cur_errors = new_errors
 
+        def check_counter(cur_value, new_value):
+            delta = new_value - cur_value
+            if new_value < cur_value:
+                delta += 1 << 16
+            return new_value, delta
+
+        cur_baud = await self.get_baud()
+        cur_errors = cur_overflow = 0
+        while True:
             new_baud = await self.get_baud()
             if new_baud != cur_baud:
                 self._logger.info("switched to %d baud", await self.get_baud())
             cur_baud = new_baud
+
+            cur_errors, delta = check_counter(cur_errors, await self._rx_errors)
+            if delta > 0:
+                self._logger.warning("%d frames dropped due to frame/parity errors", delta)
+
+            cur_overflow, delta = check_counter(cur_overflow, await self._rx_overflow)
+            if delta > 0:
+                self._logger.warning("%d frames dropped due to overflow", delta)
 
             await asyncio.sleep(interval)
 
@@ -413,13 +428,6 @@ class UARTApplet(GlasgowAppletV2):
                 await self._run_pty()
             case "socket":
                 await self._run_socket(args.endpoint)
-
-    async def repl(self, args):
-        self.logger.info("dropping to REPL; use 'help(iface)' to see available APIs")
-        await AsyncInteractiveConsole(
-            locals={"iface": self.uart_iface},
-            run_callback=self.assembly.flush_pipes
-        ).interact()
 
     @classmethod
     def tests(cls):
