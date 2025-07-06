@@ -356,12 +356,11 @@ def applet_v2_simulation_test(*, prepare=None, args=None):
     return decorator
 
 
-def applet_v2_hardware_test(*, prepare=None, args=None, mock):
+def applet_v2_hardware_test(*, prepare=None, args=None, mocks: list[str]):
     def decorator(case):
         @functools.wraps(case)
         @async_test
         async def wrapper(self):
-            *mock_path, mock_attr = mock.split(".")
             parsed_args = self._parse_args(args)
             fixture_path = os.path.join(
                 os.path.dirname(case.__code__.co_filename), "fixtures",
@@ -378,11 +377,14 @@ def applet_v2_hardware_test(*, prepare=None, args=None, mock):
                         await applet.setup(parsed_args)
                         if prepare is not None:
                             await prepare(self, assembly)
-                        mock_obj = applet
-                        for attr in mock_path:
-                            mock_obj = getattr(mock_obj, attr)
-                        setattr(mock_obj, mock_attr,
-                            MockRecorder(self, fixture, getattr(mock_obj, mock_attr)))
+                        for mock in mocks:
+                            mock_obj = applet
+                            *mock_path, mock_attr = mock.split(".")
+                            for attr in mock_path:
+                                mock_obj = getattr(mock_obj, attr)
+                            if getattr(mock_obj, mock_attr) is not None:
+                                setattr(mock_obj, mock_attr,
+                                    MockRecorder(self, fixture, mock, getattr(mock_obj, mock_attr)))
                         await case(self, applet)
                     os.rename(f"{fixture_path}.new", fixture_path)
                 device.close()
@@ -392,10 +394,13 @@ def applet_v2_hardware_test(*, prepare=None, args=None, mock):
                 applet: GlasgowAppletV2 = self.applet_cls(assembly)
                 applet.build(parsed_args)
                 with open(fixture_path, "r") as fixture:
-                    mock_obj = applet
-                    for attr in mock_path:
-                        mock_obj = getattr(mock_obj, attr)
-                    setattr(mock_obj, mock_attr, MockReplayer(self, fixture))
+                    for mock in mocks:
+                        mock_obj = applet
+                        *mock_path, mock_attr = mock.split(".")
+                        for attr in mock_path:
+                            mock_obj = getattr(mock_obj, attr)
+                        if getattr(mock_obj, mock_attr) is not None:
+                            setattr(mock_obj, mock_attr, MockReplayer(self, fixture, mock))
                     await case(self, applet)
         return wrapper
     return decorator

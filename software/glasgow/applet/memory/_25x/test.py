@@ -30,12 +30,12 @@ class Memory25xAppletTestCase(GlasgowAppletV2TestCase, applet=Memory25xApplet):
         await applet.m25x_iface.write_enable()
         await applet.m25x_iface.page_program(self.dut_block_size, b"One block later")
 
-    @applet_v2_hardware_test(args=hardware_args, mock="m25x_iface.qspi")
+    @applet_v2_hardware_test(args=hardware_args, mocks=["m25x_iface.qspi"])
     async def test_api_sleep_wake(self, applet):
         await applet.m25x_iface.wakeup()
         await applet.m25x_iface.deep_sleep()
 
-    @applet_v2_hardware_test(args=hardware_args, mock="m25x_iface.qspi")
+    @applet_v2_hardware_test(args=hardware_args, mocks=["m25x_iface.qspi"])
     async def test_api_device_ids(self, applet):
         self.assertEqual(await applet.m25x_iface.read_device_id(),
                          (self.dut_ids[1],))
@@ -44,21 +44,21 @@ class Memory25xAppletTestCase(GlasgowAppletV2TestCase, applet=Memory25xApplet):
         self.assertEqual(await applet.m25x_iface.read_manufacturer_long_device_id(),
                          (self.dut_ids[0], self.dut_ids[2]))
 
-    @applet_v2_hardware_test(prepare=prepare_flash_data, args=hardware_args, mock="m25x_iface.qspi")
+    @applet_v2_hardware_test(prepare=prepare_flash_data, args=hardware_args, mocks=["m25x_iface.qspi"])
     async def test_api_read(self, applet):
         self.assertEqual(await applet.m25x_iface.read(0, 13),
                          b"Hello, world!")
         self.assertEqual(await applet.m25x_iface.read(self.dut_sector_size, 14),
                          b"Some more data")
 
-    @applet_v2_hardware_test(prepare=prepare_flash_data, args=hardware_args, mock="m25x_iface.qspi")
+    @applet_v2_hardware_test(prepare=prepare_flash_data, args=hardware_args, mocks=["m25x_iface.qspi"])
     async def test_api_fast_read(self, applet):
         self.assertEqual(await applet.m25x_iface.fast_read(0, 13),
                          b"Hello, world!")
         self.assertEqual(await applet.m25x_iface.fast_read(self.dut_sector_size, 14),
                          b"Some more data")
 
-    @applet_v2_hardware_test(prepare=prepare_flash_data, args=hardware_args, mock="m25x_iface.qspi")
+    @applet_v2_hardware_test(prepare=prepare_flash_data, args=hardware_args, mocks=["m25x_iface.qspi"])
     async def test_api_sector_erase(self, applet):
         await applet.m25x_iface.write_enable()
         await applet.m25x_iface.sector_erase(0)
@@ -71,7 +71,7 @@ class Memory25xAppletTestCase(GlasgowAppletV2TestCase, applet=Memory25xApplet):
         self.assertEqual(await applet.m25x_iface.read(self.dut_sector_size, 16),
                          b"\xff" * 16)
 
-    @applet_v2_hardware_test(prepare=prepare_flash_data, args=hardware_args, mock="m25x_iface.qspi")
+    @applet_v2_hardware_test(prepare=prepare_flash_data, args=hardware_args, mocks=["m25x_iface.qspi"])
     async def test_api_block_erase(self, applet):
         await applet.m25x_iface.write_enable()
         await applet.m25x_iface.block_erase(0)
@@ -86,7 +86,7 @@ class Memory25xAppletTestCase(GlasgowAppletV2TestCase, applet=Memory25xApplet):
         self.assertEqual(await applet.m25x_iface.read(self.dut_block_size, 16),
                          b"\xff" * 16)
 
-    @applet_v2_hardware_test(prepare=prepare_flash_data, args=hardware_args, mock="m25x_iface.qspi")
+    @applet_v2_hardware_test(prepare=prepare_flash_data, args=hardware_args, mocks=["m25x_iface.qspi"])
     async def test_api_chip_erase(self, applet):
         await applet.m25x_iface.write_enable()
         await applet.m25x_iface.chip_erase()
@@ -97,14 +97,14 @@ class Memory25xAppletTestCase(GlasgowAppletV2TestCase, applet=Memory25xApplet):
         self.assertEqual(await applet.m25x_iface.read(self.dut_block_size, 16),
                          b"\xff" * 16)
 
-    @applet_v2_hardware_test(prepare=prepare_flash_data, args=hardware_args, mock="m25x_iface.qspi")
+    @applet_v2_hardware_test(prepare=prepare_flash_data, args=hardware_args, mocks=["m25x_iface.qspi"])
     async def test_api_page_program(self, applet):
         await applet.m25x_iface.write_enable()
         await applet.m25x_iface.page_program(self.dut_page_size * 2, b"test")
         self.assertEqual(await applet.m25x_iface.read(self.dut_page_size * 2, 4),
                          b"test")
 
-    @applet_v2_hardware_test(prepare=prepare_flash_data, args=hardware_args, mock="m25x_iface.qspi")
+    @applet_v2_hardware_test(prepare=prepare_flash_data, args=hardware_args, mocks=["m25x_iface.qspi"])
     async def test_api_program(self, applet):
         # crosses the page boundary
         await applet.m25x_iface.write_enable()
@@ -112,7 +112,7 @@ class Memory25xAppletTestCase(GlasgowAppletV2TestCase, applet=Memory25xApplet):
         self.assertEqual(await applet.m25x_iface.read(self.dut_page_size * 2 - 6, 12),
                          b"before/after")
 
-    @applet_v2_hardware_test(prepare=prepare_flash_data, args=hardware_args, mock="m25x_iface.qspi")
+    @applet_v2_hardware_test(prepare=prepare_flash_data, args=hardware_args, mocks=["m25x_iface.qspi"])
     async def test_api_erase_program(self, applet):
         await applet.m25x_iface.write_enable()
         await applet.m25x_iface.erase_program(0, b"Bye  ",
