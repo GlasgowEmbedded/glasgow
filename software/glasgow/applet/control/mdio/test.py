@@ -10,7 +10,7 @@ class ControlMDIOAppletTestCase(GlasgowAppletV2TestCase, applet=ControlMDIOApple
         self.assertBuilds()
 
     # Requires a Microchip LAN8670 PHY connected, with a 50 MHz clock provided at REF_CLK pin.
-    @applet_v2_hardware_test(mock="mdio_iface._pipe", args="-V A=3.3")
+    @applet_v2_hardware_test(mocks=["mdio_iface._pipe"], args="-V A=3.3")
     async def test_microchip_lan8670(self, applet: ControlMDIOApplet):
         assert await applet.mdio_iface.c22_read(0, REG_PHY_ID1_addr) == 0x0007
         assert await applet.mdio_iface.c22_read(0, REG_PHY_ID2_addr) == 0xc165

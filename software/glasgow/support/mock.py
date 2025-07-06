@@ -1,4 +1,4 @@
-from typing import Any, TextIO
+from typing import Any, Optional, TextIO
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 import sys
 import json
@@ -10,9 +10,10 @@ __all__ = ["MockRecorder", "MockReplayer"]
 
 
 class MockRecorder:
-    def __init__(self, case: unittest.TestCase, fixture: TextIO, mocked: Any):
+    def __init__(self, case: unittest.TestCase, fixture: TextIO, name: str, mocked: Any):
         self.__case    = case
         self.__fixture = fixture
+        self.__name    = name
         self.__mocked  = mocked
 
     @staticmethod
@@ -29,7 +30,10 @@ class MockRecorder:
         # TODO: remove once applets are migrated to V2 API
         if hasattr(self.__case, "_recording") and not self.__case._recording:
             return
-        json.dump(fp=self.__fixture, default=self.__dump_object, obj=stanza)
+        json.dump(fp=self.__fixture, default=self.__dump_object, obj={
+            "self": self.__name,
+            **stanza
+        })
         self.__fixture.write("\n")
 
     def __dump_method(self, call, kind, args, kwargs, result):
@@ -73,9 +77,10 @@ class MockRecorder:
 
 
 class MockReplayer:
-    def __init__(self, case: unittest.TestCase, fixture: TextIO):
+    def __init__(self, case: unittest.TestCase, fixture: TextIO, name: str):
         self.__case    = case
         self.__fixture = fixture
+        self.__name    = name
 
     @staticmethod
     def __load_object(obj):
@@ -90,8 +95,7 @@ class MockReplayer:
         assert False
 
     def __load(self):
-        json_str = self.__fixture.readline()
-        return json.loads(s=json_str, object_hook=self.__load_object)
+        return json.loads(self.__fixture.readline(), object_hook=self.__load_object)
 
     @staticmethod
     def __upgrade(stanza):
@@ -106,6 +110,8 @@ class MockReplayer:
 
     def __getattr__(self, attr):
         stanza = self.__upgrade(self.__load())
+        if "self" in stanza: # old fixtures lack a sense of self
+            self.__case.assertEqual(self.__name, stanza["self"])
         self.__case.assertEqual(attr, stanza["call"])
         if stanza["kind"] == "asynccontext.enter":
             @asynccontextmanager

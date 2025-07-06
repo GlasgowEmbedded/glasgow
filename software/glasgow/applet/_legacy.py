@@ -148,12 +148,12 @@ class GlasgowAppletTestCase(unittest.TestCase):
         async def run_lower(cls, device, args):
             if mode == "record":
                 lower_iface = await old_run_lower(cls, device, args)
-                recorder = MockRecorder(case,  fixture, lower_iface)
+                recorder = MockRecorder(case,  fixture, "lower", lower_iface)
                 self._recorders.append(recorder)
                 return recorder
 
             if mode == "replay":
-                return MockReplayer(case, fixture)
+                return MockReplayer(case, fixture, "lower")
 
         self.applet.run_lower = run_lower
 
