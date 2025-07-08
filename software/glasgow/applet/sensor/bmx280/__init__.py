@@ -8,7 +8,7 @@ import asyncio
 
 from ....support.data_logger import DataLogger
 from ... import *
-from ...interface.i2c_initiator_deprecated import I2CInitiatorApplet
+from ...interface.i2c_initiator import I2CInitiatorApplet
 
 
 REG_CAL_T1      = 0x88 # 16-bit unsigned
@@ -374,22 +374,20 @@ class SensorBMx280Applet(I2CInitiatorApplet):
     """
 
     @classmethod
-    def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
-
+    def add_setup_arguments(cls, parser):
         def i2c_address(arg):
             return int(arg, 0)
         parser.add_argument(
             "--i2c-address", type=i2c_address, metavar="ADDR", choices=[0x76, 0x77], default=0x76,
             help="I2C address of the sensor (one of: 0x76 0x77, default: %(default)#02x)")
 
-    async def run(self, device, args):
-        i2c_iface = await self.run_lower(SensorBMx280Applet, device, args)
-        bmx280_iface = BMx280I2CInterface(i2c_iface, self.logger, args.i2c_address)
-        return BMx280Interface(bmx280_iface, self.logger)
+    async def setup(self, args):
+        await super().setup(args)
+        self.bmx280_i2c_iface = BMx280I2CInterface(self.i2c_iface, self.logger, args.i2c_address)
+        self.bmx280_iface = BMx280Interface(self.bmx280_i2c_iface, self.logger)
 
     @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         parser.add_argument(
             "-T", "--oversample-temperature", type=int, metavar="FACTOR",
             choices=bit_osrs_temp.keys(), default=1,
@@ -426,7 +424,8 @@ class SensorBMx280Applet(I2CInitiatorApplet):
             help="sample each TIME seconds")
         DataLogger.add_subparsers(p_log)
 
-    async def interact(self, device, args, bmx280):
+    async def run(self, args):
+        bmx280 = self.bmx280_iface
         await bmx280.reset()
         ident = await bmx280.identify()
 

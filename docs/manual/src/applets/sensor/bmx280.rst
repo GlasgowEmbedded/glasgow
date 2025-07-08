@@ -1,0 +1,7 @@
+``bmx280``
+=================
+
+.. _applet.interface.bmx280:
+
+.. autoprogram:: glasgow.applet.sensor.bmx280:SensorBMx280Applet._get_argparser_for_sphinx("bmx280")
+    :prog: glasgow run bmx280

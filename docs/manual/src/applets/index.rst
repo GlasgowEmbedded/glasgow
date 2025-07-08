@@ -15,3 +15,4 @@ Applet index
     control/index
     bridge/index
     internal/index
+    sensor/index
