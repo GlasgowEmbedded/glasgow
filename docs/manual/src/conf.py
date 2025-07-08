@@ -87,12 +87,11 @@ linkcheck_ignore = [
     r"^http://127\.0\.0\.1:8000$",
     # Doesn't like the linkcheck User-Agent.
     r"^https://mouser\.com/",
-    # For unknown reasons, is (mostly) unreachable from GitHub CI runners.
+    # For unknown reasons, these are (mostly) unreachable from GitHub CI runners.
     r"^https://chaos\.social/",
-    # As above.
     r"^https://en\.uesp\.net/",
-    # As above.
     r"^https://www\.gnu\.org/",
+    r"^https://sdcc\.sourceforge\.net/",
     # Part of applet option help.
     r"^tcp:",
 ]
