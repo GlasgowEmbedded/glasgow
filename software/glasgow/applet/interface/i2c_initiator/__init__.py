@@ -137,6 +137,7 @@ class I2CInitiatorInterface:
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
+        assembly.use_pulls({scl: "high", sda: "high"})
         ports = assembly.add_port_group(scl=scl, sda=sda)
         component = assembly.add_submodule(I2CInitiatorComponent(ports, period_cyc))
         self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
@@ -288,17 +289,12 @@ class I2CInitiatorApplet(GlasgowAppletV2):
         parser.add_argument(
             "-b", "--bit-rate", metavar="FREQ", type=int, default=100,
             help="set I2C bit rate to FREQ kHz (default: %(default)s)")
-        parser.add_argument(
-            "--pulls", default=False, action="store_true",
-            help="enable integrated pull-ups")
 
     def build(self, args):
         with self.assembly.add_applet(self):
             self.assembly.use_voltage(args.voltage)
             self.i2c_iface = I2CInitiatorInterface(self.logger, self.assembly,
                 scl=args.scl, sda=args.sda, period_cyc=math.ceil(1 / (self.assembly.sys_clk_period * args.bit_rate * 1000)))
-            if args.pulls:
-                self.assembly.use_pulls({args.scl: "high", args.sda: "high"})
 
     @classmethod
     def add_setup_arguments(cls, parser):
