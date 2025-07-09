@@ -1,3 +1,4 @@
+from typing import Optional
 import argparse
 import logging
 import math
@@ -6,8 +7,11 @@ from amaranth.lib import enum, data, wiring, stream, io
 from amaranth.lib.wiring import In, Out
 from glasgow.abstract import AbstractAssembly, GlasgowPin, PullState
 
-from ....gateware.i2c import I2CInitiator
-from ... import *
+from glasgow.gateware.i2c import I2CInitiator
+from glasgow.applet import GlasgowAppletV2
+
+
+__all__ = ["I2CInitiatorInterface"]
 
 
 CMD_START = 0x01
@@ -133,7 +137,7 @@ class I2CInitiatorComponent(wiring.Component):
 
 class I2CInitiatorInterface:
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 scl: GlasgowPin, sda: GlasgowPin, period_cyc):
+                 scl: GlasgowPin, sda: GlasgowPin, period_cyc: int):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
@@ -152,7 +156,7 @@ class I2CInitiatorInterface:
     async def _cmd_stop(self):
         await self._pipe.send([CMD_STOP])
 
-    async def _cmd_count(self, count):
+    async def _cmd_count(self, count: int):
         assert count < 0xffff
         msb = (count >> 8) & 0xff
         lsb = (count >> 0) & 0xff
@@ -161,16 +165,16 @@ class I2CInitiatorInterface:
     async def _cmd_write(self):
         await self._pipe.send([CMD_WRITE])
 
-    async def _data_write(self, data):
+    async def _data_write(self, data: bytes | bytearray | memoryview):
         await self._pipe.send(data)
 
     async def _cmd_read(self):
         await self._pipe.send([CMD_READ])
 
-    async def _data_read(self, size):
+    async def _data_read(self, size: int) -> memoryview:
         return await self._pipe.recv(size)
 
-    async def write(self, addr, data, stop=False):
+    async def write(self, addr: int, data: bytes | bytearray | memoryview, stop=False):
         data = bytes(data)
 
         if stop:
@@ -197,7 +201,7 @@ class I2CInitiatorInterface:
 
         return unacked == 0
 
-    async def read(self, addr, size, stop=False):
+    async def read(self, addr: int, size: int, stop=False) -> Optional[memoryview]:
         if stop:
             self._logger.log(self._level, "I2C: start addr=%s read=%d stop",
                              bin(addr), size)
@@ -222,7 +226,7 @@ class I2CInitiatorInterface:
             self._logger.log(self._level, "I2C: unacked")
             return None
 
-    async def poll(self, addr):
+    async def poll(self, addr: int) -> bool:
         self._logger.trace("I2C: poll addr=%s", bin(addr))
         await self._cmd_start()
         await self._cmd_count(1)
@@ -236,7 +240,7 @@ class I2CInitiatorInterface:
 
         return unacked == 0
 
-    async def device_id(self, addr):
+    async def device_id(self, addr: int) -> Optional[tuple[int, int, int]]:
         if await self.write(0b1111_100, [addr]) is False:
             return None
         device_id = await self.read(0b1111_100, 3)
@@ -294,14 +298,8 @@ class I2CInitiatorApplet(GlasgowAppletV2):
         with self.assembly.add_applet(self):
             self.assembly.use_voltage(args.voltage)
             self.i2c_iface = I2CInitiatorInterface(self.logger, self.assembly,
-                scl=args.scl, sda=args.sda, period_cyc=math.ceil(1 / (self.assembly.sys_clk_period * args.bit_rate * 1000)))
-
-    @classmethod
-    def add_setup_arguments(cls, parser):
-        pass
-
-    async def setup(self, args):
-        pass
+                scl=args.scl, sda=args.sda,
+                period_cyc=math.ceil(1 / (self.assembly.sys_clk_period * args.bit_rate * 1000)))
 
     @classmethod
     def add_run_arguments(cls, parser):
@@ -309,15 +307,12 @@ class I2CInitiatorApplet(GlasgowAppletV2):
 
         p_scan = p_operation.add_parser(
             "scan", help="scan all possible I2C addresses")
-
         p_scan.add_argument(
             "--read", "-r", action="store_true", default=False,
             help="scan read addresses")
-
         p_scan.add_argument(
             "--write", "-w", action="store_true", default=False,
             help="scan write addresses")
-
         p_scan.add_argument(
             "--device-id", "-i", action="store_true", default=False,
             help="read device ID from devices responding to scan")
