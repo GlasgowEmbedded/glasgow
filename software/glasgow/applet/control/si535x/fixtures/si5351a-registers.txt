@@ -1,0 +1,51 @@
+# Si535x Registers Script
+#
+# Part: Si5351A
+# Project File: <not saved>
+# Includes Pre/Post Download Control Register Writes: Yes
+# Creator: ClockBuilder Pro v4.13.0.2 [2024-06-10]
+# Created On: 2025-07-11 18:32:08 GMT+01:00
+# Address,Data
+2,53h
+3,01h
+4,20h
+7,00h
+15,00h
+16,0Fh
+17,8Ch
+18,8Ch
+19,8Ch
+20,8Ch
+21,8Ch
+22,8Ch
+23,8Ch
+26,03h
+27,E8h
+28,00h
+29,0Fh
+30,F9h
+31,00h
+32,01h
+33,D8h
+42,00h
+43,04h
+44,00h
+45,3Fh
+46,20h
+47,00h
+48,00h
+49,00h
+90,00h
+91,00h
+149,00h
+150,00h
+151,00h
+152,00h
+153,00h
+154,00h
+155,00h
+162,00h
+163,00h
+164,00h
+165,00h
+183,92h
