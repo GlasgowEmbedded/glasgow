@@ -50,7 +50,7 @@ What can I do with Glasgow?
 
 * analyze :ref:`UART <applet.interface.uart_analyzer>` transactions
 
-* initiate :ref:`SPI <applet.interface.spi_controller>`, :ref:`QSPI <applet.interface.qspi_controller>`, or :ref:`I²C <applet.interface.i2c_initiator>` transactions
+* initiate :ref:`SPI <applet.interface.spi_controller>`, :ref:`QSPI <applet.interface.qspi_controller>`, or :ref:`I²C <applet.interface.i2c_controller>` transactions
 
 * analyze :ref:`SPI <applet.interface.spi_analyzer>` and :ref:`QSPI <applet.interface.qspi_analyzer>` transactions at up to ~100 MHz
 
