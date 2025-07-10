@@ -59,6 +59,22 @@ jobs:
         if: matrix.dep-versions == 'minimal'
         working-directory: ./software
         run: git diff --exit-code pdm.min.lock
+      - name: Cache PDM package data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pdm
+          key: PDM-${{ matrix.dep-versions }}-${{ hashFiles(matrix.dep-versions == 'minimal' && './software/pdm.min.lock' || './software/pdm.lock') }}
+          restore-keys: |
+            PDM-${{ matrix.dep-versions }}-
+            PDM-
+      - name: Cache virtual environment
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pdm
+          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.dep-versions }}-${{ hashFiles(matrix.dep-versions == 'minimal' && './software/pdm.min.lock' || './software/pdm.lock') }}
+          restore-keys: |
+            venv-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.dep-versions }}-
+            venv-${{ runner.os }}-${{ matrix.python-version }}-
       - name: Install dependencies
         working-directory: ./software
         run: pdm sync
