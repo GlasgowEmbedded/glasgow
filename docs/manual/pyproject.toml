@@ -18,6 +18,6 @@ dependencies = [
 ]
 
 [tool.pdm.scripts]
-live.cmd = "sphinx-autobuild src build"
+live.cmd = "sphinx-autobuild src build --watch ../../software/glasgow"
 build.cmd = "sphinx-build src build -b html"
 check.cmd = "sphinx-build src check -b linkcheck"
