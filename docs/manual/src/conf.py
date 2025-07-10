@@ -13,12 +13,31 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.intersphinx",
     "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
     "sphinx_copybutton",
     "sphinx_inline_tabs",
     "sphinxcontrib.autoprogram",
 ]
 
 highlight_language = "text"
+
+rst_prolog = """
+.. role:: py(code)
+   :language: python
+"""
+
+autodoc_member_order = "bysource"
+autodoc_default_options = {
+    "members": True,
+}
+autodoc_preserve_defaults = True
+autodoc_inherit_docstrings = False
+
+napoleon_google_docstring = False
+napoleon_numpy_docstring = True
+napoleon_use_ivar = True
+napoleon_include_init_with_doc = True
+napoleon_include_special_with_doc = True
 
 todo_include_todos = True
 todo_emit_warnings = True
