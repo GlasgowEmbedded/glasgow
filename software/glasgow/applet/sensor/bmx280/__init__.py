@@ -3,12 +3,17 @@
 # Ref: https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme280-ds002.pdf
 # Accession: G00050
 
+from typing import Literal, Optional
+from abc import ABCMeta, abstractmethod
 import logging
 import asyncio
 
-from ....support.data_logger import DataLogger
-from ... import *
-from ...interface.i2c_initiator_deprecated import I2CInitiatorApplet
+from glasgow.support.data_logger import DataLogger
+from glasgow.applet.interface.i2c_controller import I2CControllerInterface
+from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
+
+
+__all__ = ["BMx280Error", "BMx280Interface"]
 
 
 REG_CAL_T1      = 0x88 # 16-bit unsigned
@@ -147,11 +152,11 @@ class BMx280Error(GlasgowAppletError):
     pass
 
 
-class BMx280Interface:
-    def __init__(self, interface, logger):
-        self._iface   = interface
-        self._logger  = logger
-        self._level   = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+class BMx280Interface(metaclass=ABCMeta):
+    def __init__(self, logger: logging.Logger):
+        self._logger = logger
+        self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+
         self._has_cal = False
         self._has_hum = False
         self._ident   = "BMx280"
@@ -159,17 +164,25 @@ class BMx280Interface:
     def _log(self, message, *args):
         self._logger.log(self._level, self._ident + ": " + message, *args)
 
-    async def _read_reg8u(self, reg):
-        byte, = await self._iface.read(reg, 1)
+    @abstractmethod
+    async def _write(self, addr: int, data: list[int]):
+        pass
+
+    @abstractmethod
+    async def _read(self, addr: int, size: int) -> list[int]:
+        pass
+
+    async def _read_reg8u(self, reg: int) -> int:
+        byte, = await self._read(reg, 1)
         self._log("reg=%#04x read=%#04x", reg, byte)
         return byte
 
-    async def _write_reg8u(self, reg, byte):
-        await self._iface.write(reg, [byte])
+    async def _write_reg8u(self, reg: int, byte: int):
+        await self._write(reg, [byte])
         self._log("reg=%#04x write=%#04x", reg, byte)
 
-    async def _read_reg8s(self, reg):
-        raw, = await self._iface.read(reg, 1)
+    async def _read_reg8s(self, reg: int) -> int:
+        raw, = await self._read(reg, 1)
         if raw & (1 << 7):
             value = -((1 << 8) - raw)
         else:
@@ -177,15 +190,15 @@ class BMx280Interface:
         self._log("reg=%#04x raw=%#04x read=%d", reg, raw, value)
         return value
 
-    async def _read_reg16ule(self, reg):
-        lsb, msb = await self._iface.read(reg, 2)
+    async def _read_reg16ule(self, reg: int) -> int:
+        lsb, msb = await self._read(reg, 2)
         raw = (msb << 8) | lsb
         value = raw
         self._log("reg=%#04x raw=%#06x read=%d", reg, raw, value)
         return value
 
-    async def _read_reg16sle(self, reg):
-        lsb, msb = await self._iface.read(reg, 2)
+    async def _read_reg16sle(self, reg: int) -> int:
+        lsb, msb = await self._read(reg, 2)
         raw = (msb << 8) | lsb
         if raw & (1 << 15):
             value = -((1 << 16) - raw)
@@ -194,25 +207,24 @@ class BMx280Interface:
         self._log("reg=%#04x raw=%#06x read=%+d", reg, raw, value)
         return value
 
-    async def _read_reg16ube(self, reg):
-        msb, lsb = await self._iface.read(reg, 2)
+    async def _read_reg16ube(self, reg: int) -> int:
+        msb, lsb = await self._read(reg, 2)
         raw = (msb << 8) | lsb
         value = raw
         self._log("reg=%#04x raw=%#06x read=%d", reg, raw, value)
         return value
 
-    async def _read_reg24ube(self, reg):
-        msb, lsb, xlsb = await self._iface.read(reg, 3)
+    async def _read_reg24ube(self, reg: int) -> int:
+        msb, lsb, xlsb = await self._read(reg, 3)
         raw = ((msb << 16) | (lsb << 8) | xlsb)
         value = raw >> 4
         self._log("reg=%#04x raw=%#06x read=%d", reg, raw, value)
         return value
 
     async def reset(self):
-        await self._iface.reset()
         await self._write_reg8u(REG_RESET, BIT_RESET)
 
-    async def identify(self):
+    async def identify(self) -> Literal["BMP280", "BME280"]:
         id = await self._read_reg8u(REG_ID)
         self._log("ID=%#04x", id)
         if id == BIT_ID_BMP280:
@@ -225,7 +237,7 @@ class BMx280Interface:
         return self._ident
 
     @property
-    def has_humidity(self):
+    def has_humidity(self) -> bool:
         return self._has_hum
 
     async def _read_cal(self):
@@ -256,17 +268,18 @@ class BMx280Interface:
             self._h5 = _12u_to_12s((h4_h5_3 << 4) | (h4_h5_2 >> 4))
         self._has_cal = True
 
-    async def set_iir_coefficient(self, coeff):
+    async def set_iir_coefficient(self, coeff: int):
         config = await self._read_reg8u(REG_CONFIG)
         config = (config & ~MASK_IIR) | bit_iir[coeff]
         await self._write_reg8u(REG_CONFIG, config)
 
-    async def set_standby_time(self, t_sb):
+    async def set_standby_time(self, t_sb: float):
         config = await self._read_reg8u(REG_CONFIG)
         config = (config & ~MASK_T_SB) | bit_t_sb[t_sb]
         await self._write_reg8u(REG_CONFIG, config)
 
-    async def set_oversample(self, ovs_t=None, ovs_p=None, ovs_h=None):
+    async def set_oversample(self, ovs_t: Optional[int] = None, ovs_p: Optional[int] = None,
+                             ovs_h: Optional[int] = None):
         if ovs_h is not None and not self._has_hum:
             raise BMx280Error("%s: sensor does not measure humidity" % self._ident)
 
@@ -279,14 +292,14 @@ class BMx280Interface:
             config = (config & ~MASK_OSRS_P) | bit_osrs_press[ovs_p]
         await self._write_reg8u(REG_CTRL_MEAS, config)
 
-    async def set_mode(self, mode):
+    async def set_mode(self, mode: Literal["sleep", "force", "normal"]):
         config = await self._read_reg8u(REG_CTRL_MEAS)
         config = (config & ~MASK_MODE) | bit_mode[mode]
         await self._write_reg8u(REG_CTRL_MEAS, config)
         if mode == "force":
             await asyncio.sleep(0.050) # worst case
 
-    async def _get_temp_fine(self):
+    async def _get_temp_fine(self) -> float:
         await self._read_cal()
         ut = await self._read_reg24ube(REG_TEMP)
         x1 = (ut / 16384.0  - self._t1 / 1024.0) * self._t2
@@ -294,12 +307,12 @@ class BMx280Interface:
         tf = x1 + x2
         return tf
 
-    async def get_temperature(self):
+    async def get_temperature(self) -> float:
         tf = await self._get_temp_fine()
         t  = tf / 5120.0
         return t # in °C
 
-    async def get_pressure(self):
+    async def get_pressure(self) -> float:
         await self._read_cal()
         tf = await self._get_temp_fine()
         up = await self._read_reg24ube(REG_PRESS)
@@ -316,14 +329,14 @@ class BMx280Interface:
         p  = p + (x1 + x2 + self._p7) / 16.0
         return p # in Pa
 
-    async def get_altitude(self, p0=101325):
+    async def get_altitude(self, p0: float = 101325.0) -> float:
         p  = await self.get_pressure()
         h  = 44330 * (1 - (p / p0) ** (1 / 5.255))
         return h # in m
 
-    async def get_humidity(self):
+    async def get_humidity(self) -> float:
         if not self._has_hum:
-            raise BMx280Error("%s: sensor does not measure humidity" % self._ident)
+            raise BMx280Error(f"{self._ident}: sensor does not measure humidity")
 
         await self._read_cal()
         tf = await self._get_temp_fine()
@@ -340,42 +353,38 @@ class BMx280Interface:
         return rh
 
 
-class BMx280I2CInterface:
-    def __init__(self, interface, logger, i2c_address):
-        self.lower     = interface
-        self._i2c_addr = i2c_address
+class BMx280I2CInterface(BMx280Interface):
+    def __init__(self, logger: logging.Logger, i2c_iface: I2CControllerInterface,
+                 i2c_address: int = 0x76):
+        self._i2c_iface   = i2c_iface
+        self._i2c_address = i2c_address
 
-    async def reset(self):
-        await self.lower.reset()
+        super().__init__(logger)
 
-    async def read(self, addr, size):
-        await self.lower.write(self._i2c_addr, [addr])
-        result = await self.lower.read(self._i2c_addr, size)
-        if result is None:
-            raise BMx280Error("BMx280 did not acknowledge I2C read at address {:#07b}"
-                              .format(self._i2c_addr))
-        return list(result)
+    async def _write(self, addr: int, data: list[int]):
+        await self._i2c_iface.write(self._i2c_address, [addr, *data])
 
-    async def write(self, addr, data):
-        result = await self.lower.write(self._i2c_addr, [addr, *data])
-        if not result:
-            raise BMx280Error("BMx280 did not acknowledge I2C write at address {:#07b}"
-                              .format(self._i2c_addr))
+    async def _read(self, addr: int, size: int) -> list[int]:
+        async with self._i2c_iface.transaction():
+            await self._i2c_iface.write(self._i2c_address, [addr])
+            return list(await self._i2c_iface.read(self._i2c_address, size))
 
 
-class SensorBMx280Applet(I2CInitiatorApplet):
+class SensorBMx280Applet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "measure temperature, pressure, and humidity with Bosch BMx280 sensors"
     description = """
     Measure temperature and pressure using Bosch BMP280 sensors, or temperature, pressure,
     and humidity using Bosch BME280 sensors.
 
-    This applet only supports sensors connected via the I²C interface.
+    Only the I²C communication interface is supported.
     """
 
     @classmethod
-    def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
+    def add_build_arguments(cls, parser, access):
+        access.add_voltage_argument(parser)
+        access.add_pins_argument(parser, "scl", default=True, required=True)
+        access.add_pins_argument(parser, "sda", default=True, required=True)
 
         def i2c_address(arg):
             return int(arg, 0)
@@ -383,13 +392,18 @@ class SensorBMx280Applet(I2CInitiatorApplet):
             "--i2c-address", type=i2c_address, metavar="ADDR", choices=[0x76, 0x77], default=0x76,
             help="I2C address of the sensor (one of: 0x76 0x77, default: %(default)#02x)")
 
-    async def run(self, device, args):
-        i2c_iface = await self.run_lower(SensorBMx280Applet, device, args)
-        bmx280_iface = BMx280I2CInterface(i2c_iface, self.logger, args.i2c_address)
-        return BMx280Interface(bmx280_iface, self.logger)
+    def build(self, args):
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            self.i2c_iface = I2CControllerInterface(self.logger, self.assembly,
+                scl=args.scl, sda=args.sda)
+            self.bmx280_iface = BMx280I2CInterface(self.logger, self.i2c_iface, args.i2c_address)
+
+    async def setup(self, args):
+        await self.i2c_iface.clock.set_frequency(400e3)
 
     @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         parser.add_argument(
             "-T", "--oversample-temperature", type=int, metavar="FACTOR",
             choices=bit_osrs_temp.keys(), default=1,
@@ -408,11 +422,11 @@ class SensorBMx280Applet(I2CInitiatorApplet):
             help="use IIR filter with coefficient COEFF (default: %(default)d)")
 
         parser.add_argument(
-            "-a", "--altitude", default=False, action="store_true", dest="report_altitude",
-            help="report calculated altitude")
-        parser.add_argument(
-            "--sea-level-pressure", type=float, metavar="PRESSURE", default=101325,
+            "-p0", "--sea-level-pressure", type=float, metavar="PRESSURE", default=101325,
             help="use PRESSURE Pa as sea level pressure (default: %(default)f)")
+        parser.add_argument(
+            "-a", "--altitude", default=False, action="store_true", dest="report_altitude",
+            help="calculate altitude")
 
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
@@ -426,55 +440,60 @@ class SensorBMx280Applet(I2CInitiatorApplet):
             help="sample each TIME seconds")
         DataLogger.add_subparsers(p_log)
 
-    async def interact(self, device, args, bmx280):
-        await bmx280.reset()
-        ident = await bmx280.identify()
+    async def run(self, args):
+        await self.bmx280_iface.reset()
+        ident = await self.bmx280_iface.identify()
 
-        await bmx280.set_mode("sleep")
-        await bmx280.set_iir_coefficient(args.iir_filter)
-        await bmx280.set_oversample(
+        await self.bmx280_iface.set_mode("sleep")
+        await self.bmx280_iface.set_iir_coefficient(args.iir_filter)
+        await self.bmx280_iface.set_oversample(
             ovs_t=args.oversample_temperature,
             ovs_p=args.oversample_pressure,
-            ovs_h=args.oversample_humidity if bmx280.has_humidity else None)
+            ovs_h=args.oversample_humidity if self.bmx280_iface.has_humidity else None)
 
         if args.operation == "measure":
-            await bmx280.set_mode("force")
+            await self.bmx280_iface.set_mode("force")
 
-            temp_degC = await bmx280.get_temperature()
-            press_Pa  = await bmx280.get_pressure()
+            temp_degC = await self.bmx280_iface.get_temperature()
+            press_Pa  = await self.bmx280_iface.get_pressure()
             print(f"temperature : {temp_degC:.0f} °C")
             print(f"pressure    : {press_Pa:.0f} Pa")
             if args.report_altitude:
-                altitude_m = await bmx280.get_altitude(p0=args.sea_level_pressure)
+                altitude_m = await self.bmx280_iface.get_altitude(p0=args.sea_level_pressure)
                 print(f"altitude    : {altitude_m:.0f} m")
-            if bmx280.has_humidity:
-                humidity_pct = await bmx280.get_humidity()
+            if self.bmx280_iface.has_humidity:
+                humidity_pct = await self.bmx280_iface.get_humidity()
                 print(f"humidity    : {humidity_pct:.0f}%")
 
         if args.operation == "log":
-            await bmx280.set_mode("normal")
+            await self.bmx280_iface.set_mode("normal")
 
             field_names = dict(t="T(°C)", p="p(Pa)")
             if args.report_altitude:
                 field_names.update(h="h(m)")
-            if bmx280.has_humidity:
+            if self.bmx280_iface.has_humidity:
                 field_names.update(rh="RH(%)")
             data_logger = await DataLogger(self.logger, args, field_names=field_names)
             while True:
                 async def report():
-                    fields = dict(t=await bmx280.get_temperature(),
-                                  p=await bmx280.get_pressure())
+                    fields = dict(t=await self.bmx280_iface.get_temperature(),
+                                  p=await self.bmx280_iface.get_pressure())
                     if args.report_altitude:
-                        fields.update(h=await bmx280.get_altitude(p0=args.sea_level_pressure))
-                    if bmx280.has_humidity:
-                        fields.update(rh=await bmx280.get_humidity())
+                        fields.update(h=await self.bmx280_iface.get_altitude(p0=args.sea_level_pressure))
+                    if self.bmx280_iface.has_humidity:
+                        fields.update(rh=await self.bmx280_iface.get_humidity())
                     await data_logger.report_data(fields)
                 try:
                     await asyncio.wait_for(report(), args.interval * 2)
                 except BMx280Error as error:
                     await data_logger.report_error(str(error), exception=error)
-                    await bmx280.reset()
+                    await self.bmx280_iface.reset()
                 except asyncio.TimeoutError as error:
                     await data_logger.report_error("timeout", exception=error)
-                    await bmx280.reset()
+                    await self.bmx280_iface.reset()
                 await asyncio.sleep(args.interval)
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.SensorBMx280AppletTestCase

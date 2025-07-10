@@ -96,6 +96,10 @@ What can I do with Glasgow?
 
 * program nRF24LE1 and nRF24LU1(+) microcontrollers
 
+* sense environmental data
+
+  * temperature, pressure, and humidity via :ref:`Bosch BMP280/BME280 <applet.sensor.bmx280>` sensors
+
 * synthesize sound using a Yamaha OPLx/OPM chip and play it in real time on a webpage
 
 * read raw modulated data from 5.25"/3.5" floppy drives
