@@ -1,4 +1,6 @@
-# I2C reference: https://www.nxp.com/docs/en/user-guide/UM10204.pdf
+# Ref: I2C-bus specification and user manual Rev 7.0
+# Document Number: UM10204
+# Accession: G00101
 
 from amaranth import *
 from amaranth.lib import io

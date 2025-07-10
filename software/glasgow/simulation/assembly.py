@@ -115,10 +115,10 @@ class SimulationAssembly(AbstractAssembly):
         self._pins[pin_name] = port
         return port
 
-    def get_pin(self, pin_name):
+    def get_pin(self, pin_name: str) -> io.SimulationPort:
         return self._pins[pin_name]
 
-    def connect_pins(self, *pin_names):
+    def connect_pins(self, *pin_names: str):
         self._jumpers.append(pin_names)
 
     def add_in_pipe(self, in_stream, *, in_flush=C(1),
