@@ -10,3 +10,4 @@ Device control
 
     gpio
     servo
+    si535x
