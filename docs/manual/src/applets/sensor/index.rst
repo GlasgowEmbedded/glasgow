@@ -6,6 +6,6 @@ Environment sensing
 .. automodule:: glasgow.applet.sensor
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 3
 
     bmx280

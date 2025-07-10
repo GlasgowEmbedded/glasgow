@@ -6,6 +6,6 @@ MCU debugging
 .. automodule:: glasgow.applet.debug
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 3
 
     arm7

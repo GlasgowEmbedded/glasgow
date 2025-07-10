@@ -194,7 +194,19 @@ class QSPIAnalyzerInterface:
     def _log(self, message, *args):
         self._logger.log(self._level, "QSPI analyzer: " + message, *args)
 
-    async def capture(self) -> tuple[bytes, bytes]:
+    async def capture(self) -> bytes:
+        """Capture a transaction.
+
+        It is not possible to determine the mode of any given bus cycle, or the direction of any
+        given bit, so the transaction is captured as a byte sequence.
+
+        Raises
+        ------
+        QSPIAnalyzerOverflow
+            When the FPGA buffer overflows. The last few transactions before the overflow occurred
+            may be dropped as well.
+        """
+
         if await self._overflow:
             raise QSPIAnalyzerOverflow("overflow")
 

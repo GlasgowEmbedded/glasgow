@@ -205,7 +205,20 @@ class SPIAnalyzerInterface:
     def _log(self, message, *args):
         self._logger.log(self._level, "SPI analyzer: " + message, *args)
 
-    async def capture(self) -> tuple[bytes, bytes]:
+    async def capture(self) -> tuple[int, bytes, bytes]:
+        """Capture a transaction.
+
+        Returns a 3-tuple :py:`(chip, copi, cipo)`, where :py:`chip` is the chip select index,
+        :py:`copi` are bytes transmitted from controller to peripheral, and :py:`cipo` are bytes
+        transmitted from peripheral to controller.
+
+        Raises
+        ------
+        SPIAnalyzerOverflow
+            When the FPGA buffer overflows. The last few transactions before the overflow occurred
+            may be dropped as well.
+        """
+
         packet = cobs.decode((await self._pipe.recv_until(b"\0"))[:-1])
         chip, copi_data, cipo_data = packet[0], packet[1::2], packet[2::2]
         self._log("capture chip=%d copi=<%s> cipo=<%s>",
