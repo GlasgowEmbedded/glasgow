@@ -223,16 +223,14 @@ def get_argparser():
                     if mode in ("build", "interact", "repl", "script"):
                         access_args = GlasgowAppletArguments(applet_name=handle)
                         if mode in ("interact", "repl", "script"):
-                            g_applet_build = p_applet.add_argument_group("build arguments")
-                            applet_cls.add_build_arguments(g_applet_build, access_args)
+                            g_applet_config = p_applet.add_argument_group("configuration")
+                            applet_cls.add_build_arguments(g_applet_config, access_args)
                             if issubclass(applet_cls, GlasgowAppletV2):
-                                g_applet_setup = p_applet.add_argument_group("setup arguments")
-                                applet_cls.add_setup_arguments(g_applet_setup)
+                                applet_cls.add_setup_arguments(g_applet_config)
                                 if mode == "interact":
                                     applet_cls.add_run_arguments(p_applet)
                             else:
-                                g_applet_run = p_applet.add_argument_group("run arguments")
-                                applet_cls.add_run_arguments(g_applet_run, access_args)
+                                applet_cls.add_run_arguments(g_applet_config, access_args)
                                 if mode == "interact":
                                     applet_cls.add_interact_arguments(p_applet)
                             if mode == "repl":
