@@ -274,7 +274,7 @@ class I2CInitiatorInterface:
         return found
 
 
-class I2CInitiatorApplet(GlasgowAppletV2):
+class I2CControllerApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "initiate I²C transactions"
     description = """
