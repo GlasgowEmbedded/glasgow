@@ -102,8 +102,12 @@ class I2CInitiator(Elaboratable):
         Acknowledge bit to be transmitted. Latched immediately after ``read`` is asserted.
     """
     def __init__(self, pads, period_cyc, clk_stretch=True):
+        assert (period_cyc // 4) < (1 << 16)
+
         self.period_cyc = int(period_cyc)
         self.clk_stretch = clk_stretch
+
+        self.divisor = Signal(16, init=self.period_cyc // 4)
 
         self.busy   = Signal(init=1)
         self.start  = Signal()
@@ -122,11 +126,11 @@ class I2CInitiator(Elaboratable):
 
         m.submodules.bus = self.bus
 
-        timer = Signal(range(self.period_cyc))
+        timer = Signal.like(self.divisor)
         stb   = Signal()
 
         with m.If((timer == 0) | ~self.busy):
-            m.d.sync += timer.eq(self.period_cyc // 4)
+            m.d.sync += timer.eq(self.divisor)
         with m.Elif((not self.clk_stretch) | (self.bus.scl_o == self.bus.scl_i)):
             m.d.sync += timer.eq(timer - 1)
         m.d.comb += stb.eq(timer == 0)

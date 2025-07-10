@@ -13,7 +13,7 @@ from amaranth.lib import enum, data, wiring, stream, io
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support.logging import dump_hex
-from glasgow.abstract import AbstractAssembly, GlasgowPin, PullState
+from glasgow.abstract import AbstractAssembly, GlasgowPin, PullState, ClockDivisor
 from glasgow.gateware.i2c import I2CInitiator
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
@@ -36,16 +36,18 @@ class I2CControllerComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
 
-    def __init__(self, ports, period_cyc):
+    divisor: In(16)
+
+    def __init__(self, ports):
         self._ports = ports
-        self._period_cyc = period_cyc
 
         super().__init__()
 
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.ctrl = ctrl = I2CInitiator(self._ports, self._period_cyc)
+        m.submodules.ctrl = ctrl = I2CInitiator(self._ports, 0)
+        m.d.comb += ctrl.divisor.eq(self.divisor)
 
         cmd   = Signal(_Command)
         count = Signal(16)
@@ -142,14 +144,16 @@ class I2CControllerComponent(wiring.Component):
 
 class I2CControllerInterface:
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 scl: GlasgowPin, sda: GlasgowPin, period_cyc: int):
+                 scl: GlasgowPin, sda: GlasgowPin):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
         assembly.use_pulls({scl: "high", sda: "high"})
         ports = assembly.add_port_group(scl=scl, sda=sda)
-        component = assembly.add_submodule(I2CControllerComponent(ports, period_cyc))
+        component = assembly.add_submodule(I2CControllerComponent(ports))
         self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
+        self._clock = assembly.add_clock_divisor(component.divisor,
+            ref_period=assembly.sys_clk_period * 4, name="scl")
 
         self._multi = False
         self._busy  = False
@@ -228,6 +232,11 @@ class I2CControllerInterface:
         finally:
             if not self._multi:
                 await self._do_stop()
+
+    @property
+    def clock(self) -> ClockDivisor:
+        """SCL clock divisor."""
+        return self._clock
 
     @contextlib.asynccontextmanager
     async def transaction(self):
@@ -376,16 +385,20 @@ class I2CControllerApplet(GlasgowAppletV2):
         access.add_pins_argument(parser, "scl", default=True, required=True)
         access.add_pins_argument(parser, "sda", default=True, required=True)
 
-        parser.add_argument(
-            "-b", "--bit-rate", metavar="FREQ", type=int, default=100,
-            help="set I2C bit rate to FREQ kHz (default: %(default)s)")
-
     def build(self, args):
         with self.assembly.add_applet(self):
             self.assembly.use_voltage(args.voltage)
             self.i2c_iface = I2CControllerInterface(self.logger, self.assembly,
-                scl=args.scl, sda=args.sda,
-                period_cyc=math.ceil(1 / (self.assembly.sys_clk_period * args.bit_rate * 1000)))
+                scl=args.scl, sda=args.sda)
+
+    @classmethod
+    def add_setup_arguments(cls, parser):
+        parser.add_argument(
+            "-f", "--frequency", metavar="FREQ", type=int, default=100,
+            help="set SCL frequency to FREQ kHz (default: %(default)s, range: 100...4000)")
+
+    async def setup(self, args):
+        await self.i2c_iface.clock.set_frequency(args.frequency * 1000)
 
     @classmethod
     def add_run_arguments(cls, parser):

@@ -13,6 +13,8 @@ class I2CControllerAppletTestCase(GlasgowAppletV2TestCase, applet=I2CControllerA
     def test_build(self):
         self.assertBuilds()
 
+    simulation_args = ["-f", "50"]
+
     def prepare_target(self, assembly: SimulationAssembly):
         ctl_ports = PortGroup(
             scl=assembly.get_pin("A0"),
@@ -57,12 +59,12 @@ class I2CControllerAppletTestCase(GlasgowAppletV2TestCase, applet=I2CControllerA
         assembly.add_submodule(m)
         assembly.add_testbench(testbench, background=True)
 
-    @applet_v2_simulation_test(prepare=prepare_target)
+    @applet_v2_simulation_test(prepare=prepare_target, args=simulation_args)
     async def test_addr_ack(self, applet: I2CControllerApplet, ctx):
         await applet.i2c_iface.write(0x50, b"")
         self.assertEqual(self.i2c_events, ['S', 'P'])
 
-    @applet_v2_simulation_test(prepare=prepare_target)
+    @applet_v2_simulation_test(prepare=prepare_target, args=simulation_args)
     async def test_addr_nak(self, applet: I2CControllerApplet, ctx):
         try:
             await applet.i2c_iface.write(0x51, b"")
@@ -71,13 +73,13 @@ class I2CControllerAppletTestCase(GlasgowAppletV2TestCase, applet=I2CControllerA
             pass
         self.assertEqual(self.i2c_events, [])
 
-    @applet_v2_simulation_test(prepare=prepare_target)
+    @applet_v2_simulation_test(prepare=prepare_target, args=simulation_args)
     async def test_write_ack(self, applet: I2CControllerApplet, ctx):
         self.i2c_acks = [1, 1, 1]
         await applet.i2c_iface.write(0x50, b"abc")
         self.assertEqual(self.i2c_events, ['S', 'W', 97, 'W', 98, 'W', 99, 'P'])
 
-    @applet_v2_simulation_test(prepare=prepare_target)
+    @applet_v2_simulation_test(prepare=prepare_target, args=simulation_args)
     async def test_write_nak(self, applet: I2CControllerApplet, ctx):
         self.i2c_acks = [1, 0]
         try:
@@ -87,14 +89,14 @@ class I2CControllerAppletTestCase(GlasgowAppletV2TestCase, applet=I2CControllerA
             pass
         self.assertEqual(self.i2c_events, ['S', 'W', 0x12, 'W', 0x34, 'P'])
 
-    @applet_v2_simulation_test(prepare=prepare_target)
+    @applet_v2_simulation_test(prepare=prepare_target, args=simulation_args)
     async def test_read(self, applet: I2CControllerApplet, ctx):
         self.i2c_reads = [0x12, 0x34]
         data = await applet.i2c_iface.read(0x50, 2)
         self.assertEqual(data, bytes([0x12, 0x34]))
         self.assertEqual(self.i2c_events, ['S', 'R', 'R', 'P'])
 
-    @applet_v2_simulation_test(prepare=prepare_target)
+    @applet_v2_simulation_test(prepare=prepare_target, args=simulation_args)
     async def test_trans_ack(self, applet: I2CControllerApplet, ctx):
         self.i2c_reads = [0x12, 0x34]
         self.i2c_acks = [1]
@@ -104,7 +106,7 @@ class I2CControllerAppletTestCase(GlasgowAppletV2TestCase, applet=I2CControllerA
         self.assertEqual(data, bytes([0x12, 0x34]))
         self.assertEqual(self.i2c_events, ['S', 'W', 0xaa, 'Sr', 'S', 'R', 'R', 'P'])
 
-    @applet_v2_simulation_test(prepare=prepare_target)
+    @applet_v2_simulation_test(prepare=prepare_target, args=simulation_args)
     async def test_trans_nak(self, applet: I2CControllerApplet, ctx):
         self.i2c_acks = [1, 0]
         try:
@@ -116,27 +118,27 @@ class I2CControllerAppletTestCase(GlasgowAppletV2TestCase, applet=I2CControllerA
             pass
         self.assertEqual(self.i2c_events, ['S', 'W', 0x55, 'Sr', 'S', 'W', 0xaa, 'P'])
 
-    @applet_v2_simulation_test(prepare=prepare_target)
+    @applet_v2_simulation_test(prepare=prepare_target, args=simulation_args)
     async def test_ping_ack(self, applet: I2CControllerApplet, ctx):
         self.assertTrue(await applet.i2c_iface.ping(0x50))
         self.assertEqual(self.i2c_events, ['S', 'P'])
 
-    @applet_v2_simulation_test(prepare=prepare_target)
+    @applet_v2_simulation_test(prepare=prepare_target, args=simulation_args)
     async def test_ping_nak(self, applet: I2CControllerApplet, ctx):
         self.assertFalse(await applet.i2c_iface.ping(0x51))
         self.assertEqual(self.i2c_events, [])
 
-    @applet_v2_simulation_test(prepare=prepare_target)
+    @applet_v2_simulation_test(prepare=prepare_target, args=simulation_args)
     async def test_scan(self, applet: I2CControllerApplet, ctx):
         self.assertEqual(await applet.i2c_iface.scan(), {0x50})
         self.assertEqual(self.i2c_events, ['S', 'P'])
 
-    @applet_v2_simulation_test(prepare=prepare_target)
+    @applet_v2_simulation_test(prepare=prepare_target, args=simulation_args)
     async def test_scan_range(self, applet: I2CControllerApplet, ctx):
         self.assertEqual(await applet.i2c_iface.scan(range(0x20, 0x30)), set())
         self.assertEqual(self.i2c_events, [])
 
-    @applet_v2_simulation_test(prepare=prepare_target)
+    @applet_v2_simulation_test(prepare=prepare_target, args=simulation_args)
     async def test_device_id(self, applet: I2CControllerApplet, ctx):
         ctx.set(self.tgt.address, 0b1111_100)
         self.i2c_reads = [0xab, 0xc1, 0x25]
