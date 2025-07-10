@@ -2,7 +2,7 @@ import base64
 import zlib
 
 from glasgow.applet import GlasgowAppletV2TestCase, synthesis_test, applet_v2_hardware_test
-from . import ProgramICE40SRAMApplet
+from . import ProgramICE40SRAMApplet, ICE40SRAMError
 
 
 class ProgramICE40SRAMAppletTestCase(GlasgowAppletV2TestCase, applet=ProgramICE40SRAMApplet):
@@ -18,20 +18,24 @@ class ProgramICE40SRAMAppletTestCase(GlasgowAppletV2TestCase, applet=ProgramICE4
 
     @applet_v2_hardware_test(args=["-V", "3.3", "--done", "A4"],
             mocks=[f"ice40_iface.{attr}" for attr in ["_spi_iface", "_reset_iface", "_done_iface"]])
-    async def test_hardware_with_done(self, applet):
-        assert await applet.ice40_iface.program(ICE40UP5K_BLINKY_BITSTREAM)
+    async def test_hardware_with_done(self, applet: ProgramICE40SRAMApplet):
+        await applet.ice40_iface.load(ICE40UP5K_BLINKY_BITSTREAM)
 
     @applet_v2_hardware_test(args=["-V", "3.3", "--done", "-"],
             mocks=[f"ice40_iface.{attr}" for attr in ["_spi_iface", "_reset_iface", "_done_iface"]])
-    async def test_hardware_without_done(self, applet):
-        assert await applet.ice40_iface.program(ICE40UP5K_BLINKY_BITSTREAM)
+    async def test_hardware_without_done(self, applet: ProgramICE40SRAMApplet):
+        await applet.ice40_iface.load(ICE40UP5K_BLINKY_BITSTREAM)
 
     # For the next test, the configuration should fail. (Leave everything disconnected.)
 
     @applet_v2_hardware_test(args=["-V", "3.3", "--done", "A4"],
             mocks=[f"ice40_iface.{attr}" for attr in ["_spi_iface", "_reset_iface", "_done_iface"]])
-    async def test_hardware_failure(self, applet):
-        assert not await applet.ice40_iface.program(ICE40UP5K_BLINKY_BITSTREAM)
+    async def test_hardware_failure(self, applet: ProgramICE40SRAMApplet):
+        try:
+            await applet.ice40_iface.load(ICE40UP5K_BLINKY_BITSTREAM)
+            self.fail("expected an error")
+        except ICE40SRAMError:
+            pass
 
 
 ICE40UP5K_BLINKY_BITSTREAM = zlib.decompress(base64.b85decode(R"""

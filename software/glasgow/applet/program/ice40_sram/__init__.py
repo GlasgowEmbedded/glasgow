@@ -10,13 +10,17 @@ import logging
 from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
 from glasgow.applet.interface.spi_controller import SPIControllerInterface
 from glasgow.applet.control.gpio import GPIOInterface
-from glasgow.applet import GlasgowAppletV2
+from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
-__all__ = ["ProgramICE40SRAMInterface"]
+__all__ = ["ICE40SRAMInterface"]
 
 
-class ProgramICE40SRAMInterface:
+class ICE40SRAMError(GlasgowAppletError):
+    pass
+
+
+class ICE40SRAMInterface:
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
                  cs: GlasgowPin, sck: GlasgowPin, copi: GlasgowPin,
                  reset: GlasgowPin, done: Optional[GlasgowPin] = None):
@@ -36,9 +40,19 @@ class ProgramICE40SRAMInterface:
 
     @property
     def clock(self) -> ClockDivisor:
+        """SCK clock divisor."""
         return self._spi_iface.clock
 
-    async def program(self, bitstream: bytes | bytearray | memoryview):
+    async def load(self, bitstream: bytes | bytearray | memoryview) -> bool:
+        """Load :py:`bitstream` into configuration SRAM.
+
+        Raises
+        ------
+        ICE40SRAMError
+            If the CDONE pin is present and was not asserted within 100 ms after the bitstream
+            has been shifted in.
+        """
+
         async with self._spi_iface.select():
             self._log("resetting")
 
@@ -68,12 +82,12 @@ class ProgramICE40SRAMInterface:
             for _ in range(10):    # Wait up to 100 ms
                 await asyncio.sleep(0.010)  # Poll every 10 ms
                 if await self._done_iface.get(0):
-                    return True
-            return False
+                    return
+
+            raise ICE40SRAMError("FPGA failed to configure")
 
         else:
             self._log("waiting for CDONE (absent)")
-            return True
 
 
 class ProgramICE40SRAMApplet(GlasgowAppletV2):
@@ -95,7 +109,7 @@ class ProgramICE40SRAMApplet(GlasgowAppletV2):
     def build(self, args):
         with self.assembly.add_applet(self):
             self.assembly.use_voltage(args.voltage)
-            self.ice40_iface = ProgramICE40SRAMInterface(self.logger, self.assembly,
+            self.ice40_iface = ICE40SRAMInterface(self.logger, self.assembly,
                 cs=args.cs, sck=args.sck, copi=args.copi,
                 reset=args.reset, done=args.done)
 
@@ -115,10 +129,8 @@ class ProgramICE40SRAMApplet(GlasgowAppletV2):
             help="bitstream file")
 
     async def run(self, args):
-        if await self.ice40_iface.program(args.bitstream.read()):
-            self.logger.info("FPGA successfully configured")
-        else:
-            self.logger.warning("FPGA failed to configure")
+        await self.ice40_iface.load(args.bitstream.read())
+        self.logger.info("FPGA successfully configured")
 
     @classmethod
     def tests(cls):

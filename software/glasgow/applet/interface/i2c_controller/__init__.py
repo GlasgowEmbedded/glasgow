@@ -279,7 +279,7 @@ class I2CControllerInterface:
 
         Raises
         ------
-        I2CControllerError
+        I2CNotAcknowledged
             If either the target address or the written data receives a not-acknowledgement.
         """
         assert address in range(0, 128)
@@ -298,7 +298,7 @@ class I2CControllerInterface:
 
         Raises
         ------
-        I2CControllerError
+        I2CNotAcknowledged
             If the target address receives a not-acknowledgement.
         """
         assert address in range(0, 128) and count >= 1
@@ -352,7 +352,7 @@ class I2CControllerInterface:
 
         Raises
         ------
-        I2CControllerError
+        I2CNotAcknowledged
             If the command is not implemented.
         """
 

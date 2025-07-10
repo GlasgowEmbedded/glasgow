@@ -1,5 +1,8 @@
 ``i2c-controller``
-=================
+==================
+
+CLI reference
+-------------
 
 .. _applet.interface.i2c_controller:
 
@@ -12,6 +15,6 @@ API reference
 
 .. module:: glasgow.applet.interface.i2c_controller
 
-.. autoexception:: I2CControllerError
+.. autoexception:: I2CNotAcknowledged
 
 .. autoclass:: I2CControllerInterface

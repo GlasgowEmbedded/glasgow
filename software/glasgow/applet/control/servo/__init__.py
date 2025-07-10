@@ -4,10 +4,11 @@ from amaranth import *
 from amaranth.lib import enum, io, wiring, stream
 from amaranth.lib.wiring import In, Out
 
+from glasgow.abstract import AbstractAssembly, GlasgowPin
 from glasgow.applet import GlasgowAppletV2
 
 
-__all__ = ["ControlServoComponent", "ControlServoInterface"]
+__all__ = ["ServoChannel", "ServoInterface"]
 
 
 class ServoChannel(wiring.Component):
@@ -120,8 +121,8 @@ class ControlServoComponent(wiring.Component):
         return m
 
 
-class ControlServoInterface:
-    def __init__(self, logger, assembly, *, out):
+class ServoInterface:
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *, out: GlasgowPin):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
@@ -148,20 +149,21 @@ class ControlServoInterface:
     async def disable(self):
         """Disable the servo.
 
-        When disabled, no pulses are sent over the control line.
+        Calls :py:`self.enable(False)`.
         """
         await self.enable(False)
 
     async def set_value(self, value: int):
         """Set servo control value.
 
-        ``value`` is an integer number of microseconds in the range of 1000 to 2000 inclusive.
-        Note that the interpretation of this value varies.
-        - For a servo, 1500 corresponds to the neutral position.
+        :py:`value` is an integer number of microseconds in the range of 1000 to 2000 inclusive.
+        Note that the interpretation of this value varies depending on the connected device:
+
+        - For a servo proper, 1500 corresponds to the neutral position.
         - For an unidirectional ESC, 1000 is 0 rpm and 2000 is maximum rpm.
         - For a bidirectional ESC, 1000 is maximum rpm backwards and 2000 is maximum rpm forwards.
 
-        The servo is enabled after the value is set.
+        The servo is enabled after the value is configured.
         """
         assert 1000 <= value <= 2000, "Position out of [1000, 2000] range"
 
@@ -200,7 +202,7 @@ class ControlServoApplet(GlasgowAppletV2):
     def build(self, args):
         with self.assembly.add_applet(self):
             self.assembly.use_voltage(args.voltage)
-            self.servo_iface = ControlServoInterface(self.logger, self.assembly, out=args.out)
+            self.servo_iface = ServoInterface(self.logger, self.assembly, out=args.out)
 
     @classmethod
     def tests(cls):

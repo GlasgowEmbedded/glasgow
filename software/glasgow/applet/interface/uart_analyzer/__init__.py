@@ -117,11 +117,27 @@ class UARTAnalyzerInterface:
         self._logger.log(self._level, "UART analyzer: " + message, *args)
 
     def baud(self, channel: str) -> ClockDivisor:
-        """Clock divisor for ``channel``. Raises ``ValueError`` if no such channel exists."""
+        """Clock divisor for :py:`channel`.
+
+        Raises
+        ------
+        ValueError
+            If no such channel exists.
+        """
         return self._periods[self._channels.index(channel)]
 
     async def capture(self) -> list[tuple[str, bytearray | UARTAnalyzerError]]:
-        """Captures a sequence of messages: (channel, data) or (channel, error) pairs."""
+        """Capture a sequence of messages.
+
+        Returns a list of :py:`(channel, data)` or :py:`(channel, error)` tuples. The :py:`data`
+        indicates a byte sequence transmitted on the :py:`channel`, while :py:`error` indicates
+        that an error has occurred. (The :py:enum:member:`UARTAnalyzerError.Good` error code will
+        never appear in results.)
+
+        This function concatenates consecutive data messages to improve readability; despite this,
+        protocol decoders must be prepared to handle data being split across any number of messages
+        at any boundaries.
+        """
 
         if await self._overflow:
             raise GlasgowAppletError("overflow")

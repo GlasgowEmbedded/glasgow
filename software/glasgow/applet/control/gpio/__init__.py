@@ -57,41 +57,67 @@ class GPIOInterface:
         self._logger.log(self._level, "GPIO: " + message, *args)
 
     @property
-    def count(self):
+    def count(self) -> int:
+        """Number of pins."""
         return len(self._pins)
 
-    def _check_index(self, index):
+    def _check_index(self, index: int):
         if index not in range(self.count):
             raise IndexError(f"pin {index} out of range [0,{self.count})")
 
     async def pull(self, index: int, state: PullState | str):
-        """Configure pull-up or pull-down for pin ``index``."""
+        """Configure pull-up or pull-down for pin :py:`index`."""
         self._assembly.use_pulls({self._pins[index]: state})
         await self._assembly.configure_ports()
 
     async def input(self, index: int):
-        """Configure pin ``index`` as input."""
+        """Configure pin :py:`index` as input.
+
+        Raises
+        ------
+        IndexError
+            If :py:`index` does not specify a valid pin index.
+        """
         self._check_index(index)
         self._log(f"pin={index} in")
         await self._oe.set((await self._oe) & ~(1 << index))
 
     async def output(self, index: int, value: bool):
-        """Configure pin ``index`` as output, initially driving ``value``."""
+        """Configure pin :py:`index` as output, initially driving :py:`value`.
+
+        Raises
+        ------
+        IndexError
+            If :py:`index` does not specify a valid pin index.
+        """
         self._check_index(index)
         self._log(f"pin={index} out set={bool(value):b}")
         await self._o.set((await self._o) & ~(1 << index) | (bool(value) << index))
         await self._oe.set((await self._oe) | (1 << index))
 
     async def get(self, index: int) -> bool:
-        """Sample state of pin ``index``."""
+        """Sample state of pin :py:`index`.
+
+        Raises
+        ------
+        IndexError
+            If :py:`index` does not specify a valid pin index.
+        """
         self._check_index(index)
         state = (await self._i >> index) & 1
         self._log(f"pin={index} get={state:b}")
         return bool(state)
 
     async def set(self, index: int, value: bool):
-        """Update value driven by pin ``index`` to be ``value``. If the pin is not currently
-        configured as an output, an exception is raised."""
+        """Update value driven by pin :py:`index` to be :py:`value`.
+
+        Raises
+        ------
+        IndexError
+            If :py:`index` does not specify a valid pin index.
+        GPIOException
+            If pin :py:`index` is not configured as an ouptut.
+        """
         self._check_index(index)
         self._log(f"pin={index} set={value:b}")
         if not (await self._oe & (1 << index)):
@@ -99,16 +125,22 @@ class GPIOInterface:
         await self._o.set((await self._o) & ~(1 << index) | (value << index))
 
     async def get_all(self) -> int:
-        """Sample state of every pin simultaneously. In the returned value, the least significant
-        bit corresponds to the first pin in the port provided to the constructor."""
+        """Sample state of every pin simultaneously.
+
+        In the returned value, the least significant bit corresponds to the first pin in the port
+        provided to the constructor.
+        """
         state = await self._i
         self._log(f"pins get={state:0{self.count}b}")
         return state
 
     async def set_all(self, value: int):
-        """Update value of every pin simultaneously. In ``value``, the least significant bit
-        corresponds to the first pin in the port provided to the constructor. The bits
-        corresponding to pins that are configured as inputs are ignored."""
+        """Update value of every pin simultaneously.
+
+        In :py:`value`, the least significant bit corresponds to the first pin in the port provided
+        to the constructor. The bits corresponding to pins that are configured as inputs, as well
+        as the bits that do not correspond to any pins, are ignored.
+        """
         self._log(f"pins set={value:0{self.count}b}")
         await self._o.set(value)
 

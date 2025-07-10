@@ -7,6 +7,7 @@ dependencies = [
     "sphinx-inline-tabs",
     "sphinx-copybutton",
     "sphinxcontrib-autoprogram",
+    "enum-tools[sphinx]",
     # If you change the version of Furo, check out the repository, apply the following patch
     # to `src/furo/assets/styles/variables/_layout.scss`:
     #   -$sidebar-width: 15em;
