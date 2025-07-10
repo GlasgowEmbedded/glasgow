@@ -413,7 +413,7 @@ class I2CControllerApplet(GlasgowAppletV2):
     async def run(self, args):
         if args.operation == "scan":
             for addr in await self.i2c_iface.scan():
-                self.logger.info(f"scan found address {addr:#09b}")
+                self.logger.info(f"scan found address {addr:#09b}/{addr:#04x}")
                 if args.device_id:
                     try:
                         manufacturer, part_ident, revision = await self.i2c_iface.device_id(addr)
