@@ -1,0 +1,93 @@
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [224, 182]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [208]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 1], "kwargs": {}, "result": {"__class__": "bytes", "hex": "58"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [244]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 1], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [244, 0]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [245]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 1], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [245, 8]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [244]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 1], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [244, 144]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [244]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 1], "kwargs": {}, "result": {"__class__": "bytes", "hex": "90"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [244, 145]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [136]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 2], "kwargs": {}, "result": {"__class__": "bytes", "hex": "a36b"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [138]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 2], "kwargs": {}, "result": {"__class__": "bytes", "hex": "9168"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [140]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 2], "kwargs": {}, "result": {"__class__": "bytes", "hex": "18fc"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [142]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 2], "kwargs": {}, "result": {"__class__": "bytes", "hex": "338f"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [144]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 2], "kwargs": {}, "result": {"__class__": "bytes", "hex": "afd5"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [146]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 2], "kwargs": {}, "result": {"__class__": "bytes", "hex": "d00b"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [148]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 2], "kwargs": {}, "result": {"__class__": "bytes", "hex": "0007"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [150]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 2], "kwargs": {}, "result": {"__class__": "bytes", "hex": "0101"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [152]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 2], "kwargs": {}, "result": {"__class__": "bytes", "hex": "f9ff"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [154]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 2], "kwargs": {}, "result": {"__class__": "bytes", "hex": "8c3c"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [156]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 2], "kwargs": {}, "result": {"__class__": "bytes", "hex": "f8c6"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [158]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 2], "kwargs": {}, "result": {"__class__": "bytes", "hex": "7017"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [250]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 3], "kwargs": {}, "result": {"__class__": "bytes", "hex": "8011a0"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [250]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 3], "kwargs": {}, "result": {"__class__": "bytes", "hex": "8011a0"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [247]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 3], "kwargs": {}, "result": {"__class__": "bytes", "hex": "69fb20"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [250]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 3], "kwargs": {}, "result": {"__class__": "bytes", "hex": "8011a0"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [118, [247]], "kwargs": {}, "result": null}
+{"self": "bmx280_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [118, 3], "kwargs": {}, "result": {"__class__": "bytes", "hex": "69fb20"}}
+{"self": "bmx280_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
