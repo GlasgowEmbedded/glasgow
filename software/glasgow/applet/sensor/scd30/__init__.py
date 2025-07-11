@@ -60,12 +60,8 @@ class SCD30I2CInterface:
 
     async def _read_raw(self, address: int, length: int = 0) -> bytearray:
         assert length % 2 == 0
-        acked = await self._i2c_iface.write(self.i2c_address, struct.pack(">H", address))
-        if acked is False:
-            raise SCD30Error("SCD30 did not acknowledge address write")
+        await self._i2c_iface.write(self.i2c_address, struct.pack(">H", address))
         crc_data = await self._i2c_iface.read(self.i2c_address, length // 2 * 3)
-        if crc_data is None:
-            raise SCD30Error("SCD30 did not acknowledge data read")
         self._log("read addr=%#06x data=<%s>", address, dump_hex(crc_data))
         data = bytearray()
         for index, (chunk, crc) in enumerate(struct.iter_unpack(">2sB", crc_data)):
@@ -81,10 +77,8 @@ class SCD30I2CInterface:
             crc_data += chunk
             crc_data.append(self._crc(chunk))
         self._log("write addr=%#06x args=<%s>", address, dump_hex(crc_data))
-        acked = await self._i2c_iface.write(self.i2c_address,
+        await self._i2c_iface.write(self.i2c_address,
             struct.pack(">H", address) + crc_data)
-        if acked is False:
-            raise SCD30Error("SCD30 did not acknowledge command write")
 
     async def _read(self, cmd: SCD30Command, format: str):
         return struct.unpack(format, await self._read_raw(cmd.value, struct.calcsize(format)))
