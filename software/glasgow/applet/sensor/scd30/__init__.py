@@ -45,7 +45,7 @@ class SCD30Measurement:
 
 
 class SCD30I2CInterface:
-    i2c_address = 0x61
+    _i2c_address = 0x61
 
     def __init__(self, logger: logging.Logger, i2c_iface: I2CControllerInterface):
         self._logger = logger
@@ -60,8 +60,8 @@ class SCD30I2CInterface:
 
     async def _read_raw(self, address: int, length: int = 0) -> bytearray:
         assert length % 2 == 0
-        await self._i2c_iface.write(self.i2c_address, struct.pack(">H", address))
-        crc_data = await self._i2c_iface.read(self.i2c_address, length // 2 * 3)
+        await self._i2c_iface.write(self._i2c_address, struct.pack(">H", address))
+        crc_data = await self._i2c_iface.read(self._i2c_address, length // 2 * 3)
         self._log("read addr=%#06x data=<%s>", address, dump_hex(crc_data))
         data = bytearray()
         for index, (chunk, crc) in enumerate(struct.iter_unpack(">2sB", crc_data)):
@@ -77,7 +77,7 @@ class SCD30I2CInterface:
             crc_data += chunk
             crc_data.append(self._crc(chunk))
         self._log("write addr=%#06x args=<%s>", address, dump_hex(crc_data))
-        await self._i2c_iface.write(self.i2c_address,
+        await self._i2c_iface.write(self._i2c_address,
             struct.pack(">H", address) + crc_data)
 
     async def _read(self, cmd: SCD30Command, format: str):
@@ -174,11 +174,11 @@ class SensorSCD30Applet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "measure CO₂, humidity, and temperature with Sensirion SCD30 sensors"
     description = """
-    Measure CO₂ concentration, humidity, and temperature using Sensirion SCD30 sensors
-    connected over the I²C interface.
+    Measure CO₂ concentration, humidity, and temperature using Sensirion SCD30 sensors connected
+    over the I²C interface.
 
-    NOTE: The SCD30 takes some time to start up. Run `glasgow voltage AB 3.3`
-    or similar before attempting to interact with it.
+    NOTE: The SCD30 takes some time to start up. Run `glasgow voltage AB 3.3` or similar before
+    attempting to interact with it.
     """
 
     @classmethod
