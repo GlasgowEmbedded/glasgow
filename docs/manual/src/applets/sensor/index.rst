@@ -10,3 +10,4 @@ Environment sensing
 
     bmx280
     scd30
+    sen5x

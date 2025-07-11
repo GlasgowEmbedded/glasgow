@@ -1,0 +1,12 @@
+{"self": "sen5x_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [105, {"__class__": "bytes", "hex": "d014"}], "kwargs": {}, "result": null}
+{"self": "sen5x_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [105, 48], "kwargs": {}, "result": {"__class__": "bytes", "hex": "5345834e3555350044000081000081000081000081000081000081000081000081000081000081000081000081000081"}}
+{"self": "sen5x_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [105, {"__class__": "bytes", "hex": "d033"}], "kwargs": {}, "result": null}
+{"self": "sen5x_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [105, 48], "kwargs": {}, "result": {"__class__": "bytes", "hex": "4644ab4337774333b34336463235da3743f330397e383756000081000081000081000081000081000081000081000081"}}
+{"self": "sen5x_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [105, {"__class__": "bytes", "hex": "d100"}], "kwargs": {}, "result": null}
+{"self": "sen5x_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [105, 3], "kwargs": {}, "result": {"__class__": "bytes", "hex": "010075"}}
+{"self": "sen5x_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [105, {"__class__": "bytes", "hex": "0021"}], "kwargs": {}, "result": null}
+{"self": "sen5x_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [105, {"__class__": "bytes", "hex": "0202"}], "kwargs": {}, "result": null}
+{"self": "sen5x_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [105, 3], "kwargs": {}, "result": {"__class__": "bytes", "hex": "0001b0"}}
+{"self": "sen5x_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [105, {"__class__": "bytes", "hex": "03c4"}], "kwargs": {}, "result": null}
+{"self": "sen5x_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [105, 24], "kwargs": {}, "result": {"__class__": "bytes", "hex": "002bed002e18002e18002e18165ed413222603d46c000a5a"}}
+{"self": "sen5x_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [105, {"__class__": "bytes", "hex": "0104"}], "kwargs": {}, "result": null}
