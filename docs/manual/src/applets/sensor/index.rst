@@ -9,3 +9,4 @@ Environment sensing
     :maxdepth: 3
 
     bmx280
+    scd30
