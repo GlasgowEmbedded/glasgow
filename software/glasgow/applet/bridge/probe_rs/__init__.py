@@ -46,7 +46,6 @@ class ProbeRsRootTarget(wiring.Component):
 
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
-    o_flush:  Out(1)
 
     divisor:  Out(16)
     dut_rst:  Out(1)
@@ -78,8 +77,6 @@ class ProbeRsRootTarget(wiring.Component):
                             m.d.sync += self.dut_rst.eq(0)
                         with m.Case():
                             m.d.comb += self.i_stream.ready.eq(0)
-                with m.Else():
-                    m.d.comb += self.o_flush.eq(1)
 
             with m.State("Identify"):
                 ident  = C(int.from_bytes(self.IDENTIFIER, "little"), 12 * 8)
@@ -195,12 +192,20 @@ class ProbeRsComponent(wiring.Component):
                     m.next = "Connect"
 
             with m.State("Connect"):
-                with m.If(~targets[o_target].o_stream.valid & targets[o_target].o_flush):
-                    m.next = "End" # `o_flush` could go down; make sure `encoder.i.valid` doesn't
-                with m.Else():
+                # Wait for 1 µs before flushing the COBS encoder, since COBS has up to 3× overhead
+                # for small packets.
+                timeout = round(self._ref_clock * 1e-6)
+                timer = Signal(range(timeout + 1), init=timeout)
+
+                with m.If(targets[o_target].o_stream.valid):
                     m.d.comb += cobs_encoder.i.p.data.eq(targets[o_target].o_stream.payload)
                     m.d.comb += cobs_encoder.i.valid.eq(targets[o_target].o_stream.valid)
                     m.d.comb += targets[o_target].o_stream.ready.eq(cobs_encoder.i.ready)
+                    m.d.sync += timer.eq(timer.init)
+                with m.Elif(timer != 0):
+                    m.d.sync += timer.eq(timer - 1)
+                with m.Else():
+                    m.next = "End"
 
             with m.State("End"):
                 m.d.comb += cobs_encoder.i.p.end.eq(1)
@@ -238,8 +243,8 @@ class ProbeRsApplet(GlasgowAppletV2):
             ports = self.assembly.add_port_group(swclk=args.swclk, swdio=args.swdio, srst=args.srst)
             component = self.assembly.add_submodule(ProbeRsComponent(ports,
                 ref_clock=int(1 / self.assembly.sys_clk_period)))
-            self.__pipe = self.assembly.add_inout_pipe(component.o_stream, component.i_stream,
-                in_flush=component.o_flush, in_fifo_depth=0)
+            self.__pipe = self.assembly.add_inout_pipe(
+                component.o_stream, component.i_stream, in_flush=component.o_flush, in_fifo_depth=0)
 
     @classmethod
     def add_run_arguments(cls, parser):

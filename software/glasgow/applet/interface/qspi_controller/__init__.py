@@ -26,7 +26,6 @@ class QSPICommand(enum.Enum, shape=4):
 class QSPIControllerComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
-    o_flush:  Out(1)
 
     divisor:  In(16)
 
@@ -58,7 +57,6 @@ class QSPIControllerComponent(wiring.Component):
         timer   = Signal(range(self._us_cycles))
         with m.FSM():
             with m.State("Read-Command"):
-                m.d.comb += self.o_flush.eq(1)
                 m.d.comb += self.i_stream.ready.eq(1)
                 with m.If(self.i_stream.valid):
                     m.d.sync += command.eq(self.i_stream.payload[4:])
@@ -142,8 +140,7 @@ class QSPIControllerInterface:
         assembly.use_pulls({io: "high"}) # pull WP#/HOLD# high
         component = assembly.add_submodule(QSPIControllerComponent(ports,
             us_cycles=int(1 / (assembly.sys_clk_period * 1_000_000))))
-        self._pipe = assembly.add_inout_pipe(
-            component.o_stream, component.i_stream, in_flush=component.o_flush)
+        self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
         self._clock = assembly.add_clock_divisor(component.divisor,
             ref_period=assembly.sys_clk_period, name="sck")
 

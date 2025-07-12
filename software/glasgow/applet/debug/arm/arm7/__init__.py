@@ -100,7 +100,6 @@ class DebugARM7Opcode(enum.Enum, shape=3):
 class DebugARM7Sequencer(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
-    o_flush:  Out(1)
 
     divisor:  In(8)
 
@@ -163,8 +162,6 @@ class DebugARM7Sequencer(wiring.Component):
                             m.next = "Fetch data"
                         with m.Default():
                             m.next = "Run command"
-                with m.Else():
-                    m.d.comb += self.o_flush.eq(1)
 
             with m.State("Fetch data"):
                 i_offset = Signal(2)
@@ -762,8 +759,7 @@ class DebugARM7Interface(GDBRemote):
 
         ports = assembly.add_port_group(tck=tck, tms=tms, tdo=tdo, tdi=tdi, trst=trst)
         component = assembly.add_submodule(DebugARM7Sequencer(ports))
-        self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream,
-            in_flush=component.o_flush)
+        self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
         self._clock = assembly.add_clock_divisor(component.divisor,
             ref_period=assembly.sys_clk_period * 2, name="tck")
 
