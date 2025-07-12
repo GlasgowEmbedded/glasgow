@@ -160,7 +160,8 @@ class UARTInterface:
         ports = assembly.add_port_group(rx=rx, tx=tx)
         assembly.use_pulls({rx: "high"})
         component = assembly.add_submodule(UARTComponent(ports, parity=parity))
-        self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
+        self._pipe = assembly.add_inout_pipe(
+            component.o_stream, component.i_stream, in_flush=C(1)) # force flush to reduce latency
         self._use_auto   = assembly.add_rw_register(component.use_auto)
         self._manual_cyc = assembly.add_rw_register(component.manual_cyc)
         self._auto_cyc   = assembly.add_ro_register(component.auto_cyc)
@@ -194,7 +195,7 @@ class UARTInterface:
         await self._use_auto.set(1)
 
     async def read(self, length: int, *, flush=True) -> memoryview:
-        """Reads one or more bytes from the UART. If ``flush`` is true, transmits any buffered
+        """Reads one or more bytes from the UART. If :py:`flush` is true, transmits any buffered
         writes before starting to receive."""
         self._log("rx len=%d", length)
         if flush:
@@ -204,7 +205,7 @@ class UARTInterface:
         return data
 
     async def read_all(self, *, flush=True) -> memoryview:
-        """Reads all buffered bytes from the UART, but no less than one byte. If ``flush`` is
+        """Reads all buffered bytes from the UART, but no less than one byte. If :py:`flush` is
         true, transmits any buffered writes before starting to read."""
         self._log("rx all")
         if flush:
@@ -217,7 +218,7 @@ class UARTInterface:
         return data
 
     async def read_until(self, trailer: bytes | Tuple[bytes, ...]) -> memoryview:
-        """Reads bytes from the UART until ``trailer``, which can be a single byte sequence
+        """Reads bytes from the UART until :py:`trailer`, which can be a single byte sequence
         or a choice of multiple byte sequences, is encountered. The return value includes
         the trailer."""
         buffer = bytearray()

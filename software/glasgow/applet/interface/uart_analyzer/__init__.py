@@ -41,7 +41,6 @@ class UARTAnalyzerComponent(wiring.Component):
 
         super().__init__({
             "o_stream": Out(stream.Signature(8)),
-            "o_flush":  Out(1),
 
             "periods":  In(20).array(len(port)),
             "overflow": Out(1),
@@ -85,14 +84,6 @@ class UARTAnalyzerComponent(wiring.Component):
             with m.If(offset == 1):
                 m.d.comb += queue.o.ready.eq(1)
 
-        # TODO: remove this in favor of Nagle-like flush once that's implemented
-        timer = Signal(16, init=127 if platform is None else ~0)
-        m.d.comb += self.o_flush.eq(timer == 0)
-        with m.If(self.o_stream.valid):
-            m.d.sync += timer.eq(timer.init)
-        with m.Elif(timer != 0):
-            m.d.sync += timer.eq(timer - 1)
-
         return m
 
 
@@ -107,7 +98,7 @@ class UARTAnalyzerInterface:
         assembly.use_pulls({self._pins: "high"})
         port = assembly.add_port(self._pins, name="uart")
         component = assembly.add_submodule(UARTAnalyzerComponent(port, parity=parity))
-        self._pipe = assembly.add_in_pipe(component.o_stream, in_flush=component.o_flush)
+        self._pipe = assembly.add_in_pipe(component.o_stream)
         self._periods = [assembly.add_clock_divisor(period, ref_period=assembly.sys_clk_period,
                             round_mode="nearest", name="baud")
                          for period in component.periods]

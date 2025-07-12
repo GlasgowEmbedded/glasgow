@@ -46,7 +46,6 @@ class ProbeRsRootTarget(wiring.Component):
 
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
-    o_flush:  Out(1)
 
     divisor:  Out(16)
     dut_rst:  Out(1)
@@ -78,8 +77,6 @@ class ProbeRsRootTarget(wiring.Component):
                             m.d.sync += self.dut_rst.eq(0)
                         with m.Case():
                             m.d.comb += self.i_stream.ready.eq(0)
-                with m.Else():
-                    m.d.comb += self.o_flush.eq(1)
 
             with m.State("Identify"):
                 ident  = C(int.from_bytes(self.IDENTIFIER, "little"), 12 * 8)
@@ -130,7 +127,6 @@ class ProbeRsRootTarget(wiring.Component):
 class ProbeRsComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
-    o_flush:  Out(1)
 
     def __init__(self, ports, *, ref_clock):
         self._ports     = ports
@@ -185,8 +181,6 @@ class ProbeRsComponent(wiring.Component):
                     with m.Elif(target.o_stream.valid):
                         m.d.sync += o_target.eq(index)
                         m.next = "Header"
-                with m.Else():
-                    m.d.comb += self.o_flush.eq(1)
 
             with m.State("Header"):
                 m.d.comb += cobs_encoder.i.p.data.eq(o_target)
@@ -195,7 +189,8 @@ class ProbeRsComponent(wiring.Component):
                     m.next = "Connect"
 
             with m.State("Connect"):
-                with m.If(~targets[o_target].o_stream.valid & targets[o_target].o_flush):
+                with m.If(~targets[o_target].o_stream.valid):
+                    raise Exception("NEED A TIMER HERE")
                     m.next = "End" # `o_flush` could go down; make sure `encoder.i.valid` doesn't
                 with m.Else():
                     m.d.comb += cobs_encoder.i.p.data.eq(targets[o_target].o_stream.payload)
@@ -238,8 +233,8 @@ class ProbeRsApplet(GlasgowAppletV2):
             ports = self.assembly.add_port_group(swclk=args.swclk, swdio=args.swdio, srst=args.srst)
             component = self.assembly.add_submodule(ProbeRsComponent(ports,
                 ref_clock=int(1 / self.assembly.sys_clk_period)))
-            self.__pipe = self.assembly.add_inout_pipe(component.o_stream, component.i_stream,
-                in_flush=component.o_flush, in_fifo_depth=0)
+            self.__pipe = self.assembly.add_inout_pipe(
+                component.o_stream, component.i_stream, in_fifo_depth=0)
 
     @classmethod
     def add_run_arguments(cls, parser):

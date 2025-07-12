@@ -121,7 +121,7 @@ class SimulationAssembly(AbstractAssembly):
     def connect_pins(self, *pin_names: str):
         self._jumpers.append(pin_names)
 
-    def add_in_pipe(self, in_stream, *, in_flush=C(1),
+    def add_in_pipe(self, in_stream, *, in_flush=C(0),
                     fifo_depth=None, buffer_size=None) -> AbstractInPipe:
         return self.add_inout_pipe(
             in_stream=in_stream, out_stream=None, in_flush=in_flush,
@@ -133,7 +133,7 @@ class SimulationAssembly(AbstractAssembly):
             in_stream=None, out_stream=out_stream,
             out_fifo_depth=fifo_depth, out_buffer_size=buffer_size)
 
-    def add_inout_pipe(self, in_stream, out_stream, *, in_flush=C(1),
+    def add_inout_pipe(self, in_stream, out_stream, *, in_flush=C(0),
                        in_fifo_depth=None, in_buffer_size=None,
                        out_fifo_depth=None, out_buffer_size=None) -> AbstractInOutPipe:
         if in_stream is None:

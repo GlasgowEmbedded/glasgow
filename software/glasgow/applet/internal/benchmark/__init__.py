@@ -23,7 +23,7 @@ class Mode(enum.Enum):
 class BenchmarkComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
-    o_flush:  Out(1)
+
     mode:     In(Mode)
     error:    Out(1)
     count:    Out(32)
@@ -81,10 +81,6 @@ class BenchmarkComponent(wiring.Component):
                 ]
                 with m.If(self.o_stream.ready & self.o_stream.valid):
                     m.d.sync += self.count.eq(self.count + 1)
-                with m.Else():
-                    m.d.comb += [
-                        self.o_flush.eq(1),
-                    ]
 
         return m
 
@@ -118,8 +114,7 @@ class BenchmarkApplet(GlasgowAppletV2):
     def build(self, args):
         with self.assembly.add_applet(self):
             component = self.assembly.add_submodule(BenchmarkComponent())
-            self._pipe = self.assembly.add_inout_pipe(
-                component.o_stream, component.i_stream, in_flush=component.o_flush)
+            self._pipe = self.assembly.add_inout_pipe(component.o_stream, component.i_stream)
             self._mode = self.assembly.add_rw_register(component.mode)
             self._error = self.assembly.add_ro_register(component.error)
             self._count = self.assembly.add_ro_register(component.count)

@@ -99,7 +99,7 @@ class JTAGXVCProbe(wiring.Component):
 class JTAGXVCComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
-    o_flush:  Out(1)
+
     divisor:  In(16)
 
     def __init__(self, ports):
@@ -119,7 +119,6 @@ class JTAGXVCComponent(wiring.Component):
         count = Signal(16)
         with m.FSM():
             with m.State("Receive Count 8:16"):
-                m.d.comb += self.o_flush.eq(1)
                 m.d.comb += self.i_stream.ready.eq(1)
                 with m.If(self.i_stream.valid):
                     m.d.sync += count[8:16].eq(self.i_stream.payload)
@@ -168,8 +167,7 @@ class JTAGXVCInterface:
 
         ports = assembly.add_port_group(tck=tck, tms=tms, tdi=tdi, tdo=tdo)
         component = assembly.add_submodule(JTAGXVCComponent(ports))
-        self._pipe = assembly.add_inout_pipe(
-            component.o_stream, component.i_stream, in_flush=component.o_flush)
+        self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
         self._divisor = assembly.add_rw_register(component.divisor)
         self._sys_clk_period = assembly.sys_clk_period
 
