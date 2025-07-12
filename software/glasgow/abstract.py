@@ -326,7 +326,7 @@ class AbstractAssembly(metaclass=ABCMeta):
                             name=name)
 
     @abstractmethod
-    def add_in_pipe(self, in_stream, *, in_flush=C(1),
+    def add_in_pipe(self, in_stream, *, in_flush=C(0),
                     fifo_depth=None, buffer_size=None) -> AbstractInPipe:
         pass
 
@@ -336,7 +336,7 @@ class AbstractAssembly(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def add_inout_pipe(self, in_stream, out_stream, *, in_flush=C(1),
+    def add_inout_pipe(self, in_stream, out_stream, *, in_flush=C(0),
                        in_fifo_depth=None, in_buffer_size=None,
                        out_fifo_depth=None, out_buffer_size=None) -> AbstractInOutPipe:
         pass

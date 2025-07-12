@@ -552,7 +552,7 @@ class HardwareAssembly(AbstractAssembly):
         self._registers.append((register, signal, self._domain))
         return register
 
-    def add_in_pipe(self, in_stream, *, in_flush=C(1),
+    def add_in_pipe(self, in_stream, *, in_flush=C(0),
                     fifo_depth=None, buffer_size=None) -> AbstractInPipe:
         assert self._artifact is None, "cannot add a pipe to a sealed assembly"
         in_pipe = HardwareInPipe(self._logger, self, buffer_size=buffer_size)
@@ -568,7 +568,7 @@ class HardwareAssembly(AbstractAssembly):
         self._pipes.append(out_pipe)
         return out_pipe
 
-    def add_inout_pipe(self, in_stream, out_stream, *, in_flush=C(1),
+    def add_inout_pipe(self, in_stream, out_stream, *, in_flush=C(0),
                        in_fifo_depth=None, in_buffer_size=None,
                        out_fifo_depth=None, out_buffer_size=None) -> AbstractInOutPipe:
         assert self._artifact is None, "cannot add a pipe to a sealed assembly"

@@ -65,7 +65,6 @@ class SWDResponse(data.Struct):
 class SWDProbeComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
-    o_flush:  Out(1)
 
     divisor: In(16)
     timeout: In(16, init=~0)
@@ -147,8 +146,6 @@ class SWDProbeComponent(wiring.Component):
                         m.d.comb += ctrl.o_stream.ready.eq(1)
                         m.next = "Response"
 
-        m.d.comb += self.o_flush.eq(~self.i_stream.valid)
-
         return m
 
 
@@ -159,8 +156,7 @@ class SWDProbeInterface:
 
         ports = assembly.add_port_group(swclk=swclk, swdio=swdio)
         component = assembly.add_submodule(SWDProbeComponent(ports))
-        self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream,
-            in_flush=component.o_flush)
+        self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
         self._clock = assembly.add_clock_divisor(component.divisor,
             ref_period=assembly.sys_clk_period, name="swclk")
         self._timeout = assembly.add_rw_register(component.timeout)

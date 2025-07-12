@@ -160,7 +160,8 @@ class UARTInterface:
         ports = assembly.add_port_group(rx=rx, tx=tx)
         assembly.use_pulls({rx: "high"})
         component = assembly.add_submodule(UARTComponent(ports, parity=parity))
-        self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
+        self._pipe = assembly.add_inout_pipe(
+            component.o_stream, component.i_stream, in_flush=C(1)) # force flush to reduce latency
         self._use_auto   = assembly.add_rw_register(component.use_auto)
         self._manual_cyc = assembly.add_rw_register(component.manual_cyc)
         self._auto_cyc   = assembly.add_ro_register(component.auto_cyc)
