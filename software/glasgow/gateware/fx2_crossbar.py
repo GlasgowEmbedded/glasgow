@@ -179,6 +179,20 @@ class _INFIFO(wiring.Component):
 
         connect(m, flipped(self.r), flipped(self.w))
 
+        # Flush the incomplete packet after 1 microframe (125 µs) of inactivity. The host will poll
+        # us at least once per microframe in most conditions; therefore there is little advantage
+        # in holding onto the incomplete packet. Having fewer non-maximum-length packets sent means
+        # fewer URBs serviced (good), but having data remain in the hardware buffers for longer
+        # than necessary means confused applet authors (very bad).
+        timer = Signal(16, init=int(125e-6 * platform.default_clk_frequency))
+        timeout = Signal()
+        with m.If(self.w.valid):
+            m.d.sync += timer.eq(timer.init)
+        with m.Elif(timer != 0):
+            m.d.sync += timer.eq(timer - 1)
+        with m.Else():
+            m.d.comb += timeout.eq(1)
+
         pending = Signal()
         with m.If(self.flushed):
             m.d.sync += self.queued.eq(0)
@@ -193,7 +207,7 @@ class _INFIFO(wiring.Component):
 
         m.d.comb += [
             self.complete.eq(self.queued >= _PACKET_SIZE),
-            self.pending.eq(pending & self.flush),
+            self.pending.eq(pending & (timeout | self.flush)),
         ]
 
         return m
