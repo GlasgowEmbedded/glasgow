@@ -10,10 +10,11 @@ from glasgow.support.logging import dump_hex
 from glasgow.support.endpoint import ServerEndpoint
 from glasgow.gateware.stream import StreamBuffer
 from glasgow.gateware.iostream import IOStreamer
+from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
-__all__ = ["JTAGXVCComponent"]
+__all__ = ["JTAGXVCComponent", "JTAGXVCInterface"]
 
 
 class _ShiftIn(enum.Enum, shape=unsigned(2)):
@@ -162,7 +163,8 @@ class JTAGXVCComponent(wiring.Component):
 
 
 class JTAGXVCInterface:
-    def __init__(self, logger, assembly, *, tck, tms, tdi, tdo):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *, tck: GlasgowPin,
+                 tms: GlasgowPin, tdi: GlasgowPin, tdo: GlasgowPin):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
@@ -170,20 +172,22 @@ class JTAGXVCInterface:
         component = assembly.add_submodule(JTAGXVCComponent(ports))
         self._pipe = assembly.add_inout_pipe(
             component.o_stream, component.i_stream, in_flush=component.o_flush)
-        self._divisor = assembly.add_rw_register(component.divisor)
-        self._sys_clk_period = assembly.sys_clk_period
+        self._clock = assembly.add_clock_divisor(component.divisor,
+            # Tolerance is 10% because the XVC protocol transfers frequencies as an integral period
+            # in nanoseconds. For frequencies >1 MHz this often results in a significant error.
+            ref_period=assembly.sys_clk_period * 2, tolerance=0.1, name="tck")
 
-    async def get_tck_period(self) -> int:
-        """Get TCK period, in nanoseconds."""
-        divisor = await self._divisor
-        return round(1e9 * 2 * (divisor + 1) * self._sys_clk_period)
-
-    async def set_tck_period(self, period: int):
-        """Set TCK period, in nanoseconds."""
-        await self._divisor.set(
-            max(round(1e-9 * period / (2 * self._sys_clk_period) - 1), 0))
+    @property
+    def clock(self) -> ClockDivisor:
+        """TCK clock divisor."""
+        return self._clock
 
     async def shift(self, count: int, tms: bytes, tdi: bytes) -> bytes:
+        """Shift :py:`count` cycles.
+
+        State of TMS and TDI is taken from :py:`tms` and :py:`tdi`, where the LSB of the 0th byte
+        is transmitted first; state of TDO is serialized in the same way and returned.
+        """
         assert len(tms) == len(tdi) == (count + 7) // 8 and count > 0
         request = bytearray(2 + len(tms) + len(tdi))
         request[0:2:] = struct.pack(">H", count)
@@ -232,7 +236,7 @@ class JTAGXVCApplet(GlasgowAppletV2):
 
     async def run(self, args):
         if args.frequency is not None:
-            await self.xvc_iface.set_tck_period(round(1e6 / args.frequency))
+            await self.xvc_iface.clock.set_frequency(args.frequency)
 
         endpoint = await ServerEndpoint("socket", self.logger, args.endpoint)
         while True:
@@ -245,10 +249,10 @@ class JTAGXVCApplet(GlasgowAppletV2):
 
                     case b"settck":
                         tck_period, = struct.unpack("<L", await endpoint.recv(4))
-                        self.logger.debug(f"  tck-i={tck_period}")
+                        self.logger.debug(f"  tck-i={tck_period}") # in nanoseconds
                         if args.frequency is None:
-                            await self.xvc_iface.set_tck_period(tck_period)
-                        tck_period = round(await self.xvc_iface.get_tck_period())
+                            await self.xvc_iface.clock.set_frequency(1e9 / tck_period)
+                        tck_period = round(1e9 / await self.xvc_iface.clock.get_frequency())
                         self.logger.debug(f"  tck-o={tck_period}")
                         await endpoint.send(struct.pack("<L", tck_period))
 
@@ -266,6 +270,7 @@ class JTAGXVCApplet(GlasgowAppletV2):
 
                     case command:
                         raise GlasgowAppletError(f"unrecognized command {command!r}")
+
             except EOFError:
                 pass
 
