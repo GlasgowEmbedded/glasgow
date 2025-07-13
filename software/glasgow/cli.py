@@ -469,6 +469,10 @@ def _applet(assembly, args):
                 applet.build(args)
                 return applet, None
             case GlasgowApplet():
+                logger.warning(
+                    "applet %r uses deprecated V1 API and should be migrated to V2 API; "
+                    "see https://github.com/GlasgowEmbedded/glasgow/issues/826 for details",
+                    args.applet)
                 target = DeprecatedTarget(assembly)
                 with assembly.add_applet(applet):
                     applet.build(target, args)
