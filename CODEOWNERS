@@ -17,3 +17,5 @@
 /software/glasgow/applet/servo/                         @tpwrules
 
 /software/glasgow/applet/interface/spi_flashrom/        @neuschaefer
+
+/software/glasgow/applet/sensor/sen5x/                  @miek
