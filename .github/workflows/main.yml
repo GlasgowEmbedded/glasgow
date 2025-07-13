@@ -92,7 +92,7 @@ jobs:
         run: |
           pdm run glasgow --help
           pdm run glasgow build --rev C3 uart
-          pdm run test
+          pdm run test --verbose
 
   build-firmware:
     runs-on: ubuntu-latest
