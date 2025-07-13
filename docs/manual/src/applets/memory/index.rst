@@ -8,4 +8,5 @@ Memory manipulation
 .. toctree::
     :maxdepth: 3
 
+    24x
     25x

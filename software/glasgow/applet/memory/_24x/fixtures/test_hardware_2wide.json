@@ -1,0 +1,16 @@
+{"self": "m24x_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [87, {"__class__": "bytes", "hex": "00056d6172"}], "kwargs": {}, "result": null}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [87], "kwargs": {}, "result": false}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [87], "kwargs": {}, "result": true}
+{"self": "m24x_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [87, {"__class__": "bytes", "hex": "00087920686164206120"}], "kwargs": {}, "result": null}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [87], "kwargs": {}, "result": false}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [87], "kwargs": {}, "result": true}
+{"self": "m24x_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [87, {"__class__": "bytes", "hex": "00106c6974746c65206c"}], "kwargs": {}, "result": null}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [87], "kwargs": {}, "result": false}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [87], "kwargs": {}, "result": true}
+{"self": "m24x_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [87, {"__class__": "bytes", "hex": "0018616d62"}], "kwargs": {}, "result": null}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [87], "kwargs": {}, "result": false}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [87], "kwargs": {}, "result": true}
+{"self": "m24x_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "m24x_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [87, {"__class__": "bytes", "hex": "0005"}], "kwargs": {}, "result": null}
+{"self": "m24x_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [87, 22], "kwargs": {}, "result": {"__class__": "bytes", "hex": "6d617279206861642061206c6974746c65206c616d62"}}
+{"self": "m24x_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
