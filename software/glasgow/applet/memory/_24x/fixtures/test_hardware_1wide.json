@@ -1,0 +1,25 @@
+{"self": "m24x_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [80, {"__class__": "bytes", "hex": "f76d"}], "kwargs": {}, "result": null}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [80], "kwargs": {}, "result": false}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [80], "kwargs": {}, "result": true}
+{"self": "m24x_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [80, {"__class__": "bytes", "hex": "f861727920"}], "kwargs": {}, "result": null}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [80], "kwargs": {}, "result": false}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [80], "kwargs": {}, "result": true}
+{"self": "m24x_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [80, {"__class__": "bytes", "hex": "fc68616420"}], "kwargs": {}, "result": null}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [80], "kwargs": {}, "result": false}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [80], "kwargs": {}, "result": true}
+{"self": "m24x_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [81, {"__class__": "bytes", "hex": "0061206c69"}], "kwargs": {}, "result": null}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [81], "kwargs": {}, "result": false}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [81], "kwargs": {}, "result": true}
+{"self": "m24x_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [81, {"__class__": "bytes", "hex": "0474746c65"}], "kwargs": {}, "result": null}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [81], "kwargs": {}, "result": false}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [81], "kwargs": {}, "result": true}
+{"self": "m24x_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [81, {"__class__": "bytes", "hex": "08206c616d"}], "kwargs": {}, "result": null}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [81], "kwargs": {}, "result": false}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [81], "kwargs": {}, "result": true}
+{"self": "m24x_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [81, {"__class__": "bytes", "hex": "0c62"}], "kwargs": {}, "result": null}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [81], "kwargs": {}, "result": false}
+{"self": "m24x_iface._i2c_iface", "call": "ping", "kind": "asyncmethod", "args": [81], "kwargs": {}, "result": true}
+{"self": "m24x_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "m24x_iface._i2c_iface", "call": "write", "kind": "asyncmethod", "args": [80, {"__class__": "bytes", "hex": "f7"}], "kwargs": {}, "result": null}
+{"self": "m24x_iface._i2c_iface", "call": "read", "kind": "asyncmethod", "args": [80, 22], "kwargs": {}, "result": {"__class__": "bytes", "hex": "6d617279206861642061206c6974746c65206c616d62"}}
+{"self": "m24x_iface._i2c_iface", "call": "transaction", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
