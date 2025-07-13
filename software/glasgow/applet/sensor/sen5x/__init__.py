@@ -97,22 +97,22 @@ class SEN5xI2CInterface:
         await self._write(SEN5xCommand.SOFT_RESET)
 
     async def product_name(self) -> str:
-        name, = await self._read(SEN5xCommand.PRODUCT_NAME, ">32s")
+        name, = await self._read(SEN5xCommand.PRODUCT_NAME, ">32s", delay_seconds=20e-3)
         self._log("product name=%s", name)
         return name.rstrip(b'\x00').decode('ascii')
 
     async def serial_number(self) -> str:
-        serial, = await self._read(SEN5xCommand.SERIAL_NUM, ">32s")
+        serial, = await self._read(SEN5xCommand.SERIAL_NUM, ">32s", delay_seconds=20e-3)
         self._log("serial number=%s", serial)
         return serial.rstrip(b'\x00').decode('ascii')
 
     async def firmware_version(self) -> int:
-        version, reserved = await self._read(SEN5xCommand.FIRMWARE_VER, ">BB")
+        version, reserved = await self._read(SEN5xCommand.FIRMWARE_VER, ">BB", delay_seconds=20e-3)
         self._log("firmware version=%d reserved=%d", version, reserved)
         return version
 
     async def is_data_ready(self) -> bool:
-        ready, = await self._read(SEN5xCommand.DATA_READY, ">H")
+        ready, = await self._read(SEN5xCommand.DATA_READY, ">H", delay_seconds=20e-3)
         self._log("data ready=%d", ready)
         return bool(ready)
 
@@ -125,7 +125,7 @@ class SEN5xI2CInterface:
         await self._write(SEN5xCommand.STOP_MEASURE)
 
     async def read_measurement(self):
-        measurements = await self._read(SEN5xCommand.READ_MEASURE, ">HHHHhhhh", delay_seconds=10e-3)
+        measurements = await self._read(SEN5xCommand.READ_MEASURE, ">HHHHhhhh", delay_seconds=20e-3)
         scale_factors = [10, 10, 10, 10, 100, 200, 10, 10]
         measurements = [a / float(b) for a, b in zip(measurements, scale_factors)]
         (pm1_0, pm2_5, pm4_0, pm10, rh_pct, temp_degC, voc_index, nox_index) = measurements
