@@ -223,8 +223,8 @@ class ProbeRsApplet(GlasgowAppletV2):
     Expose SWD via a socket that can be used with `probe-rs <https://probe.rs>`_. JTAG debugging
     is not supported (yet).
 
-    The current protocol version is ``{ProbeRsRootTarget.IDENTIFIER.decode("ascii")}``, which is
-    available in probe-rs 0.29.1 or later.
+    This applet is experimental. Currently, to use it you must build probe-rs from git. The current
+    protocol version is ``{ProbeRsRootTarget.IDENTIFIER.decode("ascii")}``.
     """
     required_revision = "C0"
 
