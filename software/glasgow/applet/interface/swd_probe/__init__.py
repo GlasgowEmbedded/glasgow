@@ -21,7 +21,7 @@ from glasgow.arch.arm.swj import *
 from glasgow.arch.arm.dap import *
 from glasgow.database.jedec import jedec_mfg_name_from_bank_num
 from glasgow.gateware import swd
-from glasgow.abstract import AbstractAssembly
+from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
@@ -150,7 +150,8 @@ class SWDProbeComponent(wiring.Component):
 
 
 class SWDProbeInterface:
-    def __init__(self, logger, assembly: AbstractAssembly, *, swclk, swdio):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
+                 swclk: GlasgowPin, swdio: GlasgowPin):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
@@ -167,7 +168,8 @@ class SWDProbeInterface:
         self._logger.log(self._level, "SWD: " + message, *args)
 
     @property
-    def clock(self):
+    def clock(self) -> ClockDivisor:
+        """SWCLK clock divisor."""
         return self._clock
 
     async def _send_command(self, **kwargs):
@@ -210,7 +212,8 @@ class SWDProbeInterface:
     async def jtag_to_swd_v2(self):
         """Perform a DPv2 JTAG-to-SWD switch sequence.
 
-        This sequence consists of a JTAG-to-dormant, Selection Alert, and dormant-to-SWD sequences.
+        This sequence consists of a JTAG-to-dormant, Selection Alert, and dormant-to-SWD
+        sub-sequences.
         """
         self._log("jtag-to-swd v2")
         await self._send_sequence(SWJ_jtag_to_dormant_switch_seq)
@@ -257,12 +260,24 @@ class SWDProbeInterface:
             await self._update_select(DPBANKSEL=addr >> 4)
 
     async def dp_read(self, reg: int) -> int:
-        """Read DP register, switching the DP bank if necessary."""
+        """Read from DP register :py:`reg`, switching the DP bank if necessary.
+
+        Raises
+        ------
+        SWDProbeException
+            On communication error.
+        """
         await self._select_dp_addr(reg)
         return await self._raw_read(ap_ndp=0, addr=reg & 0xf)
 
     async def dp_write(self, reg: int, data: int):
-        """Write DP register, switching the DP bank if necessary."""
+        """Write :py:`data` to DP register :py:`reg`, switching the DP bank if necessary.
+
+        Raises
+        ------
+        SWDProbeException
+            On communication error.
+        """
         await self._select_dp_addr(reg)
         return await self._raw_write(ap_ndp=0, addr=reg & 0xf, data=data)
 
@@ -270,13 +285,29 @@ class SWDProbeInterface:
         await self._update_select(APSEL=ap, APBANKSEL=reg >> 4)
 
     async def ap_read(self, ap: int, reg: int) -> int:
-        """Read AP register, switching the AP and AP bank if necessary."""
+        """Read from AP :py:`ap` register :py:`reg`, switching the AP and AP bank if necessary.
+
+        Raises
+        ------
+        SWDProbeException
+            On communication error.
+        """
         await self._select_ap_addr(ap, reg)
         await self._raw_read(ap_ndp=1, addr=reg & 0xf)
         return await self.dp_read(DP_RDBUFF_addr)
 
     async def ap_read_block(self, ap: int, reg: int, count: int) -> list[int]:
-        """Read AP register ``count`` times, switching the AP and AP bank if necessary."""
+        """Read from AP :py:`ap` register :py:`reg` :py:`count` times, switching the AP and AP bank
+        if necessary.
+
+        The AP reads are pipelined, making this method significantly faster than calling
+        :meth:`ap_read` :py:`count` times.
+
+        Raises
+        ------
+        SWDProbeException
+            On communication error.
+        """
         assert count >= 1
         await self._select_ap_addr(ap, reg)
         await self._raw_read(ap_ndp=1, addr=reg & 0xf)
@@ -287,11 +318,34 @@ class SWDProbeInterface:
         return results
 
     async def ap_write(self, ap: int, reg: int, data: int):
-        """Write AP register, switching the AP and AP bank if necessary."""
+        """Write :py:`data` to AP :py:`ap` register :py:`reg`, switching the AP and AP bank if
+        necessary.
+
+        Raises
+        ------
+        SWDProbeException
+            On communication error.
+        """
         await self._select_ap_addr(ap, reg)
         return await self._raw_write(ap_ndp=1, addr=reg & 0xf, data=data)
 
     async def initialize(self) -> DP_DPIDR:
+        """Initialize the SW-DP or SWJ-DP.
+
+        The initialization process is:
+
+        1. Perform a DPv2 JTAG-to-SWD switch sequence, as in :meth:`jtag_to_swd_v2`.
+        2. Perform a DPv1 JTAG-to-SWD switch sequence, as in :meth:`jtag_to_swd_v1`.
+        3. Perform a line reset and read ``DPIDR`` to start SWD communication.
+        4. Write ``DP_ABORT`` to clear all errors.
+        5. Write ``CTRL_STAT`` to request debug power-up.
+        6. Read ``CTRL_STAT`` to ensure acknowledge of debug power-up.
+
+        Raises
+        ------
+        SWDProbeException
+            On communication error, or if debug power-up request isn't acknowledged.
+        """
         await self.jtag_to_swd_v2()
         await self.jtag_to_swd_v1()
         await self.line_reset()
@@ -306,11 +360,21 @@ class SWDProbeInterface:
         return dpidr
 
     async def iter_aps(self) -> AsyncIterator[tuple[int, AP_IDR]]:
+        """Iterate available APs.
+
+        Yields 2-tuples :py:`(ap, ap_idr)` where :py:`ap` is the AP index and :py:`ap_idr` is
+        the value of the ``IDR`` register.
+
+        Raises
+        ------
+        SWDProbeException
+            On communication error.
+        """
         for ap in range(0, 0x100):
-            apidr = AP_IDR.from_int(await self.ap_read(ap, AP_IDR_addr))
-            if apidr.to_int() == 0:
+            ap_idr = AP_IDR.from_int(await self.ap_read(ap, AP_IDR_addr))
+            if ap_idr.to_int() == 0:
                 break
-            yield ap, apidr
+            yield ap, ap_idr
 
 
 class SWDProbeApplet(GlasgowAppletV2):

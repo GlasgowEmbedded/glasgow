@@ -13,6 +13,10 @@ CLI reference
 API reference
 -------------
 
-.. todo::
+.. module:: glasgow.applet.interface.swd_probe
 
-    Add API documentation for ``swd-probe``.
+.. autoexception:: SWDProbeException
+
+    .. autoenum:: glasgow.applet.interface.swd_probe::SWDProbeException.Kind
+
+.. autoclass:: SWDProbeInterface
