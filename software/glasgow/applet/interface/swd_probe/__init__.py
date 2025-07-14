@@ -202,10 +202,20 @@ class SWDProbeInterface:
         await self._send_sequence(SWJ_line_reset_seq)
         self._select = None
 
-    async def jtag_to_swd(self):
-        """Perform a JTAG-to-SWD switch sequence."""
-        self._log("jtag-to-swd")
+    async def jtag_to_swd_v1(self):
+        """Perform a DPv1 JTAG-to-SWD switch sequence."""
+        self._log("jtag-to-swd v1")
         await self._send_sequence(SWJ_jtag_to_swd_switch_seq)
+
+    async def jtag_to_swd_v2(self):
+        """Perform a DPv2 JTAG-to-SWD switch sequence.
+
+        This sequence consists of a JTAG-to-dormant, Selection Alert, and dormant-to-SWD sequences.
+        """
+        self._log("jtag-to-swd v2")
+        await self._send_sequence(SWJ_jtag_to_dormant_switch_seq)
+        await self._send_sequence(SWJ_selection_alert_seq)
+        await self._send_sequence(SWJ_dormant_to_swd_switch_seq)
 
     async def _raw_read(self, *, ap_ndp: bool, addr: int) -> int:
         assert addr in range(0, 0x10, 4)
@@ -282,7 +292,8 @@ class SWDProbeInterface:
         return await self._raw_write(ap_ndp=1, addr=reg & 0xf, data=data)
 
     async def initialize(self) -> DP_DPIDR:
-        await self.jtag_to_swd()
+        await self.jtag_to_swd_v2()
+        await self.jtag_to_swd_v1()
         await self.line_reset()
         dpidr = DP_DPIDR.from_int(await self.dp_read(reg=DP_DPIDR_addr))
         await self.dp_write(reg=DP_ABORT_addr,
