@@ -54,7 +54,7 @@ What can I do with Glasgow?
 
 * analyze :ref:`SPI <applet.interface.spi_analyzer>` and :ref:`QSPI <applet.interface.qspi_analyzer>` transactions at up to ~100 MHz
 
-* read and write 24-series I²C EEPROMs
+* read and write :ref:`24-series I²C EEPROMs <applet.memory._24x>`
 
 * read and write :ref:`25-series SPI Flash memories <applet.memory._25x>`
 
