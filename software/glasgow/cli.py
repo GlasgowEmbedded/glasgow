@@ -596,6 +596,8 @@ async def main():
     args = get_argparser().parse_args()
     configure_logger(args, term_handler)
 
+    logger.debug(version_info()) # print version info if verbose
+
     device = None
     try:
         if args.action not in ("build", "test", "tool", "factory", "list"):
