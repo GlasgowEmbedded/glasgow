@@ -1,3 +1,4 @@
+from typing import Optional
 import re
 import time
 import struct
@@ -10,7 +11,8 @@ import usb1
 from fx2 import REQ_RAM, REG_CPUCS
 from fx2.format import input_data
 
-from ..support.logging import *
+from ..support.logging import dump_hex
+from ..support.usb import libusb1 as usb
 from . import quirks
 
 
@@ -47,31 +49,6 @@ IO_BUF_A         = 1<<0
 IO_BUF_B         = 1<<1
 
 
-class _PollerThread(threading.Thread):
-    def __init__(self, context):
-        super().__init__()
-        self.done    = False
-        self.context = context
-
-    def run(self):
-        # The poller thread spends most of its life in blocking `handleEvents()` calls and this can
-        # cause issues during interpreter shutdown. If it were a daemon thread (it isn't) then it
-        # would be instantly killed on interpreter shutdown and any locks it took could block some
-        # libusb1 objects being destroyed as their Python counterparts are garbage collected. Since
-        # it is not a daemon thread, `threading._shutdown()` (that is called by e.g. `exit()`) will
-        # join it, and so it must terminate during threading shutdown. Note that `atexit.register`
-        # is not enough as those callbacks are called after threading shutdown, and past the point
-        # where a deadlock would happen.
-        threading._register_atexit(self.stop)
-        while not self.done:
-            self.context.handleEvents()
-
-    def stop(self):
-        self.done = True
-        self.context.interruptEventHandler()
-        self.join()
-
-
 class GlasgowDeviceError(Exception):
     """An exception raised on a communication error."""
 
@@ -87,87 +64,77 @@ class GlasgowDevice:
             return input_data(file, fmt="ihex")
 
     @classmethod
-    def _enumerate_devices(cls, usb_context):
-        devices = []
-        devices_by_serial = {}
+    async def _enumerate_devices(cls, context: usb.Context):
+        devices: list[usb.Device] = []
+        devices_by_serial: dict[str, usb.Device] = {}
 
-        def hotplug_callback(usb_context, device, event):
-            if event == usb1.HOTPLUG_EVENT_DEVICE_ARRIVED:
-                if device.getVendorID() == VID_QIHW and device.getProductID() == PID_GLASGOW:
-                    devices.append(device)
-
-        if usb_context.hasCapability(usb1.CAP_HAS_HOTPLUG):
-            usb_context.hotplugRegisterCallback(hotplug_callback,
-                flags=usb1.HOTPLUG_ENUMERATE)
-        else:
-            devices.extend(list(usb_context.getDeviceIterator(skip_on_error=True)))
+        def on_connected(device):
+            if device.vendor_id == VID_QIHW and device.product_id == PID_GLASGOW:
+                devices.append(device)
+        context.add_connect_callback(on_connected)
+        devices.extend(await context.get_devices())
 
         while any(devices):
             device = devices.pop()
 
-            if device.getVendorID() == VID_QIHW and device.getProductID() == PID_GLASGOW:
-                revision  = GlasgowDeviceConfig.decode_revision(device.getbcdDevice() & 0xFF)
-                api_level = device.getbcdDevice() >> 8
+            if device.vendor_id == VID_QIHW and device.product_id == PID_GLASGOW:
+                revision  = GlasgowDeviceConfig.decode_revision(device.version & 0xFF)
+                api_level = device.version >> 8
             else:
                 continue
 
             try:
-                handle = device.open()
-            except usb1.USBErrorAccess:
-                logger.error("missing permissions to open device %03d/%03d",
-                             device.getBusNumber(), device.getDeviceAddress())
+                await device.open()
+            except usb.ErrorAccess:
+                logger.error("missing permissions to open device %s", device.location)
                 continue
             if api_level == 0:
                 logger.debug("found rev%s device without firmware", revision)
             elif api_level != CUR_API_LEVEL:
-                for config in handle.getDevice().iterConfigurations():
-                    if config.getConfigurationValue() == handle.getConfiguration():
-                        break
                 try:
-                    # `handle` is getting closed either way, so explicit release isn't necessary.
-                    for intf_num in range(config.getNumInterfaces()):
-                        handle.claimInterface(intf_num)
+                    # Make sure nobody else is using the device, otherwise reloading the firmware
+                    # will crash an existing session.
+                    for interface in device.configuration.interfaces:
+                        await device.claim_interface(interface.number)
                     logger.info("found rev%s device with API level %d (supported API level is %d)",
-                                revision, api_level, CUR_API_LEVEL)
+                        revision, api_level, CUR_API_LEVEL)
                     # Updating the firmware is not strictly required. However, re-enumeration tends
                     # to expose all kinds of issues related to hotplug (especially on Windows,
                     # where libusb does not listen to hotplug events) and the more you do it,
                     # the more likely it is to eventually cause misery.
-                    serial = handle.getASCIIStringDescriptor(
-                        device.getSerialNumberDescriptor())
-                    logger.warning(f"please run `glasgow flash` to update firmware of device "
-                                   f"{serial}")
-                except usb1.USBErrorBusy:
+                    logger.warning("please run `glasgow flash` to update firmware of device %s",
+                        device.serial_number)
+                except usb.ErrorBusy:
                     logger.debug("found busy rev%s device with unsupported API level %d",
-                                 revision, api_level)
-                    handle.close()
+                        revision, api_level)
+                    await device.close()
                     continue
             else: # api_level == CUR_API_LEVEL
-                serial = handle.getASCIIStringDescriptor(
-                    device.getSerialNumberDescriptor())
-                if serial not in devices_by_serial:
-                    logger.debug("found rev%s device with serial %s", revision, serial)
-                    devices_by_serial[serial] = (revision, device)
-                handle.close()
+                if device.serial_number not in devices_by_serial:
+                    logger.debug("found rev%s device with serial %s",
+                        revision, device.serial_number)
+                    devices_by_serial[device.serial_number] = device
+                await device.close()
                 continue
 
             # If the device has no firmware or the firmware is too old (or, potentially, too new),
             # load the firmware that we know will work.
             logger.debug("loading firmware from %r to rev%s device",
-                         str(cls.firmware_file()), revision)
-            handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [1])
+                str(cls.firmware_file()), revision)
+            await device.control_transfer_out(
+                usb.RequestType.Vendor, usb.Recipient.Device, REQ_RAM, REG_CPUCS, 0, bytes([1]))
             for address, data in cls.firmware_data():
-                while len(data) > 0:
-                    handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM,
-                                        address, 0, data[:4096])
-                    data = data[4096:]
-                    address += 4096
-            handle.controlWrite(usb1.REQUEST_TYPE_VENDOR, REQ_RAM, REG_CPUCS, 0, [0])
-            handle.close()
+                for offset in range(0, len(data), 4096):
+                    await device.control_transfer_out(
+                        usb.RequestType.Vendor, usb.Recipient.Device,
+                        REQ_RAM, address, 0, bytes(data[offset:offset + 4096]))
+            await device.control_transfer_out(
+                usb.RequestType.Vendor, usb.Recipient.Device, REQ_RAM, REG_CPUCS, 0, bytes([0]))
+            await device.close()
 
             RE_ENUMERATION_TIMEOUT = 10.0
 
-            if usb_context.hasCapability(usb1.CAP_HAS_HOTPLUG):
+            if context.has_hotplug_support:
                 # Hotplug is available; process hotplug events for a while looking for the device
                 # that re-enumerates after firmware upload. We expect two events (one detach and
                 # one attach event), but allow for a bit more than that. (It is not possible to
@@ -177,12 +144,12 @@ class GlasgowDevice:
                 devices_len = len(devices)
                 deadline = time.time() + RE_ENUMERATION_TIMEOUT
                 while deadline > time.time():
-                    usb_context.handleEventsTimeout(0.5)
+                    await asyncio.sleep(0.25)
                     if devices_len < len(devices):
                         break # Found it!
                 else:
-                    logger.warning("device %03d/%03d did not re-enumerate after firmware upload",
-                                   device.getBusNumber(), device.getDeviceAddress())
+                    logger.warning("device %s did not re-enumerate after firmware upload",
+                        device.location)
 
             else:
                 # No hotplug capability (most likely because we're running on Windows with an older
@@ -191,172 +158,111 @@ class GlasgowDevice:
                 # to allow for the variable OS and platform delays. Windows seems particularly slow
                 # with a 5-second timeout being insufficient.
                 logger.debug(f"waiting for re-enumeration (fixed delay)")
-                time.sleep(RE_ENUMERATION_TIMEOUT)
-
-                devices.extend(list(usb_context.getDeviceIterator(skip_on_error=True)))
+                await asyncio.sleep(RE_ENUMERATION_TIMEOUT)
+                devices.extend(await context.get_devices())
 
         return devices_by_serial
 
     @classmethod
-    def enumerate_serials(cls):
-        with usb1.USBContext() as usb_context:
-            devices = cls._enumerate_devices(usb_context)
-            return list(devices.keys())
+    async def enumerate(cls) -> list[str]:
+        devices = await cls._enumerate_devices(usb.Context())
+        return list(devices.keys())
 
-    def __init__(self, serial=None):
-        usb_context = usb1.USBContext()
-        devices = self._enumerate_devices(usb_context)
-
-        if len(devices) == 0:
+    @classmethod
+    async def find(cls, serial: Optional[str] = None) -> 'GlasgowDevice':
+        usb_context = usb.Context()
+        usb_devices = await cls._enumerate_devices(usb_context)
+        if len(usb_devices) == 0:
             raise GlasgowDeviceError("device not found")
         elif serial is None:
-            if len(devices) > 1:
-                raise GlasgowDeviceError("found {} devices (serial numbers {}), but a serial "
-                                         "number is not specified"
-                                         .format(len(devices), ", ".join(devices.keys())))
-            self.revision, usb_device = next(iter(devices.values()))
+            if len(usb_devices) > 1:
+                raise GlasgowDeviceError(
+                    f"found {len(usb_devices)} devices (with serial numbers "
+                    f"{', '.join(usb_devices.keys())}), but a serial number is not specified")
+            usb_device = next(iter(usb_devices.values()))
         else:
-            if serial not in devices:
-                raise GlasgowDeviceError("device with serial number {} not found"
-                                         .format(serial))
-            self.revision, usb_device = devices[serial]
+            if serial not in usb_devices:
+                raise GlasgowDeviceError(f"device with serial number {serial} not found")
+            usb_device = usb_devices[serial]
 
+        device = GlasgowDevice(usb_context, usb_device)
+        await device.open()
+        return device
+
+    def __init__(self, usb_context: usb.Context, usb_device: usb.Device):
         self.usb_context = usb_context
-        self.usb_poller = _PollerThread(self.usb_context)
-        self.usb_poller.start()
-        self.usb_handle : usb1.USBDeviceHandle = usb_device.open()
-        try:
-            self.usb_handle.setAutoDetachKernelDriver(True)
-        except usb1.USBErrorNotSupported:
-            pass
-        device_manufacturer = self.usb_handle.getASCIIStringDescriptor(
-            usb_device.getManufacturerDescriptor())
-        device_product = self.usb_handle.getASCIIStringDescriptor(
-            usb_device.getProductDescriptor())
-        device_serial = self.usb_handle.getASCIIStringDescriptor(
-            usb_device.getSerialNumberDescriptor())
-        self._serial = device_serial
-        self._modified_design = not device_product.startswith("Glasgow Interface Explorer")
-        if (device_manufacturer == "1BitSquared" and
-                device_serial in quirks.modified_design_1b2_mar2024):
-            self._modified_design = False # see quirks.py
-        if self._modified_design:
+        self.usb_device = usb_device
+        self.revision = GlasgowDeviceConfig.decode_revision(usb_device.version & 0xFF)
+
+    async def open(self):
+        await self.usb_device.open()
+        if self.modified_design:
             logger.info("device with serial number %s was manufactured from modified design files",
-                        self._serial)
+                        self.serial)
             logger.info("the Glasgow Interface Explorer project is not responsible for "
                         "operation of this device")
 
+    async def close(self):
+        await self.usb_device.close()
+
     @property
     def serial(self):
-        return self._serial
+        return self.usb_device.serial_number
 
     @property
     def modified_design(self):
-        return self._modified_design
+        is_modified = not self.usb_device.product_name.startswith("Glasgow Interface Explorer")
+        if (self.usb_device.manufacturer_name == "1BitSquared" and
+                self.usb_device.serial_number in quirks.modified_design_1b2_mar2024):
+            is_modified = False # see quirks.py
+        return is_modified
 
-    def close(self):
-        self.usb_handle.close()
-        self.usb_poller.stop()
-        self.usb_context.close()
-
-    async def _do_transfer(self, is_read, setup):
-        # libusb transfer cancellation is asynchronous, and moreover, it is necessary to wait for
-        # all transfers to finish cancelling before closing the event loop. To do this, use
-        # separate futures for result and cancel.
-        cancel_future = asyncio.Future()
-        result_future = asyncio.Future()
-
-        transfer = self.usb_handle.getTransfer()
-        setup(transfer)
-
-        def usb_callback(transfer):
-            if self.usb_poller.done:
-                return # shutting down
-            if transfer.isSubmitted():
-                return # transfer not completed
-
-            status = transfer.getStatus()
-            if status == usb1.TRANSFER_CANCELLED:
-                usb_transfer_type = transfer.getType()
-                if usb_transfer_type == usb1.TRANSFER_TYPE_CONTROL:
-                    transfer_type = "CONTROL"
-                if usb_transfer_type == usb1.TRANSFER_TYPE_BULK:
-                    transfer_type = "BULK"
-                endpoint = transfer.getEndpoint()
-                if endpoint & usb1.ENDPOINT_DIR_MASK == usb1.ENDPOINT_IN:
-                    endpoint_dir = "IN"
-                if endpoint & usb1.ENDPOINT_DIR_MASK == usb1.ENDPOINT_OUT:
-                    endpoint_dir = "OUT"
-                logger.trace("USB: %s EP%d %s (cancelled)",
-                             transfer_type, endpoint & 0x7f, endpoint_dir)
-                cancel_future.set_result(None)
-            elif result_future.cancelled():
-                pass
-            elif status == usb1.TRANSFER_COMPLETED:
-                if is_read:
-                    result_future.set_result(transfer.getBuffer()[:transfer.getActualLength()])
-                else:
-                    result_future.set_result(None)
-            elif status == usb1.TRANSFER_STALL:
-                result_future.set_exception(usb1.USBErrorPipe())
-            elif status == usb1.TRANSFER_NO_DEVICE:
-                result_future.set_exception(GlasgowDeviceError("device disconnected"))
-            else:
-                result_future.set_exception(GlasgowDeviceError(
-                    f"transfer error: {usb1.libusb1.libusb_transfer_status(status)}"))
-
-        def handle_usb_error(func):
-            try:
-                func()
-            except usb1.USBErrorNoDevice:
-                raise GlasgowDeviceError("device disconnected") from None
-
-        loop = asyncio.get_event_loop()
-        transfer.setCallback(lambda transfer: loop.call_soon_threadsafe(usb_callback, transfer))
-        handle_usb_error(lambda: transfer.submit())
+    async def control_read(self, request, value, index, length):
+        logger.trace("USB: CONTROL IN request=%#04x value=%#06x index=%#06x length=%d (submit)",
+                     request, value, index, length)
         try:
-            return await result_future
-        finally:
-            if result_future.cancelled():
-                try:
-                    handle_usb_error(lambda: transfer.cancel())
-                    await cancel_future
-                except usb1.USBErrorNotFound:
-                    pass # already finished, one way or another
+            data = await self.usb_device.control_transfer_in(
+                usb.RequestType.Vendor, usb.Recipient.Device, request, value, index, length)
+            logger.trace("USB: CONTROL IN request=%#04x data=<%s> (completed)",
+                request, dump_hex(data))
+            return data
+        except asyncio.CancelledError:
+            logger.trace("USB: CONTROL IN request=%#04x (cancelled)", request)
+            raise
 
-    async def control_read(self, request_type, request, value, index, length):
-        logger.trace("USB: CONTROL IN type=%#04x request=%#04x "
-                     "value=%#06x index=%#06x length=%d (submit)",
-                     request_type, request, value, index, length)
-        data = await self._do_transfer(is_read=True, setup=lambda transfer:
-            transfer.setControl(request_type|usb1.ENDPOINT_IN, request, value, index, length))
-        logger.trace("USB: CONTROL IN data=<%s> (completed)", dump_hex(data))
-        return data
-
-    async def control_write(self, request_type, request, value, index, data):
+    async def control_write(self, request, value, index, data):
         if not isinstance(data, (bytes, bytearray)):
-            data = bytes(data)
-        logger.trace("USB: CONTROL OUT type=%#04x request=%#04x "
-                     "value=%#06x index=%#06x data=<%s> (submit)",
-                     request_type, request, value, index, dump_hex(data))
-        await self._do_transfer(is_read=False, setup=lambda transfer:
-            transfer.setControl(request_type|usb1.ENDPOINT_OUT, request, value, index, data))
-        logger.trace("USB: CONTROL OUT (completed)")
+            data = bytearray(data)
+        logger.trace("USB: CONTROL OUT request=%#04x value=%#06x index=%#06x data=<%s> (submit)",
+                     request, value, index, dump_hex(data))
+        try:
+            await self.usb_device.control_transfer_out(
+                usb.RequestType.Vendor, usb.Recipient.Device, request, value, index, data)
+            logger.trace("USB: CONTROL OUT request=%#04x (completed)", request)
+        except asyncio.CancelledError:
+            logger.trace("USB: CONTROL OUT request=%#04x (cancelled)", request)
+            raise
 
     async def bulk_read(self, endpoint, length):
         logger.trace("USB: BULK EP%d IN length=%d (submit)", endpoint & 0x7f, length)
-        data = await self._do_transfer(is_read=True, setup=lambda transfer:
-            transfer.setBulk(endpoint|usb1.ENDPOINT_IN, length))
-        logger.trace("USB: BULK EP%d IN data=<%s> (completed)", endpoint & 0x7f, dump_hex(data))
-        return data
+        try:
+            data = await self.usb_device.bulk_transfer_in(endpoint, length)
+            logger.trace("USB: BULK EP%d IN data=<%s> (completed)", endpoint & 0x7f, dump_hex(data))
+            return data
+        except asyncio.CancelledError:
+            logger.trace("USB: BULK EP%d IN (cancelled)", endpoint & 0x7f)
+            raise
 
     async def bulk_write(self, endpoint, data):
         if not isinstance(data, (bytes, bytearray)):
-            data = bytes(data)
+            data = bytearray(data)
         logger.trace("USB: BULK EP%d OUT data=<%s> (submit)", endpoint & 0x7f, dump_hex(data))
-        await self._do_transfer(is_read=False, setup=lambda transfer:
-            transfer.setBulk(endpoint|usb1.ENDPOINT_OUT, data))
-        logger.trace("USB: BULK EP%d OUT (completed)", endpoint & 0x7f)
+        try:
+            await self.usb_device.bulk_transfer_out(endpoint, data)
+            logger.trace("USB: BULK EP%d OUT (completed)", endpoint & 0x7f)
+        except asyncio.CancelledError:
+            logger.trace("USB: BULK EP%d OUT (cancelled)", endpoint & 0x7f)
+            raise
 
     async def _read_eeprom_raw(self, idx, addr, length, chunk_size=0x1000):
         """
@@ -368,8 +274,7 @@ class GlasgowDevice:
             chunk_length = min(length, chunk_size)
             logger.debug("reading EEPROM chip %d range %04x-%04x",
                          idx, addr, addr + chunk_length - 1)
-            data += await self.control_read(usb1.REQUEST_TYPE_VENDOR, REQ_EEPROM,
-                                            addr, idx, chunk_length)
+            data += await self.control_read(REQ_EEPROM, addr, idx, chunk_length)
             addr += chunk_length
             length -= chunk_length
         return data
@@ -383,8 +288,7 @@ class GlasgowDevice:
             chunk_length = min(len(data), chunk_size)
             logger.debug("writing EEPROM chip %d range %04x-%04x",
                          idx, addr, addr + chunk_length - 1)
-            await self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_EEPROM,
-                                     addr, idx, data[:chunk_length])
+            await self.control_write(REQ_EEPROM, addr, idx, data[:chunk_length])
             addr += chunk_length
             data  = data[chunk_length:]
 
@@ -431,7 +335,7 @@ class GlasgowDevice:
             data  = data[chunk_length:]
 
     async def _status(self):
-        result = await self.control_read(usb1.REQUEST_TYPE_VENDOR, REQ_STATUS, 0, 0, 1)
+        result = await self.control_read(REQ_STATUS, 0, 0, 1)
         return result[0]
 
     async def status(self):
@@ -455,8 +359,7 @@ class GlasgowDevice:
         Get bitstream ID for the bitstream currently running on the FPGA,
         or ``None`` if the FPGA does not have a bitstream.
         """
-        bitstream_id = await self.control_read(usb1.REQUEST_TYPE_VENDOR, REQ_BITSTREAM_ID,
-                                               0, 0, 16)
+        bitstream_id = await self.control_read(REQ_BITSTREAM_ID, 0, 0, 16)
         if re.match(rb"^\x00+$", bitstream_id):
             return None
         return bytes(bitstream_id)
@@ -466,21 +369,20 @@ class GlasgowDevice:
         # Send consecutive chunks of bitstream. Sending 0th chunk also clears the FPGA bitstream.
         index = 0
         while index * 4096 < len(bitstream):
-            await self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_FPGA_CFG,
-                                     0, index, bitstream[index * 4096:(index + 1) * 4096])
+            await self.control_write(REQ_FPGA_CFG, 0, index,
+                bitstream[index * 4096:(index + 1) * 4096])
             index += 1
         # Complete configuration by setting bitstream ID. This starts the FPGA.
         try:
-            await self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_BITSTREAM_ID,
-                                     0, 0, bitstream_id)
-        except usb1.USBErrorPipe:
-            raise GlasgowDeviceError("FPGA configuration failed")
+            await self.control_write(REQ_BITSTREAM_ID, 0, 0, bitstream_id)
+        except usb.ErrorStall:
+            raise GlasgowDeviceError("FPGA configuration failed") from None
         try:
             # Each bitstream has an I2C register at address 0, which is used to check that the FPGA
             # has configured properly and that the I2C bus function is intact. A small subset of
             # production devices manufactured by 1bitSquared fails this check.
-            magic, = await self.control_read(usb1.REQUEST_TYPE_VENDOR, REQ_REGISTER, 0x00, 0, 1)
-        except usb1.USBErrorPipe:
+            magic, = await self.control_read(REQ_REGISTER, 0x00, 0, 1)
+        except usb.ErrorStall:
             magic = 0
         if magic != 0xa5:
             raise GlasgowDeviceError(
@@ -513,7 +415,7 @@ class GlasgowDevice:
     async def _iobuf_enable(self, on):
         # control the IO-buffers (FXMA108) on revAB, they are on by default
         # no effect on other revisions
-        await self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_IOBUF_ENABLE, on, 0, [])
+        await self.control_write(REQ_IOBUF_ENABLE, on, 0, [])
 
     @staticmethod
     def _iobuf_spec_to_mask(spec, one):
@@ -541,8 +443,8 @@ class GlasgowDevice:
 
     async def _write_voltage(self, req, spec, volts):
         millivolts = round(volts * 1000)
-        await self.control_write(usb1.REQUEST_TYPE_VENDOR, req,
-            0, self._iobuf_spec_to_mask(spec, one=False), struct.pack("<H", millivolts))
+        await self.control_write(req, 0, self._iobuf_spec_to_mask(spec, one=False),
+            struct.pack("<H", millivolts))
 
     async def set_voltage(self, spec, volts):
         await self._write_voltage(REQ_IO_VOLT, spec, volts)
@@ -568,34 +470,32 @@ class GlasgowDevice:
 
     async def _read_voltage(self, req, spec):
         millivolts, = struct.unpack("<H",
-            await self.control_read(usb1.REQUEST_TYPE_VENDOR, req,
-                0, self._iobuf_spec_to_mask(spec, one=True), 2))
+            await self.control_read(req, 0, self._iobuf_spec_to_mask(spec, one=True), 2))
         volts = round(millivolts / 1000, 2) # we only have 8 bits of precision
         return volts
 
     async def get_voltage(self, spec):
         try:
             return await self._read_voltage(REQ_IO_VOLT, spec)
-        except usb1.USBErrorPipe:
-            raise GlasgowDeviceError(f"cannot get I/O port {spec} I/O voltage")
+        except usb.ErrorStall:
+            raise GlasgowDeviceError(f"cannot get I/O port {spec} I/O voltage") from None
 
     async def get_voltage_limit(self, spec):
         try:
             return await self._read_voltage(REQ_LIMIT_VOLT, spec)
-        except usb1.USBErrorPipe:
-            raise GlasgowDeviceError(f"cannot get I/O port {spec} I/O voltage limit")
+        except usb.ErrorStall:
+            raise GlasgowDeviceError(f"cannot get I/O port {spec} I/O voltage limit") from None
 
     async def measure_voltage(self, spec):
         try:
             return await self._read_voltage(REQ_SENSE_VOLT, spec)
-        except usb1.USBErrorPipe:
-            raise GlasgowDeviceError(f"cannot measure I/O port {spec} sense voltage")
+        except usb.ErrorStall:
+            raise GlasgowDeviceError(f"cannot measure I/O port {spec} sense voltage") from None
 
     async def set_alert(self, spec, low_volts, high_volts):
         low_millivolts  = round(low_volts * 1000)
         high_millivolts = round(high_volts * 1000)
-        await self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_ALERT_VOLT,
-            0, self._iobuf_spec_to_mask(spec, one=False),
+        await self.control_write(REQ_ALERT_VOLT, 0, self._iobuf_spec_to_mask(spec, one=False),
             struct.pack("<HH", low_millivolts, high_millivolts))
         # Check if we've succeeded
         if await self._status() & ST_ERROR:
@@ -628,20 +528,20 @@ class GlasgowDevice:
     async def get_alert(self, spec):
         try:
             low_millivolts, high_millivolts = struct.unpack("<HH",
-                await self.control_read(usb1.REQUEST_TYPE_VENDOR, REQ_ALERT_VOLT,
-                    0, self._iobuf_spec_to_mask(spec, one=True), 4))
+                await self.control_read(
+                    REQ_ALERT_VOLT, 0, self._iobuf_spec_to_mask(spec, one=True), 4))
             low_volts  = round(low_millivolts / 1000, 2) # we only have 8 bits of precision
             high_volts = round(high_millivolts / 1000, 2)
             return low_volts, high_volts
-        except usb1.USBErrorPipe:
-            raise GlasgowDeviceError(f"cannot get I/O port {spec} voltage alert")
+        except usb.ErrorStall:
+            raise GlasgowDeviceError(f"cannot get I/O port {spec} voltage alert") from None
 
     async def poll_alert(self):
         try:
-            mask, = await self.control_read(usb1.REQUEST_TYPE_VENDOR, REQ_POLL_ALERT, 0, 0, 1)
+            mask, = await self.control_read(REQ_POLL_ALERT, 0, 0, 1)
             return self._mask_to_iobuf_spec(mask)
-        except usb1.USBErrorPipe:
-            raise GlasgowDeviceError("cannot poll alert status")
+        except usb.ErrorStall:
+            raise GlasgowDeviceError("cannot poll alert status") from None
 
     @property
     def has_pulls(self):
@@ -659,8 +559,7 @@ class GlasgowDevice:
                     port_enable |= 1 << port_bit
                 if index * 8 + port_bit in high:
                     port_value  |= 1 << port_bit
-            await self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_PULL,
-                0, self._iobuf_spec_to_mask(port, one=True),
+            await self.control_write(REQ_PULL, 0, self._iobuf_spec_to_mask(port, one=True),
                 struct.pack("BB", port_enable, port_value))
             # Check if we've succeeded
             if await self._status() & ST_ERROR:
@@ -669,23 +568,22 @@ class GlasgowDevice:
                                          .format(spec or "(none)", low or "{}", high or "{}"))
 
     async def test_leds(self, states):
-        await self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_TEST_LEDS,
-            0, states, [])
+        await self.control_write(REQ_TEST_LEDS, 0, states, [])
 
     async def _register_error(self, addr):
         if await self._status() & ST_FPGA_RDY:
-            raise GlasgowDeviceError(f"register 0x{addr:02x} does not exist")
+            raise GlasgowDeviceError(f"register 0x{addr:02x} does not exist") from None
         else:
-            raise GlasgowDeviceError("FPGA is not configured")
+            raise GlasgowDeviceError("FPGA is not configured") from None
 
     async def read_register(self, addr, width=1):
         """Read ``width``-byte FPGA register at ``addr``."""
         try:
-            value = await self.control_read(usb1.REQUEST_TYPE_VENDOR, REQ_REGISTER, addr, 0, width)
+            value = await self.control_read(REQ_REGISTER, addr, 0, width)
             value = int.from_bytes(value, byteorder="little")
             logger.trace("register %d read: %#04x", addr, value)
             return value
-        except usb1.USBErrorPipe:
+        except usb.ErrorStall:
             await self._register_error(addr)
 
     async def write_register(self, addr, value, width=1):
@@ -693,8 +591,8 @@ class GlasgowDevice:
         try:
             logger.trace("register %d write: %#04x", addr, value)
             value = value.to_bytes(width, byteorder="big")
-            await self.control_write(usb1.REQUEST_TYPE_VENDOR, REQ_REGISTER, addr, 0, value)
-        except usb1.USBErrorPipe:
+            await self.control_write(REQ_REGISTER, addr, 0, value)
+        except usb.ErrorStall:
             await self._register_error(addr)
 
 

@@ -601,7 +601,7 @@ async def main():
     device = None
     try:
         if args.action not in ("build", "test", "tool", "factory", "list"):
-            device = GlasgowDevice(args.serial)
+            device = await GlasgowDevice.find(args.serial)
             assembly = HardwareAssembly(device=device)
 
         if args.action == "voltage":
@@ -1006,7 +1006,7 @@ async def main():
             logger.warning("power cycle the device to finish the operation")
 
         if args.action == "list":
-            for serial in sorted(GlasgowDevice.enumerate_serials()):
+            for serial in sorted(await GlasgowDevice.enumerate()):
                 print(serial)
             return 0
 
@@ -1037,7 +1037,7 @@ async def main():
 
     finally:
         if device is not None:
-            device.close()
+            await device.close()
 
     return 0
 

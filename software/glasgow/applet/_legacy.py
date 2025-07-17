@@ -129,7 +129,8 @@ class GlasgowAppletTestCase(unittest.TestCase):
 
         if mode == "record":
             self.device = None # in case the next line raises
-            self.device = GlasgowDevice()
+            loop = asyncio.new_event_loop()
+            self.device = loop.run_until_complete(GlasgowDevice.find())
             self.device.demultiplexer = DeprecatedDemultiplexer(self.device, pipe_count=1)
             revision = self.device.revision
         else:
@@ -225,6 +226,8 @@ def applet_hardware_test(setup="run_hardware_applet", args=[]):
                     finally:
                         if self.device is not None:
                             loop.run_until_complete(self.device.demultiplexer.cancel())
+                            if mode == "record":
+                                loop.run_until_complete(self.device.close())
                         loop.close()
 
                 thread = threading.Thread(target=run_test)
@@ -239,9 +242,6 @@ def applet_hardware_test(setup="run_hardware_applet", args=[]):
                 raise
 
             finally:
-                if mode == "record":
-                    if self.device is not None:
-                        self.device.close()
                 fixture.close()
 
         return wrapper

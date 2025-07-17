@@ -84,9 +84,9 @@ class GlasgowPlatform:
         bitstream = products.get(f"{name}.bin")
         async def do_program():
             from ..device import GlasgowDevice
-            device = GlasgowDevice()
+            device = await GlasgowDevice.find()
             await device.download_bitstream(bitstream)
-            device.close()
+            await device.close()
         asyncio.get_event_loop().run_until_complete(do_program())
 
     def get_io_buffer(self, buffer):

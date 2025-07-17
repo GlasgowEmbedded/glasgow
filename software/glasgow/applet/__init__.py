@@ -367,8 +367,7 @@ def applet_v2_hardware_test(*, prepare=None, args=None, mocks: list[str]):
                 case.__name__ + ".json")
             if not os.path.exists(fixture_path):
                 # Record mode
-                device = GlasgowDevice()
-                assembly = HardwareAssembly(device=device)
+                assembly = HardwareAssembly.find_device()
                 applet: GlasgowAppletV2 = self.applet_cls(assembly)
                 applet.build(parsed_args)
                 async with assembly:
@@ -387,7 +386,6 @@ def applet_v2_hardware_test(*, prepare=None, args=None, mocks: list[str]):
                                     MockRecorder(self, fixture, mock, getattr(mock_obj, mock_attr)))
                         await case(self, applet)
                     os.rename(f"{fixture_path}.new", fixture_path)
-                device.close()
             else:
                 # Replay mode
                 assembly = HardwareAssembly(revision=self.applet_cls.required_revision)
