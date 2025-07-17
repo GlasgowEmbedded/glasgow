@@ -1,4 +1,4 @@
-from typing import Iterator
+from typing import Optional, Iterator
 from abc import ABCMeta, abstractmethod
 import re
 import os
@@ -28,6 +28,16 @@ class Tool(metaclass=ABCMeta):
         self.name = str(name)
 
     @property
+    def package_name(self) -> str:
+        if self.name == "yosys" or self.name.startswith("nextpnr-"):
+            return self.name
+        if self.name == "icepack":
+            return "nextpnr-ice40"
+        if self.name == "ecppack":
+            return "nextpnr-ecp5"
+        raise NotImplementedError(f"package name for tool {self.name} is not known")
+
+    @property
     def env_var_name(self) -> str:
         """Name of environment variable used by Amaranth to configure tool location."""
         # Identical to amaranth._toolchain.tool_env_var.
@@ -35,7 +45,7 @@ class Tool(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def command(self) -> list[str]:
+    def command(self) -> Optional[str]:
         """Command name for invoking the tool.
 
         Full path to the executable that can be used to run the tool, or ``None`` if the tool
@@ -55,7 +65,7 @@ class Tool(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def version(self) -> tuple[int, ...]:
+    def version(self) -> Optional[tuple[int, ...]]:
         """Tool version number.
 
         ``None`` if version number could not be determined, or a tool-specific tuple if it could.
@@ -64,7 +74,7 @@ class Tool(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def identifier(self) -> bytes:
+    def identifier(self) -> Optional[bytes]:
         """Unique tool identifier.
 
         Returns an array of 16 bytes that uniquely identifies the behavior of this particular tool
@@ -76,19 +86,12 @@ class Tool(metaclass=ABCMeta):
         return f"<{self.__class__.__module__}.{self.__class__.__name__} {self.name}>"
 
 
-
 class WasmTool(Tool):
     PREFIX = "yowasp-"
 
     @property
     def python_package(self) -> str:
-        if self.name == "yosys" or self.name.startswith("nextpnr-"):
-            return self.PREFIX + self.name
-        if self.name == "icepack":
-            return self.PREFIX + "nextpnr-ice40"
-        if self.name == "ecppack":
-            return self.PREFIX + "nextpnr-ecp5"
-        raise NotImplementedError(f"Python package for tool {self.name} is not known")
+        return self.PREFIX + self.package_name
 
     @property
     def available(self) -> bool:
@@ -99,7 +102,7 @@ class WasmTool(Tool):
             return False
 
     @property
-    def command(self) -> list[str]:
+    def command(self) -> Optional[str]:
         if self.available:
             basename = self.PREFIX + self.name
             # We cannot assume that the command is on PATH and accessible by its basename. This
@@ -119,7 +122,7 @@ class WasmTool(Tool):
             raise FileNotFoundError(f"script {basename!r} not found; this is an issue with your installation")
 
     @property
-    def version(self) -> tuple[int, ...]:
+    def version(self) -> Optional[tuple[int, ...]]:
         if self.available:
             # Running Wasm tools for the first time can incur a significant delay, so use
             # the version from the Python package metadata (which is guaranteed to be the same).
@@ -127,7 +130,7 @@ class WasmTool(Tool):
             return (*importlib.metadata.version(self.python_package).split("."),)
 
     @property
-    def identifier(self) -> bytes:
+    def identifier(self) -> Optional[bytes]:
         if self.available:
             hasher = hashlib.blake2s()
             for file_entry in importlib.metadata.files(self.python_package):
@@ -150,11 +153,11 @@ class SystemTool(Tool):
         return self.command is not None
 
     @property
-    def command(self) -> list[str]:
+    def command(self) -> Optional[str]:
         return shutil.which(os.environ.get(self.env_var_name, self.name))
 
     @property
-    def version(self) -> tuple[int, ...]:
+    def version(self) -> Optional[tuple[int, ...]]:
         if self.available:
             if self.name == "yosys":
                 # Yosys 0.26+50 (git sha1 ef8ed21a2, ccache clang 11.0.1-2 -O0 -fPIC)
@@ -207,7 +210,7 @@ class SystemTool(Tool):
 
     # To the Nix person who replaces this with something more sensible: please message @whitequark
     @property
-    def identifier(self) -> bytes:
+    def identifier(self) -> Optional[bytes]:
         if self.available:
             if self._identifier_cache is None:
                 hasher = hashlib.blake2s()
@@ -263,7 +266,7 @@ class Toolchain:
         return {tool.name: tool.version for tool in self.tools}
 
     @property
-    def identifier(self) -> bytes:
+    def identifier(self) -> Optional[bytes]:
         """Unique toolchain identifier.
 
         Returns an array of 16 bytes that uniquely identifies this particular collection of tools,
