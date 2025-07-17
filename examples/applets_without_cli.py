@@ -31,7 +31,7 @@ logger = logging.getLogger()
 
 
 async def main():
-    assembly = HardwareAssembly()
+    assembly = await HardwareAssembly.find_device()
     assembly.use_voltage({"A": 3.3, "B": 3.3})
     spi_rom_iface = Memory25xInterface(logger, assembly,
         cs="A0", sck="A1", io="A2:5")

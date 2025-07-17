@@ -221,7 +221,7 @@ class DebugARM7AppletTestCase(GlasgowAppletV2TestCase, applet=DebugARM7Applet):
     @async_test
     async def run_on_hardware(self, test_case, **test_kwargs):
         parsed_args = self._parse_args(self.hardware_args)
-        assembly = HardwareAssembly()
+        assembly = await HardwareAssembly.find_device()
         applet = self.applet_cls(assembly)
         applet.build(parsed_args)
         async with assembly:
