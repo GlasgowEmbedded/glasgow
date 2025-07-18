@@ -45,7 +45,7 @@ class TextHelpFormatter(argparse.HelpFormatter):
         else:
             try:
                 columns, _ = os.get_terminal_size(sys.stderr.fileno())
-            except OSError:
+            except (OSError, AttributeError):
                 columns = 80
         super().__init__(prog, width=columns, max_help_position=28)
 
