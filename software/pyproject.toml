@@ -44,7 +44,7 @@ dependencies = [
   # `libusb1` is used to communicate with the device, and its API mirrors the stable API/ABI of
   # of the native `libusb1` library. It increases major version when dropping support for older
   # Python versions.
-  "libusb1>=3.3.0",
+  "libusb1>=3.3.0; sys_platform!='emscripten'",
   # `cobs` is used to multiplex communication streams in applets. It uses an ad-hoc versioning
   # system.
   "cobs>=1.2.1",
