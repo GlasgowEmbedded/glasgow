@@ -1,4 +1,4 @@
-from typing import Optional, Iterator
+from typing import Any, Optional, Iterator
 from abc import ABCMeta, abstractmethod
 import re
 import os
@@ -65,7 +65,7 @@ class Tool(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def version(self) -> Optional[tuple[int, ...]]:
+    def version(self) -> Optional[tuple[str, ...]]:
         """Tool version number.
 
         ``None`` if version number could not be determined, or a tool-specific tuple if it could.
@@ -157,7 +157,7 @@ class SystemTool(Tool):
         return shutil.which(os.environ.get(self.env_var_name, self.name))
 
     @property
-    def version(self) -> Optional[tuple[int, ...]]:
+    def version(self) -> Optional[tuple[str, ...]]:
         if self.available:
             if self.name == "yosys":
                 # Yosys 0.26+50 (git sha1 ef8ed21a2, ccache clang 11.0.1-2 -O0 -fPIC)
@@ -223,6 +223,40 @@ class SystemTool(Tool):
             return self._identifier_cache
 
 
+class JsTool(Tool):
+    @property
+    def _js_bridge(self) -> Any:
+        import js
+        return js.glasgowToolchain
+
+    @property
+    def available(self) -> bool:
+        return self._js_bridge.available(self.package_name)
+
+    @property
+    def command(self) -> Optional[str]:
+        if self.available:
+            return self.name
+
+    @property
+    def version(self) -> Optional[tuple[str, ...]]:
+        if self.available:
+            # Running Wasm tools can incur a significant delay; request the version from
+            # the toolchain bridge object.
+            return tuple(self._js_bridge.version(self.package_name).split("."))
+
+    @property
+    def identifier(self) -> Optional[bytes]:
+        if self.available:
+            # This implementation assumes that no two different tool builds will ever have the same
+            # version metadata. This is less robust than hashing every tool component, but it's not
+            # practical to do the latter on JS hosts.
+            hasher = hashlib.blake2s()
+            hasher.update(self.name.encode("utf-8"))
+            hasher.update(self._js_bridge.version(self.package_name).encode("utf-8"))
+            return hasher.digest()[:16]
+
+
 class Toolchain:
     def __init__(self, tools):
         self.tools = list(tools)
@@ -258,7 +292,7 @@ class Toolchain:
         return {tool.env_var_name: tool.command for tool in self.tools}
 
     @property
-    def versions(self) -> dict[str, tuple[int, ...]]:
+    def versions(self) -> dict[str, tuple[str, ...]]:
         """Versions of tools.
 
         A dictionary that maps names of tools to their versions.
@@ -298,10 +332,12 @@ def find_toolchain(tools=("yosys", "nextpnr-ice40", "icepack"), *, quiet=False):
     toolchain isn't available within the constraints.
     """
     env_var_name = "GLASGOW_TOOLCHAIN"
-    available_toolchains = {
-        "builtin": Toolchain(map(WasmTool,   tools)),
-        "system":  Toolchain(map(SystemTool, tools)),
-    }
+    available_toolchains = {}
+    if sys.platform == "emscripten":
+        available_toolchains["js"]      = Toolchain(map(JsTool,     tools))
+    else:
+        available_toolchains["builtin"] = Toolchain(map(WasmTool,   tools))
+        available_toolchains["system"]  = Toolchain(map(SystemTool, tools))
 
     kinds = os.environ.get(env_var_name, ",".join(available_toolchains.keys())).split(",")
     for kind in kinds:
