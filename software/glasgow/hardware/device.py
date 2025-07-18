@@ -1,5 +1,6 @@
 from typing import Optional
 import re
+import sys
 import time
 import struct
 import logging
@@ -12,7 +13,10 @@ from fx2 import REQ_RAM, REG_CPUCS
 from fx2.format import input_data
 
 from ..support.logging import dump_hex
-from ..support.usb import libusb1 as usb
+if sys.platform == "emscripten":
+    from ..support.usb import webusb as usb
+else:
+    from ..support.usb import libusb1 as usb
 from . import quirks
 
 
