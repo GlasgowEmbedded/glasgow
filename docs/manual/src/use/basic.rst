@@ -60,7 +60,7 @@ You can use this command at any time to put your Glasgow hardware into a `safe` 
 Working with applets
 --------------------
 
-``glasgow`` is based around the concept of `applets`, with each implementing a particular mode of operation or interface. For example, there are applets such as ``uart``, ``i2c-initiator``, and ``spi-controller`` --- each implementing the gateware (which runs on the FPGA) and software (which runs on the host PC). The Glasgow software framework coordinates building, caching, and operating these applets for you.
+``glasgow`` is based around the concept of `applets`, with each implementing a particular mode of operation or interface. For example, there are applets such as ``uart``, ``i2c-controller``, and ``spi-controller`` --- each implementing the gateware (which runs on the FPGA) and software (which runs on the host PC). The Glasgow software framework coordinates building, caching, and operating these applets for you.
 
 A list of available applets [#applet_sources]_ can be shown by running ``glasgow run --help``.  You can interact with applets from the ``glasgow`` tool in one of four ways:
 
@@ -163,14 +163,14 @@ The ``spi-controller`` applet implements an SPI controller, allowing full-duplex
         '0301235ff5'
 
 
-I²C initiator
+I²C controller
 #############
 
-The ``i2c-initiator`` applet implements an I²C initiator, which facilitates a simple bus scan from the command line, using the on-board pull-up resistors.
+The ``i2c-controller`` applet implements an I²C controller, which features a simple bus scan operation from the command line, using the on-board pull-up resistors.
 
 .. code:: console
 
-    $ glasgow run i2c-initiator -V 3.3 --pulls scan
+    $ glasgow run i2c-controller -V 3.3 scan
 
 Using the :ref:`repl or script modes <repl-script>`, it's possible to easily communicate with devices, obeying clock stretching and other factors that are often ignored with bit-banged interfaces.
 
