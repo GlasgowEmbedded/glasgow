@@ -1,11 +1,12 @@
 from typing import Optional, BinaryIO
 import os
+import sys
 import logging
 import hashlib
 import pathlib
 import tempfile
 import shutil
-import subprocess
+from asyncio import subprocess
 
 import platformdirs
 from amaranth.build.run import BuildPlan
@@ -48,11 +49,24 @@ class GlasgowBuildPlan:
     def bitstream_id(self) -> bytes:
         return self._bitstream_id
 
+    def _report_build_failure(self, stdout_lines: list[str], exit_code: int):
+        if not logger.isEnabledFor(logging.TRACE): # don't print the log twice
+            for stdout_line in stdout_lines:
+                logger.info(f"build: %s", stdout_line.rstrip())
+        if logger.isEnabledFor(logging.INFO):
+            raise GatewareBuildError(
+                f"gateware build failed with exit code {exit_code}; "
+                f"see build log above for details")
+        else:
+            raise GatewareBuildError(
+                f"gateware build failed with exit code {exit_code}; "
+                f"re-run `glasgow` without `-q` to view build log")
+
     # this function is only public for paranoid people who don't trust our excellent cache system.
     # it's very unlikely to fail, but people are rightfully distrustful of cache systems, so
     # be sympathetic to that.
-    def execute(self, build_dir: Optional[os.PathLike] = None, *,
-                debug = False) -> tuple[bytes, bytes]:
+    async def execute_shell(self, build_dir: Optional[os.PathLike] = None, *,
+                            debug: bool = False) -> tuple[bytes, bytes]:
         if build_dir is None:
             build_dir = tempfile.mkdtemp(prefix="glasgow_")
         try:
@@ -76,27 +90,18 @@ class GlasgowBuildPlan:
             # collect stdout (so that it can be reproduced if a log for a cached bitstream is
             # requested later) and also log it with the appropriate level
             stdout_lines = []
-            with subprocess.Popen(
-                    args, cwd=build_dir, env=environ, text=True,
-                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT) as proc:
-                for stdout_line in proc.stdout:
-                    stdout_lines.append(stdout_line)
-                    logger.trace(f"build: %s", stdout_line.rstrip())
-                if proc.wait():
-                    if not logger.isEnabledFor(logging.TRACE): # don't print the log twice
-                        for stdout_line in stdout_lines:
-                            logger.info(f"build: %s", stdout_line.rstrip())
-                    if logger.isEnabledFor(logging.INFO):
-                        raise GatewareBuildError(
-                            f"gateware build failed with exit code {proc.returncode}; "
-                            f"see build log above for details")
-                    else:
-                        raise GatewareBuildError(
-                            f"gateware build failed with exit code {proc.returncode}; "
-                            f"re-run `glasgow` without `-q` to view build log")
+            process = await subprocess.create_subprocess_exec(
+                *args, cwd=build_dir, env=environ,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            async for stdout_line in process.stdout:
+                stdout_lines.append(stdout_line)
+                logger.trace(f"build: %s", stdout_line.decode("utf-8").rstrip())
+            if await process.wait():
+                self._report_build_failure(stdout_lines, process.returncode)
 
             bitstream_data = (pathlib.Path(build_dir) / "top.bin").read_bytes()
-            stdout_data = "".join(stdout_lines).encode()
+            stdout_data = b"".join(stdout_lines)
+            return bitstream_data, stdout_data
         except:
             if debug:
                 logger.info("keeping build tree as %s", build_dir)
@@ -104,9 +109,27 @@ class GlasgowBuildPlan:
         finally:
             if not debug:
                 shutil.rmtree(build_dir)
-        return bitstream_data, stdout_data
 
-    def get_bitstream(self, *, debug=False) -> bytes:
+    async def _execute_js(self) -> tuple[bytes, bytes]:
+        import js
+        import pyodide.ffi
+
+        stdout_lines = []
+        def on_stdout_line(stdout_line):
+            stdout_lines.append(stdout_line)
+            logger.trace(f"build: %s", stdout_line.rstrip())
+        source_files = pyodide.ffi.to_js(self._inner.files, dict_converter=js.Object.fromEntries)
+        build_script = f"{self._inner.script}.json"
+        build_result = await js.glasgowToolchain.build(
+            source_files, build_script, on_stdout_line)
+        if build_result.code == 0:
+            bitstream_data = build_result.files.as_object_map()["top.bin"].to_py()
+            stdout_data = "".join(stdout_lines).encode()
+            return bitstream_data, stdout_data
+        else:
+            self._report_build_failure(stdout_lines, build_result.code)
+
+    async def get_bitstream(self, *, debug=False) -> bytes:
         # locate the caches in the platform-appropriate cache directory; bitstreams aren't large,
         # but it is good etiquette to indicate to the OS that they can be wiped without concern
         cache_path = platformdirs.user_cache_path("GlasgowEmbedded", appauthor=False)
@@ -139,7 +162,11 @@ class GlasgowBuildPlan:
             # don't have to forward it here) and write the artifacts to the platform-appropriate
             # cache directory
             logger.debug(f"bitstream ID {self.bitstream_id.hex()} is not cached, executing build")
-            bitstream_data, stdout_data = self.execute(debug=debug)
+            if sys.platform == "emscripten":
+                build_result = await self._execute_js()
+            else:
+                build_result = await self.execute_shell(debug=debug)
+            bitstream_data, stdout_data = build_result
             bitstream_hash = hashlib.blake2s(bitstream_data).digest()
             stdout_hash = hashlib.blake2s(stdout_data).hexdigest().encode()
             bitstream_filename.parent.mkdir(parents=True, exist_ok=True)

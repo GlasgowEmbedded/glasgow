@@ -5,7 +5,6 @@ import time
 import struct
 import logging
 import asyncio
-import threading
 import importlib.resources
 
 import usb1
@@ -409,7 +408,7 @@ class GlasgowDevice:
             logger.info("device already has bitstream ID %s", plan.bitstream_id.hex())
             return
         logger.info("generating bitstream ID %s", plan.bitstream_id.hex())
-        await self.download_bitstream(plan.get_bitstream(), plan.bitstream_id)
+        await self.download_bitstream(await plan.get_bitstream(), plan.bitstream_id)
 
     async def download_prebuilt(self, plan, bitstream_file):
         bitstream_file_id = bitstream_file.read(16)
