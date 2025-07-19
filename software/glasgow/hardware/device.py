@@ -76,6 +76,11 @@ class GlasgowDevice:
             if device.vendor_id == VID_QIHW and device.product_id == PID_GLASGOW:
                 devices.append(device)
         context.add_connect_callback(on_connected)
+
+        # No especially good way to handle the case where multiple devices are connected without
+        # also making it very annoying to use a single device only.
+        if len(await context.get_devices()) == 0:
+            await context.request_device(VID_QIHW, PID_GLASGOW)
         devices.extend(await context.get_devices())
 
         while any(devices):
@@ -148,7 +153,9 @@ class GlasgowDevice:
                 devices_len = len(devices)
                 deadline = time.time() + RE_ENUMERATION_TIMEOUT
                 while deadline > time.time():
-                    await asyncio.sleep(0.25)
+                    await asyncio.sleep(0.5)
+                    if len(await context.get_devices()) == 0:
+                        await context.request_device(VID_QIHW, PID_GLASGOW)
                     if devices_len < len(devices):
                         break # Found it!
                 else:
@@ -163,6 +170,9 @@ class GlasgowDevice:
                 # with a 5-second timeout being insufficient.
                 logger.debug(f"waiting for re-enumeration (fixed delay)")
                 await asyncio.sleep(RE_ENUMERATION_TIMEOUT)
+
+                if len(await context.get_devices()) == 0:
+                    await context.request_device(VID_QIHW, PID_GLASGOW)
                 devices.extend(await context.get_devices())
 
         return devices_by_serial
