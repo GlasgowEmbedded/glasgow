@@ -861,7 +861,7 @@ async def main():
                 applet, _multiplexer = _applet(assembly, args)
                 plan = assembly.artifact()
                 new_bitstream_id = plan.bitstream_id
-                new_bitstream    = plan.get_bitstream()
+                new_bitstream    = await plan.get_bitstream()
 
                 # We always build and reflash the bitstream in case the one currently
                 # in EEPROM is corrupted. If we only compared the ID, there would be
@@ -939,7 +939,7 @@ async def main():
                 logger.info("generating bitstream for applet %r", args.applet)
                 with open(args.filename or args.applet + ".bin", "wb") as f:
                     f.write(plan.bitstream_id)
-                    f.write(plan.get_bitstream())
+                    f.write(await plan.get_bitstream())
 
         if args.action == "test":
             logger.info("testing applet %r", args.applet)

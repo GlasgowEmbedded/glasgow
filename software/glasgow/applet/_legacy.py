@@ -6,6 +6,7 @@ import functools
 import asyncio
 import threading
 
+from ..support.asyncio import asyncio_run_in_thread
 from ..support.arepl import AsyncInteractiveConsole
 from ..support.mock import MockRecorder, MockReplayer
 from ..simulation.assembly import SimulationAssembly
@@ -110,7 +111,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
             raise AssertionError("argument parsing failed") from None
         self.applet.build(target, parsed_args)
 
-        target.build_plan().get_bitstream()
+        asyncio_run_in_thread(target.build_plan().get_bitstream())
 
     def _prepare_applet_args(self, args, access_args, interact=False):
         parser = argparse.ArgumentParser()

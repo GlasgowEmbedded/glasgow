@@ -5,9 +5,9 @@ import unittest
 import argparse
 import functools
 import asyncio
-import threading
 
 from ..support.plugin import PluginMetadata
+from ..support.asyncio import asyncio_run_in_thread
 from ..support.arepl import AsyncInteractiveConsole
 from ..support.mock import MockRecorder, MockReplayer
 from ..abstract import GlasgowVio, GlasgowPin, AbstractAssembly
@@ -308,7 +308,7 @@ class GlasgowAppletV2TestCase(unittest.TestCase):
         assembly = HardwareAssembly(revision=revision or self.applet_cls.required_revision)
         applet = self.applet_cls(assembly)
         applet.build(parsed_args)
-        assembly.artifact().get_bitstream()
+        asyncio_run_in_thread(assembly.artifact().get_bitstream())
 
 
 def synthesis_test(case):
@@ -319,22 +319,7 @@ def synthesis_test(case):
 def async_test(case):
     @functools.wraps(case)
     def wrapper(*args, **kwargs):
-        thread_exn = None
-        def run_case():
-            nonlocal thread_exn
-            loop = asyncio.new_event_loop()
-            try:
-                loop.run_until_complete(case(*args, **kwargs))
-            except Exception as exn:
-                thread_exn = exn
-            finally:
-                loop.close()
-
-        thread = threading.Thread(target=run_case)
-        thread.start()
-        thread.join()
-        if thread_exn is not None:
-            raise thread_exn
+        asyncio_run_in_thread(case(*args, **kwargs))
     return wrapper
 
 
