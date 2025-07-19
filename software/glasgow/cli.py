@@ -590,7 +590,7 @@ async def wait_for_sigint():
     raise SIGINTCaught
 
 
-async def main():
+async def main() -> int:
     term_handler = file_handler = device = None
     try:
         # Handle log messages emitted during construction of the argument parser (e.g. by
@@ -1035,6 +1035,9 @@ async def main():
     except KeyboardInterrupt:
         logger.warning("interrupted")
         return 130 # 128 + SIGINT
+
+    except SystemExit as e:
+        return e.code
 
     finally:
         root_logger = logging.getLogger()
