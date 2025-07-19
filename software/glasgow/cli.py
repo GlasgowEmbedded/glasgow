@@ -561,6 +561,8 @@ def configure_logger(args, term_handler):
         # more efficient.
         root_logger.setLevel(level)
 
+    return file_handler
+
 
 @contextlib.contextmanager
 def gc_freeze():
@@ -589,17 +591,16 @@ async def wait_for_sigint():
 
 
 async def main():
-    # Handle log messages emitted during construction of the argument parser (e.g. by the plugin
-    # subsystem).
-    term_handler = create_logger()
-
-    args = get_argparser().parse_args()
-    configure_logger(args, term_handler)
-
-    logger.debug(version_info()) # print version info if verbose
-
-    device = None
+    term_handler = file_handler = device = None
     try:
+        # Handle log messages emitted during construction of the argument parser (e.g. by
+        # the plugin subsystem).
+        term_handler = create_logger()
+        args = get_argparser().parse_args()
+        file_handler = configure_logger(args, term_handler)
+
+        logger.debug(version_info()) # print version info if verbose
+
         if args.action not in ("build", "test", "tool", "factory", "list"):
             device = await GlasgowDevice.find(args.serial)
             assembly = HardwareAssembly(device=device)
@@ -1036,6 +1037,11 @@ async def main():
         return 130 # 128 + SIGINT
 
     finally:
+        root_logger = logging.getLogger()
+        root_logger.removeHandler(term_handler)
+        if file_handler is not None:
+            root_logger.removeHandler(file_handler)
+
         if device is not None:
             await device.close()
 
