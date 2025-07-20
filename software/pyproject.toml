@@ -18,7 +18,7 @@ classifiers = [
   "Topic :: System :: Hardware",
 ]
 
-requires-python = "~=3.11"
+requires-python = ">=3.11, <4"
 
 # Glasgow has only a few carefully chosen dependencies. The rationale for having them, as well as
 # the rationale for the particular version constraint, is explained below, and should be kept
