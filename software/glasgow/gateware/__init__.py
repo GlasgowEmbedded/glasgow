@@ -6,7 +6,7 @@ from amaranth.sim import Simulator
 __all__ = ["simulation_test"]
 
 
-def simulation_test(case=None, testbench=False, **kwargs):
+def simulation_test(case=None, **kwargs):
     def configure_wrapper(case):
         @functools.wraps(case)
         def wrapper(self):
@@ -20,10 +20,7 @@ def simulation_test(case=None, testbench=False, **kwargs):
                 sim = Simulator(self.tb)
                 with sim.write_vcd("test.vcd"):
                     sim.add_clock(1e-8)
-                    if testbench:
-                        sim.add_testbench(setup_wrapper)
-                    else:
-                        sim.add_sync_process(setup_wrapper)
+                    sim.add_testbench(setup_wrapper)
                     sim.run()
         return wrapper
 

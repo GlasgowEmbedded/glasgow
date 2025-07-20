@@ -1,5 +1,6 @@
 import unittest
-from amaranth import *
+from amaranth import ClockDomain, Elaboratable, Module, Signal
+from amaranth.sim import Tick
 
 from glasgow.gateware import simulation_test
 from glasgow.gateware.registers import I2CRegisters
@@ -159,7 +160,7 @@ class I2CRegistersTestCase(unittest.TestCase):
         yield from tb.i2c.stop()
         self.assertEqual((yield tb.reg_app), 0b10100101)
         yield tb.cd_app.rst.eq(1)
-        yield
+        yield Tick()
         yield tb.cd_app.rst.eq(0)
-        yield
+        yield Tick()
         self.assertEqual((yield tb.reg_app), 0)
