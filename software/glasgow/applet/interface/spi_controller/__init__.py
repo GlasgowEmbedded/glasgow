@@ -259,7 +259,7 @@ class SPIControllerApplet(GlasgowAppletV2):
         access.add_pins_argument(parser, "cipo", default=True)
 
         parser.add_argument(
-            "-m", "--mode", metavar="MODE", choices=(0, 1, 2, 3), default=3,
+            "-m", "--mode", metavar="MODE", type=int, choices=(0, 1, 2, 3), default=3,
             help="configure clock phase and idle state according to MODE (default: %(default)s)")
 
     def build(self, args):
