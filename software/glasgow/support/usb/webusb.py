@@ -37,7 +37,10 @@ def _map_exceptions(f):
             case "InvalidAccessError":
                 raise ErrorNotSupported(error.message) from None
             case "NotFoundError":
-                raise ErrorNotFound(error.message) from None
+                if "disconnected" in error.message:
+                    raise ErrorDisconnected(error.message) from None
+                else:
+                    raise ErrorNotFound(error.message) from None
             case "SecurityError":
                 raise ErrorAccess(error.message) from None
             case "DataError":
@@ -45,7 +48,7 @@ def _map_exceptions(f):
             case "InvalidStateError":
                 raise ErrorNotOpen(error.message) from None
             case "NetworkError":
-                raise ErrorDisconnected(error.message) from None
+                raise ErrorStall(error.message) from None
             case "AbortError":
                 raise ErrorAborted(error.message) from None
             case _:
