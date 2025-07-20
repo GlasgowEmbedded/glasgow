@@ -325,11 +325,11 @@ class FX2Crossbar(wiring.Component):
     in_eps: Out(wiring.Signature({
         "data":  In(stream.Signature(8)),
         "flush": In(1),
-        "reset": In(1, reset=1),
+        "reset": In(1, init=1),
     })).array(2)
     out_eps: Out(wiring.Signature({
         "data":  Out(stream.Signature(8)),
-        "reset": In(1, reset=1),
+        "reset": In(1, init=1),
     })).array(2)
 
     def __init__(self, pads):
