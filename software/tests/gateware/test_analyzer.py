@@ -1,6 +1,7 @@
 import unittest
 from amaranth import *
 from amaranth.lib.fifo import SyncFIFOBuffered
+from amaranth.sim import Tick
 
 from glasgow.gateware import simulation_test
 from glasgow.gateware.analyzer import EventAnalyzer, TraceDecoder, REPORT_DELAY, REPORT_EVENT, REPORT_SPECIAL, SPECIAL_DONE, SPECIAL_OVERRUN
@@ -25,7 +26,7 @@ class EventAnalyzerTestbench(Elaboratable):
             yield self.dut.event_sources[index].data.eq(data)
 
     def step(self):
-        yield
+        yield Tick()
         for event_source in self.dut.event_sources:
             yield event_source.trigger.eq(0)
 
@@ -34,19 +35,19 @@ class EventAnalyzerTestbench(Elaboratable):
         cycle = 0
         while len(data) < count:
             while not (yield self.fifo.r_rdy) and cycle < limit:
-                yield
+                yield Tick()
                 cycle += 1
             if not (yield self.fifo.r_rdy):
                 raise ValueError("FIFO underflow")
             data.append((yield self.fifo.r_data))
             yield self.fifo.r_en.eq(1)
-            yield
+            yield Tick()
             yield self.fifo.r_en.eq(0)
-            yield
+            yield Tick()
 
         cycle = 16
         while not (yield self.fifo.r_rdy) and cycle < limit:
-            yield
+            yield Tick()
             cycle += 1
         if (yield self.fifo.r_rdy):
             raise ValueError("junk in FIFO: %#04x at %d" % ((yield self.fifo.r_data), count))
@@ -76,10 +77,10 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield from tb.trigger(0, 0xaa)
         yield from tb.step()
         yield from self.assertEmitted(tb, [
-            REPORT_DELAY|2,
+            REPORT_DELAY|1,
             REPORT_EVENT|0, 0xaa,
         ], [
-            (2, {"0": 0xaa}),
+            (1, {"0": 0xaa}),
         ])
 
     @simulation_test(sources=(8,8))
@@ -88,11 +89,11 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield from tb.trigger(1, 0xbb)
         yield from tb.step()
         yield from self.assertEmitted(tb, [
-            REPORT_DELAY|2,
+            REPORT_DELAY|1,
             REPORT_EVENT|0, 0xaa,
             REPORT_EVENT|1, 0xbb,
         ], [
-            (2, {"0": 0xaa, "1": 0xbb}),
+            (1, {"0": 0xaa, "1": 0xbb}),
         ])
 
     @simulation_test(sources=(12,))
@@ -100,10 +101,10 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield from tb.trigger(0, 0xabc)
         yield from tb.step()
         yield from self.assertEmitted(tb, [
-            REPORT_DELAY|2,
+            REPORT_DELAY|1,
             REPORT_EVENT|0, 0x0a, 0xbc,
         ], [
-            (2, {"0": 0xabc}),
+            (1, {"0": 0xabc}),
         ])
 
     @simulation_test(sources=(16,))
@@ -111,10 +112,10 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield from tb.trigger(0, 0xabcd)
         yield from tb.step()
         yield from self.assertEmitted(tb, [
-            REPORT_DELAY|2,
+            REPORT_DELAY|1,
             REPORT_EVENT|0, 0xab, 0xcd,
         ], [
-            (2, {"0": 0xabcd}),
+            (1, {"0": 0xabcd}),
         ])
 
     @simulation_test(sources=(24,))
@@ -122,10 +123,10 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield from tb.trigger(0, 0xabcdef)
         yield from tb.step()
         yield from self.assertEmitted(tb, [
-            REPORT_DELAY|2,
+            REPORT_DELAY|1,
             REPORT_EVENT|0, 0xab, 0xcd, 0xef
         ], [
-            (2, {"0": 0xabcdef}),
+            (1, {"0": 0xabcdef}),
         ])
 
     @simulation_test(sources=(32,))
@@ -133,10 +134,10 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield from tb.trigger(0, 0xabcdef12)
         yield from tb.step()
         yield from self.assertEmitted(tb, [
-            REPORT_DELAY|2,
+            REPORT_DELAY|1,
             REPORT_EVENT|0, 0xab, 0xcd, 0xef, 0x12
         ], [
-            (2, {"0": 0xabcdef12}),
+            (1, {"0": 0xabcdef12}),
         ])
 
     @simulation_test(sources=(0,))
@@ -144,10 +145,10 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield from tb.trigger(0, 0)
         yield from tb.step()
         yield from self.assertEmitted(tb, [
-            REPORT_DELAY|2,
+            REPORT_DELAY|1,
             REPORT_EVENT|0,
         ], [
-            (2, {"0": None}),
+            (1, {"0": None}),
         ])
 
     @simulation_test(sources=(0,0))
@@ -156,11 +157,11 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield from tb.trigger(1, 0)
         yield from tb.step()
         yield from self.assertEmitted(tb, [
-            REPORT_DELAY|2,
+            REPORT_DELAY|1,
             REPORT_EVENT|0,
             REPORT_EVENT|1,
         ], [
-            (2, {"0": None, "1": None}),
+            (1, {"0": None, "1": None}),
         ])
 
     @simulation_test(sources=(0,1))
@@ -169,11 +170,11 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield from tb.trigger(1, 1)
         yield from tb.step()
         yield from self.assertEmitted(tb, [
-            REPORT_DELAY|2,
+            REPORT_DELAY|1,
             REPORT_EVENT|0,
             REPORT_EVENT|1, 0b1
         ], [
-            (2, {"0": None, "1": 0b1}),
+            (1, {"0": None, "1": 0b1}),
         ])
 
     @simulation_test(sources=(1,0))
@@ -182,11 +183,11 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield from tb.trigger(1, 0)
         yield from tb.step()
         yield from self.assertEmitted(tb, [
-            REPORT_DELAY|2,
+            REPORT_DELAY|1,
             REPORT_EVENT|0, 0b1,
             REPORT_EVENT|1,
         ], [
-            (2, {"0": 0b1, "1": None}),
+            (1, {"0": 0b1, "1": None}),
         ])
 
     @simulation_test(sources=((3, (("a", 1), ("b", 2))),))
@@ -196,34 +197,34 @@ class EventAnalyzerTestCase(unittest.TestCase):
         yield from tb.trigger(0, 0b110)
         yield from tb.step()
         yield from self.assertEmitted(tb, [
-            REPORT_DELAY|2,
+            REPORT_DELAY|1,
             REPORT_EVENT|0, 0b101,
             REPORT_DELAY|1,
             REPORT_EVENT|0, 0b110,
         ], [
-            (2, {"a-0": 0b1, "b-0": 0b10}),
-            (3, {"a-0": 0b0, "b-0": 0b11}),
+            (1, {"a-0": 0b1, "b-0": 0b10}),
+            (2, {"a-0": 0b0, "b-0": 0b11}),
         ])
 
     @simulation_test(sources=(8,))
     def test_delay(self, tb):
-        yield
-        yield
+        yield Tick()
+        yield Tick()
         yield from tb.trigger(0, 0xaa)
         yield from tb.step()
-        yield
+        yield Tick()
         yield from tb.trigger(0, 0xbb)
         yield from tb.step()
-        yield
-        yield
+        yield Tick()
+        yield Tick()
         yield from self.assertEmitted(tb, [
-            REPORT_DELAY|4,
+            REPORT_DELAY|3,
             REPORT_EVENT|0, 0xaa,
             REPORT_DELAY|2,
             REPORT_EVENT|0, 0xbb,
         ], [
-            (4, {"0": 0xaa}),
-            (6, {"0": 0xbb}),
+            (3, {"0": 0xaa}),
+            (5, {"0": 0xbb}),
         ])
 
     @simulation_test(sources=(1,))
@@ -274,7 +275,7 @@ class EventAnalyzerTestCase(unittest.TestCase):
     @unittest.skip("FIXME: see issue #182")
     def test_delay_overflow(self, tb):
         yield tb.dut._delay_timer.eq(0xfffe)
-        yield
+        yield Tick()
         yield from tb.trigger(0, 1)
         yield from tb.step()
         yield from self.assertEmitted(tb, [
@@ -290,8 +291,8 @@ class EventAnalyzerTestCase(unittest.TestCase):
     @unittest.skip("FIXME: see issue #182")
     def test_delay_overflow_p1(self, tb):
         yield tb.dut._delay_timer.eq(0xfffe)
-        yield
-        yield
+        yield Tick()
+        yield Tick()
         yield from tb.trigger(0, 1)
         yield from tb.step()
         yield from self.assertEmitted(tb, [
@@ -308,7 +309,7 @@ class EventAnalyzerTestCase(unittest.TestCase):
     def test_delay_4_septet(self, tb):
         for _ in range(64):
             yield tb.dut._delay_timer.eq(0xfffe)
-            yield
+            yield Tick()
 
         yield from tb.trigger(0, 1)
         yield from tb.step()
@@ -326,16 +327,16 @@ class EventAnalyzerTestCase(unittest.TestCase):
     def test_done(self, tb):
         yield from tb.trigger(0, 1)
         yield from tb.step()
-        yield
+        yield Tick()
         yield tb.dut.done.eq(1)
         yield from self.assertEmitted(tb, [
-            REPORT_DELAY|2,
+            REPORT_DELAY|1,
             REPORT_EVENT|0, 0b1,
             REPORT_DELAY|2,
             REPORT_SPECIAL|SPECIAL_DONE
         ], [
-            (2, {"0": 0b1}),
-            (4, {})
+            (1, {"0": 0b1}),
+            (3, {})
         ], flush_pending=False)
 
     @simulation_test(sources=(1,))
@@ -343,15 +344,15 @@ class EventAnalyzerTestCase(unittest.TestCase):
         for x in range(16):
             yield from tb.trigger(0, 1)
             yield from tb.step()
-            self.assertEqual((yield tb.dut.throttle), 0)
+            self.assertEqual((yield tb.dut.throttle), x == 15)
         yield from tb.trigger(0, 1)
         yield from tb.step()
         self.assertEqual((yield tb.dut.throttle), 1)
         yield tb.fifo.r_en.eq(1)
         for x in range(52):
-            yield
+            yield Tick()
         yield tb.fifo.r_en.eq(0)
-        yield
+        yield Tick()
         self.assertEqual((yield tb.dut.throttle), 0)
 
     @simulation_test(sources=(1,))
@@ -359,17 +360,17 @@ class EventAnalyzerTestCase(unittest.TestCase):
         for x in range(18):
             yield from tb.trigger(0, 1)
             yield from tb.step()
-            self.assertEqual((yield tb.dut.overrun), 0)
+            self.assertEqual((yield tb.dut.overrun), x == 17)
         yield from tb.trigger(0, 1)
         yield from tb.step()
         self.assertEqual((yield tb.dut.overrun), 1)
         yield tb.fifo.r_en.eq(1)
         for x in range(55):
             while not (yield tb.fifo.r_rdy):
-                yield
-            yield
+                yield Tick()
+            yield Tick()
         yield tb.fifo.r_en.eq(0)
-        yield
+        yield Tick()
         yield from self.assertEmitted(tb, [
             REPORT_DELAY|0b0000100,
             REPORT_DELAY|0b0000000,

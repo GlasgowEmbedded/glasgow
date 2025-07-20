@@ -1,5 +1,6 @@
 import unittest
 from amaranth import *
+from amaranth.sim import Tick
 
 from glasgow.gateware import simulation_test
 from glasgow.gateware.lfsr import LinearFeedbackShiftRegister
@@ -23,7 +24,7 @@ class LFSRTestCase(unittest.TestCase):
         hard_values = []
         for _ in range(len(soft_values)):
             hard_values.append((yield self.tb.dut.value))
-            yield
+            yield Tick()
 
         self.assertEqual(len(soft_values), 65535)
         self.assertEqual(hard_values, soft_values)

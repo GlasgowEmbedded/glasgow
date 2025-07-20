@@ -13,7 +13,7 @@ class AccumulatorTestCase(unittest.TestCase):
     @simulation_test()
     def test_counter(self, tb):
         total = 0
-        queue = [0] * (self.tb.stages + 1)
+        queue = [0] * self.tb.stages
         for i in range(100):
             addend = i * 2137 % 32
             total += addend
