@@ -760,7 +760,8 @@ class HardwareAssembly(AbstractAssembly):
             # fall back to using the configuration with fewer FX2-side buffers.
             try:
                 await self._device.usb_device.select_configuration(2)
-            except usb.ErrorNotSupported:
+            # `ErrorNotSupported` with libusb backend, `ErrorStall` with webusb backend.
+            except (usb.ErrorNotSupported, usb.ErrorStall):
                 await self._device.usb_device.select_configuration(1)
         elif len(self._in_streams) <= 2 and len(self._out_streams) <= 2:
             await self._device.usb_device.select_configuration(1)
