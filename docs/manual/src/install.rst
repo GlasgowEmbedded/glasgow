@@ -1,6 +1,12 @@
 Installing & updating
 =====================
 
+.. hint::
+
+    If you are using a Chromium-based browser (including Chrome, Edge, Vivaldi, Opera, Brave), you can `run the Glasgow software within the browser <webusb_>`__. This functionality is experimental and has limitations and bugs that are not present when running natively on a desktop.
+
+.. _webusb: https://webusb.glasgow-embedded.org/
+
 .. _initial-setup:
 
 Initial setup
