@@ -50,6 +50,11 @@ Revision C is the latest revision, first mass produced by `1bitSquared`_ at step
     .. image:: ./_images/revC-3drender-back.png
         :alt: Overview of the Glasgow PCB (back)
 
+.. tab:: Legend
+
+    .. image:: ./_images/revC-legend.svg
+        :alt: Description of functional blocks on the Glasgow PCB
+
 .. _1bitSquared: https://1bitsquared.com/
 
 Design and fabrication files are located in the Git repository:
