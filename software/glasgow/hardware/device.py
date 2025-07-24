@@ -7,7 +7,6 @@ import logging
 import asyncio
 import importlib.resources
 
-import usb1
 from fx2 import REQ_RAM, REG_CPUCS
 from fx2.format import input_data
 
