@@ -66,25 +66,25 @@ class GlasgowDevice:
             return input_data(file, fmt="ihex")
 
     @classmethod
-    async def _enumerate_devices(cls, context: usb.Context):
+    async def _enumerate_devices(cls, context: usb.Context, *, vid: int, pid: int):
         devices: list[usb.Device] = []
         devices_by_serial: dict[str, usb.Device] = {}
 
         def on_connected(device):
-            if device.vendor_id == VID_QIHW and device.product_id == PID_GLASGOW:
+            if device.vendor_id == vid and device.product_id == pid:
                 devices.append(device)
         context.add_connect_callback(on_connected)
 
         # No especially good way to handle the case where multiple devices are connected without
         # also making it very annoying to use a single device only.
         if len(await context.get_devices()) == 0:
-            await context.request_device(VID_QIHW, PID_GLASGOW)
+            await context.request_device(vid, pid)
         devices.extend(await context.get_devices())
 
         while any(devices):
             device = devices.pop()
 
-            if device.vendor_id == VID_QIHW and device.product_id == PID_GLASGOW:
+            if device.vendor_id == vid and device.product_id == pid:
                 revision  = GlasgowDeviceConfig.decode_revision(device.version & 0xFF)
                 api_level = device.version >> 8
             else:
@@ -153,7 +153,7 @@ class GlasgowDevice:
                 while deadline > time.time():
                     await asyncio.sleep(0.5)
                     if len(await context.get_devices()) == 0:
-                        await context.request_device(VID_QIHW, PID_GLASGOW)
+                        await context.request_device(vid, pid)
                     if devices_len < len(devices):
                         break # Found it!
                 else:
@@ -170,20 +170,21 @@ class GlasgowDevice:
                 await asyncio.sleep(RE_ENUMERATION_TIMEOUT)
 
                 if len(await context.get_devices()) == 0:
-                    await context.request_device(VID_QIHW, PID_GLASGOW)
+                    await context.request_device(vid, pid)
                 devices.extend(await context.get_devices())
 
         return devices_by_serial
 
     @classmethod
-    async def enumerate(cls) -> list[str]:
-        devices = await cls._enumerate_devices(usb.Context())
+    async def enumerate(cls, *, vid: int = VID_QIHW, pid: int = PID_GLASGOW) -> list[str]:
+        devices = await cls._enumerate_devices(usb.Context(), vid=vid, pid=pid)
         return list(devices.keys())
 
     @classmethod
-    async def find(cls, serial: Optional[str] = None) -> 'GlasgowDevice':
+    async def find(cls, serial: Optional[str] = None, *,
+                   vid: int = VID_QIHW, pid: int = PID_GLASGOW) -> 'GlasgowDevice':
         usb_context = usb.Context()
-        usb_devices = await cls._enumerate_devices(usb_context)
+        usb_devices = await cls._enumerate_devices(usb_context, vid=vid, pid=pid)
         if len(usb_devices) == 0:
             raise GlasgowDeviceError("device not found")
         elif serial is None:
