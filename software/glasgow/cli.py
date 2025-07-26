@@ -15,7 +15,7 @@ from datetime import datetime
 
 from vcd import VCDWriter
 from amaranth import UnusedElaboratable
-from fx2 import FX2Config, FX2Device, FX2DeviceError, VID_CYPRESS, PID_FX2
+from fx2 import FX2Config, VID_CYPRESS, PID_FX2
 from fx2.format import input_data, diff_data
 
 from . import __version__
@@ -980,14 +980,9 @@ async def main() -> int:
                 vid, pid = VID_QIHW, PID_GLASGOW
             else:
                 vid, pid = VID_CYPRESS, PID_FX2
-            try:
-                fx2_device = FX2Device(vid, pid)
-            except FX2DeviceError:
-                logger.error(f"device {vid:#06x}:{pid:#06x} not found")
-                return 1
 
-            with importlib.resources.files("fx2").joinpath("boot-cypress.ihex").open("r") as f:
-                fx2_device.load_ram(input_data(f, fmt="ihex"))
+            # GlasgowDevice.find loads the firmware into RAM
+            device = await GlasgowDevice.find(vid=vid, pid=pid)
 
             fx2_config = FX2Config(vendor_id=VID_QIHW, product_id=PID_GLASGOW,
                                    device_id=device_id, i2c_400khz=True, disconnect=True)
@@ -997,10 +992,10 @@ async def main() -> int:
             image = fx2_config.encode()
 
             logger.info("programming device configuration and firmware")
-            fx2_device.write_boot_eeprom(0, image, addr_width=2, page_size=8)
+            await device.write_eeprom("fx2", 0, image)
 
             logger.info("verifying device configuration and firmware")
-            if fx2_device.read_boot_eeprom(0, len(image), addr_width=2) != image:
+            if await device.read_eeprom("fx2", 0, len(image)) != image:
                 logger.critical("factory programming failed")
                 return 1
 
