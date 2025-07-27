@@ -30,7 +30,7 @@ apt-get install -qq --no-install-recommends git make sdcc
 # apt-get would not be able to install packages.
 #
 # Create a user and a group with the UID/GID of the caller.
-groupadd --gid ${GID} caller
+groupadd --gid ${GID} caller || true
 useradd --uid ${UID} --gid ${GID} caller
 
 # Do the work.
