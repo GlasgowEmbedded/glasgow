@@ -119,7 +119,8 @@ class Context(AbstractContext):
         self._on_connect = []
         self._on_disconnect = []
 
-        self._impl.hotplugRegisterCallback(self._process_hotplug_event)
+        if self.has_hotplug_support:
+            self._impl.hotplugRegisterCallback(self._process_hotplug_event)
         self._poller.start()
 
     async def request_device(self, vendor_id: int, product_id: int):
