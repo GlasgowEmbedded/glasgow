@@ -6,7 +6,7 @@
 # Using this script is not a requirement to work on the firmware; installation instructions for
 # the prerequisites for a selection of operating systems are included in the documentation.
 
-BASE_IMAGE=debian:bookworm-slim
+BASE_IMAGE=debian:trixie-20250721-slim@sha256:cc92da07b99dd5c078cb5583fdb4ba639c7c9c14eb78508a2be285ca67cc738a
 
 if [ -z "${DOCKER}" ]; then
     exec docker run \
