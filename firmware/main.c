@@ -8,7 +8,6 @@
 #include <fx2eeprom.h>
 #include <usbmicrosoft.h>
 #include "glasgow.h"
-#include "version.h"
 
 // bcdDevice is a 16-bit number where the high byte indicates the API revision and the low byte
 // indicates the hardware revision. If the firmware is not flashed (only the FX2 header is present)
@@ -157,7 +156,7 @@ usb_configuration_set_c usb_configs[] = {
 
 usb_ascii_string_c usb_strings[] = {
   [0] = "whitequark research\0\0\0", // CONFIG_SIZE_MANUFACTURER characters long
-  [1] = "Glasgow Interface Explorer (git " GIT_REVISION ")",
+  [1] = "Glasgow Interface Explorer",
   [2] = "XX-XXXXXXXXXXXXXXXX",
 };
 

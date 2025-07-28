@@ -23,7 +23,7 @@ set -ex
 
 # Install dependencies.
 apt-get update -qq
-apt-get install -qq --no-install-recommends git make sdcc
+apt-get install -qq --no-install-recommends make sdcc
 
 # Any commands that create new files in the host mount must be invoked with the caller UID/GID, or
 # else the created files will be owned by root. We can't use `docker run --user` because then
