@@ -135,7 +135,7 @@ class GlasgowDevice:
                 for offset in range(0, len(data), 4096):
                     await device.control_transfer_out(
                         usb.RequestType.Vendor, usb.Recipient.Device,
-                        REQ_RAM, address, 0, bytes(data[offset:offset + 4096]))
+                        REQ_RAM, address + offset, 0, bytes(data[offset:offset + 4096]))
             await device.control_transfer_out(
                 usb.RequestType.Vendor, usb.Recipient.Device, REQ_RAM, REG_CPUCS, 0, bytes([0]))
             await device.close()
