@@ -1,7 +1,6 @@
 from abc import ABCMeta, abstractmethod
 import asyncio
 
-import usb1
 from amaranth import *
 from amaranth import Module, ResetInserter, Signal
 from amaranth.lib import wiring, stream, io
