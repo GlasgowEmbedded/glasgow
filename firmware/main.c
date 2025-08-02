@@ -440,7 +440,6 @@ void handle_pending_usb_setup() {
     uint8_t  arg_chip = 0;
     uint16_t arg_addr = req->wValue;
     uint16_t arg_len  = req->wLength;
-    uint8_t  page_size = 0;
     uint8_t  timeout   = 255; // 5 ms
     if(req->bRequest == USB_REQ_CYPRESS_EEPROM_DB) {
       arg_chip = I2C_ADDR_FX2_MEM;
@@ -448,16 +447,13 @@ void handle_pending_usb_setup() {
       switch(req->wIndex) {
         case 0:
           arg_chip  = I2C_ADDR_FX2_MEM;
-          page_size = 6; // 64 bytes
           break;
         case 1:
           arg_chip  = I2C_ADDR_ICE_MEM;
-          page_size = 8; // 256 bytes
           break;
         case 2:
           // Same chip, different I2C address for the top half.
           arg_chip  = I2C_ADDR_ICE_MEM + 1;
-          page_size = 8;
           break;
         case 3:
           // The HX8K bitstream is slightly (less than 4 KB) larger than the capacity of ICE_MEM,
@@ -465,7 +461,6 @@ void handle_pending_usb_setup() {
           // make sure the writes don't wrap, or we can overwrite the configuration info.
           if(arg_addr <= 0x1000 && arg_len <= 0x1000 && (arg_addr + arg_len) <= 0x1000) {
             arg_chip  = I2C_ADDR_FX2_MEM;
-            page_size = 6; // 64 bytes
             arg_addr += 0x7000;
           }
       }
@@ -488,6 +483,9 @@ void handle_pending_usb_setup() {
       } else {
         SETUP_EP0_BUF(0);
         while(EP0CS & _BUSY);
+        // Using a constant page size of 64 bytes because both the ICE and FX2 EEPROMs have a page
+        // size of >= 64 bytes, and USB2 control transfer packets are at most 64 bytes.
+        const uint8_t page_size = 6; // 64 bytes
         if(!eeprom_write(arg_chip, arg_addr, EP0BUF, chunk_len, /*double_byte=*/true,
                          page_size, timeout)) {
           goto stall_ep0_return;
