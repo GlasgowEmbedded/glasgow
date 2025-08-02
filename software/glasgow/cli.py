@@ -858,7 +858,7 @@ async def main() -> int:
                     glasgow_config.bitstream_id   = new_bitstream_id
             elif args.applet:
                 logger.info("generating bitstream for applet %s", args.applet)
-                assembly = HardwareAssembly(revision=args.rev)
+                assembly = HardwareAssembly(revision=device.revision)
                 applet, _multiplexer = _applet(assembly, args)
                 plan = assembly.artifact()
                 new_bitstream_id = plan.bitstream_id
