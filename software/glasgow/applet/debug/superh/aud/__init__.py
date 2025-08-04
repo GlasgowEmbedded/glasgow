@@ -273,9 +273,6 @@ class AUDApplet(GlasgowAppletV2):
     """
     @classmethod
     def add_build_arguments(cls, parser, access):
-        def auto_int(x):
-            return int(x, 0)
-
         access.add_voltage_argument(parser)
 
         access.add_pins_argument(parser, "audata", width=4, required=True)
@@ -287,6 +284,11 @@ class AUDApplet(GlasgowAppletV2):
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=100,
             help="set clock period to FREQ kHz (default: %(default)s)")
+
+    @classmethod
+    def add_run_arguments(cls, parser):
+        def auto_int(x):
+            return int(x, 0)
 
         parser.add_argument(
             "-a", "--address", type=auto_int, required=True,
