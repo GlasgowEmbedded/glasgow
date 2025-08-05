@@ -119,7 +119,7 @@ class WasmTool(Tool):
                 schemes = ["posix_venv", "posix_user", "posix_home", "posix_prefix"]
         for scheme in schemes:
             script_path  = os.path.join(sysconfig.get_path("scripts", scheme), basename)
-            script_path += sysconfig.get_config_var('EXE')
+            script_path += sysconfig.get_config_var("EXE")
             if os.path.exists(script_path):
                 return script_path
         else:

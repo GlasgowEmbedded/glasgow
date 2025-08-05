@@ -41,7 +41,7 @@ class _bits_base(amaranth.ValueCastable, Sequence):
             value &= ~(-1 << length)
         inst = object.__new__(cls)
         inst._len = length
-        inst._bytes = cls._bytestype(value.to_bytes(_byte_len(length), 'little'))
+        inst._bytes = cls._bytestype(value.to_bytes(_byte_len(length), "little"))
         return inst
 
     @classmethod
@@ -194,11 +194,11 @@ class _bits_base(amaranth.ValueCastable, Sequence):
 
     def to_int(self) -> int:
         """Returns the value of this bit string as an integer."""
-        return int.from_bytes(self._bytes, 'little')
+        return int.from_bytes(self._bytes, "little")
 
     def to_str(self) -> str:
         """Returns the bit string as a human-readable string (MSB-first)."""
-        return ''.join(str(x) for x in reversed(self))
+        return "".join(str(x) for x in reversed(self))
 
     def to_bytes(self) -> bytes:
         """Returns the bits packed into bytes. The bits are packed into bytes LSB-first.

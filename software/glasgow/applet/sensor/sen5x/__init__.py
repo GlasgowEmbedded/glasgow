@@ -99,12 +99,12 @@ class SEN5xI2CInterface:
     async def product_name(self) -> str:
         name, = await self._read(SEN5xCommand.PRODUCT_NAME, ">32s", delay_seconds=20e-3)
         self._log("product name=%s", name)
-        return name.rstrip(b'\x00').decode('ascii')
+        return name.rstrip(b"\x00").decode("ascii")
 
     async def serial_number(self) -> str:
         serial, = await self._read(SEN5xCommand.SERIAL_NUM, ">32s", delay_seconds=20e-3)
         self._log("serial number=%s", serial)
-        return serial.rstrip(b'\x00').decode('ascii')
+        return serial.rstrip(b"\x00").decode("ascii")
 
     async def firmware_version(self) -> int:
         version, reserved = await self._read(SEN5xCommand.FIRMWARE_VER, ">BB", delay_seconds=20e-3)

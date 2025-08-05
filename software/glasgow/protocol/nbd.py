@@ -143,7 +143,7 @@ class NBDServer:
         await self._send64(IHAVEOPT)
         await self._send16(handshake_flags)
         client_flags = await self._recv32()
-        self._logger.trace(f'client flags: {client_flags}')
+        self._logger.trace(f"client flags: {client_flags}")
         unsupported = client_flags & ~handshake_flags
         if unsupported:
             raise RuntimeError(f"Unsupported client flags: {unsupported:#x}")
@@ -159,7 +159,7 @@ class NBDServer:
             if option == NBD_OPT_GO:
                 done = True
                 await self._send_info(option)
-                await self._send_option(option, NBD_REP_ACK, struct.pack('>I', option))
+                await self._send_option(option, NBD_REP_ACK, struct.pack(">I", option))
             else:
                 self._logger.warning(f"client requested unknown option {option}")
                 await self._send_option(option, NBD_REP_ERR_UNSUP)
@@ -169,7 +169,7 @@ class NBDServer:
         if not self._writable:
             transmission_flags |= NBD_FLAG_READ_ONLY
 
-        info = struct.pack('>HQH', NBD_INFO_EXPORT, await self.device_size(), transmission_flags)
+        info = struct.pack(">HQH", NBD_INFO_EXPORT, await self.device_size(), transmission_flags)
         await self._send_option(option, NBD_REP_INFO, info)
 
     async def _recv_option(self):
@@ -182,7 +182,7 @@ class NBDServer:
         data = await self._endpoint.recv(length)
         return option, data
 
-    async def _send_option(self, option, status, data=b''):
+    async def _send_option(self, option, status, data=b""):
         # Reply to a client's option request
         await self._send64(REPLY_MAGIC)
         await self._send32(option)
@@ -229,7 +229,7 @@ class NBDServer:
         length = await self._recv32()
         return Request(flags=flags, command=command, cookie=cookie, offset=offset, length=length)
 
-    async def _write_simple_reply(self, error, cookie, data=b''):
+    async def _write_simple_reply(self, error, cookie, data=b""):
         await self._send32(NBD_SIMPLE_REPLY_MAGIC)
         await self._send32(error)
         await self._send64(cookie)
@@ -237,8 +237,8 @@ class NBDServer:
 
 
 async def main():
-    parser = argparse.ArgumentParser(description='NBD ramdisk')
-    parser.add_argument('--size', type=int, help='size in bytes', default=0x100000)
+    parser = argparse.ArgumentParser(description="NBD ramdisk")
+    parser.add_argument("--size", type=int, help="size in bytes", default=0x100000)
     ServerEndpoint.add_argument(parser, "endpoint")
     args = parser.parse_args()
 
@@ -265,5 +265,5 @@ async def main():
             pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())

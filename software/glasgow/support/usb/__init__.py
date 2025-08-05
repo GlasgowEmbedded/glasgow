@@ -104,7 +104,7 @@ class AbstractContext(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    async def get_devices(self) -> list['AbstractDevice']:
+    async def get_devices(self) -> list["AbstractDevice"]:
         pass
 
     @property
@@ -113,11 +113,11 @@ class AbstractContext(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def add_connect_callback(self, callback: Callable[['AbstractDevice'], None]):
+    def add_connect_callback(self, callback: Callable[["AbstractDevice"], None]):
         pass
 
     @abstractmethod
-    def add_disconnect_callback(self, callback: Callable[['AbstractDevice'], None]):
+    def add_disconnect_callback(self, callback: Callable[["AbstractDevice"], None]):
         pass
 
 
@@ -159,12 +159,12 @@ class AbstractDevice(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def configuration(self) -> 'AbstractConfiguration':
+    def configuration(self) -> "AbstractConfiguration":
         pass
 
     @property
     @abstractmethod
-    def configurations(self) -> list['AbstractConfiguration']:
+    def configurations(self) -> list["AbstractConfiguration"]:
         pass
 
     @abstractmethod
@@ -218,7 +218,7 @@ class AbstractConfiguration(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def interfaces(self) -> list['AbstractInterface']:
+    def interfaces(self) -> list["AbstractInterface"]:
         pass
 
 
@@ -235,7 +235,7 @@ class AbstractInterface(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def alternates(self) -> list['AbstractAlternateInterface']:
+    def alternates(self) -> list["AbstractAlternateInterface"]:
         pass
 
 
@@ -247,7 +247,7 @@ class AbstractAlternateInterface(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def endpoints(self) -> list['AbstractEndpoint']:
+    def endpoints(self) -> list["AbstractEndpoint"]:
         pass
 
 

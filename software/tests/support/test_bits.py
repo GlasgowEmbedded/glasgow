@@ -9,7 +9,7 @@ class BitsTestCase(unittest.TestCase):
     def assertBits(self, value, bit_length, bit_value):
         self.assertIsInstance(value, bits)
         self.assertEqual(value._len, bit_length)
-        self.assertEqual(value._bytes, bit_value.to_bytes(_byte_len(bit_length), 'little'))
+        self.assertEqual(value._bytes, bit_value.to_bytes(_byte_len(bit_length), "little"))
 
     def test_from_int(self):
         self.assertBits(bits.from_int(0), 0, 0b0)
@@ -149,7 +149,7 @@ class BitsTestCase(unittest.TestCase):
         self.assertBits(some[3:2], 0, 0b0)
         self.assertBits(some[::2], 6, 0b101001)
         self.assertBits(some[1::2], 5, 0b00011)
-        some = bits(b'\xaa\x99\x55\x66')
+        some = bits(b"\xaa\x99\x55\x66")
         self.assertBits(some[8:24], 16, 0b0101010110011001)
         self.assertBits(some[23:7:-1], 16, 0b1001100110101010)
         self.assertBits(some[::-1], 32, 0b01010101100110011010101001100110)
@@ -188,7 +188,7 @@ class BitsTestCase(unittest.TestCase):
         self.assertBits((0,1,0,1) & bits("1100"), 4, 0b1000)
 
     def test_and_wrong(self):
-        with self.assertRaisesRegex(ValueError, r'mismatched bitwise operator widths'):
+        with self.assertRaisesRegex(ValueError, r"mismatched bitwise operator widths"):
             bits("10101") & bits("1100")
 
     def test_or(self):
@@ -247,7 +247,7 @@ class BitarrayTestCase(unittest.TestCase):
     def assertBitarray(self, value, bit_length, bit_value):
         self.assertIsInstance(value, bitarray)
         self.assertEqual(value._len, bit_length)
-        self.assertEqual(value._bytes, bit_value.to_bytes(_byte_len(bit_length), 'little'))
+        self.assertEqual(value._bytes, bit_value.to_bytes(_byte_len(bit_length), "little"))
 
     def test_new(self):
         self.assertBitarray(bitarray(), 0, 0b0)

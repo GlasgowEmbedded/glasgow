@@ -38,7 +38,7 @@ class SnoopDatalinkType(enum.IntEnum):
 
 
 class SnoopPacket:
-    def __init__(self, payload: bytes, *, orig_length: 'None | int' = None, timestamp_ns: int = 0):
+    def __init__(self, payload: bytes, *, orig_length: "None | int" = None, timestamp_ns: int = 0):
         assert orig_length is None or orig_length >= len(payload)
         self._length: int = len(payload)
         self._orig_length: int = len(payload) if orig_length is None else orig_length
@@ -107,7 +107,7 @@ class SnoopReader:
             raise SnoopError(f"unexpected snoop version number: {version!r}")
         self.datalink_type = SnoopDatalinkType(datalink_type)
 
-    def read(self) -> 'SnoopPacket | None':
+    def read(self) -> "SnoopPacket | None":
         try:
             orig_length, length, record_length, _cumulative_drops, timestamp_s, timestamp_us = \
                 struct.unpack(">LLLLLL", self.file.read(struct.calcsize(">LLLLLL")))

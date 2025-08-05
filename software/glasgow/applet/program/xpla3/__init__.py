@@ -255,7 +255,7 @@ class XPLA3Interface:
     async def erase(self):
         self._log("erase")
         await self.lower.write_ir(IR_ISP_ERASE)
-        await self.lower.write_dr('')
+        await self.lower.write_dr("")
         await self.lower.run_test_idle(self._time_us(100000))
 
 
@@ -324,10 +324,10 @@ class ProgramXPLA3Applet(JTAGProbeApplet):
             "--read-protect", default=False, action="store_true",
             help="enable read protection")
         p_program.add_argument(
-            "--ues", default=None, type=str.encode, nargs='?',
+            "--ues", default=None, type=str.encode, nargs="?",
             help="user electronic signature (ASCII)")
         p_program.add_argument(
-            "--ues-hex", default=None, type=bytes.fromhex, nargs='?',
+            "--ues-hex", default=None, type=bytes.fromhex, nargs="?",
             help="user electronic signature (hex)")
 
         p_program_sram = p_operation.add_parser(

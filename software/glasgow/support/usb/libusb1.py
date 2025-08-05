@@ -127,7 +127,7 @@ class Context(AbstractContext):
         pass # not necessary on libusb1
 
     @_map_exceptions
-    async def get_devices(self) -> list['Device']:
+    async def get_devices(self) -> list["Device"]:
         return [
             Device(self._poller, device)
             for device in self._impl.getDeviceIterator(skip_on_error=True)
@@ -137,10 +137,10 @@ class Context(AbstractContext):
     def has_hotplug_support(self) -> bool:
         return self._impl.hasCapability(usb1.CAP_HAS_HOTPLUG)
 
-    def add_connect_callback(self, callback: Callable[['Device'], None]):
+    def add_connect_callback(self, callback: Callable[["Device"], None]):
         self._on_connect.append(callback)
 
-    def add_disconnect_callback(self, callback: Callable[['Device'], None]):
+    def add_disconnect_callback(self, callback: Callable[["Device"], None]):
         self._on_disconnect.append(callback)
 
     def _process_hotplug_event(self, _impl, impl_device, event):
@@ -219,7 +219,7 @@ class Device(AbstractDevice):
 
     @property
     @_map_exceptions
-    def configuration(self) -> 'Configuration':
+    def configuration(self) -> "Configuration":
         for configuration in self._impl_device.iterConfigurations():
             if configuration.getConfigurationValue() == self._ensure_open.getConfiguration():
                 return Configuration(configuration)
@@ -228,7 +228,7 @@ class Device(AbstractDevice):
 
     @property
     @_map_exceptions
-    def configurations(self) -> list['Configuration']:
+    def configurations(self) -> list["Configuration"]:
         return [
             Configuration(configuration)
             for configuration in self._impl_device.iterConfigurations()
@@ -348,7 +348,7 @@ class Configuration(AbstractConfiguration):
         return self._impl.getConfigurationValue()
 
     @property
-    def interfaces(self) -> list['Interface']:
+    def interfaces(self) -> list["Interface"]:
         return [
             Interface(number, interface)
             for number, interface in enumerate(self._impl.iterInterfaces())
@@ -365,7 +365,7 @@ class Interface(AbstractInterface):
         return self._number
 
     @property
-    def alternates(self) -> list['AlternateInterface']:
+    def alternates(self) -> list["AlternateInterface"]:
         return [
             AlternateInterface(alternate)
             for alternate in self._impl.iterSettings()
@@ -381,7 +381,7 @@ class AlternateInterface(AbstractAlternateInterface):
         return self._impl.getAlternateSetting()
 
     @property
-    def endpoints(self) -> list['Endpoint']:
+    def endpoints(self) -> list["Endpoint"]:
         return [
             Endpoint(endpoint)
             for endpoint in self._impl.iterEndpoints()

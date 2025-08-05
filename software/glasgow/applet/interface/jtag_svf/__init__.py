@@ -102,7 +102,7 @@ class SVFInterface(SVFEventHandler):
                 assert False
         else:
             # The TRST# pin is not present; ignore the command if it's Z or OFF, error if it's ON.
-            if mode == 'ON':
+            if mode == "ON":
                 raise SVFError("TRST ON command used, but the TRST# pin is not present")
 
     async def svf_state(self, state, path):

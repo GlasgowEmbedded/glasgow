@@ -1995,14 +1995,14 @@ def _jedec_update_mfg_from_pdf():
 
     parser = argparse.ArgumentParser(description="Update manufactures ID from JEDEC's official list distributed via PDF")
     parser.add_argument("pdf_filepath", default="JEP106BF01.pdf", help="Offical JEP106 PDF")
-    parser.add_argument("output_filepath", nargs='?', default=__file__, help="Optional output file. Default: 'jedec.py'")
+    parser.add_argument("output_filepath", nargs="?", default=__file__, help="Optional output file. Default: 'jedec.py'")
     args = parser.parse_args()
 
-    pdf_text = ''
+    pdf_text = ""
     with fitz.open(args.pdf_filepath) as doc:
         for page in doc:
             pdf_text += page.get_text()
-    jep106_matches = re.findall(r'^(\d+) (.+(?:\n.+){0,1})(?:(?:\n\d ){8})(?:\n)([0-9A-F]{2})', pdf_text, re.MULTILINE)
+    jep106_matches = re.findall(r"^(\d+) (.+(?:\n.+){0,1})(?:(?:\n\d ){8})(?:\n)([0-9A-F]{2})", pdf_text, re.MULTILINE)
 
     output_text = ""
     with open(__file__) as source_file:
@@ -2014,20 +2014,20 @@ def _jedec_update_mfg_from_pdf():
     manufacturers_array = "_manufacturers = [\n"
     bank_no = 0
     for entry in jep106_matches:
-        entry = tuple(item.replace('\n', '').strip() for item in entry)
-        if entry[0] == '1':
+        entry = tuple(item.replace("\n", "").strip() for item in entry)
+        if entry[0] == "1":
             bank_no += 1
             if (bank_no > 1):
                 manufacturers_array += f"    ],\n"
             manufacturers_array += f"    [ # Bank {bank_no}\n"
-        manufacturers_array += f"        ({int(entry[0])}, \"{entry[1]}\", 0x{int(entry[2], 16):02X}),\n"
+        manufacturers_array += f'        ({int(entry[0])}, "{entry[1]}", 0x{int(entry[2], 16):02X}),\n'
     manufacturers_array += "    ]\n]"
 
     # Update Manufacturers array
     output_text = re.sub(r"_manufacturers = \[(.|\n)*^\]", manufacturers_array, output_text, flags=re.MULTILINE)
 
-    with open(args.output_filepath, 'w') as f:
-        print(output_text, file=f, end='')
+    with open(args.output_filepath, "w") as f:
+        print(output_text, file=f, end="")
 
 if __name__ == "__main__":
     _jedec_update_mfg_from_pdf()
