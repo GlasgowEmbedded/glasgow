@@ -6,6 +6,18 @@ on:
 name: CI
 jobs:
 
+  lint-software:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v4
+      - name: Check source code for issues
+        uses: astral-sh/ruff-action@v3
+        with:
+          # `noqa:` directives are intentionally ignored; see `ruff.toml`
+          args: check --ignore-noqa --fix --no-show-fixes
+          src: software/
+
   test-software:
     strategy:
       matrix:
@@ -144,6 +156,7 @@ jobs:
 
   required: # group all required workflows into one to avoid reconfiguring this in Actions settings
     needs:
+      # - lint-software
       - test-software
       - build-firmware
       - build-manual
