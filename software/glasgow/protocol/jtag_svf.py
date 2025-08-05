@@ -68,7 +68,7 @@ class SVFLexer:
          None),
         (r"(?:!|//)([^\n]*)(?:\n|\Z)",
          None),
-        (r"({})(?=\s+|[;()]|\Z)".format("|".join(_keywords)),
+        (rf"({'|'.join(_keywords)})(?=\s+|[;()]|\Z)",
          lambda m: m[1]),
         (r"(\d+)(?=[^0-9\.E])",
          lambda m: int(m[1])),
@@ -110,9 +110,10 @@ class SVFLexer:
                     else:
                         return action(match), match.end()
             else:
-                raise SVFParsingError("unrecognized SVF data at line %d, column %d (%s...)"
-                                    % (*self.line_column(),
-                                       self.buffer[self.position:self.position + 16]))
+                line, column = self.line_column()
+                buffer_slice = self.buffer[self.position:self.position + 16]
+                raise SVFParsingError(
+                    f"unrecognized SVF data at line {line}, column {column} ({buffer_slice!r}...)")
 
     def peek(self):
         """Return the next token without advancing the position."""
@@ -175,8 +176,8 @@ class SVFParser:
         return self._token
 
     def _parse_error(self, error):
-        raise SVFParsingError("%s at line %d, column %d"
-                              % (error, *self._lexer.line_column(self._position)))
+        line, column = self._lexer.line_column(self._position)
+        raise SVFParsingError(f"{error} at line {line}, column {column}")
 
     def _parse_unexpected(self, expected, valid=()):
         if isinstance(self._token, str):
@@ -194,11 +195,9 @@ class SVFParser:
         else:
             assert False
         if valid:
-            self._parse_error("expected %s (one of %s), found %s"
-                              % (expected, ", ".join(valid), actual))
+            self._parse_error(f"expected {expected} (one of {', '.join(valid)}), found {actual}")
         else:
-            self._parse_error("expected %s, found %s"
-                              % (expected, actual))
+            self._parse_error(f"expected {expected}, found {actual}")
 
     def _parse_keyword(self, keyword):
         if self._parse_token() == keyword:
@@ -211,7 +210,7 @@ class SVFParser:
         if self._parse_token() in keywords:
             return self._token
         else:
-            self._parse_unexpected("one of {}".format(", ".join(keywords)))
+            self._parse_unexpected(f"one of {', '.join(keywords)}")
             assert False
 
     def _parse_value(self, kind):
@@ -257,8 +256,7 @@ class SVFParser:
     def _parse_scan_data(self, length):
         value = self._parse_value(bits)
         if int(value[length:]) != 0:
-            self._parse_error("scan data length %d exceeds command length %d"
-                              % (len(value), length))
+            self._parse_error(f"scan data length {len(value)} exceeds command length {length}")
 
         if length > len(value):
             return value + bits(0, length - len(value))
@@ -331,7 +329,7 @@ class SVFParser:
 
                 value = self._parse_scan_data(length)
                 if parameter in parameters:
-                    self._parse_error("parameter %s specified twice" % parameter)
+                    self._parse_error(f"parameter {parameter} specified twice")
                 parameters.add(parameter)
 
                 if parameter == "TDI":

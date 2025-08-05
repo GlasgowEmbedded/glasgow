@@ -55,7 +55,7 @@ class ARCDebugInterface:
             status = DR_STATUS.from_bits(status_bits)
             self._log("status %s", status.bits_repr())
             if status.FL:
-                raise ARCDebugError("transaction failed: %s" % status.bits_repr())
+                raise ARCDebugError(f"transaction failed: {status.bits_repr()}")
 
     async def read(self, address, space):
         if space == "memory":
@@ -169,7 +169,7 @@ class DebugARCApplet(JTAGProbeApplet):
     async def interact(self, device, args, arc_iface):
         idcode, device = await arc_iface.identify()
         if device is None:
-            raise GlasgowAppletError("cannot operate on unknown device with IDCODE=%08x"
-                                     % idcode.to_int())
+            raise GlasgowAppletError(
+                f"cannot operate on unknown device with IDCODE={idcode.to_int():08x}")
         self.logger.info("IDCODE=%08x device=%s rev=%d",
                          idcode.to_int(), device.name, idcode.version)

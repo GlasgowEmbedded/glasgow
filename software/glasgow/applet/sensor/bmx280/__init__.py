@@ -233,7 +233,7 @@ class BMx280Interface(metaclass=ABCMeta):
             self._ident = "BME280"
             self._has_hum = True
         else:
-            raise BMx280Error("BMx280: wrong ID=%#04x" % id)
+            raise BMx280Error(f"BMx280: wrong ID={id:#04x}")
         return self._ident
 
     @property
@@ -281,7 +281,7 @@ class BMx280Interface(metaclass=ABCMeta):
     async def set_oversample(self, ovs_t: int | None = None, ovs_p: int | None = None,
                              ovs_h: int | None = None):
         if ovs_h is not None and not self._has_hum:
-            raise BMx280Error("%s: sensor does not measure humidity" % self._ident)
+            raise BMx280Error(f"{self._ident}: sensor does not measure humidity")
 
         if ovs_h is not None:
             await self._write_reg8u(REG_CTRL_HUM, bit_osrs_hum[ovs_h])

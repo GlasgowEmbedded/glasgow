@@ -48,9 +48,8 @@ def dump_seq(joiner, data):
                                       data_length <= dump_seq.limit):
             return joiner.join(data)
         else:
-            return "{}... ({} elements total)".format(
-                joiner.join(elem for elem, _ in zip(data, range(dump_seq.limit))),
-                data_length or "?")
+            dumped = joiner.join((elem for elem, _ in zip(data, range(dump_seq.limit))))
+            return f"{dumped}... ({data_length or '?'} elements total)"
     return lazy(lambda: to_seq(data))
 
 
@@ -70,9 +69,8 @@ def dump_mapseq(joiner, mapper, data):
                                          data_length <= dump_mapseq.limit):
             return joiner.join(map(mapper, data))
         else:
-            return "{}... ({} elements total)".format(
-                joiner.join(mapper(elem) for elem, _ in zip(data, range(dump_mapseq.limit))),
-                data_length or "?")
+            dumped = joiner.join((mapper(elem) for elem, _ in zip(data, range(dump_mapseq.limit))))
+            return f"{dumped}... ({data_length or '?'} elements total)"
     return lazy(lambda: to_mapseq(data))
 
 

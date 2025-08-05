@@ -71,7 +71,7 @@ class BitstructTestCase(unittest.TestCase):
     def test_reserved(self):
         bs = bitstruct("bs", 64, [(None, 1), ("a", 1), (None, 62)])
         x = bs(1)
-        self.assertEqual(repr(x), "<%s.bs a=1>" % __name__)
+        self.assertEqual(repr(x), f"<{__name__}.bs a=1>")
 
     def test_bytes(self):
         bs = bitstruct("bs", 8, [("a", 3), ("b", 5)])
@@ -104,7 +104,7 @@ class BitstructTestCase(unittest.TestCase):
     def test_repr(self):
         bs = bitstruct("bs", 8, [("a", 3), ("b", 5)])
         x = bs(1, 2)
-        self.assertEqual(repr(x), "<%s.bs a=001 b=00010>" % __name__)
+        self.assertEqual(repr(x), f"<{__name__}.bs a=001 b=00010>")
 
     def test_copy(self):
         bs = bitstruct("bs", 8, [("a", 3), ("b", 5)])

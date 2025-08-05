@@ -271,7 +271,7 @@ class SensorSCD30Applet(GlasgowAppletV2):
             temperature_offset    = await self.scd30_iface.get_temperature_offset()
             altitude_compensation = await self.scd30_iface.get_altitude_compensation()
             measurement_interval  = await self.scd30_iface.get_measurement_interval()
-            print("auto-calibration      : {}".format("on" if auto_calibration else "off"))
+            print(f"auto-calibration      : {'on' if auto_calibration else 'off'}")
             print(f"forced calibration    : {force_calibration} ppm (last)")
             print(f"temperature offset    : {temperature_offset} °C")
             print(f"altitude compensation : {altitude_compensation} m")

@@ -16,32 +16,34 @@ class _bitstruct:
     def _check_bits_(action, expected_width, value):
         assert isinstance(value, bits)
         if len(value) != expected_width:
-            raise ValueError("%s requires %d bits, got %d bits (%s)"
-                             % (action, expected_width, len(value), value))
+            raise ValueError(
+                f"{action} requires {expected_width} bits, got {len(value)} bits ({value})")
 
     @staticmethod
     def _check_int_(action, expected_width, value):
         assert isinstance(value, int)
         if value < 0:
-            raise ValueError("%s requires a non-negative integer, got %d"
-                             % (action, value))
+            raise ValueError(f"{action} requires a non-negative integer, got {value}")
         if value.bit_length() > expected_width:
-            raise ValueError("%s requires a %d-bit integer, got %d-bit (%d)"
-                             % (action, expected_width, value.bit_length(), value))
+            raise ValueError(
+                f"{action} requires a {expected_width}-bit integer, "
+                f"got {value.bit_length()}-bit ({value})")
 
     @staticmethod
     def _check_bytes_(action, expected_length, value):
         assert isinstance(value, (bytes, bytearray, memoryview))
         if len(value) != expected_length:
-            raise ValueError("%s requires %d bytes, got %d bytes (%s)"
-                             % (action, expected_length, len(value), value.hex()))
+            raise ValueError(
+                f"{action} requires {expected_length} bytes, "
+                f"got {len(value)} bytes ({value.hex()})")
 
     @staticmethod
     def _define_fields_(cls, declared_bits, fields):
         total_bits = sum(width for name, width in fields)
         if total_bits != declared_bits:
-            raise TypeError("declared width is %d bits, but sum of field widths is %d bits"
-                            % (declared_bits, total_bits))
+            raise TypeError(
+                f"declared width is {declared_bits} bits, but "
+                f"sum of field widths is {total_bits} bits")
 
         cls["_size_bits_"]    = declared_bits
         cls["_size_bytes_"]   = (declared_bits + 7) // 8
@@ -51,7 +53,7 @@ class _bitstruct:
         offset = 0
         for name, width in fields:
             if name is None:
-                name = "padding_%d" % offset
+                name = f"padding_{offset}"
             else:
                 cls["_named_fields_"].append(name)
             cls["_layout_"][name] = (offset, width)
@@ -146,7 +148,7 @@ class _bitstruct:
             if omit_zero and value == 0:
                 continue
 
-            fields.append("{}={:0{}b}".format(name, value, width))
+            fields.append(f"{name}={value:0{width}b}")
 
         return " ".join(fields)
 

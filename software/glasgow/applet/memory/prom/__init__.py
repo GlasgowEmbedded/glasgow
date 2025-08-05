@@ -669,7 +669,7 @@ class MemoryPROMApplet(GlasgowApplet):
                 args.file.write(data.convert(args.endian).raw_data)
             else:
                 for word in data:
-                    print("{:0{}x}".format(word, (dq_bits + 3) // 4))
+                    print(f"{word:0{(dq_bits + 3) // 4}x}")
 
         if args.operation == "verify":
             golden_data = prom_iface.Data(args.file.read(), prom_iface.dq_bytes, args.endian)
@@ -678,8 +678,7 @@ class MemoryPROMApplet(GlasgowApplet):
                 self.logger.info("verify PASS")
             else:
                 differ = sum(a != b for a, b in zip(golden_data, actual_data))
-                raise GlasgowAppletError(f"verify FAIL ({differ} words differ)"
-                                         )
+                raise GlasgowAppletError(f"verify FAIL ({differ} words differ)")
 
         if args.operation == "write":
             data = prom_iface.Data(args.file.read(), prom_iface.dq_bytes, args.endian)

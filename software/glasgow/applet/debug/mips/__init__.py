@@ -42,8 +42,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
 
     def _check_state(self, action, *states):
         if self._state not in states:
-            raise EJTAGError("cannot %s: not in %s state" %
-                             (action, ", ".join(states)))
+            raise EJTAGError(f"cannot {action}: not in {', '.join(states)} state")
 
     def _change_state(self, state):
         self._log("set state %s", state)
@@ -138,8 +137,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         else:
             raise EJTAGError("DMAAcc: read hang")
         if control.DErr:
-            raise EJTAGError("DMAAcc: read error address=%#0.*x size=%d" %
-                             (self._prec, address, size))
+            raise EJTAGError(f"DMAAcc: read error address={address:#0{self._prec}x} size={size}")
         data = await self._read_data()
         self._log("DMAAcc: data=%#0.*x", self._prec, data)
         await self._exchange_control(DMAAcc=0)
@@ -159,8 +157,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         else:
             raise EJTAGError("DMAAcc: write hang")
         if control.DErr:
-            raise EJTAGError("DMAAcc: write error address=%#0.*x size=%d" %
-                             (self._prec, address, size))
+            raise EJTAGError(f"DMAAcc: write error address={address:#0{self._prec}x} size={size}")
         await self._exchange_control(DMAAcc=0)
 
     # PrAcc state management
@@ -276,14 +273,13 @@ class EJTAGDebugInterface(aobject, GDBRemote):
             elif address in range(data_beg, data_end):
                 area, area_beg, area_wr, area_name = data, data_beg, True,  "data"
             else:
-                raise EJTAGError("Exec_PrAcc: address %#0.*x out of range" %
-                                 (self._prec, address))
+                raise EJTAGError(f"Exec_PrAcc: address {address:#0{self._prec}x} out of range")
 
             area_off = (address - area_beg) // 4
             if control.PRnW:
                 if not area_wr:
-                    raise EJTAGError("Exec_PrAcc: write access to %s at %#0.*x" %
-                                     (area_name, self._prec, address))
+                    raise EJTAGError(
+                        f"Exec_PrAcc: write access to {area_name} at {address:#0{self._prec}x}")
 
                 word = await self._read_data()
                 self._log("Exec_PrAcc: write %s [%#06x] = %#0.*x",
@@ -775,7 +771,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         elif number == 37:
             return await self._pracc_read_cp0(CP0_DEPC_addr)
         else:
-            raise EJTAGError("getting register %d not supported" % number)
+            raise EJTAGError(f"getting register {number} not supported")
 
     async def target_set_register(self, number, value):
         self._check_state("set register", "Stopped")
@@ -784,7 +780,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
         elif number == 37:
             await self._pracc_write_cp0(CP0_DEPC_addr, value)
         else:
-            raise EJTAGError("setting register %d not supported" % number)
+            raise EJTAGError(f"setting register {number} not supported")
 
     async def target_read_memory(self, address, length):
         self._check_state("read memory", "Stopped")

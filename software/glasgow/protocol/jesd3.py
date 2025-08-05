@@ -102,17 +102,19 @@ class JESD3Lexer:
                 token = match.group(0)
                 match = self._field_res[token].match(self.buffer, self.position)
                 if not match:
-                    raise JESD3ParsingError("field %s has invalid format at line %d, column %d"
-                                            % (token, *self.line_column()))
+                    line, column = self.line_column()
+                    raise JESD3ParsingError(
+                        f"field {token} has invalid format at line {line}, column {column}")
                 else:
                     self.checksum += sum(match.group(0))
 
             else:
                 match = self._etx_re.match(self.buffer, self.position)
                 if not match:
-                    raise JESD3ParsingError("unrecognized field at line %d, column %d (%r...)"
-                                            % (*self.line_column(),
-                                               self.buffer[self.position:self.position + 16]))
+                    line, column = self.line_column()
+                    buffer_slice = self.buffer[self.position:self.position + 16]
+                    raise JESD3ParsingError(
+                        f"unrecognized field at line {line}, column {column} ({buffer_slice!r}...)")
                 else:
                     token = b"end"
                     self._state = "end"
@@ -141,8 +143,8 @@ class JESD3Parser:
         self.device_id       = None
 
     def _parse_error(self, error):
-        raise JESD3ParsingError("%s at line %d, column %d"
-                                % (error, *self._lexer.line_column(self._position)))
+        line, column = self._lexer.line_column(self._position)
+        raise JESD3ParsingError(f"{error} at line {line}, column {column}")
 
     def parse(self):
         for token, position, args in self._lexer:
@@ -193,8 +195,9 @@ class JESD3Parser:
         index  = int(index, 10)
         values = bits(values[::-1].decode("ascii"))
         if index + len(values) > len(self.fuse):
-            self._parse_error("fuse list specifies range [%d:%d] beyond last fuse %d"
-                              % (index, index + len(values), len(self.fuse)))
+            self._parse_error(
+                f"fuse list specifies range [{index}:{index + len(values)}] beyond "
+                f"last fuse {len(self.fuse)}")
         self.fuse[index:index + len(values)] = values
         self._fuse_bit_count += len(values)
 
@@ -203,8 +206,9 @@ class JESD3Parser:
         expected_checksum = int(checksum, 16)
         actual_checksum   = sum(self.fuse.to_bytes()) & 0xffff
         if expected_checksum != actual_checksum:
-            self._parse_error("fuse checksum mismatch: expected %04X, actual %04X"
-                              % (expected_checksum, actual_checksum))
+            self._parse_error(
+                f"fuse checksum mismatch: expected {expected_checksum:04X}, "
+                f"actual {actual_checksum:04X}")
 
     def _set_electrical_fuse(self, value):
         if self.electrical_fuse is not None:
@@ -281,13 +285,14 @@ class JESD3Parser:
             return
         actual_checksum   = self._lexer.checksum & 0xffff
         if expected_checksum != actual_checksum:
-            self._parse_error("transmission checksum mismatch: expected %04X, actual %04X"
-                              % (expected_checksum, actual_checksum))
+            self._parse_error(
+                f"transmission checksum mismatch: expected {expected_checksum:04X}, "
+                f"actual {actual_checksum:04X}")
 
         if self._fuse_default is None and self._fuse_bit_count < len(self.fuse):
-            self._parse_error("fuse default state is not specified, and only %d out of %d fuse "
-                              "bits are explicitly defined"
-                              % (self._fuse_bit_count, len(self.fuse)))
+            self._parse_error(
+                f"fuse default state is not specified, and only {self._fuse_bit_count} "
+                f"out of {len(self.fuse)} fuse bits are explicitly defined")
 
 
 class JESD3Emitter:

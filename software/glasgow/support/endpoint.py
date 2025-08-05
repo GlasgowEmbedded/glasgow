@@ -27,7 +27,7 @@ class ServerEndpoint(aobject, asyncio.Protocol):
     @classmethod
     def add_argument(cls, parser, name, default=None):
         metavar = name.upper().replace("_", "-")
-        help    = "listen at %s, either unix:PATH or tcp:HOST:PORT" % metavar
+        help    = f"listen at {metavar}, either unix:PATH or tcp:HOST:PORT"
         if default is None:
             nargs = None
         else:
@@ -56,7 +56,7 @@ class ServerEndpoint(aobject, asyncio.Protocol):
             tcp_host, tcp_port = proto_args
             self._log(logging.INFO, "listening at tcp:%s:%d", tcp_host or "*", tcp_port)
         else:
-            raise ValueError("unknown protocol %s" % proto)
+            raise ValueError(f"unknown protocol {proto}")
 
         self._transport     = None
         self._new_transport = None
@@ -240,7 +240,7 @@ class ClientEndpoint(aobject, asyncio.Protocol):
     @classmethod
     def add_argument(cls, parser, name, default=None):
         metavar = name.upper().replace("_", "-")
-        help    = "connect to %s, either unix:PATH or tcp:HOST:PORT" % metavar
+        help    = f"connect to {metavar}, either unix:PATH or tcp:HOST:PORT"
         if default is None:
             nargs = None
         else:

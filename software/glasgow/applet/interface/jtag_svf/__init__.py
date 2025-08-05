@@ -84,9 +84,9 @@ class SVFInterface(SVFEventHandler):
 
     async def svf_frequency(self, frequency):
         if frequency is not None and frequency < self._frequency:
-            raise SVFError("FREQUENCY command requires a lower frequency (%.3f kHz) "
-                           "than the applet is configured for (%.3f kHz)"
-                           % (frequency / 1e3, self._frequency / 1e3))
+            raise SVFError(
+                f"FREQUENCY command requires a lower frequency ({frequency / 1e3:.3f} kHz) "
+                f"than the applet is configured for ({self._frequency / 1e3:.3f} kHz)")
 
     async def svf_trst(self, mode):
         if self.lower.has_trst:
@@ -227,8 +227,9 @@ class SVFInterface(SVFEventHandler):
         else:
             tdo = await self.lower.shift_tdio(op.tdi)
             if tdo & op.mask != op.tdo & op.mask:
-                raise SVFError("SIR command failed: TDO <%s> & <%s> != <%s>"
-                               % (dump_bin(tdo), dump_bin(op.mask), dump_bin(op.tdo)))
+                raise SVFError(
+                    f"SIR command failed: TDO <{dump_bin(tdo)}> & <{dump_bin(op.mask)}> "
+                    f"!= <{dump_bin(op.tdo)}>")
         await self._enter_state(self._endir)
 
     async def svf_sdr(self, tdi, smask, tdo, mask):
@@ -239,18 +240,20 @@ class SVFInterface(SVFEventHandler):
         else:
             tdo = await self.lower.shift_tdio(op.tdi)
             if tdo & op.mask != op.tdo & op.mask:
-                raise SVFError("SDR command failed: TDO <%s> & <%s> != <%s>"
-                               % (dump_bin(tdo), dump_bin(op.mask), dump_bin(op.tdo)))
+                raise SVFError(
+                    f"SDR command failed: TDO <{dump_bin(tdo)}> & <{dump_bin(op.mask)}> "
+                    f"!= <{dump_bin(op.tdo)}>")
         await self._enter_state(self._enddr)
 
     async def svf_runtest(self, run_state, run_count, run_clock, min_time, max_time, end_state):
         if run_clock != "TCK":
-            raise SVFError("RUNTEST clock %s is not supported" % run_count)
+            raise SVFError(f"RUNTEST clock {run_count} is not supported")
         if run_count is None or (min_time is not None and run_count / self._frequency < min_time):
             run_count = int(self._frequency * min_time)
         if max_time is not None and run_count / self._frequency > max_time:
-            self._logger.warning("RUNTEST exceeds maximum time: %d cycles (%.3f s) > %.3f s"
-                                 % (run_count, run_count / self._frequency, max_time))
+            self._logger.warning(
+                f"RUNTEST exceeds maximum time: {run_count} cycles "
+                f"({run_count / self._frequency:.3f} s) > {max_time:.3f} s")
 
         await self._enter_state(run_state)
         await self.lower.pulse_tck(run_count)
