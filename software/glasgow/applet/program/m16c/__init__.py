@@ -218,7 +218,7 @@ class ProgramM16CInterface:
                 timeout -= 0.1
 
     async def is_bootloader_locked(self):
-        srd1, srd2 = await self._bootloader_read_status()
+        _srd1, srd2 = await self._bootloader_read_status()
         if (srd2 & ID_MASK) in (ID_MISSING, ID_WRONG):
             return True
         if (srd2 & ID_MASK) == ID_CORRECT:
@@ -237,7 +237,7 @@ class ProgramM16CInterface:
         await self.lower.write([len(key)])
         await self.lower.write(key)
 
-        srd1, srd2 = await self._bootloader_read_status()
+        _srd1, srd2 = await self._bootloader_read_status()
         if (srd2 & ID_MASK) == ID_CORRECT:
             return True
         if (srd2 & ID_MASK) == ID_WRONG:
@@ -272,7 +272,7 @@ class ProgramM16CInterface:
         ])
         await self.lower.write(data)
         try:
-            srd1, srd2 = await self._bootloader_poll_status(1.0)
+            srd1, _srd2 = await self._bootloader_poll_status(1.0)
             assert (srd1 & ST_READY) != 0
             if (srd1 & ST_PROGRAM_FAIL) != 0:
                 raise M16CBootloaderError(f"cannot program page {address:06x}")
@@ -289,7 +289,7 @@ class ProgramM16CInterface:
         ])
         await self.lower.write([Command.ERASE_KEY])
         try:
-            srd1, srd2 = await self._bootloader_poll_status(1.0)
+            srd1, _srd2 = await self._bootloader_poll_status(1.0)
             assert (srd1 & ST_READY) != 0
             if (srd1 & ST_ERASE_FAIL) != 0:
                 raise M16CBootloaderError(f"cannot erase block {address:06x}")
@@ -300,7 +300,7 @@ class ProgramM16CInterface:
         self._log("command erase-all")
         await self.lower.write([Command.CLEAR_STATUS, Command.ERASE_ALL, Command.ERASE_KEY])
         try:
-            srd1, srd2 = await self._bootloader_poll_status(10.0)
+            srd1, _srd2 = await self._bootloader_poll_status(10.0)
             assert (srd1 & ST_READY) != 0
             if (srd1 & ST_ERASE_FAIL) != 0:
                 raise M16CBootloaderError("cannot erase entire array")

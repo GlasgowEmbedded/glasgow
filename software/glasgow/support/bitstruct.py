@@ -141,7 +141,7 @@ class _bitstruct:
             names = self._layout_.keys()
 
         for name in names:
-            offset, width = self._layout_[name]
+            _offset, width = self._layout_[name]
             value = getattr(self, name)
             if omit_zero and value == 0:
                 continue

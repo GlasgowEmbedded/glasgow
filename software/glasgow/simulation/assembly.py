@@ -30,7 +30,7 @@ class SimulationPipe(AbstractInOutPipe):
     async def recv(self, length) -> memoryview:
         assert self._i_buffer is not None, "recv() called on an out pipe"
         while len(self._i_buffer) < length:
-            clk_hit, rst_hit = await self._parent._context.tick()
+            _clk_hit, rst_hit = await self._parent._context.tick()
             assert not rst_hit
         data = self._i_buffer[:length]
         del self._i_buffer[:length]
@@ -40,7 +40,7 @@ class SimulationPipe(AbstractInOutPipe):
         assert self._i_buffer is not None, "recv_until() called on an out pipe"
         assert len(delimiter) >= 1
         while delimiter not in self._i_buffer:
-            clk_hit, rst_hit = await self._parent._context.tick()
+            _clk_hit, rst_hit = await self._parent._context.tick()
             assert not rst_hit
         length = self._i_buffer.index(delimiter) + len(delimiter)
         data = self._i_buffer[:length]
@@ -58,7 +58,7 @@ class SimulationPipe(AbstractInOutPipe):
     async def flush(self, *, _wait=True):
         assert self._o_buffer is not None, "flush() called on an in pipe"
         while len(self._o_buffer) > 0:
-            clk_hit, rst_hit = await self._parent._context.tick()
+            _clk_hit, rst_hit = await self._parent._context.tick()
             assert not rst_hit
 
     async def reset(self):
@@ -169,7 +169,7 @@ class SimulationAssembly(AbstractAssembly):
                     ctx.set(out_stream.valid, len(o_buffer) > 0)
                     if o_buffer:
                         ctx.set(out_stream.payload, o_buffer[0])
-                    clk_hit, rst_hit, xfer_smp = \
+                    _clk_hit, _rst_hit, xfer_smp = \
                         await ctx.tick().sample(out_stream.ready & out_stream.valid)
                     if xfer_smp:
                         del o_buffer[0]

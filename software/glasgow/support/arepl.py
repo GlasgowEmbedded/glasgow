@@ -174,7 +174,7 @@ class AsyncInteractiveConsole:
                 else:
                     sigint_task = asyncio.ensure_future(wait_for_signal(signal.SIGINT))
                     line_task = asyncio.ensure_future(self._process_line(line))
-                    done, pending = await asyncio.wait([sigint_task, line_task],
+                    _done, pending = await asyncio.wait([sigint_task, line_task],
                         return_when=asyncio.FIRST_COMPLETED)
                     for task in pending:
                         task.cancel()

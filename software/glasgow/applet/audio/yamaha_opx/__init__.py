@@ -1262,8 +1262,8 @@ class AudioYamahaOPxApplet(GlasgowApplet):
             play_fut   = asyncio.ensure_future(vgm_player.play())
             record_fut = asyncio.ensure_future(vgm_player.record(sample_queue))
             write_fut  = asyncio.ensure_future(write_pcm(sample_queue))
-            done, pending = await asyncio.wait([play_fut, record_fut, write_fut],
-                                               return_when=asyncio.FIRST_EXCEPTION)
+            done, _pending = await asyncio.wait([play_fut, record_fut, write_fut],
+                                                return_when=asyncio.FIRST_EXCEPTION)
             for fut in done:
                 await fut
 
@@ -1285,7 +1285,7 @@ class AudioYamahaOPxApplet(GlasgowApplet):
             await opx_iface._use_highest_level()
             record_fut = asyncio.ensure_future(opx_iface.read_samples(context["samples"]))
             play_fut   = asyncio.ensure_future(context["main"](opx_iface))
-            done, pending = await asyncio.wait([play_fut, record_fut],
+            done, _pending = await asyncio.wait([play_fut, record_fut],
                                                return_when=asyncio.FIRST_EXCEPTION)
             for fut in done:
                 await fut

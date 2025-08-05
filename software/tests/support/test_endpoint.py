@@ -87,7 +87,7 @@ class ServerEndpointTestCase(unittest.TestCase):
         sock = ("unix", f"{tempfile.gettempdir()}/test_until_sock")
         endp = await ServerEndpoint("test_until", logging.getLogger(__name__), sock)
 
-        conn_rd, conn_wr = await asyncio.open_unix_connection(*sock[1:])
+        _conn_rd, conn_wr = await asyncio.open_unix_connection(*sock[1:])
         conn_wr.write(b"ABC;DEF")
         await conn_wr.drain()
         self.assertEqual(await endp.recv_until(b";"), b"ABC")

@@ -121,7 +121,7 @@ class MockReplayer:
                 try:
                     yield stanza["result"]
                 finally:
-                    exc_type, exc_value, traceback = sys.exc_info()
+                    _exc_type, exc_value, _traceback = sys.exc_info()
                     exit_stanza = self.__load()
                     self.__case.assertEqual(attr, exit_stanza["call"])
                     self.__case.assertEqual("asynccontext.exit", exit_stanza["kind"])
