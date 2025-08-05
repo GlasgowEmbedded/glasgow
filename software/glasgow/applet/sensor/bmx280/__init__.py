@@ -263,9 +263,9 @@ class BMx280Interface(metaclass=ABCMeta):
             h4_h5_1 = await self._read_reg8u(REG_CAL_H4_H5 + 0)
             h4_h5_2 = await self._read_reg8u(REG_CAL_H4_H5 + 1)
             h4_h5_3 = await self._read_reg8u(REG_CAL_H4_H5 + 2)
-            _12u_to_12s = lambda raw: -((1 << 12) - raw) if raw & (1 << 11) else raw
-            self._h4 = _12u_to_12s((h4_h5_1 << 4) | (h4_h5_2 & 0xf))
-            self._h5 = _12u_to_12s((h4_h5_3 << 4) | (h4_h5_2 >> 4))
+            conv_12u_to_12s = lambda raw: -((1 << 12) - raw) if raw & (1 << 11) else raw
+            self._h4 = conv_12u_to_12s((h4_h5_1 << 4) | (h4_h5_2 & 0xf))
+            self._h5 = conv_12u_to_12s((h4_h5_3 << 4) | (h4_h5_2 >> 4))
         self._has_cal = True
 
     async def set_iir_coefficient(self, coeff: int):
