@@ -247,7 +247,7 @@ class SVFInterface(SVFEventHandler):
     async def svf_runtest(self, run_state, run_count, run_clock, min_time, max_time, end_state):
         if run_clock != "TCK":
             raise SVFError("RUNTEST clock %s is not supported" % run_count)
-        if run_count is None or min_time is not None and run_count / self._frequency < min_time:
+        if run_count is None or (min_time is not None and run_count / self._frequency < min_time):
             run_count = int(self._frequency * min_time)
         if max_time is not None and run_count / self._frequency > max_time:
             self._logger.warning("RUNTEST exceeds maximum time: %d cycles (%.3f s) > %.3f s"

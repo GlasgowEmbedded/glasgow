@@ -57,8 +57,8 @@ class _PriorityDecoder(Elaboratable):
 
 class EventSource(Elaboratable):
     def __init__(self, name, kind, width, fields, depth):
-        assert (width >  0 and kind in ("change", "strobe") or
-                width == 0 and kind == "strobe")
+        assert ((width >  0 and kind in ("change", "strobe")) or
+                (width == 0 and kind == "strobe"))
 
         self.name    = name
         self.width   = width
@@ -503,7 +503,7 @@ class TraceDecoder:
         """
         if self._state == "OVERRUN":
             self._timeline.append((self._timestamp, "overrun"))
-        elif pending and self._pending or self._state == "DONE":
+        elif (pending and self._pending) or self._state == "DONE":
             self._timeline.append((self._timestamp, self._pending))
             self._pending = OrderedDict()
 

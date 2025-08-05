@@ -806,7 +806,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
         data = []
         labels = []
         for cylinder, head, bytestream in self.iter_tracks(args.file):
-            if cylinder not in args.cylinders or args.head is not None and head not in args.head:
+            if cylinder not in args.cylinders or (args.head is not None and head not in args.head):
                 continue
             self.logger.info("processing C/H %d/%d",
                              cylinder, head)
