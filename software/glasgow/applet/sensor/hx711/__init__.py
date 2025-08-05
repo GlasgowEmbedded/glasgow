@@ -30,7 +30,7 @@ class HX711Bus(Elaboratable):
         m.submodules += cdc.FFSynchronizer(din_buffer.i, self.din)
         if self.ports.osc is not None:
             m.submodules.osc_buffer = osc_buffer = io.Buffer("o", self.ports.osc)
-            m.d.comb += osc_buffer.o.eq(self.osc),
+            m.d.comb += osc_buffer.o.eq(self.osc)
         return m
 
 

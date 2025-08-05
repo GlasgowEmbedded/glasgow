@@ -88,7 +88,7 @@ class VideoHub75OutputSubtarget(Elaboratable):
                     m.next = "LATCH"
 
             with m.State("LATCH"):
-                m.d.comb += output.lat.eq(1),
+                m.d.comb += output.lat.eq(1)
                 m.d.sync += [
                     row_disp.eq(row),
                     row.eq(Mux(row < (px_height_half - 1), row + 1, 0)),

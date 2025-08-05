@@ -221,7 +221,7 @@ class JTAGProbeDriver(Elaboratable):
 
             with m.State("RECV-COUNT-2"):
                 with m.If(self._out_fifo.r_rdy):
-                    m.d.comb += self._out_fifo.r_en.eq(1),
+                    m.d.comb += self._out_fifo.r_en.eq(1)
                     m.d.sync += count[8:16].eq(self._out_fifo.r_data)
                     m.next = "RECV-BITS"
 
@@ -274,7 +274,7 @@ class JTAGProbeDriver(Elaboratable):
             with m.State("SEND-BITS"):
                 with m.If(cmd & BIT_DATA_IN):
                     with m.If(self._in_fifo.w_rdy):
-                        m.d.comb += self._in_fifo.w_en.eq(1),
+                        m.d.comb += self._in_fifo.w_en.eq(1)
                         with m.If(count == 0):
                             m.d.comb += self._in_fifo.w_data.eq(shreg_i >> align)
                         with m.Else():

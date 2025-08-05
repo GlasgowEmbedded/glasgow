@@ -65,9 +65,9 @@ class MemoryPROMBus(Elaboratable):
             a_si  = Signal()
             a_lat = Signal(init=0) if ports.a_lat is not None else None
             m.submodules.a_clk_buffer = a_clk_buffer = io.Buffer("o", ports.a_clk)
-            m.d.comb += a_clk_buffer.o.eq(a_clk),
+            m.d.comb += a_clk_buffer.o.eq(a_clk)
             m.submodules.a_si_buffer = a_si_buffer = io.Buffer("o", ports.a_si)
-            m.d.comb += a_si_buffer.o.eq(a_si),
+            m.d.comb += a_si_buffer.o.eq(a_si)
             if a_lat is not None:
                 m.submodules.a_lat_buffer = a_lat_buffer = io.Buffer("o", ports.a_lat)
                 m.d.comb += a_lat_buffer.o.eq(a_lat)

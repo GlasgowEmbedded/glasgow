@@ -62,7 +62,7 @@ class JTAGXVCProbe(wiring.Component):
             io_streamer.i.p.port.tdi.o.eq(self.i_stream.p.tdi.bit_select(phase[1:], 1)),
         ]
         with m.If(phase[0] & (timer == 0)):
-            m.d.comb += io_streamer.i.p.meta.eq(Mux(last, _ShiftIn.Last, _ShiftIn.More)),
+            m.d.comb += io_streamer.i.p.meta.eq(Mux(last, _ShiftIn.Last, _ShiftIn.More))
 
         m.d.comb += io_streamer.i.valid.eq(self.i_stream.valid)
         with m.If(self.i_stream.valid & io_streamer.i.ready):
