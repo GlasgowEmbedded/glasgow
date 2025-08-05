@@ -95,7 +95,7 @@ class SimulationAssembly(AbstractAssembly):
         self.__context = None
 
     @property
-    def sys_clk_period(self) -> 'Period':
+    def sys_clk_period(self) -> "Period":
         # Reduced from 36 or 48 MHz to 1 MHz to improve test performance.
         return 1/1000000
 

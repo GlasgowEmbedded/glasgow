@@ -143,9 +143,9 @@ class VideoWS2812OutputApplet(GlasgowApplet):
 
     pixel_formats = {
         # in-out      in size  out size  format_func
-        'RGB-BRG':   (   3,        3,    lambda r,g,b:   Cat(b,r,g)   ),
-        'RGB-xBRG':  (   3,        4,    lambda r,g,b:   Cat(Const(0, unsigned(8)),b,r,g) ),
-        'RGBW-WBRG': (   4,        4,    lambda r,g,b,w: Cat(w,b,r,g) ),
+        "RGB-BRG":   (   3,        3,    lambda r,g,b:   Cat(b,r,g)   ),
+        "RGB-xBRG":  (   3,        4,    lambda r,g,b:   Cat(Const(0, unsigned(8)),b,r,g) ),
+        "RGBW-WBRG": (   4,        4,    lambda r,g,b,w: Cat(w,b,r,g) ),
     }
 
     @classmethod

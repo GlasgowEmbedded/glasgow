@@ -179,7 +179,7 @@ class XC95xxInterface:
     async def programming_enable(self):
         self._log("programming enable")
         await self.lower.write_ir(IR_ISPEN)
-        ispenable = self.DR_ISPENABLE(fbs=bits('1' * self.device.fbs), uim=1)
+        ispenable = self.DR_ISPENABLE(fbs=bits("1" * self.device.fbs), uim=1)
         await self.lower.write_dr(ispenable.to_bits())
         await self.lower.run_test_idle(1)
 

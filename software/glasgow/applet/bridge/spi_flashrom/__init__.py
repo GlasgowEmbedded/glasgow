@@ -22,7 +22,7 @@ class SerprogCommandHandler:
         (1 << SerprogCommand.CMD_S_BUSTYPE)
     )
 
-    PROGNAME = b'Glasgow serprog\0'
+    PROGNAME = b"Glasgow serprog\0"
     assert len(PROGNAME) == 16
 
     def __init__(self, logger: logging.Logger, spi_iface: SPIControllerInterface,
@@ -69,7 +69,7 @@ class SerprogCommandHandler:
             await self.ack()
             await self.endpoint.send(self.PROGNAME)
         elif cmd == SerprogCommand.CMD_Q_CMDMAP:
-            cmdmap = self.CMDMAP_VALUE.to_bytes(length=32, byteorder='little')
+            cmdmap = self.CMDMAP_VALUE.to_bytes(length=32, byteorder="little")
             await self.ack()
             await self.endpoint.send(cmdmap)
         elif cmd == SerprogCommand.CMD_Q_SERBUF:

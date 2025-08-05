@@ -462,7 +462,7 @@ class HardwareAssembly(AbstractAssembly):
                 assert False, f"invalid revision {revision}"
 
     @classmethod
-    async def find_device(cls, serial: Optional[str] = None) -> 'HardwareAssembly':
+    async def find_device(cls, serial: Optional[str] = None) -> "HardwareAssembly":
         return cls(device=await GlasgowDevice.find(serial))
 
     def __init__(self, *,

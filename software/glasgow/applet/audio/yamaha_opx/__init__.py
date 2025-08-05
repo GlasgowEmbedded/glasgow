@@ -1214,7 +1214,7 @@ class AudioYamahaOPxApplet(GlasgowApplet):
         p_web = p_operation.add_parser(
             "web", help="expose Yamaha hardware via a web interface")
         p_web.add_argument(
-            "--allow-urls", action='store_true',
+            "--allow-urls", action="store_true",
             help="allow users to specify a URL to play a VGM/VGZ file from (use with caution)")
         p_web.add_argument(
             "endpoint", metavar="ENDPOINT", type=str, default="localhost:8080",

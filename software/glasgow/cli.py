@@ -158,12 +158,12 @@ def get_argparser():
     def add_subparsers(parser, **kwargs):
         if isinstance(parser, argparse._MutuallyExclusiveGroup):
             container = parser._container
-            if kwargs.get('prog') is None:
+            if kwargs.get("prog") is None:
                 formatter = container._get_formatter()
-                formatter.add_usage(container.usage, [], [], '')
-                kwargs['prog'] = formatter.format_help().strip()
+                formatter.add_usage(container.usage, [], [], "")
+                kwargs["prog"] = formatter.format_help().strip()
 
-            parsers_class = parser._pop_action_class(kwargs, 'parsers')
+            parsers_class = parser._pop_action_class(kwargs, "parsers")
             kwargs["parser_class"] = type(container)
             subparsers = argparse._SubParsersAction(option_strings=[], **kwargs)
             parser._add_action(subparsers)
@@ -175,7 +175,7 @@ def get_argparser():
         # fantastically cursed
         p_stub = subparsers.add_parser(
             handle, help=metadata.synopsis, description=metadata.description,
-            formatter_class=TextHelpFormatter, prefix_chars='\0', add_help=False)
+            formatter_class=TextHelpFormatter, prefix_chars="\0", add_help=False)
         p_stub.add_argument("args", nargs="...", help=argparse.SUPPRESS)
         p_stub.add_argument("help", nargs="?", default=p_stub.format_help())
 
@@ -244,7 +244,7 @@ def get_argparser():
                         # this will absorb all arguments from the '--' onwards (inclusive), make sure it's
                         # always last... the '--' item that ends up at the front is removed before the list
                         # is passed to the repo / script environment
-                        p_applet.add_argument('script_args', nargs=argparse.REMAINDER)
+                        p_applet.add_argument("script_args", nargs=argparse.REMAINDER)
                 return p_applet_build
             p_applet.add_build_func(p_applet_build_factory(p_applet, handle, applet_cls, mode))
 
@@ -527,7 +527,7 @@ def create_logger():
     term_formatter_args = {"style": "{",
         "fmt": "{levelname[0]:s}: {name:s}: {message:s}"}
     term_handler = logging.StreamHandler()
-    if sys.stderr.isatty() and sys.platform != 'win32':
+    if sys.stderr.isatty() and sys.platform != "win32":
         term_handler.setFormatter(TerminalFormatter(**term_formatter_args))
     else:
         term_handler.setFormatter(logging.Formatter(**term_formatter_args))

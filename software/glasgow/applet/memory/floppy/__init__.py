@@ -711,7 +711,7 @@ class MemoryFloppyApplet(GlasgowApplet):
             help="read from track FIRST")
         p_read_raw.add_argument(
             "last", metavar="LAST", type=int,
-            help="read until track LAST (inclusive; 159 for most 3.5\" disks)")
+            help='read until track LAST (inclusive; 159 for most 3.5" disks)')
 
     async def interact(self, device, args, floppy_iface):
         self.logger.info("starting up the drive")

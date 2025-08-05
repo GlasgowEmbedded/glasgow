@@ -333,8 +333,8 @@ class InfluxDB2DataLogger(DataLogger, name="influxdb2"):
 
         if len(self._queue) >= self._batch_size:
             try:
-                authHeader = 'Token ' + self.token
-                async with self.session.post(self.url, data="\n".join(self._queue), headers= {'Authorization': authHeader}) as response:
+                authHeader = "Token " + self.token
+                async with self.session.post(self.url, data="\n".join(self._queue), headers= {"Authorization": authHeader}) as response:
                     if response.status not in range(200, 300):
                         self.logger.error("InfluxDB: write status=%d body=%s",
                                           response.status, (await response.text()).strip())

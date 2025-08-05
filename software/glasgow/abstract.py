@@ -70,7 +70,7 @@ class GlasgowVio:
         object.__setattr__(self, "sense", GlasgowPort(sense) if sense is not None else None)
 
     @classmethod
-    def parse(cls, value, *, all_ports="AB") -> dict[GlasgowPort, 'GlasgowVio']:
+    def parse(cls, value, *, all_ports="AB") -> dict[GlasgowPort, "GlasgowVio"]:
         result = {}
         for clause in value.split(","):
             if m := re.match(r"^([0-9]+(\.[0-9]+)?)$", clause):

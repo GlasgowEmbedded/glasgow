@@ -179,7 +179,7 @@ class ControlSi535xApplet(GlasgowAppletV2):
         p_configure_si5351.add_argument(
             "--enable", metavar="OUTPUTS", type=outputs,
             help="comma-separated list of outputs to enable after configuration "
-                 "(for \"Powered-up with Output Disabled\" mode)")
+                 '(for "Powered-up with Output Disabled" mode)')
 
     async def run(self, args):
         if args.operation == "read":

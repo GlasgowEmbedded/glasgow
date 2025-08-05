@@ -394,7 +394,7 @@ class MEC16xxInterface(aobject):
         if not await self.is_eeprom_blocked():
             self._logger.log(logging.WARNING, "EEPROM is not blocked, there is nothing to unlock.")
             return
-        await self.lower.write(EEPROM_Unlock_addr, password, space='memory')
+        await self.lower.write(EEPROM_Unlock_addr, password, space="memory")
         if await self.is_eeprom_blocked():
             raise MEC16xxError(f"Error: EEPROM wasn't unlocked!")
         else:
@@ -471,10 +471,10 @@ class ProgramMEC16xxApplet(DebugARCApplet):
             "-s", "--size-bytes", metavar="FLASH_SIZE_BYTES", type=flash_size, required=True,
             help="size of the embedded flash memory in bytes (typically 192K or 256K. a K suffix means multiply by 1024)")
         p_read_flash.add_argument(
-            "-f", "--force", action='store_true',
+            "-f", "--force", action="store_true",
             help="force reading the flash even if it would result in an incomplete image due to security settings")
         p_read_flash.add_argument(
-            "-b", "--burst", action='store_true',
+            "-b", "--burst", action="store_true",
             help="use burst read for speed. this may be unreliable on some MEC16xx variants")
         p_read_flash.add_argument(
             "file", metavar="FILE", type=argparse.FileType("wb"),
@@ -483,7 +483,7 @@ class ProgramMEC16xxApplet(DebugARCApplet):
         p_erase_flash = p_operation.add_parser(
             "erase-flash", help="erase the flash (non-emergency mode)")
         p_erase_flash.add_argument(
-            "-f", "--force", action='store_true',
+            "-f", "--force", action="store_true",
             help="force erasing the flash even if parts of it can't be erased due to security settings")
         p_erase_flash.add_argument(
             "-s", "--size-bytes", metavar="FLASH_SIZE_BYTES", type=flash_size,
@@ -492,7 +492,7 @@ class ProgramMEC16xxApplet(DebugARCApplet):
         p_write_flash = p_operation.add_parser(
             "write-flash", help="erase and write the flash memory")
         p_write_flash.add_argument(
-            "-f", "--force", action='store_true',
+            "-f", "--force", action="store_true",
             help="force erasing and writing the flash even if parts of it can't be written due to security settings")
         p_write_flash.add_argument(
             "-s", "--size-bytes", metavar="FLASH_SIZE_BYTES", type=flash_size,
@@ -535,7 +535,7 @@ class ProgramMEC16xxApplet(DebugARCApplet):
 
 
     async def interact(self, device, args, mec_iface):
-        if args.operation in ['read-flash', 'erase-flash', 'write-flash']:
+        if args.operation in ["read-flash", "erase-flash", "write-flash"]:
             if args.force and args.size_bytes is None:
                 raise MEC16xxError(f"must also specify --size-bytes when using {args.operation} --force")
 
@@ -586,11 +586,11 @@ class ProgramMEC16xxApplet(DebugARCApplet):
             await mec_iface.enable_flash_access(enabled=False)
 
             bytes_left = real_size_bytes
-            args.file.write(starting_address * b'\xff')
+            args.file.write(starting_address * b"\xff")
             for word in words:
                 args.file.write(struct.pack("<L", word)[:bytes_left])
                 bytes_left -= 4
-            args.file.write(final_bytes_to_skip * b'\xff')
+            args.file.write(final_bytes_to_skip * b"\xff")
 
         if args.operation == "erase-flash":
 
@@ -611,16 +611,16 @@ class ProgramMEC16xxApplet(DebugARCApplet):
                 raise MEC16xxError(f"binary file size ({file_size} bytes) is larger than the specified flash size ({flash_size} bytes)")
             if file_size > flash_size - final_bytes_to_skip:
                 tail = file_bytes[flash_size - final_bytes_to_skip:]
-                if tail != len(tail) * b'\xff':
+                if tail != len(tail) * b"\xff":
                     self.logger.warning("the specified flash image has non-empty Data Block (the final 4KiB). that area will not be written.")
             if starting_address:
                 head = file_bytes[:starting_address]
-                if head != len(head) * b'\xff':
+                if head != len(head) * b"\xff":
                     self.logger.warning("the specified flash image has non-empty Boot Block (the first 4KiB). that area will not be written.")
             toflash_bytes = file_bytes[starting_address:flash_size - final_bytes_to_skip]
             if len(toflash_bytes) % 4:
                 # Make sure we pad everything to a multiple of 4 byte words
-                toflash_bytes += (4 - (len(toflash_bytes) % 4)) * b'\xff' # 0xff is the empty state of flash memory
+                toflash_bytes += (4 - (len(toflash_bytes) % 4)) * b"\xff" # 0xff is the empty state of flash memory
             words = [word[0] for word in struct.iter_unpack("<L", toflash_bytes)]
 
             await mec_iface.enable_flash_access(enabled=True)

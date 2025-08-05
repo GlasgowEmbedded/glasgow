@@ -73,13 +73,13 @@ class GlasgowBuildPlan:
             # copied from `BuildPlan.execute_local`, which was inlined into this function because
             # Glasgow has unique (caching) needs. see the comment in that function for details.
             self._inner.extract(build_dir)
-            if os.name == 'nt':
+            if os.name == "nt":
                 args = ["cmd", "/c", f"call {self._inner.script}.bat"]
             else:
                 args = ["sh", f"{self._inner.script}.sh"]
 
             environ = self._toolchain.env_vars
-            if os.name == 'nt':
+            if os.name == "nt":
                 # Windows has some environment variables that are required by the OS runtime:
                 # - SYSTEMROOT: required for child Python processes to initialize properly
                 # - PROCESSOR_ARCHITECTURE: required for YoWASP (used by wasmtime)
