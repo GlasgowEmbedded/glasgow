@@ -63,7 +63,7 @@ class ARMDPInterface(metaclass=ABCMeta):
             if dp_ctrl_stat.CDBGPWRUPACK == enabled:
                 break
         else:
-            raise ARMDPError("cannot %s debug power".format("enable" if enabled else "disable"))
+            raise ARMDPError(f"cannot {'enable' if enabled else 'disable'} debug power")
 
     async def set_system_power(self, enabled):
         dp_ctrl_stat = DP_CTRL_STAT.from_int(await self.read_dp_reg(DP_CTRL_STAT_addr))
@@ -75,7 +75,7 @@ class ARMDPInterface(metaclass=ABCMeta):
             if dp_ctrl_stat.CSYSPWRUPACK == enabled:
                 break
         else:
-            raise ARMDPError("cannot %s system power".format("enable" if enabled else "disable"))
+            raise ARMDPError(f"cannot {'enable' if enabled else 'disable'} system power")
 
 
 class DebugARMAppletMixin:
