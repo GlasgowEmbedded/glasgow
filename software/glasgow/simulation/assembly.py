@@ -202,7 +202,7 @@ class SimulationAssembly(AbstractAssembly):
     @property
     def _context(self):
         if self.__context is None:
-            raise Exception("runtime features can be used only while simulation is running")
+            raise RuntimeError("runtime features can be used only while simulation is running")
         return self.__context
 
     def run(self, fn, *, vcd_file=None, gtkw_file=None):

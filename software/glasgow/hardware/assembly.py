@@ -700,7 +700,7 @@ class HardwareAssembly(AbstractAssembly):
     @property
     def device(self):
         if not self._running:
-            raise Exception("runtime features may be used only while a bitstream is loaded")
+            raise RuntimeError("runtime features may be used only while a bitstream is loaded")
         return self._device
 
     async def configure_ports(self):
@@ -743,7 +743,7 @@ class HardwareAssembly(AbstractAssembly):
         elif device is not None:
             assert self._device == device
         if self._device is None:
-            raise Exception("no device provided")
+            raise RuntimeError("no device provided")
 
         await self._device.open()
 
