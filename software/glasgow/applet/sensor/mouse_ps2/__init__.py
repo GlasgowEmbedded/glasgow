@@ -300,7 +300,7 @@ class SensorMousePS2Applet(PS2HostApplet):
         if args.operation == "stream-log":
             async for report in mouse_iface.stream_reports(ident):
                 overflow = report.overflow_x or report.overflow_y
-                self.logger.log(logging.WARN if overflow else logging.INFO,
+                self.logger.log(logging.WARNING if overflow else logging.INFO,
                     "btn=%s%s%s%s%s x=%+4d%s y=%+4d%s z=%+2d",
                     "L" if report.left     else "-",
                     "M" if report.middle   else "-",

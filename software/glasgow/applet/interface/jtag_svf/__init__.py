@@ -79,7 +79,7 @@ class SVFInterface(SVFEventHandler):
             # reset; accept that, but warn.
             if error.old_state == "Unknown":
                 self._log("test vector did not reset DUT explicitly, resetting",
-                          level=logging.WARN)
+                          level=logging.WARNING)
                 await self.lower.enter_test_logic_reset()
                 await self._enter_state(state)
 
@@ -115,7 +115,7 @@ class SVFInterface(SVFEventHandler):
             # in a known state or not, and it looks like some SVF generators assume it is, indeed,
             # reset; accept that, but warn.
             self._log("test vector did not reset DUT explicitly, resetting",
-                        level=logging.WARN)
+                        level=logging.WARNING)
             await self.lower.enter_test_logic_reset()
         state = getattr(JTAGState, state)
         if path:
