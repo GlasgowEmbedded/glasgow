@@ -156,8 +156,10 @@ class Deframer(wiring.Component): # meow :3
 class Controller(wiring.Component):
     def __init__(self, ports, *, offset=0, chip_count=None):
         assert chip_count is None or len(ports.cs) <= chip_count
-        assert len(ports.cs) >= 1 and ports.cs.direction in (io.Direction.Output, io.Direction.Bidir)
-        assert len(ports.sck) == 1 and ports.sck.direction in (io.Direction.Output, io.Direction.Bidir)
+        assert (len(ports.cs) >= 1 and
+                ports.cs.direction in (io.Direction.Output, io.Direction.Bidir))
+        assert (len(ports.sck) == 1 and
+                ports.sck.direction in (io.Direction.Output, io.Direction.Bidir))
         assert len(ports.io) == 4 and ports.io.direction == io.Direction.Bidir
 
         self._ports = PortGroup(

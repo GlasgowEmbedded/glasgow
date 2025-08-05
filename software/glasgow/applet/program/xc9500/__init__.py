@@ -40,7 +40,8 @@ class XC9500Bitstream:
     @classmethod
     def from_fuses(cls, fuses, device):
         self = cls(device)
-        total_bits = BS_MAIN_ROWS * device.fbs * (9 * 8 + 6 * 6) + BS_UIM_ROWS * (8 + 4 * 7) * device.fbs * device.fbs
+        total_bits = (BS_MAIN_ROWS * device.fbs * (9 * 8 + 6 * 6) +
+                      BS_UIM_ROWS * (8 + 4 * 7) * device.fbs * device.fbs)
         if len(fuses) != total_bits:
             raise GlasgowAppletError(
                 "JED file does not have the right fuse count (expected %d, got %d)"
@@ -91,13 +92,16 @@ class XC9500Bitstream:
             for row in range(BS_MAIN_ROWS):
                 for col in range(BS_MAIN_COLS):
                     if self.fbs[fb][row][col] != other.fbs[fb][row][col]:
-                        raise GlasgowAppletError(f"bitstream verification failed at FB={fb} row={row} col={col}")
+                        raise GlasgowAppletError(
+                            f"bitstream verification failed at FB={fb} row={row} col={col}")
         for fb in range(self.device.fbs):
             for sfb in range(self.device.fbs):
                 for row in range(BS_UIM_ROWS):
                     for col in range(BS_UIM_COLS):
                         if self.uim[fb][sfb][row][col] != other.uim[fb][sfb][row][col]:
-                            raise GlasgowAppletError(f"bitstream verification failed at UIM FB={fb} sFB={sfb} row={row} col={col}")
+                            raise GlasgowAppletError(
+                                f"bitstream verification failed at UIM FB={fb} sFB={sfb} "
+                                f"row={row} col={col}")
 
     def get_byte(self, coords):
         if coords[0] == "main":
@@ -298,7 +302,8 @@ class XC95xxInterface:
                         if res.control == CTRL_WPROT:
                             raise XC9500Error("fast programming failed: device is write protected")
                         elif res.control != CTRL_OK:
-                            raise XC9500Error(f"fast programming failed {res.bits_repr()} at {prev_coords}")
+                            raise XC9500Error(
+                                f"fast programming failed {res.bits_repr()} at {prev_coords}")
                 await self.lower.run_test_idle(self._time_us(WAIT_PROGRAM))
                 prev_coords = coords
 
@@ -318,7 +323,8 @@ class XC95xxInterface:
                     if res.control == CTRL_WPROT:
                         raise XC9500Error("programming failed: device is write protected")
                     elif res.control != CTRL_OK:
-                        raise XC9500Error(f"programming failed {res.bits_repr()} at row {prev_coords}")
+                        raise XC9500Error(
+                            f"programming failed {res.bits_repr()} at row {prev_coords}")
                 await self.lower.run_test_idle(self._time_us(WAIT_PROGRAM))
                 prev_coords = coords
 

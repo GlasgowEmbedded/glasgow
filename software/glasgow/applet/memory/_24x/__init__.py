@@ -1,4 +1,5 @@
-# Ref: AT24C04C and AT24C08C I²C-Compatible, (2-wire) Serial EEPROM 4-Kbit (512 x 8), 8-Kbit (1024 x 8) DATASHEET
+# Ref: AT24C04C and AT24C08C I²C-Compatible, (2-wire) Serial EEPROM 4-Kbit (512 x 8),
+#      8-Kbit (1024 x 8) DATASHEET
 # Accession: G00104
 #
 # Ref: AT24C256C I²C-Compatible (2-Wire) Serial EEPROM 256-Kbit (32,768 x 8) DATASHEET

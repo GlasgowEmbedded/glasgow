@@ -113,7 +113,8 @@ class HardwareRWRegister(HardwareRORegister, AbstractRWRegister):
 def _check_detach():
     # See the comment in `HardwareAssembly.start()`.
     if os.name == "nt":
-        raise NotImplementedError("pipe detaching is not supported on Windows due to WinUSB limitations")
+        raise NotImplementedError(
+            "pipe detaching is not supported on Windows due to WinUSB limitations")
 
 
 class HardwareInPipe(AbstractInPipe):
@@ -528,7 +529,8 @@ class HardwareAssembly(AbstractAssembly):
         # TODO: make this a proper error and not an assertion
         pin_name = f"{pin.port}{pin.number}"
         assert pin_name in self._platform.glasgow_pins, f"unknown or already used pin {pin_name}"
-        self._logger.debug("assigning pin %s to %s%s", port_name, pin_name, " (inverted)" if pin.invert else "")
+        self._logger.debug("assigning pin %s to %s%s", port_name, pin_name,
+            " (inverted)" if pin.invert else "")
         if (pin.port, pin.number) not in self._pulls:
             self._pulls[pin.port, pin.number] = PullState.Float
         port = self._platform.glasgow_pins.pop(pin_name)

@@ -23,17 +23,29 @@ NBD_OPT_INFO             = 6
 NBD_OPT_GO               = 7
 NBD_OPT_STRUCTURED_REPLY = 8
 
-NBD_REP_ACK                 = (1) # ACK a request. Data: option number to be acked
-NBD_REP_SERVER              = (2) # Reply to NBD_OPT_LIST (one of these per server; must be followed by NBD_REP_ACK to signal the end of the list
-NBD_REP_INFO                = (3) # Reply to NBD_OPT_INFO
-NBD_REP_FLAG_ERROR          = (1 << 31) # If the high bit is set, the reply is an error
-NBD_REP_ERR_UNSUP           = (1 | NBD_REP_FLAG_ERROR)    # Client requested an option not understood by this version of the server
-NBD_REP_ERR_POLICY          = (2 | NBD_REP_FLAG_ERROR)    # Client requested an option not allowed by server configuration. (e.g., the option was disabled)
-NBD_REP_ERR_INVALID         = (3 | NBD_REP_FLAG_ERROR)    # Client issued an invalid request
-NBD_REP_ERR_PLATFORM        = (4 | NBD_REP_FLAG_ERROR)    # Option not supported on this platform
-NBD_REP_ERR_TLS_REQD        = (5 | NBD_REP_FLAG_ERROR)    # TLS required
-NBD_REP_ERR_UNKNOWN         = (6 | NBD_REP_FLAG_ERROR)    # NBD_OPT_INFO or ..._GO requested on unknown export
-NBD_REP_ERR_BLOCK_SIZE_REQD = (8 | NBD_REP_FLAG_ERROR)    # Server is not willing to serve the export without the block size being negotiated
+# ACK a request. Data: option number to be acked
+NBD_REP_ACK                 = (1)
+# Reply to NBD_OPT_LIST (one of these per server; must be followed by NBD_REP_ACK to signal the end
+# of the list
+NBD_REP_SERVER              = (2)
+# Reply to NBD_OPT_INFO
+NBD_REP_INFO                = (3)
+# If the high bit is set, the reply is an error
+NBD_REP_FLAG_ERROR          = (1 << 31)
+# Client requested an option not understood by this version of the server
+NBD_REP_ERR_UNSUP           = (1 | NBD_REP_FLAG_ERROR)
+# Client requested an option not allowed by server configuration. (e.g., the option was disabled)
+NBD_REP_ERR_POLICY          = (2 | NBD_REP_FLAG_ERROR)
+# Client issued an invalid request
+NBD_REP_ERR_INVALID         = (3 | NBD_REP_FLAG_ERROR)
+# Option not supported on this platform
+NBD_REP_ERR_PLATFORM        = (4 | NBD_REP_FLAG_ERROR)
+# TLS required
+NBD_REP_ERR_TLS_REQD        = (5 | NBD_REP_FLAG_ERROR)
+# NBD_OPT_INFO or ..._GO requested on unknown export
+NBD_REP_ERR_UNKNOWN         = (6 | NBD_REP_FLAG_ERROR)
+# Server is not willing to serve the export without the block size being negotiated
+NBD_REP_ERR_BLOCK_SIZE_REQD = (8 | NBD_REP_FLAG_ERROR)
 
 NBD_FLAG_FIXED_NEWSTYLE = (1 << 0)
 NBD_FLAG_NO_ZEROES      = (1 << 1)

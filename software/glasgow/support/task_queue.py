@@ -69,8 +69,8 @@ class TaskQueue:
         return had_done
 
     async def wait_one(self):
-        """Await at least one task in the queue. If there are no finished tasks, waits until the first
-        pending task finishes.
+        """Await at least one task in the queue. If there are no finished tasks, waits until
+        the first pending task finishes.
         """
         if not self._done:
             started_at = time.monotonic()

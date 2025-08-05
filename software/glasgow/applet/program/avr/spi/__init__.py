@@ -1,4 +1,5 @@
-# Ref: ATmega16U4/ATmega32U4 8-bit Microcontroller with 16/32K bytes of ISP Flash and USB Controller datasheet
+# Ref: ATmega16U4/ATmega32U4 8-bit Microcontroller with 16/32K bytes of ISP Flash and
+#      USB Controller datasheet
 # Accession: G00058
 
 import math

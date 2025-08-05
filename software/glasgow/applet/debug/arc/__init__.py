@@ -108,7 +108,8 @@ class ARCDebugInterface:
         return status32.H
 
     async def force_halt(self, read_modify_write=True):
-        debug = AUX_DEBUG.from_int((await self.read(AUX_DEBUG_addr, space="aux")) if read_modify_write else 0)
+        debug = AUX_DEBUG.from_int(
+            (await self.read(AUX_DEBUG_addr, space="aux")) if read_modify_write else 0)
         debug.FH = 1
         await self.write(AUX_DEBUG_addr, debug.to_int(), space="aux")
         debug.FH = 0

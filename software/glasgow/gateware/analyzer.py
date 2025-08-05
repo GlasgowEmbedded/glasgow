@@ -253,7 +253,8 @@ class EventAnalyzer(Elaboratable):
                     m.d.comb += event_fifo.r_en.eq(1)
                     m.d.sync += event_encoder.i.eq(event_fifo.r_data[1:])
                     m.d.sync += rep_throttle_new.eq(event_fifo.r_data[0])
-                    with m.If((event_fifo.r_data != 0) | (rep_throttle_cur != event_fifo.r_data[0])):
+                    with m.If((event_fifo.r_data != 0) |
+                              (rep_throttle_cur != event_fifo.r_data[0])):
                         m.next = "REPORT-DELAY"
                 with m.Elif(self.done):
                     m.next = "REPORT-DELAY"

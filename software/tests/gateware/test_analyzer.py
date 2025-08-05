@@ -4,7 +4,9 @@ from amaranth.lib.fifo import SyncFIFOBuffered
 from amaranth.sim import Tick
 
 from glasgow.gateware import simulation_test
-from glasgow.gateware.analyzer import EventAnalyzer, TraceDecoder, REPORT_DELAY, REPORT_EVENT, REPORT_SPECIAL, SPECIAL_DONE, SPECIAL_OVERRUN
+from glasgow.gateware.analyzer import EventAnalyzer, TraceDecoder
+from glasgow.gateware.analyzer import REPORT_DELAY, REPORT_EVENT, REPORT_SPECIAL
+from glasgow.gateware.analyzer import SPECIAL_DONE, SPECIAL_OVERRUN
 
 
 class EventAnalyzerTestbench(Elaboratable):

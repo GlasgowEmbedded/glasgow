@@ -303,7 +303,8 @@ class XC9500XLBitstream:
             for row in range(BS_ROWS):
                 for col in range(BS_COLS):
                     if self.fbs[fb][row][col] != other.fbs[fb][row][col]:
-                        raise GlasgowAppletError(f"bitstream verification failed at FB={fb} row={row} col={col}")
+                        raise GlasgowAppletError(
+                            f"bitstream verification failed at FB={fb} row={row} col={col}")
 
 
 class BlankCheckResult(Enum):
@@ -434,7 +435,8 @@ class XC95xxXLInterface:
                     res = await self._dr_isconfiguration(CTRL_START, bs_address(row, col))
                     if prev_row is not None:
                         if res.control != CTRL_OK:
-                            raise XC9500XLError(f"read failed {res.bits_repr()} at ({prev_row}, {prev_col})")
+                            raise XC9500XLError(
+                                f"read failed {res.bits_repr()} at ({prev_row}, {prev_col})")
                         bs.put_word(prev_row, prev_col, res.data)
                     await self.lower.run_test_idle(1)
                     prev_row = row
@@ -490,9 +492,11 @@ class XC95xxXLInterface:
                             data=word)
                         if col == 0 and prev_row is not None:
                             if res.control == CTRL_WPROT:
-                                raise XC9500XLError("fast programming failed: device is write protected")
+                                raise XC9500XLError(
+                                    "fast programming failed: device is write protected")
                             elif res.control != CTRL_OK:
-                                raise XC9500XLError(f"fast programming failed {res.bits_repr()} at row {prev_row}")
+                                raise XC9500XLError(
+                                    f"fast programming failed {res.bits_repr()} at row {prev_row}")
                 await self.lower.run_test_idle(self._time_us(WAIT_PROGRAM))
                 prev_row = row
 
@@ -516,7 +520,8 @@ class XC95xxXLInterface:
                         if res.control == CTRL_WPROT:
                             raise XC9500XLError("programming failed: device is write protected")
                         elif res.control != CTRL_OK:
-                            raise XC9500XLError(f"programming failed {res.bits_repr()} at row {prev_row}")
+                            raise XC9500XLError(
+                                f"programming failed {res.bits_repr()} at row {prev_row}")
                 await self.lower.run_test_idle(self._time_us(WAIT_PROGRAM))
                 prev_row = row
 
@@ -572,7 +577,8 @@ class ProgramXC9500XLApplet(JTAGProbeApplet):
     logger = logging.getLogger(__name__)
     help = "program Xilinx XC9500XL and XC9500XV CPLDs via JTAG"
     description = """
-    Program, verify, and read out Xilinx XC9500XL and XC9500XV series CPLD bitstreams via the JTAG interface.
+    Program, verify, and read out Xilinx XC9500XL and XC9500XV series CPLD bitstreams via
+    the JTAG interface.
 
     It is recommended to use TCK frequency between 100 and 250 kHz for programming.
 

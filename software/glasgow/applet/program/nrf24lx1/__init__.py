@@ -222,7 +222,8 @@ class ProgramNRF24Lx1Applet(GlasgowApplet):
             sck_edge="rising",
         )
 
-        subtarget = ProgramNRF24Lx1Subtarget(controller, ports.prog, dut_prog, ports.reset, dut_reset)
+        subtarget = ProgramNRF24Lx1Subtarget(
+            controller, ports.prog, dut_prog, ports.reset, dut_reset)
 
         return iface.add_subtarget(subtarget)
 
