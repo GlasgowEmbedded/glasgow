@@ -32,13 +32,14 @@ If you believe that your device may be damaged or malfunctioning, and the device
 Contributing code or documentation
 ----------------------------------
 
-You are expected to contribute code as a `pull request <pulls_>`__ containing a small number of self-contained commits with :ref:`descriptive messages <commit-messages>`, each of which individually captures a functional state of the working tree. If your pull request does not fit this description it will not be merged until it is cleaned up, but it is okay to have a draft pull request containing a large number of temporary commits while it is undergoing review or ongoing work.
+Code contributions are expected to be in the form of a `pull request <pulls_>`__ containing a small number of self-contained commits with :ref:`descriptive messages <commit-messages>`, each of which individually captures a functional state of the working tree. If your pull request does not fit this description it will not be merged until it is cleaned up, but it is okay to have a draft pull request containing a large number of temporary commits while it is undergoing review or ongoing work.
 
 As Git is a notoriously difficult version control system to use effectively, feel free to :ref:`ask the community for assistance <community>`. Often, your pull request will be edited by maintainers to ensure it fits the codebase well. In those cases the maintainer will usually rearrange the commits to fit our requirements.
 
-The Glasgow project does not strictly adhere to any specific Python or C coding standards. If your code is structured and formatted similarly to existing code, it is good enough. You may be instructed to reformat your code to ensure that it fits the codebase well.
+The Glasgow project does not strictly adhere to any specific Python or C coding standards. If your code is structured and formatted similarly to existing code, it is good enough. We use `pre-commit.ci <pre-commit-ci_>`__, a system that automatically remediates code style issues where possible, and highlights them otherwise. Code review is a dialogue focused on function, not form.
 
 .. _pulls: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests
+
 
 .. _commit-messages:
 
@@ -70,6 +71,20 @@ When modifying firmware, the first line of a commit message should start with ``
     firmware: fix an operator precedence issue.
 
 If none of the cases above are a good fit, any descriptive message is sufficient.
+
+
+.. _pre-commit-ci:
+
+Working with `pre-commit.ci <https://pre-commit.ci>`_
+#####################################################
+
+Whenever our continuous integration system notices issues with your code that it can automatically fix, it will push a commit to your branch (provided you have allowed edits from maintainers for your pull request, which you should). You are encouraged to examine this commit and integrate the changes it suggests into your code, but it is not a requirement to do so. Such issues will not clutter the "Files changed" view of your pull request, and the "lint" check will ignore them.
+
+Less commonly, our continuous integration system will encounter an issue it cannot resolve on its own. Such issues will appear as an annotation in the "Files changed" view of your PR (as well as in the commit diffs), and the "lint" check will reject your code. You will have to resolve the issue before the pull request can be merged, but you can ignore it until then, and all other checks will still run.
+
+Whenever your branch is edited by our automated system, you will not be able to update it using ``git push`` right away because your local system and the Git server disagree on the state of the branch. You can either retrieve the suggested changes using ``git pull``, or discard them using ``git push --force``, at your discretion; you do not have to keep the ``[pre-commit.ci]`` commit in your branch.
+
+To expedite the workflow, you may run the ``pre-commit`` tool locally on your system such that it can tidy up your commits while you create them. To do so, `install the pre-commit tool <https://pre-commit.com/#install>`_ and run ``pre-commit install`` in the Glasgow repository. From that point on, running ``git commit`` will invoke ``pre-commit run`` first, and your branch will not be edited by the continuous integration system.
 
 
 .. _docs-archive:
