@@ -343,7 +343,7 @@ def find_toolchain(tools=("yosys", "nextpnr-ice40", "icepack"), *, quiet=False):
     for kind in kinds:
         if kind not in available_toolchains:
             if quiet:
-                return
+                return None
             logger.error(f"the {env_var_name} environment variable contains "
                          f"an unrecognized toolchain kind {kind!r}, available: "
                          f"{', '.join(available_toolchains)}")
@@ -364,7 +364,7 @@ def find_toolchain(tools=("yosys", "nextpnr-ice40", "icepack"), *, quiet=False):
 
     else:
         if quiet:
-            return
+            return None
         examined = ", ".join(f"{kind} (missing {', '.join(selected_toolchains[kind].missing)})"
                              for kind in kinds)
         if env_var_name in os.environ:

@@ -257,7 +257,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
                 elif not control.DM:
                     self._log("Exec_PrAcc: debug return")
                     self._change_state("Running")
-                    return
+                    return None
                 elif control.PrAcc:
                     break
             else:
