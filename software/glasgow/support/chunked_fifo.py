@@ -5,7 +5,9 @@ __all__ = ["ChunkedFIFO"]
 
 
 class ChunkedFIFO:
-    """A first-in first-out byte buffer that uses discontiguous storage to operate without copying."""
+    """A first-in first-out byte buffer that uses discontiguous storage to operate without
+    copying.
+    """
 
     def __init__(self):
         self._queue  = deque()

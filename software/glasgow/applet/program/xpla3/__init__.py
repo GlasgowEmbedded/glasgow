@@ -95,7 +95,8 @@ class XPLA3Bitstream:
         bits = list(jed_bits(device))
         if len(fuses) != len(bits):
             raise GlasgowAppletError(
-                f"JED file does not have the right fuse count (expected {len(bits)}, got {len(fuses)})")
+                f"JED file does not have the right fuse count "
+                f"(expected {len(bits)}, got {len(fuses)})")
         for (row, plane, col), val in zip(bits, fuses):
             self.data[row][plane][col] = val
         return self
@@ -130,7 +131,8 @@ class XPLA3Bitstream:
         assert self.device is other.device
         for row, plane, col in jed_bits(self.device):
             if self.data[row][plane][col] != other.data[row][plane][col]:
-                raise GlasgowAppletError(f"bitstream verification failed at row={row} plane={plane} col={col}")
+                raise GlasgowAppletError(
+                    f"bitstream verification failed at row={row} plane={plane} col={col}")
 
 
 class XPLA3Interface:
@@ -331,7 +333,8 @@ class ProgramXPLA3Applet(JTAGProbeApplet):
             help="user electronic signature (hex)")
 
         p_program_sram = p_operation.add_parser(
-            "program-sram", help="read bitstream from a .jed file and program it to the device SRAM")
+            "program-sram",
+            help="read bitstream from a .jed file and program it to the device SRAM")
         p_program_sram.add_argument(
             "jed_file", metavar="JED-FILE", type=argparse.FileType("rb"),
             help="JED file to read")

@@ -25,7 +25,8 @@ __all__ = [
     "synthesis_test", "async_test",
     "GlasgowAppletV2TestCase", "applet_v2_simulation_test", "applet_v2_hardware_test",
     # deprecated:
-    "GlasgowApplet", "GlasgowAppletTestCase", "applet_simulation_test", "applet_hardware_test", "ClockGen"
+    "GlasgowApplet", "GlasgowAppletTestCase", "applet_simulation_test", "applet_hardware_test",
+    "ClockGen"
 ]
 
 

@@ -58,7 +58,8 @@ class ControlMDIOComponent(wiring.Component):
             with m.State("Receive Header"):
                 m.d.comb += self.i_stream.ready.eq(1)
                 with m.If(self.i_stream.valid):
-                    m.d.sync += i_header.as_value().word_select(i_count[0], 8).eq(self.i_stream.payload)
+                    m.d.sync += i_header.as_value().word_select(i_count[0], 8).eq(
+                                    self.i_stream.payload)
                     m.d.sync += i_count.eq(i_count + 1)
                     with m.If(i_count == 1):
                         with m.If(i_header.type == mdio.Request.Write):
@@ -69,7 +70,8 @@ class ControlMDIOComponent(wiring.Component):
             with m.State("Receive Data"):
                 m.d.comb += self.i_stream.ready.eq(1)
                 with m.If(self.i_stream.valid):
-                    m.d.sync += ctrl.i_stream.p.data.word_select(i_count[0], 8).eq(self.i_stream.payload)
+                    m.d.sync += ctrl.i_stream.p.data.word_select(i_count[0], 8).eq(
+                                    self.i_stream.payload)
                     m.d.sync += i_count.eq(i_count + 1)
                     with m.If(i_count == 1):
                         m.next = "Submit"

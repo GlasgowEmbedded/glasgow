@@ -44,7 +44,8 @@ class VGAOutputSubtarget(Elaboratable):
         m.submodules.b  = b_buf  = io.FFBuffer("o", self.ports.b)
 
         m.domains.pix = cd_pix = ClockDomain()
-        m.submodules += PLL(f_in=platform.default_clk_frequency, f_out=self.pix_clk_freq, odomain="pix")
+        m.submodules += PLL(
+            f_in=platform.default_clk_frequency, f_out=self.pix_clk_freq, odomain="pix")
 
         h_ctr = Signal(range(self.h_active + self.h_front + self.h_sync + self.h_back))
         v_ctr = Signal(range(self.v_active + self.v_front + self.v_sync + self.v_back))

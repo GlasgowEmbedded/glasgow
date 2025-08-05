@@ -479,7 +479,8 @@ class SensorBMx280Applet(GlasgowAppletV2):
                     fields = dict(t=await self.bmx280_iface.get_temperature(),
                                   p=await self.bmx280_iface.get_pressure())
                     if args.report_altitude:
-                        fields.update(h=await self.bmx280_iface.get_altitude(p0=args.sea_level_pressure))
+                        fields.update(h=await self.bmx280_iface.get_altitude(
+                            p0=args.sea_level_pressure))
                     if self.bmx280_iface.has_humidity:
                         fields.update(rh=await self.bmx280_iface.get_humidity())
                     await data_logger.report_data(fields)

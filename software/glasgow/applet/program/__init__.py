@@ -1,6 +1,6 @@
-"""The ``program`` taxon groups applets implementing interfaces to memory technology devices (volatile
-and non-volatile) that are directly connected to programmable logic, such as a microcontroller or
-a gate array.
+"""The ``program`` taxon groups applets implementing interfaces to memory technology devices
+(volatile and non-volatile) that are directly connected to programmable logic, such as
+a microcontroller or a gate array.
 
 Such memories may be included on the same die, in the same package, on the same  board, or in
 the same assembly as the programmable logic; what is important is that the applet has both memory

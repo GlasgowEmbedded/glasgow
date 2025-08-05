@@ -53,8 +53,9 @@ class SPIControllerComponent(wiring.Component):
         command = Signal(SPICommand)
         chip    = Signal(range(1 + len(self._ports.cs)))
         mode    = Signal(spi.Mode)
+        # FIXME: amaranth-lang/amaranth#1462
         is_put  = mode.as_value().matches(spi.Mode.Put, spi.Mode.Swap)
-        is_get  = mode.as_value().matches(spi.Mode.Get, spi.Mode.Swap) # FIXME: amaranth-lang/amaranth#1462
+        is_get  = mode.as_value().matches(spi.Mode.Get, spi.Mode.Swap)
         o_count = Signal(16)
         i_count = Signal(16)
         timer   = Signal(range(self._us_cycles))

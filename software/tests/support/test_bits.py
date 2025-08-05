@@ -57,7 +57,8 @@ class BitsTestCase(unittest.TestCase):
         self.assertBits(bits.from_iter(iter([])), 0, 0b0)
         self.assertBits(bits.from_iter(iter([1,1,0,1,0,0,1])), 7, 0b1001011)
         self.assertBits(bits.from_iter(iter([1,1,0,1,0,0,1,1])), 8, 0b11001011)
-        self.assertBits(bits.from_iter(iter([1,1,0,1,0,0,1,1,1,0,1,0,0,1,1])), 15, 0b110010111001011)
+        self.assertBits(bits.from_iter(iter([1,1,0,1,0,0,1,1,1,0,1,0,0,1,1])), 15,
+                        0b110010111001011)
         self.assertBits(bits.from_iter(iter([True, False, True])), 3, 0b101)
 
     def test_from_iter_wrong(self):

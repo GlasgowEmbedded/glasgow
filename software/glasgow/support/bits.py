@@ -98,7 +98,8 @@ class _bits_base(amaranth.ValueCastable, Sequence):
         if length is None:
             length = len(value) * 8
         if len(value) != _byte_len(length):
-            raise ValueError(f"wrong bytes length {len(value)} for {cls.__name__} of length {length}")
+            raise ValueError(
+                f"wrong bytes length {len(value)} for {cls.__name__} of length {length}")
         if length % 8:
             mask = -1 << (length % 8)
             if value[-1] & (-1 << (length % 8)):
@@ -117,7 +118,8 @@ class _bits_base(amaranth.ValueCastable, Sequence):
         - int (``length`` may be provided or not, see ``from_int``)
         - str (``length`` must not be provided, see ``from_str``)
         - bytes, bytearray, memoryview (``length`` may be provided or not, see ``from_bytes``)
-        - an iterable of 0 and 1 other than the above (``length`` must not be provided, see ``from_iter``)
+        - an iterable of 0 and 1 other than the above (``length`` must not be provided, see
+          ``from_iter``)
         """
         if isinstance(value, _bits_base):
             if length is not None:
@@ -140,10 +142,12 @@ class _bits_base(amaranth.ValueCastable, Sequence):
             return cls.from_bytes(value, length)
         if isinstance(value, Iterable):
             if length is not None:
-                raise ValueError(f"invalid input for {cls.__name__}(): when converting from an iterable "
-                                 "length must not be provided")
+                raise ValueError(
+                    f"invalid input for {cls.__name__}(): when converting from an iterable length "
+                    f"must not be provided")
             return cls.from_iter(value)
-        raise TypeError(f"invalid input for {cls.__name__}(): cannot convert from {value.__class__.__name__}")
+        raise TypeError(
+            f"invalid input for {cls.__name__}(): cannot convert from {value.__class__.__name__}")
 
     # This method only exists because otherwise `ValueCastable.__init__` crashes. All of the actual
     # work is done in `__new__`.
@@ -303,7 +307,10 @@ class _bits_base(amaranth.ValueCastable, Sequence):
         return res
 
     def reversed(self) -> Self:
-        """Returns a reversed copy of this bit string. Equivalent to ``from_iter(reversed(self))``."""
+        """Returns a reversed copy of this bit string.
+
+        Equivalent to ``from_iter(reversed(self))``.
+        """
         if self._len % 8 == 0:
             res = object.__new__(self.__class__)
             res._bytes = self._bytes.translate(_byterev_lut)[::-1]
@@ -322,14 +329,15 @@ class _bits_base(amaranth.ValueCastable, Sequence):
             res._len = self._len
             return res
         else:
-            raise ValueError(f"byte_reversed requires {self.__class__.__name__} of length divisible by 8")
+            raise ValueError(
+                f"byte_reversed requires {self.__class__.__name__} of length divisible by 8")
 
     def find(self, needle, start=0, end=None) -> int:
         """Returns the start index of the first occurence of a given bit string within this
         bit string. If the ``needle`` is an ``str`` or an iterator, it is first converted
         to ``bits``. If ``needle`` is an integer, it must hava a value of 0 or 1, and is
-        converted to single-bit ``bits``. If ``start`` and ``end`` are given, only start positions in
-        ``range(start, end)`` are checked. If no occurence is found, the result is ``-1``.
+        converted to single-bit ``bits``. If ``start`` and ``end`` are given, only start positions
+        in ``range(start, end)`` are checked. If no occurence is found, the result is ``-1``.
         """
         if isinstance(needle, (str, Iterable)):
             needle = bits(needle)
@@ -404,7 +412,9 @@ class bitarray(_bits_base, MutableSequence):
             if step != 1:
                 # generic slow path
                 if len(rng) != len(value):
-                    raise ValueError(f"atempt to assign sequence of size {len(value)} to extended slice of size {len(rng)}")
+                    raise ValueError(
+                        f"atempt to assign sequence of size {len(value)} to "
+                        f"extended slice of size {len(rng)}")
                 for di, bit in zip(rng, value):
                     self[di] = bit
             elif start % 8 == 0 and stop % 8 == 0 and value._len % 8 == 0:
