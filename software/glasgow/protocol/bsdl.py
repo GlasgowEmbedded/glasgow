@@ -138,6 +138,7 @@ class BSDLParserBase:
                     raise BSDLParseError(f"{token}")
                 case _:
                     return token
+        assert False
 
     def _expect(self, kind, value=None):
         token = self._lex()
@@ -148,6 +149,7 @@ class BSDLParserBase:
                 raise BSDLParseError(f"expected {kind} {value!r}, got {token}")
             case BSDLToken(_, lex_value):
                 return lex_value
+        assert False
 
 
 class BSDLPinMap(BSDLParserBase):

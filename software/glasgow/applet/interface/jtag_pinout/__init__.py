@@ -297,6 +297,8 @@ class JTAGPinoutApplet(GlasgowAppletV2):
                            for bit in range(pat_bits)]
             if reduce(lambda x, y: x&y, corr_result) & tdo:
                 return ir_len
+        else:
+            return None
 
     async def run(self, args):
         def bits_to_str(pins):

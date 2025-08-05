@@ -216,6 +216,7 @@ class ProgramM16CInterface:
             except asyncio.TimeoutError:
                 self._log("poll timeout")
                 timeout -= 0.1
+        raise M16CBootloaderError("command timeout")
 
     async def is_bootloader_locked(self):
         _srd1, srd2 = await self._bootloader_read_status()

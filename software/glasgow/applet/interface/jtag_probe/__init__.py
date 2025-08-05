@@ -1195,7 +1195,7 @@ class JTAGProbeApplet(GlasgowApplet):
     def add_repl_arguments(cls, parser):
         # Inheriting from the JTAG probe applet does not inherit the REPL.
         if cls is not JTAGProbeApplet:
-            return super().add_repl_arguments(parser)
+            super().add_repl_arguments(parser)
 
         parser.add_argument(
             "--tap-index", metavar="INDEX", type=int,
@@ -1204,7 +1204,7 @@ class JTAGProbeApplet(GlasgowApplet):
     async def repl(self, device, args, jtag_iface):
         # See explanation in add_repl_arguments().
         if type(self) is not JTAGProbeApplet:
-            return await super().repl(device, args, jtag_iface)
+            await super().repl(device, args, jtag_iface)
 
         if args.tap_index is None:
             iface = jtag_iface

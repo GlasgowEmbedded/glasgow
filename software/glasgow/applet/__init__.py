@@ -154,6 +154,7 @@ class GlasgowAppletArguments:
                 result = self._free_pins[0]
                 del self._free_pins[0]
                 return GlasgowPin.parse(result)[0]
+            return None
 
         if width is None:
             match default:
@@ -189,6 +190,7 @@ class GlasgowAppletArguments:
                         self._arg_error(f"expected zero or one pins, got {len(result)} pins")
                     if result:
                         return result[0]
+                    return None
 
         else:
             if type(width) is int:

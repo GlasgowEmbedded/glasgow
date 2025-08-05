@@ -343,9 +343,6 @@ class MemoryPROMInterface:
             else:
                 raise TypeError(f"Cannot index value with {key!r}")
 
-            if index not in range(len(self)):
-                raise IndexError
-
         def __eq__(self, other):
             if not isinstance(other, type(self)):
                 return False
