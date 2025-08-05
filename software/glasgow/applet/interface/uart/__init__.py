@@ -357,7 +357,7 @@ class UARTApplet(GlasgowAppletV2):
             while True:
                 data = await self.uart_iface.read_all(flush=False)
                 await asyncio.get_event_loop().run_in_executor(None,
-                    lambda: os.write(out_fileno, data))
+                    lambda data=data: os.write(out_fileno, data))
 
         try:
             async with asyncio.TaskGroup() as group:

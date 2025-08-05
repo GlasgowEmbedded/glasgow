@@ -208,7 +208,7 @@ class Memory25xInterface:
 
             if not re.match(rb"^\xff*$", sector_data):
                 await self.program(sector_start, sector_data, page_size,
-                    callback=lambda page_done, page_total, status:
+                    callback=lambda page_done, page_total, status, done=done:
                                 callback(done + page_done, total, status))
 
             address += len(chunk)

@@ -82,7 +82,7 @@ class Scenario:
 
     def run(self):
         for divisor in (0, 1, 2, 3):
-            async def d_testbench(ctx):
+            async def d_testbench(ctx, divisor=divisor):
                 ctx.set(self.dut.divisor, divisor)
 
             sim = Simulator(self.dut)
