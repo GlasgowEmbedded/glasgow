@@ -64,7 +64,7 @@ class GlasgowVio:
     sense: Optional[GlasgowPort] = None
 
     def __init__(self, value:Optional[float]=None, *, sense:Optional[GlasgowPort]=None):
-        if value is None and sense is None or value is not None and sense is not None:
+        if (value is None and sense is None) or (value is not None and sense is not None):
             raise ValueError("exactly one of voltage value or a port to be sensed may be present")
         object.__setattr__(self, "value", float(value) if value is not None else None)
         object.__setattr__(self, "sense", GlasgowPort(sense) if sense is not None else None)
