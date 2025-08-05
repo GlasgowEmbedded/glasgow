@@ -392,36 +392,40 @@ class GDBRemote(metaclass=ABCMeta):
             address, kind = (int(x, 16) for x in command[3:].split(b","))
             try:
                 await self.target_set_software_breakpt(address, kind)
-                return b"OK"
             except NotImplementedError:
                 return b""
+            else:
+                return b"OK"
 
         # "Clear software breakpoint."
         if command.startswith(b"z0"):
             address, kind = (int(x, 16) for x in command[3:].split(b","))
             try:
                 await self.target_clear_software_breakpt(address, kind)
-                return b"OK"
             except NotImplementedError:
                 return b""
+            else:
+                return b"OK"
 
         # "Set hardware breakpoint."
         if command.startswith(b"Z1"):
             address, kind = (int(x, 16) for x in command[3:].split(b","))
             try:
                 await self.target_set_instr_breakpt(address, kind)
-                return b"OK"
             except NotImplementedError:
                 return b""
+            else:
+                return b"OK"
 
         # "Clear hardware breakpoint."
         if command.startswith(b"z1"):
             address, kind = (int(x, 16) for x in command[3:].split(b","))
             try:
                 await self.target_clear_instr_breakpt(address, kind)
-                return b"OK"
             except NotImplementedError:
                 return b""
+            else:
+                return b"OK"
 
         # "Execute this code."
         if command.startswith(b"qRcmd,"):

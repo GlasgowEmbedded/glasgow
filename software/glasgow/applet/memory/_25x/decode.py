@@ -32,9 +32,10 @@ class MemoryImage:
     def __bool__(self):
         try:
             self._mask.index(b"\xff")
-            return True
         except ValueError:
             return False
+        else:
+            return True
 
     @property
     def data(self) -> memoryview:

@@ -237,10 +237,11 @@ class GlasgowDevice:
                 usb.RequestType.Vendor, usb.Recipient.Device, request, value, index, length)
             logger.trace("USB: CONTROL IN request=%#04x data=<%s> (completed)",
                 request, dump_hex(data))
-            return data
         except asyncio.CancelledError:
             logger.trace("USB: CONTROL IN request=%#04x (cancelled)", request)
             raise
+        else:
+            return data
 
     async def control_write(self, request, value, index, data):
         if not isinstance(data, (bytes, bytearray)):
@@ -260,10 +261,11 @@ class GlasgowDevice:
         try:
             data = await self.usb_device.bulk_transfer_in(endpoint, length)
             logger.trace("USB: BULK EP%d IN data=<%s> (completed)", endpoint & 0x7f, dump_hex(data))
-            return data
         except asyncio.CancelledError:
             logger.trace("USB: BULK EP%d IN (cancelled)", endpoint & 0x7f)
             raise
+        else:
+            return data
 
     async def bulk_write(self, endpoint, data):
         if not isinstance(data, (bytes, bytearray)):
@@ -544,16 +546,18 @@ class GlasgowDevice:
                     REQ_ALERT_VOLT, 0, self._iobuf_spec_to_mask(spec, one=True), 4))
             low_volts  = round(low_millivolts / 1000, 2) # we only have 8 bits of precision
             high_volts = round(high_millivolts / 1000, 2)
-            return low_volts, high_volts
         except usb.ErrorStall:
             raise GlasgowDeviceError(f"cannot get I/O port {spec} voltage alert") from None
+        else:
+            return low_volts, high_volts
 
     async def poll_alert(self):
         try:
             mask, = await self.control_read(REQ_POLL_ALERT, 0, 0, 1)
-            return self._mask_to_iobuf_spec(mask)
         except usb.ErrorStall:
             raise GlasgowDeviceError("cannot poll alert status") from None
+        else:
+            return self._mask_to_iobuf_spec(mask)
 
     @property
     def has_pulls(self):
@@ -594,9 +598,10 @@ class GlasgowDevice:
             value = await self.control_read(REQ_REGISTER, addr, 0, width)
             value = int.from_bytes(value, byteorder="little")
             logger.trace("register %d read: %#04x", addr, value)
-            return value
         except usb.ErrorStall:
             await self._register_error(addr)
+        else:
+            return value
 
     async def write_register(self, addr, value, width=1):
         """Write ``value`` to ``width``-byte FPGA register at ``addr``."""
