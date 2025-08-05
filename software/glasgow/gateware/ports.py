@@ -40,8 +40,12 @@ class PortGroup:
 
 # HACK: temporary until RFC #79
 import copy
+
+
 def SimulationPort_with_direction(self, direction):
     self = copy.copy(self)
     self._direction = io.Direction(direction)
     return self
+
+
 io.SimulationPort.with_direction = SimulationPort_with_direction

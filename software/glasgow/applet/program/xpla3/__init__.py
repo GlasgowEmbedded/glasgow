@@ -376,7 +376,7 @@ class ProgramXPLA3Applet(JTAGProbeApplet):
                 except JESD3ParsingError as e:
                     raise GlasgowAppletError(str(e))
 
-                bs = XPLA3Bitstream.from_fuses(parser.fuse, device) 
+                bs = XPLA3Bitstream.from_fuses(parser.fuse, device)
 
             if args.operation in ("read", "read-sram", "verify", "verify-sram"):
                 await iface.isp_enable(args.otf)

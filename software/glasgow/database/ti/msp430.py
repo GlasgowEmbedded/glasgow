@@ -38,6 +38,7 @@ class MSP430Device(namedtuple("MSP430Device", (
             f"core={self.core!r}, type={self.type!r}, features={self.features!r}, "
             f"pkg_variants={self.pkg_variants!r})")
 
+
 MSP430Device.__new__.__defaults__ = ([], None)
 
 

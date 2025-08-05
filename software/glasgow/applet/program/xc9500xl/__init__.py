@@ -721,6 +721,7 @@ class ProgramXC9500XLApplet(JTAGProbeApplet):
 
 # -------------------------------------------------------------------------------------------------
 
+
 class ProgramXC9500XLAppletTool(GlasgowAppletTool, applet=ProgramXC9500XLApplet):
     help = "manipulate Xilinx XC9500XL and XC9500XV CPLD bitstreams"
     description = """

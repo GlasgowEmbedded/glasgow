@@ -337,7 +337,7 @@ class XC95xxInterface:
         if not bits:
             # Nothing to do.
             return
-        
+
         self._log("program protection bits")
         await self.lower.write_ir(IR_FPGM)
         for fb in range(self.device.fbs):
@@ -505,6 +505,7 @@ class ProgramXC9500Applet(JTAGProbeApplet):
             await xc95xx_iface.programming_disable()
 
 # -------------------------------------------------------------------------------------------------
+
 
 class ProgramXC9500AppletTool(GlasgowAppletTool, applet=ProgramXC9500Applet):
     help = "manipulate Xilinx XC9500 CPLD bitstreams"

@@ -363,6 +363,7 @@ class SVFParserTestCase(unittest.TestCase):
 
 # -------------------------------------------------------------------------------------------------
 
+
 class SVFPrintingEventHandler:
     def __getattr__(self, name):
         if name.startswith("svf_"):

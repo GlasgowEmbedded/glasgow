@@ -234,12 +234,12 @@ class ProgramAVRSPIApplet(ProgramAVRApplet):
 
     def build(self, target, args):
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        ports=iface.get_port_group(
-                reset = args.reset,
-                sck   = args.sck,
-                cipo  = args.cipo,
-                copi  = args.copi
-            )
+        ports = iface.get_port_group(
+            reset = args.reset,
+            sck   = args.sck,
+            cipo  = args.cipo,
+            copi  = args.copi
+        )
 
         controller = SPIControllerSubtarget(
             ports=ports,

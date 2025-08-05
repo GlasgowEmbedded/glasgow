@@ -4,7 +4,6 @@ from amaranth import Signal
 from amaranth.lib import wiring, stream
 
 
-
 __all__ = [
     "DeprecatedTarget", "DeprecatedMultiplexer",
     "DeprecatedDevice", "DeprecatedDemultiplexer"

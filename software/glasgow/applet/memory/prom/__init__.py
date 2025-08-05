@@ -824,6 +824,7 @@ class MemoryPROMApplet(GlasgowApplet):
 
 # -------------------------------------------------------------------------------------------------
 
+
 class MemoryPROMAppletTool(GlasgowAppletTool, applet=MemoryPROMApplet):
     help = "display statistics of parallel EPROMs, EEPROMs, and Flash memories"
     description = """
