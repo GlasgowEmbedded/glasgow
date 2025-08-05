@@ -220,15 +220,15 @@ class SVFParser:
         if isinstance(self._parse_token(), kind):
             return self._token
         else:
-            if kind == int:
+            if kind is int:
                 expected = "integer"
-            elif kind == float:
+            elif kind is float:
                 expected = "real"
             elif kind == (int, float):
                 expected = "number"
-            elif kind == bits:
+            elif kind is bits:
                 expected = "scan data"
-            elif kind == tuple:
+            elif kind is tuple:
                 expected = "data"
             else:
                 assert False
