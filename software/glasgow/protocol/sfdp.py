@@ -241,7 +241,7 @@ class SFDPJEDECFlashParametersTable(SFDPTable):
                     word6._fast_read_4_4_4_mode_bits)
 
         except ValueError as e:
-            raise ValueError(f"cannot parse {str(self)}: {str(e)}") from None
+            raise ValueError(f"cannot parse {self!s}: {e!s}") from None
 
     @property
     def table_name(self) -> str:

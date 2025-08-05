@@ -854,8 +854,8 @@ class MemoryPROMAppletTool(GlasgowAppletTool, applet=MemoryPROMApplet):
             max_popcount = max(mean_popcounts for _, _, mean_popcounts in series)
             histogram_size = 40
             resolution = max(1, (max_popcount - min_popcount) / histogram_size)
-            print(f"Vcc   {str(math.floor(min_popcount)):<{1 + histogram_size // 2}s}"
-                        f"{str(math.ceil (max_popcount)):>{1 + histogram_size // 2}s} popcount")
+            print(f"Vcc   {math.floor(min_popcount)!s:<{1 + histogram_size // 2}s}"
+                        f"{math.ceil (max_popcount)!s:>{1 + histogram_size // 2}s} popcount")
             for voltage, popcounts, mean_popcount in series:
                 rectangle_size = math.floor((mean_popcount - min_popcount) / resolution)
                 print(f"{voltage:.2f}: |{'1' * rectangle_size:{histogram_size}s}| "
