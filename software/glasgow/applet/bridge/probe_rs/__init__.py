@@ -21,7 +21,7 @@ from glasgow.applet.interface.swd_probe import SWDProbeComponent
 from glasgow.applet import GlasgowAppletV2
 
 
-__all__ = []
+__all__ = ["StreamBuffer"]
 
 
 class ProbeRsTarget(enum.Enum, shape=8):

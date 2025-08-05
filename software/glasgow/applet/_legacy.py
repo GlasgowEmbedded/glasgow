@@ -13,7 +13,6 @@ from ..simulation.assembly import SimulationAssembly
 from ..abstract import AbstractAssembly
 from ..hardware.assembly import HardwareAssembly
 from ..hardware.device import GlasgowDevice
-from ..hardware.platform.rev_ab import GlasgowRevABPlatform
 from ..gateware.clockgen import ClockGen
 from ..legacy import DeprecatedTarget, DeprecatedDevice, DeprecatedDemultiplexer
 from . import GlasgowAppletError, GlasgowAppletArguments

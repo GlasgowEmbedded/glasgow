@@ -1,5 +1,5 @@
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io
+from amaranth.lib import enum, data, wiring, stream
 from amaranth.lib.wiring import In, Out, connect, flipped
 
 from .ports import PortGroup

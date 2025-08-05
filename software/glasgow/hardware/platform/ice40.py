@@ -1,4 +1,3 @@
-import asyncio
 from amaranth import *
 from amaranth.lib.cdc import ResetSynchronizer
 from amaranth.vendor import LatticeICE40Platform

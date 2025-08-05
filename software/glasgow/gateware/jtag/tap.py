@@ -8,7 +8,7 @@
 from typing import Iterable
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, io, cdc
+from amaranth.lib import enum, wiring, io
 from amaranth.lib.wiring import In, Out
 
 

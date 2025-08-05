@@ -8,7 +8,7 @@ import math
 import logging
 
 from amaranth import *
-from amaranth.lib import stream, io
+from amaranth.lib import io
 
 from .gateware.ports import PortGroup
 

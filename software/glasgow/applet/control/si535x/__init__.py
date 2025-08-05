@@ -15,7 +15,7 @@ from glasgow.applet.interface.i2c_controller import I2CNotAcknowledged, I2CContr
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
-__all__ = ["Si535xError", "Si535xInterface"]
+__all__ = ["Si535xError", "Si535xInterface", "I2CNotAcknowledged"]
 
 
 class Si535xError(GlasgowAppletError):

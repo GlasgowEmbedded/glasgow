@@ -1,4 +1,4 @@
-from typing import Any, Optional, TextIO
+from typing import Any, TextIO
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 import sys
 import json

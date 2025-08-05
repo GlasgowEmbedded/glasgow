@@ -1,4 +1,3 @@
-import unittest
 
 from glasgow.applet import GlasgowAppletV2TestCase, synthesis_test, applet_v2_hardware_test
 from . import Memory24xApplet

@@ -3,7 +3,7 @@ import unittest
 
 from amaranth import *
 from amaranth.sim import Simulator
-from amaranth.lib import io, wiring
+from amaranth.lib import io
 
 from .....gateware.ports import PortGroup
 from .....gateware.stream import stream_get, stream_put

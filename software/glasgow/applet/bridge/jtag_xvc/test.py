@@ -1,5 +1,5 @@
 from amaranth import *
-from amaranth.lib import wiring, stream, io
+from amaranth.lib import wiring, io
 from amaranth.sim import Simulator
 
 from glasgow.gateware.ports import PortGroup
