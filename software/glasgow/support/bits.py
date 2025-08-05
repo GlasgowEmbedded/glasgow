@@ -332,7 +332,7 @@ class _bits_base(amaranth.ValueCastable, Sequence):
         end = min(end, self._len - (needle._len - 1))
         for i in range(start, end):
             if all(self[i + j] == needle[j] for j in range(needle._len)):
-               return i
+                return i
         return -1
 
     def index(self, *args, **kwargs) -> int:
