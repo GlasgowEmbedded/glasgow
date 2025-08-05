@@ -1180,11 +1180,11 @@ class JTAGProbeApplet(GlasgowApplet):
                     dr_value = await tap_iface.scan_dr(check=False)
                     if dr_value is None:
                         dr_length = "?"
-                        level = logging.WARN
+                        level = logging.WARNING
                     else:
                         dr_length = len(dr_value)
                         if dr_length == 0:
-                            level = logging.WARN
+                            level = logging.WARNING
                         elif dr_length == 1:
                             level = logging.DEBUG
                         else:

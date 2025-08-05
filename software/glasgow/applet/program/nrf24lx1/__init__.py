@@ -346,7 +346,7 @@ class ProgramNRF24Lx1Applet(GlasgowApplet):
                                       - memory_area.mem_addr
                                       + memory_area.spi_addr) & 0xffff
                     if memory_area.spi_addr & 0x10000:
-                        level = logging.WARN
+                        level = logging.WARNING
                         await nrf24lx1_iface.write_status(FSR_BIT_INFEN)
                     else:
                         level = logging.INFO

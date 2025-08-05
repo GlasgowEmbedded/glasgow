@@ -1092,7 +1092,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
                         fail_crc = False
                     else:
                         fail_crc = True
-                    self.logger.log(logging.ERROR if fail_crc else logging.WARN,
+                    self.logger.log(logging.ERROR if fail_crc else logging.WARNING,
                                     "wrong checksum sym-off=%d state=%s type=%02X",
                                     offset, state, data[2])
                     if fail_crc:

@@ -355,7 +355,7 @@ class Memory25xDecoder:
 
         except IndexError:
             if cmd is None:
-                self._log("(truncated)", level=logging.WARN)
+                self._log("(truncated)", level=logging.WARNING)
             else:
                 self._log(f"{cmd=:02X} (truncated)", level=logging.ERROR)
 

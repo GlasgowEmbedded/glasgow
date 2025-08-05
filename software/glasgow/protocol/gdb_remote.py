@@ -129,7 +129,7 @@ class GDBRemote(metaclass=ABCMeta):
                     elif delimiter in (b"+", b"\x03"):
                         pass
                     else:
-                        self.gdb_log(logging.WARN, "received junk: <%s>", delimiter.hex())
+                        self.gdb_log(logging.WARNING, "received junk: <%s>", delimiter.hex())
 
                 command  = await endpoint.recv_until(b"#")
                 checksum = await endpoint.recv(2)

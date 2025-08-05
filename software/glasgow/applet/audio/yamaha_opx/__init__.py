@@ -479,10 +479,10 @@ class YamahaOPxInterface(metaclass=ABCMeta):
             self._feature_warned = True
             self._log("client uses feature [%#04x] with level %d, but only level %d is enabled",
                       feature, feature_level, self._feature_level,
-                      level=logging.WARN)
+                      level=logging.WARNING)
             self._log("retrying with level %d enabled",
                       feature_level,
-                      level=logging.WARN)
+                      level=logging.WARNING)
             return True
         return False
 
@@ -490,7 +490,7 @@ class YamahaOPxInterface(metaclass=ABCMeta):
         if address not in self._registers:
             self._log("client uses undefined feature [%#04x]=%#04x",
                       address, data,
-                      level=logging.WARN)
+                      level=logging.WARNING)
 
     async def write_register(self, address, data, check_feature=True):
         if self.filter is not None:
@@ -709,7 +709,7 @@ class YamahaOPL3Interface(YamahaOPL2Interface):
     async def _check_enable_features(self, address, data):
         if address == 0x08 and data & 0x80:
             self._log("client uses deprecated and removed feature [0x08]|0x80",
-                      level=logging.WARN)
+                      level=logging.WARNING)
         elif address == 0x105 and data in (0x00, 0x01):
             if data & 0x01:
                 self._enable_level(3)
