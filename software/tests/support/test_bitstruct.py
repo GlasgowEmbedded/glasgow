@@ -117,6 +117,6 @@ class BitstructTestCase(unittest.TestCase):
         bs = bitstruct("bs", 8, [("a", 8)])
         x  = bs()
         with self.assertRaises(AttributeError):
-            x.b
+            _ = x.b
         with self.assertRaises(AttributeError):
             x.b = 1

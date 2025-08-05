@@ -28,7 +28,7 @@ class LazyTestCase(unittest.TestCase):
         y = lazy(lambda: x)
         del y.f
         with self.assertRaises(AttributeError):
-            x.f
+            _ = x.f
 
     def test_str(self):
         x = lazy(lambda: "foo")
