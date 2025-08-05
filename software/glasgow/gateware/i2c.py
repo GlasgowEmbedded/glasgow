@@ -11,11 +11,11 @@ __all__ = ["I2CInitiator", "I2CTarget"]
 
 
 class I2CBus(Elaboratable):
-    """
-    I2C bus.
+    """I2C bus.
 
     Decodes bus conditions (start, stop, sample and setup) and provides synchronization.
     """
+
     def __init__(self, pads):
         self.pads = pads
 
@@ -62,8 +62,7 @@ class I2CBus(Elaboratable):
 
 
 class I2CInitiator(Elaboratable):
-    """
-    Simple I2C transaction initiator.
+    """Simple I2C transaction initiator.
 
     Generates start and stop conditions, and transmits and receives octets.
     Clock stretching is supported.
@@ -101,6 +100,7 @@ class I2CInitiator(Elaboratable):
     :attr ack_i:
         Acknowledge bit to be transmitted. Latched immediately after ``read`` is asserted.
     """
+
     def __init__(self, pads, period_cyc, clk_stretch=True):
         assert (period_cyc // 4) < (1 << 16)
 
@@ -257,8 +257,7 @@ class I2CInitiator(Elaboratable):
 
 
 class I2CTarget(Elaboratable):
-    """
-    Simple I2C target.
+    """Simple I2C target.
 
     Clock stretching is not supported.
     Builtin responses (identification, general call, etc.) are not provided.
@@ -293,6 +292,7 @@ class I2CTarget(Elaboratable):
         Data octet to be transmitted to the initiator. Latched immediately after receiving
         a read command.
     """
+
     def __init__(self, pads):
         self.address = Signal(7)
         self.busy    = Signal() # clock stretching request (experimental, undocumented)

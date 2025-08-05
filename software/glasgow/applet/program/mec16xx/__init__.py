@@ -377,7 +377,7 @@ class MEC16xxInterface(aobject):
         await self._eeprom_command(mode=EEPROM_Mode_Standby)
 
     async def program_eeprom(self, address, bytes):
-        """ Program eeprom.
+        """Program eeprom.
 
         Assumes that the area has already been erased.
         """

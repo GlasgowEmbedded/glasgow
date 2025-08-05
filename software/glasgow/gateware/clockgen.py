@@ -5,8 +5,7 @@ __all__ = ["ClockGen"]
 
 
 class ClockGen(Elaboratable):
-    """
-    A clock generator. The purpose of a clock generator is to use an input clock signal to
+    """A clock generator. The purpose of a clock generator is to use an input clock signal to
     generate an output clock (50% duty cycle pulses) and rising/falling strobe (1 input clock
     period wide pulses preceding the rising/falling edge of output clock pulses) signals using
     nothing but LUT/FF logic, i.e. no PLLs, hard dividers, etc. This implies that the output clock
@@ -95,8 +94,7 @@ class ClockGen(Elaboratable):
 
     @staticmethod
     def calculate(input_hz, output_hz, max_deviation_ppm=None, min_cyc=None):
-        """
-        Calculate the integer period ratio for dividing an ``input_hz`` clock to an approximately
+        """Calculate the integer period ratio for dividing an ``input_hz`` clock to an approximately
         ``output_hz`` clock, and return the divisor as well as the actual output frequency and
         its deviation from requested output frequency.
 
@@ -134,8 +132,7 @@ class ClockGen(Elaboratable):
     @classmethod
     def derive(cls, input_hz, output_hz, max_deviation_ppm=None, min_cyc=None,
                logger=None, clock_name=None):
-        """
-        Derive the parameter for :class:`ClockGen`, and log the input frequency, requested
+        """Derive the parameter for :class:`ClockGen`, and log the input frequency, requested
         output frequency, actual output frequency, frequency deviation, and actual duty cycle.
 
         See :meth:`calculate` for details.

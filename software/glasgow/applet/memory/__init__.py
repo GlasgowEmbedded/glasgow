@@ -1,5 +1,4 @@
-"""
-The ``memory`` taxon groups applets implementing interfaces to memory technology devices (volatile
+"""The ``memory`` taxon groups applets implementing interfaces to memory technology devices (volatile
 and non-volatile) that include no functionality beyond manipulating data.
 
 Examples: SPI flash, I²C EEPROM.

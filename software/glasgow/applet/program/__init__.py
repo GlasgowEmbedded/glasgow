@@ -1,5 +1,4 @@
-"""
-The ``program`` taxon groups applets implementing interfaces to memory technology devices (volatile
+"""The ``program`` taxon groups applets implementing interfaces to memory technology devices (volatile
 and non-volatile) that are directly connected to programmable logic, such as a microcontroller or
 a gate array.
 

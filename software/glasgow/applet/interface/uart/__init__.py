@@ -16,8 +16,7 @@ from glasgow.applet import GlasgowAppletV2
 
 
 class UARTAutoBaud(wiring.Component):
-    """
-    Automatic UART baud rate determination.
+    """Automatic UART baud rate determination.
 
     Unlike the algorithm usually called "autobaud" that only works on the initial "A" letter
     (as in "AT command"), the algorithm implemented here does not require any particular alphabet
@@ -182,7 +181,8 @@ class UARTInterface:
 
     async def set_baud(self, baud):
         """Configures baud rate to ``baud`` bits per second, overriding any automatically detected
-        baud rate."""
+        baud rate.
+        """
         manual_cyc = round(1 / (baud * self._sys_clk_period))
         if manual_cyc < 2:
             raise GlasgowAppletError(f"baud rate {baud} is too high")
@@ -195,7 +195,8 @@ class UARTInterface:
 
     async def read(self, length: int, *, flush=True) -> memoryview:
         """Reads one or more bytes from the UART. If :py:`flush` is true, transmits any buffered
-        writes before starting to receive."""
+        writes before starting to receive.
+        """
         self._log("rx len=%d", length)
         if flush:
             await self.flush()
@@ -205,7 +206,8 @@ class UARTInterface:
 
     async def read_all(self, *, flush=True) -> memoryview:
         """Reads all buffered bytes from the UART, but no less than one byte. If :py:`flush` is
-        true, transmits any buffered writes before starting to read."""
+        true, transmits any buffered writes before starting to read.
+        """
         self._log("rx all")
         if flush:
             await self.flush()
@@ -219,7 +221,8 @@ class UARTInterface:
     async def read_until(self, trailer: bytes | Tuple[bytes, ...]) -> memoryview:
         """Reads bytes from the UART until :py:`trailer`, which can be a single byte sequence
         or a choice of multiple byte sequences, is encountered. The return value includes
-        the trailer."""
+        the trailer.
+        """
         buffer = bytearray()
         while not buffer.endswith(trailer):
             buffer += await self.read(1)
@@ -227,7 +230,8 @@ class UARTInterface:
 
     async def write(self, data: bytes | bytearray | memoryview, *, flush=False):
         """Buffers bytes to be transmitted. Until :meth:`flush` is called, bytes are not guaranteed
-        to be transmitted (they may or may not be)."""
+        to be transmitted (they may or may not be).
+        """
         data = memoryview(data)
         self._log("tx data=<%s>", dump_hex(data))
         await self._pipe.send(data)

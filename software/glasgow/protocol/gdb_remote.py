@@ -57,7 +57,8 @@ class GDBRemote(metaclass=ABCMeta):
     @abstractmethod
     async def target_detach(self):
         """Detaches from the target. Typically, this method clears all breakpoints and resumes
-        execution."""
+        execution.
+        """
 
     @abstractmethod
     async def target_get_registers(self) -> list[int]:
@@ -88,14 +89,16 @@ class GDBRemote(metaclass=ABCMeta):
         """Sets software breakpoint at given address. This could fail if the memory at this address
         is not writable.
 
-        Raises ``NotImplementedError`` if this breakpoint type isn't supported."""
+        Raises ``NotImplementedError`` if this breakpoint type isn't supported.
+        """
         raise NotImplementedError
 
     @abstractmethod
     async def target_clear_software_breakpt(self, address: int, kind: int):
         """Clears software breakpoint previously set at given address.
 
-        Raises ``NotImplementedError`` if this breakpoint type isn't supported."""
+        Raises ``NotImplementedError`` if this breakpoint type isn't supported.
+        """
         raise NotImplementedError
 
     @abstractmethod
@@ -103,14 +106,16 @@ class GDBRemote(metaclass=ABCMeta):
         """Sets hardware breakpoint at given address. This could fail if the amount of available
         hardware breakpoints is exceeded.
 
-        Raises ``NotImplementedError`` if this breakpoint type isn't supported."""
+        Raises ``NotImplementedError`` if this breakpoint type isn't supported.
+        """
         raise NotImplementedError
 
     @abstractmethod
     async def target_clear_instr_breakpt(self, address: int, kind: int):
         """Clears hardware breakpoint previously set at given address.
 
-        Raises ``NotImplementedError`` if this breakpoint type isn't supported."""
+        Raises ``NotImplementedError`` if this breakpoint type isn't supported.
+        """
         raise NotImplementedError
 
     async def gdb_run(self, endpoint):

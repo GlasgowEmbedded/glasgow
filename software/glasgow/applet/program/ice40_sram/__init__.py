@@ -52,7 +52,6 @@ class ICE40SRAMInterface:
             If the CDONE pin is present and was not asserted within 100 ms after the bitstream
             has been shifted in.
         """
-
         async with self._spi_iface.select():
             self._log("resetting")
 

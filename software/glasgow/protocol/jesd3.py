@@ -13,8 +13,7 @@ class JESD3ParsingError(Exception):
 
 
 class JESD3Lexer:
-    """
-    A JESD3 (JED) lexer.
+    """A JESD3 (JED) lexer.
 
     :type buffer: str
     :attr buffer:
@@ -72,8 +71,7 @@ class JESD3Lexer:
             self._stx_re = self._stx_spec_re
 
     def line_column(self, position=None):
-        """
-        Return a ``(line, column)`` tuple for the given or, if not specified, current position.
+        """Return a ``(line, column)`` tuple for the given or, if not specified, current position.
 
         Both the line and the column start at 1.
         """

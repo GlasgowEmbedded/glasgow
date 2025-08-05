@@ -96,7 +96,6 @@ class Memory24xInterface:
         I2CNotAcknowledged
             If communication fails; if a previous write hasn't completed yet.
         """
-
         while len(data) > 0:
             if address % self._page_size == 0:
                 chunk_size = self._page_size

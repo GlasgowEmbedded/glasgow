@@ -1,5 +1,4 @@
-"""
-The ``display`` taxon groups applets implementing display interfaces, that is, interfaces for
+"""The ``display`` taxon groups applets implementing display interfaces, that is, interfaces for
 sending commands to a device that alters its transmittance and/or reflectance in response.
 
 Although some devices may receive periodic commands that embed 2d arrays of samples, they are
