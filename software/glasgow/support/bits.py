@@ -75,7 +75,6 @@ class _bits_base(amaranth.ValueCastable, Sequence):
                     byte = 0
             if nbits % 8 != 0:
                 yield byte
-            return
 
         res = object.__new__(cls)
         res._bytes = cls._bytestype(make_bytes())
