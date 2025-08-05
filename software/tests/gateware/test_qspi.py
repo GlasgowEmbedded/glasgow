@@ -204,7 +204,7 @@ class QSPIFramingTestCase(unittest.TestCase):
 
         async def testbench_in(ctx):
             async def bits_put(*, ix, mode):
-                for cycle, i in enumerate(ix):
+                for _cycle, i in enumerate(ix):
                     await stream_put(ctx, dut.frames, {
                         "port": {
                             "io0": {"i": [0, (i>>0)&1]},

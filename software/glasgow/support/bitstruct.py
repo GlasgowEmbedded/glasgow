@@ -81,7 +81,7 @@ class _bitstruct:
             return bits(value, self._size_bits_)
         """)
 
-        for field, (offset, width) in cls["_layout_"].items():
+        for field, (_offset, width) in cls["_layout_"].items():
             code += textwrap.dedent(f"""
             @property
             def {field}(self):

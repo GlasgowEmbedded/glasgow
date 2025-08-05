@@ -447,7 +447,7 @@ class JTAGProbeInterface:
     async def pulse_tck(self, count):
         assert self._state in (JTAGState.IDLE, JTAGState.IRPAUSE, JTAGState.DRPAUSE)
         self._log_l("pulse tck count=%d", count)
-        for count, last in self._chunk_count(count, last=True):
+        for count, _last in self._chunk_count(count, last=True):
             await self.lower.write(struct.pack("<BH",
                 CMD_SHIFT_TDIO, count))
 

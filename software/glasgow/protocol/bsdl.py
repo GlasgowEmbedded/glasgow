@@ -115,7 +115,7 @@ class BSDLLexer:
     def __next__(self):
         if match := self._REGEX.match(self._source, self._offset):
             offset, self._offset = match.span(0)
-            for name, regex in self._TOKENS:
+            for name, _regex in self._TOKENS:
                 if (value := match[name]) is not None:
                     return BSDLToken(
                         name, value.upper(),

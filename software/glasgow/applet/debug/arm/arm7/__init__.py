@@ -1258,13 +1258,13 @@ class DebugARM7Interface(GDBRemote):
         self._log("breakpoint clear at=%08x kind=%s", address, kind.name)
         for (breakpt_address, breakpt_kind), breakpt_save in self._breakpts.items():
             if (breakpt_address, breakpt_kind) == (address, kind):
+                if breakpt_kind.is_soft:
+                    await self._replace_code(breakpt_address, breakpt_save, action="clear")
+                del self._breakpts[(breakpt_address, breakpt_kind)]
                 break
         else:
             raise GDBRemoteError(f"cannot clear a {kind.name} breakpoint at {address:#010x}: "
                                  f"breakpoint does not exist")
-        if breakpt_kind.is_soft:
-            await self._replace_code(breakpt_address, breakpt_save, action="clear")
-        del self._breakpts[(breakpt_address, breakpt_kind)]
 
     async def _clear_all_breakpts(self):
         assert self._is_halted

@@ -187,7 +187,7 @@ class SystemTool(Tool):
 
     def _iter_data_files(self):
         def iter_files(start):
-            for root, dirs, files in os.walk(start):
+            for root, _dirs, files in os.walk(start):
                 for file in files:
                     yield os.path.join(root, file)
 
