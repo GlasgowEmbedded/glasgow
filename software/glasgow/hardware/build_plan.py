@@ -101,11 +101,12 @@ class GlasgowBuildPlan:
 
             bitstream_data = (pathlib.Path(build_dir) / "top.bin").read_bytes()
             stdout_data = b"".join(stdout_lines)
-            return bitstream_data, stdout_data
         except:
             if debug:
                 logger.info("keeping build tree as %s", build_dir)
             raise
+        else:
+            return bitstream_data, stdout_data
         finally:
             if not debug:
                 shutil.rmtree(build_dir)

@@ -322,9 +322,10 @@ class I2CControllerInterface:
         try:
             async with self._do_operation():
                 await self._do_addr(address, read=False)
-            return True
         except I2CNotAcknowledged:
             return False
+        else:
+            return True
 
     async def scan(self, addresses: range = range(0b0001_000, 0b1111_000)) -> set[int]:
         """Scan address range for presence.

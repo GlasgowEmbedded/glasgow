@@ -97,9 +97,10 @@ class WasmTool(Tool):
     def available(self) -> bool:
         try:
             importlib.metadata.metadata(self.python_package)
-            return True
         except importlib.metadata.PackageNotFoundError:
             return False
+        else:
+            return True
 
     @property
     def command(self) -> Optional[str]:
