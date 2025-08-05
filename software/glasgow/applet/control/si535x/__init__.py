@@ -149,7 +149,7 @@ class ControlSi535xApplet(GlasgowAppletV2):
         def hex_bytes(arg):
             return bytes.fromhex(arg)
         def outputs(arg):
-            return sum([1 << int(index) for index in arg.split(",")])
+            return sum(1 << int(index) for index in arg.split(","))
 
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 

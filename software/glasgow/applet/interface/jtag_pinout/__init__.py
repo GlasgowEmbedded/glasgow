@@ -193,7 +193,7 @@ class JTAGPinoutApplet(GlasgowAppletV2):
                 pins=args.pins, frequency=args.frequency * 1000)
 
         self.bits  = set(range(len(args.pins)))
-        self.pins  = {bit: pin      for bit, pin in enumerate(args.pins)}
+        self.pins  = dict(enumerate(args.pins))
         self.names = {bit: str(pin) for bit, pin in enumerate(args.pins)}
 
     @staticmethod

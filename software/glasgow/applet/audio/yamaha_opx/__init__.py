@@ -1274,7 +1274,7 @@ class AudioYamahaOPxApplet(GlasgowApplet):
             await web_iface.serve(args.endpoint)
 
         if args.operation == "run":
-            context = dict()
+            context = {}
             exec(compile(args.script_file.read(), args.script_file.name, mode="exec"), context)
             if not isinstance(context.get("samples", None), int):
                 raise GlasgowAppletError("Script should set 'samples' to an int")

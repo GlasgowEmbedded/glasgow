@@ -57,7 +57,7 @@ class Controller(wiring.Component):
         assert ir_length >= 2, "IR must be at least 2 bits long"
 
         self._ir_length = ir_length
-        self._drs       = dict()
+        self._drs       = {}
 
         if ir_idcode is not None:
             self._dr_idcode = self.add({ir_idcode}, length=32)

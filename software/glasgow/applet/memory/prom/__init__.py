@@ -366,7 +366,7 @@ class MemoryPROMInterface:
             raw_diff = ((int.from_bytes(self.raw_data,  "little") ^
                          int.from_bytes(other.raw_data, "little"))
                         .to_bytes(len(self.raw_data), "little"))
-            diff = dict()
+            diff = {}
             for m in re.finditer(rb"[^\x00]", raw_diff):
                 index = m.start() // self.dq_bytes
                 diff[index] = (self[index], other[index])
@@ -400,7 +400,7 @@ class MemoryPROMInterface:
 
     async def read_shuffled(self, address, count):
         self._log("read shuffled a=%#x n=%d", address, count)
-        order = [offset for offset in range(count)]
+        order = list(range(count))
         random.shuffle(order)
         commands = []
         for offset in order:

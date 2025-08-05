@@ -283,7 +283,7 @@ class GDBRemote(metaclass=ABCMeta):
         # "Tell me everything you know about the target features (architecture, registers, etc.)"
         if command.startswith(b"qXfer:features:read:"):
             annex, offset_length = command[20:].decode("ascii").split(":")
-            offset, length = map(lambda x: int(x, 16), offset_length.split(","))
+            offset, length = (int(x, 16) for x in offset_length.split(","))
             if data := self.target_features().get(annex):
                 assert isinstance(data, (bytes, bytearray))
                 hex_chunk = binary_escape(data[offset:offset + length])
@@ -376,20 +376,20 @@ class GDBRemote(metaclass=ABCMeta):
 
         # "Read specified memory range of the target."
         if command.startswith(b"m"):
-            address, length = map(lambda x: int(x, 16), command[1:].split(b","))
+            address, length = (int(x, 16) for x in command[1:].split(b","))
             data = await self.target_read_memory(address, length)
             return data.hex().encode("ascii")
 
         # "Write specified memory range of the target."
         if command.startswith(b"M"):
             location, data = command[1:].split(b":")
-            address, _length = map(lambda x: int(x, 16), location.split(b","))
+            address, _length = (int(x, 16) for x in location.split(b","))
             await self.target_write_memory(address, bytes.fromhex(data.decode("ascii")))
             return b"OK"
 
         # "Set software breakpoint."
         if command.startswith(b"Z0"):
-            address, kind = map(lambda x: int(x, 16), command[3:].split(b","))
+            address, kind = (int(x, 16) for x in command[3:].split(b","))
             try:
                 await self.target_set_software_breakpt(address, kind)
                 return b"OK"
@@ -398,7 +398,7 @@ class GDBRemote(metaclass=ABCMeta):
 
         # "Clear software breakpoint."
         if command.startswith(b"z0"):
-            address, kind = map(lambda x: int(x, 16), command[3:].split(b","))
+            address, kind = (int(x, 16) for x in command[3:].split(b","))
             try:
                 await self.target_clear_software_breakpt(address, kind)
                 return b"OK"
@@ -407,7 +407,7 @@ class GDBRemote(metaclass=ABCMeta):
 
         # "Set hardware breakpoint."
         if command.startswith(b"Z1"):
-            address, kind = map(lambda x: int(x, 16), command[3:].split(b","))
+            address, kind = (int(x, 16) for x in command[3:].split(b","))
             try:
                 await self.target_set_instr_breakpt(address, kind)
                 return b"OK"
@@ -416,7 +416,7 @@ class GDBRemote(metaclass=ABCMeta):
 
         # "Clear hardware breakpoint."
         if command.startswith(b"z1"):
-            address, kind = map(lambda x: int(x, 16), command[3:].split(b","))
+            address, kind = (int(x, 16) for x in command[3:].split(b","))
             try:
                 await self.target_clear_instr_breakpt(address, kind)
                 return b"OK"
