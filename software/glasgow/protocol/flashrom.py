@@ -5,7 +5,9 @@ __all__ = ["SerprogCommand", "SerprogBus"]
 
 
 class SerprogCommand(enum.IntEnum):
-    """Serprog commands and responses, based on:
+    """Serprog commands and responses.
+
+    Based on:
 
     - https://review.coreboot.org/plugins/gitiles/flashrom/+/refs/tags/v1.0.2/serprog.h
     - https://review.coreboot.org/plugins/gitiles/flashrom/+/refs/tags/v1.0.2/Documentation/serprog-protocol.txt

@@ -107,7 +107,9 @@ class _bits_base(amaranth.ValueCastable, Sequence):
         return res
 
     def __new__(cls, value=0, length=None) -> Self:
-        """Creates a new bits instance.  The valid arguments for ``value`` are:
+        """Creates a new bits instance.
+
+        The valid arguments for ``value`` are:
 
         - another bits or bitarray instance (``length`` must not be provided)
         - int (``length`` may be provided or not, see ``from_int``)
