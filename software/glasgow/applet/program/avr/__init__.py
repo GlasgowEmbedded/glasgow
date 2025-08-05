@@ -1,5 +1,4 @@
-"""
-The Microchip (Atmel) AVR family has 9 (nine) incompatible programming interfaces. The vendor
+"""The Microchip (Atmel) AVR family has 9 (nine) incompatible programming interfaces. The vendor
 provides no overview, compatibility matrix, or (for most interfaces) documentation other than
 descriptions in MCU datasheets, so this document has to fill in the blanks.
 

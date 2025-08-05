@@ -5,12 +5,12 @@ __all__ = ["SerprogCommand", "SerprogBus"]
 
 
 class SerprogCommand(enum.IntEnum):
-    """
-    Serprog commands and responses, based on:
+    """Serprog commands and responses, based on:
 
     - https://review.coreboot.org/plugins/gitiles/flashrom/+/refs/tags/v1.0.2/serprog.h
     - https://review.coreboot.org/plugins/gitiles/flashrom/+/refs/tags/v1.0.2/Documentation/serprog-protocol.txt
     """
+
     ACK               = 0x06
     NAK               = 0x15
     CMD_NOP           = 0x00    # No operation
@@ -38,9 +38,8 @@ class SerprogCommand(enum.IntEnum):
 
 
 class SerprogBus(enum.IntEnum):
-    """
-    Bus types supported by the serprog protocol.
-    """
+    """Bus types supported by the serprog protocol."""
+
     PARALLEL = (1 << 0)
     LPC = (1 << 1)
     FHW = (1 << 2)

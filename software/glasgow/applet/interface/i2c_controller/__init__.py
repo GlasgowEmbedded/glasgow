@@ -333,7 +333,6 @@ class I2CControllerInterface:
 
         Returns the set of addresses receiving an acknowledgement.
         """
-
         acked = set()
         for address in addresses:
             if await self.ping(address):
@@ -354,7 +353,6 @@ class I2CControllerInterface:
         I2CNotAcknowledged
             If the command is not implemented.
         """
-
         async with self.transaction():
             await self.write(0b1111_100, [address])
             device_id = await self.read(0b1111_100, 3)

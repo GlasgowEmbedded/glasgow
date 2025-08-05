@@ -780,7 +780,6 @@ class JTAGProbeInterface:
 
     async def scan_reset_dr_ir(self):
         """Capture IR values and IDCODE/BYPASS DR values using Test-Logic-Reset."""
-
         await self.test_reset()
         # Scan DR chain first, since scanning IR chain will latch BYPASS into every IR.
         dr_value = await self._scan_xr("dr", idempotent=False)
@@ -791,7 +790,6 @@ class JTAGProbeInterface:
 
     def interrogate_dr(self, dr_value, *, check=True):
         """Split DR value captured after TAP reset into IDCODE/BYPASS chunks."""
-
         idcodes = []
         offset = 0
         while offset < len(dr_value):

@@ -92,12 +92,14 @@ class Memory25xAbstractTrace(metaclass=ABCMeta):
     @abstractmethod
     def read_dual(self, count: Optional[int] = None) -> memoryview:
         """Reads ``count`` bytes (or until the end of trace) by sampling IO0/IO1
-        (COPI/CIPO) lines."""
+        (COPI/CIPO) lines.
+        """
 
     @abstractmethod
     def read_quad(self, count: Optional[int] = None) -> memoryview:
         """Reads ``count`` bytes (or until the end of trace) by sampling IO0/IO1/IO2/IO3
-        (COPI/CIPO/WP#/HOLD#) lines."""
+        (COPI/CIPO/WP#/HOLD#) lines.
+        """
 
 
 class Memory25xSPITrace(Memory25xAbstractTrace):

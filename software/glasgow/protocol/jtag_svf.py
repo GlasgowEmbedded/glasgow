@@ -41,8 +41,7 @@ class SVFParsingError(Exception):
 
 
 class SVFLexer:
-    """
-    A Serial Vector Format lexer.
+    """A Serial Vector Format lexer.
 
     Comments (``! comment``, ``// comment``) are ignored.
 
@@ -88,8 +87,7 @@ class SVFLexer:
         self.position = 0
 
     def line_column(self, position=None):
-        """
-        Return a ``(line, column)`` tuple for the given or, if not specified, current position.
+        """Return a ``(line, column)`` tuple for the given or, if not specified, current position.
 
         Both the line and the column start at 1.
         """
@@ -138,13 +136,13 @@ class SVFLexer:
 
 
 class SVFParser:
-    """
-    A Serial Vector Format streaming parser.
+    """A Serial Vector Format streaming parser.
 
     This parser maintains and allows querying lexical state (e.g. "sticky" ``TDI`` is
     automatically tracked), and invokes the SVF event handler for all commands so that
     any necessary action may be taken.
     """
+
     def __init__(self, buffer, handler):
         self._lexer     = SVFLexer(buffer)
         self._handler   = handler
@@ -454,8 +452,7 @@ class SVFParser:
 
 
 class SVFEventHandler(metaclass=ABCMeta):
-    """
-    An abstract base class for Serial Vector Format parsing events.
+    """An abstract base class for Serial Vector Format parsing events.
 
     The methods of this class are called when a well-formed SVF command is encountered.
     The parser takes care of maintaining all lexical state (e.g. "sticky" parameters),

@@ -256,7 +256,8 @@ class BSDLScanCellMap(BSDLParserBase):
     @property
     def cells(self) -> list[tuple[int, BSDLScanCell]]:
         """Mapping of cell indices to cells. Under certain circumstances, two cells may be assigned
-        the same index; this is called a "merger"."""
+        the same index; this is called a "merger".
+        """
         return self._cells
 
     def _parse(self):

@@ -279,8 +279,7 @@ class GlasgowDevice:
             raise
 
     async def _read_eeprom_raw(self, idx, addr, length, chunk_size=0x1000):
-        """
-        Read ``length`` bytes at ``addr`` from EEPROM at index ``idx``
+        """Read ``length`` bytes at ``addr`` from EEPROM at index ``idx``
         in ``chunk_size`` byte chunks.
         """
         data = bytearray()
@@ -294,8 +293,7 @@ class GlasgowDevice:
         return data
 
     async def _write_eeprom_raw(self, idx, addr, data, chunk_size=0x1000):
-        """
-        Write ``data`` to ``addr`` in EEPROM at index ``idx``
+        """Write ``data`` to ``addr`` in EEPROM at index ``idx``
         in ``chunk_size`` byte chunks.
         """
         while len(data) > 0:
@@ -317,8 +315,7 @@ class GlasgowDevice:
         return 0x10000 * base_offset + addr
 
     async def read_eeprom(self, kind, addr, length):
-        """
-        Read ``length`` bytes at ``addr`` from EEPROM of kind ``kind``
+        """Read ``length`` bytes at ``addr`` from EEPROM of kind ``kind``
         in ``chunk_size`` byte chunks. Valid ``kind`` is ``"fx2"`` or ``"ice"``.
         """
         logger.debug("reading %s EEPROM range %04x-%04x",
@@ -334,8 +331,7 @@ class GlasgowDevice:
         return result
 
     async def write_eeprom(self, kind, addr, data):
-        """
-        Write ``data`` to ``addr`` in EEPROM of kind ``kind``
+        """Write ``data`` to ``addr`` in EEPROM of kind ``kind``
         in ``chunk_size`` byte chunks. Valid ``kind`` is ``"fx2"`` or ``"ice"``.
         """
         logger.debug("writing %s EEPROM range %04x-%04x",
@@ -353,8 +349,7 @@ class GlasgowDevice:
         return result[0]
 
     async def status(self):
-        """
-        Query device status.
+        """Query device status.
 
         Returns a set of flags out of ``{"fpga-ready", "alert"}``.
         """
@@ -369,8 +364,7 @@ class GlasgowDevice:
         return status_set
 
     async def bitstream_id(self):
-        """
-        Get bitstream ID for the bitstream currently running on the FPGA,
+        """Get bitstream ID for the bitstream currently running on the FPGA,
         or ``None`` if the FPGA does not have a bitstream.
         """
         bitstream_id = await self.control_read(REQ_BITSTREAM_ID, 0, 0, 16)
@@ -614,8 +608,7 @@ class GlasgowDevice:
 
 
 class GlasgowDeviceConfig:
-    """
-    Glasgow EEPROM configuration data.
+    """Glasgow EEPROM configuration data.
 
     :ivar int size:
         Total size of configuration block (currently 64).
@@ -646,6 +639,7 @@ class GlasgowDeviceConfig:
         except those exempted in https://glasgow-embedded.org/latest/build.html. It will be set when
         running `glasgow factory --using-modified-design-files=yes`.
     """
+
     size = 64
     _encoding = "<B16sI16s2H22sb"
 
@@ -663,8 +657,7 @@ class GlasgowDeviceConfig:
 
     @staticmethod
     def encode_revision(string):
-        """
-        Encode the human readable revision to the revision byte as used in the firmware.
+        """Encode the human readable revision to the revision byte as used in the firmware.
 
         The revision byte encodes the letter ``X`` and digit ``N`` in ``revXN`` in the high and
         low nibble respectively. The high nibble is the letter (1 means ``A``) and the low nibble
@@ -678,8 +671,7 @@ class GlasgowDeviceConfig:
 
     @staticmethod
     def decode_revision(value):
-        """
-        Decode the revision byte as used in the firmware to the human readable revision.
+        """Decode the revision byte as used in the firmware to the human readable revision.
 
         This inverts the transformation done by :meth:`encode_revision`.
         """
@@ -692,9 +684,7 @@ class GlasgowDeviceConfig:
             raise ValueError(f"invalid revision value {value:#04x}")
 
     def encode(self):
-        """
-        Convert configuration to a byte array that can be loaded into memory or EEPROM.
-        """
+        """Convert configuration to a byte array that can be loaded into memory or EEPROM."""
         data = struct.pack(self._encoding,
                            self.encode_revision(self.revision),
                            self.serial.encode("ascii"),
@@ -708,8 +698,7 @@ class GlasgowDeviceConfig:
 
     @classmethod
     def decode(cls, data):
-        """
-        Parse configuration from a byte array loaded from memory or EEPROM.
+        """Parse configuration from a byte array loaded from memory or EEPROM.
 
         Returns :class:`GlasgowConfiguration` or raises :class:`ValueError` if
         the byte array does not contain a valid configuration.
@@ -772,8 +761,7 @@ class FX2BootloaderDevice:
         await self.usb_device.close()
 
     async def load_ram(self, chunks):
-        """
-        Write ``chunks``, a list of ``(address, data)`` pairs, to internal RAM,
+        """Write ``chunks``, a list of ``(address, data)`` pairs, to internal RAM,
         and start the CPU core.
         """
         # Put the FX2 into reset
@@ -792,8 +780,7 @@ class FX2BootloaderDevice:
             usb.RequestType.Vendor, usb.Recipient.Device, REQ_RAM, REG_CPUCS, 0, bytes([0]))
 
     async def read_boot_eeprom(self, addr, length, chunk_size=0x1000):
-        """
-        Read ``length`` bytes at ``addr`` from boot EEPROM in ``chunk_size`` chunks.
+        """Read ``length`` bytes at ``addr`` from boot EEPROM in ``chunk_size`` chunks.
 
         Requires the second stage bootloader or a compatible firmware.
         """
@@ -806,8 +793,7 @@ class FX2BootloaderDevice:
         return data
 
     async def write_boot_eeprom(self, addr, data, chunk_size=0x1000):
-        """
-        Write ``data`` to ``addr`` in boot EEPROM in ``chunk_size`` chunks.
+        """Write ``data`` to ``addr`` in boot EEPROM in ``chunk_size`` chunks.
 
         Requires the second stage bootloader or a compatible firmware.
         """

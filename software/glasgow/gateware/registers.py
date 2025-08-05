@@ -5,12 +5,12 @@ __all__ = ["Registers", "I2CRegisters"]
 
 
 class Registers(Elaboratable):
-    """
-    A register array.
+    """A register array.
 
     :attr reg_count:
         Register count.
     """
+
     def __init__(self):
         self.reg_count = 0
         self.regs_r = Array()
@@ -59,12 +59,12 @@ class Registers(Elaboratable):
 
 
 class I2CRegisters(Registers):
-    """
-    A register array, accessible over I2C.
+    """A register array, accessible over I2C.
 
     Note that for multibyte registers, the register data is read in little endian, but written
     in big endian. This replaces a huge multiplexer with a shift register, but is a bit cursed.
     """
+
     def __init__(self, i2c_target):
         super().__init__()
         self.i2c_target = i2c_target

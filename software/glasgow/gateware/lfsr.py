@@ -5,8 +5,7 @@ __all__ = ["LinearFeedbackShiftRegister"]
 
 
 class LinearFeedbackShiftRegister(Elaboratable):
-    """
-    A linear feedback shift register. Useful for generating long pseudorandom sequences with
+    """A linear feedback shift register. Useful for generating long pseudorandom sequences with
     a minimal amount of logic.
 
     Use ``CEInserter`` and ``ResetInserter`` transformers to control the LFSR.
@@ -22,6 +21,7 @@ class LinearFeedbackShiftRegister(Elaboratable):
         generated.
     :type reset: int
     """
+
     def __init__(self, degree, taps, init=1):
         assert init != 0
 

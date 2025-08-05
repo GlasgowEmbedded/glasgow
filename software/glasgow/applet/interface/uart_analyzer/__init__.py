@@ -127,7 +127,6 @@ class UARTAnalyzerInterface:
         protocol decoders must be prepared to handle data being split across any number of messages
         at any boundaries.
         """
-
         if await self._overflow:
             raise GlasgowAppletError("overflow")
 

@@ -35,13 +35,15 @@ class ARMDPInterface(metaclass=ABCMeta):
     async def write_dp_reg(self, addr, value):
         """Write ``value`` to the data link independent DP register at ``addr``.
 
-        In ADIv5.2, this may be only ``CTRL/STAT``, and data link dependent bits must be zero."""
+        In ADIv5.2, this may be only ``CTRL/STAT``, and data link dependent bits must be zero.
+        """
 
     @abstractmethod
     async def read_dp_reg(self, addr):
         """Read ``value`` from the data link independent DP register at ``addr``.
 
-        In ADIv5.2, this may be ``CTRL/STAT``, ``DPIDR``, ``TARGETID``, and ``EVENTSTAT``."""
+        In ADIv5.2, this may be ``CTRL/STAT``, ``DPIDR``, ``TARGETID``, and ``EVENTSTAT``.
+        """
 
     @abstractmethod
     async def write_ap_reg(self, index, addr, value):

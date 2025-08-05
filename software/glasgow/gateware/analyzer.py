@@ -89,8 +89,7 @@ class EventSource(Elaboratable):
 
 
 class EventAnalyzer(Elaboratable):
-    """
-    An event analyzer module.
+    """An event analyzer module.
 
     This event analyzer is designed to observe parallel, bursty processes in real-time, and yet
     degrade gracefully (i.e. without losing data or breaking most applets) when observing processes
@@ -376,12 +375,12 @@ class TraceDecodingError(Exception):
 
 
 class TraceDecoder:
-    """
-    Event analyzer trace decoder.
+    """Event analyzer trace decoder.
 
     Decodes raw analyzer traces into a timestamped sequence of maps from event fields to
     their values.
     """
+
     def __init__(self, event_sources, absolute_timestamps=True):
         self.event_sources       = event_sources
         self.absolute_timestamps = absolute_timestamps
@@ -397,9 +396,7 @@ class TraceDecoder:
         self._timeline   = []
 
     def events(self):
-        """
-        Return names and widths for all events that may be emitted by this trace decoder.
-        """
+        """Return names and widths for all events that may be emitted by this trace decoder."""
         yield ("throttle", "throttle", 1)
 
         for event_src in self.event_sources:
@@ -424,9 +421,7 @@ class TraceDecoder:
         self._delay = 0
 
     def process(self, data):
-        """
-        Incrementally parse a chunk of analyzer trace, and record events in it.
-        """
+        """Incrementally parse a chunk of analyzer trace, and record events in it."""
         for octet in data:
             is_delay   = ((octet & REPORT_DELAY_MASK)   == REPORT_DELAY)
             is_event   = ((octet & REPORT_EVENT_MASK)   == REPORT_EVENT)
@@ -496,8 +491,7 @@ class TraceDecoder:
             self._byte_off += 1
 
     def flush(self, pending=False):
-        """
-        Return the complete event timeline since the start of decoding or the previous flush.
+        """Return the complete event timeline since the start of decoding or the previous flush.
         If ``pending`` is ``True``, also flushes pending events; this may cause duplicate
         timestamps if more events arrive after the flush.
         """

@@ -58,7 +58,8 @@ class _bits_base(amaranth.ValueCastable, Sequence):
     @classmethod
     def from_iter(cls, iterator) -> Self:
         """Creates bits from an iterator of bit values (ie. ints of value 0 and 1).
-        The bits in the iterator are treated as LSB-first."""
+        The bits in the iterator are treated as LSB-first.
+        """
         nbits = 0
 
         def make_bytes():
@@ -203,7 +204,8 @@ class _bits_base(amaranth.ValueCastable, Sequence):
     def to_bytes(self) -> bytes:
         """Returns the bits packed into bytes. The bits are packed into bytes LSB-first.
         If the length of the bit string is not divisible by 8, the last byte will have
-        padding bits at MSB with a value of 0."""
+        padding bits at MSB with a value of 0.
+        """
         return bytes(self._bytes)
 
     def shape(self) -> amaranth.Shape:
@@ -308,7 +310,8 @@ class _bits_base(amaranth.ValueCastable, Sequence):
 
     def byte_reversed(self) -> Self:
         """Returns a copy of this bit string with bits reversed within each byte.
-        The length of this bit string must be divisible by 8."""
+        The length of this bit string must be divisible by 8.
+        """
         if self._len % 8 == 0:
             res = object.__new__(self.__class__)
             res._bytes = self._bytes.translate(_byterev_lut)
@@ -322,7 +325,8 @@ class _bits_base(amaranth.ValueCastable, Sequence):
         bit string. If the ``needle`` is an ``str`` or an iterator, it is first converted
         to ``bits``. If ``needle`` is an integer, it must hava a value of 0 or 1, and is
         converted to single-bit ``bits``. If ``start`` and ``end`` are given, only start positions in
-        ``range(start, end)`` are checked. If no occurence is found, the result is ``-1``."""
+        ``range(start, end)`` are checked. If no occurence is found, the result is ``-1``.
+        """
         if isinstance(needle, (str, Iterable)):
             needle = bits(needle)
         elif not isinstance(needle, _bits_base):
@@ -512,7 +516,8 @@ class bitarray(_bits_base, MutableSequence):
 
     def byte_reverse(self) -> None:
         """Reverses the bits within every byte of this bitarray in-place. The length
-        of this bitarray must be divisible by 8."""
+        of this bitarray must be divisible by 8.
+        """
         if self._len % 8 == 0:
             self._bytes = self._bytes.translate(_byterev_lut)
         else:

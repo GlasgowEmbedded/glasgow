@@ -5,9 +5,8 @@ __all__ = ["ChunkedFIFO"]
 
 
 class ChunkedFIFO:
-    """
-    A first-in first-out byte buffer that uses discontiguous storage to operate without copying.
-    """
+    """A first-in first-out byte buffer that uses discontiguous storage to operate without copying."""
+
     def __init__(self):
         self._queue  = deque()
         self._chunk  = None
@@ -37,8 +36,7 @@ class ChunkedFIFO:
         self._queue.append(data)
 
     def read(self, max_length=None):
-        """
-        Dequeue at most ``max_length`` bytes. If ``max_length`` is not specified, dequeue
+        """Dequeue at most ``max_length`` bytes. If ``max_length`` is not specified, dequeue
         the maximum possible contiguous amount of bytes (at least one).
 
         Regardless of what was written into the FIFO, ``read`` always returns a ``memoryview``
@@ -76,8 +74,7 @@ class ChunkedFIFO:
         return result
 
     def read_until(self, delimiter: bytes) -> memoryview:
-        """
-        Dequeue bytes up to and and including ``delimiter`` (if any). If ``delimiter`` is not
+        """Dequeue bytes up to and and including ``delimiter`` (if any). If ``delimiter`` is not
         found, dequeue the maximum possible contiguous amount of bytes (at least one).
 
         Regardless of what was written into the FIFO, ``read_until`` always returns a ``memoryview``

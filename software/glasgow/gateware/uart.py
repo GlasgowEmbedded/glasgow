@@ -7,11 +7,11 @@ __all__ = ["UART"]
 
 
 class UARTBus(Elaboratable):
-    """
-    UART bus.
+    """UART bus.
 
     Provides synchronization.
     """
+
     def __init__(self, ports):
         self.ports = ports
 
@@ -41,8 +41,7 @@ class UARTBus(Elaboratable):
 
 
 class UART(Elaboratable):
-    """
-    Asynchronous serial receiver-transmitter.
+    """Asynchronous serial receiver-transmitter.
 
     Any number of data bits, any parity, and 1 stop bit are supported. Baud rate may be changed
     at runtime.
@@ -90,6 +89,7 @@ class UART(Elaboratable):
         Transmit acknowledgement. If active when ``tx_rdy`` is active, ``tx_rdy`` is reset,
         ``tx_data`` is sampled, and the transmit state machine starts transmitting a frame.
     """
+
     def __init__(self, ports, bit_cyc, data_bits=8, parity="none", max_bit_cyc=None):
         if max_bit_cyc is not None:
             self.max_bit_cyc = max_bit_cyc

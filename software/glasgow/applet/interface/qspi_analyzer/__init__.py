@@ -192,7 +192,6 @@ class QSPIAnalyzerInterface:
             When the FPGA buffer overflows. The last few transactions before the overflow occurred
             may be dropped as well.
         """
-
         if await self._overflow:
             raise QSPIAnalyzerOverflow("overflow")
 

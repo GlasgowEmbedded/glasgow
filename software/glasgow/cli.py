@@ -126,7 +126,9 @@ def create_argparser():
 def get_argparser():
     class LazyParser(argparse.ArgumentParser):
         """This is a lazy ArgumentParser that runs any added build_func(s) just before arguments
-        are parsed"""
+        are parsed
+        """
+
         def __init__(self, *args, **kwargs):
             self.build_funcs = []
             super().__init__(*args, **kwargs)
@@ -579,7 +581,8 @@ def gc_freeze():
 
 class SIGINTCaught(Exception):
     """This exception is necessary because asyncio recognizes both SystemExit and
-    KeyboardInterrupt and treats them specially in a way we don't need."""
+    KeyboardInterrupt and treats them specially in a way we don't need.
+    """
 
 
 async def wait_for_sigint():

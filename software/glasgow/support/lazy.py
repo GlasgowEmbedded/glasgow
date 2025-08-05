@@ -2,8 +2,7 @@ __all__ = ["lazy"]
 
 
 class lazy:
-    """
-    A wrapper for lazily evaluating an expression.
+    """A wrapper for lazily evaluating an expression.
 
     E.g. ``obj = slow_operation()`` can generally be replaced with
     ``obj = lazy(lambda: slow_operation())``, which would only perform ``slow_operation()`` when
