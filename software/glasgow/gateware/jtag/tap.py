@@ -199,7 +199,7 @@ class Controller(wiring.Component):
 
             with m.Case(State.Test_Logic_Reset):
                 m.d.jtag += self.ir_upd.eq(self.ir_upd.init)
-                for dr, _ir_values in self._drs.items():
+                for dr in self._drs.keys():
                     m.d.jtag += dr.upd.eq(dr.upd.init)
 
             with m.Case(State.Capture_DR):
