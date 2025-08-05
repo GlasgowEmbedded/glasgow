@@ -127,7 +127,7 @@ class MockReplayer:
                     self.__case.assertEqual("asynccontext.exit", exit_stanza["kind"])
                     self.__case.assertEqual((exc_value,), tuple(exit_stanza["args"]))
                     assert {} == exit_stanza["kwargs"]
-                    assert None == exit_stanza["result"]
+                    assert None is exit_stanza["result"]
         elif stanza["kind"] == "asyncmethod":
             async def mock(*args, **kwargs):
                 self.__case.assertEqual(args, tuple(stanza["args"]))
