@@ -184,8 +184,9 @@ class _bits_base(amaranth.ValueCastable, Sequence):
         else:
             try:
                 key = operator.index(key)
-            except:
-                raise TypeError(f"{self.__class__.__name__} indices must be integers or slices, not {key.__class__.__name__}")
+            except Exception:
+                raise TypeError(f"{self.__class__.__name__} indices must be integers or slices, "
+                                f"not {key.__class__.__name__}")
             if key < 0:
                 key += self._len
             if key not in range(self._len):
@@ -425,8 +426,9 @@ class bitarray(_bits_base, MutableSequence):
         else:
             try:
                 key = operator.index(key)
-            except:
-                raise TypeError(f"{self.__class__.__name__} indices must be integers or slices, not {key.__class__.__name__}")
+            except Exception:
+                raise TypeError(f"{self.__class__.__name__} indices must be integers or slices, "
+                                f"not {key.__class__.__name__}")
             value = operator.index(value)
             if value not in (0, 1):
                 raise ValueError("bit value must be 0 or 1")
@@ -473,8 +475,9 @@ class bitarray(_bits_base, MutableSequence):
         else:
             try:
                 key = operator.index(key)
-            except:
-                raise TypeError(f"{self.__class__.__name__} indices must be integers or slices, not {key.__class__.__name__}")
+            except Exception:
+                raise TypeError(f"{self.__class__.__name__} indices must be integers or slices, "
+                                f"not {key.__class__.__name__}")
             if key < 0:
                 key += self._len
             if key not in range(self._len):
