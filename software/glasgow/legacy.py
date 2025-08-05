@@ -1,15 +1,8 @@
-from abc import ABCMeta, abstractmethod
-import asyncio
 
 from amaranth import *
-from amaranth import Module, ResetInserter, Signal
-from amaranth.lib import wiring, stream, io
+from amaranth import Signal
+from amaranth.lib import wiring, stream
 
-from .support.chunked_fifo import ChunkedFIFO
-from .support.logging import dump_hex
-from .support.task_queue import TaskQueue
-from .gateware.ports import PortGroup
-from .hardware.platform import GlasgowPlatformPort
 
 
 __all__ = [

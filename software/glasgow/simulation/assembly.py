@@ -1,5 +1,4 @@
 from typing import Any, Optional, Generator
-from collections.abc import Mapping
 from contextlib import contextmanager
 import logging
 
@@ -7,7 +6,6 @@ from amaranth import *
 from amaranth.lib import io
 from amaranth.sim import Simulator
 
-from ..gateware.stream import stream_get, stream_put
 from ..abstract import *
 
 

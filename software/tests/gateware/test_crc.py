@@ -1,9 +1,8 @@
 from typing import Iterable
 import unittest
 from amaranth import *
-from amaranth.lib import wiring, crc
+from amaranth.lib import crc
 from amaranth.sim import Simulator
-from amaranth.back import rtlil
 
 from glasgow.gateware.stream import stream_put, stream_assert
 from glasgow.gateware.crc import *

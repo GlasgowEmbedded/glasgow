@@ -13,7 +13,7 @@ from glasgow.applet.interface.i2c_controller import I2CNotAcknowledged, I2CContr
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
-__all__ = ["Memory24xInterface"]
+__all__ = ["Memory24xInterface", "I2CNotAcknowledged"]
 
 
 class Memory24xInterface:

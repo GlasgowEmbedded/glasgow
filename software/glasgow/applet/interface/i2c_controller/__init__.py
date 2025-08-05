@@ -18,7 +18,7 @@ from glasgow.gateware.i2c import I2CInitiator
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
-__all__ = ["I2CNotAcknowledged", "I2CControllerInterface"]
+__all__ = ["I2CNotAcknowledged", "I2CControllerInterface", "PullState"]
 
 
 class I2CNotAcknowledged(GlasgowAppletError):

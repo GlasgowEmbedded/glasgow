@@ -1,6 +1,5 @@
 from typing import Optional, BinaryIO
 from abc import ABCMeta, abstractmethod
-import enum
 import struct
 import logging
 import argparse

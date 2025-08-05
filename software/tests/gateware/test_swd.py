@@ -2,10 +2,10 @@ import unittest
 
 from amaranth import *
 from amaranth.sim import Simulator
-from amaranth.lib import io, wiring
+from amaranth.lib import io
 
 from glasgow.gateware.ports import PortGroup
-from glasgow.gateware.stream import stream_get, stream_put, stream_assert
+from glasgow.gateware.stream import stream_put, stream_assert
 from glasgow.gateware.swd import *
 
 

@@ -1,4 +1,3 @@
-import operator
 
 from .lazy import *
 from .bits import bits

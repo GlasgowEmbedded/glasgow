@@ -1,5 +1,4 @@
 from typing import Any, Optional, Generator, BinaryIO
-from collections.abc import Mapping
 from collections import defaultdict
 from contextlib import contextmanager
 import os

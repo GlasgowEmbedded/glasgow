@@ -7,7 +7,7 @@ from amaranth import *
 from amaranth.lib import wiring, stream, io
 from amaranth.lib.wiring import In, Out
 
-from glasgow.support.arepl import AsyncInteractiveConsole
+from glasgow.support.arepl import AsyncInteractiveConsole as AsyncInteractiveConsole
 from glasgow.support.logging import dump_hex
 from glasgow.support.endpoint import ServerEndpoint
 from glasgow.gateware.uart import UART

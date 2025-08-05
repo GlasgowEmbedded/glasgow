@@ -13,7 +13,6 @@ import unittest
 import importlib.metadata
 from datetime import datetime
 
-from vcd import VCDWriter
 from amaranth import UnusedElaboratable
 from fx2 import FX2Config, VID_CYPRESS, PID_FX2
 from fx2.format import input_data, diff_data
@@ -28,7 +27,7 @@ from .hardware.device import FX2BootloaderDevice, VID_QIHW, PID_GLASGOW
 from .hardware.toolchain import ToolchainNotFound
 from .hardware.build_plan import GatewareBuildError
 from .hardware.assembly import HardwareAssembly
-from .legacy import DeprecatedTarget, DeprecatedMultiplexer
+from .legacy import DeprecatedTarget
 from .legacy import DeprecatedDevice, DeprecatedDemultiplexer
 from .applet import *
 
