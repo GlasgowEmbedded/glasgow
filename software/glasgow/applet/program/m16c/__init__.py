@@ -20,7 +20,6 @@ import logging
 import argparse
 import asyncio
 import enum
-from contextlib import contextmanager
 from amaranth import *
 from amaranth.lib import io
 

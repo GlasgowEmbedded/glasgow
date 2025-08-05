@@ -4,7 +4,7 @@ import sys
 import logging
 import asyncio
 from amaranth import *
-from amaranth.lib import wiring, stream, io
+from amaranth.lib import wiring, stream
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support.arepl import AsyncInteractiveConsole as AsyncInteractiveConsole

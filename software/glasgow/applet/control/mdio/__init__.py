@@ -12,7 +12,7 @@ import struct
 import logging
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io
+from amaranth.lib import data, wiring, stream
 from amaranth.lib.wiring import In, Out
 
 from glasgow.arch.ieee802_3 import *

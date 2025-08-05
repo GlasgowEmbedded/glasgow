@@ -1,10 +1,9 @@
 import sys
 import logging
-import asyncio
 import argparse
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io, cdc
-from amaranth.lib.wiring import In, Out
+from amaranth.lib import data, wiring, stream, io, cdc
+from amaranth.lib.wiring import Out
 
 from glasgow.support.logging import dump_hex
 from glasgow.gateware.stream import AsyncQueue

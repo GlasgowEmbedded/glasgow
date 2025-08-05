@@ -4,8 +4,8 @@ import logging
 import struct
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io
-from amaranth.lib.wiring import In, Out, connect, flipped
+from amaranth.lib import enum, wiring, stream
+from amaranth.lib.wiring import In, Out
 
 from glasgow.support.logging import dump_hex
 from glasgow.gateware import qspi

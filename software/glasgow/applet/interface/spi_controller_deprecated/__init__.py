@@ -1,4 +1,3 @@
-import math
 import struct
 import logging
 import contextlib

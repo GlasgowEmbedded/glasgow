@@ -7,7 +7,6 @@ import math
 import json
 import random
 import logging
-import asyncio
 import argparse
 import statistics
 from amaranth import *

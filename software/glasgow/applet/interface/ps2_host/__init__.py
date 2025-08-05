@@ -60,7 +60,6 @@
 # details on the command set.
 
 import logging
-import asyncio
 from amaranth import *
 from amaranth.lib import data, io
 from amaranth.lib.cdc import FFSynchronizer

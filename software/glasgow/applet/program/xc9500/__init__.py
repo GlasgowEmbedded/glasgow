@@ -5,7 +5,6 @@ import logging
 import argparse
 import math
 import re
-from enum import Enum, auto
 
 from ....arch.jtag import *
 from ....arch.xilinx.xc9500 import *

@@ -3,7 +3,6 @@
 # Ref: http://www.jtagtest.com/pdf/svf_specification.pdf
 # Accession: G00023
 
-import struct
 import logging
 import argparse
 

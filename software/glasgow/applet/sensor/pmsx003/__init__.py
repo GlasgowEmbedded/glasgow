@@ -4,11 +4,9 @@
 # Accession: G00054
 
 import logging
-import asyncio
 import struct
 from collections import namedtuple
 from amaranth import *
-from amaranth.lib import io
 
 from ... import *
 from ....support.data_logger import DataLogger

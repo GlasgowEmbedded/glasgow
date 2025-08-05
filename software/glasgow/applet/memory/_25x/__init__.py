@@ -8,7 +8,7 @@ import logging
 import argparse
 
 from amaranth import *
-from amaranth.lib import enum, io
+from amaranth.lib import enum
 
 from glasgow.support.logging import dump_hex
 from glasgow.database.jedec import *

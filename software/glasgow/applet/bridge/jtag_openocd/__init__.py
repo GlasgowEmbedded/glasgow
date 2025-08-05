@@ -1,5 +1,4 @@
 import logging
-import asyncio
 from amaranth import *
 from amaranth.lib import wiring, stream, io, cdc
 from amaranth.lib.wiring import In, Out

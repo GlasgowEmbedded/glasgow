@@ -2,14 +2,12 @@
 # Document Number: UM10204
 # Accession: G00101
 
-from typing import Optional
 import contextlib
 import logging
 import struct
-import math
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io
+from amaranth.lib import enum, wiring, stream
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support.logging import dump_hex

@@ -1,9 +1,8 @@
 import logging
-import asyncio
 import struct
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io
+from amaranth.lib import enum, data, wiring, stream
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support.logging import dump_hex

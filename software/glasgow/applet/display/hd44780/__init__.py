@@ -8,9 +8,7 @@
 # to E falling edge, and BF/AC can and will change while E is high.
 # We make use of it by waiting on BF falling edge when polling the IC.
 
-import time
 import math
-import argparse
 import logging
 import asyncio
 from amaranth import *

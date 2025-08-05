@@ -6,11 +6,9 @@
 # changes to the protocol of that applet are also breaking changes to the protocol of this applet.
 
 import logging
-import asyncio
-import argparse
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io
+from amaranth.lib import enum, wiring, stream, io
 from amaranth.lib.wiring import In, Out
 
 from glasgow.gateware import cobs

@@ -10,7 +10,6 @@ import argparse
 import textwrap
 import platform
 import unittest
-import importlib.metadata
 from datetime import datetime
 
 from amaranth import UnusedElaboratable

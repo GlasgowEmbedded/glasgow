@@ -2,7 +2,6 @@
 # Accession: G00049
 
 import logging
-import asyncio
 from amaranth import *
 from amaranth.lib import io, cdc
 
