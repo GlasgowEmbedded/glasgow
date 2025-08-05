@@ -891,8 +891,8 @@ class YamahaOPxWebInterface:
                         return sock
                     elif int(client_resp.headers["Content-Length"]) > (1<<20):
                         await sock.close(code=2999, message=
-                            "File too large ({} bytes) to be fetched"
-                            .format(client_resp.headers["Content-Length"]))
+                            f"File too large ({client_resp.headers['Content-Length']} bytes) "
+                            f"to be fetched")
                         return sock
 
                     vgm_data = await client_resp.read()
@@ -923,14 +923,15 @@ class YamahaOPxWebInterface:
 
             clock_rate, clock_prescaler = self._opx_iface.get_vgm_clock_rate(vgm_reader)
             if clock_rate == 0:
-                raise ValueError("VGM file contains commands for {}, which is not a supported chip"
-                                 .format(", ".join(vgm_reader.chips())))
+                raise ValueError(
+                    f"VGM file contains commands for {', '.join(vgm_reader.chips())}, "
+                    f"which is not a supported chip")
             if clock_rate & 0xc0000000:
                 raise ValueError("VGM file uses unsupported chip configuration")
             if len(vgm_reader.chips()) != 1:
-                raise ValueError("VGM file contains commands for {}, but only playback of exactly "
-                                 "one chip is supported"
-                                 .format(", ".join(vgm_reader.chips())))
+                raise ValueError(
+                    f"VGM file contains commands for {', '.join(vgm_reader.chips())}, "
+                    f"but only playback of exactly one chip is supported")
             clock_rate *= clock_prescaler
 
             self._logger.info("web: %s: VGM is looped for %.2f/%.2f s",

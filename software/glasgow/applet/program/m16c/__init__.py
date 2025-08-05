@@ -474,8 +474,7 @@ class ProgramM16CApplet(GlasgowApplet):
                     self.logger.info("programming page %0.*x", 5, address)
                     await iface.program_page(address, page_data)
                     if await iface.read_page(address) != page_data:
-                        raise M16CBootloaderError("verifying page {:0{}x} failed"
-                                                  .format(address, 5))
+                        raise M16CBootloaderError(f"verifying page {address:0{5}x} failed")
 
             if args.operation == "erase":
                 self.logger.info("erasing array")

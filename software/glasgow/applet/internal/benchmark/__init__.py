@@ -133,7 +133,7 @@ class BenchmarkApplet(GlasgowAppletV2):
 
         parser.add_argument(
             dest="modes", metavar="MODE", type=str, nargs="*", choices=[[]] + cls.__all_modes,
-            help="run benchmark mode MODE (default: {})".format(" ".join(cls.__all_modes)))
+            help=f"run benchmark mode MODE (default: {' '.join(cls.__all_modes)})")
 
     async def run(self, args):
         golden = bytearray()

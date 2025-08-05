@@ -465,15 +465,17 @@ class GlasgowDevice:
             causes_string = ""
             if causes:
                 causes_string = f" ({', '.join(causes)})"
-            raise GlasgowDeviceError("cannot set I/O port(s) {} voltage to {:.2} V{}"
-                                     .format(spec or "(none)", float(volts), causes_string))
+            raise GlasgowDeviceError(
+                f"cannot set I/O port(s) {spec or '(none)'} voltage "
+                f"to {float(volts):.2} V{causes_string}")
 
     async def set_voltage_limit(self, spec, volts):
         await self._write_voltage(REQ_LIMIT_VOLT, spec, volts)
         # Check if we've succeeded
         if await self._status() & ST_ERROR:
-            raise GlasgowDeviceError("cannot set I/O port(s) {} voltage limit to {:.2} V"
-                                     .format(spec or "(none)", float(volts)))
+            raise GlasgowDeviceError(
+                f"cannot set I/O port(s) {spec or '(none)'} voltage limit "
+                f"to {float(volts):.2} V")
 
     async def _read_voltage(self, req, spec):
         millivolts, = struct.unpack("<H",
@@ -506,9 +508,9 @@ class GlasgowDevice:
             struct.pack("<HH", low_millivolts, high_millivolts))
         # Check if we've succeeded
         if await self._status() & ST_ERROR:
-            raise GlasgowDeviceError("cannot set I/O port(s) {} voltage alert to {:.2}-{:.2} V"
-                                     .format(spec or "(none)",
-                                             float(low_volts), float(high_volts)))
+            raise GlasgowDeviceError(
+                f"cannot set I/O port(s) {spec or '(none)'} voltage alert "
+                f"to {float(low_volts):.2}-{float(high_volts):.2} V")
 
     async def reset_alert(self, spec):
         await self.set_alert(spec, 0.0, 5.5)
@@ -572,9 +574,9 @@ class GlasgowDevice:
                 struct.pack("BB", port_enable, port_value))
             # Check if we've succeeded
             if await self._status() & ST_ERROR:
-                raise GlasgowDeviceError("cannot set I/O port(s) {} pull resistors to "
-                                         "low={} high={}"
-                                         .format(spec or "(none)", low or "{}", high or "{}"))
+                raise GlasgowDeviceError(
+                    f"cannot set I/O port(s) {spec or '(none)'} pull resistors to "
+                    f"low={low or '{}'} high={high or '{}'}")
 
     async def test_leds(self, states):
         await self.control_write(REQ_TEST_LEDS, 0, states, [])

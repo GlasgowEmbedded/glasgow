@@ -349,7 +349,7 @@ class Memory25xApplet(GlasgowAppletV2):
         def add_erase_arguments(parser, kind):
             parser.add_argument(
                 "addresses", metavar="ADDRESS", type=address, nargs="+",
-                help="erase %s(s) starting at address ADDRESS" % kind)
+                help=f"erase {kind}(s) starting at address ADDRESS")
 
         p_erase_sector = p_operation.add_parser(
             "erase-sector", help="erase memory using SECTOR ERASE command")

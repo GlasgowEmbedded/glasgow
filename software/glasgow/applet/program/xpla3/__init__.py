@@ -357,8 +357,8 @@ class ProgramXPLA3Applet(JTAGProbeApplet):
     async def interact(self, device, args, iface):
         idcode, device = await iface.identify()
         if device is None:
-            raise GlasgowAppletError("cannot operate on unknown device with IDCODE=%#10x"
-                                     % idcode.to_int())
+            raise GlasgowAppletError(
+                f"cannot operate on unknown device with IDCODE={idcode.to_int():#10x}")
 
         self.logger.info("found %s rev=%d",
                          device.name, idcode.version)

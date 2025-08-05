@@ -814,9 +814,9 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             labels.append(f"cylinder {cylinder}, head {head}")
 
         fig, ax = plt.subplots()
-        fig.suptitle("Domain size histogram for {} (heads: {})"
-                     .format(args.file.name,
-                             ", ".join(str(h) for h in args.head) if args.head else "all"))
+        fig.suptitle(
+            f"Domain size histogram for {args.file.name} "
+            f"(heads: {', '.join(str(h) for h in args.head) if args.head else 'all'})")
         ax.hist(data,
             bins     = [x * self._timebase for x in range(600)],
             label    = labels,

@@ -481,8 +481,9 @@ class MemoryONFIApplet(GlasgowApplet):
 
         available_ce = range(1, 1 + len(args.ce))
         if args.chip not in available_ce:
-            raise GlasgowAppletError("cannot select chip {}; available select signals are {}"
-                .format(args.chip, ", ".join(f"CE{n}#" for n in available_ce)))
+            raise GlasgowAppletError(
+                f"cannot select chip {args.chip}; available select signals are "
+                f"{', '.join(f'CE{n}#' for n in available_ce)}")
         await onfi_iface.select(args.chip - 1)
 
         return onfi_iface
@@ -637,11 +638,11 @@ class MemoryONFIApplet(GlasgowApplet):
                 "LUN size":
                     f"{onfi_param.blocks_per_lun} blocks; "
                     f"{onfi_param.blocks_per_lun * onfi_param.pages_per_block} pages",
-                "target size":        "{} LUNs; {} blocks; {} pages"
-                    .format(onfi_param.luns_per_target,
-                            onfi_param.luns_per_target * onfi_param.blocks_per_lun,
-                            onfi_param.luns_per_target * onfi_param.blocks_per_lun
-                                                       * onfi_param.pages_per_block),
+                "target size":
+                    f"{onfi_param.luns_per_target} LUNs; "
+                    f"{onfi_param.luns_per_target * onfi_param.blocks_per_lun} blocks; "
+                    f"""{onfi_param.luns_per_target * onfi_param.blocks_per_lun *
+                         onfi_param.pages_per_block} pages""",
                 "address cycles":
                     f"{onfi_param.address_cycles.row} row, "
                     f"{onfi_param.address_cycles.column} column",

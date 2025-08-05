@@ -35,8 +35,8 @@ class MEC16xxInterface(aobject):
 
         idcode, device = await self.lower.identify()
         if device is None or device.name != "ARC6xx":
-            raise MEC16xxError("cannot operate on unknown device with IDCODE=%08x"
-                               % idcode.to_int())
+            raise MEC16xxError(
+                f"cannot operate on unknown device with IDCODE={idcode.to_int():08x}")
 
         self._log("halting CPU")
         await self.lower.set_halted(True)
@@ -190,9 +190,8 @@ class MEC16xxInterface(aobject):
             self._log("read Flash_Status %s", flash_status.bits_repr(omit_zero=True))
 
             if flash_status.Busy_Err or flash_status.CMD_Err or flash_status.Protect_Err:
-                raise MEC16xxError("%s with status %s"
-                                   % (fail_msg,
-                                      flash_status.bits_repr(omit_zero=True)))
+                raise MEC16xxError(
+                    f"{fail_msg} with status {flash_status.bits_repr(omit_zero=True)}")
 
     async def _flash_wait_for_data_not_full(self, fail_msg="Failure detected"):
         flash_status = Flash_Status(Data_Full=1)
@@ -202,9 +201,8 @@ class MEC16xxInterface(aobject):
             self._log("read Flash_Status %s", flash_status.bits_repr(omit_zero=True))
 
             if flash_status.Busy_Err or flash_status.CMD_Err or flash_status.Protect_Err:
-                raise MEC16xxError("%s with status %s"
-                                   % (fail_msg,
-                                      flash_status.bits_repr(omit_zero=True)))
+                raise MEC16xxError(
+                    f"{fail_msg} with status {flash_status.bits_repr(omit_zero=True)}")
 
     async def read_flash(self, address, count):
         await self._flash_clean_start()
@@ -335,9 +333,8 @@ class MEC16xxInterface(aobject):
             self._log("read EEPROM_Status %s", eeprom_status.bits_repr(omit_zero=True))
 
             if eeprom_status.Busy_Err or eeprom_status.CMD_Err:
-                raise MEC16xxError("%s with status %s"
-                                   % (fail_msg,
-                                      eeprom_status.bits_repr(omit_zero=True)))
+                raise MEC16xxError(
+                    f"{fail_msg} with status {eeprom_status.bits_repr(omit_zero=True)}")
 
     async def _eeprom_wait_for_data_not_full(self, fail_msg="Failure detected"):
         eeprom_status = EEPROM_Status(Data_Full=1)
@@ -347,9 +344,8 @@ class MEC16xxInterface(aobject):
             self._log("read EEPROM_Status %s", eeprom_status.bits_repr(omit_zero=True))
 
             if eeprom_status.Busy_Err or eeprom_status.CMD_Err:
-                raise MEC16xxError("%s with status %s"
-                                   % (fail_msg,
-                                      eeprom_status.bits_repr(omit_zero=True)))
+                raise MEC16xxError(
+                    f"{fail_msg} with status {eeprom_status.bits_repr(omit_zero=True)}")
 
     async def read_eeprom(self, address=0, count=EEPROM_SIZE):
         """Read all of the embedded 2KiB eeprom.

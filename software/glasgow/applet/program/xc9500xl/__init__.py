@@ -255,8 +255,8 @@ class XC9500XLBitstream:
         total_bits = BS_ROWS * device.fbs * (9 * 8 + 6 * 6)
         if len(fuses) != total_bits:
             raise GlasgowAppletError(
-                "JED file does not have the right fuse count (expected %d, got %d)"
-                % (total_bits, len(fuses)))
+                f"JED file does not have the right fuse count "
+                f"(expected {total_bits}, got {len(fuses)})")
         pos = 0
         for row in range(BS_ROWS):
             for col in range(BS_COLS):
@@ -654,8 +654,8 @@ class ProgramXC9500XLApplet(JTAGProbeApplet):
     async def interact(self, device, args, xc9500_iface):
         idcode, xc9500_device, xc95xx_iface = await xc9500_iface.identify()
         if xc9500_device is None:
-            raise GlasgowAppletError("cannot operate on unknown device with IDCODE=%#10x"
-                                     % idcode.to_int())
+            raise GlasgowAppletError(
+                f"cannot operate on unknown device with IDCODE={idcode.to_int():#10x}")
 
         self.logger.info("found %s rev=%d",
                          xc9500_device.name, idcode.version)

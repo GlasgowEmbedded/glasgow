@@ -24,7 +24,7 @@ class MockRecorder:
             return {"__class__": "bytearray", "hex": obj.hex()}
         if isinstance(obj, memoryview):
             return {"__class__": "memoryview", "hex": obj.hex()}
-        raise TypeError("%s is not serializable" % type(obj))
+        raise TypeError(f"{type(obj)} is not serializable")
 
     def __dump_stanza(self, stanza):
         # TODO: remove once applets are migrated to V2 API

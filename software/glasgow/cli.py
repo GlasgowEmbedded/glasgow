@@ -277,8 +277,8 @@ def get_argparser():
         if arg in revisions:
             return arg
         else:
-            raise argparse.ArgumentTypeError("{} is not a valid revision (should be one of: {})"
-                                             .format(arg, ", ".join(revisions)))
+            raise argparse.ArgumentTypeError(
+                f"{arg} is not a valid revision (should be one of: {', '.join(revisions)})")
 
     def serial(arg):
         if re.match(r"^[A-C][0-9]-\d{8}T\d{6}Z$", arg):

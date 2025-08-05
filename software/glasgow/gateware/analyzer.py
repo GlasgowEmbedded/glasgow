@@ -449,8 +449,8 @@ class TraceDecoder:
                 self._flush_timestamp()
 
                 if (octet & ~REPORT_EVENT_MASK) > len(self.event_sources):
-                    raise TraceDecodingError("at byte offset %d: event source out of bounds" %
-                                             self._byte_off)
+                    raise TraceDecodingError(
+                        f"at byte offset {self._byte_off}: event source out of bounds")
                 self._event_src = self.event_sources[octet & ~REPORT_EVENT_MASK]
                 if self._event_src.width == 0:
                     self._pending[self._event_src.name] = None
@@ -486,8 +486,9 @@ class TraceDecoder:
                     self._state = "OVERRUN"
 
             else:
-                raise TraceDecodingError("at byte offset %d: invalid byte %#04x for state %s" %
-                                         (self._byte_off, octet, self._state))
+                raise TraceDecodingError(
+                    f"at byte offset {self._byte_off}: invalid byte {octet:#04x} "
+                    f"for state {self._state}")
 
             self._byte_off += 1
 

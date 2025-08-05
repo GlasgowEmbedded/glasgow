@@ -288,7 +288,7 @@ class ProgramAVRApplet(GlasgowApplet):
                     calibration = \
                         await avr_iface.read_calibration_range(range(device.calibration_size))
                     self.logger.info("calibration bytes: %s",
-                                     " ".join(["%02x" % b for b in calibration]))
+                                     " ".join([f"{b:02x}" for b in calibration]))
 
                 if args.program:
                     program_file, program_fmt = args.program
@@ -313,32 +313,32 @@ class ProgramAVRApplet(GlasgowApplet):
                     await avr_iface.write_fuse(0, args.low)
                     written = await avr_iface.read_fuse(0)
                     if written != args.low:
-                        raise ProgramAVRError("verification of low fuse failed: %s" %
-                                              f"{written:08b} != {args.low:08b}")
+                        raise ProgramAVRError(
+                            f"verification of low fuse failed: {written:08b} != {args.low:08b}")
 
                 if args.high:
                     self.logger.info("writing high fuse")
                     await avr_iface.write_fuse(1, args.high)
                     written = await avr_iface.read_fuse(1)
                     if written != args.high:
-                        raise ProgramAVRError("verification of high fuse failed: %s" %
-                                              f"{written:08b} != {args.high:08b}")
+                        raise ProgramAVRError(
+                            f"verification of high fuse failed: {written:08b} != {args.high:08b}")
 
                 if args.extra:
                     self.logger.info("writing extra fuse")
                     await avr_iface.write_fuse(2, args.extra)
                     written = await avr_iface.read_fuse(2)
                     if written != args.extra:
-                        raise ProgramAVRError("verification of extra fuse failed: %s" %
-                                              f"{written:08b} != {args.extra:08b}")
+                        raise ProgramAVRError(
+                            f"verification of extra fuse failed: {written:08b} != {args.extra:08b}")
 
             if args.operation == "write-lock":
                 self.logger.info("writing lock bits")
                 await avr_iface.write_lock_bits(args.bits)
                 written = await avr_iface.read_lock_bits()
                 if written != args.bits:
-                    raise ProgramAVRError("verification of lock bits failed: %s" %
-                                          f"{written:08b} != {args.bits:08b}")
+                    raise ProgramAVRError(
+                        f"verification of lock bits failed: {written:08b} != {args.bits:08b}")
 
             if args.operation == "write-program":
                 self.logger.info("erasing chip")
@@ -354,8 +354,9 @@ class ProgramAVRApplet(GlasgowApplet):
                     written = await avr_iface.read_program_memory_range(
                         range(address, address + len(chunk)))
                     if written != chunk:
-                        raise ProgramAVRError("verification failed at address %#06x: %s != %s" %
-                                              (address, written.hex(), chunk.hex()))
+                        raise ProgramAVRError(
+                            f"verification failed at address {address:#06x}: "
+                            f"{written.hex()} != {chunk.hex()}")
 
             if args.operation == "write-eeprom":
                 eeprom_file, eeprom_fmt = args.file
@@ -367,8 +368,9 @@ class ProgramAVRApplet(GlasgowApplet):
                     await avr_iface.write_eeprom_range(address, chunk, device.eeprom_page)
                     written = await avr_iface.read_eeprom_range(range(address, len(chunk)))
                     if written != chunk:
-                        raise ProgramAVRError("verification failed at address %#06x: %s != %s" %
-                                              (address, written.hex(), chunk.hex()))
+                        raise ProgramAVRError(
+                            f"verification failed at address {address:#06x}: "
+                            f"{written.hex()} != {chunk.hex()}")
 
             if args.operation == "erase":
                 self.logger.info("erasing device")
