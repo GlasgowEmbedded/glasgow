@@ -1,4 +1,4 @@
-from typing import Optional, Callable
+from collections.abc import Callable
 import functools
 import threading
 import inspect
@@ -161,11 +161,11 @@ class Device(AbstractDevice):
     def __init__(self, _poller: Context._PollerThread, _impl_device: usb1.USBDevice):
         self._poller = _poller
         self._impl_device = _impl_device
-        self._impl_handle: Optional[usb1.USBDeviceHandle] = None
+        self._impl_handle: usb1.USBDeviceHandle | None = None
 
-        self._manufacturer_name: Optional[str] = None
-        self._product_name: Optional[str] = None
-        self._serial_number: Optional[str] = None
+        self._manufacturer_name: str | None = None
+        self._product_name: str | None = None
+        self._serial_number: str | None = None
 
     @property
     def _ensure_open(self) -> usb1.USBDeviceHandle:
@@ -185,7 +185,7 @@ class Device(AbstractDevice):
 
     @property
     @_map_exceptions
-    def manufacturer_name(self) -> Optional[str]:
+    def manufacturer_name(self) -> str | None:
         if self._manufacturer_name is None:
             self._manufacturer_name = self._ensure_open.getASCIIStringDescriptor(
                 self._impl_device.getManufacturerDescriptor())
@@ -193,7 +193,7 @@ class Device(AbstractDevice):
 
     @property
     @_map_exceptions
-    def product_name(self) -> Optional[str]:
+    def product_name(self) -> str | None:
         if self._product_name is None:
             self._product_name = self._ensure_open.getASCIIStringDescriptor(
                 self._impl_device.getProductDescriptor())
@@ -201,7 +201,7 @@ class Device(AbstractDevice):
 
     @property
     @_map_exceptions
-    def serial_number(self) -> Optional[str]:
+    def serial_number(self) -> str | None:
         if self._serial_number is None:
             self._serial_number = self._ensure_open.getASCIIStringDescriptor(
                 self._impl_device.getSerialNumberDescriptor())

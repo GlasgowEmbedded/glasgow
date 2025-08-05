@@ -105,8 +105,8 @@ class HX711Interface:
 
     async def set_channel_gain(self, channel, gain):
         if (channel, gain) not in (("A", 128), ("B", 32), ("A", 64)):
-            raise HX711Error("HX711 does not support a combination of channel {} and gain {}"
-                             .format(channel, gain))
+            raise HX711Error(
+                f"HX711 does not support a combination of channel {channel} and gain {gain}")
         self._channel = channel
         self._gain    = gain
         self._log("set channel=%s gain=%d", channel, gain)

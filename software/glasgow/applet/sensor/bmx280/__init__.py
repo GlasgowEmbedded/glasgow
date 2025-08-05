@@ -3,7 +3,7 @@
 # Ref: https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme280-ds002.pdf
 # Accession: G00050
 
-from typing import Literal, Optional
+from typing import Literal
 from abc import ABCMeta, abstractmethod
 import logging
 import asyncio
@@ -278,8 +278,8 @@ class BMx280Interface(metaclass=ABCMeta):
         config = (config & ~MASK_T_SB) | bit_t_sb[t_sb]
         await self._write_reg8u(REG_CONFIG, config)
 
-    async def set_oversample(self, ovs_t: Optional[int] = None, ovs_p: Optional[int] = None,
-                             ovs_h: Optional[int] = None):
+    async def set_oversample(self, ovs_t: int | None = None, ovs_p: int | None = None,
+                             ovs_h: int | None = None):
         if ovs_h is not None and not self._has_hum:
             raise BMx280Error("%s: sensor does not measure humidity" % self._ident)
 
@@ -489,7 +489,7 @@ class SensorBMx280Applet(GlasgowAppletV2):
                 except BMx280Error as error:
                     await data_logger.report_error(str(error), exception=error)
                     await self.bmx280_iface.reset()
-                except asyncio.TimeoutError as error:
+                except TimeoutError as error:
                     await data_logger.report_error("timeout", exception=error)
                     await self.bmx280_iface.reset()
                 await asyncio.sleep(args.interval)

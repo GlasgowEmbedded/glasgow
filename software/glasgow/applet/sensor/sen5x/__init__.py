@@ -1,7 +1,6 @@
 # Ref: https://developer.sensirion.com/fileadmin/user_upload/customers/sensirion/Dokumente/15_Environmental_Sensor_Node/Datasheets/Sensirion_Environmental_Sensor_Node_SEN5x_Datasheet.pdf
 # Accession: G00083
 
-from typing import Optional
 from dataclasses import asdict, dataclass
 import argparse
 import logging
@@ -62,7 +61,7 @@ class SEN5xI2CInterface:
     _crc = staticmethod(CRC8_NRSC_5(data_width=8).compute)
 
     async def _read_raw(self, address: int, length: int = 0,
-                        delay_seconds: Optional[float] = None) -> bytearray:
+                        delay_seconds: float | None = None) -> bytearray:
         assert length % 2 == 0
         await self._i2c_iface.write(self._i2c_address, struct.pack(">H", address))
         if delay_seconds is not None:
@@ -85,7 +84,7 @@ class SEN5xI2CInterface:
         self._log("cmd=%#06x args=<%s>", address, dump_hex(crc_data))
         await self._i2c_iface.write(self._i2c_address, struct.pack(">H", address) + crc_data)
 
-    async def _read(self, cmd: SEN5xCommand, format: str, delay_seconds: Optional[float] = None):
+    async def _read(self, cmd: SEN5xCommand, format: str, delay_seconds: float | None = None):
         return struct.unpack(format,
             await self._read_raw(cmd.value, struct.calcsize(format), delay_seconds))
 
@@ -241,7 +240,7 @@ class SensorSEN5xApplet(GlasgowAppletV2):
                     await data_logger.report_error(str(error), exception=error)
                     await self.sen5x_iface.lower.reset()
                     await asyncio.sleep(meas_interval)
-                except asyncio.TimeoutError as error:
+                except TimeoutError as error:
                     await data_logger.report_error("timeout", exception=error)
                     await self.sen5x_iface.lower.reset()
 

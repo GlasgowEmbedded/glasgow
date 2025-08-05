@@ -1011,7 +1011,7 @@ class YamahaOPxWebInterface:
                                   digest)
                 await sock.close()
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 self._logger.info("web: %s: timeout streaming",
                                   digest)
                 await sock.close(code=1002, message="Streaming timeout (glitched too hard?)")

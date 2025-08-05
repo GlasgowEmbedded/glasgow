@@ -34,7 +34,7 @@ from ....arch.jtag import *
 from ... import *
 
 
-class JTAGState(str, enum.Enum):
+class JTAGState(enum.StrEnum):
     # The names are JTAG SVF state names; the values are IEEE names.
     UNKNOWN = "Unknown"
     RESET = "Test-Logic-Reset"
@@ -800,8 +800,9 @@ class JTAGProbeInterface:
                     if dr_chunk[1:12] == bits("00001111111"):
                         self._log_h("invalid dr idcode=%08x", idcode)
                         if check:
-                            raise JTAGProbeError("TAP #{} has invalid DR IDCODE={:08x}"
-                                                 .format(len(idcodes), idcode))
+                            raise JTAGProbeError(
+                                f"TAP #{len(idcodes)} has invalid DR "
+                                f"IDCODE={idcode:08x}")
                         return None
                     else:
                         self._log_h("found dr idcode=%08x (tap #%d)", idcode, len(idcodes))
@@ -810,8 +811,9 @@ class JTAGProbeInterface:
                 else:
                     self._log_h("truncated dr idcode=<%s>", dump_bin(dr_value[offset:]))
                     if check:
-                        raise JTAGProbeError("TAP #{} has truncated DR IDCODE=<{}>"
-                                             .format(len(idcodes), dump_bin(dr_value[offset:])))
+                        raise JTAGProbeError(
+                            f"TAP #{len(idcodes)} has truncated DR "
+                            f"IDCODE=<{dump_bin(dr_value[offset:])}>")
                     return None
             else:
                 self._log_h("found dr bypass (tap #%d)", len(idcodes))
@@ -868,8 +870,8 @@ class JTAGProbeInterface:
                         ir_offset + ir_length != len(ir_value)):
                     self._log_h("misaligned ir (tap #%d)", tap_index)
                     if check:
-                        raise JTAGProbeError("IR length for TAP #{:d} misaligns next TAP"
-                                             .format(tap_index))
+                        raise JTAGProbeError(f"IR length for TAP #{tap_index:d} misaligns next TAP"
+                                             )
                     return None
 
                 self._log_h("explicit ir length=%d (tap #%d)", ir_length, tap_index)
@@ -915,8 +917,8 @@ class TAPInterface:
     @classmethod
     def from_layout(cls, lower, ir_layout, *, index):
         if index not in range(len(ir_layout)):
-            raise JTAGProbeError("TAP #{:d} is not a part of {:d}-TAP chain"
-                                 .format(index, len(ir_layout)))
+            raise JTAGProbeError(f"TAP #{index:d} is not a part of {len(ir_layout):d}-TAP chain"
+                                 )
 
         return cls(lower, ir_length=ir_layout[index],
             ir_prefix=sum(ir_layout[:index]), ir_suffix=sum(ir_layout[index + 1:]),
@@ -1048,8 +1050,8 @@ class JTAGProbeApplet(GlasgowApplet):
                         continue
                 except ValueError:
                     pass
-                raise argparse.ArgumentTypeError("{!r} is not a valid IR length"
-                                                 .format(arg))
+                raise argparse.ArgumentTypeError(f"{arg!r} is not a valid IR length"
+                                                 )
             return lengths
 
         parser.add_argument(

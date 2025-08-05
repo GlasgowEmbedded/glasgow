@@ -178,7 +178,7 @@ class SVFParserTestCase(unittest.TestCase):
                     "mask":  bits("000000"),
                 }),
             ])
-            self.assertParses("{c} 8 TDI(a); {c} 8;".format(c=command), [
+            self.assertParses(f"{command} 8 TDI(a); {command} 8;", [
                 (event, {
                     "tdi":   bits("00001010"),
                     "smask": bits("11111111"),
@@ -192,8 +192,8 @@ class SVFParserTestCase(unittest.TestCase):
                     "mask":  bits("00000000"),
                 }),
             ])
-            self.assertParses("{c} 8 TDI(a) SMASK(3); {c} 8; {c} 12 TDI(b);"
-                              .format(c=command), [
+            self.assertParses(f"{command} 8 TDI(a) SMASK(3); {command} 8; {command} 12 TDI(b);"
+                              , [
                 (event, {
                     "tdi":   bits("00001010"),
                     "smask": bits("00000011"),
@@ -213,9 +213,9 @@ class SVFParserTestCase(unittest.TestCase):
                     "mask":  bits("000000000000"),
                 }),
             ])
-            self.assertParses("{c} 8 TDI(0) TDO(a) MASK(3); {c} 8; "
-                              "{c} 8 TDO(1); {c} 12 TDI(0) TDO(b);"
-                              .format(c=command), [
+            self.assertParses(f"{command} 8 TDI(0) TDO(a) MASK(3); {command} 8; "
+                              f"{command} 8 TDO(1); {command} 12 TDI(0) TDO(b);"
+                              , [
                 (event, {
                     "tdi":   bits("00000000"),
                     "smask": bits("11111111"),
@@ -248,7 +248,7 @@ class SVFParserTestCase(unittest.TestCase):
                               "parameter TDI specified twice")
             self.assertErrors(f"{command} 8;",
                               "initial value for parameter TDI required")
-            self.assertErrors("{c} 8 TDI(aa); {c} 12;".format(c=command),
+            self.assertErrors(f"{command} 8 TDI(aa); {command} 12;",
                               "parameter TDI needs to be specified again because "
                               "the length changed")
 

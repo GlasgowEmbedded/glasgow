@@ -1,4 +1,4 @@
-from typing import Optional, BinaryIO
+from typing import BinaryIO
 from abc import ABCMeta, abstractmethod
 import struct
 import logging
@@ -44,7 +44,7 @@ class MemoryImage:
     def mask(self) -> memoryview:
         return memoryview(self._mask)
 
-    def read(self, addr: int, size: int, *, if_present=False) -> Optional[memoryview]:
+    def read(self, addr: int, size: int, *, if_present=False) -> memoryview | None:
         if addr < 0:
             raise IndexError(f"start address {addr:#x} is out of bounds")
         if len(self._data) < addr + size:
@@ -69,7 +69,7 @@ class MemoryImage:
                 self._data[byte_addr] = byte
                 self._mask[byte_addr] = 0xff
 
-    def save(self, data_file: Optional[BinaryIO], mask_file: Optional[BinaryIO] = None):
+    def save(self, data_file: BinaryIO | None, mask_file: BinaryIO | None = None):
         if data_file is not None:
             data_file.write(self._data)
         if mask_file is not None:
@@ -82,21 +82,21 @@ class Memory25xTraceTypeError(Exception):
 
 class Memory25xAbstractTrace(metaclass=ABCMeta):
     @abstractmethod
-    def read_copi(self, count: Optional[int] = None) -> memoryview:
+    def read_copi(self, count: int | None = None) -> memoryview:
         """Reads ``count`` bytes (or until the end of trace) by sampling COPI line."""
 
     @abstractmethod
-    def read_cipo(self, count: Optional[int] = None) -> memoryview:
+    def read_cipo(self, count: int | None = None) -> memoryview:
         """Reads ``count`` bytes (or until the end of trace) by sampling CIPO line."""
 
     @abstractmethod
-    def read_dual(self, count: Optional[int] = None) -> memoryview:
+    def read_dual(self, count: int | None = None) -> memoryview:
         """Reads ``count`` bytes (or until the end of trace) by sampling IO0/IO1
         (COPI/CIPO) lines.
         """
 
     @abstractmethod
-    def read_quad(self, count: Optional[int] = None) -> memoryview:
+    def read_quad(self, count: int | None = None) -> memoryview:
         """Reads ``count`` bytes (or until the end of trace) by sampling IO0/IO1/IO2/IO3
         (COPI/CIPO/WP#/HOLD#) lines.
         """
@@ -108,7 +108,7 @@ class Memory25xSPITrace(Memory25xAbstractTrace):
         self._copi = memoryview(copi)
         self._cipo = memoryview(cipo)
 
-    def read_copi(self, count: Optional[int] = None) -> memoryview:
+    def read_copi(self, count: int | None = None) -> memoryview:
         if count is None:
             count = len(self._copi) - self._at
         if self._at + count > len(self._copi):
@@ -117,7 +117,7 @@ class Memory25xSPITrace(Memory25xAbstractTrace):
         self._at += count
         return data
 
-    def read_cipo(self, count: Optional[int] = None) -> memoryview:
+    def read_cipo(self, count: int | None = None) -> memoryview:
         if count is None:
             count = len(self._cipo) - self._at
         if self._at + count > len(self._cipo):
@@ -126,10 +126,10 @@ class Memory25xSPITrace(Memory25xAbstractTrace):
         self._at += count
         return data
 
-    def read_dual(self, count: Optional[int] = None) -> memoryview:
+    def read_dual(self, count: int | None = None) -> memoryview:
         raise Memory25xTraceTypeError("dual I/O read requires a QSPI trace")
 
-    def read_quad(self, count: Optional[int] = None) -> memoryview:
+    def read_quad(self, count: int | None = None) -> memoryview:
         raise Memory25xTraceTypeError("quad I/O read requires a QSPI trace")
 
 
@@ -143,7 +143,7 @@ class Memory25xQSPITrace(Memory25xAbstractTrace):
         self._at += count
         return data
 
-    def read_copi(self, count: Optional[int] = None) -> memoryview:
+    def read_copi(self, count: int | None = None) -> memoryview:
         if count is None:
             count = (len(self._data) - self._at) // 4
         if self._at + 4 * count > len(self._data):
@@ -156,7 +156,7 @@ class Memory25xQSPITrace(Memory25xAbstractTrace):
             return byte
         return memoryview(bytes(get_copi() for _ in range(count)))
 
-    def read_cipo(self, count: Optional[int] = None) -> memoryview:
+    def read_cipo(self, count: int | None = None) -> memoryview:
         if count is None:
             count = (len(self._data) - self._at) // 4
         if self._at + 4 * count > len(self._data):
@@ -169,7 +169,7 @@ class Memory25xQSPITrace(Memory25xAbstractTrace):
             return byte
         return memoryview(bytes(get_cipo() for _ in range(count)))
 
-    def read_dual(self, count: Optional[int] = None) -> memoryview:
+    def read_dual(self, count: int | None = None) -> memoryview:
         if count is None:
             count = (len(self._data) - self._at) // 2
         if self._at + 2 * count > len(self._data):
@@ -182,7 +182,7 @@ class Memory25xQSPITrace(Memory25xAbstractTrace):
             return byte
         return memoryview(bytes(get_dual() for _ in range(count)))
 
-    def read_quad(self, count: Optional[int] = None) -> memoryview:
+    def read_quad(self, count: int | None = None) -> memoryview:
         if count is None:
             count = len(self._data) - self._at
         return self._get(count)
@@ -198,7 +198,7 @@ class MemoryImageSFDPParser(SFDPParser):
 
 
 class Memory25xDecoder:
-    def __init__(self, logger: Optional[logging.Logger] = None):
+    def __init__(self, logger: logging.Logger | None = None):
         self._logger   = logger
 
         self._jedec_id = None
@@ -216,7 +216,7 @@ class Memory25xDecoder:
             self._logger.log(level, f"25x decode: [{self._index}] " + message, *args)
 
     @property
-    def jedec_id(self) -> Optional[tuple[int, int]]:
+    def jedec_id(self) -> tuple[int, int] | None:
         return self._jedec_id
 
     @property

@@ -1156,7 +1156,7 @@ class DebugARM7Interface(GDBRemote):
             mid_data  = bytes(txn.results[head_bytes:head_bytes+mid_words])
             return head_data + mid_data + tail_data
         else:
-            return bytes()
+            return b""
 
     async def target_write_memory(self, address: int, data: bytes):
         assert self._is_halted

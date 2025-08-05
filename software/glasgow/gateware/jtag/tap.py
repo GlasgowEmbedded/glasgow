@@ -5,7 +5,7 @@
 # known design quirks. If you want to add a TAP to your design, use the one from amaranth-stdio,
 # (assuming it has been merged by the time you're reading this).
 
-from typing import Iterable
+from collections.abc import Iterable
 
 from amaranth import *
 from amaranth.lib import enum, wiring, io

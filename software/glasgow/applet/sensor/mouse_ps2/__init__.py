@@ -91,8 +91,8 @@ class SensorMousePS2Interface:
         elif bat_result == 0xfc:
             raise SensorMousePS2Error("Basic Assurance Test failed")
         else:
-            raise SensorMousePS2Error("invalid Basic Assurance Test response {:#04x}"
-                                      .format(bat_result))
+            raise SensorMousePS2Error(f"invalid Basic Assurance Test response {bat_result:#04x}"
+                                      )
 
     async def identify(self):
         ident, = await self.lower.send_command(CMD_GET_DEVICE_ID, ret=1)
@@ -278,7 +278,7 @@ class SensorMousePS2Applet(PS2HostApplet):
 
         try:
             ident = await asyncio.wait_for(initialize(), timeout=1)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise SensorMousePS2Error("initialization timeout; connection problem?")
 
         if ident == ID_MOUSE_STANDARD:

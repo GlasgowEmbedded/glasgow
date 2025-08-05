@@ -1,4 +1,4 @@
-from typing import Never, Optional, BinaryIO
+from typing import Never, BinaryIO
 import os
 import sys
 import logging
@@ -65,7 +65,7 @@ class GlasgowBuildPlan:
     # this function is only public for paranoid people who don't trust our excellent cache system.
     # it's very unlikely to fail, but people are rightfully distrustful of cache systems, so
     # be sympathetic to that.
-    async def execute_shell(self, build_dir: Optional[os.PathLike] = None, *,
+    async def execute_shell(self, build_dir: os.PathLike | None = None, *,
                             debug: bool = False) -> tuple[bytes, bytes]:
         if build_dir is None:
             build_dir = tempfile.mkdtemp(prefix="glasgow_")

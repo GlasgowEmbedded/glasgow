@@ -2,7 +2,6 @@
 # Document Number: FPGA-TN-02001-3.2
 # Accession: G00073
 
-from typing import Optional
 import argparse
 import asyncio
 import logging
@@ -23,7 +22,7 @@ class ICE40SRAMError(GlasgowAppletError):
 class ICE40SRAMInterface:
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
                  cs: GlasgowPin, sck: GlasgowPin, copi: GlasgowPin,
-                 reset: GlasgowPin, done: Optional[GlasgowPin] = None):
+                 reset: GlasgowPin, done: GlasgowPin | None = None):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 

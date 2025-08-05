@@ -34,8 +34,7 @@ class PortGroup:
             self[name] = value
 
     def __iter__(self):
-        for name, port in self._ports_.items():
-            yield name, port
+        yield from self._ports_.items()
 
 
 # HACK: temporary until RFC #79

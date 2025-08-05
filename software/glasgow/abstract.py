@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
-from typing import Self, Any, Literal, Optional, Generator
+from typing import Self, Any, Literal
+from collections.abc import Generator
 from collections.abc import Mapping
 from dataclasses import dataclass
 import re
@@ -60,10 +61,10 @@ class GlasgowPort(enum.Enum):
 
 @dataclass(frozen=True)
 class GlasgowVio:
-    value: Optional[float]       = None
-    sense: Optional[GlasgowPort] = None
+    value: float | None       = None
+    sense: GlasgowPort | None = None
 
-    def __init__(self, value:Optional[float] = None, *, sense:Optional[GlasgowPort] = None):
+    def __init__(self, value:float | None = None, *, sense:GlasgowPort | None = None):
         if (value is None and sense is None) or (value is not None and sense is not None):
             raise ValueError("exactly one of voltage value or a port to be sensed may be present")
         object.__setattr__(self, "value", float(value) if value is not None else None)
@@ -215,7 +216,7 @@ class ClockDivisor:
 class AbstractInPipe(metaclass=ABCMeta):
     @property
     @abstractmethod
-    def readable(self) -> Optional[int]:
+    def readable(self) -> int | None:
         pass
 
     @abstractmethod
@@ -238,7 +239,7 @@ class AbstractInPipe(metaclass=ABCMeta):
 class AbstractOutPipe(metaclass=ABCMeta):
     @property
     @abstractmethod
-    def writable(self) -> Optional[int]:
+    def writable(self) -> int | None:
         pass
 
     @abstractmethod
@@ -315,7 +316,7 @@ class AbstractAssembly(metaclass=ABCMeta):
     def add_rw_register(self, signal) -> AbstractRWRegister:
         pass
 
-    def add_clock_divisor(self, signal, ref_period: float, *, tolerance: Optional[float] = None,
+    def add_clock_divisor(self, signal, ref_period: float, *, tolerance: float | None = None,
                           round_mode: Literal["floor", "nearest"] = "floor",
                           name: str) -> ClockDivisor:
         if not isinstance(signal.shape(), Shape):

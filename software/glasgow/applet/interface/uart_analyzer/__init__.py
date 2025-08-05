@@ -1,4 +1,3 @@
-from typing import Optional
 import re
 import sys
 import logging
@@ -87,7 +86,7 @@ class UARTAnalyzerComponent(wiring.Component):
 
 class UARTAnalyzerInterface:
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
-                 channels: dict[str, Optional[GlasgowPin]], parity="none"):
+                 channels: dict[str, GlasgowPin | None], parity="none"):
         self._logger   = logger
         self._level    = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
         self._channels = [channel for channel, pin in channels.items() if pin is not None]

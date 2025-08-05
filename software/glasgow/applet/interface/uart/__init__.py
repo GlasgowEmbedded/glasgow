@@ -1,4 +1,4 @@
-from typing import Literal, Optional, Tuple
+from typing import Literal
 import os
 import sys
 import logging
@@ -151,7 +151,7 @@ class UARTComponent(wiring.Component):
 
 class UARTInterface:
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 rx: Optional[GlasgowPin], tx: Optional[GlasgowPin],
+                 rx: GlasgowPin | None, tx: GlasgowPin | None,
                  parity: Literal["none", "zero", "one", "odd", "even"] = "none"):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
@@ -218,7 +218,7 @@ class UARTInterface:
         self._log("rx data=<%s>", dump_hex(data))
         return data
 
-    async def read_until(self, trailer: bytes | Tuple[bytes, ...]) -> memoryview:
+    async def read_until(self, trailer: bytes | tuple[bytes, ...]) -> memoryview:
         """Reads bytes from the UART until :py:`trailer`, which can be a single byte sequence
         or a choice of multiple byte sequences, is encountered. The return value includes
         the trailer.

@@ -379,7 +379,7 @@ def applet_v2_hardware_test(*, prepare=None, args=None, mocks: list[str]):
                 assembly = HardwareAssembly(revision=self.applet_cls.required_revision)
                 applet: GlasgowAppletV2 = self.applet_cls(assembly)
                 applet.build(parsed_args)
-                with open(fixture_path, "r") as fixture:
+                with open(fixture_path) as fixture:
                     for mock in mocks:
                         mock_obj = applet
                         *mock_path, mock_attr = mock.split(".")

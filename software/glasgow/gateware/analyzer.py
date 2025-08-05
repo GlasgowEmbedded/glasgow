@@ -403,7 +403,7 @@ class TraceDecoder:
         for event_src in self.event_sources:
             if event_src.fields:
                 for field_name, field_width in event_src.fields:
-                    yield ("{}-{}".format(field_name, event_src.name), event_src.kind, field_width)
+                    yield (f"{field_name}-{event_src.name}", event_src.kind, field_width)
             else:
                 yield (event_src.name, event_src.kind, event_src.width)
 
@@ -469,7 +469,7 @@ class TraceDecoder:
                     if self._event_src.fields:
                         offset = 0
                         for field_name, field_width in self._event_src.fields:
-                            self._pending["{}-{}".format(field_name, self._event_src.name)] = \
+                            self._pending[f"{field_name}-{self._event_src.name}"] = \
                                 (self._event_data >> offset) & ((1 << field_width) - 1)
                             offset += field_width
                     else:

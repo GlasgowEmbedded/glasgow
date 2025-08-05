@@ -401,8 +401,8 @@ class Memory25xApplet(GlasgowAppletV2):
             status = await self.m25x_iface.read_status()
             if status & MSK_PROT:
                 self.logger.warning("block protect bits are set to %s, program/erase command "
-                                    "might not succeed", "{:04b}"
-                                    .format((status & MSK_PROT) >> 2))
+                                    "might not succeed", f"{(status & MSK_PROT) >> 2:04b}"
+                                    )
 
         if args.operation == "identify":
             legacy_device_id, = \

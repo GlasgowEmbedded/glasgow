@@ -1,6 +1,6 @@
 """Abstract USB backend interface."""
 
-from typing import Optional, Callable
+from collections.abc import Callable
 from abc import ABCMeta, abstractmethod
 import enum
 
@@ -134,17 +134,17 @@ class AbstractDevice(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def manufacturer_name(self) -> Optional[str]:
+    def manufacturer_name(self) -> str | None:
         pass
 
     @property
     @abstractmethod
-    def product_name(self) -> Optional[str]:
+    def product_name(self) -> str | None:
         pass
 
     @property
     @abstractmethod
-    def serial_number(self) -> Optional[str]:
+    def serial_number(self) -> str | None:
         pass
 
     @property
