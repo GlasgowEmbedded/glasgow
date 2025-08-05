@@ -113,11 +113,11 @@ class AbstractContext(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def add_connect_callback(self, callback: Callable[['Device'], None]):
+    def add_connect_callback(self, callback: Callable[['AbstractDevice'], None]):
         pass
 
     @abstractmethod
-    def add_disconnect_callback(self, callback: Callable[['Device'], None]):
+    def add_disconnect_callback(self, callback: Callable[['AbstractDevice'], None]):
         pass
 
 

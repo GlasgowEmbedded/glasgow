@@ -50,7 +50,7 @@ class MemoryImage:
         if len(self._data) < addr + size:
             raise IndexError(f"end address {addr + size:#x} is out of bounds")
         if if_present:
-            if self.mask[addr:addr + size] != b"\xff" * len(chunk):
+            if self.mask[addr:addr + size] != b"\xff" * size:
                 return None
         return self.data[addr:addr + size]
 
