@@ -136,7 +136,7 @@ class SelfTestApplet(GlasgowApplet):
             desc = f"oe={oe:016b} o={o:016b} i={i:016b}"
             return i, desc
 
-        pin_names = sum([["%s%d" % (p, n) for n in range(8)] for p in ("A", "B")], [])
+        pin_names = sum((["%s%d" % (p, n) for n in range(8)] for p in ("A", "B")), [])
         def decode_pins(bits):
             result = set()
             for bit in range(0, 16):

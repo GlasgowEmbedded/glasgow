@@ -348,7 +348,7 @@ class ProgramAVRApplet(GlasgowApplet):
                 program_file, program_fmt = args.file
                 data = input_data(program_file, program_fmt)
                 self.logger.info("writing program memory (%d bytes)",
-                                 sum([len(chunk) for address, chunk in data]))
+                                 sum(len(chunk) for address, chunk in data))
                 for address, chunk in data:
                     chunk = bytes(chunk)
                     await avr_iface.write_program_memory_range(address, chunk, device.program_page)
@@ -361,7 +361,7 @@ class ProgramAVRApplet(GlasgowApplet):
                 eeprom_file, eeprom_fmt = args.file
                 data = input_data(eeprom_file, eeprom_fmt)
                 self.logger.info("writing EEPROM (%d bytes)",
-                                 sum([len(chunk) for address, chunk in data]))
+                                 sum(len(chunk) for address, chunk in data))
                 for address, chunk in data:
                     chunk = bytes(chunk)
                     await avr_iface.write_eeprom_range(address, chunk, device.eeprom_page)
