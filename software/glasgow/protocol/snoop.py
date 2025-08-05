@@ -109,7 +109,7 @@ class SnoopReader:
 
     def read(self) -> 'SnoopPacket | None':
         try:
-            orig_length, length, record_length, cumulative_drops, timestamp_s, timestamp_us = \
+            orig_length, length, record_length, _cumulative_drops, timestamp_s, timestamp_us = \
                 struct.unpack(">LLLLLL", self.file.read(struct.calcsize(">LLLLLL")))
         except struct.error:
             return None

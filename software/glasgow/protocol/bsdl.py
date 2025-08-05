@@ -483,7 +483,7 @@ class BSDLEntity(BSDLParserBase):
             assert bscan_cells[index] is None
             bscan_cells[index] = cell
             if cell.port is not None:
-                port, port_bit = cell.port
+                port, _port_bit = cell.port
                 port_cells[port].add(index)
 
         return BSDLDevice(
