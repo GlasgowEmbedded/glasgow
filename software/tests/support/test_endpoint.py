@@ -120,14 +120,15 @@ class ServerEndpointTestCase(unittest.TestCase):
         sock = ("tcp", "localhost", 2345)
         endp = await ServerEndpoint("test_server_banner", logging.getLogger(__name__), sock)
 
-        async def endpoint_task():
-            await endp.recv_wait()
-            await endp.send(b"Hello")
-        asyncio.create_task(endpoint_task())
+        async with asyncio.TaskGroup() as group:
+            async def endpoint_task():
+                await endp.recv_wait()
+                await endp.send(b"Hello")
+            group.create_task(endpoint_task())
 
-        conn_rd, conn_wr = await asyncio.open_connection(*sock[1:])
-        self.assertEqual(await conn_rd.read(5), b"Hello")
-        conn_wr.close()
+            conn_rd, conn_wr = await asyncio.open_connection(*sock[1:])
+            self.assertEqual(await conn_rd.read(5), b"Hello")
+            conn_wr.close()
 
     def test_server_banner(self):
         logging.basicConfig(level=logging.TRACE)
