@@ -595,8 +595,7 @@ class MemoryONFIApplet(GlasgowApplet):
                 "model":        onfi_param.model,
                 "date code":
                     "(not specified)" if onfi_param.date_code is None else
-                    "year %02d, week %02d".format(onfi_param.date_code.year,
-                                                  onfi_param.date_code.week)
+                    f"year {onfi_param.date_code.year:02d}, week {onfi_param.date_code.week:02d}"
             }
 
             blocks["Features"] = {
