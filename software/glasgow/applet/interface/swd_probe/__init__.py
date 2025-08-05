@@ -6,14 +6,14 @@
 # applet. Be careful when making changes to it; any breaking changes must update `probe-rs` as
 # instructed in the comment there.
 
-from typing import Optional, AsyncIterator
+from typing import AsyncIterator
 import sys
 import argparse
 import logging
 import struct
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io, cdc
+from amaranth.lib import enum, data, wiring, stream
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support.bits import bits

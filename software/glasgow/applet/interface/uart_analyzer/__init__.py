@@ -1,13 +1,11 @@
-from typing import Literal, Optional
-from functools import reduce
+from typing import Optional
 import re
 import sys
 import logging
-import asyncio
 import argparse
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io
+from amaranth.lib import enum, data, wiring, stream
 from amaranth.lib.wiring import In, Out
 
 from glasgow.gateware.ports import PortGroup

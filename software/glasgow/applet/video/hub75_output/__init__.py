@@ -1,4 +1,3 @@
-import argparse
 import logging
 from amaranth import *
 from amaranth.lib import io

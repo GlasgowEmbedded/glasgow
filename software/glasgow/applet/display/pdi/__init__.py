@@ -57,7 +57,6 @@
 
 import math
 import re
-import itertools
 import logging
 import argparse
 import asyncio

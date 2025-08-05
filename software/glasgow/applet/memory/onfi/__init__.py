@@ -77,7 +77,6 @@
 
 import argparse
 import logging
-import asyncio
 import struct
 from amaranth import *
 from amaranth.lib import io

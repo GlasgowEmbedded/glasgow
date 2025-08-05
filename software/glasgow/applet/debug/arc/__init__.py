@@ -17,7 +17,6 @@
 #   address, data and command registers only occurs once on entry to Run-Test/Idle.
 
 import logging
-import argparse
 
 from ....arch.jtag import *
 from ....arch.arc import *

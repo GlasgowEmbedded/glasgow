@@ -2,7 +2,6 @@
 # Accession: G00038
 
 import logging
-import asyncio
 from amaranth import *
 from amaranth.lib import io
 from amaranth.lib.cdc import FFSynchronizer

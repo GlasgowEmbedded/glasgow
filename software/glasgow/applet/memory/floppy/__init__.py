@@ -297,11 +297,8 @@
 # on the track where its end meets its beginning. Such a floppy would have a much larger density.
 
 import logging
-import asyncio
 import argparse
 import struct
-import random
-import itertools
 import math
 from amaranth import *
 from amaranth.lib import cdc, io
