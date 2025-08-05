@@ -744,7 +744,7 @@ async def main() -> int:
                 applet_cmdline, args.rest = args.rest[:split_at], args.rest[split_at + 1:]
                 if len(applet_cmdline) < 1:
                     logger.error(f"no applet name specified for applet #{len(applets) + 1}")
-                    return
+                    return 1
 
                 applet_name, *applet_args = applet_cmdline
                 try:

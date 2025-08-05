@@ -804,7 +804,7 @@ class JTAGProbeInterface:
                         if check:
                             raise JTAGProbeError("TAP #{} has invalid DR IDCODE={:08x}"
                                                  .format(len(idcodes), idcode))
-                        return
+                        return None
                     else:
                         self._log_h("found dr idcode=%08x (tap #%d)", idcode, len(idcodes))
                     idcodes.append(idcode)
@@ -814,7 +814,7 @@ class JTAGProbeInterface:
                     if check:
                         raise JTAGProbeError("TAP #{} has truncated DR IDCODE=<{}>"
                                              .format(len(idcodes), dump_bin(dr_value[offset:])))
-                    return
+                    return None
             else:
                 self._log_h("found dr bypass (tap #%d)", len(idcodes))
                 idcodes.append(None)
@@ -840,14 +840,14 @@ class JTAGProbeInterface:
             self._log_h("invalid ir taps=%d starts=%d", tap_count, len(ir_starts))
             if check:
                 raise JTAGProbeError("IR capture has fewer <10> transitions than TAPs")
-            return
+            return None
 
         # The chain must start with a valid captured IR value.
         if ir_starts[0] != 0:
             self._log_h("invalid ir starts[0]=%d", ir_starts[0])
             if check:
                 raise JTAGProbeError("IR capture does not start with <10> transition")
-            return
+            return None
 
         # If IR lengths are specified explicitly, use them but validate first.
         if ir_lengths is not None:
@@ -855,14 +855,14 @@ class JTAGProbeInterface:
                 self._log_h("invalid ir taps=%d user-lengths=%d", tap_count, len(ir_lengths))
                 if check:
                     raise JTAGProbeError("IR length count differs from TAP count")
-                return
+                return None
 
             if sum(ir_lengths) != len(ir_value):
                 self._log_h("invalid ir total-length=%d user-total-length=%d",
                             sum(ir_lengths), len(ir_value))
                 if check:
                     raise JTAGProbeError("IR capture length differs from sum of IR lengths")
-                return
+                return None
 
             ir_offset = 0
             for tap_index, ir_length in enumerate(ir_lengths):
@@ -872,7 +872,7 @@ class JTAGProbeInterface:
                     if check:
                         raise JTAGProbeError("IR length for TAP #{:d} misaligns next TAP"
                                              .format(tap_index))
-                    return
+                    return None
 
                 self._log_h("explicit ir length=%d (tap #%d)", ir_length, tap_index)
                 ir_offset += ir_length
@@ -904,7 +904,7 @@ class JTAGProbeInterface:
                         tap_count, ",".join(f"{chunk:d}" for chunk in ir_chunks))
             if check:
                 raise JTAGProbeError("IR capture insufficiently constrains IR lengths")
-            return
+            return None
 
     async def select_tap(self, index, *, ir_lengths=None):
         dr_value, ir_value = await self.scan_reset_dr_ir()
