@@ -346,7 +346,7 @@ class AbstractAssembly(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def set_pin_pull(self, pin: GlasgowPin, statee: PullState):
+    def set_pin_pull(self, pin: GlasgowPin, state: PullState):
         pass
 
     def use_voltage(self, ports: Mapping[GlasgowPort | str, GlasgowVio | float]):
