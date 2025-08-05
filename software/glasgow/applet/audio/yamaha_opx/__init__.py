@@ -200,10 +200,10 @@ class YamahaCPUBus(Elaboratable):
 
         if self.ports.cs is not None:
             m.submodules.cs_buffer = cs_buffer = io.Buffer("o", self.ports.cs)
-            m.d.comb += cs_buffer.o.eq(~self.cs),
+            m.d.comb += cs_buffer.o.eq(~self.cs)
         if self.ports.ic is not None:
             m.submodules.ic_buffer = ic_buffer = io.Buffer("o", self.ports.ic)
-            m.d.comb += ic_buffer.o.eq(~self.rst),
+            m.d.comb += ic_buffer.o.eq(~self.rst)
 
         return m
 

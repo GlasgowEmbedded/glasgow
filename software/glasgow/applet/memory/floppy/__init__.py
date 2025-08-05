@@ -356,15 +356,15 @@ class ShugartFloppyBus(Elaboratable):
         m.submodules.side1_buffer = side1_buffer = io.Buffer("o", ~self.ports.side1)
         m.d.comb += side1_buffer.o.eq(self.side1)
         m.submodules.index_buffer = index_buffer = io.Buffer("i", ~self.ports.index)
-        m.submodules += cdc.FFSynchronizer(index_buffer.i, self.index),
+        m.submodules += cdc.FFSynchronizer(index_buffer.i, self.index)
         m.submodules.trk00_buffer = trk00_buffer = io.Buffer("i", ~self.ports.trk00)
-        m.submodules += cdc.FFSynchronizer(trk00_buffer.i, self.trk00),
+        m.submodules += cdc.FFSynchronizer(trk00_buffer.i, self.trk00)
         m.submodules.wpt_buffer = wpt_buffer = io.Buffer("i", ~self.ports.wpt)
-        m.submodules += cdc.FFSynchronizer(wpt_buffer.i, self.wpt),
+        m.submodules += cdc.FFSynchronizer(wpt_buffer.i, self.wpt)
         m.submodules.rdata_buffer = rdata_buffer = io.Buffer("i", ~self.ports.rdata)
-        m.submodules += cdc.FFSynchronizer(rdata_buffer.i, self.rdata),
+        m.submodules += cdc.FFSynchronizer(rdata_buffer.i, self.rdata)
         m.submodules.dskchg_buffer = dskchg_buffer = io.Buffer("i", ~self.ports.dskchg)
-        m.submodules += cdc.FFSynchronizer(dskchg_buffer.i, self.dskchg),
+        m.submodules += cdc.FFSynchronizer(dskchg_buffer.i, self.dskchg)
 
         index_r = Signal()
         m.d.sync += index_r.eq(self.index)

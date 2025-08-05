@@ -212,7 +212,7 @@ class PS2HostController(Elaboratable):
                     shift.eq(self.bus.falling),
                 ]
                 with m.If(bitno == 11):
-                    m.d.comb += self.stb.eq(1),
+                    m.d.comb += self.stb.eq(1)
                     m.d.sync += [
                         bitno.eq(0),
                         self.o_valid.eq(_verify_frame(frame)),

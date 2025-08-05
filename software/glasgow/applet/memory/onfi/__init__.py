@@ -162,7 +162,7 @@ class MemoryONFISubtarget(Elaboratable):
 
         with m.FSM() as fsm:
             with m.State("RECV-COMMAND"):
-                m.d.comb += self.in_fifo.flush.eq(1),
+                m.d.comb += self.in_fifo.flush.eq(1)
                 with m.If(self.out_fifo.r_rdy):
                     m.d.comb += self.out_fifo.r_en.eq(1)
                     m.d.sync += command.eq(self.out_fifo.r_data)

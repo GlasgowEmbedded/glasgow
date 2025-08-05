@@ -40,7 +40,7 @@ class SPIControllerBus(Elaboratable):
         if hasattr(self.ports, "cs"):
             if self.ports.cs is not None:
                 m.submodules.cs_buffer = cs_buffer = io.Buffer("o", self.ports.cs)
-                m.d.comb += cs_buffer.o.eq(~self.cs),
+                m.d.comb += cs_buffer.o.eq(~self.cs)
 
         if hasattr(self.ports, "copi"):
             if self.ports.copi is not None:

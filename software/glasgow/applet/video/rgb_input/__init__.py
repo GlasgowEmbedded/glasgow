@@ -118,7 +118,7 @@ class VideoRGBInputSubtarget(Elaboratable):
                         ]
                         m.next = "CAPTURE-ROW"
                     with m.Else():
-                        m.d.fsm += col.eq(col + 1),
+                        m.d.fsm += col.eq(col + 1)
                         m.next = "REPORT-1"
 
         vblank_cyc = math.ceil(self.vblank * 0.9 * self.sys_clk_freq) # reset at 90% vblank

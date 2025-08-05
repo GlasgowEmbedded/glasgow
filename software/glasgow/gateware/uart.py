@@ -250,7 +250,7 @@ class UART(Elaboratable):
                                 m.next = "PARITY"
                 with m.State("PARITY"):
                     with m.If(tx_stb):
-                        m.d.sync += self.bus.tx_o.eq(1),
+                        m.d.sync += self.bus.tx_o.eq(1)
                         m.next = "STOP"
                 with m.State("STOP"):
                     with m.If(tx_stb):

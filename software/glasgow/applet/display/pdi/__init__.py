@@ -102,9 +102,9 @@ class PDIDisplaySubtarget(Elaboratable):
 
         # Make sure power and disch are never asserted together, as a safety interlock.
         m.submodules.power_buffer = power_buffer = io.Buffer("o", self.ports.power)
-        m.d.comb += power_buffer.o.eq(self.cog_power & ~self.cog_disch),
+        m.d.comb += power_buffer.o.eq(self.cog_power & ~self.cog_disch)
         m.submodules.disch_buffer = disch_buffer = io.Buffer("o", self.ports.disch)
-        m.d.comb += disch_buffer.o.eq(self.cog_disch & ~self.cog_power),
+        m.d.comb += disch_buffer.o.eq(self.cog_disch & ~self.cog_power)
         m.submodules.reset_buffer = reset_buffer = io.Buffer("o", self.ports.reset)
         m.d.comb += reset_buffer.o.eq(~self.cog_reset)
 
