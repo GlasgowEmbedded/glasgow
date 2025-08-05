@@ -60,7 +60,7 @@ class JESD3Lexer:
 
     def __init__(self, buffer, quirk_no_design_spec=False):
         if not isinstance(buffer, (bytes, bytearray)):
-            raise ValueError(f"JESD3 lexer requires bytes or bytearray as input, not {type(buffer)}")
+            raise TypeError(f"JESD3 lexer requires bytes or bytearray as input, not {type(buffer)}")
 
         self.buffer   = buffer
         self.position = 0
