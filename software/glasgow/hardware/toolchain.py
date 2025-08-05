@@ -393,7 +393,7 @@ def find_toolchain(tools=("yosys", "nextpnr-ice40", "icepack"), *, quiet=False):
     else:
         if quiet:
             return None
-        examined = ", ".join(f"{kind} (missing {', '.join(selected_toolchains[kind].missing)})"
+        examined = ", ".join(f"{kind} (missing {', '.join(toolchain.missing)})"
                              for kind in kinds)
         if env_var_name in os.environ:
             logger.error(f"could not find a usable FPGA toolchain; "
