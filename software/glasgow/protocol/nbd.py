@@ -23,26 +23,26 @@ NBD_OPT_INFO             = 6
 NBD_OPT_GO               = 7
 NBD_OPT_STRUCTURED_REPLY = 8
 
-NBD_REP_ACK                 = (1) #/**< ACK a request. Data: option number to be acked */
-NBD_REP_SERVER              = (2) #/**< Reply to NBD_OPT_LIST (one of these per server; must be followed by NBD_REP_ACK to signal the end of the list */
-NBD_REP_INFO                = (3) #/**< Reply to NBD_OPT_INFO */
-NBD_REP_FLAG_ERROR          = (1 << 31)   #/** If the high bit is set, the reply is an error */
-NBD_REP_ERR_UNSUP           = (1 | NBD_REP_FLAG_ERROR)    #/**< Client requested an option not understood by this version of the server */
-NBD_REP_ERR_POLICY          = (2 | NBD_REP_FLAG_ERROR)    #/**< Client requested an option not allowed by server configuration. (e.g., the option was disabled) */
-NBD_REP_ERR_INVALID         = (3 | NBD_REP_FLAG_ERROR)    #/**< Client issued an invalid request */
-NBD_REP_ERR_PLATFORM        = (4 | NBD_REP_FLAG_ERROR)    #/**< Option not supported on this platform */
-NBD_REP_ERR_TLS_REQD        = (5 | NBD_REP_FLAG_ERROR)    #/**< TLS required */
-NBD_REP_ERR_UNKNOWN         = (6 | NBD_REP_FLAG_ERROR)    #/**< NBD_OPT_INFO or ..._GO requested on unknown export */
-NBD_REP_ERR_BLOCK_SIZE_REQD = (8 | NBD_REP_FLAG_ERROR)    #/**< Server is not willing to serve the export without the block size being negotiated */
+NBD_REP_ACK                 = (1) # ACK a request. Data: option number to be acked
+NBD_REP_SERVER              = (2) # Reply to NBD_OPT_LIST (one of these per server; must be followed by NBD_REP_ACK to signal the end of the list
+NBD_REP_INFO                = (3) # Reply to NBD_OPT_INFO
+NBD_REP_FLAG_ERROR          = (1 << 31) # If the high bit is set, the reply is an error
+NBD_REP_ERR_UNSUP           = (1 | NBD_REP_FLAG_ERROR)    # Client requested an option not understood by this version of the server
+NBD_REP_ERR_POLICY          = (2 | NBD_REP_FLAG_ERROR)    # Client requested an option not allowed by server configuration. (e.g., the option was disabled)
+NBD_REP_ERR_INVALID         = (3 | NBD_REP_FLAG_ERROR)    # Client issued an invalid request
+NBD_REP_ERR_PLATFORM        = (4 | NBD_REP_FLAG_ERROR)    # Option not supported on this platform
+NBD_REP_ERR_TLS_REQD        = (5 | NBD_REP_FLAG_ERROR)    # TLS required
+NBD_REP_ERR_UNKNOWN         = (6 | NBD_REP_FLAG_ERROR)    # NBD_OPT_INFO or ..._GO requested on unknown export
+NBD_REP_ERR_BLOCK_SIZE_REQD = (8 | NBD_REP_FLAG_ERROR)    # Server is not willing to serve the export without the block size being negotiated
 
 NBD_FLAG_FIXED_NEWSTYLE = (1 << 0)
 NBD_FLAG_NO_ZEROES      = (1 << 1)
 
-#* Info types */
-NBD_INFO_EXPORT    = (0)
-NBD_INFO_NAME      = (1)
-NBD_INFO_DESCRIPTION =   (2)
-NBD_INFO_BLOCK_SIZE =(3)
+# Info types
+NBD_INFO_EXPORT      = (0)
+NBD_INFO_NAME        = (1)
+NBD_INFO_DESCRIPTION = (2)
+NBD_INFO_BLOCK_SIZE  = (3)
 
 # from nbd.h
 
@@ -56,15 +56,15 @@ NBD_CMD_WRITE_ZEROES = 6
 NBD_CMD_BLOCK_STATUS = 7
 NBD_CMD_RESIZE = 8
 
-NBD_FLAG_HAS_FLAGS  = (1 << 0)   #/* Flags are there */
-NBD_FLAG_READ_ONLY  = (1 << 1)   #/* Device is read-only */
-NBD_FLAG_SEND_FLUSH = (1 << 2)   #/* Send FLUSH */
-NBD_FLAG_SEND_FUA   = (1 << 3)   #/* Send FUA (Force Unit Access) */
-NBD_FLAG_ROTATIONAL = (1 << 4)   #/* Use elevator algorithm - rotational media */
-NBD_FLAG_SEND_TRIM  = (1 << 5)   #/* Send TRIM (discard) */
-NBD_FLAG_SEND_WRITE_ZEROES = (1 << 6) #   /* Send NBD_CMD_WRITE_ZEROES */
-NBD_FLAG_SEND_DF    = (1 << 7)   #/* Send NBD_CMD_FLAG_DF */
-NBD_FLAG_CAN_MULTI_CONN = (1 << 8)#   /* multiple connections are okay */
+NBD_FLAG_HAS_FLAGS  = (1 << 0)   # Flags are there
+NBD_FLAG_READ_ONLY  = (1 << 1)   # Device is read-only
+NBD_FLAG_SEND_FLUSH = (1 << 2)   # Send FLUSH
+NBD_FLAG_SEND_FUA   = (1 << 3)   # Send FUA (Force Unit Access)
+NBD_FLAG_ROTATIONAL = (1 << 4)   # Use elevator algorithm - rotational media
+NBD_FLAG_SEND_TRIM  = (1 << 5)   # Send TRIM (discard)
+NBD_FLAG_SEND_WRITE_ZEROES = (1 << 6) # Send NBD_CMD_WRITE_ZEROES
+NBD_FLAG_SEND_DF    = (1 << 7)   # Send NBD_CMD_FLAG_DF
+NBD_FLAG_CAN_MULTI_CONN = (1 << 8) # multiple connections are okay
 
 # from proto.md
 

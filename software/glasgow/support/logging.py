@@ -19,6 +19,7 @@ def dump_hex(data):
                 data[:dump_hex.limit].hex(), len(data))
     return lazy(lambda: to_hex(data))
 
+
 dump_hex.limit = 64
 
 
@@ -31,6 +32,7 @@ def dump_bin(data):
             return "{}... ({} bits total)".format(
                 str(data[:dump_bin.limit])[::-1], len(data))
     return lazy(lambda: to_bin(data))
+
 
 dump_bin.limit = 64
 
@@ -53,6 +55,7 @@ def dump_seq(joiner, data):
                 data_length or "?")
     return lazy(lambda: to_seq(data))
 
+
 dump_seq.limit = 16
 
 
@@ -73,5 +76,6 @@ def dump_mapseq(joiner, mapper, data):
                 joiner.join(mapper(elem) for elem, _ in zip(data, range(dump_mapseq.limit))),
                 data_length or "?")
     return lazy(lambda: to_mapseq(data))
+
 
 dump_mapseq.limit = 16

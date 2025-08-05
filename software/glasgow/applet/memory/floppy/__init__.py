@@ -740,6 +740,7 @@ class MemoryFloppyApplet(GlasgowApplet):
 
 # -------------------------------------------------------------------------------------------------
 
+
 class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
     help = "manipulate raw disk images captured from IBM/Shugart floppy drives"
     description = """

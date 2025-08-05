@@ -6,7 +6,7 @@ from ...support.bitstruct import *
 __all__ = [
     "MFG_PHILIPS", "MFG_XILINX",
     # IR
-    "IR_EXTEST", "IR_IDCODE", "IR_SAMPLE", "IR_INTEST", "IR_STRTEST", 
+    "IR_EXTEST", "IR_IDCODE", "IR_SAMPLE", "IR_INTEST", "IR_STRTEST",
     "IR_HIGHZ", "IR_CLAMP", "IR_ISP_WRITE", "IR_ISP_EOTF", "IR_ISP_ENABLE",
     "IR_ISP_ERASE", "IR_ISP_PROGRAM", "IR_ISP_VERIFY", "IR_ISP_INIT",
     "IR_ISP_READ", "IR_ISP_DISABLE", "IR_TEST_MODE", "IR_BYPASS",

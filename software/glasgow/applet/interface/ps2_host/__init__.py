@@ -74,12 +74,14 @@ _frame_layout = data.StructLayout({
     "stop":   1,
 })
 
+
 def _verify_frame(frame):
     return (
         (frame.start == 0) &
         (frame.parity == ~frame.data.xor()) &
         (frame.stop == 1)
     )
+
 
 def _prepare_frame(frame, data):
     return [

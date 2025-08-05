@@ -751,7 +751,6 @@ class DebugARM7Interface(GDBRemote):
         def is_thumb(self):
             return self in (self.SOFT_THUMB, self.HARD_THUMB)
 
-
     def __init__(self, logger, assembly: AbstractAssembly, *,
                  tck, tms, tdo, tdi, trst=None, endian):
         self._logger = logger

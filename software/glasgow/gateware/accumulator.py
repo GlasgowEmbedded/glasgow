@@ -62,4 +62,3 @@ class Accumulator(wiring.Component):
         m.d.comb += self.sum.eq(result)
 
         return m
-

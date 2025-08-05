@@ -136,6 +136,7 @@ class ARCDebugInterface:
             else:
                 raise ARCDebugError("Un halting the ARC failed!")
 
+
 class DebugARCApplet(JTAGProbeApplet):
     logger = logging.getLogger(__name__)
     help = "debug ARC processors via JTAG"

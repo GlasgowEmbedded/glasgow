@@ -19,7 +19,6 @@ class StUsb4500NvmInterface:
     def _log(self, message, *args):
         self._logger.log(self._level, "stusb4500_nvm: " + message, *args)
 
-
     FTP_DATA_BASE = 0x53
     FTP_KEY       = 0x95
     FTP_CTRL_0    = 0x96

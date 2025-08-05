@@ -400,6 +400,7 @@ class MEC16xxInterface(aobject):
         else:
             self._logger.log(logging.INFO, "EEPROM has been successfully unlocked.")
 
+
 class ProgramMEC16xxApplet(DebugARCApplet):
     logger = logging.getLogger(__name__)
     help = "program Microchip MEC16xx embedded controller via JTAG"
@@ -532,7 +533,6 @@ class ProgramMEC16xxApplet(DebugARCApplet):
 
         p_test_lock_boot_block = p_operation.add_parser(
             "test-lock-boot-block", help="temporarily lock boot block, for testing purposes")
-
 
     async def interact(self, device, args, mec_iface):
         if args.operation in ["read-flash", "erase-flash", "write-flash"]:

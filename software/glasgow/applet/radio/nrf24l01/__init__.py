@@ -217,14 +217,14 @@ class RadioNRF24L01Applet(GlasgowApplet):
         dut_ce, self.__addr_dut_ce = target.registers.add_rw(1)
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        ports=iface.get_port_group(
-                ce   = args.ce,
-                cs   = args.cs,
-                sck  = args.sck,
-                copi = args.copi,
-                cipo = args.cipo,
-                irq  = args.irq
-            )
+        ports = iface.get_port_group(
+            ce   = args.ce,
+            cs   = args.cs,
+            sck  = args.sck,
+            copi = args.copi,
+            cipo = args.cipo,
+            irq  = args.irq
+        )
 
         controller = SPIControllerSubtarget(
             ports=ports,

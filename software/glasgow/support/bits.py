@@ -13,6 +13,7 @@ __all__ = ["bits", "bitarray"]
 def _byte_len(l):
     return (l + 7) // 8
 
+
 _byterev_lut = bytes(
     sum(
         ((byte >> bit) & 1) << (7 - bit)
@@ -20,6 +21,7 @@ _byterev_lut = bytes(
     )
     for byte in range(0x100)
 )
+
 
 class _bits_base(amaranth.ValueCastable, Sequence):
     __slots__ = ("_len", "_bytes")
