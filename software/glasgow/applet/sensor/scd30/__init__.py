@@ -100,7 +100,7 @@ class SCD30I2CInterface:
         self._log("data ready=%d", ready)
         return bool(ready)
 
-    async def start_measurement(self, pressure_mbar: int = None):
+    async def start_measurement(self, pressure_mbar: int | None = None):
         assert pressure_mbar is None or pressure_mbar in range(700, 1200)
         if pressure_mbar is None:
             self._log("start measurement")
