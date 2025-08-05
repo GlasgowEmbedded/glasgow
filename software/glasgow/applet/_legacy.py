@@ -157,6 +157,8 @@ class GlasgowAppletTestCase(unittest.TestCase):
             if mode == "replay":
                 return MockReplayer(case, fixture, "lower")
 
+            assert False
+
         self.applet.run_lower = run_lower
 
     async def run_hardware_applet(self, mode):

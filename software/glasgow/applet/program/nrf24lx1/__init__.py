@@ -114,6 +114,8 @@ class ProgramNRF24Lx1Interface:
         if ret > 0:
             self._log("res=<%s>", dump_hex(result))
             return result
+        else:
+            return None
 
     async def read_status(self):
         status, = await self._command(0x05, ret=1)

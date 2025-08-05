@@ -94,6 +94,7 @@ class GlasgowVio:
             return f"S{self.sense}"
         if self.value is not None:
             return f"{self.value:.2f}"
+        assert False
 
 
 @dataclass(frozen=True)

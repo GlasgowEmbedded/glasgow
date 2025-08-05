@@ -103,41 +103,49 @@ class WasmTool(Tool):
 
     @property
     def command(self) -> Optional[str]:
-        if self.available:
-            basename = self.PREFIX + self.name
-            # We cannot assume that the command is on PATH and accessible by its basename. This
-            # will not be true when Glasgow is running from a pipx virtual environment (which isn't
-            # activated when the `glasgow` script is run). Also, our build environment does not
-            # even *have* PATH.
-            match os.name:
-                case "nt":
-                    schemes = ["nt_venv", "nt_user", "nt"]
-                case "posix":
-                    schemes = ["posix_venv", "posix_user", "posix_home", "posix_prefix"]
-            for scheme in schemes:
-                script_path  = os.path.join(sysconfig.get_path("scripts", scheme), basename)
-                script_path += sysconfig.get_config_var('EXE')
-                if os.path.exists(script_path):
-                    return script_path
-            raise FileNotFoundError(f"script {basename!r} not found; this is an issue with your installation")
+        if not self.available:
+            return None
+
+        basename = self.PREFIX + self.name
+        # We cannot assume that the command is on PATH and accessible by its basename. This
+        # will not be true when Glasgow is running from a pipx virtual environment (which isn't
+        # activated when the `glasgow` script is run). Also, our build environment does not
+        # even *have* PATH.
+        match os.name:
+            case "nt":
+                schemes = ["nt_venv", "nt_user", "nt"]
+            case "posix":
+                schemes = ["posix_venv", "posix_user", "posix_home", "posix_prefix"]
+        for scheme in schemes:
+            script_path  = os.path.join(sysconfig.get_path("scripts", scheme), basename)
+            script_path += sysconfig.get_config_var('EXE')
+            if os.path.exists(script_path):
+                return script_path
+        else:
+            raise FileNotFoundError(f"script {basename!r} not found; "
+                                    f"this is an issue with your installation")
 
     @property
     def version(self) -> Optional[tuple[int, ...]]:
-        if self.available:
-            # Running Wasm tools for the first time can incur a significant delay, so use
-            # the version from the Python package metadata (which is guaranteed to be the same).
-            # This makes querying the version at least as fast as for the native tools.
-            return (*importlib.metadata.version(self.python_package).split("."),)
+        if not self.available:
+            return None
+
+        # Running Wasm tools for the first time can incur a significant delay, so use
+        # the version from the Python package metadata (which is guaranteed to be the same).
+        # This makes querying the version at least as fast as for the native tools.
+        return (*importlib.metadata.version(self.python_package).split("."),)
 
     @property
     def identifier(self) -> Optional[bytes]:
-        if self.available:
-            hasher = hashlib.blake2s()
-            for file_entry in importlib.metadata.files(self.python_package):
-                if file_entry.hash is None:
-                    continue # RECORD, *.pyc, etc
-                hasher.update(file_entry.hash.value.encode("utf-8"))
-            return hasher.digest()[:16]
+        if not self.available:
+            return None
+
+        hasher = hashlib.blake2s()
+        for file_entry in importlib.metadata.files(self.python_package):
+            if file_entry.hash is None:
+                continue # RECORD, *.pyc, etc
+            hasher.update(file_entry.hash.value.encode("utf-8"))
+        return hasher.digest()[:16]
 
 
 class SystemTool(Tool):
@@ -158,69 +166,82 @@ class SystemTool(Tool):
 
     @property
     def version(self) -> Optional[tuple[str, ...]]:
-        if self.available:
-            if self.name == "yosys":
-                # Yosys 0.26+50 (git sha1 ef8ed21a2, ccache clang 11.0.1-2 -O0 -fPIC)
-                raw_version = self.get_output([self.command, "--version"])
-                if matches := re.match(r"^Yosys ([^\s]+) \(git sha1 ([0-9a-f]+)", raw_version):
-                    version = matches[1].replace("+", ".").split(".")
-                    return (*version, "g" + matches[2])
+        if not self.available:
+            return None
 
-            elif self.name.startswith("nextpnr-"):
-                # nextpnr-ice40 -- Nex... ...ce and Route (Version nextpnr-0.2-48-g20e595e2)
-                raw_version = self.get_output([self.command, "--version"])
-                if matches := re.match(r".+?\(Version .+?-(.+)\)$", raw_version):
-                    return (*matches[1].replace("-", ".").split("."),)
+        if self.name == "yosys":
+            # Yosys 0.26+50 (git sha1 ef8ed21a2, ccache clang 11.0.1-2 -O0 -fPIC)
+            raw_version = self.get_output([self.command, "--version"])
+            if matches := re.match(r"^Yosys ([^\s]+) \(git sha1 ([0-9a-f]+)", raw_version):
+                version = matches[1].replace("+", ".").split(".")
+                return (*version, "g" + matches[2])
 
-            elif self.name == "icepack":
-                # does not have versions; does not have an option to return version
-                return ("0",)
+        elif self.name.startswith("nextpnr-"):
+            # nextpnr-ice40 -- Nex... ...ce and Route (Version nextpnr-0.2-48-g20e595e2)
+            raw_version = self.get_output([self.command, "--version"])
+            if matches := re.match(r".+?\(Version .+?-(.+)\)$", raw_version):
+                return (*matches[1].replace("-", ".").split("."),)
 
-            elif self.name == "ecppack":
-                # Project Trellis ecppack Version 1.3-3-g6845f33
-                raw_version = self.get_output([self.command, "--version"])
-                if matches := re.match(r".+?Version (.+)$", raw_version):
-                    return (*matches[1].replace("-", ".").split("."),)
+        elif self.name == "icepack":
+            # does not have versions; does not have an option to return version
+            return ("0",)
 
-            else:
-                raise NotImplementedError(f"Cannot extract version from tool {self.name!r}")
+        elif self.name == "ecppack":
+            # Project Trellis ecppack Version 1.3-3-g6845f33
+            raw_version = self.get_output([self.command, "--version"])
+            if matches := re.match(r".+?Version (.+)$", raw_version):
+                return (*matches[1].replace("-", ".").split("."),)
+
+        else:
+            raise NotImplementedError(f"Cannot extract version from tool {self.name!r}")
+
+        # Unparseable version; presume unavailable.
+        return None
 
     def _iter_data_files(self):
+        if not self.available:
+            return None
+
         def iter_files(start):
             for root, _dirs, files in os.walk(start):
                 for file in files:
                     yield os.path.join(root, file)
 
-        if self.available:
-            if self.name == "yosys":
-                if yosys_datdir := self.get_output([f"{self.command}-config", "--datdir"]):
-                    return iter_files(yosys_datdir)
+        if self.name == "yosys":
+            if yosys_datdir := self.get_output([f"{self.command}-config", "--datdir"]):
+                return iter_files(yosys_datdir)
             else:
-                # It is unclear if it is feasible to get at the data files and other dependencies
-                # for nextpnr. However, while it is possible to ship chipdb separately (and Wasm
-                # builds do so), the overwhelming majority of native builds is likely shipping
-                # nxetpnr as a self-contained binary that loads no data.
-                #
-                # Icepack is a self-contained binary. Ecppack is similar to nextpnr.
-                #
-                # This is likely fine.
-                return iter([])
+                return None
+        else:
+            # It is unclear if it is feasible to get at the data files and other dependencies
+            # for nextpnr. However, while it is possible to ship chipdb separately (and Wasm
+            # builds do so), the overwhelming majority of native builds is likely shipping
+            # nxetpnr as a self-contained binary that loads no data.
+            #
+            # Icepack is a self-contained binary. Ecppack is similar to nextpnr.
+            #
+            # This is likely fine.
+            return iter([])
 
-    _identifier_cache = None
+    _identifier_cache: Optional[str] = None
 
     # To the Nix person who replaces this with something more sensible: please message @whitequark
     @property
     def identifier(self) -> Optional[bytes]:
-        if self.available:
-            if self._identifier_cache is None:
-                hasher = hashlib.blake2s()
-                with open(self.command, "rb") as file:
-                    hasher.update(file.read())
-                for data_filename in self._iter_data_files():
-                    with open(data_filename, "rb") as file:
-                        hasher.update(file.read())
-                self._identifier_cache = hasher.digest()[:16]
+        if not self.available:
+            return None
+
+        if self._identifier_cache is not None:
             return self._identifier_cache
+
+        hasher = hashlib.blake2s()
+        with open(self.command, "rb") as file:
+            hasher.update(file.read())
+        for data_filename in self._iter_data_files():
+            with open(data_filename, "rb") as file:
+                hasher.update(file.read())
+        self._identifier_cache = hasher.digest()[:16]
+        return self._identifier_cache
 
 
 class JsTool(Tool):
@@ -237,24 +258,30 @@ class JsTool(Tool):
     def command(self) -> Optional[str]:
         if self.available:
             return self.name
+        else:
+            return None
 
     @property
     def version(self) -> Optional[tuple[str, ...]]:
-        if self.available:
-            # Running Wasm tools can incur a significant delay; request the version from
-            # the toolchain bridge object.
-            return tuple(self._js_bridge.version(self.package_name).split("."))
+        if not self.available:
+            return None
+
+        # Running Wasm tools can incur a significant delay; request the version from
+        # the toolchain bridge object.
+        return tuple(self._js_bridge.version(self.package_name).split("."))
 
     @property
     def identifier(self) -> Optional[bytes]:
-        if self.available:
-            # This implementation assumes that no two different tool builds will ever have the same
-            # version metadata. This is less robust than hashing every tool component, but it's not
-            # practical to do the latter on JS hosts.
-            hasher = hashlib.blake2s()
-            hasher.update(self.name.encode("utf-8"))
-            hasher.update(self._js_bridge.version(self.package_name).encode("utf-8"))
-            return hasher.digest()[:16]
+        if not self.available:
+            return None
+
+        # This implementation assumes that no two different tool builds will ever have the same
+        # version metadata. This is less robust than hashing every tool component, but it's not
+        # practical to do the latter on JS hosts.
+        hasher = hashlib.blake2s()
+        hasher.update(self.name.encode("utf-8"))
+        hasher.update(self._js_bridge.version(self.package_name).encode("utf-8"))
+        return hasher.digest()[:16]
 
 
 class Toolchain:

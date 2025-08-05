@@ -1,4 +1,4 @@
-from typing import Optional, BinaryIO
+from typing import Never, Optional, BinaryIO
 import os
 import sys
 import logging
@@ -49,7 +49,7 @@ class GlasgowBuildPlan:
     def bitstream_id(self) -> bytes:
         return self._bitstream_id
 
-    def _report_build_failure(self, stdout_lines: list[str], exit_code: int):
+    def _report_build_failure(self, stdout_lines: list[str], exit_code: int) -> Never:
         if not logger.isEnabledFor(logging.TRACE): # don't print the log twice
             for stdout_line in stdout_lines:
                 logger.info(f"build: %s", stdout_line.decode().rstrip())
@@ -128,6 +128,7 @@ class GlasgowBuildPlan:
             return bitstream_data, stdout_data
         else:
             self._report_build_failure(stdout_lines, build_result.code)
+            assert False
 
     async def get_bitstream(self, *, debug=False) -> bytes:
         # locate the caches in the platform-appropriate cache directory; bitstreams aren't large,

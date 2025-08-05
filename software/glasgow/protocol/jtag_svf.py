@@ -207,12 +207,14 @@ class SVFParser:
             return self._token
         else:
             self._parse_unexpected("semicolon" if keyword == ";" else keyword)
+            assert False
 
     def _parse_keywords(self, keywords):
         if self._parse_token() in keywords:
             return self._token
         else:
             self._parse_unexpected("one of {}".format(", ".join(keywords)))
+            assert False
 
     def _parse_value(self, kind):
         if isinstance(self._parse_token(), kind):
@@ -231,24 +233,28 @@ class SVFParser:
             else:
                 assert False
             self._parse_unexpected(expected)
+            assert False
 
     def _parse_trst_mode(self):
         if self._parse_token() in _trst_modes:
             return self._token
         else:
             self._parse_unexpected("TRST mode", _trst_modes)
+            assert False
 
     def _parse_tap_state(self):
         if self._parse_token() in _tap_states:
             return self._token
         else:
             self._parse_unexpected("TAP state", _tap_states)
+            assert False
 
     def _parse_tap_stable_state(self):
         if self._parse_token() in _tap_stable_states:
             return self._token
         else:
             self._parse_unexpected("stable TAP state", _tap_stable_states)
+            assert False
 
     def _parse_scan_data(self, length):
         value = self._parse_value(bits)

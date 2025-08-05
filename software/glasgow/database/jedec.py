@@ -15,6 +15,7 @@ def jedec_mfg_name_from_bytes(mfg_ids):
                 if code == mfg_id:
                     return name
             return None
+    return None
 
 
 def jedec_mfg_name_from_bank_num(bank, mfg_num):
