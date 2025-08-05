@@ -1,0 +1,36 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+# See https://pre-commit.ci/ for continuous integration
+
+files: software/
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+  - id: check-merge-conflict
+  - id: check-ast
+  - id: check-toml
+  - id: end-of-file-fixer
+  - id: trailing-whitespace
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.13.1
+  hooks:
+  # on GitHub, pre-commit fixes the code and the GitHub Action reports unfixable issues
+  # when committing locally, pre-commit both fixes the code and reports unfixable issues
+  - id: ruff-check
+    alias: ruff-fix
+    name: ruff (auto-fix)
+    # `noqa:` directives are intentionally ignored; see `ruff.toml`
+    args: [ --ignore-noqa, --fix-only ]
+  - id: ruff-check
+    alias: ruff-annotate
+    name: ruff (annotate)
+    args: [ --ignore-noqa ]
+
+ci:
+  skip:
+  - ruff-annotate
+  autofix_commit_msg: |
+    [pre-commit.ci] software: automatic code style fixes.
+
+    For more information, see https://pre-commit.ci.

@@ -1,0 +1,204 @@
+# The linter is configured in a very conservative way. I (Catherine) do not believe
+# in `noqa:` directives: they pollute the codebase with noise and allow false positives
+# to proliferate in tooling. These directives are disabled on CI. In the few cases where
+# an exclusion is necessary, it is configured in this file; in all other cases, if you
+# feel that there is a need to start using directives, simply remove the rule from
+# the selection below.
+#
+# We do not use the formatter.
+
+src = ["glasgow", "tests"]
+line-length = 100
+target-version = "py311"
+
+[lint]
+preview = true
+select = [
+    "W191",    # tab-indentation
+    "W291",    # trailing-whitespace
+    "W292",    # missing-newline-at-end-of-file
+    "W293",    # blank-line-with-whitespace
+    "W391",    # too-many-newlines-at-end-of-file
+    "W505",    # doc-line-too-long
+
+    "D200",    # unnecessary-multiline-docstring
+    "D201",    # blank-line-before-function
+    "D202",    # blank-line-after-function
+    "D204",    # incorrect-blank-line-after-class
+    "D207",    # under-indentation
+    "D208",    # over-indentation
+    "D209",    # new-line-after-last-paragraph
+    "D210",    # surrounding-whitespace
+    "D211",    # blank-line-before-class
+    "D212",    # multi-line-summary-first-line
+    "D214",    # overindented-section
+    "D215",    # overindented-section-underline
+    "D300",    # triple-single-quotes
+    "D301",    # escape-sequence-in-docstring
+    "D400",    # missing-trailing-period
+    "D404",    # docstring-starts-with-this
+    "D409",    # mismatched-section-underline-length
+    "D411",    # no-blank-line-before-section
+    "D412",    # blank-lines-between-header-and-content
+    "D419",    # empty-docstring
+
+    "E101",    # mixed-spaces-and-tabs
+    "E111",    # indentation-with-invalid-multiple
+    "E112",    # no-indented-block
+    "E113",    # unexpected-indentation
+    "E117",    # over-indented
+    "E223",    # tab-before-operator
+    "E224",    # tab-after-operator
+    "E225",    # missing-whitespace-around-operator
+    "E242",    # tab-after-comma
+    "E252",    # missing-whitespace-around-parameter-equals
+    "E262",    # no-space-after-inline-comment
+    "E265",    # no-space-after-block-comment
+    "E273",    # tab-after-keyword
+    "E274",    # tab-before-keyword
+    "E301",    # blank-line-between-methods
+    "E302",    # blank-lines-top-level
+    "E303",    # too-many-blank-lines
+    "E304",    # blank-line-after-decorator
+    "E305",    # blank-lines-after-function-or-class
+    "E402",    # module-import-not-at-top-of-file
+    "E501",    # line-too-long
+    "E502",    # redundant-backslash
+    "E703",    # useless-semicolon
+    "E711",    # none-comparison
+    "E712",    # true-false-comparison
+    "E713",    # not-in-test
+    "E714",    # not-is-test
+    "E721",    # type-comparison
+    "E722",    # bare-except
+
+    "COM818",  # trailing-comma-on-bare-tuple
+
+    "Q",       # (quotes)
+
+    "F401",    # unused-import
+    "F50",     # (%-string issues)
+    "F52",     # (.format() issues)
+    "F6",      # (meaningless syntax)
+    "F7",      # (meaningless control flow)
+    "F82",     # (undefined names)
+    "F901",    # raise-not-implemented
+
+    "B005",    # strip-with-multi-characters
+    # "B006",    # mutable-argument-default
+    "B007",    # unused-loop-control-variable
+    "B009",    # get-attr-with-constant
+    "B010",    # set-attr-with-constant
+    "B012",    # jump-statement-in-finally
+    "B013",    # redundant-tuple-in-exception-handler
+    "B014",    # duplicate-handler-exception
+    "B015",    # useless-comparison
+    "B016",    # raise-literal
+    "B017",    # assert-raises-exception
+    "B018",    # useless-expression
+    "B021",    # f-string-docstring
+    "B023",    # function-uses-loop-variable
+    "B024",    # abstract-base-class-without-abstract-method
+    "B025",    # duplicate-try-block-exception
+    "B030",    # except-with-non-exception-classes
+    "B032",    # unintentional-type-annotation
+    "B033",    # duplicate-value
+    "B034",    # re-sub-positional-args
+    "B035",    # static-key-dict-comprehension
+    "B903",    # class-as-data-structure
+    "B909",    # loop-iterator-mutation
+
+    "C4",      # (unnecessary comprehensions)
+
+    "RET502",  # implicit-return-value
+    "RET503",  # implicit-return
+
+    "PLE",     # (errors)
+
+    "TRY002",  # raise-vanilla-class
+    "TRY004",  # type-check-without-type-error
+    "TRY203",  # useless-try-except
+    "TRY300",  # try-consider-else
+
+    "RUF006",  # asyncio-dangling-task
+    "RUF008",  # mutable-dataclass-default
+    "RUF009",  # function-call-in-dataclass-default-argument
+    "RUF010",  # explicit-f-string-type-conversion
+    "RUF013",  # implicit-optional
+    "RUF015",  # unnecessary-iterable-allocation-for-first-element
+    "RUF016",  # invalid-index-type
+    "RUF017",  # quadratic-list-summation
+    "RUF019",  # unnecessary-key-check
+    "RUF020",  # never-union
+    "RUF021",  # parenthesize-chained-operators
+    "RUF024",  # mutable-fromkeys-value
+    "RUF026",  # default-factory-kwarg
+    "RUF027",  # missing-f-string-syntax
+    "RUF032",  # decimal-from-float-literal
+    "RUF033",  # post-init-default
+    "RUF034",  # useless-if-else
+    "RUF039",  # unraw-re-pattern
+    "RUF040",  # invalid-assert-message-literal-argument
+    "RUF045",  # implicit-class-var-in-dataclass
+    "RUF047",  # needless-else
+    "RUF051",  # if-key-in-dict-del
+    "RUF052",  # used-dummy-variable
+    "RUF055",  # unnecessary-regular-expression
+    "RUF056",  # falsy-dict-get-fallback
+    "RUF059",  # unused-unpacked-variable
+    "RUF060",  # in-empty-collection
+
+    "PLR0124", # comparison-with-itself
+    "PLR0133", # comparison-of-constant
+    "PLR0402", # manual-from-import
+    "PLR1711", # useless-return
+    "PLR1716", # boolean-chained-comparison
+    "PLR1733", # unnecessary-dict-index-lookup
+    "PLR1736", # unnecessary-list-index-lookup
+    "PLR2044", # empty-comment
+
+    "PERF101", # unnecessary-list-cast
+    "PERF102", # incorrect-dict-iterator
+
+    "FURB116", # f-string-number-format
+    "FURB188", # slice-to-remove-prefix-or-suffix
+    "FURB192", # sorted-min-max
+
+    "UP",      # (pyupgrade)
+
+    "LOG",     # (logging)
+
+    "G010",    # logging-warn
+
+    "INP001",  # implicit-namespace-package
+]
+ignore = [
+    "PLE0605", # invalid-all-format
+]
+extend-safe-fixes = [
+    "E",       # (pycodestyle)
+    "F401",    # unused-import
+    "C4",      # (unnecessary comprehensions)
+    "RUF059",  # unused-unpacked-variable
+    "PERF",    # (perflint)
+    "UP",      # (pyupgrade)
+]
+unfixable = [
+    "F523",    # string-dot-format-extra-positional-arguments; probably a typo
+    "B033",    # duplicate-value; probably a typo
+    "RUF017",  # quadratic-list-summation; very ugly fix
+]
+
+[lint.flake8-comprehensions]
+allow-dict-calls-with-keyword-arguments = true
+
+[lint.extend-per-file-ignores]
+# Architecture definitions are very compact.
+"glasgow/arch/*" = ["E302", "E305"] # blank-lines-top-level, blank-lines-after-function-or-class
+
+# Databases don't have to be formatted well.
+"glasgow/database/*" = ["E501"] # line-too-long
+
+# These modules use cursed import hacks for backward compatibility.
+"glasgow/applet/__init__.py" = ["E402"] # module-import-not-at-top-of-file
+"glasgow/gateware/ports.py" = ["E402"] # module-import-not-at-top-of-file
