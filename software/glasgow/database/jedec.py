@@ -11,7 +11,7 @@ def jedec_mfg_name_from_bytes(mfg_ids):
         else:
             if bank >= len(_manufacturers):
                 return None
-            for (number, name, code) in _manufacturers[bank]:
+            for (_number, name, code) in _manufacturers[bank]:
                 if code == mfg_id:
                     return name
             return None
@@ -20,7 +20,7 @@ def jedec_mfg_name_from_bytes(mfg_ids):
 def jedec_mfg_name_from_bank_num(bank, mfg_num):
     if bank >= len(_manufacturers):
         return None
-    for (number, name, code) in _manufacturers[bank]:
+    for (number, name, _code) in _manufacturers[bank]:
         if number == mfg_num:
             return name
     return None

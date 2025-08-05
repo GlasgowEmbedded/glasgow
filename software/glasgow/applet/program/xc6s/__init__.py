@@ -44,7 +44,7 @@ class XC6SJTAGInterface:
 
     async def _poll(self, ir, limit):
         status = await self._status(ir)
-        for attempt in range(limit):
+        for _ in range(limit):
             yield (await self._status(ir))
 
     async def reconfigure(self):

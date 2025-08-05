@@ -711,7 +711,7 @@ class EJTAGDebugInterface(aobject, GDBRemote):
             if address is not None:
                 await self._pracc_write_word(self._DRSEG_IBCn_addr(index), 0)
                 self._instr_brkpts[index] = None
-        for address, saved_instr in self._softw_brkpts.items():
+        for address, _saved_instr in self._softw_brkpts.items():
             await self._pracc_write_word(address, self._softw_brkpts[address])
             await self._pracc_sync_icache(address)
         self._softw_brkpts = {}
