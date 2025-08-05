@@ -41,8 +41,8 @@ class INA260I2CInterface:
         await self.lower.write(self._i2c_addr, [reg])
         result = await self.lower.read(self._i2c_addr, 2)
         if result is None:
-            raise INA260Error("INA260 did not acknowledge I2C read at address {:#07b}"
-                              .format(self._i2c_addr))
+            raise INA260Error(
+                f"INA260 did not acknowledge I2C read at address {self._i2c_addr:#07b}")
         msb, lsb = result
         raw = (msb << 8) | lsb
         self._logger.log(self._level, "INA260: read reg=%#04x raw=%#06x", reg, raw)
@@ -52,8 +52,8 @@ class INA260I2CInterface:
         await self.lower.write(self._i2c_addr, [reg])
         result = await self.lower.read(self._i2c_addr, 2)
         if result is None:
-            raise INA260Error("INA260 did not acknowledge I2C read at address {:#07b}"
-                              .format(self._i2c_addr))
+            raise INA260Error(
+                f"INA260 did not acknowledge I2C read at address {self._i2c_addr:#07b}")
         msb, lsb = result
         raw = (msb << 8) | lsb
         if raw & (1 << 15):
@@ -152,7 +152,7 @@ class SensorINA260Applet(I2CInitiatorApplet):
                 except INA260Error as error:
                     await data_logger.report_error(str(error), exception=error)
                     await ina260.lower.reset()
-                except asyncio.TimeoutError as error:
+                except TimeoutError as error:
                     await data_logger.report_error("timeout", exception=error)
                     await ina260.lower.reset()
                 await asyncio.sleep(args.interval)

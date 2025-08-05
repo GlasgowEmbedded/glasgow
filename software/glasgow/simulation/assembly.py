@@ -1,4 +1,5 @@
-from typing import Any, Optional, Generator
+from typing import Any
+from collections.abc import Generator
 from contextlib import contextmanager
 import logging
 
@@ -22,7 +23,7 @@ class SimulationPipe(AbstractInOutPipe):
         self._o_buffer = o_buffer
 
     @property
-    def readable(self) -> Optional[int]:
+    def readable(self) -> int | None:
         return len(self._i_buffer)
 
     async def recv(self, length) -> memoryview:
@@ -46,7 +47,7 @@ class SimulationPipe(AbstractInOutPipe):
         return bytes(data)
 
     @property
-    def writable(self) -> Optional[int]:
+    def writable(self) -> int | None:
         return None
 
     async def send(self, data: bytes | bytearray | memoryview):

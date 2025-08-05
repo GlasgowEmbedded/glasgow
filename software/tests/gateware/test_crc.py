@@ -1,4 +1,4 @@
-from typing import Iterable
+from collections.abc import Iterable
 import unittest
 from amaranth import *
 from amaranth.lib import crc

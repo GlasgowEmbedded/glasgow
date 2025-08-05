@@ -75,7 +75,7 @@ class AsyncInteractiveConsole:
         except OSError as exc:
             if exc.errno == errno.EINVAL: # (screaming internally)
                 assert self._is_using_libedit()
-                with open(self._history_filename, "r") as f:
+                with open(self._history_filename) as f:
                     history = f.readlines()
                 assert history[:1] != ["_HiStOrY_V2_"], \
                     "History file has already been converted"

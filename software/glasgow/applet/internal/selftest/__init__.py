@@ -245,14 +245,14 @@ class SelfTestApplet(GlasgowApplet):
                         await device.set_voltage(port, vout)
                         await asyncio.sleep(0.1)
                         vin = await device.measure_voltage(port)
-                        self.logger.debug("port {}: Vio={:.1f} Vsense={:.2f}"
-                                          .format(port, vout, vin))
+                        self.logger.debug(f"port {port}: Vio={vout:.1f} Vsense={vin:.2f}"
+                                          )
 
                         if abs(vout - vin) / vout > 0.05:
                             passed = False
-                            report.append((mode, "port {} out of ±5% tolerance: "
-                                                 "Vio={:.2f} Vsense={:.2f}"
-                                                 .format(port, vout, vin)))
+                            report.append((mode, f"port {port} out of ±5% tolerance: "
+                                                 f"Vio={vout:.2f} Vsense={vin:.2f}"
+                                                 ))
 
                     await device.set_voltage(port, 0)
 
@@ -272,22 +272,22 @@ class SelfTestApplet(GlasgowApplet):
                     try:
                         await iface_out.write(data)
                         await asyncio.wait_for(iface_out.flush(), timeout=0.1)
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         passed = False
                         report.append((mode, f"USB {ep_out} timeout"))
                         continue
 
                     try:
                         received = await asyncio.wait_for(iface_in.read(len(data)), timeout=0.1)
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         passed = False
                         report.append((mode, f"USB {ep_in} timeout"))
                         continue
 
                     if received != data:
                         passed = False
-                        report.append((mode, "USB {}->{} read-write mismatch"
-                                             .format(ep_out, ep_in)))
+                        report.append((mode, f"USB {ep_out}->{ep_in} read-write mismatch"
+                                             ))
 
         if passed:
             self.logger.info("self-test: PASS")

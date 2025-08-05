@@ -310,7 +310,7 @@ class SensorSCD30Applet(GlasgowAppletV2):
                     await data_logger.report_error(str(error), exception=error)
                     await self.scd30_iface.lower.reset()
                     await asyncio.sleep(meas_interval)
-                except asyncio.TimeoutError as error:
+                except TimeoutError as error:
                     await data_logger.report_error("timeout", exception=error)
                     await self.scd30_iface.lower.reset()
 

@@ -1,4 +1,3 @@
-from typing import Optional
 import re
 import sys
 import time
@@ -181,7 +180,7 @@ class GlasgowDevice:
         return list(devices.keys())
 
     @classmethod
-    async def find(cls, serial: Optional[str] = None) -> "GlasgowDevice":
+    async def find(cls, serial: str | None = None) -> "GlasgowDevice":
         usb_context = usb.Context()
         usb_devices = await cls._enumerate_devices(usb_context)
         if len(usb_devices) == 0:
@@ -461,8 +460,8 @@ class GlasgowDevice:
             causes = []
             for port in spec:
                 if (limit := await self._read_voltage(REQ_LIMIT_VOLT, port)) < volts:
-                    causes.append("port {} voltage limit is set to {:.2} V"
-                                  .format(port, limit))
+                    causes.append(f"port {port} voltage limit is set to {limit:.2} V"
+                                  )
             causes_string = ""
             if causes:
                 causes_string = f" ({', '.join(causes)})"
@@ -524,11 +523,11 @@ class GlasgowDevice:
             sense = spec
         voltage = await self.measure_voltage(sense)
         if voltage < 1.8 * (1 - tolerance):
-            raise GlasgowDeviceError("I/O port {} voltage ({} V) too low"
-                                     .format(spec, voltage))
+            raise GlasgowDeviceError(f"I/O port {spec} voltage ({voltage} V) too low"
+                                     )
         if voltage > 5.0 * (1 + tolerance):
-            raise GlasgowDeviceError("I/O port {} voltage ({} V) too high"
-                                     .format(spec, voltage))
+            raise GlasgowDeviceError(f"I/O port {spec} voltage ({voltage} V) too high"
+                                     )
         await self.set_voltage(spec, voltage)
         await self.set_alert_tolerance(spec, voltage, tolerance=0.05)
         return voltage

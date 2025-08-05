@@ -205,8 +205,8 @@ def get_argparser():
                               "have missing features. Use at your own risk.\n" + description
             if applet_cls.required_revision > "A0":
                 help += f" (rev{applet_cls.required_revision}+)"
-                description += "\n    This applet requires Glasgow rev{} or later." \
-                               .format(applet_cls.required_revision)
+                description += f"\n    This applet requires " \
+                               f"Glasgow rev{applet_cls.required_revision} or later."
 
             p_applet = subparsers.add_parser(
                 handle, help=help, description=description,
@@ -630,8 +630,8 @@ async def main() -> int:
                 notice = ""
                 if port in alerts:
                     notice += " (ALERT)"
-                print("{}\t{:.2}\t{:.2}\t{:.3}\t{:.2}-{:.2}\t{}"
-                      .format(port, vio, vlimit, vsense, alert[0], alert[1], notice))
+                print(f"{port}\t{vio:.2}\t{vlimit:.2}\t{vsense:.3}\t{alert[0]:.2}-{alert[1]:.2}\t{notice}"
+                      )
 
         if args.action == "safe":
             await device.reset_alert("AB")
@@ -647,8 +647,8 @@ async def main() -> int:
             for port in args.ports:
                 vio    = await device.get_voltage(port)
                 vlimit = await device.get_voltage_limit(port)
-                print("{}\t{:.2}\t{:.2}"
-                      .format(port, vio, vlimit))
+                print(f"{port}\t{vio:.2}\t{vlimit:.2}"
+                      )
 
         if args.action in ("run", "repl", "script"):
             applet, target = _applet(assembly, args)

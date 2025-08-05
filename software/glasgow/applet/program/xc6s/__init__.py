@@ -100,8 +100,8 @@ class ProgramXC6SApplet(JTAGProbeApplet):
     async def interact(self, device, args, xc6s_iface):
         idcode, xc6s_device = await xc6s_iface.identify()
         if xc6s_device is None:
-            raise XC6SJTAGError("cannot operate on unknown device with IDCODE={:#10x}"
-                                .format(idcode.to_int()))
+            raise XC6SJTAGError(
+                f"cannot operate on unknown device with IDCODE={idcode.to_int():#10x}")
         self.logger.info("found %s rev=%d", xc6s_device.name, idcode.version)
 
         if args.bit_file:

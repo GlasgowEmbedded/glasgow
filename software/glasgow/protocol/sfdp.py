@@ -7,7 +7,7 @@
 #
 # Currently, only JESD216 (initial revision) is implemented.
 
-from typing import Iterator
+from collections.abc import Iterator
 from abc import ABCMeta, abstractmethod
 import struct
 
@@ -188,8 +188,8 @@ class SFDPJEDECFlashParametersTable(SFDPTable):
             elif word0.address_byte_count == 0b10:
                 self.address_byte_count = {4}
             else:
-                raise ValueError("invalid address byte count {:#04b}"
-                                 .format(word0.address_byte_count))
+                raise ValueError(f"invalid address byte count {word0.address_byte_count:#04b}"
+                                 )
 
             if word0.write_granularity:
                 self.write_granularity = 64
@@ -264,8 +264,8 @@ class SFDPJEDECFlashParametersTable(SFDPTable):
             ", ".join("({}-{}-{})".format(*mode) for mode in self.fast_read_modes.keys())
         for mode, (opcode, wait_states, mode_bits) in self.fast_read_modes.items():
             properties["fast read mode ({}-{}-{})".format(*mode)] = \
-                ("opcode {:#04x}, {} wait states, {} mode bits"
-                 .format(opcode, wait_states, mode_bits))
+                (f"opcode {opcode:#04x}, {wait_states} wait states, {mode_bits} mode bits"
+                 )
 
         return iter(properties.items())
 
@@ -287,8 +287,8 @@ class SFDPParser(_JEDECRevisionMixin, aobject, metaclass=ABCMeta):
             pointer = int.from_bytes(pointer, "little")
 
             if index == 0 and vendor_id != 0x00:
-                raise ValueError("SFDP parameter header 0 has incorrect vendor ID {:#04x}"
-                                 .format(vendor_id))
+                raise ValueError(f"SFDP parameter header 0 has incorrect vendor ID {vendor_id:#04x}"
+                                 )
 
             parameter = await self.read(pointer, length_dwords * 4)
             table = SFDPTable(vendor_id, table_id, (rev_major, rev_minor), parameter)

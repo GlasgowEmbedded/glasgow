@@ -1,4 +1,5 @@
-from typing import Any, Optional, Generator, BinaryIO
+from typing import Any, BinaryIO
+from collections.abc import Generator
 from collections import defaultdict
 from contextlib import contextmanager
 import os
@@ -316,7 +317,7 @@ class HardwareOutPipe(AbstractOutPipe):
             self._out_tasks.submit(self._out_task(self._out_slice()))
 
     @property
-    def writable(self) -> Optional[int]:
+    def writable(self) -> int | None:
         if self._out_buffer_size is None:
             return None
         return self._out_buffer_size - self._out_inflight
@@ -463,12 +464,12 @@ class HardwareAssembly(AbstractAssembly):
                 assert False, f"invalid revision {revision}"
 
     @classmethod
-    async def find_device(cls, serial: Optional[str] = None) -> "HardwareAssembly":
+    async def find_device(cls, serial: str | None = None) -> "HardwareAssembly":
         return cls(device=await GlasgowDevice.find(serial))
 
     def __init__(self, *,
-            device: Optional[GlasgowDevice] = None,
-            revision: Optional[str] = None):
+            device: GlasgowDevice | None = None,
+            revision: str | None = None):
         if device is not None:
             assert revision is None or revision == device.revision
             self._device    = device
@@ -735,8 +736,8 @@ class HardwareAssembly(AbstractAssembly):
     async def __aenter__(self):
         return await self.start()
 
-    async def start(self, device: Optional[GlasgowDevice] = None, *,
-                    reload_bitstream: bool = False, _bitstream_file: Optional[BinaryIO] = None):
+    async def start(self, device: GlasgowDevice | None = None, *,
+                    reload_bitstream: bool = False, _bitstream_file: BinaryIO | None = None):
         assert not self._running, "only a stopped assembly can be started"
 
         if self._device is None:

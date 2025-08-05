@@ -118,7 +118,7 @@ class Memory24xApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "read and write 24-series I²C EEPROM memories"
     default_page_size = 8
-    description = """
+    description = f"""
     Read and write memories compatible with 24-series EEPROM memory, such as Microchip 24C02C,
     Atmel 24C256, or hundreds of other memories that typically have "24X" (where X is some letter)
     in their part number.
@@ -138,10 +138,10 @@ class Memory24xApplet(GlasgowAppletV2):
     page size, the inverse is not true. On the other hand, using the right page size significantly
     improves performance.
 
-    The default page size in this applet is {page_size}, because no memories with page smaller
-    than {page_size} bytes have been observed so far. If the writes are too slow, look up the page
-    size in the memory documentation. If the writes seem to be corrupted, use the ``--page-size 1``
-    option.
+    The default page size in this applet is {default_page_size}, because no memories with page size
+    less than {default_page_size} bytes have been observed so far. If the writes are too slow,
+    look up the page size in the memory documentation. If the writes seem to be corrupted, use
+    the ``--page-size 1`` option.
 
     The pinout of a typical 24-series IC is as follows (the A2:0 pins may be N/C in large devices):
 
@@ -151,7 +151,7 @@ class Memory24xApplet(GlasgowAppletV2):
           A1 * * WP#
           A2 * * SCL
          GND * * SDA
-    """.format(page_size=default_page_size)
+    """
 
     @classmethod
     def add_build_arguments(cls, parser, access):

@@ -12,7 +12,7 @@
 # This parser has been validated on a large test set of BSDL files from Xilinx, Lattice, Altera,
 # other vendors.
 
-from typing import Optional, Literal
+from typing import Literal
 from collections import defaultdict
 from dataclasses import dataclass, KW_ONLY
 import re
@@ -34,7 +34,7 @@ class BSDLParseError(Exception):
 class BSDLPortInfo:
     kind:  Literal["in", "out", "inout", "buffer", "linkage"]
     pins:  list[str]
-    range: Optional[range]
+    range: range | None
     cells: list[int]
 
 
@@ -44,10 +44,10 @@ class BSDLScanCell:
     port:     tuple[str, int]
     function: Literal["input", "output2", "output3", "control", "controlr", "internal",
                       "clock", "bidir", "observe_only"]
-    safe:     Optional[int]
+    safe:     int | None
 
-    control:  Optional[int] = None # index into cell list
-    disable:  Optional[int] = None
+    control:  int | None = None # index into cell list
+    disable:  int | None = None
 
 
 @dataclass
@@ -508,5 +508,5 @@ class BSDLEntity(BSDLParserBase):
 
 if __name__ == "__main__":
     import sys, pprint
-    with open(sys.argv[1], "r") as file:
+    with open(sys.argv[1]) as file:
         pprint.pp(BSDLEntity(file.read(), file.name).device())

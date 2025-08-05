@@ -15,8 +15,7 @@ def dump_hex(data):
         if dump_hex.limit is None or len(data) <= dump_hex.limit:
             return data.hex()
         else:
-            return "{}... ({} bytes total)".format(
-                data[:dump_hex.limit].hex(), len(data))
+            return f"{data[:dump_hex.limit].hex()}... ({len(data)} bytes total)"
     return lazy(lambda: to_hex(data))
 
 
@@ -29,8 +28,7 @@ def dump_bin(data):
         if dump_bin.limit is None or len(data) <= dump_bin.limit:
             return str(data)[::-1]
         else:
-            return "{}... ({} bits total)".format(
-                str(data[:dump_bin.limit])[::-1], len(data))
+            return f"{str(data[:dump_bin.limit])[::-1]}... ({len(data)} bits total)"
     return lazy(lambda: to_bin(data))
 
 

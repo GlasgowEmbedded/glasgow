@@ -880,8 +880,9 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
                 ui_time += edge
 
             fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True)
-            fig.suptitle("PLL debug output for {}, track {}, range {}+{}"
-                         .format(args.file.name, args.track, args.offset or 0, len(bytestream)))
+            fig.suptitle(
+                f"PLL debug output for {args.file.name}, track {args.track}, "
+                f"range {args.offset or 0}+{len(bytestream)}")
             times = np.arange(0, len(bits)) * self._timebase
 
             ax1.plot(times, np.array([x[1] / ui_cycles for x in plldata]),

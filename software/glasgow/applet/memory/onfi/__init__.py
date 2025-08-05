@@ -589,8 +589,8 @@ class MemoryONFIApplet(GlasgowApplet):
             onfi_jedec_manufacturer_name = \
                 jedec_mfg_name_from_bytes([onfi_param.jedec_manufacturer_id]) or "unknown"
             blocks["ONFI manufacturer information"] = {
-                "JEDEC ID":     "{:#04x} ({})"
-                    .format(onfi_param.jedec_manufacturer_id, onfi_jedec_manufacturer_name),
+                "JEDEC ID":     f"{onfi_param.jedec_manufacturer_id:#04x} "
+                                f"({onfi_jedec_manufacturer_name})",
                 "manufacturer": onfi_param.manufacturer,
                 "model":        onfi_param.model,
                 "date code":
@@ -627,56 +627,54 @@ class MemoryONFIApplet(GlasgowApplet):
             }
 
             blocks["Memory organization"] = {
-                "page size":          "{} + {} bytes"
-                    .format(onfi_param.bytes_per_page, onfi_param.bytes_per_spare),
-                "partial page size":  "{} + {} bytes"
-                    .format(onfi_param.bytes_per_partial_page, onfi_param.bytes_per_partial_spare),
-                "block size":         "{} pages"
-                    .format(onfi_param.pages_per_block),
-                "LUN size":           "{} blocks; {} pages"
-                    .format(onfi_param.blocks_per_lun,
-                            onfi_param.blocks_per_lun * onfi_param.pages_per_block),
+                "page size":
+                    f"{onfi_param.bytes_per_page} + {onfi_param.bytes_per_spare} bytes",
+                "partial page size":
+                    f"{onfi_param.bytes_per_partial_page} + "
+                    f"{onfi_param.bytes_per_partial_spare} bytes",
+                "block size":
+                    f"{onfi_param.pages_per_block} pages",
+                "LUN size":
+                    f"{onfi_param.blocks_per_lun} blocks; "
+                    f"{onfi_param.blocks_per_lun * onfi_param.pages_per_block} pages",
                 "target size":        "{} LUNs; {} blocks; {} pages"
                     .format(onfi_param.luns_per_target,
                             onfi_param.luns_per_target * onfi_param.blocks_per_lun,
                             onfi_param.luns_per_target * onfi_param.blocks_per_lun
                                                        * onfi_param.pages_per_block),
-                "address cycles":     "{} row, {} column"
-                    .format(onfi_param.address_cycles.row, onfi_param.address_cycles.column),
-                "bits per cell":      "{}"
-                    .format(onfi_param.bits_per_cell),
-                "bad blocks per LUN": "{} (maximum)"
-                    .format(onfi_param.max_bad_blocks_per_lun),
-                "block endurance":    "{} cycles (maximum)"
-                    .format(onfi_param.block_endurance),
-                "guaranteed blocks":  "{} (at target beginning)"
-                    .format(onfi_param.guaranteed_valid_blocks),
-                "guaranteed block endurance": "{} cycles"
-                    .format(onfi_param.guaranteed_valid_block_endurance),
-                "programs per page":  "{} (maximum)"
-                    .format(onfi_param.programs_per_page),
+                "address cycles":
+                    f"{onfi_param.address_cycles.row} row, "
+                    f"{onfi_param.address_cycles.column} column",
+                "bits per cell":      f"{onfi_param.bits_per_cell}",
+                "bad blocks per LUN": f"{onfi_param.max_bad_blocks_per_lun} (maximum)",
+                "block endurance":    f"{onfi_param.block_endurance} cycles (maximum)",
+                "guaranteed blocks":
+                    f"{onfi_param.guaranteed_valid_blocks} (at target beginning)",
+                "guaranteed block endurance":
+                    f"{onfi_param.guaranteed_valid_block_endurance} cycles",
+                "programs per page":
+                    f"{onfi_param.programs_per_page} (maximum)",
                 # Partial programming constraints not displayed.
-                "ECC correctability": "{} bits (maximum, per 512 bytes)"
-                    .format(onfi_param.ecc_correctability_bits),
+                "ECC correctability":
+                    f"{onfi_param.ecc_correctability_bits} bits (maximum, per 512 bytes)",
                 # Interleaved operations not displayed.
             }
 
             blocks["Electrical parameters"] = {
-                "I/O pin capacitance": "{} pF"
-                    .format(onfi_param.io_pin_capacitance),
+                "I/O pin capacitance": f"{onfi_param.io_pin_capacitance} pF",
                 "timing modes":
                     ", ".join(str(mode) for mode in onfi_param.timing_modes),
                 "program cache timing modes":
                     ", ".join(str(mode) for mode in onfi_param.program_cache_timing_modes) or
                     "(not supported)",
-                "page program time":   "{} us (maximum)"
-                    .format(onfi_param.max_page_program_time),
-                "block erase time":    "{} us (maximum)"
-                    .format(onfi_param.max_block_erase_time),
-                "page read time":      "{} us (maximum)"
-                    .format(onfi_param.max_page_read_time),
-                "change column setup time": "{} us (minimum)"
-                    .format(onfi_param.min_change_column_setup_time),
+                "page program time":
+                    f"{onfi_param.max_page_program_time} us (maximum)",
+                "block erase time":
+                    f"{onfi_param.max_block_erase_time} us (maximum)",
+                "page read time":
+                    f"{onfi_param.max_page_read_time} us (maximum)",
+                "change column setup time":
+                    f"{onfi_param.min_change_column_setup_time} us (minimum)",
             }
 
             for block, params in blocks.items():

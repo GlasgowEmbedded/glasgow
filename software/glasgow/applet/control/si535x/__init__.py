@@ -5,7 +5,7 @@
 # Document Number: AN619
 # Accession: G00103
 
-from typing import Optional, TextIO
+from typing import TextIO
 import re
 import csv
 import logging
@@ -34,7 +34,7 @@ class Si535xInterface:
     def _log(self, message, *args):
         self._logger.log(self._level, "Si535x: " + message, *args)
 
-    async def read(self, address: int, count: Optional[int] = None) -> int | bytes:
+    async def read(self, address: int, count: int | None = None) -> int | bytes:
         """Read a register or several consecutive registers starting at :py:`address`.
 
         Returns an :class:`int` if :py:`count is None`, and :class:`bytes` otherwise.
@@ -85,7 +85,7 @@ class Si535xInterface:
                 raise Si535xError(f"failed to parse register map at line {index}: {','.join(row)}")
         return sequence
 
-    async def configure_si5351(self, sequence: list[tuple[int, int]], enable: Optional[int] = None):
+    async def configure_si5351(self, sequence: list[tuple[int, int]], enable: int | None = None):
         """Configure a Si5351A/B/C device.
 
         Accepts a list of 2-tuples :py:`(register, value)` (as returned by :meth:`parse_file`) and

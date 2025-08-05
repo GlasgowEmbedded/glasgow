@@ -1,4 +1,5 @@
-from typing import Any, Optional, Iterator
+from typing import Any
+from collections.abc import Iterator
 from abc import ABCMeta, abstractmethod
 import re
 import os
@@ -45,7 +46,7 @@ class Tool(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def command(self) -> Optional[str]:
+    def command(self) -> str | None:
         """Command name for invoking the tool.
 
         Full path to the executable that can be used to run the tool, or ``None`` if the tool
@@ -65,7 +66,7 @@ class Tool(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def version(self) -> Optional[tuple[str, ...]]:
+    def version(self) -> tuple[str, ...] | None:
         """Tool version number.
 
         ``None`` if version number could not be determined, or a tool-specific tuple if it could.
@@ -74,7 +75,7 @@ class Tool(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def identifier(self) -> Optional[bytes]:
+    def identifier(self) -> bytes | None:
         """Unique tool identifier.
 
         Returns an array of 16 bytes that uniquely identifies the behavior of this particular tool
@@ -103,7 +104,7 @@ class WasmTool(Tool):
             return True
 
     @property
-    def command(self) -> Optional[str]:
+    def command(self) -> str | None:
         if not self.available:
             return None
 
@@ -127,7 +128,7 @@ class WasmTool(Tool):
                                     f"this is an issue with your installation")
 
     @property
-    def version(self) -> Optional[tuple[int, ...]]:
+    def version(self) -> tuple[int, ...] | None:
         if not self.available:
             return None
 
@@ -137,7 +138,7 @@ class WasmTool(Tool):
         return (*importlib.metadata.version(self.python_package).split("."),)
 
     @property
-    def identifier(self) -> Optional[bytes]:
+    def identifier(self) -> bytes | None:
         if not self.available:
             return None
 
@@ -162,11 +163,11 @@ class SystemTool(Tool):
         return self.command is not None
 
     @property
-    def command(self) -> Optional[str]:
+    def command(self) -> str | None:
         return shutil.which(os.environ.get(self.env_var_name, self.name))
 
     @property
-    def version(self) -> Optional[tuple[str, ...]]:
+    def version(self) -> tuple[str, ...] | None:
         if not self.available:
             return None
 
@@ -224,11 +225,11 @@ class SystemTool(Tool):
             # This is likely fine.
             return iter([])
 
-    _identifier_cache: Optional[str] = None
+    _identifier_cache: str | None = None
 
     # To the Nix person who replaces this with something more sensible: please message @whitequark
     @property
-    def identifier(self) -> Optional[bytes]:
+    def identifier(self) -> bytes | None:
         if not self.available:
             return None
 
@@ -256,14 +257,14 @@ class JsTool(Tool):
         return self._js_bridge.available(self.package_name)
 
     @property
-    def command(self) -> Optional[str]:
+    def command(self) -> str | None:
         if self.available:
             return self.name
         else:
             return None
 
     @property
-    def version(self) -> Optional[tuple[str, ...]]:
+    def version(self) -> tuple[str, ...] | None:
         if not self.available:
             return None
 
@@ -272,7 +273,7 @@ class JsTool(Tool):
         return tuple(self._js_bridge.version(self.package_name).split("."))
 
     @property
-    def identifier(self) -> Optional[bytes]:
+    def identifier(self) -> bytes | None:
         if not self.available:
             return None
 
@@ -328,7 +329,7 @@ class Toolchain:
         return {tool.name: tool.version for tool in self.tools}
 
     @property
-    def identifier(self) -> Optional[bytes]:
+    def identifier(self) -> bytes | None:
         """Unique toolchain identifier.
 
         Returns an array of 16 bytes that uniquely identifies this particular collection of tools,

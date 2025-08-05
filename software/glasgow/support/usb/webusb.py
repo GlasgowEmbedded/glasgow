@@ -1,4 +1,4 @@
-from typing import Optional, Callable
+from collections.abc import Callable
 import functools
 import inspect
 import js
@@ -124,15 +124,15 @@ class Device(AbstractDevice):
         return self._impl.productId
 
     @property
-    def manufacturer_name(self) -> Optional[str]:
+    def manufacturer_name(self) -> str | None:
         return self._impl.manufacturerName
 
     @property
-    def product_name(self) -> Optional[str]:
+    def product_name(self) -> str | None:
         return self._impl.productName
 
     @property
-    def serial_number(self) -> Optional[str]:
+    def serial_number(self) -> str | None:
         return self._impl.serialNumber
 
     @property

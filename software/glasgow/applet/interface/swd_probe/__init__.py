@@ -6,7 +6,7 @@
 # applet. Be careful when making changes to it; any breaking changes must update `probe-rs` as
 # instructed in the comment there.
 
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 import sys
 import argparse
 import logging

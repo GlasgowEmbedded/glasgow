@@ -1,4 +1,4 @@
-from typing import Optional, Literal
+from typing import Literal
 import contextlib
 import logging
 import struct
@@ -137,8 +137,8 @@ class SPIControllerComponent(wiring.Component):
 
 class SPIControllerInterface:
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 cs: GlasgowPin, sck: GlasgowPin, copi: Optional[GlasgowPin] = None,
-                 cipo: Optional[GlasgowPin] = None, mode: Literal[0, 1, 2, 3]):
+                 cs: GlasgowPin, sck: GlasgowPin, copi: GlasgowPin | None = None,
+                 cipo: GlasgowPin | None = None, mode: Literal[0, 1, 2, 3]):
         assert mode == 3, "Only Mode 3 is supported at the moment"
 
         self._logger = logger

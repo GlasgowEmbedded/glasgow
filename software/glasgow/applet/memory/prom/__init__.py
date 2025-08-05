@@ -678,8 +678,8 @@ class MemoryPROMApplet(GlasgowApplet):
                 self.logger.info("verify PASS")
             else:
                 differ = sum(a != b for a, b in zip(golden_data, actual_data))
-                raise GlasgowAppletError("verify FAIL ({} words differ)"
-                                         .format(differ))
+                raise GlasgowAppletError(f"verify FAIL ({differ} words differ)"
+                                         )
 
         if args.operation == "write":
             data = prom_iface.Data(args.file.read(), prom_iface.dq_bytes, args.endian)
@@ -745,8 +745,8 @@ class MemoryPROMApplet(GlasgowApplet):
             if not unstable:
                 self.logger.info("health scan PASS")
             else:
-                raise GlasgowAppletError("health scan FAIL ({} words unstable)"
-                                         .format(len(unstable)))
+                raise GlasgowAppletError(f"health scan FAIL ({len(unstable)} words unstable)"
+                                         )
 
         if args.operation == "health" and args.mode == "sweep":
             if args.voltage is None:

@@ -2,7 +2,7 @@ import re
 import itertools
 import operator
 from collections.abc import Sequence, MutableSequence, Iterable
-from typing_extensions import Self
+from typing import Self
 
 import amaranth
 
