@@ -66,7 +66,7 @@ builtin-toolchain = [
   # the lowest that has features transitively required by Glasgow.
   "yowasp-runtime>=1.42",
   # Most versions of Yosys and nextpnr work; the minimum versions listed here are known good.
-  "yowasp-yosys>=0.31.0.13,!=0.54.*,!=0.55.*",
+  "yowasp-yosys>=0.31.0.13,!=0.54.*,!=0.55.*,!=0.56.*",
   "yowasp-nextpnr-ice40>=0.1",
 ]
 

@@ -5,7 +5,7 @@
 groups = ["default", "builtin-toolchain", "http", "numpy"]
 strategy = ["direct_minimal_versions"]
 lock_version = "4.5.0"
-content_hash = "sha256:f70ed3a1c040429b00ef80562afe91d3c8d59f32fbbeb5303a1fd1048a548259"
+content_hash = "sha256:b702a6bc4183702ef9f29c5e0c8f04d14339521abbb2a6e9cc774b1f4fe746ca"
 
 [[metadata.targets]]
 requires_python = "~=3.11"
