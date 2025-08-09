@@ -341,13 +341,15 @@ class UARTApplet(GlasgowAppletV2):
                     raise EOFError
 
                 if os.isatty(in_fileno):
-                    if quit == 0 and data == b"\034":
-                        quit = 1
-                        continue
-                    elif quit == 1 and data == b"q":
-                        raise EOFError
-                    else:
-                        quit = 0
+                    match (quit, data):
+                        case (0, b"~"):
+                            quit = 1
+                            continue
+                        case (1, b"."):
+                            raise EOFError
+                        case (1, _):
+                            quit = 0
+                            data = b"~" + data
 
                 await self.uart_iface.write(data, flush=True)
 
@@ -380,7 +382,7 @@ class UARTApplet(GlasgowAppletV2):
             new_stdin_attrs = [iflag, oflag, cflag, lflag, ispeed, ospeed, cc]
             termios.tcsetattr(in_fileno, termios.TCSADRAIN, new_stdin_attrs)
 
-            self.logger.info("running on a TTY; enter `Ctrl+\\ q` to quit")
+            self.logger.info("running on a TTY; enter `~` then `.` to quit")
             try:
                 await self._forward_fd(in_fileno, out_fileno, stream=stream)
             finally:
