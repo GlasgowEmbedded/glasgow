@@ -1,0 +1,28 @@
+name: "Bug report"
+description: "Create an issue for a bug"
+body:
+- type: input
+  id: version
+  attributes:
+    label: "Version"
+    description: "Please paste the output of `glasgow --version`."
+    placeholder: "Glasgow 0.1.dev1234+gabcdef (CPython 3.14.5 on Linux-4.20-amd64-x86_64-with-glibc2.69)"
+  validations:
+    required: true
+- type: textarea
+  id: description
+  attributes:
+    label: "Description"
+    description: "Please describe what went wrong and what you expected."
+    placeholder: "I ran `glasgow run uart -V 3.3 tty` and the command crashed."
+  validations:
+    required: true
+- type: textarea
+  id: log-file
+  attributes:
+    label: "Log file"
+    description: "Please re-run the command as `glasgow -L debug.log <...>` and attach it here using the 📎 button below."
+    placeholder: |
+      [Log file](file.log)
+  validations:
+    required: false
