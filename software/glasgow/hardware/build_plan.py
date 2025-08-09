@@ -52,7 +52,7 @@ class GlasgowBuildPlan:
     def _report_build_failure(self, stdout_lines: list[str], exit_code: int):
         if not logger.isEnabledFor(logging.TRACE): # don't print the log twice
             for stdout_line in stdout_lines:
-                logger.info(f"build: %s", stdout_line.rstrip())
+                logger.info(f"build: %s", stdout_line.decode().rstrip())
         if logger.isEnabledFor(logging.INFO):
             raise GatewareBuildError(
                 f"gateware build failed with exit code {exit_code}; "
@@ -95,7 +95,7 @@ class GlasgowBuildPlan:
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             async for stdout_line in process.stdout:
                 stdout_lines.append(stdout_line)
-                logger.trace(f"build: %s", stdout_line.decode("utf-8").rstrip())
+                logger.trace(f"build: %s", stdout_line.decode().rstrip())
             if await process.wait():
                 self._report_build_failure(stdout_lines, process.returncode)
 
