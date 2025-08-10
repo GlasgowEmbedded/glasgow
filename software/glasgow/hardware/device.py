@@ -7,7 +7,7 @@ import logging
 import asyncio
 import importlib.resources
 
-from fx2 import REQ_RAM, REG_CPUCS
+from fx2 import REQ_RAM, REQ_PAGE_SIZE, REQ_EEPROM_DB, REG_CPUCS
 from fx2.format import input_data
 
 from ..support.logging import dump_hex
@@ -18,7 +18,7 @@ else:
 from . import quirks
 
 
-__all__ = ["GlasgowDevice"]
+__all__ = ["GlasgowDevice", "FX2BootloaderDevice"]
 
 
 logger = logging.getLogger(__name__)
@@ -723,3 +723,95 @@ class GlasgowDeviceConfig:
                    voltage_limit,
                    manufacturer.decode("ascii"),
                    flags & cls._FLAG_MODIFIED_DESIGN)
+
+
+class FX2BootloaderDevice:
+    @classmethod
+    def firmware_file(cls):
+        return importlib.resources.files("fx2").joinpath("boot-cypress.ihex")
+
+    @classmethod
+    def firmware_data(cls):
+        with cls.firmware_file().open() as file:
+            return input_data(file, fmt="ihex")
+
+    @classmethod
+    async def find(cls, vid: int, pid: int) -> 'FX2BootloaderDevice':
+        usb_context = usb.Context()
+        device_filter = lambda device: (device.vendor_id, device.product_id) == (vid, pid)
+        usb_devices: list[usb.Device] = []
+        usb_devices.extend(filter(device_filter, await usb_context.get_devices()))
+        if len(usb_devices) == 0:
+            await usb_context.request_device(vid, pid)
+            usb_devices.extend(filter(device_filter, await usb_context.get_devices()))
+
+        if len(usb_devices) == 0:
+            raise GlasgowDeviceError(f"device {vid:#06x}:{pid:#06x} not found")
+        elif len(usb_devices) > 1:
+            raise GlasgowDeviceError(
+                f"found {len(usb_devices)} devices (with {vid:#06x}:{pid:#06x})")
+
+        device = FX2BootloaderDevice(usb_context, usb_devices[0])
+        await device.open()
+        return device
+
+    def __init__(self, usb_context: usb.Context, usb_device: usb.Device):
+        self.usb_context = usb_context
+        self.usb_device = usb_device
+
+    async def open(self):
+        # usb.Device.open() is safe to call multiple times
+        await self.usb_device.open()
+
+    async def close(self):
+        await self.usb_device.close()
+
+    async def load_ram(self, chunks):
+        """
+        Write ``chunks``, a list of ``(address, data)`` pairs, to internal RAM,
+        and start the CPU core.
+        """
+        # Put the FX2 into reset
+        await self.usb_device.control_transfer_out(
+            usb.RequestType.Vendor, usb.Recipient.Device, REQ_RAM, REG_CPUCS, 0, bytes([1]))
+
+        chunk_size = 0x1000
+        for addr, data in chunks:
+            for offset in range(0, len(data), chunk_size):
+                await self.usb_device.control_transfer_out(
+                    usb.RequestType.Vendor, usb.Recipient.Device,
+                    REQ_RAM, addr + offset, 0, bytes(data[offset:offset + chunk_size]))
+
+        # Take the FX2 out of reset
+        await self.usb_device.control_transfer_out(
+            usb.RequestType.Vendor, usb.Recipient.Device, REQ_RAM, REG_CPUCS, 0, bytes([0]))
+
+    async def read_boot_eeprom(self, addr, length, chunk_size=0x1000):
+        """
+        Read ``length`` bytes at ``addr`` from boot EEPROM in ``chunk_size`` chunks.
+
+        Requires the second stage bootloader or a compatible firmware.
+        """
+        data = bytearray()
+        for offset in range(0, length, chunk_size):
+            chunk_length = min(length - offset, chunk_size)
+            data += await self.usb_device.control_transfer_in(
+                usb.RequestType.Vendor, usb.Recipient.Device,
+                REQ_EEPROM_DB, addr + offset, 0, chunk_length)
+        return data
+
+    async def write_boot_eeprom(self, addr, data, chunk_size=0x1000):
+        """
+        Write ``data`` to ``addr`` in boot EEPROM in ``chunk_size`` chunks.
+
+        Requires the second stage bootloader or a compatible firmware.
+        """
+        # 64 bytes
+        page_size = 6
+        await self.usb_device.control_transfer_out(
+            usb.RequestType.Vendor, usb.Recipient.Device, REQ_PAGE_SIZE, page_size, 0, b"")
+
+        for offset in range(0, len(data), chunk_size):
+            await self.usb_device.control_transfer_out(
+                usb.RequestType.Vendor, usb.Recipient.Device,
+                REQ_EEPROM_DB, addr + offset, 0, bytes(data[offset:offset + chunk_size]))
