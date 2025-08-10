@@ -162,6 +162,13 @@ jobs:
       - name: Check out source code
         uses: actions/checkout@v4
       - if: ${{ github.repository == 'GlasgowEmbedded/glasgow' && github.event.ref == 'refs/heads/main' }}
+        name: Inject wheel under latest/dist/
+        run: |
+          pip install build
+          python -m build --wheel software/
+          mkdir -p pages/latest/dist/
+          cp software/dist/*.whl pages/latest/dist/glasgow-0.1.dev0-py3-none-any.whl
+      - if: ${{ github.repository == 'GlasgowEmbedded/glasgow' && github.event.ref == 'refs/heads/main' }}
         name: Inject documentation from artifact under latest/
         uses: actions/download-artifact@v4
         with:
