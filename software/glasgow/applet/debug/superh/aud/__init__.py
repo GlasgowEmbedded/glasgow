@@ -17,7 +17,7 @@ from amaranth import *
 from amaranth.lib import io, wiring, stream, cdc, enum
 from amaranth.lib.wiring import In, Out
 
-from glasgow.abstract import AbstractAssembly, GlasgowPin
+from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
 from glasgow.applet import GlasgowAppletV2, GlasgowAppletError
 
 
@@ -48,9 +48,10 @@ class AUDComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
 
-    def __init__(self, ports, period_cyc):
+    divisor:  In(16)
+
+    def __init__(self, ports):
         self._ports      = ports
-        self._period_cyc = period_cyc
 
         super().__init__()
 
@@ -72,7 +73,7 @@ class AUDComponent(wiring.Component):
         m.submodules += cdc.FFSynchronizer(audata.i, audata_i)
 
         # FSM related signals
-        timer = Signal(range(self._period_cyc))
+        timer = Signal.like(self.divisor)
         data = Signal(4)
 
         # Main State Machine
@@ -124,24 +125,24 @@ class AUDComponent(wiring.Component):
 
                 # Strobe clock
                 m.d.sync += audck.o.eq(0)
-                m.d.sync += timer.eq(self._period_cyc - 1)
+                m.d.sync += timer.eq(0)
                 m.next = "OUT-CLOCK-0"
 
             # Wait for clock period to pass, then set clock high
             with m.State("OUT-CLOCK-0"):
-                with m.If(timer == 0):
+                with m.If(timer == self.divisor):
                     m.d.sync += audck.o.eq(1)
-                    m.d.sync += timer.eq(self._period_cyc - 1)
+                    m.d.sync += timer.eq(0)
                     m.next = "OUT-CLOCK-1"
                 with m.Else():
-                    m.d.sync += timer.eq(timer - 1)
+                    m.d.sync += timer.eq(timer + 1)
 
             # Wait for clock period to pass, then return to command reception
             with m.State("OUT-CLOCK-1"):
-                with m.If(timer == 0):
+                with m.If(timer == self.divisor):
                     m.next = "RECV-COMMAND"
                 with m.Else():
-                    m.d.sync += timer.eq(timer - 1)
+                    m.d.sync += timer.eq(timer + 1)
 
             # Strobe clock, then read data on the rising edge. Send to PC
             with m.State("INP"):
@@ -149,28 +150,28 @@ class AUDComponent(wiring.Component):
 
                 # Strobe clock
                 m.d.sync += audck.o.eq(0)
-                m.d.sync += timer.eq(self._period_cyc - 1)
+                m.d.sync += timer.eq(9)
                 m.next = "INP-CLOCK-0"
 
             # Wait for clock period to pass, then sample data and set clock high
             with m.State("INP-CLOCK-0"):
-                with m.If(timer == 0):
+                with m.If(timer == self.divisor):
                     m.d.sync += audck.o.eq(1)
-                    m.d.sync += timer.eq(self._period_cyc - 1)
+                    m.d.sync += timer.eq(0)
 
                     # Sample data on rising edge
                     m.d.sync += data.eq(audata_i)
 
                     m.next = "INP-CLOCK-1"
                 with m.Else():
-                    m.d.sync += timer.eq(timer - 1)
+                    m.d.sync += timer.eq(timer + 1)
 
             # Wait for clock period to pass, then send data to PC
             with m.State("INP-CLOCK-1"):
-                with m.If(timer == 0):
+                with m.If(timer == self.divisor):
                     m.next = "SEND-DATA"
                 with m.Else():
-                    m.d.sync += timer.eq(timer - 1)
+                    m.d.sync += timer.eq(timer + 1)
 
             # Send the sampled data to the output stream, return to command reception
             with m.State("SEND-DATA"):
@@ -185,16 +186,21 @@ class AUDComponent(wiring.Component):
 
 class AUDInterface:
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-        audata: GlasgowPin, audsync: GlasgowPin, audck: GlasgowPin, audmd: GlasgowPin, audrst: GlasgowPin, frequency: int):
+        audata: GlasgowPin, audsync: GlasgowPin, audck: GlasgowPin, audmd: GlasgowPin, audrst: GlasgowPin):
         self._logger = logger
         self._level  = logging.TRACE
 
         ports = assembly.add_port_group(audata=audata, audsync=audsync, audck=audck, audmd=audmd, audrst=audrst)
         component = assembly.add_submodule(AUDComponent(
             ports,
-            period_cyc=round(1 / (assembly.sys_clk_period * frequency)),
         ))
         self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
+        self._clock = assembly.add_clock_divisor(component.divisor,
+            ref_period=assembly.sys_clk_period, name="audclk")
+
+    @property
+    def clock(self) -> ClockDivisor:
+        return self._clock
 
     async def _cmd(self, cmd: AUDCommand, val=0):
         assert val <= 0xF, "Value must be less than 0xF"
@@ -292,6 +298,8 @@ class AUDApplet(GlasgowAppletV2):
         access.add_pins_argument(parser, "audrst", required=True)
         access.add_pins_argument(parser, "audmd", required=True)
 
+    @classmethod
+    def add_setup_arguments(cls, parser):
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=100,
             help="set clock period to FREQ kHz (default: %(default)s)")
@@ -330,6 +338,8 @@ class AUDApplet(GlasgowAppletV2):
             required=True,
             help="write memory contents to FILENAME")
 
+    async def setup(self, args):
+        await self.aud_iface.clock.set_frequency(args.frequency * 1000)
 
     def build(self, args):
         with self.assembly.add_applet(self):
@@ -341,8 +351,7 @@ class AUDApplet(GlasgowAppletV2):
                 audsync=args.audsync,
                 audck=args.audck,
                 audmd=args.audmd,
-                audrst=args.audrst,
-                frequency=args.frequency * 1000)
+                audrst=args.audrst)
 
     @staticmethod
     def _show_progress(done, total, status):
