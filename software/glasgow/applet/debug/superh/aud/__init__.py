@@ -198,6 +198,7 @@ class AUDInterface:
 
     async def _cmd(self, cmd: AUDCommand, val=0):
         assert val <= 0xF, "Value must be less than 0xF"
+        self._logger.log(self._level, "AUD: write CMD: %s DATA: <%02x>", cmd.name, val)
         await self._pipe.send([cmd.value | (val << 4)])
 
     async def reset(self):
@@ -216,6 +217,7 @@ class AUDInterface:
         await self._pipe.flush()
 
         data = await self._pipe.recv(1)
+        self._logger.log(self._level, "AUD: read <%02x>", data[0])
         return data[0]
 
     async def sync(self, val):
@@ -353,10 +355,10 @@ class AUDApplet(GlasgowAppletV2):
             sys.stdout.flush()
 
     async def run(self, args):
-        self.logger.info("Initializing AUD-II interface")
+        self.logger.trace("Initializing AUD-II interface")
         await self.aud_iface.init()
 
-        self.logger.info("Reading data")
+        self.logger.trace("Reading data")
         bs = 4
 
         for i in range(args.address, args.address + args.length, bs):
@@ -364,4 +366,4 @@ class AUDApplet(GlasgowAppletV2):
             args.file.write(data)
             self._show_progress(i - args.address + bs, args.length, f"Read {data.hex()}")
 
-        self.logger.info("Done")
+        self.logger.trace("Done")
