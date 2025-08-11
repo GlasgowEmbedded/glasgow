@@ -279,31 +279,32 @@ class AUDApplet(GlasgowAppletV2):
 
             # Check alignment
             if addr % 4:
-                raise argparse.ArgumentTypeError(f"Address {x} is not 4 byte aligned")
+                raise argparse.ArgumentTypeError(f"address {x} is not 4 byte aligned")
 
             return addr
 
-        def size(x):
+        def length(x):
             sz = int(x, 0)
             # Check alignment
             if sz % 4:
-                raise argparse.ArgumentTypeError(f"Size {x} is not a multiple of 4")
+                raise argparse.ArgumentTypeError(f"length {x} is not a multiple of 4")
 
             return sz
 
-        parser.add_argument(
-            "-a", "--address", type=address, required=True,
-            help="Starting address to read from, e.g. 0x0"
-        )
-        parser.add_argument(
-            "-s", "--size", type=size, required=True,
-            help="Size of the data to read in bytes, e.g. 0x80000"
-        )
-        parser.add_argument(
-            "-o", "--output", required=True,
-            type=argparse.FileType('wb'),
-            help="Filename to write the output to"
-        )
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
+
+        p_read = p_operation.add_parser(
+            "read", help="read memory")
+        p_read.add_argument(
+            "address", metavar="ADDRESS", type=address,
+            help="read memory starting at address ADDRESS, needs to be 4 byte aligned")
+        p_read.add_argument(
+            "length", metavar="LENGTH", type=length,
+            help="read LENGTH bytes from memory, needs to be a multiple of 4")
+        p_read.add_argument(
+            "-f", "--file", metavar="FILENAME", type=argparse.FileType("wb"),
+            required=True,
+            help="write memory contents to FILENAME")
 
 
     def build(self, args):
@@ -336,9 +337,9 @@ class AUDApplet(GlasgowAppletV2):
         self.logger.info("Reading data")
         bs = 4
 
-        for i in range(args.address, args.address + args.size, bs):
+        for i in range(args.address, args.address + args.length, bs):
             data = await self.aud_iface.read(i, sz=bs)
-            args.output.write(data)
-            self._show_progress(i - args.address + bs, args.size, f"Read {data.hex()}")
+            args.file.write(data)
+            self._show_progress(i - args.address + bs, args.length, f"Read {data.hex()}")
 
         self.logger.info("Done")
