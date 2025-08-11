@@ -274,15 +274,29 @@ class AUDApplet(GlasgowAppletV2):
 
     @classmethod
     def add_run_arguments(cls, parser):
-        def auto_int(x):
-            return int(x, 0)
+        def address(x):
+            addr = int(x, 0)
+
+            # Check alignment
+            if addr % 4:
+                raise argparse.ArgumentTypeError(f"Address {x} is not 4 byte aligned")
+
+            return addr
+
+        def size(x):
+            sz = int(x, 0)
+            # Check alignment
+            if sz % 4:
+                raise argparse.ArgumentTypeError(f"Size {x} is not a multiple of 4")
+
+            return sz
 
         parser.add_argument(
-            "-a", "--address", type=auto_int, required=True,
+            "-a", "--address", type=address, required=True,
             help="Starting address to read from, e.g. 0x0"
         )
         parser.add_argument(
-            "-s", "--size", type=auto_int, required=True,
+            "-s", "--size", type=size, required=True,
             help="Size of the data to read in bytes, e.g. 0x80000"
         )
         parser.add_argument(
