@@ -11,6 +11,7 @@
 import argparse
 import logging
 import sys
+from typing import Literal
 
 from amaranth import *
 from amaranth.lib import io, wiring, stream, cdc, enum
@@ -22,6 +23,17 @@ from glasgow.applet import GlasgowAppletV2, GlasgowAppletError
 
 class AUDError(GlasgowAppletError):
     pass
+
+
+class _AUDMonitorSize(enum.Enum):
+    Byte = 0b00
+    Word = 0b01
+    LongWord = 0b10
+
+
+class _AUDMonitorCommand(enum.Enum):
+    Read = 0b1000
+    Write = 0b1100
 
 
 class AUDCommand(enum.Enum, shape=8):
@@ -222,19 +234,21 @@ class AUDInterface:
         for i in range(10):
             await self.out(0)
 
-    async def read(self, addr, sz=4, timeout=100):
+    async def read(self, addr: int, sz: Literal[1,2,4 ] = 4, timeout: int = 100):
+        assert addr in range(0, 1<<32), "Address must be a 32-bit value"
+        assert sz in (1, 2, 4), "Size must be one of 1, 2, or 4 bytes"
+
         await self.sync(0)
         await self.out(0)
 
-        match sz:
-            case 1:
-                await self.out(0b1000) # Read byte
-            case 2:
-                await self.out(0b1001) # Read word
-            case 4:
-                await self.out(0b1010) # Read longword
-            case _:
-                raise ValueError("Invalid size, must be 1, 2, or 4 bytes")
+        # Send the Read command
+        cmd = _AUDMonitorCommand.Read.value | \
+           {
+               1: _AUDMonitorSize.Byte,
+               2: _AUDMonitorSize.Word,
+               4: _AUDMonitorSize.LongWord,
+            }[sz].value
+        await self.out(cmd)
 
         # Clock out Addr
         for i in range(8):
@@ -265,6 +279,7 @@ class AUDApplet(GlasgowAppletV2):
     description = """
     Read memory using the SuperH AUD-II protocol.
     """
+
     @classmethod
     def add_build_arguments(cls, parser, access):
         access.add_voltage_argument(parser)
