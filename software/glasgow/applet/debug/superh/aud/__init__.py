@@ -39,33 +39,18 @@ class AUDComponent(wiring.Component):
         m = Module()
 
         # Add IO buffers
-        m.submodules.audsync_buffer = io.Buffer("o", self._ports.audsync)
-        m.submodules.audmd_buffer = io.Buffer("o", self._ports.audmd)
-        m.submodules.audrst_buffer = io.Buffer("o", self._ports.audrst)
-        m.submodules.audck_buffer = io.Buffer("o", self._ports.audck)
-        data_pins = []
-        for i, pin in enumerate(self._ports.audata):
-            m.submodules[f"audata{i}_buffer"] = pin = io.Buffer("io", pin)
-            data_pins.append(pin)
+        m.submodules.audsync_buffer = audsync = io.Buffer("o", self._ports.audsync)
+        m.submodules.audmd_buffer = audmd = io.Buffer("o", self._ports.audmd)
+        m.submodules.audrst_buffer = audrst = io.Buffer("o", self._ports.audrst)
+        m.submodules.audck_buffer = audck = io.Buffer("o", self._ports.audck)
+        m.submodules.audata_buffer = audata = io.Buffer("io", self._ports.audata)
 
-        # Create signals for the IO
-        audata_o = Signal(4)
-        audata_oe = Signal(4)
+        # Always in RAM monitoring mode
+        m.d.comb += audmd.o.eq(1)
+
+        # Create signal for reading AUDATA pins
         audata_i  = Signal(4)
-        audsync = Signal()
-        audrst = Signal()
-        audck = Signal()
-
-        # Connect the IO buffers to the signals
-        m.d.comb += m.submodules.audmd_buffer.o.eq(1) # Always in RAM monitoring mode
-        m.d.comb += m.submodules.audrst_buffer.o.eq(audrst)
-        m.d.comb += m.submodules.audck_buffer.o.eq(audck)
-        m.d.comb += m.submodules.audsync_buffer.o.eq(audsync)
-        m.d.comb += [
-            Cat(pin.oe for pin in data_pins).eq(audata_oe),
-            Cat(pin.o for pin in data_pins).eq(audata_o),
-        ]
-        m.submodules += cdc.FFSynchronizer(Cat(pin.i for pin in data_pins), audata_i)
+        m.submodules += cdc.FFSynchronizer(audata.i, audata_i)
 
         # FSM related signals
         timer = Signal(range(self._period_cyc))
@@ -92,40 +77,40 @@ class AUDComponent(wiring.Component):
             # Assert Reset and put pins into a known state
             with m.State("RESET"):
                 # Put pins into known state
-                m.d.sync += audck.eq(0)
-                m.d.sync += audata_oe.eq(0b1111)
-                m.d.sync += audata_o.eq(0b0000)
-                m.d.sync += audsync.eq(1)
+                m.d.sync += audck.o.eq(0)
+                m.d.sync += audata.oe.eq(1)
+                m.d.sync += audata.o.eq(0b0000)
+                m.d.sync += audsync.o.eq(1)
 
                 # Put into reset
-                m.d.sync += audrst.eq(0)
+                m.d.sync += audrst.o.eq(0)
                 m.next = "RECV-COMMAND"
 
             # Release Reset
             with m.State("RUN"):
                 # Release reset
-                m.d.sync += audrst.eq(1)
+                m.d.sync += audrst.o.eq(1)
                 m.next = "RECV-COMMAND"
 
             # Set Sync pin to provided value
             with m.State("SYNC"):
-                m.d.sync += audsync.eq(data != 0b0000)
+                m.d.sync += audsync.o.eq(data != 0b0000)
                 m.next = "RECV-COMMAND"
 
             # Send 1 nibble of data on the bus, then strobe clock
             with m.State("OUT"):
-                m.d.sync += audata_oe.eq(0b1111) # Switch AUDATA pins to output
-                m.d.sync += audata_o.eq(data)
+                m.d.sync += audata.oe.eq(1) # Switch AUDATA pins to output
+                m.d.sync += audata.o.eq(data)
 
                 # Strobe clock
-                m.d.sync += audck.eq(0)
+                m.d.sync += audck.o.eq(0)
                 m.d.sync += timer.eq(self._period_cyc - 1)
                 m.next = "OUT-CLOCK-0"
 
             # Wait for clock period to pass, then set clock high
             with m.State("OUT-CLOCK-0"):
                 with m.If(timer == 0):
-                    m.d.sync += audck.eq(1)
+                    m.d.sync += audck.o.eq(1)
                     m.d.sync += timer.eq(self._period_cyc - 1)
                     m.next = "OUT-CLOCK-1"
                 with m.Else():
@@ -140,17 +125,17 @@ class AUDComponent(wiring.Component):
 
             # Strobe clock, then read data on the rising edge. Send to PC
             with m.State("INP"):
-                m.d.sync += audata_oe.eq(0b0000)
+                m.d.sync += audata.oe.eq(0) # Switch AUDATA pins to input
 
                 # Strobe clock
-                m.d.sync += audck.eq(0)
+                m.d.sync += audck.o.eq(0)
                 m.d.sync += timer.eq(self._period_cyc - 1)
                 m.next = "INP-CLOCK-0"
 
             # Wait for clock period to pass, then sample data and set clock high
             with m.State("INP-CLOCK-0"):
                 with m.If(timer == 0):
-                    m.d.sync += audck.eq(1)
+                    m.d.sync += audck.o.eq(1)
                     m.d.sync += timer.eq(self._period_cyc - 1)
 
                     # Sample data on rising edge
