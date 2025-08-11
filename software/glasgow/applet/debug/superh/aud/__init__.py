@@ -178,7 +178,8 @@ class AUDComponent(wiring.Component):
         m.d.comb += audmd.o.eq(1)
 
         # FSM related signals
-        data = Signal(4)
+        cmd_data = Signal(4)
+        out_data = Signal(8)
 
         # Main State Machine
         with m.FSM():
@@ -186,7 +187,7 @@ class AUDComponent(wiring.Component):
             with m.State("RECV-COMMAND"):
                 with m.If(self.i_stream.valid):
                     m.d.comb += self.i_stream.ready.eq(1)
-                    m.d.sync += data.eq(self.i_stream.payload >> 4)
+                    m.d.sync += cmd_data.eq(self.i_stream.payload >> 4)
                     with m.Switch(self.i_stream.payload & 0xF):
                         with m.Case(AUDCommand.Reset):
                             m.next = "RESET"
@@ -223,41 +224,69 @@ class AUDComponent(wiring.Component):
 
             # Set Sync pin to provided value
             with m.State("SYNC"):
-                m.d.sync += audsync.o.eq(data != 0b0000)
+                m.d.sync += audsync.o.eq(cmd_data != 0b0000)
                 m.next = "RECV-COMMAND"
 
             # Send 1 nibble of data on the bus
             with m.State("OUT"):
                 m.d.sync += audata.oe.eq(1) # Switch AUDATA pins to output
                 m.d.comb += bus.i_stream.valid.eq(1)
-                m.d.comb += bus.i_stream.payload.eq((data << 4) |  AUDBusCommand.WriteNibble.value)
+                m.d.comb += bus.i_stream.payload.eq((cmd_data << 4) |  AUDBusCommand.WriteNibble.value)
 
                 with m.If(bus.i_stream.ready):
                     m.next = "RECV-COMMAND"
 
-            # Read 1 nibble of data
+            # Receive N nibbles of data
             with m.State("INP"):
                 m.d.sync += audata.oe.eq(0) # Switch AUDATA pins to input
+
                 m.d.comb += bus.i_stream.valid.eq(1)
                 m.d.comb += bus.i_stream.payload.eq(AUDBusCommand.ReadNibble.value)
 
                 with m.If(bus.i_stream.ready):
-                    m.next = "SEND-DATA-1"
+                    m.next = "WAIT-READY"
 
-            # Wait for data from the AUDBus
-            with m.State("SEND-DATA-1"):
+            # Wait for data to be ready
+            with m.State("WAIT-READY"):
                 with m.If(bus.o_stream.valid):
                     m.d.comb += bus.o_stream.ready.eq(1)
-                    m.d.sync += data.eq(bus.o_stream.payload)
-                    m.next = "SEND-DATA-2"
+
+                    with m.If(bus.o_stream.payload == 0b0001):
+                        m.d.sync += audsync.o.eq(1)
+                        m.next = "RECEIVE-DATA-1"
+                    with m.Else():
+                        m.next = "INP"
+                    # TODO: Handle error conditions and timeout
+
+            # Read nibble
+            with m.State("RECEIVE-DATA-1"):
+                m.d.comb += bus.i_stream.valid.eq(1)
+                m.d.comb += bus.i_stream.payload.eq(AUDBusCommand.ReadNibble.value)
+
+                with m.If(bus.i_stream.ready):
+                    m.d.sync += cmd_data.eq(cmd_data - 1)
+                    m.next = "RECEIVE-DATA-2"
+
+            # Wait for nibble
+            with m.State("RECEIVE-DATA-2"):
+                with m.If(bus.o_stream.valid):
+                    m.d.comb += bus.o_stream.ready.eq(1)
+                    m.d.sync += out_data.eq(bus.o_stream.payload)
+                    m.next = "SEND-DATA"
 
             # Forward data from the AUDBus to the output stream
-            with m.State("SEND-DATA-2"):
+            with m.State("SEND-DATA"):
                 m.d.comb += self.o_stream.valid.eq(1)
-                m.d.comb += self.o_stream.payload.eq(data)
+                m.d.comb += self.o_stream.payload.eq(out_data)
 
                 with m.If(self.o_stream.ready):
-                    m.next = "RECV-COMMAND"
+
+                    # Keep reading until we have all N nibbles
+                    with m.If(cmd_data == 0):
+                        m.next = "RECV-COMMAND"
+                    with m.Else():
+                        m.d.sync += audsync.o.eq(0)
+                        m.next = "RECEIVE-DATA-1"
 
         return m
 
@@ -294,15 +323,16 @@ class AUDInterface:
     async def out(self, val):
         await self._cmd(AUDCommand.Out, val)
 
-    async def inp(self):
-        await self._cmd(AUDCommand.Inp)
+    async def inp(self, n) -> bytes:
+        await self._cmd(AUDCommand.Inp, n)
 
-         # This is the only place we need to flush, as we're going to wait for a response
+        # This is the only place we need to flush, as we're going to wait for a response
         await self._pipe.flush()
 
-        data = await self._pipe.recv(1)
-        self._logger.log(self._level, "AUD: read <%02x>", data[0])
-        return data[0]
+        data = await self._pipe.recv(n)
+        data = bytes(data)
+        self._logger.log(self._level, "AUD: read <%s>", data.hex())
+        return data
 
     async def sync(self, val):
         await self._cmd(AUDCommand.Sync, val)
@@ -340,23 +370,14 @@ class AUDInterface:
         for i in range(8):
             await self.out((addr >> (i * 4)) & 0b1111)
 
-        # Wait for data ready
-        for _ in range(timeout):
-            data = await self.inp()
-            if data == 1:
-                break
-        else:
-            raise AUDError(f"timeout waiting for data ready; got {data:#06b}")
+        out = await self.inp(1 + 2 * sz)
+        out = out[1:]  # Remove the status code nibble
 
-        # Set AUDSYNC high to indicate we're ready to read
-        await self.sync(1)
-        await self.inp()
+        # Combine nibbles into bytes and reverse
+        out = bytes([x << 4 | y for x, y in zip(out[0::2], out[1::2])])
+        out = out[::-1]
 
-        # Clock in the data
-        out = 0
-        for i in range(2*sz):
-            out  |= (await self.inp() << (i * 4))
-        return out.to_bytes(sz, byteorder='big')
+        return out
 
 
 class AUDApplet(GlasgowAppletV2):
