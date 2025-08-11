@@ -44,6 +44,105 @@ class AUDCommand(enum.Enum, shape=8):
     Inp = 0x04
 
 
+class AUDBusCommand(enum.Enum, shape=8):
+    WriteNibble = 0x00
+    ReadNibble = 0x01
+
+
+class AUDBus(wiring.Component):
+    i_stream: In(stream.Signature(8))
+    o_stream: Out(stream.Signature(8))
+
+    audata_o: Out(4)
+    audata_i: In(4)
+    audck_o: Out(1)
+
+    divisor:  In(16)
+
+    def elaborate(self, platform):
+        m = Module()
+
+        timer = Signal.like(self.divisor)
+        data = Signal(4)
+
+        with m.FSM():
+            # Receive command and switch to the appropriate handler state
+            with m.State("RECV-COMMAND"):
+                with m.If(self.i_stream.valid):
+                    m.d.sync += data.eq(self.i_stream.payload >> 4)
+                    with m.Switch(self.i_stream.payload & 0xF):
+                        with m.Case(AUDBusCommand.WriteNibble):
+                            m.next = "OUT"
+                        with m.Case(AUDBusCommand.ReadNibble):
+                            m.next = "INP"
+
+            # Send 1 nibble of data on the bus, then strobe clock
+            with m.State("OUT"):
+                m.d.sync += self.audata_o.eq(data)
+
+                # Strobe clock
+                m.d.sync += timer.eq(0)
+                m.next = "OUT-CLOCK-0"
+
+            # Wait for clock period to pass, then set clock high
+            with m.State("OUT-CLOCK-0"):
+                with m.If(timer == self.divisor):
+                    m.d.sync += self.audck_o.eq(1)
+                    m.d.sync += timer.eq(0)
+                    m.next = "OUT-CLOCK-1"
+                with m.Else():
+                    m.d.sync += timer.eq(timer + 1)
+
+            # Wait for clock period to pass, then return to command reception
+            with m.State("OUT-CLOCK-1"):
+                with m.If(timer == self.divisor):
+                    m.d.sync += self.audck_o.eq(0)
+                    m.d.comb += self.i_stream.ready.eq(1) # Indicate to AUDComponent we're ready to receive a new command
+                    m.next = "RECV-COMMAND"
+                with m.Else():
+                    m.d.sync += timer.eq(timer + 1)
+
+            # Strobe clock, then read data on the rising edge. Send to PC
+            with m.State("INP"):
+                # Strobe clock
+                m.d.sync += timer.eq(0)
+                m.next = "INP-CLOCK-0"
+
+            # Wait for clock period to pass, then sample data and set clock high
+            with m.State("INP-CLOCK-0"):
+                with m.If(timer == self.divisor):
+                    m.d.sync += self.audck_o.eq(1)
+                    m.d.sync += timer.eq(0)
+
+                    # Sample data on rising edge
+                    m.d.sync += data.eq(self.audata_i)
+
+                    m.next = "INP-CLOCK-1"
+                with m.Else():
+                    m.d.sync += timer.eq(timer + 1)
+
+            # Wait for clock period to pass, then send data
+            with m.State("INP-CLOCK-1"):
+                with m.If(timer == self.divisor):
+                    m.d.sync += self.audck_o.eq(0)
+                    m.next = "SEND-DATA"
+                with m.Else():
+                    m.d.sync += timer.eq(timer + 1)
+
+            # Send the sampled data to the output stream, return to command reception
+            with m.State("SEND-DATA"):
+                m.d.comb += self.o_stream.valid.eq(1)
+                m.d.comb += self.o_stream.payload.eq(data)
+                m.d.comb += self.i_stream.ready.eq(1) # Indicate to AUDComponent we're ready to receive a new command
+
+                with m.If(self.o_stream.ready):
+                    m.next = "RECV-COMMAND"
+
+
+        return m
+
+
+
 class AUDComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
@@ -51,8 +150,7 @@ class AUDComponent(wiring.Component):
     divisor:  In(16)
 
     def __init__(self, ports):
-        self._ports      = ports
-
+        self._ports = ports
         super().__init__()
 
     def elaborate(self, platform):
@@ -65,15 +163,21 @@ class AUDComponent(wiring.Component):
         m.submodules.audck_buffer = audck = io.Buffer("o", self._ports.audck)
         m.submodules.audata_buffer = audata = io.Buffer("io", self._ports.audata)
 
-        # Always in RAM monitoring mode
-        m.d.comb += audmd.o.eq(1)
-
         # Create signal for reading AUDATA pins
         audata_i  = Signal(4)
         m.submodules += cdc.FFSynchronizer(audata.i, audata_i)
 
+        # Create AUDBus
+        m.submodules.bus = bus = AUDBus()
+        m.d.comb += bus.divisor.eq(self.divisor)
+        m.d.comb += audata.o.eq(bus.audata_o)
+        m.d.comb += bus.audata_i.eq(audata_i)
+        m.d.comb += audck.o.eq(bus.audck_o)
+
+        # Always in RAM monitoring mode
+        m.d.comb += audmd.o.eq(1)
+
         # FSM related signals
-        timer = Signal.like(self.divisor)
         data = Signal(4)
 
         # Main State Machine
@@ -98,19 +202,23 @@ class AUDComponent(wiring.Component):
             # Assert Reset and put pins into a known state
             with m.State("RESET"):
                 # Put pins into known state
-                m.d.sync += audck.o.eq(0)
                 m.d.sync += audata.oe.eq(1)
-                m.d.sync += audata.o.eq(0b0000)
                 m.d.sync += audsync.o.eq(1)
 
                 # Put into reset
                 m.d.sync += audrst.o.eq(0)
+
+                # TODO: strobe clock a few times
+
                 m.next = "RECV-COMMAND"
 
             # Release Reset
             with m.State("RUN"):
                 # Release reset
                 m.d.sync += audrst.o.eq(1)
+
+                # TODO: strobe clock a few times
+
                 m.next = "RECV-COMMAND"
 
             # Set Sync pin to provided value
@@ -118,63 +226,33 @@ class AUDComponent(wiring.Component):
                 m.d.sync += audsync.o.eq(data != 0b0000)
                 m.next = "RECV-COMMAND"
 
-            # Send 1 nibble of data on the bus, then strobe clock
+            # Send 1 nibble of data on the bus
             with m.State("OUT"):
                 m.d.sync += audata.oe.eq(1) # Switch AUDATA pins to output
-                m.d.sync += audata.o.eq(data)
+                m.d.comb += bus.i_stream.valid.eq(1)
+                m.d.comb += bus.i_stream.payload.eq((data << 4) |  AUDBusCommand.WriteNibble.value)
 
-                # Strobe clock
-                m.d.sync += audck.o.eq(0)
-                m.d.sync += timer.eq(0)
-                m.next = "OUT-CLOCK-0"
-
-            # Wait for clock period to pass, then set clock high
-            with m.State("OUT-CLOCK-0"):
-                with m.If(timer == self.divisor):
-                    m.d.sync += audck.o.eq(1)
-                    m.d.sync += timer.eq(0)
-                    m.next = "OUT-CLOCK-1"
-                with m.Else():
-                    m.d.sync += timer.eq(timer + 1)
-
-            # Wait for clock period to pass, then return to command reception
-            with m.State("OUT-CLOCK-1"):
-                with m.If(timer == self.divisor):
+                with m.If(bus.i_stream.ready):
                     m.next = "RECV-COMMAND"
-                with m.Else():
-                    m.d.sync += timer.eq(timer + 1)
 
-            # Strobe clock, then read data on the rising edge. Send to PC
+            # Read 1 nibble of data
             with m.State("INP"):
                 m.d.sync += audata.oe.eq(0) # Switch AUDATA pins to input
+                m.d.comb += bus.i_stream.valid.eq(1)
+                m.d.comb += bus.i_stream.payload.eq(AUDBusCommand.ReadNibble.value)
 
-                # Strobe clock
-                m.d.sync += audck.o.eq(0)
-                m.d.sync += timer.eq(9)
-                m.next = "INP-CLOCK-0"
+                with m.If(bus.i_stream.ready):
+                    m.next = "SEND-DATA-1"
 
-            # Wait for clock period to pass, then sample data and set clock high
-            with m.State("INP-CLOCK-0"):
-                with m.If(timer == self.divisor):
-                    m.d.sync += audck.o.eq(1)
-                    m.d.sync += timer.eq(0)
+            # Wait for data from the AUDBus
+            with m.State("SEND-DATA-1"):
+                with m.If(bus.o_stream.valid):
+                    m.d.comb += bus.o_stream.ready.eq(1)
+                    m.d.sync += data.eq(bus.o_stream.payload)
+                    m.next = "SEND-DATA-2"
 
-                    # Sample data on rising edge
-                    m.d.sync += data.eq(audata_i)
-
-                    m.next = "INP-CLOCK-1"
-                with m.Else():
-                    m.d.sync += timer.eq(timer + 1)
-
-            # Wait for clock period to pass, then send data to PC
-            with m.State("INP-CLOCK-1"):
-                with m.If(timer == self.divisor):
-                    m.next = "SEND-DATA"
-                with m.Else():
-                    m.d.sync += timer.eq(timer + 1)
-
-            # Send the sampled data to the output stream, return to command reception
-            with m.State("SEND-DATA"):
+            # Forward data from the AUDBus to the output stream
+            with m.State("SEND-DATA-2"):
                 m.d.comb += self.o_stream.valid.eq(1)
                 m.d.comb += self.o_stream.payload.eq(data)
 
