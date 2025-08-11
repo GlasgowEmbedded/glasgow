@@ -17,7 +17,12 @@ from amaranth.lib import io, wiring, stream, cdc, enum
 from amaranth.lib.wiring import In, Out
 
 from glasgow.abstract import AbstractAssembly, GlasgowPin
-from glasgow.applet import GlasgowAppletV2
+from glasgow.applet import GlasgowAppletV2, GlasgowAppletError
+
+
+class AUDError(GlasgowAppletError):
+    pass
+
 
 class AUDCommand(enum.Enum, shape=8):
     Reset = 0x00
@@ -25,6 +30,7 @@ class AUDCommand(enum.Enum, shape=8):
     Sync = 0x02
     Out = 0x03
     Inp = 0x04
+
 
 class AUDComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
@@ -164,6 +170,7 @@ class AUDComponent(wiring.Component):
 
         return m
 
+
 class AUDInterface:
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
         audata: GlasgowPin, audsync: GlasgowPin, audck: GlasgowPin, audmd: GlasgowPin, audrst: GlasgowPin, frequency: int):
@@ -239,7 +246,7 @@ class AUDInterface:
             if data == 1:
                 break
         else:
-            raise RuntimeError(f"Timeout waiting for data ready. Got {data:#x}")
+            raise AUDError(f"timeout waiting for data ready; got {data:#06b}")
 
         # Set AUDSYNC high to indicate we're ready to read
         await self.sync(1)
