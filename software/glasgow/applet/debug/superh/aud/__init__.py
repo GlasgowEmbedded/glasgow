@@ -20,6 +20,8 @@ from amaranth.lib.wiring import In, Out
 from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
 from glasgow.applet import GlasgowAppletV2, GlasgowAppletError
 
+MAX_BS = 1024
+
 
 class AUDError(GlasgowAppletError):
     pass
@@ -86,7 +88,7 @@ class AUDBus(wiring.Component):
 
             # Wait for clock period to pass, then set clock high
             with m.State("OUT-CLOCK-0"):
-                with m.If(timer == self.divisor):
+                with m.If(timer == self.divisor >> 1):
                     m.d.sync += self.audck_o.eq(1)
                     m.d.sync += timer.eq(0)
                     m.next = "OUT-CLOCK-1"
@@ -95,7 +97,7 @@ class AUDBus(wiring.Component):
 
             # Wait for clock period to pass, then return to command reception
             with m.State("OUT-CLOCK-1"):
-                with m.If(timer == self.divisor):
+                with m.If(timer == self.divisor >> 1):
                     m.d.sync += self.audck_o.eq(0)
                     m.d.comb += self.i_stream.ready.eq(1) # Indicate to AUDComponent we're ready to receive a new command
                     m.next = "RECV-COMMAND"
@@ -110,7 +112,7 @@ class AUDBus(wiring.Component):
 
             # Wait for clock period to pass, then sample data and set clock high
             with m.State("INP-CLOCK-0"):
-                with m.If(timer == self.divisor):
+                with m.If(timer == self.divisor >> 1):
                     m.d.sync += self.audck_o.eq(1)
                     m.d.sync += timer.eq(0)
 
@@ -123,7 +125,7 @@ class AUDBus(wiring.Component):
 
             # Wait for clock period to pass, then send data
             with m.State("INP-CLOCK-1"):
-                with m.If(timer == self.divisor):
+                with m.If(timer == self.divisor >> 1):
                     m.d.sync += self.audck_o.eq(0)
                     m.next = "SEND-DATA"
                 with m.Else():
@@ -323,12 +325,10 @@ class AUDInterface:
     async def out(self, val):
         await self._cmd(AUDCommand.Out, val)
 
-    async def inp(self, n) -> bytes:
+    async def inp(self, n):
         await self._cmd(AUDCommand.Inp, n)
 
-        # This is the only place we need to flush, as we're going to wait for a response
-        await self._pipe.flush()
-
+    async def read(self, n) -> bytes:
         data = await self._pipe.recv(n)
         data = bytes(data)
         self._logger.log(self._level, "AUD: read <%s>", data.hex())
@@ -350,34 +350,47 @@ class AUDInterface:
         for i in range(10):
             await self.out(0)
 
-    async def read(self, addr: int, sz: Literal[1,2,4 ] = 4, timeout: int = 100):
+    async def bulk_read(self, addr: int, sz: int, bs: Literal[1,2,4 ] = 4):
         assert addr in range(0, 1<<32), "Address must be a 32-bit value"
-        assert sz in (1, 2, 4), "Size must be one of 1, 2, or 4 bytes"
+        assert bs in (1, 2, 4), "Block size must be one of 1, 2, or 4 bytes"
 
-        await self.sync(0)
-        await self.out(0)
+        # Queue up all the reads
+        for block_addr in range(addr, addr + sz, bs):
+            await self.sync(0)
+            await self.out(0)
 
-        # Send the Read command
-        cmd = _AUDMonitorCommand.Read.value | \
-           {
-               1: _AUDMonitorSize.Byte,
-               2: _AUDMonitorSize.Word,
-               4: _AUDMonitorSize.LongWord,
-            }[sz].value
-        await self.out(cmd)
+            # Send the Read command
+            cmd = _AUDMonitorCommand.Read.value | \
+            {
+                1: _AUDMonitorSize.Byte,
+                2: _AUDMonitorSize.Word,
+                4: _AUDMonitorSize.LongWord,
+                }[bs].value
+            await self.out(cmd)
 
-        # Clock out Addr
-        for i in range(8):
-            await self.out((addr >> (i * 4)) & 0b1111)
+            # Clock out Addr
+            for i in range(8):
+                await self.out((block_addr >> (i * 4)) & 0b1111)
 
-        out = await self.inp(1 + 2 * sz)
-        out = out[1:]  # Remove the status code nibble
+            await self.inp(1 + 2 * bs)
 
-        # Combine nibbles into bytes and reverse
-        out = bytes([x << 4 | y for x, y in zip(out[0::2], out[1::2])])
-        out = out[::-1]
+        # This is the only place we need to flush, as we're going to wait for a response
+        await self._pipe.flush()
 
-        return out
+        # Get all the responses
+        out = []
+        for _ in range(addr, addr + sz, bs):
+            data = await self.read(1 + 2 * bs)
+
+            # Remove the status code nibble
+            data = data[1:]
+
+            # Combine nibbles into bytes and reverse
+            data = bytes([y << 4 | x for x, y in zip(data[0::2], data[1::2])])
+            data = data[::-1]
+            out.append(data)
+
+        return b"".join(out)
 
 
 class AUDApplet(GlasgowAppletV2):
@@ -467,11 +480,11 @@ class AUDApplet(GlasgowAppletV2):
         await self.aud_iface.init()
 
         self.logger.trace("Reading data")
-        bs = 4
+        bs = min(MAX_BS, args.length)
 
         for i in range(args.address, args.address + args.length, bs):
-            data = await self.aud_iface.read(i, sz=bs)
+            data = await self.aud_iface.bulk_read(i, bs)
             args.file.write(data)
-            self._show_progress(i - args.address + bs, args.length, f"Read {data.hex()}")
+            self._show_progress(i - args.address + bs, args.length, f"Read {data[:0x10].hex()}...")
 
         self.logger.trace("Done")
