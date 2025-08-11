@@ -1,4 +1,3 @@
-import argparse
 import logging
 from amaranth import *
 from amaranth.lib import io
@@ -88,7 +87,7 @@ class VideoHub75OutputSubtarget(Elaboratable):
                     m.next = "LATCH"
 
             with m.State("LATCH"):
-                m.d.comb += output.lat.eq(1),
+                m.d.comb += output.lat.eq(1)
                 m.d.sync += [
                     row_disp.eq(row),
                     row.eq(Mux(row < (px_height_half - 1), row + 1, 0)),
@@ -134,14 +133,16 @@ class VideoHub75OutputApplet(GlasgowApplet):
             help="the pattern's rate-of-change (default: %(default)s)")
         parser.add_argument(
             "--expose-delay", metavar="EXPOSE-DELAY", type=int, default=1000,
-            help="the exposure delay, directly impacts brightness and refresh rate (default: %(default)s)")
+            help="the exposure delay, directly impacts brightness and refresh rate "
+                 "(default: %(default)s)")
 
     def build(self, target, args):
         num_addr_bits = len(args.addr)
         max_px_height = pow(2, num_addr_bits) * 2
         if args.px_height > max_px_height:
-            raise GlasgowAppletError("Cannot have a vertical panel resolution of {} with only {} address bits..."
-                                     .format(args.px_height, num_addr_bits))
+            raise GlasgowAppletError(
+                f"Cannot have a vertical panel resolution of {args.px_height} "
+                f"with only {num_addr_bits} address bits")
 
         self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
         subtarget = iface.add_subtarget(VideoHub75OutputSubtarget(

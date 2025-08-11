@@ -289,7 +289,7 @@ class I2CTargetTestbench(I2CTestbench):
 
     def read_octet(self):
         octet = 0
-        for bit in range(8):
+        for _ in range(8):
             octet = (octet << 1) | (yield from self.read_bit())
         return octet
 

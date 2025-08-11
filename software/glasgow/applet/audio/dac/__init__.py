@@ -86,11 +86,11 @@ class AudioDACSubtarget(Elaboratable):
 
             for index, channel in enumerate(channels):
                 if index + 1 < len(channels):
-                    next_state = "CHANNEL-%d-READ-1" % (index + 1)
+                    next_state = f"CHANNEL-{index + 1}-READ-1"
                 else:
                     next_state = "LATCH"
                 if self.width == 1:
-                    with m.State("CHANNEL-%d-READ-1" % index):
+                    with m.State(f"CHANNEL-{index}-READ-1"):
                         m.d.comb += self.out_fifo.r_en.eq(1)
                         with m.If(self.out_fifo.r_rdy):
                             m.d.sync += channel.input[0:8].eq(self.out_fifo.r_data)
@@ -98,14 +98,14 @@ class AudioDACSubtarget(Elaboratable):
                         with m.Else():
                             m.next = "STANDBY"
                 if self.width == 2:
-                    with m.State("CHANNEL-%d-READ-1" % index):
+                    with m.State(f"CHANNEL-{index}-READ-1"):
                         m.d.comb += self.out_fifo.r_en.eq(1)
                         with m.If(self.out_fifo.r_rdy):
                             m.d.sync += channel.input[0:8].eq(self.out_fifo.r_data)
-                            m.next = "CHANNEL-%d-READ-2" % index
+                            m.next = f"CHANNEL-{index}-READ-2"
                         with m.Else():
                             m.next = "STANDBY"
-                    with m.State("CHANNEL-%d-READ-2" % index):
+                    with m.State(f"CHANNEL-{index}-READ-2"):
                         m.d.comb += self.out_fifo.r_en.eq(1)
                         with m.If(self.out_fifo.r_rdy):
                             m.d.sync += channel.input[8:16].eq(self.out_fifo.r_data)

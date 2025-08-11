@@ -114,6 +114,8 @@ class ProgramNRF24Lx1Interface:
         if ret > 0:
             self._log("res=<%s>", dump_hex(result))
             return result
+        else:
+            return None
 
     async def read_status(self):
         status, = await self._command(0x05, ret=1)
@@ -220,7 +222,8 @@ class ProgramNRF24Lx1Applet(GlasgowApplet):
             sck_edge="rising",
         )
 
-        subtarget = ProgramNRF24Lx1Subtarget(controller, ports.prog, dut_prog, ports.reset, dut_reset)
+        subtarget = ProgramNRF24Lx1Subtarget(
+            controller, ports.prog, dut_prog, ports.reset, dut_reset)
 
         return iface.add_subtarget(subtarget)
 
@@ -326,17 +329,18 @@ class ProgramNRF24Lx1Applet(GlasgowApplet):
                     if len(chunk_data) == 0:
                         continue
                     if chunk_mem_addr < memory_area.mem_addr:
-                        raise ProgramNRF24Lx1Error("data outside of memory map at {:#06x}"
-                                                 .format(chunk_mem_addr))
+                        raise ProgramNRF24Lx1Error(
+                            f"data outside of memory map at {chunk_mem_addr:#06x}")
                     while chunk_mem_addr >= memory_area.mem_addr + memory_area.size:
                         area_index += 1
                         if area_index >= len(memory_area):
-                            raise ProgramNRF24Lx1Error("data outside of memory map at {:#06x}"
-                                                     .format(chunk_mem_addr))
+                            raise ProgramNRF24Lx1Error(
+                                f"data outside of memory map at {chunk_mem_addr:#06x}")
                         memory_area = memory_map[area_index]
                     if chunk_mem_addr + len(chunk_data) > memory_area.mem_addr + memory_area.size:
-                        raise ProgramNRF24Lx1Error("data outside of memory map at {:#06x}"
-                                                 .format(memory_area.mem_addr + memory_area.size))
+                        raise ProgramNRF24Lx1Error(
+                            f"data outside of memory map at "
+                            f"{memory_area.mem_addr + memory_area.size:#06x}")
                     if memory_area.spi_addr & 0x10000 and not args.info_page:
                         self.logger.warning("data provided for info page, but info page "
                                             "programming is not enabled")
@@ -346,7 +350,7 @@ class ProgramNRF24Lx1Applet(GlasgowApplet):
                                       - memory_area.mem_addr
                                       + memory_area.spi_addr) & 0xffff
                     if memory_area.spi_addr & 0x10000:
-                        level = logging.WARN
+                        level = logging.WARNING
                         await nrf24lx1_iface.write_status(FSR_BIT_INFEN)
                     else:
                         level = logging.INFO

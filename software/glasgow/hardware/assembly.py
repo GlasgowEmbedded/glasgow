@@ -1,5 +1,5 @@
-from typing import Any, Optional, Generator, BinaryIO
-from collections.abc import Mapping
+from typing import Any, BinaryIO
+from collections.abc import Generator
 from collections import defaultdict
 from contextlib import contextmanager
 import os
@@ -10,7 +10,6 @@ from amaranth import *
 from amaranth.hdl import ShapeCastable
 from amaranth.lib import wiring, io
 from amaranth.build import ResourceError
-import usb1
 
 from ..support import usb
 from ..support.logging import dump_hex
@@ -115,7 +114,8 @@ class HardwareRWRegister(HardwareRORegister, AbstractRWRegister):
 def _check_detach():
     # See the comment in `HardwareAssembly.start()`.
     if os.name == "nt":
-        raise NotImplementedError("pipe detaching is not supported on Windows due to WinUSB limitations")
+        raise NotImplementedError(
+            "pipe detaching is not supported on Windows due to WinUSB limitations")
 
 
 class HardwareInPipe(AbstractInPipe):
@@ -317,7 +317,7 @@ class HardwareOutPipe(AbstractOutPipe):
             self._out_tasks.submit(self._out_task(self._out_slice()))
 
     @property
-    def writable(self) -> Optional[int]:
+    def writable(self) -> int | None:
         if self._out_buffer_size is None:
             return None
         return self._out_buffer_size - self._out_inflight
@@ -464,12 +464,12 @@ class HardwareAssembly(AbstractAssembly):
                 assert False, f"invalid revision {revision}"
 
     @classmethod
-    async def find_device(cls, serial: Optional[str] = None) -> 'HardwareAssembly':
+    async def find_device(cls, serial: str | None = None) -> "HardwareAssembly":
         return cls(device=await GlasgowDevice.find(serial))
 
     def __init__(self, *,
-            device: Optional[GlasgowDevice] = None,
-            revision: Optional[str] = None):
+            device: GlasgowDevice | None = None,
+            revision: str | None = None):
         if device is not None:
             assert revision is None or revision == device.revision
             self._device    = device
@@ -530,7 +530,8 @@ class HardwareAssembly(AbstractAssembly):
         # TODO: make this a proper error and not an assertion
         pin_name = f"{pin.port}{pin.number}"
         assert pin_name in self._platform.glasgow_pins, f"unknown or already used pin {pin_name}"
-        self._logger.debug("assigning pin %s to %s%s", port_name, pin_name, " (inverted)" if pin.invert else "")
+        self._logger.debug("assigning pin %s to %s%s", port_name, pin_name,
+            " (inverted)" if pin.invert else "")
         if (pin.port, pin.number) not in self._pulls:
             self._pulls[pin.port, pin.number] = PullState.Float
         port = self._platform.glasgow_pins.pop(pin_name)
@@ -701,7 +702,7 @@ class HardwareAssembly(AbstractAssembly):
     @property
     def device(self):
         if not self._running:
-            raise Exception("runtime features may be used only while a bitstream is loaded")
+            raise RuntimeError("runtime features may be used only while a bitstream is loaded")
         return self._device
 
     async def configure_ports(self):
@@ -735,8 +736,8 @@ class HardwareAssembly(AbstractAssembly):
     async def __aenter__(self):
         return await self.start()
 
-    async def start(self, device: Optional[GlasgowDevice] = None, *,
-                    reload_bitstream: bool = False, _bitstream_file: Optional[BinaryIO] = None):
+    async def start(self, device: GlasgowDevice | None = None, *,
+                    reload_bitstream: bool = False, _bitstream_file: BinaryIO | None = None):
         assert not self._running, "only a stopped assembly can be started"
 
         if self._device is None:
@@ -744,7 +745,7 @@ class HardwareAssembly(AbstractAssembly):
         elif device is not None:
             assert self._device == device
         if self._device is None:
-            raise Exception("no device provided")
+            raise RuntimeError("no device provided")
 
         await self._device.open()
 

@@ -156,8 +156,7 @@ _PACKET_SIZE = 512
 
 
 class _INFIFO(wiring.Component):
-    """
-    A FIFO with a sideband flag indicating whether the FIFO has enough data to read from it yet.
+    """A FIFO with a sideband flag indicating whether the FIFO has enough data to read from it yet.
     This FIFO may be used for packetizing the data read from the FIFO when there is no particular
     framing available to optimize the packet boundaries.
     """
@@ -214,8 +213,7 @@ class _INFIFO(wiring.Component):
 
 
 class _OUTFIFO(wiring.Component):
-    """
-    A FIFO with a skid buffer in front of it. This FIFO may be fed from a pipeline that
+    """A FIFO with a skid buffer in front of it. This FIFO may be fed from a pipeline that
     reacts to the ``w.ready`` flag with a latency up to the skid buffer depth, and writes
     will not be lost.
 

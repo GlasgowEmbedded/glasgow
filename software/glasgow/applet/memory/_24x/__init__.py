@@ -1,4 +1,5 @@
-# Ref: AT24C04C and AT24C08C I²C-Compatible, (2-wire) Serial EEPROM 4-Kbit (512 x 8), 8-Kbit (1024 x 8) DATASHEET
+# Ref: AT24C04C and AT24C08C I²C-Compatible, (2-wire) Serial EEPROM 4-Kbit (512 x 8),
+#      8-Kbit (1024 x 8) DATASHEET
 # Accession: G00104
 #
 # Ref: AT24C256C I²C-Compatible (2-Wire) Serial EEPROM 256-Kbit (32,768 x 8) DATASHEET
@@ -13,7 +14,7 @@ from glasgow.applet.interface.i2c_controller import I2CNotAcknowledged, I2CContr
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
-__all__ = ["Memory24xInterface"]
+__all__ = ["Memory24xInterface", "I2CNotAcknowledged"]
 
 
 class Memory24xInterface:
@@ -96,7 +97,6 @@ class Memory24xInterface:
         I2CNotAcknowledged
             If communication fails; if a previous write hasn't completed yet.
         """
-
         while len(data) > 0:
             if address % self._page_size == 0:
                 chunk_size = self._page_size
@@ -118,7 +118,7 @@ class Memory24xApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "read and write 24-series I²C EEPROM memories"
     default_page_size = 8
-    description = """
+    description = f"""
     Read and write memories compatible with 24-series EEPROM memory, such as Microchip 24C02C,
     Atmel 24C256, or hundreds of other memories that typically have "24X" (where X is some letter)
     in their part number.
@@ -138,10 +138,10 @@ class Memory24xApplet(GlasgowAppletV2):
     page size, the inverse is not true. On the other hand, using the right page size significantly
     improves performance.
 
-    The default page size in this applet is {page_size}, because no memories with page smaller
-    than {page_size} bytes have been observed so far. If the writes are too slow, look up the page
-    size in the memory documentation. If the writes seem to be corrupted, use the ``--page-size 1``
-    option.
+    The default page size in this applet is {default_page_size}, because no memories with page size
+    less than {default_page_size} bytes have been observed so far. If the writes are too slow,
+    look up the page size in the memory documentation. If the writes seem to be corrupted, use
+    the ``--page-size 1`` option.
 
     The pinout of a typical 24-series IC is as follows (the A2:0 pins may be N/C in large devices):
 
@@ -151,7 +151,7 @@ class Memory24xApplet(GlasgowAppletV2):
           A1 * * WP#
           A2 * * SCL
          GND * * SDA
-    """.format(page_size=default_page_size)
+    """
 
     @classmethod
     def add_build_arguments(cls, parser, access):

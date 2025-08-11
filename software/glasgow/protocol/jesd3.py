@@ -13,8 +13,7 @@ class JESD3ParsingError(Exception):
 
 
 class JESD3Lexer:
-    """
-    A JESD3 (JED) lexer.
+    """A JESD3 (JED) lexer.
 
     :type buffer: str
     :attr buffer:
@@ -60,7 +59,7 @@ class JESD3Lexer:
 
     def __init__(self, buffer, quirk_no_design_spec=False):
         if not isinstance(buffer, (bytes, bytearray)):
-            raise ValueError(f"JESD3 lexer requires bytes or bytearray as input, not {type(buffer)}")
+            raise TypeError(f"JESD3 lexer requires bytes or bytearray as input, not {type(buffer)}")
 
         self.buffer   = buffer
         self.position = 0
@@ -72,8 +71,7 @@ class JESD3Lexer:
             self._stx_re = self._stx_spec_re
 
     def line_column(self, position=None):
-        """
-        Return a ``(line, column)`` tuple for the given or, if not specified, current position.
+        """Return a ``(line, column)`` tuple for the given or, if not specified, current position.
 
         Both the line and the column start at 1.
         """
@@ -104,17 +102,19 @@ class JESD3Lexer:
                 token = match.group(0)
                 match = self._field_res[token].match(self.buffer, self.position)
                 if not match:
-                    raise JESD3ParsingError("field %s has invalid format at line %d, column %d"
-                                            % (token, *self.line_column()))
+                    line, column = self.line_column()
+                    raise JESD3ParsingError(
+                        f"field {token} has invalid format at line {line}, column {column}")
                 else:
                     self.checksum += sum(match.group(0))
 
             else:
                 match = self._etx_re.match(self.buffer, self.position)
                 if not match:
-                    raise JESD3ParsingError("unrecognized field at line %d, column %d (%r...)"
-                                            % (*self.line_column(),
-                                               self.buffer[self.position:self.position + 16]))
+                    line, column = self.line_column()
+                    buffer_slice = self.buffer[self.position:self.position + 16]
+                    raise JESD3ParsingError(
+                        f"unrecognized field at line {line}, column {column} ({buffer_slice!r}...)")
                 else:
                     token = b"end"
                     self._state = "end"
@@ -143,8 +143,8 @@ class JESD3Parser:
         self.device_id       = None
 
     def _parse_error(self, error):
-        raise JESD3ParsingError("%s at line %d, column %d"
-                                % (error, *self._lexer.line_column(self._position)))
+        line, column = self._lexer.line_column(self._position)
+        raise JESD3ParsingError(f"{error} at line {line}, column {column}")
 
     def parse(self):
         for token, position, args in self._lexer:
@@ -153,32 +153,32 @@ class JESD3Parser:
             getattr(self, "_on_" + token)(*args)
 
     def _on_start(self, design_spec):
-        """Start marker and design specification"""
+        """Start marker and design specification."""
         self.design_spec = design_spec
 
     def _on_N(self, note):
-        """Note"""
+        """Note."""
         self.notes.append(note)
 
     def _on_D(self):
-        """Device (obsolete)"""
+        """Device (obsolete)."""
 
     def _on_QF(self, count):
-        """Fuse count"""
+        """Fuse count."""
         if self.fuse is not None:
             self._parse_error("fuse count specified more than once")
         self.fuse = bitarray(0, int(count, 10))
 
     def _on_QP(self, count):
-        """Pin count (unsupported and ignored)"""
+        """Pin count (unsupported and ignored)."""
 
     def _on_QV(self, count):
-        """Test vector count (unsupported)"""
+        """Test vector count (unsupported)."""
         if int(count, 10) > 0:
             self._parse_error("test vectors are unsupported")
 
     def _on_F(self, state):
-        """Fuse default state"""
+        """Fuse default state."""
         if self.fuse is None:
             self._parse_error("fuse default state specified before fuse count")
         if self._fuse_default is not None:
@@ -189,24 +189,26 @@ class JESD3Parser:
         self.fuse.setall(self._fuse_default)
 
     def _on_L(self, index, values):
-        """Fuse list"""
+        """Fuse list."""
         if self.fuse is None:
             self._parse_error("fuse list specified before fuse count")
         index  = int(index, 10)
         values = bits(values[::-1].decode("ascii"))
         if index + len(values) > len(self.fuse):
-            self._parse_error("fuse list specifies range [%d:%d] beyond last fuse %d"
-                              % (index, index + len(values), len(self.fuse)))
+            self._parse_error(
+                f"fuse list specifies range [{index}:{index + len(values)}] beyond "
+                f"last fuse {len(self.fuse)}")
         self.fuse[index:index + len(values)] = values
         self._fuse_bit_count += len(values)
 
     def _on_C(self, checksum):
-        """Fuse checksum"""
+        """Fuse checksum."""
         expected_checksum = int(checksum, 16)
         actual_checksum   = sum(self.fuse.to_bytes()) & 0xffff
         if expected_checksum != actual_checksum:
-            self._parse_error("fuse checksum mismatch: expected %04X, actual %04X"
-                              % (expected_checksum, actual_checksum))
+            self._parse_error(
+                f"fuse checksum mismatch: expected {expected_checksum:04X}, "
+                f"actual {actual_checksum:04X}")
 
     def _set_electrical_fuse(self, value):
         if self.electrical_fuse is not None:
@@ -214,11 +216,11 @@ class JESD3Parser:
         self.electrical_fuse = value
 
     def _on_EH(self, value):
-        """Electrical fuse, hex"""
+        """Electrical fuse, hex."""
         self._set_electrical_fuse(int(value, 16))
 
     def _on_E(self, value):
-        """Electrical fuse, binary"""
+        """Electrical fuse, binary."""
         self._set_electrical_fuse(int(value, 2))
 
     def _set_user_fuse(self, value):
@@ -227,7 +229,7 @@ class JESD3Parser:
         self.user_fuse = value
 
     def _on_UA(self, value):
-        """User fuse, 7-bit ASCII"""
+        """User fuse, 7-bit ASCII."""
         int_value = 0
         for char in reversed(value):
             int_value <<= 7
@@ -235,61 +237,62 @@ class JESD3Parser:
         self._set_user_fuse(int_value)
 
     def _on_UH(self, value):
-        """User fuse, hex"""
+        """User fuse, hex."""
         self._set_user_fuse(int(value, 16))
 
     def _on_U(self, value):
-        """User fuse, binary"""
+        """User fuse, binary."""
         self._set_user_fuse(int(value, 2))
 
     def _on_J(self, arch_code, pinout_code):
-        """Device identification"""
+        """Device identification."""
         if self.device_id is not None:
             self._parse_error("device identification specified more than once")
         self.device_id = (int(arch_code, 10), int(pinout_code, 10))
 
     def _on_G(self, value):
-        """Security fuse"""
+        """Security fuse."""
         if self.security_fuse is not None:
             self._parse_error("security fuse specified more than once")
         self.security_fuse = int(value, 2)
 
     def _on_X(self, value):
-        """Default test condition (unsupported and ignored)"""
+        """Default test condition (unsupported and ignored)."""
 
     def _on_P(self, pin_numbers):
-        """Pin list (unsupported and ignored)"""
+        """Pin list (unsupported and ignored)."""
 
     def _on_V(self, vector_number, test_conditions):
-        """Test vector (unsupported and ignored)"""
+        """Test vector (unsupported and ignored)."""
 
     def _on_S(self, test_condition):
-        """Signature analysis starting vector (unsupported)"""
+        """Signature analysis starting vector (unsupported)."""
         self._parse_error("signature analysis is not supported")
 
     def _on_R(self, test_sum):
-        """Signature analysis resulting vector (unsupported and ignored)"""
+        """Signature analysis resulting vector (unsupported and ignored)."""
 
     def _on_T(self, test_cycles):
-        """Signature analysis test cycle count (unsupported and ignored)"""
+        """Signature analysis test cycle count (unsupported and ignored)."""
 
     def _on_A(self, subfield, delay):
-        """Propagation delay for test vectors (unsupported and ignored)"""
+        """Propagation delay for test vectors (unsupported and ignored)."""
 
     def _on_end(self, checksum):
-        """End marker and checksum"""
+        """End marker and checksum."""
         expected_checksum = int(checksum, 16)
         if expected_checksum == 0x0000:
             return
         actual_checksum   = self._lexer.checksum & 0xffff
         if expected_checksum != actual_checksum:
-            self._parse_error("transmission checksum mismatch: expected %04X, actual %04X"
-                              % (expected_checksum, actual_checksum))
+            self._parse_error(
+                f"transmission checksum mismatch: expected {expected_checksum:04X}, "
+                f"actual {actual_checksum:04X}")
 
         if self._fuse_default is None and self._fuse_bit_count < len(self.fuse):
-            self._parse_error("fuse default state is not specified, and only %d out of %d fuse "
-                              "bits are explicitly defined"
-                              % (self._fuse_bit_count, len(self.fuse)))
+            self._parse_error(
+                f"fuse default state is not specified, and only {self._fuse_bit_count} "
+                f"out of {len(self.fuse)} fuse bits are explicitly defined")
 
 
 class JESD3Emitter:

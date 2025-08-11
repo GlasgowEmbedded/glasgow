@@ -2,14 +2,12 @@
 # Document Number: UM10204
 # Accession: G00101
 
-from typing import Optional
 import contextlib
 import logging
 import struct
-import math
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io
+from amaranth.lib import enum, wiring, stream
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support.logging import dump_hex
@@ -18,7 +16,7 @@ from glasgow.gateware.i2c import I2CInitiator
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
-__all__ = ["I2CNotAcknowledged", "I2CControllerInterface"]
+__all__ = ["I2CNotAcknowledged", "I2CControllerInterface", "PullState"]
 
 
 class I2CNotAcknowledged(GlasgowAppletError):
@@ -322,9 +320,10 @@ class I2CControllerInterface:
         try:
             async with self._do_operation():
                 await self._do_addr(address, read=False)
-            return True
         except I2CNotAcknowledged:
             return False
+        else:
+            return True
 
     async def scan(self, addresses: range = range(0b0001_000, 0b1111_000)) -> set[int]:
         """Scan address range for presence.
@@ -334,7 +333,6 @@ class I2CControllerInterface:
 
         Returns the set of addresses receiving an acknowledgement.
         """
-
         acked = set()
         for address in addresses:
             if await self.ping(address):
@@ -355,7 +353,6 @@ class I2CControllerInterface:
         I2CNotAcknowledged
             If the command is not implemented.
         """
-
         async with self.transaction():
             await self.write(0b1111_100, [address])
             device_id = await self.read(0b1111_100, 3)

@@ -3,7 +3,7 @@ import unittest
 
 from amaranth import *
 from amaranth.sim import Simulator
-from amaranth.lib import io, wiring
+from amaranth.lib import io
 
 from .....gateware.ports import PortGroup
 from .....gateware.stream import stream_get, stream_put
@@ -61,7 +61,6 @@ class DebugARM7AppletTestCase(GlasgowAppletV2TestCase, applet=DebugARM7Applet):
         to adjust `hardware_args` above to match your connections, as well as `ram_addr` to point
         at any RWX region in the target's address space.
         """
-
         await iface._debug_request()
         await iface._debug_enter()
         ctx = iface._context

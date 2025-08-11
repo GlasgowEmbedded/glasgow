@@ -25,7 +25,8 @@ __all__ = [
     "synthesis_test", "async_test",
     "GlasgowAppletV2TestCase", "applet_v2_simulation_test", "applet_v2_hardware_test",
     # deprecated:
-    "GlasgowApplet", "GlasgowAppletTestCase", "applet_simulation_test", "applet_hardware_test"
+    "GlasgowApplet", "GlasgowAppletTestCase", "applet_simulation_test", "applet_hardware_test",
+    "ClockGen"
 ]
 
 
@@ -154,6 +155,7 @@ class GlasgowAppletArguments:
                 result = self._free_pins[0]
                 del self._free_pins[0]
                 return GlasgowPin.parse(result)[0]
+            return None
 
         if width is None:
             match default:
@@ -189,6 +191,7 @@ class GlasgowAppletArguments:
                         self._arg_error(f"expected zero or one pins, got {len(result)} pins")
                     if result:
                         return result[0]
+                    return None
 
         else:
             if type(width) is int:
@@ -376,7 +379,7 @@ def applet_v2_hardware_test(*, prepare=None, args=None, mocks: list[str]):
                 assembly = HardwareAssembly(revision=self.applet_cls.required_revision)
                 applet: GlasgowAppletV2 = self.applet_cls(assembly)
                 applet.build(parsed_args)
-                with open(fixture_path, "r") as fixture:
+                with open(fixture_path) as fixture:
                     for mock in mocks:
                         mock_obj = applet
                         *mock_path, mock_attr = mock.split(".")

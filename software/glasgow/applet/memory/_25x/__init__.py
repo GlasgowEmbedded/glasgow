@@ -8,7 +8,7 @@ import logging
 import argparse
 
 from amaranth import *
-from amaranth.lib import enum, io
+from amaranth.lib import enum
 
 from glasgow.support.logging import dump_hex
 from glasgow.database.jedec import *
@@ -208,7 +208,7 @@ class Memory25xInterface:
 
             if not re.match(rb"^\xff*$", sector_data):
                 await self.program(sector_start, sector_data, page_size,
-                    callback=lambda page_done, page_total, status:
+                    callback=lambda page_done, page_total, status, done=done:
                                 callback(done + page_done, total, status))
 
             address += len(chunk)
@@ -349,7 +349,7 @@ class Memory25xApplet(GlasgowAppletV2):
         def add_erase_arguments(parser, kind):
             parser.add_argument(
                 "addresses", metavar="ADDRESS", type=address, nargs="+",
-                help="erase %s(s) starting at address ADDRESS" % kind)
+                help=f"erase {kind}(s) starting at address ADDRESS")
 
         p_erase_sector = p_operation.add_parser(
             "erase-sector", help="erase memory using SECTOR ERASE command")
@@ -401,8 +401,8 @@ class Memory25xApplet(GlasgowAppletV2):
             status = await self.m25x_iface.read_status()
             if status & MSK_PROT:
                 self.logger.warning("block protect bits are set to %s, program/erase command "
-                                    "might not succeed", "{:04b}"
-                                    .format((status & MSK_PROT) >> 2))
+                                    "might not succeed", f"{(status & MSK_PROT) >> 2:04b}"
+                                    )
 
         if args.operation == "identify":
             legacy_device_id, = \

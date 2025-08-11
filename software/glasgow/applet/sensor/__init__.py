@@ -1,5 +1,4 @@
-"""
-The ``sensor`` taxon groups applets implementing interfaces to measurement devices.
+"""The ``sensor`` taxon groups applets implementing interfaces to measurement devices.
 The  differentiating characteristic for this taxon is explicit display of measured data in terms
 of physical quantities.
 

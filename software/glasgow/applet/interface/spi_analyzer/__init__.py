@@ -1,10 +1,9 @@
 import sys
 import logging
-import asyncio
 import argparse
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io, cdc
-from amaranth.lib.wiring import In, Out
+from amaranth.lib import data, wiring, stream, io, cdc
+from amaranth.lib.wiring import Out
 
 from glasgow.support.logging import dump_hex
 from glasgow.gateware.stream import AsyncQueue
@@ -206,7 +205,6 @@ class SPIAnalyzerInterface:
             When the FPGA buffer overflows. The last few transactions before the overflow occurred
             may be dropped as well.
         """
-
         packet = cobs.decode((await self._pipe.recv_until(b"\0"))[:-1])
         chip, copi_data, cipo_data = packet[0], packet[1::2], packet[2::2]
         self._log("capture chip=%d copi=<%s> cipo=<%s>",

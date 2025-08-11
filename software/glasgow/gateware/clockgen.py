@@ -5,8 +5,7 @@ __all__ = ["ClockGen"]
 
 
 class ClockGen(Elaboratable):
-    """
-    A clock generator. The purpose of a clock generator is to use an input clock signal to
+    """A clock generator. The purpose of a clock generator is to use an input clock signal to
     generate an output clock (50% duty cycle pulses) and rising/falling strobe (1 input clock
     period wide pulses preceding the rising/falling edge of output clock pulses) signals using
     nothing but LUT/FF logic, i.e. no PLLs, hard dividers, etc. This implies that the output clock
@@ -95,8 +94,7 @@ class ClockGen(Elaboratable):
 
     @staticmethod
     def calculate(input_hz, output_hz, max_deviation_ppm=None, min_cyc=None):
-        """
-        Calculate the integer period ratio for dividing an ``input_hz`` clock to an approximately
+        """Calculate the integer period ratio for dividing an ``input_hz`` clock to an approximately
         ``output_hz`` clock, and return the divisor as well as the actual output frequency and
         its deviation from requested output frequency.
 
@@ -108,34 +106,33 @@ class ClockGen(Elaboratable):
             * The output period is lower than ``min_cyc`` input periods.
         """
         if output_hz <= 0:
-            raise ValueError("output frequency {:.3f} kHz is not positive"
-                             .format(output_hz / 1000))
+            raise ValueError(
+                f"output frequency {output_hz / 1000:.3f} kHz is not positive")
         if output_hz > input_hz:
-            raise ValueError("output frequency {:.3f} kHz is higher than input frequency "
-                             "{:.3f} kHz"
-                             .format(output_hz / 1000, input_hz / 1000))
+            raise ValueError(
+                f"output frequency {output_hz / 1000:.3f} kHz is higher than input frequency "
+                f"{input_hz / 1000:.3f} kHz")
         if min_cyc is not None and output_hz * min_cyc > input_hz:
-            raise ValueError("output frequency {:.3f} kHz requires a period smaller than {:d} "
-                             "cycles at input frequency {:.3f} kHz"
-                             .format(output_hz / 1000, min_cyc, input_hz / 1000))
+            raise ValueError(
+                f"output frequency {output_hz / 1000:.3f} kHz requires a period smaller than "
+                f"{min_cyc:d} cycles at input frequency {input_hz / 1000:.3f} kHz")
 
         cyc = round(input_hz // output_hz) - 1
         actual_output_hz = input_hz / (cyc + 1)
         deviation_ppm = round(1000000 * (actual_output_hz - output_hz) // output_hz)
 
         if max_deviation_ppm is not None and deviation_ppm > max_deviation_ppm:
-            raise ValueError("output frequency {:.3f} kHz deviates from requested frequency "
-                             "{:.3f} kHz by {:d} ppm, which is higher than {:d} ppm"
-                             .format(actual_output_hz / 1000, output_hz / 1000,
-                                     deviation_ppm, max_deviation_ppm))
+            raise ValueError(
+                f"output frequency {actual_output_hz / 1000:.3f} kHz deviates from requested "
+                f"frequency {output_hz / 1000:.3f} kHz by {deviation_ppm:d} ppm, which is higher "
+                f"than {max_deviation_ppm:d} ppm")
 
         return cyc, actual_output_hz, deviation_ppm
 
     @classmethod
     def derive(cls, input_hz, output_hz, max_deviation_ppm=None, min_cyc=None,
                logger=None, clock_name=None):
-        """
-        Derive the parameter for :class:`ClockGen`, and log the input frequency, requested
+        """Derive the parameter for :class:`ClockGen`, and log the input frequency, requested
         output frequency, actual output frequency, frequency deviation, and actual duty cycle.
 
         See :meth:`calculate` for details.

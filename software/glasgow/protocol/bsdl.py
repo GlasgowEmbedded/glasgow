@@ -12,7 +12,7 @@
 # This parser has been validated on a large test set of BSDL files from Xilinx, Lattice, Altera,
 # other vendors.
 
-from typing import Optional, Literal
+from typing import Literal
 from collections import defaultdict
 from dataclasses import dataclass, KW_ONLY
 import re
@@ -34,7 +34,7 @@ class BSDLParseError(Exception):
 class BSDLPortInfo:
     kind:  Literal["in", "out", "inout", "buffer", "linkage"]
     pins:  list[str]
-    range: Optional[range]
+    range: range | None
     cells: list[int]
 
 
@@ -44,10 +44,10 @@ class BSDLScanCell:
     port:     tuple[str, int]
     function: Literal["input", "output2", "output3", "control", "controlr", "internal",
                       "clock", "bidir", "observe_only"]
-    safe:     Optional[int]
+    safe:     int | None
 
-    control:  Optional[int] = None # index into cell list
-    disable:  Optional[int] = None
+    control:  int | None = None # index into cell list
+    disable:  int | None = None
 
 
 @dataclass
@@ -115,7 +115,7 @@ class BSDLLexer:
     def __next__(self):
         if match := self._REGEX.match(self._source, self._offset):
             offset, self._offset = match.span(0)
-            for name, regex in self._TOKENS:
+            for name, _regex in self._TOKENS:
                 if (value := match[name]) is not None:
                     return BSDLToken(
                         name, value.upper(),
@@ -138,6 +138,7 @@ class BSDLParserBase:
                     raise BSDLParseError(f"{token}")
                 case _:
                     return token
+        assert False
 
     def _expect(self, kind, value=None):
         token = self._lex()
@@ -148,6 +149,7 @@ class BSDLParserBase:
                 raise BSDLParseError(f"expected {kind} {value!r}, got {token}")
             case BSDLToken(_, lex_value):
                 return lex_value
+        assert False
 
 
 class BSDLPinMap(BSDLParserBase):
@@ -254,7 +256,8 @@ class BSDLScanCellMap(BSDLParserBase):
     @property
     def cells(self) -> list[tuple[int, BSDLScanCell]]:
         """Mapping of cell indices to cells. Under certain circumstances, two cells may be assigned
-        the same index; this is called a "merger"."""
+        the same index; this is called a "merger".
+        """
         return self._cells
 
     def _parse(self):
@@ -483,7 +486,7 @@ class BSDLEntity(BSDLParserBase):
             assert bscan_cells[index] is None
             bscan_cells[index] = cell
             if cell.port is not None:
-                port, port_bit = cell.port
+                port, _port_bit = cell.port
                 port_cells[port].add(index)
 
         return BSDLDevice(
@@ -505,5 +508,5 @@ class BSDLEntity(BSDLParserBase):
 
 if __name__ == "__main__":
     import sys, pprint
-    with open(sys.argv[1], "r") as file:
+    with open(sys.argv[1]) as file:
         pprint.pp(BSDLEntity(file.read(), file.name).device())

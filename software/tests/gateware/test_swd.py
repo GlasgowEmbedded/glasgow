@@ -2,10 +2,10 @@ import unittest
 
 from amaranth import *
 from amaranth.sim import Simulator
-from amaranth.lib import io, wiring
+from amaranth.lib import io
 
 from glasgow.gateware.ports import PortGroup
-from glasgow.gateware.stream import stream_get, stream_put, stream_assert
+from glasgow.gateware.stream import stream_put, stream_assert
 from glasgow.gateware.swd import *
 
 
@@ -82,7 +82,7 @@ class Scenario:
 
     def run(self):
         for divisor in (0, 1, 2, 3):
-            async def d_testbench(ctx):
+            async def d_testbench(ctx, divisor=divisor):
                 ctx.set(self.dut.divisor, divisor)
 
             sim = Simulator(self.dut)

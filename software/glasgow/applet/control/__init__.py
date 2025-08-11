@@ -1,5 +1,4 @@
-"""
-The ``control`` taxon groups applets implementing control interfaces, that is, interfaces for
+"""The ``control`` taxon groups applets implementing control interfaces, that is, interfaces for
 changing the volatile or non-volatile state of a device.
 
 This taxon is an exclusion taxon, i.e. if a more specific taxon exists, it should be used. For

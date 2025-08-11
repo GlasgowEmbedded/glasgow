@@ -1,5 +1,4 @@
 import logging
-import asyncio
 from amaranth import *
 from amaranth.lib import wiring, stream, io, cdc
 from amaranth.lib.wiring import In, Out
@@ -51,7 +50,7 @@ class JTAGOpenOCDComponent(wiring.Component):
         try:
             m.submodules.io_blink = io_blink = io.Buffer("o", platform.request("led", dir="-"))
             m.d.comb += io_blink.o.eq(blink)
-        except:
+        except Exception:
             pass
 
         timer = Signal(range(max(self._period_cyc, 1000 * self._us_cyc)))

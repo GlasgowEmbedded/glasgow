@@ -193,7 +193,7 @@ class JTAGPinoutApplet(GlasgowAppletV2):
                 pins=args.pins, frequency=args.frequency * 1000)
 
         self.bits  = set(range(len(args.pins)))
-        self.pins  = {bit: pin      for bit, pin in enumerate(args.pins)}
+        self.pins  = dict(enumerate(args.pins))
         self.names = {bit: str(pin) for bit, pin in enumerate(args.pins)}
 
     @staticmethod
@@ -287,7 +287,7 @@ class JTAGPinoutApplet(GlasgowAppletV2):
                 await self.jtag_iface.set_o_0(tdi)
             result.append(await self._strobe_tck_input(tck))
         await self.jtag_iface.set_o_1(tdi)
-        for bit in range(flush_bits):
+        for _ in range(flush_bits):
             result.append(await self._strobe_tck_input(tck))
         # Release the bus
         await self.jtag_iface.set_oe(0)
@@ -297,6 +297,8 @@ class JTAGPinoutApplet(GlasgowAppletV2):
                            for bit in range(pat_bits)]
             if reduce(lambda x, y: x&y, corr_result) & tdo:
                 return ir_len
+        else:
+            return None
 
     async def run(self, args):
         def bits_to_str(pins):
@@ -431,7 +433,8 @@ class JTAGPinoutApplet(GlasgowAppletV2):
 
             probe_args = ["jtag-probe"]
             if args.voltage:
-                probe_args += ["-V", ",".join(f"{port}={vio}" for port, vio in args.voltage.items())]
+                probe_args += [
+                    "-V", ",".join(f"{port}={vio}" for port, vio in args.voltage.items())]
             probe_args += ["--tck", str(self.pins[bit_tck])]
             probe_args += ["--tms", str(self.pins[bit_tms])]
             probe_args += ["--tdi", str(self.pins[bit_tdi])]

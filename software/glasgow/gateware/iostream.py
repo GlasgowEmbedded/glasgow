@@ -1,5 +1,5 @@
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io
+from amaranth.lib import data, wiring, stream, io
 from amaranth.lib.wiring import In, Out
 
 from .stream import SkidBuffer

@@ -1,11 +1,11 @@
-from typing import Optional, Literal
+from typing import Literal
 import contextlib
 import logging
 import struct
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io
-from amaranth.lib.wiring import In, Out, connect, flipped
+from amaranth.lib import enum, wiring, stream, io
+from amaranth.lib.wiring import In, Out
 
 from glasgow.support.logging import dump_hex
 from glasgow.gateware import spi
@@ -53,8 +53,9 @@ class SPIControllerComponent(wiring.Component):
         command = Signal(SPICommand)
         chip    = Signal(range(1 + len(self._ports.cs)))
         mode    = Signal(spi.Mode)
+        # FIXME: amaranth-lang/amaranth#1462
         is_put  = mode.as_value().matches(spi.Mode.Put, spi.Mode.Swap)
-        is_get  = mode.as_value().matches(spi.Mode.Get, spi.Mode.Swap) # FIXME: amaranth-lang/amaranth#1462
+        is_get  = mode.as_value().matches(spi.Mode.Get, spi.Mode.Swap)
         o_count = Signal(16)
         i_count = Signal(16)
         timer   = Signal(range(self._us_cycles))
@@ -136,8 +137,8 @@ class SPIControllerComponent(wiring.Component):
 
 class SPIControllerInterface:
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 cs: GlasgowPin, sck: GlasgowPin, copi: Optional[GlasgowPin] = None,
-                 cipo: Optional[GlasgowPin] = None, mode: Literal[0, 1, 2, 3]):
+                 cs: GlasgowPin, sck: GlasgowPin, copi: GlasgowPin | None = None,
+                 cipo: GlasgowPin | None = None, mode: Literal[0, 1, 2, 3]):
         assert mode == 3, "Only Mode 3 is supported at the moment"
 
         self._logger = logger

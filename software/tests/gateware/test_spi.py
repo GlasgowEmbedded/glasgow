@@ -39,7 +39,7 @@ def simulate_flash(ports, memory=b"nya nya nya nya nyaaaaan"):
         for _ in range(cycles):
             if ctx.get(sck.o):
                 await watch_cs(cs.o, ctx.negedge(sck.o))
-            _, copi_oe = await watch_cs(cs.o, ctx.posedge(sck.o).sample(copi.oe))
+            _, _copi_oe = await watch_cs(cs.o, ctx.posedge(sck.o).sample(copi.oe))
 
     async def dev_put(ctx, ports, word):
         sck, copi, cipo, cs = ports.sck, ports.copi, ports.cipo, ports.cs
@@ -148,7 +148,7 @@ class SPIFramingTestCase(unittest.TestCase):
 
         async def testbench_in(ctx):
             async def bits_put(*, ix, mode):
-                for cycle, i in enumerate(ix):
+                for _cycle, i in enumerate(ix):
                     await stream_put(ctx, dut.frames, {
                         "port": {
                             "cipo": {"i": [0, i]},

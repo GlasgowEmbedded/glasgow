@@ -5,10 +5,10 @@
 # known design quirks. If you want to add a TAP to your design, use the one from amaranth-stdio,
 # (assuming it has been merged by the time you're reading this).
 
-from typing import Iterable
+from collections.abc import Iterable
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, io, cdc
+from amaranth.lib import enum, wiring, io
 from amaranth.lib.wiring import In, Out
 
 
@@ -57,7 +57,7 @@ class Controller(wiring.Component):
         assert ir_length >= 2, "IR must be at least 2 bits long"
 
         self._ir_length = ir_length
-        self._drs       = dict()
+        self._drs       = {}
 
         if ir_idcode is not None:
             self._dr_idcode = self.add({ir_idcode}, length=32)
@@ -199,7 +199,7 @@ class Controller(wiring.Component):
 
             with m.Case(State.Test_Logic_Reset):
                 m.d.jtag += self.ir_upd.eq(self.ir_upd.init)
-                for dr, ir_values in self._drs.items():
+                for dr in self._drs.keys():
                     m.d.jtag += dr.upd.eq(dr.upd.init)
 
             with m.Case(State.Capture_DR):

@@ -33,4 +33,3 @@ def crc16_nrf24l(data, *, bits):
                 rem = rem << 1
             rem &= 0xffff
     return rem
-

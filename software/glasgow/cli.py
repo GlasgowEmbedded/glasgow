@@ -13,7 +13,6 @@ import unittest
 import importlib.metadata
 from datetime import datetime
 
-from vcd import VCDWriter
 from amaranth import UnusedElaboratable
 from fx2 import FX2Config, FX2Device, FX2DeviceError, VID_CYPRESS, PID_FX2
 from fx2.format import input_data, diff_data
@@ -28,7 +27,7 @@ from .hardware.device import VID_QIHW, PID_GLASGOW
 from .hardware.toolchain import ToolchainNotFound
 from .hardware.build_plan import GatewareBuildError
 from .hardware.assembly import HardwareAssembly
-from .legacy import DeprecatedTarget, DeprecatedMultiplexer
+from .legacy import DeprecatedTarget
 from .legacy import DeprecatedDevice, DeprecatedDemultiplexer
 from .applet import *
 
@@ -127,8 +126,10 @@ def create_argparser():
 
 def get_argparser():
     class LazyParser(argparse.ArgumentParser):
-        """This is a lazy ArgumentParser that runs any added build_func(s) just before arguments
-        are parsed"""
+        """Lazy ArgumentParser that runs any added build_func(s) just before arguments are
+        parsed.
+        """
+
         def __init__(self, *args, **kwargs):
             self.build_funcs = []
             super().__init__(*args, **kwargs)
@@ -160,12 +161,12 @@ def get_argparser():
     def add_subparsers(parser, **kwargs):
         if isinstance(parser, argparse._MutuallyExclusiveGroup):
             container = parser._container
-            if kwargs.get('prog') is None:
+            if kwargs.get("prog") is None:
                 formatter = container._get_formatter()
-                formatter.add_usage(container.usage, [], [], '')
-                kwargs['prog'] = formatter.format_help().strip()
+                formatter.add_usage(container.usage, [], [], "")
+                kwargs["prog"] = formatter.format_help().strip()
 
-            parsers_class = parser._pop_action_class(kwargs, 'parsers')
+            parsers_class = parser._pop_action_class(kwargs, "parsers")
             kwargs["parser_class"] = type(container)
             subparsers = argparse._SubParsersAction(option_strings=[], **kwargs)
             parser._add_action(subparsers)
@@ -177,7 +178,7 @@ def get_argparser():
         # fantastically cursed
         p_stub = subparsers.add_parser(
             handle, help=metadata.synopsis, description=metadata.description,
-            formatter_class=TextHelpFormatter, prefix_chars='\0', add_help=False)
+            formatter_class=TextHelpFormatter, prefix_chars="\0", add_help=False)
         p_stub.add_argument("args", nargs="...", help=argparse.SUPPRESS)
         p_stub.add_argument("help", nargs="?", default=p_stub.format_help())
 
@@ -205,8 +206,8 @@ def get_argparser():
                               "have missing features. Use at your own risk.\n" + description
             if applet_cls.required_revision > "A0":
                 help += f" (rev{applet_cls.required_revision}+)"
-                description += "\n    This applet requires Glasgow rev{} or later." \
-                               .format(applet_cls.required_revision)
+                description += f"\n    This applet requires " \
+                               f"Glasgow rev{applet_cls.required_revision} or later."
 
             p_applet = subparsers.add_parser(
                 handle, help=help, description=description,
@@ -243,10 +244,10 @@ def get_argparser():
                         applet_cls.tool_cls.add_arguments(p_applet)
 
                     if mode in ("repl", "script"):
-                        # this will absorb all arguments from the '--' onwards (inclusive), make sure it's
-                        # always last... the '--' item that ends up at the front is removed before the list
-                        # is passed to the repo / script environment
-                        p_applet.add_argument('script_args', nargs=argparse.REMAINDER)
+                        # this will absorb all arguments from the '--' onwards (inclusive), make
+                        # sure it's always last... the '--' item that ends up at the front is
+                        # removed before the list is passed to the repo / script environment
+                        p_applet.add_argument("script_args", nargs=argparse.REMAINDER)
                 return p_applet_build
             p_applet.add_build_func(p_applet_build_factory(p_applet, handle, applet_cls, mode))
 
@@ -277,8 +278,8 @@ def get_argparser():
         if arg in revisions:
             return arg
         else:
-            raise argparse.ArgumentTypeError("{} is not a valid revision (should be one of: {})"
-                                             .format(arg, ", ".join(revisions)))
+            raise argparse.ArgumentTypeError(
+                f"{arg} is not a valid revision (should be one of: {', '.join(revisions)})")
 
     def serial(arg):
         if re.match(r"^[A-C][0-9]-\d{8}T\d{6}Z$", arg):
@@ -529,7 +530,7 @@ def create_logger():
     term_formatter_args = {"style": "{",
         "fmt": "{levelname[0]:s}: {name:s}: {message:s}"}
     term_handler = logging.StreamHandler()
-    if sys.stderr.isatty() and sys.platform != 'win32':
+    if sys.stderr.isatty() and sys.platform != "win32":
         term_handler.setFormatter(TerminalFormatter(**term_formatter_args))
     else:
         term_handler.setFormatter(logging.Formatter(**term_formatter_args))
@@ -580,8 +581,9 @@ def gc_freeze():
 
 
 class SIGINTCaught(Exception):
-    """This exception is necessary because asyncio recognizes both SystemExit and
-    KeyboardInterrupt and treats them specially in a way we don't need."""
+    """Exception that is necessary because asyncio recognizes both SystemExit and
+    KeyboardInterrupt and treats them specially in a way we don't need.
+    """
 
 
 async def wait_for_sigint():
@@ -629,8 +631,8 @@ async def main() -> int:
                 notice = ""
                 if port in alerts:
                     notice += " (ALERT)"
-                print("{}\t{:.2}\t{:.2}\t{:.3}\t{:.2}-{:.2}\t{}"
-                      .format(port, vio, vlimit, vsense, alert[0], alert[1], notice))
+                print(f"{port}\t{vio:.2}\t{vlimit:.2}\t{vsense:.3}\t{alert[0]:.2}-{alert[1]:.2}\t{notice}"
+                      )
 
         if args.action == "safe":
             await device.reset_alert("AB")
@@ -646,8 +648,8 @@ async def main() -> int:
             for port in args.ports:
                 vio    = await device.get_voltage(port)
                 vlimit = await device.get_voltage_limit(port)
-                print("{}\t{:.2}\t{:.2}"
-                      .format(port, vio, vlimit))
+                print(f"{port}\t{vio:.2}\t{vlimit:.2}"
+                      )
 
         if args.action in ("run", "repl", "script"):
             applet, target = _applet(assembly, args)
@@ -661,7 +663,8 @@ async def main() -> int:
 
             if target:
                 device = DeprecatedDevice(target)
-                device.demultiplexer = DeprecatedDemultiplexer(device, target.multiplexer.pipe_count)
+                device.demultiplexer = DeprecatedDemultiplexer(
+                    device, target.multiplexer.pipe_count)
 
             async def run_applet():
                 if args.action in ("repl", "script"):
@@ -744,7 +747,7 @@ async def main() -> int:
                 applet_cmdline, args.rest = args.rest[:split_at], args.rest[split_at + 1:]
                 if len(applet_cmdline) < 1:
                     logger.error(f"no applet name specified for applet #{len(applets) + 1}")
-                    return
+                    return 1
 
                 applet_name, *applet_args = applet_cmdline
                 try:

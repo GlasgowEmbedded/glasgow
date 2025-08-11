@@ -1,13 +1,10 @@
-from typing import Literal, Optional
-from functools import reduce
 import re
 import sys
 import logging
-import asyncio
 import argparse
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io
+from amaranth.lib import enum, data, wiring, stream
 from amaranth.lib.wiring import In, Out
 
 from glasgow.gateware.ports import PortGroup
@@ -89,7 +86,7 @@ class UARTAnalyzerComponent(wiring.Component):
 
 class UARTAnalyzerInterface:
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
-                 channels: dict[str, Optional[GlasgowPin]], parity="none"):
+                 channels: dict[str, GlasgowPin | None], parity="none"):
         self._logger   = logger
         self._level    = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
         self._channels = [channel for channel, pin in channels.items() if pin is not None]
@@ -129,7 +126,6 @@ class UARTAnalyzerInterface:
         protocol decoders must be prepared to handle data being split across any number of messages
         at any boundaries.
         """
-
         if await self._overflow:
             raise GlasgowAppletError("overflow")
 

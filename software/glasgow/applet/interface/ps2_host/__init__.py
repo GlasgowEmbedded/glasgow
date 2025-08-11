@@ -60,7 +60,6 @@
 # details on the command set.
 
 import logging
-import asyncio
 from amaranth import *
 from amaranth.lib import data, io
 from amaranth.lib.cdc import FFSynchronizer
@@ -75,12 +74,14 @@ _frame_layout = data.StructLayout({
     "stop":   1,
 })
 
+
 def _verify_frame(frame):
     return (
         (frame.start == 0) &
         (frame.parity == ~frame.data.xor()) &
         (frame.stop == 1)
     )
+
 
 def _prepare_frame(frame, data):
     return [
@@ -212,7 +213,7 @@ class PS2HostController(Elaboratable):
                     shift.eq(self.bus.falling),
                 ]
                 with m.If(bitno == 11):
-                    m.d.comb += self.stb.eq(1),
+                    m.d.comb += self.stb.eq(1)
                     m.d.sync += [
                         bitno.eq(0),
                         self.o_valid.eq(_verify_frame(frame)),
@@ -346,14 +347,14 @@ class PS2HostInterface:
         line_ack, = await self._lower.read(1)
         if not line_ack:
             self._log("cmd=%02x nak", cmd)
-            raise PS2HostError("peripheral did not acknowledge command {:#04x}"
-                               .format(cmd))
+            raise PS2HostError(f"peripheral did not acknowledge command {cmd:#04x}"
+                               )
         cmd_ack, *result, error = await self._lower.read(1 + ret + 1)
         result = bytes(result)
         self._log("cmd=%02x ack=%02x ret=<%s>", cmd, cmd_ack, result.hex())
         if error > 0:
-            raise PS2HostError("parity error in byte {} in response to command {:#04x}"
-                               .format(error - 1, cmd))
+            raise PS2HostError(f"parity error in byte {error - 1} in response to command {cmd:#04x}"
+                               )
         if cmd_ack in (0xfa, 0xee): # ACK
             pass
         elif cmd_ack in (0xfe, 0xfc, 0xfd): # NAK
@@ -378,8 +379,8 @@ class PS2HostInterface:
         result = bytes(result)
         self._log("ret=<%s>", result.hex())
         if error > 0:
-            raise PS2HostError("parity error in byte {} in unsolicited response"
-                               .format(error - 1))
+            raise PS2HostError(f"parity error in byte {error - 1} in unsolicited response"
+                               )
         return result
 
     async def stream(self, callback):

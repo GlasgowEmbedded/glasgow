@@ -19,6 +19,7 @@ class Accumulator(wiring.Component):
     sum : Out(width)
         Accumulated sum.
     """
+
     def __init__(self, width, *, stage_width=16):
         self._width = operator.index(width)
         self._stage_width = operator.index(stage_width)
@@ -61,4 +62,3 @@ class Accumulator(wiring.Component):
         m.d.comb += self.sum.eq(result)
 
         return m
-

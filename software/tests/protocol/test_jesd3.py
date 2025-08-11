@@ -4,6 +4,7 @@ import unittest
 from glasgow.support.bits import *
 from glasgow.protocol.jesd3 import *
 
+
 class JESD3TestCase(unittest.TestCase):
     def test_roundtrip(self):
         data = bitarray(random.randbytes(1234))

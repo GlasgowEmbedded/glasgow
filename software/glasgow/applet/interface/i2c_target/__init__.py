@@ -1,4 +1,3 @@
-import argparse
 import logging
 import enum
 from abc import ABCMeta, abstractmethod

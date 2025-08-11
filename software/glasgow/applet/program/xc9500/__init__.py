@@ -5,7 +5,6 @@ import logging
 import argparse
 import math
 import re
-from enum import Enum, auto
 
 from ....arch.jtag import *
 from ....arch.xilinx.xc9500 import *
@@ -41,11 +40,12 @@ class XC9500Bitstream:
     @classmethod
     def from_fuses(cls, fuses, device):
         self = cls(device)
-        total_bits = BS_MAIN_ROWS * device.fbs * (9 * 8 + 6 * 6) + BS_UIM_ROWS * (8 + 4 * 7) * device.fbs * device.fbs
+        total_bits = (BS_MAIN_ROWS * device.fbs * (9 * 8 + 6 * 6) +
+                      BS_UIM_ROWS * (8 + 4 * 7) * device.fbs * device.fbs)
         if len(fuses) != total_bits:
             raise GlasgowAppletError(
-                "JED file does not have the right fuse count (expected %d, got %d)"
-                % (total_bits, len(fuses)))
+                f"JED file does not have the right fuse count "
+                f"(expected {total_bits}, got {len(fuses)})")
         pos = 0
         for fb in range(device.fbs):
             for row in range(BS_MAIN_ROWS):
@@ -92,13 +92,16 @@ class XC9500Bitstream:
             for row in range(BS_MAIN_ROWS):
                 for col in range(BS_MAIN_COLS):
                     if self.fbs[fb][row][col] != other.fbs[fb][row][col]:
-                        raise GlasgowAppletError(f"bitstream verification failed at FB={fb} row={row} col={col}")
+                        raise GlasgowAppletError(
+                            f"bitstream verification failed at FB={fb} row={row} col={col}")
         for fb in range(self.device.fbs):
             for sfb in range(self.device.fbs):
                 for row in range(BS_UIM_ROWS):
                     for col in range(BS_UIM_COLS):
                         if self.uim[fb][sfb][row][col] != other.uim[fb][sfb][row][col]:
-                            raise GlasgowAppletError(f"bitstream verification failed at UIM FB={fb} sFB={sfb} row={row} col={col}")
+                            raise GlasgowAppletError(
+                                f"bitstream verification failed at UIM FB={fb} sFB={sfb} "
+                                f"row={row} col={col}")
 
     def get_byte(self, coords):
         if coords[0] == "main":
@@ -180,7 +183,7 @@ class XC95xxInterface:
     async def programming_enable(self):
         self._log("programming enable")
         await self.lower.write_ir(IR_ISPEN)
-        ispenable = self.DR_ISPENABLE(fbs=bits('1' * self.device.fbs), uim=1)
+        ispenable = self.DR_ISPENABLE(fbs=bits("1" * self.device.fbs), uim=1)
         await self.lower.write_dr(ispenable.to_bits())
         await self.lower.run_test_idle(1)
 
@@ -299,7 +302,8 @@ class XC95xxInterface:
                         if res.control == CTRL_WPROT:
                             raise XC9500Error("fast programming failed: device is write protected")
                         elif res.control != CTRL_OK:
-                            raise XC9500Error(f"fast programming failed {res.bits_repr()} at {prev_coords}")
+                            raise XC9500Error(
+                                f"fast programming failed {res.bits_repr()} at {prev_coords}")
                 await self.lower.run_test_idle(self._time_us(WAIT_PROGRAM))
                 prev_coords = coords
 
@@ -319,7 +323,8 @@ class XC95xxInterface:
                     if res.control == CTRL_WPROT:
                         raise XC9500Error("programming failed: device is write protected")
                     elif res.control != CTRL_OK:
-                        raise XC9500Error(f"programming failed {res.bits_repr()} at row {prev_coords}")
+                        raise XC9500Error(
+                            f"programming failed {res.bits_repr()} at row {prev_coords}")
                 await self.lower.run_test_idle(self._time_us(WAIT_PROGRAM))
                 prev_coords = coords
 
@@ -338,7 +343,7 @@ class XC95xxInterface:
         if not bits:
             # Nothing to do.
             return
-        
+
         self._log("program protection bits")
         await self.lower.write_ir(IR_FPGM)
         for fb in range(self.device.fbs):
@@ -434,8 +439,8 @@ class ProgramXC9500Applet(JTAGProbeApplet):
     async def interact(self, device, args, xc9500_iface):
         idcode, xc9500_device, xc95xx_iface = await xc9500_iface.identify()
         if xc9500_device is None:
-            raise GlasgowAppletError("cannot operate on unknown device with IDCODE=%#10x"
-                                     % idcode.to_int())
+            raise GlasgowAppletError(
+                f"cannot operate on unknown device with IDCODE={idcode.to_int():#10x}")
 
         self.logger.info("found %s rev=%d",
                          xc9500_device.name, idcode.version)
@@ -506,6 +511,7 @@ class ProgramXC9500Applet(JTAGProbeApplet):
             await xc95xx_iface.programming_disable()
 
 # -------------------------------------------------------------------------------------------------
+
 
 class ProgramXC9500AppletTool(GlasgowAppletTool, applet=ProgramXC9500Applet):
     help = "manipulate Xilinx XC9500 CPLD bitstreams"

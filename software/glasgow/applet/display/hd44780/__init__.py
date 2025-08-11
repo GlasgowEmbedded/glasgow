@@ -8,9 +8,7 @@
 # to E falling edge, and BF/AC can and will change while E is high.
 # We make use of it by waiting on BF falling edge when polling the IC.
 
-import time
 import math
-import argparse
 import logging
 import asyncio
 from amaranth import *
@@ -76,7 +74,7 @@ class HD44780Subtarget(Elaboratable):
         m.submodules.rw_buffer = rw_buffer = io.Buffer("o", self.ports.rw)
         m.submodules.e_buffer = e_buffer = io.Buffer("o", self.ports.e)
         m.submodules.d_buffer = d_buffer = io.Buffer("io", self.ports.d)
-        m.d.comb += d_buffer.oe.eq(~rw_buffer.o),
+        m.d.comb += d_buffer.oe.eq(~rw_buffer.o)
         m.submodules += cdc.FFSynchronizer(d_buffer.i, di)
 
         rx_setup_cyc = math.ceil(60e-9 * self.sys_clk_freq)

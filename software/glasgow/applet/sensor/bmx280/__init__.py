@@ -3,7 +3,7 @@
 # Ref: https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme280-ds002.pdf
 # Accession: G00050
 
-from typing import Literal, Optional
+from typing import Literal
 from abc import ABCMeta, abstractmethod
 import logging
 import asyncio
@@ -233,7 +233,7 @@ class BMx280Interface(metaclass=ABCMeta):
             self._ident = "BME280"
             self._has_hum = True
         else:
-            raise BMx280Error("BMx280: wrong ID=%#04x" % id)
+            raise BMx280Error(f"BMx280: wrong ID={id:#04x}")
         return self._ident
 
     @property
@@ -263,9 +263,9 @@ class BMx280Interface(metaclass=ABCMeta):
             h4_h5_1 = await self._read_reg8u(REG_CAL_H4_H5 + 0)
             h4_h5_2 = await self._read_reg8u(REG_CAL_H4_H5 + 1)
             h4_h5_3 = await self._read_reg8u(REG_CAL_H4_H5 + 2)
-            _12u_to_12s = lambda raw: -((1 << 12) - raw) if raw & (1 << 11) else raw
-            self._h4 = _12u_to_12s((h4_h5_1 << 4) | (h4_h5_2 & 0xf))
-            self._h5 = _12u_to_12s((h4_h5_3 << 4) | (h4_h5_2 >> 4))
+            conv_12u_to_12s = lambda raw: -((1 << 12) - raw) if raw & (1 << 11) else raw
+            self._h4 = conv_12u_to_12s((h4_h5_1 << 4) | (h4_h5_2 & 0xf))
+            self._h5 = conv_12u_to_12s((h4_h5_3 << 4) | (h4_h5_2 >> 4))
         self._has_cal = True
 
     async def set_iir_coefficient(self, coeff: int):
@@ -278,10 +278,10 @@ class BMx280Interface(metaclass=ABCMeta):
         config = (config & ~MASK_T_SB) | bit_t_sb[t_sb]
         await self._write_reg8u(REG_CONFIG, config)
 
-    async def set_oversample(self, ovs_t: Optional[int] = None, ovs_p: Optional[int] = None,
-                             ovs_h: Optional[int] = None):
+    async def set_oversample(self, ovs_t: int | None = None, ovs_p: int | None = None,
+                             ovs_h: int | None = None):
         if ovs_h is not None and not self._has_hum:
-            raise BMx280Error("%s: sensor does not measure humidity" % self._ident)
+            raise BMx280Error(f"{self._ident}: sensor does not measure humidity")
 
         if ovs_h is not None:
             await self._write_reg8u(REG_CTRL_HUM, bit_osrs_hum[ovs_h])
@@ -479,7 +479,8 @@ class SensorBMx280Applet(GlasgowAppletV2):
                     fields = dict(t=await self.bmx280_iface.get_temperature(),
                                   p=await self.bmx280_iface.get_pressure())
                     if args.report_altitude:
-                        fields.update(h=await self.bmx280_iface.get_altitude(p0=args.sea_level_pressure))
+                        fields.update(h=await self.bmx280_iface.get_altitude(
+                            p0=args.sea_level_pressure))
                     if self.bmx280_iface.has_humidity:
                         fields.update(rh=await self.bmx280_iface.get_humidity())
                     await data_logger.report_data(fields)
@@ -488,7 +489,7 @@ class SensorBMx280Applet(GlasgowAppletV2):
                 except BMx280Error as error:
                     await data_logger.report_error(str(error), exception=error)
                     await self.bmx280_iface.reset()
-                except asyncio.TimeoutError as error:
+                except TimeoutError as error:
                     await data_logger.report_error("timeout", exception=error)
                     await self.bmx280_iface.reset()
                 await asyncio.sleep(args.interval)

@@ -1,4 +1,4 @@
-from typing import Any, Optional, TextIO
+from typing import Any, TextIO
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 import sys
 import json
@@ -24,7 +24,7 @@ class MockRecorder:
             return {"__class__": "bytearray", "hex": obj.hex()}
         if isinstance(obj, memoryview):
             return {"__class__": "memoryview", "hex": obj.hex()}
-        raise TypeError("%s is not serializable" % type(obj))
+        raise TypeError(f"{type(obj)} is not serializable")
 
     def __dump_stanza(self, stanza):
         # TODO: remove once applets are migrated to V2 API
@@ -121,13 +121,13 @@ class MockReplayer:
                 try:
                     yield stanza["result"]
                 finally:
-                    exc_type, exc_value, traceback = sys.exc_info()
+                    _exc_type, exc_value, _traceback = sys.exc_info()
                     exit_stanza = self.__load()
                     self.__case.assertEqual(attr, exit_stanza["call"])
                     self.__case.assertEqual("asynccontext.exit", exit_stanza["kind"])
                     self.__case.assertEqual((exc_value,), tuple(exit_stanza["args"]))
                     assert {} == exit_stanza["kwargs"]
-                    assert None == exit_stanza["result"]
+                    assert None is exit_stanza["result"]
         elif stanza["kind"] == "asyncmethod":
             async def mock(*args, **kwargs):
                 self.__case.assertEqual(args, tuple(stanza["args"]))

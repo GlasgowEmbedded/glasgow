@@ -56,7 +56,8 @@ class ProbeTestCase(unittest.TestCase):
             await stream_put(ctx, dut.i_words,
                 {"mode": jtag_probe.Mode.ShiftTMS, "data": 0b11101, "size": 5})
             await stream_put(ctx, dut.i_words,
-                {"mode": jtag_probe.Mode.ShiftTDI, "data": 0b11110000111100001111000011110000, "size": 32})
+                {"mode": jtag_probe.Mode.ShiftTDI, "data": 0b11110000111100001111000011110000,
+                                                   "size": 32})
             await stream_put(ctx, dut.i_words,
                 {"mode": jtag_probe.Mode.ShiftTDIO, "size": 8})
 

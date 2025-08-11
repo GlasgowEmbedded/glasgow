@@ -3,7 +3,7 @@
 # Document Number: IHI0031E
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io
+from amaranth.lib import enum, data, wiring, stream
 from amaranth.lib.wiring import In, Out, connect, flipped
 
 from glasgow.gateware.ports import PortGroup

@@ -2,7 +2,7 @@ import re
 import itertools
 import operator
 from collections.abc import Sequence, MutableSequence, Iterable
-from typing_extensions import Self
+from typing import Self
 
 import amaranth
 
@@ -13,6 +13,7 @@ __all__ = ["bits", "bitarray"]
 def _byte_len(l):
     return (l + 7) // 8
 
+
 _byterev_lut = bytes(
     sum(
         ((byte >> bit) & 1) << (7 - bit)
@@ -20,6 +21,7 @@ _byterev_lut = bytes(
     )
     for byte in range(0x100)
 )
+
 
 class _bits_base(amaranth.ValueCastable, Sequence):
     __slots__ = ("_len", "_bytes")
@@ -41,7 +43,7 @@ class _bits_base(amaranth.ValueCastable, Sequence):
             value &= ~(-1 << length)
         inst = object.__new__(cls)
         inst._len = length
-        inst._bytes = cls._bytestype(value.to_bytes(_byte_len(length), 'little'))
+        inst._bytes = cls._bytestype(value.to_bytes(_byte_len(length), "little"))
         return inst
 
     @classmethod
@@ -58,7 +60,8 @@ class _bits_base(amaranth.ValueCastable, Sequence):
     @classmethod
     def from_iter(cls, iterator) -> Self:
         """Creates bits from an iterator of bit values (ie. ints of value 0 and 1).
-        The bits in the iterator are treated as LSB-first."""
+        The bits in the iterator are treated as LSB-first.
+        """
         nbits = 0
 
         def make_bytes():
@@ -75,7 +78,6 @@ class _bits_base(amaranth.ValueCastable, Sequence):
                     byte = 0
             if nbits % 8 != 0:
                 yield byte
-            return
 
         res = object.__new__(cls)
         res._bytes = cls._bytestype(make_bytes())
@@ -96,7 +98,8 @@ class _bits_base(amaranth.ValueCastable, Sequence):
         if length is None:
             length = len(value) * 8
         if len(value) != _byte_len(length):
-            raise ValueError(f"wrong bytes length {len(value)} for {cls.__name__} of length {length}")
+            raise ValueError(
+                f"wrong bytes length {len(value)} for {cls.__name__} of length {length}")
         if length % 8:
             mask = -1 << (length % 8)
             if value[-1] & (-1 << (length % 8)):
@@ -107,13 +110,16 @@ class _bits_base(amaranth.ValueCastable, Sequence):
         return res
 
     def __new__(cls, value=0, length=None) -> Self:
-        """Creates a new bits instance.  The valid arguments for ``value`` are:
+        """Creates a new bits instance.
+
+        The valid arguments for ``value`` are:
 
         - another bits or bitarray instance (``length`` must not be provided)
         - int (``length`` may be provided or not, see ``from_int``)
         - str (``length`` must not be provided, see ``from_str``)
         - bytes, bytearray, memoryview (``length`` may be provided or not, see ``from_bytes``)
-        - an iterable of 0 and 1 other than the above (``length`` must not be provided, see ``from_iter``)
+        - an iterable of 0 and 1 other than the above (``length`` must not be provided, see
+          ``from_iter``)
         """
         if isinstance(value, _bits_base):
             if length is not None:
@@ -136,10 +142,12 @@ class _bits_base(amaranth.ValueCastable, Sequence):
             return cls.from_bytes(value, length)
         if isinstance(value, Iterable):
             if length is not None:
-                raise ValueError(f"invalid input for {cls.__name__}(): when converting from an iterable "
-                                 "length must not be provided")
+                raise ValueError(
+                    f"invalid input for {cls.__name__}(): when converting from an iterable length "
+                    f"must not be provided")
             return cls.from_iter(value)
-        raise TypeError(f"invalid input for {cls.__name__}(): cannot convert from {value.__class__.__name__}")
+        raise TypeError(
+            f"invalid input for {cls.__name__}(): cannot convert from {value.__class__.__name__}")
 
     # This method only exists because otherwise `ValueCastable.__init__` crashes. All of the actual
     # work is done in `__new__`.
@@ -184,8 +192,9 @@ class _bits_base(amaranth.ValueCastable, Sequence):
         else:
             try:
                 key = operator.index(key)
-            except:
-                raise TypeError(f"{self.__class__.__name__} indices must be integers or slices, not {key.__class__.__name__}")
+            except Exception:
+                raise TypeError(f"{self.__class__.__name__} indices must be integers or slices, "
+                                f"not {key.__class__.__name__}")
             if key < 0:
                 key += self._len
             if key not in range(self._len):
@@ -194,16 +203,17 @@ class _bits_base(amaranth.ValueCastable, Sequence):
 
     def to_int(self) -> int:
         """Returns the value of this bit string as an integer."""
-        return int.from_bytes(self._bytes, 'little')
+        return int.from_bytes(self._bytes, "little")
 
     def to_str(self) -> str:
         """Returns the bit string as a human-readable string (MSB-first)."""
-        return ''.join(str(x) for x in reversed(self))
+        return "".join(str(x) for x in reversed(self))
 
     def to_bytes(self) -> bytes:
         """Returns the bits packed into bytes. The bits are packed into bytes LSB-first.
         If the length of the bit string is not divisible by 8, the last byte will have
-        padding bits at MSB with a value of 0."""
+        padding bits at MSB with a value of 0.
+        """
         return bytes(self._bytes)
 
     def shape(self) -> amaranth.Shape:
@@ -297,7 +307,10 @@ class _bits_base(amaranth.ValueCastable, Sequence):
         return res
 
     def reversed(self) -> Self:
-        """Returns a reversed copy of this bit string. Equivalent to ``from_iter(reversed(self))``."""
+        """Returns a reversed copy of this bit string.
+
+        Equivalent to ``from_iter(reversed(self))``.
+        """
         if self._len % 8 == 0:
             res = object.__new__(self.__class__)
             res._bytes = self._bytes.translate(_byterev_lut)[::-1]
@@ -308,21 +321,24 @@ class _bits_base(amaranth.ValueCastable, Sequence):
 
     def byte_reversed(self) -> Self:
         """Returns a copy of this bit string with bits reversed within each byte.
-        The length of this bit string must be divisible by 8."""
+        The length of this bit string must be divisible by 8.
+        """
         if self._len % 8 == 0:
             res = object.__new__(self.__class__)
             res._bytes = self._bytes.translate(_byterev_lut)
             res._len = self._len
             return res
         else:
-            raise ValueError(f"byte_reversed requires {self.__class__.__name__} of length divisible by 8")
+            raise ValueError(
+                f"byte_reversed requires {self.__class__.__name__} of length divisible by 8")
 
     def find(self, needle, start=0, end=None) -> int:
         """Returns the start index of the first occurence of a given bit string within this
         bit string. If the ``needle`` is an ``str`` or an iterator, it is first converted
         to ``bits``. If ``needle`` is an integer, it must hava a value of 0 or 1, and is
-        converted to single-bit ``bits``. If ``start`` and ``end`` are given, only start positions in
-        ``range(start, end)`` are checked. If no occurence is found, the result is ``-1``."""
+        converted to single-bit ``bits``. If ``start`` and ``end`` are given, only start positions
+        in ``range(start, end)`` are checked. If no occurence is found, the result is ``-1``.
+        """
         if isinstance(needle, (str, Iterable)):
             needle = bits(needle)
         elif not isinstance(needle, _bits_base):
@@ -332,7 +348,7 @@ class _bits_base(amaranth.ValueCastable, Sequence):
         end = min(end, self._len - (needle._len - 1))
         for i in range(start, end):
             if all(self[i + j] == needle[j] for j in range(needle._len)):
-               return i
+                return i
         return -1
 
     def index(self, *args, **kwargs) -> int:
@@ -396,7 +412,9 @@ class bitarray(_bits_base, MutableSequence):
             if step != 1:
                 # generic slow path
                 if len(rng) != len(value):
-                    raise ValueError(f"atempt to assign sequence of size {len(value)} to extended slice of size {len(rng)}")
+                    raise ValueError(
+                        f"atempt to assign sequence of size {len(value)} to "
+                        f"extended slice of size {len(rng)}")
                 for di, bit in zip(rng, value):
                     self[di] = bit
             elif start % 8 == 0 and stop % 8 == 0 and value._len % 8 == 0:
@@ -425,8 +443,9 @@ class bitarray(_bits_base, MutableSequence):
         else:
             try:
                 key = operator.index(key)
-            except:
-                raise TypeError(f"{self.__class__.__name__} indices must be integers or slices, not {key.__class__.__name__}")
+            except Exception:
+                raise TypeError(f"{self.__class__.__name__} indices must be integers or slices, "
+                                f"not {key.__class__.__name__}")
             value = operator.index(value)
             if value not in (0, 1):
                 raise ValueError("bit value must be 0 or 1")
@@ -473,8 +492,9 @@ class bitarray(_bits_base, MutableSequence):
         else:
             try:
                 key = operator.index(key)
-            except:
-                raise TypeError(f"{self.__class__.__name__} indices must be integers or slices, not {key.__class__.__name__}")
+            except Exception:
+                raise TypeError(f"{self.__class__.__name__} indices must be integers or slices, "
+                                f"not {key.__class__.__name__}")
             if key < 0:
                 key += self._len
             if key not in range(self._len):
@@ -510,7 +530,8 @@ class bitarray(_bits_base, MutableSequence):
 
     def byte_reverse(self) -> None:
         """Reverses the bits within every byte of this bitarray in-place. The length
-        of this bitarray must be divisible by 8."""
+        of this bitarray must be divisible by 8.
+        """
         if self._len % 8 == 0:
             self._bytes = self._bytes.translate(_byterev_lut)
         else:

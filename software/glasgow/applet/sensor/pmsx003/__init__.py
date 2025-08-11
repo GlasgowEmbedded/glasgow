@@ -4,11 +4,9 @@
 # Accession: G00054
 
 import logging
-import asyncio
 import struct
 from collections import namedtuple
 from amaranth import *
-from amaranth.lib import io
 
 from ... import *
 from ....support.data_logger import DataLogger
@@ -57,8 +55,8 @@ class PMSx003Interface:
 
     async def read_measurement(self):
         start_bytes = b"BM"
-        while (await self.lower.read(1)) != b'B': pass
-        while (await self.lower.read(1)) != b'M': pass
+        while (await self.lower.read(1)) != b"B": pass
+        while (await self.lower.read(1)) != b"M": pass
 
         length_bytes = await self.lower.read(2)
         length, = struct.unpack(">H", length_bytes)

@@ -1,6 +1,4 @@
 import argparse
-import asyncio
-import logging
 import re
 import time
 import sys
@@ -305,7 +303,8 @@ class InfluxDB2DataLogger(DataLogger, name="influxdb2"):
         self.token = args.token
         self.series = ",".join([
             InfluxDBDataLogger._escape_name(", ", args.measurement),
-            *[InfluxDBDataLogger._escape_name(",= ", key) + "=" + InfluxDBDataLogger._escape_name(",= ", value)
+            *[InfluxDBDataLogger._escape_name(",= ", key) + "=" +
+              InfluxDBDataLogger._escape_name(",= ", value)
               for key, value in args.tags]
         ])
         self.precision = args.precision
@@ -335,8 +334,9 @@ class InfluxDB2DataLogger(DataLogger, name="influxdb2"):
 
         if len(self._queue) >= self._batch_size:
             try:
-                authHeader = 'Token ' + self.token
-                async with self.session.post(self.url, data="\n".join(self._queue), headers= {'Authorization': authHeader}) as response:
+                authHeader = "Token " + self.token
+                async with self.session.post(self.url, data="\n".join(self._queue),
+                        headers={"Authorization": authHeader}) as response:
                     if response.status not in range(200, 300):
                         self.logger.error("InfluxDB: write status=%d body=%s",
                                           response.status, (await response.text()).strip())

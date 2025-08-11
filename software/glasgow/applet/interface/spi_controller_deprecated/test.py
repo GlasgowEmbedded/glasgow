@@ -1,6 +1,4 @@
-import types
 from amaranth import *
-from amaranth.lib import io
 
 from ... import *
 from . import SPIControllerApplet

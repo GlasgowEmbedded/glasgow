@@ -1,5 +1,5 @@
-from typing import Any, Optional, Generator
-from collections.abc import Mapping
+from typing import Any
+from collections.abc import Generator
 from contextlib import contextmanager
 import logging
 
@@ -7,7 +7,6 @@ from amaranth import *
 from amaranth.lib import io
 from amaranth.sim import Simulator
 
-from ..gateware.stream import stream_get, stream_put
 from ..abstract import *
 
 
@@ -24,13 +23,13 @@ class SimulationPipe(AbstractInOutPipe):
         self._o_buffer = o_buffer
 
     @property
-    def readable(self) -> Optional[int]:
+    def readable(self) -> int | None:
         return len(self._i_buffer)
 
     async def recv(self, length) -> memoryview:
         assert self._i_buffer is not None, "recv() called on an out pipe"
         while len(self._i_buffer) < length:
-            clk_hit, rst_hit = await self._parent._context.tick()
+            _clk_hit, rst_hit = await self._parent._context.tick()
             assert not rst_hit
         data = self._i_buffer[:length]
         del self._i_buffer[:length]
@@ -40,7 +39,7 @@ class SimulationPipe(AbstractInOutPipe):
         assert self._i_buffer is not None, "recv_until() called on an out pipe"
         assert len(delimiter) >= 1
         while delimiter not in self._i_buffer:
-            clk_hit, rst_hit = await self._parent._context.tick()
+            _clk_hit, rst_hit = await self._parent._context.tick()
             assert not rst_hit
         length = self._i_buffer.index(delimiter) + len(delimiter)
         data = self._i_buffer[:length]
@@ -48,7 +47,7 @@ class SimulationPipe(AbstractInOutPipe):
         return bytes(data)
 
     @property
-    def writable(self) -> Optional[int]:
+    def writable(self) -> int | None:
         return None
 
     async def send(self, data: bytes | bytearray | memoryview):
@@ -58,7 +57,7 @@ class SimulationPipe(AbstractInOutPipe):
     async def flush(self, *, _wait=True):
         assert self._o_buffer is not None, "flush() called on an in pipe"
         while len(self._o_buffer) > 0:
-            clk_hit, rst_hit = await self._parent._context.tick()
+            _clk_hit, rst_hit = await self._parent._context.tick()
             assert not rst_hit
 
     async def reset(self):
@@ -97,7 +96,7 @@ class SimulationAssembly(AbstractAssembly):
         self.__context = None
 
     @property
-    def sys_clk_period(self) -> 'Period':
+    def sys_clk_period(self) -> "Period":
         # Reduced from 36 or 48 MHz to 1 MHz to improve test performance.
         return 1/1000000
 
@@ -169,7 +168,7 @@ class SimulationAssembly(AbstractAssembly):
                     ctx.set(out_stream.valid, len(o_buffer) > 0)
                     if o_buffer:
                         ctx.set(out_stream.payload, o_buffer[0])
-                    clk_hit, rst_hit, xfer_smp = \
+                    _clk_hit, _rst_hit, xfer_smp = \
                         await ctx.tick().sample(out_stream.ready & out_stream.valid)
                     if xfer_smp:
                         del o_buffer[0]
@@ -202,7 +201,7 @@ class SimulationAssembly(AbstractAssembly):
     @property
     def _context(self):
         if self.__context is None:
-            raise Exception("runtime features can be used only while simulation is running")
+            raise RuntimeError("runtime features can be used only while simulation is running")
         return self.__context
 
     def run(self, fn, *, vcd_file=None, gtkw_file=None):

@@ -67,11 +67,11 @@ class ProgramAVRSPIAppletTestCase(GlasgowAppletTestCase, applet=ProgramAVRSPIApp
         await avr_iface.chip_erase()
         # program
         await avr_iface.write_program_memory_range(
-            page // 2, [n for n in range(page)], page)
+            page // 2, list(range(page)), page)
         # verify
         data = await avr_iface.read_program_memory_range(range(page * 2))
         self.assertEqual(data,
-            b"\xff" * (page // 2) + bytes([n for n in range(page)]) + b"\xff" * (page // 2))
+            b"\xff" * (page // 2) + bytes(list(range(page))) + b"\xff" * (page // 2))
 
     @applet_hardware_test(setup="setup_programming", args=hardware_args)
     async def test_api_eeprom(self, avr_iface):
@@ -81,8 +81,8 @@ class ProgramAVRSPIAppletTestCase(GlasgowAppletTestCase, applet=ProgramAVRSPIApp
             0, b"\xff" * page * 2, page)
         # program
         await avr_iface.write_eeprom_range(
-            page // 2, [n for n in range(page)], page)
+            page // 2, list(range(page)), page)
         # verify
         data = await avr_iface.read_eeprom_range(range(page * 2))
         self.assertEqual(data,
-            b"\xff" * (page // 2) + bytes([n for n in range(page)]) + b"\xff" * (page // 2))
+            b"\xff" * (page // 2) + bytes(list(range(page))) + b"\xff" * (page // 2))

@@ -1,4 +1,4 @@
-from typing import Optional, Callable
+from collections.abc import Callable
 import functools
 import inspect
 import js
@@ -89,21 +89,21 @@ class Context(AbstractContext):
         ]})
 
     @_map_exceptions
-    async def get_devices(self) -> list['Device']:
+    async def get_devices(self) -> list["Device"]:
         return [Device(device) for device in await self._impl.getDevices()]
 
     @property
     def has_hotplug_support(self) -> bool:
         return True
 
-    def add_connect_callback(self, callback: Callable[['Device'], None]):
+    def add_connect_callback(self, callback: Callable[["Device"], None]):
         self._on_connect.append(callback)
 
     def _process_connect_event(self, event):
         for callback in self._on_connect:
             callback(Device(event.device))
 
-    def add_disconnect_callback(self, callback: Callable[['Device'], None]):
+    def add_disconnect_callback(self, callback: Callable[["Device"], None]):
         self._on_disconnect.append(callback)
 
     def _process_disconnect_event(self, event):
@@ -124,15 +124,15 @@ class Device(AbstractDevice):
         return self._impl.productId
 
     @property
-    def manufacturer_name(self) -> Optional[str]:
+    def manufacturer_name(self) -> str | None:
         return self._impl.manufacturerName
 
     @property
-    def product_name(self) -> Optional[str]:
+    def product_name(self) -> str | None:
         return self._impl.productName
 
     @property
-    def serial_number(self) -> Optional[str]:
+    def serial_number(self) -> str | None:
         return self._impl.serialNumber
 
     @property
@@ -148,11 +148,11 @@ class Device(AbstractDevice):
         return "<webusb>"
 
     @property
-    def configuration(self) -> 'Configuration':
+    def configuration(self) -> "Configuration":
         return Configuration(self._impl.configuration)
 
     @property
-    def configurations(self) -> list['Configuration']:
+    def configurations(self) -> list["Configuration"]:
         return [Configuration(configuration) for configuration in self._impl.configurations]
 
     @_map_exceptions
@@ -219,7 +219,7 @@ class Configuration(AbstractConfiguration):
         return self._impl.configurationValue
 
     @property
-    def interfaces(self) -> list['Interface']:
+    def interfaces(self) -> list["Interface"]:
         return [Interface(interface) for interface in self._impl.interfaces]
 
 
@@ -236,7 +236,7 @@ class Interface(AbstractInterface):
     #     return AlternateInterface(self._impl.alternate)
 
     @property
-    def alternates(self) -> list['AlternateInterface']:
+    def alternates(self) -> list["AlternateInterface"]:
         return [AlternateInterface(alternate) for alternate in self._impl.alternates]
 
 
@@ -249,7 +249,7 @@ class AlternateInterface(AbstractAlternateInterface):
         return self._impl.alternateSetting
 
     @property
-    def endpoints(self) -> list['Endpoint']:
+    def endpoints(self) -> list["Endpoint"]:
         return [Endpoint(endpoint) for endpoint in self._impl.endpoints]
 
 

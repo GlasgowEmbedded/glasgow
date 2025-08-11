@@ -100,7 +100,7 @@ class SCD30I2CInterface:
         self._log("data ready=%d", ready)
         return bool(ready)
 
-    async def start_measurement(self, pressure_mbar: int = None):
+    async def start_measurement(self, pressure_mbar: int | None = None):
         assert pressure_mbar is None or pressure_mbar in range(700, 1200)
         if pressure_mbar is None:
             self._log("start measurement")
@@ -271,7 +271,7 @@ class SensorSCD30Applet(GlasgowAppletV2):
             temperature_offset    = await self.scd30_iface.get_temperature_offset()
             altitude_compensation = await self.scd30_iface.get_altitude_compensation()
             measurement_interval  = await self.scd30_iface.get_measurement_interval()
-            print("auto-calibration      : {}".format("on" if auto_calibration else "off"))
+            print(f"auto-calibration      : {'on' if auto_calibration else 'off'}")
             print(f"forced calibration    : {force_calibration} ppm (last)")
             print(f"temperature offset    : {temperature_offset} °C")
             print(f"altitude compensation : {altitude_compensation} m")
@@ -310,7 +310,7 @@ class SensorSCD30Applet(GlasgowAppletV2):
                     await data_logger.report_error(str(error), exception=error)
                     await self.scd30_iface.lower.reset()
                     await asyncio.sleep(meas_interval)
-                except asyncio.TimeoutError as error:
+                except TimeoutError as error:
                     await data_logger.report_error("timeout", exception=error)
                     await self.scd30_iface.lower.reset()
 

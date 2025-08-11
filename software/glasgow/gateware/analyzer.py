@@ -57,8 +57,8 @@ class _PriorityDecoder(Elaboratable):
 
 class EventSource(Elaboratable):
     def __init__(self, name, kind, width, fields, depth):
-        assert (width >  0 and kind in ("change", "strobe") or
-                width == 0 and kind == "strobe")
+        assert ((width >  0 and kind in ("change", "strobe")) or
+                (width == 0 and kind == "strobe"))
 
         self.name    = name
         self.width   = width
@@ -89,8 +89,7 @@ class EventSource(Elaboratable):
 
 
 class EventAnalyzer(Elaboratable):
-    """
-    An event analyzer module.
+    """An event analyzer module.
 
     This event analyzer is designed to observe parallel, bursty processes in real-time, and yet
     degrade gracefully (i.e. without losing data or breaking most applets) when observing processes
@@ -254,7 +253,8 @@ class EventAnalyzer(Elaboratable):
                     m.d.comb += event_fifo.r_en.eq(1)
                     m.d.sync += event_encoder.i.eq(event_fifo.r_data[1:])
                     m.d.sync += rep_throttle_new.eq(event_fifo.r_data[0])
-                    with m.If((event_fifo.r_data != 0) | (rep_throttle_cur != event_fifo.r_data[0])):
+                    with m.If((event_fifo.r_data != 0) |
+                              (rep_throttle_cur != event_fifo.r_data[0])):
                         m.next = "REPORT-DELAY"
                 with m.Elif(self.done):
                     m.next = "REPORT-DELAY"
@@ -376,12 +376,12 @@ class TraceDecodingError(Exception):
 
 
 class TraceDecoder:
-    """
-    Event analyzer trace decoder.
+    """Event analyzer trace decoder.
 
     Decodes raw analyzer traces into a timestamped sequence of maps from event fields to
     their values.
     """
+
     def __init__(self, event_sources, absolute_timestamps=True):
         self.event_sources       = event_sources
         self.absolute_timestamps = absolute_timestamps
@@ -397,15 +397,13 @@ class TraceDecoder:
         self._timeline   = []
 
     def events(self):
-        """
-        Return names and widths for all events that may be emitted by this trace decoder.
-        """
+        """Return names and widths for all events that may be emitted by this trace decoder."""
         yield ("throttle", "throttle", 1)
 
         for event_src in self.event_sources:
             if event_src.fields:
                 for field_name, field_width in event_src.fields:
-                    yield ("{}-{}".format(field_name, event_src.name), event_src.kind, field_width)
+                    yield (f"{field_name}-{event_src.name}", event_src.kind, field_width)
             else:
                 yield (event_src.name, event_src.kind, event_src.width)
 
@@ -424,9 +422,7 @@ class TraceDecoder:
         self._delay = 0
 
     def process(self, data):
-        """
-        Incrementally parse a chunk of analyzer trace, and record events in it.
-        """
+        """Incrementally parse a chunk of analyzer trace, and record events in it."""
         for octet in data:
             is_delay   = ((octet & REPORT_DELAY_MASK)   == REPORT_DELAY)
             is_event   = ((octet & REPORT_EVENT_MASK)   == REPORT_EVENT)
@@ -453,8 +449,8 @@ class TraceDecoder:
                 self._flush_timestamp()
 
                 if (octet & ~REPORT_EVENT_MASK) > len(self.event_sources):
-                    raise TraceDecodingError("at byte offset %d: event source out of bounds" %
-                                             self._byte_off)
+                    raise TraceDecodingError(
+                        f"at byte offset {self._byte_off}: event source out of bounds")
                 self._event_src = self.event_sources[octet & ~REPORT_EVENT_MASK]
                 if self._event_src.width == 0:
                     self._pending[self._event_src.name] = None
@@ -473,7 +469,7 @@ class TraceDecoder:
                     if self._event_src.fields:
                         offset = 0
                         for field_name, field_width in self._event_src.fields:
-                            self._pending["{}-{}".format(field_name, self._event_src.name)] = \
+                            self._pending[f"{field_name}-{self._event_src.name}"] = \
                                 (self._event_data >> offset) & ((1 << field_width) - 1)
                             offset += field_width
                     else:
@@ -490,20 +486,20 @@ class TraceDecoder:
                     self._state = "OVERRUN"
 
             else:
-                raise TraceDecodingError("at byte offset %d: invalid byte %#04x for state %s" %
-                                         (self._byte_off, octet, self._state))
+                raise TraceDecodingError(
+                    f"at byte offset {self._byte_off}: invalid byte {octet:#04x} "
+                    f"for state {self._state}")
 
             self._byte_off += 1
 
     def flush(self, pending=False):
-        """
-        Return the complete event timeline since the start of decoding or the previous flush.
+        """Return the complete event timeline since the start of decoding or the previous flush.
         If ``pending`` is ``True``, also flushes pending events; this may cause duplicate
         timestamps if more events arrive after the flush.
         """
         if self._state == "OVERRUN":
             self._timeline.append((self._timestamp, "overrun"))
-        elif pending and self._pending or self._state == "DONE":
+        elif (pending and self._pending) or self._state == "DONE":
             self._timeline.append((self._timestamp, self._pending))
             self._pending = OrderedDict()
 

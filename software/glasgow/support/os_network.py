@@ -14,7 +14,7 @@ LINUX_IFF_NO_PI = 0x1000
 class OSNetworkInterface:
     """Userspace network interface driver for the host operating system."""
 
-    def __init__(self, name: 'str | bytes'):
+    def __init__(self, name: "str | bytes"):
         if not (isinstance(name, (str, bytes)) and len(name) in range(1, 16)):
             raise TypeError(f"invalid interface name: {name!r}")
         if isinstance(name, str):
@@ -32,7 +32,7 @@ class OSNetworkInterface:
         """
         return self._fd
 
-    async def send(self, packets: 'list[bytes | bytearray | memoryview]'):
+    async def send(self, packets: "list[bytes | bytearray | memoryview]"):
         """"Send packets.
 
         To improve throughput, :meth:`send` can queue multiple packets.
@@ -45,7 +45,7 @@ class OSNetworkInterface:
         except BlockingIOError: # write until the buffer is full
             pass
 
-    async def recv(self, *, length=65536) -> 'list[bytes | bytearray | memoryview]':
+    async def recv(self, *, length=65536) -> "list[bytes | bytearray | memoryview]":
         """"Receive packets.
 
         To improve throughput, :meth:`recv` dequeues all available packets. Packets longer than

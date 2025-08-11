@@ -41,8 +41,8 @@ class INA260I2CInterface:
         await self.lower.write(self._i2c_addr, [reg])
         result = await self.lower.read(self._i2c_addr, 2)
         if result is None:
-            raise INA260Error("INA260 did not acknowledge I2C read at address {:#07b}"
-                              .format(self._i2c_addr))
+            raise INA260Error(
+                f"INA260 did not acknowledge I2C read at address {self._i2c_addr:#07b}")
         msb, lsb = result
         raw = (msb << 8) | lsb
         self._logger.log(self._level, "INA260: read reg=%#04x raw=%#06x", reg, raw)
@@ -52,8 +52,8 @@ class INA260I2CInterface:
         await self.lower.write(self._i2c_addr, [reg])
         result = await self.lower.read(self._i2c_addr, 2)
         if result is None:
-            raise INA260Error("INA260 did not acknowledge I2C read at address {:#07b}"
-                              .format(self._i2c_addr))
+            raise INA260Error(
+                f"INA260 did not acknowledge I2C read at address {self._i2c_addr:#07b}")
         msb, lsb = result
         raw = (msb << 8) | lsb
         if raw & (1 << 15):
@@ -66,10 +66,10 @@ class INA260I2CInterface:
     async def identify(self):
         vendor = await self._read_reg16u(REG_VENDOR_ID)
         if vendor != REG_VALUE_VENDOR_ID:
-            raise INA260Error("INA260: wrong vendor ID=%#04x" % vendor)
+            raise INA260Error(f"INA260: wrong vendor ID={vendor:#04x}")
         product = await self._read_reg16u(REG_PRODUCT_ID)
         if product != REG_VALUE_PRODUCT_ID:
-            raise INA260Error("INA260: wrong product ID=%#04x" % product)
+            raise INA260Error(f"INA260: wrong product ID={product:#04x}")
 
     async def get_voltage(self):
         raw = await self._read_reg16u(REG_VOLTAGE)
@@ -152,7 +152,7 @@ class SensorINA260Applet(I2CInitiatorApplet):
                 except INA260Error as error:
                     await data_logger.report_error(str(error), exception=error)
                     await ina260.lower.reset()
-                except asyncio.TimeoutError as error:
+                except TimeoutError as error:
                     await data_logger.report_error("timeout", exception=error)
                     await ina260.lower.reset()
                 await asyncio.sleep(args.interval)

@@ -6,11 +6,9 @@
 # changes to the protocol of that applet are also breaking changes to the protocol of this applet.
 
 import logging
-import asyncio
-import argparse
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io
+from amaranth.lib import enum, wiring, stream, io
 from amaranth.lib.wiring import In, Out
 
 from glasgow.gateware import cobs
@@ -21,7 +19,7 @@ from glasgow.applet.interface.swd_probe import SWDProbeComponent
 from glasgow.applet import GlasgowAppletV2
 
 
-__all__ = []
+__all__ = ["StreamBuffer"]
 
 
 class ProbeRsTarget(enum.Enum, shape=8):

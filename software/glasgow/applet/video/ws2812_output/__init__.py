@@ -91,7 +91,8 @@ class VideoWS2812OutputSubtarget(Elaboratable):
                     m.d.comb += output.out.eq((1 << len(self.ports.out)) - 1)
                     m.d.sync += cyc_ctr.eq(cyc_ctr + 1)
                 with m.Elif(cyc_ctr < t_one):
-                    m.d.comb += ( o.eq(word[(pix_out_bpp - 1) + (pix_out_bpp * i)]) for i,o in enumerate(output.out) )
+                    m.d.comb += (o.eq(word[(pix_out_bpp - 1) + (pix_out_bpp * i)])
+                                 for i,o in enumerate(output.out))
                     m.d.sync += cyc_ctr.eq(cyc_ctr + 1)
                 with m.Elif(cyc_ctr < t_period):
                     m.d.comb += output.out.eq(0)
@@ -143,9 +144,9 @@ class VideoWS2812OutputApplet(GlasgowApplet):
 
     pixel_formats = {
         # in-out      in size  out size  format_func
-        'RGB-BRG':   (   3,        3,    lambda r,g,b:   Cat(b,r,g)   ),
-        'RGB-xBRG':  (   3,        4,    lambda r,g,b:   Cat(Const(0, unsigned(8)),b,r,g) ),
-        'RGBW-WBRG': (   4,        4,    lambda r,g,b,w: Cat(w,b,r,g) ),
+        "RGB-BRG":   (   3,        3,    lambda r,g,b:   Cat(b,r,g)   ),
+        "RGB-xBRG":  (   3,        4,    lambda r,g,b:   Cat(Const(0, unsigned(8)),b,r,g) ),
+        "RGBW-WBRG": (   4,        4,    lambda r,g,b,w: Cat(w,b,r,g) ),
     }
 
     @classmethod
@@ -185,7 +186,8 @@ class VideoWS2812OutputApplet(GlasgowApplet):
 
     async def run(self, device, args):
         buffer_size = len(args.out) * args.count * self.pix_in_size * args.buffer
-        return await device.demultiplexer.claim_interface(self, self.mux_interface, args, write_buffer_size=buffer_size)
+        return await device.demultiplexer.claim_interface(self, self.mux_interface, args,
+            write_buffer_size=buffer_size)
 
     @classmethod
     def add_interact_arguments(cls, parser):
@@ -194,8 +196,8 @@ class VideoWS2812OutputApplet(GlasgowApplet):
     async def interact(self, device, args, leds):
         frame_size = len(args.out) * args.count * self.pix_in_size
         buffer_size = frame_size * args.buffer
-        endpoint = await ServerEndpoint("socket", self.logger, args.endpoint, queue_size=buffer_size,
-            deprecated_cancel_on_eof=True)
+        endpoint = await ServerEndpoint("socket", self.logger, args.endpoint,
+            queue_size=buffer_size, deprecated_cancel_on_eof=True)
         while True:
             try:
                 data = await asyncio.shield(endpoint.recv(buffer_size))

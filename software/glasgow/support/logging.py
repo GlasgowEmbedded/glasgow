@@ -1,4 +1,3 @@
-import operator
 
 from .lazy import *
 from .bits import bits
@@ -16,9 +15,9 @@ def dump_hex(data):
         if dump_hex.limit is None or len(data) <= dump_hex.limit:
             return data.hex()
         else:
-            return "{}... ({} bytes total)".format(
-                data[:dump_hex.limit].hex(), len(data))
+            return f"{data[:dump_hex.limit].hex()}... ({len(data)} bytes total)"
     return lazy(lambda: to_hex(data))
+
 
 dump_hex.limit = 64
 
@@ -29,9 +28,9 @@ def dump_bin(data):
         if dump_bin.limit is None or len(data) <= dump_bin.limit:
             return str(data)[::-1]
         else:
-            return "{}... ({} bits total)".format(
-                str(data[:dump_bin.limit])[::-1], len(data))
+            return f"{str(data[:dump_bin.limit])[::-1]}... ({len(data)} bits total)"
     return lazy(lambda: to_bin(data))
+
 
 dump_bin.limit = 64
 
@@ -49,10 +48,10 @@ def dump_seq(joiner, data):
                                       data_length <= dump_seq.limit):
             return joiner.join(data)
         else:
-            return "{}... ({} elements total)".format(
-                joiner.join(elem for elem, _ in zip(data, range(dump_seq.limit))),
-                data_length or "?")
+            dumped = joiner.join((elem for elem, _ in zip(data, range(dump_seq.limit))))
+            return f"{dumped}... ({data_length or '?'} elements total)"
     return lazy(lambda: to_seq(data))
+
 
 dump_seq.limit = 16
 
@@ -70,9 +69,9 @@ def dump_mapseq(joiner, mapper, data):
                                          data_length <= dump_mapseq.limit):
             return joiner.join(map(mapper, data))
         else:
-            return "{}... ({} elements total)".format(
-                joiner.join(mapper(elem) for elem, _ in zip(data, range(dump_mapseq.limit))),
-                data_length or "?")
+            dumped = joiner.join((mapper(elem) for elem, _ in zip(data, range(dump_mapseq.limit))))
+            return f"{dumped}... ({data_length or '?'} elements total)"
     return lazy(lambda: to_mapseq(data))
+
 
 dump_mapseq.limit = 16

@@ -1,4 +1,4 @@
-from typing import Optional, BinaryIO
+from typing import Never, BinaryIO
 import os
 import sys
 import logging
@@ -49,7 +49,7 @@ class GlasgowBuildPlan:
     def bitstream_id(self) -> bytes:
         return self._bitstream_id
 
-    def _report_build_failure(self, stdout_lines: list[str], exit_code: int):
+    def _report_build_failure(self, stdout_lines: list[str], exit_code: int) -> Never:
         if not logger.isEnabledFor(logging.TRACE): # don't print the log twice
             for stdout_line in stdout_lines:
                 logger.info(f"build: %s", stdout_line.decode().rstrip())
@@ -65,7 +65,7 @@ class GlasgowBuildPlan:
     # this function is only public for paranoid people who don't trust our excellent cache system.
     # it's very unlikely to fail, but people are rightfully distrustful of cache systems, so
     # be sympathetic to that.
-    async def execute_shell(self, build_dir: Optional[os.PathLike] = None, *,
+    async def execute_shell(self, build_dir: os.PathLike | None = None, *,
                             debug: bool = False) -> tuple[bytes, bytes]:
         if build_dir is None:
             build_dir = tempfile.mkdtemp(prefix="glasgow_")
@@ -73,13 +73,13 @@ class GlasgowBuildPlan:
             # copied from `BuildPlan.execute_local`, which was inlined into this function because
             # Glasgow has unique (caching) needs. see the comment in that function for details.
             self._inner.extract(build_dir)
-            if os.name == 'nt':
+            if os.name == "nt":
                 args = ["cmd", "/c", f"call {self._inner.script}.bat"]
             else:
                 args = ["sh", f"{self._inner.script}.sh"]
 
             environ = self._toolchain.env_vars
-            if os.name == 'nt':
+            if os.name == "nt":
                 # Windows has some environment variables that are required by the OS runtime:
                 # - SYSTEMROOT: required for child Python processes to initialize properly
                 # - PROCESSOR_ARCHITECTURE: required for YoWASP (used by wasmtime)
@@ -101,11 +101,12 @@ class GlasgowBuildPlan:
 
             bitstream_data = (pathlib.Path(build_dir) / "top.bin").read_bytes()
             stdout_data = b"".join(stdout_lines)
-            return bitstream_data, stdout_data
         except:
             if debug:
                 logger.info("keeping build tree as %s", build_dir)
             raise
+        else:
+            return bitstream_data, stdout_data
         finally:
             if not debug:
                 shutil.rmtree(build_dir)
@@ -128,6 +129,7 @@ class GlasgowBuildPlan:
             return bitstream_data, stdout_data
         else:
             self._report_build_failure(stdout_lines, build_result.code)
+            assert False
 
     async def get_bitstream(self, *, debug=False) -> bytes:
         # locate the caches in the platform-appropriate cache directory; bitstreams aren't large,

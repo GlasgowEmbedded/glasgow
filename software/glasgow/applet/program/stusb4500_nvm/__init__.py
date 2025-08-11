@@ -19,7 +19,6 @@ class StUsb4500NvmInterface:
     def _log(self, message, *args):
         self._logger.log(self._level, "stusb4500_nvm: " + message, *args)
 
-
     FTP_DATA_BASE = 0x53
     FTP_KEY       = 0x95
     FTP_CTRL_0    = 0x96
@@ -29,7 +28,7 @@ class StUsb4500NvmInterface:
 
     async def _read_regs(self, addr, length):
         self._log("i2c-addr=%#02x reg-addr=%#02x", self._i2c_addr, addr)
-        result = await self.lower.write(self._i2c_addr, addr.to_bytes(1, 'little'))
+        result = await self.lower.write(self._i2c_addr, addr.to_bytes(1, "little"))
         if result is False:
             self._log("unacked")
             return None
@@ -48,7 +47,7 @@ class StUsb4500NvmInterface:
 
         if not isinstance(data, list):
             data = [data]
-        chunk = addr.to_bytes(1, 'little') + bytes(data)
+        chunk = addr.to_bytes(1, "little") + bytes(data)
         self._log("write=<%s>", chunk[1:].hex())
 
         result = await self.lower.write(self._i2c_addr, chunk, stop=True)

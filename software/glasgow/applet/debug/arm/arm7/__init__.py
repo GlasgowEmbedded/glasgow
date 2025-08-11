@@ -751,7 +751,6 @@ class DebugARM7Interface(GDBRemote):
         def is_thumb(self):
             return self in (self.SOFT_THUMB, self.HARD_THUMB)
 
-
     def __init__(self, logger, assembly: AbstractAssembly, *,
                  tck, tms, tdo, tdi, trst=None, endian):
         self._logger = logger
@@ -1157,7 +1156,7 @@ class DebugARM7Interface(GDBRemote):
             mid_data  = bytes(txn.results[head_bytes:head_bytes+mid_words])
             return head_data + mid_data + tail_data
         else:
-            return bytes()
+            return b""
 
     async def target_write_memory(self, address: int, data: bytes):
         assert self._is_halted
@@ -1258,13 +1257,13 @@ class DebugARM7Interface(GDBRemote):
         self._log("breakpoint clear at=%08x kind=%s", address, kind.name)
         for (breakpt_address, breakpt_kind), breakpt_save in self._breakpts.items():
             if (breakpt_address, breakpt_kind) == (address, kind):
+                if breakpt_kind.is_soft:
+                    await self._replace_code(breakpt_address, breakpt_save, action="clear")
+                del self._breakpts[(breakpt_address, breakpt_kind)]
                 break
         else:
             raise GDBRemoteError(f"cannot clear a {kind.name} breakpoint at {address:#010x}: "
                                  f"breakpoint does not exist")
-        if breakpt_kind.is_soft:
-            await self._replace_code(breakpt_address, breakpt_save, action="clear")
-        del self._breakpts[(breakpt_address, breakpt_kind)]
 
     async def _clear_all_breakpts(self):
         assert self._is_halted

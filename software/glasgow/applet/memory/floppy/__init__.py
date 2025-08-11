@@ -297,11 +297,8 @@
 # on the track where its end meets its beginning. Such a floppy would have a much larger density.
 
 import logging
-import asyncio
 import argparse
 import struct
-import random
-import itertools
 import math
 from amaranth import *
 from amaranth.lib import cdc, io
@@ -356,15 +353,15 @@ class ShugartFloppyBus(Elaboratable):
         m.submodules.side1_buffer = side1_buffer = io.Buffer("o", ~self.ports.side1)
         m.d.comb += side1_buffer.o.eq(self.side1)
         m.submodules.index_buffer = index_buffer = io.Buffer("i", ~self.ports.index)
-        m.submodules += cdc.FFSynchronizer(index_buffer.i, self.index),
+        m.submodules += cdc.FFSynchronizer(index_buffer.i, self.index)
         m.submodules.trk00_buffer = trk00_buffer = io.Buffer("i", ~self.ports.trk00)
-        m.submodules += cdc.FFSynchronizer(trk00_buffer.i, self.trk00),
+        m.submodules += cdc.FFSynchronizer(trk00_buffer.i, self.trk00)
         m.submodules.wpt_buffer = wpt_buffer = io.Buffer("i", ~self.ports.wpt)
-        m.submodules += cdc.FFSynchronizer(wpt_buffer.i, self.wpt),
+        m.submodules += cdc.FFSynchronizer(wpt_buffer.i, self.wpt)
         m.submodules.rdata_buffer = rdata_buffer = io.Buffer("i", ~self.ports.rdata)
-        m.submodules += cdc.FFSynchronizer(rdata_buffer.i, self.rdata),
+        m.submodules += cdc.FFSynchronizer(rdata_buffer.i, self.rdata)
         m.submodules.dskchg_buffer = dskchg_buffer = io.Buffer("i", ~self.ports.dskchg)
-        m.submodules += cdc.FFSynchronizer(dskchg_buffer.i, self.dskchg),
+        m.submodules += cdc.FFSynchronizer(dskchg_buffer.i, self.dskchg)
 
         index_r = Signal()
         m.d.sync += index_r.eq(self.index)
@@ -714,7 +711,7 @@ class MemoryFloppyApplet(GlasgowApplet):
             help="read from track FIRST")
         p_read_raw.add_argument(
             "last", metavar="LAST", type=int,
-            help="read until track LAST (inclusive; 159 for most 3.5\" disks)")
+            help='read until track LAST (inclusive; 159 for most 3.5" disks)')
 
     async def interact(self, device, args, floppy_iface):
         self.logger.info("starting up the drive")
@@ -742,6 +739,7 @@ class MemoryFloppyApplet(GlasgowApplet):
         return test.MemoryFloppyAppletTestCase
 
 # -------------------------------------------------------------------------------------------------
+
 
 class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
     help = "manipulate raw disk images captured from IBM/Shugart floppy drives"
@@ -806,7 +804,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
         data = []
         labels = []
         for cylinder, head, bytestream in self.iter_tracks(args.file):
-            if cylinder not in args.cylinders or args.head is not None and head not in args.head:
+            if cylinder not in args.cylinders or (args.head is not None and head not in args.head):
                 continue
             self.logger.info("processing C/H %d/%d",
                              cylinder, head)
@@ -816,9 +814,9 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             labels.append(f"cylinder {cylinder}, head {head}")
 
         fig, ax = plt.subplots()
-        fig.suptitle("Domain size histogram for {} (heads: {})"
-                     .format(args.file.name,
-                             ", ".join(str(h) for h in args.head) if args.head else "all"))
+        fig.suptitle(
+            f"Domain size histogram for {args.file.name} "
+            f"(heads: {', '.join(str(h) for h in args.head) if args.head else 'all'})")
         ax.hist(data,
             bins     = [x * self._timebase for x in range(600)],
             label    = labels,
@@ -882,8 +880,9 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
                 ui_time += edge
 
             fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True)
-            fig.suptitle("PLL debug output for {}, track {}, range {}+{}"
-                         .format(args.file.name, args.track, args.offset or 0, len(bytestream)))
+            fig.suptitle(
+                f"PLL debug output for {args.file.name}, track {args.track}, "
+                f"range {args.offset or 0}+{len(bytestream)}")
             times = np.arange(0, len(bits)) * self._timebase
 
             ax1.plot(times, np.array([x[1] / ui_cycles for x in plldata]),
@@ -1092,7 +1091,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
                         fail_crc = False
                     else:
                         fail_crc = True
-                    self.logger.log(logging.ERROR if fail_crc else logging.WARN,
+                    self.logger.log(logging.ERROR if fail_crc else logging.WARNING,
                                     "wrong checksum sym-off=%d state=%s type=%02X",
                                     offset, state, data[2])
                     if fail_crc:

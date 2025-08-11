@@ -17,7 +17,6 @@
 #   address, data and command registers only occurs once on entry to Run-Test/Idle.
 
 import logging
-import argparse
 
 from ....arch.jtag import *
 from ....arch.arc import *
@@ -56,7 +55,7 @@ class ARCDebugInterface:
             status = DR_STATUS.from_bits(status_bits)
             self._log("status %s", status.bits_repr())
             if status.FL:
-                raise ARCDebugError("transaction failed: %s" % status.bits_repr())
+                raise ARCDebugError(f"transaction failed: {status.bits_repr()}")
 
     async def read(self, address, space):
         if space == "memory":
@@ -109,7 +108,8 @@ class ARCDebugInterface:
         return status32.H
 
     async def force_halt(self, read_modify_write=True):
-        debug = AUX_DEBUG.from_int((await self.read(AUX_DEBUG_addr, space="aux")) if read_modify_write else 0)
+        debug = AUX_DEBUG.from_int(
+            (await self.read(AUX_DEBUG_addr, space="aux")) if read_modify_write else 0)
         debug.FH = 1
         await self.write(AUX_DEBUG_addr, debug.to_int(), space="aux")
         debug.FH = 0
@@ -137,6 +137,7 @@ class ARCDebugInterface:
             else:
                 raise ARCDebugError("Un halting the ARC failed!")
 
+
 class DebugARCApplet(JTAGProbeApplet):
     logger = logging.getLogger(__name__)
     help = "debug ARC processors via JTAG"
@@ -149,7 +150,7 @@ class DebugARCApplet(JTAGProbeApplet):
     There is currently no debug server implemented. This applet only allows manipulating Memory,
     Core and Aux spaces via a Python REPL.
     """.format(
-        devices="\n".join(map(lambda x: f"        * {x.name}", devices.values()))
+        devices="\n".join(f"        * {x.name}" for x in devices.values())
     )
 
     @classmethod
@@ -168,7 +169,7 @@ class DebugARCApplet(JTAGProbeApplet):
     async def interact(self, device, args, arc_iface):
         idcode, device = await arc_iface.identify()
         if device is None:
-            raise GlasgowAppletError("cannot operate on unknown device with IDCODE=%08x"
-                                     % idcode.to_int())
+            raise GlasgowAppletError(
+                f"cannot operate on unknown device with IDCODE={idcode.to_int():08x}")
         self.logger.info("IDCODE=%08x device=%s rev=%d",
                          idcode.to_int(), device.name, idcode.version)

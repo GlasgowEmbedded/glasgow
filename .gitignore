@@ -1,3 +1,5 @@
+/.ruff_cache
+
 *.vcd
 *.gtkw
 *.log

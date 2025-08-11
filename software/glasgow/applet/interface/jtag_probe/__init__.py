@@ -34,7 +34,7 @@ from ....arch.jtag import *
 from ... import *
 
 
-class JTAGState(str, enum.Enum):
+class JTAGState(enum.StrEnum):
     # The names are JTAG SVF state names; the values are IEEE names.
     UNKNOWN = "Unknown"
     RESET = "Test-Logic-Reset"
@@ -221,7 +221,7 @@ class JTAGProbeDriver(Elaboratable):
 
             with m.State("RECV-COUNT-2"):
                 with m.If(self._out_fifo.r_rdy):
-                    m.d.comb += self._out_fifo.r_en.eq(1),
+                    m.d.comb += self._out_fifo.r_en.eq(1)
                     m.d.sync += count[8:16].eq(self._out_fifo.r_data)
                     m.next = "RECV-BITS"
 
@@ -274,7 +274,7 @@ class JTAGProbeDriver(Elaboratable):
             with m.State("SEND-BITS"):
                 with m.If(cmd & BIT_DATA_IN):
                     with m.If(self._in_fifo.w_rdy):
-                        m.d.comb += self._in_fifo.w_en.eq(1),
+                        m.d.comb += self._in_fifo.w_en.eq(1)
                         with m.If(count == 0):
                             m.d.comb += self._in_fifo.w_data.eq(shreg_i >> align)
                         with m.Else():
@@ -447,7 +447,7 @@ class JTAGProbeInterface:
     async def pulse_tck(self, count):
         assert self._state in (JTAGState.IDLE, JTAGState.IRPAUSE, JTAGState.DRPAUSE)
         self._log_l("pulse tck count=%d", count)
-        for count, last in self._chunk_count(count, last=True):
+        for count, _last in self._chunk_count(count, last=True):
             await self.lower.write(struct.pack("<BH",
                 CMD_SHIFT_TDIO, count))
 
@@ -780,7 +780,6 @@ class JTAGProbeInterface:
 
     async def scan_reset_dr_ir(self):
         """Capture IR values and IDCODE/BYPASS DR values using Test-Logic-Reset."""
-
         await self.test_reset()
         # Scan DR chain first, since scanning IR chain will latch BYPASS into every IR.
         dr_value = await self._scan_xr("dr", idempotent=False)
@@ -791,7 +790,6 @@ class JTAGProbeInterface:
 
     def interrogate_dr(self, dr_value, *, check=True):
         """Split DR value captured after TAP reset into IDCODE/BYPASS chunks."""
-
         idcodes = []
         offset = 0
         while offset < len(dr_value):
@@ -802,9 +800,10 @@ class JTAGProbeInterface:
                     if dr_chunk[1:12] == bits("00001111111"):
                         self._log_h("invalid dr idcode=%08x", idcode)
                         if check:
-                            raise JTAGProbeError("TAP #{} has invalid DR IDCODE={:08x}"
-                                                 .format(len(idcodes), idcode))
-                        return
+                            raise JTAGProbeError(
+                                f"TAP #{len(idcodes)} has invalid DR "
+                                f"IDCODE={idcode:08x}")
+                        return None
                     else:
                         self._log_h("found dr idcode=%08x (tap #%d)", idcode, len(idcodes))
                     idcodes.append(idcode)
@@ -812,9 +811,10 @@ class JTAGProbeInterface:
                 else:
                     self._log_h("truncated dr idcode=<%s>", dump_bin(dr_value[offset:]))
                     if check:
-                        raise JTAGProbeError("TAP #{} has truncated DR IDCODE=<{}>"
-                                             .format(len(idcodes), dump_bin(dr_value[offset:])))
-                    return
+                        raise JTAGProbeError(
+                            f"TAP #{len(idcodes)} has truncated DR "
+                            f"IDCODE=<{dump_bin(dr_value[offset:])}>")
+                    return None
             else:
                 self._log_h("found dr bypass (tap #%d)", len(idcodes))
                 idcodes.append(None)
@@ -840,14 +840,14 @@ class JTAGProbeInterface:
             self._log_h("invalid ir taps=%d starts=%d", tap_count, len(ir_starts))
             if check:
                 raise JTAGProbeError("IR capture has fewer <10> transitions than TAPs")
-            return
+            return None
 
         # The chain must start with a valid captured IR value.
         if ir_starts[0] != 0:
             self._log_h("invalid ir starts[0]=%d", ir_starts[0])
             if check:
                 raise JTAGProbeError("IR capture does not start with <10> transition")
-            return
+            return None
 
         # If IR lengths are specified explicitly, use them but validate first.
         if ir_lengths is not None:
@@ -855,14 +855,14 @@ class JTAGProbeInterface:
                 self._log_h("invalid ir taps=%d user-lengths=%d", tap_count, len(ir_lengths))
                 if check:
                     raise JTAGProbeError("IR length count differs from TAP count")
-                return
+                return None
 
             if sum(ir_lengths) != len(ir_value):
                 self._log_h("invalid ir total-length=%d user-total-length=%d",
                             sum(ir_lengths), len(ir_value))
                 if check:
                     raise JTAGProbeError("IR capture length differs from sum of IR lengths")
-                return
+                return None
 
             ir_offset = 0
             for tap_index, ir_length in enumerate(ir_lengths):
@@ -870,9 +870,9 @@ class JTAGProbeInterface:
                         ir_offset + ir_length != len(ir_value)):
                     self._log_h("misaligned ir (tap #%d)", tap_index)
                     if check:
-                        raise JTAGProbeError("IR length for TAP #{:d} misaligns next TAP"
-                                             .format(tap_index))
-                    return
+                        raise JTAGProbeError(f"IR length for TAP #{tap_index:d} misaligns next TAP"
+                                             )
+                    return None
 
                 self._log_h("explicit ir length=%d (tap #%d)", ir_length, tap_index)
                 ir_offset += ir_length
@@ -904,7 +904,7 @@ class JTAGProbeInterface:
                         tap_count, ",".join(f"{chunk:d}" for chunk in ir_chunks))
             if check:
                 raise JTAGProbeError("IR capture insufficiently constrains IR lengths")
-            return
+            return None
 
     async def select_tap(self, index, *, ir_lengths=None):
         dr_value, ir_value = await self.scan_reset_dr_ir()
@@ -917,8 +917,8 @@ class TAPInterface:
     @classmethod
     def from_layout(cls, lower, ir_layout, *, index):
         if index not in range(len(ir_layout)):
-            raise JTAGProbeError("TAP #{:d} is not a part of {:d}-TAP chain"
-                                 .format(index, len(ir_layout)))
+            raise JTAGProbeError(f"TAP #{index:d} is not a part of {len(ir_layout):d}-TAP chain"
+                                 )
 
         return cls(lower, ir_length=ir_layout[index],
             ir_prefix=sum(ir_layout[:index]), ir_suffix=sum(ir_layout[index + 1:]),
@@ -1050,8 +1050,8 @@ class JTAGProbeApplet(GlasgowApplet):
                         continue
                 except ValueError:
                     pass
-                raise argparse.ArgumentTypeError("{!r} is not a valid IR length"
-                                                 .format(arg))
+                raise argparse.ArgumentTypeError(f"{arg!r} is not a valid IR length"
+                                                 )
             return lengths
 
         parser.add_argument(
@@ -1180,11 +1180,11 @@ class JTAGProbeApplet(GlasgowApplet):
                     dr_value = await tap_iface.scan_dr(check=False)
                     if dr_value is None:
                         dr_length = "?"
-                        level = logging.WARN
+                        level = logging.WARNING
                     else:
                         dr_length = len(dr_value)
                         if dr_length == 0:
-                            level = logging.WARN
+                            level = logging.WARNING
                         elif dr_length == 1:
                             level = logging.DEBUG
                         else:
@@ -1195,7 +1195,7 @@ class JTAGProbeApplet(GlasgowApplet):
     def add_repl_arguments(cls, parser):
         # Inheriting from the JTAG probe applet does not inherit the REPL.
         if cls is not JTAGProbeApplet:
-            return super().add_repl_arguments(parser)
+            super().add_repl_arguments(parser)
 
         parser.add_argument(
             "--tap-index", metavar="INDEX", type=int,
@@ -1204,7 +1204,7 @@ class JTAGProbeApplet(GlasgowApplet):
     async def repl(self, device, args, jtag_iface):
         # See explanation in add_repl_arguments().
         if type(self) is not JTAGProbeApplet:
-            return await super().repl(device, args, jtag_iface)
+            await super().repl(device, args, jtag_iface)
 
         if args.tap_index is None:
             iface = jtag_iface

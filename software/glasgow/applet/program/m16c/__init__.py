@@ -20,7 +20,6 @@ import logging
 import argparse
 import asyncio
 import enum
-from contextlib import contextmanager
 from amaranth import *
 from amaranth.lib import io
 
@@ -161,7 +160,7 @@ class ProgramM16CInterface:
                     return
         try:
             await asyncio.wait_for(response(), timeout=self.timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise M16CBootloaderError("cannot synchronize with ROM bootloader")
 
     async def sync_bootloader(self):
@@ -176,7 +175,7 @@ class ProgramM16CInterface:
             assert new_baud == BAUD_RATES[baud_rate]
         try:
             return await asyncio.wait_for(response(), timeout=self.timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise M16CBootloaderError(f"bootloader does not support baud rate {baud_rate}")
 
     async def bootloader_version(self):
@@ -188,7 +187,7 @@ class ProgramM16CInterface:
             return str(version, encoding="ASCII")
         try:
             return await asyncio.wait_for(response(), timeout=self.timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise M16CBootloaderError("command timeout")
 
     async def _bootloader_read_status(self):
@@ -200,7 +199,7 @@ class ProgramM16CInterface:
             return srd1, srd2
         try:
             return await asyncio.wait_for(response(), timeout=self.timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise M16CBootloaderError("command timeout")
 
     async def _bootloader_poll_status(self, timeout):
@@ -213,12 +212,13 @@ class ProgramM16CInterface:
                 return srd1, srd2
             try:
                 return await asyncio.wait_for(response(), timeout=0.1)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 self._log("poll timeout")
                 timeout -= 0.1
+        raise M16CBootloaderError("command timeout")
 
     async def is_bootloader_locked(self):
-        srd1, srd2 = await self._bootloader_read_status()
+        _srd1, srd2 = await self._bootloader_read_status()
         if (srd2 & ID_MASK) in (ID_MISSING, ID_WRONG):
             return True
         if (srd2 & ID_MASK) == ID_CORRECT:
@@ -237,7 +237,7 @@ class ProgramM16CInterface:
         await self.lower.write([len(key)])
         await self.lower.write(key)
 
-        srd1, srd2 = await self._bootloader_read_status()
+        _srd1, srd2 = await self._bootloader_read_status()
         if (srd2 & ID_MASK) == ID_CORRECT:
             return True
         if (srd2 & ID_MASK) == ID_WRONG:
@@ -258,7 +258,7 @@ class ProgramM16CInterface:
             return data
         try:
             return await asyncio.wait_for(response(), timeout=self.timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise M16CBootloaderError(f"cannot read page {address:06x}")
 
     async def program_page(self, address, data):
@@ -272,11 +272,11 @@ class ProgramM16CInterface:
         ])
         await self.lower.write(data)
         try:
-            srd1, srd2 = await self._bootloader_poll_status(1.0)
+            srd1, _srd2 = await self._bootloader_poll_status(1.0)
             assert (srd1 & ST_READY) != 0
             if (srd1 & ST_PROGRAM_FAIL) != 0:
                 raise M16CBootloaderError(f"cannot program page {address:06x}")
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise M16CBootloaderError("page program timeout")
 
     async def erase_block(self, address):
@@ -289,22 +289,22 @@ class ProgramM16CInterface:
         ])
         await self.lower.write([Command.ERASE_KEY])
         try:
-            srd1, srd2 = await self._bootloader_poll_status(1.0)
+            srd1, _srd2 = await self._bootloader_poll_status(1.0)
             assert (srd1 & ST_READY) != 0
             if (srd1 & ST_ERASE_FAIL) != 0:
                 raise M16CBootloaderError(f"cannot erase block {address:06x}")
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise M16CBootloaderError("block erase timeout")
 
     async def erase_all(self):
         self._log("command erase-all")
         await self.lower.write([Command.CLEAR_STATUS, Command.ERASE_ALL, Command.ERASE_KEY])
         try:
-            srd1, srd2 = await self._bootloader_poll_status(10.0)
+            srd1, _srd2 = await self._bootloader_poll_status(10.0)
             assert (srd1 & ST_READY) != 0
             if (srd1 & ST_ERASE_FAIL) != 0:
                 raise M16CBootloaderError("cannot erase entire array")
-        except asyncio.TimeoutError:
+        except TimeoutError:
             raise M16CBootloaderError("entire array erase timeout")
 
 
@@ -464,8 +464,8 @@ class ProgramM16CApplet(GlasgowApplet):
             if args.operation == "program":
                 firmware = args.file.read()
                 if (len(firmware) % PAGE_SIZE) != 0:
-                    raise M16CBootloaderError("file size ({}) is not a multiple of page size"
-                                              .format(len(firmware)))
+                    raise M16CBootloaderError(
+                        f"file size ({len(firmware)}) is not a multiple of page size")
 
                 for offset in range(0, len(firmware), PAGE_SIZE):
                     address   = args.address + offset
@@ -474,8 +474,7 @@ class ProgramM16CApplet(GlasgowApplet):
                     self.logger.info("programming page %0.*x", 5, address)
                     await iface.program_page(address, page_data)
                     if await iface.read_page(address) != page_data:
-                        raise M16CBootloaderError("verifying page {:0{}x} failed"
-                                                  .format(address, 5))
+                        raise M16CBootloaderError(f"verifying page {address:0{5}x} failed")
 
             if args.operation == "erase":
                 self.logger.info("erasing array")

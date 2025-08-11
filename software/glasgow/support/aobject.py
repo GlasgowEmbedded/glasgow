@@ -2,11 +2,11 @@ __all__ = ["aobject"]
 
 
 class aobject:
-    """
-    Base class for objects with an async ``__init__`` method.
+    """Base class for objects with an async ``__init__`` method.
 
     Creating an instance of ``aobject`` requires awaiting, e.g. ``await aobject()``.
     """
+
     async def __new__(cls, *a, **kw):
         instance = super().__new__(cls)
         await instance.__init__(*a, **kw)

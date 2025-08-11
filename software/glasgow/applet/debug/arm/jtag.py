@@ -3,7 +3,6 @@
 # Accession: G00027
 
 import logging
-import argparse
 
 from ....support.aobject import *
 from ....arch.jtag import *

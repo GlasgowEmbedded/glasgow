@@ -2,7 +2,6 @@
 # Accession: G00049
 
 import logging
-import asyncio
 from amaranth import *
 from amaranth.lib import io, cdc
 
@@ -30,7 +29,7 @@ class HX711Bus(Elaboratable):
         m.submodules += cdc.FFSynchronizer(din_buffer.i, self.din)
         if self.ports.osc is not None:
             m.submodules.osc_buffer = osc_buffer = io.Buffer("o", self.ports.osc)
-            m.d.comb += osc_buffer.o.eq(self.osc),
+            m.d.comb += osc_buffer.o.eq(self.osc)
         return m
 
 
@@ -106,8 +105,8 @@ class HX711Interface:
 
     async def set_channel_gain(self, channel, gain):
         if (channel, gain) not in (("A", 128), ("B", 32), ("A", 64)):
-            raise HX711Error("HX711 does not support a combination of channel {} and gain {}"
-                             .format(channel, gain))
+            raise HX711Error(
+                f"HX711 does not support a combination of channel {channel} and gain {gain}")
         self._channel = channel
         self._gain    = gain
         self._log("set channel=%s gain=%d", channel, gain)

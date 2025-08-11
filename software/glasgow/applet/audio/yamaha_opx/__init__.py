@@ -200,10 +200,10 @@ class YamahaCPUBus(Elaboratable):
 
         if self.ports.cs is not None:
             m.submodules.cs_buffer = cs_buffer = io.Buffer("o", self.ports.cs)
-            m.d.comb += cs_buffer.o.eq(~self.cs),
+            m.d.comb += cs_buffer.o.eq(~self.cs)
         if self.ports.ic is not None:
             m.submodules.ic_buffer = ic_buffer = io.Buffer("o", self.ports.ic)
-            m.d.comb += ic_buffer.o.eq(~self.rst),
+            m.d.comb += ic_buffer.o.eq(~self.rst)
 
         return m
 
@@ -479,10 +479,10 @@ class YamahaOPxInterface(metaclass=ABCMeta):
             self._feature_warned = True
             self._log("client uses feature [%#04x] with level %d, but only level %d is enabled",
                       feature, feature_level, self._feature_level,
-                      level=logging.WARN)
+                      level=logging.WARNING)
             self._log("retrying with level %d enabled",
                       feature_level,
-                      level=logging.WARN)
+                      level=logging.WARNING)
             return True
         return False
 
@@ -490,7 +490,7 @@ class YamahaOPxInterface(metaclass=ABCMeta):
         if address not in self._registers:
             self._log("client uses undefined feature [%#04x]=%#04x",
                       address, data,
-                      level=logging.WARN)
+                      level=logging.WARNING)
 
     async def write_register(self, address, data, check_feature=True):
         if self.filter is not None:
@@ -709,7 +709,7 @@ class YamahaOPL3Interface(YamahaOPL2Interface):
     async def _check_enable_features(self, address, data):
         if address == 0x08 and data & 0x80:
             self._log("client uses deprecated and removed feature [0x08]|0x80",
-                      level=logging.WARN)
+                      level=logging.WARNING)
         elif address == 0x105 and data in (0x00, 0x01):
             if data & 0x01:
                 self._enable_level(3)
@@ -891,8 +891,8 @@ class YamahaOPxWebInterface:
                         return sock
                     elif int(client_resp.headers["Content-Length"]) > (1<<20):
                         await sock.close(code=2999, message=
-                            "File too large ({} bytes) to be fetched"
-                            .format(client_resp.headers["Content-Length"]))
+                            f"File too large ({client_resp.headers['Content-Length']} bytes) "
+                            f"to be fetched")
                         return sock
 
                     vgm_data = await client_resp.read()
@@ -923,14 +923,15 @@ class YamahaOPxWebInterface:
 
             clock_rate, clock_prescaler = self._opx_iface.get_vgm_clock_rate(vgm_reader)
             if clock_rate == 0:
-                raise ValueError("VGM file contains commands for {}, which is not a supported chip"
-                                 .format(", ".join(vgm_reader.chips())))
+                raise ValueError(
+                    f"VGM file contains commands for {', '.join(vgm_reader.chips())}, "
+                    f"which is not a supported chip")
             if clock_rate & 0xc0000000:
                 raise ValueError("VGM file uses unsupported chip configuration")
             if len(vgm_reader.chips()) != 1:
-                raise ValueError("VGM file contains commands for {}, but only playback of exactly "
-                                 "one chip is supported"
-                                 .format(", ".join(vgm_reader.chips())))
+                raise ValueError(
+                    f"VGM file contains commands for {', '.join(vgm_reader.chips())}, "
+                    f"but only playback of exactly one chip is supported")
             clock_rate *= clock_prescaler
 
             self._logger.info("web: %s: VGM is looped for %.2f/%.2f s",
@@ -1011,7 +1012,7 @@ class YamahaOPxWebInterface:
                                   digest)
                 await sock.close()
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 self._logger.info("web: %s: timeout streaming",
                                   digest)
                 await sock.close(code=1002, message="Streaming timeout (glitched too hard?)")
@@ -1214,7 +1215,7 @@ class AudioYamahaOPxApplet(GlasgowApplet):
         p_web = p_operation.add_parser(
             "web", help="expose Yamaha hardware via a web interface")
         p_web.add_argument(
-            "--allow-urls", action='store_true',
+            "--allow-urls", action="store_true",
             help="allow users to specify a URL to play a VGM/VGZ file from (use with caution)")
         p_web.add_argument(
             "endpoint", metavar="ENDPOINT", type=str, default="localhost:8080",
@@ -1262,8 +1263,8 @@ class AudioYamahaOPxApplet(GlasgowApplet):
             play_fut   = asyncio.ensure_future(vgm_player.play())
             record_fut = asyncio.ensure_future(vgm_player.record(sample_queue))
             write_fut  = asyncio.ensure_future(write_pcm(sample_queue))
-            done, pending = await asyncio.wait([play_fut, record_fut, write_fut],
-                                               return_when=asyncio.FIRST_EXCEPTION)
+            done, _pending = await asyncio.wait([play_fut, record_fut, write_fut],
+                                                return_when=asyncio.FIRST_EXCEPTION)
             for fut in done:
                 await fut
 
@@ -1274,7 +1275,7 @@ class AudioYamahaOPxApplet(GlasgowApplet):
             await web_iface.serve(args.endpoint)
 
         if args.operation == "run":
-            context = dict()
+            context = {}
             exec(compile(args.script_file.read(), args.script_file.name, mode="exec"), context)
             if not isinstance(context.get("samples", None), int):
                 raise GlasgowAppletError("Script should set 'samples' to an int")
@@ -1285,7 +1286,7 @@ class AudioYamahaOPxApplet(GlasgowApplet):
             await opx_iface._use_highest_level()
             record_fut = asyncio.ensure_future(opx_iface.read_samples(context["samples"]))
             play_fut   = asyncio.ensure_future(context["main"](opx_iface))
-            done, pending = await asyncio.wait([play_fut, record_fut],
+            done, _pending = await asyncio.wait([play_fut, record_fut],
                                                return_when=asyncio.FIRST_EXCEPTION)
             for fut in done:
                 await fut

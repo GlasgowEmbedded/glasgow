@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
-from typing import Self, Any, Literal, Optional, Generator
+from typing import Self, Any, Literal
+from collections.abc import Generator
 from collections.abc import Mapping
 from dataclasses import dataclass
 import re
@@ -8,7 +9,7 @@ import math
 import logging
 
 from amaranth import *
-from amaranth.lib import stream, io
+from amaranth.lib import io
 
 from .gateware.ports import PortGroup
 
@@ -60,17 +61,17 @@ class GlasgowPort(enum.Enum):
 
 @dataclass(frozen=True)
 class GlasgowVio:
-    value: Optional[float]       = None
-    sense: Optional[GlasgowPort] = None
+    value: float | None       = None
+    sense: GlasgowPort | None = None
 
-    def __init__(self, value:Optional[float]=None, *, sense:Optional[GlasgowPort]=None):
-        if value is None and sense is None or value is not None and sense is not None:
+    def __init__(self, value:float | None = None, *, sense:GlasgowPort | None = None):
+        if (value is None and sense is None) or (value is not None and sense is not None):
             raise ValueError("exactly one of voltage value or a port to be sensed may be present")
         object.__setattr__(self, "value", float(value) if value is not None else None)
         object.__setattr__(self, "sense", GlasgowPort(sense) if sense is not None else None)
 
     @classmethod
-    def parse(cls, value, *, all_ports="AB") -> dict[GlasgowPort, 'GlasgowVio']:
+    def parse(cls, value, *, all_ports="AB") -> dict[GlasgowPort, "GlasgowVio"]:
         result = {}
         for clause in value.split(","):
             if m := re.match(r"^([0-9]+(\.[0-9]+)?)$", clause):
@@ -94,6 +95,7 @@ class GlasgowVio:
             return f"S{self.sense}"
         if self.value is not None:
             return f"{self.value:.2f}"
+        assert False
 
 
 @dataclass(frozen=True)
@@ -214,7 +216,7 @@ class ClockDivisor:
 class AbstractInPipe(metaclass=ABCMeta):
     @property
     @abstractmethod
-    def readable(self) -> Optional[int]:
+    def readable(self) -> int | None:
         pass
 
     @abstractmethod
@@ -237,7 +239,7 @@ class AbstractInPipe(metaclass=ABCMeta):
 class AbstractOutPipe(metaclass=ABCMeta):
     @property
     @abstractmethod
-    def writable(self) -> Optional[int]:
+    def writable(self) -> int | None:
         pass
 
     @abstractmethod
@@ -314,7 +316,7 @@ class AbstractAssembly(metaclass=ABCMeta):
     def add_rw_register(self, signal) -> AbstractRWRegister:
         pass
 
-    def add_clock_divisor(self, signal, ref_period: float, *, tolerance: Optional[float] = None,
+    def add_clock_divisor(self, signal, ref_period: float, *, tolerance: float | None = None,
                           round_mode: Literal["floor", "nearest"] = "floor",
                           name: str) -> ClockDivisor:
         if not isinstance(signal.shape(), Shape):
@@ -346,7 +348,7 @@ class AbstractAssembly(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def set_pin_pull(self, pin: GlasgowPin, statee: PullState):
+    def set_pin_pull(self, pin: GlasgowPin, state: PullState):
         pass
 
     def use_voltage(self, ports: Mapping[GlasgowPort | str, GlasgowVio | float]):

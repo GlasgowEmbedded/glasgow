@@ -57,7 +57,8 @@ class GDBRemote(metaclass=ABCMeta):
     @abstractmethod
     async def target_detach(self):
         """Detaches from the target. Typically, this method clears all breakpoints and resumes
-        execution."""
+        execution.
+        """
 
     @abstractmethod
     async def target_get_registers(self) -> list[int]:
@@ -88,14 +89,16 @@ class GDBRemote(metaclass=ABCMeta):
         """Sets software breakpoint at given address. This could fail if the memory at this address
         is not writable.
 
-        Raises ``NotImplementedError`` if this breakpoint type isn't supported."""
+        Raises ``NotImplementedError`` if this breakpoint type isn't supported.
+        """
         raise NotImplementedError
 
     @abstractmethod
     async def target_clear_software_breakpt(self, address: int, kind: int):
         """Clears software breakpoint previously set at given address.
 
-        Raises ``NotImplementedError`` if this breakpoint type isn't supported."""
+        Raises ``NotImplementedError`` if this breakpoint type isn't supported.
+        """
         raise NotImplementedError
 
     @abstractmethod
@@ -103,14 +106,16 @@ class GDBRemote(metaclass=ABCMeta):
         """Sets hardware breakpoint at given address. This could fail if the amount of available
         hardware breakpoints is exceeded.
 
-        Raises ``NotImplementedError`` if this breakpoint type isn't supported."""
+        Raises ``NotImplementedError`` if this breakpoint type isn't supported.
+        """
         raise NotImplementedError
 
     @abstractmethod
     async def target_clear_instr_breakpt(self, address: int, kind: int):
         """Clears hardware breakpoint previously set at given address.
 
-        Raises ``NotImplementedError`` if this breakpoint type isn't supported."""
+        Raises ``NotImplementedError`` if this breakpoint type isn't supported.
+        """
         raise NotImplementedError
 
     async def gdb_run(self, endpoint):
@@ -129,7 +134,7 @@ class GDBRemote(metaclass=ABCMeta):
                     elif delimiter in (b"+", b"\x03"):
                         pass
                     else:
-                        self.gdb_log(logging.WARN, "received junk: <%s>", delimiter.hex())
+                        self.gdb_log(logging.WARNING, "received junk: <%s>", delimiter.hex())
 
                 command  = await endpoint.recv_until(b"#")
                 checksum = await endpoint.recv(2)
@@ -283,7 +288,7 @@ class GDBRemote(metaclass=ABCMeta):
         # "Tell me everything you know about the target features (architecture, registers, etc.)"
         if command.startswith(b"qXfer:features:read:"):
             annex, offset_length = command[20:].decode("ascii").split(":")
-            offset, length = map(lambda x: int(x, 16), offset_length.split(","))
+            offset, length = (int(x, 16) for x in offset_length.split(","))
             if data := self.target_features().get(annex):
                 assert isinstance(data, (bytes, bytearray))
                 hex_chunk = binary_escape(data[offset:offset + length])
@@ -376,52 +381,56 @@ class GDBRemote(metaclass=ABCMeta):
 
         # "Read specified memory range of the target."
         if command.startswith(b"m"):
-            address, length = map(lambda x: int(x, 16), command[1:].split(b","))
+            address, length = (int(x, 16) for x in command[1:].split(b","))
             data = await self.target_read_memory(address, length)
             return data.hex().encode("ascii")
 
         # "Write specified memory range of the target."
         if command.startswith(b"M"):
             location, data = command[1:].split(b":")
-            address, _length = map(lambda x: int(x, 16), location.split(b","))
+            address, _length = (int(x, 16) for x in location.split(b","))
             await self.target_write_memory(address, bytes.fromhex(data.decode("ascii")))
             return b"OK"
 
         # "Set software breakpoint."
         if command.startswith(b"Z0"):
-            address, kind = map(lambda x: int(x, 16), command[3:].split(b","))
+            address, kind = (int(x, 16) for x in command[3:].split(b","))
             try:
                 await self.target_set_software_breakpt(address, kind)
-                return b"OK"
             except NotImplementedError:
                 return b""
+            else:
+                return b"OK"
 
         # "Clear software breakpoint."
         if command.startswith(b"z0"):
-            address, kind = map(lambda x: int(x, 16), command[3:].split(b","))
+            address, kind = (int(x, 16) for x in command[3:].split(b","))
             try:
                 await self.target_clear_software_breakpt(address, kind)
-                return b"OK"
             except NotImplementedError:
                 return b""
+            else:
+                return b"OK"
 
         # "Set hardware breakpoint."
         if command.startswith(b"Z1"):
-            address, kind = map(lambda x: int(x, 16), command[3:].split(b","))
+            address, kind = (int(x, 16) for x in command[3:].split(b","))
             try:
                 await self.target_set_instr_breakpt(address, kind)
-                return b"OK"
             except NotImplementedError:
                 return b""
+            else:
+                return b"OK"
 
         # "Clear hardware breakpoint."
         if command.startswith(b"z1"):
-            address, kind = map(lambda x: int(x, 16), command[3:].split(b","))
+            address, kind = (int(x, 16) for x in command[3:].split(b","))
             try:
                 await self.target_clear_instr_breakpt(address, kind)
-                return b"OK"
             except NotImplementedError:
                 return b""
+            else:
+                return b"OK"
 
         # "Execute this code."
         if command.startswith(b"qRcmd,"):

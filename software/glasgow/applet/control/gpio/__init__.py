@@ -188,14 +188,14 @@ class ControlGPIOApplet(GlasgowAppletV2):
             match level:
                 case None:
                     print(f"{pin}={await self.gpio_iface.get(pin_index):b}")
-                case '0':
+                case "0":
                     await self.gpio_iface.output(pin_index, False)
-                case '1':
+                case "1":
                     await self.gpio_iface.output(pin_index, True)
-                case 'H':
+                case "H":
                     await self.gpio_iface.pull(pin_index, PullState.High)
                     await self.gpio_iface.input(pin_index)
-                case 'L':
+                case "L":
                     await self.gpio_iface.pull(pin_index, PullState.Low)
                     await self.gpio_iface.input(pin_index)
                 case _:

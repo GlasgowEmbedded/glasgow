@@ -2,7 +2,6 @@
 # Accession: G00038
 
 import logging
-import asyncio
 from amaranth import *
 from amaranth.lib import io
 from amaranth.lib.cdc import FFSynchronizer
@@ -79,17 +78,17 @@ class SpyBiWireProbeAdapter(Elaboratable):
             # for >100 us, which will reset the DUT and restart the SBW entry sequence.
             with m.State("RESET-1"):
                 with m.If(timer == 0):
-                    m.d.sync += bus.sbwtck.eq(1),
+                    m.d.sync += bus.sbwtck.eq(1)
                     m.next = "RESET-2"
 
             with m.State("RESET-2"):
                 with m.If(timer == 0):
-                    m.d.sync += bus.sbwtck.eq(0),
+                    m.d.sync += bus.sbwtck.eq(0)
                     m.next = "RESET-3"
 
             with m.State("RESET-3"):
                 with m.If(timer == 0):
-                    m.d.sync += bus.sbwtck.eq(1),
+                    m.d.sync += bus.sbwtck.eq(1)
                     m.next = "IDLE"
 
             with m.State("IDLE"):
@@ -119,7 +118,7 @@ class SpyBiWireProbeAdapter(Elaboratable):
                         m.d.sync += self.tclk.eq(self.tclk)
 
                 with m.Elif(timer == 0):
-                    m.d.sync += bus.sbwtck.eq(1),
+                    m.d.sync += bus.sbwtck.eq(1)
                     with m.If(~(self.tclk_latch | self.tclk_toggle)):
                         m.d.sync += bus.sbwtd_o.eq(self.tdi)
                     m.next = "TDI-HOLD"
@@ -131,7 +130,7 @@ class SpyBiWireProbeAdapter(Elaboratable):
                         m.d.sync += bus.sbwtd_o.eq(self.tclk)
 
                 with m.Elif(timer == 0):
-                    m.d.sync += bus.sbwtck.eq(0),
+                    m.d.sync += bus.sbwtck.eq(0)
                     m.next = "TDO-TURNAROUND"
 
             with m.State("TDO-TURNAROUND"):

@@ -93,7 +93,7 @@ class GlasgowPlatform:
         if isinstance(buffer.port, GlasgowPlatformPort):
             m = Module()
             # Determine the domains that clocked buffers must belong to.
-            i_domain_kwarg, o_domain_kwarg = dict(), dict()
+            i_domain_kwarg, o_domain_kwarg = {}, {}
             if isinstance(buffer, (io.FFBuffer, io.DDRBuffer)):
                 i_domain_kwarg = dict(i_domain=buffer.i_domain)
                 o_domain_kwarg = dict(o_domain=buffer.o_domain)

@@ -1,9 +1,8 @@
 import logging
-import asyncio
 import struct
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io
+from amaranth.lib import enum, data, wiring, stream
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support.logging import dump_hex
@@ -62,7 +61,7 @@ class JTAGXVCProbe(wiring.Component):
             io_streamer.i.p.port.tdi.o.eq(self.i_stream.p.tdi.bit_select(phase[1:], 1)),
         ]
         with m.If(phase[0] & (timer == 0)):
-            m.d.comb += io_streamer.i.p.meta.eq(Mux(last, _ShiftIn.Last, _ShiftIn.More)),
+            m.d.comb += io_streamer.i.p.meta.eq(Mux(last, _ShiftIn.Last, _ShiftIn.More))
 
         m.d.comb += io_streamer.i.valid.eq(self.i_stream.valid)
         with m.If(self.i_stream.valid & io_streamer.i.ready):

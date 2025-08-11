@@ -1,14 +1,14 @@
 import logging
 
 from amaranth import *
-from amaranth.lib import wiring, io
+from amaranth.lib import io
 from amaranth.sim import Simulator
 
 from glasgow.simulation.assembly import SimulationAssembly
 from glasgow.gateware.ports import PortGroup
-from glasgow.gateware.stream import stream_get, stream_put
+from glasgow.gateware.stream import stream_get
 from glasgow.applet import GlasgowAppletV2TestCase, synthesis_test
-from . import QSPIAnalyzerFrontend, QSPIAnalyzerComponent, QSPIAnalyzerInterface, QSPIAnalyzerApplet
+from . import QSPIAnalyzerFrontend, QSPIAnalyzerInterface, QSPIAnalyzerApplet
 
 
 logger = logging.getLogger(__name__)

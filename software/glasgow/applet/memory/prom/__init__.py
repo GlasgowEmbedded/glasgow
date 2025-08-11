@@ -7,7 +7,6 @@ import math
 import json
 import random
 import logging
-import asyncio
 import argparse
 import statistics
 from amaranth import *
@@ -65,9 +64,9 @@ class MemoryPROMBus(Elaboratable):
             a_si  = Signal()
             a_lat = Signal(init=0) if ports.a_lat is not None else None
             m.submodules.a_clk_buffer = a_clk_buffer = io.Buffer("o", ports.a_clk)
-            m.d.comb += a_clk_buffer.o.eq(a_clk),
+            m.d.comb += a_clk_buffer.o.eq(a_clk)
             m.submodules.a_si_buffer = a_si_buffer = io.Buffer("o", ports.a_si)
-            m.d.comb += a_si_buffer.o.eq(a_si),
+            m.d.comb += a_si_buffer.o.eq(a_si)
             if a_lat is not None:
                 m.submodules.a_lat_buffer = a_lat_buffer = io.Buffer("o", ports.a_lat)
                 m.d.comb += a_lat_buffer.o.eq(a_lat)
@@ -343,9 +342,6 @@ class MemoryPROMInterface:
             else:
                 raise TypeError(f"Cannot index value with {key!r}")
 
-            if index not in range(len(self)):
-                raise IndexError
-
         def __eq__(self, other):
             if not isinstance(other, type(self)):
                 return False
@@ -366,7 +362,7 @@ class MemoryPROMInterface:
             raw_diff = ((int.from_bytes(self.raw_data,  "little") ^
                          int.from_bytes(other.raw_data, "little"))
                         .to_bytes(len(self.raw_data), "little"))
-            diff = dict()
+            diff = {}
             for m in re.finditer(rb"[^\x00]", raw_diff):
                 index = m.start() // self.dq_bytes
                 diff[index] = (self[index], other[index])
@@ -400,7 +396,7 @@ class MemoryPROMInterface:
 
     async def read_shuffled(self, address, count):
         self._log("read shuffled a=%#x n=%d", address, count)
-        order = [offset for offset in range(count)]
+        order = list(range(count))
         random.shuffle(order)
         commands = []
         for offset in order:
@@ -673,7 +669,7 @@ class MemoryPROMApplet(GlasgowApplet):
                 args.file.write(data.convert(args.endian).raw_data)
             else:
                 for word in data:
-                    print("{:0{}x}".format(word, (dq_bits + 3) // 4))
+                    print(f"{word:0{(dq_bits + 3) // 4}x}")
 
         if args.operation == "verify":
             golden_data = prom_iface.Data(args.file.read(), prom_iface.dq_bytes, args.endian)
@@ -682,8 +678,7 @@ class MemoryPROMApplet(GlasgowApplet):
                 self.logger.info("verify PASS")
             else:
                 differ = sum(a != b for a, b in zip(golden_data, actual_data))
-                raise GlasgowAppletError("verify FAIL ({} words differ)"
-                                         .format(differ))
+                raise GlasgowAppletError(f"verify FAIL ({differ} words differ)")
 
         if args.operation == "write":
             data = prom_iface.Data(args.file.read(), prom_iface.dq_bytes, args.endian)
@@ -749,8 +744,8 @@ class MemoryPROMApplet(GlasgowApplet):
             if not unstable:
                 self.logger.info("health scan PASS")
             else:
-                raise GlasgowAppletError("health scan FAIL ({} words unstable)"
-                                         .format(len(unstable)))
+                raise GlasgowAppletError(f"health scan FAIL ({len(unstable)} words unstable)"
+                                         )
 
         if args.operation == "health" and args.mode == "sweep":
             if args.voltage is None:
@@ -828,6 +823,7 @@ class MemoryPROMApplet(GlasgowApplet):
 
 # -------------------------------------------------------------------------------------------------
 
+
 class MemoryPROMAppletTool(GlasgowAppletTool, applet=MemoryPROMApplet):
     help = "display statistics of parallel EPROMs, EEPROMs, and Flash memories"
     description = """
@@ -857,8 +853,8 @@ class MemoryPROMAppletTool(GlasgowAppletTool, applet=MemoryPROMApplet):
             max_popcount = max(mean_popcounts for _, _, mean_popcounts in series)
             histogram_size = 40
             resolution = max(1, (max_popcount - min_popcount) / histogram_size)
-            print(f"Vcc   {str(math.floor(min_popcount)):<{1 + histogram_size // 2}s}"
-                        f"{str(math.ceil (max_popcount)):>{1 + histogram_size // 2}s} popcount")
+            print(f"Vcc   {math.floor(min_popcount)!s:<{1 + histogram_size // 2}s}"
+                        f"{math.ceil (max_popcount)!s:>{1 + histogram_size // 2}s} popcount")
             for voltage, popcounts, mean_popcount in series:
                 rectangle_size = math.floor((mean_popcount - min_popcount) / resolution)
                 print(f"{voltage:.2f}: |{'1' * rectangle_size:{histogram_size}s}| "

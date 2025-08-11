@@ -1,5 +1,4 @@
 import logging
-import asyncio
 
 from ...interface.i2c_initiator_deprecated import I2CInitiatorApplet
 from ... import *
@@ -95,8 +94,8 @@ class ControlTPS6598xApplet(I2CInitiatorApplet):
 
         if args.operation == "read-all":
             for address in range(0x80):
-                print("{:02x}: {}"
-                      .format(address, (await tps6598x_iface.read_reg(address)).hex()))
+                print(f"{address:02x}: {(await tps6598x_iface.read_reg(address)).hex()}"
+                      )
 
         if args.operation == "write-reg":
             await tps6598x_iface.write_reg(args.address, args.data)

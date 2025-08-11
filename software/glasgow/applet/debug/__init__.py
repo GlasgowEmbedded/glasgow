@@ -1,5 +1,4 @@
-"""
-The ``debug`` taxon groups applets implementing interfaces to microprocessor or microcontroller
+"""The ``debug`` taxon groups applets implementing interfaces to microprocessor or microcontroller
 debug functions, such as manipulating memory and core state, and pausing and resuming execution.
 The differentiating characteristic for this taxon is manipulation of control flow.
 
