@@ -63,16 +63,17 @@ class AUDComponent(wiring.Component):
                 with m.If(self.i_stream.valid):
                     m.d.comb += self.i_stream.ready.eq(1)
                     m.d.sync += data.eq(self.i_stream.payload >> 4)
-                    with m.If((self.i_stream.payload & 0xF) == AUDCommand.Reset):
-                        m.next = "RESET"
-                    with m.If((self.i_stream.payload & 0xF) == AUDCommand.Run):
-                        m.next = "RUN"
-                    with m.If((self.i_stream.payload & 0xF) == AUDCommand.Sync):
-                        m.next = "SYNC"
-                    with m.Elif((self.i_stream.payload & 0xF) == AUDCommand.Out):
-                        m.next = "OUT"
-                    with m.Elif((self.i_stream.payload & 0xF) == AUDCommand.Inp):
-                        m.next = "INP"
+                    with m.Switch(self.i_stream.payload & 0xF):
+                        with m.Case(AUDCommand.Reset):
+                            m.next = "RESET"
+                        with m.Case(AUDCommand.Run):
+                            m.next = "RUN"
+                        with m.Case(AUDCommand.Sync):
+                            m.next = "SYNC"
+                        with m.Case(AUDCommand.Out):
+                            m.next = "OUT"
+                        with m.Case(AUDCommand.Inp):
+                            m.next = "INP"
 
             # Assert Reset and put pins into a known state
             with m.State("RESET"):
