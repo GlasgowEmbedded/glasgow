@@ -8,6 +8,7 @@
 # applet implements the RAM Monitoring Mode read command to be able to dump a
 # target's memory.
 
+import argparse
 import logging
 import sys
 
@@ -286,6 +287,7 @@ class AUDApplet(GlasgowAppletV2):
         )
         parser.add_argument(
             "-o", "--output", required=True,
+            type=argparse.FileType('wb'),
             help="Filename to write the output to"
         )
 
@@ -319,10 +321,10 @@ class AUDApplet(GlasgowAppletV2):
 
         self.logger.info("Reading data")
         bs = 4
-        with open(args.output, 'wb') as f:
-            for i in range(args.address, args.address + args.size, bs):
-                data = await self.aud_iface.read(i, sz=bs)
-                f.write(data)
-                self._show_progress(i - args.address + bs, args.size, f"Read {data.hex()}")
+
+        for i in range(args.address, args.address + args.size, bs):
+            data = await self.aud_iface.read(i, sz=bs)
+            args.output.write(data)
+            self._show_progress(i - args.address + bs, args.size, f"Read {data.hex()}")
 
         self.logger.info("Done")
