@@ -125,7 +125,7 @@ If these instructions don't work for you, please `file a bug <file-a-bug_>`__ so
 
     .. code:: doscon
 
-        > pipx install -e glasgow/software[builtin-toolchain]
+        > pipx install -e "glasgow/software[builtin-toolchain]"
 
     To update the software to its newest revision, navigate to your working directory and run:
 
