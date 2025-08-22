@@ -27,7 +27,8 @@ class PMSx003Subtarget(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.uart = uart = UART(self.ports,
+        m.submodules.uart = uart = ExternalUART(
+            self.ports,
             bit_cyc=int(platform.default_clk_frequency // 9600))
         m.d.comb += [
             self.in_fifo.w_data.eq(uart.rx_data),
