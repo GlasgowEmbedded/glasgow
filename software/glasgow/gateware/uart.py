@@ -3,7 +3,7 @@ from amaranth.lib import io
 from amaranth.lib.cdc import FFSynchronizer
 
 
-__all__ = ["UART"]
+__all__ = ["UART", "ExternalUART"]
 
 
 class UARTBus(Elaboratable):
@@ -12,6 +12,7 @@ class UARTBus(Elaboratable):
 
     Provides synchronization.
     """
+
     def __init__(self, ports):
         self.ports = ports
 
@@ -90,7 +91,8 @@ class UART(Elaboratable):
         Transmit acknowledgement. If active when ``tx_rdy`` is active, ``tx_rdy`` is reset,
         ``tx_data`` is sampled, and the transmit state machine starts transmitting a frame.
     """
-    def __init__(self, ports, bit_cyc, data_bits=8, parity="none", max_bit_cyc=None):
+
+    def __init__(self, bus, bit_cyc, data_bits=8, parity="none", max_bit_cyc=None):
         if max_bit_cyc is not None:
             self.max_bit_cyc = max_bit_cyc
         else:
@@ -102,18 +104,18 @@ class UART(Elaboratable):
         self.bit_cyc = Signal(range(self.max_bit_cyc + 1), init=bit_cyc)
 
         self.rx_data = Signal(data_bits)
-        self.rx_rdy  = Signal()
-        self.rx_ack  = Signal()
+        self.rx_rdy = Signal()
+        self.rx_ack = Signal()
         self.rx_ferr = Signal()
         self.rx_perr = Signal()
-        self.rx_ovf  = Signal()
-        self.rx_err  = Signal()
+        self.rx_ovf = Signal()
+        self.rx_err = Signal()
 
         self.tx_data = Signal(data_bits)
-        self.tx_rdy  = Signal()
-        self.tx_ack  = Signal()
+        self.tx_rdy = Signal()
+        self.tx_ack = Signal()
 
-        self.bus = UARTBus(ports)
+        self.bus = bus
 
     def elaborate(self, platform):
         m = Module()
@@ -139,7 +141,7 @@ class UART(Elaboratable):
         if self.bus.has_rx:
             rx_start = Signal()
             rx_timer = Signal(range(self.max_bit_cyc))
-            rx_stb   = Signal()
+            rx_stb = Signal()
             rx_shreg = Signal(self.data_bits)
             rx_bitno = Signal(range(len(rx_shreg)))
 
@@ -199,11 +201,11 @@ class UART(Elaboratable):
         ###
 
         if self.bus.has_tx:
-            tx_start  = Signal()
-            tx_timer  = Signal(range(self.max_bit_cyc))
-            tx_stb    = Signal()
-            tx_shreg  = Signal(self.data_bits)
-            tx_bitno  = Signal(range(len(tx_shreg)))
+            tx_start = Signal()
+            tx_timer = Signal(range(self.max_bit_cyc))
+            tx_stb = Signal()
+            tx_shreg = Signal(self.data_bits)
+            tx_bitno = Signal(range(len(tx_shreg)))
             tx_parity = Signal()
 
             with m.If(tx_start | (tx_timer == 0)):
@@ -222,7 +224,9 @@ class UART(Elaboratable):
                             self.bus.tx_o.eq(0),
                         ]
                         if self.parity != "none":
-                            m.d.sync += tx_parity.eq(calc_parity(self.tx_data, self.parity))
+                            m.d.sync += tx_parity.eq(
+                                calc_parity(self.tx_data, self.parity)
+                            )
                         m.next = "START"
                     with m.Else():
                         m.d.sync += self.bus.tx_o.eq(1)
@@ -230,7 +234,7 @@ class UART(Elaboratable):
                     with m.If(tx_stb):
                         m.d.sync += [
                             self.bus.tx_o.eq(tx_shreg[0]),
-                            tx_shreg.eq(Cat(tx_shreg[1:], C(0,1))),
+                            tx_shreg.eq(Cat(tx_shreg[1:], C(0, 1))),
                         ]
                         m.next = "DATA"
                 with m.State("DATA"):
@@ -239,7 +243,7 @@ class UART(Elaboratable):
                         with m.If(tx_bitno != len(tx_shreg) - 1):
                             m.d.sync += [
                                 self.bus.tx_o.eq(tx_shreg[0]),
-                                tx_shreg.eq(Cat(tx_shreg[1:], C(0,1))),
+                                tx_shreg.eq(Cat(tx_shreg[1:], C(0, 1))),
                             ]
                         with m.Else():
                             if self.parity == "none":
@@ -250,10 +254,16 @@ class UART(Elaboratable):
                                 m.next = "PARITY"
                 with m.State("PARITY"):
                     with m.If(tx_stb):
-                        m.d.sync += self.bus.tx_o.eq(1),
+                        m.d.sync += (self.bus.tx_o.eq(1),)
                         m.next = "STOP"
                 with m.State("STOP"):
                     with m.If(tx_stb):
                         m.next = "IDLE"
 
         return m
+
+
+class ExternalUART(UART):
+    def __init__(self, ports, *args, **kwargs):
+        bus = UARTBus(ports)
+        super().__init__(bus, *args, **kwargs)

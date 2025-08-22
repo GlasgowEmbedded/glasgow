@@ -80,7 +80,7 @@ class ProgramM16CSubtarget(Elaboratable):
         self.reset    = reset
         self.mode     = mode
 
-        self.uart     = UART(ports, bit_cyc=max_bit_cyc)
+        self.uart     = ExternalUART(ports, bit_cyc=max_bit_cyc)
 
     def elaborate(self, platform):
         m = Module()
