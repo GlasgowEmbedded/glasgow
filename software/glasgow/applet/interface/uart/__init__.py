@@ -10,7 +10,7 @@ from amaranth.lib.wiring import In, Out
 from glasgow.support.arepl import AsyncInteractiveConsole
 from glasgow.support.logging import dump_hex
 from glasgow.support.endpoint import ServerEndpoint
-from glasgow.gateware.uart import UART
+from glasgow.gateware.uart import ExternalUART
 from glasgow.abstract import AbstractAssembly, GlasgowPin
 from glasgow.applet import GlasgowAppletV2
 
@@ -117,7 +117,8 @@ class UARTComponent(wiring.Component):
         # TODO: `uart.bit_cyc` is only used to set the width of the register; the actual initial
         # value is zero (same as `self.bit_cyc`); this is a footgun and should be fixed by rewriting
         # the UART to use lib.wiring
-        m.submodules.uart = uart = UART(self.ports,
+        m.submodules.uart = uart = ExternalUART(
+            self.ports,
             bit_cyc=(1 << len(self.manual_cyc)) - 1,
             parity=self.parity)
         m.submodules.auto_baud = auto_baud = UARTAutoBaud()
