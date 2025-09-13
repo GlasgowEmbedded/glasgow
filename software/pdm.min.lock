@@ -956,12 +956,12 @@ files = [
 
 [[package]]
 name = "pyparsing"
-version = "3.2.3"
+version = "3.2.4"
 requires_python = ">=3.9"
-summary = "pyparsing module - Classes and methods to define and execute parsing grammars"
+summary = "pyparsing - Classes and methods to define and execute parsing grammars"
 files = [
-    {file = "pyparsing-3.2.3-py3-none-any.whl", hash = "sha256:a749938e02d6fd0b59b356ca504a24982314bb090c383e3cf201c95ef7e2bfcf"},
-    {file = "pyparsing-3.2.3.tar.gz", hash = "sha256:b9c13f1ab8b3b542f72e28f634bad4de758ab3ce4546e4301970ad6fa77c38be"},
+    {file = "pyparsing-3.2.4-py3-none-any.whl", hash = "sha256:91d0fcde680d42cd031daf3a6ba20da3107e08a75de50da58360e7d94ab24d36"},
+    {file = "pyparsing-3.2.4.tar.gz", hash = "sha256:fff89494f45559d0f2ce46613b419f632bbb6afbdaed49696d322bcf98a58e99"},
 ]
 
 [[package]]
