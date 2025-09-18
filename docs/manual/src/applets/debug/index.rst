@@ -9,3 +9,4 @@ MCU debugging
     :maxdepth: 3
 
     arm7
+    superh
