@@ -11,7 +11,7 @@ from amaranth.lib import enum, data, wiring, stream, io
 from amaranth.lib.wiring import In, Out
 
 from glasgow.gateware.ports import PortGroup
-from glasgow.gateware.uart import UART
+from glasgow.gateware.uart import ExternalUART
 from glasgow.gateware.stream import Queue
 from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
 from glasgow.applet import GlasgowAppletV2, GlasgowAppletError
@@ -51,8 +51,10 @@ class UARTAnalyzerComponent(wiring.Component):
 
         channels = []
         for index, pin in enumerate(self._port):
-            m.submodules[f"ch{index}"] = uart = UART(PortGroup(rx=pin),
-                bit_cyc=(1 << len(self.periods[index])) - 1, parity=self._parity)
+            m.submodules[f"ch{index}"] = uart = ExternalUART(
+                PortGroup(rx=pin),
+                bit_cyc=(1 << len(self.periods[index])) - 1,
+                parity=self._parity)
             m.d.comb += uart.bit_cyc.eq(self.periods[index] + 1)
             channels.append(uart)
 
