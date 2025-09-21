@@ -15,11 +15,12 @@ try:
     import readline
     import rlcompleter
 except ModuleNotFoundError:
-    from _pyrepl import readline
-    import rlcompleter
-    readline._setup({})  # hijack input(). the completer will be overridden later
-except ModuleNotFoundError:
-    readline = None
+    try:
+        from _pyrepl import readline
+        import rlcompleter
+        readline._setup({})  # hijack input(). the completer will be overridden later
+    except ModuleNotFoundError:
+        readline = None
 
 from .asignal import wait_for_signal
 
