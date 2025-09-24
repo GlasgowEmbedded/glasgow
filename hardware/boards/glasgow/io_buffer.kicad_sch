@@ -6,7 +6,7 @@
 	(paper "A4")
 	(title_block
 		(title "I/O Buffer")
-		(rev "C2")
+		(rev "C3")
 		(company "whitequark research")
 		(comment 1 "Glasgow Debug Tool")
 		(comment 2 "Calculations by @awygle")
