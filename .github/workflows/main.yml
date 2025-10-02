@@ -189,8 +189,7 @@ jobs:
         name: Add CNAME and redirect from the root to latest/
         run: |
           echo >pages/CNAME 'glasgow-embedded.org'
-          echo >pages/_redirects <<END
-          / /latest/intro.html 302!
+          cat >pages/_redirects <<END
           //www.glasgow-embedded.org/* //glasgow-embedded.org/:splat 301!
           //glasgowembedded.org/* //glasgow-embedded.org/:splat 301!
           //www.glasgowembedded.org/* //glasgow-embedded.org/:splat 301!
@@ -198,6 +197,8 @@ jobs:
           //www.glasgow-embedded.com/* //glasgow-embedded.org/:splat 301!
           //glasgowembedded.com/* //glasgow-embedded.org/:splat 301!
           //www.glasgowembedded.com/* //glasgow-embedded.org/:splat 301!
+
+          / /latest/intro.html 302!
           END
           cat >pages/index.html <<END
           <!DOCTYPE html>
