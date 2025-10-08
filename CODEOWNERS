@@ -1,6 +1,8 @@
 # Catherine owns everything that's not owned by someone else.
 *                                                       @whitequark
 
+/firmware                                               @whitequark @purdeaandrei
+
 /software/glasgow/applet/video/hub75_output/            @attie
 /software/glasgow/applet/video/ws2812_output/           @attie
 
