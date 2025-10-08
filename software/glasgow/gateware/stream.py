@@ -23,6 +23,16 @@ async def stream_get(ctx, stream):
     return payload
 
 
+async def stream_get_maybe(ctx, stream):
+    ctx.set(stream.ready, 1)
+    _, _, payload, stream_valid = await ctx.tick().sample(stream.payload, stream.valid)
+    ctx.set(stream.ready, 0)
+    if stream_valid:
+        return payload
+    else:
+        return None
+
+
 async def stream_assert(ctx, stream, expected):
     value = await stream_get(ctx, stream)
     for key, expected_value in expected.items():
