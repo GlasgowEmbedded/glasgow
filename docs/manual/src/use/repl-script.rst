@@ -25,7 +25,7 @@ By invoking ``glasgow repl ...`` you can gain interactive code-level access to t
 
 What happens now is entirely up to you --- ``glasgow script ...`` is given an identical environment, except that it will run the nominated script rather than present control to you.
 
-The Glasgow framework provides us with access to the ``device`` and ``args`` variables, plus an ``applet_iface``, that is named differently depending on the applet being used. For example, the i2c applet is called ``i2c_iface``
+The Glasgow framework provides us with access to the ``device`` and ``args`` variables, plus another variable that is named differently depending on the applet being used. For example, the I²C applet calls it ``i2c_iface``.
 
 .. code:: console
 
