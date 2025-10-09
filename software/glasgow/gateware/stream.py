@@ -1,5 +1,5 @@
 from amaranth import *
-from amaranth.lib import wiring, stream, fifo
+from amaranth.lib import data, wiring, stream, fifo, memory
 from amaranth.lib.wiring import In, Out
 
 
@@ -146,5 +146,90 @@ class SkidBuffer(wiring.Component):
             wiring.connect(m, wiring.flipped(self.o), skid.o)
         with m.Else():
             wiring.connect(m, wiring.flipped(self.o), wiring.flipped(self.i))
+
+        return m
+
+
+class PacketQueue(wiring.Component):
+    """A packet queue with a discard function.
+
+    A packet begins with an item that has ``first == 1``, and ends with an item that has
+    ``last == 1`` (which may be the same item). Items that are pushed into queue since
+    the beginning of a packet are not available until the end of the packet is also pushed.
+    If, while a packet is being pushed into the queue, a new packet (indicated by an item
+    with ``first == 1``) starts being pushed into the queue, the previous packet is discarded.
+    """
+    def __init__(self, data_shape, *, data_depth, size_depth):
+        self._data_shape = data_shape
+        self._data_depth = data_depth
+        self._size_depth = size_depth
+
+        super().__init__({
+            "i": In(stream.Signature(data.StructLayout({
+                "data":  data_shape,
+                "first": 1,
+                "last":  1,
+            }))),
+            "o": Out(stream.Signature(data.StructLayout({
+                "data":  data_shape,
+                "first": 1,
+                "last":  1,
+            }))),
+        })
+
+    def elaborate(self, platform):
+        m = Module()
+
+        def incr(addr, size):
+            return Mux(addr == size - 1, 0, addr + 1)
+
+        m.submodules.size_queue = size_queue = \
+            Queue(shape=range(self._data_depth), depth=self._size_depth)
+        m.submodules.data_memory = data_memory = \
+            memory.Memory(shape=self._data_shape, depth=self._data_depth, init=[])
+        data_write = data_memory.write_port()
+        data_read  = data_memory.read_port(transparent_for=(data_write,))
+
+        write_first = Signal(range(self._data_depth))
+        write_count = Signal(range(self._data_depth))
+        write_incr  = incr(data_write.addr, self._data_depth)
+
+        m.d.comb += data_write.data.eq(self.i.p.data)
+        m.d.comb += size_queue.i.payload.eq(write_count)
+        with m.If(self.i.valid):
+            with m.If(self.i.p.first & (write_count != 0)):
+                m.d.sync += data_write.addr.eq(write_first)
+                m.d.sync += write_count.eq(0)
+            with m.Elif(~self.i.p.last | size_queue.i.ready):
+                with m.If(write_incr != data_read.addr):
+                    m.d.comb += self.i.ready.eq(1)
+                    m.d.comb += data_write.en.eq(1)
+                    with m.If(self.i.p.last):
+                        m.d.comb += size_queue.i.valid.eq(1)
+                        m.d.sync += write_first.eq(write_incr)
+                        m.d.sync += data_write.addr.eq(write_incr)
+                        m.d.sync += write_count.eq(0)
+                    with m.Else():
+                        m.d.sync += data_write.addr.eq(write_incr)
+                        m.d.sync += write_count.eq(write_count + 1)
+
+        read_addr  = Signal(range(self._data_depth))
+        read_count = Signal(range(self._data_depth))
+        read_incr  = incr(read_addr, self._data_depth)
+
+        m.d.comb += self.o.p.data.eq(data_read.data)
+        m.d.comb += self.o.p.first.eq(read_count == 0)
+        m.d.comb += self.o.p.last.eq(read_count == size_queue.o.payload)
+        m.d.comb += self.o.valid.eq(size_queue.o.valid)
+        with m.If(self.o.valid & self.o.ready):
+            with m.If(self.o.p.last):
+                m.d.comb += size_queue.o.ready.eq(1)
+                m.d.sync += read_count.eq(0)
+            with m.Else():
+                m.d.sync += read_count.eq(read_count + 1)
+            m.d.sync += read_addr.eq(read_incr)
+            m.d.comb += data_read.addr.eq(read_incr)
+        with m.Else():
+            m.d.comb += data_read.addr.eq(read_addr)
 
         return m
