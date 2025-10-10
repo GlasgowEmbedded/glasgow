@@ -138,6 +138,7 @@ control-si535x = "glasgow.applet.control.si535x:ControlSi535xApplet"
 control-tps6598x = "glasgow.applet.control.tps6598x:ControlTPS6598xApplet"
 
 sensor-bmx280 = "glasgow.applet.sensor.bmx280:SensorBMx280Applet"
+sensor-hcsr04 = "glasgow.applet.sensor.hcsr04:SensorHCSR04Applet"
 sensor-hx711 = "glasgow.applet.sensor.hx711:SensorHX711Applet"
 sensor-ina260 = "glasgow.applet.sensor.ina260:SensorINA260Applet"
 sensor-mouse-ps2 = "glasgow.applet.sensor.mouse_ps2:SensorMousePS2Applet"

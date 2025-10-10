@@ -9,5 +9,6 @@ Environment sensing
     :maxdepth: 3
 
     bmx280
+    hcsr04
     scd30
     sen5x
