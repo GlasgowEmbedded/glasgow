@@ -13,9 +13,10 @@ __all__ = ["SensorHCSR04Component", "SensorHCSR04Interface"]
         
 
 class SensorHCSR04Component(wiring.Component):
-    start:   In(1)
+    start:    In(1)
+    samples:  In(7)
     done:     Out(1)
-    distance: Out(24)
+    distance: Out(32)
     
     def __init__(self, ports):
         self._ports = ports
@@ -35,13 +36,17 @@ class SensorHCSR04Component(wiring.Component):
         m.submodules += cdc.FFSynchronizer(echo_buffer.i, echo)
 
         pulse_count = Signal(range(480 + 1))
-        dist_count  = Signal(24)
+        dist_count  = Signal(32)
+        read_count = Signal(7)
+        samples_count = Signal(7)
 
         with m.FSM():
             with m.State("Idle"):
                 m.d.sync += self.done.eq(0)
                 m.d.sync += pulse_count.eq(0)
                 m.d.sync += dist_count.eq(0)
+                m.d.sync += read_count.eq(0)
+                m.d.sync += samples_count.eq(self.samples)
                 with m.If(self.start):
                     m.next = "Pulse"
 
@@ -59,6 +64,17 @@ class SensorHCSR04Component(wiring.Component):
             with m.State("Measure-Echo"):
                 m.d.sync += dist_count.eq(dist_count + 1)
                 with m.If(~echo):
+                    m.d.sync += read_count.eq(read_count + 1)
+                    with m.If(read_count == self.samples):
+                        m.next = "Normalize"
+                    with m.Else():
+                        m.next = "Pulse"
+
+            with m.State("Normalize"):
+                with m.If(samples_count != 1):
+                    m.d.sync += dist_count.eq(dist_count >> 1)
+                    m.d.sync += samples_count.eq(samples_count >> 1)
+                with m.Else():
                     m.next = "Done"
 
             with m.State("Done"):
@@ -81,18 +97,27 @@ class SensorHCSR04Interface:
         component = assembly.add_submodule(SensorHCSR04Component(ports))
 
         self._start = assembly.add_rw_register(component.start)
+        self._samples = assembly.add_rw_register(component.samples)
         self._done = assembly.add_ro_register(component.done)
         self._distance = assembly.add_ro_register(component.distance)
 
     def _log(self, message: str, *args):
         self._logger.log(self._level, "HC-SR04: " + message, *args)
 
-    async def measure(self) -> float:
-        """Measures the time to receiving echo, in microseconds."""
+    async def measure(self, samples: int) -> float:
+        """Measures the time to receiving echo, in microseconds.
+
+        :py:`samples` is a power of two that defines how many samples we should
+        take for supersampling. If this number is 1, supersampling is disabled.
+        """
+        assert 0 < samples <= 64, "Samples has to be a positive integer inferior to 64"
+        assert samples & (samples - 1) == 0, "Samples has to be a power of two"
+
+        await self._samples.set(samples)
         await self._start.set(1)
         while not await self._done:
-            await asyncio.sleep(0.005)
-        interval = await self._distance / self._assembly._platform.default_clk_frequency
+            await asyncio.sleep(0.001)
+        interval = await self._distance * 1_000_000 / self._assembly._platform.default_clk_frequency
         await self._start.set(0)
         return interval
 
@@ -102,8 +127,6 @@ class SensorHCSR04Applet(GlasgowAppletV2):
     help = "measure distances with HC-SR04 generic ultrasound sensors"
     description = """
     Measure distances using HC-SR04 generic ultrasound sensors.
-
-    Returns a value in centimeters by default.
     """
 
     @classmethod
@@ -121,18 +144,21 @@ class SensorHCSR04Applet(GlasgowAppletV2):
     @classmethod
     def add_run_arguments(cls, parser):
         parser.add_argument(
-            "-I", "--inches", type=bool, default=False,
+            "-I", "--inches", default=False, action="store_true",
             help="return inches instead of centimeters")
+        parser.add_argument(
+            "-S", "--samples", type=int, default=16,
+            help="how many samples to take per measurement. has to be a power of 2. (set to 1 to disable supersampling)")
 
     async def run(self, args):
         self.hcsr04_iface._log("Applet started")
         while True:
-            distance = 0
-            for i in range(16): # Supersample
-                distance += await self.hcsr04_iface.measure()
-            distance /= 16
-            distance *= 1_000_000 / 58
-            self.hcsr04_iface._log(f"Distance: {distance}")
+            distance = await self.hcsr04_iface.measure(args.samples)
+            if args.inches:
+                distance /= 148
+            else:
+                distance /= 58
+            self.hcsr04_iface._log(f"Distance: {distance:6.2f}")
             await asyncio.sleep(0.1)
 
     @classmethod
