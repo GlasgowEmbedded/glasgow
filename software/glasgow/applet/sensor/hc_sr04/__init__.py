@@ -2,7 +2,7 @@ import logging
 import asyncio
 
 from amaranth import *
-from amaranth.lib import wiring, io, enum, stream, cdc
+from amaranth.lib import wiring, io, cdc
 from amaranth.lib.wiring import In, Out
 
 from glasgow.abstract import AbstractAssembly, GlasgowPin
@@ -10,14 +10,14 @@ from glasgow.applet import GlasgowAppletV2
 
 
 __all__ = ["SensorHCSR04Component", "SensorHCSR04Interface"]
-        
+
 
 class SensorHCSR04Component(wiring.Component):
     start:    In(1)
     samples:  In(7)
     done:     Out(1)
     distance: Out(32)
-    
+
     def __init__(self, ports):
         self._ports = ports
 
@@ -60,7 +60,7 @@ class SensorHCSR04Component(wiring.Component):
                 with m.If(echo):
                     m.d.sync += self.done.eq(1)
                     m.next = "Measure-Echo"
-            
+
             with m.State("Measure-Echo"):
                 m.d.sync += dist_count.eq(dist_count + 1)
                 with m.If(~echo):
@@ -80,7 +80,7 @@ class SensorHCSR04Component(wiring.Component):
             with m.State("Done"):
                 with m.If(~self.start):
                     m.next = "Idle"
-        
+
         m.d.comb += self.distance.eq(dist_count)
 
         return m
