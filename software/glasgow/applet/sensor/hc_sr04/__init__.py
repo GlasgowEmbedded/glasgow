@@ -1,3 +1,6 @@
+# Ref: Sparkfun HCSR04 (https://cdn.sparkfun.com/datasheets/Sensors/Proximity/HCSR04.pdf)
+# Accession: G00107
+
 import logging
 import asyncio
 
@@ -117,7 +120,8 @@ class SensorHCSR04Interface:
         await self._start.set(1)
         while not await self._done:
             await asyncio.sleep(0.001)
-        interval = await self._distance * 1_000_000 / self._assembly._platform.default_clk_frequency
+        interval = await self._distance * 1_000_000
+        interval /= self._assembly._platform.default_clk_frequency
         await self._start.set(0)
         return interval
 
@@ -148,7 +152,8 @@ class SensorHCSR04Applet(GlasgowAppletV2):
             help="return inches instead of centimeters")
         parser.add_argument(
             "-S", "--samples", type=int, default=16,
-            help="how many samples to take per measurement. has to be a power of 2. (set to 1 to disable supersampling)")
+            help="""how many samples to take per measurement. has to be a power of 2.
+                    set to 1 to disable supersampling""")
 
     async def run(self, args):
         self.hcsr04_iface._log("Applet started")
