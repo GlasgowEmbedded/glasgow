@@ -7,6 +7,7 @@
 #include <fx2i2c.h>
 #include <fx2eeprom.h>
 #include <usbmicrosoft.h>
+#include <usbweb.h>
 #include "glasgow.h"
 #include "version.h"
 
@@ -19,7 +20,7 @@
 usb_desc_device_c usb_device = {
   .bLength              = sizeof(struct usb_desc_device),
   .bDescriptorType      = USB_DESC_DEVICE,
-  .bcdUSB               = 0x0200,
+  .bcdUSB               = 0x0210,
   .bDeviceClass         = USB_DEV_CLASS_PER_INTERFACE,
   .bDeviceSubClass      = USB_DEV_SUBCLASS_PER_INTERFACE,
   .bDeviceProtocol      = USB_DEV_PROTOCOL_PER_INTERFACE,
@@ -161,6 +162,16 @@ usb_ascii_string_c usb_strings[] = {
   [2] = "XX-XXXXXXXXXXXXXXXX",
 };
 
+usb_desc_platform_capability_webusb_c usb_capability_webusb = {
+  .bLength                = sizeof(struct usb_desc_platform_capability_webusb),
+  .bDescriptorType        = USB_DESC_DEVICE_CAPABILITY,
+  .bDevCapabilityType     = USB_DEV_CAP_PLATFORM,
+  .PlatformCapablityUUID  = USB_PLATFORM_CAPABILITY_UUID_WEBUSB,
+  .bcdVersion             = 0x0100,
+  .bVendorCode            = 0xD0,
+  .iLandingPage           = 1,
+};
+
 usb_descriptor_set_c usb_descriptor_set = {
   .device           = &usb_device,
   .device_qualifier = &usb_device_qualifier,
@@ -168,6 +179,8 @@ usb_descriptor_set_c usb_descriptor_set = {
   .configs          = usb_configs,
   .string_count     = ARRAYSIZE(usb_strings),
   .strings          = usb_strings,
+  .capability_count = 1,
+  .capabilities     = &usb_capability_webusb,
 };
 
 usb_desc_microsoft_v10_c usb_microsoft = {
@@ -197,6 +210,15 @@ usb_desc_ms_ext_property_c usb_ms_ext_properties = {
   .bcdVersion       = 0x0100,
   .wIndex           = USB_DESC_MS_EXTENDED_PROPERTIES,
   .wCount           = 0,
+};
+
+#define WEBUSB_URL "webusb.glasgow-embedded.org"
+
+usb_desc_url_c usb_webusb_url = {
+  .bLength          = sizeof(struct usb_desc_url) + sizeof(WEBUSB_URL) - 1,
+  .bDescriptorType  = USB_DESC_URL,
+  .bScheme          = USB_URL_SCHEME_HTTPS,
+  .bURL             = WEBUSB_URL,
 };
 
 void handle_usb_get_descriptor(enum usb_descriptor type, uint8_t index) {
@@ -299,6 +321,8 @@ enum {
   USB_REQ_LIBFX2_PAGE_SIZE  = 0xB0,
   // Microsoft requests
   USB_REQ_GET_MS_DESCRIPTOR = 0xC0,
+  // WebUSB requests
+  USB_REQ_GET_WEBUSB_DESCRIPTOR = 0xD0,
 };
 
 // Test mode functions
@@ -823,6 +847,16 @@ void handle_pending_usb_setup() {
 
     xmemcpy(scratch, (__xdata void *)&usb_ms_ext_properties, usb_ms_ext_properties.dwLength);
     SETUP_EP0_IN_DESC(scratch);
+    return;
+  }
+  if(req_dir_in &&
+     req->bRequest == USB_REQ_GET_WEBUSB_DESCRIPTOR &&
+     req->wIndex == /*GET_URL*/ 0x02 &&
+     req->wValue == 1) {
+    pending_setup = false;
+
+    xmemcpy(scratch, (__xdata void *)&usb_webusb_url, usb_webusb_url.bLength);
+    SETUP_EP0_IN_DATA(scratch, usb_webusb_url.bLength);
     return;
   }
 
