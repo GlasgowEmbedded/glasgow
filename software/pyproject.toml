@@ -118,6 +118,7 @@ debug-arc = "glasgow.applet.debug.arc:DebugARCApplet"
 debug-arm = "glasgow.applet.debug.arm.jtag:DebugARMJTAGApplet"
 debug-arm7 = "glasgow.applet.debug.arm.arm7:DebugARM7Applet"
 debug-mips = "glasgow.applet.debug.mips:DebugMIPSApplet"
+debug-superh-aud = "glasgow.applet.debug.superh.aud:AUDApplet"
 
 program-avr-spi = "glasgow.applet.program.avr.spi:ProgramAVRSPIApplet"
 program-ice40-flash = "glasgow.applet.program.ice40_flash:ProgramICE40FlashApplet"
