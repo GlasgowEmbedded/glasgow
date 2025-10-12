@@ -105,8 +105,8 @@ class SensorHCSR04Interface:
         self._assembly = assembly
 
         ports = assembly.add_port_group(trig=trig, echo=echo)
-        us_cycles = int(assembly.sys_clk_period * 1_000_000)
-        component = assembly.add_submodule(SensorHCSR04Component(ports, us_cycles=us_cycles))
+        component = assembly.add_submodule(SensorHCSR04Component(ports,
+            us_cycles=round(1e-6 / assembly.sys_clk_period)))
 
         self._start = assembly.add_rw_register(component.start)
         self._supersample = assembly.add_rw_register(component.supersample)
