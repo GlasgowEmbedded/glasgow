@@ -807,20 +807,20 @@ class DebugMIPSApplet(JTAGProbeApplet):
     correctly, and running a GDB remote protocol server for a debugger. The supported debugger
     features are:
 
-        * Starting, stopping and single-stepping.
-        * Hardware and software breakpoints.
-        * Register and memory reads and writes.
+    * Starting, stopping and single-stepping.
+    * Hardware and software breakpoints.
+    * Register and memory reads and writes.
 
     Notable omissions include:
 
-        * Floating point.
-        * Tracepoints and watchpoints.
+    * Floating point.
+    * Tracepoints and watchpoints.
 
     The applet has been written with 32- and 64-bit CPUs with EJTAG 1.x-5.x in mind, but has only
     been tested with the following configurations:
 
-        * MIPS32 R1 big endian with EJTAG 1.x/2.0 (Broadcom BCM6358);
-        * MIPS32 R1 big endian with EJTAG 2.6 (Infineon ADM5120).
+    * MIPS32 R1 big endian with EJTAG 1.x/2.0 (Broadcom BCM6358);
+    * MIPS32 R1 big endian with EJTAG 2.6 (Infineon ADM5120).
 
     Other configurations might or might not work. In particular, it certainly does not currently
     work on little-endian CPUs. Sorry about that.

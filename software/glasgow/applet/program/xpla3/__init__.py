@@ -272,7 +272,7 @@ class ProgramXPLA3Applet(JTAGProbeApplet):
     Warning: programming SRAM directly will not set the initial register values correctly.
     Use this option at your own risk.
     """.format(
-        devices="\n".join(f"        * {device.name}" for device in devices)
+        devices="\n".join(f"    * {device.name}" for device in devices)
     )
     requires_tap = True
 

@@ -418,11 +418,11 @@ class ProgramMEC16xxApplet(DebugARCApplet):
     There are two types of erase operations that can be performed:
 
     * Emergency erase: It erases both the flash and eeprom (if the device has an eeprom),
-        using a special JTAG sequence, which may work even in the case of boot code
-        corruption
+      using a special JTAG sequence, which may work even in the case of boot code
+      corruption
     * Non-emergency erase: (see commands erase-flash and erase-eeprom). This uses normal
-        flash or eeprom controller commands to perform the erase, but if the target is
-        protected, then it might fail.
+      flash or eeprom controller commands to perform the erase, but if the target is
+      protected, then it might fail.
 
     Typical flash sizes:
 
