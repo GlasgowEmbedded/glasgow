@@ -181,9 +181,9 @@ class SensorHCSR04Applet(GlasgowAppletV2):
             "--speed-of-sound", type=float, default=343.2,
             help="speed of sound for conversion to distance (default: %(default)s)")
 
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
-        p_measure = p_operation.add_parser("measure", help="display measured values")
+        p_measure = p_operation.add_parser("measure", help="display measured values",)
 
         p_log = p_operation.add_parser("log", help="log measured values")
         p_log.add_argument(
@@ -196,24 +196,25 @@ class SensorHCSR04Applet(GlasgowAppletV2):
             return await self.hcsr04_iface.measure_distance(args.supersample,
                                                             args.speed_of_sound)
 
-        if args.operation == "measure":
-            try:
-                distance = await asyncio.wait_for(retrieve_distance(), timeout=args.timeout)
-                print(f"distance: {distance:2.4f}")
-            except TimeoutError:
-                raise SensorHCSR04Error("measurement timed out")
-
-        elif args.operation == "log":
-            field_names = dict(dist="distance")
-            data_logger = await DataLogger(self.logger, args, field_names=field_names)
-            while True:
+        match args.operation:
+            case None | "measure":
                 try:
                     distance = await asyncio.wait_for(retrieve_distance(), timeout=args.timeout)
-                    fields = dict(dist=distance)
-                    await data_logger.report_data(fields=fields)
-                    await asyncio.sleep(args.interval)
-                except TimeoutError as error:
-                    await data_logger.report_error("timeout", exception=error)
+                    print(f"distance : {distance:2.4f}")
+                except TimeoutError:
+                    raise SensorHCSR04Error("measurement timed out")
+
+            case "log":
+                field_names = dict(dist="distance")
+                data_logger = await DataLogger(self.logger, args, field_names=field_names)
+                while True:
+                    try:
+                        distance = await asyncio.wait_for(retrieve_distance(), timeout=args.timeout)
+                        fields = dict(dist=distance)
+                        await data_logger.report_data(fields=fields)
+                        await asyncio.sleep(args.interval)
+                    except TimeoutError as error:
+                        await data_logger.report_error("timeout", exception=error)
 
     @classmethod
     def tests(cls):
