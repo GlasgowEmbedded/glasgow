@@ -44,10 +44,13 @@ class SensorHCSR04Component(wiring.Component):
         m.submodules.echo_buffer = echo_buffer = io.Buffer("i", self._ports.echo)
         m.submodules += cdc.FFSynchronizer(echo_buffer.i, echo)
 
-        pulse_cycles = 10 * self._us_cycles
-        pulse_delay = Signal(range(pulse_cycles + 1), init=pulse_cycles)
+        pulse_cycles = 10 * self._us_cycles # 10 µs trigger pulse
+        pulse_delay  = Signal(range(pulse_cycles + 1), init=pulse_cycles)
 
-        dist_accum  = Signal(24 + len(1 << self.supersample))
+        wait_cycles  = 50_000 * self._us_cycles # 50 ms recovery time between samples
+        wait_delay   = Signal(range(wait_cycles + 1), init=wait_cycles)
+
+        dist_accum   = Signal(24 + len(1 << self.supersample))
         sample_count = Signal(1 << len(self.supersample))
 
         with m.FSM():
@@ -55,9 +58,9 @@ class SensorHCSR04Component(wiring.Component):
                 m.d.sync += dist_accum.eq(0)
                 m.d.sync += sample_count.eq(0)
                 with m.If(self.start):
-                    m.next = "Pulse"
+                    m.next = "Trig-Pulse"
 
-            with m.State("Pulse"):
+            with m.State("Trig-Pulse"):
                 m.d.comb += trig.eq(1)
                 with m.If(pulse_delay == 0):
                     m.d.sync += pulse_delay.eq(pulse_delay.init)
@@ -74,11 +77,18 @@ class SensorHCSR04Component(wiring.Component):
             with m.State("Measure-Echo"):
                 m.d.sync += dist_accum.eq(dist_accum + 1)
                 with m.If(~echo):
+                    m.next = "Recovery-Delay"
+
+            with m.State("Recovery-Delay"):
+                with m.If(wait_delay == 0):
+                    m.d.sync += wait_delay.eq(wait_delay.init)
                     m.d.sync += sample_count.eq(sample_count + 1)
                     with m.If(sample_count + 1 == (1 << self.supersample)):
                         m.next = "Normalize"
                     with m.Else():
-                        m.next = "Pulse"
+                        m.next = "Trig-Pulse"
+                with m.Else():
+                    m.d.sync += wait_delay.eq(wait_delay - 1)
 
             with m.State("Normalize"):
                 with m.If(sample_count != 1):
@@ -171,11 +181,11 @@ class SensorHCSR04Applet(GlasgowAppletV2):
     @classmethod
     def add_run_arguments(cls, parser):
         parser.add_argument(
-            "-S", "--supersample", type=int, default=4,
+            "-S", "--supersample", type=int, default=2,
             help="number of samples to take for supersampling, as a power of two; "
                  "use 0 to disable, 4 to average 16 samples (default: %(default)s)")
         parser.add_argument(
-            "-t", "--timeout", type=float, default=0.050 * 16, # 15 m * 2^4 supersample
+            "-t", "--timeout", type=float, default=0.065 * 16, # 10 m * 2^4 supersample
             help="timeout for each measurement, in seconds (default: %(default).3f)")
         parser.add_argument(
             "--speed-of-sound", type=float, default=343.2,
@@ -183,7 +193,7 @@ class SensorHCSR04Applet(GlasgowAppletV2):
 
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
-        p_measure = p_operation.add_parser("measure", help="display measured values",)
+        p_measure = p_operation.add_parser("measure", help="display measured values")
 
         p_log = p_operation.add_parser("log", help="log measured values")
         p_log.add_argument(
