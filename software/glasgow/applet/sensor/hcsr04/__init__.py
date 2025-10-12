@@ -172,18 +172,19 @@ class SensorHCSR04Applet(GlasgowAppletV2):
     def add_run_arguments(cls, parser):
         parser.add_argument(
             "-S", "--supersample", type=int, default=4,
-            help="""number of samples to take for supersampling (to the power of two).
-                    set to 0 to disable supersampling""")
+            help="number of samples to take for supersampling, as a power of two; "
+                 "use 0 to disable, 4 to average 16 samples (default: %(default)s)")
+        parser.add_argument(
+            "-t", "--timeout", type=float, default=0.050 * 16, # 15 m * 2^4 supersample
+            help="timeout for each measurement, in seconds (default: %(default).3f)")
         parser.add_argument(
             "--speed-of-sound", type=float, default=343.2,
-            help="speed of sound in the current environment")
-        parser.add_argument(
-            "-t", "--timeout", type=float, default=0.1,
-            help="timeout for each measurement, in seconds")
+            help="speed of sound for conversion to distance (default: %(default)s)")
 
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_measure = p_operation.add_parser("measure", help="display measured values")
+
         p_log = p_operation.add_parser("log", help="log measured values")
         p_log.add_argument(
             "-i", "--interval", type=float, default=0.1,
