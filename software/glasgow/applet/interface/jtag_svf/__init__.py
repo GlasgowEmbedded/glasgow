@@ -274,8 +274,9 @@ class JTAGSVFApplet(JTAGProbeApplet):
     Play SVF test vectors via the JTAG interface.
 
     This applet currently does not implement some SVF features:
-        * PIOMAP and PIO are not supported;
-        * The SCK clock in RUNTEST is not supported.
+
+    * PIOMAP and PIO are not supported;
+    * The SCK clock in RUNTEST is not supported.
 
     If any commands requiring these features are encountered, the applet terminates itself.
     """

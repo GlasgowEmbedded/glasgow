@@ -148,12 +148,13 @@ class DebugARCApplet(JTAGProbeApplet):
     Debug ARC processors via the JTAG interface.
 
     The list of supported devices is:
+
 {devices}
 
     There is currently no debug server implemented. This applet only allows manipulating Memory,
     Core and Aux spaces via a Python REPL.
     """.format(
-        devices="\n".join(f"        * {x.name}" for x in devices.values())
+        devices="\n".join(f"    * {x.name}" for x in devices.values())
     )
     requires_tap = True
 
