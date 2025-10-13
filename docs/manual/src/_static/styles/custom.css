@@ -1,0 +1,14 @@
+body[data-theme="dark"]  img {
+    color-scheme: dark;
+}
+body[data-theme="light"] img {
+    color-scheme: light;
+}
+.oshwa-mark {
+    float: right;
+    position: relative;
+    height: 60px;
+    top: -65px;
+    right: 50px;
+    max-width: 30%;
+}
