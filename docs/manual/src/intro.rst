@@ -25,15 +25,22 @@ Introduction
 .. image:: ./_images/glasgow-in-case.webp
     :alt: Glasgow Interface Explorer, in a black anodized aluminum case
 
+.. image:: ./_images/oshwa-UK000081.svg
+    :alt: Open Source Hardware Association mark, project UK000081
+    :class: oshwa-mark
+    :target: https://certification.oshwa.org/uk000081.html
+
 
 What is Glasgow?
 ----------------
 
-Glasgow Interface Explorer is a tool for exploring digital interfaces, aimed at embedded developers, reverse engineers, digital archivists, electronics hobbyists, and everyone else who wants to communicate with a wide range of digital devices with high reliability and minimum hassle. It can be connected to most digital interfaces without additional active or passive components, and includes extensive protection from unexpected conditions and operator error.
+Glasgow Interface Explorer is an `open hardware <oshwa-cert_>`__ tool for exploring digital interfaces, aimed at embedded developers, reverse engineers, digital archivists, electronics hobbyists, and everyone else who wants to communicate with a wide range of digital devices with high reliability and minimum hassle. It can be connected to most digital interfaces without additional active or passive components, and includes extensive protection from unexpected conditions and operator error.
 
 The Glasgow hardware can support many digital interfaces because it uses reconfigurable logic. Instead of only offering a small selection of standard hardware supported interfaces, it uses an FPGA to adapt on the fly to the task at hand without compromising on performance or reliability, even for unusual, custom, or obsolete interfaces.
 
 The Glasgow software is a set of building blocks designed to eliminate incidental complexity. Each interface is packaged into a self-contained applet that can be used directly from the command line, or reused as a part of a more complex system. Using Glasgow does not require any programming knowledge, although it becomes much more powerful if you know a bit of Python.
+
+.. _oshwa-cert: https://certification.oshwa.org/uk000081.html
 
 .. image:: ./_images/glasgow-pcba.webp
     :alt: Bare Glasgow Interface Explorer PCB assembly
