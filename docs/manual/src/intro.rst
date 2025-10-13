@@ -22,13 +22,15 @@
 Introduction
 ============
 
-.. image:: ./_images/glasgow-in-case.webp
-    :alt: Glasgow Interface Explorer, in a black anodized aluminum case
+.. container:: glasgow-image-with-marks
 
-.. image:: ./_images/oshwa-UK000081.svg
-    :alt: Open Source Hardware Association mark, project UK000081
-    :class: oshwa-mark
-    :target: https://certification.oshwa.org/uk000081.html
+  .. image:: ./_images/glasgow-in-case.webp
+      :alt: Glasgow Interface Explorer, in a black anodized aluminum case
+
+  .. image:: ./_images/oshwa-UK000081.svg
+      :alt: Open Source Hardware Association mark, project UK000081
+      :class: oshwa-mark
+      :target: https://certification.oshwa.org/uk000081.html
 
 
 What is Glasgow?
