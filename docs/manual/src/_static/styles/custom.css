@@ -4,11 +4,14 @@ body[data-theme="dark"]  img {
 body[data-theme="light"] img {
     color-scheme: light;
 }
-.oshwa-mark {
-    float: right;
+.glasgow-image-with-marks {
     position: relative;
-    height: 60px;
-    top: -65px;
-    right: 50px;
-    max-width: 30%;
+    line-height: 0;
+    .oshwa-mark {
+        position: absolute;
+        right: 6%;
+        bottom: 2%;
+        max-width: 30%;
+        max-height: 60px;
+    }
 }
