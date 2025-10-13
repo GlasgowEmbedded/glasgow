@@ -83,15 +83,15 @@ What can I do with Glasgow?
 
 * probe `IEEE 1149.1`_ compatible devices via :ref:`JTAG <applet.interface.jtag_probe>`
 
-  * play back JTAG SVF files
+  * play back JTAG :ref:`SVF files <applet.interface.jtag_svf>`
 
   * :ref:`debug ARM7TDMI processors <applet.debug.arm.arm7>` via JTAG
 
-  * debug ARC processors via JTAG
+  * :ref:`debug ARC processors <applet.debug.arc>` via JTAG
 
-  * debug MIPS processors via EJTAG
+  * :ref:`debug MIPS processors <applet.debug.mips>` via EJTAG
 
-  * program and verify XC9500XL CPLDs via JTAG
+  * program and verify :ref:`XC9500 <applet.program.xc9500>` and :ref:`XC9500XL <applet.program.xc9500xl>` CPLDs via JTAG
 
   * :ref:`expose JTAG to Vivado <applet.bridge.jtag_xvc>`
 
@@ -106,6 +106,10 @@ What can I do with Glasgow?
 * sense environmental data
 
   * temperature, pressure, and humidity via :ref:`Bosch BMP280/BME280 <applet.sensor.bmx280>` sensors
+
+  * CO₂ concentration via Sensirion :ref:`SCD30 <applet.sensor.scd30>` and NOx concentration via :ref:`SEN5x <applet.sensor.sen5x>` sensors
+
+  * distance by ultrasonic echo via :ref:`HC-SR04 <applet.sensor.hcsr04>` sensors
 
 * synthesize sound using a Yamaha OPLx/OPM chip and play it in real time on a webpage
 
