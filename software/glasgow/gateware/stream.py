@@ -159,6 +159,7 @@ class PacketQueue(wiring.Component):
     If, while a packet is being pushed into the queue, a new packet (indicated by an item
     with ``first == 1``) starts being pushed into the queue, the previous packet is discarded.
     """
+
     def __init__(self, data_shape, *, data_depth, size_depth):
         self._data_shape = data_shape
         self._data_depth = data_depth
