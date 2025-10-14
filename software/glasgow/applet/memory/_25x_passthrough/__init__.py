@@ -387,45 +387,33 @@ class Memory25xPassThroughApplet(GlasgowAppletV2):
     can be achieved. The equation looks like this, when a sample delaying feature is enabled:
     `1000MHz / (2 * 9ns + additional_delays_ns - sample_delay_ns) / 2`
 
-    Examples of working/non-working systems and configurations this has been tested on:
+    Examples of systems and configurations this has been tested on:
     - On a RP2040 test jig, with Winbond W25Q80DVUXIE memory, running a system clock running at
-      125MHz when fully up and running (except when stated otherwise):
-      - Works: SCLK=15.62MHz RX_SAMPLE_DLY=1 (resulting in 8ns sample delay @ clk_sys=125MHz) -
-        the default second-stage bootloader has a hardcoded RX_SAMPLE_DLY=1
-      - Fails: SCLK=20.83MHz RX_SAMPLE_DLY=1 (resulting in 8ns sample delay @ clk_sys=125MHz) -
-        the default second-stage bootloader has a hardcoded RX_SAMPLE_DLY=1
-      - Works: SCLK=20.83MHz RX_SAMPLE_DLY=2 (resulting in 16ns sample delay @ clk_sys=125MHz) -
-        the second state bootloader was modified to force RX_SAMPLE_DLY=2
-      - Fails: SCLK=31.25MHz RX_SAMPLE_DLY=2 (resulting in 16ns sample delay @ clk_sys=125MHz) -
-        the second state bootloader was modified to force RX_SAMPLE_DLY=2
-      - Works: SCLK=31.25MHz RX_SAMPLE_DLY=3 (resulting in 24ns sample delay @ clk_sys=125MHz) -
-        This sample delay is longer than half a SCLK clock cycle. Because on the RP2040 platform
-        the SSI controller is clocked from the system clock, and the sample delay is configured
-        in number of system clock cycles, when the system is running at slower speeds (such as
-        during initialization), the actual sample delay will be a lot larger than 24ns, and this
-        can cause us to sample the signal too late. This introduces a minimum clock frequency
-        constraint too. To check that this example works, the bootloader was configured to only
-        SCLK=15.62MHz, and then the speed was raised later on in software, when the system clock
-        was up and running.
-      - Fails: SCLK=62.5MHz RX_SAMPLE_DLY=3 (resulting in 24ns sample delay @ clk_sys=125MHz)
-      - Works: SCLK=62.5MHz RX_SAMPLE_DLY=4 (resulting in 32ns sample delay @ clk_sys=125MHz) -
-        this also results in a minimum clock frequency requirement, so extreme care should be taken
-        for the system to not lower its clock frequency after the sample delay is set to 4 system
-        clock cycles.
-      - Fails: SCLK=15.62MHz RX_SAMPLE_DLY=0 (resulting in 0ns sample delay) - the second stage
-        bootloader was modified to force RX_SAMPLE_DLY=0
-      - Works: SCLK=15.50MHz RX_SAMPLE_DLY=0 (resulting in 0ns sample delay) - the second stage
-        bootloader was modified to force RX_SAMPLE_DLY=0, and the pico-sdk was edited to set a
-        system clock of 124MHz
-      - Works: SCLK=77.50MHz RX_SAMPLE_DLY=4 (resulting in 25.8ns sample delay) - this was achieved
-        with a second stage bootloader dividing down the system clock by 8, and a sample delay of
-        4, in order to not fail when the system clock is configured to be higher, and the pico-sdk
-        was edited to set a system clock of 155MHz
-      - according to these results the additional delay of this test jig must be between
-        14.0..14.3ns
+      125MHz when fully up and running (except when stated otherwise). This system has an
+      `additional_delay_ns` of about 14.0..14.3ns.:
+      - SCLK=30MHz Can be achieved by setting clk_sys to 60MHz, PICO_FLASH_SPI_CLKDIV=2. Note
+        that the the 2nd stage bootloader configures an RX_SAMPLE_DLY of 1 system clock cycle,
+        that is why this frequency works correctly.
+      - SCLK=77MHz Can be achieved by setting clk_sys to 154MHz, PICO_FLASH_SPI_CLKDIV=2, and
+        using RX_SAMPLE_DLY=4. However note that this sample delay is larger then half an SCLK
+        clock cycle, which means that in this mode there is now a minimum clock frequency
+        constraint as well, i.e. the system clock must not be slower than around 110MHz, so care
+        must be taken that the application does not use dynamic frequency scaling, and it doesn't
+        reinitialize the system clock after the SPI has been switched to this speed. This speed
+        needed two two software tweaks to make it possible:
+        - for the normal second stage bootloader a setting of PICO_FLASH_SPI_CLKDIV=8 was used,
+          (keeping the original RX_SAMPLE_DLY=1) that it sets. This was necessary, for the SPI
+          interface to operate correctly when the system clock switches to 154MHz.
+        - When making non-xip memory accesses, the pico-sdk calls into a copy of the second stage
+          bootloader to restart xip-mode. The pico-sdk code was hacked to use a different
+          second stage bootloader to restore xip mode that would use PICO_FLASH_SPI_CLKDIV=2, and
+          RX_SAMPLE_DLY=4. Then a routine was written to exit XIP mode, and re-enter it, while
+          doing nothing else. This was called after configuring the pll.
+        - The system must not ever reduce the speed the system clock without also returning the
+          SPI_CLKDIV to 8.
       - The maximum sample delay supported by the RP2050 is 4 sysclk cycles, and the SCK frequency
-        is also derived from the system clock. For this reason it's not possible to achieves higher
-        that 77.5MHz on this test jig. (When trying to set a sample delay of 5, the RP2040 just
+        is also derived from the system clock. For this reason it's not possible to achieve higher
+        than 77MHz on this test jig. (When trying to set a sample delay of 5, the RP2040 just
         seems to behave as if the sample delay was 0). Higher speeds may be possible with this
         applet, if a different controller has more control over the sampling delay.
     """
