@@ -392,7 +392,7 @@ class Memory25xPassThroughApplet(GlasgowAppletV2):
     Examples of systems and configurations this has been tested on:
 
     * On a RP2040 test jig, with Winbond W25Q80DVUXIE memory, running SCLK=30MHz Can be achieved by
-      setting clk_sys to 60MHz, PICO_FLASH_SPI_CLKDIV=2. Note that the the 2nd stage bootloader
+      setting clk_sys to 60MHz, PICO_FLASH_SPI_CLKDIV=2. Note that the 2nd stage bootloader
       configures an RX_SAMPLE_DLY of 1 system clock cycle, that is why this frequency works
       correctly. This system has an `additional_delay_ns` of about 14.0..14.3ns, so if the 2nd
       stage bootloader would not have set RX_SAMPLE_DLY=1, then it would have only worked to about
