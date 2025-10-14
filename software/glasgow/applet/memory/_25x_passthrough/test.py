@@ -8,4 +8,6 @@ class Memory25xPassThroughAppletTestCase(GlasgowAppletV2TestCase,
                                          applet=Memory25xPassThroughApplet):
     @synthesis_test
     def test_build(self):
-        self.assertBuilds()
+        self.assertBuilds("--chip w25q80dv")
+        self.assertBuilds("--chip w25q80dv -d")
+        self.assertBuilds("--chip mx25l6436f")
