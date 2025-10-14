@@ -363,6 +363,7 @@ class Memory25xPassThroughApplet(GlasgowAppletV2):
     `spi-flashrom` applet, however the pin argument names are not compatible.
 
     Three leds are configured as such:
+
     * U2 = busy in non-xip mode
     * U3 = currently in xip mode
     * U4 = busy in non-xip mode
