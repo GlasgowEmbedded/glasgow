@@ -440,9 +440,10 @@ class Memory25xPassThroughApplet(GlasgowAppletV2):
                             help="Select compatible chip type")
 
         parser.add_argument("-d", "--drive-second-nibble-continuous-read-mode", action="store_true",
-                            help="The second nibble of some Continuous Read/eXecute-In-Place mode "
-                            "bits is don't care. So for those chips, the default is to not drive "
-                            "the lower nibble")
+                            help="On some chips the second (i.e. least significant) nibble of the "
+                            "mode bits used to turn on Continuous Read/eXecute-In-Place mode is "
+                            "don't-care. For those chips the default is to not drive the lower "
+                            "nibble at all. This argument forces driving that nibble too.")
 
     def build(self, args):
         with self.assembly.add_applet(self):
