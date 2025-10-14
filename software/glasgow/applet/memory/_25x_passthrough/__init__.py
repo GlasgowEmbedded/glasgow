@@ -373,7 +373,7 @@ class Memory25xPassThroughApplet(GlasgowAppletV2):
 
     Please note that although the logic in this applet may be able to run at high clock
     frequencies, the overall system clock frequency achievable may be limited because of
-    propagation time through the Glasgow, which has to be observed twice: First the SCK falling
+    propagation time through the Glasgow, which has to be observed twice: First the SCK rising
     edge has to pass through the Glasgow from the controller to the memory, and then the memory
     outputs data in response to that which has to pass back through the Glasgow to the controller.
     On one glasgow a single propagation delay has been measured as 9ns. This may be different on
