@@ -85,6 +85,7 @@ chips = {
     },
 }
 
+
 class Memory25xPassThroughComponent(wiring.Component):
     reset: In(1)
 
@@ -218,7 +219,7 @@ class Memory25xPassThroughComponent(wiring.Component):
             if type(commands) is Command:
                 commands = (commands,)
             codes = [command.code for command in commands]
-            codes_str = '_'.join([f'{code:02x}h' for code in codes])
+            codes_str = "_".join([f"{code:02x}h" for code in codes])
             return codes, codes_str
 
         xip_submodes = {}
