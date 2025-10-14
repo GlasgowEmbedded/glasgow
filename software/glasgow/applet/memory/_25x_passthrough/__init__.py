@@ -411,9 +411,9 @@ class Memory25xPassThroughApplet(GlasgowAppletV2):
       pico-sdk code was hacked to use a different second stage bootloader to restore xip mode that
       would use PICO_FLASH_SPI_CLKDIV=2, and RX_SAMPLE_DLY=4. Then a routine was written to exit
       XIP mode, and re-enter it, while doing nothing else. This was called after configuring the
-      pll. 3) The system must not ever reduce the speed the system clock without also returning the
-      SPI_CLKDIV to 8.
-    * The maximum sample delay supported by the RP2050 is 4 sysclk cycles, and the SCK frequency is
+      pll. 3) The system must not ever reduce the speed of the system clock without also returning
+      the SPI_CLKDIV to 8.
+    * The maximum sample delay supported by the RP2040 is 4 sysclk cycles, and the SCK frequency is
       also derived from the system clock. For this reason it's not possible to achieve higher than
       77MHz on this test jig. (When trying to set a sample delay of 5, the RP2040 just seems to
       behave as if the sample delay was 0). Higher speeds may be possible with this applet, if a
