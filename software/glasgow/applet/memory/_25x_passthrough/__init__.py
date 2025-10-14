@@ -447,10 +447,6 @@ class Memory25xPassThroughApplet(GlasgowAppletV2):
     def build(self, args):
         with self.assembly.add_applet(self):
             chip_spec = chips[args.chip]
-            if args.drive_second_nibble_continuous_read_mode:
-                if "allowed_to_not_drive_second_nibble_of_mode_bits" not in chip_spec or \
-                   not chip_spec["allowed_to_not_drive_second_nibble_of_mode_bits"]:
-                    assert False, "This chip does not allow to skip driving the second nibble"
 
             self.assembly.use_voltage(args.voltage)
             self.assembly.use_pulls({args.cs: "high"})
