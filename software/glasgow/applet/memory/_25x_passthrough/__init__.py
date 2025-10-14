@@ -5,6 +5,7 @@ from amaranth.lib.wiring import In
 
 from glasgow.abstract import AbstractAssembly, GlasgowPin
 from glasgow.applet import GlasgowAppletV2
+from collections import namedtuple
 
 
 __all__ = ["Memory25xPassThroughComponent", "Memory25xPassThroughApplet"]
@@ -15,34 +16,90 @@ DIR_4_BIT_READ   = 0b0000
 DIR_2_BIT_WRITE  = 0b1111
 DIR_4_BIT_WRITE  = 0b1111
 
-COMMAND_DREAD = 0x3B
-COMMAND_2READ = 0xBB
-COMMAND_QREAD = 0x6B
-COMMAND_4READ = 0xEB
-COMMAND_4PP   = 0x38 # Specific to Macronix
+Phase = namedtuple("Phase",
+                   "cycles direction xip_mode_bits")
+# cycles=None means repeat until CS deassertion
 
-COMMAND_WORD_READ_QUAD_IO = 0xE7 # Winbond
-COMMAND_OCTAL_WORD_READ_QUAD_IO = 0xE3 # Winbond
-# TODO: ^^ E3 may be "Advanced sector protection command" on some other Macronix chips
-# Find a chip like that and check for compatibility.
-COMMAND_READ_MFR_DEV_ID_DUAL_IO = 0x92 # Winbond
-COMMAND_READ_MFR_DEV_ID_QUAD_IO = 0x94 # Winbond
-COMMAND_QUAD_INPUT_PAGE_PROGRAM = 0x32 # Winbond
-COMMAND_SET_BURST_WITH_WRAP = 0x77 # Winbond
-# ^^ On Macronix this is a burst read command and it's not quad I/O but that's not a problem.
+Command = namedtuple("Command",
+                     "code name")
 
+chips = {
+    "mx25l6436f" : {
+        "continuous_read": lambda high, low: high ^ low == 0xff,
+        "commands": {
+            Command(0x3B, "DREAD"): [
+                Phase(24,   DIR_1_BIT_ACCESS, False),
+                Phase(None, DIR_2_BIT_READ,   False),
+            ],
+            Command(0x6B, "QREAD"): [
+                Phase(24,   DIR_1_BIT_ACCESS, False),
+                Phase(None, DIR_4_BIT_READ  , False),
+            ],
+            Command(0x38, "4PP"): [
+                Phase(None, DIR_4_BIT_WRITE,  False),
+            ],
+            Command(0xBB, "2READ"): [
+                Phase(12,   DIR_2_BIT_WRITE,  False),
+                Phase(2,    DIR_2_BIT_WRITE,  False),
+                    # ^^ XIP not supported for 2READ
+                Phase(None, DIR_2_BIT_READ,   False),
+            ],
+            Command(0xEB, "4READ"): [
+                Phase(6,    DIR_4_BIT_WRITE,  False),
+                Phase(2,    DIR_4_BIT_WRITE,  True ),
+                Phase(None, DIR_4_BIT_READ,   False),
+            ],
+        },
+    },
+    "w25q80dv": {
+        "continuous_read": lambda high, low: high & 3 == 0b10,
+        "allowed_to_not_drive_second_nibble_of_mode_bits": True,
+        "commands": {
+            Command(0x3B, "Fast Read Dual Output"): [
+                Phase(24,   DIR_1_BIT_ACCESS, False),
+                Phase(None, DIR_2_BIT_READ,   False),
+            ],
+            Command(0x6B, "Fast Read Quad Output"): [
+                Phase(24,   DIR_1_BIT_ACCESS, False),
+                Phase(None, DIR_4_BIT_READ  , False),
+            ],
+            (Command(0xBB, "Fast Read Dual I/O"),
+             Command(0x92, "Read Manufacturer / Device ID Dual I/O")): [
+                Phase(12,   DIR_2_BIT_WRITE,  False),
+                Phase(2,    DIR_2_BIT_WRITE,  True),
+                Phase(None, DIR_2_BIT_READ,   False),
+            ],
+            (Command(0xEB, "Fast Read Quad I/O"),
+             Command(0xE7, "Word Read Quad I/O"),
+             Command(0xE3, "Octal Word Read Quad I/O"),
+             Command(0x94, "Read Manufacturer / Device ID Quad I/O")): [
+                Phase(6,    DIR_4_BIT_WRITE,  False),
+                Phase(2,    DIR_4_BIT_WRITE,  True ),
+                Phase(None, DIR_4_BIT_READ,   False),
+            ],
+            (Command(0x32, "Quad Input Page Program"),
+             Command(0x77, "Set Burst with Wrap")): [
+                Phase(None, DIR_4_BIT_WRITE,  False),
+            ],
+        },
+    },
+}
 
 class Memory25xPassThroughComponent(wiring.Component):
     reset: In(1)
 
-    def __init__(self, ports, xip_style_winbond: bool, xip_style_macronix: bool,
-                 drive_low_nibble_continuous_read_mode:bool,
+    def __init__(self, ports, chip_spec:dict,
+                 drive_second_nibble_continuous_read_mode:bool,
                  sys_clk_period: float, statistics_led_refresh_hz: float, address_cycles=24):
         self._ports = ports
         self._address_cycles = address_cycles
-        self._xip_style_winbond = xip_style_winbond
-        self._xip_style_macronix = xip_style_macronix
-        self._drive_low_nibble_continuous_read_mode = drive_low_nibble_continuous_read_mode
+        self._chip_spec = chip_spec
+        self._skip_second_nibble = False
+        if "allowed_to_not_drive_second_nibble_of_mode_bits" in chip_spec and \
+           chip_spec["allowed_to_not_drive_second_nibble_of_mode_bits"] and \
+           not drive_second_nibble_continuous_read_mode:
+            self._skip_second_nibble = True
+
         self._sys_clk_period = sys_clk_period
         self._statistics_led_refresh_hz = statistics_led_refresh_hz
 
@@ -108,7 +165,6 @@ class Memory25xPassThroughComponent(wiring.Component):
         command = Signal(8)
 
         xip_mode = Signal(init=0) # Can only be reset via i2c register
-        xip_mode_dual = Signal(reset_less=True)
         xip_mode_data = Signal()
 
         dir_io_pre = Signal(4, init=DIR_1_BIT_ACCESS)
@@ -158,6 +214,23 @@ class Memory25xPassThroughComponent(wiring.Component):
 
         m.d.comb += self.leds[2].o.eq(xip_mode)
 
+        def get_commands(commands):
+            if type(commands) is Command:
+                commands = (commands,)
+            codes = [command.code for command in commands]
+            codes_str = '_'.join([f'{code:02x}h' for code in codes])
+            return codes, codes_str
+
+        xip_submodes = {}
+        for commands, phases in self._chip_spec["commands"].items():
+            codes, codes_str = get_commands(commands)
+            for phase_ind in range(len(phases)):
+                if phases[phase_ind].xip_mode_bits:
+                    xip_submodes[codes_str] = (
+                        Signal(name=f"xip_submode_cmd_{codes_str}", reset_less=True),
+                        f"Command_{codes_str}_phase_0")
+                    break
+
         with m.FSM(domain="qspi"):
             with m.State("Wait-Command"):
                 with m.If(xip_mode):
@@ -165,75 +238,52 @@ class Memory25xPassThroughComponent(wiring.Component):
                     # transferring the first address bits
                     m.d.qspi += dir_io_pre.eq(DIR_4_BIT_WRITE)
                     m.d.qspi += addr_bit_cnt.eq(1)
-                    m.next = "Wait-4READ-Address"
+                    for xip_submode in xip_submodes.values():
+                        with m.If(xip_submode[0]):
+                            m.next = xip_submode[1]
                 with m.Else():
                     m.d.qspi += command.eq(Cat(cio_buffer[0].i, command))
                     with m.If(bit_cnt == 7):
                         m.d.qspi += addr_bit_cnt.eq(0)
                         with m.Switch(Cat(cio_buffer[0].i, command)):
-                            with m.Case(COMMAND_2READ,
-                                        COMMAND_READ_MFR_DEV_ID_DUAL_IO):
-                                m.d.qspi += dir_io_pre.eq(DIR_2_BIT_WRITE)
-                                m.next = "Wait-2READ-Address"
-                            with m.Case(COMMAND_4READ,
-                                        COMMAND_WORD_READ_QUAD_IO,
-                                        COMMAND_OCTAL_WORD_READ_QUAD_IO,
-                                        COMMAND_READ_MFR_DEV_ID_QUAD_IO):
-                                m.d.qspi += dir_io_pre.eq(DIR_4_BIT_WRITE)
-                                m.next = "Wait-4READ-Address"
-                            with m.Case(COMMAND_DREAD):
-                                m.next = "Wait-DREAD-Address"
-                            with m.Case(COMMAND_QREAD):
-                                m.next = "Wait-QREAD-Address"
-                            with m.Case(COMMAND_4PP,
-                                        COMMAND_QUAD_INPUT_PAGE_PROGRAM,
-                                        COMMAND_SET_BURST_WITH_WRAP):
-                                m.d.qspi += dir_io_pre.eq(DIR_4_BIT_WRITE)
-                                m.next = "Wait-Cs-Deassert"
+                            for commands, phases in self._chip_spec["commands"].items():
+                                codes, codes_str = get_commands(commands)
+                                with m.Case(*codes):
+                                    m.d.qspi += dir_io_pre.eq(phases[0].direction)
+                                    if len(phases) == 1:
+                                        assert phases[0].cycles is None
+                                        m.next = "Wait-Cs-Deassert"
+                                    else:
+                                        m.next = f"Command_{codes_str}_phase_0"
                             with m.Default():
                                 m.next = "Wait-Cs-Deassert"
-            with m.State("Wait-2READ-Address"):
-                m.d.qspi += addr_bit_cnt.eq(addr_bit_cnt + 1)
-                with m.If(addr_bit_cnt == self._address_cycles // 2 - 1):
-                    m.d.qspi += xip_mode_dual.eq(1)
-                    m.next = "Wait-XIP-mode-bits-high"
-            with m.State("Wait-4READ-Address"):
-                m.d.qspi += addr_bit_cnt.eq(addr_bit_cnt + 1)
-                with m.If(addr_bit_cnt == self._address_cycles // 4 - 1):
-                    m.d.qspi += xip_mode_dual.eq(0)
-                    m.next = "Wait-XIP-mode-bits-high"
-            with m.State("Wait-XIP-mode-bits-high"):
-                # Read P[7:4] bits, a.k.a. Read M[7:4]
-                p_high_nxt = Cat(*[item.i for item in cio_buffer])
-                m.d.qspi += p_high.eq(p_high_nxt)
-                if self._xip_style_winbond and not self._drive_low_nibble_continuous_read_mode:
-                    m.d.qspi_i2c_rst += xip_mode.eq(p_high_nxt & 3 == 0b10)
-                    m.d.qspi += xip_mode_data.eq(1)
-                    m.d.qspi += dir_io_pre.eq(Mux(xip_mode_dual, DIR_2_BIT_READ, DIR_4_BIT_READ))
-                    m.next = "Wait-Cs-Deassert"
-                else:
-                    m.next = "Wait-XIP-mode-bits-low"
-            with m.State("Wait-XIP-mode-bits-low"):
-                # Read P[3:0] bits, a.k.a. Read M[3:0]
-                if self._xip_style_winbond:
-                    m.d.qspi_i2c_rst += xip_mode.eq(p_high & 3 == 0b10)
-                elif self._xip_style_macronix:
-                    # Macronix performance enhance mode
-                    m.d.qspi_i2c_rst += xip_mode.eq(
-                        (p_high ^ Cat(*[item.i for item in cio_buffer])) == 0xf)
-                m.d.qspi += xip_mode_data.eq(1)
-                m.d.qspi += dir_io_pre.eq(Mux(xip_mode_dual, DIR_2_BIT_READ, DIR_4_BIT_READ))
-                m.next = "Wait-Cs-Deassert"
-            with m.State("Wait-DREAD-Address"):
-                m.d.qspi += addr_bit_cnt.eq(addr_bit_cnt + 1)
-                with m.If(addr_bit_cnt == self._address_cycles - 1):
-                    dir_io_pre.eq(DIR_2_BIT_READ)
-                    m.next = "Wait-Cs-Deassert"
-            with m.State("Wait-QREAD-Address"):
-                m.d.qspi += addr_bit_cnt.eq(addr_bit_cnt + 1)
-                with m.If(addr_bit_cnt == self._address_cycles - 1):
-                    m.d.qspi += dir_io_pre.eq(DIR_4_BIT_READ)
-                    m.next = "Wait-Cs-Deassert"
+            for commands, phases in self._chip_spec["commands"].items():
+                _, codes_str = get_commands(commands)
+                for phase_ind in range(len(phases) - 1):
+                    with m.State(f"Command_{codes_str}_phase_{phase_ind}"):
+                        m.d.qspi += addr_bit_cnt.eq(addr_bit_cnt + 1)
+                        if phases[phase_ind].xip_mode_bits:
+                            m.d.qspi += xip_submodes[codes_str][0].eq(1)
+                            m.d.qspi += p_high.eq(Cat(*[item.i for item in cio_buffer]))
+                        with m.If(1 if self._skip_second_nibble and phases[phase_ind].xip_mode_bits
+                                    else addr_bit_cnt == phases[phase_ind].cycles - 1 ):
+                            if phases[phase_ind].xip_mode_bits:
+                                if not self._skip_second_nibble:
+                                    m.d.qspi_i2c_rst += xip_mode.eq(
+                                        self._chip_spec["continuous_read"](
+                                            p_high, Cat(*[item.i for item in cio_buffer])))
+                                else:
+                                    m.d.qspi_i2c_rst += xip_mode.eq(
+                                        self._chip_spec["continuous_read"](
+                                            Cat(*[item.i for item in cio_buffer]), None))
+                            m.d.qspi += xip_mode_data.eq(1)
+                            m.d.qspi += dir_io_pre.eq(phases[phase_ind + 1].direction)
+                            if phase_ind == len(phases) - 2:
+                                assert phases[phase_ind + 1].cycles is None
+                                m.next = "Wait-Cs-Deassert"
+                            else:
+                                m.d.qspi += addr_bit_cnt.eq(0)
+                                m.next = f"Command_{codes_str}_phase_{phase_ind + 1}"
             with m.State("Wait-Cs-Deassert"):
                 pass
 
@@ -244,16 +294,14 @@ class Memory25xPassThroughInterface:
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
                  cs: GlasgowPin, sck: GlasgowPin, io: GlasgowPin,
                  ccs: GlasgowPin, csck: GlasgowPin, cio: GlasgowPin,
-                 xip_style_winbond: bool, xip_style_macronix: bool,
-                 drive_low_nibble_continuous_read_mode: bool):
+                 chip_spec: dict, drive_second_nibble_continuous_read_mode: bool):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
         ports = assembly.add_port_group(cs=cs, sck=sck, io=io,
                                         ccs=ccs, csck=csck, cio=cio)
-        component = assembly.add_submodule(Memory25xPassThroughComponent(ports,
-            xip_style_winbond=xip_style_winbond, xip_style_macronix=xip_style_macronix,
-            drive_low_nibble_continuous_read_mode = drive_low_nibble_continuous_read_mode,
+        component = assembly.add_submodule(Memory25xPassThroughComponent(ports, chip_spec=chip_spec,
+            drive_second_nibble_continuous_read_mode=drive_second_nibble_continuous_read_mode,
             sys_clk_period=assembly.sys_clk_period, statistics_led_refresh_hz=25))
         self._reset = assembly.add_rw_register(component.reset)
 
@@ -399,33 +447,30 @@ class Memory25xPassThroughApplet(GlasgowAppletV2):
             help="bind the applet I/O lines 'copi', 'cipo', 'wp', 'hold' to PINS")
         access.add_pins_argument(parser, "csck", required=True,          default="B1")
 
-        parser.add_argument(
-            "-W", "--xip-style-winbond", action="store_true",
-            help="React to Winbond-style XIP requests. i.e. we go into XIP mode when M[5:4]=0b10")
-        parser.add_argument(
-            "-M", "--xip-style-macronix", action="store_true",
-            help="React to Macronix-style XIP requests. i.e. we go into XIP mode when "
-                 "M[7:4]^M[3:0]==0xf")
-        parser.add_argument(
-            "-d", "--drive-low-nibble-continuous-read-mode", action="store_true",
-            help="The low nibble of winbond-style Continuous Read/eXecute-In-Place mode bits is "
-                 "don't care. So the default is to not drive the lower nibble")
+        parser.add_argument("--chip", choices = chips.keys(), required=True,
+                            help="Select compatible chip type")
+
+        parser.add_argument("-d", "--drive-second-nibble-continuous-read-mode", action="store_true",
+                            help="The second nibble of some Continuous Read/eXecute-In-Place mode "
+                            "bits is don't care. So for those chips, the default is to not drive "
+                            "the lower nibble")
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            assert not(args.xip_style_winbond and args.xip_style_macronix), \
-                "Cannot have both xip styles supported at the same time"
-            if args.drive_low_nibble_continuous_read_mode:
-                assert args.xip_style_winbond, "Must specify --xip-style-winbond to not drive " \
-                    "low nibble"
+            chip_spec = chips[args.chip]
+            if args.drive_second_nibble_continuous_read_mode:
+                if "allowed_to_not_drive_second_nibble_of_mode_bits" not in chip_spec or \
+                   not chip_spec["allowed_to_not_drive_second_nibble_of_mode_bits"]:
+                    assert False, "This chip does not allow to skip driving the second nibble"
+
             self.assembly.use_voltage(args.voltage)
             self.assembly.use_pulls({args.cs: "high"})
             self.memory_25x_passthrough_iface = Memory25xPassThroughInterface(
                 self.logger,self.assembly,
                 cs=args.cs, sck=args.sck, io=args.io, ccs=args.ccs, csck=args.csck, cio=args.cio,
-                xip_style_winbond=args.xip_style_winbond,
-                xip_style_macronix=args.xip_style_macronix,
-                drive_low_nibble_continuous_read_mode=args.drive_low_nibble_continuous_read_mode)
+                chip_spec=chip_spec,
+                drive_second_nibble_continuous_read_mode=
+                    args.drive_second_nibble_continuous_read_mode)
 
     @classmethod
     def add_run_arguments(cls, parser):
