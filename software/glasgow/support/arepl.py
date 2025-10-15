@@ -146,6 +146,12 @@ class AsyncInteractiveConsole:
 
     async def _process_line(self, line, *, filename="<console>"):
         self._buffer.append(line)
+
+        # If we've started accumulating a multi-line statement,
+        # keep doing so until we encounter a blank line.
+        if len(self._buffer) > 1 and len(line) > 0:
+            return
+
         try:
             source = "\n".join(self._buffer)
             try:
