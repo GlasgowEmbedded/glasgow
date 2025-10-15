@@ -26,6 +26,8 @@ jobs:
         python-version:
         - '3.11.x'
         - '3.12.x'
+        - '3.13.x'
+        - '3.14.x'
         - 'pypy-3.11'
         dep-versions:
         - minimal
@@ -34,11 +36,11 @@ jobs:
         - false
         include:
         - os-version: ubuntu-24.04
-          python-version: '3.13-dev'
+          python-version: '3.15-dev'
           dep-versions: minimal
           allow-failure: true
         - os-version: ubuntu-24.04
-          python-version: '3.13-dev'
+          python-version: '3.15-dev'
           dep-versions: latest
           allow-failure: true
     continue-on-error: ${{ matrix.allow-failure }}
