@@ -1,0 +1,20 @@
+``control-si535x``
+==================
+
+CLI reference
+-------------
+
+.. _applet.control.si535x:
+
+.. autoprogram:: glasgow.applet.control.si535x:ControlSi535xApplet._get_argparser_for_sphinx("control-si535x")
+    :prog: glasgow run control-si535x
+
+
+API reference
+-------------
+
+.. module:: glasgow.applet.control.si535x
+
+.. autoexception:: Si535xError
+
+.. autoclass:: Si535xInterface
