@@ -630,11 +630,12 @@ void handle_pending_usb_setup() {
         SETUP_EP0_IN_BUF(2);
       }
     } else {
-      SETUP_EP0_IN_BUF(2);
+      SETUP_EP0_OUT_BUF();
       while(EP0CS & _BUSY);
       if(!iobuf_set_voltage(arg_mask, (__xdata uint16_t *)EP0BUF)) {
         latch_status_bit(ST_ERROR);
       }
+      ACK_EP0();
     }
 
     return;
@@ -685,7 +686,7 @@ void handle_pending_usb_setup() {
         SETUP_EP0_IN_BUF(4);
       }
     } else {
-      SETUP_EP0_IN_BUF(4);
+      SETUP_EP0_OUT_BUF();
       while(EP0CS & _BUSY);
 
       if(glasgow_config.revision >= GLASGOW_REV_C2)
@@ -696,6 +697,7 @@ void handle_pending_usb_setup() {
       if(!result) {
         latch_status_bit(ST_ERROR);
       }
+      ACK_EP0();
     }
 
     return;
@@ -754,7 +756,7 @@ void handle_pending_usb_setup() {
         SETUP_EP0_IN_BUF(2);
       }
     } else {
-      SETUP_EP0_IN_BUF(2);
+      SETUP_EP0_OUT_BUF();
       while(EP0CS & _BUSY);
       if(!iobuf_set_voltage_limit(arg_mask, (__xdata uint16_t *)EP0BUF)) {
         latch_status_bit(ST_ERROR);
@@ -767,6 +769,7 @@ void handle_pending_usb_setup() {
           latch_status_bit(ST_ERROR);
         }
       }
+      ACK_EP0();
     }
 
     return;
@@ -789,7 +792,7 @@ void handle_pending_usb_setup() {
         SETUP_EP0_IN_BUF(2);
       }
     } else {
-      SETUP_EP0_IN_BUF(2);
+      SETUP_EP0_OUT_BUF();
       while(EP0CS & _BUSY);
       if(glasgow_config.revision < GLASGOW_REV_C0 ||
          !iobuf_set_pull(arg_selector,
@@ -797,6 +800,7 @@ void handle_pending_usb_setup() {
                          *((__xdata uint8_t *)EP0BUF + 1))) {
         latch_status_bit(ST_ERROR);
       }
+      ACK_EP0();
     }
 
     return;
