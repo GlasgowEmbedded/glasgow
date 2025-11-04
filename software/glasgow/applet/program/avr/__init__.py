@@ -158,9 +158,10 @@ class ProgramAVRApplet(GlasgowApplet):
     Commands that read or write memory contents derive the file format from the filename as follows:
 
     ::
-        *.bin                   binary; as-is
-        *.hex *.ihx *.ihex      Intel HEX
-        - (stdout)              hex dump when writing to a terminal, binary otherwise
+
+        `*.bin`                         binary; as-is
+        `*.hex`, `*.ihx`, `*.ihex`      Intel HEX
+        `-` (stdout)                    hex dump when writing to a terminal, binary otherwise
     """
 
     @classmethod
