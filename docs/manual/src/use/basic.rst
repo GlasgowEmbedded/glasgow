@@ -164,7 +164,7 @@ The ``spi-controller`` applet implements an SPI controller, allowing full-duplex
 
 
 I²C controller
-#############
+##############
 
 The ``i2c-controller`` applet implements an I²C controller, which features a simple bus scan operation from the command line, using the on-board pull-up resistors.
 
