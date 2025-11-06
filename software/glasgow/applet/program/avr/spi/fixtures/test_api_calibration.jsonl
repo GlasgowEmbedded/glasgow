@@ -1,3 +1,3 @@
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[56, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00380063"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[56, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "003800c0"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}

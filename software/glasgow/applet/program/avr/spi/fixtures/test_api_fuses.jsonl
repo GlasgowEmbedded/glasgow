@@ -1,111 +1,93 @@
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[172, 160, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00aca000"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000fe"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[80, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00500000"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[172, 160, 0, 255]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00aca000"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "fff000ff"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000fe"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[80, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "005000ff"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[172, 168, 0, 199]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00aca800"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "c7f000ff"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000fe"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[88, 8, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "005808c7"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[172, 168, 0, 24]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00aca800"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "18f000ff"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000fe"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[88, 8, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00580818"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[172, 164, 0, 244]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00aca400"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "f4f000ff"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000fe"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[80, 8, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "005008f4"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[172, 164, 0, 203]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00aca400"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "cbf000ff"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000ff"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00f000fe"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[80, 8, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "005008cb"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[172, 160, 0, 207]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00aca000"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "cff000ff"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00f000ff"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00f000fe"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[80, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "005000cf"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[172, 160, 0, 255]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00aca000"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "fff000ff"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00f000fe"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[80, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "005000ff"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[172, 168, 0, 199]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00aca800"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "c7f000ff"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00f000ff"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00f000fe"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[88, 8, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "005808c7"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[172, 168, 0, 218]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00aca800"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "daf000ff"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00f000ff"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00f000ff"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00f000fe"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[88, 8, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "005808da"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[172, 164, 0, 248]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00aca400"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "f8f000ff"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00f000ff"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00f000fe"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[80, 8, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "005008f8"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[172, 164, 0, 253]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00aca400"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "fdf000ff"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00f000ff"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00f000ff"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[240, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00f000fe"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[80, 8, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "005008fd"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}

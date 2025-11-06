@@ -8,6 +8,7 @@ MCU/FPGA programming
 .. toctree::
     :maxdepth: 3
 
+    avr_spi
     ice40_sram
     ice40_flash
     xc6s

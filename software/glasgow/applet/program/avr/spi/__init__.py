@@ -7,57 +7,65 @@ import logging
 from amaranth import *
 from amaranth.lib import io
 
-from ....interface.spi_controller_deprecated import SPIControllerSubtarget, SPIControllerInterface
-from .... import *
-from .. import *
+from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
+from glasgow.applet.program.avr import ProgramAVRError, ProgramAVRApplet, ProgramAVRInterface
+from glasgow.applet.interface.spi_controller import SPIControllerInterface
+from glasgow.applet.control.gpio import GPIOInterface
 
 
-class ProgramAVRSPISubtarget(Elaboratable):
-    def __init__(self, controller, port_reset, dut_reset):
-        self.controller = controller
-        self.port_reset = port_reset
-        self.dut_reset = dut_reset
-
-    def elaborate(self, platform):
-        m = Module()
-
-        m.submodules.controller = self.controller
-        m.submodules.reset_buffer = reset_buffer = io.Buffer("o", self.port_reset)
-
-        m.d.comb += [
-            self.controller.bus.oe.eq(self.dut_reset),
-            reset_buffer.o.eq(~self.dut_reset)
-        ]
-
-        return m
+__all__ = ["ProgramAVRSPIInterface"]
 
 
 class ProgramAVRSPIInterface(ProgramAVRInterface):
-    def __init__(self, interface, logger, addr_dut_reset):
-        self.lower   = interface
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
+                 sck: GlasgowPin, copi: GlasgowPin, cipo: GlasgowPin, reset: GlasgowPin):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
-        self._addr_dut_reset = addr_dut_reset
+
+        self._spi_iface = SPIControllerInterface(logger, assembly,
+            sck=sck, copi=copi, cipo=cipo)
+        self._reset_iface = GPIOInterface(logger, assembly, pins=(~reset,), name="reset")
+
         self._extended_addr  = None
-        self.erase_time      = None
 
     def _log(self, message, *args):
         self._logger.log(self._level, "AVR SPI: " + message, *args)
 
+    @property
+    def clock(self) -> ClockDivisor:
+        """SCK clock divisor."""
+        return self._spi_iface.clock
+
     async def _command(self, byte1, byte2, byte3, byte4):
         command = [byte1, byte2, byte3, byte4]
         self._log("command %s", "{:08b} {:08b} {:08b} {:08b}".format(*command))
-        async with self.lower.select():
-            result = await self.lower.exchange(command)
+        async with self._spi_iface.select():
+            result = await self._spi_iface.exchange(command)
         self._log("result  %s", "{:08b} {:08b} {:08b} {:08b}".format(*result))
         return result
 
     async def programming_enable(self):
         self._log("programming enable")
 
-        await self.lower.lower.device.write_register(self._addr_dut_reset, 1)
-        await self.lower.delay_ms(20)
+        # Apply power between VCC and GND while RESET and SCK are set to “0”. In some systems,
+        # the programmer can not guarantee that SCK is held low during power-up. In this case,
+        # RESET must be given  a positive pulse of at least two CPU clock cycles duration after
+        # SCK has been set to “0”. [We have the second case.]
+        self._spi_iface.mode = 0
+        async with self._spi_iface.select():
+            # Set SCK low (transmit at least one byte in SPI Mode 0).
+            await self._spi_iface.write(0x00)
+            # Momentarily deassert RESET#.
+            await self._spi_iface.synchronize()
+            await self._reset_iface.output(0, False)
+            await self._spi_iface.delay_ms(1)
+            await self._spi_iface.synchronize()
+            await self._reset_iface.output(0, True)
+            await self._spi_iface.synchronize()
 
+        # Wait for at least 20ms and enable serial programming by sending the Programming Enable
+        # serial instruction to pin PDI.
+        await self._spi_iface.delay_ms(20)
         _, _, echo, _ = await self._command(0b1010_1100, 0b0101_0011, 0, 0)
         if echo == 0b0101_0011:
             self._log("synchronization ok")
@@ -66,18 +74,19 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
 
     async def programming_disable(self):
         self._log("programming disable")
-        await self.lower.synchronize()
-        await self.lower.lower.device.write_register(self._addr_dut_reset, 0)
-        await self.lower.delay_ms(20)
+        await self._spi_iface.synchronize()
+        await self._reset_iface.output(0, False)
+        await self._spi_iface.delay_ms(20)
 
     async def _is_busy(self):
         if self.erase_time is not None:
             self._log("wait for completion")
-            await self.lower.delay_ms(self.erase_time)
+            await self._spi_iface.delay_ms(self.erase_time)
             return False
-        self._log("poll ready/busy flag")
-        _, _, _, busy = await self._command(0b1111_0000, 0b0000_0000, 0, 0)
-        return bool(busy & 1)
+        else:
+            self._log("poll ready/busy flag")
+            _, _, _, busy = await self._command(0b1111_0000, 0b0000_0000, 0, 0)
+            return bool(busy & 1)
 
     async def read_signature(self):
         self._log("read signature")
@@ -152,8 +161,8 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
 
     async def load_program_memory_page(self, address, data):
         self._log("load program memory address %#06x data %02x", address, data)
-        async with self.lower.select():
-            await self.lower.write([
+        async with self._spi_iface.select():
+            await self._spi_iface.write([
                 0b0100_0000 | (address & 1) << 3,
                 (address >> 9) & 0xff,
                 (address >> 1) & 0xff,
@@ -215,60 +224,38 @@ class ProgramAVRSPIApplet(ProgramAVRApplet):
     The standard AVR ICSP connector layout is as follows:
 
     ::
+
         CIPO @ * VCC
          SCK * * COPI
         RST# * * GND
 
     {ProgramAVRApplet.description}
     """
+    required_revision = "C0"
+    avr_iface: ProgramAVRSPIInterface
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        super().add_build_arguments(parser, access)
+        access.add_voltage_argument(parser)
+        access.add_pins_argument(parser, "reset", required=True, default=True)
+        access.add_pins_argument(parser, "sck",   required=True, default=True)
+        access.add_pins_argument(parser, "cipo",  required=True, default=True)
+        access.add_pins_argument(parser, "copi",  required=True, default=True)
 
-        access.add_pins_argument(parser, "reset", default=True)
-        access.add_pins_argument(parser, "sck",   default=True)
-        access.add_pins_argument(parser, "cipo",  default=True)
-        access.add_pins_argument(parser, "copi",  default=True)
+    def build(self, args):
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            self.avr_iface = ProgramAVRSPIInterface(self.logger, self.assembly,
+                reset=args.reset, sck=args.sck, cipo=args.cipo, copi=args.copi)
 
+    @classmethod
+    def add_setup_arguments(cls, parser):
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=100,
-            help="set SPI frequency to FREQ kHz (default: %(default)s)")
+            help="set SCK frequency to FREQ kHz (default: %(default)s)")
 
-    def build(self, target, args):
-        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        ports = iface.get_port_group(
-            reset = args.reset,
-            sck   = args.sck,
-            cipo  = args.cipo,
-            copi  = args.copi
-        )
-
-        controller = SPIControllerSubtarget(
-            ports=ports,
-            out_fifo=iface.get_out_fifo(),
-            in_fifo=iface.get_in_fifo(auto_flush=False),
-            period_cyc=math.ceil(target.sys_clk_freq / (args.frequency * 1000)),
-            delay_cyc=math.ceil(target.sys_clk_freq / 1e6),
-            sck_idle=0,
-            sck_edge="rising",
-        )
-
-        dut_reset, self.__addr_dut_reset = target.registers.add_rw(1)
-        return iface.add_subtarget(ProgramAVRSPISubtarget(
-            controller=controller,
-            port_reset=ports.reset,
-            dut_reset=dut_reset
-        ))
-
-    async def run_lower(self, cls, device, args):
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        return SPIControllerInterface(iface, self.logger)
-
-    async def run(self, device, args):
-        spi_iface = await self.run_lower(ProgramAVRSPIApplet, device, args)
-        avr_iface = ProgramAVRSPIInterface(spi_iface, self.logger, self.__addr_dut_reset)
-        return avr_iface
+    async def setup(self, args):
+        await self.avr_iface.clock.set_frequency(args.frequency * 1000)
 
     @classmethod
     def tests(cls):

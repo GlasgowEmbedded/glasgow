@@ -36,8 +36,8 @@ import argparse
 from abc import ABCMeta, abstractmethod
 from fx2.format import autodetect, input_data, output_data
 
-from ... import *
-from ....database.microchip.avr import *
+from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
+from glasgow.database.microchip.avr import *
 
 
 __all__ = ["ProgramAVRError", "ProgramAVRInterface", "ProgramAVRApplet"]
@@ -48,6 +48,8 @@ class ProgramAVRError(GlasgowAppletError):
 
 
 class ProgramAVRInterface(metaclass=ABCMeta):
+    erase_time: None | int = None # in milliseconds
+
     @abstractmethod
     async def programming_enable(self):
         raise NotImplementedError
@@ -151,7 +153,7 @@ class ProgramAVRInterface(metaclass=ABCMeta):
         raise NotImplementedError
 
 
-class ProgramAVRApplet(GlasgowApplet):
+class ProgramAVRApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "program Microchip (Atmel) AVR microcontrollers"
     description = """
@@ -163,9 +165,10 @@ class ProgramAVRApplet(GlasgowApplet):
         `*.hex`, `*.ihx`, `*.ihex`      Intel HEX
         `-` (stdout)                    hex dump when writing to a terminal, binary otherwise
     """
+    avr_iface: ProgramAVRInterface
 
     @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         extensions = ", ".join([".bin", ".hex", ".ihx", ".ihex"])
 
         def bits(arg): return int(arg, 2)
@@ -247,11 +250,11 @@ class ProgramAVRApplet(GlasgowApplet):
         p_erase = p_operation.add_parser(
             "erase", help="erase device lock bits, program memory, and EEPROM")
 
-    async def interact(self, device, args, avr_iface):
-        await avr_iface.programming_enable()
+    async def run(self, args):
+        await self.avr_iface.programming_enable()
 
         try:
-            signature = await avr_iface.read_signature()
+            signature = await self.avr_iface.read_signature()
             device = devices_by_signature[signature]
             self.logger.info("device signature: %s (%s)",
                 "{:02x} {:02x} {:02x}".format(*signature),
@@ -268,7 +271,7 @@ class ProgramAVRApplet(GlasgowApplet):
 
             if args.operation == "read":
                 if args.fuses:
-                    fuses = await avr_iface.read_fuse_range(range(device.fuses_size))
+                    fuses = await self.avr_iface.read_fuse_range(range(device.fuses_size))
                     if device.fuses_size > 2:
                         self.logger.info("fuses: low %s high %s extra %s",
                                          f"{fuses[0]:08b}",
@@ -282,12 +285,12 @@ class ProgramAVRApplet(GlasgowApplet):
                         self.logger.info("fuse: %s", f"{fuses[0]:08b}")
 
                 if args.lock_bits:
-                    lock_bits = await avr_iface.read_lock_bits()
+                    lock_bits = await self.avr_iface.read_lock_bits()
                     self.logger.info("lock bits: %s", f"{lock_bits:08b}")
 
                 if args.calibration:
                     calibration = \
-                        await avr_iface.read_calibration_range(range(device.calibration_size))
+                        await self.avr_iface.read_calibration_range(range(device.calibration_size))
                     self.logger.info("calibration bytes: %s",
                                      " ".join([f"{b:02x}" for b in calibration]))
 
@@ -295,14 +298,14 @@ class ProgramAVRApplet(GlasgowApplet):
                     program_file, program_fmt = args.program
                     self.logger.info("reading program memory (%d bytes)", device.program_size)
                     output_data(program_file,
-                        await avr_iface.read_program_memory_range(range(device.program_size)),
+                        await self.avr_iface.read_program_memory_range(range(device.program_size)),
                         program_fmt)
 
                 if args.eeprom:
                     eeprom_file, eeprom_fmt = args.eeprom
                     self.logger.info("reading EEPROM (%d bytes)", device.eeprom_size)
                     output_data(eeprom_file,
-                        await avr_iface.read_eeprom_range(range(device.eeprom_size)),
+                        await self.avr_iface.read_eeprom_range(range(device.eeprom_size)),
                         eeprom_fmt)
 
             if args.operation == "write-fuses":
@@ -311,39 +314,39 @@ class ProgramAVRApplet(GlasgowApplet):
 
                 if args.low:
                     self.logger.info("writing low fuse")
-                    await avr_iface.write_fuse(0, args.low)
-                    written = await avr_iface.read_fuse(0)
+                    await self.avr_iface.write_fuse(0, args.low)
+                    written = await self.avr_iface.read_fuse(0)
                     if written != args.low:
                         raise ProgramAVRError(
                             f"verification of low fuse failed: {written:08b} != {args.low:08b}")
 
                 if args.high:
                     self.logger.info("writing high fuse")
-                    await avr_iface.write_fuse(1, args.high)
-                    written = await avr_iface.read_fuse(1)
+                    await self.avr_iface.write_fuse(1, args.high)
+                    written = await self.avr_iface.read_fuse(1)
                     if written != args.high:
                         raise ProgramAVRError(
                             f"verification of high fuse failed: {written:08b} != {args.high:08b}")
 
                 if args.extra:
                     self.logger.info("writing extra fuse")
-                    await avr_iface.write_fuse(2, args.extra)
-                    written = await avr_iface.read_fuse(2)
+                    await self.avr_iface.write_fuse(2, args.extra)
+                    written = await self.avr_iface.read_fuse(2)
                     if written != args.extra:
                         raise ProgramAVRError(
                             f"verification of extra fuse failed: {written:08b} != {args.extra:08b}")
 
             if args.operation == "write-lock":
                 self.logger.info("writing lock bits")
-                await avr_iface.write_lock_bits(args.bits)
-                written = await avr_iface.read_lock_bits()
+                await self.avr_iface.write_lock_bits(args.bits)
+                written = await self.avr_iface.read_lock_bits()
                 if written != args.bits:
                     raise ProgramAVRError(
                         f"verification of lock bits failed: {written:08b} != {args.bits:08b}")
 
             if args.operation == "write-program":
                 self.logger.info("erasing chip")
-                await avr_iface.chip_erase()
+                await self.avr_iface.chip_erase()
 
                 program_file, program_fmt = args.file
                 data = input_data(program_file, program_fmt)
@@ -351,8 +354,9 @@ class ProgramAVRApplet(GlasgowApplet):
                                  sum(len(chunk) for address, chunk in data))
                 for address, chunk in data:
                     chunk = bytes(chunk)
-                    await avr_iface.write_program_memory_range(address, chunk, device.program_page)
-                    written = await avr_iface.read_program_memory_range(
+                    await self.avr_iface.write_program_memory_range(
+                        address, chunk, device.program_page)
+                    written = await self.avr_iface.read_program_memory_range(
                         range(address, address + len(chunk)))
                     if written != chunk:
                         raise ProgramAVRError(
@@ -366,8 +370,8 @@ class ProgramAVRApplet(GlasgowApplet):
                                  sum(len(chunk) for address, chunk in data))
                 for address, chunk in data:
                     chunk = bytes(chunk)
-                    await avr_iface.write_eeprom_range(address, chunk, device.eeprom_page)
-                    written = await avr_iface.read_eeprom_range(range(address, len(chunk)))
+                    await self.avr_iface.write_eeprom_range(address, chunk, device.eeprom_page)
+                    written = await self.avr_iface.read_eeprom_range(range(address, len(chunk)))
                     if written != chunk:
                         raise ProgramAVRError(
                             f"verification failed at address {address:#06x}: "
@@ -375,6 +379,6 @@ class ProgramAVRApplet(GlasgowApplet):
 
             if args.operation == "erase":
                 self.logger.info("erasing device")
-                await avr_iface.chip_erase()
+                await self.avr_iface.chip_erase()
         finally:
-            await avr_iface.programming_disable()
+            await self.avr_iface.programming_disable()

@@ -1,9 +1,9 @@
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[48, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "0030001e"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[48, 0, 1, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00300095"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
-{"call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
-{"call": "exchange", "kind": "asyncmethod", "args": [[48, 0, 2, 0]], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00300087"}}
-{"call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[48, 0, 0, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "0030001e"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[48, 0, 1, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00300095"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
+{"self": "avr_iface._spi_iface", "call": "exchange", "kind": "asyncmethod", "args": [[48, 0, 2, 0]], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "0030000f"}}
+{"self": "avr_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}
