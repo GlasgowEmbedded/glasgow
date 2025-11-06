@@ -42,13 +42,13 @@ class GPIOComponent(wiring.Component):
 
 class GPIOInterface:
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 pins: tuple[GlasgowPin]):
+                 pins: tuple[GlasgowPin], name="gpio"):
         self._logger   = logger
         self._level    = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
         self._assembly = assembly
         self._pins     = pins
 
-        component = assembly.add_submodule(GPIOComponent(assembly.add_port(pins, name="gpio")))
+        component = assembly.add_submodule(GPIOComponent(assembly.add_port(pins, name=name)))
         self._i   = assembly.add_ro_register(component.i)
         self._o   = assembly.add_rw_register(component.o)
         self._oe  = assembly.add_rw_register(component.oe)
