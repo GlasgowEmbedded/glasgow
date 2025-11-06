@@ -48,7 +48,8 @@ class GPIOInterface:
         self._assembly = assembly
         self._pins     = pins
 
-        component = assembly.add_submodule(GPIOComponent(assembly.add_port(pins, name=name)))
+        port_pins = pins[0] if len(pins) == 1 else pins
+        component = assembly.add_submodule(GPIOComponent(assembly.add_port(port_pins, name=name)))
         self._i   = assembly.add_ro_register(component.i)
         self._o   = assembly.add_rw_register(component.o)
         self._oe  = assembly.add_rw_register(component.oe)
