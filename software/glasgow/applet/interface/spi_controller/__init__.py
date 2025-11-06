@@ -39,6 +39,8 @@ class SPIControllerComponent(wiring.Component):
     def elaborate(self, platform):
         m = Module()
 
+        if self._ports.cs is None:
+            self._ports.cs = io.SimulationPort("o", 1)
         if self._ports.copi is None:
             self._ports.copi = io.SimulationPort("o", 1)
         if self._ports.cipo is None:
@@ -137,8 +139,8 @@ class SPIControllerComponent(wiring.Component):
 
 class SPIControllerInterface:
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 cs: GlasgowPin, sck: GlasgowPin, copi: GlasgowPin | None = None,
-                 cipo: GlasgowPin | None = None, mode: Literal[0, 1, 2, 3]):
+                 mode: Literal[0, 1, 2, 3], cs: GlasgowPin | None = None, sck: GlasgowPin,
+                 copi: GlasgowPin | None = None, cipo: GlasgowPin | None = None):
         assert mode == 3, "Only Mode 3 is supported at the moment"
 
         self._logger = logger
