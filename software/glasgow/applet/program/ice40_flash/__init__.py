@@ -27,9 +27,11 @@ class ProgramICE40FlashApplet(Memory25xApplet):
     def build(self, args):
         super().build(args)
 
-        self._reset_iface = GPIOInterface(self.logger, self.assembly, pins=(~args.reset,))
+        self._reset_iface = GPIOInterface(self.logger, self.assembly,
+            pins=(~args.reset,), name="reset")
         if args.done is not None:
-            self._done_iface = GPIOInterface(self.logger, self.assembly, pins=(args.done,))
+            self._done_iface = GPIOInterface(self.logger, self.assembly,
+                pins=(args.done,), name="done")
         else:
             self._done_iface = None
 

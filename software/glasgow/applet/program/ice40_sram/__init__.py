@@ -28,9 +28,11 @@ class ICE40SRAMInterface:
 
         self._spi_iface = SPIControllerInterface(logger, assembly,
             cs=cs, sck=sck, copi=copi, mode=3)
-        self._reset_iface = GPIOInterface(logger, assembly, pins=(~reset,))
+        self._reset_iface = GPIOInterface(logger, assembly,
+            pins=(~reset,), name="reset")
         if done is not None:
-            self._done_iface = GPIOInterface(logger, assembly, pins=(done,))
+            self._done_iface = GPIOInterface(logger, assembly,
+                pins=(done,), name="done")
         else:
             self._done_iface = None
 
