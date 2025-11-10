@@ -107,8 +107,11 @@ class AsyncInteractiveConsole:
                 readline.read_history_file(self._history_filename)
 
         completer = rlcompleter.Completer(self.locals)
-        readline.parse_and_bind("tab: complete")
         readline.set_completer(completer.complete)
+        if self._is_using_libedit():
+            readline.parse_and_bind("bind ^I rl_complete")
+        else:
+            readline.parse_and_bind("tab: complete")
 
     def _save_readline(self):
         readline.set_history_length(1000)
