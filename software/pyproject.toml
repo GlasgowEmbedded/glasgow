@@ -110,6 +110,7 @@ probe-rs = "glasgow.applet.bridge.probe_rs:ProbeRsApplet"
 
 memory-24x = "glasgow.applet.memory._24x:Memory24xApplet"
 memory-25x = "glasgow.applet.memory._25x:Memory25xApplet"
+memory-25x-passthrough = "glasgow.applet.memory._25x_passthrough:Memory25xPassThroughApplet"
 memory-onfi = "glasgow.applet.memory.onfi:MemoryONFIApplet"
 memory-prom = "glasgow.applet.memory.prom:MemoryPROMApplet"
 memory-floppy = "glasgow.applet.memory.floppy:MemoryFloppyApplet"
