@@ -352,7 +352,7 @@ def applet_v2_hardware_test(*, prepare=None, args=None, mocks: list[str]):
             parsed_args = self._parse_args(args)
             fixture_path = os.path.join(
                 os.path.dirname(case.__code__.co_filename), "fixtures",
-                case.__name__ + ".json")
+                case.__name__ + ".jsonl")
             if not os.path.exists(fixture_path):
                 # Record mode
                 assembly = HardwareAssembly.find_device()
