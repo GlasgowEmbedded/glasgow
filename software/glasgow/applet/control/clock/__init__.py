@@ -49,16 +49,19 @@ class ClockDriveInterface:
         self._clock = assembly.add_clock_divisor(component.divisor,
             ref_period=assembly.sys_clk_period * 2, name=name)
 
-    async def enable(self, frequency: int):
+    async def enable(self, frequency: int) -> int:
         """Enable and configure clock.
 
         Sets the clock frequency to :py:`frequency` Hz and configures the clock pin as push-pull.
         If the clock pin is already configured as push-pull, then the change in frequency is done
         as follows: the current half-cycle has the old period, and the next half-cycle has
         the new period.
+
+        Returns the actual frequency used, which may be equal or less than :py:`frequency`.
         """
         await self._clock.set_frequency(frequency)
         await self._enabled.set(True)
+        return await self._clock.get_frequency()
 
     async def disable(self):
         """Disable clock.
