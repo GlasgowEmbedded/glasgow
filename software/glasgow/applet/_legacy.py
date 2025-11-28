@@ -198,7 +198,7 @@ def applet_hardware_test(setup="run_hardware_applet", args=[]):
         @functools.wraps(case)
         def wrapper(self):
             fixture_path = os.path.join(os.path.dirname(case.__code__.co_filename), "fixtures",
-                                        case.__name__ + ".json")
+                                        case.__name__ + ".jsonl")
             os.makedirs(os.path.dirname(fixture_path), exist_ok=True)
             if os.path.exists(fixture_path):
                 fixture = open(fixture_path)
