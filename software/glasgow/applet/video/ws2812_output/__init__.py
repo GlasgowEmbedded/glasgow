@@ -1,5 +1,4 @@
 import logging
-import asyncio
 
 from amaranth import *
 from amaranth.lib import io, wiring, stream
@@ -232,8 +231,7 @@ class VideoWS2812OutputApplet(GlasgowAppletV2):
     async def run(self, args):
         # This buffer is for the socket only, and is independet from the one
         # configured in VideoWS2812OutputInterface
-        frame_size = self.ws2812_iface.frame_size
-        buffer_size = frame_size * args.buffer
+        buffer_size = self.ws2812_iface.frame_size * args.buffer
         endpoint = await ServerEndpoint(
             "socket",
             self.logger,
@@ -242,12 +240,9 @@ class VideoWS2812OutputApplet(GlasgowAppletV2):
         )
         while True:
             try:
-                data = await asyncio.shield(endpoint.recv(buffer_size))
-                partial = len(data) % frame_size
-                while partial:
-                    data += await asyncio.shield(endpoint.recv(frame_size - partial))
-                    partial = len(data) % frame_size
-                await self.ws2812_iface.write_frame(data)
+                await self.ws2812_iface.write_frame(
+                    await endpoint.recv(self.ws2812_iface.frame_size)
+                )
             except EOFError:
                 pass
 
