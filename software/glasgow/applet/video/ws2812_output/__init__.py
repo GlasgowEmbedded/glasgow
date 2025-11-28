@@ -1,15 +1,18 @@
 import logging
 import asyncio
-from amaranth import *
-from amaranth.lib import io
 
-from ....support.endpoint import *
-from ....gateware.pll import *
-from ... import *
+from amaranth import *
+from amaranth.lib import io, wiring, stream
+from amaranth.lib.wiring import In
+
+from glasgow.abstract import AbstractAssembly, GlasgowPin, PortGroup
+from glasgow.applet import GlasgowAppletV2
+from glasgow.support.endpoint import *
+from glasgow.gateware.pll import *
 
 
 class VideoWS2812Output(Elaboratable):
-    def __init__(self, ports):
+    def __init__(self, ports: PortGroup):
         self.ports = ports
         self.out = Signal(len(ports.out))
 
@@ -22,14 +25,19 @@ class VideoWS2812Output(Elaboratable):
         return m
 
 
-class VideoWS2812OutputSubtarget(Elaboratable):
-    def __init__(self, ports, count, pix_in_size, pix_out_size, pix_format_func, out_fifo):
-        self.ports           = ports
-        self.count           = count
-        self.pix_in_size     = pix_in_size
-        self.pix_out_size    = pix_out_size
+class VideoWS2812OutputComponent(wiring.Component):
+    i_stream: In(stream.Signature(8))
+
+    def __init__(
+        self, ports: PortGroup, count: int, pix_in_size: int, pix_out_size: int, pix_format_func
+    ):
+        self.ports = ports
+        self.count = count
+        self.pix_in_size = pix_in_size
+        self.pix_out_size = pix_out_size
         self.pix_format_func = pix_format_func
-        self.out_fifo        = out_fifo
+
+        super().__init__()
 
     def elaborate(self, platform):
         # Safe timings:
@@ -54,29 +62,29 @@ class VideoWS2812OutputSubtarget(Elaboratable):
         pix_out_size = self.pix_out_size
         pix_out_bpp = pix_out_size * 8
 
-        cyc_ctr = Signal(range(t_reset+1))
-        bit_ctr = Signal(range(pix_out_bpp+1))
-        byt_ctr = Signal(range((pix_in_size)+1))
-        pix_ctr = Signal(range(self.count+1))
+        cyc_ctr = Signal(range(t_reset + 1))
+        bit_ctr = Signal(range(pix_out_bpp + 1))
+        byt_ctr = Signal(range((pix_in_size) + 1))
+        pix_ctr = Signal(range(self.count + 1))
         word_ctr = Signal(range(max(2, len(self.ports.out))))
 
-        pix = Array([ Signal(8) for i in range((pix_in_size) - 1) ])
+        pix = Array([Signal(8) for i in range((pix_in_size) - 1)])
         word = Signal(pix_out_bpp * len(self.ports.out))
 
         with m.FSM():
             with m.State("LOAD"):
                 m.d.comb += [
-                    self.out_fifo.r_en.eq(1),
+                    self.i_stream.ready.eq(1),
                     output.out.eq(0),
                 ]
-                with m.If(self.out_fifo.r_rdy):
+                with m.If(self.i_stream.valid):
                     with m.If(byt_ctr < ((pix_in_size) - 1)):
                         m.d.sync += [
-                            pix[byt_ctr].eq(self.out_fifo.r_data),
+                            pix[byt_ctr].eq(self.i_stream.payload),
                             byt_ctr.eq(byt_ctr + 1),
                         ]
                     with m.Else():
-                        p = self.pix_format_func(*pix, self.out_fifo.r_data)
+                        p = self.pix_format_func(*pix, self.i_stream.payload)
                         m.d.sync += word.eq(Cat(word[pix_out_bpp:], p))
                         with m.If(word_ctr < (len(self.ports.out) - 1)):
                             m.d.sync += [
@@ -91,8 +99,10 @@ class VideoWS2812OutputSubtarget(Elaboratable):
                     m.d.comb += output.out.eq((1 << len(self.ports.out)) - 1)
                     m.d.sync += cyc_ctr.eq(cyc_ctr + 1)
                 with m.Elif(cyc_ctr < t_one):
-                    m.d.comb += (o.eq(word[(pix_out_bpp - 1) + (pix_out_bpp * i)])
-                                 for i,o in enumerate(output.out))
+                    m.d.comb += (
+                        o.eq(word[(pix_out_bpp - 1) + (pix_out_bpp * i)])
+                        for i, o in enumerate(output.out)
+                    )
                     m.d.sync += cyc_ctr.eq(cyc_ctr + 1)
                 with m.Elif(cyc_ctr < t_period):
                     m.d.comb += output.out.eq(0)
@@ -135,7 +145,42 @@ class VideoWS2812OutputSubtarget(Elaboratable):
         return m
 
 
-class VideoWS2812OutputApplet(GlasgowApplet):
+class VideoWS2812OutputInterface:
+    def __init__(
+        self,
+        logger: logging.Logger,
+        assembly: AbstractAssembly,
+        *,
+        out: tuple[GlasgowPin],
+        count: int,
+        pix_in_size: int,
+        pix_out_size: int,
+        pix_format_func,
+        buffer: int,
+    ):
+        self._logger = logger
+        self._frame_size = len(out) * pix_in_size * count
+        ports = assembly.add_port_group(out=out)
+        component = assembly.add_submodule(
+            VideoWS2812OutputComponent(ports, count, pix_in_size, pix_out_size, pix_format_func)
+        )
+        self._pipe = assembly.add_out_pipe(
+            component.i_stream, buffer_size=len(out) * count * pix_in_size * buffer
+        )
+
+    async def write_frame(self, data):
+        """Send one or more frame's worth of pixel data to the LED string."""
+        assert len(data) % self._frame_size == 0
+        await self._pipe.send(data)
+        await self._pipe.flush(_wait=False)
+
+    @property
+    def frame_size(self) -> int:
+        """Size of each frame in bytes."""
+        return self._frame_size
+
+
+class VideoWS2812OutputApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "display video via WS2812 LEDs"
     description = """
@@ -152,8 +197,7 @@ class VideoWS2812OutputApplet(GlasgowApplet):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        super().add_build_arguments(parser, access)
-
+        access.add_voltage_argument(parser)
         access.add_pins_argument(parser, "out", width=range(1, 17), required=True)
         parser.add_argument(
             "-c", "--count", metavar="N", type=int, required=True,
@@ -161,44 +205,42 @@ class VideoWS2812OutputApplet(GlasgowApplet):
         parser.add_argument(
             "-f", "--pix-fmt", metavar="F", choices=cls.pixel_formats.keys(), default="RGB-BRG",
             help="set the pixel format (one of: %(choices)s, default: %(default)s)")
-
-    def build(self, target, args):
-        self.pix_in_size, pix_out_size, pix_format_func = self.pixel_formats[args.pix_fmt]
-
-        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        subtarget = iface.add_subtarget(VideoWS2812OutputSubtarget(
-            ports=iface.get_port_group(out=args.out),
-            count=args.count,
-            pix_in_size=self.pix_in_size,
-            pix_out_size=pix_out_size,
-            pix_format_func=pix_format_func,
-            out_fifo=iface.get_out_fifo(),
-        ))
-
-        return subtarget
-
-    @classmethod
-    def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
-
         parser.add_argument(
             "-b", "--buffer", metavar="N", type=int, default=16,
             help="set the number of frames to buffer internally (buffered twice)")
 
-    async def run(self, device, args):
-        buffer_size = len(args.out) * args.count * self.pix_in_size * args.buffer
-        return await device.demultiplexer.claim_interface(self, self.mux_interface, args,
-            write_buffer_size=buffer_size)
+    def build(self, args):
+        self.pix_in_size, pix_out_size, pix_format_func = self.pixel_formats[args.pix_fmt]
+
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            self.ws2812_iface = VideoWS2812OutputInterface(
+                self.logger,
+                self.assembly,
+                out=args.out,
+                count=args.count,
+                pix_in_size=self.pix_in_size,
+                pix_out_size=pix_out_size,
+                pix_format_func=pix_format_func,
+                buffer=args.buffer,
+            )
 
     @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         ServerEndpoint.add_argument(parser, "endpoint")
 
-    async def interact(self, device, args, leds):
-        frame_size = len(args.out) * args.count * self.pix_in_size
+    async def run(self, args):
+        # This buffer is for the socket only, and is independet from the one
+        # configured in VideoWS2812OutputInterface
+        frame_size = self.ws2812_iface.frame_size
         buffer_size = frame_size * args.buffer
-        endpoint = await ServerEndpoint("socket", self.logger, args.endpoint,
-            queue_size=buffer_size, deprecated_cancel_on_eof=True)
+        endpoint = await ServerEndpoint(
+            "socket",
+            self.logger,
+            args.endpoint,
+            queue_size=buffer_size,
+            deprecated_cancel_on_eof=True,
+        )
         while True:
             try:
                 data = await asyncio.shield(endpoint.recv(buffer_size))
@@ -206,12 +248,12 @@ class VideoWS2812OutputApplet(GlasgowApplet):
                 while partial:
                     data += await asyncio.shield(endpoint.recv(frame_size - partial))
                     partial = len(data) % frame_size
-                await leds.write(data)
-                await leds.flush(wait=False)
+                await self.ws2812_iface.write_frame(data)
             except asyncio.CancelledError:
                 pass
 
     @classmethod
     def tests(cls):
         from . import test
+
         return test.VideoWS2812OutputAppletTestCase
