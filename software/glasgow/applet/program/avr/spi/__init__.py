@@ -152,11 +152,13 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
 
     async def load_program_memory_page(self, address, data):
         self._log("load program memory address %#06x data %02x", address, data)
-        await self._command(
-            0b0100_0000 | (address & 1) << 3,
-            (address >> 9) & 0xff,
-            (address >> 1) & 0xff,
-            data)
+        async with self.lower.select():
+            await self.lower.write([
+                0b0100_0000 | (address & 1) << 3,
+                (address >> 9) & 0xff,
+                (address >> 1) & 0xff,
+                data
+            ])
 
     async def write_program_memory_page(self, address):
         await self.load_extended_address_byte(address)
