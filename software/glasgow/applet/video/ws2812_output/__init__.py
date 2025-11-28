@@ -239,7 +239,6 @@ class VideoWS2812OutputApplet(GlasgowAppletV2):
             self.logger,
             args.endpoint,
             queue_size=buffer_size,
-            deprecated_cancel_on_eof=True,
         )
         while True:
             try:
@@ -249,7 +248,7 @@ class VideoWS2812OutputApplet(GlasgowAppletV2):
                     data += await asyncio.shield(endpoint.recv(frame_size - partial))
                     partial = len(data) % frame_size
                 await self.ws2812_iface.write_frame(data)
-            except asyncio.CancelledError:
+            except EOFError:
                 pass
 
     @classmethod
