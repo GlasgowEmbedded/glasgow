@@ -67,7 +67,7 @@ The firmware can only be built on a Unix-like system; to develop the firmware on
 
     .. code:: console
 
-        $ sudo pacman -Sy make sdcc git python-libusb1
+        $ sudo pacman -Syu make sdcc git python-libusb1
 
 .. tab:: Fedora
 
