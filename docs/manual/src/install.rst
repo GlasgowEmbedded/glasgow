@@ -35,7 +35,7 @@ If these instructions don't work for you, please `file a bug <file-a-bug_>`__ so
 
         .. code:: console
 
-            $ sudo pacman -Sy git python-pipx
+            $ sudo pacman -Syu git python-pipx
             $ pipx ensurepath
 
         The ``pipx ensurepath`` command may prompt you to reopen the terminal window; do so.
