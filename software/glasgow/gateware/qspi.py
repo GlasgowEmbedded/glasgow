@@ -6,10 +6,10 @@ from .ports import PortGroup
 from .iostream import IOStreamer
 
 
-__all__ = ["Mode", "Enframer", "Deframer", "Controller"]
+__all__ = ["Operation", "Enframer", "Deframer", "Controller"]
 
 
-class Mode(enum.Enum, shape=3):
+class Operation(enum.Enum, shape=3):
     Dummy = 0
     PutX1 = 1
     GetX1 = 2
@@ -21,7 +21,7 @@ class Mode(enum.Enum, shape=3):
 
 
 class Sample(data.Struct):
-    mode: Mode
+    oper: Operation
     half: 1
 
 
@@ -30,7 +30,7 @@ class Enframer(wiring.Component):
         super().__init__({
             "octets":  In(stream.Signature(data.StructLayout({
                 "chip": range(1 + (chip_count or len(ports.cs))),
-                "mode": Mode,
+                "oper": Operation,
                 "data": 8,
             }))),
             "frames":  Out(IOStreamer.i_signature(ports, ratio=2, meta_layout=Sample)),
@@ -48,20 +48,20 @@ class Enframer(wiring.Component):
         m.d.comb += self.frames.p.port.cs.oe.eq(1)
 
         rev_data = self.octets.p.data[::-1] # MSB first
-        with m.Switch(self.octets.p.mode):
-            with m.Case(Mode.PutX1, Mode.Swap):
+        with m.Switch(self.octets.p.oper):
+            with m.Case(Operation.PutX1, Operation.Swap):
                 for n in range(2):
                     m.d.comb += self.frames.p.port.io0.o[n].eq(rev_data.word_select(cycle, 1))
                 m.d.comb += self.frames.p.port.io0.oe.eq(0b1)
-            with m.Case(Mode.GetX1):
+            with m.Case(Operation.GetX1):
                 m.d.comb += self.frames.p.port.io0.oe.eq(0b1)
-            with m.Case(Mode.PutX2):
+            with m.Case(Operation.PutX2):
                 for n in range(2):
                     m.d.comb += Cat(self.frames.p.port.io1.o[n],
                                     self.frames.p.port.io0.o[n]).eq(rev_data.word_select(cycle, 2))
                 m.d.comb += Cat(self.frames.p.port.io1.oe,
                                 self.frames.p.port.io0.oe).eq(0b11)
-            with m.Case(Mode.PutX4):
+            with m.Case(Operation.PutX4):
                 for n in range(2):
                     m.d.comb += Cat(self.frames.p.port.io3.o[n],
                                     self.frames.p.port.io2.o[n],
@@ -72,7 +72,7 @@ class Enframer(wiring.Component):
                                 self.frames.p.port.io1.oe,
                                 self.frames.p.port.io0.oe).eq(0b1111)
 
-        # When no chip is selected, keep clock in the idle state. The only supported `mode`
+        # When no chip is selected, keep clock in the idle state. The only supported `oper`
         # in this case is `QSPIMode.Dummy`, which should be used to deassert CS# at the end of
         # a transfer.
         with m.If(self.octets.p.chip):
@@ -84,22 +84,22 @@ class Enframer(wiring.Component):
         m.d.comb += self.frames.p.port.sck.oe.eq(1)
 
         with m.If(timer == (self.divisor + 1) >> 1):
-            with m.Switch(self.octets.p.mode):
-                with m.Case(Mode.GetX1, Mode.GetX2, Mode.GetX4, Mode.Swap):
-                    m.d.comb += self.frames.p.meta.mode.eq(self.octets.p.mode)
+            with m.Switch(self.octets.p.oper):
+                with m.Case(Operation.GetX1, Operation.GetX2, Operation.GetX4, Operation.Swap):
+                    m.d.comb += self.frames.p.meta.oper.eq(self.octets.p.oper)
                     m.d.comb += self.frames.p.meta.half.eq(~self.divisor[0])
 
         m.d.comb += self.frames.valid.eq(self.octets.valid)
         with m.If(self.frames.valid & self.frames.ready):
             with m.If(timer == self.divisor):
-                with m.Switch(self.octets.p.mode):
-                    with m.Case(Mode.PutX1, Mode.GetX1, Mode.Swap):
+                with m.Switch(self.octets.p.oper):
+                    with m.Case(Operation.PutX1, Operation.GetX1, Operation.Swap):
                         m.d.comb += self.octets.ready.eq(cycle == 7)
-                    with m.Case(Mode.PutX2, Mode.GetX2):
+                    with m.Case(Operation.PutX2, Operation.GetX2):
                         m.d.comb += self.octets.ready.eq(cycle == 3)
-                    with m.Case(Mode.PutX4, Mode.GetX4):
+                    with m.Case(Operation.PutX4, Operation.GetX4):
                         m.d.comb += self.octets.ready.eq(cycle == 1)
-                    with m.Case(Mode.Dummy):
+                    with m.Case(Operation.Dummy):
                         m.d.comb += self.octets.ready.eq(cycle == 0)
                 m.d.sync += cycle.eq(Mux(self.octets.ready, 0, cycle + 1))
                 m.d.sync += timer.eq(0)
@@ -122,14 +122,14 @@ class Deframer(wiring.Component): # meow :3
         m = Module()
 
         shreg = Signal(8)
-        with m.Switch(self.frames.p.meta.mode):
+        with m.Switch(self.frames.p.meta.oper):
             half = self.frames.p.meta.half
-            with m.Case(Mode.GetX1, Mode.Swap): # note: samples IO1
+            with m.Case(Operation.GetX1, Operation.Swap): # note: samples IO1
                 m.d.comb += self.octets.p.data.eq(Cat(self.frames.p.port.io1.i[half], shreg))
-            with m.Case(Mode.GetX2):
+            with m.Case(Operation.GetX2):
                 m.d.comb += self.octets.p.data.eq(Cat(self.frames.p.port.io0.i[half],
                                                       self.frames.p.port.io1.i[half], shreg))
-            with m.Case(Mode.GetX4):
+            with m.Case(Operation.GetX4):
                 m.d.comb += self.octets.p.data.eq(Cat(self.frames.p.port.io0.i[half],
                                                       self.frames.p.port.io1.i[half],
                                                       self.frames.p.port.io2.i[half],
@@ -137,13 +137,13 @@ class Deframer(wiring.Component): # meow :3
 
         cycle = Signal(range(8))
         m.d.comb += self.frames.ready.eq(1)
-        with m.If(self.frames.valid & (self.frames.p.meta.mode != Mode.Dummy)):
-            with m.Switch(self.frames.p.meta.mode):
-                with m.Case(Mode.GetX1, Mode.Swap):
+        with m.If(self.frames.valid & (self.frames.p.meta.oper != Operation.Dummy)):
+            with m.Switch(self.frames.p.meta.oper):
+                with m.Case(Operation.GetX1, Operation.Swap):
                     m.d.comb += self.octets.valid.eq(cycle == 7)
-                with m.Case(Mode.GetX2):
+                with m.Case(Operation.GetX2):
                     m.d.comb += self.octets.valid.eq(cycle == 3)
-                with m.Case(Mode.GetX4):
+                with m.Case(Operation.GetX4):
                     m.d.comb += self.octets.valid.eq(cycle == 1)
             m.d.comb += self.frames.ready.eq(~self.octets.valid | self.octets.ready)
             with m.If(self.frames.ready):
@@ -176,7 +176,7 @@ class Controller(wiring.Component):
         super().__init__({
             "i_stream": In(stream.Signature(data.StructLayout({
                 "chip": range(1 + self._chip_count),
-                "mode": Mode,
+                "oper": Operation,
                 "data": 8
             }))),
             "o_stream": Out(stream.Signature(data.StructLayout({

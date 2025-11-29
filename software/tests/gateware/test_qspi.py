@@ -121,30 +121,30 @@ class QSPIFramingTestCase(unittest.TestCase):
 
         async def testbench_in(ctx):
             async def data_put(*, chip, data, mode):
-                await stream_put(ctx, dut.octets, {"chip": chip, "data": data, "mode": mode})
+                await stream_put(ctx, dut.octets, {"chip": chip, "data": data, "oper": mode})
 
-            await data_put(chip=1, data=0xBA, mode=Mode.Swap)
+            await data_put(chip=1, data=0xBA, mode=Operation.Swap)
 
-            await data_put(chip=1, data=0xAA, mode=Mode.PutX1)
-            await data_put(chip=1, data=0x55, mode=Mode.PutX1)
-            await data_put(chip=1, data=0xC1, mode=Mode.PutX1)
+            await data_put(chip=1, data=0xAA, mode=Operation.PutX1)
+            await data_put(chip=1, data=0x55, mode=Operation.PutX1)
+            await data_put(chip=1, data=0xC1, mode=Operation.PutX1)
 
-            await data_put(chip=1, data=0xAA, mode=Mode.PutX2)
-            await data_put(chip=1, data=0x55, mode=Mode.PutX2)
-            await data_put(chip=1, data=0xC1, mode=Mode.PutX2)
+            await data_put(chip=1, data=0xAA, mode=Operation.PutX2)
+            await data_put(chip=1, data=0x55, mode=Operation.PutX2)
+            await data_put(chip=1, data=0xC1, mode=Operation.PutX2)
 
-            await data_put(chip=1, data=0xAA, mode=Mode.PutX4)
-            await data_put(chip=1, data=0x55, mode=Mode.PutX4)
-            await data_put(chip=1, data=0xC1, mode=Mode.PutX4)
+            await data_put(chip=1, data=0xAA, mode=Operation.PutX4)
+            await data_put(chip=1, data=0x55, mode=Operation.PutX4)
+            await data_put(chip=1, data=0xC1, mode=Operation.PutX4)
 
             for _ in range(6):
-                await data_put(chip=1, data=0, mode=Mode.Dummy)
+                await data_put(chip=1, data=0, mode=Operation.Dummy)
 
-            await data_put(chip=1, data=0, mode=Mode.GetX1)
-            await data_put(chip=1, data=0, mode=Mode.GetX2)
-            await data_put(chip=1, data=0, mode=Mode.GetX4)
+            await data_put(chip=1, data=0, mode=Operation.GetX1)
+            await data_put(chip=1, data=0, mode=Operation.GetX2)
+            await data_put(chip=1, data=0, mode=Operation.GetX4)
 
-            await data_put(chip=0, data=0, mode=Mode.Dummy)
+            await data_put(chip=0, data=0, mode=Operation.Dummy)
 
         async def testbench_out(ctx):
             async def bits_get(*, cs, ox, oe, mode):
@@ -163,34 +163,34 @@ class QSPIFramingTestCase(unittest.TestCase):
                             "io3": {"o": [(o>>3)&1, (o>>3)&1], "oe": (oe>>3)&1},
                         },
                         "meta": {
-                            "mode": mode,
-                            "half": 0 if mode == Mode.Dummy else 1
+                            "oper": mode,
+                            "half": 0 if mode == Operation.Dummy else 1
                         }
                     }
                     assert (actual := await stream_get(ctx, dut.frames)) == expected, \
                         f"(cycle {cycle}) {actual} != {expected}"
 
-            await bits_get(cs=1, ox=[1,0,1,1,1,0,1,0], oe=1, mode=Mode.Swap)
+            await bits_get(cs=1, ox=[1,0,1,1,1,0,1,0], oe=1, mode=Operation.Swap)
 
-            await bits_get(cs=1, ox=[1,0,1,0,1,0,1,0], oe=1, mode=Mode.Dummy)
-            await bits_get(cs=1, ox=[0,1,0,1,0,1,0,1], oe=1, mode=Mode.Dummy)
-            await bits_get(cs=1, ox=[1,1,0,0,0,0,0,1], oe=1, mode=Mode.Dummy)
+            await bits_get(cs=1, ox=[1,0,1,0,1,0,1,0], oe=1, mode=Operation.Dummy)
+            await bits_get(cs=1, ox=[0,1,0,1,0,1,0,1], oe=1, mode=Operation.Dummy)
+            await bits_get(cs=1, ox=[1,1,0,0,0,0,0,1], oe=1, mode=Operation.Dummy)
 
-            await bits_get(cs=1, ox=[0b10,0b10,0b10,0b10], oe=0b11, mode=Mode.Dummy)
-            await bits_get(cs=1, ox=[0b01,0b01,0b01,0b01], oe=0b11, mode=Mode.Dummy)
-            await bits_get(cs=1, ox=[0b11,0b00,0b00,0b01], oe=0b11, mode=Mode.Dummy)
+            await bits_get(cs=1, ox=[0b10,0b10,0b10,0b10], oe=0b11, mode=Operation.Dummy)
+            await bits_get(cs=1, ox=[0b01,0b01,0b01,0b01], oe=0b11, mode=Operation.Dummy)
+            await bits_get(cs=1, ox=[0b11,0b00,0b00,0b01], oe=0b11, mode=Operation.Dummy)
 
-            await bits_get(cs=1, ox=[0b1010,0b1010], oe=0b1111, mode=Mode.Dummy)
-            await bits_get(cs=1, ox=[0b0101,0b0101], oe=0b1111, mode=Mode.Dummy)
-            await bits_get(cs=1, ox=[0b1100,0b0001], oe=0b1111, mode=Mode.Dummy)
+            await bits_get(cs=1, ox=[0b1010,0b1010], oe=0b1111, mode=Operation.Dummy)
+            await bits_get(cs=1, ox=[0b0101,0b0101], oe=0b1111, mode=Operation.Dummy)
+            await bits_get(cs=1, ox=[0b1100,0b0001], oe=0b1111, mode=Operation.Dummy)
 
-            await bits_get(cs=1, ox=[0,0,0,0,0,0], oe=0, mode=Mode.Dummy)
+            await bits_get(cs=1, ox=[0,0,0,0,0,0], oe=0, mode=Operation.Dummy)
 
-            await bits_get(cs=1, ox=[0,0,0,0,0,0,0,0], oe=1, mode=Mode.GetX1)
-            await bits_get(cs=1, ox=[0,0,0,0],         oe=0, mode=Mode.GetX2)
-            await bits_get(cs=1, ox=[0,0],             oe=0, mode=Mode.GetX4)
+            await bits_get(cs=1, ox=[0,0,0,0,0,0,0,0], oe=1, mode=Operation.GetX1)
+            await bits_get(cs=1, ox=[0,0,0,0],         oe=0, mode=Operation.GetX2)
+            await bits_get(cs=1, ox=[0,0],             oe=0, mode=Operation.GetX4)
 
-            await bits_get(cs=0, ox=[0], oe=0, mode=Mode.Dummy)
+            await bits_get(cs=0, ox=[0], oe=0, mode=Operation.Dummy)
 
         sim = Simulator(dut)
         sim.add_clock(1e-6)
@@ -213,24 +213,24 @@ class QSPIFramingTestCase(unittest.TestCase):
                             "io3": {"i": [0, (i>>3)&1]},
                         },
                         "meta": {
-                            "mode": mode,
+                            "oper": mode,
                             "half": 1
                         }
                     })
 
-            await bits_put(ix=[i<<1 for i in [1,0,1,1,1,0,1,0]], mode=Mode.Swap)
+            await bits_put(ix=[i<<1 for i in [1,0,1,1,1,0,1,0]], mode=Operation.Swap)
 
-            await bits_put(ix=[i<<1 for i in [1,0,1,0,1,0,1,0]], mode=Mode.GetX1)
-            await bits_put(ix=[i<<1 for i in [0,1,0,1,0,1,0,1]], mode=Mode.GetX1)
-            await bits_put(ix=[i<<1 for i in [1,1,0,0,0,0,0,1]], mode=Mode.GetX1)
+            await bits_put(ix=[i<<1 for i in [1,0,1,0,1,0,1,0]], mode=Operation.GetX1)
+            await bits_put(ix=[i<<1 for i in [0,1,0,1,0,1,0,1]], mode=Operation.GetX1)
+            await bits_put(ix=[i<<1 for i in [1,1,0,0,0,0,0,1]], mode=Operation.GetX1)
 
-            await bits_put(ix=[0b10,0b10,0b10,0b10], mode=Mode.GetX2)
-            await bits_put(ix=[0b01,0b01,0b01,0b01], mode=Mode.GetX2)
-            await bits_put(ix=[0b11,0b00,0b00,0b01], mode=Mode.GetX2)
+            await bits_put(ix=[0b10,0b10,0b10,0b10], mode=Operation.GetX2)
+            await bits_put(ix=[0b01,0b01,0b01,0b01], mode=Operation.GetX2)
+            await bits_put(ix=[0b11,0b00,0b00,0b01], mode=Operation.GetX2)
 
-            await bits_put(ix=[0b1010,0b1010], mode=Mode.GetX4)
-            await bits_put(ix=[0b0101,0b0101], mode=Mode.GetX4)
-            await bits_put(ix=[0b1100,0b0001], mode=Mode.GetX4)
+            await bits_put(ix=[0b1010,0b1010], mode=Operation.GetX4)
+            await bits_put(ix=[0b0101,0b0101], mode=Operation.GetX4)
+            await bits_put(ix=[0b1100,0b0001], mode=Operation.GetX4)
 
         async def testbench_out(ctx):
             async def data_get(*, data):
@@ -271,14 +271,14 @@ class QSPIIntegrationTestCase(unittest.TestCase):
 
         async def testbench_controller(ctx):
             async def ctrl_idle():
-                await stream_put(ctx, dut.i_stream, {"chip": 0, "data": 0, "mode": Mode.Dummy})
+                await stream_put(ctx, dut.i_stream, {"chip": 0, "data": 0, "oper": Operation.Dummy})
 
-            async def ctrl_put(*, mode, data=0):
-                await stream_put(ctx, dut.i_stream, {"chip": 1, "data": data, "mode": mode})
+            async def ctrl_put(*, oper, data=0):
+                await stream_put(ctx, dut.i_stream, {"chip": 1, "data": data, "oper": oper})
 
-            async def ctrl_get(*, mode, count=1):
+            async def ctrl_get(*, oper, count=1):
                 ctx.set(dut.i_stream.p.chip, 1)
-                ctx.set(dut.i_stream.p.mode, mode)
+                ctx.set(dut.i_stream.p.oper, oper)
                 ctx.set(dut.i_stream.valid, 1)
                 ctx.set(dut.o_stream.ready, 1)
                 words = bytearray()
@@ -303,23 +303,23 @@ class QSPIIntegrationTestCase(unittest.TestCase):
 
             await ctrl_idle()
 
-            await ctrl_put(mode=Mode.PutX1, data=0x0B)
-            await ctrl_put(mode=Mode.PutX1, data=0x00)
-            await ctrl_put(mode=Mode.PutX1, data=0x00)
-            await ctrl_put(mode=Mode.PutX1, data=0x08)
+            await ctrl_put(oper=Operation.PutX1, data=0x0B)
+            await ctrl_put(oper=Operation.PutX1, data=0x00)
+            await ctrl_put(oper=Operation.PutX1, data=0x00)
+            await ctrl_put(oper=Operation.PutX1, data=0x08)
             for _ in range(8):
-                await ctrl_put(mode=Mode.Dummy)
-            assert (data := await ctrl_get(mode=Mode.GetX1, count=4)) == b"awa!", data
+                await ctrl_put(oper=Operation.Dummy)
+            assert (data := await ctrl_get(oper=Operation.GetX1, count=4)) == b"awa!", data
 
             await ctrl_idle()
 
-            await ctrl_put(mode=Mode.PutX1, data=0x6B)
-            await ctrl_put(mode=Mode.PutX1, data=0x00)
-            await ctrl_put(mode=Mode.PutX1, data=0x00)
-            await ctrl_put(mode=Mode.PutX1, data=0x10)
+            await ctrl_put(oper=Operation.PutX1, data=0x6B)
+            await ctrl_put(oper=Operation.PutX1, data=0x00)
+            await ctrl_put(oper=Operation.PutX1, data=0x00)
+            await ctrl_put(oper=Operation.PutX1, data=0x10)
             for _ in range(4):
-                await ctrl_put(mode=Mode.Dummy)
-            assert (data := await ctrl_get(mode=Mode.GetX4, count=8)) == b"nyaaaaan", data
+                await ctrl_put(oper=Operation.Dummy)
+            assert (data := await ctrl_get(oper=Operation.GetX4, count=8)) == b"nyaaaaan", data
 
             await ctrl_idle()
 
