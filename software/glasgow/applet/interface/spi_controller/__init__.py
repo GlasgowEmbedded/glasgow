@@ -54,10 +54,10 @@ class SPIControllerComponent(wiring.Component):
 
         command = Signal(SPICommand)
         chip    = Signal(range(1 + len(self._ports.cs)))
-        mode    = Signal(spi.Mode)
+        oper    = Signal(spi.Operation)
         # FIXME: amaranth-lang/amaranth#1462
-        is_put  = mode.as_value().matches(spi.Mode.Put, spi.Mode.Swap)
-        is_get  = mode.as_value().matches(spi.Mode.Get, spi.Mode.Swap)
+        is_put  = oper.as_value().matches(spi.Operation.Put, spi.Operation.Swap)
+        is_get  = oper.as_value().matches(spi.Operation.Get, spi.Operation.Swap)
         o_count = Signal(16)
         i_count = Signal(16)
         timer   = Signal(range(self._us_cycles))
@@ -71,7 +71,7 @@ class SPIControllerComponent(wiring.Component):
                             m.d.sync += chip.eq(self.i_stream.payload[:4])
                             m.next = "Read-Command"
                         with m.Case(SPICommand.Transfer):
-                            m.d.sync += mode.eq(self.i_stream.payload[:4])
+                            m.d.sync += oper.eq(self.i_stream.payload[:4])
                             m.next = "Read-Count-0:8"
                         with m.Case(SPICommand.Delay):
                             m.next = "Read-Count-0:8"
@@ -99,7 +99,7 @@ class SPIControllerComponent(wiring.Component):
             with m.State("Transfer"):
                 m.d.comb += [
                     ctrl.i_stream.p.chip.eq(chip),
-                    ctrl.i_stream.p.mode.eq(mode),
+                    ctrl.i_stream.p.oper.eq(oper),
                     ctrl.i_stream.p.data.eq(self.i_stream.payload),
                     self.o_stream.payload.eq(ctrl.o_stream.p.data),
                 ]
@@ -182,7 +182,7 @@ class SPIControllerInterface:
             self._log("deselect")
             await self._pipe.send(struct.pack("<BBH",
                 (SPICommand.Select.value << 4) | 0,
-                (SPICommand.Transfer.value << 4) | spi.Mode.Dummy.value, 1))
+                (SPICommand.Transfer.value << 4) | spi.Operation.Dummy.value, 1))
             await self._pipe.flush()
             self._active = None
 
@@ -191,7 +191,7 @@ class SPIControllerInterface:
         self._log("xchg-o=<%s>", dump_hex(octets))
         for chunk in self._chunked(octets):
             await self._pipe.send(struct.pack("<BH",
-                (SPICommand.Transfer.value << 4) | spi.Mode.Swap.value, len(chunk)))
+                (SPICommand.Transfer.value << 4) | spi.Operation.Swap.value, len(chunk)))
             await self._pipe.send(chunk)
         await self._pipe.flush()
         octets = await self._pipe.recv(len(octets))
@@ -203,14 +203,14 @@ class SPIControllerInterface:
         self._log("write=<%s>", dump_hex(octets))
         for chunk in self._chunked(octets):
             await self._pipe.send(struct.pack("<BH",
-                (SPICommand.Transfer.value << 4) | spi.Mode.Put.value, len(chunk)))
+                (SPICommand.Transfer.value << 4) | spi.Operation.Put.value, len(chunk)))
             await self._pipe.send(chunk)
 
     async def read(self, count: int) -> memoryview:
         assert self._active is not None, "no chip selected"
         for chunk in self._chunked(range(count)):
             await self._pipe.send(struct.pack("<BH",
-                (SPICommand.Transfer.value << 4) | spi.Mode.Get.value, len(chunk)))
+                (SPICommand.Transfer.value << 4) | spi.Operation.Get.value, len(chunk)))
         await self._pipe.flush()
         octets = await self._pipe.recv(count)
         self._log("read=<%s>", dump_hex(octets))
@@ -221,7 +221,7 @@ class SPIControllerInterface:
         self._log("dummy=%d", count)
         for chunk in self._chunked(range(count)):
             await self._pipe.send(struct.pack("<BH",
-                (SPICommand.Transfer.value << 4) | spi.Mode.Dummy.value, len(chunk)))
+                (SPICommand.Transfer.value << 4) | spi.Operation.Dummy.value, len(chunk)))
 
     async def delay_us(self, duration: int):
         self._log("delay us=%d", duration)

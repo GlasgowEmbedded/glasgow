@@ -47,11 +47,12 @@ class QSPIControllerComponent(wiring.Component):
 
         command = Signal(QSPICommand)
         chip    = Signal(range(1 + len(self._ports.cs)))
-        mode    = Signal(qspi.Mode)
-        is_put  = mode.as_value().matches(qspi.Mode.PutX1, qspi.Mode.PutX2, qspi.Mode.PutX4,
-                                          qspi.Mode.Swap)
-        is_get  = mode.as_value().matches(qspi.Mode.GetX1, qspi.Mode.GetX2, qspi.Mode.GetX4,
-                                          qspi.Mode.Swap) # FIXME: amaranth-lang/amaranth#1462
+        oper    = Signal(qspi.Operation)
+        # FIXME: amaranth-lang/amaranth#1462
+        is_put  = oper.as_value().matches(qspi.Operation.PutX1, qspi.Operation.PutX2,
+                                          qspi.Operation.PutX4, qspi.Operation.Swap)
+        is_get  = oper.as_value().matches(qspi.Operation.GetX1, qspi.Operation.GetX2,
+                                          qspi.Operation.GetX4, qspi.Operation.Swap)
         o_count = Signal(16)
         i_count = Signal(16)
         timer   = Signal(range(self._us_cycles))
@@ -65,7 +66,7 @@ class QSPIControllerComponent(wiring.Component):
                             m.d.sync += chip.eq(self.i_stream.payload[:4])
                             m.next = "Read-Command"
                         with m.Case(QSPICommand.Transfer):
-                            m.d.sync += mode.eq(self.i_stream.payload[:4])
+                            m.d.sync += oper.eq(self.i_stream.payload[:4])
                             m.next = "Read-Count-0:8"
                         with m.Case(QSPICommand.Delay):
                             m.next = "Read-Count-0:8"
@@ -93,7 +94,7 @@ class QSPIControllerComponent(wiring.Component):
             with m.State("Transfer"):
                 m.d.comb += [
                     ctrl.i_stream.p.chip.eq(chip),
-                    ctrl.i_stream.p.mode.eq(mode),
+                    ctrl.i_stream.p.oper.eq(oper),
                     ctrl.i_stream.p.data.eq(self.i_stream.payload),
                     self.o_stream.payload.eq(ctrl.o_stream.p.data),
                 ]
@@ -173,7 +174,7 @@ class QSPIControllerInterface:
             self._log("deselect")
             await self._pipe.send(struct.pack("<BBH",
                 (QSPICommand.Select.value << 4) | 0,
-                (QSPICommand.Transfer.value << 4) | qspi.Mode.Dummy.value, 1))
+                (QSPICommand.Transfer.value << 4) | qspi.Operation.Dummy.value, 1))
             await self._pipe.flush()
             self._active = None
 
@@ -182,7 +183,7 @@ class QSPIControllerInterface:
         self._log("xchg-o=<%s>", dump_hex(octets))
         for chunk in self._chunked(octets):
             await self._pipe.send(struct.pack("<BH",
-                (QSPICommand.Transfer.value << 4) | qspi.Mode.Swap.value, len(chunk)))
+                (QSPICommand.Transfer.value << 4) | qspi.Operation.Swap.value, len(chunk)))
             await self._pipe.send(chunk)
         await self._pipe.flush()
         octets = await self._pipe.recv(len(octets))
@@ -191,7 +192,7 @@ class QSPIControllerInterface:
 
     async def write(self, octets: bytes | bytearray | memoryview, *, x: Literal[1, 2, 4] = 1):
         assert self._active is not None, "no chip selected"
-        mode = {1: qspi.Mode.PutX1, 2: qspi.Mode.PutX2, 4: qspi.Mode.PutX4}[x]
+        mode = {1: qspi.Operation.PutX1, 2: qspi.Operation.PutX2, 4: qspi.Operation.PutX4}[x]
         self._log("write=<%s>", dump_hex(octets))
         for chunk in self._chunked(octets):
             await self._pipe.send(struct.pack("<BH",
@@ -200,7 +201,7 @@ class QSPIControllerInterface:
 
     async def read(self, count: int, *, x: Literal[1, 2, 4] = 1) -> memoryview:
         assert self._active is not None, "no chip selected"
-        mode = {1: qspi.Mode.GetX1, 2: qspi.Mode.GetX2, 4: qspi.Mode.GetX4}[x]
+        mode = {1: qspi.Operation.GetX1, 2: qspi.Operation.GetX2, 4: qspi.Operation.GetX4}[x]
         for chunk in self._chunked(range(count)):
             await self._pipe.send(struct.pack("<BH",
                 (QSPICommand.Transfer.value << 4) | mode.value, len(chunk)))
@@ -214,7 +215,7 @@ class QSPIControllerInterface:
         self._log("dummy=%d", count)
         for chunk in self._chunked(range(count)):
             await self._pipe.send(struct.pack("<BH",
-                (QSPICommand.Transfer.value << 4) | qspi.Mode.Dummy.value, len(chunk)))
+                (QSPICommand.Transfer.value << 4) | qspi.Operation.Dummy.value, len(chunk)))
 
     async def delay_us(self, duration: int):
         self._log("delay us=%d", duration)
