@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 VID_QIHW         = 0x20b7
 PID_GLASGOW      = 0x9db1
 
-CUR_API_LEVEL    = 0x04
+CUR_API_LEVEL    = 0x05
 
 REQ_EEPROM       = 0x10
 REQ_FPGA_CFG     = 0x11
@@ -41,6 +41,7 @@ REQ_IOBUF_ENABLE = 0x19
 REQ_LIMIT_VOLT   = 0x1A
 REQ_PULL         = 0x1B
 REQ_TEST_LEDS    = 0x1C
+REQ_TEST_PULLS   = 0x1D
 
 ST_ERROR         = 1<<0
 ST_FPGA_RDY      = 1<<1
@@ -580,6 +581,13 @@ class GlasgowDevice:
 
     async def test_leds(self, states):
         await self.control_write(REQ_TEST_LEDS, 0, states, [])
+
+    async def test_pulls(self, spec):
+        assert self.has_pulls
+
+        level, = struct.unpack("B",
+            await self.control_read(REQ_TEST_PULLS, 0, self._iobuf_spec_to_mask(spec, one=True), 1))
+        return level
 
     async def _register_error(self, addr):
         if await self._status() & ST_FPGA_RDY:

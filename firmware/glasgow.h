@@ -28,7 +28,7 @@ enum {
 
 enum {
   // API compatibility level
-  CUR_API_LEVEL  = 0x04,
+  CUR_API_LEVEL  = 0x05,
 };
 
 // PORTA pins
@@ -187,6 +187,7 @@ void iobuf_read_alert_cache_ina233(__xdata uint8_t *mask, bool clear);
 // Pull API
 bool iobuf_set_pull(uint8_t selector, uint8_t enable, uint8_t level);
 bool iobuf_get_pull(uint8_t selector, __xdata uint8_t *enable, __xdata uint8_t *level);
+bool iobuf_get_state(uint8_t selector, __xdata uint8_t *level);
 
 // Util functions
 bool i2c_reg8_read(uint8_t addr, uint8_t reg, __pdata uint8_t *value, uint8_t length);
