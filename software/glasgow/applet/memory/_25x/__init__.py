@@ -296,7 +296,7 @@ class Memory25xApplet(GlasgowAppletV2):
         def bits(arg):
             return int(arg, 2)
 
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
+        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION")
 
         p_identify = p_operation.add_parser(
             "identify", help="identify memory using REMS and RDID commands")
@@ -404,7 +404,7 @@ class Memory25xApplet(GlasgowAppletV2):
                                     "might not succeed", f"{(status & MSK_PROT) >> 2:04b}"
                                     )
 
-        if args.operation == "identify":
+        if args.operation in (None, "identify"):
             legacy_device_id, = \
                 await self.m25x_iface.read_device_id()
             short_manufacturer_id, short_device_id = \
