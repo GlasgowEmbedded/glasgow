@@ -315,6 +315,7 @@ enum {
   USB_REQ_LIMIT_VOLT   = 0x1A,
   USB_REQ_PULL         = 0x1B,
   USB_REQ_TEST_LEDS    = 0x1C,
+  USB_REQ_TEST_PULLS   = 0x1D,
   // Cypress requests
   USB_REQ_CYPRESS_EEPROM_DB = 0xA9,
   // libfx2 requests
@@ -818,6 +819,25 @@ void handle_pending_usb_setup() {
     IOD &=             ~(0xf  << PIND_LED_FX2);
     IOD |= (arg_states & 0xf) << PIND_LED_FX2;
     ACK_EP0();
+
+    return;
+  }
+
+  // Pull expander test mode request
+  if(req_dir_in &&
+     req->bRequest == USB_REQ_TEST_PULLS &&
+     req->wLength == 1) {
+    uint8_t  arg_selector = req->wIndex;
+    pending_setup = false;
+
+    while(EP0CS & _BUSY);
+    if(glasgow_config.revision < GLASGOW_REV_C0 ||
+        !iobuf_get_state(arg_selector,
+                         (__xdata uint8_t *)EP0BUF + 0)) {
+      goto stall_ep0_return;
+    } else {
+      SETUP_EP0_IN_BUF(1);
+    }
 
     return;
   }

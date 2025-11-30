@@ -73,3 +73,10 @@ bool iobuf_get_pull(uint8_t selector, __xdata uint8_t *enable, __xdata uint8_t *
   *enable = ~*enable;
   return true;
 }
+
+// Used for self-test only.
+bool iobuf_get_state(uint8_t selector, __xdata uint8_t *level) {
+  if(!pull_read(selector, TCA9534_CMD_INPUT_PORT, level))
+    return false;
+  return true;
+}
