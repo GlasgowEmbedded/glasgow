@@ -19,8 +19,8 @@ DOCKERFILE=$(cat <<-'EOF'
 	ARG UID
 	ARG GID
 
-	RUN DEBIAN_FRONTEND="noninteractive" apt-get update -qq && \
-	    DEBIAN_FRONTEND="noninteractive" apt-get install -qq --no-install-recommends git make sdcc python3 python3-usb1 && \
+	RUN DEBIAN_FRONTEND="noninteractive" apt-get update -y && \
+	    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends git make sdcc python3 python3-usb1 && \
 	    rm -rf /var/lib/apt/lists/*
 
 	# Any commands that create new files in the host mount must be invoked with the caller UID/GID, or
@@ -99,18 +99,18 @@ elif [ "rebuild" = "$1" ]; then
 elif [ "deploy" = "$1" ]; then
 	docker_run --buildargs "--no-cache --progress=plain" /bin/bash -s -x <<-'EOF'
 		set -e
-		
+
 		# Display dependency versions.
 		sdcc --version
-		
+
 		# Clean all build products; they may have been built using a different compiler.
 		make -C vendor/libfx2/firmware/library clean
 		make -C firmware clean
-		
+
 		# Build the artifact.
 		make -C vendor/libfx2/firmware/library all MODELS=medium
 		make -C firmware all
-		
+
 		# Deploy the artifact. For incomprehensible (literally; I could not figure out why) reasons,
 		# the Debian and NixOS builds of exact same commit of sdcc produce different .ihex files that
 		# nevertheless translate to the same binary contents.
