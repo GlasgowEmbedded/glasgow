@@ -96,11 +96,11 @@ class SPIFramingTestCase(unittest.TestCase):
             await data_put(chip=1, data=0xC1, oper=Operation.Put)
 
             for _ in range(6):
-                await data_put(chip=1, data=0, oper=Operation.Dummy)
+                await data_put(chip=1, data=0, oper=Operation.Idle)
 
             await data_put(chip=1, data=0, oper=Operation.Get)
 
-            await data_put(chip=0, data=0, oper=Operation.Dummy)
+            await data_put(chip=0, data=0, oper=Operation.Idle)
 
         async def testbench_out(ctx):
             async def bits_get(*, cs, ox, oe, oper):
@@ -118,7 +118,7 @@ class SPIFramingTestCase(unittest.TestCase):
                         },
                         "meta": {
                             "oper": oper,
-                            "half": 0 if oper == Operation.Dummy else 1
+                            "half": 0 if oper == Operation.Idle else 1
                         }
                     }
                     assert (actual := await stream_get(ctx, dut.frames)) == expected, \
@@ -126,15 +126,15 @@ class SPIFramingTestCase(unittest.TestCase):
 
             await bits_get(cs=1, ox=[1,0,1,1,1,0,1,0], oe=1, oper=Operation.Swap)
 
-            await bits_get(cs=1, ox=[1,0,1,0,1,0,1,0], oe=1, oper=Operation.Dummy)
-            await bits_get(cs=1, ox=[0,1,0,1,0,1,0,1], oe=1, oper=Operation.Dummy)
-            await bits_get(cs=1, ox=[1,1,0,0,0,0,0,1], oe=1, oper=Operation.Dummy)
+            await bits_get(cs=1, ox=[1,0,1,0,1,0,1,0], oe=1, oper=Operation.Idle)
+            await bits_get(cs=1, ox=[0,1,0,1,0,1,0,1], oe=1, oper=Operation.Idle)
+            await bits_get(cs=1, ox=[1,1,0,0,0,0,0,1], oe=1, oper=Operation.Idle)
 
-            await bits_get(cs=1, ox=[0,0,0,0,0,0],     oe=0, oper=Operation.Dummy)
+            await bits_get(cs=1, ox=[0,0,0,0,0,0],     oe=0, oper=Operation.Idle)
 
             await bits_get(cs=1, ox=[0,0,0,0,0,0,0,0], oe=1, oper=Operation.Get)
 
-            await bits_get(cs=0, ox=[0],               oe=0, oper=Operation.Dummy)
+            await bits_get(cs=0, ox=[0],               oe=0, oper=Operation.Idle)
 
         sim = Simulator(dut)
         sim.add_clock(1e-6)
@@ -197,7 +197,7 @@ class SPIIntegrationTestCase(unittest.TestCase):
 
         async def testbench_controller(ctx):
             async def ctrl_idle():
-                await stream_put(ctx, dut.i_stream, {"chip": 0, "data": 0, "oper": Operation.Dummy})
+                await stream_put(ctx, dut.i_stream, {"chip": 0, "data": 0, "oper": Operation.Idle})
 
             async def ctrl_put(*, oper, data=0):
                 await stream_put(ctx, dut.i_stream, {"chip": 1, "data": data, "oper": oper})
@@ -234,7 +234,7 @@ class SPIIntegrationTestCase(unittest.TestCase):
             await ctrl_put(oper=Operation.Put, data=0x00)
             await ctrl_put(oper=Operation.Put, data=0x08)
             for _ in range(8):
-                await ctrl_put(oper=Operation.Dummy)
+                await ctrl_put(oper=Operation.Idle)
             assert (data := await ctrl_get(oper=Operation.Get, count=4)) == b"awa!", data
 
             await ctrl_idle()
