@@ -8,9 +8,41 @@ from glasgow.gateware.stream import stream_get, stream_put
 from glasgow.gateware.spi import *
 
 
-def simulate_flash(ports, memory=b"nya nya nya nya nyaaaaan"):
+class SPIModeTestCase(unittest.TestCase):
+    def test_is_idle_low(self):
+        for mode in (0, 1, 2, 3):
+            self.assertEqual(Mode(mode).is_idle_low,
+                mode in (Mode.IdleLow_SampleFalling, Mode.IdleLow_SampleRising))
+
+    def test_is_idle_high(self):
+        for mode in (0, 1, 2, 3):
+            self.assertEqual(Mode(mode).is_idle_high,
+                mode in (Mode.IdleHigh_SampleFalling, Mode.IdleHigh_SampleRising))
+
+    def test_is_rising(self):
+        for mode in (0, 1, 2, 3):
+            self.assertEqual(Mode(mode).is_rising,
+                mode in (Mode.IdleLow_SampleRising, Mode.IdleHigh_SampleRising))
+
+    def test_is_falling(self):
+        for mode in (0, 1, 2, 3):
+            self.assertEqual(Mode(mode).is_falling,
+                mode in (Mode.IdleLow_SampleFalling, Mode.IdleHigh_SampleFalling))
+
+    def test_cpol_cpha(self):
+        for mode in (0, 1, 2, 3):
+            mode = Mode(mode)
+            self.assertEqual(Mode.from_cpol_cpha(mode.cpol, mode.cpha), mode)
+            self.assertEqual(mode.cpol, mode >> 1)
+            self.assertEqual(mode.cpha, mode & 1)
+
+
+def simulate_flash(ports, *, mode: Mode, memory=b"nya nya nya nya nyaaaaan"):
     class CSDeasserted(Exception):
         pass
+
+    shift_edge  = not mode.is_rising
+    sample_edge = mode.is_rising
 
     async def watch_cs(cs_o, triggers):
         try:
@@ -27,9 +59,10 @@ def simulate_flash(ports, memory=b"nya nya nya nya nyaaaaan"):
         sck, copi, cipo, cs = ports.sck, ports.copi, ports.cipo, ports.cs
         word = 0
         for _ in range(0, 8):
-            if ctx.get(sck.o):
-                await watch_cs(cs.o, ctx.negedge(sck.o))
-            _, copi_oe, copi_o = await watch_cs(cs.o, ctx.posedge(sck.o).sample(copi.oe, copi.o))
+            if ctx.get(sck.o) == sample_edge:
+                await watch_cs(cs.o, ctx.edge(sck.o, shift_edge))
+            _, copi_oe, copi_o = await watch_cs(cs.o,
+                ctx.edge(sck.o, sample_edge).sample(copi.oe, copi.o))
             assert copi_oe == 1
             word = (word << 1) | (copi_o << 0)
         return word
@@ -37,18 +70,20 @@ def simulate_flash(ports, memory=b"nya nya nya nya nyaaaaan"):
     async def dev_nop(ctx, ports, *, cycles):
         sck, copi, cipo, cs = ports.sck, ports.copi, ports.cipo, ports.cs
         for _ in range(cycles):
-            if ctx.get(sck.o):
-                await watch_cs(cs.o, ctx.negedge(sck.o))
-            _, _copi_oe = await watch_cs(cs.o, ctx.posedge(sck.o).sample(copi.oe))
+            if ctx.get(sck.o) == sample_edge:
+                await watch_cs(cs.o, ctx.edge(sck.o, shift_edge))
+            _, _copi_oe = await watch_cs(cs.o,
+                ctx.edge(sck.o, sample_edge).sample(copi.oe))
 
     async def dev_put(ctx, ports, word):
         sck, copi, cipo, cs = ports.sck, ports.copi, ports.cipo, ports.cs
         for _ in range(0, 8):
-            if ctx.get(sck.o):
-                await watch_cs(cs.o, ctx.negedge(sck.o))
+            if ctx.get(sck.o) == sample_edge:
+                await watch_cs(cs.o, ctx.edge(sck.o, shift_edge))
             ctx.set(Cat(cipo.i), (word >> 7))
             word = (word << 1) & 0xff
-            _, copi_oe = await watch_cs(cs.o, ctx.posedge(sck.o).sample(copi.oe))
+            _, copi_oe = await watch_cs(cs.o,
+                ctx.edge(sck.o, sample_edge).sample(copi.oe))
             assert copi_oe == 1
 
     async def testbench(ctx):
@@ -87,7 +122,8 @@ class SPIFramingTestCase(unittest.TestCase):
 
         async def testbench_in(ctx):
             async def data_put(*, chip, data, oper):
-                await stream_put(ctx, dut.octets, {"chip": chip, "data": data, "oper": oper})
+                await stream_put(ctx, dut.octets,
+                    {"chip": chip, "mode": 3, "oper": oper, "data": data})
 
             await data_put(chip=1, data=0xBA, oper=Operation.Swap)
 
@@ -186,7 +222,7 @@ class SPIFramingTestCase(unittest.TestCase):
 
 
 class SPIIntegrationTestCase(unittest.TestCase):
-    def subtest_spi_controller(self, *, divisor: int):
+    def subtest_spi_controller(self, *, divisor: int, mode: Mode):
         ports = PortGroup()
         ports.cs   = io.SimulationPort("o", 1)
         ports.sck  = io.SimulationPort("o", 1)
@@ -197,13 +233,16 @@ class SPIIntegrationTestCase(unittest.TestCase):
 
         async def testbench_controller(ctx):
             async def ctrl_idle():
-                await stream_put(ctx, dut.i_stream, {"chip": 0, "data": 0, "oper": Operation.Idle})
+                await stream_put(ctx, dut.i_stream,
+                    {"chip": 0, "mode": mode, "data": 0, "oper": Operation.Idle})
 
             async def ctrl_put(*, oper, data=0):
-                await stream_put(ctx, dut.i_stream, {"chip": 1, "data": data, "oper": oper})
+                await stream_put(ctx, dut.i_stream,
+                    {"chip": 1, "mode": mode, "data": data, "oper": oper})
 
             async def ctrl_get(*, oper, count=1):
                 ctx.set(dut.i_stream.p.chip, 1)
+                ctx.set(dut.i_stream.p.mode, mode)
                 ctx.set(dut.i_stream.p.oper, oper)
                 ctx.set(dut.i_stream.valid, 1)
                 ctx.set(dut.o_stream.ready, 1)
@@ -239,7 +278,7 @@ class SPIIntegrationTestCase(unittest.TestCase):
 
             await ctrl_idle()
 
-        testbench_flash = simulate_flash(ports, memory=b"nya nya awa!nya nyaaaaan")
+        testbench_flash = simulate_flash(ports, mode=mode, memory=b"nya nya awa!nya nyaaaaan")
 
         sim = Simulator(dut)
         sim.add_clock(1e-6)
@@ -249,13 +288,17 @@ class SPIIntegrationTestCase(unittest.TestCase):
             sim.run()
 
     def test_spi_controller_div0(self):
-        self.subtest_spi_controller(divisor=0)
+        for mode in (0, 1, 2, 3):
+            self.subtest_spi_controller(divisor=0, mode=Mode(mode))
 
     def test_spi_controller_div1(self):
-        self.subtest_spi_controller(divisor=1)
+        for mode in (0, 1, 2, 3):
+            self.subtest_spi_controller(divisor=1, mode=Mode(mode))
 
     def test_spi_controller_div2(self):
-        self.subtest_spi_controller(divisor=2)
+        for mode in (0, 1, 2, 3):
+            self.subtest_spi_controller(divisor=2, mode=Mode(mode))
 
     def test_spi_controller_div3(self):
-        self.subtest_spi_controller(divisor=2)
+        for mode in (0, 1, 2, 3):
+            self.subtest_spi_controller(divisor=2, mode=Mode(mode))

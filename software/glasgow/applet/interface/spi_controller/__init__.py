@@ -99,6 +99,7 @@ class SPIControllerComponent(wiring.Component):
             with m.State("Transfer"):
                 m.d.comb += [
                     ctrl.i_stream.p.chip.eq(chip),
+                    ctrl.i_stream.p.mode.eq(3),
                     ctrl.i_stream.p.oper.eq(oper),
                     ctrl.i_stream.p.data.eq(self.i_stream.payload),
                     self.o_stream.payload.eq(ctrl.o_stream.p.data),
