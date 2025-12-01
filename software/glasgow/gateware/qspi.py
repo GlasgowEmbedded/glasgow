@@ -10,7 +10,7 @@ __all__ = ["Operation", "Enframer", "Deframer", "Controller"]
 
 
 class Operation(enum.Enum, shape=3):
-    Dummy = 0
+    Idle  = 0
     PutX1 = 1
     GetX1 = 2
     PutX2 = 3
@@ -99,7 +99,7 @@ class Enframer(wiring.Component):
                         m.d.comb += self.octets.ready.eq(cycle == 3)
                     with m.Case(Operation.PutX4, Operation.GetX4):
                         m.d.comb += self.octets.ready.eq(cycle == 1)
-                    with m.Case(Operation.Dummy):
+                    with m.Case(Operation.Idle):
                         m.d.comb += self.octets.ready.eq(cycle == 0)
                 m.d.sync += cycle.eq(Mux(self.octets.ready, 0, cycle + 1))
                 m.d.sync += timer.eq(0)
@@ -137,7 +137,7 @@ class Deframer(wiring.Component): # meow :3
 
         cycle = Signal(range(8))
         m.d.comb += self.frames.ready.eq(1)
-        with m.If(self.frames.valid & (self.frames.p.meta.oper != Operation.Dummy)):
+        with m.If(self.frames.valid & (self.frames.p.meta.oper != Operation.Idle)):
             with m.Switch(self.frames.p.meta.oper):
                 with m.Case(Operation.GetX1, Operation.Swap):
                     m.d.comb += self.octets.valid.eq(cycle == 7)

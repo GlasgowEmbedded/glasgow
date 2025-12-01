@@ -182,7 +182,7 @@ class SPIControllerInterface:
             self._log("deselect")
             await self._pipe.send(struct.pack("<BBH",
                 (SPICommand.Select.value << 4) | 0,
-                (SPICommand.Transfer.value << 4) | spi.Operation.Dummy.value, 1))
+                (SPICommand.Transfer.value << 4) | spi.Operation.Idle.value, 1))
             await self._pipe.flush()
             self._active = None
 
@@ -221,7 +221,7 @@ class SPIControllerInterface:
         self._log("dummy=%d", count)
         for chunk in self._chunked(range(count)):
             await self._pipe.send(struct.pack("<BH",
-                (SPICommand.Transfer.value << 4) | spi.Operation.Dummy.value, len(chunk)))
+                (SPICommand.Transfer.value << 4) | spi.Operation.Idle.value, len(chunk)))
 
     async def delay_us(self, duration: int):
         self._log("delay us=%d", duration)
