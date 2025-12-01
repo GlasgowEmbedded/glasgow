@@ -174,7 +174,7 @@ class QSPIControllerInterface:
             self._log("deselect")
             await self._pipe.send(struct.pack("<BBH",
                 (QSPICommand.Select.value << 4) | 0,
-                (QSPICommand.Transfer.value << 4) | qspi.Operation.Dummy.value, 1))
+                (QSPICommand.Transfer.value << 4) | qspi.Operation.Idle.value, 1))
             await self._pipe.flush()
             self._active = None
 
@@ -215,7 +215,7 @@ class QSPIControllerInterface:
         self._log("dummy=%d", count)
         for chunk in self._chunked(range(count)):
             await self._pipe.send(struct.pack("<BH",
-                (QSPICommand.Transfer.value << 4) | qspi.Operation.Dummy.value, len(chunk)))
+                (QSPICommand.Transfer.value << 4) | qspi.Operation.Idle.value, len(chunk)))
 
     async def delay_us(self, duration: int):
         self._log("delay us=%d", duration)
