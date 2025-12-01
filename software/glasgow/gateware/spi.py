@@ -1,3 +1,4 @@
+from typing import Literal
 from amaranth import *
 from amaranth.lib import enum, data, wiring, stream
 from amaranth.lib.wiring import In, Out, connect, flipped
@@ -6,7 +7,42 @@ from .ports import PortGroup
 from .iostream import IOStreamer
 
 
-__all__ = ["Operation", "Enframer", "Deframer", "Controller"]
+__all__ = ["Mode", "Operation", "Enframer", "Deframer", "Controller"]
+
+
+class Mode(enum.IntEnum, shape=2):
+    IdleLow_SampleRising   = 0 # CPOL=0, CPHA=0
+    IdleLow_SampleFalling  = 1 # CPOL=0, CPHA=1
+    IdleHigh_SampleFalling = 2 # CPOL=1, CPHA=0
+    IdleHigh_SampleRising  = 3 # CPOL=1, CPHA=1
+
+    @classmethod
+    def from_cpol_cpha(cls, cpol: Literal[0, 1], cpha: Literal[0, 1]):
+        return cls(cpol << 1 | cpha)
+
+    @property
+    def is_idle_low(self) -> bool:
+        return (self == self.IdleLow_SampleRising or self == self.IdleLow_SampleFalling)
+
+    @property
+    def is_idle_high(self) -> bool:
+        return (self == self.IdleHigh_SampleFalling or self == self.IdleHigh_SampleRising)
+
+    @property
+    def is_rising(self) -> bool:
+        return (self == self.IdleLow_SampleRising or self == self.IdleHigh_SampleRising)
+
+    @property
+    def is_falling(self) -> bool:
+        return (self == self.IdleLow_SampleFalling or self == self.IdleHigh_SampleFalling)
+
+    @property
+    def cpol(self) -> Literal[0, 1]:
+        return int(self.is_idle_high)
+
+    @property
+    def cpha(self) -> Literal[0, 1]:
+        return int(self.is_falling ^ self.is_idle_high)
 
 
 class Operation(enum.Enum, shape=2):
@@ -26,6 +62,7 @@ class Enframer(wiring.Component):
         super().__init__({
             "octets":  In(stream.Signature(data.StructLayout({
                 "chip": range(1 + (chip_count or len(ports.cs))),
+                "mode": Mode,
                 "oper": Operation,
                 "data": 8,
             }))),
@@ -35,6 +72,11 @@ class Enframer(wiring.Component):
 
     def elaborate(self, platform):
         m = Module()
+
+        is_rising = (self.octets.p.mode
+            .matches(Mode.IdleLow_SampleRising, Mode.IdleHigh_SampleRising))
+        is_idle_high = (self.octets.p.mode
+            .matches(Mode.IdleHigh_SampleFalling, Mode.IdleHigh_SampleRising))
 
         timer = Signal.like(self.divisor)
         cycle = Signal(range(8))
@@ -56,11 +98,11 @@ class Enframer(wiring.Component):
         # in this case is `SPIMode.Dummy`, which should be used to deassert CS# at the end of
         # a transfer.
         with m.If(self.octets.p.chip):
-            m.d.comb += self.frames.p.port.sck.o[0].eq(timer * 2 >  self.divisor)
-            m.d.comb += self.frames.p.port.sck.o[1].eq(timer * 2 >= self.divisor)
+            m.d.comb += self.frames.p.port.sck.o[0].eq((timer * 2 >  self.divisor) ^ ~is_rising)
+            m.d.comb += self.frames.p.port.sck.o[1].eq((timer * 2 >= self.divisor) ^ ~is_rising)
         with m.Else():
             for n in range(2):
-                m.d.comb += self.frames.p.port.sck.o[n].eq(1)
+                m.d.comb += self.frames.p.port.sck.o[n].eq(is_idle_high)
         m.d.comb += self.frames.p.port.sck.oe.eq(1)
 
         with m.If(timer == (self.divisor + 1) >> 1):
@@ -137,6 +179,7 @@ class Controller(wiring.Component):
         super().__init__({
             "i_stream": In(stream.Signature(data.StructLayout({
                 "chip": range(1 + self._chip_count),
+                "mode": Mode,
                 "oper": Operation,
                 "data": 8
             }))),
@@ -156,7 +199,6 @@ class Controller(wiring.Component):
         m.submodules.io_streamer = io_streamer = \
             IOStreamer(self._ports, ratio=2, offset=self._offset, meta_layout=Sample, init={
                 "cs":  {"o": 0, "oe": 1}, # deselected
-                "sck": {"o": 1, "oe": 1}, # Motorola "Mode 3" with clock idling high
             })
         connect(m, io_streamer=io_streamer.i, enframer=enframer.frames)
 
