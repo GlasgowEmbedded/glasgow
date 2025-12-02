@@ -165,6 +165,10 @@ class SPIControllerInterface:
 
     @property
     def mode(self) -> spi.Mode:
+        """SPI mode.
+
+        Should not be changed while a transaction is active.
+        """
         return self._mode
 
     @mode.setter
@@ -174,6 +178,7 @@ class SPIControllerInterface:
 
     @property
     def clock(self) -> ClockDivisor:
+        """SCK clock divisor."""
         return self._clock
 
     @staticmethod
@@ -184,6 +189,27 @@ class SPIControllerInterface:
 
     @contextlib.asynccontextmanager
     async def select(self, index=0):
+        """Perform a transaction.
+
+        Starting a transaction asserts :py:`index`-th chip select signal and configures the mode;
+        ending a transaction deasserts the chip select signal. Methods :meth:`write`, :meth:`read`,
+        :meth:`exchange`, and :meth:`dummy` may be called while a transaction is active (only) to
+        exchange data on the bus.
+
+        For example, to read 4 bytes from an SPI flash, use the following code:
+
+        .. code:: python
+
+            iface.mode = 3
+            async with iface.select():
+                await iface.write([0x03, 0, 0, 0]) # READ = 0x03, address = 0x000000
+                data = await iface.read(4)
+
+        An empty transaction (where the body does not call :meth:`write`, :meth:`read`,
+        :meth:`exchange`, or :meth:`dummy`) is allowed and causes chip select activity only,
+        in addition to any clock edges required to switch the SPI bus mode with chip select
+        inactive.
+        """
         assert self._active is None, "chip already selected"
         assert index in range(8)
         try:
@@ -202,27 +228,46 @@ class SPIControllerInterface:
             await self._pipe.flush()
             self._active = None
 
-    async def exchange(self, octets: bytes | bytearray | memoryview) -> memoryview:
+    async def exchange(self, data: bytes | bytearray | memoryview) -> memoryview:
+        """Exchange data.
+
+        Must be used within a transaction (see :meth:`select`). Shifts :py:`data` into
+        the peripheral while shifting :py:`len(data)` bytes out of the peripheral.
+
+        Returns the bytes shifted out.
+        """
         assert self._active is not None, "no chip selected"
-        self._log("xchg-o=<%s>", dump_hex(octets))
-        for chunk in self._chunked(octets):
+        self._log("xchg-o=<%s>", dump_hex(data))
+        for chunk in self._chunked(data):
             await self._pipe.send(struct.pack("<BH",
                 (SPICommand.Transfer.value << 4) | spi.Operation.Swap.value, len(chunk)))
             await self._pipe.send(chunk)
         await self._pipe.flush()
-        octets = await self._pipe.recv(len(octets))
-        self._log("xchg-i=<%s>", dump_hex(octets))
-        return octets
+        data = await self._pipe.recv(len(data))
+        self._log("xchg-i=<%s>", dump_hex(data))
+        return data
 
-    async def write(self, octets: bytes | bytearray | memoryview):
+    async def write(self, data: bytes | bytearray | memoryview):
+        """Write data.
+
+        Must be used within a transaction (see :meth:`select`). Shifts :py:`data` into
+        the peripheral.
+        """
         assert self._active is not None, "no chip selected"
-        self._log("write=<%s>", dump_hex(octets))
-        for chunk in self._chunked(octets):
+        self._log("write=<%s>", dump_hex(data))
+        for chunk in self._chunked(data):
             await self._pipe.send(struct.pack("<BH",
                 (SPICommand.Transfer.value << 4) | spi.Operation.Put.value, len(chunk)))
             await self._pipe.send(chunk)
 
     async def read(self, count: int) -> memoryview:
+        """Read data.
+
+        Must be used within a transaction (see :meth:`select`). Shifts :py:`len(data)` bytes out of
+        the peripheral.
+
+        Returns the bytes shifted out.
+        """
         assert self._active is not None, "no chip selected"
         for chunk in self._chunked(range(count)):
             await self._pipe.send(struct.pack("<BH",
@@ -240,18 +285,31 @@ class SPIControllerInterface:
                 (SPICommand.Transfer.value << 4) | spi.Operation.Idle.value, len(chunk)))
 
     async def delay_us(self, duration: int):
+        """Delay operations.
+
+        Delays the following SPI bus operations by :py:`duration` microseconds.
+        """
         self._log("delay us=%d", duration)
         for chunk in self._chunked(range(duration)):
             await self._pipe.send(struct.pack("<BH",
                 (SPICommand.Delay.value << 4), len(chunk)))
 
     async def delay_ms(self, duration: int):
+        """Delay operations.
+
+        Delays the following SPI bus operations by :py:`duration` milliseconds. Equivalent to
+        :py:`delay_us(duration * 1000)`.
+        """
         self._log("delay ms=%d", duration)
         for chunk in self._chunked(range(duration * 1000)):
             await self._pipe.send(struct.pack("<BH",
                 (SPICommand.Delay.value << 4), len(chunk)))
 
     async def synchronize(self):
+        """Synchronization barrier.
+
+        Ensures that once this method returns, all previously submitted operations have completed.
+        """
         self._log("sync-o")
         await self._pipe.send(struct.pack("<B",
             (SPICommand.Sync.value << 4)))
