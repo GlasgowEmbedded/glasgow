@@ -4,7 +4,7 @@ from amaranth import *
 from amaranth.lib import io, wiring, stream
 from amaranth.lib.wiring import In
 
-from glasgow.abstract import AbstractAssembly, GlasgowPin, PortGroup
+from glasgow.abstract import AbstractAssembly, ClockDivisor, GlasgowPin, PortGroup
 from glasgow.applet import GlasgowAppletV2
 from glasgow.support.endpoint import *
 from glasgow.gateware.pll import *
@@ -26,6 +26,7 @@ class VideoWS2812Output(Elaboratable):
 
 class VideoWS2812OutputComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
+    framerate_divisor: In(24)
 
     def __init__(
         self, ports: PortGroup, count: int, pix_in_size: int, pix_out_size: int, pix_format_func
@@ -66,9 +67,13 @@ class VideoWS2812OutputComponent(wiring.Component):
         byt_ctr = Signal(range((pix_in_size) + 1))
         pix_ctr = Signal(range(self.count + 1))
         word_ctr = Signal(range(max(2, len(self.ports.out))))
+        framerate_ctr = Signal(self.framerate_divisor.shape())
 
         pix = Array([Signal(8) for i in range((pix_in_size) - 1)])
         word = Signal(pix_out_bpp * len(self.ports.out))
+
+        with m.If(framerate_ctr + 1 != 0):
+            m.d.sync += framerate_ctr.eq(framerate_ctr + 1)
 
         with m.FSM():
             with m.State("LOAD"):
@@ -130,14 +135,16 @@ class VideoWS2812OutputComponent(wiring.Component):
 
             with m.State("RESET"):
                 m.d.comb += output.out.eq(0)
-                m.d.sync += cyc_ctr.eq(cyc_ctr + 1)
-                with m.If(cyc_ctr == t_reset):
+                with m.If(cyc_ctr + 1 != 0):
+                    m.d.sync += cyc_ctr.eq(cyc_ctr + 1)
+                with m.If((cyc_ctr >= t_reset) & (framerate_ctr >= self.framerate_divisor)):
                     m.d.sync += [
                         cyc_ctr.eq(0),
                         pix_ctr.eq(0),
                         bit_ctr.eq(0),
                         byt_ctr.eq(0),
                         word_ctr.eq(0),
+                        framerate_ctr.eq(0),
                     ]
                     m.next = "LOAD"
 
@@ -166,6 +173,9 @@ class VideoWS2812OutputInterface:
         self._pipe = assembly.add_out_pipe(
             component.i_stream, buffer_size=len(out) * count * pix_in_size * buffer
         )
+        self._framerate = assembly.add_clock_divisor(
+            component.framerate_divisor, ref_period=assembly.sys_clk_period, name="framerate"
+        )
 
     async def write_frame(self, data):
         """Send one or more frame's worth of pixel data to the LED string."""
@@ -177,6 +187,11 @@ class VideoWS2812OutputInterface:
     def frame_size(self) -> int:
         """Size of each frame in bytes."""
         return self._frame_size
+
+    @property
+    def framerate_limiter(self) -> ClockDivisor:
+        """Framerate limiter."""
+        return self._framerate
 
 
 class VideoWS2812OutputApplet(GlasgowAppletV2):
@@ -223,6 +238,16 @@ class VideoWS2812OutputApplet(GlasgowAppletV2):
                 pix_format_func=pix_format_func,
                 buffer=args.buffer,
             )
+
+    @classmethod
+    def add_setup_arguments(cls, parser):
+        parser.add_argument(
+            "-r", "--framerate", type=float,
+            help="configure a framerate limiter in Hz")
+
+    async def setup(self, args):
+        if args.framerate is not None:
+            await self.ws2812_iface.framerate_limiter.set_frequency(args.framerate)
 
     @classmethod
     def add_run_arguments(cls, parser):
