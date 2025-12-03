@@ -324,11 +324,12 @@ class HardwareOutPipe(AbstractOutPipe):
 
     async def send(self, data):
         if self._out_buffer_size is not None:
-            # If write buffer is bounded, and we have more inflight requests than the configured
-            # write buffer size, then wait until the inflight requests arrive before continuing.
-            if self._out_inflight >= self._out_buffer_size:
+            # If write buffer is bounded, and the combined size of said buffer and all inflight
+            # requests is greater than the configured size, then wait until the combined size is
+            # less than the configured size.
+            if self._out_inflight + len(self._out_buffer) >= self._out_buffer_size:
                 self._out_stalls += 1
-            while self._out_inflight >= self._out_buffer_size:
+            while self._out_inflight + len(self._out_buffer) >= self._out_buffer_size:
                 self._logger.trace(f"OUT pipe {self._out_interface}: write pushback")
                 await self._out_tasks.wait_one()
 
