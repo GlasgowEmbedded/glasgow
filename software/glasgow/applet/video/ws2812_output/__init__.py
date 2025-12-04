@@ -218,7 +218,7 @@ class VideoWS2812OutputApplet(GlasgowAppletV2):
             help="set the number of LEDs per string")
         parser.add_argument(
             "-f", "--pix-fmt", metavar="F", choices=cls.pixel_formats.keys(), default="RGB-BRG",
-            help="set the pixel format (one of: %(choices)s, default: %(default)s)")
+            help="set the pixel format (default: %(default)s)")
         parser.add_argument(
             "-b", "--buffer", metavar="N", type=int, default=16,
             help="set the number of frames to buffer internally (buffered twice)")
