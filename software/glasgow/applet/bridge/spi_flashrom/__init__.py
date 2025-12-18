@@ -88,7 +88,10 @@ class SerprogCommandHandler:
             sdata = await self.endpoint.recv(slen)
             async with self.spi_iface.select():
                 await self.spi_iface.write(sdata)
-                rdata = await self.spi_iface.read(rlen)
+                if rlen > 0:
+                    rdata = await self.spi_iface.read(rlen)
+                else:
+                    rdata = bytes([])
             await self.endpoint.send(rdata)
         else:
             self.logger.warning(f"Unhandled command {cmd:#04x}")
