@@ -134,8 +134,7 @@ class SPIFlashromApplet(GlasgowAppletV2):
         with self.assembly.add_applet(self):
             self.assembly.use_voltage(args.voltage)
             self.spi_iface = SPIControllerInterface(self.logger, self.assembly,
-                cs=args.cs, sck=args.sck, copi=args.copi, cipo=args.cipo,
-                mode=3)
+                cs=args.cs, sck=args.sck, copi=args.copi, cipo=args.cipo)
             if args.wp:
                 self.assembly.use_pulls({~args.wp:   "low"})
             if args.hold:
