@@ -1,6 +1,7 @@
 from typing import Any
 from collections.abc import Generator
 from contextlib import contextmanager
+import itertools
 import logging
 
 from amaranth import *
@@ -217,13 +218,20 @@ class SimulationAssembly(AbstractAssembly):
                 m.d.comb += pin.i.eq(net)
                 with m.If(pin.oe):
                     m.d.comb += net.eq(pin.o)
+
+            any_zero = Cat((pin.o == 0) & pin.oe for pin in pins).any()
+            any_one = Cat((pin.o == 1) & pin.oe for pin in pins).any()
+
             m.d.comb += Assert(
-                sum(Cat(pin.oe for pin in pins)) <= 1,
+                ~(any_zero & any_one),
                 Format(
                     f"electrical contention on a jumper: "
-                    f"{' '.join(f'{name}.oe={{}}' for name in jumper)}",
-                    *(self._pins[name].oe for name in jumper)
-                )
+                    f"{' '.join(f'{name}(oe={{}}, o={{}})' for name in jumper)}",
+                    *itertools.chain.from_iterable(
+                        (self._pins[name].oe, self._pins[name].o)
+                        for name in jumper
+                    ),
+                ),
             )
 
         for elaboratable, name in self._modules:
