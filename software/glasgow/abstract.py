@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import Self, Any, Literal
+from typing import Self, Any, Literal, assert_never
 from collections.abc import Generator
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -34,6 +34,26 @@ class PullState(enum.Enum):
 
     def enabled(self):
         return self != self.Float
+
+    def combine(self, other: "PullState") -> "PullState":
+        if self == PullState.Float:
+            return other
+        elif other == PullState.Float:
+            return self
+        elif self == other:
+            return self
+        else:
+            raise ValueError(f"Can't combine conflicting pulls {self} and {other}")
+
+    def to_bit(self) -> bool:
+        if self == PullState.Float:
+            raise ValueError("Can't convert floating PullState into concrete bit value")
+        elif self == PullState.Low:
+            return False
+        elif self == PullState.High:
+            return True
+
+        assert_never(self)
 
     def __invert__(self):
         match self:
@@ -137,6 +157,14 @@ class GlasgowPin:
             case GlasgowPort.A: return 0 + self.number
             case GlasgowPort.B: return 8 + self.number
             case _: assert False
+
+    @property
+    def loc_name(self) -> str:
+        """Name of the pin location.
+
+        The same as the ``__str__`` of the pin, but without the inversion symbol.
+        """
+        return f"{self.port}{self.number}"
 
     def __invert__(self) -> Self:
         return GlasgowPin(self.port, self.number, invert=not self.invert)

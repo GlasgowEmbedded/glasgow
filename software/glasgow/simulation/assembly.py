@@ -86,14 +86,64 @@ class SimulationRWRegister(SimulationRORegister, AbstractRWRegister):
         self._parent._context.set(self._signal, value)
 
 
+class SimulationPin:
+    _name: str
+    _pin: GlasgowPin
+    _port: io.SimulationPort
+    _pull_state: PullState | None
+
+    def __init__(self, pin: GlasgowPin, name: str):
+        self._name = name
+        self._pin = pin
+        self._port = io.SimulationPort("io", 1, name=self._name, invert=pin.invert)
+        self._pull_state = None
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def port(self) -> io.SimulationPort:
+        return self._port
+
+    @property
+    def pin(self) -> GlasgowPin:
+        return self._pin
+
+    @property
+    def pull_state(self) -> PullState | None:
+        return self._pull_state
+
+    @pull_state.setter
+    def pull_state(self, new_state: PullState):
+        if self._pull_state is None:
+            self._pull_state = new_state
+        else:
+            self._pull_state = self._pull_state.combine(new_state)
+
+    @property
+    def effective_pull_state(self) -> PullState:
+        non_inverted = PullState.Float if self._pull_state is None else self._pull_state
+        return ~non_inverted if self._pin.invert else non_inverted
+
+    def __repr__(self) -> str:
+        return (
+            "SimulationPin("
+            f"name={self._name}, pin={self._pin}, port={self._port}, pull_state={self._pull_state}"
+            ")"
+        )
+
+
 class SimulationAssembly(AbstractAssembly):
+    _pins: dict[str, SimulationPin]
+
     def __init__(self):
-        self._logger   = logger
-        self._pins     = {} # {name: io.PortLike}
-        self._modules  = [] # (elaboratable, name)
-        self._benches  = [] # (constructor, background)
-        self._jumpers  = [] # (pin_name...)
-        self.__context = None
+        self._logger    = logger
+        self._pins      = {}
+        self._modules   = [] # (elaboratable, name)
+        self._benches   = [] # (constructor, background)
+        self._jumpers   = [] # (pin_name...)
+        self.__context  = None
 
     @property
     def sys_clk_period(self) -> "Period":
@@ -109,13 +159,27 @@ class SimulationAssembly(AbstractAssembly):
             self._logger = logger
 
     def add_platform_pin(self, pin: GlasgowPin, port_name: str) -> io.PortLike:
-        pin_name = f"{pin.port}{pin.number}"
-        port = io.SimulationPort("io", 1, name=pin_name)
-        self._pins[pin_name] = port
-        return port
+        # TODO: do we want to support use case of multiple buffers attaching to the same pin?
+        #       (mustn't output at the same time at different levels)
+        pin_name = pin.loc_name
+
+        sim_pin: SimulationPin
+        if pin_name in self._pins:
+            if pin != self._pins[pin_name].pin:
+                raise ValueError(
+                    f"Tried to add pin {pin_name} with conflicting configurations "
+                    f"old={self._pins[pin_name]} new={pin}"
+                )
+
+            sim_pin = self._pins[pin_name]
+        else:
+            sim_pin = SimulationPin(pin, pin_name)
+            self._pins[pin_name] = sim_pin
+
+        return sim_pin.port
 
     def get_pin(self, pin_name: str) -> io.SimulationPort:
-        return self._pins[pin_name]
+        return self._pins[pin_name].port
 
     def connect_pins(self, *pin_names: str):
         self._jumpers.append(pin_names)
@@ -193,7 +257,12 @@ class SimulationAssembly(AbstractAssembly):
         pass
 
     def set_pin_pull(self, pin: GlasgowPin, state: PullState):
-        pass # TODO: record pull state?
+        # NOTE: Currently only works with pins connected to each other via a jumper
+        #       Implemented below in jumper elaboration
+        pin_name = pin.loc_name
+        if pin_name not in self._pins:
+            self.add_platform_pin(pin, pin_name)
+        self._pins[pin_name].pull_state = state
 
     async def configure_ports(self):
         pass # TODO: log and use pull state for default pin state?
@@ -213,18 +282,25 @@ class SimulationAssembly(AbstractAssembly):
         for jumper in self._jumpers:
             net = Signal(name=f"jumper_{'_'.join(jumper)}")
             pins = [self._pins[name] for name in jumper]
+            pull_state = PullState.Float
             for pin in pins:
-                m.d.comb += pin.i.eq(net)
-                with m.If(pin.oe):
-                    m.d.comb += net.eq(pin.o)
+                pull_state = pull_state.combine(pin.effective_pull_state)
+
+                m.d.comb += pin.port.i.eq(net)
+                with m.If(pin.port.oe):
+                    m.d.comb += net.eq(pin.port.o)
             m.d.comb += Assert(
-                sum(Cat(pin.oe for pin in pins)) <= 1,
+                sum(Cat(pin.port.oe for pin in pins)) <= 1,
                 Format(
                     f"electrical contention on a jumper: "
                     f"{' '.join(f'{name}.oe={{}}' for name in jumper)}",
-                    *(self._pins[name].oe for name in jumper)
+                    *(self._pins[name].port.oe for name in jumper)
                 )
             )
+
+            if pull_state != PullState.Float:
+                with m.If(Cat(pin.port.oe for pin in pins) == 0):
+                    m.d.comb += net.eq(pull_state.to_bit())
 
         for elaboratable, name in self._modules:
             m.submodules[name] = elaboratable
