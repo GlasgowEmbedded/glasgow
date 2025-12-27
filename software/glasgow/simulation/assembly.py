@@ -161,14 +161,17 @@ class SimulationPin:
 
 class SimulationAssembly(AbstractAssembly):
     _pins: dict[str, SimulationPin]
+    _jumpers: dict[str, int] # {pin_name: jumper_group}
+    _next_jumper_group: int
 
     def __init__(self):
-        self._logger    = logger
-        self._pins      = {}
-        self._modules   = [] # (elaboratable, name)
-        self._benches   = [] # (constructor, background)
-        self._jumpers   = [] # (pin_name...)
-        self.__context  = None
+        self._logger            = logger
+        self._pins              = {}
+        self._modules           = [] # (elaboratable, name)
+        self._benches           = [] # (constructor, background)
+        self._jumpers           = {}
+        self._next_jumper_group = 0
+        self.__context          = None
 
     @property
     def sys_clk_period(self) -> "Period":
@@ -203,7 +206,24 @@ class SimulationAssembly(AbstractAssembly):
         return self._pins[pin_name].port
 
     def connect_pins(self, *pin_names: str):
-        self._jumpers.append(pin_names)
+        now_connected_existing_groups = {
+            self._jumpers[pin_name]
+            for pin_name in pin_names
+            if pin_name in self._jumpers
+        }
+
+        # load-bearing list (don't use a generator expression here)
+        # we want to get all old pins to update and the update the dict
+        # from which we are getting them (no data racing plz)
+        self._jumpers.update([
+            (pin_name, self._next_jumper_group)
+            for pin_name, old_group in self._jumpers.items()
+            if old_group in now_connected_existing_groups
+        ])
+        self._jumpers.update(
+            (pin_name, self._next_jumper_group) for pin_name in pin_names
+        )
+        self._next_jumper_group += 1
 
     def add_in_pipe(self, in_stream, *, in_flush=C(0),
                     fifo_depth=None, buffer_size=None) -> AbstractInPipe:
@@ -305,7 +325,13 @@ class SimulationAssembly(AbstractAssembly):
         dummy = Signal()
         m.d.sync += dummy.eq(0) # make sure the domain exists
 
-        for jumper in self._jumpers:
+        jumped_pin_groups: dict[int, list[str]] = {}
+        for pin_name, group in self._jumpers.items():
+            if group not in jumped_pin_groups:
+                jumped_pin_groups[group] = []
+            jumped_pin_groups[group].append(pin_name)
+
+        for jumper in jumped_pin_groups.values():
             net = Signal(name=f"jumper_{'_'.join(jumper)}")
             pins = [self._pins[name] for name in jumper]
             pull_state = PullState.Float
