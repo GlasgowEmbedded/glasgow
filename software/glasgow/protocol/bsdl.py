@@ -60,9 +60,15 @@ class BSDLDevice:
 
     scan_cells: list[BSDLScanCell]
 
+    idcode: bits | None = None
+
     @property
     def scan_length(self):
         return len(self.scan_cells)
+
+    @property
+    def idcode_length(self):
+        return 0 if self.idcode is None else len(self.idcode)
 
 
 @dataclass
@@ -489,6 +495,10 @@ class BSDLEntity(BSDLParserBase):
                 port, _port_bit = cell.port
                 port_cells[port].add(index)
 
+        idcode = self._attrs.get("IDCODE_REGISTER")
+        if idcode is not None:
+            idcode = bits(idcode)
+
         return BSDLDevice(
             name=self._name,
             ports={
@@ -503,6 +513,7 @@ class BSDLEntity(BSDLParserBase):
             ir_length=ir_length,
             ir_values=opcode_map.opcodes,
             scan_cells=bscan_cells,
+            idcode=idcode
         )
 
 
