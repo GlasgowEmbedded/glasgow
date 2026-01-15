@@ -60,7 +60,8 @@ class BSDLDevice:
 
     scan_cells: list[BSDLScanCell]
 
-    idcode: bits | None = None
+    idcode_match: bits | None = None
+    idcode_mask: bits | None = None
 
     @property
     def scan_length(self):
@@ -68,7 +69,7 @@ class BSDLDevice:
 
     @property
     def idcode_length(self):
-        return 0 if self.idcode is None else len(self.idcode)
+        return 0 if self.idcode_match is None else len(self.idcode_match)
 
 
 @dataclass
@@ -495,9 +496,12 @@ class BSDLEntity(BSDLParserBase):
                 port, _port_bit = cell.port
                 port_cells[port].add(index)
 
-        idcode = self._attrs.get("IDCODE_REGISTER")
+        idcode, idcode_mask = self._attrs.get("IDCODE_REGISTER"), None
         if idcode is not None:
-            idcode = bits(idcode)
+            # using integers here reverses the bit order compared to strings,
+            # so we have to reverse the idcode string to compensate
+            idcode_mask = bits(0 if bit == 'X' else 1 for bit in idcode[::-1])
+            idcode = bits(0 if bit == 'X' else int(bit) for bit in idcode[::-1])
 
         return BSDLDevice(
             name=self._name,
@@ -513,7 +517,8 @@ class BSDLEntity(BSDLParserBase):
             ir_length=ir_length,
             ir_values=opcode_map.opcodes,
             scan_cells=bscan_cells,
-            idcode=idcode
+            idcode_match=idcode,
+            idcode_mask=idcode_mask
         )
 
 
