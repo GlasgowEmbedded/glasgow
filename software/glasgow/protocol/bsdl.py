@@ -500,8 +500,8 @@ class BSDLEntity(BSDLParserBase):
         if idcode is not None:
             # using integers here reverses the bit order compared to strings,
             # so we have to reverse the idcode string to compensate
-            idcode_mask = bits(0 if bit == 'X' else 1 for bit in idcode[::-1])
-            idcode = bits(0 if bit == 'X' else int(bit) for bit in idcode[::-1])
+            idcode_mask = bits(0 if bit == "X" else 1 for bit in idcode[::-1])
+            idcode = bits(0 if bit == "X" else int(bit) for bit in idcode[::-1])
 
         return BSDLDevice(
             name=self._name,
