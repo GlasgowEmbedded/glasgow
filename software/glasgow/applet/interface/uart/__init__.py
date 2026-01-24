@@ -95,6 +95,7 @@ class UARTAutoBaud(wiring.Component):
 class UARTComponent(wiring.Component):
     i_stream:   In(stream.Signature(8))
     o_stream:   Out(stream.Signature(8))
+    o_flush:    Out(1)
 
     use_auto:   In(1)
     manual_cyc: In(20)
@@ -144,6 +145,7 @@ class UARTComponent(wiring.Component):
             self.o_stream.payload.eq(uart.rx_data),
             self.o_stream.valid.eq(uart.rx_rdy),
             uart.rx_ack.eq(self.o_stream.ready),
+            self.o_flush.eq(uart.rx_ack & uart.rx_data.matches(0x0A, 0x0D)),
         ]
 
         return m
@@ -159,7 +161,8 @@ class UARTInterface:
         ports = assembly.add_port_group(rx=rx, tx=tx)
         assembly.use_pulls({rx: "high"})
         component = assembly.add_submodule(UARTComponent(ports, parity=parity))
-        self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
+        self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream,
+            in_flush=component.o_flush)
         self._use_auto   = assembly.add_rw_register(component.use_auto)
         self._manual_cyc = assembly.add_rw_register(component.manual_cyc)
         self._auto_cyc   = assembly.add_ro_register(component.auto_cyc)
