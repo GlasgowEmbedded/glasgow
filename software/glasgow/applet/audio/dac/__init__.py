@@ -164,12 +164,12 @@ class AudioDACInterface:
 
     @property
     def sample_clock(self) -> ClockDivisor:
-        """:py:`ClockDivisor` for setting the sample rate."""
+        """Sampling clock divisor."""
         return self._sample_clock
 
     @property
     def modulation_clock(self) -> ClockDivisor:
-        """:py:`ClockDivisor` for setting the modulation rate."""
+        """Modulation clock divisor."""
         return self._modulation_clock
 
     async def write(self, pcm_data: bytes | bytearray | memoryview):
