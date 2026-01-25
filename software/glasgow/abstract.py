@@ -204,7 +204,7 @@ class ClockDivisor:
                 f"{self._name!r} is below minimum achievable {minimum / 1e3:.3f} kHz")
 
         actual = self._round(1 / ((divisor + 1) * self._ref_period))
-        if abs(requested - actual) / requested < self._tolerance:
+        if abs(requested - actual) / requested <= self._tolerance:
             level = logging.DEBUG
         else:
             level = logging.WARNING
