@@ -1,7 +1,8 @@
 # Ref: IEEE Std 802.3-2018
 # Accession: G00098
 
-from typing import Iterable, AsyncIterator, BinaryIO
+from typing import BinaryIO
+from collections.abc import AsyncIterator
 import time
 import logging
 import asyncio
@@ -22,7 +23,7 @@ from glasgow.applet import GlasgowAppletV2
 from glasgow.applet.control.mdio import ControlMDIOInterface
 
 
-__all__ = ["EthernetComponent", "AbstractEthernetApplet"]
+__all__ = ["EthernetComponent", "AbstractEthernetApplet", "GlasgowPin", "ControlMDIOInterface"]
 
 
 class EthernetComponent(wiring.Component):
@@ -208,7 +209,7 @@ class AbstractEthernetApplet(GlasgowAppletV2):
                                 self.logger.warning("packet bad (crc)")
                             count_bad += 1
                         await asyncio.sleep(args.delay)
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         self.logger.warning("packet lost")
                         count_lost += 1
             finally:

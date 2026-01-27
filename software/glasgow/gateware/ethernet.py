@@ -1,5 +1,5 @@
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io, cdc
+from amaranth.lib import data, wiring, stream
 from amaranth.lib.wiring import In, Out
 from amaranth.lib.crc.catalog import CRC32_ETHERNET
 

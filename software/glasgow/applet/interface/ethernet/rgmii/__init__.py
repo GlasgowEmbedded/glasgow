@@ -4,11 +4,9 @@
 # Accession: G00099
 
 import logging
-import asyncio
 
 from amaranth import *
-from amaranth.lib import enum, wiring, io, cdc
-from amaranth.lib.wiring import In, Out
+from amaranth.lib import io
 
 from glasgow.arch.ieee802_3 import *
 from glasgow.gateware.ethernet import AbstractDriver
@@ -21,7 +19,7 @@ from glasgow.applet.interface.ethernet import AbstractEthernetInterface, Abstrac
 from glasgow.applet.control.mdio import ControlMDIOInterface
 
 
-__all__ = ["EthernetRGMIIDriver", "EthernetRGMIIInterface"]
+__all__ = ["EthernetRGMIIDriver", "EthernetRGMIIInterface", "PLL"]
 
 
 class EthernetRGMIIDriver(AbstractDriver):
