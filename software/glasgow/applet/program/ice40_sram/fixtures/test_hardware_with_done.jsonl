@@ -1,7 +1,8 @@
+{"self": "ice40_iface._spi_iface", "call": "synchronize", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "ice40_iface._reset_iface", "call": "output", "kind": "asyncmethod", "args": [0, true], "kwargs": {}, "result": null}
 {"self": "ice40_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [], "kwargs": {}, "result": null}
 {"self": "ice40_iface._spi_iface", "call": "dummy", "kind": "asyncmethod", "args": [1], "kwargs": {}, "result": null}
 {"self": "ice40_iface._spi_iface", "call": "synchronize", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
-{"self": "ice40_iface._reset_iface", "call": "output", "kind": "asyncmethod", "args": [0, true], "kwargs": {}, "result": null}
 {"self": "ice40_iface._reset_iface", "call": "output", "kind": "asyncmethod", "args": [0, false], "kwargs": {}, "result": null}
 {"self": "ice40_iface._spi_iface", "call": "synchronize", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
 {"self": "ice40_iface._spi_iface", "call": "delay_us", "kind": "asyncmethod", "args": [1200], "kwargs": {}, "result": null}
