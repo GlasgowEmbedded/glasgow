@@ -12,7 +12,7 @@ from glasgow.support.logging import dump_hex
 from glasgow.support.endpoint import ServerEndpoint
 from glasgow.gateware.uart import UART
 from glasgow.abstract import AbstractAssembly, GlasgowPin
-from glasgow.applet import GlasgowAppletV2
+from glasgow.applet import GlasgowAppletV2, GlasgowAppletError
 
 
 class UARTAutoBaud(wiring.Component):
@@ -122,7 +122,8 @@ class UARTComponent(wiring.Component):
             parity=self.parity)
         m.submodules.auto_baud = auto_baud = UARTAutoBaud()
 
-        m.d.comb += auto_baud.rx.eq(uart.bus.rx_i)
+        if self.ports.rx is not None:
+            m.d.comb += auto_baud.rx.eq(uart.bus.rx_i)
         m.d.comb += self.auto_cyc.eq(auto_baud.cyc)
 
         with m.If(self.use_auto):
@@ -159,7 +160,8 @@ class UARTInterface:
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
         ports = assembly.add_port_group(rx=rx, tx=tx)
-        assembly.use_pulls({rx: "high"})
+        if rx is not None:
+            assembly.use_pulls({rx: "high"})
         component = assembly.add_submodule(UARTComponent(ports, parity=parity))
         self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream,
             in_flush=component.o_flush)
