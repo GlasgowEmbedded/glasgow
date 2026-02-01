@@ -9,6 +9,10 @@ class UARTAppletTestCase(GlasgowAppletV2TestCase, applet=UARTApplet):
     def test_build(self):
         self.assertBuilds()
 
+    @synthesis_test
+    def test_build_optional_pins(self):
+        self.assertBuilds(["--rx", "-", "--tx", "-"])
+
     def prepare_loopback(self, assembly):
         assembly.connect_pins("A0", "A1")
 
