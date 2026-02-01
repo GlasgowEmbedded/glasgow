@@ -53,7 +53,6 @@ class ICE40SRAMInterface:
             If the CDONE pin is present and was not asserted within 100 ms after the bitstream
             has been shifted in.
         """
-
         # Assert CS# low as RESET# is deasserted to prevent FPGA from attempting to configure
         # from flash using the same SPI interface.
         self._log("resetting")
