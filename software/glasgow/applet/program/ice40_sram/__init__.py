@@ -53,16 +53,19 @@ class ICE40SRAMInterface:
             If the CDONE pin is present and was not asserted within 100 ms after the bitstream
             has been shifted in.
         """
+
+        # Assert CS# low as RESET# is deasserted to prevent FPGA from attempting to configure
+        # from flash using the same SPI interface.
+        self._log("resetting")
+        await self._spi_iface.synchronize()
+        await self._reset_iface.output(0, True)
+
         async with self._spi_iface.select():
-            self._log("resetting")
-
-            # Assert CS#
+            # Shift a dummy byte to ensure CS# is actually asserted. (This is a property of
+            # the Glasgow SPI controller as of 2026-02-01).
             await self._spi_iface.dummy(1)
-
-            # Pulse reset while holding CS# low; if CS# is not held low as RESET# is deasserted,
-            # the FPGA will try to configure from Flash instead, causing bus contention
             await self._spi_iface.synchronize()
-            await self._reset_iface.output(0, True)
+
             await self._reset_iface.output(0, False)
             await self._spi_iface.synchronize()
 
