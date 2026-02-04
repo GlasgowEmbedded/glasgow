@@ -17,10 +17,11 @@ __all__ = ["SPIControllerComponent", "SPIControllerInterface"]
 
 
 class SPICommand(enum.Enum, shape=4):
-    Select   = 0
-    Transfer = 1
-    Delay    = 2
-    Sync     = 3
+    SetMode  = 0
+    Select   = 1
+    Transfer = 2
+    Delay    = 3
+    Sync     = 4
 
 
 class SPIControllerComponent(wiring.Component):
@@ -53,11 +54,12 @@ class SPIControllerComponent(wiring.Component):
         m.d.comb += ctrl.divisor.eq(self.divisor)
 
         command = Signal(SPICommand)
-        chip    = Signal(range(1 + len(self._ports.cs)))
         mode    = Signal(spi.Mode)
+        chip    = Signal(range(1 + len(self._ports.cs)))
+        oper    = Signal(spi.Operation)
         # FIXME: amaranth-lang/amaranth#1462
-        is_put  = mode.as_value().matches(spi.Mode.Put, spi.Mode.Swap)
-        is_get  = mode.as_value().matches(spi.Mode.Get, spi.Mode.Swap)
+        is_put  = oper.as_value().matches(spi.Operation.Put, spi.Operation.Swap)
+        is_get  = oper.as_value().matches(spi.Operation.Get, spi.Operation.Swap)
         o_count = Signal(16)
         i_count = Signal(16)
         timer   = Signal(range(self._us_cycles))
@@ -67,11 +69,14 @@ class SPIControllerComponent(wiring.Component):
                 with m.If(self.i_stream.valid):
                     m.d.sync += command.eq(self.i_stream.payload[4:])
                     with m.Switch(self.i_stream.payload[4:]):
+                        with m.Case(SPICommand.SetMode):
+                            m.d.sync += mode.eq(self.i_stream.payload[:2])
+                            m.next = "Read-Command"
                         with m.Case(SPICommand.Select):
                             m.d.sync += chip.eq(self.i_stream.payload[:4])
                             m.next = "Read-Command"
                         with m.Case(SPICommand.Transfer):
-                            m.d.sync += mode.eq(self.i_stream.payload[:4])
+                            m.d.sync += oper.eq(self.i_stream.payload[:2])
                             m.next = "Read-Count-0:8"
                         with m.Case(SPICommand.Delay):
                             m.next = "Read-Count-0:8"
@@ -98,8 +103,9 @@ class SPIControllerComponent(wiring.Component):
 
             with m.State("Transfer"):
                 m.d.comb += [
-                    ctrl.i_stream.p.chip.eq(chip),
                     ctrl.i_stream.p.mode.eq(mode),
+                    ctrl.i_stream.p.chip.eq(chip),
+                    ctrl.i_stream.p.oper.eq(oper),
                     ctrl.i_stream.p.data.eq(self.i_stream.payload),
                     self.o_stream.payload.eq(ctrl.o_stream.p.data),
                 ]
@@ -139,10 +145,8 @@ class SPIControllerComponent(wiring.Component):
 
 class SPIControllerInterface:
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 mode: Literal[0, 1, 2, 3], cs: GlasgowPin | None = None, sck: GlasgowPin,
+                 cs: GlasgowPin | None = None, sck: GlasgowPin,
                  copi: GlasgowPin | None = None, cipo: GlasgowPin | None = None):
-        assert mode == 3, "Only Mode 3 is supported at the moment"
-
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
@@ -153,13 +157,28 @@ class SPIControllerInterface:
         self._clock = assembly.add_clock_divisor(component.divisor,
             ref_period=assembly.sys_clk_period, name="sck")
 
+        self._mode = spi.Mode(0)
         self._active = None
 
     def _log(self, message, *args):
         self._logger.log(self._level, "SPI: " + message, *args)
 
     @property
+    def mode(self) -> spi.Mode:
+        """SPI mode.
+
+        Should not be changed while a transaction is active.
+        """
+        return self._mode
+
+    @mode.setter
+    def mode(self, mode: spi.Mode | Literal[0, 1, 2, 3]):
+        assert self._active is None, "cannot switch mode during transaction"
+        self._mode = spi.Mode(mode)
+
+    @property
     def clock(self) -> ClockDivisor:
+        """SCK clock divisor."""
         return self._clock
 
     @staticmethod
@@ -170,47 +189,89 @@ class SPIControllerInterface:
 
     @contextlib.asynccontextmanager
     async def select(self, index=0):
+        """Perform a transaction.
+
+        Starting a transaction asserts :py:`index`-th chip select signal and configures the mode;
+        ending a transaction deasserts the chip select signal. Methods :meth:`write`, :meth:`read`,
+        :meth:`exchange`, and :meth:`dummy` may be called while a transaction is active (only) to
+        exchange data on the bus.
+
+        For example, to read 4 bytes from an SPI flash, use the following code:
+
+        .. code:: python
+
+            iface.mode = 3
+            async with iface.select():
+                await iface.write([0x03, 0, 0, 0]) # READ = 0x03, address = 0x000000
+                data = await iface.read(4)
+
+        An empty transaction (where the body does not call :meth:`write`, :meth:`read`,
+        :meth:`exchange`, or :meth:`dummy`) is allowed and causes chip select activity only,
+        in addition to any clock edges required to switch the SPI bus mode with chip select
+        inactive.
+        """
         assert self._active is None, "chip already selected"
         assert index in range(8)
         try:
             self._log("select chip=%d", index)
-            await self._pipe.send(struct.pack("<B",
-                (SPICommand.Select.value << 4) | (1 + index)))
+            await self._pipe.send(struct.pack("<BBBH",
+                (SPICommand.SetMode.value << 4) | self._mode,
+                (SPICommand.Transfer.value << 4) | spi.Operation.Idle.value, 1,
+                (SPICommand.Select.value << 4) | 0))
             self._active = index
             yield
         finally:
             self._log("deselect")
             await self._pipe.send(struct.pack("<BBH",
                 (SPICommand.Select.value << 4) | 0,
-                (SPICommand.Transfer.value << 4) | spi.Mode.Dummy.value, 1))
+                (SPICommand.Transfer.value << 4) | spi.Operation.Idle.value, 1))
             await self._pipe.flush()
             self._active = None
 
-    async def exchange(self, octets: bytes | bytearray | memoryview) -> memoryview:
+    async def exchange(self, data: bytes | bytearray | memoryview) -> memoryview:
+        """Exchange data.
+
+        Must be used within a transaction (see :meth:`select`). Shifts :py:`data` into
+        the peripheral while shifting :py:`len(data)` bytes out of the peripheral.
+
+        Returns the bytes shifted out.
+        """
         assert self._active is not None, "no chip selected"
-        self._log("xchg-o=<%s>", dump_hex(octets))
-        for chunk in self._chunked(octets):
+        self._log("xchg-o=<%s>", dump_hex(data))
+        for chunk in self._chunked(data):
             await self._pipe.send(struct.pack("<BH",
-                (SPICommand.Transfer.value << 4) | spi.Mode.Swap.value, len(chunk)))
+                (SPICommand.Transfer.value << 4) | spi.Operation.Swap.value, len(chunk)))
             await self._pipe.send(chunk)
         await self._pipe.flush()
-        octets = await self._pipe.recv(len(octets))
-        self._log("xchg-i=<%s>", dump_hex(octets))
-        return octets
+        data = await self._pipe.recv(len(data))
+        self._log("xchg-i=<%s>", dump_hex(data))
+        return data
 
-    async def write(self, octets: bytes | bytearray | memoryview):
+    async def write(self, data: bytes | bytearray | memoryview):
+        """Write data.
+
+        Must be used within a transaction (see :meth:`select`). Shifts :py:`data` into
+        the peripheral.
+        """
         assert self._active is not None, "no chip selected"
-        self._log("write=<%s>", dump_hex(octets))
-        for chunk in self._chunked(octets):
+        self._log("write=<%s>", dump_hex(data))
+        for chunk in self._chunked(data):
             await self._pipe.send(struct.pack("<BH",
-                (SPICommand.Transfer.value << 4) | spi.Mode.Put.value, len(chunk)))
+                (SPICommand.Transfer.value << 4) | spi.Operation.Put.value, len(chunk)))
             await self._pipe.send(chunk)
 
     async def read(self, count: int) -> memoryview:
+        """Read data.
+
+        Must be used within a transaction (see :meth:`select`). Shifts :py:`len(data)` bytes out of
+        the peripheral.
+
+        Returns the bytes shifted out.
+        """
         assert self._active is not None, "no chip selected"
         for chunk in self._chunked(range(count)):
             await self._pipe.send(struct.pack("<BH",
-                (SPICommand.Transfer.value << 4) | spi.Mode.Get.value, len(chunk)))
+                (SPICommand.Transfer.value << 4) | spi.Operation.Get.value, len(chunk)))
         await self._pipe.flush()
         octets = await self._pipe.recv(count)
         self._log("read=<%s>", dump_hex(octets))
@@ -221,21 +282,34 @@ class SPIControllerInterface:
         self._log("dummy=%d", count)
         for chunk in self._chunked(range(count)):
             await self._pipe.send(struct.pack("<BH",
-                (SPICommand.Transfer.value << 4) | spi.Mode.Dummy.value, len(chunk)))
+                (SPICommand.Transfer.value << 4) | spi.Operation.Idle.value, len(chunk)))
 
     async def delay_us(self, duration: int):
+        """Delay operations.
+
+        Delays the following SPI bus operations by :py:`duration` microseconds.
+        """
         self._log("delay us=%d", duration)
         for chunk in self._chunked(range(duration)):
             await self._pipe.send(struct.pack("<BH",
                 (SPICommand.Delay.value << 4), len(chunk)))
 
     async def delay_ms(self, duration: int):
+        """Delay operations.
+
+        Delays the following SPI bus operations by :py:`duration` milliseconds. Equivalent to
+        :py:`delay_us(duration * 1000)`.
+        """
         self._log("delay ms=%d", duration)
         for chunk in self._chunked(range(duration * 1000)):
             await self._pipe.send(struct.pack("<BH",
                 (SPICommand.Delay.value << 4), len(chunk)))
 
     async def synchronize(self):
+        """Synchronization barrier.
+
+        Ensures that once this method returns, all previously submitted operations have completed.
+        """
         self._log("sync-o")
         await self._pipe.send(struct.pack("<B",
             (SPICommand.Sync.value << 4)))
@@ -248,9 +322,7 @@ class SPIControllerApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "initiate SPI transactions"
     description = """
-    Initiate transactions on the SPI bus.
-
-    Currently, only SPI mode 3 (CPOL=1, CPHA=1) is supported.
+    Initiate transactions on the Motorola SPI bus.
     """
 
     @classmethod
@@ -261,24 +333,23 @@ class SPIControllerApplet(GlasgowAppletV2):
         access.add_pins_argument(parser, "copi", default=True)
         access.add_pins_argument(parser, "cipo", default=True)
 
-        parser.add_argument(
-            "-m", "--mode", metavar="MODE", type=int, choices=(0, 1, 2, 3), default=3,
-            help="configure clock phase and idle state according to MODE (default: %(default)s)")
-
     def build(self, args):
         with self.assembly.add_applet(self):
             self.assembly.use_voltage(args.voltage)
             self.spi_iface = SPIControllerInterface(self.logger, self.assembly,
-                cs=args.cs, sck=args.sck, copi=args.copi, cipo=args.cipo,
-                mode=args.mode)
+                cs=args.cs, sck=args.sck, copi=args.copi, cipo=args.cipo)
 
     @classmethod
     def add_setup_arguments(cls, parser):
+        parser.add_argument(
+            "-m", "--mode", metavar="MODE", type=int, choices=(0, 1, 2, 3), default=0,
+            help="configure active edge and idle state according to MODE (default: %(default)s)")
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=100,
             help="set SCK frequency to FREQ kHz (default: %(default)s)")
 
     async def setup(self, args):
+        self.spi_iface.mode = args.mode
         await self.spi_iface.clock.set_frequency(args.frequency * 1000)
 
     @classmethod

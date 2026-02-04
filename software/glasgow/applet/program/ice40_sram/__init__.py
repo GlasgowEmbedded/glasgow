@@ -27,7 +27,7 @@ class ICE40SRAMInterface:
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
         self._spi_iface = SPIControllerInterface(logger, assembly,
-            cs=cs, sck=sck, copi=copi, mode=3)
+            cs=cs, sck=sck, copi=copi)
         self._reset_iface = GPIOInterface(logger, assembly,
             pins=(~reset,), name="reset")
         if done is not None:
