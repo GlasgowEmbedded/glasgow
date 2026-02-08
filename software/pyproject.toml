@@ -88,6 +88,7 @@ selftest = "glasgow.applet.internal.selftest:SelfTestApplet"
 benchmark = "glasgow.applet.internal.benchmark:BenchmarkApplet"
 
 analyzer = "glasgow.applet.interface.analyzer:AnalyzerApplet"
+ethernet-rgmii = "glasgow.applet.interface.ethernet.rgmii:EthernetRGMIIApplet"
 uart = "glasgow.applet.interface.uart:UARTApplet"
 uart-analyzer = "glasgow.applet.interface.uart_analyzer:UARTAnalyzerApplet"
 spi-analyzer = "glasgow.applet.interface.spi_analyzer:SPIAnalyzerApplet"
