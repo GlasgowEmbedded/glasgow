@@ -22,5 +22,5 @@ class SPIControllerAppletTestCase(GlasgowAppletV2TestCase, applet=SPIControllerA
             result = await applet.spi_iface.exchange([0xAA, 0x55, 0x12, 0x34])
             self.assertEqual(ctx.get(cs.o), 0)
             self.assertEqual(result, bytearray([0xAA, 0x55, 0x12, 0x34]))
-        await ctx.tick()
+        await ctx.tick().repeat(10)
         self.assertEqual(ctx.get(cs.o), 1)

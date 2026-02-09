@@ -71,10 +71,17 @@ class SPIControllerComponent(wiring.Component):
                     with m.Switch(self.i_stream.payload[4:]):
                         with m.Case(SPICommand.SetMode):
                             m.d.sync += mode.eq(self.i_stream.payload[:4])
-                            m.next = "Read-Command"
+                            m.d.sync += oper.eq(spi.Operation.Idle)
+                            m.d.sync += o_count.eq(1)
+                            m.d.sync += i_count.eq(1)
+                            m.next = "Transfer"
                         with m.Case(SPICommand.Select):
                             m.d.sync += chip.eq(self.i_stream.payload[:4])
-                            m.next = "Read-Command"
+                            with m.If(self.i_stream.payload[:4] == 0):
+                                m.d.sync += oper.eq(spi.Operation.Idle)
+                                m.d.sync += o_count.eq(1)
+                                m.d.sync += i_count.eq(1)
+                                m.next = "Transfer"
                         with m.Case(SPICommand.Transfer):
                             m.d.sync += oper.eq(self.i_stream.payload[:4])
                             m.next = "Read-Count-0:8"
@@ -214,17 +221,15 @@ class SPIControllerInterface:
         assert index in range(8)
         try:
             self._log("select chip=%d", index)
-            await self._pipe.send(struct.pack("<BBHB",
+            await self._pipe.send(struct.pack("<BB",
                 (SPICommand.SetMode.value << 4) | self._mode,
-                (SPICommand.Transfer.value << 4) | spi.Operation.Idle.value, 1,
                 (SPICommand.Select.value << 4) | (1 + index)))
             self._active = index
             yield
         finally:
             self._log("deselect")
-            await self._pipe.send(struct.pack("<BBH",
-                (SPICommand.Select.value << 4) | 0,
-                (SPICommand.Transfer.value << 4) | spi.Operation.Idle.value, 1))
+            await self._pipe.send(struct.pack("<B",
+                (SPICommand.Select.value << 4) | 0))
             await self._pipe.flush()
             self._active = None
 
@@ -324,6 +329,7 @@ class SPIControllerApplet(GlasgowAppletV2):
     description = """
     Initiate transactions on the Motorola SPI bus.
     """
+    required_revision = "C0"
 
     @classmethod
     def add_build_arguments(cls, parser, access):

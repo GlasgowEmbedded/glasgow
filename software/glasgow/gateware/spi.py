@@ -73,31 +73,28 @@ class Enframer(wiring.Component):
     def elaborate(self, platform):
         m = Module()
 
+        select = Signal.like(self.octets.p.chip)
+        timer  = Signal.like(self.divisor)
+        cycle  = Signal(range(8))
+
         is_rising = (self.octets.p.mode
             .matches(Mode.IdleLow_SampleRising, Mode.IdleHigh_SampleRising))
         is_idle_high = (self.octets.p.mode
             .matches(Mode.IdleHigh_SampleFalling, Mode.IdleHigh_SampleRising))
 
-        timer = Signal.like(self.divisor)
-        cycle = Signal(range(8))
+        half_timer = (timer == (self.divisor + 1) >> 1)
+        full_timer = (timer == self.divisor)
 
         for n in range(2):
-            m.d.comb += self.frames.p.port.cs.o[n].eq((1 << self.octets.p.chip)[1:])
+            # Ensure sufficient setup/hold time between CS# and SCK.
+            active = (1 << Mux(select == 0, self.octets.p.chip, select))[1:]
+            m.d.comb += self.frames.p.port.cs.o[n].eq(active)
         m.d.comb += self.frames.p.port.cs.oe.eq(1)
 
-        rev_data = self.octets.p.data[::-1] # MSB first
-        with m.Switch(self.octets.p.oper):
-            with m.Case(Operation.Put, Operation.Swap):
-                for n in range(2):
-                    m.d.comb += self.frames.p.port.copi.o[n].eq(rev_data.word_select(cycle, 1))
-                m.d.comb += self.frames.p.port.copi.oe.eq(0b1)
-            with m.Case(Operation.Get):
-                m.d.comb += self.frames.p.port.copi.oe.eq(0b1)
-
         # When no chip is selected, keep clock in the idle state. The only supported `oper`
-        # in this case is `SPIMode.Dummy`, which should be used to deassert CS# at the end of
+        # in this case is `SPIMode.Idle`, which should be used to deassert CS# at the end of
         # a transfer.
-        with m.If(self.octets.p.chip):
+        with m.If((select == self.octets.p.chip) & (select != 0)):
             m.d.comb += self.frames.p.port.sck.o[0].eq((timer * 2 >  self.divisor) ^ ~is_rising)
             m.d.comb += self.frames.p.port.sck.o[1].eq((timer * 2 >= self.divisor) ^ ~is_rising)
         with m.Else():
@@ -105,15 +102,28 @@ class Enframer(wiring.Component):
                 m.d.comb += self.frames.p.port.sck.o[n].eq(is_idle_high)
         m.d.comb += self.frames.p.port.sck.oe.eq(1)
 
-        with m.If(timer == (self.divisor + 1) >> 1):
+        with m.If(select == self.octets.p.chip):
+            rev_data = self.octets.p.data[::-1] # MSB first
             with m.Switch(self.octets.p.oper):
-                with m.Case(Operation.Get, Operation.Swap):
-                    m.d.comb += self.frames.p.meta.oper.eq(self.octets.p.oper)
-                    m.d.comb += self.frames.p.meta.half.eq(~self.divisor[0])
+                with m.Case(Operation.Put, Operation.Swap):
+                    for n in range(2):
+                        m.d.comb += self.frames.p.port.copi.o[n].eq(rev_data.word_select(cycle, 1))
+                    m.d.comb += self.frames.p.port.copi.oe.eq(0b1)
+                with m.Case(Operation.Get):
+                    m.d.comb += self.frames.p.port.copi.oe.eq(0b1)
+
+            with m.If(half_timer):
+                with m.Switch(self.octets.p.oper):
+                    with m.Case(Operation.Get, Operation.Swap):
+                        m.d.comb += self.frames.p.meta.oper.eq(self.octets.p.oper)
+                        m.d.comb += self.frames.p.meta.half.eq(~self.divisor[0])
 
         m.d.comb += self.frames.valid.eq(self.octets.valid)
         with m.If(self.frames.valid & self.frames.ready):
-            with m.If(timer == self.divisor):
+            with m.If(half_timer & (select != self.octets.p.chip)):
+                m.d.sync += select.eq(self.octets.p.chip)
+                m.d.sync += timer.eq(0)
+            with m.Elif(full_timer):
                 with m.Switch(self.octets.p.oper):
                     with m.Case(Operation.Put, Operation.Get, Operation.Swap):
                         m.d.comb += self.octets.ready.eq(cycle == 7)
