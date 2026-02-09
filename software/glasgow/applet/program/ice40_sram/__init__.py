@@ -73,11 +73,9 @@ class ICE40SRAMInterface:
 
             self._log("programming")
 
-            # Write bitstream
+            # Write bitstream followed by 49 dummy bits (per TN-02001).
             await self._spi_iface.write(bitstream)
-
-            # Specs says at least 49 dummy bits. Send 128.
-            await self._spi_iface.dummy(128)
+            await self._spi_iface.dummy(49)
 
         if self._done_iface is not None:
             self._log("waiting for CDONE")
