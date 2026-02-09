@@ -119,6 +119,7 @@ class SPIFlashromApplet(GlasgowAppletV2):
     flashrom offers compatibility with a wider variety of devices, some of which may not be
     supported by the `memory-25x` applet.
     """
+    required_revision = "C0"
 
     @classmethod
     def add_build_arguments(cls, parser, access):

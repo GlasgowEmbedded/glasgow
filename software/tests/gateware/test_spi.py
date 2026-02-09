@@ -139,9 +139,9 @@ class SPIFramingTestCase(unittest.TestCase):
             await data_put(chip=0, data=0, oper=Operation.Idle)
 
         async def testbench_out(ctx):
-            async def bits_get(*, cs, ox, oe, oper):
+            async def bits_get(*, cs, ox, oe, oper, t):
                 for cycle, o in enumerate(ox):
-                    if cs:
+                    if t:
                         sck_o = [0,1]
                     else:
                         sck_o = [1,1]
@@ -160,17 +160,19 @@ class SPIFramingTestCase(unittest.TestCase):
                     assert (actual := await stream_get(ctx, dut.frames)) == expected, \
                         f"(cycle {cycle}) {actual} != {expected}"
 
-            await bits_get(cs=1, ox=[1,0,1,1,1,0,1,0], oe=1, oper=Operation.Swap)
+            await bits_get(cs=1, ox=[0],               oe=0, oper=Operation.Idle, t=False)
+            await bits_get(cs=1, ox=[1,0,1,1,1,0,1,0], oe=1, oper=Operation.Swap, t=True)
 
-            await bits_get(cs=1, ox=[1,0,1,0,1,0,1,0], oe=1, oper=Operation.Idle)
-            await bits_get(cs=1, ox=[0,1,0,1,0,1,0,1], oe=1, oper=Operation.Idle)
-            await bits_get(cs=1, ox=[1,1,0,0,0,0,0,1], oe=1, oper=Operation.Idle)
+            await bits_get(cs=1, ox=[1,0,1,0,1,0,1,0], oe=1, oper=Operation.Idle, t=True)
+            await bits_get(cs=1, ox=[0,1,0,1,0,1,0,1], oe=1, oper=Operation.Idle, t=True)
+            await bits_get(cs=1, ox=[1,1,0,0,0,0,0,1], oe=1, oper=Operation.Idle, t=True)
 
-            await bits_get(cs=1, ox=[0,0,0,0,0,0],     oe=0, oper=Operation.Idle)
+            await bits_get(cs=1, ox=[0,0,0,0,0,0],     oe=0, oper=Operation.Idle, t=True)
 
-            await bits_get(cs=1, ox=[0,0,0,0,0,0,0,0], oe=1, oper=Operation.Get)
+            await bits_get(cs=1, ox=[0,0,0,0,0,0,0,0], oe=1, oper=Operation.Get,  t=True)
 
-            await bits_get(cs=0, ox=[0],               oe=0, oper=Operation.Idle)
+            await bits_get(cs=1, ox=[0],               oe=0, oper=Operation.Idle, t=False)
+            await bits_get(cs=0, ox=[0],               oe=0, oper=Operation.Idle, t=False)
 
         sim = Simulator(dut)
         sim.add_clock(1e-6)

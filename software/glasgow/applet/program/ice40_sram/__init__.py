@@ -98,6 +98,7 @@ class ProgramICE40SRAMApplet(GlasgowAppletV2):
     description = """
     Program the volatile bitstream memory of iCE40 FPGAs.
     """
+    required_revision = "C0"
 
     @classmethod
     def add_build_arguments(cls, parser, access):
