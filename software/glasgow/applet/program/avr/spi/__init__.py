@@ -2,10 +2,8 @@
 #      USB Controller datasheet
 # Accession: G00058
 
-import math
 import logging
 from amaranth import *
-from amaranth.lib import io
 
 from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
 from glasgow.applet.program.avr import ProgramAVRError, ProgramAVRApplet, ProgramAVRInterface
