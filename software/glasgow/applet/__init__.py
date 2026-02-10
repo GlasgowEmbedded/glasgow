@@ -355,7 +355,7 @@ def applet_v2_hardware_test(*, prepare=None, args=None, mocks: list[str]):
                 case.__name__ + ".jsonl")
             if not os.path.exists(fixture_path):
                 # Record mode
-                assembly = HardwareAssembly.find_device()
+                assembly = await HardwareAssembly.find_device()
                 applet: GlasgowAppletV2 = self.applet_cls(assembly)
                 applet.build(parsed_args)
                 async with assembly:
@@ -363,7 +363,7 @@ def applet_v2_hardware_test(*, prepare=None, args=None, mocks: list[str]):
                     with open(f"{fixture_path}.new", "w") as fixture:
                         await applet.setup(parsed_args)
                         if prepare is not None:
-                            await prepare(self, assembly)
+                            await prepare(self, applet)
                         for mock in mocks:
                             mock_obj = applet
                             *mock_path, mock_attr = mock.split(".")
