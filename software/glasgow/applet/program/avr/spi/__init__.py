@@ -21,7 +21,7 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
         self._spi_iface = SPIControllerInterface(logger, assembly,
-            sck=sck, copi=copi, cipo=cipo)
+            sck=sck, copi=copi, cipo=cipo, mode=0)
         self._reset_iface = GPIOInterface(logger, assembly, pins=(~reset,), name="reset")
 
         self._extended_addr  = None
@@ -49,7 +49,6 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
         # the programmer can not guarantee that SCK is held low during power-up. In this case,
         # RESET must be given  a positive pulse of at least two CPU clock cycles duration after
         # SCK has been set to “0”. [We have the second case.]
-        self._spi_iface.mode = 0
         async with self._spi_iface.select():
             # Set SCK low (transmit at least one byte in SPI Mode 0).
             await self._spi_iface.write(0x00)
