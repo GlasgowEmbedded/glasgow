@@ -529,7 +529,7 @@ class HardwareAssembly(AbstractAssembly):
     def add_platform_pin(self, pin: GlasgowPin, port_name: str) -> io.PortLike:
         assert self._artifact is None, "cannot add a port to a sealed assembly"
         # TODO: make this a proper error and not an assertion
-        pin_name = f"{pin.port}{pin.number}"
+        pin_name = pin.loc_name
         assert pin_name in self._platform.glasgow_pins, f"unknown or already used pin {pin_name}"
         self._logger.debug("assigning pin %s to %s%s", port_name, pin_name,
             " (inverted)" if pin.invert else "")
