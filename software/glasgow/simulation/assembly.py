@@ -1,3 +1,7 @@
+# amaranth: UnusedElaboratable=no
+# Suppress warning about unused elaboratable emitted when a simulation run is
+# exited via an exception before elaboration
+
 from typing import Any
 from collections.abc import Generator
 from contextlib import contextmanager
