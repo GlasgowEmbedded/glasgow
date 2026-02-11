@@ -153,7 +153,8 @@ class SPIControllerComponent(wiring.Component):
 class SPIControllerInterface:
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
                  cs: GlasgowPin | None = None, sck: GlasgowPin,
-                 copi: GlasgowPin | None = None, cipo: GlasgowPin | None = None):
+                 copi: GlasgowPin | None = None, cipo: GlasgowPin | None = None,
+                 mode: spi.Mode | Literal[0, 1, 2, 3] = spi.Mode.IdleLow_SampleRising):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
@@ -164,8 +165,8 @@ class SPIControllerInterface:
         self._clock = assembly.add_clock_divisor(component.divisor,
             ref_period=assembly.sys_clk_period, name="sck")
 
-        self._mode = spi.Mode(0)
         self._active = None
+        self.mode = mode
 
     def _log(self, message, *args):
         self._logger.log(self._level, "SPI: " + message, *args)
@@ -174,7 +175,7 @@ class SPIControllerInterface:
     def mode(self) -> spi.Mode:
         """SPI mode.
 
-        Should not be changed while a transaction is active.
+        Cannot be changed while a transaction is active.
         """
         return self._mode
 
