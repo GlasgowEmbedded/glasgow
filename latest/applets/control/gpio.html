@@ -1,0 +1,592 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="search" title="Search" href="../../search.html" /><link rel="next" title="control-servo" href="servo.html" /><link rel="prev" title="control-clock" href="clock.html" />
+        <link rel="canonical" href="https://glasgow-embedded.org/latest/applets/control/gpio.html" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
+        <title>control-gpio - Glasgow Interface Explorer</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=6ed97bf6" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/tabs.css?v=4c969af8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/fontawesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/solid.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/brands.min.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/custom.css?v=1626aa46" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  --color-announcement-background: #56bf62;
+  --color-announcement-text: #094a05;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-announcement-background: #1c4808;
+  --color-announcement-text: #64cc69;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-announcement-background: #1c4808;
+  --color-announcement-text: #64cc69;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+<div class="announcement">
+  <aside class="announcement-content">
+     Production units are being shipped by Mouser. <a href='https://crowdsupply.com/1bitsquared/glasgow'>Order yours now!</a> 
+  </aside>
+</div>
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../index.html"><div class="brand">Glasgow Interface Explorer</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../index.html">
+  
+  
+  <span class="sidebar-brand-text">Glasgow Interface Explorer</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html">Introduction</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../revisions/index.html">Hardware revisions</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Hardware revisions</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../revisions/revC3.html">Technical description (revC3)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../purchase.html">Purchasing hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../build.html">Building hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installing &amp; updating</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://webusb.glasgow-embedded.org/">Run in browser</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../use/index.html">Using the device</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Using the device</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../use/basic.html">Basic usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../use/repl-script.html">REPL &amp; script operation</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="../index.html">Applet index</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Applet index</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="../interface/index.html">I/O interfaces</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of I/O interfaces</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../interface/uart.html"><code class="docutils literal notranslate"><span class="pre">uart</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../interface/uart_analyzer.html"><code class="docutils literal notranslate"><span class="pre">uart-analyzer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../interface/i2c_controller.html"><code class="docutils literal notranslate"><span class="pre">i2c-controller</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../interface/spi_controller.html"><code class="docutils literal notranslate"><span class="pre">spi-controller</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../interface/spi_analyzer.html"><code class="docutils literal notranslate"><span class="pre">spi-analyzer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../interface/qspi_controller.html"><code class="docutils literal notranslate"><span class="pre">qspi-controller</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../interface/qspi_analyzer.html"><code class="docutils literal notranslate"><span class="pre">qspi-analyzer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../interface/jtag_pinout.html"><code class="docutils literal notranslate"><span class="pre">jtag-pinout</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../interface/jtag_probe.html"><code class="docutils literal notranslate"><span class="pre">jtag-probe</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../interface/jtag_svf.html"><code class="docutils literal notranslate"><span class="pre">jtag-svf</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../interface/sbw_probe.html"><code class="docutils literal notranslate"><span class="pre">sbw-probe</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../interface/swd_probe.html"><code class="docutils literal notranslate"><span class="pre">swd-probe</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../memory/index.html">Memory manipulation</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of Memory manipulation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../memory/24x.html"><code class="docutils literal notranslate"><span class="pre">memory-24x</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../memory/25x.html"><code class="docutils literal notranslate"><span class="pre">memory-25x</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../program/index.html">MCU/FPGA programming</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of MCU/FPGA programming</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../program/avr_spi.html"><code class="docutils literal notranslate"><span class="pre">program-avr-spi</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../program/ice40_sram.html"><code class="docutils literal notranslate"><span class="pre">program-ice40-sram</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../program/ice40_flash.html"><code class="docutils literal notranslate"><span class="pre">program-ice40-flash</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../program/xc6s.html"><code class="docutils literal notranslate"><span class="pre">program-xc6s</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../program/xc9500.html"><code class="docutils literal notranslate"><span class="pre">program-xc9500</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../program/xc9500xl.html"><code class="docutils literal notranslate"><span class="pre">program-xc9500xl</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../program/xpla3.html"><code class="docutils literal notranslate"><span class="pre">program-xpla3</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../program/mec16xx.html"><code class="docutils literal notranslate"><span class="pre">program-mec16xx</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../program/nrf24lx1.html"><code class="docutils literal notranslate"><span class="pre">program-nrf24lx1</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../debug/index.html">MCU debugging</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of MCU debugging</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../debug/arc.html"><code class="docutils literal notranslate"><span class="pre">debug-arc</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../debug/arm.html"><code class="docutils literal notranslate"><span class="pre">debug-arm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../debug/arm7.html"><code class="docutils literal notranslate"><span class="pre">debug-arm7</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../debug/mips.html"><code class="docutils literal notranslate"><span class="pre">debug-mips</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../radio/index.html">Radio frequency</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of Radio frequency</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../radio/nrf24l01.html"><code class="docutils literal notranslate"><span class="pre">radio-nrf24l01</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 current has-children"><a class="reference internal" href="index.html">Device control</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Device control</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="clock.html"><code class="docutils literal notranslate"><span class="pre">control-clock</span></code></a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">control-gpio</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="servo.html"><code class="docutils literal notranslate"><span class="pre">control-servo</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="si535x.html"><code class="docutils literal notranslate"><span class="pre">control-si535x</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../sensor/index.html">Environment sensing</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of Environment sensing</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../sensor/bmx280.html"><code class="docutils literal notranslate"><span class="pre">sensor-bmx280</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sensor/hcsr04.html"><code class="docutils literal notranslate"><span class="pre">sensor-hcsr04</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sensor/hx711.html"><code class="docutils literal notranslate"><span class="pre">sensor-hx711</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sensor/scd30.html"><code class="docutils literal notranslate"><span class="pre">sensor-scd30</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../sensor/sen5x.html"><code class="docutils literal notranslate"><span class="pre">sensor-sen5x</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../bridge/index.html">External tools</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of External tools</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../bridge/flashrom.html"><code class="docutils literal notranslate"><span class="pre">spi-flashrom</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bridge/jtag_openocd.html"><code class="docutils literal notranslate"><span class="pre">jtag-openocd</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bridge/jtag_xvc.html"><code class="docutils literal notranslate"><span class="pre">jtag-xvc</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../bridge/probe_rs.html"><code class="docutils literal notranslate"><span class="pre">probe-rs</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../audio/index.html">Audio</a><input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><div class="visually-hidden">Toggle navigation of Audio</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../audio/dac.html"><code class="docutils literal notranslate"><span class="pre">audio-dac</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../internal/index.html">Internal test</a><input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><div class="visually-hidden">Toggle navigation of Internal test</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../internal/benchmark.html"><code class="docutils literal notranslate"><span class="pre">benchmark</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../develop/index.html">Development process</a><input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><div class="visually-hidden">Toggle navigation of Development process</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../develop/applet.html">Applets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../develop/docs.html">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../develop/software.html">Software</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../develop/firmware.html">Firmware</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../develop/hardware.html">Hardware</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contribute.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../community.html">Community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../conduct.html">Code of Conduct</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">License</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/GlasgowEmbedded/glasgow/blob/main/docs/manual/src/applets/control/gpio.rst?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/GlasgowEmbedded/glasgow/edit/main/docs/manual/src/applets/control/gpio.rst" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="control-gpio">
+<h1><code class="docutils literal notranslate"><span class="pre">control-gpio</span></code><a class="headerlink" href="#control-gpio" title="Link to this heading">¶</a></h1>
+<section id="cli-reference">
+<h2>CLI reference<a class="headerlink" href="#cli-reference" title="Link to this heading">¶</a></h2>
+<section id="glasgow-run-control-gpio">
+<span id="applet-control-gpio"></span><h3>glasgow run control-gpio<a class="headerlink" href="#glasgow-run-control-gpio" title="Link to this heading">¶</a></h3>
+<p>Sample and drive individual I/O pins via the CLI, the REPL, or a script.</p>
+<p>CLI pin actions can be used to configure a pin to be driven strongly (<code class="docutils literal notranslate"><span class="pre">A0=0</span></code> or <code class="docutils literal notranslate"><span class="pre">A0=1</span></code>),
+or to be driven weakly using a pull resistor (<code class="docutils literal notranslate"><span class="pre">A0=H</span></code> or <code class="docutils literal notranslate"><span class="pre">A0=L</span></code>). The actions are executed
+in the order they are provided on the command line.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">usage: glasgow run control-gpio [-h] [-V SPEC] --pins PINS [PIN-ACTION ...]</span>
+</pre></div>
+</div>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-glasgow-run-control-gpio-arg-pin-action">
+<span class="sig-name descname"><span class="pre">pin-action</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-glasgow-run-control-gpio-arg-pin-action" title="Link to this definition">¶</a></dt>
+<dd><p>pins to drive or sample, e.g.: ‘A0=1’, ‘A1=L’, ‘B5’</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-glasgow-run-control-gpio-h">
+<span id="cmdoption-glasgow-run-control-gpio-help"></span><span class="sig-name descname"><span class="pre">-h</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--help</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-glasgow-run-control-gpio-h" title="Link to this definition">¶</a></dt>
+<dd><p>show this help message and exit</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-glasgow-run-control-gpio-V">
+<span id="cmdoption-glasgow-run-control-gpio-voltage"></span><span class="sig-name descname"><span class="pre">-V</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;spec&gt;</span></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--voltage</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;spec&gt;</span></span><a class="headerlink" href="#cmdoption-glasgow-run-control-gpio-V" title="Link to this definition">¶</a></dt>
+<dd><p>configure I/O port voltage to SPEC (e.g.: ‘3.3’, ‘A=5.0,B=3.3’, ‘A=SA’)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-glasgow-run-control-gpio-pins">
+<span class="sig-name descname"><span class="pre">--pins</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;pins&gt;</span></span><a class="headerlink" href="#cmdoption-glasgow-run-control-gpio-pins" title="Link to this definition">¶</a></dt>
+<dd><p>bind the applet I/O lines ‘pins’ to PINS (required)</p>
+</dd></dl>
+
+</section>
+</section>
+<section id="module-glasgow.applet.control.gpio">
+<span id="api-reference"></span><h2>API reference<a class="headerlink" href="#module-glasgow.applet.control.gpio" title="Link to this heading">¶</a></h2>
+<dl class="py exception">
+<dt class="sig sig-object py" id="glasgow.applet.control.gpio.GPIOException">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">glasgow.applet.control.gpio.</span></span><span class="sig-name descname"><span class="pre">GPIOException</span></span><a class="headerlink" href="#glasgow.applet.control.gpio.GPIOException" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="glasgow.applet.control.gpio.GPIOInterface">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">glasgow.applet.control.gpio.</span></span><span class="sig-name descname"><span class="pre">GPIOInterface</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Logger" title="(in Python v3.14)"><span class="pre">Logger</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">assembly</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">AbstractAssembly</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">pins</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><span class="pre">GlasgowPin</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gpio'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#glasgow.applet.control.gpio.GPIOInterface" title="Link to this definition">¶</a></dt>
+<dd><dl class="py property">
+<dt class="sig sig-object py" id="glasgow.applet.control.gpio.GPIOInterface.count">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">count</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#glasgow.applet.control.gpio.GPIOInterface.count" title="Link to this definition">¶</a></dt>
+<dd><p>Number of pins.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="glasgow.applet.control.gpio.GPIOInterface.pull">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pull</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PullState</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#glasgow.applet.control.gpio.GPIOInterface.pull" title="Link to this definition">¶</a></dt>
+<dd><p>Configure pull-up or pull-down for pin <code class="code highlight py python docutils literal highlight-python"><span class="n">index</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="glasgow.applet.control.gpio.GPIOInterface.input">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#glasgow.applet.control.gpio.GPIOInterface.input" title="Link to this definition">¶</a></dt>
+<dd><p>Configure pin <code class="code highlight py python docutils literal highlight-python"><span class="n">index</span></code> as input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#IndexError" title="(in Python v3.14)"><strong>IndexError</strong></a> – If <code class="code highlight py python docutils literal highlight-python"><span class="n">index</span></code> does not specify a valid pin index.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="glasgow.applet.control.gpio.GPIOInterface.output">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#glasgow.applet.control.gpio.GPIOInterface.output" title="Link to this definition">¶</a></dt>
+<dd><p>Configure pin <code class="code highlight py python docutils literal highlight-python"><span class="n">index</span></code> as output, initially driving <code class="code highlight py python docutils literal highlight-python"><span class="n">value</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#IndexError" title="(in Python v3.14)"><strong>IndexError</strong></a> – If <code class="code highlight py python docutils literal highlight-python"><span class="n">index</span></code> does not specify a valid pin index.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="glasgow.applet.control.gpio.GPIOInterface.get">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="headerlink" href="#glasgow.applet.control.gpio.GPIOInterface.get" title="Link to this definition">¶</a></dt>
+<dd><p>Sample state of pin <code class="code highlight py python docutils literal highlight-python"><span class="n">index</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#IndexError" title="(in Python v3.14)"><strong>IndexError</strong></a> – If <code class="code highlight py python docutils literal highlight-python"><span class="n">index</span></code> does not specify a valid pin index.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="glasgow.applet.control.gpio.GPIOInterface.set">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#glasgow.applet.control.gpio.GPIOInterface.set" title="Link to this definition">¶</a></dt>
+<dd><p>Update value driven by pin <code class="code highlight py python docutils literal highlight-python"><span class="n">index</span></code> to be <code class="code highlight py python docutils literal highlight-python"><span class="n">value</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#IndexError" title="(in Python v3.14)"><strong>IndexError</strong></a> – If <code class="code highlight py python docutils literal highlight-python"><span class="n">index</span></code> does not specify a valid pin index.</p></li>
+<li><p><a class="reference internal" href="#glasgow.applet.control.gpio.GPIOException" title="glasgow.applet.control.gpio.GPIOException"><strong>GPIOException</strong></a> – If pin <code class="code highlight py python docutils literal highlight-python"><span class="n">index</span></code> is not configured as an ouptut.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="glasgow.applet.control.gpio.GPIOInterface.get_all">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="headerlink" href="#glasgow.applet.control.gpio.GPIOInterface.get_all" title="Link to this definition">¶</a></dt>
+<dd><p>Sample state of every pin simultaneously.</p>
+<p>In the returned value, the least significant bit corresponds to the first pin in the port
+provided to the constructor.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="glasgow.applet.control.gpio.GPIOInterface.set_all">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">set_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#glasgow.applet.control.gpio.GPIOInterface.set_all" title="Link to this definition">¶</a></dt>
+<dd><p>Update value of every pin simultaneously.</p>
+<p>In <code class="code highlight py python docutils literal highlight-python"><span class="n">value</span></code>, the least significant bit corresponds to the first pin in the port provided
+to the constructor. The bits corresponding to pins that are configured as inputs, as well
+as the bits that do not correspond to any pins, are ignored.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="servo.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title"><code class="docutils literal notranslate"><span class="pre">control-servo</span></code></div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="clock.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title"><code class="docutils literal notranslate"><span class="pre">control-clock</span></code></div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2020—2026, Glasgow Interface Explorer contributors
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            <div class="icons">
+              <a class="muted-link fa-brands fa-solid fa-github fa-2x" href="https://github.com/GlasgowEmbedded/glasgow/" aria-label="GitHub"></a>
+              
+            </div>
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">control-gpio</span></code></a><ul>
+<li><a class="reference internal" href="#cli-reference">CLI reference</a><ul>
+<li><a class="reference internal" href="#glasgow-run-control-gpio">glasgow run control-gpio</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-glasgow.applet.control.gpio">API reference</a><ul>
+<li><a class="reference internal" href="#glasgow.applet.control.gpio.GPIOException"><code class="docutils literal notranslate"><span class="pre">GPIOException</span></code></a></li>
+<li><a class="reference internal" href="#glasgow.applet.control.gpio.GPIOInterface"><code class="docutils literal notranslate"><span class="pre">GPIOInterface</span></code></a><ul>
+<li><a class="reference internal" href="#glasgow.applet.control.gpio.GPIOInterface.count"><code class="docutils literal notranslate"><span class="pre">GPIOInterface.count</span></code></a></li>
+<li><a class="reference internal" href="#glasgow.applet.control.gpio.GPIOInterface.pull"><code class="docutils literal notranslate"><span class="pre">GPIOInterface.pull()</span></code></a></li>
+<li><a class="reference internal" href="#glasgow.applet.control.gpio.GPIOInterface.input"><code class="docutils literal notranslate"><span class="pre">GPIOInterface.input()</span></code></a></li>
+<li><a class="reference internal" href="#glasgow.applet.control.gpio.GPIOInterface.output"><code class="docutils literal notranslate"><span class="pre">GPIOInterface.output()</span></code></a></li>
+<li><a class="reference internal" href="#glasgow.applet.control.gpio.GPIOInterface.get"><code class="docutils literal notranslate"><span class="pre">GPIOInterface.get()</span></code></a></li>
+<li><a class="reference internal" href="#glasgow.applet.control.gpio.GPIOInterface.set"><code class="docutils literal notranslate"><span class="pre">GPIOInterface.set()</span></code></a></li>
+<li><a class="reference internal" href="#glasgow.applet.control.gpio.GPIOInterface.get_all"><code class="docutils literal notranslate"><span class="pre">GPIOInterface.get_all()</span></code></a></li>
+<li><a class="reference internal" href="#glasgow.applet.control.gpio.GPIOInterface.set_all"><code class="docutils literal notranslate"><span class="pre">GPIOInterface.set_all()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=50ba5bf0"></script>
+    <script src="../../_static/tabs.js?v=3ee01567"></script>
+    </body>
+</html>

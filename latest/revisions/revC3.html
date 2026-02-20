@@ -1,0 +1,1262 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="search" title="Search" href="../search.html" /><link rel="next" title="Purchasing hardware" href="../purchase.html" /><link rel="prev" title="Hardware revisions" href="index.html" />
+        <link rel="canonical" href="https://glasgow-embedded.org/latest/revisions/revC3.html" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
+        <title>Technical description (revC3) - Glasgow Interface Explorer</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=6ed97bf6" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/tabs.css?v=4c969af8" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/fontawesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/solid.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/brands.min.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/custom.css?v=1626aa46" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  --color-announcement-background: #56bf62;
+  --color-announcement-text: #094a05;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-announcement-background: #1c4808;
+  --color-announcement-text: #64cc69;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-announcement-background: #1c4808;
+  --color-announcement-text: #64cc69;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+<div class="announcement">
+  <aside class="announcement-content">
+     Production units are being shipped by Mouser. <a href='https://crowdsupply.com/1bitsquared/glasgow'>Order yours now!</a> 
+  </aside>
+</div>
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">Glasgow Interface Explorer</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  
+  <span class="sidebar-brand-text">Glasgow Interface Explorer</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction</a></li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Hardware revisions</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Hardware revisions</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Technical description (revC3)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../purchase.html">Purchasing hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../build.html">Building hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installing &amp; updating</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://webusb.glasgow-embedded.org/">Run in browser</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../use/index.html">Using the device</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Using the device</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../use/basic.html">Basic usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../use/repl-script.html">REPL &amp; script operation</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../applets/index.html">Applet index</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Applet index</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../applets/interface/index.html">I/O interfaces</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of I/O interfaces</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../applets/interface/uart.html"><code class="docutils literal notranslate"><span class="pre">uart</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/interface/uart_analyzer.html"><code class="docutils literal notranslate"><span class="pre">uart-analyzer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/interface/i2c_controller.html"><code class="docutils literal notranslate"><span class="pre">i2c-controller</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/interface/spi_controller.html"><code class="docutils literal notranslate"><span class="pre">spi-controller</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/interface/spi_analyzer.html"><code class="docutils literal notranslate"><span class="pre">spi-analyzer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/interface/qspi_controller.html"><code class="docutils literal notranslate"><span class="pre">qspi-controller</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/interface/qspi_analyzer.html"><code class="docutils literal notranslate"><span class="pre">qspi-analyzer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/interface/jtag_pinout.html"><code class="docutils literal notranslate"><span class="pre">jtag-pinout</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/interface/jtag_probe.html"><code class="docutils literal notranslate"><span class="pre">jtag-probe</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/interface/jtag_svf.html"><code class="docutils literal notranslate"><span class="pre">jtag-svf</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/interface/sbw_probe.html"><code class="docutils literal notranslate"><span class="pre">sbw-probe</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/interface/swd_probe.html"><code class="docutils literal notranslate"><span class="pre">swd-probe</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../applets/memory/index.html">Memory manipulation</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of Memory manipulation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../applets/memory/24x.html"><code class="docutils literal notranslate"><span class="pre">memory-24x</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/memory/25x.html"><code class="docutils literal notranslate"><span class="pre">memory-25x</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../applets/program/index.html">MCU/FPGA programming</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of MCU/FPGA programming</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../applets/program/avr_spi.html"><code class="docutils literal notranslate"><span class="pre">program-avr-spi</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/program/ice40_sram.html"><code class="docutils literal notranslate"><span class="pre">program-ice40-sram</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/program/ice40_flash.html"><code class="docutils literal notranslate"><span class="pre">program-ice40-flash</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/program/xc6s.html"><code class="docutils literal notranslate"><span class="pre">program-xc6s</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/program/xc9500.html"><code class="docutils literal notranslate"><span class="pre">program-xc9500</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/program/xc9500xl.html"><code class="docutils literal notranslate"><span class="pre">program-xc9500xl</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/program/xpla3.html"><code class="docutils literal notranslate"><span class="pre">program-xpla3</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/program/mec16xx.html"><code class="docutils literal notranslate"><span class="pre">program-mec16xx</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/program/nrf24lx1.html"><code class="docutils literal notranslate"><span class="pre">program-nrf24lx1</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../applets/debug/index.html">MCU debugging</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of MCU debugging</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../applets/debug/arc.html"><code class="docutils literal notranslate"><span class="pre">debug-arc</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/debug/arm.html"><code class="docutils literal notranslate"><span class="pre">debug-arm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/debug/arm7.html"><code class="docutils literal notranslate"><span class="pre">debug-arm7</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/debug/mips.html"><code class="docutils literal notranslate"><span class="pre">debug-mips</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../applets/radio/index.html">Radio frequency</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of Radio frequency</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../applets/radio/nrf24l01.html"><code class="docutils literal notranslate"><span class="pre">radio-nrf24l01</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../applets/control/index.html">Device control</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Device control</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../applets/control/clock.html"><code class="docutils literal notranslate"><span class="pre">control-clock</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/control/gpio.html"><code class="docutils literal notranslate"><span class="pre">control-gpio</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/control/servo.html"><code class="docutils literal notranslate"><span class="pre">control-servo</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/control/si535x.html"><code class="docutils literal notranslate"><span class="pre">control-si535x</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../applets/sensor/index.html">Environment sensing</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of Environment sensing</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../applets/sensor/bmx280.html"><code class="docutils literal notranslate"><span class="pre">sensor-bmx280</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/sensor/hcsr04.html"><code class="docutils literal notranslate"><span class="pre">sensor-hcsr04</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/sensor/hx711.html"><code class="docutils literal notranslate"><span class="pre">sensor-hx711</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/sensor/scd30.html"><code class="docutils literal notranslate"><span class="pre">sensor-scd30</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/sensor/sen5x.html"><code class="docutils literal notranslate"><span class="pre">sensor-sen5x</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../applets/bridge/index.html">External tools</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of External tools</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../applets/bridge/flashrom.html"><code class="docutils literal notranslate"><span class="pre">spi-flashrom</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/bridge/jtag_openocd.html"><code class="docutils literal notranslate"><span class="pre">jtag-openocd</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/bridge/jtag_xvc.html"><code class="docutils literal notranslate"><span class="pre">jtag-xvc</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../applets/bridge/probe_rs.html"><code class="docutils literal notranslate"><span class="pre">probe-rs</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../applets/audio/index.html">Audio</a><input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><div class="visually-hidden">Toggle navigation of Audio</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../applets/audio/dac.html"><code class="docutils literal notranslate"><span class="pre">audio-dac</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../applets/internal/index.html">Internal test</a><input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><div class="visually-hidden">Toggle navigation of Internal test</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../applets/internal/benchmark.html"><code class="docutils literal notranslate"><span class="pre">benchmark</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../develop/index.html">Development process</a><input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><div class="visually-hidden">Toggle navigation of Development process</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../develop/applet.html">Applets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../develop/docs.html">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../develop/software.html">Software</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../develop/firmware.html">Firmware</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../develop/hardware.html">Hardware</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../contribute.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../community.html">Community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../conduct.html">Code of Conduct</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">License</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/GlasgowEmbedded/glasgow/blob/main/docs/manual/src/revisions/revC3.rst?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/GlasgowEmbedded/glasgow/edit/main/docs/manual/src/revisions/revC3.rst" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="technical-description-revc3">
+<h1>Technical description (revC3)<a class="headerlink" href="#technical-description-revc3" title="Link to this heading">¶</a></h1>
+<p>This document provides a technical description of the Glasgow revC3 hardware.</p>
+<section id="power">
+<span id="revc3-power"></span><h2>Power<a class="headerlink" href="#power" title="Link to this heading">¶</a></h2>
+<p>Glasgow is powered by its USB-C connection. The input voltage is 5.0 V and the typical operating current is 500 mA or less. For reliable and safe operation we recommend that you power Glasgow from a standard USB port capable of providing at least 1.0 A at 5.0 V.</p>
+<p>Some non-standards-compliant USB ports, such as those found on certain powered USB hubs, may provide more than 3.0 A of current at 5.0 V on their ports without active negotiation. While powering Glasgow from these ports is absolutely fine under all but the rarest circumstances, such non-compliant high-current USB power sources may not implement proper overcurrent protection. Such supplies carry a greater risk of damage to the board and its components in the rare event that the USB-C connector on Glasgow becomes damaged and a short develops between VBUS and GND. Shorts anywhere elsewhere on the board should be protected by overcurrent detection and protection features built into Glasgow’s design. These protection features are discussed elsewhere in this document.</p>
+<p>Since Glasgow draws less than 1.0 A of current at all times, it does not benefit from non-standards-compliant high-current USB ports.</p>
+<p>The USB-C connector shield is connected to ground via a 100 nF capacitor and 100 kΩ resistor in parallel. The plated mounting holes in the four corners of the board are grounded.</p>
+<section id="v-rail">
+<span id="revc3-5v-rail"></span><h3>+5V rail<a class="headerlink" href="#v-rail" title="Link to this heading">¶</a></h3>
+<p>The +5V rail is the input power rail for Glasgow. You can measure this rail using the 5V test points on the front and rear of the board.</p>
+<p>The +5V rail is derived from VUSB without additional regulation - as such, you should expect some variance in the +5V rail voltage depending on the power source and USB cable that you are using.</p>
+<p>A BLM15PX601SZ1 ferrite bead (FB1) is inserted in series with VUSB with the intention of reducing conducted emissions onto the USB cable. Its maximum DC series resistance is 230 mΩ and its impedance at 100 MHz is 600 Ω. This ferrite bead also acts as a makeshift fuse in the event that either U15 or C8 fail short and the upstream USB supply does not implement proper overcurrent protection.</p>
+<p>A TPD3S014 current limit switch IC (U15) is inserted between VUSB and the +5V rail, and enforces a maximum current of 850 mA. There is a 150 uF aluminium electrolytic capacitor on the +5V rail for bulk decoupling and brownout protection. As such, you should expect up to 850 mA of inrush current for a brief period when you plug Glasgow in. Continuous operating current should not exceed 500 mA under normal circumstances.</p>
+<p>The +5V rail is monitored by an APX811-40UG-7 supervisor IC. The supervisor has a nominal undervoltage threshold of 4.0 V. If the +5V rail drops below this threshold, the +3.3V regulator is disabled and <code class="docutils literal notranslate"><span class="pre">CY_RESET</span></code> is asserted to hold the Cypress FX2 USB controller IC (U1) in a reset state.</p>
+<p>The +5V rail is used to power the following devices:</p>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Designator</p></th>
+<th class="head"><p>Part</p></th>
+<th class="head"><p>Function / Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>U7</p></td>
+<td><p>APX811-40UG-7</p></td>
+<td><p>+5V rail supervisor and reset (triggered by reset button)</p></td>
+</tr>
+<tr class="row-odd"><td><p>U8</p></td>
+<td><p>TLV75533PDRVR</p></td>
+<td><p>3.3 V, 500 mA linear regulator for generating +3.3V rail</p></td>
+</tr>
+<tr class="row-even"><td><p>U36</p></td>
+<td><p>TLV73312PQDRVR</p></td>
+<td><p>1.2 V, 300 mA linear regulator for generating +1.2V rail</p></td>
+</tr>
+<tr class="row-odd"><td><p>U31</p></td>
+<td><p>TPS73101DBV</p></td>
+<td><p>Adjustable linear regulator for generating VIO on port A</p></td>
+</tr>
+<tr class="row-even"><td><p>U14</p></td>
+<td><p>TPS73101DBV</p></td>
+<td><p>Adjustable linear regulator for generating VIO on port B</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="revc3-3v3-rail">
+<span id="id1"></span><h3>+3.3V rail<a class="headerlink" href="#revc3-3v3-rail" title="Link to this heading">¶</a></h3>
+<p>The +3.3V rail is used to power most ICs on the board. You can measure this rail using the 3V3 test points on the front and rear of the board. The green PWR LED on the front of the board is powered by the +3.3V rail.</p>
+<p>The +3.3V rail is derived from the +5V rail using a TLV75533PDRVR linear voltage regulator (U8). The regulator has a maximum output current of 500 mA. The regulator’s EN pin is driven by an APX811-40UG-7 supervisor IC (U7) which monitors the +5V rail for stability; in the event that the +5V rail does not meet the required threshold, U7’s reset signal will disable the +3.3V regulator.</p>
+<p>The +3.3V rail is used to power the following devices:</p>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Designator</p></th>
+<th class="head"><p>Part</p></th>
+<th class="head"><p>Function / Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>D1</p></td>
+<td><p>NCD0603G1</p></td>
+<td><p>Green “PWR” LED on front of board</p></td>
+</tr>
+<tr class="row-odd"><td><p>U1</p></td>
+<td><p>CY7C68013A-56LTX</p></td>
+<td><p>Cypress FX2 HS USB controller. +3.3V rail powers VCC, AVCC</p></td>
+</tr>
+<tr class="row-even"><td><p>U2</p></td>
+<td><p>CAT24M01X</p></td>
+<td><p>I2C 1Mbit serial EEPROM for iCE40</p></td>
+</tr>
+<tr class="row-odd"><td><p>U3</p></td>
+<td><p>BL24C256A-SFRC</p></td>
+<td><p>I2C 256Kbit serial EEPROM for FX2</p></td>
+</tr>
+<tr class="row-even"><td><p>U5</p></td>
+<td><p>PCA6408APW</p></td>
+<td><p>I2C I/O expander for programmable pullup/pulldown resistors on port B. +3.3V powers I2C supply</p></td>
+</tr>
+<tr class="row-odd"><td><p>U4, U6, U9, U10, U11, U16, U17, U18</p></td>
+<td><p>SN74LVC1T45DCKR</p></td>
+<td><p>Logic level translators for port A. +3.3V powers internal side (VCCA)</p></td>
+</tr>
+<tr class="row-even"><td><p>U12</p></td>
+<td><p>INA233</p></td>
+<td><p>Voltage/current measurement IC for port B.</p></td>
+</tr>
+<tr class="row-odd"><td><p>U13</p></td>
+<td><p>DAC081C081CIMK</p></td>
+<td><p>I2C DAC for programming VIO voltage on port B.</p></td>
+</tr>
+<tr class="row-even"><td><p>U19</p></td>
+<td><p>PCA6408APW</p></td>
+<td><p>I2C I/O expander for programmable pullup/pulldown resistors on port A. +3.3V powers I2C supply</p></td>
+</tr>
+<tr class="row-odd"><td><p>U20</p></td>
+<td><p>DAC081C081CIMK</p></td>
+<td><p>I2C DAC for programming VIO voltage on port A</p></td>
+</tr>
+<tr class="row-even"><td><p>U21</p></td>
+<td><p>INA233</p></td>
+<td><p>Voltage/current measurement IC for port A.</p></td>
+</tr>
+<tr class="row-odd"><td><p>U22, U23, U24, U25, U26, U27, U28, U29</p></td>
+<td><p>SN74LVC1T45DCKR</p></td>
+<td><p>Logic level translators for port B. +3.3V powers internal side (VCCA)</p></td>
+</tr>
+<tr class="row-even"><td><p>U30</p></td>
+<td><p>ICE40HX8K-BG121</p></td>
+<td><p>iCE40 FPGA. +3.3V rail powers VCCIO_x, VPP_2V5, VCC_SPI</p></td>
+</tr>
+<tr class="row-odd"><td><p>U32</p></td>
+<td><p>SN74LVC1T45DCKR</p></td>
+<td><p>Logic level translator for SYNC input/output connector. +3.3V powers internal side (VCCA)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="revc3-1v2-rail">
+<span id="id2"></span><h3>+1.2V rail<a class="headerlink" href="#revc3-1v2-rail" title="Link to this heading">¶</a></h3>
+<p>The +1.2V rail is used to power the iCE40 FPGA (VCC and VCCPLL0/1). You can measure this rail using the 1V2 test points on the front and back of the board.</p>
+<p>The +1.2V rail is derived from the +5V rail using a TLV73312PQDRVR linear voltage regulator (U36). The regulator has a maximum output current of 300 mA. The regulator’s EN pin is tied directly to the +5V rail. The regulator enters dropout mode when the +5V rail reaches approximately 1.3 V, and enters normal operation once the +5V rail reaches approximately 1.65 V.</p>
+<p>The VCCPLL0 and VCCPLL1 supplies are low-pass filtered using a 100 Ω resistor and 4.7 uF capacitor, resulting in a -3 dB cutoff frequency of approximately 340 Hz.</p>
+</section>
+<section id="vio-rails">
+<span id="revc3-vio-rails"></span><h3>VIO rails<a class="headerlink" href="#vio-rails" title="Link to this heading">¶</a></h3>
+<p>There are two main independent VIO rails - one for port A, and one for port B. These rails are adjustable and set the IO voltage levels for the ports. Each VIO rail voltage can be independently configured, which allows you to work with different logic levels on ports A and B simultaneously. The VIOA and VIOB rails are exposed as pins on the port A and port B connectors.</p>
+<p>Each VIO rail is derived from the +5V rail using a TPS73101DBV linear regulator (U31, U14). These regulators have an ultra-low dropout voltage of just 30 mV, which allows the VIO voltages to be programmed anywhere between 1.8 V and the +5V rail voltage (which is essentially equal to VUSB) minus 30 mV.</p>
+<p>The TPS73101DBV regulators feature reverse current blocking which prevents current from being sunk into the regulator instead of sourced from it. They also have a unique foldback current limit characteristic which provides excellent protection against short circuits on the VIO rails - see the “Internal Current Limit” section and Figure 12 in the datasheet.</p>
+<p>Each VIO regulator has a feedback network which incorporates the output of a DAC081C081CIMK DAC IC. These DACs (U20, U13) are programmed over I2C to adjust the feedback voltage by injecting current into the feedback resistor network, which in turn adjusts the VIO voltage, thus providing runtime VIO voltage adjustment. The DAC output voltages can be measured using the VDAC A and B test points on the rear of the board. The FX2 firmware <a class="reference external" href="https://github.com/GlasgowEmbedded/glasgow/blob/1f5691a4b516f4ac083e7fa4fc32abcc659e608d/firmware/dac_ldo.c#L76-L83">calculates the correct DAC voltage</a> for the target output voltage. Some examples are:</p>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>VIO Voltage</p></th>
+<th class="head"><p>DAC Output</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>5.0 V</p></td>
+<td><p>0.45 V</p></td>
+</tr>
+<tr class="row-odd"><td><p>3.3 V</p></td>
+<td><p>1.88 V</p></td>
+</tr>
+<tr class="row-even"><td><p>2.8 V</p></td>
+<td><p>2.31 V</p></td>
+</tr>
+<tr class="row-odd"><td><p>2.5 V</p></td>
+<td><p>2.56 V</p></td>
+</tr>
+<tr class="row-even"><td><p>1.8 V</p></td>
+<td><p>3.15 V</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>On power-on or reset, both VIO regulators are disabled and the voltage adjustment DACs are reset to 0.0 V. The DAC voltages are programmed over I2C, after which the regulators may be enabled by the FX2 asserting the <code class="docutils literal notranslate"><span class="pre">ENVA</span></code> and <code class="docutils literal notranslate"><span class="pre">ENVB</span></code> signals (pins 45 and 51 on the FX2 respectively). The VIO A and VIO B LEDs on the front of the board light up when the regulators are enabled.</p>
+<p>The VIO rail currents are measured by INA233 voltage and current monitoring ADC ICs (U21, U12) using 150 mΩ shunt resistors (R49, R48) in series with the regulator outputs. This allows the VIO currents for each port to be measured over I2C. The voltage sense pin on each INA233 is exposed on the port connector (VA_SENS, VB_SENS), allowing for two useful configurations:</p>
+<ul class="simple">
+<li><p>The sense input may be connected directly to the VIO rail for that port (e.g. VA_SENSE to VIOA), enabling you to monitor the VIO rail voltage precisely and utilise the INA233’s inbuilt power calculation feature to measure total power consumption for that VIO rail.</p></li>
+<li><p>The sense input may be connected to any arbitrary voltage in the range 0.0 V to 36.0 V, essentially using the INA233’s voltage sensing input as a generic 16-bit ADC input. In this configuration the VIO rail current can still be measured but the inbuilt VIO rail power calculation feature will not be available.</p></li>
+</ul>
+<p>Additional 330 mΩ resistors (R56, R7) in series with the regulator outputs ensure recovery in the event that a VIO rail is shorted to ground - see <a class="reference external" href="https://github.com/GlasgowEmbedded/glasgow/issues/135">GitHub issue #135</a> for details.</p>
+<p>Each VIO rail is protected against overvoltage and ESD by two parallel elements of a SP3012-06UTG diode array. VIOA is protected by D22 and VIOB is protected by D20. These diode arrays also feature a 6.0 V zener diode clamp.</p>
+<p>The VIOA rail is used to power the following devices:</p>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Designator</p></th>
+<th class="head"><p>Part</p></th>
+<th class="head"><p>Function / Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>U4, U6, U9, U10, U11, U16, U17, U18</p></td>
+<td><p>SN74LVC1T45DCKR</p></td>
+<td><p>Logic level translators for port A. VIOA powers external side (VCCB)</p></td>
+</tr>
+<tr class="row-odd"><td><p>U19</p></td>
+<td><p>PCA6408APW</p></td>
+<td><p>I2C I/O expander for programmable pullup/pulldown resistors on port A. VIOA powers IO ports.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The VIOB rail is used to power the following devices:</p>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Designator</p></th>
+<th class="head"><p>Part</p></th>
+<th class="head"><p>Function / Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>U22, U23, U24, U25, U26, U27, U28, U29</p></td>
+<td><p>SN74LVC1T45DCKR</p></td>
+<td><p>Logic level translators for port B. VIOB powers external side (VCCB)</p></td>
+</tr>
+<tr class="row-odd"><td><p>U5</p></td>
+<td><p>PCA6408APW</p></td>
+<td><p>I2C I/O expander for programmable pullup/pulldown resistors on port A. VIOB powers IO ports.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="vio-aux">
+<span id="revc3-vio-aux"></span><h3>VIO_AUX<a class="headerlink" href="#vio-aux" title="Link to this heading">¶</a></h3>
+<p>Ports A and B are the primary connectors which are expected to be used with Glasgow. The LVDS connector is a secondary connector that can be used for special addons that require additional IOs. While the IOs on ports A and B are well-protected against ESD and utilise separate logic level translation with their own VIO rails, the LVDS connector is directly connected to the iCE40 FPGA without any logic level translation or discrete protection, and without a programmable IO voltage. The supply for the IOs exposed on the LVDS connector must be externally provided via VIO_AUX on pin 44. This voltage is directly fed to <code class="docutils literal notranslate"><span class="pre">VCCIO_3</span></code> on the FPGA. Voltages between 1.8 V and 3.3 V are supported. See the iCE40HX8K-BG121 datasheet for more information.</p>
+</section>
+<section id="decoupling-capacitors">
+<span id="revc3-decoupling-capacitors"></span><h3>Decoupling capacitors<a class="headerlink" href="#decoupling-capacitors" title="Link to this heading">¶</a></h3>
+<p>Two values of MLCC decoupling capacitor are used across the Glasgow
+design.</p>
+<p>4.7 uF capacitors are <a class="reference external" href="https://ds.yuden.co.jp/TYCOMPAS/eu/detail?pn=MBASL168SB5475KTNA01&amp;u=M">Taiyo Yuden LMK107BJ475KAHT</a>, with the following DC bias characteristics:</p>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>DC bias voltage</p></th>
+<th class="head"><p>Effective Capacitance</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>5.0 V</p></td>
+<td><p>1.93 uF</p></td>
+</tr>
+<tr class="row-odd"><td><p>3.3 V</p></td>
+<td><p>2.82 uF</p></td>
+</tr>
+<tr class="row-even"><td><p>2.5 V</p></td>
+<td><p>3.39 uF</p></td>
+</tr>
+<tr class="row-odd"><td><p>1.8 V</p></td>
+<td><p>3.92 uF</p></td>
+</tr>
+<tr class="row-even"><td><p>1.2 V</p></td>
+<td><p>4.37 uF</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>100 nF capacitors are <a class="reference external" href="https://ds.yuden.co.jp/TYCOMPAS/eu/detail?pn=MSAST105SB5104KFNA01&amp;u=M">Taiyo Yuden TMK105BJ104KV-F</a> (now renamed to MSAST105SB5104KFNA01), with the following DC bias characteristics:</p>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>DC bias voltage</p></th>
+<th class="head"><p>Effective Capacitance</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>5.0 V</p></td>
+<td><p>93 nF</p></td>
+</tr>
+<tr class="row-odd"><td><p>3.3 V</p></td>
+<td><p>98 nF</p></td>
+</tr>
+<tr class="row-even"><td><p>2.5 V</p></td>
+<td><p>99 nF</p></td>
+</tr>
+<tr class="row-odd"><td><p>1.8 V</p></td>
+<td><p>100 nF</p></td>
+</tr>
+<tr class="row-even"><td><p>1.2 V</p></td>
+<td><p>100 nF</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="power-on-sequencing">
+<span id="revc3-power-on-sequencing"></span><h3>Power-on sequencing<a class="headerlink" href="#power-on-sequencing" title="Link to this heading">¶</a></h3>
+<p>The power-on sequence is as follows:</p>
+<ol class="arabic simple">
+<li><p>5.0 V becomes present on the VUSB pin of the USB-C connector.</p></li>
+<li><p>After VUSB exceeds the enable threshold (nominally 1.45 V) of the TPD3S014 current limit switch (U15) for approximately 1.0 ms to 2.2 ms (nominally 1.6 ms) the switch turns on and the +5V rail begins to rise.</p></li>
+<li><p>TPD3S014 performs soft-start and inrush limiting while charging the 150 uF bulk capacitor (C87) on the +5V rail. Charging takes around 2 ms, during which up to 850 mA is drawn.</p></li>
+<li><p>When the +5V rail reaches approximately 1.3 V, the TLV73312PQDRVR linear regulator (U36) leaves disabled mode and enters dropout mode. During this time the +1.2V rail will have a voltage equal to the +5V rail minus the 450 mV dropout voltage of the regulator. When the +5V rail exceeds 1.65 V, the regulator enters normal mode and the +1.2V rail voltage becomes stable at 1.2 V.</p></li>
+<li><p>APX811-40UG-7 (U7) monitors the +5V rail and asserts a reset signal (active low) while the +5V rail is below 4.0 V nominal.</p></li>
+<li><p>Once the +5V rail exceeds this threshold for at least 240 ms, U7’s reset signal is no longer asserted. As a result, the TLV75533PDRVR linear regulator (U8) switches on and powers the +3.3V rail.</p></li>
+<li><p>The +3.3V rail and reset signal from U7 are connected to a common-anode dual-Schottky diode package (D24) in such a way that <code class="docutils literal notranslate"><span class="pre">CY_RESET</span></code> is asserted (active low) if U7 is outputting a reset state or the +3.3V rail is not present. The <cite>CY_RESET</cite> signal is low-pass filtered using R4, R5, and C88 to ensure that <code class="docutils literal notranslate"><span class="pre">CY_RESET</span></code> remains asserted for 5 ms after the +3.3V rail turns on.</p></li>
+<li><p>All rails are now at nominal and <code class="docutils literal notranslate"><span class="pre">CY_RESET</span></code> is de-asserted, allowing the FX2 USB controller to start operating. The FX2 de-asserts <code class="docutils literal notranslate"><span class="pre">FPGA_RESET</span></code>, allowing the iCE40 FPGA (U30) to operate.</p></li>
+<li><p>During power-on, <code class="docutils literal notranslate"><span class="pre">ENVA</span></code> and <code class="docutils literal notranslate"><span class="pre">ENVB</span></code> are pulled down, disabling the TPS73101DBV adjustable linear regulators (U31, U14) which provide the VIO voltages for ports A and B. The DAC081C081CIMK DACs (U20, U13) provide an adjustable feedback voltage to the regulators. These are programmed over I2C as required to adjust the voltage of the VIO regulators, after which the FX2 can assert <code class="docutils literal notranslate"><span class="pre">ENVA</span></code> and/or <code class="docutils literal notranslate"><span class="pre">ENVB</span></code> to enable the regulators which, in turn, power the VIO outputs.</p></li>
+</ol>
+</section>
+</section>
+<section id="connectors">
+<span id="revc3-connectors"></span><h2>Connectors<a class="headerlink" href="#connectors" title="Link to this heading">¶</a></h2>
+<section id="port-a-connector-layout">
+<span id="revc3-port-a-layout"></span><h3>Port A Connector Layout<a class="headerlink" href="#port-a-connector-layout" title="Link to this heading">¶</a></h3>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>VIOA</strong></p></th>
+<th class="head"><p><strong>GND</strong></p></th>
+<th class="head"><p><strong>GND</strong></p></th>
+<th class="head"><p><strong>GND</strong></p></th>
+<th class="head"><p><strong>GND</strong></p></th>
+<th class="head"><p><strong>GND</strong></p></th>
+<th class="head"><p><strong>GND</strong></p></th>
+<th class="head"><p><strong>GND</strong></p></th>
+<th class="head"><p><strong>GND</strong></p></th>
+<th class="head"><p><strong>NC</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>VA_SENS</strong></p></td>
+<td><p><strong>PA_IO0</strong></p></td>
+<td><p><strong>PA_IO1</strong></p></td>
+<td><p><strong>PA_IO2</strong></p></td>
+<td><p><strong>PA_IO3</strong></p></td>
+<td><p><strong>PA_IO4</strong></p></td>
+<td><p><strong>PA_IO5</strong></p></td>
+<td><p><strong>PA_IO6</strong></p></td>
+<td><p><strong>PA_IO7</strong></p></td>
+<td><p><strong>NC</strong></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="port-b-connector-layout">
+<span id="revc3-port-b-layout"></span><h3>Port B Connector Layout<a class="headerlink" href="#port-b-connector-layout" title="Link to this heading">¶</a></h3>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>NC</strong></p></th>
+<th class="head"><p><strong>PB_IO7</strong></p></th>
+<th class="head"><p><strong>PB_IO6</strong></p></th>
+<th class="head"><p><strong>PB_IO5</strong></p></th>
+<th class="head"><p><strong>PB_IO4</strong></p></th>
+<th class="head"><p><strong>PB_IO3</strong></p></th>
+<th class="head"><p><strong>PB_IO2</strong></p></th>
+<th class="head"><p><strong>PB_IO1</strong></p></th>
+<th class="head"><p><strong>PB_IO0</strong></p></th>
+<th class="head"><p><strong>VIOB</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>NC</strong></p></td>
+<td><p><strong>GND</strong></p></td>
+<td><p><strong>GND</strong></p></td>
+<td><p><strong>GND</strong></p></td>
+<td><p><strong>GND</strong></p></td>
+<td><p><strong>GND</strong></p></td>
+<td><p><strong>GND</strong></p></td>
+<td><p><strong>GND</strong></p></td>
+<td><p><strong>GND</strong></p></td>
+<td><p><strong>VB_SENS</strong></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="ports-a-b-pinout">
+<span id="revc3-ports-a-b-pinout"></span><h3>Ports A/B Pinout<a class="headerlink" href="#ports-a-b-pinout" title="Link to this heading">¶</a></h3>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Number</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Wire Colour</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>SENSE</p></td>
+<td><p>Blue</p></td>
+<td><p>Voltage sense, connected to VBUS pin of INA233. Tie to pin 2 to enable VIO power measurement feature, or use as an arbitrary 0-36V 16-bit ADC input.</p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p>VIO</p></td>
+<td><p>Red</p></td>
+<td><p>Logic level voltage output. Generated by TPS73101DBV linear regulator, voltage level configured at runtime by DAC081C081CIMK DAC.</p></td>
+</tr>
+<tr class="row-even"><td><p>3</p></td>
+<td><p>IO0</p></td>
+<td><p>Orange</p></td>
+<td><p>IO pin 0.</p></td>
+</tr>
+<tr class="row-odd"><td><p>4</p></td>
+<td><p>GND</p></td>
+<td><p>Black</p></td>
+<td><p>Ground.</p></td>
+</tr>
+<tr class="row-even"><td><p>5</p></td>
+<td><p>IO1</p></td>
+<td><p>Green</p></td>
+<td><p>IO pin 1.</p></td>
+</tr>
+<tr class="row-odd"><td><p>6</p></td>
+<td><p>GND</p></td>
+<td><p>Black</p></td>
+<td><p>Ground.</p></td>
+</tr>
+<tr class="row-even"><td><p>7</p></td>
+<td><p>IO2</p></td>
+<td><p>Grey</p></td>
+<td><p>IO pin 2.</p></td>
+</tr>
+<tr class="row-odd"><td><p>8</p></td>
+<td><p>GND</p></td>
+<td><p>Black</p></td>
+<td><p>Ground.</p></td>
+</tr>
+<tr class="row-even"><td><p>9</p></td>
+<td><p>IO3</p></td>
+<td><p>Brown</p></td>
+<td><p>IO pin 3.</p></td>
+</tr>
+<tr class="row-odd"><td><p>10</p></td>
+<td><p>GND</p></td>
+<td><p>Black</p></td>
+<td><p>Ground.</p></td>
+</tr>
+<tr class="row-even"><td><p>11</p></td>
+<td><p>IO4</p></td>
+<td><p>Pink</p></td>
+<td><p>IO pin 4.</p></td>
+</tr>
+<tr class="row-odd"><td><p>12</p></td>
+<td><p>GND</p></td>
+<td><p>Black</p></td>
+<td><p>Ground.</p></td>
+</tr>
+<tr class="row-even"><td><p>13</p></td>
+<td><p>IO5</p></td>
+<td><p>Yellow</p></td>
+<td><p>IO pin 5.</p></td>
+</tr>
+<tr class="row-odd"><td><p>14</p></td>
+<td><p>GND</p></td>
+<td><p>Black</p></td>
+<td><p>Ground.</p></td>
+</tr>
+<tr class="row-even"><td><p>15</p></td>
+<td><p>IO6</p></td>
+<td><p>White</p></td>
+<td><p>IO pin 6.</p></td>
+</tr>
+<tr class="row-odd"><td><p>16</p></td>
+<td><p>GND</p></td>
+<td><p>Black</p></td>
+<td><p>Ground.</p></td>
+</tr>
+<tr class="row-even"><td><p>17</p></td>
+<td><p>IO7</p></td>
+<td><p>Purple</p></td>
+<td><p>IO pin 7.</p></td>
+</tr>
+<tr class="row-odd"><td><p>18</p></td>
+<td><p>GND</p></td>
+<td><p>Black</p></td>
+<td><p>Ground.</p></td>
+</tr>
+<tr class="row-even"><td><p>19</p></td>
+<td><p>NC</p></td>
+<td><p>N/A</p></td>
+<td><p>Not connected.</p></td>
+</tr>
+<tr class="row-odd"><td><p>20</p></td>
+<td><p>NC</p></td>
+<td><p>N/A</p></td>
+<td><p>Not connected.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Wire colours described here are correct for the 1BitSquared wiring looms and are not innate to Glasgow itself.</p>
+<p>Note that each of the IOs has a GND pin opposite. This provides a ground reference plane for return currents, which helps improve signal integrity and reduces crosstalk in higher speed signals. Where possible, connect each ground wire to GND on the target device, physically close to the signal connection.</p>
+<p>Each IO is driven by an SN74LVC1T45DCKR bus transceiver, which converts between the port’s logic voltage (VIO) and the 3.3 V used by the FPGA IO ports. Each IO can be independently configured as an input or output. Each IO pin can source or sink up to 4 mA at 1.8 V, 8 mA at 2.5 V, 24 mA at 3.3 V, or 32 mA at 5.0 V.</p>
+<p>The SN74LVC1T45DCKR itself provides limited isolation between the FPGA and the IO pins, and a modicum of ESD protection. Additional ESD and overvoltage protection is provided by an SP3012-06UTG diode array and a 33Ω series termination resistor.</p>
+<p>The VSENSE pin is protected by a CDSOD323-T36S unidirectional TVS diode which helps protect the INA233 ICs against overvoltage.</p>
+</section>
+<section id="sync-connector">
+<span id="revc3-sync-connector"></span><h3>SYNC Connector<a class="headerlink" href="#sync-connector" title="Link to this heading">¶</a></h3>
+<p>The SYNC connector is used to synchronise multiple Glasgows together. As of March 2024 this has not been used for much, but we expect folks will come up with interesting ways to use it.</p>
+<p>The SYNC pin is weakly pulled up to the +3.3V rail and is buffered by a SN74LVC1T45DCKR bus transceiver. The input-low threshold is 0.8 V and the input-high threshold is 2.0 V, making it directly compatible with 2.5 V, 3.3 V, and 5.0 V logic.</p>
+<p>The SYNC pin is protected by a ESD5Z5.0T1G ESD protection diode with a standoff voltage of 5.0 V and a breakdown of 6.2 V, and a 47 Ω series resistor.</p>
+</section>
+<section id="lvds-connector">
+<span id="revc3-lvds-connector"></span><h3>LVDS Connector<a class="headerlink" href="#lvds-connector" title="Link to this heading">¶</a></h3>
+<p>The LVDS port is a secondary connector used for specially designed addons. It is directly wired to the FPGA rather than using bus transceivers, and has limited ESD protection, so you should be careful when plugging things into it and only do so when the device is fully powered off.</p>
+<p>The LVDS port will be replaced with different connectors in future hardware revisions of Glasgow, so its use is not preferred for addon boards.</p>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Number</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Number</p></th>
+<th class="head"><p>Name</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>GND</p></td>
+<td><p>2</p></td>
+<td><p>+3.3V</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>Z11_N</p></td>
+<td><p>4</p></td>
+<td><p>GND</p></td>
+</tr>
+<tr class="row-even"><td><p>5</p></td>
+<td><p>Z11_P</p></td>
+<td><p>6</p></td>
+<td><p>GND</p></td>
+</tr>
+<tr class="row-odd"><td><p>7</p></td>
+<td><p>GND</p></td>
+<td><p>8</p></td>
+<td><p>Z12_P</p></td>
+</tr>
+<tr class="row-even"><td><p>9</p></td>
+<td><p>Z10_P</p></td>
+<td><p>10</p></td>
+<td><p>Z12_N</p></td>
+</tr>
+<tr class="row-odd"><td><p>11</p></td>
+<td><p>Z10_N</p></td>
+<td><p>12</p></td>
+<td><p>GND</p></td>
+</tr>
+<tr class="row-even"><td><p>13</p></td>
+<td><p>GND</p></td>
+<td><p>14</p></td>
+<td><p>Z9_N</p></td>
+</tr>
+<tr class="row-odd"><td><p>15</p></td>
+<td><p>Z8_P</p></td>
+<td><p>16</p></td>
+<td><p>Z9_P</p></td>
+</tr>
+<tr class="row-even"><td><p>17</p></td>
+<td><p>Z8_N</p></td>
+<td><p>18</p></td>
+<td><p>GND</p></td>
+</tr>
+<tr class="row-odd"><td><p>19</p></td>
+<td><p>GND</p></td>
+<td><p>20</p></td>
+<td><p>Z7_N</p></td>
+</tr>
+<tr class="row-even"><td><p>21</p></td>
+<td><p>Z6_P</p></td>
+<td><p>22</p></td>
+<td><p>Z7_P</p></td>
+</tr>
+<tr class="row-odd"><td><p>23</p></td>
+<td><p>Z6_N</p></td>
+<td><p>24</p></td>
+<td><p>GND</p></td>
+</tr>
+<tr class="row-even"><td><p>25</p></td>
+<td><p>GND</p></td>
+<td><p>26</p></td>
+<td><p>Z5_N</p></td>
+</tr>
+<tr class="row-odd"><td><p>27</p></td>
+<td><p>Z3_P</p></td>
+<td><p>28</p></td>
+<td><p>Z5_P</p></td>
+</tr>
+<tr class="row-even"><td><p>29</p></td>
+<td><p>Z3_N</p></td>
+<td><p>30</p></td>
+<td><p>GND</p></td>
+</tr>
+<tr class="row-odd"><td><p>31</p></td>
+<td><p>GND</p></td>
+<td><p>32</p></td>
+<td><p>Z4_P</p></td>
+</tr>
+<tr class="row-even"><td><p>33</p></td>
+<td><p>Z2_N</p></td>
+<td><p>34</p></td>
+<td><p>Z4_N</p></td>
+</tr>
+<tr class="row-odd"><td><p>35</p></td>
+<td><p>Z2_P</p></td>
+<td><p>36</p></td>
+<td><p>GND</p></td>
+</tr>
+<tr class="row-even"><td><p>37</p></td>
+<td><p>GND</p></td>
+<td><p>38</p></td>
+<td><p>Z1_N</p></td>
+</tr>
+<tr class="row-odd"><td><p>39</p></td>
+<td><p>Z0_P</p></td>
+<td><p>40</p></td>
+<td><p>Z1_P</p></td>
+</tr>
+<tr class="row-even"><td><p>41</p></td>
+<td><p>Z0_N</p></td>
+<td><p>42</p></td>
+<td><p>GND</p></td>
+</tr>
+<tr class="row-odd"><td><p>43</p></td>
+<td><p>GND</p></td>
+<td><p>44</p></td>
+<td><p>VIO_AUX</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The +3.3V pin provides 3.3 V power from the onboard +3.3V rail.</p>
+<p>To use the LVDS connector you must provide <code class="docutils literal notranslate"><span class="pre">VIO_AUX</span></code>, an IO voltage between 1.8 V and 3.3 V, on pin 44. This pin is tied directly to <code class="docutils literal notranslate"><span class="pre">VCCIO_3</span></code> on the FPGA. See the iCE40HX8K-BG121 datasheet for more information about the power requirements.</p>
+<p>The pins can be used in differential mode (N/P pairs) or in single-ended mode (independent signals on N and P).</p>
+<p>No termination resistors are included. You should include termination resistors on your board if you use the LVDS connector. See the Lattice document <a class="reference external" href="https://www.latticesemi.com/view_document?document_id=47960">FPGA-TN-02213 “Using Differential I/O (LVDS, Sub-LVDS) in iCE40 LP/HX Devices”</a> for details.</p>
+</section>
+</section>
+<section id="leds">
+<span id="revc3-leds"></span><h2>LEDs<a class="headerlink" href="#leds" title="Link to this heading">¶</a></h2>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Colour</p></th>
+<th class="head"><p>Designator</p></th>
+<th class="head"><p>Part</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>PWR</p></td>
+<td><p>Green</p></td>
+<td><p>D1</p></td>
+<td><p>NCD0603G1</p></td>
+<td><p>Powered by +3.3V rail</p></td>
+</tr>
+<tr class="row-odd"><td><p>FX2</p></td>
+<td><p>White</p></td>
+<td><p>D2</p></td>
+<td><p>NCD0603W1</p></td>
+<td><p>Connected to pin 47 (PD2/FD10) of Cypress FX2 (U1). Pulses during enumeration. Lights when the FX2 has initialised.</p></td>
+</tr>
+<tr class="row-even"><td><p>ICE</p></td>
+<td><p>Blue</p></td>
+<td><p>D3</p></td>
+<td><p>ORH-B36G</p></td>
+<td><p>Connected to pin 48 (PD3/FD11) of Cypress FX2 (U1). Lights when the FPGA is ready.</p></td>
+</tr>
+<tr class="row-odd"><td><p>ACT</p></td>
+<td><p>Orange</p></td>
+<td><p>D4</p></td>
+<td><p>NCD0603O1</p></td>
+<td><p>Connected to pin 49 (PD4/FD12) of Cypress FX2 (U1). Lights when activity is occurring.</p></td>
+</tr>
+<tr class="row-even"><td><p>ERR</p></td>
+<td><p>Red</p></td>
+<td><p>D5</p></td>
+<td><p>NCD0603R1</p></td>
+<td><p>Connected to pin 50 (PD5/FD13) of Cypress FX2 (U1). Lights when an error occurs.</p></td>
+</tr>
+<tr class="row-odd"><td><p>U1</p></td>
+<td><p>Blue</p></td>
+<td><p>D6</p></td>
+<td><p>ORH-B36G</p></td>
+<td><p>Connected to ball G9 (IOR_128) of iCE40 FPGA (U30)</p></td>
+</tr>
+<tr class="row-even"><td><p>U2</p></td>
+<td><p>Pink</p></td>
+<td><p>D7</p></td>
+<td><p>OSK40603C1E</p></td>
+<td><p>Connected to ball G8 (IOR_118) of iCE40 FPGA (U30)</p></td>
+</tr>
+<tr class="row-odd"><td><p>U3</p></td>
+<td><p>White</p></td>
+<td><p>D8</p></td>
+<td><p>NCD0603W1</p></td>
+<td><p>Connected to ball E9 (IOR_144) of iCE40 FPGA (U30)</p></td>
+</tr>
+<tr class="row-even"><td><p>U4</p></td>
+<td><p>Pink</p></td>
+<td><p>D9</p></td>
+<td><p>OSK40603C1E</p></td>
+<td><p>Connected to ball D9 (IOR_147) of iCE40 FPGA (U30)</p></td>
+</tr>
+<tr class="row-odd"><td><p>U5</p></td>
+<td><p>Blue</p></td>
+<td><p>D10</p></td>
+<td><p>ORH-B36G</p></td>
+<td><p>Connected to ball E8 (IOR_146) of iCE40 FPGA (U30)</p></td>
+</tr>
+<tr class="row-even"><td><p>VIO A</p></td>
+<td><p>Green</p></td>
+<td><p>D15</p></td>
+<td><p>NCD0603G1</p></td>
+<td><p>Lights when VIO A regulator (U31) is enabled</p></td>
+</tr>
+<tr class="row-odd"><td><p>VIO B</p></td>
+<td><p>Green</p></td>
+<td><p>D14</p></td>
+<td><p>NCD0603G1</p></td>
+<td><p>Lights when VIO B regulator (U14) is enabled</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The system LEDs (FX2, ICE, ACT, ERR) are under control of the FX2 firmware, which is responsible for producing the behaviour described above. In the event that the FX2 firmware does not run (e.g. no firmware is present), the LED IO pins default to a high-impedance input state and will all be off.</p>
+<p>The user LEDs (U1-U5) are under control of the gateware. In most cases they go unused and the FPGA defaults the pins to be inputs with weak pullups, which results in the user LEDs lighting dimly.</p>
+</section>
+<section id="i2c-bus">
+<span id="revc3-i2c-bus"></span><h2>I²C bus<a class="headerlink" href="#i2c-bus" title="Link to this heading">¶</a></h2>
+<p>Glasgow uses I2C internally for controlling the VIO voltages, measuring VIO current and voltage (or an external voltage input), and for communicating with the FX2 and iCE40 EEPROMs. The SDA and SCL signals can be accessed via test points on the front and rear of the board.</p>
+<section id="i2c-bus-addresses">
+<span id="revc3-i2c-bus-addresses"></span><h3>I²C bus addresses<a class="headerlink" href="#i2c-bus-addresses" title="Link to this heading">¶</a></h3>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Address</p></th>
+<th class="head"><p>Designator</p></th>
+<th class="head"><p>Part</p></th>
+<th class="head"><p>Function</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>101001X <a class="footnote-reference brackets" href="#id7" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a></p></td>
+<td><p>U2</p></td>
+<td><p>CAT24M01X</p></td>
+<td><p>1 Mbit <a class="footnote-reference brackets" href="#id10" id="id4" role="doc-noteref"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></a> flash memory for ICE40 FPGA</p></td>
+</tr>
+<tr class="row-odd"><td><p>1010001</p></td>
+<td><p>U3</p></td>
+<td><p>BL24C256A-SFRC</p></td>
+<td><p>Flash memory for FX2 USB controller</p></td>
+</tr>
+<tr class="row-even"><td><p>0001110</p></td>
+<td><p>U20</p></td>
+<td><p>DAC081C081CIMK</p></td>
+<td><p>DAC for setting VIO voltage on port A</p></td>
+</tr>
+<tr class="row-odd"><td><p>1000000</p></td>
+<td><p>U21</p></td>
+<td><p>INA233</p></td>
+<td><p>Voltage/current measurement ADC for port A</p></td>
+</tr>
+<tr class="row-even"><td><p>0100000 <a class="footnote-reference brackets" href="#id8" id="id5" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></td>
+<td><p>U19</p></td>
+<td><p>PCA6408APW</p></td>
+<td><p>I/O expander for programmable pullup/pulldowns on port A</p></td>
+</tr>
+<tr class="row-odd"><td><p>0001101</p></td>
+<td><p>U13</p></td>
+<td><p>DAC081C081CIMK</p></td>
+<td><p>DAC for setting VIO voltage on port B</p></td>
+</tr>
+<tr class="row-even"><td><p>1000001</p></td>
+<td><p>U12</p></td>
+<td><p>INA233</p></td>
+<td><p>Voltage/current measurement ADC for port B</p></td>
+</tr>
+<tr class="row-odd"><td><p>0100001 <a class="footnote-reference brackets" href="#id9" id="id6" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></td>
+<td><p>U5</p></td>
+<td><p>PCA6408APW</p></td>
+<td><p>I/O expander for programmable pullup/pulldowns on port B</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="id7" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">1</a><span class="fn-bracket">]</span></span>
+<p>The X in this address indicates that the device responds to two addresses (0 or 1 in the last bit position). In this case each address acts as a 512 Kbit flash device, providing 1 Mbit in total. Refer to the product datasheet for more information.</p>
+</aside>
+<aside class="footnote brackets" id="id8" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id5">2</a><span class="fn-bracket">]</span></span>
+<p>PCA6408APW is an SMBus device. The SMBus Alert Response Address (ARA) is 0001100 for both U19 (port A) and U5 (port B).</p>
+</aside>
+<aside class="footnote brackets" id="id9" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id6">3</a><span class="fn-bracket">]</span></span>
+<p>PCA6408APW is an SMBus device. The SMBus Alert Response Address (ARA) is 0001100 for both U19 (port A) and U5 (port B).</p>
+</aside>
+<aside class="footnote brackets" id="id10" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id4">4</a><span class="fn-bracket">]</span></span>
+<p>The iCE40HX8K bitstream is actually about 3 KB bigger than 1 Mbit, so the tail end of the bitstream lives in U3 as a workaround.</p>
+</aside>
+</aside>
+</section>
+</section>
+<section id="recovery">
+<span id="revc3-recovery"></span><h2>Recovery<a class="headerlink" href="#recovery" title="Link to this heading">¶</a></h2>
+<p>Two pads can be found on the board marked “RECOVER”, next to the FX2 EEPROM (U2). This footprint is R40 in the schematic. To initiate recovery, short these pads together and press the reset button, then remove the short. This temporarily changes the I2C address of the FX2 EEPROM so that it boots without firmware, placing it into a recovery mode where it enumerates with the default FX2 device descriptor. The <code class="docutils literal notranslate"><span class="pre">fx2tool</span></code> utility can then be used to make a backup copy of the FX2 EEPROM, and the <code class="docutils literal notranslate"><span class="pre">glasgow</span> <span class="pre">factory</span></code> command can be used to re-provision the device configuration block and the firmware</p>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="../purchase.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Purchasing hardware</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="index.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Hardware revisions</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2020—2026, Glasgow Interface Explorer contributors
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            <div class="icons">
+              <a class="muted-link fa-brands fa-solid fa-github fa-2x" href="https://github.com/GlasgowEmbedded/glasgow/" aria-label="GitHub"></a>
+              
+            </div>
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Technical description (revC3)</a><ul>
+<li><a class="reference internal" href="#power">Power</a><ul>
+<li><a class="reference internal" href="#v-rail">+5V rail</a></li>
+<li><a class="reference internal" href="#revc3-3v3-rail">+3.3V rail</a></li>
+<li><a class="reference internal" href="#revc3-1v2-rail">+1.2V rail</a></li>
+<li><a class="reference internal" href="#vio-rails">VIO rails</a></li>
+<li><a class="reference internal" href="#vio-aux">VIO_AUX</a></li>
+<li><a class="reference internal" href="#decoupling-capacitors">Decoupling capacitors</a></li>
+<li><a class="reference internal" href="#power-on-sequencing">Power-on sequencing</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#connectors">Connectors</a><ul>
+<li><a class="reference internal" href="#port-a-connector-layout">Port A Connector Layout</a></li>
+<li><a class="reference internal" href="#port-b-connector-layout">Port B Connector Layout</a></li>
+<li><a class="reference internal" href="#ports-a-b-pinout">Ports A/B Pinout</a></li>
+<li><a class="reference internal" href="#sync-connector">SYNC Connector</a></li>
+<li><a class="reference internal" href="#lvds-connector">LVDS Connector</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#leds">LEDs</a></li>
+<li><a class="reference internal" href="#i2c-bus">I²C bus</a><ul>
+<li><a class="reference internal" href="#i2c-bus-addresses">I²C bus addresses</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#recovery">Recovery</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=50ba5bf0"></script>
+    <script src="../_static/tabs.js?v=3ee01567"></script>
+    </body>
+</html>

@@ -1,0 +1,18 @@
+``sensor-bmx280``
+=================
+
+CLI reference
+-------------
+
+.. _applet.sensor.bmx280:
+
+.. autoprogram:: glasgow.applet.sensor.bmx280:SensorBMx280Applet._get_argparser_for_sphinx("sensor-bmx280")
+    :prog: glasgow run sensor-bmx280
+
+
+API reference
+-------------
+
+.. todo::
+
+    Add API documentation for ``sensor-bmx280``.
