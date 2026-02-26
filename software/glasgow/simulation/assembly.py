@@ -101,7 +101,7 @@ class SimulationAssembly(AbstractAssembly):
         return 1/1000000
 
     @contextmanager
-    def add_applet(self, applet: Any) -> Generator[None, None, None]:
+    def add_applet(self, applet: Any) -> Generator[None]:
         self._logger = applet.logger
         try:
             yield

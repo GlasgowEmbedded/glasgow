@@ -1,4 +1,3 @@
-
 from amaranth import *
 from amaranth import Signal
 from amaranth.lib import wiring, stream
