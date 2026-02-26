@@ -9,7 +9,7 @@
 
 src = ["glasgow", "tests"]
 line-length = 100
-target-version = "py311"
+target-version = "py313"
 
 [lint]
 preview = true

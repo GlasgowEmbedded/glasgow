@@ -512,7 +512,7 @@ class HardwareAssembly(AbstractAssembly):
                 return 1/48e6
 
     @contextmanager
-    def add_applet(self, applet: Any) -> Generator[None, None, None]:
+    def add_applet(self, applet: Any) -> Generator[None]:
         assert self._applet is None
 
         self._logger = applet.logger

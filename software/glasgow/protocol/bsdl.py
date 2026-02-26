@@ -163,7 +163,7 @@ class BSDLPinMap(BSDLParserBase):
     def __init__(self, source, src_name):
         super().__init__(source, src_name)
 
-        self._pins  = defaultdict(lambda: [])
+        self._pins  = defaultdict(list)
         self._ports = {}
 
         self._parse()
@@ -485,7 +485,7 @@ class BSDLEntity(BSDLParserBase):
         opcode_map = BSDLOpcodeMap(self._extract_attribute("INSTRUCTION_OPCODE"),
                                    "INSTRUCTION_OPCODE")
 
-        port_cells = defaultdict(lambda: set())
+        port_cells = defaultdict(set)
         bscan_cells = [None] * self._extract_attribute("BOUNDARY_LENGTH")
         bscan_cell_map = BSDLScanCellMap(self._extract_attribute("BOUNDARY_REGISTER"),
                                          "BOUNDARY_REGISTER")
