@@ -12,6 +12,7 @@ Glasgow Interface Explorer manual
     Run in browser <https://webusb.glasgow-embedded.org/>
     use/index
     applets/index
+    library/index
     develop/index
     contribute
     community
