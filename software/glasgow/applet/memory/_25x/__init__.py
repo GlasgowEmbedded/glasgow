@@ -11,6 +11,7 @@ from amaranth import *
 from amaranth.lib import enum
 
 from glasgow.support.logging import dump_hex
+from glasgow.support.progress import Progress
 from glasgow.database.jedec import *
 from glasgow.protocol.sfdp import *
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
@@ -88,37 +89,25 @@ class Memory25xInterface:
     def _format_addr(self, addr):
         return bytes([(addr >> 16) & 0xff, (addr >> 8) & 0xff, addr & 0xff])
 
-    async def _read_command(self, address, length, chunk_size, cmd, dummy=0,
-                            callback=lambda done, total, status: None):
-        if chunk_size is None:
-            chunk_size = 0x10000 # for progress indication
-
+    async def _read_command(self, address, length, cmd, dummy=0, chunk_size=0x10000):
         data = bytearray()
-        while length > len(data):
-            callback(len(data), length, f"reading address {address:#08x}")
-            chunk    = await self._command(cmd, arg=self._format_addr(address),
-                                           dummy=dummy, ret=min(chunk_size, length - len(data)))
-            data    += chunk
-            address += len(chunk)
-
-        callback(len(data), length, None)
+        for chunk in Progress.chunks(range(address, address + length), chunk_size=chunk_size,
+                action="reading", item="B", scale=1024):
+            data += await self._command(
+                cmd, arg=self._format_addr(chunk.start), dummy=dummy, ret=len(chunk))
         return data
 
-    async def read(self, address, length, chunk_size=None,
-                   callback=lambda done, total, status: None):
+    async def read(self, address, length):
         self._log("read addr=%#08x len=%d", address, length)
-        return await self._read_command(address, length, chunk_size, cmd=0x03,
-                                        callback=callback)
+        return await self._read_command(address, length, cmd=0x03)
 
-    async def fast_read(self, address, length, chunk_size=None,
-                        callback=lambda done, total, status: None):
+    async def fast_read(self, address, length):
         self._log("fast read addr=%#08x len=%d", address, length)
-        return await self._read_command(address, length, chunk_size, cmd=0x0B, dummy=1,
-                                        callback=callback)
+        return await self._read_command(address, length, cmd=0x0B, dummy=1)
 
     async def read_sfdp(self, address, length):
         self._log("read sfdp addr=%#08x len=%d", address, length)
-        return await self._read_command(address, length, chunk_size=0x100, cmd=0x5A, dummy=1)
+        return await self._read_command(address, length, cmd=0x5A, dummy=1, chunk_size=0x100)
 
     async def read_status(self):
         status, = await self._command(0x05, ret=1)
@@ -170,51 +159,39 @@ class Memory25xInterface:
         await self._command(0x02, arg=self._format_addr(address) + data)
         while await self.write_in_progress(command="PAGE PROGRAM"): pass
 
-    async def program(self, address, data, page_size,
-                      callback=lambda done, total, status: None):
+    async def program(self, address, data, page_size):
         data = bytes(data)
-        done, total = 0, len(data)
         while len(data) > 0:
-            chunk    = data[:page_size - address % page_size]
-            data     = data[len(chunk):]
+            chunk = data[:page_size - address % page_size]
+            data  = data[len(chunk):]
 
-            callback(done, total, f"programming page {address:#08x}")
             await self.write_enable()
             await self.page_program(address, chunk)
 
             address += len(chunk)
-            done    += len(chunk)
 
-        callback(done, total, None)
+    async def erase_program(self, address, data, sector_size, page_size):
+        with Progress(total=len(data), action="writing", item="B", scale=1024) as progress:
+            data = bytes(data)
+            while len(data) > 0:
+                chunk    = data[:sector_size - address % sector_size]
+                data     = data[len(chunk):]
 
-    async def erase_program(self, address, data, sector_size, page_size,
-                            callback=lambda done, total, status: None):
-        data = bytes(data)
-        done, total = 0, len(data)
-        while len(data) > 0:
-            chunk    = data[:sector_size - address % sector_size]
-            data     = data[len(chunk):]
+                sector_start = address & ~(sector_size - 1)
+                if address % sector_size == 0 and len(chunk) == sector_size:
+                    sector_data = chunk
+                else:
+                    sector_data = await self.read(sector_start, sector_size)
+                    sector_data[address % sector_size:(address % sector_size) + len(chunk)] = chunk
 
-            sector_start = address & ~(sector_size - 1)
-            if address % sector_size == 0 and len(chunk) == sector_size:
-                sector_data = chunk
-            else:
-                sector_data = await self.read(sector_start, sector_size)
-                sector_data[address % sector_size:(address % sector_size) + len(chunk)] = chunk
+                await self.write_enable()
+                await self.sector_erase(sector_start)
 
-            callback(done, total, f"erasing sector {sector_start:#08x}")
-            await self.write_enable()
-            await self.sector_erase(sector_start)
+                if not re.match(rb"^\xff*$", sector_data):
+                    await self.program(sector_start, sector_data, page_size)
 
-            if not re.match(rb"^\xff*$", sector_data):
-                await self.program(sector_start, sector_data, page_size,
-                    callback=lambda page_done, page_total, status, done=done:
-                                callback(done + page_done, total, status))
-
-            address += len(chunk)
-            done    += len(chunk)
-
-        callback(done, total, None)
+                address += len(chunk)
+                progress.advance(len(chunk))
 
 
 class Memory25xSFDPParser(SFDPParser):
@@ -401,8 +378,7 @@ class Memory25xApplet(GlasgowAppletV2):
             status = await self.m25x_iface.read_status()
             if status & MSK_PROT:
                 self.logger.warning("block protect bits are set to %s, program/erase command "
-                                    "might not succeed", f"{(status & MSK_PROT) >> 2:04b}"
-                                    )
+                                    "might not succeed", f"{(status & MSK_PROT) >> 2:04b}")
 
         if args.operation in (None, "identify"):
             legacy_device_id, = \
@@ -437,11 +413,9 @@ class Memory25xApplet(GlasgowAppletV2):
 
         if args.operation in ("read", "fast-read"):
             if args.operation == "read":
-                data = await self.m25x_iface.read(args.address, args.length,
-                                             callback=self._show_progress)
+                data = await self.m25x_iface.read(args.address, args.length)
             if args.operation == "fast-read":
-                data = await self.m25x_iface.fast_read(args.address, args.length,
-                                                  callback=self._show_progress)
+                data = await self.m25x_iface.fast_read(args.address, args.length)
 
             if args.file:
                 args.file.write(data)
@@ -459,11 +433,10 @@ class Memory25xApplet(GlasgowAppletV2):
                 await self.m25x_iface.write_enable()
                 await self.m25x_iface.page_program(args.address, data)
             if args.operation == "program":
-                await self.m25x_iface.program(args.address, data, args.page_size,
-                                         callback=self._show_progress)
+                await self.m25x_iface.program(args.address, data, args.page_size)
             if args.operation == "erase-program":
-                await self.m25x_iface.erase_program(args.address, data, args.sector_size,
-                                               args.page_size, callback=self._show_progress)
+                await self.m25x_iface.erase_program(
+                    args.address, data, args.sector_size, args.page_size)
 
         if args.operation == "verify":
             if args.data is not None:
