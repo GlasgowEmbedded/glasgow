@@ -48,6 +48,8 @@ dependencies = [
   # `cobs` is used to multiplex communication streams in applets. It uses an ad-hoc versioning
   # system.
   "cobs>=1.2.1",
+  # `tqdm` is used to compute and render progress indicatrs. It uses SemVer.
+  "tqdm>=4.67.3",
   # `pyvcd` is used in the applet analyzer to dump waveform files. It is also a dependency of
   # Amaranth, and the version range here must be compatible with Amaranth's.
   "pyvcd>=0.4.1,<0.5",

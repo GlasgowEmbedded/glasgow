@@ -19,6 +19,7 @@ from fx2.format import input_data, diff_data
 from . import __version__
 from .support.logging import *
 from .support.asignal import *
+from .support.progress import TqdmProgressImpl
 from .support.plugin import PluginRequirementsUnmet, PluginLoadError
 from .abstract import ClockingError
 from .hardware.device import GlasgowDeviceError, GlasgowDevice, GlasgowDeviceConfig
@@ -594,6 +595,10 @@ async def wait_for_sigint():
 async def main() -> int:
     term_handler = file_handler = device = None
     try:
+        # This intercepts stdin/stdout, so do it before creating a logger or anything else that
+        # might capture those file objects.
+        TqdmProgressImpl().register()
+
         # Handle log messages emitted during construction of the argument parser (e.g. by
         # the plugin subsystem).
         term_handler = create_logger()
