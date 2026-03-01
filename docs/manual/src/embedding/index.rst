@@ -43,31 +43,12 @@ reference to an attached device; you can use
 ``HardwareAssembly.find_device()`` to locate a device, and build an Assembly
 based on it.  An Assembly has `.start()` and `.stop()` methods to synthesize
 it and download it to the device, but for convenience, it also implements
-the async context manager protocol to connect to the device.  The following
-skeleton of a program will search for a Glasgow, create an empty Assembly
+the async context manager protocol to connect to the device.  `The following
+skeleton of a program <../_static/examples/assembly-skeleton.py>`_ will search for a Glasgow, create an empty Assembly
 targetted to it, and then download it to the attached Glasgow:
 
-.. code:: python
-
-    # assembly-skeleton.py
-    # XXX: I have distilled but not actually tested this snippet on hardware yet
-
-    import asyncio
-    import logging
-
-    from glasgow.hardware.assembly import HardwareAssembly
-
-    logging.basicConfig(level=logging.DEBUG)
-    logger = logging.getLogger()
-
-    async def main():
-        assembly = await HardwareAssembly.find_device()
-        async with assembly:
-            logger.info("Glasgow is alive!")
-            await asyncio.sleep(5)
-
-    if __name__ == "__main__":
-        asyncio.run(main())
+.. literalinclude:: ../_static/examples/assembly-skeleton.py
+   :language: python
 
 .. note::
 
