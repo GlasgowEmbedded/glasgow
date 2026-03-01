@@ -135,6 +135,24 @@ remember to connect a flying lead from pin A0 to pin B0!
 .. literalinclude:: ../_static/examples/assembly-applets.py
    :language: python
 
+Glasgow should respond:
+
+.. code:: console
+
+    DEBUG:asyncio:Using selector: EpollSelector
+    DEBUG:glasgow.hardware.device:found revC3 device with serial C3-20240518T200308Z
+    DEBUG:glasgow.hardware.assembly:setting port A voltage to 3.30 V
+    DEBUG:glasgow.hardware.assembly:setting port B voltage to 3.30 V
+    DEBUG:glasgow.hardware.assembly:assigning pin tx[0] to A0
+    DEBUG:glasgow.hardware.assembly:assigning pin rx[0] to B0
+    DEBUG:glasgow.hardware.assembly:pulling pin B0 high
+    DEBUG:glasgow.hardware.toolchain:using toolchain 'builtin' (yosys 0.61.0.0.post1073, nextpnr-ice40 0.9.0.0.post686, icepack 0.9.0.0.post686)
+    INFO:glasgow.hardware.device:device already has bitstream ID 083ca04cc3edb43de9ba63d35bec38fc
+    INFO:glasgow.hardware.assembly:port A voltage set to 3.3 V
+    INFO:glasgow.hardware.assembly:port B voltage set to 3.3 V
+    INFO:root:assembly has started
+    INFO:root:uart_a transmitted data, waiting for received data
+    INFO:root:uart_b received data b'Hello, Glasgow!'
 
 Putting your own logic into an Assembly
 ---------------------------------------
