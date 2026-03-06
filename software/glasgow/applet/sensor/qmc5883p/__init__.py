@@ -65,7 +65,7 @@ _LSB_PER_GAUSS = {
     RANGE_30G: 1000.0,
     RANGE_12G: 2500.0,
     RANGE_8G: 3750.0,
-    RANGE_2G: 15000.0
+    RANGE_2G: 15000.0,
 }
 
 # Mode names for user interface
@@ -124,7 +124,7 @@ class QMC5883PInterface:
         self._logger.log(self._level, "QMC5883P: " + message, *args)
 
     async def _read_reg8u(self, reg):
-        byte, = await self._iface.read(reg, 1)
+        (byte,) = await self._iface.read(reg, 1)
         self._log("reg=%#04x read=%#04x", reg, byte)
         return byte
 
@@ -139,7 +139,9 @@ class QMC5883PInterface:
         chip_id = await self._read_reg8u(_CHIPID)
         self._log("Chip ID=%#04x", chip_id)
         if chip_id != 0x80:
-            raise QMC5883PError(f"QMC5883P: wrong chip ID={chip_id:#04x}, expected 0x80")
+            raise QMC5883PError(
+                f"QMC5883P: wrong chip ID={chip_id:#04x}, expected 0x80"
+            )
         return chip_id
 
     async def soft_reset(self):
@@ -156,7 +158,9 @@ class QMC5883PInterface:
         # Accept both user-facing names and register values
         if isinstance(mode, str):
             if mode not in mode_names:
-                raise QMC5883PError(f"Invalid mode: {mode} (choose from: {', '.join(mode_names.keys())})")
+                raise QMC5883PError(
+                    f"Invalid mode: {mode} (choose from: {', '.join(mode_names.keys())})"
+                )
             mode = mode_names[mode]
         elif mode not in mode_names.values():
             raise QMC5883PError(f"Invalid mode: {mode}")
@@ -170,7 +174,9 @@ class QMC5883PInterface:
         if odr in data_rate_names:
             odr = data_rate_names[odr]
         elif odr not in data_rate_names.values():
-            raise QMC5883PError(f"Invalid output data rate: {odr} (choose from: {', '.join(map(str, data_rate_names.keys()))} Hz)")
+            raise QMC5883PError(
+                f"Invalid output data rate: {odr} (choose from: {', '.join(map(str, data_rate_names.keys()))} Hz)"
+            )
 
         ctrl1 = await self._read_reg8u(_CONTROL1)
         ctrl1 = (ctrl1 & ~0x0C) | (odr << 2)
@@ -181,7 +187,9 @@ class QMC5883PInterface:
         if osr in oversample_ratio_names:
             osr = oversample_ratio_names[osr]
         elif osr not in oversample_ratio_names.values():
-            raise QMC5883PError(f"Invalid oversample ratio: {osr} (choose from: {', '.join(map(str, oversample_ratio_names.keys()))})")
+            raise QMC5883PError(
+                f"Invalid oversample ratio: {osr} (choose from: {', '.join(map(str, oversample_ratio_names.keys()))})"
+            )
 
         ctrl1 = await self._read_reg8u(_CONTROL1)
         ctrl1 = (ctrl1 & ~0x30) | (osr << 4)
@@ -192,7 +200,9 @@ class QMC5883PInterface:
         if dsr in downsample_ratio_names:
             dsr = downsample_ratio_names[dsr]
         elif dsr not in downsample_ratio_names.values():
-            raise QMC5883PError(f"Invalid downsample ratio: {dsr} (choose from: {', '.join(map(str, downsample_ratio_names.keys()))})")
+            raise QMC5883PError(
+                f"Invalid downsample ratio: {dsr} (choose from: {', '.join(map(str, downsample_ratio_names.keys()))})"
+            )
 
         ctrl1 = await self._read_reg8u(_CONTROL1)
         ctrl1 = (ctrl1 & ~0xC0) | (dsr << 6)
@@ -203,7 +213,9 @@ class QMC5883PInterface:
         if field_range in range_names:
             field_range = range_names[field_range]
         elif field_range not in range_names.values():
-            raise QMC5883PError(f"Invalid range: {field_range} (choose from: {', '.join(map(str, range_names.keys()))} G)")
+            raise QMC5883PError(
+                f"Invalid range: {field_range} (choose from: {', '.join(map(str, range_names.keys()))} G)"
+            )
 
         self._range = field_range
         ctrl2 = await self._read_reg8u(_CONTROL2)
@@ -288,13 +300,17 @@ class QMC5883PI2CInterface:
         await self.lower.write(self._i2c_addr, [addr])
         result = await self.lower.read(self._i2c_addr, size, stop=True)
         if result is None:
-            raise QMC5883PError(f"QMC5883P did not acknowledge I2C read at address {self._i2c_addr:#07b}")
+            raise QMC5883PError(
+                f"QMC5883P did not acknowledge I2C read at address {self._i2c_addr:#07b}"
+            )
         return list(result)
 
     async def write(self, addr, data):
         result = await self.lower.write(self._i2c_addr, [addr, *data], stop=True)
         if not result:
-            raise QMC5883PError(f"QMC5883P did not acknowledge I2C write at address {self._i2c_addr:#07b}")
+            raise QMC5883PError(
+                f"QMC5883P did not acknowledge I2C write at address {self._i2c_addr:#07b}"
+            )
 
 
 class SensorQMC5883PApplet(I2CInitiatorApplet):
@@ -312,9 +328,14 @@ class SensorQMC5883PApplet(I2CInitiatorApplet):
 
         def i2c_address(arg):
             return int(arg, 0)
+
         parser.add_argument(
-            "--i2c-address", type=i2c_address, metavar="ADDR", default=0x2C,
-            help="I2C address of the sensor (default: %(default)#02x)")
+            "--i2c-address",
+            type=i2c_address,
+            metavar="ADDR",
+            default=0x2C,
+            help="I2C address of the sensor (default: %(default)#02x)",
+        )
 
     async def run(self, device, args):
         i2c_iface = await self.run_lower(SensorQMC5883PApplet, device, args)
@@ -324,35 +345,65 @@ class SensorQMC5883PApplet(I2CInitiatorApplet):
     @classmethod
     def add_interact_arguments(cls, parser):
         parser.add_argument(
-            "-m", "--mode", metavar="MODE", choices=mode_names.keys(), default="normal",
-            help="operating mode (one of: %(choices)s; default: %(default)s)")
+            "-m",
+            "--mode",
+            metavar="MODE",
+            choices=mode_names.keys(),
+            default="normal",
+            help="operating mode (one of: %(choices)s; default: %(default)s)",
+        )
         parser.add_argument(
-            "-r", "--data-rate", type=int, metavar="RATE",
-            choices=data_rate_names.keys(), default=50,
-            help="output data rate in Hz (one of: %(choices)s; default: %(default)d)")
+            "-r",
+            "--data-rate",
+            type=int,
+            metavar="RATE",
+            choices=data_rate_names.keys(),
+            default=50,
+            help="output data rate in Hz (one of: %(choices)s; default: %(default)d)",
+        )
         parser.add_argument(
-            "-o", "--oversample", type=int, metavar="RATIO",
-            choices=oversample_ratio_names.keys(), default=4,
-            help="oversample ratio (one of: %(choices)s; default: %(default)d)")
+            "-o",
+            "--oversample",
+            type=int,
+            metavar="RATIO",
+            choices=oversample_ratio_names.keys(),
+            default=4,
+            help="oversample ratio (one of: %(choices)s; default: %(default)d)",
+        )
         parser.add_argument(
-            "-d", "--downsample", type=int, metavar="RATIO",
-            choices=downsample_ratio_names.keys(), default=2,
-            help="downsample ratio (one of: %(choices)s; default: %(default)d)")
+            "-d",
+            "--downsample",
+            type=int,
+            metavar="RATIO",
+            choices=downsample_ratio_names.keys(),
+            default=2,
+            help="downsample ratio (one of: %(choices)s; default: %(default)d)",
+        )
         parser.add_argument(
-            "-R", "--range", type=int, metavar="GAUSS",
-            choices=range_names.keys(), default=8,
-            help="field range in Gauss (one of: %(choices)s; default: %(default)d)")
+            "-R",
+            "--range",
+            type=int,
+            metavar="GAUSS",
+            choices=range_names.keys(),
+            default=8,
+            help="field range in Gauss (one of: %(choices)s; default: %(default)d)",
+        )
 
-        p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
+        p_operation = parser.add_subparsers(
+            dest="operation", metavar="OPERATION", required=True
+        )
 
-        p_measure = p_operation.add_parser(
-            "measure", help="read measured values")
+        p_measure = p_operation.add_parser("measure", help="read measured values")
 
-        p_log = p_operation.add_parser(
-            "log", help="log measured values")
+        p_log = p_operation.add_parser("log", help="log measured values")
         p_log.add_argument(
-            "-i", "--interval", metavar="TIME", type=float, required=True,
-            help="sample each TIME seconds")
+            "-i",
+            "--interval",
+            metavar="TIME",
+            type=float,
+            required=True,
+            help="sample each TIME seconds",
+        )
         DataLogger.add_subparsers(p_log)
 
     async def interact(self, device, args, qmc5883p):
@@ -382,7 +433,7 @@ class SensorQMC5883PApplet(I2CInitiatorApplet):
             print(f"magnetic field z: {z:.3f} G")
 
             # Calculate magnitude
-            magnitude = (x**2 + y**2 + z**2)**0.5
+            magnitude = (x**2 + y**2 + z**2) ** 0.5
             print(f"magnitude      : {magnitude:.3f} G")
 
         if args.operation == "log":
@@ -390,9 +441,10 @@ class SensorQMC5883PApplet(I2CInitiatorApplet):
             data_logger = await DataLogger(self.logger, args, field_names=field_names)
 
             while True:
+
                 async def report():
                     x, y, z = await qmc5883p.get_magnetic()
-                    magnitude = (x**2 + y**2 + z**2)**0.5
+                    magnitude = (x**2 + y**2 + z**2) ** 0.5
                     fields = dict(x=x, y=y, z=z, mag=magnitude)
                     await data_logger.report_data(fields)
 
