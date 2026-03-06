@@ -403,7 +403,7 @@ class SensorQMC5883PApplet(I2CInitiatorApplet):
                     await qmc5883p.reset()
                     await qmc5883p.identify()
                     await qmc5883p.set_mode(mode_names[args.mode])
-                except asyncio.TimeoutError as error:
+                except TimeoutError as error:
                     await data_logger.report_error("timeout", exception=error)
                     await qmc5883p.reset()
                     await qmc5883p.identify()
