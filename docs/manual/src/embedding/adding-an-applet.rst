@@ -1,7 +1,7 @@
 Adding an applet to an Assembly
 -------------------------------
 
-The most common straightforward of an Assembly is to add `existing Glasgow
+The most common and straightforward use of an Assembly is to add `existing Glasgow
 applets <../applets>`_ to it.  (Indeed, internally, the "new-style" Glasgow
 ``AppletV2`` subsystem is based on Assemblies.) Many Glasgow applets were
 designed to be used with :ref:`the REPL <repl-script>`, and expose a
