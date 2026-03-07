@@ -514,7 +514,8 @@ class SensorQMC5883PApplet(I2CInitiatorApplet):
             metavar="MODE",
             choices=mode_names.keys(),
             default="normal",
-            help="operating mode (one of: %(choices)s; default: %(default)s)",
+            help="operating mode (one of: suspend, normal, single, continuous; "
+            "default: %(default)s)",
         )
         parser.add_argument(
             "-r",
@@ -523,7 +524,7 @@ class SensorQMC5883PApplet(I2CInitiatorApplet):
             metavar="RATE",
             choices=data_rate_names.keys(),
             default=50,
-            help="output data rate in Hz (one of: %(choices)s; default: %(default)d)",
+            help="output data rate in Hz (one of: 10, 50, 100, 200; default: %(default)d)",
         )
         parser.add_argument(
             "-o",
@@ -532,7 +533,7 @@ class SensorQMC5883PApplet(I2CInitiatorApplet):
             metavar="RATIO",
             choices=oversample_ratio_names.keys(),
             default=4,
-            help="oversample ratio (one of: %(choices)s; default: %(default)d)",
+            help="oversample ratio (one of: 1, 2, 4, 8; default: %(default)d)",
         )
         parser.add_argument(
             "-d",
@@ -541,7 +542,7 @@ class SensorQMC5883PApplet(I2CInitiatorApplet):
             metavar="RATIO",
             choices=downsample_ratio_names.keys(),
             default=2,
-            help="downsample ratio (one of: %(choices)s; default: %(default)d)",
+            help="downsample ratio (one of: 1, 2, 4, 8; default: %(default)d)",
         )
         parser.add_argument(
             "-R",
@@ -550,7 +551,7 @@ class SensorQMC5883PApplet(I2CInitiatorApplet):
             metavar="GAUSS",
             choices=range_names.keys(),
             default=8,
-            help="field range in Gauss (one of: %(choices)s; default: %(default)d)",
+            help="field range in Gauss (one of: 2, 8, 12, 30; default: %(default)d)",
         )
 
         p_operation = parser.add_subparsers(
