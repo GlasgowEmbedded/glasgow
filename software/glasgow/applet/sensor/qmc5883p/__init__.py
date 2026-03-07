@@ -1,53 +1,6 @@
 # Ref: QMC5883P Datasheet - Triple Axis Magnetometer
 # Accession: G00XXX
 
-"""QMC5883P triple-axis magnetometer applet.
-
-This applet provides an interface to the QMC5883P 3-axis magnetic sensor over I2C.
-The sensor measures magnetic field strength in three axes with configurable range,
-data rate, and sampling parameters.
-
-CLI Usage
----------
-
-Measure magnetic field once::
-
-    glasgow run sensor-qmc5883p --i2c-address 0x2c measure
-
-Log continuous measurements::
-
-    glasgow run sensor-qmc5883p --i2c-address 0x2c log -i 0.5 log.csv
-
-Configuration options::
-
-    -m, --mode {suspend,normal,single,continuous}
-        Operating mode (default: normal)
-    -r, --data-rate {10,50,100,200}
-        Output data rate in Hz (default: 50)
-    -o, --oversample {1,2,4,8}
-        Oversample ratio (default: 4)
-    -d, --downsample {1,2,4,8}
-        Downsample ratio (default: 2)
-    -R, --range {2,8,12,30}
-        Field range in Gauss (default: 8)
-
-API Documentation
------------------
-
-The primary interface class is ``QMC5883PInterface``, which provides methods for
-configuring the sensor and reading measurements.
-
-Basic usage::
-
-    iface = await applet.run(device, args)
-    await iface.identify()
-    await iface.set_mode(OperatingMode.CONTINUOUS)
-    await iface.set_range(FieldRange.RANGE_8G)
-    x, y, z = await iface.get_magnetic()
-
-See ``QMC5883PInterface`` class documentation for available methods.
-"""
-
 import logging
 import asyncio
 import struct
@@ -181,61 +134,7 @@ class QMC5883PError(GlasgowAppletError):
 
 
 class QMC5883PInterface:
-    """Interface to QMC5883P magnetometer sensor.
-
-    This class provides methods for configuring the sensor and reading magnetic
-    field measurements. All configuration methods accept both user-friendly values
-    (strings, Hz, Gauss) and raw enum values.
-
-    Attributes
-    ----------
-    _range : FieldRange
-        Current field range setting, used for converting raw readings to Gauss.
-
-    Methods
-    -------
-    identify() -> int
-        Read and verify chip ID (should be 0x80).
-    soft_reset() -> None
-        Perform soft reset via CONTROL2 register.
-    set_mode(mode: str | OperatingMode) -> None
-        Set operating mode: "suspend", "normal", "single", "continuous".
-    set_data_rate(odr: int | OutputDataRate) -> None
-        Set output data rate: 10, 50, 100, 200 Hz.
-    set_oversample_ratio(osr: int | OversampleRatio) -> None
-        Set oversample ratio: 1, 2, 4, 8.
-    set_downsample_ratio(dsr: int | DownsampleRatio) -> None
-        Set downsample ratio: 1, 2, 4, 8.
-    set_range(field_range: int | FieldRange) -> None
-        Set field range: 2, 8, 12, 30 Gauss.
-    get_range() -> int
-        Get current field range in Gauss.
-    set_setreset_mode(setreset: SetResetMode) -> None
-        Set set/reset mode for eliminating offset.
-    data_ready() -> bool
-        Check if new measurement data is available.
-    overflow() -> bool
-        Check if sensor has overflowed.
-    get_magnetic_raw() -> tuple[int, int, int]
-        Read raw 16-bit signed magnetic field values (x, y, z).
-    get_magnetic() -> tuple[float, float, float]
-        Read magnetic field in Gauss (x, y, z).
-
-    Examples
-    --------
-    Configure sensor for continuous measurement::
-
-        await iface.set_mode(OperatingMode.SUSPEND)
-        await iface.set_range(8)  # 8 Gauss range
-        await iface.set_data_rate(50)  # 50 Hz
-        await iface.set_mode("continuous")
-
-    Read single measurement::
-
-        await iface.set_mode("single")
-        x, y, z = await iface.get_magnetic()
-        magnitude = (x**2 + y**2 + z**2)**0.5
-    """
+    """Interface to QMC5883P magnetometer sensor."""
 
     def __init__(self, interface: "QMC5883PI2CInterface", logger: logging.Logger) -> None:
         self._iface = interface
@@ -259,6 +158,18 @@ class QMC5883PInterface:
         await self._iface.reset()
 
     async def identify(self) -> int:
+        """Read and verify chip ID.
+
+        Returns
+        -------
+        int
+            Chip ID (should be 0x80).
+
+        Raises
+        ------
+        QMC5883PError
+            If chip ID does not match expected value 0x80.
+        """
         chip_id = await self._read_reg8u(_CHIPID)
         self._log("Chip ID=%#04x", chip_id)
         if chip_id != 0x80:
@@ -266,6 +177,15 @@ class QMC5883PInterface:
         return chip_id
 
     async def soft_reset(self) -> None:
+        """Perform soft reset via CONTROL2 register.
+
+        Waits 50ms for reset to complete and verifies chip ID.
+
+        Raises
+        ------
+        QMC5883PError
+            If chip ID is invalid after reset.
+        """
         # Soft reset by setting bit 7 of CONTROL2
         await self._write_reg8u(_CONTROL2, 0x80)
         await asyncio.sleep(0.05)  # Wait 50ms for reset to complete
@@ -276,6 +196,19 @@ class QMC5883PInterface:
             raise QMC5883PError(f"Chip ID invalid after reset: {chip_id:#04x}")
 
     async def set_mode(self, mode: str | OperatingMode) -> None:
+        """Set operating mode.
+
+        Parameters
+        ----------
+        mode : str or OperatingMode
+            Operating mode: "suspend", "normal", "single", "continuous",
+            or a :class:`OperatingMode` value.
+
+        Raises
+        ------
+        QMC5883PError
+            If mode is invalid.
+        """
         # Accept both user-facing names and register values
         if isinstance(mode, str):
             if mode not in mode_names:
@@ -291,6 +224,18 @@ class QMC5883PInterface:
         await self._write_reg8u(_CONTROL1, ctrl1)
 
     async def set_data_rate(self, odr: int | OutputDataRate) -> None:
+        """Set output data rate.
+
+        Parameters
+        ----------
+        odr : int or OutputDataRate
+            Output data rate: 10, 50, 100, 200 (Hz) or an :class:`OutputDataRate` value.
+
+        Raises
+        ------
+        QMC5883PError
+            If data rate is invalid.
+        """
         # Accept both user-facing values (Hz) and register values
         if odr in data_rate_names:
             odr = data_rate_names[odr]
@@ -305,6 +250,18 @@ class QMC5883PInterface:
         await self._write_reg8u(_CONTROL1, ctrl1)
 
     async def set_oversample_ratio(self, osr: int | OversampleRatio) -> None:
+        """Set oversample ratio.
+
+        Parameters
+        ----------
+        osr : int or OversampleRatio
+            Oversample ratio: 1, 2, 4, 8 or an :class:`OversampleRatio` value.
+
+        Raises
+        ------
+        QMC5883PError
+            If oversample ratio is invalid.
+        """
         # Accept both user-facing values and register values
         if osr in oversample_ratio_names:
             osr = oversample_ratio_names[osr]
@@ -319,6 +276,18 @@ class QMC5883PInterface:
         await self._write_reg8u(_CONTROL1, ctrl1)
 
     async def set_downsample_ratio(self, dsr: int | DownsampleRatio) -> None:
+        """Set downsample ratio.
+
+        Parameters
+        ----------
+        dsr : int or DownsampleRatio
+            Downsample ratio: 1, 2, 4, 8 or a :class:`DownsampleRatio` value.
+
+        Raises
+        ------
+        QMC5883PError
+            If downsample ratio is invalid.
+        """
         # Accept both user-facing values and register values
         if dsr in downsample_ratio_names:
             dsr = downsample_ratio_names[dsr]
@@ -333,6 +302,18 @@ class QMC5883PInterface:
         await self._write_reg8u(_CONTROL1, ctrl1)
 
     async def set_range(self, field_range: int | FieldRange) -> None:
+        """Set field range.
+
+        Parameters
+        ----------
+        field_range : int or FieldRange
+            Field range: 2, 8, 12, 30 (Gauss) or a :class:`FieldRange` value.
+
+        Raises
+        ------
+        QMC5883PError
+            If field range is invalid.
+        """
         # Accept both user-facing values (Gauss) and register values
         if field_range in range_names:
             field_range = range_names[field_range]
@@ -348,9 +329,12 @@ class QMC5883PInterface:
         await self._write_reg8u(_CONTROL2, ctrl2)
 
     async def get_range(self) -> int:
-        """Get the current field range setting in Gauss.
+        """Get current field range setting.
 
-        Returns one of: 30, 12, 8, or 2 (Gauss)
+        Returns
+        -------
+        int
+            Field range in Gauss (30, 12, 8, or 2).
         """
         ctrl2 = await self._read_reg8u(_CONTROL2)
         range_bits = (ctrl2 >> 2) & 0x03
@@ -365,6 +349,19 @@ class QMC5883PInterface:
         return range_map.get(range_bits, 8)  # Default to 8G if unknown
 
     async def set_setreset_mode(self, setreset: SetResetMode) -> None:
+        """Set set/reset mode for eliminating sensor offset.
+
+        Parameters
+        ----------
+        setreset : SetResetMode
+            Set/reset mode: :py:`SetResetMode.ON`, :py:`SetResetMode.SETONLY`,
+            or :py:`SetResetMode.OFF`.
+
+        Raises
+        ------
+        QMC5883PError
+            If set/reset mode is invalid.
+        """
         if setreset not in [SetResetMode.ON, SetResetMode.SETONLY, SetResetMode.OFF]:
             raise QMC5883PError(f"Invalid set/reset mode: {setreset}")
 
@@ -373,14 +370,42 @@ class QMC5883PInterface:
         await self._write_reg8u(_CONTROL2, ctrl2)
 
     async def data_ready(self) -> bool:
+        """Check if new measurement data is available.
+
+        Returns
+        -------
+        bool
+            True if data is ready to be read.
+        """
         status = await self._read_reg8u(_STATUS)
         return bool(status & 0x01)
 
     async def overflow(self) -> bool:
+        """Check if sensor measurement has overflowed.
+
+        Returns
+        -------
+        bool
+            True if overflow occurred.
+        """
         status = await self._read_reg8u(_STATUS)
         return bool(status & 0x02)
 
     async def get_magnetic_raw(self) -> tuple[int, int, int]:
+        """Read raw magnetic field values.
+
+        Waits for data ready, then reads all three axes.
+
+        Returns
+        -------
+        tuple[int, int, int]
+            Raw 16-bit signed values (x, y, z).
+
+        Raises
+        ------
+        QMC5883PError
+            If timeout waiting for data ready.
+        """
         # Wait for data ready
         timeout = 100  # 100 iterations
         while not await self.data_ready():
@@ -399,6 +424,20 @@ class QMC5883PInterface:
         return (raw_x, raw_y, raw_z)
 
     async def get_magnetic(self) -> tuple[float, float, float]:
+        """Read magnetic field in Gauss.
+
+        Reads raw values and converts to Gauss based on current range setting.
+
+        Returns
+        -------
+        tuple[float, float, float]
+            Magnetic field values in Gauss (x, y, z).
+
+        Raises
+        ------
+        QMC5883PError
+            If timeout waiting for data ready.
+        """
         raw_x, raw_y, raw_z = await self.get_magnetic_raw()
 
         # Get conversion factor based on current range
