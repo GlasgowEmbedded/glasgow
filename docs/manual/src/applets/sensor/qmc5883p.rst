@@ -1,0 +1,20 @@
+``sensor-qmc5883p``
+==================
+
+CLI reference
+-------------
+
+.. _applet.sensor.qmc5883p:
+
+.. autoprogram:: glasgow.applet.sensor.qmc5883p:SensorQMC5883PApplet._get_argparser_for_sphinx("sensor-qmc5883p")
+    :prog: glasgow run sensor-qmc5883p
+
+
+API reference
+-------------
+
+.. module:: glasgow.applet.sensor.qmc5883p
+
+.. autoexception:: QMC5883PError
+
+.. autoclass:: QMC5883PInterface
