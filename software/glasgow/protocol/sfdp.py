@@ -7,16 +7,15 @@
 #
 # Currently, only JESD216 (initial revision) is implemented.
 
-from collections.abc import Iterator
-from abc import ABCMeta, abstractmethod
+from __future__ import annotations
+from collections.abc import Iterator, Callable, Awaitable
 import struct
 
-from ..database.jedec import *
-from ..support.aobject import *
-from ..support.bitstruct import *
+from glasgow.database.jedec import *
+from glasgow.support.bitstruct import *
 
 
-__all__ = ["SFDPParser"]
+__all__ = ["SFDPCollection"]
 
 
 class _JEDECRevisionMixin:
@@ -269,18 +268,19 @@ class SFDPJEDECFlashParametersTable(SFDPTable):
         return iter(properties.items())
 
 
-class SFDPParser(_JEDECRevisionMixin, aobject, metaclass=ABCMeta):
-    async def __init__(self):
-        sfdp_header = await self.read(0, 8)
+class SFDPCollection(_JEDECRevisionMixin):
+    @classmethod
+    async def parse(cls, read_sfdp: Callable[[int, int], Awaitable[bytes]]) -> SFDPCollection:
+        sfdp_header = await read_sfdp(0, 8)
         signature, ver_minor, ver_major, num_param_headers, _ = \
             struct.unpack("4sBBBB", sfdp_header)
         if signature != b"SFDP":
             raise ValueError("SFDP signature not present")
-        self.version = (ver_major, ver_minor)
+        version = (ver_major, ver_minor)
 
-        self.tables = []
+        tables = []
         for index in range(num_param_headers + 1):
-            param_header = await self.read(8 * (1 + index), 8)
+            param_header = await read_sfdp(8 * (1 + index), 8)
             vendor_id, rev_minor, rev_major, length_dwords, pointer, table_id = \
                 struct.unpack("BBBB3sB", param_header)
             pointer = int.from_bytes(pointer, "little")
@@ -289,9 +289,15 @@ class SFDPParser(_JEDECRevisionMixin, aobject, metaclass=ABCMeta):
                 raise ValueError(
                     f"SFDP parameter header 0 has incorrect vendor ID {vendor_id:#04x}")
 
-            parameter = await self.read(pointer, length_dwords * 4)
+            parameter = await read_sfdp(pointer, length_dwords * 4)
             table = SFDPTable(vendor_id, table_id, (rev_major, rev_minor), parameter)
-            self.tables.append(table)
+            tables.append(table)
+
+        return cls(version, tables)
+
+    def __init__(self, version: Tuple[int, int], tables: list[SFDPTable]):
+        self.version = version
+        self.tables  = tables
 
     def __len__(self) -> int:
         return len(self.tables)
@@ -307,7 +313,3 @@ class SFDPParser(_JEDECRevisionMixin, aobject, metaclass=ABCMeta):
 
     def __str__(self) -> str:
         return f"SFDP {self.version[0]}.{self.version[1]} ({self.jedec_revision})"
-
-    @abstractmethod
-    async def read(self, offset: int, length: int):
-        pass
