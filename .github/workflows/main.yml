@@ -47,6 +47,11 @@ jobs:
     env:
       PDM_LOCKFILE: ${{ matrix.dep-versions == 'minimal' && 'pdm.min.lock' || 'pdm.lock' }}
     steps:
+      - name: Install native dependencies for Pillow
+        if: ${{ contains(matrix.python-version, '-dev') }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install libjpeg8-dev zlib1g-dev
       - name: Check out source code
         uses: actions/checkout@v4
         with:
