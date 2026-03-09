@@ -14,7 +14,7 @@ dependencies = [
     #   +$sidebar-width: 16em;
     # then rebuild it and place the build product `src/furo/theme/furo/static/styles/furo.css`
     # into `docs/manual/src/_static/styles/furo.css`.
-    "furo==2024.8.6",
+    "furo==2025.12.19",
     "glasgow @ file:///${PROJECT_ROOT}/../../software"
 ]
 
