@@ -13,6 +13,8 @@ CLI reference
 API reference
 -------------
 
-.. todo::
+.. module:: glasgow.applet.interface.qspi_controller
 
-    Add API documentation for ``qspi-controller``.
+.. autoexception:: QSPIControllerError
+
+.. autoclass:: QSPIControllerInterface
