@@ -18,3 +18,13 @@ API reference
 .. autoexception:: QSPIControllerError
 
 .. autoclass:: QSPIControllerInterface
+
+
+Memory command set reference
+----------------------------
+
+The building blocks below are used for implementing memory technology interfaces, such as :ref:`memory-25q <applet.memory._25q>`. They are typically not used on their own.
+
+.. module:: glasgow.arch.qspi
+
+.. automodule:: glasgow.arch.qspi
