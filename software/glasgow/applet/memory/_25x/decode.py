@@ -1,3 +1,4 @@
+from collections.abc import Buffer
 from typing import BinaryIO
 from abc import ABCMeta, abstractmethod
 import struct
@@ -54,7 +55,7 @@ class MemoryImage:
                 return None
         return self.data[addr:addr + size]
 
-    def write(self, addr: int, chunk: bytes | bytearray | memoryview):
+    def write(self, addr: int, chunk: Buffer):
         if self._wrap is None:
             extra_len = addr + len(chunk) - len(self.data)
             if extra_len > 0:

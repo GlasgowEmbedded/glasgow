@@ -2,6 +2,7 @@
 # Document Number: FPGA-TN-02001-3.2
 # Accession: G00073
 
+from collections.abc import Buffer
 import argparse
 import asyncio
 import logging
@@ -44,7 +45,7 @@ class ICE40SRAMInterface:
         """SCK clock divisor."""
         return self._spi_iface.clock
 
-    async def load(self, bitstream: bytes | bytearray | memoryview) -> bool:
+    async def load(self, bitstream: Buffer) -> bool:
         """Load :py:`bitstream` into configuration SRAM.
 
         Raises

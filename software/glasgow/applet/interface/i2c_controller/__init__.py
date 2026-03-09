@@ -2,6 +2,7 @@
 # Document Number: UM10204
 # Accession: G00101
 
+from collections.abc import Buffer
 import contextlib
 import logging
 import struct
@@ -165,7 +166,7 @@ class I2CControllerInterface:
     def _log(self, message, *args):
         self._logger.log(self._level, "I²C: " + message, *args)
 
-    async def _command(self, cmd: _Command, *, send: bytes | bytearray, recv: int) -> memoryview:
+    async def _command(self, cmd: _Command, *, send: Buffer, recv: int) -> memoryview:
         await self._pipe.send([cmd.value])
         await self._pipe.send(send)
         await self._pipe.flush()
@@ -197,7 +198,7 @@ class I2CControllerInterface:
             raise I2CNotAcknowledged(
                 f"address {address:#09b} ({'read' if read else 'write'}) not acknowledged")
 
-    async def _do_write(self, data: bytes | bytearray | memoryview) -> int:
+    async def _do_write(self, data: Buffer) -> int:
         self._log("write data=<%s>", dump_hex(data))
         acked = 0
         for chunk in self._chunked(data):
@@ -269,7 +270,7 @@ class I2CControllerInterface:
                 await self._do_stop()
             self._multi = False
 
-    async def write(self, address: int, data: bytes | bytearray | memoryview):
+    async def write(self, address: int, data: Buffer):
         """Write bytes.
 
         Generates a START condition followed by a WRITE target address (:py:`(address << 1) | 0`),

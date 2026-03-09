@@ -1,3 +1,4 @@
+from collections.abc import Buffer
 from typing import Literal
 import os
 import sys
@@ -233,7 +234,7 @@ class UARTInterface:
             buffer += await self.read(1)
         return memoryview(buffer)
 
-    async def write(self, data: bytes | bytearray | memoryview, *, flush=False):
+    async def write(self, data: Buffer, *, flush=False):
         """Buffers bytes to be transmitted. Until :meth:`flush` is called, bytes are not guaranteed
         to be transmitted (they may or may not be).
         """

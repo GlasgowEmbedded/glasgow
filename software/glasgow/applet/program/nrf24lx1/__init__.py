@@ -1,6 +1,7 @@
 # Reference: https://infocenter.nordicsemi.com/pdf/nRF24LE1_PS_v1.6.pdf
 # Accession: G00035
 
+from collections.abc import Buffer
 from dataclasses import dataclass
 import asyncio
 import logging
@@ -157,7 +158,7 @@ class ProgramNRF24Lx1Interface:
         self._log("read address=%#06x length=%#06x", address, length)
         return await self._command(0x03, arg=struct.pack(">H", address), ret=length)
 
-    async def program(self, address: int, data: bytes | bytearray | memoryview):
+    async def program(self, address: int, data: Buffer):
         self._log("program address=%#06x length=%#06x", address, len(data))
         await self._command(0x02, arg=struct.pack(">H", address) + bytes(data))
 

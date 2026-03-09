@@ -1,3 +1,4 @@
+from collections.abc import Buffer
 from typing import Literal
 import logging
 import asyncio
@@ -172,7 +173,7 @@ class AudioDACInterface:
         """Modulation clock divisor."""
         return self._modulation_clock
 
-    async def write(self, pcm_data: bytes | bytearray | memoryview):
+    async def write(self, pcm_data: Buffer):
         """Send samples to the DAC to be played in round robin order."""
         await self._pipe.send(pcm_data)
 
