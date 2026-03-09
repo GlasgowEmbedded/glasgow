@@ -194,15 +194,6 @@ class Memory25xInterface:
                 progress.advance(len(chunk))
 
 
-class Memory25xSFDPParser(SFDPParser):
-    async def __init__(self, m25x_iface):
-        self._m25x_iface = m25x_iface
-        await super().__init__()
-
-    async def read(self, offset, length):
-        return await self._m25x_iface.read_sfdp(offset, length)
-
-
 class Memory25xApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "read and write 25-series SPI Flash memories"
@@ -404,7 +395,7 @@ class Memory25xApplet(GlasgowAppletV2):
                                      legacy_device_id)
 
             try:
-                sfdp = await Memory25xSFDPParser(self.m25x_iface)
+                sfdp = await SFDPCollection.parse(self.m25x_iface.read_sfdp)
                 self.logger.info(f"device has valid {sfdp} descriptor")
                 for line in sfdp.description():
                     self.logger.info(f"  {line}")

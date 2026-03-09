@@ -7,7 +7,7 @@ import argparse
 
 from glasgow.database.jedec import jedec_mfg_name_from_bytes
 from glasgow.support.logging import dump_hex
-from glasgow.protocol.sfdp import SFDPParser, SFDPJEDECFlashParametersTable
+from glasgow.protocol.sfdp import SFDPCollection, SFDPJEDECFlashParametersTable
 from glasgow.applet import GlasgowAppletTool
 from . import Memory25xAddrMode, Memory25xApplet
 
@@ -187,15 +187,6 @@ class Memory25xQSPITrace(Memory25xAbstractTrace):
         if count is None:
             count = len(self._data) - self._at
         return self._get(count)
-
-
-class MemoryImageSFDPParser(SFDPParser):
-    async def __init__(self, image):
-        self._image = image
-        await super().__init__()
-
-    async def read(self, offset, length):
-        return self._image.read(offset, length)
 
 
 class Memory25xDecoder:
@@ -467,7 +458,9 @@ class Memory25xAppletTool(GlasgowAppletTool, applet=Memory25xApplet):
             self.logger.info("capture does not have JEDEC device ID")
 
         try:
-            sfdp = await MemoryImageSFDPParser(decoder.sfdp)
+            async def read_sfdp(offset, length):
+                return decoder.sfdp.read(offset, length)
+            sfdp = await SFDPCollection.parse(read_sfdp)
             self.logger.info(f"capture contains valid {sfdp} descriptor")
             for line in sfdp.description():
                 self.logger.info(f"  {line}")
