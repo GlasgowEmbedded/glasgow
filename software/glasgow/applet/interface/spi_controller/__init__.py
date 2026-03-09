@@ -1,3 +1,4 @@
+from collections.abc import Buffer
 from typing import Literal
 import contextlib
 import logging
@@ -234,7 +235,7 @@ class SPIControllerInterface:
             await self._pipe.flush()
             self._active = None
 
-    async def exchange(self, data: bytes | bytearray | memoryview) -> memoryview:
+    async def exchange(self, data: Buffer) -> memoryview:
         """Exchange data.
 
         Must be used within a transaction (see :meth:`select`). Shifts :py:`data` into
@@ -253,7 +254,7 @@ class SPIControllerInterface:
         self._log("xchg-i=<%s>", dump_hex(data))
         return data
 
-    async def write(self, data: bytes | bytearray | memoryview):
+    async def write(self, data: Buffer):
         """Write data.
 
         Must be used within a transaction (see :meth:`select`). Shifts :py:`data` into

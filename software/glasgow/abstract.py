@@ -1,7 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from typing import Self, Any, Literal
-from collections.abc import Generator
-from collections.abc import Mapping
+from collections.abc import Buffer, Generator, Mapping
 from dataclasses import dataclass
 import re
 import enum
@@ -243,7 +242,7 @@ class AbstractOutPipe(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    async def send(self, data: bytes | bytearray | memoryview):
+    async def send(self, data: Buffer):
         pass
 
     @abstractmethod

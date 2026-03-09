@@ -1,5 +1,5 @@
 from typing import Any
-from collections.abc import Generator
+from collections.abc import Buffer, Generator
 from contextlib import contextmanager
 import logging
 
@@ -50,7 +50,7 @@ class SimulationPipe(AbstractInOutPipe):
     def writable(self) -> int | None:
         return None
 
-    async def send(self, data: bytes | bytearray | memoryview):
+    async def send(self, data: Buffer):
         assert self._o_buffer is not None, "send() called on an in pipe"
         self._o_buffer.extend(data)
 

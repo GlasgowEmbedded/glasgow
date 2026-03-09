@@ -1,3 +1,4 @@
+from collections.abc import Buffer
 from typing import Literal
 import contextlib
 import logging
@@ -178,7 +179,7 @@ class QSPIControllerInterface:
             await self._pipe.flush()
             self._active = None
 
-    async def exchange(self, octets: bytes | bytearray | memoryview) -> memoryview:
+    async def exchange(self, octets: Buffer) -> memoryview:
         assert self._active is not None, "no chip selected"
         self._log("xchg-o=<%s>", dump_hex(octets))
         for chunk in self._chunked(octets):
@@ -190,7 +191,7 @@ class QSPIControllerInterface:
         self._log("xchg-i=<%s>", dump_hex(octets))
         return octets
 
-    async def write(self, octets: bytes | bytearray | memoryview, *, x: Literal[1, 2, 4] = 1):
+    async def write(self, octets: Buffer, *, x: Literal[1, 2, 4] = 1):
         assert self._active is not None, "no chip selected"
         mode = {1: qspi.Operation.PutX1, 2: qspi.Operation.PutX2, 4: qspi.Operation.PutX4}[x]
         self._log("write=<%s>", dump_hex(octets))

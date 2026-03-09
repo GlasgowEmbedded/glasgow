@@ -5,6 +5,7 @@
 # Ref: AT24C256C I²C-Compatible (2-Wire) Serial EEPROM 256-Kbit (32,768 x 8) DATASHEET
 # Accession: G00105
 
+from collections.abc import Buffer
 from typing import Literal
 import asyncio
 import logging
@@ -78,7 +79,7 @@ class Memory24xInterface:
 
         return data
 
-    async def write(self, address: int, data: bytes | bytearray | memoryview):
+    async def write(self, address: int, data: Buffer):
         """Write :py:`data` bytes at :py:`address`.
 
         The :py:`data` is broken up into chunks such that each chunk is aligned to, and no larger
