@@ -22,13 +22,15 @@ __all__ = ["SFDPParser"]
 class _JEDECRevisionMixin:
     @property
     def jedec_revision(self):
-        if self.version == (1, 0):
-            return "JESD216"
-        if self.version == (1, 5):
-            return "JESD216A"
-        if self.version == (1, 6):
-            return "JESD216B"
-        return "unknown JESD216 revision"
+        match self.version:
+            case (1, 0):
+                return "JESD216"
+            case (1, 5):
+                return "JESD216A"
+            case (1, 6):
+                return "JESD216B"
+            case _:
+                return "unknown JESD216 revision"
 
 
 _JEDEC_Flash_Param_0 = bitstruct("JEDEC_Flash_Param_0", 32, [
@@ -188,8 +190,7 @@ class SFDPJEDECFlashParametersTable(SFDPTable):
             elif word0.address_byte_count == 0b10:
                 self.address_byte_count = {4}
             else:
-                raise ValueError(f"invalid address byte count {word0.address_byte_count:#04b}"
-                                 )
+                raise ValueError(f"invalid address byte count {word0.address_byte_count:#04b}")
 
             if word0.write_granularity:
                 self.write_granularity = 64
@@ -256,16 +257,14 @@ class SFDPJEDECFlashParametersTable(SFDPTable):
 
         properties["sector sizes"] = ", ".join(map(str, self.sector_sizes))
         for sector_size, opcode in self.sector_sizes.items():
-            properties[f"sector size {sector_size}"] = \
-                f"erase opcode {opcode:#04x}"
+            properties[f"sector size {sector_size}"] = f"erase opcode {opcode:#04x}"
 
         properties["double transfer rate"] = "yes" if self.has_double_transfer_rate else "no"
         properties["fast read modes"] = \
             ", ".join("({}-{}-{})".format(*mode) for mode in self.fast_read_modes.keys())
         for mode, (opcode, wait_states, mode_bits) in self.fast_read_modes.items():
             properties["fast read mode ({}-{}-{})".format(*mode)] = \
-                (f"opcode {opcode:#04x}, {wait_states} wait states, {mode_bits} mode bits"
-                 )
+                f"opcode {opcode:#04x}, {wait_states} wait states, {mode_bits} mode bits"
 
         return iter(properties.items())
 
@@ -287,8 +286,8 @@ class SFDPParser(_JEDECRevisionMixin, aobject, metaclass=ABCMeta):
             pointer = int.from_bytes(pointer, "little")
 
             if index == 0 and vendor_id != 0x00:
-                raise ValueError(f"SFDP parameter header 0 has incorrect vendor ID {vendor_id:#04x}"
-                                 )
+                raise ValueError(
+                    f"SFDP parameter header 0 has incorrect vendor ID {vendor_id:#04x}")
 
             parameter = await self.read(pointer, length_dwords * 4)
             table = SFDPTable(vendor_id, table_id, (rev_major, rev_minor), parameter)
