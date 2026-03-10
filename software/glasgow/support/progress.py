@@ -106,6 +106,7 @@ class Progress:
         All keyword arguments not explicitly declared are passed to the class constructor. Returns
         a :term:`python:generator` yielding the result of indexing slices of :py:`items` up to
         :py:`chunk_size` in length, and advancing progress whenever control is returned.
+        If :py:`len(items) <= chunk_size`, progress indication is omitted entirely.
 
         To split a byte array into chunks of up to :py:`chunk_size`, such as for a write
         operation, use:
@@ -130,12 +131,16 @@ class Progress:
             Avoid passing :class:`bytes` or :class:`bytearray` values as :py:`items`; wrap them
             in :class:`memoryview` so that chunks reference the original bytes instead of copying.
         """
-        with cls(**kwargs, total=len(items)) as progress:
-            for start in range(0, len(items), chunk_size):
-                chunk = items[start:start + chunk_size]
-                assert isinstance(chunk, type(items))
-                yield chunk
-                progress.advance(len(chunk))
+        if len(items) <= chunk_size:
+            # Avoid creating nuisance progress bars for very small collections.
+            yield items
+        else:
+            with cls(**kwargs, total=len(items)) as progress:
+                for start in range(0, len(items), chunk_size):
+                    chunk = items[start:start + chunk_size]
+                    assert isinstance(chunk, type(items))
+                    yield chunk
+                    progress.advance(len(chunk))
 
     @property
     def action(self) -> str:
