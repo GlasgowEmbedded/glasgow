@@ -95,7 +95,7 @@ class Progress:
         self._scale  = scale
 
     @classmethod
-    def chunks[T](cls, items: Sequence[T], chunk_size: int, **kwargs) -> Generator[Sequence[T]]:
+    def chunks[T: Sequence](cls, items: T, chunk_size: int, **kwargs) -> Generator[T]:
         """Chunked progress tracker.
 
         This helper method exists to handle the case where a sequence must be brought into chunks
@@ -132,8 +132,10 @@ class Progress:
         """
         with cls(**kwargs, total=len(items)) as progress:
             for start in range(0, len(items), chunk_size):
-                yield items[start:start + chunk_size]
-                progress.advance(chunk_size)
+                chunk = items[start:start + chunk_size]
+                assert isinstance(chunk, type(items))
+                yield chunk
+                progress.advance(len(chunk))
 
     @property
     def action(self) -> str:
