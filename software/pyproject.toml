@@ -53,6 +53,8 @@ dependencies = [
   # `pyvcd` is used in the applet analyzer to dump waveform files. It is also a dependency of
   # Amaranth, and the version range here must be compatible with Amaranth's.
   "pyvcd>=0.4.1,<0.5",
+  # `enum-tools` is used for documenting enums. It is unclear which versioning scheme it uses.
+  "enum-tools==0.13.0",
   # `importlib_resources` is used to shim over Python API incompatibilities. It uses SemVer.
   "importlib_resources~=6.5.2",
 ]
@@ -111,6 +113,7 @@ jtag-xvc = "glasgow.applet.bridge.jtag_xvc:JTAGXVCApplet"
 probe-rs = "glasgow.applet.bridge.probe_rs:ProbeRsApplet"
 
 memory-24x = "glasgow.applet.memory._24x:Memory24xApplet"
+memory-25q = "glasgow.applet.memory._25q:Memory25QApplet"
 memory-25x = "glasgow.applet.memory._25x:Memory25xApplet"
 memory-onfi = "glasgow.applet.memory.onfi:MemoryONFIApplet"
 memory-prom = "glasgow.applet.memory.prom:MemoryPROMApplet"
@@ -162,6 +165,7 @@ video-ws2812-output = "glasgow.applet.video.ws2812_output:VideoWS2812OutputApple
 radio-nrf24l01 = "glasgow.applet.radio.nrf24l01:RadioNRF24L01Applet"
 
 [project.entry-points."glasgow.applet.tool"]
+memory-25q = "glasgow.applet.memory._25q.decode:Memory25QAppletTool"
 memory-25x = "glasgow.applet.memory._25x.decode:Memory25xAppletTool"
 memory-prom = "glasgow.applet.memory.prom:MemoryPROMAppletTool"
 memory-floppy = "glasgow.applet.memory.floppy:MemoryFloppyAppletTool [numpy]"

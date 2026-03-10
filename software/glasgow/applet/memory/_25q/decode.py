@@ -1,6 +1,9 @@
+# TODO: use `glasgow.arch.qspi.nor` for decoding? (This was too much to refactor at once.)
+
 from collections.abc import Buffer
 from typing import BinaryIO
 from abc import ABCMeta, abstractmethod
+import enum
 import struct
 import logging
 import argparse
@@ -9,10 +12,15 @@ from glasgow.database.jedec import jedec_mfg_name_from_bytes
 from glasgow.support.logging import dump_hex
 from glasgow.protocol.sfdp import SFDPCollection, SFDPJEDECFlashParametersTable
 from glasgow.applet import GlasgowAppletTool
-from . import Memory25xAddrMode, Memory25xApplet
+from . import Memory25QApplet
 
 
-__all__ = ["MemoryImage", "Memory25xDecoder"]
+__all__ = ["MemoryImage", "Memory25QDecoder"]
+
+
+class AddressingMode(enum.Enum):
+    ThreeByte = enum.auto()
+    FourByte  = enum.auto()
 
 
 class MemoryImage:
@@ -77,11 +85,11 @@ class MemoryImage:
             mask_file.write(self._mask)
 
 
-class Memory25xTraceTypeError(Exception):
+class Memory25QTraceTypeError(Exception):
     pass
 
 
-class Memory25xAbstractTrace(metaclass=ABCMeta):
+class Memory25QAbstractTrace(metaclass=ABCMeta):
     @abstractmethod
     def read_copi(self, count: int | None = None) -> memoryview:
         """Reads ``count`` bytes (or until the end of trace) by sampling COPI line."""
@@ -103,7 +111,7 @@ class Memory25xAbstractTrace(metaclass=ABCMeta):
         """
 
 
-class Memory25xSPITrace(Memory25xAbstractTrace):
+class Memory25QSPITrace(Memory25QAbstractTrace):
     def __init__(self, copi: bytes, cipo: bytes):
         self._at   = 0
         self._copi = memoryview(copi)
@@ -128,13 +136,13 @@ class Memory25xSPITrace(Memory25xAbstractTrace):
         return data
 
     def read_dual(self, count: int | None = None) -> memoryview:
-        raise Memory25xTraceTypeError("dual I/O read requires a QSPI trace")
+        raise Memory25QTraceTypeError("dual I/O read requires a QSPI trace")
 
     def read_quad(self, count: int | None = None) -> memoryview:
-        raise Memory25xTraceTypeError("quad I/O read requires a QSPI trace")
+        raise Memory25QTraceTypeError("quad I/O read requires a QSPI trace")
 
 
-class Memory25xQSPITrace(Memory25xAbstractTrace):
+class Memory25QQSPITrace(Memory25QAbstractTrace):
     def __init__(self, data: bytes):
         self._at   = 0
         self._data = memoryview(data)
@@ -189,7 +197,7 @@ class Memory25xQSPITrace(Memory25xAbstractTrace):
         return self._get(count)
 
 
-class Memory25xDecoder:
+class Memory25QDecoder:
     def __init__(self, logger: logging.Logger | None = None):
         self._logger   = logger
 
@@ -201,7 +209,7 @@ class Memory25xDecoder:
 
         self._index    = 0
         self._write    = False
-        self._mode     = Memory25xAddrMode.ThreeByte
+        self._mode     = AddressingMode.ThreeByte
 
     def _log(self, message, *args, level=logging.DEBUG):
         if self._logger:
@@ -229,14 +237,14 @@ class Memory25xDecoder:
 
     def _decode_addr(self, trace, mode, *, x=1) -> int:
         match mode:
-            case Memory25xAddrMode.ThreeByte:
+            case AddressingMode.ThreeByte:
                 match x:
                     case 1: data = trace.read_copi(3)
                     case 2: data = trace.read_dual(3)
                     case 4: data = trace.read_quad(3)
                 addr = data[0] << 16 | data[1] << 8  | data[2] << 0
                 self._log(f"  {addr=:06x}")
-            case Memory25xAddrMode.FourByte:
+            case AddressingMode.FourByte:
                 match x:
                     case 1: data = trace.read_copi(4)
                     case 2: data = trace.read_dual(4)
@@ -280,7 +288,7 @@ class Memory25xDecoder:
 
                 case 0x4B:
                     self._log(f"{cmd=:02X} (Read Unique ID)")
-                    addr = self._decode_addr(trace, Memory25xAddrMode.ThreeByte)
+                    addr = self._decode_addr(trace, AddressingMode.ThreeByte)
                     _    = trace.read_cipo(1)
                     data = trace.read_cipo()
                     self._log("  data=%s", dump_hex(data))
@@ -288,7 +296,7 @@ class Memory25xDecoder:
 
                 case 0x5A:
                     self._log(f"{cmd=:02X} (Read SFDP)")
-                    addr = self._decode_addr(trace, Memory25xAddrMode.ThreeByte)
+                    addr = self._decode_addr(trace, AddressingMode.ThreeByte)
                     _    = trace.read_cipo(1)
                     data = trace.read_cipo()
                     self._log("  data=%s", dump_hex(data))
@@ -301,11 +309,11 @@ class Memory25xDecoder:
 
                 case 0xB7:
                     self._log(f"{cmd=:02X} (Enter 4-Byte Address Mode)")
-                    self._mode = Memory25xAddrMode.FourByte
+                    self._mode = AddressingMode.FourByte
 
                 case 0xE9:
                     self._log(f"{cmd=:02X} (Exit 4-Byte Address Mode)")
-                    self._mode = Memory25xAddrMode.ThreeByte
+                    self._mode = AddressingMode.ThreeByte
 
                 case 0x3B:
                     self._log(f"{cmd=:02X} (Dual Output Fast Read)")
@@ -353,22 +361,22 @@ class Memory25xDecoder:
             else:
                 self._log(f"{cmd=:02X} (truncated)", level=logging.ERROR)
 
-        except Memory25xTraceTypeError as exn:
+        except Memory25QTraceTypeError as exn:
             self._log(str(exn), level=logging.ERROR)
 
         finally:
             self._index += 1
 
     def decode_spi(self, copi, cipo):
-        self.decode_trace(Memory25xSPITrace(copi, cipo))
+        self.decode_trace(Memory25QSPITrace(copi, cipo))
 
     def decode_qspi(self, data):
-        self.decode_trace(Memory25xQSPITrace(data))
+        self.decode_trace(Memory25QQSPITrace(data))
 
 
-class Memory25xAppletTool(GlasgowAppletTool, applet=Memory25xApplet):
+class Memory25QAppletTool(GlasgowAppletTool, applet=Memory25QApplet):
     logger = logging.getLogger(__name__)
-    help = "decode communications with 25-series Flash memories and extract data"
+    help = "decode communications with 25-series SPI NOR Flash memories and extract data"
     description = """
     Dissect captured SPI/QSPI transactions and extract data into linear memory image files.
 
@@ -431,7 +439,7 @@ class Memory25xAppletTool(GlasgowAppletTool, applet=Memory25xApplet):
             help="write UID data presence mask to MASK-FILE")
 
     async def run(self, args):
-        decoder = Memory25xDecoder(self.logger)
+        decoder = Memory25QDecoder(self.logger)
 
         for index, line in enumerate(args.capture_file):
             try:
