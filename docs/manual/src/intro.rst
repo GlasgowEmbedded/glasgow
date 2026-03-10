@@ -65,11 +65,11 @@ What can I do with Glasgow?
 
 * read and write :ref:`24-series I²C EEPROMs <applet.memory._24x>`
 
-* read and write :ref:`25-series SPI Flash memories <applet.memory._25x>`
+* read and write :ref:`25-series SPI Flash memories <applet.memory._25q>`
 
   * determine memory parameters via SFDP
 
-  * :ref:`extract data and SFDP information <applet.memory._25x.tool>` from SPI transaction captures
+  * :ref:`extract data and SFDP information <applet.memory._25q.tool>` from SPI transaction captures
 
 * read and write ONFI-compatible Flash memories
 

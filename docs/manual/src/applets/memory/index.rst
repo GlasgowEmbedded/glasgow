@@ -10,3 +10,4 @@ Memory manipulation
 
     24x
     25x
+    25q
