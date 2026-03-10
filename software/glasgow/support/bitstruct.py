@@ -2,6 +2,7 @@ import sys
 import types
 import textwrap
 from collections import OrderedDict
+from typing import Self
 
 from .bits import *
 
@@ -13,14 +14,14 @@ class _bitstruct:
     __slots__ = ()
 
     @staticmethod
-    def _check_bits_(action, expected_width, value):
+    def _check_bits_(action, expected_width: int, value: bits):
         assert isinstance(value, bits)
         if len(value) != expected_width:
             raise ValueError(
                 f"{action} requires {expected_width} bits, got {len(value)} bits ({value})")
 
     @staticmethod
-    def _check_int_(action, expected_width, value):
+    def _check_int_(action, expected_width: int, value: int):
         assert isinstance(value, int)
         if value < 0:
             raise ValueError(f"{action} requires a non-negative integer, got {value}")
@@ -30,7 +31,7 @@ class _bitstruct:
                 f"got {value.bit_length()}-bit ({value})")
 
     @staticmethod
-    def _check_bytes_(action, expected_length, value):
+    def _check_bytes_(action, expected_length: int, value: bytes | bytearray | memoryview):
         assert isinstance(value, (bytes, bytearray, memoryview))
         if len(value) != expected_length:
             raise ValueError(
@@ -104,38 +105,38 @@ class _bitstruct:
             cls[name] = method
 
     @classmethod
-    def from_bytes(cls, value):
+    def from_bytes(cls, value) -> Self:
         cls._check_bytes_("initialization", cls._size_bytes_, value)
         return cls.from_bits(bits(value, cls._size_bits_))
 
     from_bytearray = from_bytes
 
     @classmethod
-    def from_int(cls, value):
+    def from_int(cls, value) -> Self:
         cls._check_int_("initialization", cls._size_bits_, value)
         return cls.from_bits(bits(value, cls._size_bits_))
 
     @classmethod
-    def bit_length(cls):
+    def bit_length(cls) -> int:
         return cls._size_bits_
 
-    def to_int(self):
+    def to_int(self) -> int:
         return int(self.to_bits())
 
     __int__ = to_int
 
-    def to_bytes(self):
+    def to_bytes(self) -> bytes:
         return bytes(self.to_bits())
 
     __bytes__ = to_bytes
 
-    def to_bytearray(self):
+    def to_bytearray(self) -> bytearray:
         return bytearray(bytes(self.to_bits()))
 
-    def copy(self):
+    def copy(self) -> Self:
         return self.__class__.from_bits(self.to_bits())
 
-    def bits_repr(self, omit_zero=False, omit_padding=True):
+    def bits_repr(self, omit_zero=False, omit_padding=True) -> str:
         fields = []
         if omit_padding:
             names = self._named_fields_
@@ -152,14 +153,14 @@ class _bitstruct:
 
         return " ".join(fields)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.__module__}.{self.__class__.__name__} {self.bits_repr()}>"
 
-    def __eq__(self, other):
+    def __eq__(self, other: Self) -> bool:
         return isinstance(other, self.__class__) and self.to_bits() == other.to_bits()
 
 
-def bitstruct(name, size_bits, fields):
+def bitstruct(name, size_bits, fields) -> type[_bitstruct]:
     mod = sys._getframe(1).f_globals["__name__"] # see namedtuple()
 
     cls = types.new_class(name, (_bitstruct,),
