@@ -281,7 +281,7 @@ class AbstractAssembly(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def add_submodule(self, elaboratable, *, name=None) -> Elaboratable:
+    def add_submodule(self, elaboratable, *, name: str | None = None) -> Elaboratable:
         pass
 
     @abstractmethod
