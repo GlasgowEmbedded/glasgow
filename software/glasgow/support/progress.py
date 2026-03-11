@@ -76,6 +76,12 @@ class Progress:
         (and so on until completion)
     """
 
+    _total: int | None
+    _done: int
+    _action: str
+    _item: str | None
+    _scale: Literal[1, 1000, 1024]
+
     def __init__(self, *,
         total: int | None = None,
         action: str,
@@ -89,7 +95,7 @@ class Progress:
         self._scale  = scale
 
     @classmethod
-    def chunks[T: Sequence](cls, items: T, chunk_size: int, **kwargs) -> Generator[T]:
+    def chunks[T](cls, items: Sequence[T], chunk_size: int, **kwargs) -> Generator[Sequence[T]]:
         """Chunked progress tracker.
 
         This helper method exists to handle the case where a sequence must be brought into chunks
@@ -216,7 +222,7 @@ class AbstractProgressImpl(metaclass=ABCMeta):
         ...
 
     @abstractmethod
-    def update(self, progress: Progress):
+    def update(self, progress: Progress, count: int):
         ...
 
 
@@ -230,19 +236,19 @@ class TqdmProgressImpl(AbstractProgressImpl):
         self._orig_stderr, sys.stderr = sys.stderr, DummyTqdmFile(sys.stderr)
         # https://github.com/tqdm/tqdm/pull/1719
         self._orig_format_sizeof, tqdm.format_sizeof = tqdm.format_sizeof, \
-            lambda num, divisor=1000: \
+            lambda num, suffix="", divisor=1000.0: \
                 self._orig_format_sizeof(num, "i" if divisor == 1024 else "", divisor)
 
     def unregister(self):
         Progress._impl = self._orig_impl
-        sys.stdout = self._prog_stdout
-        sys.stderr = self._prog_stderr
+        sys.stdout = self._orig_stdout
+        sys.stderr = self._orig_stderr
         tqdm.format_sizeof = self._orig_format_sizeof
 
     def open(self, progress: Progress):
         self._bars[progress] = tqdm(
             desc=progress.action,
-            unit=progress.item,
+            unit=progress.item or "it", # explicit default to work around tqdm typing issue
             unit_scale=True if progress.scale != 1 else False,
             unit_divisor=progress.scale,
             total=float("+inf") if progress.total is None else progress.total,
