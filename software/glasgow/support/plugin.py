@@ -75,7 +75,7 @@ class PluginMetadata:
     #
     # E.g. if the name is `"glasgow.applet"` then the `pyproject.toml` section will be
     # `[project.entry-points."glasgow.applet"]`.
-    GROUP_NAME = None
+    GROUP_NAME: str
 
     _out_of_tree_warning_printed_for = set()
 
