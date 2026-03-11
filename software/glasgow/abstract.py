@@ -1,6 +1,7 @@
 from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from typing import Self, Any, Literal
+from contextlib import contextmanager
 from collections.abc import Buffer, Generator, Mapping
 from dataclasses import dataclass
 import re
@@ -276,6 +277,7 @@ class AbstractAssembly(metaclass=ABCMeta):
     def sys_clk_period(self) -> float: # TODO: migrate to `amaranth.hdl.Period`
         pass
 
+    @contextmanager
     @abstractmethod
     def add_applet(self, applet: Any) -> Generator[None]:
         pass
