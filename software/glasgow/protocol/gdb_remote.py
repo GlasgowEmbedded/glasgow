@@ -6,7 +6,6 @@ import logging
 import asyncio
 import typing
 from abc import ABCMeta, abstractmethod
-from collections.abc import Buffer
 
 from glasgow.applet import GlasgowAppletError
 
@@ -78,7 +77,7 @@ class GDBRemote(metaclass=ABCMeta):
         """Updates the value of one register, with the number GDB uses."""
 
     @abstractmethod
-    async def target_read_memory(self, address: int, length: int) -> Buffer:
+    async def target_read_memory(self, address: int, length: int) -> bytes:
         """Reads system memory."""
 
     @abstractmethod
