@@ -1991,7 +1991,7 @@ _manufacturers = [
 
 
 def _jedec_update_mfg_from_pdf():
-    import fitz
+    import fitz # type:ignore
     import re
     import argparse
 
