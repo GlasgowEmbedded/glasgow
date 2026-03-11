@@ -1,17 +1,26 @@
-from collections import namedtuple
+from dataclasses import dataclass, field
+from typing import Literal
 
 
 __all__ = ["devices", "devices_by_ids"]
 
 
-class MSP430Device(namedtuple("MSP430Device", (
-    "name", "jtag_id", "device_id", "ext_id",
-    "core", # '430', '430X', '430Xv2'
-    "type", # 'flash', 'fram'
-    "features", # [] of 'quick.{flash,sram,fram}.{r,w}', 'fast_flash', 'enhanced_verify'
-    "pkg_variants", # If ID depends on package, list variant(s)
-))):
+@dataclass
+class MSP430Device:
     __slots__ = ()
+    name: str
+    jtag_id: int
+    device_id: int
+    ext_id: int | None
+    core: Literal["430", "430X", "430Xv2"]
+    type: Literal["flash", "fram"]
+    features: list[Literal[
+        "quick.flash.r", "quick.flash.w",
+        "quick.sram.r", "quick.sram.w",
+        "quick.fram.r", "quick.fram.w",
+        "fast_flash", "enhanced_verify",
+    ]]
+    pkg_variants: list[str] = field(default_factory=lambda: []) # If ID depends on package
 
     def address_width(self):
         if self.core in ("430X", "430Xv2"):
@@ -34,7 +43,7 @@ class MSP430Device(namedtuple("MSP430Device", (
     def __repr__(self):
         return (f"MSP430Device({self.name!r}, "
             f"{self.jtag_id:#02x}, {self.device_id:#04x}, "
-            f"{'None' if self.ext_id is None else self.ext_id.format('#02x')}, "
+            f"{'None' if self.ext_id is None else f'{self.ext_id:#02x}'}, "
             f"core={self.core!r}, type={self.type!r}, features={self.features!r}, "
             f"pkg_variants={self.pkg_variants!r})")
 
