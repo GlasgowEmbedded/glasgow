@@ -196,6 +196,7 @@ class Memory25xInterface:
 
 class Memory25xApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
+    deprecated = "use applet `memory-25q` instead (be aware of different default pins)"
     help = "read and write 25-series SPI Flash memories"
     description = """
     Identify, read, erase, or program memories compatible with 25-series Flash memory, such as

@@ -204,6 +204,10 @@ def get_argparser():
                 help += " (PREVIEW QUALITY APPLET)"
                 description = "    This applet is PREVIEW QUALITY and may CORRUPT DATA or " \
                               "have missing features. Use at your own risk.\n" + description
+            if applet_cls.deprecated:
+                help += " (DEPRECATED APPLET)"
+                description = "    This applet is DEPRECATED and WILL BE REMOVED soon: " \
+                              f"{applet_cls.deprecated}.\n" + description
             if applet_cls.required_revision > "A0":
                 help += f" (rev{applet_cls.required_revision}+)"
                 description += f"\n    This applet requires " \
