@@ -186,6 +186,7 @@ class JESD3Parser:
         if self._fuse_bit_count > 0:
             self._parse_error("fuse default state specified after fuse list")
         self._fuse_default = int(state, 2)
+        assert self._fuse_default in (0, 1)
         self.fuse.setall(self._fuse_default)
 
     def _on_L(self, index, values):
@@ -203,6 +204,7 @@ class JESD3Parser:
 
     def _on_C(self, checksum):
         """Fuse checksum."""
+        assert self.fuse is not None
         expected_checksum = int(checksum, 16)
         actual_checksum   = sum(self.fuse.to_bytes()) & 0xffff
         if expected_checksum != actual_checksum:
@@ -289,6 +291,7 @@ class JESD3Parser:
                 f"transmission checksum mismatch: expected {expected_checksum:04X}, "
                 f"actual {actual_checksum:04X}")
 
+        assert self.fuse is not None
         if self._fuse_default is None and self._fuse_bit_count < len(self.fuse):
             self._parse_error(
                 f"fuse default state is not specified, and only {self._fuse_bit_count} "
@@ -334,5 +337,6 @@ if __name__ == "__main__":
     with open(sys.argv[1], "rb") as f:
         parser = JESD3Parser(f.read(), quirk_no_design_spec=False)
         parser.parse()
-        for i in range(0, len(parser.fuse) + 63, 64):
-            print(f"{i:08x}: {parser.fuse[i:i + 64]}")
+        if parser.fuse:
+            for i in range(0, len(parser.fuse) + 63, 64):
+                print(f"{i:08x}: {parser.fuse[i:i + 64]}")
