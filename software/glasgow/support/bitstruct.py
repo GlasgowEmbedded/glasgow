@@ -1,10 +1,10 @@
 import sys
 import types
 import textwrap
-from collections import OrderedDict
 from typing import Self
+from collections.abc import Callable
 
-from .bits import *
+from glasgow.support.bits import bits
 
 
 __all__ = ["bitstruct"]
@@ -12,6 +12,10 @@ __all__ = ["bitstruct"]
 
 class _bitstruct:
     __slots__ = ()
+    _size_bits_: int
+    _size_bytes_: int
+    _named_fields_: list[str]
+    _layout_: dict[str, tuple[int, int]]
 
     @staticmethod
     def _check_bits_(action, expected_width: int, value: bits):
@@ -39,52 +43,52 @@ class _bitstruct:
                 f"got {len(value)} bytes ({value.hex()})")
 
     @staticmethod
-    def _define_fields_(cls, declared_bits, fields):
+    def _define_fields_(ty, declared_bits, fields):
         total_bits = sum(width for name, width in fields)
         if total_bits != declared_bits:
             raise TypeError(
                 f"declared width is {declared_bits} bits, but "
                 f"sum of field widths is {total_bits} bits")
 
-        cls["_size_bits_"]    = declared_bits
-        cls["_size_bytes_"]   = (declared_bits + 7) // 8
-        cls["_named_fields_"] = []
-        cls["_layout_"]       = OrderedDict()
+        ty["_size_bits_"]    = declared_bits
+        ty["_size_bytes_"]   = (declared_bits + 7) // 8
+        ty["_named_fields_"] = []
+        ty["_layout_"]       = {}
 
         offset = 0
         for name, width in fields:
             if name is None:
                 name = f"padding_{offset}"
             else:
-                cls["_named_fields_"].append(name)
-            cls["_layout_"][name] = (offset, width)
+                ty["_named_fields_"].append(name)
+            ty["_layout_"][name] = (offset, width)
             offset += width
 
-        cls["__slots__"] = tuple(f"_f_{field}" for field in cls["_layout_"])
+        ty["__slots__"] = tuple(f"_f_{field}" for field in ty["_layout_"])
 
         code = textwrap.dedent(f"""
-        def __init__(self, {", ".join(f"{field}=0" for field in cls["_named_fields_"])}):
+        def __init__(self, {", ".join(f"{field}=0" for field in ty["_named_fields_"])}):
             {"; ".join(f"self.{field} = 0"
-                       for field in cls["_layout_"] if field not in cls["_named_fields_"])}
+                       for field in ty["_layout_"] if field not in ty["_named_fields_"])}
             {"; ".join(f"self.{field} = {field}"
-                       for field in cls["_layout_"] if field in cls["_named_fields_"])}
+                       for field in ty["_layout_"] if field in ty["_named_fields_"])}
 
         @classmethod
         def from_bits(cls, value):
             cls._check_bits_("initialization", cls._size_bits_, value)
             self = object.__new__(cls)
             {"; ".join(f"self._f_{field} = int(value[{offset}:{offset+width}])"
-                       for field, (offset, width) in cls["_layout_"].items())}
+                       for field, (offset, width) in ty["_layout_"].items())}
             return self
 
         def to_bits(self):
             value = 0
             {"; ".join(f"value |= self._f_{field} << {offset}"
-                       for field, (offset, width) in cls["_layout_"].items())}
+                       for field, (offset, width) in ty["_layout_"].items())}
             return bits(value, self._size_bits_)
         """)
 
-        for field, (_offset, width) in cls["_layout_"].items():
+        for field, (_offset, width) in ty["_layout_"].items():
             code += textwrap.dedent(f"""
             @property
             def {field}(self):
@@ -102,7 +106,10 @@ class _bitstruct:
         methods = {}
         exec(code, globals(), methods)
         for name, method in methods.items():
-            cls[name] = method
+            ty[name] = method
+
+    from_bits: Callable[[bits], Self]
+    to_bits: Callable[[], bits]
 
     @classmethod
     def from_bytes(cls, value) -> Self:
