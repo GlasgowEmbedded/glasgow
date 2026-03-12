@@ -337,8 +337,8 @@ class SFDPJEDECFastReadParameters:
     the address phase. Neither the controller nor the device drives the bus, which provides
     turn-around period and avoids contention on bidirectional pins.
 
-    Device datasheets consider wait states to "dummy cycles", but sometimes expand the latter term
-    to also include mode clocks.
+    Device datasheets consider wait states to be "dummy cycles", but sometimes expand the latter
+    term to also include mode clocks.
 
     Some devices define fast read modes with zero wait states and a non-zero number of mode clocks.
     This is ill-formed as no turnaround period would be available; upon closer inspection, usually
