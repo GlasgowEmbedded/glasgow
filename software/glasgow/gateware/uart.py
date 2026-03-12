@@ -43,8 +43,8 @@ class UARTBus(Elaboratable):
 class UART(Elaboratable):
     """Asynchronous serial receiver-transmitter.
 
-    Any number of data bits, any parity, and 1 stop bit are supported. Baud rate may be changed
-    at runtime.
+    Any number of data bits, any parity, and any integer stop bits are supported. Baud rate may be
+    changed at runtime.
 
     :type bit_cyc: int
     :param bit_cyc:
@@ -55,6 +55,9 @@ class UART(Elaboratable):
     :type parity: str
     :param parity:
         Parity, one of ``"none"`` (default), ``"zero"``, ``"one"``, ``"even"``, ``"odd"``.
+    :type stop_bits: int
+    :param stop_bits:
+        Number of stop bits. Support 1 (default) to 8.
     :type max_bit_cyc: int
     :param max_bit_cyc:
         Maximum possible value for ``bit_cyc`` that can be configured at runtime.
@@ -90,7 +93,7 @@ class UART(Elaboratable):
         ``tx_data`` is sampled, and the transmit state machine starts transmitting a frame.
     """
 
-    def __init__(self, ports, bit_cyc, data_bits=8, parity="none", max_bit_cyc=None):
+    def __init__(self, ports, bit_cyc, data_bits=8, parity="none", stop_bits=1, max_bit_cyc=None):
         if max_bit_cyc is not None:
             self.max_bit_cyc = max_bit_cyc
         else:
@@ -98,6 +101,7 @@ class UART(Elaboratable):
 
         self.data_bits = data_bits
         self.parity = parity
+        self.stop_bits = stop_bits
 
         self.bit_cyc = Signal(range(self.max_bit_cyc + 1), init=bit_cyc)
 
@@ -137,11 +141,12 @@ class UART(Elaboratable):
                     assert False
 
         if self.bus.has_rx:
-            rx_start = Signal()
-            rx_timer = Signal(range(self.max_bit_cyc))
-            rx_stb   = Signal()
-            rx_shreg = Signal(self.data_bits)
-            rx_bitno = Signal(range(len(rx_shreg)))
+            rx_start        = Signal()
+            rx_timer        = Signal(range(self.max_bit_cyc))
+            rx_stb          = Signal()
+            rx_shreg        = Signal(self.data_bits)
+            rx_bitno        = Signal(range(len(rx_shreg)))
+            rx_stop_bit_cnt = Signal(range(self.stop_bits))
 
             m.d.comb += self.rx_err.eq(self.rx_ferr | self.rx_ovf | self.rx_perr)
 
@@ -182,12 +187,16 @@ class UART(Elaboratable):
 
                 with m.State("STOP"):
                     with m.If(rx_stb):
+                        m.d.sync += [
+                            rx_stop_bit_cnt.eq(rx_stop_bit_cnt + 1),
+                        ]
                         with m.If(~self.bus.rx_i):
                             m.d.comb += self.rx_ferr.eq(1)
                             m.next = "IDLE"
                         with m.Else():
-                            m.d.sync += self.rx_data.eq(rx_shreg)
-                            m.next = "READY"
+                            with m.If(rx_stop_bit_cnt == self.stop_bits - 1):
+                                m.d.sync += self.rx_data.eq(rx_shreg)
+                                m.next = "READY"
                 with m.State("READY"):
                     m.d.comb += self.rx_rdy.eq(1)
                     with m.If(self.rx_ack):
@@ -199,12 +208,13 @@ class UART(Elaboratable):
         ###
 
         if self.bus.has_tx:
-            tx_start  = Signal()
-            tx_timer  = Signal(range(self.max_bit_cyc))
-            tx_stb    = Signal()
-            tx_shreg  = Signal(self.data_bits)
-            tx_bitno  = Signal(range(len(tx_shreg)))
-            tx_parity = Signal()
+            tx_start        = Signal()
+            tx_timer        = Signal(range(self.max_bit_cyc))
+            tx_stb          = Signal()
+            tx_shreg        = Signal(self.data_bits)
+            tx_bitno        = Signal(range(len(tx_shreg)))
+            tx_parity       = Signal()
+            tx_stop_bit_cnt = Signal(range(self.stop_bits))
 
             with m.If(tx_start | (tx_timer == 0)):
                 m.d.sync += tx_timer.eq(self.bit_cyc - 1)
@@ -254,6 +264,8 @@ class UART(Elaboratable):
                         m.next = "STOP"
                 with m.State("STOP"):
                     with m.If(tx_stb):
-                        m.next = "IDLE"
+                        m.d.sync += tx_stop_bit_cnt.eq(tx_stop_bit_cnt + 1)
+                        with m.If(tx_stop_bit_cnt == self.stop_bits - 1):
+                            m.next = "IDLE"
 
         return m
