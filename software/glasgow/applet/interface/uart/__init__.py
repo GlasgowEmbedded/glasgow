@@ -308,7 +308,7 @@ class UARTApplet(GlasgowAppletV2):
             help="send and receive parity bit as PARITY (default: %(default)s)")
         parser.add_argument(
             "--stop-bits", metavar="STOP_BITS", choices=(range(1, 9)), type=int, default=1,
-            help="send and receive stop bits as STOP_BITS (default: %(default)s, options: 1..=8)")
+            help="send and receive stop bits as STOP_BITS (default: %(default)s, options: 1..8)")
 
     def build(self, args):
         with self.assembly.add_applet(self):
