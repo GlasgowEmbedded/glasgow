@@ -87,6 +87,15 @@ class GlasgowApplet(metaclass=ABCMeta):
     def tests(cls):
         return None
 
+    @classmethod
+    def _get_argparser_for_sphinx(cls, name):
+        parser = argparse.ArgumentParser(name, description=cls.description)
+        access = GlasgowAppletArguments(name)
+        cls.add_build_arguments(parser, access)
+        cls.add_run_arguments(parser, access)
+        cls.add_interact_arguments(parser)
+        return parser
+
 
 class GlasgowAppletTestCase(unittest.TestCase):
     def __init_subclass__(cls, applet, **kwargs):
