@@ -7,6 +7,7 @@
 # instructed in the comment there.
 
 from collections.abc import AsyncIterator
+from typing import Literal
 import sys
 import argparse
 import logging
@@ -35,9 +36,23 @@ class SWDProbeException(GlasgowAppletError):
         Timeout = "timeout" # too many retries for a WAIT response
         Other   = "other"   # unspecified
 
-    def __init__(self, message, *, kind: Kind = Kind.Other):
+    def __init__(self, kind: Kind = Kind.Other, *, address: int | None = None):
         self.kind = kind
-        super().__init__(message)
+        self.address = address
+
+    def __str__(self):
+        match self.kind:
+            case SWDProbeException.Kind.Error:
+                message = "communication error"
+            case SWDProbeException.Kind.Fault:
+                message = "transaction fault"
+            case SWDProbeException.Kind.Timeout:
+                message = "wait timeout"
+            case _:
+                assert False
+        if self.address is not None:
+            message += f" (at address {self.address:#10x}"
+        return message
 
 
 class SWDCommand(data.Struct):
@@ -191,11 +206,11 @@ class SWDProbeInterface:
         await self._pipe.flush()
         response = data.Const(SWDResponse, (await self._pipe.recv(1))[0])
         if response.rsp == swd.Response.Error:
-            raise SWDProbeException("communication error", kind=SWDProbeException.Kind.Error)
+            raise SWDProbeException(SWDProbeException.Kind.Error)
         if response.ack == swd.Ack.FAULT:
-            raise SWDProbeException("transaction fault", kind=SWDProbeException.Kind.Fault)
+            raise SWDProbeException(SWDProbeException.Kind.Fault)
         if response.ack == swd.Ack.WAIT:
-            raise SWDProbeException("wait timeout", kind=SWDProbeException.Kind.Timeout)
+            raise SWDProbeException(SWDProbeException.Kind.Timeout)
         assert response.ack == swd.Ack.OK
 
     async def line_reset(self):
@@ -220,7 +235,7 @@ class SWDProbeInterface:
         await self._send_sequence(SWJ_selection_alert_seq)
         await self._send_sequence(SWJ_dormant_to_swd_switch_seq)
 
-    async def _raw_read(self, *, ap_ndp: bool, addr: int) -> int:
+    async def _raw_read(self, *, ap_ndp: Literal[0, 1], addr: int) -> int:
         assert addr in range(0, 0x10, 4)
         await self._send_transfer(ap_ndp=ap_ndp, r_nw=1, addr23=addr >> 2)
         try:
@@ -232,7 +247,7 @@ class SWDProbeInterface:
             raise
         return data
 
-    async def _raw_write(self, *, ap_ndp: bool, addr: int, data: int):
+    async def _raw_write(self, *, ap_ndp: Literal[0, 1], addr: int, data: int):
         assert addr in range(0, 0x10, 4)
         await self._send_transfer(ap_ndp=ap_ndp, r_nw=0, addr23=addr >> 2)
         await self._pipe.send(struct.pack("<L", data))
