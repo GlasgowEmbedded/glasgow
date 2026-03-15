@@ -1,0 +1,608 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="search" title="Search" href="../../search.html"><link rel="next" title="Development process" href="../../develop/index.html"><link rel="prev" title="Reusable library" href="../index.html">
+        <link rel="canonical" href="https://glasgow-embedded.org/latest/library/support/progress.html">
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.12.19 -->
+        <title>support.progress - Glasgow Interface Explorer</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=f7b2d380" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/tabs.css?v=4c969af8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/fontawesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/solid.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/brands.min.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/custom.css?v=1626aa46" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  --color-announcement-background: #56bf62;
+  --color-announcement-text: #094a05;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-announcement-background: #1c4808;
+  --color-announcement-text: #64cc69;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-announcement-background: #1c4808;
+  --color-announcement-text: #64cc69;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+<div class="announcement">
+  <aside class="announcement-content">
+     Production units are being shipped by Mouser. <a href='https://crowdsupply.com/1bitsquared/glasgow'>Order yours now!</a> 
+  </aside>
+</div>
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../index.html"><div class="brand">Glasgow Interface Explorer</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../index.html">
+  
+  <span class="sidebar-brand-text">Glasgow Interface Explorer</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html">Introduction</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../revisions/index.html">Hardware revisions</a><input aria-label="Toggle navigation of Hardware revisions" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../revisions/revC3.html">Technical description (revC3)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../purchase.html">Purchasing hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../build.html">Building hardware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installing &amp; updating</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://webusb.glasgow-embedded.org/">Run in browser</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../use/index.html">Using the device</a><input aria-label="Toggle navigation of Using the device" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../use/basic.html">Basic usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../use/repl-script.html">REPL &amp; script operation</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../applets/index.html">Applet index</a><input aria-label="Toggle navigation of Applet index" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../applets/interface/index.html">I/O interfaces</a><input aria-label="Toggle navigation of I/O interfaces" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/interface/uart.html"><code class="docutils literal notranslate"><span class="pre">uart</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/interface/uart_analyzer.html"><code class="docutils literal notranslate"><span class="pre">uart-analyzer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/interface/i2c_controller.html"><code class="docutils literal notranslate"><span class="pre">i2c-controller</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/interface/spi_controller.html"><code class="docutils literal notranslate"><span class="pre">spi-controller</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/interface/spi_analyzer.html"><code class="docutils literal notranslate"><span class="pre">spi-analyzer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/interface/qspi_controller.html"><code class="docutils literal notranslate"><span class="pre">qspi-controller</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/interface/qspi_analyzer.html"><code class="docutils literal notranslate"><span class="pre">qspi-analyzer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/interface/jtag_pinout.html"><code class="docutils literal notranslate"><span class="pre">jtag-pinout</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/interface/jtag_probe.html"><code class="docutils literal notranslate"><span class="pre">jtag-probe</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/interface/jtag_svf.html"><code class="docutils literal notranslate"><span class="pre">jtag-svf</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/interface/sbw_probe.html"><code class="docutils literal notranslate"><span class="pre">sbw-probe</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/interface/swd_probe.html"><code class="docutils literal notranslate"><span class="pre">swd-probe</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../applets/memory/index.html">Memory manipulation</a><input aria-label="Toggle navigation of Memory manipulation" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/memory/24x.html"><code class="docutils literal notranslate"><span class="pre">memory-24x</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/memory/25x.html"><code class="docutils literal notranslate"><span class="pre">memory-25x</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/memory/25q.html"><code class="docutils literal notranslate"><span class="pre">memory-25q</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../applets/program/index.html">MCU/FPGA programming</a><input aria-label="Toggle navigation of MCU/FPGA programming" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/program/avr_spi.html"><code class="docutils literal notranslate"><span class="pre">program-avr-spi</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/program/ice40_sram.html"><code class="docutils literal notranslate"><span class="pre">program-ice40-sram</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/program/ice40_flash.html"><code class="docutils literal notranslate"><span class="pre">program-ice40-flash</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/program/xc6s.html"><code class="docutils literal notranslate"><span class="pre">program-xc6s</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/program/xc9500.html"><code class="docutils literal notranslate"><span class="pre">program-xc9500</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/program/xc9500xl.html"><code class="docutils literal notranslate"><span class="pre">program-xc9500xl</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/program/xpla3.html"><code class="docutils literal notranslate"><span class="pre">program-xpla3</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/program/mec16xx.html"><code class="docutils literal notranslate"><span class="pre">program-mec16xx</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/program/nrf24lx1.html"><code class="docutils literal notranslate"><span class="pre">program-nrf24lx1</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../applets/debug/index.html">MCU debugging</a><input aria-label="Toggle navigation of MCU debugging" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/debug/arc.html"><code class="docutils literal notranslate"><span class="pre">debug-arc</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/debug/arm.html"><code class="docutils literal notranslate"><span class="pre">debug-arm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/debug/arm7.html"><code class="docutils literal notranslate"><span class="pre">debug-arm7</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/debug/mips.html"><code class="docutils literal notranslate"><span class="pre">debug-mips</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../applets/radio/index.html">Radio frequency</a><input aria-label="Toggle navigation of Radio frequency" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/radio/nrf24l01.html"><code class="docutils literal notranslate"><span class="pre">radio-nrf24l01</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../applets/control/index.html">Device control</a><input aria-label="Toggle navigation of Device control" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/control/clock.html"><code class="docutils literal notranslate"><span class="pre">control-clock</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/control/gpio.html"><code class="docutils literal notranslate"><span class="pre">control-gpio</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/control/servo.html"><code class="docutils literal notranslate"><span class="pre">control-servo</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/control/si535x.html"><code class="docutils literal notranslate"><span class="pre">control-si535x</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../applets/sensor/index.html">Environment sensing</a><input aria-label="Toggle navigation of Environment sensing" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/sensor/bmx280.html"><code class="docutils literal notranslate"><span class="pre">sensor-bmx280</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/sensor/hcsr04.html"><code class="docutils literal notranslate"><span class="pre">sensor-hcsr04</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/sensor/hx711.html"><code class="docutils literal notranslate"><span class="pre">sensor-hx711</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/sensor/scd30.html"><code class="docutils literal notranslate"><span class="pre">sensor-scd30</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/sensor/sen5x.html"><code class="docutils literal notranslate"><span class="pre">sensor-sen5x</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../applets/bridge/index.html">External tools</a><input aria-label="Toggle navigation of External tools" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/bridge/flashrom.html"><code class="docutils literal notranslate"><span class="pre">spi-flashrom</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/bridge/jtag_openocd.html"><code class="docutils literal notranslate"><span class="pre">jtag-openocd</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/bridge/jtag_xvc.html"><code class="docutils literal notranslate"><span class="pre">jtag-xvc</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/bridge/probe_rs.html"><code class="docutils literal notranslate"><span class="pre">probe-rs</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../applets/audio/index.html">Audio</a><input aria-label="Toggle navigation of Audio" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/audio/dac.html"><code class="docutils literal notranslate"><span class="pre">audio-dac</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../applets/internal/index.html">Internal test</a><input aria-label="Toggle navigation of Internal test" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../applets/internal/benchmark.html"><code class="docutils literal notranslate"><span class="pre">benchmark</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="../index.html">Reusable library</a><input aria-label="Toggle navigation of Reusable library" checked="" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">support.progress</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../develop/index.html">Development process</a><input aria-label="Toggle navigation of Development process" class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../develop/applet.html">Applets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../develop/docs.html">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../develop/software.html">Software</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../develop/firmware.html">Firmware</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../develop/hardware.html">Hardware</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../contribute.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../community.html">Community</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../conduct.html">Code of Conduct</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">License</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/GlasgowEmbedded/glasgow/blob/main/docs/manual/src/library/support/progress.rst?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/GlasgowEmbedded/glasgow/edit/main/docs/manual/src/library/support/progress.rst" rel="edit" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="support-progress">
+<h1><code class="docutils literal notranslate"><span class="pre">support.progress</span></code><a class="headerlink" href="#support-progress" title="Link to this heading">¶</a></h1>
+<dl class="py class" id="module-glasgow.support.progress">
+<span id="id1"></span><dt class="sig sig-object py" id="glasgow.support.progress.Progress">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">glasgow.support.progress.</span></span><span class="sig-name descname"><span class="pre">Progress</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">total</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">item</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="m"><span class="pre">1</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="m"><span class="pre">1000</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="m"><span class="pre">1024</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#glasgow.support.progress.Progress" title="Link to this definition">¶</a></dt>
+<dd><p>Progress tracker.</p>
+<p>This context manager is used to indicate progress of a slow process within applet code in
+a generic way, decoupling it from a specific type of user interface. For example, if an applet
+is used with a CLI frontend, terminal escape sequences could be used to repeatedly display
+a text description on the last used line, whereas with a GUI frontend, a progress bar widget
+would be used.</p>
+<p>To use it, modify applet code that processes multiple items by wrapping it in
+<code class="code highlight py python docutils literal highlight-python"><span class="k">with</span> <span class="n">Progress</span><span class="p">(</span><span class="o">...</span><span class="p">):</span></code>. For example, let’s consider a method that uploads a bitstream via
+<a class="reference internal" href="../../applets/interface/spi_controller.html#glasgow.applet.interface.spi_controller.SPIControllerInterface" title="glasgow.applet.interface.spi_controller.SPIControllerInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">SPIControllerInterface</span></code></a>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="n">bitstream</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spi</span><span class="o">.</span><span class="n">select</span><span class="p">():</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spi</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">bitstream</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To add progress indication here, the bitstream will need to be explicitly chunked (while
+avoiding copies using <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#memoryview" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">memoryview</span></code></a>) and individual chunks iterated through:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="n">bitstream</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">):</span>
+    <span class="n">bitstream</span>  <span class="o">=</span> <span class="nb">memoryview</span><span class="p">(</span><span class="n">bitstream</span><span class="p">)</span>
+    <span class="n">chunk_size</span> <span class="o">=</span> <span class="mh">0x10000</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spi</span><span class="o">.</span><span class="n">select</span><span class="p">():</span>
+        <span class="k">with</span> <span class="n">Progress</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">bitstream</span><span class="p">),</span>
+                <span class="n">action</span><span class="o">=</span><span class="s2">&quot;programming&quot;</span><span class="p">,</span> <span class="n">item</span><span class="o">=</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">1024</span><span class="p">)</span> <span class="k">as</span> <span class="n">progress</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">start</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">bitstream</span><span class="p">),</span> <span class="n">chunk_size</span><span class="p">):</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spi</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">bitstream</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">chunk_size</span><span class="p">])</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spi</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
+                <span class="n">progress</span><span class="o">.</span><span class="n">advance</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="code highlight py python docutils literal highlight-python"><span class="n">synchronize</span><span class="p">()</span></code> call is added because the <code class="code highlight py python docutils literal highlight-python"><span class="n">write</span><span class="p">()</span></code> method does not wait for
+the operation to complete; without it, the <code class="code highlight py python docutils literal highlight-python"><span class="n">load</span><span class="p">()</span></code> method would quickly finish, with
+the command buffer draining slowly after. In most cases (e.g. Flash programming) there is
+a requirement to wait for feedback, making explicit synchronization unnecessary.</p>
+</div>
+<p>The particluar case of chunking a sequence (of bytes, or otherwise) is common enough that
+this class provides a helper method for it, <a class="reference internal" href="#glasgow.support.progress.Progress.chunks" title="glasgow.support.progress.Progress.chunks"><code class="xref py py-meth docutils literal notranslate"><span class="pre">chunks()</span></code></a>. Using this helper the <code class="code highlight py python docutils literal highlight-python"><span class="n">load</span><span class="p">()</span></code>
+function becomes:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="n">bitstream</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spi</span><span class="o">.</span><span class="n">select</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">Progress</span><span class="o">.</span><span class="n">chunks</span><span class="p">(</span><span class="nb">memoryview</span><span class="p">(</span><span class="n">bitstream</span><span class="p">),</span> <span class="mh">0x10000</span><span class="p">,</span>
+                <span class="n">action</span><span class="o">=</span><span class="s2">&quot;programming&quot;</span><span class="p">,</span> <span class="n">item</span><span class="o">=</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">1024</span><span class="p">):</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spi</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spi</span><span class="o">.</span><span class="n">synchronize</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>With this change to the applet code, a CLI frontend can now indicate the progress of
+the operation, for example, by printing:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>programming... 13% (65536/500000 bytes)
+programming... 26% (131072/500000 bytes)
+(and so on until completion)
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="glasgow.support.progress.Progress.chunks">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">chunks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">items</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Generator" title="(in Python v3.14)"><span class="pre">Generator</span></a></span></span><a class="headerlink" href="#glasgow.support.progress.Progress.chunks" title="Link to this definition">¶</a></dt>
+<dd><p>Chunked progress tracker.</p>
+<p>This helper method exists to handle the case where a sequence must be brought into chunks
+for processing, but progress must be tracked per-item, not per-chunk. For example, when
+manipulating large byte sequences, it would be too inefficient to process bytes one by one
+just to report progress, but processing 64 KiB chunks is usually fine.</p>
+<p>All keyword arguments not explicitly declared are passed to the class constructor. Returns
+a <a class="reference external" href="https://docs.python.org/3/glossary.html#term-generator" title="(in Python v3.14)"><span>generator</span></a> yielding the result of indexing slices of <code class="code highlight py python docutils literal highlight-python"><span class="n">items</span></code> up to
+<code class="code highlight py python docutils literal highlight-python"><span class="n">chunk_size</span></code> in length, and advancing progress whenever control is returned.
+If <code class="code highlight py python docutils literal highlight-python"><span class="nb">len</span><span class="p">(</span><span class="n">items</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">chunk_size</span></code>, progress indication is omitted entirely.</p>
+<p>To split a byte array into chunks of up to <code class="code highlight py python docutils literal highlight-python"><span class="n">chunk_size</span></code>, such as for a write
+operation, use:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">Progress</span><span class="o">.</span><span class="n">chunks</span><span class="p">(</span><span class="nb">memoryview</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">chunk_size</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;programming&quot;</span><span class="p">,</span> <span class="n">item</span><span class="o">=</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">1024</span><span class="p">):</span>
+    <span class="n">write_data</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span> <span class="c1"># here `chunk` is a `memoryview`</span>
+</pre></div>
+</div>
+<p>To split an address range into chunks of up to <code class="code highlight py python docutils literal highlight-python"><span class="n">chunk_size</span></code>, such as for a read
+operation, use:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">Progress</span><span class="o">.</span><span class="n">chunks</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">start</span> <span class="o">+</span> <span class="n">length</span><span class="p">),</span> <span class="n">chunk_size</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;reading&quot;</span><span class="p">,</span> <span class="n">item</span><span class="o">=</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">1024</span><span class="p">):</span>
+    <span class="n">data</span> <span class="o">+=</span> <span class="n">read_data</span><span class="p">(</span><span class="n">chunk</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="p">))</span> <span class="c1"># here `chunk` is a `range`</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Avoid passing <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a> or <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytearray" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytearray</span></code></a> values as <code class="code highlight py python docutils literal highlight-python"><span class="n">items</span></code>; wrap them
+in <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#memoryview" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">memoryview</span></code></a> so that chunks reference the original bytes instead of copying.</p>
+</div>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="glasgow.support.progress.Progress.action">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">action</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#glasgow.support.progress.Progress.action" title="Link to this definition">¶</a></dt>
+<dd><p>Action taking progress.</p>
+<p>Should have a <cite>present participle</cite> with no punctuation at the end, e.g. <code class="code highlight py python docutils literal highlight-python"><span class="s2">&quot;writing&quot;</span></code>
+or <code class="code highlight py python docutils literal highlight-python"><span class="s2">&quot;programming flash&quot;</span></code>.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="glasgow.support.progress.Progress.item">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">item</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#glasgow.support.progress.Progress.item" title="Link to this definition">¶</a></dt>
+<dd><p>Item being operated on.</p>
+<p>Should be a singular noun, e.g. <code class="code highlight py python docutils literal highlight-python"><span class="s2">&quot;byte&quot;</span></code> or <code class="code highlight py python docutils literal highlight-python"><span class="s2">&quot;B&quot;</span></code>. If <code class="code highlight py python docutils literal highlight-python"><span class="kc">None</span></code>, then the unit
+of processing is unspecified: either clear from context, or not feasible to specify exactly.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="glasgow.support.progress.Progress.scale">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">scale</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="m"><span class="pre">1</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="m"><span class="pre">1000</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="m"><span class="pre">1024</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#glasgow.support.progress.Progress.scale" title="Link to this definition">¶</a></dt>
+<dd><p>Scale of item count.</p>
+<p>May be one of 1, 1000, or 1024. If not 1, an appropriate SI prefix (K, M, G… or
+Ki, Mi, Gi…) will be used when counting items.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="glasgow.support.progress.Progress.total">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">total</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#glasgow.support.progress.Progress.total" title="Link to this definition">¶</a></dt>
+<dd><p>Total number of items.</p>
+<p>If <code class="code highlight py python docutils literal highlight-python"><span class="kc">None</span></code>, impossible to know until the operation finishes.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="glasgow.support.progress.Progress.done">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">done</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#glasgow.support.progress.Progress.done" title="Link to this definition">¶</a></dt>
+<dd><p>Number of completed items.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="glasgow.support.progress.Progress.advance">
+<span class="sig-name descname"><span class="pre">advance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#glasgow.support.progress.Progress.advance" title="Link to this definition">¶</a></dt>
+<dd><p>Indicate completion of <code class="code highlight py python docutils literal highlight-python"><span class="n">count</span></code> items.</p>
+<p>Advancing progress beyond <code class="code highlight py python docutils literal highlight-python"><span class="bp">self</span><span class="o">.</span><span class="n">total</span></code> completed items may result in confusing UI
+behavior, but will not raise errors. However, <code class="code highlight py python docutils literal highlight-python"><span class="n">count</span></code> must not be negative.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="glasgow.support.progress.Progress.__enter__">
+<span class="sig-name descname"><span class="pre">__enter__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#glasgow.support.progress.Progress.__enter__" title="Link to this definition">¶</a></dt>
+<dd><p>Register the progress indicator.</p>
+<p>Adds <code class="code highlight py python docutils literal highlight-python"><span class="bp">self</span></code> to the stack of displayed progress indicators.</p>
+<p>This <a class="reference external" href="https://docs.python.org/3/glossary.html#term-dunder" title="(in Python v3.14)"><span>dunder</span></a> method is called implicitly by the <code class="code highlight py python docutils literal highlight-python"><span class="k">with</span> <span class="n">Progress</span><span class="p">(</span><span class="o">...</span><span class="p">):</span></code>
+block.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="glasgow.support.progress.Progress.__exit__">
+<span class="sig-name descname"><span class="pre">__exit__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exc_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exc_value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">traceback</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#glasgow.support.progress.Progress.__exit__" title="Link to this definition">¶</a></dt>
+<dd><p>Unregister the progress indicator.</p>
+<p>Removes <code class="code highlight py python docutils literal highlight-python"><span class="bp">self</span></code> from the stack of displayed progress indicators.</p>
+<p>This <a class="reference external" href="https://docs.python.org/3/glossary.html#term-dunder" title="(in Python v3.14)"><span>dunder</span></a> method is called implicitly by the <code class="code highlight py python docutils literal highlight-python"><span class="k">with</span> <span class="n">Progress</span><span class="p">(</span><span class="o">...</span><span class="p">):</span></code>
+block.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="../../develop/index.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Development process</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="../index.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Reusable library</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2020—2026, Glasgow Interface Explorer contributors
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            <div class="icons">
+              <a class="muted-link fa-brands fa-solid fa-github fa-2x" href="https://github.com/GlasgowEmbedded/glasgow/" aria-label="GitHub"></a>
+              
+            </div>
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">support.progress</span></code></a><ul>
+<li><a class="reference internal" href="#glasgow.support.progress.Progress"><code class="docutils literal notranslate"><span class="pre">Progress</span></code></a><ul>
+<li><a class="reference internal" href="#glasgow.support.progress.Progress.chunks"><code class="docutils literal notranslate"><span class="pre">Progress.chunks()</span></code></a></li>
+<li><a class="reference internal" href="#glasgow.support.progress.Progress.action"><code class="docutils literal notranslate"><span class="pre">Progress.action</span></code></a></li>
+<li><a class="reference internal" href="#glasgow.support.progress.Progress.item"><code class="docutils literal notranslate"><span class="pre">Progress.item</span></code></a></li>
+<li><a class="reference internal" href="#glasgow.support.progress.Progress.scale"><code class="docutils literal notranslate"><span class="pre">Progress.scale</span></code></a></li>
+<li><a class="reference internal" href="#glasgow.support.progress.Progress.total"><code class="docutils literal notranslate"><span class="pre">Progress.total</span></code></a></li>
+<li><a class="reference internal" href="#glasgow.support.progress.Progress.done"><code class="docutils literal notranslate"><span class="pre">Progress.done</span></code></a></li>
+<li><a class="reference internal" href="#glasgow.support.progress.Progress.advance"><code class="docutils literal notranslate"><span class="pre">Progress.advance()</span></code></a></li>
+<li><a class="reference internal" href="#glasgow.support.progress.Progress.__enter__"><code class="docutils literal notranslate"><span class="pre">Progress.__enter__()</span></code></a></li>
+<li><a class="reference internal" href="#glasgow.support.progress.Progress.__exit__"><code class="docutils literal notranslate"><span class="pre">Progress.__exit__()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=50ba5bf0"></script>
+    <script src="../../_static/tabs.js?v=3ee01567"></script>
+    </body>
+</html>
