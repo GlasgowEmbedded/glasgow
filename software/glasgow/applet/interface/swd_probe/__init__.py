@@ -18,6 +18,7 @@ from amaranth.lib import enum, data, wiring, stream
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support.bits import bits
+from glasgow.support.progress import Progress
 from glasgow.arch.arm.swj import *
 from glasgow.arch.arm.dap import *
 from glasgow.database.jedec import jedec_mfg_name_from_bank_num
@@ -493,13 +494,15 @@ class SWDProbeApplet(GlasgowAppletV2):
                 last = args.address + args.length
                 await self.swd_iface.ap_write(args.ap, MEM_AP_CSW_addr,
                     MEM_AP_CSW(AddrInc=1, Size=2).to_int())
-                while addr < last:
-                    await self.swd_iface.ap_write(args.ap, MEM_AP_TAR_addr, addr)
-                    block = await self.swd_iface.ap_read_block(args.ap, MEM_AP_DRW_addr,
-                        min(0x100, (last - addr) >> 2))
-                    data += block
-                    addr += len(block) << 2
-                    self._show_progress(len(data) << 2, args.length)
+                with Progress(action="reading",
+                        total=args.length, item="B", scale=1024) as progress:
+                    while addr < last:
+                        await self.swd_iface.ap_write(args.ap, MEM_AP_TAR_addr, addr)
+                        block = await self.swd_iface.ap_read_block(args.ap, MEM_AP_DRW_addr,
+                            min(0x100, (last - addr) >> 2))
+                        data += block
+                        addr += len(block) << 2
+                        progress.advance(len(block) << 2)
 
                 image = b"".join(word.to_bytes(4, "big" if ap_cfg.BE else "little")
                                  for word in data)
