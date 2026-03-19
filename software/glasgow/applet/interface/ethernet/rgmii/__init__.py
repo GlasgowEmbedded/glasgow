@@ -4,17 +4,14 @@
 # Accession: G00099
 
 import logging
-import asyncio
 
 from amaranth import *
-from amaranth.lib import enum, wiring, io, cdc
-from amaranth.lib.wiring import In, Out
+from amaranth.lib import io
 
 from glasgow.arch.ieee802_3 import *
 from glasgow.gateware.ethernet import AbstractDriver
 from glasgow.gateware.iostream import StreamIOBuffer
 from glasgow.gateware.ports import PortGroup
-from glasgow.gateware.pll import PLL
 from glasgow.gateware.iodelay import IODelay
 from glasgow.abstract import AbstractAssembly, GlasgowPin
 from glasgow.applet.interface.ethernet import AbstractEthernetInterface, AbstractEthernetApplet

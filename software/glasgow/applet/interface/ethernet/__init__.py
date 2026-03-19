@@ -1,7 +1,8 @@
 # Ref: IEEE Std 802.3-2018
 # Accession: G00098
 
-from typing import Iterable, AsyncIterator, BinaryIO
+from typing import BinaryIO
+from collections.abc import AsyncIterator
 import time
 import logging
 import asyncio
@@ -17,7 +18,7 @@ from glasgow.support.os_network import OSNetworkInterface
 from glasgow.arch.ieee802_3 import *
 from glasgow.gateware import cobs, ethernet
 from glasgow.protocol import snoop
-from glasgow.abstract import AbstractAssembly, GlasgowPin
+from glasgow.abstract import AbstractAssembly
 from glasgow.applet import GlasgowAppletV2
 from glasgow.applet.control.mdio import ControlMDIOInterface
 
@@ -69,15 +70,16 @@ class AbstractEthernetInterface:
         self._rx_bypass = assembly.add_rw_register(component.rx_bypass)
         self._tx_bypass = assembly.add_rw_register(component.tx_bypass)
 
-        self._snoop: snoop.SnoopWriter = None
+        self._snoop: snoop.SnoopWriter | None = None
 
     def _log(self, message: str, *args):
         self._logger.log(self._level, "Ethernet: " + message, *args)
 
     @property
-    def snoop_file(self) -> BinaryIO:
+    def snoop_file(self) -> BinaryIO | None:
         if self._snoop is not None:
             return self._snoop.file
+        return None
 
     @snoop_file.setter
     def snoop_file(self, snoop_file):
@@ -128,6 +130,8 @@ class AbstractEthernetApplet(GlasgowAppletV2):
         sudo ip link set glasgow0 up
     """
     required_revision = "C0"
+    eth_iface: AbstractEthernetInterface
+    mdio_iface: ControlMDIOInterface
 
     @classmethod
     def add_setup_arguments(cls, parser):
@@ -208,7 +212,7 @@ class AbstractEthernetApplet(GlasgowAppletV2):
                                 self.logger.warning("packet bad (crc)")
                             count_bad += 1
                         await asyncio.sleep(args.delay)
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         self.logger.warning("packet lost")
                         count_lost += 1
             finally:
