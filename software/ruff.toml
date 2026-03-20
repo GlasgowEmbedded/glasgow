@@ -197,7 +197,7 @@ allow-dict-calls-with-keyword-arguments = true
 "glasgow/arch/*" = ["E302", "E305"] # blank-lines-top-level, blank-lines-after-function-or-class
 
 # Databases don't have to be formatted well.
-"glasgow/database/*" = ["E501"] # line-too-long
+"glasgow/database/*" = ["E501", "FURB192", "Q000"] # line-too-long, sorted-min-max
 
 # These modules use cursed import hacks for backward compatibility.
 "glasgow/applet/__init__.py" = ["E402"] # module-import-not-at-top-of-file
