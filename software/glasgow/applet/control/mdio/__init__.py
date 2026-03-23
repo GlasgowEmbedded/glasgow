@@ -18,7 +18,7 @@ from amaranth.lib.wiring import In, Out
 from glasgow.database.ieee import company_names
 from glasgow.arch.ieee802_3 import *
 from glasgow.gateware import mdio
-from glasgow.abstract import GlasgowPin, AbstractAssembly
+from glasgow.abstract import ClockDivisor, GlasgowPin, AbstractAssembly
 from glasgow.applet import GlasgowAppletV2
 
 
@@ -110,7 +110,8 @@ class ControlMDIOInterface:
         self._logger.log(self._level, "MDIO: " + message, *args)
 
     @property
-    def clock(self):
+    def clock(self) -> ClockDivisor:
+        """MDC clock divisor."""
         return self._clock
 
     async def _read(self, phy: int, reg: int) -> int:
