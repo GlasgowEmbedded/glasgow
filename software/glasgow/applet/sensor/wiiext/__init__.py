@@ -4,6 +4,9 @@ import logging
 from glasgow.applet import GlasgowAppletV2
 from glasgow.applet.interface.i2c_controller import I2CNotAcknowledged, I2CControllerInterface
 
+# TODO
+
+
 class Device:
     """Extension device specific driver."""
 
