@@ -1,6 +1,6 @@
 [submodule "libfx2"]
 	path = vendor/libfx2
-	url = https://github.com/whitequark/libfx2
+	url = https://codeberg.org/GlasgowEmbedded/libfx2
 [submodule "docs/archive"]
 	path = docs/archive
 	url = https://github.com/GlasgowEmbedded/archive
