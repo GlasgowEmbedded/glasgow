@@ -21,10 +21,20 @@ responsible for adding itself to the Assembly.  Internally, the
 Elaboratable abstract base class
 <https://amaranth-lang.org/docs/amaranth/latest/guide.html#elaboration>`_, and then called the Assembly's
 ``add_submodule()`` method; in order to implement our own logic, we will
-want to create our own ``Elaboratable`` object.  (Later, when we connect
-pins and registers to our logic, we'll switch to the more powerful
-``wiring.Component``; since our logic keeps all of its I/Os internally, we
-do not need to use it!)
+want to create our own ``Elaboratable`` object.
+
+.. note::
+
+    This is probably the only time you will ever directly instantiate an
+    ``Elaboratable``!  In general, if you find yourself directly
+    instantiating one, you are probably doing something very unusual. 
+    Later, when we connect pins and registers to our logic, we'll switch to
+    the more powerful ``wiring.Component`` -- itself a subclass of an
+    ``Elaboratable`` -- which allows us to describe, roughly, "things that
+    you can connect together", on top of the ``Elaboratable``'s abstraction
+    of "things that contain logic".  But for now, since the logic we're
+    about to describe keeps all of its I/Os internally, we won't quite
+    concern ourselves with the ``wiring.Component`` yet.
 
 All ``Elaboratable`` objects have a method, ``elaborate``, that instantiates
 the logic inside of a module.  (Digital logic designers will recognize the
