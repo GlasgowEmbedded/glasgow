@@ -6,6 +6,7 @@ import asyncio
 import logging
 
 from amaranth import *
+from amaranth.lib import io
 from glasgow.hardware.assembly import HardwareAssembly
 
 logging.basicConfig(level=logging.DEBUG)
@@ -14,7 +15,7 @@ logger = logging.getLogger()
 class BlinkLEDs(Elaboratable):
     def elaborate(self, platform) -> Module:
         # The returned Module encapsulates all of the logic that we will
-        # define.
+        # define.  It also contains any submodules that we will instantiate.
         m = Module()
         
         # In the future, we will pass I/O pins into a module using
@@ -22,12 +23,20 @@ class BlinkLEDs(Elaboratable):
         # Platform object that we were passed (which represents the Glasgow
         # board we are running on), and we retrieve I/O pads associated with
         # each of the five LEDs directly from there.
-        led_pads = [platform.request("led", n) for n in range(5)]
+        led_outs = []
+        for n in range(5):
+            pad = platform.request("led", n, dir="-")
+            
+            # You cannot assign directly to a pad -- if you want to work
+            # with a pad, you need to instantiate an I/O buffer for it.  The
+            # I/O buffer, in turn, has signals that you can assign later.
+            m.submodules[f"led_buffer_{n}"] = pad_buffer = io.Buffer("o", pad)
+            
+            led_outs.append(pad_buffer.o)
         
-        # You cannot assign directly to a pad -- if you want to work with a
-        # pad, you need to assign to its output buffer (or assign from its
-        # input buffer).
-        led_outs = Cat(pin.o for pin in led_pads)
+        # To make them easier to work with, we can concatenate together the
+        # five one-bit-wide LED pad outputs to form a 5-bit-wide singal.
+        led_out_bus = Cat(led_outs)
         
         # Experienced digital logic designers will realize that this infers
         # a flipflop; in Glasgow's mental model, we are creating a signal,
@@ -46,12 +55,12 @@ class BlinkLEDs(Elaboratable):
         # Verilog, this would be roughly equivalent to:
         #
         #  always @(*)
-        #      led_outs = counter[27:23];
+        #      led_out_bus = counter[27:23];
         #
         # (Note that bit indices in Amaranth follow Python MSB-exclusive
         # array index convention, rather than Verilog MSB-inclusive
-        # convention.)
-        m.d.comb += led_outs.eq(counter[23:28])
+        # convention!)
+        m.d.comb += led_out_bus.eq(counter[23:28])
         
         return m
 
