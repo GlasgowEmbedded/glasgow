@@ -35,7 +35,7 @@ class BlinkLEDs(Elaboratable):
             led_outs.append(pad_buffer.o)
         
         # To make them easier to work with, we can concatenate together the
-        # five one-bit-wide LED pad outputs to form a 5-bit-wide singal.
+        # five one-bit-wide LED pad outputs to form a 5-bit-wide signal.
         led_out_bus = Cat(led_outs)
         
         # Experienced digital logic designers will realize that this infers
