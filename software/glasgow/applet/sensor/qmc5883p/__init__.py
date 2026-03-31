@@ -7,8 +7,8 @@ import struct
 from enum import IntEnum
 
 from glasgow.support.data_logger import DataLogger
-from glasgow.applet import GlasgowAppletError
-from glasgow.applet.interface.i2c_initiator_deprecated import I2CInitiatorApplet
+from glasgow.applet.interface.i2c_controller import I2CControllerInterface
+from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
 # I2C Address
@@ -453,31 +453,29 @@ class QMC5883PInterface:
 
 
 class QMC5883PI2CInterface:
-    def __init__(self, interface, logger: logging.Logger, i2c_address: int) -> None:
-        self.lower = interface
-        self._i2c_addr = i2c_address
+    def __init__(self, logger: logging.Logger, i2c_iface: I2CControllerInterface,
+                 i2c_address: int = _DEFAULT_ADDR) -> None:
+        self._i2c_iface = i2c_iface
+        self._i2c_address = i2c_address
 
     async def reset(self) -> None:
-        await self.lower.reset()
+        pass
 
     async def read(self, addr: int, size: int) -> list[int]:
-        await self.lower.write(self._i2c_addr, [addr])
-        result = await self.lower.read(self._i2c_addr, size, stop=True)
+        async with self._i2c_iface.transaction():
+            await self._i2c_iface.write(self._i2c_address, [addr])
+            result = await self._i2c_iface.read(self._i2c_address, size)
         if result is None:
             raise QMC5883PError(
-                f"QMC5883P did not acknowledge I2C read at address {self._i2c_addr:#07b}"
+                f"QMC5883P did not acknowledge I2C read at address {self._i2c_address:#04x}"
             )
         return list(result)
 
     async def write(self, addr: int, data: list[int]) -> None:
-        result = await self.lower.write(self._i2c_addr, [addr, *data], stop=True)
-        if not result:
-            raise QMC5883PError(
-                f"QMC5883P did not acknowledge I2C write at address {self._i2c_addr:#07b}"
-            )
+        await self._i2c_iface.write(self._i2c_address, [addr, *data])
 
 
-class SensorQMC5883PApplet(I2CInitiatorApplet):
+class SensorQMC5883PApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "measure magnetic field with QMC5883P triple-axis magnetometer"
     description = """
@@ -487,97 +485,71 @@ class SensorQMC5883PApplet(I2CInitiatorApplet):
     """
 
     @classmethod
-    def add_run_arguments(cls, parser, access) -> None:
-        super().add_run_arguments(parser, access)
+    def add_build_arguments(cls, parser, access):
+        access.add_voltage_argument(parser)
+        access.add_pins_argument(parser, "scl", default=True, required=True)
+        access.add_pins_argument(parser, "sda", default=True, required=True)
 
-        def i2c_address(arg: str) -> int:
+        def i2c_address(arg):
             return int(arg, 0)
-
         parser.add_argument(
-            "--i2c-address",
-            type=i2c_address,
-            metavar="ADDR",
-            default=0x2C,
-            help="I2C address of the sensor (default: %(default)#02x)",
-        )
+            "--i2c-address", type=i2c_address, metavar="ADDR", default=0x2C,
+            help="I2C address of the sensor (default: %(default)#02x)")
 
-    async def run(self, device, args) -> QMC5883PInterface:
-        i2c_iface = await self.run_lower(SensorQMC5883PApplet, device, args)
-        qmc5883p_iface = QMC5883PI2CInterface(i2c_iface, self.logger, args.i2c_address)
-        return QMC5883PInterface(qmc5883p_iface, self.logger)
+    def build(self, args):
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            self.i2c_iface = I2CControllerInterface(self.logger, self.assembly,
+                scl=args.scl, sda=args.sda)
+            self.qmc5883p_iface = QMC5883PI2CInterface(self.logger, self.i2c_iface,
+                args.i2c_address)
+
+    async def setup(self, args):
+        await self.i2c_iface.clock.set_frequency(100e3)
 
     @classmethod
-    def add_interact_arguments(cls, parser) -> None:
+    def add_run_arguments(cls, parser):
         parser.add_argument(
-            "-m",
-            "--mode",
-            metavar="MODE",
-            choices=mode_names.keys(),
-            default="normal",
+            "-m", "--mode", metavar="MODE", choices=mode_names.keys(), default="normal",
             help="operating mode (one of: suspend, normal, single, continuous; "
-            "default: %(default)s)",
-        )
+            "default: %(default)s)")
         parser.add_argument(
-            "-r",
-            "--data-rate",
-            type=int,
-            metavar="RATE",
-            choices=data_rate_names.keys(),
-            default=50,
-            help="output data rate in Hz (one of: 10, 50, 100, 200; default: %(default)d)",
-        )
+            "-r", "--data-rate", type=int, metavar="RATE",
+            choices=data_rate_names.keys(), default=50,
+            help="output data rate in Hz (one of: 10, 50, 100, 200; default: %(default)d)")
         parser.add_argument(
-            "-o",
-            "--oversample",
-            type=int,
-            metavar="RATIO",
-            choices=oversample_ratio_names.keys(),
-            default=4,
-            help="oversample ratio (one of: 1, 2, 4, 8; default: %(default)d)",
-        )
+            "-o", "--oversample", type=int, metavar="RATIO",
+            choices=oversample_ratio_names.keys(), default=4,
+            help="oversample ratio (one of: 1, 2, 4, 8; default: %(default)d)")
         parser.add_argument(
-            "-d",
-            "--downsample",
-            type=int,
-            metavar="RATIO",
-            choices=downsample_ratio_names.keys(),
-            default=2,
-            help="downsample ratio (one of: 1, 2, 4, 8; default: %(default)d)",
-        )
+            "-d", "--downsample", type=int, metavar="RATIO",
+            choices=downsample_ratio_names.keys(), default=2,
+            help="downsample ratio (one of: 1, 2, 4, 8; default: %(default)d)")
         parser.add_argument(
-            "-R",
-            "--range",
-            type=int,
-            metavar="GAUSS",
-            choices=range_names.keys(),
-            default=8,
-            help="field range in Gauss (one of: 2, 8, 12, 30; default: %(default)d)",
-        )
+            "-R", "--range", type=int, metavar="GAUSS",
+            choices=range_names.keys(), default=8,
+            help="field range in Gauss (one of: 2, 8, 12, 30; default: %(default)d)")
 
         p_operation = parser.add_subparsers(
-            dest="operation", metavar="OPERATION", required=True
-        )
+            dest="operation", metavar="OPERATION", required=True)
 
         p_measure = p_operation.add_parser("measure", help="read measured values")
 
         p_log = p_operation.add_parser("log", help="log measured values")
         p_log.add_argument(
-            "-i",
-            "--interval",
-            metavar="TIME",
-            type=float,
-            required=True,
-            help="sample each TIME seconds",
-        )
+            "-i", "--interval", metavar="TIME", type=float, required=True,
+            help="sample each TIME seconds")
         DataLogger.add_subparsers(p_log)
 
-    async def interact(self, device, args, qmc5883p: QMC5883PInterface) -> None:
+    async def run(self, args):
+        qmc5883p = QMC5883PInterface(self.qmc5883p_iface, self.logger)
+
         await qmc5883p.reset()
         chip_id = await qmc5883p.identify()
-        self.logger.info(f"QMC5883P chip ID: {chip_id:#04x}")
+        self.logger.info("QMC5883P chip ID: %#04x", chip_id)
 
         # Configure the sensor
-        await qmc5883p.set_mode(OperatingMode.SUSPEND)  # Set to suspend mode before configuring
+        await qmc5883p.set_mode(OperatingMode.SUSPEND)
         await qmc5883p.set_data_rate(data_rate_names[args.data_rate])
         await qmc5883p.set_oversample_ratio(oversample_ratio_names[args.oversample])
         await qmc5883p.set_downsample_ratio(downsample_ratio_names[args.downsample])
@@ -589,7 +561,6 @@ class SensorQMC5883PApplet(I2CInitiatorApplet):
 
         if args.operation == "measure":
             if args.mode == "single":
-                # In single mode, trigger a measurement
                 await qmc5883p.set_mode(OperatingMode.SINGLE)
 
             x, y, z = await qmc5883p.get_magnetic()
@@ -597,7 +568,6 @@ class SensorQMC5883PApplet(I2CInitiatorApplet):
             print(f"magnetic field y: {y:.3f} G")
             print(f"magnetic field z: {z:.3f} G")
 
-            # Calculate magnitude
             magnitude = (x**2 + y**2 + z**2) ** 0.5
             print(f"magnitude      : {magnitude:.3f} G")
 
@@ -606,7 +576,6 @@ class SensorQMC5883PApplet(I2CInitiatorApplet):
             data_logger = await DataLogger(self.logger, args, field_names=field_names)
 
             while True:
-
                 async def report():
                     x, y, z = await qmc5883p.get_magnetic()
                     magnitude = (x**2 + y**2 + z**2) ** 0.5
