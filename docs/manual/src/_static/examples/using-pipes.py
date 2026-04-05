@@ -21,13 +21,22 @@ class PipesToPorts(wiring.Component):
     rx_received: Out(16)
     rx_overflow_count: Out(16)
 
-    tx_port: io.PortLike
-    rx_port: io.PortLike
+    _tx_port: io.PortLike
+    _rx_port: io.PortLike
+    
+    def __init__(self, tx_port, rx_port):
+        assert len(tx_port) == 4
+        assert len(rx_port) == 4
+        
+        self._tx_port = tx_port
+        self._rx_port = rx_port
+        
+        super().__init__()
     
     def elaborate(self, platform) -> Module:
         m = Module()
         
-        m.submodules.tx_buf = tx_buf = io.Buffer("o", self.tx_port)
+        m.submodules.tx_buf = tx_buf = io.Buffer("o", self._tx_port)
         
         m.d.comb += self.tx_stream.ready.eq(1)
         
@@ -35,7 +44,7 @@ class PipesToPorts(wiring.Component):
         # inverse of Verilog's: self.tx_stream.valid goes onto tx_buf[0]!
         m.d.sync += tx_buf.o.eq(Cat(self.tx_stream.valid, ~self.tx_stream.payload[0:3]))
 
-        m.submodules.rx_buf = rx_buf = io.Buffer("i", self.rx_port)
+        m.submodules.rx_buf = rx_buf = io.Buffer("i", self._rx_port)
 
         rx_data = Signal(4)
         m.submodules.sync_rx = FFSynchronizer(rx_buf.i, rx_data)
@@ -58,14 +67,12 @@ async def main():
     # ports; we do so in this example to make it easier to connect Glasgow
     # in the specified way using the wiring in the package.
     assembly.use_voltage({"A": 3.3, "B": 3.3})
-    
-    driver = PipesToPorts()
-    assembly.add_submodule(driver)
 
-    # The usage of "assembly.add_port" in this example is very similar to
-    # the "platform.request" API in the previous examples.
-    driver.tx_port = assembly.add_port(pins=("A0", "A1", "A2", "A3"), name="tx")
-    driver.rx_port = assembly.add_port(pins=("B0", "B1", "B2", "B3"), name="rx")
+    driver = PipesToPorts(
+        tx_port=assembly.add_port(pins=("A0", "A1", "A2", "A3"), name="tx"),
+        rx_port=assembly.add_port(pins=("B0", "B1", "B2", "B3"), name="rx")
+    )
+    assembly.add_submodule(driver)
 
     rx_received = assembly.add_ro_register(driver.rx_received)
     rx_overflow_count = assembly.add_ro_register(driver.rx_overflow_count)

@@ -21,18 +21,32 @@ class DrivePorts(wiring.Component):
     
     # The In- and Out-typed properties in a Component inform the Component's
     # signature, but you can of course have any other type of property in a
-    # Component.  Here, we provide a mechanism for the harness to attach
-    # pins.
-    tx_port: io.PortLike
-    rx_port: io.PortLike
+    # Component, and the Component's constructor will not automatically
+    # attach Signals to them.  Here, we define instance properties for the
+    # pins that we will later connect.
+    _tx_port: io.PortLike
+    _rx_port: io.PortLike
+
+    def __init__(self, tx_port, rx_port):
+        # Traditionally, ports (and other parameterizations of a Component)
+        # are passed in through a constructor, rather than being assigned to
+        # instance properties externally.  This allows the Component's
+        # constructor to validate its usage.
+        assert len(tx_port) == 4
+        assert len(rx_port) == 4
+        
+        self._tx_port = tx_port
+        self._rx_port = rx_port
+        
+        super().__init__()
     
     def elaborate(self, platform) -> Module:
         m = Module()
         
         # Much like the LED drivers, we instantiate I/O buffers for the pins
         # that we are passed.
-        m.submodules.tx_buf = tx_buf = io.Buffer("o", self.tx_port)
-        m.submodules.rx_buf = rx_buf = io.Buffer("i", self.rx_port)
+        m.submodules.tx_buf = tx_buf = io.Buffer("o", self._tx_port)
+        m.submodules.rx_buf = rx_buf = io.Buffer("i", self._rx_port)
         
         # Although the cone of logic is simple here, we generally prefer to
         # drive output pins directly from the output pins of flops
@@ -61,13 +75,13 @@ async def main():
     # in the specified way using the wiring in the package.
     assembly.use_voltage({"A": 3.3, "B": 3.3})
     
-    driver = DrivePorts()
-    assembly.add_submodule(driver)
-
     # The usage of "assembly.add_port" in this example is very similar to
     # the "platform.request" API in the previous examples.
-    driver.tx_port = assembly.add_port(pins=("A0", "A1", "A2", "A3"), name="tx")
-    driver.rx_port = assembly.add_port(pins=("B0", "B1", "B2", "B3"), name="rx")
+    driver = DrivePorts(
+        tx_port=assembly.add_port(pins=("A0", "A1", "A2", "A3"), name="tx"),
+        rx_port=assembly.add_port(pins=("B0", "B1", "B2", "B3"), name="rx")
+    )
+    assembly.add_submodule(driver)
 
     # In this example, we instantiate not just a read-write
     # (host-to-Glasgow) register, but a read-only (Glasgow-to-host)
