@@ -40,9 +40,8 @@ class PipesToPorts(wiring.Component):
         
         m.d.comb += self.tx_stream.ready.eq(1)
         
-        # Remember that Amaranth's array order and concatenations are the
-        # inverse of Verilog's: self.tx_stream.valid goes onto tx_buf[0]!
-        m.d.sync += tx_buf.o.eq(Cat(self.tx_stream.valid, ~self.tx_stream.payload[0:3]))
+        m.d.sync += tx_buf.o[0].eq(self.tx_stream.valid)
+        m.d.sync += tx_buf.o[1:4].eq(~self.tx_stream.payload[0:3])
 
         m.submodules.rx_buf = rx_buf = io.Buffer("i", self._rx_port)
 
