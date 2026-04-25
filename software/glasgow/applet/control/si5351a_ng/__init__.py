@@ -23,7 +23,7 @@ from glasgow.applet.interface.i2c_controller import I2CNotAcknowledged, I2CContr
 from glasgow.applet import GlasgowAppletError, GlasgowAppletTool, GlasgowAppletV2
 
 
-__all__ = ["Si5351AError", "Si5351AInterface", "I2CNotAcknowledged"]
+__all__ = ["Si5351AError", "Si5351AInterface", "I2CNotAcknowledged", "PortGroup"]
 
 
 # ---------------------------------------------------------------------------
@@ -418,7 +418,6 @@ class Si5351AControllerInterface:
 
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
                  *, scl: GlasgowPin, sda: GlasgowPin):
-        from glasgow.abstract import PullState  # local import to avoid circular
         assembly.use_pulls({scl: "high", sda: "high"})
         ports = assembly.add_port_group(scl=scl, sda=sda)
         component = assembly.add_submodule(Si5351AControllerComponent(ports))
@@ -694,7 +693,7 @@ def encode_sequence(symbols: list[tuple[int, float]], xtal_freq: int,
     if enable_output:
         transactions.append((0, _REG_OUTPUT_ENABLE, bytes([0xFF & ~(1 << clk)])))
 
-    for i, (freq_hz, duration_ms) in enumerate(symbols):
+    for i, (freq_hz, _duration_ms) in enumerate(symbols):
         p = plan(freq_hz)
         divider_changed = (prev_out_div != p["out_div"] or prev_r_div != p["r_div"])
 
@@ -1361,6 +1360,7 @@ class ControlSi5351ANextApplet(GlasgowAppletV2):
                  "(ticks are shorter than nominal, symbols finish early), negative = runs slow; "
                  "corrects hardware-timed symbol durations for sweep-hw and sequence "
                  "(default: %(default)g)")
+
     def build(self, args):
         with self.assembly.add_applet(self):
             self.assembly.use_voltage(args.voltage)
@@ -1693,7 +1693,8 @@ class ControlSi5351ANextApplet(GlasgowAppletV2):
             drift_ms   = (elapsed_hw_s - nominal_s) * 1000.0
 
             self.logger.info("sequence: started %.1f ms after invocation", startup_ms)
-            self.logger.info("sequence: complete, %.3f s hw elapsed (nominal %.3f s, drift %+.1f ms)",
+            self.logger.info \
+                    ("sequence: complete, %.3f s hw elapsed (nominal %.3f s, drift %+.1f ms)",
                              elapsed_hw_s, nominal_s, drift_ms)
             # Output already disabled by the final hardware transaction
 
