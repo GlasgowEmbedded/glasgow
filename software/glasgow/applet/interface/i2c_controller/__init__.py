@@ -2,6 +2,7 @@
 # Document Number: UM10204
 # Accession: G00101
 
+from collections.abc import Buffer
 import contextlib
 import logging
 import struct
@@ -49,6 +50,7 @@ class I2CControllerComponent(wiring.Component):
 
         cmd   = Signal(_Command)
         count = Signal(16)
+        acked = Signal.like(count)
 
         with m.FSM():
             with m.State("IDLE"):
@@ -88,35 +90,38 @@ class I2CControllerComponent(wiring.Component):
                                 m.next = "READ-FIRST"
 
             with m.State("WRITE-FIRST"):
+                m.d.sync += acked.eq(0)
                 with m.If(self.i_stream.valid):
                     m.d.comb += self.i_stream.ready.eq(1)
                     m.d.comb += ctrl.data_i.eq(self.i_stream.payload)
                     m.d.comb += ctrl.write.eq(1)
                     m.next = "WRITE-ACK"
 
+            with m.State("WRITE-NEXT"):
+                with m.If(self.i_stream.valid):
+                    m.d.comb += self.i_stream.ready.eq(1)
+                    with m.If(ctrl.ack_o):
+                        m.d.comb += ctrl.data_i.eq(self.i_stream.payload)
+                        m.d.comb += ctrl.write.eq(1)
+                    m.next = "WRITE-ACK"
+
             with m.State("WRITE-ACK"):
                 with m.If(~ctrl.busy):
+                    m.d.sync += count.eq(count - 1)
                     with m.If(ctrl.ack_o):
-                        m.d.sync += count.eq(count - 1)
-                    m.next = "WRITE"
-
-            with m.State("WRITE"):
-                with m.If((count == 0) | ~ctrl.ack_o):
-                    m.next = "REPORT"
-                with m.Elif(self.i_stream.valid):
-                    m.d.comb += self.i_stream.ready.eq(1)
-                    m.d.comb += ctrl.data_i.eq(self.i_stream.payload)
-                    m.d.comb += ctrl.write.eq(1)
-                    m.next = "WRITE-ACK"
+                        m.d.sync += acked.eq(acked + 1)
+                    with m.If(count > 1):
+                        m.next = "WRITE-NEXT"
+                    with m.Else():
+                        m.next = "REPORT"
 
             with m.State("REPORT"):
                 word = Signal(range(2))
                 m.d.comb += self.o_stream.valid.eq(1)
                 with m.If(self.o_stream.ready):
-                    m.d.comb += self.o_stream.payload.eq(count.word_select(word, 8))
+                    m.d.comb += self.o_stream.payload.eq(acked.word_select(word, 8))
                     m.d.sync += word.eq(word + 1)
                     with m.If(word == 1):
-                        m.d.sync += count.eq(0)
                         m.next = "IDLE"
 
             with m.State("READ-FIRST"):
@@ -165,7 +170,7 @@ class I2CControllerInterface:
     def _log(self, message, *args):
         self._logger.log(self._level, "I²C: " + message, *args)
 
-    async def _command(self, cmd: _Command, *, send: bytes | bytearray, recv: int) -> memoryview:
+    async def _command(self, cmd: _Command, *, send: Buffer, recv: int) -> memoryview:
         await self._pipe.send([cmd.value])
         await self._pipe.send(send)
         await self._pipe.flush()
@@ -189,24 +194,25 @@ class I2CControllerInterface:
             self._log(f"read addr={address:#09b}")
         else:
             self._log(f"write addr={address:#09b}")
-        unacked, = struct.unpack("<H",
+        acked, = struct.unpack("<H",
             await self._command(_Command.Write,
                 send=struct.pack("<HB", 1, (address << 1) | read),
                 recv=2))
-        if unacked:
+        if not acked:
             raise I2CNotAcknowledged(
                 f"address {address:#09b} ({'read' if read else 'write'}) not acknowledged")
 
-    async def _do_write(self, data: bytes | bytearray | memoryview) -> int:
+    async def _do_write(self, data: Buffer) -> int:
         self._log("write data=<%s>", dump_hex(data))
         acked = 0
         for chunk in self._chunked(data):
-            chunk_unacked, = struct.unpack("<H",
+            chunk_acked, = struct.unpack("<H",
                 await self._command(_Command.Write,
                     send=struct.pack("<H", len(chunk)) + bytes(chunk),
                     recv=2))
-            acked += len(chunk) - chunk_unacked
-            if chunk_unacked > 0:
+            self._log("write   acked=%d/%d", chunk_acked, len(chunk))
+            acked += chunk_acked
+            if chunk_acked < len(chunk):
                 raise I2CNotAcknowledged(
                     f"data not acknowledged ({acked}/{len(data)} written)")
 
@@ -269,7 +275,7 @@ class I2CControllerInterface:
                 await self._do_stop()
             self._multi = False
 
-    async def write(self, address: int, data: bytes | bytearray | memoryview):
+    async def write(self, address: int, data: Buffer):
         """Write bytes.
 
         Generates a START condition followed by a WRITE target address (:py:`(address << 1) | 0`),

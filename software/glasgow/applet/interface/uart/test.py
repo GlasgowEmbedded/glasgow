@@ -26,6 +26,11 @@ class UARTAppletTestCase(GlasgowAppletV2TestCase, applet=UARTApplet):
         await applet.uart_iface.write(bytes([0x55, 0xAA]))
         self.assertEqual(await applet.uart_iface.read(2), bytes([0x55, 0xAA]))
 
+    @applet_v2_simulation_test(prepare=prepare_loopback, args="--baud 9600 --stop-bits 2")
+    async def test_stop_bits_loopback(self, applet, ctx):
+        await applet.uart_iface.write(bytes([0x55, 0xAA]))
+        self.assertEqual(await applet.uart_iface.read(2), bytes([0x55, 0xAA]))
+
     # This test is here mainly to test the test machinery.
     @applet_v2_hardware_test(args="-V 3.3 --baud 9600", mocks=["uart_iface"])
     async def test_loopback_hw(self, applet):

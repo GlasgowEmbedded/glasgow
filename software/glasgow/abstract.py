@@ -1,7 +1,8 @@
+from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from typing import Self, Any, Literal
-from collections.abc import Generator
-from collections.abc import Mapping
+from contextlib import contextmanager
+from collections.abc import Buffer, Generator, Mapping
 from dataclasses import dataclass
 import re
 import enum
@@ -32,19 +33,19 @@ class PullState(enum.Enum):
     High  = "high"
     Low   = "low"
 
-    def enabled(self):
+    def enabled(self) -> bool:
         return self != self.Float
 
-    def __invert__(self):
+    def __invert__(self) -> PullState:
         match self:
             case self.Float: return self
             case self.High:  return self.Low
             case self.Low:   return self.High
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__}.{self.name}"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.value
 
 
@@ -52,10 +53,10 @@ class GlasgowPort(enum.Enum):
     A = "A"
     B = "B"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__}.{self.name}"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.value
 
 
@@ -64,14 +65,14 @@ class GlasgowVio:
     value: float | None       = None
     sense: GlasgowPort | None = None
 
-    def __init__(self, value:float | None = None, *, sense:GlasgowPort | None = None):
+    def __init__(self, value: float | None = None, *, sense: GlasgowPort | str | None = None):
         if (value is None and sense is None) or (value is not None and sense is not None):
             raise ValueError("exactly one of voltage value or a port to be sensed may be present")
         object.__setattr__(self, "value", float(value) if value is not None else None)
         object.__setattr__(self, "sense", GlasgowPort(sense) if sense is not None else None)
 
     @classmethod
-    def parse(cls, value, *, all_ports="AB") -> dict[GlasgowPort, "GlasgowVio"]:
+    def parse(cls, value, *, all_ports="AB") -> dict[GlasgowPort, GlasgowVio]:
         result = {}
         for clause in value.split(","):
             if m := re.match(r"^([0-9]+(\.[0-9]+)?)$", clause):
@@ -110,7 +111,7 @@ class GlasgowPin:
         object.__setattr__(self, "invert", bool(invert))
 
     @classmethod
-    def parse(cls, value: str) -> tuple["GlasgowPin"]:
+    def parse(cls, value: str) -> tuple[GlasgowPin]:
         result = []
         for clause in value.split(","):
             if clause == "-":
@@ -139,7 +140,7 @@ class GlasgowPin:
             case _: assert False
 
     def __invert__(self) -> Self:
-        return GlasgowPin(self.port, self.number, invert=not self.invert)
+        return type(self)(self.port, self.number, invert=not self.invert)
 
     def __str__(self):
         return f"{self.port}{self.number}{'#' if self.invert else ''}"
@@ -243,7 +244,7 @@ class AbstractOutPipe(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    async def send(self, data: bytes | bytearray | memoryview):
+    async def send(self, data: Buffer):
         pass
 
     @abstractmethod
@@ -268,24 +269,29 @@ class AbstractInOutPipe(AbstractInPipe, AbstractOutPipe):
 class AbstractAssembly(metaclass=ABCMeta):
     DEFAULT_FIFO_DEPTH = 512
 
+    # Logger for the applet currently being assembled (if any). For internal use only.
+    _logger: logging.Logger | None = None
+
     @property
     @abstractmethod
     def sys_clk_period(self) -> float: # TODO: migrate to `amaranth.hdl.Period`
         pass
 
+    @contextmanager
     @abstractmethod
     def add_applet(self, applet: Any) -> Generator[None]:
         pass
 
     @abstractmethod
-    def add_submodule(self, elaboratable, *, name=None) -> Elaboratable:
+    def add_submodule(self, elaboratable, *, name: str | None = None) -> Elaboratable:
         pass
 
     @abstractmethod
     def add_platform_pin(self, pin: GlasgowPin, port_name: str) -> io.PortLike:
         pass
 
-    def add_port(self, pins: GlasgowPin | tuple[GlasgowPin] | str | None, name: str) -> io.PortLike:
+    def add_port(self, pins: GlasgowPin | tuple[GlasgowPin] | str | None,
+            name: str) -> io.PortLike | None:
         match pins:
             case None:
                 return None
@@ -323,6 +329,7 @@ class AbstractAssembly(metaclass=ABCMeta):
             raise TypeError(f"signal must have a plain shape, not {signal.shape()!r}")
         if tolerance is None:
             tolerance = 1e-2 # assume the clock doesn't need to be very accurate and 1% is enough
+        assert self._logger is not None
         return ClockDivisor(self._logger, self.add_rw_register(signal),
                             ref_period=ref_period, tolerance=tolerance, round_mode=round_mode,
                             name=name)
@@ -352,22 +359,35 @@ class AbstractAssembly(metaclass=ABCMeta):
         pass
 
     def use_voltage(self, ports: Mapping[GlasgowPort | str, GlasgowVio | float]):
-        for port, vio in ports.items():
+        for port, vio_desc in ports.items():
             port = GlasgowPort(port)
-            if isinstance(vio, float):
-                vio = GlasgowVio(vio)
+            match vio_desc:
+                case GlasgowVio() as vio:
+                    pass
+                case float():
+                    vio = GlasgowVio(vio_desc)
+                case _:
+                    assert False
             self.set_port_voltage(port, vio)
 
     def use_pulls(self, pulls: Mapping[tuple[GlasgowPin] | GlasgowPin | str, PullState | str]):
         for pins, state in pulls.items():
             match pins:
+                case tuple():
+                    pass
                 case GlasgowPin():
                     pins = [pins]
                 case str():
                     pins = GlasgowPin.parse(pins)
+                case _:
+                    assert False
             match state:
+                case PullState():
+                    pass
                 case str():
                     state = PullState(state)
+                case _:
+                    assert False
             for pin in pins:
                 self.set_pin_pull(pin, state)
 

@@ -26,6 +26,7 @@ __all__ = [
 
 class GlasgowApplet(metaclass=ABCMeta):
     preview = False
+    deprecated = False
     help = "applet help missing"
     description = "applet description missing"
     required_revision = "A0"

@@ -1,3 +1,4 @@
+from collections.abc import Buffer
 from typing import Literal
 import contextlib
 import logging
@@ -13,7 +14,11 @@ from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
 from glasgow.applet import GlasgowAppletV2
 
 
-__all__ = ["SPIControllerComponent", "SPIControllerInterface"]
+__all__ = ["SPIControllerError", "SPIControllerComponent", "SPIControllerInterface"]
+
+
+class SPIControllerError(Exception):
+    pass
 
 
 class SPICommand(enum.Enum, shape=4):
@@ -201,25 +206,36 @@ class SPIControllerInterface:
 
         Starting a transaction asserts :py:`index`-th chip select signal and configures the mode;
         ending a transaction deasserts the chip select signal. Methods :meth:`write`, :meth:`read`,
-        :meth:`exchange`, and :meth:`dummy` may be called while a transaction is active (only) to
-        exchange data on the bus.
+        :meth:`exchange`, and :meth:`dummy` may be called only while a transaction is active to
+        transfer data on the bus.
 
-        For example, to read 4 bytes from an SPI flash, use the following code:
+        For example, to read 16 bytes from an SPI NOR flash at address :py:`0x001234` using
+        the Read (03h) command, use the following code:
 
         .. code:: python
 
             iface.mode = 3
             async with iface.select():
-                await iface.write([0x03, 0, 0, 0]) # READ = 0x03, address = 0x000000
-                data = await iface.read(4)
+                await iface.write([0x03])
+                await iface.write((0x001234).to_bytes(3, byteorder="big"))
+                data = await iface.read(16)
 
         An empty transaction (where the body does not call :meth:`write`, :meth:`read`,
         :meth:`exchange`, or :meth:`dummy`) is allowed and causes chip select activity only,
         in addition to any clock edges required to switch the SPI bus mode with chip select
         inactive.
+
+        Raises
+        ------
+        SPIControllerError
+            If recursively called inside a transaction.
+        SPIControllerError
+            If :py:`index` is greater than 7.
         """
-        assert self._active is None, "chip already selected"
-        assert index in range(8)
+        if self._active is not None:
+            raise SPIControllerError("chip already selected")
+        if index not in range(8):
+            raise SPIControllerError("only eight CS# signals supported")
         try:
             self._log("select chip=%d", index)
             await self._pipe.send(struct.pack("<BB",
@@ -234,15 +250,18 @@ class SPIControllerInterface:
             await self._pipe.flush()
             self._active = None
 
-    async def exchange(self, data: bytes | bytearray | memoryview) -> memoryview:
+    async def exchange(self, data: Buffer) -> memoryview:
         """Exchange data.
 
-        Must be used within a transaction (see :meth:`select`). Shifts :py:`data` into
-        the peripheral while shifting :py:`len(data)` bytes out of the peripheral.
+        Clock :py:`data` out via the COPI pin while clocking return value in via the CIPO pin.
 
-        Returns the bytes shifted out.
+        Raises
+        ------
+        SPIControllerError
+            If called outside of a transaction.
         """
-        assert self._active is not None, "no chip selected"
+        if self._active is None:
+            raise SPIControllerError("no chip selected")
         self._log("xchg-o=<%s>", dump_hex(data))
         for chunk in self._chunked(data):
             await self._pipe.send(struct.pack("<BH",
@@ -253,13 +272,18 @@ class SPIControllerInterface:
         self._log("xchg-i=<%s>", dump_hex(data))
         return data
 
-    async def write(self, data: bytes | bytearray | memoryview):
+    async def write(self, data: Buffer):
         """Write data.
 
-        Must be used within a transaction (see :meth:`select`). Shifts :py:`data` into
-        the peripheral.
+        Clock :py:`data` out via the COPI pin.
+
+        Raises
+        ------
+        SPIControllerError
+            If called outside of a transaction.
         """
-        assert self._active is not None, "no chip selected"
+        if self._active is None:
+            raise SPIControllerError("no chip selected")
         self._log("write=<%s>", dump_hex(data))
         for chunk in self._chunked(data):
             await self._pipe.send(struct.pack("<BH",
@@ -269,12 +293,15 @@ class SPIControllerInterface:
     async def read(self, count: int) -> memoryview:
         """Read data.
 
-        Must be used within a transaction (see :meth:`select`). Shifts :py:`len(data)` bytes out of
-        the peripheral.
+        Clock :py:`count` bytes in via the CIPO pin.
 
-        Returns the bytes shifted out.
+        Raises
+        ------
+        SPIControllerError
+            If called outside of a transaction.
         """
-        assert self._active is not None, "no chip selected"
+        if self._active is None:
+            raise SPIControllerError("no chip selected")
         for chunk in self._chunked(range(count)):
             await self._pipe.send(struct.pack("<BH",
                 (SPICommand.Transfer.value << 4) | spi.Operation.Get.value, len(chunk)))
@@ -284,7 +311,21 @@ class SPIControllerInterface:
         return octets
 
     async def dummy(self, count: int):
-        # We intentionally allow sending dummy cycles with no chip selected.
+        """Clock dummy cycles.
+
+        Clock :py:`count` dummy cycles. One octet corresponds to 8 dummy cycles.
+
+        .. warning::
+
+            The state of COPI pin is undefined during this operation.
+
+        Raises
+        ------
+        SPIControllerError
+            If called outside of a transaction.
+        """
+        if self._active is None:
+            raise SPIControllerError("no chip selected")
         self._log("dummy=%d", count)
         for chunk in self._chunked(range(count)):
             await self._pipe.send(struct.pack("<BH",

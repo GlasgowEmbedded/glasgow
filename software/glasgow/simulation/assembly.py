@@ -1,5 +1,5 @@
 from typing import Any
-from collections.abc import Generator
+from collections.abc import Buffer, Generator
 from contextlib import contextmanager
 import logging
 
@@ -7,10 +7,12 @@ from amaranth import *
 from amaranth.lib import io
 from amaranth.sim import Simulator
 
-from ..abstract import *
+from glasgow.abstract import (AbstractAssembly, AbstractInOutPipe, AbstractInPipe, AbstractOutPipe,
+                              AbstractRORegister, AbstractRWRegister,
+                              GlasgowPin, GlasgowPort, GlasgowVio, PullState)
 
 
-__all__ = ["SimulationPipe", "SimulationRegister", "SimulationAssembly"]
+__all__ = ["SimulationPipe", "SimulationRORegister", "SimulationRWRegister", "SimulationAssembly"]
 
 
 logger = logging.getLogger(__name__)
@@ -50,7 +52,7 @@ class SimulationPipe(AbstractInOutPipe):
     def writable(self) -> int | None:
         return None
 
-    async def send(self, data: bytes | bytearray | memoryview):
+    async def send(self, data: Buffer):
         assert self._o_buffer is not None, "send() called on an in pipe"
         self._o_buffer.extend(data)
 
@@ -96,7 +98,7 @@ class SimulationAssembly(AbstractAssembly):
         self.__context = None
 
     @property
-    def sys_clk_period(self) -> "Period":
+    def sys_clk_period(self) -> float: # TODO: migrate to `amaranth.hdl.Period`
         # Reduced from 36 or 48 MHz to 1 MHz to improve test performance.
         return 1/1000000
 
@@ -141,6 +143,7 @@ class SimulationAssembly(AbstractAssembly):
             i_buffer = bytearray()
             async def i_testbench(ctx):
                 nonlocal i_buffer
+                assert i_buffer is not None
                 timer = 0
                 packet = bytearray()
                 ctx.set(in_stream.ready, 1)
@@ -182,7 +185,7 @@ class SimulationAssembly(AbstractAssembly):
     def add_rw_register(self, signal) -> AbstractRWRegister:
         return SimulationRWRegister(self, signal)
 
-    def add_submodule(self, elaboratable, *, name=None) -> Elaboratable:
+    def add_submodule(self, elaboratable, *, name: str | None = None) -> Elaboratable:
         self._modules.append((elaboratable, name))
         return elaboratable
 

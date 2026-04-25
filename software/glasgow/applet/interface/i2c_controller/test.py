@@ -146,3 +146,18 @@ class I2CControllerAppletTestCase(GlasgowAppletV2TestCase, applet=I2CControllerA
         device_id = await applet.i2c_iface.device_id(0x50)
         self.assertEqual(device_id, (0xabc, 0x24, 0x5))
         self.assertEqual(self.i2c_events, ["S", "W", 0x50, "Sr", "S", "R", "R", "R", "P"])
+
+    @applet_v2_simulation_test(prepare=prepare_target, args=simulation_args)
+    async def test_partial_write(self, applet: I2CControllerApplet, ctx):
+        ctx.set(self.tgt.address, 0b1110_000)
+        self.i2c_acks = [0, 1]
+        try:
+            await applet.i2c_iface.write(0x70, [0xaa, 0xbb])
+            self.assertFalse("should have raised")
+        except I2CNotAcknowledged:
+            pass
+        await applet.i2c_iface.write(0x70, [0xcc])
+        self.assertEqual(self.i2c_events, [
+            "S", "W", 0xaa, "P",
+            "S", "W", 0xcc, "P"
+        ])

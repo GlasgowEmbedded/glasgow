@@ -15,9 +15,10 @@ from amaranth import *
 from amaranth.lib import data, wiring, stream
 from amaranth.lib.wiring import In, Out
 
+from glasgow.database.ieee import company_names
 from glasgow.arch.ieee802_3 import *
 from glasgow.gateware import mdio
-from glasgow.abstract import GlasgowPin, AbstractAssembly
+from glasgow.abstract import ClockDivisor, GlasgowPin, AbstractAssembly
 from glasgow.applet import GlasgowAppletV2
 
 
@@ -109,7 +110,8 @@ class ControlMDIOInterface:
         self._logger.log(self._level, "MDIO: " + message, *args)
 
     @property
-    def clock(self):
+    def clock(self) -> ClockDivisor:
+        """MDC clock divisor."""
         return self._clock
 
     async def _read(self, phy: int, reg: int) -> int:
@@ -161,6 +163,24 @@ class ControlMDIOInterface:
         await self._c45_select(phy, dev, reg)
         await self._write(phy, REG_MMDAD_addr, value)
 
+    async def get_phy_id(self) -> tuple[int, int, int]:
+        """Read PHY identification.
+
+        Returns a tuple :py:`(oui24, model, rev)`, where :py:`oui24` is the OUI in the canonical
+        (non-bit-reversed) representation; in it, two least significant bits are always 0.
+        """
+        phy_id1 = REG_PHY_ID1.from_int(await self.c22_read(0, REG_PHY_ID1_addr))
+        phy_id2 = REG_PHY_ID2.from_int(await self.c22_read(0, REG_PHY_ID2_addr))
+        oui24_rev = (phy_id1.OUI_2_17 << 6) | phy_id2.OUI_18_23
+        oui24_fwd = 0
+        for bit in range(22)[::-1]:
+            oui24_fwd  |= ((oui24_rev >> bit) & 1) << 24
+            oui24_fwd >>= 1
+        # For some reason the OUI has to be byte-reversed after bit-reversing to match
+        # the canonical representation and the IEEE OUI database. Awful. This is awful.
+        oui24 = int.from_bytes(oui24_fwd.to_bytes(3, "little"), "big")
+        return (oui24, phy_id2.MODEL, phy_id2.REV)
+
 
 class ControlMDIOApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
@@ -170,6 +190,7 @@ class ControlMDIOApplet(GlasgowAppletV2):
     interface. Both Clause 22 and Clause 45 operations are supported.
     """
     required_revision = "C0" # IEEE 802.3 requires pull-ups/pull-downs on MDIO
+    mdio_iface: ControlMDIOInterface
 
     @classmethod
     def add_build_arguments(cls, parser, access):
@@ -191,6 +212,13 @@ class ControlMDIOApplet(GlasgowAppletV2):
 
     async def setup(self, args):
         await self.mdio_iface.clock.set_frequency(args.frequency * 1000)
+
+    async def run(self, args):
+        oui24, model, rev = await self.mdio_iface.get_phy_id()
+        oui_repr = "-".join(f"{b:02X}" for b in oui24.to_bytes(3, byteorder="big"))
+        company_name = company_names.get(oui24, "Unknown")
+        self.logger.info("OUI=%s (%s) model=%#x rev=%#x",
+            oui_repr, company_name, model, rev)
 
     @classmethod
     def tests(cls):

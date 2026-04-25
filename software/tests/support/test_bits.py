@@ -283,7 +283,7 @@ class BitarrayTestCase(unittest.TestCase):
             some[-13] = 0
         with self.assertRaises(ValueError):
             some[0] = 2
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValueError):
             some[0] = "0"
         with self.assertRaises(TypeError):
             some["0"] = 0
@@ -395,7 +395,7 @@ class BitarrayTestCase(unittest.TestCase):
         some = bitarray("01010101")
         with self.assertRaises(TypeError):
             some.insert("a", 1)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValueError):
             some.insert(0, "a")
         with self.assertRaises(ValueError):
             some.insert(0, 2)

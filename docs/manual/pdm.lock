@@ -5,10 +5,23 @@
 groups = ["default"]
 strategy = []
 lock_version = "4.5.0"
-content_hash = "sha256:e52018bef1caf54274343f7b81663663f7313fb086da6348ab969221488c49aa"
+content_hash = "sha256:8b2e50a2b778fe650abb26fdcb3943897b1af7abc613fda539026757fbd6ee56"
 
 [[metadata.targets]]
 requires_python = "~=3.13"
+
+[[package]]
+name = "accessible-pygments"
+version = "0.0.5"
+requires_python = ">=3.9"
+summary = "A collection of accessible pygments styles"
+dependencies = [
+    "pygments>=1.5",
+]
+files = [
+    {file = "accessible_pygments-0.0.5-py3-none-any.whl", hash = "sha256:88ae3211e68a1d0b011504b2ffc1691feafce124b845bd072ab6f9f66f34d4b7"},
+    {file = "accessible_pygments-0.0.5.tar.gz", hash = "sha256:40918d3e6a2b619ad424cb91e556bd3bd8865443d9f22f1dcdf79e33c8046872"},
+]
 
 [[package]]
 name = "alabaster"
@@ -378,18 +391,19 @@ files = [
 
 [[package]]
 name = "furo"
-version = "2024.8.6"
+version = "2025.12.19"
 requires_python = ">=3.8"
 summary = "A clean customisable Sphinx documentation theme."
 dependencies = [
+    "accessible-pygments>=0.0.5",
     "beautifulsoup4",
     "pygments>=2.7",
     "sphinx-basic-ng>=1.0.0.beta2",
-    "sphinx<9.0,>=6.0",
+    "sphinx<10.0,>=7.0",
 ]
 files = [
-    {file = "furo-2024.8.6-py3-none-any.whl", hash = "sha256:6cd97c58b47813d3619e63e9081169880fbe331f0ca883c871ff1f3f11814f5c"},
-    {file = "furo-2024.8.6.tar.gz", hash = "sha256:b63e4cee8abfc3136d3bc03a3d45a76a850bada4d6374d24c1716b0e01394a01"},
+    {file = "furo-2025.12.19-py3-none-any.whl", hash = "sha256:bb0ead5309f9500130665a26bee87693c41ce4dbdff864dbfb6b0dae4673d24f"},
+    {file = "furo-2025.12.19.tar.gz", hash = "sha256:188d1f942037d8b37cd3985b955839fea62baa1730087dc29d157677c857e2a7"},
 ]
 
 [[package]]

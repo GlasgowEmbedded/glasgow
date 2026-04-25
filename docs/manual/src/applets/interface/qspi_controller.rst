@@ -13,6 +13,18 @@ CLI reference
 API reference
 -------------
 
-.. todo::
+.. module:: glasgow.applet.interface.qspi_controller
 
-    Add API documentation for ``qspi-controller``.
+.. autoexception:: QSPIControllerError
+
+.. autoclass:: QSPIControllerInterface
+
+
+Memory command set reference
+----------------------------
+
+The building blocks below are used for implementing memory technology interfaces, such as :ref:`memory-25q <applet.memory._25q>`. They are typically not used on their own.
+
+.. module:: glasgow.arch.qspi
+
+.. automodule:: glasgow.arch.qspi

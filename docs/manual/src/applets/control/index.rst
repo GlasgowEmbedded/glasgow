@@ -10,5 +10,6 @@ Device control
 
     clock
     gpio
+    mdio
     servo
     si535x

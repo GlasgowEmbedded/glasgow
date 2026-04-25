@@ -2,7 +2,7 @@ import os
 import fcntl
 import struct
 import asyncio
-
+from collections.abc import Buffer
 
 LINUX_TUNSETIFF = 0x400454CA
 LINUX_IFF_TUN   = 0x0001
@@ -32,7 +32,7 @@ class OSNetworkInterface:
         """
         return self._fd
 
-    async def send(self, packets: "list[bytes | bytearray | memoryview]"):
+    async def send(self, packets: list[Buffer]):
         """"Send packets.
 
         To improve throughput, :meth:`send` can queue multiple packets.
@@ -45,7 +45,7 @@ class OSNetworkInterface:
         except BlockingIOError: # write until the buffer is full
             pass
 
-    async def recv(self, *, length=65536) -> "list[bytes | bytearray | memoryview]":
+    async def recv(self, *, length=65536) -> list[Buffer]:
         """"Receive packets.
 
         To improve throughput, :meth:`recv` dequeues all available packets. Packets longer than

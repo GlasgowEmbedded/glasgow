@@ -38,6 +38,8 @@ As Git is a notoriously difficult version control system to use effectively, fee
 
 The Glasgow project does not strictly adhere to any specific Python or C coding standards. If your code is structured and formatted similarly to existing code, it is good enough. We use `pre-commit.ci <pre-commit-ci_>`__, a system that automatically remediates code style issues where possible, and highlights them otherwise. Code review is a dialogue focused on function, not form.
 
+We do not accept contributions where code was generated partly or in whole using LLMs. These tools are designed to be extractive and place an unreasonable burden on OSS maintainers, both on the level of individual pull requests and for the ecosystem as a whole. If you didn't bother writing it, we won't bother reading.
+
 .. _pulls: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests
 
 

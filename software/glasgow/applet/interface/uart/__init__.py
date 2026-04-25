@@ -1,3 +1,4 @@
+from collections.abc import Buffer
 from typing import Literal
 import os
 import sys
@@ -105,9 +106,10 @@ class UARTComponent(wiring.Component):
     rx_errors:   Out(16)
     rx_overflow: Out(16)
 
-    def __init__(self, ports, *, parity: str):
+    def __init__(self, ports, *, parity: str, stop_bits: int):
         self.ports  = ports
         self.parity = parity
+        self.stop_bits = stop_bits
 
         super().__init__()
 
@@ -119,7 +121,8 @@ class UARTComponent(wiring.Component):
         # the UART to use lib.wiring
         m.submodules.uart = uart = UART(self.ports,
             bit_cyc=(1 << len(self.manual_cyc)) - 1,
-            parity=self.parity)
+            parity=self.parity,
+            stop_bits=self.stop_bits)
         m.submodules.auto_baud = auto_baud = UARTAutoBaud()
 
         if self.ports.rx is not None:
@@ -155,14 +158,15 @@ class UARTComponent(wiring.Component):
 class UARTInterface:
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
                  rx: GlasgowPin | None, tx: GlasgowPin | None,
-                 parity: Literal["none", "zero", "one", "odd", "even"] = "none"):
+                 parity: Literal["none", "zero", "one", "odd", "even"] = "none",
+                 stop_bits: int = 1):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
         ports = assembly.add_port_group(rx=rx, tx=tx)
         if rx is not None:
             assembly.use_pulls({rx: "high"})
-        component = assembly.add_submodule(UARTComponent(ports, parity=parity))
+        component = assembly.add_submodule(UARTComponent(ports, parity=parity, stop_bits=stop_bits))
         self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream,
             in_flush=component.o_flush)
         self._use_auto   = assembly.add_rw_register(component.use_auto)
@@ -233,7 +237,7 @@ class UARTInterface:
             buffer += await self.read(1)
         return memoryview(buffer)
 
-    async def write(self, data: bytes | bytearray | memoryview, *, flush=False):
+    async def write(self, data: Buffer, *, flush=False):
         """Buffers bytes to be transmitted. Until :meth:`flush` is called, bytes are not guaranteed
         to be transmitted (they may or may not be).
         """
@@ -282,8 +286,8 @@ class UARTApplet(GlasgowAppletV2):
     description = """
     Transmit and receive data via UART.
 
-    Any baud rate is supported. Only 8 data bits and 1 stop bits are supported, with configurable
-    parity.
+    Any baud rate is supported. Only 8 data bits and from 1 to 8 integer stop bits are supported,
+    with configurable parity.
 
     The automatic baud rate determination algorithm works by locking onto the shortest bit time in
     the receive stream. It will determine the baud rate incorrectly in presence of glitches as well
@@ -302,12 +306,15 @@ class UARTApplet(GlasgowAppletV2):
             "--parity", metavar="PARITY",
             choices=("none", "zero", "one", "odd", "even"), default="none",
             help="send and receive parity bit as PARITY (default: %(default)s)")
+        parser.add_argument(
+            "--stop-bits", metavar="STOP_BITS", choices=(range(1, 9)), type=int, default=1,
+            help="send and receive stop bits as STOP_BITS (default: %(default)s, options: 1..8)")
 
     def build(self, args):
         with self.assembly.add_applet(self):
             self.assembly.use_voltage(args.voltage)
             self.uart_iface = UARTInterface(self.logger, self.assembly,
-                rx=args.rx, tx=args.tx, parity=args.parity)
+                rx=args.rx, tx=args.tx, parity=args.parity, stop_bits=args.stop_bits)
 
     @classmethod
     def add_setup_arguments(cls, parser):

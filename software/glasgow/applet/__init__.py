@@ -52,6 +52,7 @@ class GlasgowAppletError(Exception):
 
 class GlasgowAppletV2(metaclass=ABCMeta):
     preview = False
+    deprecated = False
     help = "applet help missing"
     description = "applet description missing"
     required_revision = "A0"
@@ -65,6 +66,8 @@ class GlasgowAppletV2(metaclass=ABCMeta):
                                     f"use on a rev{assembly.revision} device is unsupported")
             if self.preview:
                 self.logger.warning(f"applet is PREVIEW QUALITY and may CORRUPT DATA")
+            if self.deprecated:
+                self.logger.warning(f"applet is DEPRECATED and WILL BE REMOVED: {self.deprecated}")
 
     @property
     def assembly(self) -> AbstractAssembly:

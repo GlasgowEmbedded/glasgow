@@ -9,11 +9,16 @@ from amaranth.lib.wiring import In, Out
 
 from glasgow.support.logging import dump_hex
 from glasgow.gateware import qspi
-from glasgow.abstract import AbstractAssembly, ClockDivisor
+from glasgow.arch.qspi import Instruction
+from glasgow.abstract import AbstractAssembly, ClockDivisor, GlasgowPin
 from glasgow.applet import GlasgowAppletV2
 
 
-__all__ = ["QSPIControllerComponent", "QSPIControllerInterface"]
+__all__ = ["QSPIControllerError", "QSPIControllerComponent", "QSPIControllerInterface"]
+
+
+class QSPIControllerError(Exception):
+    pass
 
 
 class QSPICommand(enum.Enum, shape=4):
@@ -133,7 +138,10 @@ class QSPIControllerComponent(wiring.Component):
 
 
 class QSPIControllerInterface:
-    def __init__(self, logger, assembly: AbstractAssembly, *, cs, sck, io):
+    """Pull-ups are enabled on all :py:`io` pins."""
+
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
+            cs: GlasgowPin, sck: GlasgowPin, io: GlasgowPin):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
@@ -152,6 +160,7 @@ class QSPIControllerInterface:
 
     @property
     def clock(self) -> ClockDivisor:
+        """SCK clock divisor."""
         return self._clock
 
     @staticmethod
@@ -162,8 +171,38 @@ class QSPIControllerInterface:
 
     @contextlib.asynccontextmanager
     async def select(self, index=0):
-        assert self._active is None, "chip already selected"
-        assert index in range(8)
+        """Perform a transaction.
+
+        Starting a transaction configures the first transfer within the transaction to assert
+        the :py:`index`-th chip select signal; ending a transaction deasserts the chip select
+        signal. Methods :meth:`write`, :meth:`read`, :meth:`exchange`, and :meth:`dummy` may be
+        called only while a transaction is active to transfer data on the bus.
+
+        For example, to read 16 bytes from an SPI NOR flash at address :py:`0x001234` using
+        the Fast Read (0Bh) command, use the following code:
+
+        .. code:: python
+
+            async with iface.select():
+                await iface.write([0x0B])
+                await iface.write((0x001234).to_bytes(3, byteorder="big"))
+                await iface.dummy(8)
+                data = await iface.read(16)
+
+        An empty transaction (where the body does not call :meth:`write`, :meth:`read`,
+        :meth:`exchange`, or :meth:`dummy`) is allowed and does not cause any chip select activity.
+
+        Raises
+        ------
+        QSPIControllerError
+            If recursively called inside a transaction.
+        QSPIControllerError
+            If :py:`index` is greater than 7.
+        """
+        if self._active is not None:
+            raise QSPIControllerError("chip already selected")
+        if index not in range(8):
+            raise QSPIControllerError("only eight CS# signals supported")
         try:
             self._log("select chip=%d", index)
             await self._pipe.send(struct.pack("<B",
@@ -179,63 +218,224 @@ class QSPIControllerInterface:
             self._active = None
 
     async def exchange(self, octets: bytes | bytearray | memoryview) -> memoryview:
-        assert self._active is not None, "no chip selected"
-        self._log("xchg-o=<%s>", dump_hex(octets))
+        """Exchange bytes.
+
+        Clock :py:`octets` out via the IO0 (COPI) pin while clocking return value in via
+        the IO1 (CIPO) pin. Unlike :meth:`write` and :meth:`read`, this method always uses x1
+        transfer rate.
+
+        Raises
+        ------
+        QSPIControllerError
+            If called outside of a transaction.
+        """
+        if self._active is None:
+            raise QSPIControllerError("no chip selected")
+        self._log("  xchg-o=<%s>", dump_hex(octets))
         for chunk in self._chunked(octets):
             await self._pipe.send(struct.pack("<BH",
                 (QSPICommand.Transfer.value << 4) | qspi.Operation.Swap.value, len(chunk)))
             await self._pipe.send(chunk)
         await self._pipe.flush()
         octets = await self._pipe.recv(len(octets))
-        self._log("xchg-i=<%s>", dump_hex(octets))
+        self._log("  xchg-i=<%s>", dump_hex(octets))
         return octets
 
     async def write(self, octets: bytes | bytearray | memoryview, *, x: Literal[1, 2, 4] = 1):
-        assert self._active is not None, "no chip selected"
+        """Write bytes.
+
+        Clock :py:`octets` out via :py:`x` IOn pins, corresponding to single, dual, or quad SPI.
+
+        Raises
+        ------
+        QSPIControllerError
+            If called outside of a transaction.
+        """
+        if self._active is None:
+            raise QSPIControllerError("no chip selected")
         mode = {1: qspi.Operation.PutX1, 2: qspi.Operation.PutX2, 4: qspi.Operation.PutX4}[x]
-        self._log("write=<%s>", dump_hex(octets))
+        self._log("  x=%d write=<%s>", x, dump_hex(octets))
         for chunk in self._chunked(octets):
             await self._pipe.send(struct.pack("<BH",
                 (QSPICommand.Transfer.value << 4) | mode.value, len(chunk)))
             await self._pipe.send(chunk)
 
     async def read(self, count: int, *, x: Literal[1, 2, 4] = 1) -> memoryview:
-        assert self._active is not None, "no chip selected"
+        """Read bytes.
+
+        Clock :py:`count` octets in via :py:`x` IOn pins, corresponding to single, dual, or
+        quad SPI.
+
+        Raises
+        ------
+        QSPIControllerError
+            If called outside of a transaction.
+        """
+        if self._active is None:
+            raise QSPIControllerError("no chip selected")
         mode = {1: qspi.Operation.GetX1, 2: qspi.Operation.GetX2, 4: qspi.Operation.GetX4}[x]
         for chunk in self._chunked(range(count)):
             await self._pipe.send(struct.pack("<BH",
                 (QSPICommand.Transfer.value << 4) | mode.value, len(chunk)))
         await self._pipe.flush()
         octets = await self._pipe.recv(count)
-        self._log("read=<%s>", dump_hex(octets))
+        self._log("  x=%d read=<%s>", x, dump_hex(octets))
         return octets
 
     async def dummy(self, count: int):
-        # We intentionally allow sending dummy cycles with no chip selected.
-        self._log("dummy=%d", count)
+        """Clock dummy cycles.
+
+        Clock :py:`count` dummy cycles. One octet corresponds to 8 dummy cycles in single SPI mode,
+        4 dummy cycles in dual SPI mode, and 2 dummy cycles in quad SPI mode. Some devices may
+        require a non-multiple
+
+        .. warning::
+
+            The state of IOn pins is undefined during this operation.
+
+        Raises
+        ------
+        QSPIControllerError
+            If called outside of a transaction.
+        """
+        if self._active is None:
+            raise QSPIControllerError("no chip selected")
+        self._log("  dummy=%d", count)
         for chunk in self._chunked(range(count)):
             await self._pipe.send(struct.pack("<BH",
                 (QSPICommand.Transfer.value << 4) | qspi.Operation.Idle.value, len(chunk)))
 
     async def delay_us(self, duration: int):
+        """Delay operations.
+
+        Delays the following QSPI bus operations by :py:`duration` microseconds.
+        """
         self._log("delay us=%d", duration)
         for chunk in self._chunked(range(duration)):
             await self._pipe.send(struct.pack("<BH",
                 (QSPICommand.Delay.value << 4), len(chunk)))
 
     async def delay_ms(self, duration: int):
+        """Delay operations.
+
+        Delays the following QSPI bus operations by :py:`duration` milliseconds. Equivalent to
+        :py:`delay_us(duration * 1000)`.
+        """
         self._log("delay ms=%d", duration)
         for chunk in self._chunked(range(duration * 1000)):
             await self._pipe.send(struct.pack("<BH",
                 (QSPICommand.Delay.value << 4), len(chunk)))
 
     async def synchronize(self):
+        """Synchronization barrier.
+
+        Ensures that once this method returns, all previously submitted operations have completed.
+        """
         self._log("sync-o")
         await self._pipe.send(struct.pack("<B",
             (QSPICommand.Sync.value << 4)))
         await self._pipe.flush()
         await self._pipe.recv(1)
         self._log("sync-i")
+
+    async def execute_cmd(self, instr: Instruction[int], *,
+            address: int | None = None):
+        """Execute a memory technology instruction without data transfer.
+
+        This is a low-level operation; in most cases, a memory technology specific interface
+        should be used instead.
+        """
+        instr.check_usage(address=address, data=None, length=None)
+
+        if instr.x_address == 0:
+            self._log("cmd insn=%s", instr)
+        else:
+            self._log("cmd insn=%s addr=%0.*x",
+                instr, instr.address_octets * 2, address)
+
+        async with self.select():
+            if instr.x_opcode != 0:
+                await self.write(bytes([instr.opcode]), x=instr.x_opcode)
+            if instr.x_address != 0:
+                assert address is not None, "ensured by check_usage()"
+                await self.write(
+                    address.to_bytes(instr.address_octets, byteorder="big"), x=instr.x_address)
+
+    async def execute_read(self, instr: Instruction, *,
+            address: int | None = None, length: int | None = None) -> memoryview:
+        """Execute a memory technology instruction that reads data.
+
+        This is a low-level operation; in most cases, a memory technology specific interface
+        should be used instead.
+        """
+        instr.check_usage(address=address, data=None, length=length)
+
+        if length is None:
+            length = instr.data_octets
+
+        async with self.select():
+            if instr.x_opcode != 0:
+                await self.write(bytes([instr.opcode]), x=instr.x_opcode)
+            if instr.x_address != 0:
+                assert address is not None, "ensured by check_usage()"
+                await self.write(
+                    address.to_bytes(instr.address_octets, byteorder="big"), x=instr.x_address)
+            if instr.mode_cycles != 0:
+                # SFDP is defined in a way where a "fractional byte" worth of mode cycles is
+                # submitted. The QSPI core we use currently can't deal with this.
+                # Also, it is not well-defined what a "neutral" mode bits value is (JESD216 does
+                # not seem to specify this) but it seems like 00h and FFh octets would both work,
+                # as in "not cause the flash to enter a secret mode where it ignores next opcode".
+                # (`instr.x_address == instr.x_data` is enforced if `instr.mode_cycles != 0`).
+                assert (instr.mode_cycles * instr.x_address) % 8 == 0, \
+                    "only mode cycles that are an integral number of octets are supported"
+                mode_octets = (instr.mode_cycles * instr.x_address) >> 3
+                assert instr.x_address != 0, "ensured by check_usage()"
+                await self.write(b"\xFF" * mode_octets, x=instr.x_address)
+            await self.dummy(instr.dummy_cycles)
+            assert length is not None and instr.x_data != 0, "ensured by check_usage()"
+            data = await self.read(length, x=instr.x_data)
+
+        if instr.x_address == 0:
+            self._log("read insn=%s read=<%s>", instr, dump_hex(data))
+        else:
+            self._log("read insn=%s addr=%0.*x read=<%s>",
+                instr, instr.address_octets * 2, address, dump_hex(data))
+
+        return data
+
+    async def execute_write(self, instr: Instruction, *,
+            address: int | None = None, data: bytes | bytearray | memoryview):
+        """Execute a memory technology instruction that writes data.
+
+        This is a low-level operation; in most cases, a memory technology specific interface
+        should be used instead.
+        """
+        instr.check_usage(address=address, data=data, length=None)
+
+        if instr.x_address == 0:
+            self._log("write insn=%s data=<%s>", instr, dump_hex(data))
+        else:
+            self._log("write insn=%s addr=%0.*x data=<%s>",
+                instr, instr.address_octets * 2, address, dump_hex(data))
+
+        async with self.select():
+            if instr.x_opcode != 0:
+                await self.write(bytes([instr.opcode]), x=instr.x_opcode)
+            if instr.x_address != 0:
+                assert address is not None, "ensured by check_usage()"
+                await self.write(
+                    address.to_bytes(instr.address_octets, byteorder="big"), x=instr.x_address)
+            if instr.mode_cycles != 0:
+                # See the note in :meth:`execute_read`.
+                assert (instr.mode_cycles * instr.x_address) % 8 == 0, \
+                    "only mode cycles that are an integral number of octets are supported"
+                mode_octets = (instr.mode_cycles * instr.x_address) >> 3
+                assert instr.x_address != 0, "ensured by check_usage()"
+                await self.write(b"\xFF" * mode_octets, x=instr.x_address)
+            await self.dummy(instr.dummy_cycles)
+            assert instr.x_data != 0, "ensured by check_usage()"
+            await self.write(data, x=instr.x_data)
 
 
 class QSPIControllerApplet(GlasgowAppletV2):
@@ -259,7 +459,7 @@ class QSPIControllerApplet(GlasgowAppletV2):
 
     The command line interface only initiates SPI mode transfers. Use the REPL for other modes.
     """
-    # The FPGA on revA/revB is (marginally) too slow for the QSPI contrller core.
+    # The FPGA on revA/revB is (marginally) too slow for the QSPI controller core.
     required_revision = "C0"
 
     @classmethod

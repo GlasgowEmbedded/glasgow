@@ -65,11 +65,11 @@ What can I do with Glasgow?
 
 * read and write :ref:`24-series I²C EEPROMs <applet.memory._24x>`
 
-* read and write :ref:`25-series SPI Flash memories <applet.memory._25x>`
+* read and write :ref:`25-series SPI Flash memories <applet.memory._25q>`
 
   * determine memory parameters via SFDP
 
-  * :ref:`extract data and SFDP information <applet.memory._25x.tool>` from SPI transaction captures
+  * :ref:`extract data and SFDP information <applet.memory._25q.tool>` from SPI transaction captures
 
 * read and write ONFI-compatible Flash memories
 
@@ -79,7 +79,7 @@ What can I do with Glasgow?
 
   * determine the extent of floating gate charge decay and rescue data
 
-* program and verify AVR microcontrollers via SPI
+* :ref:`program and verify AVR microcontrollers <applet.program.avr.spi>` via SPI
 
 * automatically :ref:`determine JTAG pinout <applet.interface.jtag_pinout>`
 
@@ -101,9 +101,13 @@ What can I do with Glasgow?
 
   * :ref:`debug Arm Cortex processors <applet.bridge.probe_rs>` via `probe-rs <https://probe.rs>`_
 
-* communicate using nRF24L01(+) radios
+* program :ref:`internal SRAM <applet.program.ice40_sram>` and :ref:`external Flash <applet.program.ice40_flash>` memories of iCE40 FPGAs
 
-* program nRF24LE1 and nRF24LU1(+) microcontrollers
+* :ref:`configure Ethernet PHYs  <applet.control.mdio>` via MDIO
+
+* :ref:`communicate using nRF24L01(+) radios <applet.radio.nrf24l01>`
+
+* :ref:`program nRF24LE1 and nRF24LU1(+) microcontrollers <applet.program.nrf24lx1>`
 
 * sense environmental data
 
@@ -112,6 +116,8 @@ What can I do with Glasgow?
   * CO₂ concentration via Sensirion :ref:`SCD30 <applet.sensor.scd30>` and NOx concentration via :ref:`SEN5x <applet.sensor.sen5x>` sensors
 
   * distance by ultrasonic echo via :ref:`HC-SR04 <applet.sensor.hcsr04>` sensors
+
+  * weight by Whetstone bridge via :ref:`HX-711 <applet.sensor.hx711>` amplifier
 
 * synthesize sound using a Yamaha OPLx/OPM chip and play it in real time on a webpage
 
