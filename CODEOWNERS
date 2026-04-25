@@ -20,4 +20,6 @@
 
 /software/glasgow/applet/interface/spi_flashrom/        @neuschaefer
 
+/software/glasgow/applet/control/si5351a_ng/            @i-infra
+
 /software/glasgow/applet/sensor/sen5x/                  @miek
