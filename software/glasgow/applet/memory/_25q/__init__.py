@@ -149,7 +149,10 @@ class Memory25QInterface:
             self._logger.warning(f"device does not have valid SFDP tables: {err}")
         else:
             try:
-                # If SFDP data exists, it is taken to be axiomatically correct.
+                # If SFDP data exists, we would like to take it to be axiomatically correct...
+                # ... but, unfortunately, vendors. So we have to apply quirks first.
+                if quirks := self.cmds.apply_quirks(self.sfdp):
+                    self._logger.warning(f"applied quirks: {', '.join(quirks)}")
                 self.cmds.use_jesd216(self.sfdp, enable_dual=enable_dual, enable_quad=enable_quad)
                 self.sfdp_used = True
             except ValueError as err:
