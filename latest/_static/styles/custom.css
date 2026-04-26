@@ -1,0 +1,17 @@
+body[data-theme="dark"]  img {
+    color-scheme: dark;
+}
+body[data-theme="light"] img {
+    color-scheme: light;
+}
+.glasgow-image-with-marks {
+    position: relative;
+    line-height: 0;
+    .oshwa-mark {
+        position: absolute;
+        right: 6%;
+        bottom: 2%;
+        max-width: 30%;
+        max-height: 60px;
+    }
+}
