@@ -9,11 +9,11 @@ from glasgow.abstract import AbstractAssembly, GlasgowPin
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
-__all__ = ["CalibrateClockComponent", "CalibrateClockInterface", "CalibrateClockApplet"]
+__all__ = ["CalibrateClockInterface"]
 
 
-# Gate time in seconds. Longer = more resolution but slower updates.
-GATE_TIME_SEC = 4
+# Maximum gate time in seconds. Longer = more resolution but slower updates.
+MAX_GATE_TIME_SEC = 10
 
 
 class CalibrateClockComponent(wiring.Component):
@@ -33,7 +33,7 @@ class CalibrateClockComponent(wiring.Component):
 
     o_stream: Out(stream.Signature(8))
 
-    def __init__(self, ref_port: io.PortLike, ref_edges_per_gate: int,
+    def __init__(self, *, ref_port: io.PortLike, ref_edges_per_gate: int,
                  ext_port: io.PortLike | None = None):
         self._ref_port           = ref_port
         self._ext_port           = ext_port
@@ -122,6 +122,7 @@ class CalibrateClockInterface:
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
                  ref_pin: GlasgowPin,
                  ref_freq: float,
+                 gate_time_sec: float = MAX_GATE_TIME_SEC,
                  nominal_sys_clk: float = 48e6,
                  initial_ppm: float = 0.0,
                  ext_pin: GlasgowPin | None = None,
@@ -136,13 +137,14 @@ class CalibrateClockInterface:
         # errors are relative to the corrected baseline.
         self._nominal_sys_clk = nominal_sys_clk * (1 + initial_ppm / 1e6)
 
-        self._ref_edges_per_gate = max(1, int(ref_freq * GATE_TIME_SEC))
+        self._ref_edges_per_gate = max(1, int(ref_freq * gate_time_sec))
 
         ref_port = assembly.add_port(ref_pin, name="ref")
         ext_port = assembly.add_port(ext_pin, name="ext") if ext_pin is not None else None
 
         component = assembly.add_submodule(
-            CalibrateClockComponent(ref_port, self._ref_edges_per_gate, ext_port))
+            CalibrateClockComponent(ref_port=ref_port, ref_edges_per_gate=self._ref_edges_per_gate,
+                ext_port=ext_port))
         self._pipe = assembly.add_in_pipe(component.o_stream)
         self._prev_snap = None
 
@@ -204,24 +206,36 @@ class CalibrateClockApplet(GlasgowAppletV2):
     description = """
     Measure clock accuracy against a stable external reference signal.
 
-    By default measures the internal Glasgow system clock. With --ext-pin, measures
+    By default measures the internal Glasgow system clock. With ``--ext-pin``, measures
     a second clock source (e.g. Si5351A output) against the reference instead.
 
     Measure system clock vs GPS PPS reference (1 Hz) on pin B1:
-        glasgow run experimental-calibrate-clock -V 3.3 --ref-pin B1 --ref-freq 1
+
+    ::
+
+        glasgow run calibrate-clock -V 3.3 --ref-pin B1 --ref-freq 1
 
     The reference input expects a signal that crosses the logic threshold cleanly.
     A 2 V pk-pk sine centred at 1 V works well with the I/O bank set to 2 V.
 
     Measure system clock vs Rubidium reference (2^23 Hz) on pin B1:
-        glasgow run experimental-calibrate-clock -V 2.0 --ref-pin B1 --ref-freq 8388608
+
+    ::
+
+        glasgow run calibrate-clock -V 2.0 --ref-pin B1 --ref-freq 8388608
 
     Measure Si5351A 10 MHz output on A0 vs same Rb reference on B1:
-        glasgow run experimental-calibrate-clock -V 2.0 \\
+
+    ::
+
+        glasgow run calibrate-clock -V 2.0 \\
             --ref-pin B1 --ref-freq 8388608 --ext-pin A0 --ext-freq 10000000
 
     Apply a known rough correction to the baseline before measuring:
-        glasgow run experimental-calibrate-clock -V 2.0 \\
+
+    ::
+
+        glasgow run calibrate-clock -V 2.0 \\
             --ref-pin B1 --ref-freq 8388608 --ppm -12.5
     """
     required_revision = "C0"
@@ -245,6 +259,10 @@ class CalibrateClockApplet(GlasgowAppletV2):
             "--nominal-sys-clk", type=float, default=48e6, metavar="HZ",
             help="nominal system clock frequency in Hz (default: %(default).0f)")
         parser.add_argument(
+            "--gate-time", type=float, default=MAX_GATE_TIME_SEC, metavar="SEC",
+            help="gate window duration in seconds; longer gives more resolution "
+                 "(default: %(default)s)")
+        parser.add_argument(
             "--ppm", type=float, default=0.0, metavar="PPM",
             help="initial PPM correction applied to the nominal frequency before measuring "
                  "(default: %(default)s)")
@@ -259,6 +277,7 @@ class CalibrateClockApplet(GlasgowAppletV2):
                 self.logger, self.assembly,
                 ref_pin=args.ref_pin,
                 ref_freq=args.ref_freq,
+                gate_time_sec=args.gate_time,
                 nominal_sys_clk=args.nominal_sys_clk,
                 initial_ppm=args.ppm,
                 ext_pin=args.ext_pin,
@@ -272,7 +291,7 @@ class CalibrateClockApplet(GlasgowAppletV2):
             help="number of measurements to take then exit (default: 0 = run forever)")
 
     async def run(self, args):
-        gate_sec = max(1, int(args.ref_freq * GATE_TIME_SEC)) / args.ref_freq
+        gate_sec = self.cal_iface._ref_edges_per_gate / args.ref_freq
         measuring = f"ext pin {args.ext_pin} ({args.ext_freq:.0f} Hz)" \
             if args.ext_pin is not None else "system clock"
 
