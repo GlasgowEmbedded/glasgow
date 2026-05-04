@@ -4,8 +4,9 @@
 import logging
 import asyncio
 import struct
-from enum import IntEnum
+import enum
 
+from glasgow.support.bitstruct import bitstruct
 from glasgow.support.data_logger import DataLogger
 from glasgow.applet.interface.i2c_controller import I2CControllerInterface
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
@@ -27,105 +28,147 @@ _CONTROL1 = 0x0A
 _CONTROL2 = 0x0B
 
 
-class OperatingMode(IntEnum):
+class OperatingMode(enum.Enum):
     """Operating modes for QMC5883P."""
 
-    SUSPEND = 0x00
-    NORMAL = 0x01
-    SINGLE = 0x02
-    CONTINUOUS = 0x03
+    Suspend    = "suspend"
+    Normal     = "normal"
+    Single     = "single"
+    Continuous = "continuous"
+
+    def __str__(self):
+        return self.value
+
+    def to_device(self):
+        match self:
+            case self.Suspend:    return 0
+            case self.Normal:     return 1
+            case self.Single:     return 2
+            case self.Continuous: return 3
 
 
-class OutputDataRate(IntEnum):
+class OutputDataRate(enum.Enum):
     """Output data rates (Hz)."""
 
-    ODR_10HZ = 0x00
-    ODR_50HZ = 0x01
-    ODR_100HZ = 0x02
-    ODR_200HZ = 0x03
+    ODR_10Hz  = 10
+    ODR_50Hz  = 50
+    ODR_100Hz = 100
+    ODR_200Hz = 200
+
+    def __str__(self):
+        return str(self.value)
+
+    def to_device(self):
+        match self:
+            case self.ODR_10Hz:  return 0
+            case self.ODR_50Hz:  return 1
+            case self.ODR_100Hz: return 2
+            case self.ODR_200Hz: return 3
 
 
-class OversampleRatio(IntEnum):
-    """Over sample ratios."""
+class OversampleRatio(enum.Enum):
+    """Oversample ratios."""
 
-    OSR_8 = 0x00
-    OSR_4 = 0x01
-    OSR_2 = 0x02
-    OSR_1 = 0x03
+    OSR_8 = 8
+    OSR_4 = 4
+    OSR_2 = 2
+    OSR_1 = 1
+
+    def __str__(self):
+        return str(self.value)
+
+    def to_device(self):
+        match self:
+            case self.OSR_8: return 0
+            case self.OSR_4: return 1
+            case self.OSR_2: return 2
+            case self.OSR_1: return 3
 
 
-class DownsampleRatio(IntEnum):
+class DownsampleRatio(enum.Enum):
     """Downsample ratios."""
 
-    DSR_1 = 0x00
-    DSR_2 = 0x01
-    DSR_4 = 0x02
-    DSR_8 = 0x03
+    DSR_1 = 1
+    DSR_2 = 2
+    DSR_4 = 4
+    DSR_8 = 8
+
+    def __str__(self):
+        return str(self.value)
+
+    def to_device(self):
+        match self:
+            case self.DSR_1: return 0
+            case self.DSR_2: return 1
+            case self.DSR_4: return 2
+            case self.DSR_8: return 3
 
 
-class FieldRange(IntEnum):
+class FieldRange(enum.Enum):
     """Field ranges (Gauss)."""
 
-    RANGE_30G = 0x00
-    RANGE_12G = 0x01
-    RANGE_8G = 0x02
-    RANGE_2G = 0x03
+    Range_30G = 30
+    Range_12G = 12
+    Range_8G  = 8
+    Range_2G  = 2
+
+    def __str__(self):
+        return str(self.value)
+
+    def to_device(self):
+        match self:
+            case self.Range_30G: return 0
+            case self.Range_12G: return 1
+            case self.Range_8G:  return 2
+            case self.Range_2G:  return 3
 
 
-class SetResetMode(IntEnum):
+class SetResetMode(enum.Enum):
     """Set/Reset modes."""
 
-    ON = 0x00
-    SETONLY = 0x01
-    OFF = 0x02
+    On      = "on"
+    SetOnly = "set-only"
+    Off     = "off"
+
+    def __str__(self):
+        return self.value
+
+    def to_device(self):
+        match self:
+            case self.On:      return 0
+            case self.SetOnly: return 1
+            case self.Off:     return 2
+
+
+# Register layouts
+
+REG_STATUS = bitstruct("REG_STATUS", 8, [
+    ("DRDY",    1),  # Data ready
+    ("OVL",     1),  # Overflow
+    (None,      6),
+])
+
+REG_CONTROL1 = bitstruct("REG_CONTROL1", 8, [
+    ("MODE",    2),  # Operating mode
+    ("ODR",     2),  # Output data rate
+    ("OSR",     2),  # Oversample ratio
+    ("DSR",     2),  # Downsample ratio
+])
+
+REG_CONTROL2 = bitstruct("REG_CONTROL2", 8, [
+    ("SR",      2),  # Set/reset mode
+    ("RNG",     2),  # Field range
+    (None,      3),
+    ("SRST",    1),  # Soft reset
+])
 
 
 # LSB per Gauss for each range
 _LSB_PER_GAUSS = {
-    FieldRange.RANGE_30G: 1000.0,
-    FieldRange.RANGE_12G: 2500.0,
-    FieldRange.RANGE_8G: 3750.0,
-    FieldRange.RANGE_2G: 15000.0,
-}
-
-# Mode names for user interface
-mode_names = {
-    "suspend": OperatingMode.SUSPEND,
-    "normal": OperatingMode.NORMAL,
-    "single": OperatingMode.SINGLE,
-    "continuous": OperatingMode.CONTINUOUS,
-}
-
-# Data rate names for user interface
-data_rate_names = {
-    10: OutputDataRate.ODR_10HZ,
-    50: OutputDataRate.ODR_50HZ,
-    100: OutputDataRate.ODR_100HZ,
-    200: OutputDataRate.ODR_200HZ,
-}
-
-# Oversample ratio names for user interface
-oversample_ratio_names = {
-    8: OversampleRatio.OSR_8,
-    4: OversampleRatio.OSR_4,
-    2: OversampleRatio.OSR_2,
-    1: OversampleRatio.OSR_1,
-}
-
-# Downsample ratio names for user interface
-downsample_ratio_names = {
-    1: DownsampleRatio.DSR_1,
-    2: DownsampleRatio.DSR_2,
-    4: DownsampleRatio.DSR_4,
-    8: DownsampleRatio.DSR_8,
-}
-
-# Range names for user interface
-range_names = {
-    30: FieldRange.RANGE_30G,
-    12: FieldRange.RANGE_12G,
-    8: FieldRange.RANGE_8G,
-    2: FieldRange.RANGE_2G,
+    FieldRange.Range_30G: 1000.0,
+    FieldRange.Range_12G: 2500.0,
+    FieldRange.Range_8G:  3750.0,
+    FieldRange.Range_2G:  15000.0,
 }
 
 
@@ -136,26 +179,45 @@ class QMC5883PError(GlasgowAppletError):
 class QMC5883PInterface:
     """Interface to QMC5883P magnetometer sensor."""
 
-    def __init__(self, interface: "QMC5883PI2CInterface", logger: logging.Logger) -> None:
-        self._iface = interface
+    def __init__(self, logger: logging.Logger, i2c_iface: I2CControllerInterface,
+                 i2c_address: int = _DEFAULT_ADDR) -> None:
+        self._i2c_iface = i2c_iface
+        self._i2c_address = i2c_address
         self._logger = logger
         self._level = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
-        self._range = FieldRange.RANGE_8G
+        self._range = FieldRange.Range_8G
 
     def _log(self, message: str, *args) -> None:
         self._logger.log(self._level, "QMC5883P: " + message, *args)
 
     async def _read_reg8u(self, reg: int) -> int:
-        (byte,) = await self._iface.read(reg, 1)
+        async with self._i2c_iface.transaction():
+            await self._i2c_iface.write(self._i2c_address, [reg])
+            result = await self._i2c_iface.read(self._i2c_address, 1)
+        if result is None:
+            raise QMC5883PError(
+                f"QMC5883P did not acknowledge I2C read at address {self._i2c_address:#04x}"
+            )
+        (byte,) = result
         self._log("reg=%#04x read=%#04x", reg, byte)
         return byte
 
     async def _write_reg8u(self, reg: int, byte: int) -> None:
-        await self._iface.write(reg, [byte])
+        await self._i2c_iface.write(self._i2c_address, [reg, byte])
         self._log("reg=%#04x write=%#04x", reg, byte)
 
+    async def _read_regs(self, reg: int, size: int) -> list[int]:
+        async with self._i2c_iface.transaction():
+            await self._i2c_iface.write(self._i2c_address, [reg])
+            result = await self._i2c_iface.read(self._i2c_address, size)
+        if result is None:
+            raise QMC5883PError(
+                f"QMC5883P did not acknowledge I2C read at address {self._i2c_address:#04x}"
+            )
+        return list(result)
+
     async def reset(self) -> None:
-        await self._iface.reset()
+        pass
 
     async def identify(self) -> int:
         """Read and verify chip ID.
@@ -186,8 +248,7 @@ class QMC5883PInterface:
         QMC5883PError
             If chip ID is invalid after reset.
         """
-        # Soft reset by setting bit 7 of CONTROL2
-        await self._write_reg8u(_CONTROL2, 0x80)
+        await self._write_reg8u(_CONTROL2, REG_CONTROL2(SRST=1).to_int())
         await asyncio.sleep(0.05)  # Wait 50ms for reset to complete
 
         # Verify chip ID after reset
@@ -195,158 +256,113 @@ class QMC5883PInterface:
         if chip_id != 0x80:
             raise QMC5883PError(f"Chip ID invalid after reset: {chip_id:#04x}")
 
-    async def set_mode(self, mode: str | OperatingMode) -> None:
+    async def set_mode(self, mode: OperatingMode) -> None:
         """Set operating mode.
 
         Parameters
         ----------
-        mode : str or OperatingMode
-            Operating mode: "suspend", "normal", "single", "continuous",
-            or a :class:`OperatingMode` value.
+        mode : OperatingMode
+            Operating mode.
 
         Raises
         ------
         QMC5883PError
             If mode is invalid.
         """
-        # Accept both user-facing names and register values
-        if isinstance(mode, str):
-            if mode not in mode_names:
-                raise QMC5883PError(
-                    f"Invalid mode: {mode} (choose from: {', '.join(mode_names.keys())})"
-                )
-            mode = mode_names[mode]
-        elif mode not in mode_names.values():
-            raise QMC5883PError(f"Invalid mode: {mode}")
+        if not isinstance(mode, OperatingMode):
+            mode = OperatingMode(mode)
+        ctrl1 = REG_CONTROL1.from_int(await self._read_reg8u(_CONTROL1))
+        ctrl1.MODE = mode.to_device()
+        await self._write_reg8u(_CONTROL1, ctrl1.to_int())
 
-        ctrl1 = await self._read_reg8u(_CONTROL1)
-        ctrl1 = (ctrl1 & ~0x03) | mode
-        await self._write_reg8u(_CONTROL1, ctrl1)
-
-    async def set_data_rate(self, odr: int | OutputDataRate) -> None:
+    async def set_data_rate(self, odr: OutputDataRate) -> None:
         """Set output data rate.
 
         Parameters
         ----------
-        odr : int or OutputDataRate
-            Output data rate: 10, 50, 100, 200 (Hz) or an :class:`OutputDataRate` value.
+        odr : OutputDataRate
+            Output data rate.
 
         Raises
         ------
         QMC5883PError
             If data rate is invalid.
         """
-        # Accept both user-facing values (Hz) and register values
-        if odr in data_rate_names:
-            odr = data_rate_names[odr]
-        elif odr not in data_rate_names.values():
-            raise QMC5883PError(
-                f"Invalid output data rate: {odr} \
-                    (choose from: {', '.join(map(str, data_rate_names.keys()))} Hz)"
-            )
+        if not isinstance(odr, OutputDataRate):
+            odr = OutputDataRate(odr)
+        ctrl1 = REG_CONTROL1.from_int(await self._read_reg8u(_CONTROL1))
+        ctrl1.ODR = odr.to_device()
+        await self._write_reg8u(_CONTROL1, ctrl1.to_int())
 
-        ctrl1 = await self._read_reg8u(_CONTROL1)
-        ctrl1 = (ctrl1 & ~0x0C) | (odr << 2)
-        await self._write_reg8u(_CONTROL1, ctrl1)
-
-    async def set_oversample_ratio(self, osr: int | OversampleRatio) -> None:
+    async def set_oversample_ratio(self, osr: OversampleRatio) -> None:
         """Set oversample ratio.
 
         Parameters
         ----------
-        osr : int or OversampleRatio
-            Oversample ratio: 1, 2, 4, 8 or an :class:`OversampleRatio` value.
+        osr : OversampleRatio
+            Oversample ratio.
 
         Raises
         ------
         QMC5883PError
             If oversample ratio is invalid.
         """
-        # Accept both user-facing values and register values
-        if osr in oversample_ratio_names:
-            osr = oversample_ratio_names[osr]
-        elif osr not in oversample_ratio_names.values():
-            raise QMC5883PError(
-                f"Invalid oversample ratio: {osr} \
-                    (choose from: {', '.join(map(str, oversample_ratio_names.keys()))})"
-            )
+        if not isinstance(osr, OversampleRatio):
+            osr = OversampleRatio(osr)
+        ctrl1 = REG_CONTROL1.from_int(await self._read_reg8u(_CONTROL1))
+        ctrl1.OSR = osr.to_device()
+        await self._write_reg8u(_CONTROL1, ctrl1.to_int())
 
-        ctrl1 = await self._read_reg8u(_CONTROL1)
-        ctrl1 = (ctrl1 & ~0x30) | (osr << 4)
-        await self._write_reg8u(_CONTROL1, ctrl1)
-
-    async def set_downsample_ratio(self, dsr: int | DownsampleRatio) -> None:
+    async def set_downsample_ratio(self, dsr: DownsampleRatio) -> None:
         """Set downsample ratio.
 
         Parameters
         ----------
-        dsr : int or DownsampleRatio
-            Downsample ratio: 1, 2, 4, 8 or a :class:`DownsampleRatio` value.
+        dsr : DownsampleRatio
+            Downsample ratio.
 
         Raises
         ------
         QMC5883PError
             If downsample ratio is invalid.
         """
-        # Accept both user-facing values and register values
-        if dsr in downsample_ratio_names:
-            dsr = downsample_ratio_names[dsr]
-        elif dsr not in downsample_ratio_names.values():
-            raise QMC5883PError(
-                f"Invalid downsample ratio: {dsr} \
-                    (choose from: {', '.join(map(str, downsample_ratio_names.keys()))})"
-            )
+        if not isinstance(dsr, DownsampleRatio):
+            dsr = DownsampleRatio(dsr)
+        ctrl1 = REG_CONTROL1.from_int(await self._read_reg8u(_CONTROL1))
+        ctrl1.DSR = dsr.to_device()
+        await self._write_reg8u(_CONTROL1, ctrl1.to_int())
 
-        ctrl1 = await self._read_reg8u(_CONTROL1)
-        ctrl1 = (ctrl1 & ~0xC0) | (dsr << 6)
-        await self._write_reg8u(_CONTROL1, ctrl1)
-
-    async def set_range(self, field_range: int | FieldRange) -> None:
+    async def set_range(self, field_range: FieldRange) -> None:
         """Set field range.
 
         Parameters
         ----------
-        field_range : int or FieldRange
-            Field range: 2, 8, 12, 30 (Gauss) or a :class:`FieldRange` value.
+        field_range : FieldRange
+            Field range.
 
         Raises
         ------
         QMC5883PError
             If field range is invalid.
         """
-        # Accept both user-facing values (Gauss) and register values
-        if field_range in range_names:
-            field_range = range_names[field_range]
-        elif field_range not in range_names.values():
-            raise QMC5883PError(
-                f"Invalid range: {field_range} \
-                    (choose from: {', '.join(map(str, range_names.keys()))} G)"
-            )
-
+        if not isinstance(field_range, FieldRange):
+            field_range = FieldRange(field_range)
         self._range = field_range
-        ctrl2 = await self._read_reg8u(_CONTROL2)
-        ctrl2 = (ctrl2 & ~0x0C) | (field_range << 2)
-        await self._write_reg8u(_CONTROL2, ctrl2)
+        ctrl2 = REG_CONTROL2.from_int(await self._read_reg8u(_CONTROL2))
+        ctrl2.RNG = field_range.to_device()
+        await self._write_reg8u(_CONTROL2, ctrl2.to_int())
 
-    async def get_range(self) -> int:
+    async def get_range(self) -> FieldRange:
         """Get current field range setting.
 
         Returns
         -------
-        int
-            Field range in Gauss (30, 12, 8, or 2).
+        FieldRange
+            Current field range.
         """
-        ctrl2 = await self._read_reg8u(_CONTROL2)
-        range_bits = (ctrl2 >> 2) & 0x03
-
-        # Map range bits back to Gauss values
-        range_map = {
-            FieldRange.RANGE_30G: 30,
-            FieldRange.RANGE_12G: 12,
-            FieldRange.RANGE_8G: 8,
-            FieldRange.RANGE_2G: 2,
-        }
-        return range_map.get(range_bits, 8)  # Default to 8G if unknown
+        ctrl2 = REG_CONTROL2.from_int(await self._read_reg8u(_CONTROL2))
+        device_to_range = {fr.to_device(): fr for fr in FieldRange}
+        return device_to_range[ctrl2.RNG]
 
     async def set_setreset_mode(self, setreset: SetResetMode) -> None:
         """Set set/reset mode for eliminating sensor offset.
@@ -362,12 +378,11 @@ class QMC5883PInterface:
         QMC5883PError
             If set/reset mode is invalid.
         """
-        if setreset not in [SetResetMode.ON, SetResetMode.SETONLY, SetResetMode.OFF]:
-            raise QMC5883PError(f"Invalid set/reset mode: {setreset}")
-
-        ctrl2 = await self._read_reg8u(_CONTROL2)
-        ctrl2 = (ctrl2 & ~0x03) | setreset
-        await self._write_reg8u(_CONTROL2, ctrl2)
+        if not isinstance(setreset, SetResetMode):
+            setreset = SetResetMode(setreset)
+        ctrl2 = REG_CONTROL2.from_int(await self._read_reg8u(_CONTROL2))
+        ctrl2.SR = setreset.to_device()
+        await self._write_reg8u(_CONTROL2, ctrl2.to_int())
 
     async def data_ready(self) -> bool:
         """Check if new measurement data is available.
@@ -377,8 +392,7 @@ class QMC5883PInterface:
         bool
             True if data is ready to be read.
         """
-        status = await self._read_reg8u(_STATUS)
-        return bool(status & 0x01)
+        return bool(REG_STATUS.from_int(await self._read_reg8u(_STATUS)).DRDY)
 
     async def overflow(self) -> bool:
         """Check if sensor measurement has overflowed.
@@ -388,8 +402,7 @@ class QMC5883PInterface:
         bool
             True if overflow occurred.
         """
-        status = await self._read_reg8u(_STATUS)
-        return bool(status & 0x02)
+        return bool(REG_STATUS.from_int(await self._read_reg8u(_STATUS)).OVL)
 
     async def get_magnetic_raw(self) -> tuple[int, int, int]:
         """Read raw magnetic field values.
@@ -415,7 +428,7 @@ class QMC5883PInterface:
                 raise QMC5883PError("Timeout waiting for data ready")
 
         # Read all 6 bytes at once
-        data = await self._iface.read(_XOUT_LSB, 6)
+        data = await self._read_regs(_XOUT_LSB, 6)
 
         # Unpack as signed 16-bit integers (little-endian)
         raw_x, raw_y, raw_z = struct.unpack("<hhh", bytes(data))
@@ -452,29 +465,6 @@ class QMC5883PInterface:
         return (x, y, z)
 
 
-class QMC5883PI2CInterface:
-    def __init__(self, logger: logging.Logger, i2c_iface: I2CControllerInterface,
-                 i2c_address: int = _DEFAULT_ADDR) -> None:
-        self._i2c_iface = i2c_iface
-        self._i2c_address = i2c_address
-
-    async def reset(self) -> None:
-        pass
-
-    async def read(self, addr: int, size: int) -> list[int]:
-        async with self._i2c_iface.transaction():
-            await self._i2c_iface.write(self._i2c_address, [addr])
-            result = await self._i2c_iface.read(self._i2c_address, size)
-        if result is None:
-            raise QMC5883PError(
-                f"QMC5883P did not acknowledge I2C read at address {self._i2c_address:#04x}"
-            )
-        return list(result)
-
-    async def write(self, addr: int, data: list[int]) -> None:
-        await self._i2c_iface.write(self._i2c_address, [addr, *data])
-
-
 class SensorQMC5883PApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "measure magnetic field with QMC5883P triple-axis magnetometer"
@@ -499,36 +489,36 @@ class SensorQMC5883PApplet(GlasgowAppletV2):
     def build(self, args):
         with self.assembly.add_applet(self):
             self.assembly.use_voltage(args.voltage)
-            self.i2c_iface = I2CControllerInterface(self.logger, self.assembly,
+            self._i2c_iface = I2CControllerInterface(self.logger, self.assembly,
                 scl=args.scl, sda=args.sda)
-            self.qmc5883p_iface = QMC5883PI2CInterface(self.logger, self.i2c_iface,
+            self.qmc5883p_iface = QMC5883PInterface(self.logger, self._i2c_iface,
                 args.i2c_address)
 
     async def setup(self, args):
-        await self.i2c_iface.clock.set_frequency(100e3)
+        await self._i2c_iface.clock.set_frequency(100e3)
 
     @classmethod
     def add_run_arguments(cls, parser):
         parser.add_argument(
-            "-m", "--mode", metavar="MODE", choices=mode_names.keys(), default="normal",
-            help="operating mode (one of: suspend, normal, single, continuous; "
-            "default: %(default)s)")
+            "-m", "--mode", metavar="MODE", type=OperatingMode, default=OperatingMode.Normal,
+            choices=list(OperatingMode),
+            help="operating mode (default: %(default)s)")
         parser.add_argument(
-            "-r", "--data-rate", type=int, metavar="RATE",
-            choices=data_rate_names.keys(), default=50,
-            help="output data rate in Hz (one of: 10, 50, 100, 200; default: %(default)d)")
+            "-r", "--data-rate", metavar="RATE", type=lambda x: OutputDataRate(int(x)),
+            default=OutputDataRate.ODR_50Hz, choices=list(OutputDataRate),
+            help="output data rate in Hz (default: %(default)s)")
         parser.add_argument(
-            "-o", "--oversample", type=int, metavar="RATIO",
-            choices=oversample_ratio_names.keys(), default=4,
-            help="oversample ratio (one of: 1, 2, 4, 8; default: %(default)d)")
+            "-o", "--oversample", metavar="RATIO", type=lambda x: OversampleRatio(int(x)),
+            default=OversampleRatio.OSR_4, choices=list(OversampleRatio),
+            help="oversample ratio (default: %(default)s)")
         parser.add_argument(
-            "-d", "--downsample", type=int, metavar="RATIO",
-            choices=downsample_ratio_names.keys(), default=2,
-            help="downsample ratio (one of: 1, 2, 4, 8; default: %(default)d)")
+            "-d", "--downsample", metavar="RATIO", type=lambda x: DownsampleRatio(int(x)),
+            default=DownsampleRatio.DSR_2, choices=list(DownsampleRatio),
+            help="downsample ratio (default: %(default)s)")
         parser.add_argument(
-            "-R", "--range", type=int, metavar="GAUSS",
-            choices=range_names.keys(), default=8,
-            help="field range in Gauss (one of: 2, 8, 12, 30; default: %(default)d)")
+            "-R", "--range", metavar="GAUSS", type=lambda x: FieldRange(int(x)),
+            default=FieldRange.Range_8G, choices=list(FieldRange),
+            help="field range in Gauss (default: %(default)s)")
 
         p_operation = parser.add_subparsers(
             dest="operation", metavar="OPERATION", required=True)
@@ -542,27 +532,24 @@ class SensorQMC5883PApplet(GlasgowAppletV2):
         DataLogger.add_subparsers(p_log)
 
     async def run(self, args):
-        qmc5883p = QMC5883PInterface(self.qmc5883p_iface, self.logger)
+        qmc5883p = self.qmc5883p_iface
 
         await qmc5883p.reset()
         chip_id = await qmc5883p.identify()
         self.logger.info("QMC5883P chip ID: %#04x", chip_id)
 
         # Configure the sensor
-        await qmc5883p.set_mode(OperatingMode.SUSPEND)
-        await qmc5883p.set_data_rate(data_rate_names[args.data_rate])
-        await qmc5883p.set_oversample_ratio(oversample_ratio_names[args.oversample])
-        await qmc5883p.set_downsample_ratio(downsample_ratio_names[args.downsample])
-        await qmc5883p.set_range(range_names[args.range])
-        await qmc5883p.set_setreset_mode(SetResetMode.ON)
+        await qmc5883p.set_mode(OperatingMode.Suspend)
+        await qmc5883p.set_data_rate(args.data_rate)
+        await qmc5883p.set_oversample_ratio(args.oversample)
+        await qmc5883p.set_downsample_ratio(args.downsample)
+        await qmc5883p.set_range(args.range)
+        await qmc5883p.set_setreset_mode(SetResetMode.On)
 
         # Set the desired operating mode
-        await qmc5883p.set_mode(mode_names[args.mode])
+        await qmc5883p.set_mode(args.mode)
 
         if args.operation == "measure":
-            if args.mode == "single":
-                await qmc5883p.set_mode(OperatingMode.SINGLE)
-
             x, y, z = await qmc5883p.get_magnetic()
             print(f"magnetic field x: {x:.3f} G")
             print(f"magnetic field y: {y:.3f} G")
@@ -588,11 +575,11 @@ class SensorQMC5883PApplet(GlasgowAppletV2):
                     await data_logger.report_error(str(error), exception=error)
                     await qmc5883p.reset()
                     await qmc5883p.identify()
-                    await qmc5883p.set_mode(mode_names[args.mode])
+                    await qmc5883p.set_mode(args.mode)
                 except TimeoutError as error:
                     await data_logger.report_error("timeout", exception=error)
                     await qmc5883p.reset()
                     await qmc5883p.identify()
-                    await qmc5883p.set_mode(mode_names[args.mode])
+                    await qmc5883p.set_mode(args.mode)
 
                 await asyncio.sleep(args.interval)
