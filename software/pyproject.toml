@@ -90,7 +90,7 @@ glasgow = "glasgow.cli:run_main"
 [project.entry-points."glasgow.applet"]
 selftest = "glasgow.applet.internal.selftest:SelfTestApplet"
 benchmark = "glasgow.applet.internal.benchmark:BenchmarkApplet"
-calibrate-clock = "glasgow.applet.internal.calibrate_clock:CalibrateClockApplet"
+calibrate-clock = "glasgow.applet.measure.calibrate_clock:CalibrateClockApplet"
 
 analyzer = "glasgow.applet.interface.analyzer:AnalyzerApplet"
 uart = "glasgow.applet.interface.uart:UARTApplet"
