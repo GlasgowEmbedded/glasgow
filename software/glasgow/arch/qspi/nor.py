@@ -12,6 +12,8 @@
 # Accession: G00110
 # Ref: ISSI IS25LP128, 128Mb 3V SERIAL FLASH MEMORY
 # Accession: G00111
+# Ref: Macronix MX25L25635F 3V 256M-BIT [x 1/x 2/x 4] CMOS MXSMIO® (SERIAL MULTI I/O) FLASH MEMORY
+# Accession: G00116
 
 from __future__ import annotations
 
@@ -370,7 +372,7 @@ class CommandSet(BaseCommandSet[Command]):
             else:
                 raise ValueError(
                     f"mode switching required, but no compatible mode switching methods found "
-                    f"(enter_4_byte_addressing={jedec_params.enter_4_byte_addressing:010b})")
+                    f"(enter_4_byte_addressing={jedec_params.enter_4_byte_addressing.value:010b})")
 
             exit_method = jedec_params.exit_4_byte_addressing
             if exit_method & (SFDPJEDECExit4ByteAddressingMethods.CommandE9h |
@@ -416,6 +418,22 @@ class CommandSet(BaseCommandSet[Command]):
         self[Command.ProgramData] = Instruction.spi_1_1_1(Opcode.PageProgram,
             address_octets=address_bytes, direction="write",
             data_octets=jedec_params.page_size)
+
+    def apply_quirks(self, sfdp: SFDPCollection) -> set[str]:
+        if (jedec_params := sfdp.jedec_flash_table) is None:
+            raise ValueError("JEDEC flash parameters table not present")
+
+        if (jedec_params.address_byte_count == {3, 4} and
+                jedec_params.enter_4_byte_addressing == SFDPJEDECEnter4ByteAddressingMethods.Empty):
+            if any(table.vendor_id == 0xc2 for table in sfdp):
+                # Quirk: MX25L25635F advertises mode switching but lacks SFDP information on
+                # the mechanism. Assume that command B7h switches to 4-byte mode. Other Macronix
+                # devices likely have this quirk too, so only check the vendor.
+                jedec_params.enter_4_byte_addressing = \
+                    SFDPJEDECEnter4ByteAddressingMethods.CommandB7h
+                return {"Macronix missing 4-byte prologue"}
+
+        return set()
 
     @property
     def min_erase_size(self) -> int | None:

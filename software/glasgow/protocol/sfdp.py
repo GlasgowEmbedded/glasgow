@@ -214,6 +214,7 @@ _JEDECFlashParam14 = bitstruct("JEDECFlashParam14", 32, [
 
 
 class SFDPJEDECEnter4ByteAddressingMethods(enum.Flag):
+    Empty                   = 0
     CommandB7h              = 0b0000_0001
     WriteEnableCommandB7h   = 0b0000_0010
     AddrRegisterC8hC5h      = 0b0000_0100
@@ -225,6 +226,7 @@ class SFDPJEDECEnter4ByteAddressingMethods(enum.Flag):
 
 
 class SFDPJEDECExit4ByteAddressingMethods(enum.Flag):
+    Empty                   = 0
     CommandE9h              = 0b00_0000_0001
     WriteEnableCommandE9h   = 0b00_0000_0010
     AddrRegisterC8hC5h      = 0b00_0000_0100

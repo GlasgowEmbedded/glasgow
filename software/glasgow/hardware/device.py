@@ -481,10 +481,15 @@ class GlasgowDevice:
     async def _read_voltage(self, req, spec):
         millivolts, = struct.unpack("<H",
             await self.control_read(req, 0, self._iobuf_spec_to_mask(spec, one=True), 2))
-        volts = round(millivolts / 1000, 2) # we only have 8 bits of precision
+        volts = millivolts / 1000
         return volts
 
     async def get_voltage(self, spec):
+        """get configured IO voltage on port ``spec``.
+
+        This will be very close to, but often not exactly, the same as the
+        voltage that was set.
+        """
         try:
             return await self._read_voltage(REQ_IO_VOLT, spec)
         except usb.ErrorStall:
@@ -497,6 +502,12 @@ class GlasgowDevice:
             raise GlasgowDeviceError(f"cannot get I/O port {spec} I/O voltage limit") from None
 
     async def measure_voltage(self, spec):
+        """Measures voltage on port ``spec`` sense pin.
+
+        Note on precision: On Glasgow RevC2 and newer the ADC code step size is
+        1.25mV, on older hardware the step size is 25.9mV.
+        Value is truncated to 3 decimal digits (1mV)
+        """
         try:
             return await self._read_voltage(REQ_SENSE_VOLT, spec)
         except usb.ErrorStall:
@@ -540,8 +551,8 @@ class GlasgowDevice:
             low_millivolts, high_millivolts = struct.unpack("<HH",
                 await self.control_read(
                     REQ_ALERT_VOLT, 0, self._iobuf_spec_to_mask(spec, one=True), 4))
-            low_volts  = round(low_millivolts / 1000, 2) # we only have 8 bits of precision
-            high_volts = round(high_millivolts / 1000, 2)
+            low_volts  = low_millivolts / 1000
+            high_volts = high_millivolts / 1000
         except usb.ErrorStall:
             raise GlasgowDeviceError(f"cannot get I/O port {spec} voltage alert") from None
         else:
