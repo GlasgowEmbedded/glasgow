@@ -16,6 +16,8 @@
 /software/glasgow/database/xilinx/xc9500xl.py           @wanda-phi
 /software/glasgow/database/xilinx/xpla3.py              @wanda-phi
 
+/software/glasgow/applet/internal/calibrate_clock       @i-infra
+
 /software/glasgow/applet/servo/                         @tpwrules
 
 /software/glasgow/applet/interface/spi_flashrom/        @neuschaefer
