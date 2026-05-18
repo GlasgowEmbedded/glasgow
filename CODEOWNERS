@@ -24,3 +24,5 @@
 
 /software/glasgow/applet/sensor/sen5x/                  @miek
 /software/glasgow/applet/sensor/qmc5883p/               @i-infra
+
+/software/glasgow/applet/measure/curve-trace/           @i-infra
