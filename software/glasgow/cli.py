@@ -354,6 +354,10 @@ def get_argparser():
     p_repl = subparsers.add_parser(
         "repl", formatter_class=TextHelpFormatter,
         help="run an applet and open a REPL to use its programming interface")
+    p_repl.add_argument(
+        "--prelude", metavar="FILENAME", type=argparse.FileType("r", encoding="utf-8"),
+        action="append",
+        help="run Python script(s) FILENAME first, as if it was typed in the REPL")
     add_run_args(p_repl)
     p_repl.add_build_func(lambda: add_applet_arg(p_repl, mode="repl", required=True))
 
@@ -687,6 +691,10 @@ async def main() -> int:
                             if args.action == "run":
                                 return await applet.run(args)
                             elif args.action == "repl":
+                                for prelude_file in args.prelude:
+                                    code = compile(prelude_file.read(), filename=prelude_file.name,
+                                        mode="exec", flags=ast.PyCF_ALLOW_TOP_LEVEL_AWAIT)
+                                    await applet.script(args, code)
                                 await applet.repl(args)
                             elif args.action == "script":
                                 if args.script_file:
