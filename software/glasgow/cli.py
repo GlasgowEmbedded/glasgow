@@ -319,7 +319,7 @@ def get_argparser():
         help="raise alert if measured voltage deviates by more than ±PCT%% (default: %(default)s)")
     p_voltage.add_argument(
         "--alert", dest="set_alert", default=False, action="store_true",
-        help="raise an alert if Vsense is out of range of Vio")
+        help="raise an alert if Vsense is out of range of Vsupply")
 
     p_safe = subparsers.add_parser(
         "safe", formatter_class=TextHelpFormatter,
@@ -633,17 +633,22 @@ async def main() -> int:
                     await device.set_alert_tolerance(args.ports, args.voltage,
                                                      args.tolerance / 100)
 
-            print("Port\tVio\tVlimit\tVsense\tVsense(range)")
+            print("Port\tVsupply\tIsupply\tVsense\tVsense(range)\tVsupply(max)")
             alerts = await device.poll_alert()
             for port in args.ports:
-                vio    = await device.get_voltage(port)
-                vlimit = await device.get_voltage_limit(port)
-                vsense = await device.measure_voltage(port)
-                alert  = await device.get_alert(port)
+                vsupply     = await device.get_voltage(port)
+                vsupply_max = await device.get_voltage_limit(port)
+                vsense      = await device.measure_voltage(port)
+                alert       = await device.get_alert(port)
+                try:
+                    isupply = await device.measure_current(port)
+                    isupply_str = f"{isupply:.3f}"
+                except GlasgowDeviceError:
+                    isupply_str = "N/A"
                 notice = ""
                 if port in alerts:
                     notice += " (ALERT)"
-                print(f"{port}\t{vio:.2}\t{vlimit:.2}\t{vsense:.3}\t{alert[0]:.2}-{alert[1]:.2}\t{notice}"
+                print(f"{port}\t{vsupply:.3f}\t{isupply_str}\t{vsense:.3f}\t{alert[0]:.3f}-{alert[1]:.3f}\t\t{vsupply_max:.3f}\t{notice}"
                       )
 
         if args.action == "safe":
@@ -656,11 +661,11 @@ async def main() -> int:
             if args.voltage is not None:
                 await device.set_voltage_limit(args.ports, args.voltage)
 
-            print("Port\tVio\tVlimit")
+            print("Port\tVsupply\tVsupply(max)")
             for port in args.ports:
-                vio    = await device.get_voltage(port)
-                vlimit = await device.get_voltage_limit(port)
-                print(f"{port}\t{vio:.2}\t{vlimit:.2}"
+                vsupply     = await device.get_voltage(port)
+                vsupply_max = await device.get_voltage_limit(port)
+                print(f"{port}\t{vsupply:.3f}\t{vsupply_max:.3f}"
                       )
 
         if args.action in ("run", "repl", "script"):
