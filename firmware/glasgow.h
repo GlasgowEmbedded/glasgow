@@ -28,7 +28,7 @@ enum {
 
 enum {
   // API compatibility level
-  CUR_API_LEVEL  = 0x05,
+  CUR_API_LEVEL  = 0x06,
 };
 
 // PORTA pins
@@ -174,6 +174,7 @@ bool iobuf_poll_alert_adc081c(__xdata uint8_t *mask, bool clear);
 // ADC API (TI INA233)
 bool iobuf_init_adc_ina233();
 bool iobuf_measure_voltage_ina233(uint8_t selector, __xdata uint16_t *millivolts);
+bool iobuf_measure_current_ina233(uint8_t selector, __xdata uint16_t *raw);
 bool iobuf_set_alert_ina233(uint8_t mask,
                      __xdata const uint16_t *low_millivolts,
                      __xdata const uint16_t *high_millivolts);
