@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 VID_QIHW         = 0x20b7
 PID_GLASGOW      = 0x9db1
 
-CUR_API_LEVEL    = 0x05
+CUR_API_LEVEL    = 0x06
 
 REQ_EEPROM       = 0x10
 REQ_FPGA_CFG     = 0x11
@@ -40,6 +40,7 @@ REQ_BITSTREAM_ID = 0x18
 REQ_IOBUF_ENABLE = 0x19
 REQ_LIMIT_VOLT   = 0x1A
 REQ_PULL         = 0x1B
+REQ_SENSE_CURR   = 0x1E
 REQ_TEST_LEDS    = 0x1C
 REQ_TEST_PULLS   = 0x1D
 
@@ -512,6 +513,24 @@ class GlasgowDevice:
             return await self._read_voltage(REQ_SENSE_VOLT, spec)
         except usb.ErrorStall:
             raise GlasgowDeviceError(f"cannot measure I/O port {spec} sense voltage") from None
+
+    # INA233 current measurement constants (R_shunt=0.15 ohm, I_max=0.546 A)
+    _CURRENT_LSB = 0.546 / 32768  # ~16.66 uA per LSB
+
+    async def measure_current(self, spec):
+        """Measures current on port ``spec`` using INA233 shunt sense.
+
+        Returns current in amps. Only available on RevC2 and newer.
+        R_shunt = 0.15 ohm, max measurable current ~546 mA.
+        """
+        try:
+            raw, = struct.unpack("<h",
+                await self.control_read(REQ_SENSE_CURR, 0,
+                    self._iobuf_spec_to_mask(spec, one=True), 2))
+            return max(0.0, raw * self._CURRENT_LSB)
+        except usb.ErrorStall:
+            raise GlasgowDeviceError(
+                f"cannot measure I/O port {spec} sense current") from None
 
     async def set_alert(self, spec, low_volts, high_volts):
         low_millivolts  = round(low_volts * 1000)
