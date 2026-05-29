@@ -314,6 +314,7 @@ enum {
   USB_REQ_IOBUF_ENABLE = 0x19,
   USB_REQ_LIMIT_VOLT   = 0x1A,
   USB_REQ_PULL         = 0x1B,
+  USB_REQ_SENSE_CURR   = 0x1E,
   USB_REQ_TEST_LEDS    = 0x1C,
   USB_REQ_TEST_PULLS   = 0x1D,
   // Cypress requests
@@ -656,6 +657,30 @@ void handle_pending_usb_setup() {
       result = iobuf_measure_voltage_ina233(arg_mask, (__xdata uint16_t *)EP0BUF);
     else
       result = iobuf_measure_voltage_adc081c(arg_mask, (__xdata uint16_t *)EP0BUF);
+
+    if(!result) {
+      goto stall_ep0_return;
+    } else {
+      SETUP_EP0_IN_BUF(2);
+    }
+
+    return;
+  }
+
+  // Current sense request
+  if(req_dir_in &&
+     req->bRequest == USB_REQ_SENSE_CURR &&
+     req->wLength == 2) {
+    uint8_t  arg_mask = req->wIndex;
+    pending_setup = false;
+    bool result;
+
+    while(EP0CS & _BUSY);
+
+    if(glasgow_config.revision >= GLASGOW_REV_C2)
+      result = iobuf_measure_current_ina233(arg_mask, (__xdata uint16_t *)EP0BUF);
+    else
+      result = false; // no current measurement on older hardware
 
     if(!result) {
       goto stall_ep0_return;

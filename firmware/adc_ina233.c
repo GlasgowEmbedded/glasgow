@@ -58,7 +58,17 @@ static bool iobuf_reset_ina233(uint8_t i2c_addr) {
   if(!i2c_reg8_write(i2c_addr, INA233_REG_MFR_ALERT_MASK, &regval, 1))
     return false;
 
-  // TODO: write cal register to allow current measurement
+  // Write calibration register to enable current measurement.
+  // R_shunt = 0.15 ohm, I_max = 0.546 A (from schematic: 81.9 mV / 0.15 ohm)
+  // Current_LSB = I_max / 2^15 = 16.66 uA/LSB
+  // CAL = 0.00512 / (R_shunt * Current_LSB) = 0.00512 / (0.15 * 16.66e-6) = 2048
+  {
+    __pdata uint8_t cal_bytes[2];
+    cal_bytes[0] = 0x00; // 2048 & 0xFF
+    cal_bytes[1] = 0x08; // 2048 >> 8
+    if(!i2c_reg8_write(i2c_addr, INA233_REG_MFR_CALIBRATION, cal_bytes, 2))
+      return false;
+  }
 
   return true;
 }
@@ -101,6 +111,25 @@ bool iobuf_measure_voltage_ina233(uint8_t selector, __xdata uint16_t *millivolts
         return false;
 
       *millivolts = code_bytes_to_millivolts_ina233(code_bytes);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool iobuf_measure_current_ina233(uint8_t selector, __xdata uint16_t *raw) {
+  __code const struct buffer_desc *buffer;
+  for(buffer = buffers; buffer->selector; buffer++) {
+    if(selector == buffer->selector) {
+      __pdata uint8_t code_bytes[2];
+      if(!i2c_reg8_read(buffer->address, INA233_REG_READ_IIN, code_bytes, 2))
+        return false;
+
+      // Return raw register value (LSB first from INA233).
+      // Conversion to amps done on host: amps = raw * Current_LSB
+      // Current_LSB = I_max / 2^15 = 0.546 / 32768 = 16.66 uA
+      *raw = ((uint16_t)code_bytes[1] << 8) | code_bytes[0];
       return true;
     }
   }
