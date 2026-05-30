@@ -28,9 +28,7 @@ include $(LIBFX2)/fx2rules.mk
 # Yes, this is awful. I am so proud of it =^_^=
 GIT_REV_SHORT  ?= $(shell git log -1 --abbrev=8 --pretty=%h HEAD .)
 $(if $(GIT_REV_SHORT),,$(error Failed to determine git revision))
-ifneq ($(shell git diff-index --exit-code HEAD -- .),)
-GIT_TREE_DIRTY  = .dirty
-endif
+GIT_TREE_DIRTY  := $(if $(shell git diff --quiet HEAD -- . 2>/dev/null || echo dirty),.dirty)
 VERSION_H_RULE := $(shell \
 	echo "#define GIT_REVISION \"$(GIT_REV_SHORT)$(GIT_TREE_DIRTY)\"" >.version.h && \
 	if ! diff -q .version.h version.h 2>/dev/null ; then mv .version.h version.h; else rm -f .version.h; fi \
