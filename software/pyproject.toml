@@ -91,6 +91,7 @@ glasgow = "glasgow.cli:run_main"
 selftest = "glasgow.applet.internal.selftest:SelfTestApplet"
 benchmark = "glasgow.applet.internal.benchmark:BenchmarkApplet"
 calibrate-clock = "glasgow.applet.measure.calibrate_clock:CalibrateClockApplet"
+generate-prn-noise = "glasgow.applet.measure.prn_noise:GeneratePRNNoiseApplet"
 
 analyzer = "glasgow.applet.interface.analyzer:AnalyzerApplet"
 uart = "glasgow.applet.interface.uart:UARTApplet"
