@@ -357,6 +357,7 @@ def get_argparser():
     p_repl.add_argument(
         "--prelude", metavar="FILENAME", type=argparse.FileType("r", encoding="utf-8"),
         action="append",
+        default=[],
         help="run Python script(s) FILENAME first, as if it was typed in the REPL")
     add_run_args(p_repl)
     p_repl.add_build_func(lambda: add_applet_arg(p_repl, mode="repl", required=True))
