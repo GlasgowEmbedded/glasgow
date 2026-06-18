@@ -14,21 +14,35 @@ TAG=glasgow_firmware_builder_${MYUID}_${MYGID}
 GLASGOW_FOLDER=$(dirname $(dirname $(readlink -f $0)))
 
 DOCKERFILE=$(cat <<-'EOF'
-	FROM debian:trixie-20250721-slim@sha256:cc92da07b99dd5c078cb5583fdb4ba639c7c9c14eb78508a2be285ca67cc738a
+	FROM nixos/nix:2.32.8@sha256:72a13b0f42e3cc515945aa4250b772381d93c96d4bf93aa950b5c68defdab1dd
 
 	ARG UID
 	ARG GID
 
-	RUN DEBIAN_FRONTEND="noninteractive" apt-get update -y && \
-	    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends git make sdcc python3 python3-usb1 && \
-	    rm -rf /var/lib/apt/lists/*
+	# Break the /etc/ symlinks so that we can add a user/group. I'm not happy about it either.
+	RUN for file in group passwd shadow; do \
+		  cp --remove-destination $(readlink /etc/$file) /etc/$file; \
+		done
+
+	# Ensure passwd and shadow are writable.
+	RUN chmod u+w /etc/{passwd,shadow}
 
 	# Any commands that create new files in the host mount must be invoked with the caller UID/GID, or
 	# else the created files will be owned by root.
 	#
 	# Create a user and a group with the UID/GID of the caller.
-	RUN groupadd --gid ${GID} caller || true
-	RUN useradd --uid ${UID} --gid ${GID} caller
+	RUN nix-shell -p shadow --run "groupadd --gid ${GID} caller"
+	RUN nix-shell -p shadow --run "useradd -m --uid ${UID} --gid ${GID} caller"
+
+	RUN nix-channel --remove nixpkgs
+
+	# The nixpkgs commit to pin to. Currently nixos-26.05 with sdcc 4.5.0.
+	ENV NIXPKGS_COMMIT=a0374025a863d007d98e3297f6aa46cc3141c2f0
+	ENV NIX_PATH=nixpkgs=https://github.com/NixOS/nixpkgs/archive/${NIXPKGS_COMMIT}.tar.gz
+
+	# Install dependencies.
+	RUN nix-env -f '<nixpkgs>' -iA gnumake sdcc
+	RUN nix-env -i -E '_: with import <nixpkgs> {}; python3.withPackages (ps: [ ps.libusb1 ])'
 
 	USER caller
 EOF
@@ -77,19 +91,19 @@ if [ $# -lt 1 ]; then
 fi
 
 if [ "clean" = "$1" ]; then
-	docker_run /bin/bash -s -x <<-'EOF'
+	docker_run /bin/sh -s -x <<-'EOF'
 		set -e
 		make -C vendor/libfx2/firmware/library clean
 		make -C firmware clean
 	EOF
 elif [ "build" = "$1" ]; then
-	docker_run /bin/bash -s -x <<-'EOF'
+	docker_run /bin/sh -s -x <<-'EOF'
 		set -e
 		make -C vendor/libfx2/firmware/library all MODELS=medium
 		make -C firmware all
 	EOF
 elif [ "rebuild" = "$1" ]; then
-	docker_run /bin/bash -s -x <<-'EOF'
+	docker_run /bin/sh -s -x <<-'EOF'
 		set -e
 		make -C vendor/libfx2/firmware/library clean
 		make -C firmware clean
@@ -97,7 +111,7 @@ elif [ "rebuild" = "$1" ]; then
 		make -C firmware all
 	EOF
 elif [ "deploy" = "$1" ]; then
-	docker_run --buildargs "--no-cache --progress=plain" /bin/bash -s -x <<-'EOF'
+	docker_run --buildargs "--no-cache --progress=plain" /bin/sh -s -x <<-'EOF'
 		set -e
 
 		# Display dependency versions.
@@ -118,12 +132,12 @@ elif [ "deploy" = "$1" ]; then
 		    firmware/glasgow.ihex software/glasgow/hardware/firmware.ihex
 	EOF
 elif [ "load" = "$1" ]; then
-	docker_run --runargs "--privileged -v /dev/bus/usb:/dev/bus/usb" /bin/bash -s -x <<-'EOF'
+	docker_run --runargs "--privileged -v /dev/bus/usb:/dev/bus/usb" /bin/sh -s -x <<-'EOF'
 		set -e
 		make -C firmware load
 	EOF
 elif [ "bash" = "$1" ]; then
-	docker_run --runargs "--privileged -v /dev/bus/usb:/dev/bus/usb -t" /bin/bash
+	docker_run --runargs "--privileged -v /dev/bus/usb:/dev/bus/usb -t" /bin/sh
 else
 	printusage
 	echo "Unknown command $1"
