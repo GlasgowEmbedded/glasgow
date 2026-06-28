@@ -5,7 +5,7 @@
 groups = ["default", "builtin-toolchain", "http", "numpy"]
 strategy = ["direct_minimal_versions"]
 lock_version = "4.5.0"
-content_hash = "sha256:943f800f305d5bddd043971de0704313360ca4c884d7564c299986bbb70172ff"
+content_hash = "sha256:7c594916c6201b16340256412013660984d298484fefc5dd81a81bfe5029e1c4"
 
 [[metadata.targets]]
 requires_python = "~=3.13"
@@ -318,13 +318,13 @@ files = [
 
 [[package]]
 name = "fx2"
-version = "0.11"
+version = "0.16"
 summary = "A Python package for interacting with Cypress EZ-USB FX2 series chips"
 dependencies = [
     "libusb1>=1.0",
 ]
 files = [
-    {file = "fx2-0.11-py3-none-any.whl", hash = "sha256:3de180e99053db0f253de86b85a6f16145850b568a4b0d5076af00eb222304b6"},
+    {file = "fx2-0.16-py3-none-any.whl", hash = "sha256:dd85604b11072787c9e7554fdefe1126c6190ec3542dbca862a077c0b16c9b7c"},
 ]
 
 [[package]]

@@ -52,6 +52,8 @@ class PullState(enum.Enum):
 class GlasgowPort(enum.Enum):
     A = "A"
     B = "B"
+    C = "C"
+    D = "D"
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}.{self.name}"
@@ -72,12 +74,12 @@ class GlasgowVio:
         object.__setattr__(self, "sense", GlasgowPort(sense) if sense is not None else None)
 
     @classmethod
-    def parse(cls, value, *, all_ports="AB") -> dict[GlasgowPort, GlasgowVio]:
+    def parse(cls, value) -> dict[GlasgowPort, GlasgowVio]:
         result = {}
         for clause in value.split(","):
             if m := re.match(r"^([0-9]+(\.[0-9]+)?)$", clause):
                 volts = float(m.group(1))
-                for port in all_ports:
+                for port in GlasgowPort:
                     result[GlasgowPort(port)] = GlasgowVio(value=volts)
             elif m := re.match(r"^([A-Z]+)=([0-9]+(\.[0-9]+)?)$", clause):
                 ports, volts = m.group(1), float(m.group(2))

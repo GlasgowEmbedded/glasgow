@@ -40,7 +40,7 @@ dependencies = [
   "platformdirs>=3.0.0,<5",
   # `fx2` is effectively maintained together with Glasgow. It uses SemVer, and keeps backward
   # compatibility within the 0.x release series.
-  "fx2>=0.11,<1",
+  "fx2>=0.16,<1",
   # `libusb1` is used to communicate with the device, and its API mirrors the stable API/ABI of
   # of the native `libusb1` library. It increases major version when dropping support for older
   # Python versions.

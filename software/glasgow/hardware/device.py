@@ -1,19 +1,23 @@
 import re
 import sys
+import enum
 import time
 import struct
 import logging
 import asyncio
 import importlib.resources
+from typing import Self, BinaryIO
 
-from fx2 import REQ_RAM, REQ_PAGE_SIZE, REQ_EEPROM_DB, REG_CPUCS
-from fx2.format import input_data
+import fx2
+import fx2.format
 
-from ..support.logging import dump_hex
+from glasgow.support.logging import dump_hex
+from glasgow.support.progress import Progress
 if sys.platform == "emscripten":
-    from ..support.usb import webusb as usb
+    from glasgow.support.usb import webusb as usb
 else:
-    from ..support.usb import libusb1 as usb
+    from glasgow.support.usb import libusb1 as usb
+from .build_plan import GlasgowBuildPlan
 from . import quirks
 
 
@@ -26,48 +30,72 @@ logger = logging.getLogger(__name__)
 VID_QIHW         = 0x20b7
 PID_GLASGOW      = 0x9db1
 
-CUR_API_LEVEL    = 0x06
+CUR_API_LEVEL    = 0x07
 
-REQ_EEPROM       = 0x10
-REQ_FPGA_CFG     = 0x11
-REQ_STATUS       = 0x12
-REQ_REGISTER     = 0x13
-REQ_IO_VOLT      = 0x14
-REQ_SENSE_VOLT   = 0x15
-REQ_ALERT_VOLT   = 0x16
-REQ_POLL_ALERT   = 0x17
-REQ_BITSTREAM_ID = 0x18
-REQ_IOBUF_ENABLE = 0x19
-REQ_LIMIT_VOLT   = 0x1A
-REQ_PULL         = 0x1B
-REQ_SENSE_CURR   = 0x1E
-REQ_TEST_LEDS    = 0x1C
-REQ_TEST_PULLS   = 0x1D
 
-ST_ERROR         = 1<<0
-ST_FPGA_RDY      = 1<<1
-ST_ALERT         = 1<<2
+class _Request(enum.IntEnum):
+    # Board management
+    WRITE_EEPROM    = 0x10
+    READ_EEPROM     = 0x11
+    # FPGA programming
+    FPGA_LOAD_CFG   = 0x20
+    FPGA_LOAD_NVM   = 0x21
+    FPGA_STATUS     = 0x22
+    FPGA_SET_REG    = 0x28
+    FPGA_GET_REG    = 0x29
+    # Port management
+    SET_VSUPPLY     = 0x30
+    GET_VSUPPLY     = 0x31
+    SET_VLIMIT      = 0x32
+    GET_VLIMIT      = 0x33
+    SET_VALERT      = 0x34
+    GET_VALERT      = 0x35
+    SET_IALERT      = 0x36
+    GET_IALERT      = 0x37
+    GET_VSENSE      = 0x38
+    GET_ISUPPLY     = 0x39
+    SET_PULLS       = 0x3A
+    GET_PULLS       = 0x3B
+    GET_STATE       = 0x3C
+    # Alert handling
+    GET_ALERTS      = 0xA0
+    CLR_ALERTS      = 0xA1
+    # Internal use only
+    TEST_LEDS       = 0xF0
+    WRITE_SMBUS     = 0xF1
+    READ_SMBUS      = 0xF2
 
-IO_BUF_A         = 1<<0
-IO_BUF_B         = 1<<1
+
+class _Result(enum.IntEnum):
+    ACK             = 0x00
+    WAIT            = 0x01
+    ERROR           = 0xff
+
+
+class GlasgowPortAlerts(enum.Flag):
+    UNDERVOLTAGE    = 1<<0
+    OVERVOLTAGE     = 1<<1
+    OVERCURRENT     = 1<<2
+
+    ALL_POSSIBLE    = 0xff
 
 
 class GlasgowDeviceError(Exception):
-    """An exception raised on a communication error."""
+    """An exception raised on a communication or usage error."""
 
 
 class GlasgowDevice:
     @classmethod
     def firmware_file(cls):
-        return importlib.resources.files(__package__).joinpath("firmware.ihex")
+        return importlib.resources.files(__package__).joinpath("firmware-fx2.ihex")
 
     @classmethod
-    def firmware_data(cls):
+    def firmware_data(cls) -> list[tuple[int, bytes]]:
         with cls.firmware_file().open() as file:
-            return input_data(file, fmt="ihex")
+            return fx2.format.input_data(file, fmt="ihex")
 
     @classmethod
-    async def _enumerate_devices(cls, context: usb.Context):
+    async def _enumerate_devices(cls, context: usb.Context) -> dict[str, usb.Device]:
         devices: list[usb.Device] = []
         devices_by_serial: dict[str, usb.Device] = {}
 
@@ -118,7 +146,7 @@ class GlasgowDevice:
                     await device.close()
                     continue
             else: # api_level == CUR_API_LEVEL
-                if device.serial_number not in devices_by_serial:
+                if device.serial_number and device.serial_number not in devices_by_serial:
                     logger.debug("found rev%s device with serial %s",
                         revision, device.serial_number)
                     devices_by_serial[device.serial_number] = device
@@ -129,15 +157,15 @@ class GlasgowDevice:
             # load the firmware that we know will work.
             logger.debug("loading firmware from %r to rev%s device",
                 str(cls.firmware_file()), revision)
-            await device.control_transfer_out(
-                usb.RequestType.Vendor, usb.Recipient.Device, REQ_RAM, REG_CPUCS, 0, bytes([1]))
+            await device.control_transfer_out(usb.RequestType.Vendor, usb.Recipient.Device,
+                fx2.REQ_RAM, fx2.REG_CPUCS, 0, bytes([1]))
             for address, data in cls.firmware_data():
                 for offset in range(0, len(data), 4096):
                     await device.control_transfer_out(
                         usb.RequestType.Vendor, usb.Recipient.Device,
-                        REQ_RAM, address + offset, 0, bytes(data[offset:offset + 4096]))
-            await device.control_transfer_out(
-                usb.RequestType.Vendor, usb.Recipient.Device, REQ_RAM, REG_CPUCS, 0, bytes([0]))
+                        fx2.REQ_RAM, address + offset, 0, bytes(data[offset:offset + 4096]))
+            await device.control_transfer_out(usb.RequestType.Vendor, usb.Recipient.Device,
+                fx2.REQ_RAM, fx2.REG_CPUCS, 0, bytes([0]))
             await device.close()
 
             RE_ENUMERATION_TIMEOUT = 10.0
@@ -206,6 +234,9 @@ class GlasgowDevice:
         self.usb_context = usb_context
         self.usb_device = usb_device
         self.revision = GlasgowDeviceConfig.decode_revision(usb_device.version & 0xFF)
+        self._mgmt_task: asyncio.Task | None = None
+        self._mgmt_queue: dict[int, asyncio.Future[bytes]] = {}
+        self._next_serial: int = 1
 
     async def open(self):
         await self.usb_device.open()
@@ -214,8 +245,29 @@ class GlasgowDevice:
                         self.serial)
             logger.info("the Glasgow Interface Explorer project is not responsible for "
                         "operation of this device")
+        if self._mgmt_task is None:
+            await self.usb_device.claim_interface(0)
+            await self.usb_device.select_alternate_interface(0, 1)
+            async def ep1_in_poller():
+                while True:
+                    packet = await self.usb_device.bulk_transfer_in(0x81, 64)
+                    if len(packet) == 0:
+                        logger.warning("USB: BULK EP1 IN ZLP (unexpected)")
+                        continue
+                    serial, payload = packet[0], packet[1:]
+                    if handler := self._mgmt_queue.pop(serial, None):
+                        logger.trace("USB: BULK EP1 IN data=<%s>", dump_hex(packet))
+                        handler.set_result(payload)
+                    else:
+                        logger.warning("USB: BULK EP1 IN data=<%s> (unhandled)", dump_hex(packet))
+            self._mgmt_task = asyncio.create_task(ep1_in_poller())
 
     async def close(self):
+        if self._mgmt_task is not None:
+            self._mgmt_task.cancel()
+            await asyncio.wait([self._mgmt_task])
+            self._mgmt_task = None
+            await self.usb_device.release_interface(0)
         await self.usb_device.close()
 
     @property
@@ -224,40 +276,45 @@ class GlasgowDevice:
 
     @property
     def modified_design(self):
+        assert self.usb_device.product_name is not None
         is_modified = not self.usb_device.product_name.startswith("Glasgow Interface Explorer")
         if (self.usb_device.manufacturer_name == "1BitSquared" and
                 self.usb_device.serial_number in quirks.modified_design_1b2_mar2024):
             is_modified = False # see quirks.py
         return is_modified
 
-    async def control_read(self, request, value, index, length):
-        logger.trace("USB: CONTROL IN request=%#04x value=%#06x index=%#06x length=%d (submit)",
-                     request, value, index, length)
-        try:
-            data = await self.usb_device.control_transfer_in(
-                usb.RequestType.Vendor, usb.Recipient.Device, request, value, index, length)
-            logger.trace("USB: CONTROL IN request=%#04x data=<%s> (completed)",
-                request, dump_hex(data))
-        except asyncio.CancelledError:
-            logger.trace("USB: CONTROL IN request=%#04x (cancelled)", request)
-            raise
+    @property
+    def has_pulls(self):
+        # C0 has fairly broken pulls, but we still try to support them.
+        return self.revision >= "C0"
+
+    @property
+    def measures_current(self):
+        return self.revision >= "C2"
+
+    @property
+    def all_ports(self) -> str:
+        if self.revision >= "D0":
+            return "ABCD"
         else:
-            return data
+            return "AB"
 
-    async def control_write(self, request, value, index, data):
-        if not isinstance(data, (bytes, bytearray)):
-            data = bytearray(data)
-        logger.trace("USB: CONTROL OUT request=%#04x value=%#06x index=%#06x data=<%s> (submit)",
-                     request, value, index, dump_hex(data))
-        try:
-            await self.usb_device.control_transfer_out(
-                usb.RequestType.Vendor, usb.Recipient.Device, request, value, index, data)
-            logger.trace("USB: CONTROL OUT request=%#04x (completed)", request)
-        except asyncio.CancelledError:
-            logger.trace("USB: CONTROL OUT request=%#04x (cancelled)", request)
-            raise
+    async def _command_raw(self, payload: bytes | bytearray | memoryview) -> bytes:
+        serial, self._next_serial = self._next_serial, (self._next_serial % 0xff) + 1
+        packet = bytes([serial]) + payload
+        future = self._mgmt_queue[serial] = asyncio.Future()
+        logger.trace("USB: BULK EP1 OUT data=<%s>", dump_hex(packet))
+        assert len(packet) <= 64
+        await self.usb_device.bulk_transfer_out(0x01, packet)
+        return await future
 
-    async def bulk_read(self, endpoint, length):
+    async def _command_fmt(self, req_format: str, res_format: str, *req_params):
+        req_packet = struct.pack(req_format, *req_params)
+        res_packet = await self._command_raw(req_packet)
+        res_params = struct.unpack(res_format, res_packet)
+        return res_params
+
+    async def bulk_read(self, endpoint: int, length: int) -> bytearray:
         logger.trace("USB: BULK EP%d IN length=%d (submit)", endpoint & 0x7f, length)
         try:
             data = await self.usb_device.bulk_transfer_in(endpoint, length)
@@ -268,7 +325,7 @@ class GlasgowDevice:
         else:
             return data
 
-    async def bulk_write(self, endpoint, data):
+    async def bulk_write(self, endpoint: int, data: bytes | bytearray | memoryview):
         if not isinstance(data, (bytes, bytearray)):
             data = bytearray(data)
         logger.trace("USB: BULK EP%d OUT data=<%s> (submit)", endpoint & 0x7f, dump_hex(data))
@@ -279,136 +336,87 @@ class GlasgowDevice:
             logger.trace("USB: BULK EP%d OUT (cancelled)", endpoint & 0x7f)
             raise
 
-    async def _read_eeprom_raw(self, idx, addr, length, chunk_size=0x1000):
-        """Read ``length`` bytes at ``addr`` from EEPROM at index ``idx``
-        in ``chunk_size`` byte chunks.
-        """
+    # Board management
+
+    _EEPROM_CHUNK = 0x20
+
+    async def read_eeprom(self, addr: int, length: int) -> bytearray:
+        """Read ``length`` bytes at ``addr`` from FX2 EEPROM in ``chunk_size`` byte chunks."""
+        logger.debug("reading FX2 EEPROM range %04x-%04x", addr, addr + length - 1)
         data = bytearray()
         while length > 0:
-            chunk_length = min(length, chunk_size)
-            logger.debug("reading EEPROM chip %d range %04x-%04x",
-                         idx, addr, addr + chunk_length - 1)
-            data += await self.control_read(REQ_EEPROM, addr, idx, chunk_length)
-            addr += chunk_length
-            length -= chunk_length
+            chunk_size = min(length, self._EEPROM_CHUNK)
+            result = await self._command_raw(struct.pack("<BHB",
+                _Request.READ_EEPROM, addr, chunk_size))
+            assert result[0] == _Result.ACK, f"unexpected result {result[0]:02x}"
+            data   += result[1:]
+            addr   += chunk_size
+            length -= chunk_size
         return data
 
-    async def _write_eeprom_raw(self, idx, addr, data, chunk_size=0x1000):
-        """Write ``data`` to ``addr`` in EEPROM at index ``idx``
-        in ``chunk_size`` byte chunks.
-        """
+    async def write_eeprom(self, addr: int, data: bytes | bytearray):
+        """Write ``data`` bytes at ``addr`` in FX2 EEPROM."""
+        logger.debug("writing FX2 EEPROM range %04x-%04x", addr, addr + len(data) - 1)
         while len(data) > 0:
-            chunk_length = min(len(data), chunk_size)
-            logger.debug("writing EEPROM chip %d range %04x-%04x",
-                         idx, addr, addr + chunk_length - 1)
-            await self.control_write(REQ_EEPROM, addr, idx, data[:chunk_length])
-            addr += chunk_length
-            data  = data[chunk_length:]
+            # Make sure chunks never cross a 32-byte boundary.
+            chunk_size = min(((addr | (self._EEPROM_CHUNK - 1)) + 1) - addr, self._EEPROM_CHUNK)
+            result, = await self._command_raw(struct.pack("<BH",
+                _Request.WRITE_EEPROM, addr) + data[:chunk_size])
+            assert result == _Result.ACK, f"unexpected result {result:02x}"
+            addr += chunk_size
+            data  = data[chunk_size:]
 
-    @staticmethod
-    def _adjust_eeprom_addr_for_kind(kind, addr):
-        if kind == "fx2":
-            base_offset = 0
-        elif kind == "ice":
-            base_offset = 1
-        else:
-            raise ValueError(f"Unknown EEPROM kind {kind}")
-        return 0x10000 * base_offset + addr
+    # FPGA programming
 
-    async def read_eeprom(self, kind, addr, length):
-        """Read ``length`` bytes at ``addr`` from EEPROM of kind ``kind``
-        in ``chunk_size`` byte chunks. Valid ``kind`` is ``"fx2"`` or ``"ice"``.
-        """
-        logger.debug("reading %s EEPROM range %04x-%04x",
-                     kind, addr, addr + length - 1)
-        addr = self._adjust_eeprom_addr_for_kind(kind, addr)
-        result = bytearray()
-        while length > 0:
-            chunk_addr   = addr & ((1 << 16) - 1)
-            chunk_length = min(chunk_addr + length, 1 << 16) - chunk_addr
-            result += await self._read_eeprom_raw(addr >> 16, chunk_addr, chunk_length)
-            addr   += chunk_length
-            length -= chunk_length
-        return result
-
-    async def write_eeprom(self, kind, addr, data):
-        """Write ``data`` to ``addr`` in EEPROM of kind ``kind``
-        in ``chunk_size`` byte chunks. Valid ``kind`` is ``"fx2"`` or ``"ice"``.
-        """
-        logger.debug("writing %s EEPROM range %04x-%04x",
-                     kind, addr, addr + len(data) - 1)
-        addr = self._adjust_eeprom_addr_for_kind(kind, addr)
-        while len(data) > 0:
-            chunk_addr   = addr & ((1 << 16) - 1)
-            chunk_length = min(chunk_addr + len(data), 1 << 16) - chunk_addr
-            await self._write_eeprom_raw(addr >> 16, chunk_addr, data[:chunk_length])
-            addr += chunk_length
-            data  = data[chunk_length:]
-
-    async def _status(self):
-        result = await self.control_read(REQ_STATUS, 0, 0, 1)
-        return result[0]
-
-    async def status(self):
-        """Query device status.
-
-        Returns a set of flags out of ``{"fpga-ready", "alert"}``.
-        """
-        status_word = await self._status()
-        status_set  = set()
-        # Status should be queried and ST_ERROR cleared after every operation that may set it,
-        # so we ignore it here.
-        if status_word & ST_FPGA_RDY:
-            status_set.add("fpga-ready")
-        if status_word & ST_ALERT:
-            status_set.add("alert")
-        return status_set
-
-    async def bitstream_id(self):
+    async def bitstream_id(self) -> None | bytes:
         """Get bitstream ID for the bitstream currently running on the FPGA,
         or ``None`` if the FPGA does not have a bitstream.
         """
-        bitstream_id = await self.control_read(REQ_BITSTREAM_ID, 0, 0, 16)
+        result, _bitstream_size, bitstream_id = \
+            await self._command_fmt("<B", "<BL8s", _Request.FPGA_STATUS)
+        assert result == _Result.ACK, f"unexpected result {result:02x}"
         if re.match(rb"^\x00+$", bitstream_id):
             return None
         return bytes(bitstream_id)
 
-    async def download_bitstream(self, bitstream, bitstream_id=b"\xff" * 16):
+    async def download_bitstream(self, bitstream: bytes, bitstream_id: bytes = b"\xff" * 8):
         """Download ``bitstream`` with ID ``bitstream_id`` to FPGA."""
-        # Send consecutive chunks of bitstream. Sending 0th chunk also clears the FPGA bitstream.
-        index = 0
-        while index * 4096 < len(bitstream):
-            await self.control_write(REQ_FPGA_CFG, 0, index,
-                bitstream[index * 4096:(index + 1) * 4096])
-            index += 1
-        # Complete configuration by setting bitstream ID. This starts the FPGA.
-        try:
-            await self.control_write(REQ_BITSTREAM_ID, 0, 0, bitstream_id)
-        except usb.ErrorStall:
-            raise GlasgowDeviceError("FPGA configuration failed") from None
-        try:
-            # Each bitstream has an I2C register at address 0, which is used to check that the FPGA
-            # has configured properly and that the I2C bus function is intact. A small subset of
-            # production devices manufactured by 1bitSquared fails this check.
-            magic, = await self.control_read(REQ_REGISTER, 0x00, 0, 1)
-        except usb.ErrorStall:
-            magic = 0
-        if magic != 0xa5:
+        async def fpga_load():
+            while True:
+                # The FPGA_LAUNCH command serves as a synchronization point for EP2 writes.
+                result, = await self._command_fmt("<BL8s", "<B",
+                    _Request.FPGA_LOAD_CFG, len(bitstream), bitstream_id)
+                if result == _Result.ACK:
+                    break
+                elif result == _Result.WAIT:
+                    await asyncio.sleep(0.1)
+                    continue
+                else:
+                    raise GlasgowDeviceError("FPGA configuration failed")
+        async with (self.usb_device.with_interface(1, 3), # IFACE_EP2OUT, EP_MODE_CFG
+                    asyncio.TaskGroup() as tg):
+            tg.create_task(self.bulk_write(0x02, bitstream))
+            tg.create_task(fpga_load())
+        # Each bitstream has an I2C register at address 0, which is used to check that the FPGA
+        # has configured properly and that the I2C bus function is intact. A small subset of
+        # production devices manufactured by 1bitSquared fails this check.
+        result, magic = await self._command_fmt("<BBB", "<B1s", _Request.FPGA_GET_REG, 0x00, 1)
+        if result != _Result.ACK or magic != b"\xa5":
             raise GlasgowDeviceError(
                 "FPGA health check failed; if you are using a newly manufactured device, "
                 "ask the vendor of the device for return and replacement, else ask for support "
                 "on community channels")
 
-    async def download_target(self, plan, *, reload=False):
+    async def download_plan(self, plan: GlasgowBuildPlan, *, reload: bool = False):
         if await self.bitstream_id() == plan.bitstream_id and not reload:
             logger.info("device already has bitstream ID %s", plan.bitstream_id.hex())
             return
         logger.info("generating bitstream ID %s", plan.bitstream_id.hex())
         await self.download_bitstream(await plan.get_bitstream(), plan.bitstream_id)
 
-    async def download_prebuilt(self, plan, bitstream_file):
-        bitstream_file_id = bitstream_file.read(16)
-        force_download = (bitstream_file_id == b"\xff" * 16)
+    async def download_prebuilt(self, plan: GlasgowBuildPlan, bitstream_file: BinaryIO):
+        bitstream_file_id = bitstream_file.read(8)
+        force_download = (bitstream_file_id == b"\xff" * 8)
         if force_download:
             logger.warning("prebuilt bitstream ID is all ones, forcing download")
         elif await self.bitstream_id() == plan.bitstream_id:
@@ -421,229 +429,320 @@ class GlasgowDevice:
                     plan.bitstream_id.hex(), bitstream_file.name)
         await self.download_bitstream(bitstream_file.read(), plan.bitstream_id)
 
-    async def _iobuf_enable(self, on):
-        # control the IO-buffers (FXMA108) on revAB, they are on by default
-        # no effect on other revisions
-        await self.control_write(REQ_IOBUF_ENABLE, on, 0, [])
+    async def flash_bitstream(self, bitstream: bytes, bitstream_id: bytes = b"\xff" * 8):
+        """Flash ``bitstream`` with ID ``bitstream_id`` to FPGA."""
+        async def fpga_load():
+            with Progress(total=len(bitstream), action="flashing", item="B") as progress:
+                while True:
+                    # The FPGA_LOAD_NVM command serves as a synchronization point for EP2 writes.
+                    result, done_bytes = await self._command_fmt("<BL8s", "<BL",
+                        _Request.FPGA_LOAD_NVM, len(bitstream), bitstream_id)
+                    if result == _Result.ACK:
+                        break
+                    elif result == _Result.WAIT:
+                        progress.advance(done_bytes - progress.done)
+                        continue
+                    else:
+                        raise GlasgowDeviceError("FPGA bitstream flashing failed")
+        async with (self.usb_device.with_interface(1, 4), # IFACE_EP2OUT, EP_MODE_NVM
+                    asyncio.TaskGroup() as tg):
+            tg.create_task(self.bulk_write(0x02, bitstream))
+            tg.create_task(fpga_load())
 
-    @staticmethod
-    def _iobuf_spec_to_mask(spec, one):
-        if one and len(spec) != 1:
-            raise GlasgowDeviceError("exactly one I/O port may be specified for this operation")
+    async def flash_plan(self, plan: GlasgowBuildPlan):
+        logger.info("generating bitstream ID %s", plan.bitstream_id.hex())
+        await self.flash_bitstream(await plan.get_bitstream(), plan.bitstream_id)
 
+    async def write_register(self, addr: int, value: int, width: int = 1):
+        """Write ``value`` to ``width``-byte FPGA register at ``addr``."""
+        logger.trace("register %d write: %#04x", addr, value)
+        result, = await self._command_fmt(f"<BB{width}s", "<B",
+            _Request.FPGA_SET_REG, addr, value.to_bytes(width, byteorder="big"))
+        if result != _Result.ACK:
+            raise GlasgowDeviceError(f"failed to write register {addr:#04x}")
+
+    async def read_register(self, addr: int, width: int = 1):
+        """Read ``width``-byte FPGA register at ``addr``."""
+        result, data = await self._command_fmt("<BBB", f"<B{width}s",
+            _Request.FPGA_GET_REG, addr, width)
+        if result != _Result.ACK:
+            raise GlasgowDeviceError(f"failed to read register {addr:#04x}")
+        value = int.from_bytes(data, byteorder="little")
+        logger.trace("register %d read: %#04x", addr, value)
+        return value
+
+    # Port management
+
+    def _iospec_to_mask(self, spec: str) -> int:
         mask = 0
-        for port in str(spec):
-            if   port == "A":
-                mask |= IO_BUF_A
-            elif port == "B":
-                mask |= IO_BUF_B
-            else:
-                raise GlasgowDeviceError(f"unknown I/O port {port}")
+        for port in spec:
+            match port:
+                case "A": mask |= 0x1
+                case "B": mask |= 0x2
+                case "C" if self.revision >= "D0": mask |= 0x4
+                case "D" if self.revision >= "D0": mask |= 0x8
+                case _:
+                    raise GlasgowDeviceError(f"revision {self.revision} has no I/O port {port}")
         return mask
 
-    @staticmethod
-    def _mask_to_iobuf_spec(mask):
-        spec = ""
-        if mask & IO_BUF_A:
-            spec += "A"
-        if mask & IO_BUF_B:
-            spec += "B"
-        return spec
+    def _iospec_to_index(self, port: str) -> int:
+        if len(port) != 1:
+            raise GlasgowDeviceError("exactly one I/O port may be specified for this operation")
+        match port:
+            case "A": return 0
+            case "B": return 1
+            case "C" if self.revision >= "D0": return 2
+            case "D" if self.revision >= "D0": return 3
+            case _:
+                raise GlasgowDeviceError(f"revision {self.revision} has no I/O port {port}")
 
-    async def _write_voltage(self, req, spec, volts):
-        millivolts = round(volts * 1000)
-        await self.control_write(req, 0, self._iobuf_spec_to_mask(spec, one=False),
-            struct.pack("<H", millivolts))
-
-    async def set_voltage(self, spec, volts):
-        await self._write_voltage(REQ_IO_VOLT, spec, volts)
-        # Check if we've succeeded
-        if await self._status() & ST_ERROR:
-            causes = []
+    async def set_voltage(self, spec: str, volts: float):
+        """Set voltage on port(s) ``spec`` to ``volts``."""
+        value = round(volts * 1000) # to mV
+        result, = await self._command_fmt("<BB4H", "<B",
+            _Request.SET_VSUPPLY, self._iospec_to_mask(spec),
+            value, value, value, value)
+        if result == _Result.ERROR:
+            cause_list = []
             for port in spec:
-                if (limit := await self._read_voltage(REQ_LIMIT_VOLT, port)) < volts:
-                    causes.append(f"port {port} voltage limit is set to {limit:.2} V"
-                                  )
-            causes_string = ""
-            if causes:
-                causes_string = f" ({', '.join(causes)})"
+                if (limit := await self.get_voltage_limit(port)) < volts:
+                    cause_list.append(f"port {port} voltage limit is set to {limit:.4} V")
+            causes = ""
+            if cause_list:
+                causes = f" ({', '.join(cause_list)})"
             raise GlasgowDeviceError(
-                f"cannot set I/O port(s) {spec or '(none)'} voltage "
-                f"to {float(volts):.2} V{causes_string}")
+                f"cannot set I/O port(s) {spec or '(none)'} supply voltage "
+                f"to {float(volts):.4} V{causes}")
+        assert result == _Result.ACK, f"unexpected result {result:02x}"
 
-    async def set_voltage_limit(self, spec, volts):
-        await self._write_voltage(REQ_LIMIT_VOLT, spec, volts)
-        # Check if we've succeeded
-        if await self._status() & ST_ERROR:
-            raise GlasgowDeviceError(
-                f"cannot set I/O port(s) {spec or '(none)'} voltage limit "
-                f"to {float(volts):.2} V")
+    async def get_voltage(self, spec: str) -> float:
+        """Get supply supply voltage on port ``spec``, in volts."""
+        result, _mask, va, vb, vc, vd = await self._command_fmt("<B", "<BB4H", _Request.GET_VSUPPLY)
+        if result == _Result.ERROR:
+            raise GlasgowDeviceError(f"cannot get I/O port {spec} supply voltage")
+        assert result == _Result.ACK, f"unexpected result {result:02x}"
+        return [va, vb, vc, vd][self._iospec_to_index(spec)] / 1000 # from mV
 
-    async def _read_voltage(self, req, spec):
-        millivolts, = struct.unpack("<H",
-            await self.control_read(req, 0, self._iobuf_spec_to_mask(spec, one=True), 2))
-        volts = millivolts / 1000
-        return volts
+    async def set_voltage_limit(self, spec: str, volts: float):
+        """Set supply voltage limit on port(s) ``spec`` to ``volts``.
 
-    async def get_voltage(self, spec):
-        """get configured IO voltage on port ``spec``.
+        If ``volts`` is zero, limiting is removed. If voltage on this port is currently
+        higher than the limit, it is clamped to the limit value.
 
-        This will be very close to, but often not exactly, the same as the
-        voltage that was set.
+        Supply voltage limit remains in place until it is removed, including across power cycles.
         """
-        try:
-            return await self._read_voltage(REQ_IO_VOLT, spec)
-        except usb.ErrorStall:
-            raise GlasgowDeviceError(f"cannot get I/O port {spec} I/O voltage") from None
-
-    async def get_voltage_limit(self, spec):
-        try:
-            return await self._read_voltage(REQ_LIMIT_VOLT, spec)
-        except usb.ErrorStall:
-            raise GlasgowDeviceError(f"cannot get I/O port {spec} I/O voltage limit") from None
-
-    async def measure_voltage(self, spec):
-        """Measures voltage on port ``spec`` sense pin.
-
-        Note on precision: On Glasgow RevC2 and newer the ADC code step size is
-        1.25mV, on older hardware the step size is 25.9mV.
-        Value is truncated to 3 decimal digits (1mV)
-        """
-        try:
-            return await self._read_voltage(REQ_SENSE_VOLT, spec)
-        except usb.ErrorStall:
-            raise GlasgowDeviceError(f"cannot measure I/O port {spec} sense voltage") from None
-
-    # INA233 current measurement constants (R_shunt=0.15 ohm, I_max=0.546 A)
-    _CURRENT_LSB = 0.546 / 32768  # ~16.66 uA per LSB
-
-    async def measure_current(self, spec):
-        """Measures current on port ``spec`` using INA233 shunt sense.
-
-        Returns current in amps. Only available on RevC2 and newer.
-        R_shunt = 0.15 ohm, max measurable current ~546 mA.
-        """
-        try:
-            raw, = struct.unpack("<h",
-                await self.control_read(REQ_SENSE_CURR, 0,
-                    self._iobuf_spec_to_mask(spec, one=True), 2))
-            return max(0.0, raw * self._CURRENT_LSB)
-        except usb.ErrorStall:
+        value = round(volts * 1000) # to mV
+        result, = await self._command_fmt("<BB4H", "<B",
+            _Request.SET_VLIMIT, self._iospec_to_mask(spec),
+            value, value, value, value)
+        if result == _Result.ERROR:
             raise GlasgowDeviceError(
-                f"cannot measure I/O port {spec} sense current") from None
+                f"cannot set I/O port(s) {spec or '(none)'} supply voltage limit "
+                f"to {float(volts):.4} V")
+        assert result == _Result.ACK, f"unexpected result {result:02x}"
 
-    async def set_alert(self, spec, low_volts, high_volts):
-        low_millivolts  = round(low_volts * 1000)
-        high_millivolts = round(high_volts * 1000)
-        await self.control_write(REQ_ALERT_VOLT, 0, self._iobuf_spec_to_mask(spec, one=False),
-            struct.pack("<HH", low_millivolts, high_millivolts))
-        # Check if we've succeeded
-        if await self._status() & ST_ERROR:
+    async def get_voltage_limit(self, spec: str) -> float:
+        """Get supply voltage limit on port ``spec``, in volts."""
+        result, _mask, va, vb, vc, vd = await self._command_fmt("<B", "<BB4H", _Request.GET_VLIMIT)
+        if result == _Result.ERROR:
+            raise GlasgowDeviceError(f"cannot get I/O port {spec} supply voltage limit")
+        assert result == _Result.ACK, f"unexpected result {result:02x}"
+        return [va, vb, vc, vd][self._iospec_to_index(spec)] / 1000 # from mV
+
+    async def measure_voltage(self, spec: str) -> float:
+        """Measure voltage on port ``spec`` sense input, in volts.
+
+        On revision C2 and newer (INA233 ADC) the code step size is 1.25 mV/LSB, on previous
+        revisions the step size is 25.9 mV/LSB. Value is rounded to 1 mV.
+        """
+        result, _mask, va, vb, vc, vd = await self._command_fmt("<B", "<BB4H", _Request.GET_VSENSE)
+        if result == _Result.ERROR:
+            raise GlasgowDeviceError(f"cannot measure I/O port {spec} sense voltage")
+        assert result == _Result.ACK, f"unexpected result {result:02x}"
+        return [va, vb, vc, vd][self._iospec_to_index(spec)] / 1000 # from mV
+
+    async def measure_current(self, spec: str) -> float:
+        """Measure supply current on port ``spec``, in amperes.
+
+        Only available on revision C2 and newer (INA233 ADC). The code step size is 10 uA/LSB, and
+        the maximum representable value is 327.67 mA. Value is rounded to 10 uA.
+        """
+        result, _mask, va, vb, vc, vd = await self._command_fmt("<B", "<BB4h", _Request.GET_ISUPPLY)
+        if result == _Result.ERROR:
+            raise GlasgowDeviceError(f"cannot measure I/O port {spec} supply current")
+        assert result == _Result.ACK, f"unexpected result {result:02x}"
+        return abs([va, vb, vc, vd][self._iospec_to_index(spec)]) / 100000 # from 10 uA
+
+    async def set_alert(self, spec: str, low_volts: float, high_volts: float):
+        """Configure window (over/under) voltage alert on port ``spec`` sense input.
+
+        Only available on revision C2 and newer (INA233 ADC). If either ``low_volts`` or
+        ``high_volts`` is zero, that limit is not active.
+
+        If voltage on the sense input is measured outside of the configured window, the voltage
+        supply for the same port is turned off (immediately and without firmware action)
+        The alert is disabled afterwards.
+        """
+        low_value  = round(low_volts  * 1000) # to mV
+        high_value = round(high_volts * 1000) # to mV
+        result, = await self._command_fmt("<BB8H", "<B",
+            _Request.SET_VALERT, self._iospec_to_mask(spec),
+            *(low_value, high_value) * 4)
+        if result == _Result.ERROR:
             raise GlasgowDeviceError(
-                f"cannot set I/O port(s) {spec or '(none)'} voltage alert "
-                f"to {float(low_volts):.2}-{float(high_volts):.2} V")
+                f"cannot set I/O port(s) {spec or '(none)'} sense voltage alert "
+                f"to {float(low_volts):.4}-{float(high_volts):.4} V")
+        assert result == _Result.ACK, f"unexpected result {result:02x}"
 
-    async def reset_alert(self, spec):
-        await self.set_alert(spec, 0.0, 5.5)
+    async def set_alert_tolerance(self, spec: str, volts: float, tolerance: float):
+        """Configure window voltage alert on port ``spec`` sense input by center voltage and
+        relative tolerance.
 
-    async def set_alert_tolerance(self, spec, volts, tolerance):
+        For example, use :py:`device.set_alert_tolerance("A", 3.3, 0.05)` to disable supply on
+        port A if voltage on its sense pin goes out of range of 3.3 V ±5%.
+        """
         low_volts  = volts * (1 - tolerance)
         high_volts = volts * (1 + tolerance)
         await self.set_alert(spec, low_volts, high_volts)
 
-    async def mirror_voltage(self, spec, sense=None, *, tolerance=0.05):
+    async def reset_alert(self, spec: str):
+        """Disable window voltage alert on port ``spec`` sense input."""
+        await self.set_alert(spec, 0.0, 0.0)
+
+    async def get_alert(self, spec: str) -> tuple[float, float]:
+        """Get references of window voltage alert on port ``spec`` sense input."""
+        result, _mask, val, vah, vbl, vbh, vcl, vch, vdl, vdh = \
+            await self._command_fmt("<B", "<BB8H", _Request.GET_VALERT)
+        if result == _Result.ERROR:
+            raise GlasgowDeviceError(f"cannot get I/O port {spec} sense voltage alert")
+        assert result == _Result.ACK, f"unexpected result {result:02x}"
+        vl, vh = [(val, vah), (vbl, vbh), (vcl, vch), (vdl, vdh)][self._iospec_to_index(spec)]
+        return vl / 1000, vh / 1000 # from mV
+
+    async def mirror_voltage(self, spec: str, sense: str | None = None, *,
+                             tolerance: float = 0.05) -> float:
         if sense is None:
             sense = spec
         voltage = await self.measure_voltage(sense)
         if voltage < 1.8 * (1 - tolerance):
-            raise GlasgowDeviceError(f"I/O port {spec} voltage ({voltage} V) too low"
-                                     )
+            raise GlasgowDeviceError(f"I/O port {spec} sense voltage ({voltage} V) too low")
         if voltage > 5.0 * (1 + tolerance):
-            raise GlasgowDeviceError(f"I/O port {spec} voltage ({voltage} V) too high"
-                                     )
+            raise GlasgowDeviceError(f"I/O port {spec} sense voltage ({voltage} V) too high")
         await self.set_voltage(spec, voltage)
         await self.set_alert_tolerance(spec, voltage, tolerance=0.05)
         return voltage
 
-    async def get_alert(self, spec):
-        try:
-            low_millivolts, high_millivolts = struct.unpack("<HH",
-                await self.control_read(
-                    REQ_ALERT_VOLT, 0, self._iobuf_spec_to_mask(spec, one=True), 4))
-            low_volts  = low_millivolts / 1000
-            high_volts = high_millivolts / 1000
-        except usb.ErrorStall:
-            raise GlasgowDeviceError(f"cannot get I/O port {spec} voltage alert") from None
-        else:
-            return low_volts, high_volts
-
     async def poll_alert(self):
-        try:
-            mask, = await self.control_read(REQ_POLL_ALERT, 0, 0, 1)
-        except usb.ErrorStall:
-            raise GlasgowDeviceError("cannot poll alert status") from None
-        else:
-            return self._mask_to_iobuf_spec(mask)
+        raise NotImplementedError("this function has been removed")
 
-    @property
-    def has_pulls(self):
-        return self.revision >= "C"
+    async def set_trip_current(self, spec: str, amps: float):
+        """Set supply trip current on port(s) ``spec`` to ``amps``.
 
-    async def set_pulls(self, spec, low=set(), high=set()):
+        Only available on revision C2 and newer (INA233 ADC). If ``amps`` is zero, overcurrent
+        tripping is disabled.
+
+        If current on the LDO output is measured above the configured trip point, the voltage
+        supply for the same port is turned off (immediately and without firmware action).
+        The alert remains enabled afterwards.
+        """
+        value = round(amps * 100000) # to 10 uA
+        result, = await self._command_fmt("<BB4H", "<B",
+            _Request.SET_IALERT, self._iospec_to_mask(spec),
+            value, value, value, value)
+        if result == _Result.ERROR:
+            raise GlasgowDeviceError(
+                f"cannot set I/O port(s) {spec or '(none)'} supply trip current "
+                f"to {float(amps):.6} A")
+        assert result == _Result.ACK, f"unexpected result {result:02x}"
+
+    async def get_trip_current(self, spec: str) -> float:
+        """Get supply trip current on port ``spec``, in amperes."""
+        result, _mask, ia, ib, ic, id = await self._command_fmt("<B", "<BB4H", _Request.GET_IALERT)
+        if result == _Result.ERROR:
+            raise GlasgowDeviceError(f"cannot get I/O port {spec} supply trip current")
+        assert result == _Result.ACK, f"unexpected result {result:02x}"
+        return [ia, ib, ic, id][self._iospec_to_index(spec)] / 100000 # from 10 uA
+
+    async def get_faults(self, spec: str) -> GlasgowPortAlerts:
+        """Get fault alerts on port ``spec``."""
+        result, pa, pb, pc, pd, _fpga = await self._command_fmt("<B", "<B4BB", _Request.GET_ALERTS)
+        if result == _Result.ERROR:
+            raise GlasgowDeviceError(f"cannot get I/O port {spec} fault alerts")
+        assert result == _Result.ACK, f"unexpected result {result:02x}"
+        return GlasgowPortAlerts([pa, pb, pc, pd][self._iospec_to_index(spec)])
+
+    async def clear_faults(self, spec: str, alerts = GlasgowPortAlerts.ALL_POSSIBLE):
+        """Clear fault alerts on port(s) ``spec``."""
+        mask = self._iospec_to_mask(spec)
+        result, = await self._command_fmt("<B4BB", "<B",
+            _Request.CLR_ALERTS, *(alerts.value if mask & (1<<i) else 0 for i in range(4)), 0)
+        if result == _Result.ERROR:
+            raise GlasgowDeviceError(f"cannot clear I/O port {spec} fault alerts")
+        assert result == _Result.ACK, f"unexpected result {result:02x}"
+
+    async def set_pulls(self, spec: str, low: set[int] = set(), high: set[int] = set(),
+                        keep: set[int] = set()):
+        """Configure pull resistors on port(s) ``spec``.
+
+        Only available on revision C0 and newer.
+        """
         assert self.has_pulls
         assert not {bit for bit in low | high if bit >= len(spec) * 8}
 
+        mask = self._iospec_to_mask(spec)
+        values = bytearray(b"\x00"*8)
         for index, port in enumerate(spec):
-            port_enable = 0
-            port_value  = 0
+            port_index = self._iospec_to_index(port)
             for port_bit in range(0, 8):
-                if index * 8 + port_bit in low | high:
-                    port_enable |= 1 << port_bit
-                if index * 8 + port_bit in high:
-                    port_value  |= 1 << port_bit
-            await self.control_write(REQ_PULL, 0, self._iobuf_spec_to_mask(port, one=True),
-                struct.pack("BB", port_enable, port_value))
-            # Check if we've succeeded
-            if await self._status() & ST_ERROR:
-                raise GlasgowDeviceError(
-                    f"cannot set I/O port(s) {spec or '(none)'} pull resistors to "
-                    f"low={low or '{}'} high={high or '{}'}")
+                abs_index = index * 8 + port_bit
+                if (abs_index in low) + (abs_index in high) + (abs_index in keep) > 1:
+                    raise GlasgowDeviceError(f"pin {port}{port_bit} is configured ambiguously")
+                if abs_index in low  or abs_index in keep:
+                    values[(port_index<<1)|0] |= 1 << port_bit
+                if abs_index in high or abs_index in keep:
+                    values[(port_index<<1)|1] |= 1 << port_bit
 
-    async def test_leds(self, states):
-        await self.control_write(REQ_TEST_LEDS, 0, states, [])
+        result, = await self._command_fmt("<BB8s", "<B",
+            _Request.SET_PULLS, mask, values)
+        if result == _Result.ERROR:
+            raise GlasgowDeviceError(
+                f"cannot set I/O port(s) {spec or '(none)'} pull resistors to "
+                f"low={low or '{}'} high={high or '{}'}")
+        assert result == _Result.ACK, f"unexpected result {result:02x}"
 
-    async def test_pulls(self, spec):
+    async def get_state(self, spec: str) -> int:
+        """Get pin states on port ``spec``.
+
+        Only available on revision C2 and newer. Uses pull resistor GPIO expanders to observe pins.
+        """
         assert self.has_pulls
 
-        level, = struct.unpack("B",
-            await self.control_read(REQ_TEST_PULLS, 0, self._iobuf_spec_to_mask(spec, one=True), 1))
-        return level
+        result, _mask, sa, sb, sc, sd = await self._command_fmt("<B", "<BB4B", _Request.GET_STATE)
+        if result == _Result.ERROR:
+            raise GlasgowDeviceError(f"cannot get I/O port {spec} pin state")
+        assert result == _Result.ACK, f"unexpected result {result:02x}"
+        return [sa, sb, sc, sd][self._iospec_to_index(spec)]
 
-    async def _register_error(self, addr):
-        if await self._status() & ST_FPGA_RDY:
-            raise GlasgowDeviceError(f"register 0x{addr:02x} does not exist") from None
-        else:
-            raise GlasgowDeviceError("FPGA is not configured") from None
+    # Internal use only
 
-    async def read_register(self, addr, width=1):
-        """Read ``width``-byte FPGA register at ``addr``."""
-        try:
-            value = await self.control_read(REQ_REGISTER, addr, 0, width)
-            value = int.from_bytes(value, byteorder="little")
-            logger.trace("register %d read: %#04x", addr, value)
-        except usb.ErrorStall:
-            await self._register_error(addr)
-        else:
-            return value
+    async def _test_leds(self, enable: bool, state: int):
+        result, = await self._command_fmt("<BBB", "<B", _Request.TEST_LEDS, enable, state)
+        assert result == _Result.ACK, f"unexpected result {result:02x}"
 
-    async def write_register(self, addr, value, width=1):
-        """Write ``value`` to ``width``-byte FPGA register at ``addr``."""
-        try:
-            logger.trace("register %d write: %#04x", addr, value)
-            value = value.to_bytes(width, byteorder="big")
-            await self.control_write(REQ_REGISTER, addr, 0, value)
-        except usb.ErrorStall:
-            await self._register_error(addr)
+    async def _write_smbus(self, addr: int, cmd: int, value: int):
+        result, = await self._command_fmt("<BBBH", "<B",
+            _Request.WRITE_SMBUS, addr, cmd, value)
+        if result != _Result.ACK:
+            raise GlasgowDeviceError(f"failed to write SMBus word {cmd:#04x} @ {addr:#09b}")
+        assert result == _Result.ACK, f"unexpected result {result:02x}"
+
+    async def _read_smbus(self, addr: int, cmd: int) -> int:
+        result, value = await self._command_fmt("<BBB", "<BH",
+            _Request.READ_SMBUS, addr, cmd)
+        if result != _Result.ACK:
+            raise GlasgowDeviceError(f"failed to read SMBus word {cmd:#04x} @ {addr:#09b}")
+        assert result == _Result.ACK, f"unexpected result {result:02x}"
+        return value
 
 
 class GlasgowDeviceConfig:
@@ -661,7 +760,7 @@ class GlasgowDeviceConfig:
     :ivar int bitstream_size:
         Size of bitstream flashed to ICE_MEM, or 0 if there isn't one.
 
-    :ivar bytes[16] bitstream_id:
+    :ivar bytes[8] bitstream_id:
         Opaque string that uniquely identifies bitstream functionality,
         but not necessarily any particular routing and placement.
         Only meaningful if ``bitstream_size`` is set.
@@ -677,25 +776,34 @@ class GlasgowDeviceConfig:
         from the design files published in https://github.com/GlasgowEmbedded/glasgow/ in any way
         except those exempted in https://glasgow-embedded.org/latest/build.html. It will be set when
         running `glasgow factory --using-modified-design-files=yes`.
+
+    :ivar bool advertise_webusb:
+        Whether to advertise WebUSB support. This will cause Chrome (including embedded Chromium)
+        to display a notification linking to https://webusb.glasgow-embedded.org/.
     """
 
-    size = 64
-    _encoding = "<B16sI16s2H22sb"
+    _encoding = "<B16sI8sL4H22sb"
+    assert struct.calcsize(_encoding) == 64
 
-    _FLAG_MODIFIED_DESIGN = 0b00000001
+    _FLAG_MODIFIED_DESIGN  = 0b00000001
+    _FLAG_API_LEVEL_GE_7   = 0b00000010
+    _FLAG_ADVERTISE_WEBUSB = 0b00000100
 
-    def __init__(self, revision, serial, bitstream_size=0, bitstream_id=b"\x00"*16,
-                 voltage_limit=None, manufacturer="", modified_design=False):
-        self.revision = revision
-        self.serial   = serial
-        self.bitstream_size = bitstream_size
-        self.bitstream_id   = bitstream_id
-        self.voltage_limit  = [5500, 5500] if voltage_limit is None else voltage_limit
-        self.manufacturer   = manufacturer
-        self.modified_design = bool(modified_design)
+    def __init__(self, revision: str, serial: str, bitstream_size: int = 0,
+                 bitstream_id: bytes = b"\x00"*8, voltage_limit: list[int] | None = None,
+                 manufacturer: str = "", modified_design: bool = False,
+                 advertise_webusb: bool = False):
+        self.revision         = revision
+        self.serial           = serial
+        self.bitstream_size   = bitstream_size
+        self.bitstream_id     = bitstream_id
+        self.voltage_limit    = [0, 0, 0, 0] if voltage_limit is None else voltage_limit
+        self.manufacturer     = manufacturer
+        self.modified_design  = bool(modified_design)
+        self.advertise_webusb = bool(advertise_webusb)
 
     @staticmethod
-    def encode_revision(string):
+    def encode_revision(string: str) -> int:
         """Encode the human readable revision to the revision byte as used in the firmware.
 
         The revision byte encodes the letter ``X`` and digit ``N`` in ``revXN`` in the high and
@@ -709,7 +817,7 @@ class GlasgowDeviceConfig:
             raise ValueError(f"invalid revision string {string!r}")
 
     @staticmethod
-    def decode_revision(value):
+    def decode_revision(value: int) -> str:
         """Decode the revision byte as used in the firmware to the human readable revision.
 
         This inverts the transformation done by :meth:`encode_revision`.
@@ -722,40 +830,55 @@ class GlasgowDeviceConfig:
         else:
             raise ValueError(f"invalid revision value {value:#04x}")
 
-    def encode(self):
+    @classmethod
+    def size(cls):
+        return struct.calcsize(cls._encoding)
+
+    def encode(self) -> bytes:
         """Convert configuration to a byte array that can be loaded into memory or EEPROM."""
-        data = struct.pack(self._encoding,
+        return struct.pack(self._encoding,
                            self.encode_revision(self.revision),
                            self.serial.encode("ascii"),
                            self.bitstream_size,
                            self.bitstream_id,
+                           0,
                            self.voltage_limit[0],
                            self.voltage_limit[1],
+                           self.voltage_limit[2],
+                           self.voltage_limit[3],
                            self.manufacturer.encode("ascii"),
-                           (self._FLAG_MODIFIED_DESIGN if self.modified_design else 0))
-        return data.ljust(self.size, b"\x00")
+                           self._FLAG_API_LEVEL_GE_7 |
+                           (self._FLAG_MODIFIED_DESIGN if self.modified_design else 0) |
+                           (self._FLAG_ADVERTISE_WEBUSB if self.advertise_webusb else 0))
 
     @classmethod
-    def decode(cls, data):
+    def decode(cls, data: bytes) -> Self:
         """Parse configuration from a byte array loaded from memory or EEPROM.
 
         Returns :class:`GlasgowConfiguration` or raises :class:`ValueError` if
         the byte array does not contain a valid configuration.
         """
-        if len(data) != cls.size:
+        if len(data) != cls.size():
             raise ValueError("Incorrect configuration length")
 
-        voltage_limit = [0, 0]
-        revision, serial, bitstream_size, bitstream_id, \
-            voltage_limit[0], voltage_limit[1], manufacturer, flags = \
+        voltage_limit = [0, 0, 0, 0]
+        revision, serial, bitstream_size, bitstream_id, _unused, \
+        voltage_limit[0], voltage_limit[1], voltage_limit[2], voltage_limit[3], \
+        manufacturer, flags = \
             struct.unpack_from(cls._encoding, data, 0)
+        if not flags & cls._FLAG_API_LEVEL_GE_7:
+            bitstream_size = 0
+            bitstream_id = b"\x00"*8
+            voltage_limit[0] = voltage_limit[2]
+            voltage_limit[1] = voltage_limit[3]
         return cls(cls.decode_revision(revision),
                    serial.decode("ascii"),
                    bitstream_size,
                    bitstream_id,
                    voltage_limit,
                    manufacturer.decode("ascii"),
-                   flags & cls._FLAG_MODIFIED_DESIGN)
+                   flags & cls._FLAG_MODIFIED_DESIGN,
+                   flags & cls._FLAG_ADVERTISE_WEBUSB)
 
 
 class FX2BootloaderDevice:
@@ -764,9 +887,9 @@ class FX2BootloaderDevice:
         return importlib.resources.files("fx2").joinpath("boot-cypress.ihex")
 
     @classmethod
-    def firmware_data(cls):
+    def firmware_data(cls) -> list[tuple[int, bytes]]:
         with cls.firmware_file().open() as file:
-            return input_data(file, fmt="ihex")
+            return fx2.format.input_data(file, fmt="ihex")
 
     @classmethod
     async def find(cls, vid: int, pid: int) -> "FX2BootloaderDevice":
@@ -799,26 +922,26 @@ class FX2BootloaderDevice:
     async def close(self):
         await self.usb_device.close()
 
-    async def load_ram(self, chunks):
+    async def load_ram(self, chunks: list[tuple[int, bytes]]):
         """Write ``chunks``, a list of ``(address, data)`` pairs, to internal RAM,
         and start the CPU core.
         """
         # Put the FX2 into reset
         await self.usb_device.control_transfer_out(
-            usb.RequestType.Vendor, usb.Recipient.Device, REQ_RAM, REG_CPUCS, 0, bytes([1]))
+            usb.RequestType.Vendor, usb.Recipient.Device, fx2.REQ_RAM, fx2.REG_CPUCS, 0, b"\x01")
 
         chunk_size = 0x1000
         for addr, data in chunks:
             for offset in range(0, len(data), chunk_size):
                 await self.usb_device.control_transfer_out(
                     usb.RequestType.Vendor, usb.Recipient.Device,
-                    REQ_RAM, addr + offset, 0, bytes(data[offset:offset + chunk_size]))
+                    fx2.REQ_RAM, addr + offset, 0, bytes(data[offset:offset + chunk_size]))
 
         # Take the FX2 out of reset
         await self.usb_device.control_transfer_out(
-            usb.RequestType.Vendor, usb.Recipient.Device, REQ_RAM, REG_CPUCS, 0, bytes([0]))
+            usb.RequestType.Vendor, usb.Recipient.Device, fx2.REQ_RAM, fx2.REG_CPUCS, 0, b"\x00")
 
-    async def read_boot_eeprom(self, addr, length, chunk_size=0x1000):
+    async def read_boot_eeprom(self, addr: int, length: int, chunk_size: int = 0x1000) -> bytes:
         """Read ``length`` bytes at ``addr`` from boot EEPROM in ``chunk_size`` chunks.
 
         Requires the second stage bootloader or a compatible firmware.
@@ -828,10 +951,10 @@ class FX2BootloaderDevice:
             chunk_length = min(length - offset, chunk_size)
             data += await self.usb_device.control_transfer_in(
                 usb.RequestType.Vendor, usb.Recipient.Device,
-                REQ_EEPROM_DB, addr + offset, 0, chunk_length)
+                fx2.REQ_EEPROM_DB, addr + offset, 0, chunk_length)
         return data
 
-    async def write_boot_eeprom(self, addr, data, chunk_size=0x1000):
+    async def write_boot_eeprom(self, addr: int, data: bytes, chunk_size: int = 0x1000):
         """Write ``data`` to ``addr`` in boot EEPROM in ``chunk_size`` chunks.
 
         Requires the second stage bootloader or a compatible firmware.
@@ -839,9 +962,9 @@ class FX2BootloaderDevice:
         # 64 bytes
         page_size = 6
         await self.usb_device.control_transfer_out(
-            usb.RequestType.Vendor, usb.Recipient.Device, REQ_PAGE_SIZE, page_size, 0, b"")
+            usb.RequestType.Vendor, usb.Recipient.Device, fx2.REQ_PAGE_SIZE, page_size, 0, b"")
 
         for offset in range(0, len(data), chunk_size):
             await self.usb_device.control_transfer_out(
                 usb.RequestType.Vendor, usb.Recipient.Device,
-                REQ_EEPROM_DB, addr + offset, 0, bytes(data[offset:offset + chunk_size]))
+                fx2.REQ_EEPROM_DB, addr + offset, 0, bytes(data[offset:offset + chunk_size]))
