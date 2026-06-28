@@ -1,3 +1,5 @@
+from abc import ABCMeta, abstractmethod
+
 from amaranth import *
 from amaranth.lib import wiring, io
 
@@ -63,7 +65,7 @@ class GlasgowPlatformPort(io.PortLike):
             return NotImplemented
 
 
-class GlasgowPlatform:
+class GlasgowPlatform(metaclass=ABCMeta):
     def _init_glasgow_pins(self, *clauses):
         self.glasgow_pins = {}
         for glasgow_prefix, amaranth_prefix, numbers in clauses:
@@ -80,8 +82,12 @@ class GlasgowPlatform:
         del file_templates["{{name}}.debug.v"]
         return file_templates
 
-    def toolchain_program(self, products, name):
-        bitstream = products.get(f"{name}.bin")
+    @abstractmethod
+    def bitstream_filename(self, design_name):
+        raise NotImplementedError
+
+    def toolchain_program(self, products, design_name):
+        bitstream = products.get(self.bitstream_filename(design_name))
         async def do_program():
             from ..device import GlasgowDevice
             device = await GlasgowDevice.find()

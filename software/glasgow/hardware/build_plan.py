@@ -25,9 +25,10 @@ class GatewareBuildError(Exception):
 
 
 class GlasgowBuildPlan:
-    def __init__(self, inner: BuildPlan, toolchain: Toolchain):
-        self._inner     = inner
-        self._toolchain = toolchain
+    def __init__(self, inner: BuildPlan, toolchain: Toolchain, product_name: str):
+        self._inner        = inner
+        self._toolchain    = toolchain
+        self._product_name = product_name
 
         hasher = hashlib.blake2s()
         hasher.update(self._inner.digest())
@@ -99,7 +100,7 @@ class GlasgowBuildPlan:
             if await process.wait():
                 self._report_build_failure(stdout_lines, process.returncode)
 
-            bitstream_data = (pathlib.Path(build_dir) / "top.bin").read_bytes()
+            bitstream_data = (pathlib.Path(build_dir) / self._product_name).read_bytes()
             stdout_data = b"".join(stdout_lines)
         except:
             if debug:

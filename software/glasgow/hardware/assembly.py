@@ -686,7 +686,7 @@ class HardwareAssembly(AbstractAssembly):
         except ResourceError:
             pass
 
-        self._artifact = GlasgowBuildPlan(self._platform.prepare(m,
+        build_plan = self._platform.prepare(m,
             # always emit complete build log to stdout; whether it's displayed is controlled by
             # the usual logging options, e.g. `-vv` or `-v -F build`
             verbose=True,
@@ -697,7 +697,11 @@ class HardwareAssembly(AbstractAssembly):
             # older ones in case yowasp isn't available and this keeps the configuration consistent
             synth_opts="-abc9",
             nextpnr_opts="--placer heap",
-        ), find_toolchain())
+        )
+        toolchain = find_toolchain(tools=self._platform.required_tools)
+        assert toolchain is not None
+        product_name = self._platform.bitstream_filename("top")
+        self._artifact = GlasgowBuildPlan(build_plan, toolchain, product_name)
         return self._artifact
 
     @property
