@@ -315,28 +315,28 @@ class Device(AbstractDevice):
                     pass # already finished, one way or another
 
     async def control_transfer_in(self, request_type: RequestType, recipient: Recipient,
-                                  request: int, value: int, index: int, length: int) -> bytearray:
-        def setup(transfer):
+            request: int, value: int, index: int, length: int) -> memoryview:
+        def setup(transfer: usb1.USBTransfer):
             transfer.setControl(
                 _map_request_type(request_type) | _map_recipient(recipient) | usb1.ENDPOINT_IN,
                 request, value, index, length)
         return memoryview(await self._perform_transfer(Direction.In, setup))
 
     async def control_transfer_out(self, request_type: RequestType, recipient: Recipient,
-                                   request: int, value: int, index: int, data: bytearray):
-        def setup(transfer):
+            request: int, value: int, index: int, data: bytes | bytearray | memoryview):
+        def setup(transfer: usb1.USBTransfer):
             transfer.setControl(
                 _map_request_type(request_type) | _map_recipient(recipient) | usb1.ENDPOINT_OUT,
                 request, value, index, data)
         await self._perform_transfer(Direction.Out, setup)
 
     async def bulk_transfer_in(self, endpoint: int, length: int) -> bytearray:
-        def setup(transfer):
+        def setup(transfer: usb1.USBTransfer):
             transfer.setBulk(endpoint, length)
         return memoryview(await self._perform_transfer(Direction.In, setup))
 
-    async def bulk_transfer_out(self, endpoint: int, data: bytearray):
-        def setup(transfer):
+    async def bulk_transfer_out(self, endpoint: int, data: bytes | bytearray | memoryview):
+        def setup(transfer: usb1.USBTransfer):
             transfer.setBulk(endpoint, data)
         await self._perform_transfer(Direction.Out, setup)
 
