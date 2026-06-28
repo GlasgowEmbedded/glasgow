@@ -11,7 +11,6 @@ from amaranth.hdl import ShapeCastable
 from amaranth.lib import wiring, io
 from amaranth.build import ResourceError
 
-from ..support import usb
 from ..support.logging import dump_hex
 from ..support.task_queue import TaskQueue
 from ..support.chunked_fifo import ChunkedFIFO
@@ -22,6 +21,7 @@ from ..gateware.stream import Queue
 from ..abstract import *
 from .platform.rev_ab import GlasgowRevABPlatform
 from .platform.rev_c import GlasgowRevC0Platform, GlasgowRevC123Platform
+from .platform.rev_d import GlasgowRevD0Platform
 from .toolchain import find_toolchain
 from .build_plan import GlasgowBuildPlan
 from .device import GlasgowDevice
@@ -461,6 +461,8 @@ class HardwareAssembly(AbstractAssembly):
                 return GlasgowRevC0Platform()
             case "C1" | "C2" | "C3":
                 return GlasgowRevC123Platform()
+            case "D0":
+                return GlasgowRevD0Platform()
             case _:
                 assert False, f"invalid revision {revision}"
 
@@ -508,7 +510,7 @@ class HardwareAssembly(AbstractAssembly):
         match self._revision:
             case "A0" | "B0":
                 return 1/36e6
-            case "C0" | "C1" | "C2" | "C3":
+            case "C0" | "C1" | "C2" | "C3" | "D0":
                 return 1/48e6
 
     @contextmanager
