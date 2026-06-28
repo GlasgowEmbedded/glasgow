@@ -353,7 +353,10 @@ class Toolchain:
                 f">")
 
 
-def find_toolchain(tools=("yosys", "nextpnr-ice40", "icepack"), *, quiet=False):
+_ALL_TOOLS = ["yosys", "nextpnr-ice40", "icepack", "nextpnr-ecp5", "ecppack"]
+
+
+def find_toolchain(tools=_ALL_TOOLS, *, quiet=False):
     """Discover a toolchain.
 
     Returns a :class:`Toolchain` that includes all of the requested tools chosen according to
