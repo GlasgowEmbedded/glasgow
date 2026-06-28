@@ -41,6 +41,8 @@ def _map_exceptions(f):
                 raise ErrorBabble() from None
             case usb1.USBErrorInterrupted():
                 raise ErrorAborted() from None
+            case usb1.USBError(), usb1.USBErrorOther():
+                raise ErrorOther() from None
             case _:
                 raise Error(str(error)) from error
 
