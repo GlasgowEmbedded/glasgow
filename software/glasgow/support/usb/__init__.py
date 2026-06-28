@@ -21,6 +21,7 @@ __all__ = [
     "ErrorStall",
     "ErrorBabble",
     "ErrorAborted",
+    "ErrorOther",
     "AbstractContext",
     "AbstractDevice",
     "AbstractConfiguration",
@@ -95,6 +96,10 @@ class ErrorBabble(Error):
 
 
 class ErrorAborted(Error):
+    pass
+
+
+class ErrorOther(Error):
     pass
 
 
