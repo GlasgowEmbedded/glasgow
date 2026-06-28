@@ -3,6 +3,7 @@
 from collections.abc import Callable
 from abc import ABCMeta, abstractmethod
 import enum
+from contextlib import asynccontextmanager
 
 
 __all__ = [
@@ -195,6 +196,19 @@ class AbstractDevice(metaclass=ABCMeta):
     @abstractmethod
     async def release_interface(self, interface: int):
         pass
+
+    @asynccontextmanager
+    async def with_interface(self, interface: int, setting: int):
+        await self.claim_interface(interface)
+        try:
+            await self.select_alternate_interface(interface, setting)
+            yield
+        finally:
+            # On some platforms, `release_interface(i)` implies `select_alternate_interface(i, 0)`;
+            # on other it does not. Make sure actions triggered by selecting alt-setting 0 are
+            # triggered by the time this function returns.
+            await self.select_alternate_interface(interface, 0)
+            await self.release_interface(interface)
 
     @abstractmethod
     async def control_transfer_in(self, request_type: RequestType, recipient: Recipient,
