@@ -5,7 +5,7 @@
 groups = ["default", "builtin-toolchain", "http", "numpy"]
 strategy = ["direct_minimal_versions"]
 lock_version = "4.5.0"
-content_hash = "sha256:109fa3db7fc6c1db9839467b7ccf5fecfdd7f3a7c6c750f6efc71acb28ace2f3"
+content_hash = "sha256:78301dd795d9edb98a6a568d64c798414d7b2255ec658b01f860947d24e81fa1"
 
 [[metadata.targets]]
 requires_python = "~=3.13"
@@ -983,6 +983,17 @@ files = [
     {file = "yarl-1.24.5-cp314-cp314t-win_arm64.whl", hash = "sha256:cf139c02f5f23ef6532040a30ff662c00a318c952334f211046b8e60b7f17688"},
     {file = "yarl-1.24.5-py3-none-any.whl", hash = "sha256:a33700d13d9b7d84fd10947b09ff69fb9a792e519c8cb9764a3ca70baa6c23a7"},
     {file = "yarl-1.24.5.tar.gz", hash = "sha256:e81b83143bee16329c23db3c1b2d82b29892fcbcb849186d2f6e98a5abe9a57f"},
+]
+
+[[package]]
+name = "yowasp-nextpnr-ecp5"
+version = "0.1.0.0.post403"
+summary = "nextpnr-ecp5 FPGA place and route tool"
+dependencies = [
+    "yowasp-runtime~=1.1",
+]
+files = [
+    {file = "yowasp_nextpnr_ecp5-0.1.0.0.post403-py3-none-any.whl", hash = "sha256:542847d0af2bda4599c541d820f72673891d5330a58e97febad5946709315274"},
 ]
 
 [[package]]

@@ -10,6 +10,9 @@ __all__ = ["GlasgowICE40Platform"]
 
 
 class GlasgowICE40Platform(GlasgowPlatform, LatticeICE40Platform):
+    def bitstream_filename(self, design_name):
+        return f"{design_name}.bin"
+
     def get_pll(self, pll, simple_feedback=True):
         if not 10e6 <= pll.f_in <= 133e6:
             pll.logger.error("PLL: f_in (%.3f MHz) must be between 10 and 133 MHz",
