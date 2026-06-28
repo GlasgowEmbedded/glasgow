@@ -3,6 +3,7 @@
 from collections.abc import Callable
 from abc import ABCMeta, abstractmethod
 import enum
+from contextlib import asynccontextmanager
 
 
 __all__ = [
@@ -195,6 +196,15 @@ class AbstractDevice(metaclass=ABCMeta):
     @abstractmethod
     async def release_interface(self, interface: int):
         pass
+
+    @asynccontextmanager
+    async def with_interface(self, interface: int, setting: int):
+        await self.claim_interface(interface)
+        try:
+            await self.select_alternate_interface(interface, setting)
+            yield
+        finally:
+            await self.release_interface(interface)
 
     @abstractmethod
     async def control_transfer_in(self, request_type: RequestType, recipient: Recipient,
