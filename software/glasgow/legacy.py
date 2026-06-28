@@ -2,6 +2,8 @@ from amaranth import *
 from amaranth import Signal
 from amaranth.lib import wiring, stream
 
+from glasgow.abstract import GlasgowPort
+
 
 __all__ = [
     "DeprecatedTarget", "DeprecatedMultiplexer",
@@ -163,7 +165,8 @@ class DeprecatedDemultiplexer:
                 applet.logger.info("port %s voltage set to %.1f V (sensed on port %s)",
                     port, voltage, vio.sense)
             if vio.value is not None:
-                await self.device.set_voltage(port, vio.value)
+                spec = self.device.all_ports if port == GlasgowPort.ALL else str(port)
+                await self.device.set_voltage(spec, vio.value)
                 applet.logger.info("port %s voltage set to %.1f V",
                     port, vio.value)
 

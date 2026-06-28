@@ -1,3 +1,4 @@
+import asyncio
 from abc import ABCMeta, abstractmethod
 
 from amaranth import *
@@ -91,7 +92,7 @@ class GlasgowPlatform(metaclass=ABCMeta):
         async def do_program():
             from ..device import GlasgowDevice
             device = await GlasgowDevice.find()
-            await device.download_bitstream(bitstream)
+            await device.download_bitstream(bitstream, skip_health_check=True)
             await device.close()
         asyncio.get_event_loop().run_until_complete(do_program())
 

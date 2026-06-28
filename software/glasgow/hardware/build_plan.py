@@ -33,7 +33,7 @@ class GlasgowBuildPlan:
         hasher = hashlib.blake2s()
         hasher.update(self._inner.digest())
         hasher.update(self._toolchain.identifier)
-        self._bitstream_id = hasher.digest()[:16]
+        self._bitstream_id = hasher.digest()[:8]
 
     @property
     def rtlil(self) -> str:

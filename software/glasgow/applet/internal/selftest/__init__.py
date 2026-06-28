@@ -123,8 +123,8 @@ class SelfTestApplet(GlasgowApplet):
             await device.set_pulls("AB", pull_low, pull_high)
 
         async def get_pull():
-            return ((await device.test_pulls("A") << 0) |
-                    (await device.test_pulls("B") << 8))
+            return ((await device.get_state("A") << 0) |
+                    (await device.get_state("B") << 8))
 
         async def get_i():
             return ((await device.read_register(self.addr_i_a) << 0) |
@@ -171,7 +171,7 @@ class SelfTestApplet(GlasgowApplet):
 
                 led_state = 0b11111111111_00000000000
                 while True:
-                    await device.test_leds(
+                    await device._test_leds(True,
                         (led_state & 0b1111) >> 0)
                     await device.write_register(self.addr_leds,
                         (led_state & 0b11111_0000) >> 4)
