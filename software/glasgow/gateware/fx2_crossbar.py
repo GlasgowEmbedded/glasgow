@@ -145,6 +145,7 @@
 from amaranth import *
 from amaranth.lib import wiring, stream, io
 from amaranth.lib.wiring import In, Out, connect, flipped
+from amaranth.vendor import SiliconBluePlatform, LatticePlatform
 
 from .stream import SkidBuffer
 
@@ -265,35 +266,59 @@ class _FX2Bus(wiring.Component):
     def elaborate(self, platform):
         m = Module()
 
-        # The FX2 output valid window starts well after (5.4 ns past) the iCE40 input capture
-        # window for the rising edge. However, the input capture for the falling edge is
-        # just right.
-        #
-        # For input pins, we use DDR input to capture the FX2 output in the valid window, that is
-        # on negedge of system clock. The output pins are SDR, although for bidirectional pins SDR
-        # is emulated by using same data on both edges. (Amaranth does not allow different gearbox
-        # ratio between input and output buffers.)
-        #
-        # See https://github.com/GlasgowEmbedded/Glasgow/issues/89 for details.
-        m.submodules.fifoadr = fifoadr = io.FFBuffer("o", self.pads.fifoadr)
-        m.submodules.sloe    = sloe    = io.FFBuffer("o", self.pads.sloe)
-        m.submodules.slrd    = slrd    = io.FFBuffer("o", self.pads.slrd)
-        m.submodules.slwr    = slwr    = io.FFBuffer("o", self.pads.slwr)
-        m.submodules.pktend  = pktend  = io.FFBuffer("o", self.pads.pktend)
-        m.submodules.fd      = fd      = io.DDRBuffer("io", self.pads.fd)
-        m.submodules.flag    = flag    = io.DDRBuffer("i", self.pads.flag)
-        m.d.comb += [
-            fifoadr.o.eq(self.addr),
-            sloe.o.eq(~self.sloe),
-            slrd.o.eq(~self.slrd),
-            slwr.o.eq(~self.slwr),
-            pktend.o.eq(~self.pend),
-            self.data.i.eq(fd.i[1]),
-            fd.o[0].eq(self.data.o),
-            fd.o[1].eq(self.data.o),
-            fd.oe.eq(self.data.oe),
-            self.flag.eq(flag.i[1]),
-        ]
+        if isinstance(platform, SiliconBluePlatform):
+            # The FX2 output valid window starts well after (5.4 ns past) the iCE40 input capture
+            # window for the rising edge. However, the input capture for the falling edge is
+            # just right.
+            #
+            # For input pins, we use DDR input to capture the FX2 output in the valid window, that
+            # is on negedge of system clock. The output pins are SDR, although for bidirectional
+            # pins SDR is emulated by using same data on both edges. (Amaranth does not allow
+            # different gearbox ratio between input and output buffers.)
+            #
+            # See https://github.com/GlasgowEmbedded/Glasgow/issues/89 for details.
+            m.submodules.fifoadr = fifoadr = io.FFBuffer("o", self.pads.fifoadr)
+            m.submodules.sloe    = sloe    = io.FFBuffer("o", self.pads.sloe)
+            m.submodules.slrd    = slrd    = io.FFBuffer("o", self.pads.slrd)
+            m.submodules.slwr    = slwr    = io.FFBuffer("o", self.pads.slwr)
+            m.submodules.pktend  = pktend  = io.FFBuffer("o", self.pads.pktend)
+            m.submodules.fd      = fd      = io.DDRBuffer("io", self.pads.fd)
+            m.submodules.flag    = flag    = io.DDRBuffer("i", self.pads.flag)
+            m.d.comb += [
+                fifoadr.o.eq(self.addr),
+                sloe.o.eq(~self.sloe),
+                slrd.o.eq(~self.slrd),
+                slwr.o.eq(~self.slwr),
+                pktend.o.eq(~self.pend),
+                self.data.i.eq(fd.i[1]),
+                fd.o[0].eq(self.data.o),
+                fd.o[1].eq(self.data.o),
+                fd.oe.eq(self.data.oe),
+                self.flag.eq(flag.i[1]),
+            ]
+        elif isinstance(platform, LatticePlatform):
+            # ECP5 does not suffer from the timing issues described above. In addition, ECP5 DDR
+            # buffers have a higher latency (3 vs 1).
+            m.submodules.fifoadr = fifoadr = io.FFBuffer("o", self.pads.fifoadr)
+            m.submodules.sloe    = sloe    = io.FFBuffer("o", self.pads.sloe)
+            m.submodules.slrd    = slrd    = io.FFBuffer("o", self.pads.slrd)
+            m.submodules.slwr    = slwr    = io.FFBuffer("o", self.pads.slwr)
+            m.submodules.pktend  = pktend  = io.FFBuffer("o", self.pads.pktend)
+            m.submodules.fd      = fd      = io.FFBuffer("io", self.pads.fd)
+            m.submodules.flag    = flag    = io.FFBuffer("i", self.pads.flag)
+            m.d.comb += [
+                fifoadr.o.eq(self.addr),
+                sloe.o.eq(~self.sloe),
+                slrd.o.eq(~self.slrd),
+                slwr.o.eq(~self.slwr),
+                pktend.o.eq(~self.pend),
+                self.data.i.eq(fd.i),
+                fd.o.eq(self.data.o),
+                fd.oe.eq(self.data.oe),
+                self.flag.eq(flag.i),
+            ]
+        else:
+            raise NotImplementedError("unsupported platform")
 
         # Delay the FX2 bus control signals, taking into account the roundtrip latency.
         addr_r = Signal.like(self.addr)
