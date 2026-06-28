@@ -163,7 +163,7 @@ class GlasgowAppletTestCase(unittest.TestCase):
 
     async def run_hardware_applet(self, mode):
         if mode == "record":
-            await self.device.download_target(self.target.build_plan())
+            await self.device.download_plan(self.target.build_plan())
 
         return await self.applet.run(self.device, self._parsed_args)
 

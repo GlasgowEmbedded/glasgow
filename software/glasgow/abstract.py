@@ -52,6 +52,9 @@ class PullState(enum.Enum):
 class GlasgowPort(enum.Enum):
     A = "A"
     B = "B"
+    C = "C"
+    D = "D"
+    ALL = "*"
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}.{self.name}"
@@ -72,13 +75,12 @@ class GlasgowVio:
         object.__setattr__(self, "sense", GlasgowPort(sense) if sense is not None else None)
 
     @classmethod
-    def parse(cls, value, *, all_ports="AB") -> dict[GlasgowPort, GlasgowVio]:
+    def parse(cls, value) -> dict[GlasgowPort, GlasgowVio]:
         result = {}
         for clause in value.split(","):
-            if m := re.match(r"^([0-9]+(\.[0-9]+)?)$", clause):
-                volts = float(m.group(1))
-                for port in all_ports:
-                    result[GlasgowPort(port)] = GlasgowVio(value=volts)
+            if m := re.match(r"^(\*=)?([0-9]+(\.[0-9]+)?)$", clause):
+                volts = float(m.group(2))
+                result[GlasgowPort.ALL] = GlasgowVio(value=volts)
             elif m := re.match(r"^([A-Z]+)=([0-9]+(\.[0-9]+)?)$", clause):
                 ports, volts = m.group(1), float(m.group(2))
                 for port in ports:
@@ -106,6 +108,7 @@ class GlasgowPin:
     invert: bool = False
 
     def __init__(self, port: GlasgowPort, number: int, *, invert=False):
+        assert GlasgowPort(port) != GlasgowPort.ALL
         object.__setattr__(self, "port", GlasgowPort(port))
         object.__setattr__(self, "number", int(number))
         object.__setattr__(self, "invert", bool(invert))
@@ -135,8 +138,10 @@ class GlasgowPin:
     @property
     def _legacy_number(self):
         match self.port:
-            case GlasgowPort.A: return 0 + self.number
-            case GlasgowPort.B: return 8 + self.number
+            case GlasgowPort.A: return  0 + self.number
+            case GlasgowPort.B: return  8 + self.number
+            case GlasgowPort.C: return 16 + self.number
+            case GlasgowPort.D: return 24 + self.number
             case _: assert False
 
     def __invert__(self) -> Self:
