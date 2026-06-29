@@ -84,6 +84,8 @@ If you're familiar with I²C, you'll know that a common convention is for the ta
     >>> await i2c_iface.read(119, 2)
     b'\x1c\x04'
 
+.. _repl-uart:
+
 UART
 ~~~~
 
