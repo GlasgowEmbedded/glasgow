@@ -20,3 +20,5 @@ I/O interfaces
     jtag_svf
     sbw_probe
     swd_probe
+    ethernet_rgmii
+    probe_rs

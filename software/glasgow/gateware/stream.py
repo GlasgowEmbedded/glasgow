@@ -1,11 +1,12 @@
 from amaranth import *
+from amaranth.hdl import ShapeCastable, ValueCastable
 from amaranth.lib import data, wiring, stream, fifo, memory
 from amaranth.lib.wiring import In, Out
 
 
 __all__ = [
     "stream_put", "stream_get", "stream_assert"
-    "StreamBuffer", "Queue", "AsyncQueue", "SkidBuffer",
+    "StreamBuffer", "Queue", "AsyncQueue", "SkidBuffer", "PacketExtender",
 ]
 
 
@@ -170,6 +171,7 @@ class PacketQueue(wiring.Component):
                 "data":  data_shape,
                 "first": 1,
                 "last":  1,
+                "end":   1,
             }))),
             "o": Out(stream.Signature(data.StructLayout({
                 "data":  data_shape,
@@ -196,9 +198,14 @@ class PacketQueue(wiring.Component):
         write_incr  = incr(data_write.addr, self._data_depth)
 
         m.d.comb += data_write.data.eq(self.i.p.data)
-        m.d.comb += size_queue.i.payload.eq(write_count)
         with m.If(self.i.valid):
-            with m.If(self.i.p.first & (write_count != 0)):
+            with m.If(self.i.p.end & (write_count != 0)):
+                m.d.comb += self.i.ready.eq(size_queue.i.ready)
+                m.d.comb += size_queue.i.valid.eq(1)
+                m.d.comb += size_queue.i.payload.eq(write_count - 1)
+                m.d.sync += write_first.eq(data_write.addr)
+                m.d.sync += write_count.eq(0)
+            with m.Elif(self.i.p.first & (write_count != 0)):
                 m.d.sync += data_write.addr.eq(write_first)
                 m.d.sync += write_count.eq(0)
             with m.Elif(~self.i.p.last | size_queue.i.ready):
@@ -207,6 +214,7 @@ class PacketQueue(wiring.Component):
                     m.d.comb += data_write.en.eq(1)
                     with m.If(self.i.p.last):
                         m.d.comb += size_queue.i.valid.eq(1)
+                        m.d.comb += size_queue.i.payload.eq(write_count)
                         m.d.sync += write_first.eq(write_incr)
                         m.d.sync += data_write.addr.eq(write_incr)
                         m.d.sync += write_count.eq(0)
@@ -232,5 +240,54 @@ class PacketQueue(wiring.Component):
             m.d.comb += data_read.addr.eq(read_incr)
         with m.Else():
             m.d.comb += data_read.addr.eq(read_addr)
+
+        return m
+
+
+class PacketExtender(wiring.Component):
+    def __init__(self, data_shape: ShapeCastable, *, min_length: int, padding: ValueCastable):
+        self._min_length = min_length
+        self._padding    = padding
+
+        super().__init__({
+            "i": In(stream.Signature(data.StructLayout({
+                "data":  data_shape,
+                "first": 1,
+                "last":  1,
+            }))),
+            "o": Out(stream.Signature(data.StructLayout({
+                "data":  data_shape,
+                "first": 1,
+                "last":  1,
+            }))),
+        })
+
+    def elaborate(self, platform):
+        m = Module()
+
+        offset = Signal(range(self._min_length + 1))
+
+        with m.FSM():
+            with m.State("Data"):
+                wiring.connect(m, wiring.flipped(self.o), wiring.flipped(self.i))
+                with m.If(self.i.valid & self.i.ready):
+                    with m.If(self.i.p.first):
+                        m.d.sync += offset.eq(0)
+                    with m.Elif(offset < self._min_length):
+                        m.d.sync += offset.eq(offset + 1)
+                    with m.If(self.i.p.last & (offset < self._min_length - 1)):
+                        m.d.comb += self.o.p.last.eq(0)
+                        m.next = "Padding"
+
+            with m.State("Padding"):
+                m.d.comb += self.o.p.data.eq(self._padding)
+                m.d.comb += self.o.p.last.eq(offset + 1 == self._min_length - 1)
+                m.d.comb += self.o.valid.eq(1)
+                with m.If(self.o.ready):
+                    with m.If(~self.o.p.last):
+                        m.d.sync += offset.eq(offset + 1)
+                    with m.Else():
+                        m.d.sync += offset.eq(0)
+                        m.next = "Data"
 
         return m
