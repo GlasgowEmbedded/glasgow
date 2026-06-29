@@ -19,8 +19,10 @@
 // but the result code zeroed out. (For packets with variable length replies, if the request does
 // not include the length field, the returned error packet is sent as if length was 0.)
 //
-// At the moment requests are processed in-order and without pipelining. The serial is provided
-// mainly for convenience of implementation of upper layers.
+// Requests are processed in order, which is a part of the API contract. At the moment, they are
+// not pipelined (EP1IN buffer must be full and EP1OUT buffer must be empty for processing to
+// start), which is an implementation detail. The serial is provided mainly for convenience of
+// implementation of upper layers since requests are never reordered.
 //
 // The protocol specified here is a public interface. Within a single API level (high byte of
 // `bcdDevice` in the USB device descriptor), the protocol will never change. Between API levels,
