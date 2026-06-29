@@ -85,7 +85,7 @@ if [ "clean" = "$1" ]; then
 elif [ "build" = "$1" ]; then
 	docker_run /bin/bash -s -x <<-'EOF'
 		set -e
-		make -C vendor/libfx2/firmware/library all MODELS=medium
+		make -C vendor/libfx2/firmware/library all MODELS=small
 		make -C firmware/fx2 all
 	EOF
 elif [ "rebuild" = "$1" ]; then
@@ -93,7 +93,7 @@ elif [ "rebuild" = "$1" ]; then
 		set -e
 		make -C vendor/libfx2/firmware/library clean
 		make -C firmware/fx2 clean
-		make -C vendor/libfx2/firmware/library all MODELS=medium
+		make -C vendor/libfx2/firmware/library all MODELS=small
 		make -C firmware/fx2 all
 	EOF
 elif [ "deploy" = "$1" ]; then
@@ -108,7 +108,7 @@ elif [ "deploy" = "$1" ]; then
 		make -C firmware/fx2 clean
 
 		# Build the artifact.
-		make -C vendor/libfx2/firmware/library all MODELS=medium
+		make -C vendor/libfx2/firmware/library all MODELS=small
 		make -C firmware/fx2 all
 
 		# Deploy the artifact. For incomprehensible (literally; I could not figure out why) reasons,
