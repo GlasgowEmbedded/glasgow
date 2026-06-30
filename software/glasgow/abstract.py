@@ -310,6 +310,8 @@ class AbstractAssembly(metaclass=ABCMeta):
                 return port
             case GlasgowPin() as pin:
                 return self.add_platform_pin(pin, name)
+            case (io.SimulationPort() | io.SingleEndedPort()) as port:
+                return port
             case _:
                 raise TypeError(f"cannot add a port for object {pins!r}")
 
