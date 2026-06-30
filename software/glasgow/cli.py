@@ -278,7 +278,7 @@ def get_argparser():
     parser = create_argparser()
 
     def revision(arg):
-        revisions = ["A0", "B0", "C0", "C1", "C2", "C3"]
+        revisions = ["A0", "B0", "C0", "C1", "C2", "C3", "D0"]
         if arg in revisions:
             return arg
         else:
@@ -300,26 +300,25 @@ def get_argparser():
 
     def add_ports_arg(parser):
         parser.add_argument(
-            "ports", metavar="PORTS", type=str, nargs="?", default="AB",
-            help="I/O port set (one or more of: A B, default: all)")
-
-    def add_voltage_arg(parser, help):
-        parser.add_argument(
-            "voltage", metavar="VOLTS", type=float, nargs="?", default=None,
-            help=f"{help} (range: 1.8-5.0)")
+            "ports", metavar="PORTS", type=str, nargs="?", default=None,
+            help="I/O port set (one or more of: A B C D, default: all)")
 
     p_voltage = subparsers.add_parser(
         "voltage", formatter_class=TextHelpFormatter,
         help="query or set I/O port voltage")
     add_ports_arg(p_voltage)
-    add_voltage_arg(p_voltage,
-        help="I/O port voltage")
+    p_voltage.add_argument(
+        "voltage", metavar="VOLTS", type=float, nargs="?", default=None,
+        help=f"I/O port voltage (range: revABC 1.8-5.0 V, revD 1.2-5.5 V)")
+    p_voltage.add_argument(
+        "trip_current", metavar="AMPS", type=float, nargs="?", default=None,
+        help=f"I/O port trip current (revC2+; range: 0.000-0.325 A)")
     p_voltage.add_argument(
         "--tolerance", metavar="PCT", type=float, default=10.0,
         help="raise alert if measured voltage deviates by more than ±PCT%% (default: %(default)s)")
     p_voltage.add_argument(
         "--alert", dest="set_alert", default=False, action="store_true",
-        help="raise an alert if Vsense is out of range of Vsupply")
+        help="raise an alert and disable Vsupply if Vsense is out of range of Vsupply")
 
     p_safe = subparsers.add_parser(
         "safe", formatter_class=TextHelpFormatter,
@@ -329,8 +328,9 @@ def get_argparser():
         "voltage-limit", formatter_class=TextHelpFormatter,
         help="limit I/O port voltage as a safety mechanism")
     add_ports_arg(p_voltage_limit)
-    add_voltage_arg(p_voltage_limit,
-        help="maximum allowed I/O port voltage")
+    p_voltage_limit.add_argument(
+        "voltage", metavar="VOLTS", type=float, nargs="?", default=None,
+        help=f"maximum allowed I/O port voltage (range: revABC 1.8-5.0 V, revD 1.2-5.5 V)")
 
     def add_run_args(parser):
         g_run_bitstream = parser.add_mutually_exclusive_group()
@@ -407,6 +407,10 @@ def get_argparser():
         "--remove-bitstream", default=False, action="store_true",
         help="remove any bitstream present")
     p_flash.add_build_func(lambda: add_applet_arg(g_flash_bitstream, mode="build"))
+
+    p_flash.add_argument(
+        "--advertise-webusb", choices=("yes", "no"),
+        help="whether to cause the host PC to display a notification with the WebUSB URL")
 
     p_build = subparsers.add_parser(
         "build", formatter_class=TextHelpFormatter,
@@ -620,10 +624,15 @@ async def main() -> int:
             device = await GlasgowDevice.find(args.serial)
             assembly = HardwareAssembly(device=device)
 
+        if hasattr(args, "ports") and args.ports is None:
+            args.ports = device.all_ports
+
         if args.action == "voltage":
             if args.voltage is not None:
                 await device.reset_alert(args.ports)
-                await device.poll_alert() # clear any remaining alerts
+                await device.clear_faults(args.ports)
+                if args.trip_current is not None:
+                    await device.set_trip_current(args.ports, args.trip_current)
                 try:
                     await device.set_voltage(args.ports, args.voltage)
                 except:
@@ -634,40 +643,47 @@ async def main() -> int:
                     await device.set_alert_tolerance(args.ports, args.voltage,
                                                      args.tolerance / 100)
 
-            print("Port\tVsupply\tIsupply\tVsense\tVsense(range)\tVsupply(max)")
-            alerts = await device.poll_alert()
+            print("Port\tVsupply\tVlimit\tIsupply\tIalert\tVsense\tVsense(alert)")
             for port in args.ports:
-                vsupply     = await device.get_voltage(port)
-                vsupply_max = await device.get_voltage_limit(port)
-                vsense      = await device.measure_voltage(port)
-                alert       = await device.get_alert(port)
-                try:
+                vsupply = await device.get_voltage(port)
+                vlimit  = await device.get_voltage_limit(port)
+                vsense  = await device.measure_voltage(port)
+                alert   = await device.get_alert(port)
+                if device.measures_current:
                     isupply = await device.measure_current(port)
-                    isupply_str = f"{isupply:.3f}"
-                except GlasgowDeviceError:
-                    isupply_str = "N/A"
-                notice = ""
-                if port in alerts:
-                    notice += " (ALERT)"
-                print(f"{port}\t{vsupply:.3f}\t{isupply_str}\t{vsense:.3f}\t{alert[0]:.3f}-{alert[1]:.3f}\t\t{vsupply_max:.3f}\t{notice}"
-                      )
+                    ilimit  = await device.get_trip_current(port)
+                else:
+                    isupply = None
+                    ilimit  = None
+                faults  = await device.get_faults(port)
+                print("\t".join([
+                    port,
+                    f"{vsupply:.3f}",
+                    f"{vlimit:.3f}",
+                    "n/a" if isupply is None else
+                        f"{isupply:.3f}" if isupply < 0.32767 else
+                            "(SHORT)",
+                    "n/a" if ilimit is None else f"{ilimit:.3f}",
+                    f"{vsense:.3f}",
+                    f"{alert[0]:.3f}-{alert[1]:.3f}",
+                    "(FAULT)" if faults else "",
+                ]))
 
         if args.action == "safe":
-            await device.reset_alert("AB")
-            await device.set_voltage("AB", 0.0)
-            await device.poll_alert() # clear any remaining alerts
+            await device.reset_alert(device.all_ports)
+            await device.set_voltage(device.all_ports, 0.0)
+            await device.clear_faults(device.all_ports)
             logger.info("all ports safe")
 
         if args.action == "voltage-limit":
             if args.voltage is not None:
                 await device.set_voltage_limit(args.ports, args.voltage)
 
-            print("Port\tVsupply\tVsupply(max)")
+            print("Port\tVsupply\tVlimit")
             for port in args.ports:
-                vsupply     = await device.get_voltage(port)
-                vsupply_max = await device.get_voltage_limit(port)
-                print(f"{port}\t{vsupply:.3f}\t{vsupply_max:.3f}"
-                      )
+                vsupply = await device.get_voltage(port)
+                vlimit  = await device.get_voltage_limit(port)
+                print(f"{port}\t{vsupply:.3f}\t{vlimit:.3f}")
 
         if args.action in ("run", "repl", "script"):
             applet, target = _applet(assembly, args)
@@ -847,13 +863,13 @@ async def main() -> int:
 
         if args.action == "flash":
             logger.info("reading device configuration")
-            header = await device.read_eeprom("fx2", 0, 8 + 4 + GlasgowDeviceConfig.size)
+            header = await device.read_eeprom(0, 8 + 4 + GlasgowDeviceConfig.size())
             header[0] = 0xC2 # see below
 
             fx2_config = FX2Config.decode(header, partial=True)
             if (len(fx2_config.firmware) != 1 or
-                    fx2_config.firmware[0][0] != 0x4000 - GlasgowDeviceConfig.size or
-                    len(fx2_config.firmware[0][1]) != GlasgowDeviceConfig.size):
+                    fx2_config.firmware[0][0] != 0x4000 - GlasgowDeviceConfig.size() or
+                    len(fx2_config.firmware[0][1]) != GlasgowDeviceConfig.size()):
                 raise SystemExit("Unrecognized or corrupted configuration block")
             glasgow_config = GlasgowDeviceConfig.decode(fx2_config.firmware[0][1])
 
@@ -869,36 +885,13 @@ async def main() -> int:
             else:
                 logger.info("device does not have flashed bitstream")
 
-            new_bitstream = b""
-            if args.remove_bitstream:
-                logger.info("removing bitstream")
-                glasgow_config.bitstream_size = 0
-                glasgow_config.bitstream_id   = b"\x00"*16
-            elif args.bitstream:
-                logger.info("using bitstream from %s", args.bitstream.name)
-                with args.bitstream as f:
-                    new_bitstream_id = f.read(16)
-                    new_bitstream    = f.read()
-                    glasgow_config.bitstream_size = len(new_bitstream)
-                    glasgow_config.bitstream_id   = new_bitstream_id
-            elif args.applet:
-                logger.info("generating bitstream for applet %s", args.applet)
-                assembly = HardwareAssembly(revision=device.revision)
-                applet, _multiplexer = _applet(assembly, args)
-                plan = assembly.artifact()
-                new_bitstream_id = plan.bitstream_id
-                new_bitstream    = await plan.get_bitstream()
+            match args.advertise_webusb:
+                case "yes":
+                    glasgow_config.advertise_webusb = True
+                case "no":
+                    glasgow_config.advertise_webusb = False
 
-                # We always build and reflash the bitstream in case the one currently
-                # in EEPROM is corrupted. If we only compared the ID, there would be
-                # no easy way to recover from that case. There's also no point in
-                # storing the bitstream hash (as opposed to Verilog hash) in the ID,
-                # as building the bitstream takes much longer than flashing it.
-                logger.info("generated bitstream ID %s", new_bitstream_id.hex())
-                glasgow_config.bitstream_size = len(new_bitstream)
-                glasgow_config.bitstream_id   = new_bitstream_id
-
-            fx2_config.firmware[0] = (0x4000 - GlasgowDeviceConfig.size, glasgow_config.encode())
+            fx2_config.firmware[0] = (0x4000 - GlasgowDeviceConfig.size(), glasgow_config.encode())
 
             if args.remove_firmware:
                 logger.info("removing firmware")
@@ -921,34 +914,42 @@ async def main() -> int:
                 fx2_config.disconnect = True
                 new_image = fx2_config.encode()
 
-            if new_bitstream:
-                logger.info("programming bitstream")
-                old_bitstream = await device.read_eeprom("ice", 0, len(new_bitstream))
-                if old_bitstream != new_bitstream:
-                    for (addr, chunk) in diff_data(old_bitstream, new_bitstream):
-                        await device.write_eeprom("ice", addr, chunk)
-
-                    logger.info("verifying bitstream")
-                    if await device.read_eeprom("ice", 0, len(new_bitstream)) != new_bitstream:
-                        logger.critical("bitstream programming failed")
-                        return 1
-                else:
-                    logger.info("bitstream identical")
-
             logger.info("programming configuration and firmware")
-            old_image = await device.read_eeprom("fx2", 0, len(new_image))
+            old_image = await device.read_eeprom(0, len(new_image))
             if old_image != new_image:
                 for (addr, chunk) in diff_data(old_image, new_image):
-                    await device.write_eeprom("fx2", addr, chunk)
+                    await device.write_eeprom(addr, chunk)
 
                 logger.info("verifying configuration and firmware")
-                if await device.read_eeprom("fx2", 0, len(new_image)) != new_image:
+                if await device.read_eeprom(0, len(new_image)) != new_image:
                     logger.critical("configuration/firmware programming failed")
                     return 1
 
                 logger.warning("power cycle the device to apply changes")
             else:
                 logger.info("configuration and firmware identical")
+
+            bitstream_id   = b"\x00"*8
+            bitstream_data = b""
+            if args.remove_bitstream:
+                logger.info("removing bitstream")
+            elif args.bitstream:
+                logger.info("using bitstream from %s", args.bitstream.name)
+                with args.bitstream as f:
+                    bitstream_id   = f.read(8)
+                    bitstream_data = f.read()
+            elif args.applet:
+                logger.info("generating bitstream for applet %s", args.applet)
+                assembly = HardwareAssembly(revision=device.revision)
+                applet, _multiplexer = _applet(assembly, args)
+                plan = assembly.artifact()
+                bitstream_id   = plan.bitstream_id
+                bitstream_data = await plan.get_bitstream()
+            else:
+                return 0
+            if bitstream_data:
+                logger.info("flashing bitstream ID %s", bitstream_id.hex())
+            await device.flash_bitstream(bitstream_data, bitstream_id)
 
         if args.action == "build":
             assembly = HardwareAssembly(revision=args.rev)
@@ -997,8 +998,9 @@ async def main() -> int:
 
             device_id = GlasgowDeviceConfig.encode_revision(args.factory_rev)
             glasgow_config = GlasgowDeviceConfig(args.factory_rev, args.factory_serial,
-                                           manufacturer=args.factory_manufacturer,
-                                           modified_design=(args.factory_modified_design != "no"))
+                manufacturer=args.factory_manufacturer,
+                modified_design=(args.factory_modified_design != "no"),
+                advertise_webusb=True)
             firmware_data = GlasgowDevice.firmware_data()
 
             if args.reinitialize:
@@ -1015,7 +1017,7 @@ async def main() -> int:
 
             fx2_config = FX2Config(vendor_id=VID_QIHW, product_id=PID_GLASGOW,
                                    device_id=device_id, i2c_400khz=True, disconnect=True)
-            fx2_config.append(0x4000 - glasgow_config.size, glasgow_config.encode())
+            fx2_config.append(0x4000 - glasgow_config.size(), glasgow_config.encode())
             for (addr, chunk) in firmware_data:
                 fx2_config.append(addr, chunk)
             image = fx2_config.encode()

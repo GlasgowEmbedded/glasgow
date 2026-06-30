@@ -1,17 +1,22 @@
 VID      ?= 20b7
 PID      ?= 9db1
 
-CODE_SIZE = 0x3e00
-XRAM_SIZE = 0x01c0
+CODE_SIZE = 0x3d00
+XRAM_SIZE = 0x02c0
 CONF_SIZE = 0x0040
-MODEL     = medium
+MODEL     = small
 
-TARGET    = glasgow
-SOURCES   = main fpga dac_ldo adc_adc081c adc_ina233 pull fifo util
+TARGET    = firmware
+SOURCES   = main fpga mgmt smbus port nvmem
 LIBRARIES = fx2 fx2isrs fx2usb
-CFLAGS    = --std=c23 -DSYNCDELAYLEN=16 -DCONF_SIZE=$(CONF_SIZE)
+CFLAGS    = --std=c23 -DSYNCDELAYLEN=3 -DCONF_SIZE=$(CONF_SIZE)
 
-LIBFX2    = ../vendor/libfx2/firmware/library
+# Pass this flag to see all symbols (and, most importantly, their segment) in `firmware.map`.
+ifneq ($(MAP_ALL_SYMBOLS),)
+CFLAGS   += -Dstatic=
+endif
+
+LIBFX2    = ../../vendor/libfx2/firmware/library
 include $(LIBFX2)/fx2rules.mk
 
 # Embed the git revision of the last change to the firmware directory (not the repository as a whole!) into
@@ -28,8 +33,11 @@ include $(LIBFX2)/fx2rules.mk
 # Yes, this is awful. I am so proud of it =^_^=
 GIT_REV_SHORT  ?= $(shell git log -1 --abbrev=8 --pretty=%h HEAD .)
 $(if $(GIT_REV_SHORT),,$(error Failed to determine git revision))
-GIT_TREE_DIRTY  := $(if $(shell git diff --quiet HEAD -- . 2>/dev/null || echo dirty),.dirty)
+GIT_TREE_DIRTY := $(if \
+	$(shell git diff --quiet HEAD -- . 2>/dev/null || echo dirty),.dirty,\\\\0\\\\0\\\\0\\\\0\\\\0\\\\0)
 VERSION_H_RULE := $(shell \
-	echo "#define GIT_REVISION \"$(GIT_REV_SHORT)$(GIT_TREE_DIRTY)\"" >.version.h && \
+	echo "#define GIT_REVISION \"git $(GIT_REV_SHORT)$(GIT_TREE_DIRTY)\"" >.version.h && \
 	if ! diff -q .version.h version.h 2>/dev/null ; then mv .version.h version.h; else rm -f .version.h; fi \
 )
+
+build/%.rel: $(wildcard *.h)

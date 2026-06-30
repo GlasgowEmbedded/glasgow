@@ -11,7 +11,7 @@ set -e
 MYUID=$(id -u)
 MYGID=$(id -g)
 TAG=glasgow_firmware_builder_${MYUID}_${MYGID}
-GLASGOW_FOLDER=$(dirname $(dirname $(readlink -f $0)))
+GLASGOW_FOLDER=$(dirname $(dirname $(dirname $(readlink -f $0))))
 
 DOCKERFILE=$(cat <<-'EOF'
 	FROM debian:trixie-20250721-slim@sha256:cc92da07b99dd5c078cb5583fdb4ba639c7c9c14eb78508a2be285ca67cc738a
@@ -66,7 +66,7 @@ printusage() {
 	echo "    clean - clean both libfx2 and firmware"
 	echo "    build - build both libfx2 and firmware"
 	echo "    rebuild - clean and build"
-	echo "    deploy - rebuild and deploy to software/glasgow/hardware/firmware.ihex"
+	echo "    deploy - rebuild and deploy to software/glasgow/hardware/firmware-fx2.ihex"
 	echo "    load - load the newly built firmware into FX2 RAM"
 	echo "    bash - launch an interactive bash shell inside docker"
 }
@@ -80,21 +80,21 @@ if [ "clean" = "$1" ]; then
 	docker_run /bin/bash -s -x <<-'EOF'
 		set -e
 		make -C vendor/libfx2/firmware/library clean
-		make -C firmware clean
+		make -C firmware/fx2 clean
 	EOF
 elif [ "build" = "$1" ]; then
 	docker_run /bin/bash -s -x <<-'EOF'
 		set -e
-		make -C vendor/libfx2/firmware/library all MODELS=medium
-		make -C firmware all
+		make -C vendor/libfx2/firmware/library all MODELS=small
+		make -C firmware/fx2 all
 	EOF
 elif [ "rebuild" = "$1" ]; then
 	docker_run /bin/bash -s -x <<-'EOF'
 		set -e
 		make -C vendor/libfx2/firmware/library clean
-		make -C firmware clean
-		make -C vendor/libfx2/firmware/library all MODELS=medium
-		make -C firmware all
+		make -C firmware/fx2 clean
+		make -C vendor/libfx2/firmware/library all MODELS=small
+		make -C firmware/fx2 all
 	EOF
 elif [ "deploy" = "$1" ]; then
 	docker_run --buildargs "--no-cache --progress=plain" /bin/bash -s -x <<-'EOF'
@@ -105,22 +105,22 @@ elif [ "deploy" = "$1" ]; then
 
 		# Clean all build products; they may have been built using a different compiler.
 		make -C vendor/libfx2/firmware/library clean
-		make -C firmware clean
+		make -C firmware/fx2 clean
 
 		# Build the artifact.
-		make -C vendor/libfx2/firmware/library all MODELS=medium
-		make -C firmware all
+		make -C vendor/libfx2/firmware/library all MODELS=small
+		make -C firmware/fx2 all
 
 		# Deploy the artifact. For incomprehensible (literally; I could not figure out why) reasons,
 		# the Debian and NixOS builds of exact same commit of sdcc produce different .ihex files that
 		# nevertheless translate to the same binary contents.
-		PYTHONPATH=vendor/libfx2/software python3 firmware/normalize.py \
-		    firmware/glasgow.ihex software/glasgow/hardware/firmware.ihex
+		PYTHONPATH=vendor/libfx2/software python3 firmware/fx2/normalize.py \
+		    firmware/fx2/firmware.ihex software/glasgow/hardware/firmware-fx2.ihex
 	EOF
 elif [ "load" = "$1" ]; then
 	docker_run --runargs "--privileged -v /dev/bus/usb:/dev/bus/usb" /bin/bash -s -x <<-'EOF'
 		set -e
-		make -C firmware load
+		make -C firmware/fx2 load
 	EOF
 elif [ "bash" = "$1" ]; then
 	docker_run --runargs "--privileged -v /dev/bus/usb:/dev/bus/usb -t" /bin/bash
