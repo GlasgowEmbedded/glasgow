@@ -609,10 +609,10 @@ static smbus_sequence set_pulls_revd_seq0[] = {
 };
 
 static smbus_sequence set_pulls_revd_seq1[] = {
+  SM_XFRM_WORD(u8_bit_rev),
   SM_WRITE_BYTE(PCA6416A_CMD_OUTPUT_PORT_1, data0),
   SM_XFRM_WORD(u8_bit_rev),
   SM_WRITE_BYTE(PCA6416A_CMD_CONFIGURATION_1, data1),
-  SM_XFRM_WORD(u8_bit_rev),
   SM_DONE(),
 };
 
@@ -623,18 +623,18 @@ static bool set_pulls_revd(uint8_t chan) __reentrant
 }
 
 static smbus_sequence get_pulls_revd_seq0[] = {
+  SM_XFRM_WORD(u8_bit_rev),
   SM_READ_BYTE(PCA6416A_CMD_OUTPUT_PORT_0, data0),
   SM_XFRM_WORD(u8_bit_rev),
   SM_READ_BYTE(PCA6416A_CMD_CONFIGURATION_0, data1),
-  SM_XFRM_WORD(u8_bit_rev),
   SM_DONE(),
 };
 
 static smbus_sequence get_pulls_revd_seq1[] = {
+  SM_XFRM_WORD(u8_bit_rev),
   SM_READ_BYTE(PCA6416A_CMD_OUTPUT_PORT_1, data0),
   SM_XFRM_WORD(u8_bit_rev),
   SM_READ_BYTE(PCA6416A_CMD_CONFIGURATION_1, data1),
-  SM_XFRM_WORD(u8_bit_rev),
   SM_DONE(),
 };
 
