@@ -216,7 +216,7 @@ class ControlGPIOApplet(GlasgowAppletV2):
                 print(output)
 
         if args.socket:
-            ep = await ServerEndpoint('gpio', self.logger, args.socket)
+            ep = await ServerEndpoint("gpio", self.logger, args.socket)
             while True:
                 try:
                     line = await ep.recv_until(b"\n")
