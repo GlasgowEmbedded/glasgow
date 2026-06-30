@@ -19,7 +19,7 @@ typedef uint16_t (* smbus_xfrm_t)(uint16_t);
 
 // This type has to be a `__xdata void *` because sdcc doesn't let you cast a function pointer
 // to an `uint16_t` in a constant initializer.
-typedef __xdata void *smbus_sequence;
+typedef __xdata void *__xdata smbus_sequence;
 
 #define SM_DONE()                  (__xdata void*)((SMBUS_OP_DONE<<8)) // aka NULL
 #define SM_ADDR(addr)              (__xdata void*)((SMBUS_OP_ADDR<<8)|(uint8_t)(addr<<1))

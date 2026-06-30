@@ -115,4 +115,4 @@ enum ep_mode {
 #include "glasgow_fpga.h"
 
 // Surprisingly more efficient than `1<<x`.
-static const __idata uint8_t nibble_mask[] = { 0x1, 0x2, 0x4, 0x8 };
+extern const __idata uint8_t nibble_mask[];

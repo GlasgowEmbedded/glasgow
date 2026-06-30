@@ -33,7 +33,7 @@ static uint16_t dac081c_decode(uint16_t value)
   return 1650 + (255 - (bswap16(value) >> 4)) * 152 / 10;
 }
 
-static const smbus_sequence set_vsupply_revabc_seq[] = {
+static smbus_sequence set_vsupply_revabc_seq[] = {
   SM_XFRM_WORD(dac081c_encode),
   SM_SEND_WORD(data0),
   SM_DONE(),
@@ -98,7 +98,7 @@ static uint16_t adc081c_encode(uint16_t value)
 
 // Reset
 
-static const smbus_sequence reset_adc_revabc01_seq[] = {
+static smbus_sequence reset_adc_revabc01_seq[] = {
   SM_WRITE_BYTE(ADC081_REG_CONFIGURATION, zero),
   SM_DONE(),
 };
@@ -125,7 +125,7 @@ static __xdata const uint8_t set_valert_revabc01_const_0 =
   ADC081_BIT_UNDER_RANGE|ADC081_BIT_OVER_RANGE;
 static __xdata const uint8_t set_valert_revabc01_const_1 =
   ADC081_BIT_ALERT_PIN_EN|ADC081_BIT_ALERT_HOLD|/*1 ksps*/(0b110u<<5);
-static const smbus_sequence set_valert_revabc01_seq[] = {
+static smbus_sequence set_valert_revabc01_seq[] = {
   SM_WRITE_BYTE(ADC081_REG_CONFIGURATION, zero),
   SM_XFRM_WORD(adc081c_encode),
   SM_WRITE_WORD(ADC081_REG_LOW_LIMIT, data0),
@@ -141,7 +141,7 @@ static bool set_valert_revabc01(uint8_t chan) __reentrant
   return smbus_run(set_valert_revabc01_seq, adc_addr_revabc01[chan]);
 }
 
-static const smbus_sequence get_valert_revabc01_seq[] = {
+static smbus_sequence get_valert_revabc01_seq[] = {
   SM_READ_BYTE(ADC081_REG_CONFIGURATION, config),
   SM_XFRM_WORD(adc081c_decode),
   SM_READ_WORD(ADC081_REG_LOW_LIMIT, data0),
@@ -178,7 +178,7 @@ static bool get_valert_revabc01(uint8_t chan) __reentrant
 
 // Vsense
 
-static const smbus_sequence get_vsense_revabc01_seq[] = {
+static smbus_sequence get_vsense_revabc01_seq[] = {
   SM_XFRM_WORD(adc081c_decode),
   SM_READ_WORD(ADC081_REG_CONV_RESULT, data0),
   SM_DONE(),
@@ -243,7 +243,7 @@ static uint16_t ina233_encode_voltage(uint16_t value)
 
 // Reset
 
-static const smbus_sequence reset_adc_revc23d_seq[] = {
+static smbus_sequence reset_adc_revc23d_seq[] = {
   // This command is the only known way to free an asserted ~ALERT line when not using the
   // SMBus ALERT response command.
   SM_SEND_BYTE(ina233_cmd_restore_default_all_const),
@@ -261,14 +261,14 @@ static bool reset_adc_revc23d(uint8_t chan) __reentrant
 
 // Valert/Ialert shared
 
-static const smbus_sequence get_alert_mask_revc23d_seq[] = {
+static smbus_sequence get_alert_mask_revc23d_seq[] = {
   SM_READ_BYTE(INA233_CMD_MFR_ALERT_MASK, config),
   SM_DONE(),
 };
 
 // Valert
 
-static const smbus_sequence set_valert_revc23d_seq[] = {
+static smbus_sequence set_valert_revc23d_seq[] = {
   SM_XFRM_WORD(ina233_encode_voltage),
   SM_WRITE_WORD(INA233_CMD_VIN_OV_WARN_LIMIT, data1),
   SM_XFRM_WORD(ina233_encode_voltage),
@@ -294,7 +294,7 @@ static bool set_valert_revc23d(uint8_t chan) __reentrant
   return smbus_run(set_valert_revc23d_seq, addr);
 }
 
-static const smbus_sequence get_valert_revc23d_seq[] = {
+static smbus_sequence get_valert_revc23d_seq[] = {
   SM_READ_BYTE(INA233_CMD_MFR_ALERT_MASK, config),
   SM_XFRM_WORD(ina233_decode_voltage),
   SM_READ_WORD(INA233_CMD_VIN_OV_WARN_LIMIT, data1),
@@ -314,7 +314,7 @@ static bool get_valert_revc23d(uint8_t chan) __reentrant
 
 // Ialert
 
-static const smbus_sequence set_ialert_revc23d_seq[] = {
+static smbus_sequence set_ialert_revc23d_seq[] = {
   SM_WRITE_WORD(INA233_CMD_IOUT_OC_WARN_LIMIT, data0),
   SM_WRITE_BYTE(INA233_CMD_MFR_ALERT_MASK, config),
   // see note in set_valert_revc23d_seq
@@ -332,7 +332,7 @@ static bool set_ialert_revc23d(uint8_t chan) __reentrant
   return smbus_run(set_ialert_revc23d_seq, addr);
 }
 
-static const smbus_sequence get_ialert_revc23d_seq[] = {
+static smbus_sequence get_ialert_revc23d_seq[] = {
   SM_READ_BYTE(INA233_CMD_MFR_ALERT_MASK, config),
   SM_READ_WORD(INA233_CMD_IOUT_OC_WARN_LIMIT, data0),
   SM_DONE(),
@@ -348,7 +348,7 @@ static bool get_ialert_revc23d(uint8_t chan) __reentrant
 
 // Vsense
 
-static const smbus_sequence get_vsense_revc23d_seq[] = {
+static smbus_sequence get_vsense_revc23d_seq[] = {
   SM_XFRM_WORD(ina233_decode_voltage),
   SM_READ_WORD(INA233_CMD_READ_VIN, data0),
   SM_DONE(),
@@ -361,7 +361,7 @@ static bool get_vsense_revc23d(uint8_t chan) __reentrant
 
 // Isense
 
-static const smbus_sequence get_isense_revc23d_seq[] = {
+static smbus_sequence get_isense_revc23d_seq[] = {
   SM_READ_WORD(INA233_CMD_READ_IOUT, data0),
   SM_DONE(),
 };
@@ -371,7 +371,7 @@ static bool get_isense_revc23d(uint8_t chan) __reentrant
   return smbus_run(get_isense_revc23d_seq, adc_addr_revc23d[chan]);
 }
 
-static const smbus_sequence poll_alert_revc23d_seq[] = {
+static smbus_sequence poll_alert_revc23d_seq[] = {
   SM_READ_BYTE(INA233_CMD_STATUS_MFR_SPECIFIC, config),
   SM_DONE(),
 };
@@ -393,7 +393,7 @@ static bool poll_alert_revc23d(uint8_t chan) __reentrant
 // Clear the alert by reading out the entire configuration (the parts that we are using at least),
 // resetting the chip, then restoring the configuration back. This must be done after supply
 // voltage has already been disabled, else the alert will just trigger again.
-static const smbus_sequence clear_alert_revc23d_seq[] = {
+static smbus_sequence clear_alert_revc23d_seq[] = {
   SM_READ_WORD(INA233_CMD_IOUT_OC_WARN_LIMIT, data0),
   SM_SEND_BYTE(ina233_cmd_restore_default_all_const),
   SM_WRITE_WORD(INA233_CMD_MFR_CALIBRATION, adc_calib_revc23d),
@@ -455,7 +455,7 @@ static __xdata const uint16_t reset_dac_revd_const_1 =
   /*COMMON-CONFIG={EN-INT-REF=1,VOUT-PDN-X=11,IOUT-PDN-X=0}*/0b0001'110'110'110'110;
 static __xdata const uint16_t reset_dac_revd_const_2 =
   /*DAC-X-IOUT-MISC-CONFIG={IOUT-RANGE-X±50uV}=*/0b000'1001'0'00000000;
-static const smbus_sequence reset_dac_revd_seq[] = {
+static smbus_sequence reset_dac_revd_seq[] = {
   // NOP in I2C mode, PMBUS-PAGE=FFh in PMBus mode
   SM_WRITE_BYTE(DAC43204_CMD_PMBUS_PAGE, ones),
   // EN-PMBUS=1 in I2C mode, NOP in PMBus mode (no register 22h on page FFh)
@@ -477,7 +477,7 @@ static bool reset_dac_revd(uint8_t chan) __reentrant
   return true;
 }
 
-static const smbus_sequence set_vsupply_revd_seq[] = {
+static smbus_sequence set_vsupply_revd_seq[] = {
   SM_WRITE_BYTE(DAC43204_CMD_PMBUS_PAGE, dac43204_page),
   SM_XFRM_WORD(dac43204_encode),
   SM_WRITE_WORD(DAC43204_CMD_DAC_X_DATA, data0),
@@ -490,7 +490,7 @@ static bool set_vsupply_revd(uint8_t chan) __reentrant
   return smbus_run(set_vsupply_revd_seq, I2C_ADDR_ALL_DAC_REVD);
 }
 
-static const smbus_sequence get_vsupply_revd_seq[] = {
+static smbus_sequence get_vsupply_revd_seq[] = {
   SM_WRITE_BYTE(DAC43204_CMD_PMBUS_PAGE, dac43204_page),
   SM_XFRM_WORD(dac43204_decode),
   SM_READ_WORD(DAC43204_CMD_DAC_X_DATA, data0),
@@ -517,7 +517,7 @@ enum {
   PCA6408_CMD_CONFIGURATION       = 0x03,
 };
 
-static const smbus_sequence set_pulls_revc_seq[] = {
+static smbus_sequence set_pulls_revc_seq[] = {
   SM_WRITE_BYTE(PCA6408_CMD_OUTPUT_PORT, data0),
   SM_WRITE_BYTE(PCA6408_CMD_CONFIGURATION, data1),
   SM_DONE(),
@@ -528,7 +528,7 @@ static bool set_pulls_revc(uint8_t chan) __reentrant
   return smbus_run(set_pulls_revc_seq, pull_addr_revc[chan]);
 }
 
-static const smbus_sequence get_pulls_revc_seq[] = {
+static smbus_sequence get_pulls_revc_seq[] = {
   SM_READ_BYTE(PCA6408_CMD_OUTPUT_PORT, data0),
   SM_READ_BYTE(PCA6408_CMD_CONFIGURATION, data1),
   SM_DONE(),
@@ -539,7 +539,7 @@ static bool get_pulls_revc(uint8_t chan) __reentrant
   return smbus_run(get_pulls_revc_seq, pull_addr_revc[chan]);
 }
 
-static const smbus_sequence get_state_revc_seq[] = {
+static smbus_sequence get_state_revc_seq[] = {
   SM_READ_BYTE(PCA6408_CMD_INPUT_PORT, data0),
   SM_DONE(),
 };
@@ -569,13 +569,13 @@ enum {
   PCA6416_CMD_CONFIGURATION_1       = 0x07,
 };
 
-static const smbus_sequence set_pulls_revd_seq0[] = {
+static smbus_sequence set_pulls_revd_seq0[] = {
   SM_WRITE_BYTE(PCA6416_CMD_OUTPUT_PORT_0, data0),
   SM_WRITE_BYTE(PCA6416_CMD_CONFIGURATION_0, data1),
   SM_DONE(),
 };
 
-static const smbus_sequence set_pulls_revd_seq1[] = {
+static smbus_sequence set_pulls_revd_seq1[] = {
   SM_WRITE_BYTE(PCA6416_CMD_OUTPUT_PORT_1, data0),
   SM_WRITE_BYTE(PCA6416_CMD_CONFIGURATION_1, data1),
   SM_DONE(),
@@ -586,13 +586,13 @@ static bool set_pulls_revd(uint8_t chan) __reentrant
   return smbus_run(chan&1 ? set_pulls_revd_seq1 : set_pulls_revd_seq0, pull_addr_revd[chan]);
 }
 
-static const smbus_sequence get_pulls_revd_seq0[] = {
+static smbus_sequence get_pulls_revd_seq0[] = {
   SM_READ_BYTE(PCA6416_CMD_OUTPUT_PORT_0, data0),
   SM_READ_BYTE(PCA6416_CMD_CONFIGURATION_0, data1),
   SM_DONE(),
 };
 
-static const smbus_sequence get_pulls_revd_seq1[] = {
+static smbus_sequence get_pulls_revd_seq1[] = {
   SM_READ_BYTE(PCA6416_CMD_OUTPUT_PORT_1, data0),
   SM_READ_BYTE(PCA6416_CMD_CONFIGURATION_1, data1),
   SM_DONE(),
@@ -603,12 +603,12 @@ static bool get_pulls_revd(uint8_t chan) __reentrant
   return smbus_run(chan&1 ? get_pulls_revd_seq1 : get_pulls_revd_seq0, pull_addr_revd[chan]);
 }
 
-static const smbus_sequence get_state_revd_seq0[] = {
+static smbus_sequence get_state_revd_seq0[] = {
   SM_READ_BYTE(PCA6416_CMD_INPUT_PORT_0, data0),
   SM_DONE(),
 };
 
-static const smbus_sequence get_state_revd_seq1[] = {
+static smbus_sequence get_state_revd_seq1[] = {
   SM_READ_BYTE(PCA6416_CMD_INPUT_PORT_1, data0),
   SM_DONE(),
 };

@@ -11,6 +11,8 @@
 #include "glasgow.h"
 #include "version.h"
 
+const __idata uint8_t nibble_mask[] = { 0x1, 0x2, 0x4, 0x8 };
+
 enum {
   // Microsoft requests
   USB_DESC_STRING_MS_INDEX        = 0xEE,

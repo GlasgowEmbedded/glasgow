@@ -1,15 +1,20 @@
 VID      ?= 20b7
 PID      ?= 9db1
 
-CODE_SIZE = 0x3e00
-XRAM_SIZE = 0x01c0
+CODE_SIZE = 0x3d00
+XRAM_SIZE = 0x02c0
 CONF_SIZE = 0x0040
 MODEL     = small
 
 TARGET    = firmware
-SOURCES   = main fpga mgmt port smbus nvmem
+SOURCES   = main fpga mgmt smbus port nvmem
 LIBRARIES = fx2 fx2isrs fx2usb
 CFLAGS    = --std=c23 -DSYNCDELAYLEN=3 -DCONF_SIZE=$(CONF_SIZE)
+
+# Pass this flag to see all symbols (and, most importantly, their segment) in `firmware.map`.
+ifneq ($(MAP_ALL_SYMBOLS),)
+CFLAGS   += -Dstatic=
+endif
 
 LIBFX2    = ../../vendor/libfx2/firmware/library
 include $(LIBFX2)/fx2rules.mk

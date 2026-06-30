@@ -10,7 +10,7 @@ static __bit nvmem_fail;
 
 // ===== Platform-specific code ===================================================================
 
-static __xdata uint32_t load_bytes;
+static uint32_t load_bytes;
 
 static void fpga_reset(bool assert) __reentrant
 {
@@ -320,7 +320,7 @@ static bool fpga_check_mode(enum interface iface, enum ep_mode alt_setting)
   return false;
 }
 
-static const smbus_sequence set_fpga_pipe_rst_seq[] = {
+static smbus_sequence set_fpga_pipe_rst_seq[] = {
   SM_WRITE_BYTE(FPGA_REG_PIPE_RST, fpga_pipe_rst),
   SM_DONE(),
 };
@@ -577,7 +577,7 @@ fail:
 
 static __xdata uint8_t fpga_new_alerts;
 
-static const smbus_sequence fpga_poll_alert_seq[] = {
+static smbus_sequence fpga_poll_alert_seq[] = {
   SM_READ_BYTE(FPGA_REG_ALERTS, fpga_new_alerts),
   SM_DONE(),
 };
