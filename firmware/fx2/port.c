@@ -991,8 +991,8 @@ enum mgmt_result port_mgmt_set_pulls()
       uint8_t ena  = up | down;
       if (!port_params->get_pulls(chan))
         return RES_ERROR;
-      /*out*/data0 = (data0 & keep) | (up  & ~keep);
-      /*en*/ data1 = (data1 & keep) | (ena & ~keep);
+      /*out*/data0 = (data0 & keep) | ( up  & ~keep);
+      /*tri*/data1 = (data1 & keep) | (~ena & ~keep);
       if (!port_params->set_pulls(chan))
         return RES_ERROR;
     }
@@ -1010,8 +1010,8 @@ enum mgmt_result port_mgmt_get_pulls()
         if (!port_params->get_pulls(chan))
           return RES_ERROR;
       }
-      mgmt_rsp.pulls.value[chan].up   = /*en*/data1 &  /*out*/data0;
-      mgmt_rsp.pulls.value[chan].down = /*en*/data1 & ~/*out*/data0;
+      mgmt_rsp.pulls.value[chan].up   = /*tri*/~data1 &  /*out*/data0;
+      mgmt_rsp.pulls.value[chan].down = /*tri*/~data1 & ~/*out*/data0;
     }
   }
   return RES_ACK;
