@@ -170,7 +170,7 @@ class ControlGPIOApplet(GlasgowAppletV2):
     @classmethod
     def add_run_arguments(cls, parser):
         def pin_action(arg):
-            if m := re.match(r"^([A-Z][0-9]+)(?:=([01HL]))?$", arg):
+            if m := re.match(r"^([A-Z][0-9]+)(?:=([01HLZ]))?$", arg):
                 (pin,), value = GlasgowPin.parse(m[1]), m[2]
                 return (pin, value)
             raise argparse.ArgumentTypeError(f"{arg!r} is not a valid pin action")
@@ -198,6 +198,9 @@ class ControlGPIOApplet(GlasgowAppletV2):
                     await self.gpio_iface.input(pin_index)
                 case "L":
                     await self.gpio_iface.pull(pin_index, PullState.Low)
+                    await self.gpio_iface.input(pin_index)
+                case "Z":
+                    await self.gpio_iface.pull(pin_index, PullState.Float)
                     await self.gpio_iface.input(pin_index)
                 case _:
                     assert False
