@@ -551,11 +551,14 @@ static bool get_state_revc(uint8_t chan) __reentrant
 
 // ===== revD PCA6416A ============================================================================
 
+// On revD0, each 8-bit port of the pull GPIO expander is bit-reversed, and on the second expander
+// the ports are swapped. This causes a degree of annoyance to manifest.
+
 static __idata uint8_t pull_addr_revd[] = {
   I2C_ADDR_IOAC_PULL_REVD,
-  I2C_ADDR_IOBD_PULL_REVD,
+  I2C_ADDR_IODB_PULL_REVD,
   I2C_ADDR_IOAC_PULL_REVD,
-  I2C_ADDR_IOBD_PULL_REVD,
+  I2C_ADDR_IODB_PULL_REVD,
 };
 
 enum {
@@ -569,38 +572,68 @@ enum {
   PCA6416A_CMD_CONFIGURATION_1      = 0x07,
 };
 
+static uint16_t u8_bit_rev(uint16_t value) __naked
+{
+  (void)value;
+  __asm
+    push ar0
+    mov  ar0, #8
+    mov  a, dpl
+    mov  b, #0
+  0000$:
+      rlc  a
+      xch  a, b
+      rrc  a
+      xch  a, b
+      djnz r0, 0000$
+    mov  dpl, b
+    pop  ar0
+    ret
+  __endasm;
+}
+
 static smbus_sequence set_pulls_revd_seq0[] = {
+  SM_XFRM_WORD(u8_bit_rev),
   SM_WRITE_BYTE(PCA6416A_CMD_OUTPUT_PORT_0, data0),
+  SM_XFRM_WORD(u8_bit_rev),
   SM_WRITE_BYTE(PCA6416A_CMD_CONFIGURATION_0, data1),
   SM_DONE(),
 };
 
 static smbus_sequence set_pulls_revd_seq1[] = {
   SM_WRITE_BYTE(PCA6416A_CMD_OUTPUT_PORT_1, data0),
+  SM_XFRM_WORD(u8_bit_rev),
   SM_WRITE_BYTE(PCA6416A_CMD_CONFIGURATION_1, data1),
+  SM_XFRM_WORD(u8_bit_rev),
   SM_DONE(),
 };
 
 static bool set_pulls_revd(uint8_t chan) __reentrant
 {
-  return smbus_run(chan&1 ? set_pulls_revd_seq1 : set_pulls_revd_seq0, pull_addr_revd[chan]);
+  bool pick = (chan&1)^(chan>>1);
+  return smbus_run(pick ? set_pulls_revd_seq1 : set_pulls_revd_seq0, pull_addr_revd[chan]);
 }
 
 static smbus_sequence get_pulls_revd_seq0[] = {
   SM_READ_BYTE(PCA6416A_CMD_OUTPUT_PORT_0, data0),
+  SM_XFRM_WORD(u8_bit_rev),
   SM_READ_BYTE(PCA6416A_CMD_CONFIGURATION_0, data1),
+  SM_XFRM_WORD(u8_bit_rev),
   SM_DONE(),
 };
 
 static smbus_sequence get_pulls_revd_seq1[] = {
   SM_READ_BYTE(PCA6416A_CMD_OUTPUT_PORT_1, data0),
+  SM_XFRM_WORD(u8_bit_rev),
   SM_READ_BYTE(PCA6416A_CMD_CONFIGURATION_1, data1),
+  SM_XFRM_WORD(u8_bit_rev),
   SM_DONE(),
 };
 
 static bool get_pulls_revd(uint8_t chan) __reentrant
 {
-  return smbus_run(chan&1 ? get_pulls_revd_seq1 : get_pulls_revd_seq0, pull_addr_revd[chan]);
+  bool pick = (chan&1)^(chan>>1);
+  return smbus_run(pick ? get_pulls_revd_seq1 : get_pulls_revd_seq0, pull_addr_revd[chan]);
 }
 
 static smbus_sequence get_state_revd_seq0[] = {
