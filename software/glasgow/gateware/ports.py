@@ -41,10 +41,11 @@ class PortGroup:
 import copy
 
 
-def SimulationPort_with_direction(self, direction):
+def AmaranthPort_with_direction(self, direction):
     self = copy.copy(self)
     self._direction = io.Direction(direction)
     return self
 
 
-io.SimulationPort.with_direction = SimulationPort_with_direction
+io.SimulationPort.with_direction = AmaranthPort_with_direction
+io.SingleEndedPort.with_direction = AmaranthPort_with_direction
