@@ -511,15 +511,15 @@ static __idata uint8_t pull_addr_revc[] = {
 };
 
 enum {
-  PCA6408_CMD_INPUT_PORT          = 0x00,
-  PCA6408_CMD_OUTPUT_PORT         = 0x01,
-  PCA6408_CMD_POLARITY_INVERSION  = 0x02,
-  PCA6408_CMD_CONFIGURATION       = 0x03,
+  PCA6408A_CMD_INPUT_PORT         = 0x00,
+  PCA6408A_CMD_OUTPUT_PORT        = 0x01,
+  PCA6408A_CMD_POLARITY_INVERSION = 0x02,
+  PCA6408A_CMD_CONFIGURATION      = 0x03,
 };
 
 static smbus_sequence set_pulls_revc_seq[] = {
-  SM_WRITE_BYTE(PCA6408_CMD_OUTPUT_PORT, data0),
-  SM_WRITE_BYTE(PCA6408_CMD_CONFIGURATION, data1),
+  SM_WRITE_BYTE(PCA6408A_CMD_OUTPUT_PORT, data0),
+  SM_WRITE_BYTE(PCA6408A_CMD_CONFIGURATION, data1),
   SM_DONE(),
 };
 
@@ -529,8 +529,8 @@ static bool set_pulls_revc(uint8_t chan) __reentrant
 }
 
 static smbus_sequence get_pulls_revc_seq[] = {
-  SM_READ_BYTE(PCA6408_CMD_OUTPUT_PORT, data0),
-  SM_READ_BYTE(PCA6408_CMD_CONFIGURATION, data1),
+  SM_READ_BYTE(PCA6408A_CMD_OUTPUT_PORT, data0),
+  SM_READ_BYTE(PCA6408A_CMD_CONFIGURATION, data1),
   SM_DONE(),
 };
 
@@ -540,7 +540,7 @@ static bool get_pulls_revc(uint8_t chan) __reentrant
 }
 
 static smbus_sequence get_state_revc_seq[] = {
-  SM_READ_BYTE(PCA6408_CMD_INPUT_PORT, data0),
+  SM_READ_BYTE(PCA6408A_CMD_INPUT_PORT, data0),
   SM_DONE(),
 };
 
@@ -559,25 +559,25 @@ static __idata uint8_t pull_addr_revd[] = {
 };
 
 enum {
-  PCA6416_CMD_INPUT_PORT_0          = 0x00,
-  PCA6416_CMD_INPUT_PORT_1          = 0x01,
-  PCA6416_CMD_OUTPUT_PORT_0         = 0x02,
-  PCA6416_CMD_OUTPUT_PORT_1         = 0x03,
-  PCA6416_CMD_POLARITY_INVERSION_0  = 0x04,
-  PCA6416_CMD_POLARITY_INVERSION_1  = 0x05,
-  PCA6416_CMD_CONFIGURATION_0       = 0x06,
-  PCA6416_CMD_CONFIGURATION_1       = 0x07,
+  PCA6416A_CMD_INPUT_PORT_0         = 0x00,
+  PCA6416A_CMD_INPUT_PORT_1         = 0x01,
+  PCA6416A_CMD_OUTPUT_PORT_0        = 0x02,
+  PCA6416A_CMD_OUTPUT_PORT_1        = 0x03,
+  PCA6416A_CMD_POLARITY_INVERSION_0 = 0x04,
+  PCA6416A_CMD_POLARITY_INVERSION_1 = 0x05,
+  PCA6416A_CMD_CONFIGURATION_0      = 0x06,
+  PCA6416A_CMD_CONFIGURATION_1      = 0x07,
 };
 
 static smbus_sequence set_pulls_revd_seq0[] = {
-  SM_WRITE_BYTE(PCA6416_CMD_OUTPUT_PORT_0, data0),
-  SM_WRITE_BYTE(PCA6416_CMD_CONFIGURATION_0, data1),
+  SM_WRITE_BYTE(PCA6416A_CMD_OUTPUT_PORT_0, data0),
+  SM_WRITE_BYTE(PCA6416A_CMD_CONFIGURATION_0, data1),
   SM_DONE(),
 };
 
 static smbus_sequence set_pulls_revd_seq1[] = {
-  SM_WRITE_BYTE(PCA6416_CMD_OUTPUT_PORT_1, data0),
-  SM_WRITE_BYTE(PCA6416_CMD_CONFIGURATION_1, data1),
+  SM_WRITE_BYTE(PCA6416A_CMD_OUTPUT_PORT_1, data0),
+  SM_WRITE_BYTE(PCA6416A_CMD_CONFIGURATION_1, data1),
   SM_DONE(),
 };
 
@@ -587,14 +587,14 @@ static bool set_pulls_revd(uint8_t chan) __reentrant
 }
 
 static smbus_sequence get_pulls_revd_seq0[] = {
-  SM_READ_BYTE(PCA6416_CMD_OUTPUT_PORT_0, data0),
-  SM_READ_BYTE(PCA6416_CMD_CONFIGURATION_0, data1),
+  SM_READ_BYTE(PCA6416A_CMD_OUTPUT_PORT_0, data0),
+  SM_READ_BYTE(PCA6416A_CMD_CONFIGURATION_0, data1),
   SM_DONE(),
 };
 
 static smbus_sequence get_pulls_revd_seq1[] = {
-  SM_READ_BYTE(PCA6416_CMD_OUTPUT_PORT_1, data0),
-  SM_READ_BYTE(PCA6416_CMD_CONFIGURATION_1, data1),
+  SM_READ_BYTE(PCA6416A_CMD_OUTPUT_PORT_1, data0),
+  SM_READ_BYTE(PCA6416A_CMD_CONFIGURATION_1, data1),
   SM_DONE(),
 };
 
@@ -604,12 +604,12 @@ static bool get_pulls_revd(uint8_t chan) __reentrant
 }
 
 static smbus_sequence get_state_revd_seq0[] = {
-  SM_READ_BYTE(PCA6416_CMD_INPUT_PORT_0, data0),
+  SM_READ_BYTE(PCA6416A_CMD_INPUT_PORT_0, data0),
   SM_DONE(),
 };
 
 static smbus_sequence get_state_revd_seq1[] = {
-  SM_READ_BYTE(PCA6416_CMD_INPUT_PORT_1, data0),
+  SM_READ_BYTE(PCA6416A_CMD_INPUT_PORT_1, data0),
   SM_DONE(),
 };
 
