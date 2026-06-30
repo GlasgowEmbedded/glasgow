@@ -1,5 +1,6 @@
 import re
-import argparse
+from dataclasses import dataclass
+from typing import Literal, Self
 
 from amaranth import *
 from amaranth.lib import wiring, io, cdc
@@ -8,6 +9,7 @@ from amaranth.lib.wiring import In, Out
 from glasgow.support import logging
 from glasgow.abstract import AbstractAssembly, PullState
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2, GlasgowPin
+from glasgow.support.endpoint import ServerEndpoint, endpoint
 
 
 __all__ = ["GPIOException", "GPIOComponent", "GPIOInterface"]
@@ -146,6 +148,46 @@ class GPIOInterface:
         await self._o.set(value)
 
 
+@dataclass(kw_only=True)
+class PinAction:
+    pin:   GlasgowPin
+    level: Literal["0", "1", "H", "L", "Z"] | None
+
+    @classmethod
+    def parse(cls, action: str) -> Self:
+        if m := re.match(r"^([A-Z][0-9]+)(?:=([01HLZ]))?$", action):
+            pins, level = GlasgowPin.parse(m[1]), m[2]
+            return cls(pin=pins[0], level=level)
+        else:
+            raise ValueError(f"{action!r} is not a valid pin action")
+
+    async def apply(self, gpio_iface: GPIOInterface, *, all_pins: list[GlasgowPin]) -> str | None:
+        try:
+            pin_index = all_pins.index(self.pin)
+        except ValueError:
+            raise ValueError(f"pin {self.pin} is not a part of the GPIO interface") from None
+
+        match self.level:
+            case None:
+                return f"{self.pin}={await gpio_iface.get(pin_index):b}"
+            case "0":
+                await gpio_iface.output(pin_index, False)
+            case "1":
+                await gpio_iface.output(pin_index, True)
+            case "H":
+                await gpio_iface.pull(pin_index, PullState.High)
+                await gpio_iface.input(pin_index)
+            case "L":
+                await gpio_iface.pull(pin_index, PullState.Low)
+                await gpio_iface.input(pin_index)
+            case "Z":
+                await gpio_iface.pull(pin_index, PullState.Float)
+                await gpio_iface.input(pin_index)
+            case _:
+                assert False
+        return None
+
+
 class ControlGPIOApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "control individual I/O pins"
@@ -153,8 +195,14 @@ class ControlGPIOApplet(GlasgowAppletV2):
     Sample and drive individual I/O pins via the CLI, the REPL, or a script.
 
     CLI pin actions can be used to configure a pin to be driven strongly (``A0=0`` or ``A0=1``),
-    or to be driven weakly using a pull resistor (``A0=H`` or ``A0=L``). The actions are executed
-    in the order they are provided on the command line.
+    to be driven weakly using a pull resistor (``A0=H`` or ``A0=L``), undriven (``A0=Z``), or
+    specified without a value (``A0``) to sample a pin. The actions are executed in the order they
+    are provided on the command line.
+
+    Socket pin actions may be used to interface with the applet from an external application.
+    Send each action over the socket in the same format as the CLI pin action described above,
+    terminating with a ``\\n``. (Spaces are ignored.) When sampling a pin, the value is sent back
+    over the socket terminated with a `\\n``, otherwise no response is provided.
     """
 
     @classmethod
@@ -169,41 +217,31 @@ class ControlGPIOApplet(GlasgowAppletV2):
 
     @classmethod
     def add_run_arguments(cls, parser):
-        def pin_action(arg):
-            if m := re.match(r"^([A-Z][0-9]+)(?:=([01HLZ]))?$", arg):
-                (pin,), value = GlasgowPin.parse(m[1]), m[2]
-                return (pin, value)
-            raise argparse.ArgumentTypeError(f"{arg!r} is not a valid pin action")
-
         parser.add_argument(
-            "pin_actions", metavar="PIN-ACTION", nargs="*", type=pin_action,
+            "--socket", type=endpoint,
+            help="listen at ENDPOINT, either unix:PATH or tcp:HOST:PORT")
+        parser.add_argument(
+            "pin_actions", metavar="PIN-ACTION", nargs="*", type=PinAction.parse,
             help="pins to drive or sample, e.g.: 'A0=1', 'A1=L', 'B5'")
 
     async def run(self, args):
-        for pin, level in args.pin_actions:
-            try:
-                pin_index = args.pins.index(pin)
-            except ValueError:
-                raise GlasgowAppletError(f"pin {pin} is not included in the '--pins' argument")
+        for action in args.pin_actions:
+            if output := await action.apply(self.gpio_iface, all_pins=args.pins):
+                print(output)
 
-            match level:
-                case None:
-                    print(f"{pin}={await self.gpio_iface.get(pin_index):b}")
-                case "0":
-                    await self.gpio_iface.output(pin_index, False)
-                case "1":
-                    await self.gpio_iface.output(pin_index, True)
-                case "H":
-                    await self.gpio_iface.pull(pin_index, PullState.High)
-                    await self.gpio_iface.input(pin_index)
-                case "L":
-                    await self.gpio_iface.pull(pin_index, PullState.Low)
-                    await self.gpio_iface.input(pin_index)
-                case "Z":
-                    await self.gpio_iface.pull(pin_index, PullState.Float)
-                    await self.gpio_iface.input(pin_index)
-                case _:
-                    assert False
+        if args.socket:
+            endpoint = await ServerEndpoint("gpio", self.logger, args.socket)
+            while True:
+                try:
+                    line = await endpoint.recv_until(b"\n")
+                    if line := line.decode().replace(" ", ""):
+                        action = PinAction.parse(line)
+                        if output := await action.apply(self.gpio_iface, all_pins=args.pins):
+                            await endpoint.send(output.encode() + b"\n")
+                except ValueError as e:
+                    self.logger.error(str(e))
+                except EOFError:
+                    continue
 
     @classmethod
     def tests(cls):
