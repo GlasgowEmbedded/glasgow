@@ -226,6 +226,10 @@ static __xdata const uint8_t ina233_cmd_restore_default_all_const =
   INA233_CMD_RESTORE_DEFAULT_ALL;
 static __xdata const uint8_t ina233_cmd_clear_faults_const =
   INA233_CMD_CLEAR_FAULTS;
+static __xdata const uint8_t ina233_alert_mask_oc_const =
+  ~INA233_BIT_IN_OC_WARNING;
+static __xdata const uint16_t adc_default_trip_current_const =
+  10000; // 100 mA
 
 // See `port_init()`.
 static __xdata uint16_t adc_calib_revc23d;
@@ -249,8 +253,12 @@ static smbus_sequence reset_adc_revc23d_seq[] = {
   SM_SEND_BYTE(ina233_cmd_restore_default_all_const),
   // Write calibration register to enable current measurement.
   SM_WRITE_WORD(INA233_CMD_MFR_CALIBRATION, adc_calib_revc23d),
-  // Mask all alerts; they will be selectively unmasked when configured.
-  SM_WRITE_BYTE(INA233_CMD_MFR_ALERT_MASK, ones),
+  // Mask all alerts except for overcurrent.
+  SM_WRITE_BYTE(INA233_CMD_MFR_ALERT_MASK, ina233_alert_mask_oc_const),
+  // The power supplies can source quite a lot of current; about 0.5 A on revC23, and
+  // about 1 A on revD0. This can easily destroy incorrectly connected components.
+  // Limit the current, by default, to 100 mA.
+  SM_WRITE_WORD(INA233_CMD_IOUT_OC_WARN_LIMIT, adc_default_trip_current_const),
   SM_DONE(),
 };
 
@@ -769,6 +777,7 @@ void port_init()
     port_params = &port_params_revd;
     // R_shunt = 0.05 ohm, Current_LSB = 10 uA/LSB (round number to save 59 bytes XRAM)
     // I_max = Current_LSB * 2**15 = 327.68 mA (TPS629203 current limit is 300 mA)
+    //                            (but practical short circuit current is 1000 mA)
     // CAL = 0.00512 / (R_shunt * Current_LSB)
     adc_calib_revc23d = 10240;
   } else {
