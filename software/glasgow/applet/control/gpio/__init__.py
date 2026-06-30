@@ -8,6 +8,7 @@ from amaranth.lib.wiring import In, Out
 
 from glasgow.abstract import AbstractAssembly, PullState
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2, GlasgowPin
+from glasgow.support.endpoint import ServerEndpoint, endpoint
 
 
 __all__ = ["GPIOException", "GPIOComponent", "GPIOInterface"]
@@ -168,16 +169,38 @@ class ControlGPIOApplet(GlasgowAppletV2):
             self.gpio_iface = GPIOInterface(self.logger, self.assembly, pins=args.pins)
 
     @classmethod
-    def add_run_arguments(cls, parser):
-        def pin_action(arg):
-            if m := re.match(r"^([A-Z][0-9]+)(?:=([01HL]))?$", arg):
-                (pin,), value = GlasgowPin.parse(m[1]), m[2]
-                return (pin, value)
-            raise argparse.ArgumentTypeError(f"{arg!r} is not a valid pin action")
+    def pin_action(cls, arg):
+        if m := re.match(r"^([A-Z][0-9]+)(?:=([01HL]))?$", arg):
+            (pin,), value = GlasgowPin.parse(m[1]), m[2]
+            return (pin, value)
+        raise argparse.ArgumentTypeError(f"{arg!r} is not a valid pin action")
 
+    @classmethod
+    def add_run_arguments(cls, parser):
         parser.add_argument(
-            "pin_actions", metavar="PIN-ACTION", nargs="*", type=pin_action,
+            "--socket", type=endpoint,
+            help="Open TCP/UDP/Unix control socket at the given address")
+        parser.add_argument(
+            "pin_actions", metavar="PIN-ACTION", nargs="*", type=cls.pin_action,
             help="pins to drive or sample, e.g.: 'A0=1', 'A1=L', 'B5'")
+
+    async def handle_pin_action(self, pin_index, level):
+        match level:
+            case None:
+                return f"{pin}={await self.gpio_iface.get(pin_index):b}"
+            case "0":
+                await self.gpio_iface.output(pin_index, False)
+            case "1":
+                await self.gpio_iface.output(pin_index, True)
+            case "H":
+                await self.gpio_iface.pull(pin_index, PullState.High)
+                await self.gpio_iface.input(pin_index)
+            case "L":
+                await self.gpio_iface.pull(pin_index, PullState.Low)
+                await self.gpio_iface.input(pin_index)
+            case _:
+                assert False
+        return None
 
     async def run(self, args):
         for pin, level in args.pin_actions:
@@ -186,21 +209,24 @@ class ControlGPIOApplet(GlasgowAppletV2):
             except ValueError:
                 raise GlasgowAppletError(f"pin {pin} is not included in the '--pins' argument")
 
-            match level:
-                case None:
-                    print(f"{pin}={await self.gpio_iface.get(pin_index):b}")
-                case "0":
-                    await self.gpio_iface.output(pin_index, False)
-                case "1":
-                    await self.gpio_iface.output(pin_index, True)
-                case "H":
-                    await self.gpio_iface.pull(pin_index, PullState.High)
-                    await self.gpio_iface.input(pin_index)
-                case "L":
-                    await self.gpio_iface.pull(pin_index, PullState.Low)
-                    await self.gpio_iface.input(pin_index)
-                case _:
-                    assert False
+            if output := self.handle_pin_action(pin_index, level):
+                print(output)
+
+        if args.socket:
+            ep = await ServerEndpoint('gpio', self.logger, args.socket)
+            while True:
+                try:
+                    line = await ep.recv_until(b"\n")
+                    if line := line.decode().strip():
+                        pin, level = self.pin_action(line)
+                        if output := await self.handle_pin_action(args.pins.index(pin), level):
+                            await ep.send(output.encode() + b"\n")
+                except argparse.ArgumentTypeError as e:
+                    self.logger.error(e.args[0])
+                except ValueError:
+                    self.logger.error(f"pin {pin} is not included in the '--pins' argument")
+                except EOFError:
+                    continue
 
     @classmethod
     def tests(cls):
