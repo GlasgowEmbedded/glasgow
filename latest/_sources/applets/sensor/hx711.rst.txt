@@ -1,0 +1,20 @@
+``sensor-hx711``
+================
+
+CLI reference
+-------------
+
+.. _applet.sensor.hx711:
+
+.. autoprogram:: glasgow.applet.sensor.hx711:SensorHX711Applet._get_argparser_for_sphinx("sensor-hx711")
+    :prog: glasgow run sensor-hx711
+
+
+API reference
+-------------
+
+.. module:: glasgow.applet.sensor.hx711
+
+.. autoexception:: HX711Error
+
+.. autoclass:: SensorHX711Interface
