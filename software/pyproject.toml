@@ -94,6 +94,7 @@ calibrate-clock = "glasgow.applet.measure.calibrate_clock:CalibrateClockApplet"
 generate-prn-noise = "glasgow.applet.measure.prn_noise:GeneratePRNNoiseApplet"
 
 analyzer = "glasgow.applet.interface.analyzer:AnalyzerApplet"
+better-la = "glasgow.applet.interface.better_la:BetterLAApplet"
 uart = "glasgow.applet.interface.uart:UARTApplet"
 uart-analyzer = "glasgow.applet.interface.uart_analyzer:UARTAnalyzerApplet"
 spi-analyzer = "glasgow.applet.interface.spi_analyzer:SPIAnalyzerApplet"
