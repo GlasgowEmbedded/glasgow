@@ -1,6 +1,7 @@
 from amaranth import *
 from amaranth.lib import data, wiring, stream, io
 from amaranth.lib.wiring import In, Out
+from amaranth.vendor import SiliconBluePlatform, LatticePlatform
 
 from .stream import SkidBuffer
 
@@ -82,12 +83,18 @@ class StreamIOBuffer(wiring.Component):
     def ratio(self):
         return self._ratio
 
-    @property
-    def latency(self):
-        match self._ratio:
-            case 1: latency = 1
-            case 2: latency = 2
-            case _: assert False
+    def _latency(self, platform):
+        match self._ratio, platform:
+            case 1, _:
+                latency = 1
+            case 2, None:
+                latency = 2 # simulation; like SiliconBlue
+            case 2, SiliconBluePlatform():
+                latency = 2 # t1=1, t2=1
+            case 2, LatticePlatform():
+                latency = 4 # t1=3, t2=1
+            case _:
+                raise NotImplementedError("latency not known for this kind of buffer")
         return latency + -(self._offset // -self._ratio) # ceiling division
 
     def elaborate(self, platform):
@@ -116,7 +123,7 @@ class StreamIOBuffer(wiring.Component):
                             f"Unsupported ratio {self._ratio} and offset {self._offset}")
 
         meta = self.i.p.meta
-        for n in range(self.latency):
+        for n in range(self._latency(platform)):
             reg = Signal.like(self.o.p.meta, name=f"meta_{n}")
             m.d.sync += reg.eq(meta)
             meta = reg
@@ -182,7 +189,7 @@ class IOStreamer(wiring.Component):
             StreamIOBuffer(self._ports, ratio=self._ratio, offset=self._offset,
                            meta_layout=meta_layout)
         m.submodules.skid_buffer = skid_buffer = \
-            SkidBuffer(self.o.payload.shape(), depth=io_buffer.latency)
+            SkidBuffer(self.o.payload.shape(), depth=io_buffer._latency(platform))
 
         latch = Signal(data.StructLayout({
             name: data.StructLayout({
