@@ -227,13 +227,13 @@ class PRNNoiseInterface:
         """
         seed = seed & 0xFFFFFFFF
         self._log("start seed=%#010x", seed)
-        await self._pipe.send(struct.pack("<BI", _Command.Start, seed))
+        await self._pipe.send(struct.pack("<BI", _Command.Start.value, seed))
         await self._pipe.flush()
 
     async def stop(self):
         """Stop noise output (hold pin low)."""
         self._log("stop")
-        await self._pipe.send(bytes([_Command.Stop]))
+        await self._pipe.send(bytes([_Command.Stop.value]))
         await self._pipe.flush()
 
 
