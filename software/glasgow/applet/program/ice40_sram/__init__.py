@@ -45,7 +45,7 @@ class ICE40SRAMInterface:
         """SCK clock divisor."""
         return self._spi_iface.clock
 
-    async def load(self, bitstream: Buffer) -> bool:
+    async def load(self, bitstream: Buffer):
         """Load :py:`bitstream` into configuration SRAM.
 
         Raises
