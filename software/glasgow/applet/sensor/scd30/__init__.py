@@ -3,13 +3,13 @@
 
 from dataclasses import dataclass
 import argparse
-import logging
 import asyncio
 import struct
 import enum
 
 from amaranth.lib.crc.catalog import CRC8_NRSC_5
 
+from glasgow.support import logging
 from glasgow.support.logging import dump_hex
 from glasgow.support.data_logger import DataLogger
 from glasgow.applet.interface.i2c_controller import I2CControllerInterface

@@ -20,11 +20,11 @@
 # See also the note on the i8042 controller in the ps2-host applet.
 
 from collections import namedtuple
-import logging
 import asyncio
 
-from ... import *
-from ...interface.ps2_host import PS2HostApplet
+from glasgow.support import logging
+from glasgow.applet.interface.ps2_host import PS2HostApplet
+from glasgow.applet import *
 
 
 CMD_RESET               = 0xff

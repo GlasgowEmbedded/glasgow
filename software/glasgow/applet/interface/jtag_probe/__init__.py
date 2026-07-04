@@ -20,12 +20,12 @@
 # By convention, aux[0:1] are {TRST#.Z, TRST#.O} if the probe adapter provides TRST#.
 
 import struct
-import logging
 import argparse
 from amaranth import *
 from amaranth.lib import io, wiring, stream, enum
 from amaranth.lib.wiring import In, Out, flipped, connect
 
+from glasgow.support import logging
 from glasgow.support.bits import bits
 from glasgow.support.logging import dump_bin
 from glasgow.database.jedec import jedec_mfg_name_from_bank_num

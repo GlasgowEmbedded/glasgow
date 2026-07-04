@@ -16,16 +16,16 @@
 # No partial reprogram functionality is provided because it requires knowing the erase block map.
 # In the future, a database may be used to provide these.
 
-import logging
 import argparse
 import asyncio
 import enum
 from amaranth import *
 from amaranth.lib import io
 
-from ....support.logging import *
-from ....gateware.uart import *
-from ... import *
+from glasgow.support import logging
+from glasgow.support.logging import dump_hex
+from glasgow.gateware.uart import *
+from glasgow.applet import *
 
 
 BAUD_RATES = {

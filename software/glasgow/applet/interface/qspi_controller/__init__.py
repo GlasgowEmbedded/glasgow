@@ -1,12 +1,12 @@
 from typing import Literal
 import contextlib
-import logging
 import struct
 
 from amaranth import *
 from amaranth.lib import enum, wiring, stream
 from amaranth.lib.wiring import In, Out
 
+from glasgow.support import logging
 from glasgow.support.logging import dump_hex
 from glasgow.gateware import qspi
 from glasgow.arch.qspi import Instruction

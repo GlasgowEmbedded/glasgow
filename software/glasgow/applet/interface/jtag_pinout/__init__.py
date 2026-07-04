@@ -1,7 +1,6 @@
 # Ref: IEEE Std 1149.1-2001
 # Accession: G00018
 
-import logging
 import random
 import struct
 from functools import reduce
@@ -10,6 +9,7 @@ from amaranth import *
 from amaranth.lib import io, wiring, stream, cdc, enum
 from amaranth.lib.wiring import In, Out
 
+from glasgow.support import logging
 from glasgow.applet import GlasgowAppletV2
 
 

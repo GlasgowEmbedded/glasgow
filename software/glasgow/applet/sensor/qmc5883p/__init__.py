@@ -1,11 +1,11 @@
 # Ref: QMC5883P Datasheet - Triple Axis Magnetometer
 # Accession: G00XXX
 
-import logging
 import asyncio
 import struct
 import enum
 
+from glasgow.support import logging
 from glasgow.support.bitstruct import bitstruct
 from glasgow.support.data_logger import DataLogger
 from glasgow.applet.interface.i2c_controller import I2CControllerInterface

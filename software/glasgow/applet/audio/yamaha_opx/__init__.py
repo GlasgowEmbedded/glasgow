@@ -136,7 +136,6 @@
 
 from abc import ABCMeta, abstractmethod, abstractproperty
 import os.path
-import logging
 import argparse
 import struct
 import asyncio
@@ -150,9 +149,10 @@ from amaranth.lib import io
 from amaranth.lib.cdc import FFSynchronizer
 from urllib.parse import urlparse
 
-from ....gateware.clockgen import *
-from ....protocol.vgm import *
-from ... import *
+from glasgow.support import logging
+from glasgow.gateware.clockgen import *
+from glasgow.protocol.vgm import *
+from glasgow.applet import *
 
 
 class YamahaCPUBus(Elaboratable):

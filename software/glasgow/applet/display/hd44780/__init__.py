@@ -9,12 +9,13 @@
 # We make use of it by waiting on BF falling edge when polling the IC.
 
 import math
-import logging
 import asyncio
+
 from amaranth import *
 from amaranth.lib import io, cdc
 
-from ... import *
+from glasgow.support import logging
+from glasgow.applet import *
 
 
 # FPGA commands

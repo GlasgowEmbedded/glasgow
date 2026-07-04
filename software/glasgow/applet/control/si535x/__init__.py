@@ -8,9 +8,9 @@
 from typing import TextIO
 import re
 import csv
-import logging
 import argparse
 
+from glasgow.support import logging
 from glasgow.applet.interface.i2c_controller import I2CNotAcknowledged, I2CControllerInterface
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 

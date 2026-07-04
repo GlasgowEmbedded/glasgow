@@ -1,4 +1,3 @@
-import logging
 import asyncio
 import struct
 import array
@@ -10,6 +9,7 @@ from amaranth import *
 from amaranth.lib import wiring, stream
 from amaranth.lib.wiring import In, Out
 
+from glasgow.support import logging
 from glasgow.gateware.lfsr import LinearFeedbackShiftRegister
 from glasgow.applet import GlasgowAppletV2
 

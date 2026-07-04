@@ -2,8 +2,7 @@
 # Document Number: IHI0031C
 # Accession: G00027
 
-import logging
-
+from glasgow.support import logging
 from glasgow.support.aobject import aobject
 from glasgow.arch.arm.jtag.coresight import *
 from glasgow.arch.arm.dap.dp import *

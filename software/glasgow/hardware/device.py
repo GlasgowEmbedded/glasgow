@@ -2,19 +2,19 @@ import re
 import sys
 import time
 import struct
-import logging
 import asyncio
 import importlib.resources
 
 from fx2 import REQ_RAM, REQ_PAGE_SIZE, REQ_EEPROM_DB, REG_CPUCS
 from fx2.format import input_data
 
-from ..support.logging import dump_hex
+from glasgow.support import logging
+from glasgow.support.logging import dump_hex
 if sys.platform == "emscripten":
-    from ..support.usb import webusb as usb
+    from glasgow.support.usb import webusb as usb
 else:
-    from ..support.usb import libusb1 as usb
-from . import quirks
+    from glasgow.support.usb import libusb1 as usb
+from glasgow.hardware import quirks
 
 
 __all__ = ["GlasgowDevice", "FX2BootloaderDevice"]

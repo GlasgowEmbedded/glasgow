@@ -1,12 +1,12 @@
 # Ref: http://www.ti.com/lit/ds/symlink/ina260.pdf
 # Accession: G00043
 
-import logging
 import asyncio
 
-from ....support.data_logger import DataLogger
-from ... import *
-from ...interface.i2c_initiator_deprecated import I2CInitiatorApplet
+from glasgow.support import logging
+from glasgow.support.data_logger import DataLogger
+from glasgow.applet.interface.i2c_initiator_deprecated import I2CInitiatorApplet
+from glasgow.applet import *
 
 
 REG_CONFIG      = 0x00 # 16-bit rw

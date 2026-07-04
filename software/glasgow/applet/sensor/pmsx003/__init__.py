@@ -3,14 +3,14 @@
 # Ref: Plantower PMS7003 series data manual (Chinese)
 # Accession: G00054
 
-import logging
 import struct
 from collections import namedtuple
 from amaranth import *
 
-from ... import *
-from ....support.data_logger import DataLogger
-from ....gateware.uart import *
+from glasgow.support import logging
+from glasgow.support.data_logger import DataLogger
+from glasgow.gateware.uart import *
+from glasgow.applet import *
 
 
 class PMSx003Error(GlasgowAppletError):

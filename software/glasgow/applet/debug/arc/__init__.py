@@ -16,8 +16,7 @@
 #   access or place the JTAG module in the idle state. The read/write access defined by the
 #   address, data and command registers only occurs once on entry to Run-Test/Idle.
 
-import logging
-
+from glasgow.support import logging
 from glasgow.arch.jtag import DR_IDCODE
 from glasgow.arch.arc import *
 from glasgow.database.arc import devices

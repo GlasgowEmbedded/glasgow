@@ -3,9 +3,9 @@
 # Accession: G00007
 
 import struct
-import logging
 import asyncio
 
+from glasgow.support import logging
 from glasgow.support.aobject import aobject
 from glasgow.support.endpoint import ServerEndpoint
 from glasgow.support.bits import bits

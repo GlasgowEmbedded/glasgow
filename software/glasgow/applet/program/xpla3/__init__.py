@@ -1,10 +1,10 @@
 # Ref: https://prjunnamed.github.io/prjcombine/xpla3/index.html
 
-import logging
 import argparse
 import re
 import math
 
+from glasgow.support import logging
 from glasgow.arch.jtag import *
 from glasgow.arch.xilinx.xpla3 import *
 from glasgow.support.bits import bits, bitarray

@@ -296,15 +296,16 @@
 # however many are necessary for the PLL in the controller to lock, and some more to pad the space
 # on the track where its end meets its beginning. Such a floppy would have a much larger density.
 
-import logging
 import argparse
 import struct
 import math
+
 from amaranth import *
 from amaranth.lib import cdc, io
 from amaranth.lib.crc.catalog import CRC16_CCITT_FALSE
 
-from ... import *
+from glasgow.support import logging
+from glasgow.applet import *
 from .mfm import *
 
 

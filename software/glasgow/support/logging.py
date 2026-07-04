@@ -1,8 +1,34 @@
+import typing
+import logging
+from logging import ERROR, WARNING, INFO, DEBUG
+
 from .lazy import *
 from .bits import bits
 
 
-__all__ = ["dump_hex", "dump_bin", "dump_seq", "dump_mapseq"]
+__all__ = [
+    "ERROR", "WARNING", "INFO", "DEBUG", "TRACE", "Logger", "getLogger",
+    "dump_hex", "dump_bin", "dump_seq", "dump_mapseq",
+]
+
+
+TRACE = 5
+logging.addLevelName(5, "TRACE")
+
+
+class Logger(logging.Logger):
+    def trace(self, msg, *args, **kwargs):
+        if self.isEnabledFor(TRACE):
+            self.log(TRACE, msg, *args, **kwargs)
+
+
+_glasgow_logger = logging.getLogger("glasgow")
+_glasgow_logger.manager = logging.Manager(logging.root)
+_glasgow_logger.manager.setLoggerClass(Logger)
+
+
+def getLogger(name: str) -> Logger:
+    return typing.cast(Logger, _glasgow_logger.manager.getLogger(name))
 
 
 def dump_hex(data):

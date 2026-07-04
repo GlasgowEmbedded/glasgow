@@ -1,8 +1,11 @@
 import asyncio
-import logging
 
+from glasgow.support import logging
 from glasgow.applet.memory._25q import Memory25QApplet
 from glasgow.applet.control.gpio import GPIOInterface
+
+
+__all__ = ["ProgramICE40FlashApplet"]
 
 
 class ProgramICE40FlashApplet(Memory25QApplet):

@@ -76,16 +76,17 @@
 # is page-oriented, the offset into the block must be the same for both.
 
 import argparse
-import logging
 import struct
+
 from amaranth import *
 from amaranth.lib import io
 from amaranth.lib.cdc import FFSynchronizer
 
-from ....support.logging import *
-from ....database.jedec import *
-from ....protocol.onfi import *
-from ... import *
+from glasgow.support import logging
+from glasgow.support.logging import dump_hex
+from glasgow.database.jedec import *
+from glasgow.protocol.onfi import *
+from glasgow.applet import *
 
 
 CMD_SELECT  = 0x01

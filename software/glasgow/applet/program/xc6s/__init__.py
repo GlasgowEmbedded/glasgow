@@ -7,9 +7,9 @@
 # failure to program or even a corrupted bitstream (if a bitstream is loaded from memory on top
 # of the one loaded from JTAG).
 
-import logging
 import argparse
 
+from glasgow.support import logging
 from glasgow.arch.jtag import DR_IDCODE
 from glasgow.arch.xilinx.xc6s import *
 from glasgow.database.xilinx.xc6s import *

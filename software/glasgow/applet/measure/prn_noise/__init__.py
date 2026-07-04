@@ -29,7 +29,6 @@ Host control (fire-and-forget via out-pipe):
 """
 
 import asyncio
-import logging
 import struct
 
 from amaranth import *
@@ -37,6 +36,7 @@ from amaranth.lib import enum, wiring, io, stream
 from amaranth.lib.cdc import FFSynchronizer
 from amaranth.lib.wiring import In
 
+from glasgow.support import logging
 from glasgow.applet import GlasgowAppletV2
 from glasgow.gateware.pll import PLL
 

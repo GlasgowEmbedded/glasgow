@@ -1,13 +1,13 @@
 # Ref: HX711 24-Bit Analog-to-Digital Converter (ADC) for Weigh Scales
 # Accession: G00049
 
-import logging
 from typing import Literal
 
 from amaranth import *
 from amaranth.lib import enum, wiring, io, cdc, stream
 from amaranth.lib.wiring import In, Out
 
+from glasgow.support import logging
 from glasgow.abstract import AbstractAssembly, ClockDivisor, GlasgowPin
 from glasgow.applet import GlasgowAppletV2, GlasgowAppletError
 from glasgow.applet.control.clock import ClockDriveInterface

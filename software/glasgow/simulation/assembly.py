@@ -1,12 +1,12 @@
 from typing import Any
 from collections.abc import Buffer, Generator
 from contextlib import contextmanager
-import logging
 
 from amaranth import *
 from amaranth.lib import io
 from amaranth.sim import Simulator
 
+from glasgow.support import logging
 from glasgow.abstract import (AbstractAssembly, AbstractInOutPipe, AbstractInPipe, AbstractOutPipe,
                               AbstractRORegister, AbstractRWRegister,
                               GlasgowPin, GlasgowPort, GlasgowVio, PullState)

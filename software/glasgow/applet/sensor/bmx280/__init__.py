@@ -5,9 +5,9 @@
 
 from typing import Literal
 from abc import ABCMeta, abstractmethod
-import logging
 import asyncio
 
+from glasgow.support import logging
 from glasgow.support.data_logger import DataLogger
 from glasgow.applet.interface.i2c_controller import I2CControllerInterface
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2

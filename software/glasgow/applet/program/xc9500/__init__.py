@@ -1,10 +1,10 @@
 # Ref: https://prjunnamed.github.io/prjcombine/xc9500/index.html
 
 import struct
-import logging
 import argparse
 import re
 
+from glasgow.support import logging
 from glasgow.arch.jtag import *
 from glasgow.arch.xilinx.xc9500 import *
 from glasgow.support.bits import bits, bitarray

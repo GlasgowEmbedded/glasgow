@@ -6,15 +6,16 @@ import enum
 import math
 import json
 import random
-import logging
 import argparse
 import statistics
+
 from amaranth import *
 from amaranth.lib import cdc, io
 from amaranth.lib.fifo import SyncFIFOBuffered
 
-from ....support.logging import *
-from ... import *
+from glasgow.support import logging
+from glasgow.support.logging import dump_mapseq
+from glasgow.applet import *
 
 
 class MemoryPROMBus(Elaboratable):

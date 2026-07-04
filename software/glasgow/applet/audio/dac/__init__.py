@@ -1,6 +1,5 @@
 from collections.abc import Buffer
 from typing import Literal
-import logging
 import asyncio
 import argparse
 
@@ -8,6 +7,7 @@ from amaranth import *
 from amaranth.lib import wiring, stream, io
 from amaranth.lib.wiring import In, Out
 
+from glasgow.support import logging
 from glasgow.support.endpoint import ServerEndpoint
 from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
 from glasgow.applet import GlasgowAppletV2

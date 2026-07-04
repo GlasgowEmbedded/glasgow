@@ -3,12 +3,14 @@ import re
 import time
 import sys
 import csv
+from typing import TYPE_CHECKING
 try:
     import yarl
     import aiohttp
 except ImportError:
-    yarl = None
-    aiohttp = None
+    if not TYPE_CHECKING:
+        yarl = None
+        aiohttp = None
 
 
 __all__ = ["DataLogger", "STDOUTDataLogger"]

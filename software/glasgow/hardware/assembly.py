@@ -4,14 +4,13 @@ from collections import defaultdict
 from contextlib import contextmanager
 import os
 import asyncio
-import logging
 
 from amaranth import *
 from amaranth.hdl import ShapeCastable
 from amaranth.lib import wiring, io
 from amaranth.build import ResourceError
 
-from ..support import usb
+from ..support import logging
 from ..support.logging import dump_hex
 from ..support.task_queue import TaskQueue
 from ..support.chunked_fifo import ChunkedFIFO

@@ -3,8 +3,9 @@ import enum
 from abc import ABCMeta, abstractmethod
 from amaranth import *
 
-from ....gateware.i2c import I2CTarget
-from ... import *
+from glasgow.support import logging
+from glasgow.gateware.i2c import I2CTarget
+from glasgow.applet import *
 
 
 class Event(enum.IntEnum):

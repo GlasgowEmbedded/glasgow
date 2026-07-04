@@ -7,12 +7,12 @@ from dataclasses import dataclass
 import re
 import enum
 import math
-import logging
 
 from amaranth import *
 from amaranth.lib import io
 
-from .gateware.ports import PortGroup
+from glasgow.gateware.ports import PortGroup
+from glasgow.support import logging
 
 
 __all__ = [

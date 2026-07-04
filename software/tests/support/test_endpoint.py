@@ -1,8 +1,9 @@
 import asyncio
-import logging
 import unittest
 import tempfile
+import logging as pylogging
 
+from glasgow.support import logging
 from glasgow.support.endpoint import endpoint, ServerEndpoint
 
 
@@ -131,5 +132,5 @@ class ServerEndpointTestCase(unittest.TestCase):
             conn_wr.close()
 
     def test_server_banner(self):
-        logging.basicConfig(level=logging.TRACE)
+        pylogging.basicConfig(level=logging.TRACE)
         asyncio.run(self.do_test_server_banner())

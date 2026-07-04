@@ -222,11 +222,11 @@
 # set.
 
 import struct
-import logging
 import argparse
 import re
 from enum import Enum, auto
 
+from glasgow.support import logging
 from glasgow.arch.jtag import *
 from glasgow.arch.xilinx.xc9500xl import *
 from glasgow.support.bits import bits, bitarray

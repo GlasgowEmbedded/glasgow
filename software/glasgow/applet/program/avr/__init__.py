@@ -31,11 +31,12 @@ the programmer and the target, including ~RESET, but excluding power, ground, an
 """
 
 import sys
-import logging
 import argparse
+
 from abc import ABCMeta, abstractmethod
 from fx2.format import autodetect, input_data, output_data
 
+from glasgow.support import logging
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 from glasgow.database.microchip.avr import *
 

@@ -1,10 +1,11 @@
-import logging
 import struct
+
 from amaranth import *
 from amaranth.lib import io, wiring, stream
 from amaranth.lib.wiring import Out
 from amaranth.lib.cdc import FFSynchronizer
 
+from glasgow.support import logging
 from glasgow.abstract import AbstractAssembly, GlasgowPin
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 

@@ -1,5 +1,4 @@
-import logging
-
+from glasgow.support import logging
 from glasgow.applet import GlasgowAppletV2
 from glasgow.support.endpoint import ServerEndpoint
 from glasgow.protocol.flashrom import SerprogBus, SerprogCommand

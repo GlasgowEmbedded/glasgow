@@ -3,9 +3,9 @@
 # Ref: http://www.jtagtest.com/pdf/svf_specification.pdf
 # Accession: G00023
 
-import logging
 import argparse
 
+from glasgow.support import logging
 from glasgow.support.bits import bits
 from glasgow.support.logging import dump_bin
 from glasgow.protocol.jtag_svf import SVFParser, SVFEventHandler

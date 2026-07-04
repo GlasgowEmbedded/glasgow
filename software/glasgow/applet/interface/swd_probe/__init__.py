@@ -10,13 +10,13 @@ from collections.abc import AsyncIterator
 from typing import Literal
 import sys
 import argparse
-import logging
 import struct
 
 from amaranth import *
 from amaranth.lib import enum, data, wiring, stream
 from amaranth.lib.wiring import In, Out
 
+from glasgow.support import logging
 from glasgow.support.bits import bits
 from glasgow.support.progress import Progress
 from glasgow.arch.arm.swj import *

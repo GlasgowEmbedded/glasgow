@@ -4,7 +4,6 @@
 from collections.abc import Buffer
 from dataclasses import dataclass
 import asyncio
-import logging
 import argparse
 import struct
 import enum
@@ -12,6 +11,7 @@ import os
 
 from fx2.format import input_data, output_data
 
+from glasgow.support import logging
 from glasgow.support.logging import dump_hex
 from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2

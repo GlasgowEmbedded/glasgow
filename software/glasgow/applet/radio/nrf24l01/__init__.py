@@ -2,9 +2,9 @@
 # Accession: G00044
 
 import asyncio
-import logging
 import argparse
 
+from glasgow.support import logging
 from glasgow.support.logging import dump_hex
 from glasgow.arch.nrf24l import *
 from glasgow.arch.nrf24l.rf import *

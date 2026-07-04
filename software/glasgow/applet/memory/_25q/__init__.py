@@ -1,10 +1,10 @@
 import dataclasses
 import argparse
-import logging
 import re
 
 from amaranth import *
 
+from glasgow.support import logging
 from glasgow.support.logging import dump_hex
 from glasgow.arch.qspi import nor
 from glasgow.database.jedec import jedec_mfg_name_from_bytes

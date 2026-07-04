@@ -1,8 +1,8 @@
 import csv
 import json
-import logging
 import asyncio
 
+from glasgow.support import logging
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 

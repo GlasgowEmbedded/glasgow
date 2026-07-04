@@ -1,9 +1,8 @@
-import logging
-
 from amaranth import *
 from amaranth.lib import io
 from amaranth.sim import Simulator
 
+from glasgow.support import logging
 from glasgow.simulation.assembly import SimulationAssembly
 from glasgow.gateware.ports import PortGroup
 from glasgow.gateware.stream import stream_get

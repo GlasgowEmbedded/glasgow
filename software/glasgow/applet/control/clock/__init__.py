@@ -1,9 +1,8 @@
-import logging
-
 from amaranth import *
 from amaranth.lib import wiring, io
 from amaranth.lib.wiring import In
 
+from glasgow.support import logging
 from glasgow.abstract import AbstractAssembly, GlasgowPin
 from glasgow.applet import GlasgowAppletV2
 

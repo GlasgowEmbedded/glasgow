@@ -4,12 +4,12 @@
 import re
 import sys
 import struct
-import logging
 import argparse
 
 from amaranth import *
 from amaranth.lib import enum
 
+from glasgow.support import logging
 from glasgow.support.logging import dump_hex
 from glasgow.support.progress import Progress
 from glasgow.database.jedec import *

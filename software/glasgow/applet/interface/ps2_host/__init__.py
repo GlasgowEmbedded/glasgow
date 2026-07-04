@@ -59,12 +59,12 @@
 # keyboard command being EC (Reset Wrap Mode). See the respective keyboard and mouse applets for
 # details on the command set.
 
-import logging
 from amaranth import *
 from amaranth.lib import data, io
 from amaranth.lib.cdc import FFSynchronizer
 
-from ... import *
+from glasgow.support import logging
+from glasgow.applet import *
 
 
 _frame_layout = data.StructLayout({

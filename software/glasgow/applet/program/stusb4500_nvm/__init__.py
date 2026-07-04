@@ -1,12 +1,12 @@
 # Reference: STSW-STUSB004 Documentation
 # Accession: G00084
 
-import logging
 import argparse
 import asyncio
 
-from ...interface.i2c_initiator_deprecated import I2CInitiatorApplet
-from ... import *
+from glasgow.support import logging
+from glasgow.applet.interface.i2c_initiator_deprecated import I2CInitiatorApplet
+from glasgow.applet import *
 
 
 class StUsb4500NvmInterface:

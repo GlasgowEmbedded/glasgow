@@ -1,8 +1,8 @@
-import logging
 from amaranth import *
 from amaranth.lib import io
 
-from ... import *
+from glasgow.support import logging
+from glasgow.applet import *
 
 
 class VideoHub75Output(Elaboratable):

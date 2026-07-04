@@ -1,11 +1,11 @@
 import argparse
 import asyncio
-import logging
 import re
 from collections import deque
 
-from .aobject import aobject
+from . import logging
 from .logging import dump_hex
+from .aobject import aobject
 from ..abstract import AbstractInOutPipe
 
 

@@ -1,13 +1,13 @@
 from collections.abc import Buffer
 from typing import Literal
 import contextlib
-import logging
 import struct
 
 from amaranth import *
 from amaranth.lib import enum, wiring, stream, io
 from amaranth.lib.wiring import In, Out
 
+from glasgow.support import logging
 from glasgow.support.logging import dump_hex
 from glasgow.gateware import spi
 from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor

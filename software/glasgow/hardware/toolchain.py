@@ -4,14 +4,14 @@ from abc import ABCMeta, abstractmethod
 import re
 import os
 import sys
-import logging
 import hashlib
 import shutil
 import subprocess
 import importlib.metadata
 import sysconfig
 
-from ..support.lazy import lazy
+from glasgow.support import logging
+from glasgow.support.lazy import lazy
 
 
 __all__ = ["ToolchainNotFound", "Toolchain", "find_toolchain"]

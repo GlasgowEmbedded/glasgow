@@ -1,12 +1,12 @@
 # Ref: MSP430™ Programming With the JTAG Interface
 # Accession: G00038
 
-import logging
 from amaranth import *
 from amaranth.lib import io, wiring, stream, data
 from amaranth.lib.wiring import In, Out, flipped, connect
 from amaranth.lib.cdc import FFSynchronizer
 
+from glasgow.support import logging
 from glasgow.gateware.jtag.probe import Controller, Mode
 from glasgow.applet import GlasgowAppletV2
 from ..jtag_probe import JTAGProbeDriver, BaseJTAGProbeInterface

@@ -1,7 +1,6 @@
 from typing import Never, BinaryIO
 import os
 import sys
-import logging
 import hashlib
 import pathlib
 import tempfile
@@ -11,7 +10,8 @@ from asyncio import subprocess
 import platformdirs
 from amaranth.build.run import BuildPlan
 
-from .toolchain import Toolchain
+from glasgow.support import logging
+from glasgow.hardware.toolchain import Toolchain
 
 
 __all__ = ["GlasgowBuildPlan"]

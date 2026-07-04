@@ -8,9 +8,9 @@
 from collections.abc import Buffer
 from typing import Literal
 import asyncio
-import logging
 import argparse
 
+from glasgow.support import logging
 from glasgow.applet.interface.i2c_controller import I2CNotAcknowledged, I2CControllerInterface
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 

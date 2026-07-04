@@ -2,7 +2,6 @@ import re
 import os
 import sys
 import ast
-import logging
 import contextlib
 import asyncio
 import signal
@@ -10,6 +9,7 @@ import argparse
 import textwrap
 import platform
 import unittest
+import logging as pylogging
 from datetime import datetime
 
 from amaranth import UnusedElaboratable
@@ -17,7 +17,7 @@ from fx2 import FX2Config, VID_CYPRESS, PID_FX2
 from fx2.format import input_data, diff_data
 
 from . import __version__
-from .support.logging import *
+from .support import logging
 from .support.asignal import *
 from .support.progress import TqdmProgressImpl
 from .support.plugin import PluginRequirementsUnmet, PluginLoadError
@@ -493,7 +493,7 @@ def _applet(assembly, args):
         raise SystemExit()
 
 
-class TerminalFormatter(logging.Formatter):
+class TerminalFormatter(pylogging.Formatter):
     DEFAULT_COLORS = {
         "TRACE"   : "\033[0m",
         "DEBUG"   : "\033[36m",
@@ -534,33 +534,36 @@ class SubjectFilter:
 
 
 def create_logger():
-    root_logger = logging.getLogger()
+    root_logger = pylogging.getLogger()
 
     term_formatter_args = {"style": "{",
         "fmt": "{levelname[0]:s}: {name:s}: {message:s}"}
-    term_handler = logging.StreamHandler()
+    term_handler = pylogging.StreamHandler()
     if sys.stderr.isatty() and sys.platform != "win32":
         term_handler.setFormatter(TerminalFormatter(**term_formatter_args))
     else:
-        term_handler.setFormatter(logging.Formatter(**term_formatter_args))
+        term_handler.setFormatter(pylogging.Formatter(**term_formatter_args))
     root_logger.addHandler(term_handler)
     return term_handler
 
 
 def configure_logger(args, term_handler):
-    root_logger = logging.getLogger()
+    root_logger = pylogging.getLogger()
 
     file_formatter_args = {"style": "{",
         "fmt": "[{asctime:s}] {levelname:s}: {name:s}: {message:s}"}
     file_handler = None
     if args.log_file:
-        file_handler = logging.StreamHandler(args.log_file)
-        file_handler.setFormatter(logging.Formatter(**file_formatter_args))
+        file_handler = pylogging.StreamHandler(args.log_file)
+        file_handler.setFormatter(pylogging.Formatter(**file_formatter_args))
         root_logger.addHandler(file_handler)
 
     level = logging.INFO + args.quiet * 10 - args.verbose * 10
     if level < 0 or args.no_shorten:
-        dump_hex.limit = dump_bin.limit = dump_seq.limit = dump_mapseq.limit = None
+        logging.dump_hex.limit = None
+        logging.dump_bin.limit = None
+        logging.dump_seq.limit = None
+        logging.dump_mapseq.limit = None
 
     if args.log_file or args.filter_log:
         term_handler.addFilter(SubjectFilter(level, args.filter_log))
@@ -1064,7 +1067,7 @@ async def main() -> int:
         return e.code
 
     finally:
-        root_logger = logging.getLogger()
+        root_logger = pylogging.getLogger()
         root_logger.removeHandler(term_handler)
         if file_handler is not None:
             root_logger.removeHandler(file_handler)

@@ -1,11 +1,11 @@
-import logging
 import asyncio
 from amaranth import *
 from amaranth.lib import io
 
-from ....support.endpoint import *
-from ....gateware.pll import *
-from ... import *
+from glasgow.support import logging
+from glasgow.support.endpoint import *
+from glasgow.gateware.pll import *
+from glasgow.applet import *
 
 
 class VideoWS2812Output(Elaboratable):

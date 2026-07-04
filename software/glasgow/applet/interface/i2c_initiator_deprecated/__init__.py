@@ -1,9 +1,11 @@
 import logging
 import math
+
 from amaranth import *
 
-from ....gateware.i2c import I2CInitiator
-from ... import *
+from glasgow.support import logging
+from glasgow.gateware.i2c import I2CInitiator
+from glasgow.applet import *
 
 
 CMD_START = 0x01

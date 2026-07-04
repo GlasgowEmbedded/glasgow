@@ -5,9 +5,9 @@ from typing import BinaryIO
 from abc import ABCMeta, abstractmethod
 import enum
 import struct
-import logging
 import argparse
 
+from glasgow.support import logging
 from glasgow.database.jedec import jedec_mfg_name_from_bytes
 from glasgow.support.logging import dump_hex
 from glasgow.protocol.sfdp import SFDPCollection, SFDPJEDECFlashParametersTable

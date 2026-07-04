@@ -1,10 +1,10 @@
-import logging
 import asyncio
 from amaranth import *
 from amaranth.lib import io
 from amaranth.build.res import ResourceError
 
-from ... import *
+from glasgow.support import logging
+from glasgow.applet import *
 
 
 class SelfTestSubtarget(Elaboratable):

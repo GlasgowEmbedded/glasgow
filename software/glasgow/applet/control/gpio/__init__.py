@@ -1,11 +1,11 @@
 import re
 import argparse
-import logging
 
 from amaranth import *
 from amaranth.lib import wiring, io, cdc
 from amaranth.lib.wiring import In, Out
 
+from glasgow.support import logging
 from glasgow.abstract import AbstractAssembly, PullState
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2, GlasgowPin
 

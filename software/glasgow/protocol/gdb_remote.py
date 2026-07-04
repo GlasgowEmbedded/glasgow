@@ -2,11 +2,11 @@ import re
 import os
 import ast
 import sys
-import logging
 import asyncio
 import typing
 from abc import ABCMeta, abstractmethod
 
+from glasgow.support import logging
 from glasgow.applet import GlasgowAppletError
 
 

@@ -1,5 +1,4 @@
-import logging
-
+from glasgow.support import logging
 from glasgow.applet.interface.uart import UARTInterface
 from glasgow.applet import GlasgowAppletV2TestCase, synthesis_test, applet_v2_simulation_test
 

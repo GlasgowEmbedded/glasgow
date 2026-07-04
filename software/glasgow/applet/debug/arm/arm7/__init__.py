@@ -53,7 +53,6 @@
 import sys
 import array
 import asyncio
-import logging
 import argparse
 import contextlib
 from dataclasses import dataclass
@@ -61,6 +60,7 @@ from amaranth import *
 from amaranth.lib import enum, wiring, stream, io
 from amaranth.lib.wiring import In, Out
 
+from .....support import logging
 from .....support.lazy import *
 from .....support.bits import *
 from .....support.logging import *

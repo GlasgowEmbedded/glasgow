@@ -2,9 +2,9 @@
 #      USB Controller datasheet
 # Accession: G00058
 
-import logging
 from amaranth import *
 
+from glasgow.support import logging
 from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
 from glasgow.applet.program.avr import ProgramAVRError, ProgramAVRApplet, ProgramAVRInterface
 from glasgow.applet.interface.spi_controller import SPIControllerInterface

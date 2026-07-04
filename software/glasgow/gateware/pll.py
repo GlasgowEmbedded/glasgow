@@ -1,5 +1,6 @@
-import logging
 from amaranth import *
+
+from glasgow.support import logging
 
 
 __all__ = ["PLL"]

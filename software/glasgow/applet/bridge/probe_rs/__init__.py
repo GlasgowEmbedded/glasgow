@@ -5,12 +5,11 @@
 # This applet incorporates by reference the protocol used by the `swd-probe` applet. Breaking
 # changes to the protocol of that applet are also breaking changes to the protocol of this applet.
 
-import logging
-
 from amaranth import *
 from amaranth.lib import enum, wiring, stream, io
 from amaranth.lib.wiring import In, Out
 
+from glasgow.support import logging
 from glasgow.gateware import cobs
 from glasgow.gateware.stream import StreamBuffer
 from glasgow.hardware.device import VID_QIHW, PID_GLASGOW

@@ -1,13 +1,13 @@
 # Ref: Sparkfun HCSR04 (https://cdn.sparkfun.com/datasheets/Sensors/Proximity/HCSR04.pdf)
 # Accession: G00107
 
-import logging
 import asyncio
 
 from amaranth import *
 from amaranth.lib import wiring, io, cdc
 from amaranth.lib.wiring import In, Out
 
+from glasgow.support import logging
 from glasgow.abstract import AbstractAssembly, GlasgowPin
 from glasgow.applet import GlasgowAppletV2, GlasgowAppletError
 from glasgow.support.data_logger import DataLogger

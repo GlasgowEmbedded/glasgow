@@ -4,13 +4,13 @@
 
 from collections.abc import Buffer
 import contextlib
-import logging
 import struct
 
 from amaranth import *
 from amaranth.lib import enum, wiring, stream
 from amaranth.lib.wiring import In, Out
 
+from glasgow.support import logging
 from glasgow.support.logging import dump_hex
 from glasgow.abstract import AbstractAssembly, GlasgowPin, PullState, ClockDivisor
 from glasgow.gateware.i2c import I2CInitiator

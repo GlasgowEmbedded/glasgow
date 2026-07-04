@@ -1,8 +1,8 @@
-import logging
 from amaranth import *
 from amaranth.lib import wiring, stream, io, cdc
 from amaranth.lib.wiring import In, Out
 
+from glasgow.support import logging
 from glasgow.support.endpoint import ServerEndpoint
 from glasgow.applet import GlasgowAppletV2
 

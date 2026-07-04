@@ -1,4 +1,4 @@
-import logging
+from glasgow.support import logging
 
 
 __all__ = ["SoftwareMFMDecoder"]

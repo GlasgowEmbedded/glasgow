@@ -1,10 +1,11 @@
 import sys
-import logging
 import argparse
+
 from amaranth import *
 from amaranth.lib import data, wiring, stream, io, cdc
 from amaranth.lib.wiring import Out
 
+from glasgow.support import logging
 from glasgow.support.logging import dump_hex
 from glasgow.gateware.stream import AsyncQueue
 from glasgow.gateware import cobs

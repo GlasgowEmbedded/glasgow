@@ -5,8 +5,8 @@
 from collections.abc import Buffer
 import argparse
 import asyncio
-import logging
 
+from glasgow.support import logging
 from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
 from glasgow.applet.interface.spi_controller import SPIControllerInterface
 from glasgow.applet.control.gpio import GPIOInterface

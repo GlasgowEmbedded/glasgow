@@ -1,12 +1,12 @@
 import re
 import sys
-import logging
 import argparse
 
 from amaranth import *
 from amaranth.lib import enum, data, wiring, stream
 from amaranth.lib.wiring import In, Out
 
+from glasgow.support import logging
 from glasgow.gateware.ports import PortGroup
 from glasgow.gateware.uart import UART
 from glasgow.gateware.stream import Queue

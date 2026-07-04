@@ -1,12 +1,13 @@
-import logging
 import argparse
+
 from vcd import VCDWriter
 from amaranth import *
 from amaranth.lib import io
 from amaranth.lib.cdc import FFSynchronizer
 
-from ....gateware.analyzer import *
-from ... import *
+from glasgow.support import logging
+from glasgow.gateware.analyzer import *
+from glasgow.applet import *
 
 
 class AnalyzerSubtarget(Elaboratable):

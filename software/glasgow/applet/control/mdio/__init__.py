@@ -9,12 +9,12 @@
 # We use "MDIO" to match practical use.
 
 import struct
-import logging
 
 from amaranth import *
 from amaranth.lib import data, wiring, stream
 from amaranth.lib.wiring import In, Out
 
+from glasgow.support import logging
 from glasgow.database.ieee import company_names
 from glasgow.arch.ieee802_3 import *
 from glasgow.gateware import mdio
