@@ -51,7 +51,7 @@ class ProgramAVRSPIInterface(ProgramAVRInterface):
         # SCK has been set to “0”. [We have the second case.]
         async with self._spi_iface.select():
             # Set SCK low (transmit at least one byte in SPI Mode 0).
-            await self._spi_iface.write(0x00)
+            await self._spi_iface.write([0])
             # Momentarily deassert RESET#.
             await self._spi_iface.synchronize()
             await self._reset_iface.output(0, False)
