@@ -565,7 +565,7 @@ class HardwareAssembly(AbstractAssembly):
         assert self._artifact is None, "cannot add a register to a sealed assembly"
         register = HardwareRORegister(self._current_logger, self,
             address=self._1ST_USER_ADDR + len(self._registers), shape=signal.shape(),
-            name=signal.name)
+            name=Value.cast(signal).name)
         self._registers.append((register, signal, self._domain))
         return register
 
@@ -573,7 +573,7 @@ class HardwareAssembly(AbstractAssembly):
         assert self._artifact is None, "cannot add a register to a sealed assembly"
         register = HardwareRWRegister(self._current_logger, self,
             address=self._1ST_USER_ADDR + len(self._registers), shape=signal.shape(),
-            name=signal.name)
+            name=Value.cast(signal).name)
         self._registers.append((register, signal, self._domain))
         return register
 
