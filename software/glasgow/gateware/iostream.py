@@ -9,6 +9,33 @@ from .stream import SkidBuffer
 __all__ = ["IOStreamer"]
 
 
+def _i_signature(ports, *, ratio=1, meta_layout=0, always_valid=False, always_ready=False):
+    return stream.Signature(data.StructLayout({
+        "port": data.StructLayout({
+            name: data.StructLayout({
+                "o":  data.ArrayLayout(len(port), ratio),
+                "oe": 1
+            })
+            for name, port in ports
+            if port.direction in (io.Direction.Output, io.Direction.Bidir)
+        }),
+        "meta": meta_layout
+    }), always_valid=always_valid, always_ready=always_ready)
+
+
+def _o_signature(ports, *, ratio=1, meta_layout=0, always_valid=False, always_ready=False):
+    return stream.Signature(data.StructLayout({
+        "port": data.StructLayout({
+            name: data.StructLayout({
+                "i": data.ArrayLayout(len(port), ratio)
+            })
+            for name, port in ports
+            if port.direction in (io.Direction.Input, io.Direction.Bidir)
+        }),
+        "meta": meta_layout
+    }), always_valid=always_valid, always_ready=always_ready)
+
+
 class SimulatableDDRBuffer(io.DDRBuffer):
     def elaborate(self, platform):
         if not isinstance(self._port, io.SimulationPort):
@@ -56,27 +83,10 @@ class StreamIOBuffer(wiring.Component):
         self._offset = offset
 
         super().__init__({
-            "i": In(stream.Signature(data.StructLayout({
-                "port": data.StructLayout({
-                    name: data.StructLayout({
-                        "o":  data.ArrayLayout(len(port), ratio),
-                        "oe": 1
-                    })
-                    for name, port in ports
-                    if port.direction in (io.Direction.Output, io.Direction.Bidir)
-                }),
-                "meta": meta_layout,
-            }), always_valid=True, always_ready=True)),
-            "o": Out(stream.Signature(data.StructLayout({
-                "port": data.StructLayout({
-                    name: data.StructLayout({
-                        "i": data.ArrayLayout(len(port), ratio),
-                    })
-                    for name, port in ports
-                    if port.direction in (io.Direction.Input, io.Direction.Bidir)
-                }),
-                "meta": meta_layout,
-            }), always_valid=True, always_ready=True))
+            "i": In(_i_signature(ports, ratio=ratio, meta_layout=meta_layout,
+                always_valid=True, always_ready=True)),
+            "o": Out(_o_signature(ports, ratio=ratio, meta_layout=meta_layout,
+                always_valid=True, always_ready=True)),
         })
 
     @property
@@ -135,30 +145,11 @@ class StreamIOBuffer(wiring.Component):
 class IOStreamer(wiring.Component):
     @staticmethod
     def i_signature(ports, *, ratio=1, meta_layout=0):
-        return stream.Signature(data.StructLayout({
-            "port": data.StructLayout({
-                name: data.StructLayout({
-                    "o":  data.ArrayLayout(len(port), ratio),
-                    "oe": 1
-                })
-                for name, port in ports
-                if port.direction in (io.Direction.Output, io.Direction.Bidir)
-            }),
-            "meta": meta_layout
-        }))
+        return _i_signature(ports, ratio=ratio, meta_layout=meta_layout)
 
     @staticmethod
     def o_signature(ports, *, ratio=1, meta_layout=0):
-        return stream.Signature(data.StructLayout({
-            "port": data.StructLayout({
-                name: data.StructLayout({
-                    "i": data.ArrayLayout(len(port), ratio)
-                })
-                for name, port in ports
-                if port.direction in (io.Direction.Input, io.Direction.Bidir)
-            }),
-            "meta": meta_layout
-        }))
+        return _o_signature(ports, ratio=ratio, meta_layout=meta_layout)
 
     def __init__(self, ports, *, ratio=1, offset=0, init=None, meta_layout=0):
         assert ratio in (1, 2), "IOStreamer supports SDR and DDR I/O only"
