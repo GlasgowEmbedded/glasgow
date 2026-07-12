@@ -1,3 +1,4 @@
+
 from amaranth import *
 from amaranth.lib import data, wiring, stream, io
 from amaranth.lib.wiring import In, Out
@@ -6,7 +7,7 @@ from amaranth.vendor import SiliconBluePlatform, LatticePlatform
 from .stream import SkidBuffer
 
 
-__all__ = ["IOStreamer"]
+__all__ = ["IOStreamer", "HalfRateIOStreamer"]
 
 
 def _i_signature(ports, *, ratio=1, meta_layout=0, always_valid=False, always_ready=False):
@@ -214,5 +215,64 @@ class IOStreamer(wiring.Component):
         m.d.comb += skid_buffer.i.valid.eq(io_buffer.o.p.meta.valid)
 
         wiring.connect(m, wiring.flipped(self.o), skid_buffer.o)
+
+        return m
+
+
+class HalfRateIOStreamer(wiring.Component):
+    def __init__(self, ports, *, ratio, offset=0, init=None, meta_layout=0):
+        assert ratio in (2, 4), "HalfRateIOStreamer supports DDR and QDR I/O only"
+
+        self._ports  = ports
+        self._ratio  = ratio
+        self._offset = offset
+        self._init   = init
+        self._meta_layout = meta_layout
+
+        super().__init__({
+            "i":  In(IOStreamer.i_signature(ports, ratio=ratio, meta_layout=meta_layout)),
+            "o": Out(IOStreamer.o_signature(ports, ratio=ratio, meta_layout=meta_layout)),
+        })
+
+    @property
+    def ratio(self):
+        return self._ratio
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.inner = inner = IOStreamer(
+            ports=self._ports, ratio=self._ratio//2, offset=self._offset, init=self._init,
+            meta_layout=self._meta_layout,
+        )
+
+        fst_half = slice(0, 2)
+        snd_half = slice(2, 4)
+
+        i_phase = Signal()
+        for name, port in self._ports:
+            if port.direction in (io.Direction.Bidir, io.Direction.Output):
+                m.d.comb += inner.i.p.port[name].o.eq(
+                    Mux(i_phase, self.i.p.port[name].o[snd_half], self.i.p.port[name].o[fst_half]))
+                m.d.comb += inner.i.p.port[name].oe.eq(self.i.p.port[name].oe)
+        m.d.comb += inner.i.p.meta.eq(self.i.p.meta)
+
+        m.d.comb += inner.i.valid.eq(self.i.valid)
+        with m.If(inner.i.valid & inner.i.ready):
+            m.d.sync += i_phase.eq(~i_phase)
+            m.d.comb += self.i.ready.eq(i_phase)
+
+        o_phase = Signal()
+        for name, port in self._ports:
+            if port.direction in (io.Direction.Bidir, io.Direction.Input):
+                with m.If(inner.o.valid & ~o_phase):
+                    m.d.sync += self.o.p.port[name].i[fst_half].eq(inner.o.p.port[name].i)
+                m.d.comb += self.o.p.port[name].i[snd_half].eq(inner.o.p.port[name].i)
+        m.d.comb += self.o.p.meta.eq(inner.o.p.meta)
+
+        m.d.comb += inner.o.ready.eq(~o_phase | self.o.ready)
+        m.d.comb += self.o.valid.eq(inner.o.valid & o_phase)
+        with m.If(inner.o.valid & inner.o.ready):
+            m.d.sync += o_phase.eq(~o_phase)
 
         return m
