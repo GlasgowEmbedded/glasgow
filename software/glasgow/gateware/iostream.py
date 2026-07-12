@@ -105,15 +105,19 @@ class StreamIOBuffer(wiring.Component):
             case 2, LatticePlatform():
                 latency = 4 # t1=3, t2=1
             case _:
-                raise NotImplementedError("latency not known for this kind of buffer")
+                raise NotImplementedError("latency not known for this ratio and platform")
         return latency + -(self._offset // -self._ratio) # ceiling division
 
     def elaborate(self, platform):
         m = Module()
 
-        match self._ratio:
-            case 1: buffer_cls = io.FFBuffer
-            case 2: buffer_cls = SimulatableDDRBuffer
+        match self._ratio, platform:
+            case 1, _:
+                buffer_cls = io.FFBuffer
+            case 2, _:
+                buffer_cls = SimulatableDDRBuffer
+            case _:
+                raise NotImplementedError("buffer not implemented for this ratio and platform")
 
         for name, port in self._ports:
             m.submodules[name] = buffer = buffer_cls(port.direction, port)
@@ -121,17 +125,17 @@ class StreamIOBuffer(wiring.Component):
                 m.d.comb += buffer.o.eq(self.i.p.port[name].o)
                 m.d.comb += buffer.oe.eq(self.i.p.port[name].oe)
             if port.direction in (io.Direction.Input, io.Direction.Bidir):
-                match self._ratio, self._offset:
-                    case 1, _:
-                        m.d.comb += self.o.p.port[name].i.eq(buffer.i)
-                    case 2, offset if offset % self._ratio == 0:
-                        m.d.comb += self.o.p.port[name].i.eq(buffer.i)
-                    case 2, offset if offset % self._ratio == 1:
-                        m.d.sync += self.o.p.port[name].i[0].eq(buffer.i[1])
-                        m.d.comb += self.o.p.port[name].i[1].eq(buffer.i[0])
-                    case _, _:
-                        raise NotImplementedError(
-                            f"Unsupported ratio {self._ratio} and offset {self._offset}")
+                buffer_i = Signal(data.ArrayLayout(len(port), self._ratio))
+                m.d.comb += buffer_i.eq(buffer.i) # FFBuffer doesn't use ArrayLayout, normalize
+
+                i_window = Signal(data.ArrayLayout(len(port), self._ratio * 2))
+                for idx in range(self._ratio):
+                    m.d.sync += i_window[idx].eq(buffer_i[idx])
+                    m.d.comb += i_window[self._ratio + idx].eq(buffer_i[idx])
+
+                offset = self._ratio - (self._offset % self._ratio)
+                for idx in range(self._ratio):
+                    m.d.comb += self.o.p.port[name].i[idx].eq(i_window[offset + idx])
 
         meta = self.i.p.meta
         for n in range(self._latency(platform)):
