@@ -1,10 +1,10 @@
-
 from amaranth import *
 from amaranth.lib import data, wiring, stream, io
 from amaranth.lib.wiring import In, Out
 from amaranth.vendor import SiliconBluePlatform, LatticePlatform
 
-from .stream import SkidBuffer
+from glasgow.hardware.platform import ecp5
+from glasgow.gateware.stream import SkidBuffer
 
 
 __all__ = ["IOStreamer", "HalfRateIOStreamer"]
@@ -104,6 +104,8 @@ class StreamIOBuffer(wiring.Component):
                 latency = 2 # t1=1, t2=1
             case 2, LatticePlatform():
                 latency = 4 # t1=3, t2=1
+            case 4, LatticePlatform():
+                latency = 6 # t1=3, t2=3
             case _:
                 raise NotImplementedError("latency not known for this ratio and platform")
         return latency + -(self._offset // -self._ratio) # ceiling division
@@ -116,6 +118,8 @@ class StreamIOBuffer(wiring.Component):
                 buffer_cls = io.FFBuffer
             case 2, _:
                 buffer_cls = SimulatableDDRBuffer
+            case 4, LatticePlatform():
+                buffer_cls = ecp5.QDRBuffer
             case _:
                 raise NotImplementedError("buffer not implemented for this ratio and platform")
 
@@ -157,7 +161,7 @@ class IOStreamer(wiring.Component):
         return _o_signature(ports, ratio=ratio, meta_layout=meta_layout)
 
     def __init__(self, ports, *, ratio=1, offset=0, init=None, meta_layout=0):
-        assert ratio in (1, 2), "IOStreamer supports SDR and DDR I/O only"
+        assert ratio in (1, 2, 4), "IOStreamer supports SDR/DDR/QDR I/O only"
 
         self._ports  = ports
         self._ratio  = ratio
