@@ -5,7 +5,7 @@
 groups = ["default", "builtin-toolchain", "http", "numpy"]
 strategy = ["direct_minimal_versions"]
 lock_version = "4.5.0"
-content_hash = "sha256:30a0a11000dcf551893ace8c78a9a4e65506d15aeed4e2e8de488b837008aaea"
+content_hash = "sha256:109fa3db7fc6c1db9839467b7ccf5fecfdd7f3a7c6c750f6efc71acb28ace2f3"
 
 [[metadata.targets]]
 requires_python = "~=3.13"
@@ -339,15 +339,15 @@ files = [
 
 [[package]]
 name = "importlib-resources"
-version = "6.5.2"
-requires_python = ">=3.9"
+version = "7.1.0"
+requires_python = ">=3.10"
 summary = "Read resources from Python packages"
 dependencies = [
     "zipp>=3.1.0; python_version < \"3.10\"",
 ]
 files = [
-    {file = "importlib_resources-6.5.2-py3-none-any.whl", hash = "sha256:789cfdc3ed28c78b67a06acb8126751ced69a3d5f79c095a98298cd8a760ccec"},
-    {file = "importlib_resources-6.5.2.tar.gz", hash = "sha256:185f87adef5bcc288449d98fb4fba07cea78bc036455dd44c5fc4a2fe78fed2c"},
+    {file = "importlib_resources-7.1.0-py3-none-any.whl", hash = "sha256:1bd7b48b4088eddb2cd16382150bb515af0bd2c70128194392725f82ad2c96a1"},
+    {file = "importlib_resources-7.1.0.tar.gz", hash = "sha256:0722d4c6212489c530f2a145a34c0a7a3b4721bc96a15fada5930e2a0b760708"},
 ]
 
 [[package]]

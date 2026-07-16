@@ -56,7 +56,7 @@ dependencies = [
   # `enum-tools` is used for documenting enums. It is unclear which versioning scheme it uses.
   "enum-tools==0.13.0",
   # `importlib_resources` is used to shim over Python API incompatibilities. It uses SemVer.
-  "importlib_resources~=6.5.2",
+  "importlib_resources~=7.1.0",
 ]
 
 [project.optional-dependencies]
