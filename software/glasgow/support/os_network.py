@@ -45,7 +45,7 @@ class OSNetworkInterface:
         except BlockingIOError: # write until the buffer is full
             pass
 
-    async def recv(self, *, length=65536) -> list[Buffer]:
+    async def recv(self, *, length=65536) -> list[bytes]:
         """"Receive packets.
 
         To improve throughput, :meth:`recv` dequeues all available packets. Packets longer than

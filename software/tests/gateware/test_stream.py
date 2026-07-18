@@ -109,3 +109,19 @@ class PacketQueueTestCase(unittest.TestCase):
             await stream_assert(ctx, dut.o, {"data": 0xfe, "first": 1, "last": 1})
 
         self.run_scenario(dut, i_testbench, o_testbench)
+
+    def test_packet_end(self):
+        dut = PacketQueue(8, data_depth=8, size_depth=2)
+
+        async def i_testbench(ctx):
+            await stream_put(ctx, dut.i, {"data": 0x01, "first": 1, "last": 0})
+            await stream_put(ctx, dut.i, {"data": 0x02, "first": 0, "last": 0})
+            await stream_put(ctx, dut.i, {"end": 1})
+            await stream_put(ctx, dut.i, {"data": 0x03, "first": 1, "last": 1})
+
+        async def o_testbench(ctx):
+            await stream_assert(ctx, dut.o, {"data": 0x01, "first": 1, "last": 0})
+            await stream_assert(ctx, dut.o, {"data": 0x02, "first": 0, "last": 1})
+            await stream_assert(ctx, dut.o, {"data": 0x03, "first": 1, "last": 1})
+
+        self.run_scenario(dut, i_testbench, o_testbench)
