@@ -202,3 +202,6 @@ allow-dict-calls-with-keyword-arguments = true
 # These modules use cursed import hacks for backward compatibility.
 "glasgow/applet/__init__.py" = ["E402"] # module-import-not-at-top-of-file
 "glasgow/gateware/ports.py" = ["E402"] # module-import-not-at-top-of-file
+
+# These ones use cursed import hacks for a nicer API.
+"glasgow/gateware/pll/__init__.py" = ["E402"]
