@@ -194,11 +194,11 @@ If these instructions don't work for you, please `file a bug <file-a-bug_>`__ so
 
 .. tab:: FreeBSD
 
-    You will need to have `pipx`_, `Yosys`_, `nextpnr`_, and `icestorm`_ installed. To install these packages, run:
+    You will need to have `pipx`_, `Yosys`_, `nextpnr`_, `icestorm`_, and `prjtrellis`_ installed. To install these packages, run:
 
     .. code:: console
 
-        $ sudo pkg install pip pipx yosys abc nextpnr icestorm
+        $ sudo pkg install pip pipx yosys abc nextpnr icestorm trellis
         $ pipx ensurepath
 
     The ``pipx ensurepath`` command may prompt you to reopen the terminal window; do so.
@@ -245,6 +245,7 @@ If these instructions don't work for you, please `file a bug <file-a-bug_>`__ so
 .. _Yosys: https://github.com/YosysHQ/yosys
 .. _nextpnr: https://github.com/YosysHQ/yosys
 .. _icestorm: https://github.com/YosysHQ/icestorm
+.. _prjtrellis: https://github.com/YosysHQ/prjtrellis
 .. _libusb: https://libusb.info/
 
 
@@ -253,7 +254,7 @@ Using a system FPGA toolchain
 
 The steps above install the `YoWASP`_ FPGA toolchain, which is a good low-friction option, especially for people whose primary competence is not in software, since it does not require any additional installation steps. However, the YoWASP toolchain is noticeably slower compared to a native code code toolchain (usually by a factor of less than 2×). The YoWASP toolchain is also not available for all platforms and architectures; notably, 32-bit Raspberry Pi is not covered.
 
-If you already have the required tools (``yosys``, ``nextpnr-ice40``, ``icepack``) installed or are willing to `install <oss-cad-suite_>`__ them, you can update your profile to set the environment variable ``GLASGOW_TOOLCHAIN`` to ``system,builtin``, which prioritizes using the system tools over the YoWASP tools. The default value is ``builtin,system``, which causes the system tools to be used only if the YoWASP tools are not present or not runnable.
+If you already have the required tools (``yosys``, ``nextpnr-ice40``, ``nextpnr-ecp5``, ``icepack``, ``ecppack``) installed or are willing to `install <oss-cad-suite_>`__ them, you can update your profile to set the environment variable ``GLASGOW_TOOLCHAIN`` to ``system,builtin``, which prioritizes using the system tools over the YoWASP tools. The default value is ``builtin,system``, which causes the system tools to be used only if the YoWASP tools are not present or not runnable.
 
 .. _yowasp: https://yowasp.org/
 .. _oss-cad-suite: https://github.com/YosysHQ/oss-cad-suite-build
