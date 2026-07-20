@@ -326,3 +326,8 @@ class CalibrateClockApplet(GlasgowAppletV2):
             avg = sum(ppms) / len(ppms)
             self.logger.info("--- average over %d measurements: %+.3f ppm ---", len(ppms), avg)
             self.logger.info("use:  --clock-ppm %+.3f ", avg)
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.CalibrateClockAppletTestCase
