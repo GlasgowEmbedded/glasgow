@@ -308,3 +308,8 @@ class GeneratePRNNoiseApplet(GlasgowAppletV2):
         elif args.operation == "stop":
             await iface.stop()
             self.logger.info("noise output stopped")
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.GeneratePRNNoiseAppletTestCase
