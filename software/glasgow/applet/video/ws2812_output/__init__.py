@@ -4,7 +4,6 @@ from amaranth.lib import io
 
 from glasgow.support import logging
 from glasgow.support.endpoint import *
-from glasgow.gateware.pll import *
 from glasgow.applet import *
 
 

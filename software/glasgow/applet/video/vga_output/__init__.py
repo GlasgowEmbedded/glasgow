@@ -2,7 +2,7 @@ from amaranth import *
 from amaranth.lib import enum, data, io
 
 from glasgow.support import logging
-from glasgow.gateware.pll import *
+from glasgow.gateware.pll_deprecated import *
 from glasgow.applet import *
 
 
