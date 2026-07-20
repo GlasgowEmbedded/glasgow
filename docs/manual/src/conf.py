@@ -86,8 +86,8 @@ if is_production:
             "color-announcement-text": "#64cc69",
         },
         "announcement":
-            "Production units are being shipped by Mouser. "
-            "<a href='https://crowdsupply.com/1bitsquared/glasgow'>Order yours now!</a>"
+            "The latest revision, revD, is in pre-launch phase on CrowdSupply. "
+            "<a href='https://www.crowdsupply.com/fully-automated/glasgow-interface-explorer-revd'>Subscribe now!</a>"
     })
 else:
     html_theme_options.update({
