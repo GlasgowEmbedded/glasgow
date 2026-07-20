@@ -9,4 +9,5 @@ Measure
     :maxdepth: 2
 
     calibrate_clock
+    curve_trace
     prn_noise
