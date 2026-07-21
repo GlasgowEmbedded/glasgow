@@ -57,7 +57,7 @@ class Encoder(wiring.Component):
         # data, and the lookahead memory for COBS encoding. Specifically, it reuses the "empty"
         # space in the FIFO for storing bytes that follow a yet-unknown COBS overhead byte; this is
         # called "staging". Once the value of the overhead byte becomes known, the FIFO write
-        # pointer is advanced simultaneously with the overhead byte being overwriten; this is
+        # pointer is advanced simultaneously with the overhead byte being overwritten; this is
         # called "committing".
 
         m.submodules.data = data = memory.Memory(shape=8, depth=self.fifo_depth, init=[])
