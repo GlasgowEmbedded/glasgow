@@ -9,3 +9,4 @@ Internal test
     :maxdepth: 2
 
     benchmark
+    memtest
