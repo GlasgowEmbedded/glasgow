@@ -719,6 +719,12 @@ class HardwareAssembly(AbstractAssembly):
         except ResourceError:
             pass
 
+        toolchain = find_toolchain(tools=self._platform.required_tools)
+        assert toolchain is not None
+        # nextpnr-ecp5 *must* include commit `7c667eeba362a8538396f9c4dc9bd1a168b35fa3`, or any
+        # applet that uses IO gearboxes will be broken due to PLL placement issues.
+        toolchain.assert_version("nextpnr-ecp5", ("0", "10", "88"))
+
         match self._platform:
             case SiliconBluePlatform():
                 # TODO: https://github.com/GlasgowEmbedded/glasgow/issues/1203
@@ -738,8 +744,6 @@ class HardwareAssembly(AbstractAssembly):
             synth_opts="-abc9",
             nextpnr_opts=nextpnr_opts,
         )
-        toolchain = find_toolchain(tools=self._platform.required_tools)
-        assert toolchain is not None
         product_name = self._platform.bitstream_filename("top")
         self._artifact = GlasgowBuildPlan(build_plan, toolchain, product_name)
         return self._artifact

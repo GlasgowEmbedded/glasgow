@@ -16,13 +16,17 @@ from glasgow.support import logging
 from glasgow.support.lazy import lazy
 
 
-__all__ = ["ToolchainNotFound", "Toolchain", "find_toolchain"]
+__all__ = ["ToolchainNotFound", "ToolOutOfDate", "Toolchain", "find_toolchain"]
 
 
 logger = logging.getLogger(__name__)
 
 
 class ToolchainNotFound(Exception):
+    pass
+
+
+class ToolOutOfDate(Exception):
     pass
 
 
@@ -137,7 +141,12 @@ class WasmTool(Tool):
         # Running Wasm tools for the first time can incur a significant delay, so use
         # the version from the Python package metadata (which is guaranteed to be the same).
         # This makes querying the version at least as fast as for the native tools.
-        return (*importlib.metadata.version(self.python_package).split("."),)
+        a, b, _c, *d = importlib.metadata.version(self.python_package).split(".")
+        # This is a bit of a mess. In practice, the third component of the Wasm tool version
+        # doesn't correspond to anything useful for versions we care about, so skip it to make
+        # native and Wasm tools return more or less the same version. The last component is
+        # the git commit distance, which is vital for properly handling pre-release packages.
+        return (a, b, *d)
 
     @property
     def identifier(self) -> bytes | None:
@@ -212,7 +221,12 @@ class SystemTool(Tool):
                     yield os.path.join(root, file)
 
         if self.name == "yosys":
-            if yosys_datdir := self.get_output([f"{self.command}-config", "--datdir"]):
+            if self.command.endswith("yowasp-yosys"):
+                # In the odd case of `GLASGOW_TOOLCHAIN=system YOSYS=yowasp-yosys` (which does
+                # still happen), we can't access importlib metadata. However, the version should
+                # never be the same for two different builds, so we don't have to hash data files.
+                return iter([])
+            elif yosys_datdir := self.get_output([f"{self.command}-config", "--datdir"]):
                 return iter_files(yosys_datdir)
             else:
                 return None
@@ -394,6 +408,18 @@ class Toolchain:
                 return None
             hasher.update(tool.identifier)
         return hasher.digest()[:16]
+
+    def assert_version(self, tool: str, required: tuple[str, ...]):
+        # This is pretty janky, but unfortunately we don't have a clean way to implement this.
+        def comparable(version: tuple[str, ...]):
+            return [int(chunk) for chunk in version[:len(required)]]
+        assert comparable(("0", "9")) < comparable(("0", "91"))
+
+        versions = self.versions
+        if tool in versions and comparable(versions[tool]) < comparable(required):
+            raise ToolOutOfDate(
+                f"tool {tool!r} is out of date: installed version {'.'.join(versions[tool])} "
+                f"is older than required version {'.'.join(required)}")
 
     def __str__(self) -> str:
         return ", ".join(f"{name} {'.'.join(ver or ('(unavailable)',))}"
