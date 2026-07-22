@@ -5,7 +5,7 @@
 groups = ["default", "builtin-toolchain", "http", "numpy"]
 strategy = ["direct_minimal_versions"]
 lock_version = "4.5.0"
-content_hash = "sha256:ad5af09833520279930b18a10d39185388918a14d49eb8ccb8e8dad781454300"
+content_hash = "sha256:4cb9b36e2510cf7120220d0ecffbe26a8b78e8b5b53f074ed40d0c2ea9577567"
 
 [[metadata.targets]]
 requires_python = "~=3.13"
@@ -57,7 +57,7 @@ files = [
 
 [[package]]
 name = "amaranth"
-version = "0.5.8"
+version = "0.5.9"
 requires_python = "~=3.8"
 summary = "Amaranth hardware definition language"
 dependencies = [
@@ -67,8 +67,8 @@ dependencies = [
     "pyvcd<0.5,>=0.2.2",
 ]
 files = [
-    {file = "amaranth-0.5.8-py3-none-any.whl", hash = "sha256:6c32bd3422c700d246904032c1252f0a84225d2bdf9e26de4bc7df2ec83a8b39"},
-    {file = "amaranth-0.5.8.tar.gz", hash = "sha256:a9d6221fdb002614e82ac3603d245827829f279e8eb5fc543c948ea3609328ea"},
+    {file = "amaranth-0.5.9-py3-none-any.whl", hash = "sha256:513dd14cf88af1e068c6564f77deb498039bdfffeddca4053740b897aeb4ea45"},
+    {file = "amaranth-0.5.9.tar.gz", hash = "sha256:c147a5ebe6cfc70e99608e020f5c8996b12de76eb4c4c1c3007863110cab2c01"},
 ]
 
 [[package]]
