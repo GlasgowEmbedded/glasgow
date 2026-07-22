@@ -2,7 +2,7 @@ from amaranth import *
 from amaranth.lib import enum, data, io
 
 from glasgow.support import logging
-from glasgow.gateware.pll_deprecated import *
+from glasgow.gateware import pll
 from glasgow.applet import *
 
 
@@ -43,9 +43,9 @@ class VGAOutputSubtarget(Elaboratable):
         m.submodules.g  = g_buf  = io.FFBuffer("o", self.ports.g)
         m.submodules.b  = b_buf  = io.FFBuffer("o", self.ports.b)
 
-        m.domains.pix = cd_pix = ClockDomain()
-        m.submodules += PLL(
-            f_in=platform.default_clk_frequency, f_out=self.pix_clk_freq, odomain="pix")
+        plan = pll.ClockPlan(1/platform.default_clk_frequency)
+        m.domains.pix = plan.add_domain(pll.Channel(period=1/self.pix_clk_freq, tolerance=0.01))
+        m.submodules += plan.create(platform)
 
         h_ctr = Signal(range(self.h_active + self.h_front + self.h_sync + self.h_back))
         v_ctr = Signal(range(self.v_active + self.v_front + self.v_sync + self.v_back))
