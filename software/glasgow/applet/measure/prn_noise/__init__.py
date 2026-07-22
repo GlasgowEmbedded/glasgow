@@ -37,8 +37,8 @@ from amaranth.lib.cdc import FFSynchronizer
 from amaranth.lib.wiring import In
 
 from glasgow.support import logging
+from glasgow.gateware import pll
 from glasgow.applet import GlasgowAppletV2
-from glasgow.gateware.pll_deprecated import PLL
 
 
 __all__ = ["PRNNoiseInterface"]
@@ -108,9 +108,9 @@ class PRNNoiseComponent(wiring.Component):
         m = Module()
 
         # --- PLL: 48 MHz -> 192 MHz ---
-        m.domains.fast = ClockDomain("fast")
-        m.submodules.pll = PLL(
-            f_in=self._sys_clk_freq, f_out=192e6, odomain="fast")
+        plan = pll.ClockPlan(1/self._sys_clk_freq)
+        m.domains.fast = plan.add_domain(pll.Channel(period=1/192e6))
+        m.submodules.pll = plan.create(platform)
 
         # --- Control registers (sync domain) ---
         seed_reg = Signal(_LFSR_WIDTH, init=1)
