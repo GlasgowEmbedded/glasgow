@@ -24,7 +24,7 @@ from .support.plugin import PluginRequirementsUnmet, PluginLoadError
 from .abstract import ClockingError
 from .hardware.device import GlasgowDeviceError, GlasgowDevice, GlasgowDeviceConfig
 from .hardware.device import FX2BootloaderDevice, VID_QIHW, PID_GLASGOW
-from .hardware.toolchain import ToolchainNotFound
+from .hardware.toolchain import ToolchainNotFound, ToolOutOfDate
 from .hardware.build_plan import GatewareBuildError
 from .hardware.assembly import HardwareAssembly
 from .legacy import DeprecatedTarget
@@ -1055,6 +1055,10 @@ async def main() -> int:
     except (PluginRequirementsUnmet, PluginLoadError) as e:
         logger.error(e)
         print(e.metadata.description)
+        return 3
+
+    except ToolOutOfDate as e:
+        logger.error(e)
         return 3
 
     except ToolchainNotFound as e:

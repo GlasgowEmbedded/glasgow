@@ -5,7 +5,7 @@
 groups = ["default", "builtin-toolchain", "http", "numpy"]
 strategy = ["direct_minimal_versions"]
 lock_version = "4.5.0"
-content_hash = "sha256:4cb9b36e2510cf7120220d0ecffbe26a8b78e8b5b53f074ed40d0c2ea9577567"
+content_hash = "sha256:896a0f5fece78ee2309540175b02c39af8b85eb3a29b6fd279682ecb32c81855"
 
 [[metadata.targets]]
 requires_python = "~=3.13"
@@ -907,16 +907,22 @@ files = [
 
 [[package]]
 name = "wasmtime"
-version = "14.0.0"
-requires_python = ">=3.8"
+version = "44.0.0"
+requires_python = ">=3.9"
 summary = "A WebAssembly runtime powered by Wasmtime"
 files = [
-    {file = "wasmtime-14.0.0-py3-none-any.whl", hash = "sha256:708f3399d54b4304aa59c55351e06698c8d18073a70f3299eebe07e3987a7353"},
-    {file = "wasmtime-14.0.0-py3-none-macosx_10_13_x86_64.whl", hash = "sha256:13a63d99c8f53526ec8ca061a223b9499ec7cf991e3946f6fcf002a807beb079"},
-    {file = "wasmtime-14.0.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:3e1cb2a78ddce2040aa908690462deecab04924021f75de94b6ee32d0a907bc4"},
-    {file = "wasmtime-14.0.0-py3-none-manylinux1_x86_64.whl", hash = "sha256:236a9f3fb04b29bb9e553de814f2b748f2087f3fdfa99ce552f637ddedcc2a59"},
-    {file = "wasmtime-14.0.0-py3-none-manylinux2014_aarch64.whl", hash = "sha256:ec9a7fcd01ba4b04ee8f4c9d169dcf0f0fe67aa7ff8d032629cd8a08caf30c51"},
-    {file = "wasmtime-14.0.0-py3-none-win_amd64.whl", hash = "sha256:2f3a3589b6ede7c96e5d1cd45f65f88d154ccc9e9ddb34f75b49ce6db5ab6497"},
+    {file = "wasmtime-44.0.0-py3-none-android_26_arm64_v8a.whl", hash = "sha256:5bc01e2f1dae1e85b19343a718bf2b1dc9f0fa6b9f8c5f2922b9fb4b29fb56bd"},
+    {file = "wasmtime-44.0.0-py3-none-android_26_x86_64.whl", hash = "sha256:2e7db391e7cd274c3608bf22a2b2706bfbcc44a233c9a62277f0f03f9e0f48ad"},
+    {file = "wasmtime-44.0.0-py3-none-any.whl", hash = "sha256:28903f584fd9707438551ed3878bad61d841be78c715db4e20bf30e43b185825"},
+    {file = "wasmtime-44.0.0-py3-none-macosx_10_13_x86_64.whl", hash = "sha256:019923321cf9244ed48d8f3858e50a93500a523c44b31d7b93c8c30195c4b9aa"},
+    {file = "wasmtime-44.0.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:07e96eb5bbf40473ea51f2cb3b3f5358537e41644662e02115edf5bd7883c9ca"},
+    {file = "wasmtime-44.0.0-py3-none-manylinux1_x86_64.whl", hash = "sha256:f8d5bbd234bb99f9e94e284fba67b5e899ddebe2d4be7384f78396bdd4ce27a6"},
+    {file = "wasmtime-44.0.0-py3-none-manylinux2014_aarch64.whl", hash = "sha256:e686644bcddfec89095c9fd982b0848ab5e494ece865517214a63430b2ed08f8"},
+    {file = "wasmtime-44.0.0-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:7326e8cc02b583a7817cf50029d8e9b06c13d2f3573b3e677dbe51a8c52245d7"},
+    {file = "wasmtime-44.0.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:a7840d7d81e59ff666067031b3bde727ff28f923c5040b1a3cae4d8d37340f18"},
+    {file = "wasmtime-44.0.0-py3-none-win_amd64.whl", hash = "sha256:4b5c52475148f827abd9feff4460689f6979c0333b612c6c3d9211c4b7c7258d"},
+    {file = "wasmtime-44.0.0-py3-none-win_arm64.whl", hash = "sha256:931cd4d886ae6a2a06f5cfe47bf6f7a3b2635fa512a81cd1c55975505ace8cc1"},
+    {file = "wasmtime-44.0.0.tar.gz", hash = "sha256:1e5e7a7046136054e12f82101a9b5ce30b02d4f92946e6fbe3e2fced61a6b1a5"},
 ]
 
 [[package]]
@@ -987,13 +993,13 @@ files = [
 
 [[package]]
 name = "yowasp-nextpnr-ecp5"
-version = "0.1.0.0.post403"
+version = "0.10.0.96.post806.dev0"
 summary = "nextpnr-ecp5 FPGA place and route tool"
 dependencies = [
-    "yowasp-runtime~=1.1",
+    "yowasp-runtime~=1.93",
 ]
 files = [
-    {file = "yowasp_nextpnr_ecp5-0.1.0.0.post403-py3-none-any.whl", hash = "sha256:542847d0af2bda4599c541d820f72673891d5330a58e97febad5946709315274"},
+    {file = "yowasp_nextpnr_ecp5-0.10.0.96.post806.dev0-py3-none-any.whl", hash = "sha256:3c44f47d43ee0b8dff935465ce0b562052ba1639d1bcd3ac41573081db8e9cb3"},
 ]
 
 [[package]]
@@ -1009,16 +1015,16 @@ files = [
 
 [[package]]
 name = "yowasp-runtime"
-version = "1.42"
-requires_python = "~=3.8"
+version = "1.93"
+requires_python = "~=3.9"
 summary = "Common runtime for YoWASP packages"
 dependencies = [
     "importlib-resources; python_version < \"3.9\"",
-    "platformdirs~=3.0",
-    "wasmtime<15,>=1.0",
+    "platformdirs<5,>=3.0",
+    "wasmtime<45,>=44.0.0",
 ]
 files = [
-    {file = "yowasp_runtime-1.42-py3-none-any.whl", hash = "sha256:d3897a3639a0178c8a63c8427762f6cd6dd0c11b26f534f2e602fbc177082f6d"},
+    {file = "yowasp_runtime-1.93-py3-none-any.whl", hash = "sha256:5b09725771133d70e806679bb53865a13a0fc8887e1c4a085aca497dbfcffb0b"},
 ]
 
 [[package]]
