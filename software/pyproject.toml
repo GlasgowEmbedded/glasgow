@@ -92,6 +92,7 @@ glasgow = "glasgow.cli:run_main"
 
 [project.entry-points."glasgow.applet"]
 selftest = "glasgow.applet.internal.selftest:SelfTestApplet"
+memtest = "glasgow.applet.internal.memtest:MemoryTestApplet"
 benchmark = "glasgow.applet.internal.benchmark:BenchmarkApplet"
 calibrate-clock = "glasgow.applet.measure.calibrate_clock:CalibrateClockApplet"
 curve-trace = "glasgow.applet.measure.curve_trace:CurveTraceApplet"

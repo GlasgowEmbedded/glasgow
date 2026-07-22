@@ -1,5 +1,5 @@
 ``benchmark``
-====================
+=============
 
 .. _applet.internal.benchmark:
 
