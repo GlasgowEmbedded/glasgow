@@ -37,9 +37,11 @@ class SWDProbeException(GlasgowAppletError):
         Timeout = "timeout" # too many retries for a WAIT response
         Other   = "other"   # unspecified
 
-    def __init__(self, kind: Kind = Kind.Other, *, address: int | None = None):
+    def __init__(self, kind: Kind = Kind.Other, *, address: int | None = None,
+                 message: str | None = None):
         self.kind = kind
         self.address = address
+        self.message = message
 
     def __str__(self):
         match self.kind:
@@ -50,7 +52,7 @@ class SWDProbeException(GlasgowAppletError):
             case SWDProbeException.Kind.Timeout:
                 message = "wait timeout"
             case _:
-                assert False
+                message = self.message or "unknown error"
         if self.address is not None:
             message += f" (at address {self.address:#10x}"
         return message
@@ -372,7 +374,7 @@ class SWDProbeInterface:
             data=DP_CTRL_STAT(CDBGPWRUPREQ=1).to_int())
         ctrl_stat = DP_CTRL_STAT.from_int(await self.dp_read(reg=DP_CTRL_STAT_addr))
         if not ctrl_stat.CDBGPWRUPACK:
-            raise SWDProbeException("target failed to acknowledge debug power-up request")
+            raise SWDProbeException(message="target failed to acknowledge debug power-up request")
         return dpidr
 
     async def iter_aps(self) -> AsyncIterator[tuple[int, AP_IDR]]:
