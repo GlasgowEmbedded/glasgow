@@ -1,3 +1,5 @@
+import unittest
+
 from amaranth import *
 from amaranth.lib import io
 from amaranth.sim import Simulator
@@ -14,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class QSPIAnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=QSPIAnalyzerApplet):
+    @unittest.skip("https://github.com/YosysHQ/nextpnr/issues/1753")
     @synthesis_test
     def test_build(self):
         self.assertBuilds()
