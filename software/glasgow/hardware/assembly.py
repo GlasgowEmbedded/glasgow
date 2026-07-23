@@ -8,6 +8,7 @@ import asyncio
 from amaranth import *
 from amaranth.hdl import ShapeCastable
 from amaranth.lib import wiring, io
+from amaranth.vendor import SiliconBluePlatform
 from amaranth.build import ResourceError
 
 from ..support import logging
@@ -718,6 +719,13 @@ class HardwareAssembly(AbstractAssembly):
         except ResourceError:
             pass
 
+        match self._platform:
+            case SiliconBluePlatform():
+                # TODO: https://github.com/GlasgowEmbedded/glasgow/issues/1203
+                nextpnr_opts = "--placer heap --no-promote-globals"
+            case _:
+                nextpnr_opts = "--placer heap"
+
         build_plan = self._platform.prepare(m,
             # always emit complete build log to stdout; whether it's displayed is controlled by
             # the usual logging options, e.g. `-vv` or `-v -F build`
@@ -728,7 +736,7 @@ class HardwareAssembly(AbstractAssembly):
             # latest yosys and nextpnr versions default to this configuration, but we support some
             # older ones in case yowasp isn't available and this keeps the configuration consistent
             synth_opts="-abc9",
-            nextpnr_opts="--placer heap",
+            nextpnr_opts=nextpnr_opts,
         )
         toolchain = find_toolchain(tools=self._platform.required_tools)
         assert toolchain is not None
