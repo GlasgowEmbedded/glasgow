@@ -1,0 +1,10 @@
+# When configured, this mechanism skips the "load Yosys/nextpnr and all of their data files"
+# and stuff them into blake2s" step (which takes a non-trivial amount of time on every load)
+# in favor of treating the Nix store path as the source for a suitably unique `identifier`,
+# and also skips running the binaries to find out what their versions are.
+#
+# Add tools here in the following format:
+# name          version   executable
+# yosys         0.60      /nix/store/hj310dlrbbldh09rg27lr0wvsvw0z1db-yosys-0.60/bin/yosys
+# nextpnr-ecp5  0.9       /nix/store/qbl8bmrz24gnps00lhz78kz6hccbi8v0-nextpnr-0.9/bin/nextpnr-ecp5
+# ecppack       1.2.1.14  /nix/store/ig0bg3wmccghxywfzgzw1jz5jk4n50id-trellis-unstable-2022-09-14/bin/ecppack
