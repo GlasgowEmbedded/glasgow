@@ -1,6 +1,7 @@
-from typing import Any
+from typing import Any, Self
 from collections.abc import Iterator
 from abc import ABCMeta, abstractmethod
+from dataclasses import dataclass
 import re
 import os
 import sys
@@ -8,6 +9,7 @@ import hashlib
 import shutil
 import subprocess
 import importlib.metadata
+import importlib.resources
 import sysconfig
 
 from glasgow.support import logging
@@ -227,7 +229,6 @@ class SystemTool(Tool):
 
     _identifier_cache: str | None = None
 
-    # To the Nix person who replaces this with something more sensible: please message @whitequark
     @property
     def identifier(self) -> bytes | None:
         if not self.available:
@@ -284,6 +285,58 @@ class JsTool(Tool):
         hasher.update(self.name.encode("utf-8"))
         hasher.update(self._js_bridge.version(self.package_name).encode("utf-8"))
         return hasher.digest()[:16]
+
+
+@dataclass
+class _NixPackage:
+    name:    str
+    version: tuple[str, ...]
+    command: str
+
+    @classmethod
+    def parse(cls) -> dict[str, Self]:
+        with importlib.resources.files(__package__).joinpath("toolchain_nix.txt").open() as f:
+            packages = []
+            for line in f.readlines():
+                if m := re.match(r"^\s*(#.*)?$", line):
+                    pass # whitespace or comment only
+                elif m := re.match(r"^\s*(\S+)\s+(\S+)\s+(\S+)\s*(#.*)?$", line):
+                    packages.append(cls(name=m[1], version=tuple(m[2].split(".")), command=m[3]))
+                else:
+                    assert False, f"invalid toolchain_nix.txt syntax: {line!r}"
+            return {package.name: package for package in packages}
+
+
+class NixTool(Tool):
+    _STORE = _NixPackage.parse()
+
+    @property
+    def available(self) -> bool:
+        return self.package_name in self._STORE
+
+    @property
+    def command(self) -> str | None:
+        if package := self._STORE[self.package_name]:
+            return package.command
+        else:
+            return None
+
+    @property
+    def version(self) -> tuple[str, ...] | None:
+        if package := self._STORE[self.package_name]:
+            return package.version
+        else:
+            return None
+
+    @property
+    def identifier(self) -> tuple[str, ...] | None:
+        if package := self._STORE[self.package_name]:
+            # The store path uniquely identifies a specific build of the tool.
+            hasher = hashlib.blake2s()
+            hasher.update(package.command.encode("utf-8"))
+            return hasher.digest()[:16]
+        else:
+            return None
 
 
 class Toolchain:
@@ -368,6 +421,7 @@ def find_toolchain(tools=_ALL_TOOLS, *, quiet=False):
     if sys.platform == "emscripten":
         available_toolchains["js"]      = Toolchain(map(JsTool,     tools))
     else:
+        available_toolchains["nix"]     = Toolchain(map(NixTool,    tools))
         available_toolchains["builtin"] = Toolchain(map(WasmTool,   tools))
         available_toolchains["system"]  = Toolchain(map(SystemTool, tools))
 
