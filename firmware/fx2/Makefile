@@ -33,7 +33,7 @@ include $(LIBFX2)/fx2rules.mk
 # Yes, this is awful. I am so proud of it =^_^=
 GIT_REV_SHORT  ?= $(shell git log -1 --abbrev=8 --pretty=%h HEAD .)
 $(if $(GIT_REV_SHORT),,$(error Failed to determine git revision))
-GIT_TREE_DIRTY := $(shell git diff --quiet HEAD -- . 2>/dev/null ; echo $$?)
+GIT_TREE_DIRTY ?= $(shell git diff --quiet HEAD -- . 2>/dev/null ; echo $$?)
 VERSION_H_RULE := $(shell \
 	echo  >.version.h "#define GIT_REVISION \"git $(GIT_REV_SHORT)$(GIT_TREE_DIRTY)\"" && \
 	echo >>.version.h "#define GIT_IS_DIRTY $(GIT_TREE_DIRTY)" && \
