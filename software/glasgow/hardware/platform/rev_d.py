@@ -41,14 +41,14 @@ class _GlasgowRevDPlatform(GlasgowECP5Platform):
         Resource("led", 3, Pins("A14", dir="o"), Attrs(IO_TYPE="LVCMOS33")),
         Resource("led", 4, Pins("B14", dir="o"), Attrs(IO_TYPE="LVCMOS33")),
 
-        Resource("octospi", 0,
+        Resource("octoram", 0,
             Subsignal("cs",  PinsN("R16", dir="o"), Attrs(PULLMODE="UP")),
             Subsignal("clk", Pins( "P16", dir="o")),
             Subsignal("dqs", Pins( "N16", dir="io")),
             Subsignal("dq",  Pins( "L15 K13 M15 L16 M16 L13 L12 K12", dir="io")),
             Attrs(IO_TYPE="LVCMOS18", SLEWRATE="FAST")
         ),
-        Resource("octospi", 1,
+        Resource("octoram", 1,
             Subsignal("cs",  PinsN("P11", dir="o"), Attrs(PULLMODE="UP")),
             Subsignal("clk", Pins( "M11", dir="o")),
             Subsignal("dqs", Pins( "R12", dir="io")),
