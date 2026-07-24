@@ -10,6 +10,7 @@ from glasgow.support import logging
 from glasgow.abstract import (AbstractAssembly, AbstractInOutPipe, AbstractInPipe, AbstractOutPipe,
                               AbstractRORegister, AbstractRWRegister,
                               GlasgowPin, GlasgowPort, GlasgowVio, PullState)
+from glasgow.gateware import octoram
 
 
 __all__ = ["SimulationPipe", "SimulationRORegister", "SimulationRWRegister", "SimulationAssembly"]
@@ -95,6 +96,7 @@ class SimulationAssembly(AbstractAssembly):
         self._modules  = [] # (elaboratable, name)
         self._benches  = [] # (constructor, background)
         self._jumpers  = [] # (pin_name...)
+        self._memories = 0
         self.__context = None
 
     @property
@@ -178,6 +180,13 @@ class SimulationAssembly(AbstractAssembly):
             self._benches.append((o_testbench, True))
 
         return SimulationPipe(self, i_buffer=i_buffer, o_buffer=o_buffer)
+
+    def add_dynamic_memory(self, size=64*0x100000) -> tuple[octoram.Signature, range]:
+        controller = octoram.SimulationController(size)
+        self._modules.append((controller, f"mem_ctrl{self._memories}"))
+        self._benches.append((controller.testbench, True)) # background
+        self._memories += 1
+        return controller.bus, range(size)
 
     def add_ro_register(self, signal) -> AbstractRORegister:
         return SimulationRORegister(self, signal)

@@ -7,7 +7,7 @@ import asyncio
 
 from amaranth import *
 from amaranth.hdl import ShapeCastable
-from amaranth.lib import wiring, io
+from amaranth.lib import wiring, io, cdc
 from amaranth.vendor import SiliconBluePlatform
 from amaranth.build import ResourceError
 
@@ -19,6 +19,7 @@ from ..gateware.i2c import I2CTarget
 from ..gateware.registers import I2CRegisters
 from ..gateware.fx2_crossbar import FX2Crossbar
 from ..gateware.stream import Queue
+from ..gateware import octoram, pll
 from ..abstract import *
 from .platform.rev_ab import GlasgowRevABPlatform
 from .platform.rev_c import GlasgowRevC0Platform, GlasgowRevC123Platform
@@ -499,6 +500,7 @@ class HardwareAssembly(AbstractAssembly):
         self._in_streams    = [] # (domain, in_stream, in_flush, fifo_depth)
         self._out_streams   = [] # (domain, out_stream, fifo_depth)
         self._pipes         = [] # in_pipe|out_pipe|inout_pipe
+        self._memories      = [] # (domain, bus)
         self._resets        = [] # (signal, when)
         self._voltages      = [] # (port, vio)
         self._pulls         = {} # (port, number): state
@@ -605,6 +607,17 @@ class HardwareAssembly(AbstractAssembly):
         self._pipes.append(inout_pipe)
         return inout_pipe
 
+    def add_dynamic_memory(self, size=None) -> tuple[octoram.Signature, range]:
+        # In the future we will likely allow sharing memories; for now this is not available.
+        assert self._artifact is None, "cannot add a dynamic memory to a sealed assembly"
+        assert self._revision >= "D0", "DRAM is not available prior to revision D0"
+        assert size is None or size <= 64*0x100000, "memory must be less than 64 MB in size"
+        assert len(self._memories) < 2, "only two memory channels are available"
+        self._current_logger.debug(f"allocating DRAM channel {len(self._memories)}")
+        bus = octoram.Signature().flip().create()
+        self._memories.append((self._domain, bus))
+        return bus, range(64*0x100000)
+
     def set_port_voltage(self, port: GlasgowPort, vio: GlasgowVio):
         self._current_logger.debug("setting port %s voltage to %s V", port, vio)
         self._voltages.append((port, vio))
@@ -675,6 +688,34 @@ class HardwareAssembly(AbstractAssembly):
             elif isinstance(register, HardwareRORegister):
                 register_addr = i2c_registers.add_existing_ro(Value.cast(signal))
             assert register_addr == register._address
+
+        if self._memories:
+            # The location constraint should not be needed with new enough nextpnr-ecp5, but is
+            # included here as insurance. TODO: remove this once nextpnr-0.11 is used.
+            plan = pll.ClockPlan(self.sys_clk_period, location="X70/Y49/EHXPLL_LR")
+            m.domains.dram_edge = plan.add_domain(pll.ecp5.Channel(period=1/240e6, usage="edge"))
+            m.submodules.dram_pll = plan.create(self._platform)
+
+            # See the comment in `AsyncControllerECP5`.
+            m.domains.dram_logic = ClockDomain(local=True)
+            m.submodules.logic_rst = cdc.ResetSynchronizer(ResetSignal("dram_edge"),
+                domain="dram_logic")
+            m.submodules.logic_div = Instance("CLKDIVF",
+                i_RST=ResetSignal("dram_edge"),
+                i_CLKI=ClockSignal("dram_edge"),
+                o_CDIVX=ClockSignal("dram_logic"),
+            )
+
+            for channel, (domain, mem_bus) in enumerate(self._memories):
+                mem_ports = self._platform.request("octoram", channel,
+                    dir={"cs": "-", "clk": "-", "dq": "-", "dqs": "-"})
+                m.submodules[f"mem_ctrl{channel}"] = mem_ctrl = DomainRenamer({
+                    "edge":  "dram_edge",
+                    "logic": "dram_logic",
+                    "sync":  domain.name,
+                })(octoram.AsyncControllerECP5(mem_ports))
+                m.d.comb += mem_ctrl.latency.eq(5)
+                wiring.connect(m, wiring.flipped(mem_bus), mem_ctrl.bus)
 
         m.submodules.fx2_crossbar = fx2_crossbar = FX2Crossbar(fx2_pins)
 

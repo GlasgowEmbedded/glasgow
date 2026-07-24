@@ -11,8 +11,9 @@ import math
 from amaranth import *
 from amaranth.lib import io
 
-from glasgow.gateware.ports import PortGroup
 from glasgow.support import logging
+from glasgow.gateware.ports import PortGroup
+from glasgow.gateware import octoram
 
 
 __all__ = [
@@ -355,6 +356,11 @@ class AbstractAssembly(metaclass=ABCMeta):
     def add_inout_pipe(self, in_stream, out_stream, *, in_flush=C(0),
                        in_fifo_depth=None, in_buffer_size=None,
                        out_fifo_depth=None, out_buffer_size=None) -> AbstractInOutPipe:
+        pass
+
+    # Many of these interfaces are subject to change. This one is *particularly* subject to change.
+    @abstractmethod
+    def add_dynamic_memory(self, size: None | int = None) -> tuple[octoram.Signature, range]:
         pass
 
     @abstractmethod
