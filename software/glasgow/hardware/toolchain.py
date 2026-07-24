@@ -1,4 +1,4 @@
-from typing import Any, Self
+from typing import Any, Self, Literal, overload
 from collections.abc import Iterator
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
@@ -435,7 +435,12 @@ class Toolchain:
 _ALL_TOOLS = ["yosys", "nextpnr-ice40", "icepack", "nextpnr-ecp5", "ecppack"]
 
 
-def find_toolchain(tools=_ALL_TOOLS, *, quiet=False):
+@overload
+def find_toolchain(tools=_ALL_TOOLS, *, quiet: Literal[True]) -> Toolchain | None:
+    pass
+
+
+def find_toolchain(tools=_ALL_TOOLS, *, quiet: Literal[False] = False) -> Toolchain:
     """Discover a toolchain.
 
     Returns a :class:`Toolchain` that includes all of the requested tools chosen according to
