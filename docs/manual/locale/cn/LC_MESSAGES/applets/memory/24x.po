@@ -1,0 +1,177 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/memory/24x.rst:2
+msgid "``memory-24x``"
+msgstr ""
+
+#: ../../src/applets/memory/24x.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-24x"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Read and write memories compatible with 24-series EEPROM memory, such as Microchip 24C02C, Atmel 24C256, or hundreds of other memories that typically have \"24X\" (where X is some letter) in their part number."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "If the address of a read or write operation points past 255 (for one address byte memories) or 65536 (for two address byte memories), the I²C address has the extra address bits added to it. For example, running ``glasgow memory-24x -A 0x51 -W 2 read 0x10358 0x100`` reads 0x100 bytes from memory address 0x358 at I²C device address 0x52."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Page size"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The memory performs writes by first latching incoming data into a page buffer, and committing the page buffer after a stop condition. The internal address counter wraps around to the start of the page whenever the end of the page is reached. Using the correct page size is very important: while a smaller page size can always be used with a memory that has a larger actual page size, the inverse is not true. On the other hand, using the right page size significantly improves performance."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The default page size in this applet is 8, because no memories with page size less than 8 bytes have been observed so far. If the writes are too slow, look up the page size in the memory documentation. If the writes seem to be corrupted, use the ``--page-size 1`` option."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The pinout of a typical 24-series IC is as follows (the A2:0 pins may be N/C in large devices):"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'scl' to PIN (default: 'A0', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'sda' to PIN (default: 'A1', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "I²C address of the memory; typically 0b1010(A2)(A1)(A0) (default: 0b1010000)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "number of address bytes to use (one of: 1 2)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "page size; writes will be split at addresses that are multiples of PAGE-SIZE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set SCL frequency to FREQ kHz (default: 400, range: 100...4000)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-24x read"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "read memory starting at address ADDRESS, with wraparound"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "read LENGTH bytes from memory"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write memory contents to FILENAME"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-24x verify"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "verify memory starting at address ADDRESS"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "compare memory with DATA as hex bytes"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "compare memory with contents of FILENAME"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-24x write"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write memory starting at address ADDRESS"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write memory with DATA as hex bytes"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write memory with contents of FILENAME"
+msgstr ""
+
+#: ../../src/applets/memory/24x.rst:14
+msgid "API reference"
+msgstr ""
+
+#: glasgow.applet.memory._24x.Memory24xInterface.read:1 of
+msgid "Read :py:`length` bytes at :py:`address`."
+msgstr ""
+
+#: glasgow.applet.memory._24x.Memory24xInterface.read:3 of
+msgid "If :py:`address` is larger than the maximum representable given the address width (i.e. greater than 0x100 or 0x10000 for 1 and 2 address byte memories respectively), the \"extra\" address bits are carried over into the I²C address by addition. For example, calling :py:`read(0x10358, 0x100)` when configured with :py:`i2c_address=0x51, address_width=2` reads 0x100 bytes from memory address 0x358 at I²C device address 0x52."
+msgstr ""
+
+#: glasgow.applet.memory._24x.Memory24xInterface.read:11 of
+msgid "While this behavior is suitable for most memories, there may be cases where it is not appropriate; for example, if a memory wraps over at 0x100 byte or 0x10000 byte boundaries instead of returning data that would be read from the next I²C address over."
+msgstr ""
+
+#: ../../src/applets/memory/24x.rst
+msgid "Raises"
+msgstr ""
+
+#: glasgow.applet.memory._24x.Memory24xInterface.read:15
+#: glasgow.applet.memory._24x.Memory24xInterface.write:14 of
+msgid "If communication fails; if a previous write hasn't completed yet."
+msgstr ""
+
+#: glasgow.applet.memory._24x.Memory24xInterface.write:1 of
+msgid "Write :py:`data` bytes at :py:`address`."
+msgstr ""
+
+#: glasgow.applet.memory._24x.Memory24xInterface.write:3 of
+msgid "The :py:`data` is broken up into chunks such that each chunk is aligned to, and no larger than, :py:`page_size`. This algorithm assumes that partial page writes update only the part being written, which is true for virtually every 24-series memory."
+msgstr ""
+
+#: glasgow.applet.memory._24x.Memory24xInterface.write:7 of
+msgid "The note on address bit carry-over in :meth:`read` also applies here, with the caveat that reading is done in one long request, but writing is done page-wise, and the address is sent anew for each write."
+msgstr ""
+
+#: glasgow.applet.memory._24x.Memory24xInterface.write:11 of
+msgid "This method waits for the write to complete by polling the device until it responds to its address (\"Acknowledge Polling\")."
+msgstr ""
+

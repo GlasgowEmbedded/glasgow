@@ -1,0 +1,845 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/memory/25q.rst:2
+msgid "``memory-25q``"
+msgstr ""
+
+#: ../../src/applets/memory/25q.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-25q"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Identify, read, erase, or program memories compatible with 25-series SPI/dual-SPI/quad-SPI NOR Flash memory, such as Microchip 25C320, Winbond W25Q32JV, Micron MT25QU256ABA, Macronix MX25L6445E, ISSI IS25LP128, or hundreds of other memories that typically have ``25x`` (where \"x\" is a letter, usually ``C``, ``F``, or ``Q``) in their part number. Note that ``25N`` typically designates (Q)SPI NAND Flash memory, which is completely incompatible."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The pinout of a typical 25-series IC is as follows:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "This applet supports ordinary SPI mode, as well as dual-SPI and quad-SPI. When quad-SPI mode is not in use, the ``WP#`` and ``HOLD#`` pins are pulled high; these must not be left floating as the memories do not typically include internal pull-ups. These faster modes are not enabled by default because of the potential for bus contention and higher severity of crosstalk; use the options ``--dual-spi`` and ``--quad-spi`` to enable their use (when described in SFDP)."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "It is also possible to flash 25-series flash chips using the `spi-flashrom` applet, which requires a third-party tool `flashrom`. The advantage of using the `flashrom` applet is that flashrom offers compatibility with a wider variety of devices, some of which may not be supported by the `memory-25q` applet."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'cs' to PIN (default: 'A0', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'sck' to PIN (default: 'A1', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O lines 'copi', 'cipo', 'wp', 'hold' to PINS (default: 'A2,A3,A4,A5', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set SCK frequency to FREQ kHz (default: 12000)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "use dual-SPI modes if present in SFDP"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "use quad-SPI modes if present in SFDP"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "use WIDTH address bytes for data region (choices: 3, 4, default: 3)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "do not cross multiple-of-SIZE boundaries when programming"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "opcode for erasing a 4 KiB region"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "opcode for erasing a 32 KiB region"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "opcode for erasing a 64 KiB region"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-25q erase"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Erase memory range. Start and end of specified range must be aligned on erase size boundaries."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "start with byte at ADDRESS"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "continue for LENGTH bytes"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-25q erase-all"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Erase memory range covering the entire chip."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-25q identify"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Identify memory by its JEDEC ID and (if available) Serial Flash Discoverable Parameters."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "annotate known raw SFDP DWORDs with fields"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-25q protect"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Read or write Block Protection (BP) bits. The exact size and location of the protected area for a specific bit combination can only be determined from the device datasheet."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Setting all BP bits to zero may be necessary to execute the `erase-all` command or to resolve erase/program failures."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write BITMASK to BP bits (e.g. 0000 to allow all, 1111 to protect all)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-25q read"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Read memory range using the fastest available read command."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write memory contents to FILENAME"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-25q verify"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Read memory range using the fastest available read command, and compare with given data."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "use hex bytes DATA as memory contents"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "use data from FILENAME as memory contents"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-25q write"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Write memory range using a read-modify-write sequence. Start and end of specified range do not need to be aligned on erase size boundaries."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow tool memory-25q"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Dissect captured SPI/QSPI transactions and extract data into linear memory image files."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The expected capture file format is the same as ones used by `spi-analyzer` and `qspi-analyzer` applets. Specifically, one of the following Comma-Separated Value line formats is expected:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "``<COPI>,<CIPO>``, where <COPI> and <CIPO> are hexadecimal byte sequences with each eight bits corresponding to samples of COPI and CIPO, respectively (from MSB to LSB)."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "``<DATA>``, where <DATA> is a hexadecimal nibble sequence with each four bits corresponding to samples of HOLD#, WP#, CIPO, COPI (from MSB to LSB)."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The extracted data can be saved as pairs of data files and mask files, where the mask file contains a 1 bit for every bit in the data file that has been observed in a transaction, and a 0 bit otherwise."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The list below details every command that is recognized by this tool. If your capture includes commands not currently recognized, please open an issue with a capture file attached."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "03h (Read Data)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "04h (Write Disable)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "05h (Read Status Register)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "06h (Write Enable)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "0Bh (Fast Read)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "4Bh (Read Unique ID)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "5Ah (Read SFDP)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "9Fh (Read JEDEC ID)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "B7h (Enter 4-Byte Address Mode)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "E9h (Exit 4-Byte Address Mode)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "3Bh (Dual Output Fast Read)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "6Bh (Quad Output Fast Read)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "BBh (Dual I/O Fast Read)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "EBh (Quad I/O Fast Read)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "read captured SPI transactions from CAPTURE-FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write extracted data to DATA-FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write data presence mask to MASK-FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write extracted SFDP data to DATA-FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write SFDP data presence mask to MASK-FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write extracted UID data to DATA-FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write UID data presence mask to MASK-FILE"
+msgstr ""
+
+#: ../../src/applets/memory/25q.rst:19
+msgid "API reference"
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface:1 of
+msgid "Make sure to call :meth:`initialize` first."
+msgstr ""
+
+#: ../../docstring glasgow.applet.memory._25q.Memory25QInterface.qspi:1 of
+msgid "Underlying QSPI interface."
+msgstr ""
+
+#: ../../docstring glasgow.applet.memory._25q.Memory25QInterface.cmds:1 of
+msgid "Active NOR command set."
+msgstr ""
+
+#: ../../docstring glasgow.applet.memory._25q.Memory25QInterface.cmds:3 of
+msgid "The command set may be modified or extended after the interface is created to better represent actual capabilities of the memory device."
+msgstr ""
+
+#: ../../docstring glasgow.applet.memory._25q.Memory25QInterface.sfdp:1 of
+msgid "SFDP table collection."
+msgstr ""
+
+#: ../../docstring glasgow.applet.memory._25q.Memory25QInterface.sfdp:3 of
+msgid "Populated only if the tables were parsed successfully."
+msgstr ""
+
+#: ../../docstring glasgow.applet.memory._25q.Memory25QInterface.sfdp_used:1 of
+msgid "Whether SFDP tables are usable."
+msgstr ""
+
+#: ../../docstring glasgow.applet.memory._25q.Memory25QInterface.sfdp_used:3 of
+msgid "Will be :py:`True` if SFDP information was used to successfully configure data transfer parameters, :py:`False` otherwise."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.memory_size:1 of
+msgid "Memory size."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.memory_size:3 of
+msgid "Size of the data region in bytes, or :py:`None` if SFDP data is not populated."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.power_up:1 of
+msgid "Power up the device."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.power_up:3 of
+msgid "Implemented using :data:`Opcode.ReleasePowerDown <glasgow.arch.qspi.nor.Opcode.ReleasePowerDown>`."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.power_up:8 of
+msgid "A memory may not accept any commands besides this one if it is in a deep power-down state."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.power_down:1 of
+msgid "Power down the device."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.power_down:3 of
+msgid "Implemented using :data:`Opcode.PowerDown <glasgow.arch.qspi.nor.Opcode.PowerDown>`."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.power_down:5 of
+msgid "See :meth:`power_up`."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.jedec_id:1 of
+msgid "Read JEDEC IDs."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.jedec_id:3 of
+msgid "Implemented using :data:`Opcode.ReadJEDEC <glasgow.arch.qspi.nor.Opcode.ReadJEDEC>`."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.jedec_id:5 of
+msgid "Returns :py:`(jedec_mfg_id, device_id)`."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.read_sfdp:1 of
+msgid "Read SFDP information."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.read_sfdp:3 of
+msgid "Implemented using :data:`Opcode.ReadSFDP <glasgow.arch.qspi.nor.Opcode.ReadSFDP>`."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.read_sfdp:5 of
+msgid "Returns :py:`length` SFDP bytes starting at :py:`address`, wrapping when reading past the end of the SFDP region."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.initialize:1 of
+msgid "Prepare device for data transfer."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.initialize:3 of
+msgid "Powers up the device and populates :data:`sfdp` (if possible)."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.read_data:1 of
+msgid "Read data."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.read_data:3 of
+msgid "Implemented using the :data:`Command.ReadData <glasgow.arch.qspi.nor.Command.ReadData>`, which is typically but not necessarily mapped to one of:"
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.read_data:6 of
+msgid ":data:`Opcode.Read <glasgow.arch.qspi.nor.Opcode.Read>`"
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.read_data:7 of
+msgid ":data:`Opcode.FastRead <glasgow.arch.qspi.nor.Opcode.FastRead>`"
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.read_data:8 of
+msgid ":data:`Opcode.FastReadDualOutput <glasgow.arch.qspi.nor.Opcode.FastReadDualOutput>`"
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.read_data:9 of
+msgid ":data:`Opcode.FastReadQuadOutput <glasgow.arch.qspi.nor.Opcode.FastReadQuadOutput>`"
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.read_data:10 of
+msgid ":data:`Opcode.FastReadDualInOut <glasgow.arch.qspi.nor.Opcode.FastReadDualInOut>`"
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.read_data:11 of
+msgid ":data:`Opcode.FastReadQuadInOut <glasgow.arch.qspi.nor.Opcode.FastReadQuadInOut>`"
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.read_data:13 of
+msgid "Returns :py:`length` data bytes starting at :py:`address`, wrapping when reading past the end of the data region."
+msgstr ""
+
+#: ../../src/applets/memory/25q.rst
+msgid "Raises"
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.read_data:16 of
+msgid "If no read commands are configured."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.read_status_reg_1:1 of
+msgid "Read Status Register 1."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.read_status_reg_1:3 of
+msgid "Implemented using :data:`Opcode.ReadStatusReg1 <glasgow.arch.qspi.nor.Opcode.ReadStatusReg1>`."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.write_status_reg_1:1 of
+msgid "Write Status Register 1."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.write_status_reg_1:3 of
+msgid "Implemented using :data:`Opcode.WriteStatusReg1 <glasgow.arch.qspi.nor.Opcode.WriteStatusReg1>`."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.write_enable:1 of
+msgid "Prefix for write operations."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.write_enable:3 of
+msgid "All methods of this interface that perform write operations internally enable writes; only call this method explicitly when implementing new operations."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.write_enable:6 of
+msgid "If the :data:`BUSY <glasgow.arch.qspi.nor.StatusReg1.BUSY>` bit is set     in Status Register 1."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.write_enable:7 of
+msgid "If the operation fails to set the :data:`WREN <glasgow.arch.qspi.nor.StatusReg1.WREN>`     bit in Status Register 1."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.poll_busy:1 of
+msgid "Wait until operation is done."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.poll_busy:3 of
+msgid "Polls Status Register 1 until the :data:`BUSY <glasgow.arch.qspi.nor.StatusReg1.BUSY>` bit is clear."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.poll_busy:6 of
+msgid "All methods of this interfaces that perform write operations internally wait for completion; only call this method explicitly when implementing new operations."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.poll_busy:9 of
+msgid "If the :data:`WREN <glasgow.arch.qspi.nor.StatusReg1.WREN>` bit in Status Register 1     is still set after the :data:`BUSY <glasgow.arch.qspi.nor.StatusReg1.BUSY>` bit clears.     This usually means that the preceding operation failed."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.set_quad_enabled:1 of
+msgid "Enable or disable quad-SPI instructions."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.set_quad_enabled:3 of
+msgid "Most devices power on and/or arrive from the factory configured with IO2/IO3 pins having the WP#/HOLD# function. Using quad-SPI instructions requires switching them to data I/O first. Since this can cause bus contention and disables hardware write protection (if any), this action must be taken explicitly."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.set_quad_enabled:8 of
+msgid "If SFDP tables are not available."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.set_quad_enabled:9 of
+msgid "If the device-specific enablement algorithm has not been implemented."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.erase_data_all:1 of
+msgid "Erase all data."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.erase_data_all:3 of
+msgid "Implemented using :data:`Opcode.EraseChip <glasgow.arch.qspi.nor.Opcode.EraseChip>`."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.erase_data_all:7 of
+msgid "This command can take a very long time (on the order of minutes) and does not read back data to verify success."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.erase_data_all:12 of
+msgid "If the memory size is known (see :data:`memory_size`), prefer using :meth:`erase_data` with a range that covers the entire data region, which will report progress and verify that the data was successfully erased."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.erase_data:1 of
+msgid "Erase data and verify success."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.erase_data:3 of
+msgid "Implemented using one of:"
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.erase_data:5 of
+msgid ":data:`Command.EraseData4K <glasgow.arch.qspi.nor.Command.EraseData4K>`"
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.erase_data:6 of
+msgid ":data:`Command.EraseData32K <glasgow.arch.qspi.nor.Command.EraseData32K>`"
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.erase_data:7 of
+msgid ":data:`Command.EraseData64K <glasgow.arch.qspi.nor.Command.EraseData64K>`"
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.erase_data:9 of
+msgid "Erases memory range specified by :py:`address` and :py:`length`."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.erase_data:11 of
+msgid "If either :py:`address` or :py:`length` is not divisible by the erase size of one of     the available erase commands."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.erase_data:12 of
+msgid "If no erase commands are configured."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.erase_data:13 of
+msgid "If readback of erased data fails verification."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.program_data:1 of
+msgid "Program data and verify success."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.program_data:3 of
+msgid "Implemented using :data:`Command.ProgramData <glasgow.arch.qspi.nor.Command.ProgramData>`."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.program_data:5 of
+msgid "Programs :py:`data` to memory range starting at :py:`address`. The memory range must have been erased (using :meth:`erase_data` or otherwise), otherwise the resulting contents will become a logical AND of existing data and written data, and will fail verification."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.program_data:9 of
+msgid "If no program commands are available, or page size is not configured."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.program_data:10 of
+msgid "If readback of programmed data fails verification."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.write_data:1 of
+msgid "Write data and verify success."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.write_data:3 of
+msgid "Implemented using :meth:`erase_data` and :meth:`program_data`."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.write_data:5 of
+msgid "Writes :py:`data` at :py:`address` without any alignment constraints. If the written region is not already appropriately aligned, performs a read-modify-write cycle; in any case, data is first erased and then programmed."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.write_data:9 of
+msgid "If no erase or program commands are configured, or page size is not configured."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.write_data:10 of
+msgid "If readback of erased or programmed data fails verification."
+msgstr ""
+
+#: ../../src/applets/memory/25q.rst:29
+msgid "NOR command set reference"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.Opcode:1 of
+msgid "Common (Q)SPI NOR Flash memory opcodes."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.Opcode glasgow.arch.qspi.nor.StatusReg1 of
+msgid "Member Type"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.Opcode:1 glasgow.arch.qspi.nor.StatusReg1:1 of
+msgid ":py:class:`int`"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.Command:1 glasgow.arch.qspi.nor.Opcode:1
+#: glasgow.arch.qspi.nor.StatusReg1:1 of
+msgid "Valid values are as follows:"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.StatusReg1:1 of
+msgid "Status Register 1 flags."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.StatusReg1:3 of
+msgid "Only includes six universally agreed upon LSBs. The two remaining MSBs have wildly varying function."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.StatusReg1.BUSY:1 of
+msgid "Operation in Progress bit"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.StatusReg1.WREN:1 of
+msgid "Write Enable Latch bit"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.StatusReg1.BP0:1 of
+msgid "Block Protection bit 0"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.StatusReg1.BP1:1 of
+msgid "Block Protection bit 1"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.StatusReg1.BP2:1 of
+msgid "Block Protection bit 2"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.StatusReg1.BP3:1 of
+msgid "Block Protection bit 3 or Top/Bottom Block Protection bit"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.Command:1 of
+msgid "Abstract (Q)SPI NOR Flash memory commands."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.Command:3 of
+msgid "While some commands directly correspond to a specific :enum:`Opcode`, other commands have multiple functionally equivalent opcodes with different throughput, or in some cases there is no globally uniform opcode assignment at all."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.Command:7 of
+msgid "The mapping of :class:`Command`\\ s to :class:`Instruction <glasgow.arch.qspi.Instruction>`\\ s (and therefore :class:`Opcode`\\ s) is maintained within a :class:`CommandSet`."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.Command:1 of
+msgid "The :class:`~enum.Enum` and its members also have the following methods:"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.Command.all_erase_sizes:1 of
+msgid "Every known erase size."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.Command.erase_for_size:1 of
+msgid "Select erase command for an :py:`erase_size`-long region."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.Command.erase_for_size:3 of
+msgid "If :py:`erase_size` is not in :meth:`erase_erase_sizes`."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet:1 of
+msgid "Bases: :py:class:`~glasgow.arch.qspi.BaseCommandSet`\\ [:py:class:`~glasgow.arch.qspi.nor.Command`]"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet:1 of
+msgid "SPI NOR Flash command set."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet:3 of
+msgid "When created, the command set only contains the opcodes that are implemented by every JESD216 compliant device. This makes identification and configuration possible, but data transfer cannot occur until the corresponding command set is configured via :meth:`use_explicit` or :meth:`use_jesd216`."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet:8 of
+msgid "Created with the following mappings:"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet:10 of
+msgid ":data:`Command.PowerUp`: :data:`Opcode.ReleasePowerDown`, (1-0-0) mode"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet:11 of
+msgid ":data:`Command.PowerDown`: :data:`Opcode.PowerDown`, (1-0-0) mode"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet:12 of
+msgid ":data:`Command.ReadSFDP`: :data:`Opcode.ReadSFDP`, (1-1-1) mode"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet:13 of
+msgid ":data:`Command.ReadJEDEC`: :data:`Opcode.ReadJEDEC`, (1-0-1) mode"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet:14 of
+msgid ":data:`Command.ReadStatusReg1`: :data:`Opcode.ReadStatusReg1`, (1-0-1) mode"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet:15 of
+msgid ":data:`Command.ReadStatusReg2`: :data:`Opcode.ReadStatusReg2`, (1-0-1) mode"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet:16 of
+msgid ":data:`Command.ReadStatusReg3`: :data:`Opcode.ReadStatusReg3`, (1-0-1) mode"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet:17 of
+msgid ":data:`Command.WriteStatusRegs`: :data:`Opcode.WriteStatusReg1`, (1-0-1) mode"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet:18 of
+msgid ":data:`Command.WriteEnable`: :data:`Opcode.WriteEnable`, (1-0-0) mode"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet:19 of
+msgid ":data:`Command.WriteDisable`: :data:`Opcode.WriteDisable`, (1-0-0) mode"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet:20 of
+msgid ":data:`Command.EraseDataAll`: :data:`Opcode.EraseChip`, (1-0-0) mode"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_explicit:1 of
+msgid "Use explicitly specified instructions."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_explicit:3 of
+msgid "Adds up to five mappings:"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_explicit:5 of
+msgid ":data:`Command.ReadData`: :data:`Opcode.Read`, (1-1-1) mode"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_explicit:6 of
+msgid ":data:`Command.EraseData4K`: :py:`opcode_erase_4k`, (1-1-0) mode (if specified)"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_explicit:7 of
+msgid ":data:`Command.EraseData32K`: :py:`opcode_erase_32k`, (1-1-0) mode (if specified)"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_explicit:8 of
+msgid ":data:`Command.EraseData64K`: :py:`opcode_erase_64k`, (1-1-0) mode (if specified)"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_explicit:9 of
+msgid ":data:`Command.ProgramData`: :data:`Opcode.PageProgram`, (1-1-1) mode (if :py:`page_size` is specified)"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_explicit:12 of
+msgid "Configures the :meth:`data_operation_prologue` method to execute :py:`data_operation_prologue`."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_explicit:15 of
+msgid "This function is intended for \"lowest common denominator\" configuration in absence of SFDP data. If you need to configure a different or more complex command set, you should add the necessary mappings directly."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_jesd216:1 of
+msgid "Use instructions specified by :py:`sfdp`."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_jesd216:3 of
+msgid "To determine the highest throughput instruction, all the possible (1-`x`-`y`) modes are ordered first by `y` and then `x`."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_jesd216:6 of
+msgid "Adds the following mappings:"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_jesd216:8 of
+msgid ":data:`Command.ReadData` (fastest available, considering :py:`enable_dual` and :py:`enable_quad`)"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_jesd216:10 of
+msgid ":data:`Command.EraseData4K` (if available)"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_jesd216:11 of
+msgid ":data:`Command.EraseData32K` (if available)"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_jesd216:12 of
+msgid ":data:`Command.EraseData64K` (if available)"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_jesd216:13 of
+msgid ":data:`Command.ProgramData`: :data:`Opcode.PageProgram`, (1-1-1) mode"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_jesd216:14 of
+msgid ":data:`Command.Enter4ByteMode`: :data:`Opcode.Enter4ByteMode` (if relevant)"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_jesd216:15 of
+msgid ":data:`Command.Leave4ByteMode`: :data:`Opcode.Leave4ByteMode` (if relevant)"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_jesd216:17 of
+msgid "Configures the :meth:`data_operation_prologue` method to execute any appropriate mode switch or register access sequence for 4-byte addressing."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_jesd216:20 of
+msgid "If JEDEC flash parameters table is not present."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_jesd216:21 of
+msgid "If JEDEC flash parameters table contains unsupported parameters for required features."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.min_erase_size:1 of
+msgid "Smallest supported erase size."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.data_operation_prologue:1 of
+msgid "Compute prologue sequence for a data operation starting at :py:`address`."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.data_operation_prologue:3 of
+msgid "Returns an (address-specific) sequence of commands or write instructions that must be executed to prepare for any operation (reading, erasing, or programming) addressing the data region. A preceding call to :meth:`use_explicit` or :meth:`use_jesd216` may affect the specific sequence returned by this method."
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.data_operation_prologue:10 of
+msgid "If the steps above are not followed exactly, the outcome of any read, erase, or program operations may be completely unpredictable."
+msgstr ""
+

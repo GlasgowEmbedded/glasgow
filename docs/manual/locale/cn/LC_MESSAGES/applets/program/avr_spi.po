@@ -1,0 +1,148 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/program/avr_spi.rst:2
+msgid "``program-avr-spi``"
+msgstr ""
+
+#: ../../src/applets/program/avr_spi.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-avr-spi"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Identify, program, and verify Microchip AVR microcontrollers using low-voltage serial (SPI) programming."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "While programming is disabled, the programming interface is tristated, so the applet can be used for in-circuit programming even if the device uses SPI itself."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The standard AVR ICSP connector layout is as follows:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Commands that read or write memory contents derive the file format from the filename as follows:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'reset' to PIN (default: 'A0', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'sck' to PIN (default: 'A1', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'cipo' to PIN (default: 'A2', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'copi' to PIN (default: 'A3', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set SCK frequency to FREQ kHz (default: 100)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-avr-spi erase"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-avr-spi identify"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-avr-spi read"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "display fuse bytes"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "display lock bits"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "display calibration bytes"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write program memory contents to FILE (must be '-' or end with: .bin, .hex, .ihx, .ihex)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write EEPROM contents to FILE (must be '-' or end with: .bin, .hex, .ihx, .ihex)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-avr-spi write-eeprom"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "read EEPROM contents from FILE (must be '-' or end with: .bin, .hex, .ihx, .ihex)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-avr-spi write-fuses"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set low fuse to binary BITS"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set high fuse to binary BITS"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set extra fuse to binary BITS"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-avr-spi write-lock"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write lock bits BITS"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-avr-spi write-program"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "read program memory contents from FILE (must be '-' or end with: .bin, .hex, .ihx, .ihex)"
+msgstr ""
+

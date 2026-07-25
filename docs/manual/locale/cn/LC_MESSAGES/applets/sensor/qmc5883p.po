@@ -1,0 +1,382 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/sensor/qmc5883p.rst:2
+msgid "``sensor-qmc5883p``"
+msgstr ""
+
+#: ../../src/applets/sensor/qmc5883p.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-qmc5883p"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Measure magnetic field using the QMC5883P triple-axis magnetometer sensor."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "This applet only supports sensors connected via the I²C interface."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'scl' to PIN (default: 'A0', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'sda' to PIN (default: 'A1', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "I2C address of the sensor (default: 0x2c)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "operating mode (default: normal)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "output data rate in Hz (default: 50)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "oversample ratio (default: 4)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "downsample ratio (default: 2)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "field range in Gauss (default: 8)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-qmc5883p log"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "sample each TIME seconds"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-qmc5883p log csv"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Log data to a comma-separated value (CSV) file."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write data to CSV-FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "format CSV file according to DIALECT"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-qmc5883p log influxdb"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Log data to an InfluxDB 1.x endpoint over HTTP(S)."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to endpoint URL //ENDPOINT/write"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to database DATABASE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to measurement SERIES"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to retention policy POLICY"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "attach TAG=VALUE to all data points"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set timestamp precision to PRECISION"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "submit data in groups of BATCH-SIZE points"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-qmc5883p log influxdb2"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Log data to an InfluxDB 2.x endpoint over HTTP(S)."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to endpoint URL //ENDPOINT/api/v2/write"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to Organization ORGANIZATION (can be either the name or the id)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to bucket BUCKET"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set the Token to use for Authentication"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-qmc5883p log stdout"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Log data to standard output in a human-readable format."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-qmc5883p measure"
+msgstr ""
+
+#: ../../src/applets/sensor/qmc5883p.rst:14
+msgid "API reference"
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.OperatingMode:1 of
+msgid "Operating modes for QMC5883P."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.DownsampleRatio:1
+#: glasgow.applet.sensor.qmc5883p.FieldRange:1
+#: glasgow.applet.sensor.qmc5883p.OperatingMode:1
+#: glasgow.applet.sensor.qmc5883p.OutputDataRate:1
+#: glasgow.applet.sensor.qmc5883p.OversampleRatio:1
+#: glasgow.applet.sensor.qmc5883p.SetResetMode:1 of
+msgid "Valid values are as follows:"
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.OutputDataRate:1 of
+msgid "Output data rates (Hz)."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.OversampleRatio:1 of
+msgid "Oversample ratios."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.DownsampleRatio:1 of
+msgid "Downsample ratios."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.FieldRange:1 of
+msgid "Field ranges (Gauss)."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.SetResetMode:1 of
+msgid "Set/Reset modes."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface:1 of
+msgid "Interface to QMC5883P magnetometer sensor."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.identify:1 of
+msgid "Read and verify chip ID."
+msgstr ""
+
+#: ../../src/applets/sensor/qmc5883p.rst
+msgid "Returns"
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.identify:3 of
+msgid "Chip ID (should be 0x80)."
+msgstr ""
+
+#: ../../src/applets/sensor/qmc5883p.rst
+msgid "Return type"
+msgstr ""
+
+#: ../../src/applets/sensor/qmc5883p.rst
+msgid "Raises"
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.identify:6 of
+msgid "If chip ID does not match expected value 0x80."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.soft_reset:1 of
+msgid "Perform soft reset via CONTROL2 register."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.soft_reset:3 of
+msgid "Waits 50ms for reset to complete and verifies chip ID."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.soft_reset:5 of
+msgid "If chip ID is invalid after reset."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.set_mode:1 of
+msgid "Set operating mode."
+msgstr ""
+
+#: ../../src/applets/sensor/qmc5883p.rst
+msgid "Parameters"
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.set_mode:3 of
+msgid "Operating mode."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.set_mode:6 of
+msgid "If mode is invalid."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.set_data_rate:1 of
+msgid "Set output data rate."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.set_data_rate:3 of
+msgid "Output data rate."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.set_data_rate:6 of
+msgid "If data rate is invalid."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.set_oversample_ratio:1 of
+msgid "Set oversample ratio."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.set_oversample_ratio:3 of
+msgid "Oversample ratio."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.set_oversample_ratio:6 of
+msgid "If oversample ratio is invalid."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.set_downsample_ratio:1 of
+msgid "Set downsample ratio."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.set_downsample_ratio:3 of
+msgid "Downsample ratio."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.set_downsample_ratio:6 of
+msgid "If downsample ratio is invalid."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.set_range:1 of
+msgid "Set field range."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.set_range:3 of
+msgid "Field range."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.set_range:6 of
+msgid "If field range is invalid."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.get_range:1 of
+msgid "Get current field range setting."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.get_range:3 of
+msgid "Current field range."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.set_setreset_mode:1 of
+msgid "Set set/reset mode for eliminating sensor offset."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.set_setreset_mode:3 of
+msgid "Set/reset mode: :py:`SetResetMode.ON`, :py:`SetResetMode.SETONLY`, or :py:`SetResetMode.OFF`."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.set_setreset_mode:7 of
+msgid "If set/reset mode is invalid."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.data_ready:1 of
+msgid "Check if new measurement data is available."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.data_ready:3 of
+msgid "True if data is ready to be read."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.overflow:1 of
+msgid "Check if sensor measurement has overflowed."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.overflow:3 of
+msgid "True if overflow occurred."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.get_magnetic_raw:1 of
+msgid "Read raw magnetic field values."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.get_magnetic_raw:3 of
+msgid "Waits for data ready, then reads all three axes."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.get_magnetic_raw:5 of
+msgid "Raw 16-bit signed values (x, y, z)."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.get_magnetic:8
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.get_magnetic_raw:8 of
+msgid "If timeout waiting for data ready."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.get_magnetic:1 of
+msgid "Read magnetic field in Gauss."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.get_magnetic:3 of
+msgid "Reads raw values and converts to Gauss based on current range setting."
+msgstr ""
+
+#: glasgow.applet.sensor.qmc5883p.QMC5883PInterface.get_magnetic:5 of
+msgid "Magnetic field values in Gauss (x, y, z)."
+msgstr ""
+

@@ -1,0 +1,40 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/debug/index.rst:4
+msgid "MCU debugging"
+msgstr ""
+
+#: glasgow.applet.debug:1 of
+msgid "The ``debug`` taxon groups applets implementing interfaces to microprocessor or microcontroller debug functions, such as manipulating memory and core state, and pausing and resuming execution. The differentiating characteristic for this taxon is manipulation of control flow."
+msgstr ""
+
+#: glasgow.applet.debug:5 of
+msgid "These applets may provide a higher level interface that can be used with an external debugger, like gdb, or any other appropriate interface. If the debug functions may be used for manipulating non-volatile memories, a different applet would be provided for that under the ``program`` taxon."
+msgstr ""
+
+#: glasgow.applet.debug:9 of
+msgid "The names of applets in this taxon start with the processor architecture they work with, and may be differentiated further, by architecture variant and/or debug transport."
+msgstr ""
+
+#: glasgow.applet.debug:12 of
+msgid "Examples: MIPS EJTAG, AVR debugWIRE. Counterexamples: AVR SPI (use taxon ``program``)."
+msgstr ""
+

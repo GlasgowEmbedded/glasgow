@@ -1,0 +1,436 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/interface/qspi_controller.rst:2
+msgid "``qspi-controller``"
+msgstr ""
+
+#: ../../src/applets/interface/qspi_controller.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run qspi-controller"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Initiate transactions on the extended variant of the SPI bus with four I/O channels."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "This applet can control a wide range of devices, primarily memories, that use multi-bit variants of the SPI bus. Electrically, they are all compatible, with the names indicating differences in protocol logic:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "\"SPI\" uses COPI/CIPO for both commands and data;"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "\"dual-SPI\" uses COPI/CIPO for commands and IO0/IO1 for data;"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "\"quad-SPI\" uses COPI/CIPO for commands and IO0/IO1/IO2/IO3 for data;"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "\"QPI\" uses IO0/IO1/IO2/IO3 for both commands and data."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "In this list, COPI and CIPO refer to IO0 and IO1 respectively used as fixed direction I/O. Note that vendors often make further distinction between modes, e.g. between \"dual output SPI\" and \"dual I/O SPI\"; refer to the vendor documentation for details."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The command line interface only initiates SPI mode transfers. Use the REPL for other modes."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "hex bytes to exchange with the device in SPI mode"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'sck' to PIN (default: 'A0', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O lines 'copi', 'cipo', 'io2', 'io3' to PINS (default: 'A1,A2,A3,A4', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'cs' to PIN (default: 'A5', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set SCK frequency to FREQ kHz (default: 1000)"
+msgstr ""
+
+#: ../../src/applets/interface/qspi_controller.rst:14
+msgid "API reference"
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface:1 of
+msgid "Pull-ups are enabled on all :py:`io` pins."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.clock:1 of
+msgid "SCK clock divisor."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.select:1 of
+msgid "Perform a transaction."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.select:3 of
+msgid "Starting a transaction configures the first transfer within the transaction to assert the :py:`index`-th chip select signal; ending a transaction deasserts the chip select signal. Methods :meth:`write`, :meth:`read`, :meth:`exchange`, and :meth:`dummy` may be called only while a transaction is active to transfer data on the bus."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.select:8 of
+msgid "For example, to read 16 bytes from an SPI NOR flash at address :py:`0x001234` using the Fast Read (0Bh) command, use the following code:"
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.select:19
+#: of
+msgid "An empty transaction (where the body does not call :meth:`write`, :meth:`read`, :meth:`exchange`, or :meth:`dummy`) is allowed and does not cause any chip select activity."
+msgstr ""
+
+#: ../../src/applets/interface/qspi_controller.rst
+msgid "Raises"
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.select:22
+#: of
+msgid "If recursively called inside a transaction."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.select:23
+#: of
+msgid "If :py:`index` is greater than 7."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.exchange:1
+#: of
+msgid "Exchange bytes."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.exchange:3
+#: of
+msgid "Clock :py:`octets` out via the IO0 (COPI) pin while clocking return value in via the IO1 (CIPO) pin. Unlike :meth:`write` and :meth:`read`, this method always uses x1 transfer rate."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.dummy:11
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.exchange:7
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.read:6
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.write:5 of
+msgid "If called outside of a transaction."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.write:1 of
+msgid "Write bytes."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.write:3 of
+msgid "Clock :py:`octets` out via :py:`x` IOn pins, corresponding to single, dual, or quad SPI."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.read:1 of
+msgid "Read bytes."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.read:3 of
+msgid "Clock :py:`count` octets in via :py:`x` IOn pins, corresponding to single, dual, or quad SPI."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.dummy:1 of
+msgid "Clock dummy cycles."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.dummy:3 of
+msgid "Clock :py:`count` dummy cycles. One octet corresponds to 8 dummy cycles in single SPI mode, 4 dummy cycles in dual SPI mode, and 2 dummy cycles in quad SPI mode. Some devices may require a non-multiple"
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.dummy:9 of
+msgid "The state of IOn pins is undefined during this operation."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.delay_ms:1
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.delay_us:1
+#: of
+msgid "Delay operations."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.delay_us:3
+#: of
+msgid "Delays the following QSPI bus operations by :py:`duration` microseconds."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.delay_ms:3
+#: of
+msgid "Delays the following QSPI bus operations by :py:`duration` milliseconds. Equivalent to :py:`delay_us(duration * 1000)`."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.synchronize:1
+#: of
+msgid "Synchronization barrier."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.synchronize:3
+#: of
+msgid "Ensures that once this method returns, all previously submitted operations have completed."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.execute_cmd:1
+#: of
+msgid "Execute a memory technology instruction without data transfer."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.execute_cmd:3
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.execute_read:3
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.execute_write:3
+#: of
+msgid "This is a low-level operation; in most cases, a memory technology specific interface should be used instead."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.execute_read:1
+#: of
+msgid "Execute a memory technology instruction that reads data."
+msgstr ""
+
+#: glasgow.applet.interface.qspi_controller.QSPIControllerInterface.execute_write:1
+#: of
+msgid "Execute a memory technology instruction that writes data."
+msgstr ""
+
+#: ../../src/applets/interface/qspi_controller.rst:24
+msgid "Memory command set reference"
+msgstr ""
+
+#: ../../src/applets/interface/qspi_controller.rst:26
+msgid "The building blocks below are used for implementing memory technology interfaces, such as :ref:`memory-25q <applet.memory._25q>`. They are typically not used on their own."
+msgstr ""
+
+#: glasgow.arch.qspi.Direction:1 of
+msgid "Transfer direction."
+msgstr ""
+
+#: glasgow.arch.qspi.Direction:3 of
+msgid "Specified relative to the controller."
+msgstr ""
+
+#: glasgow.arch.qspi.Direction:1 of
+msgid "Valid values are as follows:"
+msgstr ""
+
+#: glasgow.arch.qspi.CommandMode:1 of
+msgid "Command mode."
+msgstr ""
+
+#: glasgow.arch.qspi.CommandMode:3 of
+msgid "Specifies gearing for the opcode, address, and data phase."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.CommandMode.opcode:1
+#: glasgow.arch.qspi.Instruction.x_opcode:1 of
+msgid "Gearing of the opcode phase."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.CommandMode.address:1
+#: glasgow.arch.qspi.Instruction.x_address:1 of
+msgid "Gearing of the address phase."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.CommandMode.address:3 of
+msgid "If :py:`0`, there is no address phase."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.CommandMode.data:1
+#: glasgow.arch.qspi.Instruction.x_data:1 of
+msgid "Gearing of the data phase."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.CommandMode.data:3 of
+msgid "If :py:`0`, there is no data phase."
+msgstr ""
+
+#: glasgow.arch.qspi.CommandMode.uses_dual:1 of
+msgid "Whether any phase uses dual SPI."
+msgstr ""
+
+#: glasgow.arch.qspi.CommandMode.uses_quad:1 of
+msgid "Whether any phase uses quad SPI."
+msgstr ""
+
+#: glasgow.arch.qspi.Instruction:1 of
+msgid "Instruction format."
+msgstr ""
+
+#: glasgow.arch.qspi.Instruction:3 of
+msgid "The :py:`Instruction` describes the framing of each part (opcode, address, dummy, and data) of an abstract (Q)SPI instruction. The :py:`(x_opcode, x_address, x_data)` tuple corresponds to the SFDP ``x-y-z`` terminology (e.g. ``1-1-4`` for quad output has :py:`x_opcode, x_address, x_data = 1, 1, 4`). These \"gearing\" parameters indicate how many bits are transmitted per cycle, e.g. it takes :py:`8 // x_opcode` cycles to transmit the instruction opcode."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.Instruction.opcode:1 of
+msgid "Instruction opcode (one octet)."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.Instruction.x_address:3 of
+msgid "If :py:`0`, there is no address phase, and :data:`address_octets` must also be :py:`0`."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.Instruction.x_data:3 of
+msgid "If :py:`0`, there is no data phase, and :data:`data_octets` must also be :py:`0`."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.Instruction.address_octets:1 of
+msgid "Length of the address phase, in octets."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.Instruction.address_octets:3 of
+msgid "Typically, between 0 and 4 inclusive, but this is not a hard requirement."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.Instruction.mode_cycles:1 of
+msgid "Length of the mode phase, in cycles."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.Instruction.mode_cycles:3 of
+msgid "Typically, between 0 and 4 inclusive, and an integer multiple of the number of cycles needed to exchange a byte in the address phase, but this is not a hard requirement."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.Instruction.dummy_cycles:1 of
+msgid "Length of the dummy phase, in cycles."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.Instruction.dummy_cycles:3 of
+msgid "Typically, either :py:`0` or :py:`8 // x_address`, but this is not guaranteed: certain devices require dummy phase of a length that is not an integer multiple of the number of cycles needed to exchange a byte in the address or data phase."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.Instruction.direction:1 of
+msgid "Direction of the data phase."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.Instruction.direction:3 of
+msgid "Must be :py:`None` if and only if :py:`x_data == 0`."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.Instruction.data_octets:1 of
+msgid "Length of the data phase, in octets."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.Instruction.data_octets:3 of
+msgid "Typically, variable (indicated as :py:`None`), but certain commands return a fixed amount of data. See also :attr:`data_repeats`."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.Instruction.data_repeats:1 of
+msgid "Whether the data output repeats."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.Instruction.data_repeats:3 of
+msgid "If true, then the output repeats after transferring more than :attr:`data_octets`. For status registers, each repeat indicates up-to-date state at the moment of the transfer."
+msgstr ""
+
+#: ../../docstring glasgow.arch.qspi.Instruction.data_repeats:6 of
+msgid "If false, data output might return all-zeroes, all-ones, or be undriven after transferring :attr:`data_octets`, and this condition should be avoided."
+msgstr ""
+
+#: glasgow.arch.qspi.Instruction.spi_1_0_0:1 of
+msgid "SPI instruction with 1-0-0 gearing."
+msgstr ""
+
+#: glasgow.arch.qspi.Instruction.spi_1_1_0:1 of
+msgid "SPI instruction with 1-1-0 gearing."
+msgstr ""
+
+#: glasgow.arch.qspi.Instruction.spi_1_0_1:1 of
+msgid "SPI instruction with 1-0-1 gearing."
+msgstr ""
+
+#: glasgow.arch.qspi.Instruction.spi_1_1_1:1 of
+msgid "SPI instruction with 1-1-1 gearing."
+msgstr ""
+
+#: glasgow.arch.qspi.Instruction.dspi_1_1_2:1 of
+msgid "Dual SPI instruction with 1-1-2 gearing."
+msgstr ""
+
+#: glasgow.arch.qspi.Instruction.dspi_1_2_2:1 of
+msgid "Dual SPI instruction with 1-2-2 gearing."
+msgstr ""
+
+#: glasgow.arch.qspi.Instruction.qspi_1_1_4:1 of
+msgid "Quad SPI instruction with 1-1-4 gearing."
+msgstr ""
+
+#: glasgow.arch.qspi.Instruction.qspi_1_4_4:1 of
+msgid "Quad SPI instruction with 1-4-4 gearing."
+msgstr ""
+
+#: glasgow.arch.qspi.Instruction.mode:1 of
+msgid "Command mode of this instruction."
+msgstr ""
+
+#: glasgow.arch.qspi.BaseCommandSet:1 of
+msgid "Base class for command sets."
+msgstr ""
+
+#: glasgow.arch.qspi.BaseCommandSet:3 of
+msgid "A command set is a mapping from an abstract command (e.g. \"Erase 4K Sector\") to a specific concrete instruction (e.g. \"20h, 1-0-0, 3 address bytes\"). Maintaining this mapping is necessary because similar devices from different vendors, different variants of the same device from the same vendor, or the exact same device with different volatile configuration, may have the same abstract commands represented by different concrete opcodes."
+msgstr ""
+
+#: glasgow.arch.qspi.BaseCommandSet:9 of
+msgid "Technology-specific command sets should inherit from this class and include methods that parse memory architecture self-description data (if available) or assist in manually configuring the instruction set; for example, see :class:`glasgow.arch.qspi.nor.CommandSet`."
+msgstr ""
+
+#: glasgow.arch.qspi.BaseCommandSet.update:1 of
+msgid "Add multiple :py:`CommandT`-:class:`Instruction` mappings."
+msgstr ""
+
+#: glasgow.arch.qspi.BaseCommandSet.__setitem__:3
+#: glasgow.arch.qspi.BaseCommandSet.update:3 of
+msgid "Overwrites mappings that already exist."
+msgstr ""
+
+#: glasgow.arch.qspi.BaseCommandSet.__setitem__:1 of
+msgid "Add a single :py:`CommandT`-:class:`Instruction` mapping."
+msgstr ""
+
+#: glasgow.arch.qspi.BaseCommandSet.__getitem__:1 of
+msgid "Map a :py:`CommandT` to a specific :class:`Instruction`."
+msgstr ""
+
+#: glasgow.arch.qspi.BaseCommandSet.__getitem__:3 of
+msgid "If the mapping does not exist."
+msgstr ""
+
+#: glasgow.arch.qspi.BaseCommandSet.__contains__:1 of
+msgid "Check whether :py:`command` is mapped."
+msgstr ""
+
+#: glasgow.arch.qspi.BaseCommandSet.__iter__:1 of
+msgid "Iterate through every mapped :py:`CommandT`."
+msgstr ""
+

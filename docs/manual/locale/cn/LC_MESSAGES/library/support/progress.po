@@ -1,0 +1,141 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/library/support/progress.rst:2
+msgid "``support.progress``"
+msgstr ""
+
+#: glasgow.support.progress.Progress:1 of
+msgid "Progress tracker."
+msgstr ""
+
+#: glasgow.support.progress.Progress:3 of
+msgid "This context manager is used to indicate progress of a slow process within applet code in a generic way, decoupling it from a specific type of user interface. For example, if an applet is used with a CLI frontend, terminal escape sequences could be used to repeatedly display a text description on the last used line, whereas with a GUI frontend, a progress bar widget would be used."
+msgstr ""
+
+#: glasgow.support.progress.Progress:9 of
+msgid "To use it, modify applet code that processes multiple items by wrapping it in :py:`with Progress(...):`. For example, let's consider a method that uploads a bitstream via :class:`SPIControllerInterface<glasgow.applet.interface.spi_controller.SPIControllerInterface>`:"
+msgstr ""
+
+#: glasgow.support.progress.Progress:19 of
+msgid "To add progress indication here, the bitstream will need to be explicitly chunked (while avoiding copies using :class:`memoryview`) and individual chunks iterated through:"
+msgstr ""
+
+#: glasgow.support.progress.Progress:37 of
+msgid "The :py:`synchronize()` call is added because the :py:`write()` method does not wait for the operation to complete; without it, the :py:`load()` method would quickly finish, with the command buffer draining slowly after. In most cases (e.g. Flash programming) there is a requirement to wait for feedback, making explicit synchronization unnecessary."
+msgstr ""
+
+#: glasgow.support.progress.Progress:42 of
+msgid "The particluar case of chunking a sequence (of bytes, or otherwise) is common enough that this class provides a helper method for it, :meth:`chunks`. Using this helper the :py:`load()` function becomes:"
+msgstr ""
+
+#: glasgow.support.progress.Progress:55 of
+msgid "With this change to the applet code, a CLI frontend can now indicate the progress of the operation, for example, by printing:"
+msgstr ""
+
+#: glasgow.support.progress.Progress.chunks:1 of
+msgid "Chunked progress tracker."
+msgstr ""
+
+#: glasgow.support.progress.Progress.chunks:3 of
+msgid "This helper method exists to handle the case where a sequence must be brought into chunks for processing, but progress must be tracked per-item, not per-chunk. For example, when manipulating large byte sequences, it would be too inefficient to process bytes one by one just to report progress, but processing 64 KiB chunks is usually fine."
+msgstr ""
+
+#: glasgow.support.progress.Progress.chunks:8 of
+msgid "All keyword arguments not explicitly declared are passed to the class constructor. Returns a :term:`python:generator` yielding the result of indexing slices of :py:`items` up to :py:`chunk_size` in length, and advancing progress whenever control is returned. If :py:`len(items) <= chunk_size`, progress indication is omitted entirely."
+msgstr ""
+
+#: glasgow.support.progress.Progress.chunks:13 of
+msgid "To split a byte array into chunks of up to :py:`chunk_size`, such as for a write operation, use:"
+msgstr ""
+
+#: glasgow.support.progress.Progress.chunks:22 of
+msgid "To split an address range into chunks of up to :py:`chunk_size`, such as for a read operation, use:"
+msgstr ""
+
+#: glasgow.support.progress.Progress.chunks:33 of
+msgid "Avoid passing :class:`bytes` or :class:`bytearray` values as :py:`items`; wrap them in :class:`memoryview` so that chunks reference the original bytes instead of copying."
+msgstr ""
+
+#: glasgow.support.progress.Progress.action:1 of
+msgid "Action taking progress."
+msgstr ""
+
+#: glasgow.support.progress.Progress.action:3 of
+msgid "Should have a `present participle` with no punctuation at the end, e.g. :py:`\"writing\"` or :py:`\"programming flash\"`."
+msgstr ""
+
+#: glasgow.support.progress.Progress.item:1 of
+msgid "Item being operated on."
+msgstr ""
+
+#: glasgow.support.progress.Progress.item:3 of
+msgid "Should be a singular noun, e.g. :py:`\"byte\"` or :py:`\"B\"`. If :py:`None`, then the unit of processing is unspecified: either clear from context, or not feasible to specify exactly."
+msgstr ""
+
+#: glasgow.support.progress.Progress.scale:1 of
+msgid "Scale of item count."
+msgstr ""
+
+#: glasgow.support.progress.Progress.scale:3 of
+msgid "May be one of 1, 1000, or 1024. If not 1, an appropriate SI prefix (K, M, G... or Ki, Mi, Gi...) will be used when counting items."
+msgstr ""
+
+#: glasgow.support.progress.Progress.total:1 of
+msgid "Total number of items."
+msgstr ""
+
+#: glasgow.support.progress.Progress.total:3 of
+msgid "If :py:`None`, impossible to know until the operation finishes."
+msgstr ""
+
+#: glasgow.support.progress.Progress.done:1 of
+msgid "Number of completed items."
+msgstr ""
+
+#: glasgow.support.progress.Progress.advance:1 of
+msgid "Indicate completion of :py:`count` items."
+msgstr ""
+
+#: glasgow.support.progress.Progress.advance:3 of
+msgid "Advancing progress beyond :py:`self.total` completed items may result in confusing UI behavior, but will not raise errors. However, :py:`count` must not be negative."
+msgstr ""
+
+#: glasgow.support.progress.Progress.__enter__:1 of
+msgid "Register the progress indicator."
+msgstr ""
+
+#: glasgow.support.progress.Progress.__enter__:3 of
+msgid "Adds :py:`self` to the stack of displayed progress indicators."
+msgstr ""
+
+#: glasgow.support.progress.Progress.__enter__:5
+#: glasgow.support.progress.Progress.__exit__:5 of
+msgid "This :term:`python:dunder` method is called implicitly by the :py:`with Progress(...):` block."
+msgstr ""
+
+#: glasgow.support.progress.Progress.__exit__:1 of
+msgid "Unregister the progress indicator."
+msgstr ""
+
+#: glasgow.support.progress.Progress.__exit__:3 of
+msgid "Removes :py:`self` from the stack of displayed progress indicators."
+msgstr ""
+

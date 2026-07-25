@@ -1,0 +1,134 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/control/si535x.rst:2
+msgid "``control-si535x``"
+msgstr ""
+
+#: ../../src/applets/control/si535x.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run control-si535x"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Access registers of Skyworks Si535x programmable clock generators."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'scl' to PIN (default: 'A0', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'sda' to PIN (default: 'A1', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "I2C address of the controller (default: 0x60)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run control-si535x configure-si5351"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "ClockBuilder Pro CSV configuration to configure"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "comma-separated list of outputs to enable after configuration (for \"Powered-up with Output Disabled\" mode)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run control-si535x read"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "register address"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "number of registers to read"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run control-si535x write"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "data to write, as hex bytes"
+msgstr ""
+
+#: ../../src/applets/control/si535x.rst:14
+msgid "API reference"
+msgstr ""
+
+#: glasgow.applet.control.si535x.Si535xInterface.read:1 of
+msgid "Read a register or several consecutive registers starting at :py:`address`."
+msgstr ""
+
+#: glasgow.applet.control.si535x.Si535xInterface.read:3 of
+msgid "Returns an :class:`int` if :py:`count is None`, and :class:`bytes` otherwise."
+msgstr ""
+
+#: ../../src/applets/control/si535x.rst
+msgid "Raises"
+msgstr ""
+
+#: glasgow.applet.control.si535x.Si535xInterface.configure_si5351:6
+#: glasgow.applet.control.si535x.Si535xInterface.read:5
+#: glasgow.applet.control.si535x.Si535xInterface.write:3 of
+msgid "If communication fails."
+msgstr ""
+
+#: glasgow.applet.control.si535x.Si535xInterface.write:1 of
+msgid "Write a register or several consecutive registers starting at :py:`address`."
+msgstr ""
+
+#: glasgow.applet.control.si535x.Si535xInterface.parse_file:1 of
+msgid "Parse a ClockBuilder Pro CSV register file."
+msgstr ""
+
+#: glasgow.applet.control.si535x.Si535xInterface.parse_file:3 of
+msgid "Returns a list of 2-tuples :py:`(register, value)`."
+msgstr ""
+
+#: glasgow.applet.control.si535x.Si535xInterface.parse_file:5 of
+msgid "If the file contains invalid data."
+msgstr ""
+
+#: glasgow.applet.control.si535x.Si535xInterface.configure_si5351:1 of
+msgid "Configure a Si5351A/B/C device."
+msgstr ""
+
+#: glasgow.applet.control.si535x.Si535xInterface.configure_si5351:3 of
+msgid "Accepts a list of 2-tuples :py:`(register, value)` (as returned by :meth:`parse_file`) and a bit mask :py:`enable` where a 1 in a position `n` enables `n`-th output."
+msgstr ""
+

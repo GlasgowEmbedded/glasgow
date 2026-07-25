@@ -1,0 +1,189 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/interface/swd_probe.rst:2
+msgid "``swd-probe``"
+msgstr ""
+
+#: ../../src/applets/interface/swd_probe.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run swd-probe"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "At the moment, this applet does not include any high-level functionality. It only offers very low-level access to the target via the REPL or script interface."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Use the `probe-rs` applet to debug and program Arm microcontrollers."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'swclk' to PIN (default: 'A0', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'swdio' to PIN (default: 'A1', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set SWCLK frequency to FREQ kHz (default: 1000)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run swd-probe dump-memory"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "start at ADDRESS"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "dump LENGTH bytes"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "dump contents to FILENAME"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "access memory via MEM-AP #INDEX"
+msgstr ""
+
+#: ../../src/applets/interface/swd_probe.rst:14
+msgid "API reference"
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeException.Kind:1 of
+msgid "Valid values are as follows:"
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.clock:1 of
+msgid "SWCLK clock divisor."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.line_reset:1 of
+msgid "Perform a line reset sequence."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.jtag_to_swd_v1:1 of
+msgid "Perform a DPv1 JTAG-to-SWD switch sequence."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.jtag_to_swd_v2:1 of
+msgid "Perform a DPv2 JTAG-to-SWD switch sequence."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.jtag_to_swd_v2:3 of
+msgid "This sequence consists of a JTAG-to-dormant, Selection Alert, and dormant-to-SWD sub-sequences."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.dp_read:1 of
+msgid "Read from DP register :py:`reg`, switching the DP bank if necessary."
+msgstr ""
+
+#: ../../src/applets/interface/swd_probe.rst
+msgid "Raises"
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.ap_read:3
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.ap_read_block:7
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.ap_write:4
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.dp_read:3
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.dp_write:3
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.iter_aps:6 of
+msgid "On communication error."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.dp_write:1 of
+msgid "Write :py:`data` to DP register :py:`reg`, switching the DP bank if necessary."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.ap_read:1 of
+msgid "Read from AP :py:`ap` register :py:`reg`, switching the AP and AP bank if necessary."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.ap_read_block:1 of
+msgid "Read from AP :py:`ap` register :py:`reg` :py:`count` times, switching the AP and AP bank if necessary."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.ap_read_block:4 of
+msgid "The AP reads are pipelined, making this method significantly faster than calling :meth:`ap_read` :py:`count` times."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.ap_write:1 of
+msgid "Write :py:`data` to AP :py:`ap` register :py:`reg`, switching the AP and AP bank if necessary."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.initialize:1 of
+msgid "Initialize the SW-DP or SWJ-DP."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.initialize:3 of
+msgid "The initialization process is:"
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.initialize:5 of
+msgid "Perform a DPv2 JTAG-to-SWD switch sequence, as in :meth:`jtag_to_swd_v2`."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.initialize:6 of
+msgid "Perform a DPv1 JTAG-to-SWD switch sequence, as in :meth:`jtag_to_swd_v1`."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.initialize:7 of
+msgid "Perform a line reset and read ``DPIDR`` to start SWD communication."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.initialize:8 of
+msgid "Write ``DP_ABORT`` to clear all errors."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.initialize:9 of
+msgid "Write ``CTRL_STAT`` to request debug power-up."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.initialize:10 of
+msgid "Read ``CTRL_STAT`` to ensure acknowledge of debug power-up."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.initialize:12 of
+msgid "On communication error, or if debug power-up request isn't acknowledged."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.iter_aps:1 of
+msgid "Iterate available APs."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.iter_aps:3 of
+msgid "Yields 2-tuples :py:`(ap, ap_idr)` where :py:`ap` is the AP index and :py:`ap_idr` is the value of the ``IDR`` register."
+msgstr ""
+

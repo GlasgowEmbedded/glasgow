@@ -1,0 +1,112 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/interface/spi_analyzer.rst:2
+msgid "``spi-analyzer``"
+msgstr ""
+
+#: ../../src/applets/interface/spi_analyzer.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run spi-analyzer"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Capture transactions on the SPI bus."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "SPI data is captured in a clock domain driven by the SCK pin and reset by the CS# pin. This approach enables capturing data at very high SCK frequencies (up to 100 MHz), but requires a small delay between the last SCK rising edge and CS# rising edge, otherwise the last byte of a transaction will not be captured correctly. Typically, SPI controllers do provide this delay."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Signal integrity is exceptionally important for this applet. When using flywires, twist every signal wire (at the very least, CS# and SCK wires) with a ground wire connected to ground at both ends, otherwise the captured data will likely be nonsense."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The capture file format is Comma Separated Values, in one of the following line formats:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "``<COPI>,<CIPO>``, where <COPI> and <CIPO> are hexadecimal byte sequences with each eight bits corresponding to samples of COPI and CIPO, respectively (from MSB to LSB); this format is used if one CS# pin is provided."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "``<CS>,<COPI>,<CIPO>``, where <CS> is a 0-based CS# pin index and <COPI> and <CIPO> are the same as above; this format is used if multiple CS# pins are provided."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "If your DUT is a 25-series SPI Flash memory, use the `tool memory-25x` to extract data from capture files. If quad-IO commands are in use, use the `qspi-analyzer` applet to capture data."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "save communications to FILE as pairs of hex sequences"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O lines 'cs' to PINS (default: 'A0', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'sck' to PIN (default: 'A1', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'copi' to PIN (default: 'A2', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'cipo' to PIN (default: 'A3', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set FPGA trace buffer size to BYTES (must be power of 2, default: 16384)"
+msgstr ""
+
+#: ../../src/applets/interface/spi_analyzer.rst:14
+msgid "API reference"
+msgstr ""
+
+#: glasgow.applet.interface.spi_analyzer.SPIAnalyzerInterface.capture:1 of
+msgid "Capture a transaction."
+msgstr ""
+
+#: glasgow.applet.interface.spi_analyzer.SPIAnalyzerInterface.capture:3 of
+msgid "Returns a 3-tuple :py:`(chip, copi, cipo)`, where :py:`chip` is the chip select index, :py:`copi` are bytes transmitted from controller to peripheral, and :py:`cipo` are bytes transmitted from peripheral to controller."
+msgstr ""
+
+#: ../../src/applets/interface/spi_analyzer.rst
+msgid "Raises"
+msgstr ""
+
+#: glasgow.applet.interface.spi_analyzer.SPIAnalyzerInterface.capture:7 of
+msgid "When the FPGA buffer overflows. The last few transactions before the overflow occurred     may be dropped as well."
+msgstr ""
+

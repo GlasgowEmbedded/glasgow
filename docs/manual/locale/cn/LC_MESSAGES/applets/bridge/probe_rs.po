@@ -1,0 +1,60 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/bridge/probe_rs.rst:2
+msgid "``probe-rs``"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run probe-rs"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Expose SWD via a socket that can be used with `probe-rs <https://probe.rs>`_. JTAG debugging is not supported (yet)."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The current protocol version is ``probe-rs,v01``, which is available in probe-rs 0.30.0 or later."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "listen at ENDPOINT, either unix:PATH or tcp:HOST:PORT (default: connect via USB)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'swclk' to PIN (default: 'A0', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'swdio' to PIN (default: 'A1', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'srst' to PIN (optional)"
+msgstr ""
+

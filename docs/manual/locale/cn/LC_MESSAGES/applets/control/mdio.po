@@ -1,0 +1,88 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/control/mdio.rst:2
+msgid "``control-mdio``"
+msgstr ""
+
+#: ../../src/applets/control/mdio.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run control-mdio"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Configure Ethernet PHYs and query their status via the standard two-wire MDC/MDIO management interface. Both Clause 22 and Clause 45 operations are supported."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'mdc' to PIN (default: 'A0', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'mdio' to PIN (default: 'A1', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set MDC frequency to FREQ kHz (default: 1000)"
+msgstr ""
+
+#: ../../src/applets/control/mdio.rst:14
+msgid "API reference"
+msgstr ""
+
+#: glasgow.applet.control.mdio.ControlMDIOInterface.clock:1 of
+msgid "MDC clock divisor."
+msgstr ""
+
+#: glasgow.applet.control.mdio.ControlMDIOInterface.c22_read:1 of
+msgid "Read Clause 22 (SMI/MIIM) register ``reg`` of PHY ``phy``."
+msgstr ""
+
+#: glasgow.applet.control.mdio.ControlMDIOInterface.c22_write:1 of
+msgid "Write ``value`` to Clause 22 (MIIM) register ``reg`` of PHY ``phy``."
+msgstr ""
+
+#: glasgow.applet.control.mdio.ControlMDIOInterface.c45_read:1 of
+msgid "Read Clause 45 (MDIO) register ``reg`` of MMD ``dev`` of PHY ``phy``."
+msgstr ""
+
+#: glasgow.applet.control.mdio.ControlMDIOInterface.c45_write:1 of
+msgid "Write ``value`` to Clause 45 (MDIO) register ``reg`` of MMD ``dev`` of PHY ``phy``."
+msgstr ""
+
+#: glasgow.applet.control.mdio.ControlMDIOInterface.get_phy_id:1 of
+msgid "Read PHY identification."
+msgstr ""
+
+#: glasgow.applet.control.mdio.ControlMDIOInterface.get_phy_id:3 of
+msgid "Returns a tuple :py:`(oui24, model, rev)`, where :py:`oui24` is the OUI in the canonical (non-bit-reversed) representation; in it, two least significant bits are always 0."
+msgstr ""
+

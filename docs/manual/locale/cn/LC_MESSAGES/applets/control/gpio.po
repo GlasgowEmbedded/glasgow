@@ -1,0 +1,123 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/control/gpio.rst:2
+msgid "``control-gpio``"
+msgstr ""
+
+#: ../../src/applets/control/gpio.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run control-gpio"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Sample and drive individual I/O pins via the CLI, the REPL, or a script."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "CLI pin actions can be used to configure a pin to be driven strongly (``A0=0`` or ``A0=1``), to be driven weakly using a pull resistor (``A0=H`` or ``A0=L``), undriven (``A0=Z``), or specified without a value (``A0``) to sample a pin. The actions are executed in the order they are provided on the command line."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Socket pin actions may be used to interface with the applet from an external application. Send each action over the socket in the same format as the CLI pin action described above, terminating with a ``\\n``. (Spaces are ignored.) When sampling a pin, the value is sent back over the socket terminated with a `\\n``, otherwise no response is provided."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "pins to drive or sample, e.g.: 'A0=1', 'A1=L', 'B5'"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O lines 'pins' to PINS (required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "listen at ENDPOINT, either unix:PATH or tcp:HOST:PORT"
+msgstr ""
+
+#: ../../src/applets/control/gpio.rst:14
+msgid "API reference"
+msgstr ""
+
+#: glasgow.applet.control.gpio.GPIOInterface.count:1 of
+msgid "Number of pins."
+msgstr ""
+
+#: glasgow.applet.control.gpio.GPIOInterface.pull:1 of
+msgid "Configure pull-up or pull-down for pin :py:`index`."
+msgstr ""
+
+#: glasgow.applet.control.gpio.GPIOInterface.input:1 of
+msgid "Configure pin :py:`index` as input."
+msgstr ""
+
+#: ../../src/applets/control/gpio.rst
+msgid "Raises"
+msgstr ""
+
+#: glasgow.applet.control.gpio.GPIOInterface.get:3
+#: glasgow.applet.control.gpio.GPIOInterface.input:3
+#: glasgow.applet.control.gpio.GPIOInterface.output:3
+#: glasgow.applet.control.gpio.GPIOInterface.set:3 of
+msgid "If :py:`index` does not specify a valid pin index."
+msgstr ""
+
+#: glasgow.applet.control.gpio.GPIOInterface.output:1 of
+msgid "Configure pin :py:`index` as output, initially driving :py:`value`."
+msgstr ""
+
+#: glasgow.applet.control.gpio.GPIOInterface.get:1 of
+msgid "Sample state of pin :py:`index`."
+msgstr ""
+
+#: glasgow.applet.control.gpio.GPIOInterface.set:1 of
+msgid "Update value driven by pin :py:`index` to be :py:`value`."
+msgstr ""
+
+#: glasgow.applet.control.gpio.GPIOInterface.set:4 of
+msgid "If pin :py:`index` is not configured as an ouptut."
+msgstr ""
+
+#: glasgow.applet.control.gpio.GPIOInterface.get_all:1 of
+msgid "Sample state of every pin simultaneously."
+msgstr ""
+
+#: glasgow.applet.control.gpio.GPIOInterface.get_all:3 of
+msgid "In the returned value, the least significant bit corresponds to the first pin in the port provided to the constructor."
+msgstr ""
+
+#: glasgow.applet.control.gpio.GPIOInterface.set_all:1 of
+msgid "Update value of every pin simultaneously."
+msgstr ""
+
+#: glasgow.applet.control.gpio.GPIOInterface.set_all:3 of
+msgid "In :py:`value`, the least significant bit corresponds to the first pin in the port provided to the constructor. The bits corresponding to pins that are configured as inputs, as well as the bits that do not correspond to any pins, are ignored."
+msgstr ""
+

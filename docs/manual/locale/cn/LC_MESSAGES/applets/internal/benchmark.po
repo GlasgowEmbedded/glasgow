@@ -1,0 +1,64 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/internal/benchmark.rst:2
+msgid "``benchmark``"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run benchmark"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Evaluate performance of the host communication link."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Benchmark modes:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "source: device emits an endless stream of data via one FIFO, host validates (simulates a logic analyzer subtarget)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "sink: host emits an endless stream of data via one FIFO, device validates (simulates an I2S protocol subtarget)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "loopback: host emits an endless stream of data via one FIFOs, device mirrors it all back, host validates (simulates an SPI protocol subtarget)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "latency: host sends one packet, device sends it back, time until the packet is received back on the host is measured (simulates cases where a transaction with the DUT relies on feedback from the host; also useful for comparing different usb stacks or usb data paths like hubs or network bridges)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "run benchmark mode MODE (default: source sink loopback latency)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "transfer COUNT bytes (default: 8388608)"
+msgstr ""
+

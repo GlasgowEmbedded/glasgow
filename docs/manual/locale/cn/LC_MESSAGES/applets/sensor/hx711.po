@@ -1,0 +1,189 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/sensor/hx711.rst:2
+msgid "``sensor-hx711``"
+msgstr ""
+
+#: ../../src/applets/sensor/hx711.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-hx711"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Measure voltage with AVIA Semiconductor HX711 wheatstone bridge analog-to-digital converter."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "This applet can optionally provide a frequency source that can be connected to the XI pin. The provided frequency source is much more accurate than the internal oscillator of the HX711, and, depending on the state of the RATE pin, allows for a much wider sample rate range from approx. 1 Hz to approx. 144 Hz."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'sck' to PIN (default: 'A0', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'din' to PIN (default: 'A1', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'osc' to PIN (optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set reference oscillator frequency to FREQ MHz"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "measure channel CHAN"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "amplify GAIN times (64 or 128 for channel A, 32 for channel B)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-hx711 log"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-hx711 log csv"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Log data to a comma-separated value (CSV) file."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write data to CSV-FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "format CSV file according to DIALECT"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-hx711 log influxdb"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Log data to an InfluxDB 1.x endpoint over HTTP(S)."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to endpoint URL //ENDPOINT/write"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to database DATABASE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to measurement SERIES"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to retention policy POLICY"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "attach TAG=VALUE to all data points"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set timestamp precision to PRECISION"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "submit data in groups of BATCH-SIZE points"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-hx711 log influxdb2"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Log data to an InfluxDB 2.x endpoint over HTTP(S)."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to endpoint URL //ENDPOINT/api/v2/write"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to Organization ORGANIZATION (can be either the name or the id)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to bucket BUCKET"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set the Token to use for Authentication"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-hx711 log stdout"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Log data to standard output in a human-readable format."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-hx711 measure"
+msgstr ""
+
+#: ../../src/applets/sensor/hx711.rst:14
+msgid "API reference"
+msgstr ""
+
+#: glasgow.applet.sensor.hx711.SensorHX711Interface.sck_clock:1 of
+msgid "Serial Clock (sck) clock divisor."
+msgstr ""
+
+#: glasgow.applet.sensor.hx711.SensorHX711Interface.sck_clock:3 of
+msgid "The recommended frequency is 1MHz, otherwise the valid range is 20kHz to 5MHz."
+msgstr ""
+
+#: glasgow.applet.sensor.hx711.SensorHX711Interface.sample:1 of
+msgid "Read the current sample, and initiate the conversion of the next sample."
+msgstr ""
+
+#: glasgow.applet.sensor.hx711.SensorHX711Interface.sample:3 of
+msgid ":py:`next_setting` determines the channel and gain of the next sample."
+msgstr ""
+
+#: glasgow.applet.sensor.hx711.SensorHX711Interface.sample:5 of
+#, python-brace-format
+msgid "Returns the sample as a signed 24 bit integer, which can be converted into the measured differential voltage with the formula: :math:`v = (sample/2^{23}) * (0.5AVDD/GAIN)`"
+msgstr ""
+

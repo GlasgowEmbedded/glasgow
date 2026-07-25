@@ -1,0 +1,180 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/interface/i2c_controller.rst:2
+msgid "``i2c-controller``"
+msgstr ""
+
+#: ../../src/applets/interface/i2c_controller.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run i2c-controller"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Initiate transactions on the I²C bus."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The following optional bus features are supported:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Clock stretching"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Device ID"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'scl' to PIN (default: 'A0', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'sda' to PIN (default: 'A1', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set SCL frequency to FREQ kHz (default: 100, range: 100...4000)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run i2c-controller scan"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "read device ID from devices responding to scan"
+msgstr ""
+
+#: ../../src/applets/interface/i2c_controller.rst:14
+msgid "API reference"
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.clock:1 of
+msgid "SCL clock divisor."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.transaction:1
+#: of
+msgid "Perform a transaction."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.transaction:3
+#: of
+msgid "While a transaction is active, calls to :meth:`write` and :meth:`read` do not generate a STOP condition; only one STOP condition is generated once the transaction ends. This also means that each call to :meth:`write` or :meth:`read` after the first such call in a transaction will generate a repeated START condition."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.transaction:8
+#: of
+msgid "For example, to perform ``S 0x50 nW 0x01 A Sr 0x50 R 0x?? nA 0x?? P`` (read of two bytes from a 24-series single address byte EEPROM, starting at address 0x01), use the following code:"
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.transaction:18
+#: of
+msgid "An empty transaction (where the body does not call :meth:`write` or :meth:`read`) is allowed and produces no bus activity. (A START condition followed by a STOP condition is prohibited by the I²C specification.)"
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.write:1 of
+msgid "Write bytes."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.write:3 of
+msgid "Generates a START condition followed by a WRITE target address (:py:`(address << 1) | 0`), writes data, then generates a STOP condition (unless used within a transaction)."
+msgstr ""
+
+#: ../../src/applets/interface/i2c_controller.rst
+msgid "Raises"
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.write:6 of
+msgid "If either the target address or the written data receives a not-acknowledgement."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.read:1 of
+msgid "Read bytes."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.read:3 of
+msgid "Generates a START condition followed by a READ target address (:py:`(address << 1) | 1`), reads data, then generates a STOP condition (unless used within a transaction)."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.read:6 of
+msgid "The I²C bus design requires :py:`count` to be 1 or more."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.read:8 of
+msgid "If the target address receives a not-acknowledgement."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.ping:1 of
+msgid "Check address for presence."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.ping:3 of
+msgid "Generates a START condition followed by a WRITE target address, then generates a STOP condition (unless used within a transaction). This is done using a :meth:`write` call with no data."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.ping:7 of
+msgid "Returns :py:`True` if the target adddress receives an acknowledgement, :py:`False` otherwise."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.scan:1 of
+msgid "Scan address range for presence."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.scan:3 of
+msgid "Calls :meth:`ping` for each of :py:`addresses`. The default address range includes every non-reserved I²C address."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.scan:6 of
+msgid "Returns the set of addresses receiving an acknowledgement."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.device_id:1
+#: of
+msgid "Retrieve Device ID."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.device_id:3
+#: of
+msgid "The standard I²C Device ID command (which uses the reserved address :py:`0b1111_100`) must not be confused with various vendor-specific device identifiers (which use a vendor-specific mechanism). This command is optional and rarely implemented."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.device_id:7
+#: of
+msgid "Returns a 3-tuple :py:`(manufacturer, part_ident, revision)`."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.device_id:9
+#: of
+msgid "If the command is not implemented."
+msgstr ""
+

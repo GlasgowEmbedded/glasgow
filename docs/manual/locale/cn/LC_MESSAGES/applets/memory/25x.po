@@ -1,0 +1,288 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/memory/25x.rst:2
+msgid "``memory-25x``"
+msgstr ""
+
+#: ../../src/applets/memory/25x.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-25x"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Identify, read, erase, or program memories compatible with 25-series Flash memory, such as Microchip 25C320, Winbond 25Q64, Macronix MX25L1605, or hundreds of other memories that typically have \"25X\" where X is a letter in their part number."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "When using this applet for erasing or programming, it is necessary to look up the page and sector sizes. These values are displayed by the `identify` command when the memory is self-describing, and can be found in the memory datasheet otherwise."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The pinout of a typical 25-series IC is as follows:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The default pin assignment follows the pinouts above in the clockwise direction, making it easy to connect the memory with probes or, alternatively, crimp an IDC cable wired to a SOIC clip."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "It is also possible to flash 25-series flash chips using the `spi-flashrom` applet, which requires a third-party tool `flashrom`. The advantage of using the `flashrom` applet is that flashrom offers compatibility with a wider variety of devices, some of which may not be supported by the `memory-25x` applet."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'cs' to PIN (default: 'A5', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O lines 'copi', 'cipo', 'wp', 'hold' to PINS (default: 'A2,A4,A3,A0', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'sck' to PIN (default: 'A1', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set SCK frequency to FREQ kHz (default: 12000)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-25x erase-block"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "erase block(s) starting at address ADDRESS"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-25x erase-chip"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-25x erase-program"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "program memory starting at address ADDRESS"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "erase memory in SIZE byte sectors"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "program memory region using SIZE byte pages"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "program memory with DATA as hex bytes"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "program memory with contents of FILENAME"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-25x erase-sector"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "erase sector(s) starting at address ADDRESS"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-25x fast-read"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "read memory starting at address ADDRESS, with wraparound"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "read LENGTH bytes from memory"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write memory contents to FILENAME"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-25x identify"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-25x program"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-25x program-page"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-25x protect"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set SR.BP[3:0] to BITS"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-25x read"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run memory-25x verify"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow tool memory-25x"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Dissect captured SPI/QSPI transactions and extract data into linear memory image files."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The expected capture file format is the same as ones used by `spi-analyzer` and `qspi-analyzer` applets. Specifically, one of the following Comma-Separated Value line formats is expected:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "``<COPI>,<CIPO>``, where <COPI> and <CIPO> are hexadecimal byte sequences with each eight bits corresponding to samples of COPI and CIPO, respectively (from MSB to LSB)."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "``<DATA>``, where <DATA> is a hexadecimal nibble sequence with each four bits corresponding to samples of HOLD#, WP#, CIPO, COPI (from MSB to LSB)."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The extracted data can be saved as pairs of data files and mask files, where the mask file contains a 1 bit for every bit in the data file that has been observed in a transaction, and a 0 bit otherwise."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The list below details every command that is recognized by this tool. If your capture includes commands not currently recognized, please open an issue with a capture file attached."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "03h (Read Data)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "04h (Write Disable)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "05h (Read Status Register)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "06h (Write Enable)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "0Bh (Fast Read)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "4Bh (Read Unique ID)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "5Ah (Read SFDP)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "9Fh (Read JEDEC ID)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "B7h (Enter 4-Byte Address Mode)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "E9h (Exit 4-Byte Address Mode)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "3Bh (Dual Output Fast Read)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "6Bh (Quad Output Fast Read)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "BBh (Dual I/O Fast Read)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "EBh (Quad I/O Fast Read)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "read captured SPI transactions from CAPTURE-FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write extracted data to DATA-FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write data presence mask to MASK-FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write extracted SFDP data to DATA-FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write SFDP data presence mask to MASK-FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write extracted UID data to DATA-FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write UID data presence mask to MASK-FILE"
+msgstr ""
+
+#: ../../src/applets/memory/25x.rst:19
+msgid "API reference"
+msgstr ""
+
+#: ../../src/applets/memory/25x.rst:21
+msgid "Todo"
+msgstr ""
+
+#: ../../src/applets/memory/25x.rst:23
+msgid "Add API documentation for ``memory-25x``."
+msgstr ""
+
