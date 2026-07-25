@@ -1,0 +1,84 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/bridge/flashrom.rst:2
+msgid "``spi-flashrom``"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run spi-flashrom"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Expose SPI via a socket using the flashrom serprog protocol; see https://flashrom.org."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "This applet has the same default pin assignment as the `memory-25x` applet; see its description for details."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Usage:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "It is also possible to flash 25-series flash chips using the `memory-25x` applet, which does not require a third-party tool. The advantage of using the `spi-flashrom` applet is that flashrom offers compatibility with a wider variety of devices, some of which may not be supported by the `memory-25x` applet."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "listen at ENDPOINT, either unix:PATH or tcp:HOST:PORT"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'cs' to PIN (default: 'A5', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'sck' to PIN (default: 'A1', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'copi' to PIN (default: 'A2', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'cipo' to PIN (default: 'A4', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'wp' to PIN (default: 'A3', optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'hold' to PIN (default: 'A0', optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set SCK frequency to FREQ kHz (default: 100)"
+msgstr ""
+

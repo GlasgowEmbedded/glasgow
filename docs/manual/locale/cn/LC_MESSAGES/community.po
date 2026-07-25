@@ -1,0 +1,120 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/community.rst:4
+msgid "Community"
+msgstr ""
+
+#: ../../src/community.rst:6
+msgid "Glasgow Interface Explorer is a community-driven project that coordinates via `GitHub issues <issues_>`__ and real-time chat channels on multiple platforms:"
+msgstr ""
+
+#: ../../src/community.rst:8
+msgid "IRC channel `#glasgow at irc.libera.chat <irc_>`__ with `logs available <irclogs_>`__."
+msgstr ""
+
+#: ../../src/community.rst:9
+msgid "Matrix channel `#glasgow-interface-explorer:matrix.org <matrix_>`__."
+msgstr ""
+
+#: ../../src/community.rst:10
+msgid "Discord channel `#glasgow at 1BitSquared's Discord server <discord_>`__."
+msgstr ""
+
+#: ../../src/community.rst:12
+msgid "All of our chat channels are bridged together; regardless of which one you choose, your messages reach everyone on all of the platforms. Note that what you say will be logged in a public archive indexed by search engines."
+msgstr ""
+
+#: ../../src/community.rst:24
+msgid "Code of Conduct"
+msgstr ""
+
+#: ../../src/community.rst:26
+msgid "All community interactions are covered by our :doc:`Code of Conduct <conduct>`."
+msgstr ""
+
+#: ../../src/community.rst:32
+msgid "Fediverse"
+msgstr ""
+
+#: ../../src/community.rst:34
+msgid "Many of the community members involved with the project have Fediverse pages; `@esden@chaos.social <https://chaos.social/@esden>`_ has been writing a lot about the process of mass manufacturing the hardware."
+msgstr ""
+
+#: ../../src/community.rst:36
+msgid "You, too, can join the conversation via the `#GlasgowInterfaceExplorer` hashtag. Please avoid using `#Glasgow`; we are not talking about the city. (Unless you live there, in which case both are appropriate!)"
+msgstr ""
+
+#: ../../src/community.rst:42
+msgid "Weekly meetings"
+msgstr ""
+
+#: ../../src/community.rst:44
+msgid "Every week we conduct an informal developer meeting on our chat channels, discussing the progress over the last week, outstanding issues, and any other matters that need attention. At the moment the meeting is scheduled **every Saturday at 22:00 UTC**, and the typical duration is one hour. Anyone is free to attend, and we publish our past `meeting minutes <minutes_>`__."
+msgstr ""
+
+#: ../../src/community.rst:46
+msgid "When conducting a meeting, we first discuss `nominated`_ issues, and then anything else that is brought up. Once discussed, the ``nominated`` tag is removed."
+msgstr ""
+
+#: ../../src/community.rst:55
+msgid "Acknowledgements"
+msgstr ""
+
+#: ../../src/community.rst:57
+msgid "The Glasgow project has been built by its many `contributors <https://github.com/GlasgowEmbedded/Glasgow/graphs/contributors>`_, including some without whom the project would not have been possible:"
+msgstr ""
+
+#: ../../src/community.rst:59
+msgid "`@whitequark <https://github.com/whitequark>`_ originated the overall design, coordinates the project and implements most of gateware and software"
+msgstr ""
+
+#: ../../src/community.rst:60
+msgid "`@awygle <https://github.com/awygle>`_ designed the power/analog port circuitry and helped with layout of revB"
+msgstr ""
+
+#: ../../src/community.rst:61
+msgid "`@marcan <https://github.com/marcan>`_ improved almost every aspect of hardware for revC"
+msgstr ""
+
+#: ../../src/community.rst:62
+msgid "`@esden <https://github.com/esden>`_ is handling batch manufacturing"
+msgstr ""
+
+#: ../../src/community.rst:63
+msgid "`@smunaut <https://github.com/smunaut>`_ provided advice crucial for stability and performance of USB communication"
+msgstr ""
+
+#: ../../src/community.rst:64
+msgid "`@electroniceel <https://github.com/electroniceel>`_ improved the hardware for revC2, designed the test jig and is working on advanced protection circuitry"
+msgstr ""
+
+#: ../../src/community.rst:65
+msgid "`@Attie <https://github.com/attie>`_ improved and refactored many applets, hardware photos"
+msgstr ""
+
+#: ../../src/community.rst:66
+msgid "`@wanda-phi <https://github.com/wanda-phi>`_ does important maintenance work to keep the codebase in good shape"
+msgstr ""
+
+#: ../../src/community.rst:67
+msgid "`@isabelburgos <https://github.com/isabelburgos>`_ brought many applets up to date"
+msgstr ""
+

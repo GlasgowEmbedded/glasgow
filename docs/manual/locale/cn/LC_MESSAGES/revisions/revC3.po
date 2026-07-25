@@ -1,0 +1,1479 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/revisions/revC3.rst:2
+msgid "Technical description (revC3)"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:4
+msgid "This document provides a technical description of the Glasgow revC3 hardware."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:10
+msgid "Power"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:12
+msgid "Glasgow is powered by its USB-C connection. The input voltage is 5.0 V and the typical operating current is 500 mA or less. For reliable and safe operation we recommend that you power Glasgow from a standard USB port capable of providing at least 1.0 A at 5.0 V."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:14
+msgid "Some non-standards-compliant USB ports, such as those found on certain powered USB hubs, may provide more than 3.0 A of current at 5.0 V on their ports without active negotiation. While powering Glasgow from these ports is absolutely fine under all but the rarest circumstances, such non-compliant high-current USB power sources may not implement proper overcurrent protection. Such supplies carry a greater risk of damage to the board and its components in the rare event that the USB-C connector on Glasgow becomes damaged and a short develops between VBUS and GND. Shorts anywhere elsewhere on the board should be protected by overcurrent detection and protection features built into Glasgow's design. These protection features are discussed elsewhere in this document."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:16
+msgid "Since Glasgow draws less than 1.0 A of current at all times, it does not benefit from non-standards-compliant high-current USB ports."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:18
+msgid "The USB-C connector shield is connected to ground via a 100 nF capacitor and 100 kΩ resistor in parallel. The plated mounting holes in the four corners of the board are grounded."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:24
+msgid "+5V rail"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:26
+msgid "The +5V rail is the input power rail for Glasgow. You can measure this rail using the 5V test points on the front and rear of the board."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:28
+msgid "The +5V rail is derived from VUSB without additional regulation - as such, you should expect some variance in the +5V rail voltage depending on the power source and USB cable that you are using."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:30
+msgid "A BLM15PX601SZ1 ferrite bead (FB1) is inserted in series with VUSB with the intention of reducing conducted emissions onto the USB cable. Its maximum DC series resistance is 230 mΩ and its impedance at 100 MHz is 600 Ω. This ferrite bead also acts as a makeshift fuse in the event that either U15 or C8 fail short and the upstream USB supply does not implement proper overcurrent protection."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:32
+msgid "A TPD3S014 current limit switch IC (U15) is inserted between VUSB and the +5V rail, and enforces a maximum current of 850 mA. There is a 150 uF aluminium electrolytic capacitor on the +5V rail for bulk decoupling and brownout protection. As such, you should expect up to 850 mA of inrush current for a brief period when you plug Glasgow in. Continuous operating current should not exceed 500 mA under normal circumstances."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:34
+msgid "The +5V rail is monitored by an APX811-40UG-7 supervisor IC. The supervisor has a nominal undervoltage threshold of 4.0 V. If the +5V rail drops below this threshold, the +3.3V regulator is disabled and ``CY_RESET`` is asserted to hold the Cypress FX2 USB controller IC (U1) in a reset state."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:36
+msgid "The +5V rail is used to power the following devices:"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:39 ../../src/revisions/revC3.rst:65
+#: ../../src/revisions/revC3.rst:150 ../../src/revisions/revC3.rst:161
+#: ../../src/revisions/revC3.rst:411 ../../src/revisions/revC3.rst:457
+msgid "Designator"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:39 ../../src/revisions/revC3.rst:65
+#: ../../src/revisions/revC3.rst:150 ../../src/revisions/revC3.rst:161
+#: ../../src/revisions/revC3.rst:411 ../../src/revisions/revC3.rst:457
+msgid "Part"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:39 ../../src/revisions/revC3.rst:65
+#: ../../src/revisions/revC3.rst:150 ../../src/revisions/revC3.rst:161
+msgid "Function / Notes"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:41
+msgid "U7"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:41
+msgid "APX811-40UG-7"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:41
+msgid "+5V rail supervisor and reset (triggered by reset button)"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:43
+msgid "U8"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:43
+msgid "TLV75533PDRVR"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:43
+msgid "3.3 V, 500 mA linear regulator for generating +3.3V rail"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:45
+msgid "U36"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:45
+msgid "TLV73312PQDRVR"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:45
+msgid "1.2 V, 300 mA linear regulator for generating +1.2V rail"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:47
+msgid "U31"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:47 ../../src/revisions/revC3.rst:49
+msgid "TPS73101DBV"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:47
+msgid "Adjustable linear regulator for generating VIO on port A"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:49
+msgid "U14"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:49
+msgid "Adjustable linear regulator for generating VIO on port B"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:56
+msgid "+3.3V rail"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:58
+msgid "The +3.3V rail is used to power most ICs on the board. You can measure this rail using the 3V3 test points on the front and rear of the board. The green PWR LED on the front of the board is powered by the +3.3V rail."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:60
+msgid "The +3.3V rail is derived from the +5V rail using a TLV75533PDRVR linear voltage regulator (U8). The regulator has a maximum output current of 500 mA. The regulator's EN pin is driven by an APX811-40UG-7 supervisor IC (U7) which monitors the +5V rail for stability; in the event that the +5V rail does not meet the required threshold, U7's reset signal will disable the +3.3V regulator."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:62
+msgid "The +3.3V rail is used to power the following devices:"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:67 ../../src/revisions/revC3.rst:413
+msgid "D1"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:67 ../../src/revisions/revC3.rst:413
+#: ../../src/revisions/revC3.rst:433 ../../src/revisions/revC3.rst:435
+msgid "NCD0603G1"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:67
+msgid "Green \"PWR\" LED on front of board"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:69 ../../src/revisions/revC3.rst:423
+msgid "U1"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:69
+msgid "CY7C68013A-56LTX"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:69
+msgid "Cypress FX2 HS USB controller. +3.3V rail powers VCC, AVCC"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:71 ../../src/revisions/revC3.rst:425
+#: ../../src/revisions/revC3.rst:459
+msgid "U2"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:71 ../../src/revisions/revC3.rst:459
+msgid "CAT24M01X"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:71
+msgid "I2C 1Mbit serial EEPROM for iCE40"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:73 ../../src/revisions/revC3.rst:427
+#: ../../src/revisions/revC3.rst:461
+msgid "U3"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:73 ../../src/revisions/revC3.rst:461
+msgid "BL24C256A-SFRC"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:73
+msgid "I2C 256Kbit serial EEPROM for FX2"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:75 ../../src/revisions/revC3.rst:165
+#: ../../src/revisions/revC3.rst:431 ../../src/revisions/revC3.rst:473
+msgid "U5"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:75 ../../src/revisions/revC3.rst:83
+#: ../../src/revisions/revC3.rst:154 ../../src/revisions/revC3.rst:165
+#: ../../src/revisions/revC3.rst:467 ../../src/revisions/revC3.rst:473
+msgid "PCA6408APW"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:75
+msgid "I2C I/O expander for programmable pullup/pulldown resistors on port B. +3.3V powers I2C supply"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:77 ../../src/revisions/revC3.rst:152
+msgid "U4, U6, U9, U10, U11, U16, U17, U18"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:77 ../../src/revisions/revC3.rst:89
+#: ../../src/revisions/revC3.rst:93 ../../src/revisions/revC3.rst:152
+#: ../../src/revisions/revC3.rst:163
+msgid "SN74LVC1T45DCKR"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:77
+msgid "Logic level translators for port A. +3.3V powers internal side (VCCA)"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:79 ../../src/revisions/revC3.rst:471
+msgid "U12"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:79 ../../src/revisions/revC3.rst:87
+#: ../../src/revisions/revC3.rst:465 ../../src/revisions/revC3.rst:471
+msgid "INA233"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:79
+msgid "Voltage/current measurement IC for port B."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:81 ../../src/revisions/revC3.rst:469
+msgid "U13"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:81 ../../src/revisions/revC3.rst:85
+#: ../../src/revisions/revC3.rst:463 ../../src/revisions/revC3.rst:469
+msgid "DAC081C081CIMK"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:81
+msgid "I2C DAC for programming VIO voltage on port B."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:83 ../../src/revisions/revC3.rst:154
+#: ../../src/revisions/revC3.rst:467
+msgid "U19"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:83
+msgid "I2C I/O expander for programmable pullup/pulldown resistors on port A. +3.3V powers I2C supply"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:85 ../../src/revisions/revC3.rst:463
+msgid "U20"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:85
+msgid "I2C DAC for programming VIO voltage on port A"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:87 ../../src/revisions/revC3.rst:465
+msgid "U21"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:87
+msgid "Voltage/current measurement IC for port A."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:89 ../../src/revisions/revC3.rst:163
+msgid "U22, U23, U24, U25, U26, U27, U28, U29"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:89
+msgid "Logic level translators for port B. +3.3V powers internal side (VCCA)"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:91
+msgid "U30"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:91
+msgid "ICE40HX8K-BG121"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:91
+msgid "iCE40 FPGA. +3.3V rail powers VCCIO_x, VPP_2V5, VCC_SPI"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:93
+msgid "U32"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:93
+msgid "Logic level translator for SYNC input/output connector. +3.3V powers internal side (VCCA)"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:100
+msgid "+1.2V rail"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:102
+msgid "The +1.2V rail is used to power the iCE40 FPGA (VCC and VCCPLL0/1). You can measure this rail using the 1V2 test points on the front and back of the board."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:104
+msgid "The +1.2V rail is derived from the +5V rail using a TLV73312PQDRVR linear voltage regulator (U36). The regulator has a maximum output current of 300 mA. The regulator's EN pin is tied directly to the +5V rail. The regulator enters dropout mode when the +5V rail reaches approximately 1.3 V, and enters normal operation once the +5V rail reaches approximately 1.65 V."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:106
+msgid "The VCCPLL0 and VCCPLL1 supplies are low-pass filtered using a 100 Ω resistor and 4.7 uF capacitor, resulting in a -3 dB cutoff frequency of approximately 340 Hz."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:112
+msgid "VIO rails"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:114
+msgid "There are two main independent VIO rails - one for port A, and one for port B. These rails are adjustable and set the IO voltage levels for the ports. Each VIO rail voltage can be independently configured, which allows you to work with different logic levels on ports A and B simultaneously. The VIOA and VIOB rails are exposed as pins on the port A and port B connectors."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:116
+msgid "Each VIO rail is derived from the +5V rail using a TPS73101DBV linear regulator (U31, U14). These regulators have an ultra-low dropout voltage of just 30 mV, which allows the VIO voltages to be programmed anywhere between 1.8 V and the +5V rail voltage (which is essentially equal to VUSB) minus 30 mV."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:118
+msgid "The TPS73101DBV regulators feature reverse current blocking which prevents current from being sunk into the regulator instead of sourced from it. They also have a unique foldback current limit characteristic which provides excellent protection against short circuits on the VIO rails - see the \"Internal Current Limit\" section and Figure 12 in the datasheet."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:120
+msgid "Each VIO regulator has a feedback network which incorporates the output of a DAC081C081CIMK DAC IC. These DACs (U20, U13) are programmed over I2C to adjust the feedback voltage by injecting current into the feedback resistor network, which in turn adjusts the VIO voltage, thus providing runtime VIO voltage adjustment. The DAC output voltages can be measured using the VDAC A and B test points on the rear of the board. The FX2 firmware `calculates the correct DAC voltage <https://github.com/GlasgowEmbedded/glasgow/blob/1f5691a4b516f4ac083e7fa4fc32abcc659e608d/firmware/dac_ldo.c#L76-L83>`__ for the target output voltage. Some examples are:"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:123
+msgid "VIO Voltage"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:123
+msgid "DAC Output"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:125 ../../src/revisions/revC3.rst:190
+#: ../../src/revisions/revC3.rst:206
+msgid "5.0 V"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:125
+msgid "0.45 V"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:127 ../../src/revisions/revC3.rst:192
+#: ../../src/revisions/revC3.rst:208
+msgid "3.3 V"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:127
+msgid "1.88 V"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:129
+msgid "2.8 V"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:129
+msgid "2.31 V"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:131 ../../src/revisions/revC3.rst:194
+#: ../../src/revisions/revC3.rst:210
+msgid "2.5 V"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:131
+msgid "2.56 V"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:133 ../../src/revisions/revC3.rst:196
+#: ../../src/revisions/revC3.rst:212
+msgid "1.8 V"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:133
+msgid "3.15 V"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:136
+msgid "On power-on or reset, both VIO regulators are disabled and the voltage adjustment DACs are reset to 0.0 V. The DAC voltages are programmed over I2C, after which the regulators may be enabled by the FX2 asserting the ``ENVA`` and ``ENVB`` signals (pins 45 and 51 on the FX2 respectively). The VIO A and VIO B LEDs on the front of the board light up when the regulators are enabled."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:138
+msgid "The VIO rail currents are measured by INA233 voltage and current monitoring ADC ICs (U21, U12) using 150 mΩ shunt resistors (R49, R48) in series with the regulator outputs. This allows the VIO currents for each port to be measured over I2C. The voltage sense pin on each INA233 is exposed on the port connector (VA_SENS, VB_SENS), allowing for two useful configurations:"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:140
+msgid "The sense input may be connected directly to the VIO rail for that port (e.g. VA_SENSE to VIOA), enabling you to monitor the VIO rail voltage precisely and utilise the INA233's inbuilt power calculation feature to measure total power consumption for that VIO rail."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:141
+msgid "The sense input may be connected to any arbitrary voltage in the range 0.0 V to 36.0 V, essentially using the INA233's voltage sensing input as a generic 16-bit ADC input. In this configuration the VIO rail current can still be measured but the inbuilt VIO rail power calculation feature will not be available."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:143
+msgid "Additional 330 mΩ resistors (R56, R7) in series with the regulator outputs ensure recovery in the event that a VIO rail is shorted to ground - see `GitHub issue #135 <https://github.com/GlasgowEmbedded/glasgow/issues/135>`__ for details."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:145
+msgid "Each VIO rail is protected against overvoltage and ESD by two parallel elements of a SP3012-06UTG diode array. VIOA is protected by D22 and VIOB is protected by D20. These diode arrays also feature a 6.0 V zener diode clamp."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:147
+msgid "The VIOA rail is used to power the following devices:"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:152
+msgid "Logic level translators for port A. VIOA powers external side (VCCB)"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:154
+msgid "I2C I/O expander for programmable pullup/pulldown resistors on port A. VIOA powers IO ports."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:158
+msgid "The VIOB rail is used to power the following devices:"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:163
+msgid "Logic level translators for port B. VIOB powers external side (VCCB)"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:165
+msgid "I2C I/O expander for programmable pullup/pulldown resistors on port A. VIOB powers IO ports."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:172 ../../src/revisions/revC3.rst:392
+msgid "VIO_AUX"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:174
+msgid "Ports A and B are the primary connectors which are expected to be used with Glasgow. The LVDS connector is a secondary connector that can be used for special addons that require additional IOs. While the IOs on ports A and B are well-protected against ESD and utilise separate logic level translation with their own VIO rails, the LVDS connector is directly connected to the iCE40 FPGA without any logic level translation or discrete protection, and without a programmable IO voltage. The supply for the IOs exposed on the LVDS connector must be externally provided via VIO_AUX on pin 44. This voltage is directly fed to ``VCCIO_3`` on the FPGA. Voltages between 1.8 V and 3.3 V are supported. See the iCE40HX8K-BG121 datasheet for more information."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:180
+msgid "Decoupling capacitors"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:182
+msgid "Two values of MLCC decoupling capacitor are used across the Glasgow design."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:185
+msgid "4.7 uF capacitors are `Taiyo Yuden LMK107BJ475KAHT <https://ds.yuden.co.jp/TYCOMPAS/eu/detail?pn=MBASL168SB5475KTNA01&u=M>`__, with the following DC bias characteristics:"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:188 ../../src/revisions/revC3.rst:204
+msgid "DC bias voltage"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:188 ../../src/revisions/revC3.rst:204
+msgid "Effective Capacitance"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:190
+msgid "1.93 uF"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:192
+msgid "2.82 uF"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:194
+msgid "3.39 uF"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:196
+msgid "3.92 uF"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:198 ../../src/revisions/revC3.rst:214
+msgid "1.2 V"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:198
+msgid "4.37 uF"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:201
+msgid "100 nF capacitors are `Taiyo Yuden TMK105BJ104KV-F <https://ds.yuden.co.jp/TYCOMPAS/eu/detail?pn=MSAST105SB5104KFNA01&u=M>`__ (now renamed to MSAST105SB5104KFNA01), with the following DC bias characteristics:"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:206
+msgid "93 nF"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:208
+msgid "98 nF"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:210
+msgid "99 nF"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:212 ../../src/revisions/revC3.rst:214
+msgid "100 nF"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:221
+msgid "Power-on sequencing"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:223
+msgid "The power-on sequence is as follows:"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:225
+msgid "5.0 V becomes present on the VUSB pin of the USB-C connector."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:226
+msgid "After VUSB exceeds the enable threshold (nominally 1.45 V) of the TPD3S014 current limit switch (U15) for approximately 1.0 ms to 2.2 ms (nominally 1.6 ms) the switch turns on and the +5V rail begins to rise."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:227
+msgid "TPD3S014 performs soft-start and inrush limiting while charging the 150 uF bulk capacitor (C87) on the +5V rail. Charging takes around 2 ms, during which up to 850 mA is drawn."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:228
+msgid "When the +5V rail reaches approximately 1.3 V, the TLV73312PQDRVR linear regulator (U36) leaves disabled mode and enters dropout mode. During this time the +1.2V rail will have a voltage equal to the +5V rail minus the 450 mV dropout voltage of the regulator. When the +5V rail exceeds 1.65 V, the regulator enters normal mode and the +1.2V rail voltage becomes stable at 1.2 V."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:229
+msgid "APX811-40UG-7 (U7) monitors the +5V rail and asserts a reset signal (active low) while the +5V rail is below 4.0 V nominal."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:230
+msgid "Once the +5V rail exceeds this threshold for at least 240 ms, U7's reset signal is no longer asserted. As a result, the TLV75533PDRVR linear regulator (U8) switches on and powers the +3.3V rail."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:231
+msgid "The +3.3V rail and reset signal from U7 are connected to a common-anode dual-Schottky diode package (D24) in such a way that ``CY_RESET`` is asserted (active low) if U7 is outputting a reset state or the +3.3V rail is not present. The `CY_RESET` signal is low-pass filtered using R4, R5, and C88 to ensure that ``CY_RESET`` remains asserted for 5 ms after the +3.3V rail turns on."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:232
+msgid "All rails are now at nominal and ``CY_RESET`` is de-asserted, allowing the FX2 USB controller to start operating. The FX2 de-asserts ``FPGA_RESET``, allowing the iCE40 FPGA (U30) to operate."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:233
+msgid "During power-on, ``ENVA`` and ``ENVB`` are pulled down, disabling the TPS73101DBV adjustable linear regulators (U31, U14) which provide the VIO voltages for ports A and B. The DAC081C081CIMK DACs (U20, U13) provide an adjustable feedback voltage to the regulators. These are programmed over I2C as required to adjust the voltage of the VIO regulators, after which the FX2 can assert ``ENVA`` and/or ``ENVB`` to enable the regulators which, in turn, power the VIO outputs."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:239
+msgid "Connectors"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:245
+msgid "Port A Connector Layout"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:248
+msgid "**VIOA**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:248 ../../src/revisions/revC3.rst:262
+msgid "**GND**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:248 ../../src/revisions/revC3.rst:250
+#: ../../src/revisions/revC3.rst:260 ../../src/revisions/revC3.rst:262
+msgid "**NC**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:250
+msgid "**VA_SENS**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:250
+msgid "**PA_IO0**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:250
+msgid "**PA_IO1**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:250
+msgid "**PA_IO2**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:250
+msgid "**PA_IO3**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:250
+msgid "**PA_IO4**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:250
+msgid "**PA_IO5**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:250
+msgid "**PA_IO6**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:250
+msgid "**PA_IO7**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:257
+msgid "Port B Connector Layout"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:260
+msgid "**PB_IO7**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:260
+msgid "**PB_IO6**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:260
+msgid "**PB_IO5**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:260
+msgid "**PB_IO4**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:260
+msgid "**PB_IO3**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:260
+msgid "**PB_IO2**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:260
+msgid "**PB_IO1**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:260
+msgid "**PB_IO0**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:260
+msgid "**VIOB**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:262
+msgid "**VB_SENS**"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:269
+msgid "Ports A/B Pinout"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:272 ../../src/revisions/revC3.rst:348
+msgid "Number"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:272 ../../src/revisions/revC3.rst:348
+#: ../../src/revisions/revC3.rst:411
+msgid "Name"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:272
+msgid "Wire Colour"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:272 ../../src/revisions/revC3.rst:411
+msgid "Description"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:274 ../../src/revisions/revC3.rst:350
+msgid "1"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:274
+msgid "SENSE"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:274 ../../src/revisions/revC3.rst:417
+#: ../../src/revisions/revC3.rst:423 ../../src/revisions/revC3.rst:431
+msgid "Blue"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:274
+msgid "Voltage sense, connected to VBUS pin of INA233. Tie to pin 2 to enable VIO power measurement feature, or use as an arbitrary 0-36V 16-bit ADC input."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:276 ../../src/revisions/revC3.rst:350
+msgid "2"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:276
+msgid "VIO"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:276 ../../src/revisions/revC3.rst:421
+msgid "Red"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:276
+msgid "Logic level voltage output. Generated by TPS73101DBV linear regulator, voltage level configured at runtime by DAC081C081CIMK DAC."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:278 ../../src/revisions/revC3.rst:352
+msgid "3"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:278
+msgid "IO0"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:278 ../../src/revisions/revC3.rst:419
+msgid "Orange"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:278
+msgid "IO pin 0."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:280 ../../src/revisions/revC3.rst:352
+msgid "4"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:280 ../../src/revisions/revC3.rst:284
+#: ../../src/revisions/revC3.rst:288 ../../src/revisions/revC3.rst:292
+#: ../../src/revisions/revC3.rst:296 ../../src/revisions/revC3.rst:300
+#: ../../src/revisions/revC3.rst:304 ../../src/revisions/revC3.rst:308
+#: ../../src/revisions/revC3.rst:350 ../../src/revisions/revC3.rst:352
+#: ../../src/revisions/revC3.rst:354 ../../src/revisions/revC3.rst:356
+#: ../../src/revisions/revC3.rst:360 ../../src/revisions/revC3.rst:362
+#: ../../src/revisions/revC3.rst:366 ../../src/revisions/revC3.rst:368
+#: ../../src/revisions/revC3.rst:372 ../../src/revisions/revC3.rst:374
+#: ../../src/revisions/revC3.rst:378 ../../src/revisions/revC3.rst:380
+#: ../../src/revisions/revC3.rst:384 ../../src/revisions/revC3.rst:386
+#: ../../src/revisions/revC3.rst:390 ../../src/revisions/revC3.rst:392
+msgid "GND"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:280 ../../src/revisions/revC3.rst:284
+#: ../../src/revisions/revC3.rst:288 ../../src/revisions/revC3.rst:292
+#: ../../src/revisions/revC3.rst:296 ../../src/revisions/revC3.rst:300
+#: ../../src/revisions/revC3.rst:304 ../../src/revisions/revC3.rst:308
+msgid "Black"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:280 ../../src/revisions/revC3.rst:284
+#: ../../src/revisions/revC3.rst:288 ../../src/revisions/revC3.rst:292
+#: ../../src/revisions/revC3.rst:296 ../../src/revisions/revC3.rst:300
+#: ../../src/revisions/revC3.rst:304 ../../src/revisions/revC3.rst:308
+msgid "Ground."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:282 ../../src/revisions/revC3.rst:354
+msgid "5"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:282
+msgid "IO1"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:282 ../../src/revisions/revC3.rst:413
+#: ../../src/revisions/revC3.rst:433 ../../src/revisions/revC3.rst:435
+msgid "Green"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:282
+msgid "IO pin 1."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:284 ../../src/revisions/revC3.rst:354
+msgid "6"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:286 ../../src/revisions/revC3.rst:356
+msgid "7"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:286
+msgid "IO2"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:286
+msgid "Grey"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:286
+msgid "IO pin 2."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:288 ../../src/revisions/revC3.rst:356
+msgid "8"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:290 ../../src/revisions/revC3.rst:358
+msgid "9"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:290
+msgid "IO3"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:290
+msgid "Brown"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:290
+msgid "IO pin 3."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:292 ../../src/revisions/revC3.rst:358
+msgid "10"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:294 ../../src/revisions/revC3.rst:360
+msgid "11"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:294
+msgid "IO4"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:294 ../../src/revisions/revC3.rst:425
+#: ../../src/revisions/revC3.rst:429
+msgid "Pink"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:294
+msgid "IO pin 4."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:296 ../../src/revisions/revC3.rst:360
+msgid "12"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:298 ../../src/revisions/revC3.rst:362
+msgid "13"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:298
+msgid "IO5"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:298
+msgid "Yellow"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:298
+msgid "IO pin 5."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:300 ../../src/revisions/revC3.rst:362
+msgid "14"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:302 ../../src/revisions/revC3.rst:364
+msgid "15"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:302
+msgid "IO6"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:302 ../../src/revisions/revC3.rst:415
+#: ../../src/revisions/revC3.rst:427
+msgid "White"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:302
+msgid "IO pin 6."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:304 ../../src/revisions/revC3.rst:364
+msgid "16"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:306 ../../src/revisions/revC3.rst:366
+msgid "17"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:306
+msgid "IO7"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:306
+msgid "Purple"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:306
+msgid "IO pin 7."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:308 ../../src/revisions/revC3.rst:366
+msgid "18"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:310 ../../src/revisions/revC3.rst:368
+msgid "19"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:310 ../../src/revisions/revC3.rst:312
+msgid "NC"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:310 ../../src/revisions/revC3.rst:312
+msgid "N/A"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:310 ../../src/revisions/revC3.rst:312
+msgid "Not connected."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:312 ../../src/revisions/revC3.rst:368
+msgid "20"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:315
+msgid "Wire colours described here are correct for the 1BitSquared wiring looms and are not innate to Glasgow itself."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:317
+msgid "Note that each of the IOs has a GND pin opposite. This provides a ground reference plane for return currents, which helps improve signal integrity and reduces crosstalk in higher speed signals. Where possible, connect each ground wire to GND on the target device, physically close to the signal connection."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:319
+msgid "Each IO is driven by an SN74LVC1T45DCKR bus transceiver, which converts between the port's logic voltage (VIO) and the 3.3 V used by the FPGA IO ports. Each IO can be independently configured as an input or output. Each IO pin can source or sink up to 4 mA at 1.8 V, 8 mA at 2.5 V, 24 mA at 3.3 V, or 32 mA at 5.0 V."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:321
+msgid "The SN74LVC1T45DCKR itself provides limited isolation between the FPGA and the IO pins, and a modicum of ESD protection. Additional ESD and overvoltage protection is provided by an SP3012-06UTG diode array and a 33Ω series termination resistor."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:323
+msgid "The VSENSE pin is protected by a CDSOD323-T36S unidirectional TVS diode which helps protect the INA233 ICs against overvoltage."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:329
+msgid "SYNC Connector"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:331
+msgid "The SYNC connector is used to synchronise multiple Glasgows together. As of March 2024 this has not been used for much, but we expect folks will come up with interesting ways to use it."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:333
+msgid "The SYNC pin is weakly pulled up to the +3.3V rail and is buffered by a SN74LVC1T45DCKR bus transceiver. The input-low threshold is 0.8 V and the input-high threshold is 2.0 V, making it directly compatible with 2.5 V, 3.3 V, and 5.0 V logic."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:335
+msgid "The SYNC pin is protected by a ESD5Z5.0T1G ESD protection diode with a standoff voltage of 5.0 V and a breakdown of 6.2 V, and a 47 Ω series resistor."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:341
+msgid "LVDS Connector"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:343
+msgid "The LVDS port is a secondary connector used for specially designed addons. It is directly wired to the FPGA rather than using bus transceivers, and has limited ESD protection, so you should be careful when plugging things into it and only do so when the device is fully powered off."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:345
+msgid "The LVDS port will be replaced with different connectors in future hardware revisions of Glasgow, so its use is not preferred for addon boards."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:350
+msgid "+3.3V"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:352
+msgid "Z11_N"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:354
+msgid "Z11_P"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:356
+msgid "Z12_P"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:358
+msgid "Z10_P"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:358
+msgid "Z12_N"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:360
+msgid "Z10_N"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:362
+msgid "Z9_N"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:364
+msgid "Z8_P"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:364
+msgid "Z9_P"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:366
+msgid "Z8_N"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:368
+msgid "Z7_N"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:370
+msgid "21"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:370
+msgid "Z6_P"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:370
+msgid "22"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:370
+msgid "Z7_P"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:372
+msgid "23"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:372
+msgid "Z6_N"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:372
+msgid "24"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:374
+msgid "25"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:374
+msgid "26"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:374
+msgid "Z5_N"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:376
+msgid "27"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:376
+msgid "Z3_P"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:376
+msgid "28"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:376
+msgid "Z5_P"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:378
+msgid "29"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:378
+msgid "Z3_N"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:378
+msgid "30"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:380
+msgid "31"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:380
+msgid "32"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:380
+msgid "Z4_P"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:382
+msgid "33"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:382
+msgid "Z2_N"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:382
+msgid "34"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:382
+msgid "Z4_N"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:384
+msgid "35"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:384
+msgid "Z2_P"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:384
+msgid "36"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:386
+msgid "37"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:386
+msgid "38"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:386
+msgid "Z1_N"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:388
+msgid "39"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:388
+msgid "Z0_P"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:388
+msgid "40"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:388
+msgid "Z1_P"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:390
+msgid "41"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:390
+msgid "Z0_N"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:390
+msgid "42"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:392
+msgid "43"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:392
+msgid "44"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:396
+msgid "The +3.3V pin provides 3.3 V power from the onboard +3.3V rail."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:398
+msgid "To use the LVDS connector you must provide ``VIO_AUX``, an IO voltage between 1.8 V and 3.3 V, on pin 44. This pin is tied directly to ``VCCIO_3`` on the FPGA. See the iCE40HX8K-BG121 datasheet for more information about the power requirements."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:400
+msgid "The pins can be used in differential mode (N/P pairs) or in single-ended mode (independent signals on N and P)."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:402
+msgid "No termination resistors are included. You should include termination resistors on your board if you use the LVDS connector. See the Lattice document `FPGA-TN-02213 \"Using Differential I/O (LVDS, Sub-LVDS) in iCE40 LP/HX Devices\" <https://www.latticesemi.com/view_document?document_id=47960>`__ for details."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:408
+msgid "LEDs"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:411
+msgid "Colour"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:413
+msgid "PWR"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:413
+msgid "Powered by +3.3V rail"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:415
+msgid "FX2"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:415
+msgid "D2"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:415 ../../src/revisions/revC3.rst:427
+msgid "NCD0603W1"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:415
+msgid "Connected to pin 47 (PD2/FD10) of Cypress FX2 (U1). Pulses during enumeration. Lights when the FX2 has initialised."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:417
+msgid "ICE"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:417
+msgid "D3"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:417 ../../src/revisions/revC3.rst:423
+#: ../../src/revisions/revC3.rst:431
+msgid "ORH-B36G"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:417
+msgid "Connected to pin 48 (PD3/FD11) of Cypress FX2 (U1). Lights when the FPGA is ready."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:419
+msgid "ACT"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:419
+msgid "D4"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:419
+msgid "NCD0603O1"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:419
+msgid "Connected to pin 49 (PD4/FD12) of Cypress FX2 (U1). Lights when activity is occurring."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:421
+msgid "ERR"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:421
+msgid "D5"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:421
+msgid "NCD0603R1"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:421
+msgid "Connected to pin 50 (PD5/FD13) of Cypress FX2 (U1). Lights when an error occurs."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:423
+msgid "D6"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:423
+msgid "Connected to ball G9 (IOR_128) of iCE40 FPGA (U30)"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:425
+msgid "D7"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:425 ../../src/revisions/revC3.rst:429
+msgid "OSK40603C1E"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:425
+msgid "Connected to ball G8 (IOR_118) of iCE40 FPGA (U30)"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:427
+msgid "D8"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:427
+msgid "Connected to ball E9 (IOR_144) of iCE40 FPGA (U30)"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:429
+msgid "U4"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:429
+msgid "D9"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:429
+msgid "Connected to ball D9 (IOR_147) of iCE40 FPGA (U30)"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:431
+msgid "D10"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:431
+msgid "Connected to ball E8 (IOR_146) of iCE40 FPGA (U30)"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:433
+msgid "VIO A"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:433
+msgid "D15"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:433
+msgid "Lights when VIO A regulator (U31) is enabled"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:435
+msgid "VIO B"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:435
+msgid "D14"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:435
+msgid "Lights when VIO B regulator (U14) is enabled"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:438
+msgid "The system LEDs (FX2, ICE, ACT, ERR) are under control of the FX2 firmware, which is responsible for producing the behaviour described above. In the event that the FX2 firmware does not run (e.g. no firmware is present), the LED IO pins default to a high-impedance input state and will all be off."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:440
+msgid "The user LEDs (U1-U5) are under control of the gateware. In most cases they go unused and the FPGA defaults the pins to be inputs with weak pullups, which results in the user LEDs lighting dimly."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:446
+msgid "I²C bus"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:448
+msgid "Glasgow uses I2C internally for controlling the VIO voltages, measuring VIO current and voltage (or an external voltage input), and for communicating with the FX2 and iCE40 EEPROMs. The SDA and SCL signals can be accessed via test points on the front and rear of the board."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:454
+msgid "I²C bus addresses"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:457
+msgid "Address"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:457
+msgid "Function"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:459
+msgid "101001X [1]_"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:459
+msgid "1 Mbit [4]_ flash memory for ICE40 FPGA"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:461
+msgid "1010001"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:461
+msgid "Flash memory for FX2 USB controller"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:463
+msgid "0001110"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:463
+msgid "DAC for setting VIO voltage on port A"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:465
+msgid "1000000"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:465
+msgid "Voltage/current measurement ADC for port A"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:467
+msgid "0100000 [2]_"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:467
+msgid "I/O expander for programmable pullup/pulldowns on port A"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:469
+msgid "0001101"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:469
+msgid "DAC for setting VIO voltage on port B"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:471
+msgid "1000001"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:471
+msgid "Voltage/current measurement ADC for port B"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:473
+msgid "0100001 [3]_"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:473
+msgid "I/O expander for programmable pullup/pulldowns on port B"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:477
+msgid "The X in this address indicates that the device responds to two addresses (0 or 1 in the last bit position). In this case each address acts as a 512 Kbit flash device, providing 1 Mbit in total. Refer to the product datasheet for more information."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:480 ../../src/revisions/revC3.rst:483
+msgid "PCA6408APW is an SMBus device. The SMBus Alert Response Address (ARA) is 0001100 for both U19 (port A) and U5 (port B)."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:486
+msgid "The iCE40HX8K bitstream is actually about 3 KB bigger than 1 Mbit, so the tail end of the bitstream lives in U3 as a workaround."
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:492
+msgid "Recovery"
+msgstr ""
+
+#: ../../src/revisions/revC3.rst:494
+msgid "Two pads can be found on the board marked \"RECOVER\", next to the FX2 EEPROM (U2). This footprint is R40 in the schematic. To initiate recovery, short these pads together and press the reset button, then remove the short. This temporarily changes the I2C address of the FX2 EEPROM so that it boots without firmware, placing it into a recovery mode where it enumerates with the default FX2 device descriptor. The ``fx2tool`` utility can then be used to make a backup copy of the FX2 EEPROM, and the ``glasgow factory`` command can be used to re-provision the device configuration block and the firmware"
+msgstr ""
+
+#~ msgid "This document provides a technical description of the Glasgow revC3 XXX hardware."
+#~ msgstr ""
+

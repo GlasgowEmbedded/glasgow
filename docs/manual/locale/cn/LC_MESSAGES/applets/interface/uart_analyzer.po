@@ -1,0 +1,128 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/interface/uart_analyzer.rst:2
+msgid "``uart-analyzer``"
+msgstr ""
+
+#: ../../src/applets/interface/uart_analyzer.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run uart-analyzer"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Capture data exchange on a full duplex UART link. The ``rx`` and ``tx`` pins are always inputs; they only affect the channel to which data is attributed."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The capture file format is Comma Separated Values, in the following line formats:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "``<CH>,<HEX-DATA>``, where <CH> is ``rx`` or ``tx``, and <HEX-DATA> is a sequence of 8-bit hexadecimal values. (Unless ``--ascii`` is used.)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "``<CH>,\"<ASC-DATA>\"``, where <CH> is the same as above, and <ASC-DATA> is a sequence of ASCII characters or escape sequences. Characters 0x00, 0x09, 0x0A, 0x0D, 0x22, 0x5C are escaped as ``\\0``, ``\\t``, ``\\n``, ``\\r``, ``\\x22``, ``\\\\``, and all other characters not in the range 0x20..0x7E (inclusive) are escaped as ``\\x<HEX>``, where <HEX> is two hexadecimal digits. (If ``--ascii`` is used.)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "``<CH>,#F``, where <CH> is the same as above, to indicate a frame error on this channel."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "``<CH>,#P``, where <CH> is the same as above, to indicate a parity error on this channel."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "save communications to FILE as comma separated values"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'rx' to PIN (default: 'A0', optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'tx' to PIN (default: 'A1', optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "receive parity bit as PARITY (default: none)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set RX and TX baud rates to RATE bits per second (default: 115200)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set RX baud rate to RATE bits per second (default: same as --baud)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set TX baud rate to RATE bits per second (default: same as --baud)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "format output data as ASCII with escape sequences"
+msgstr ""
+
+#: ../../src/applets/interface/uart_analyzer.rst:14
+msgid "API reference"
+msgstr ""
+
+#: glasgow.applet.interface.uart_analyzer.UARTAnalyzerError:1 of
+msgid "Valid values are as follows:"
+msgstr ""
+
+#: glasgow.applet.interface.uart_analyzer.UARTAnalyzerInterface.baud:1 of
+msgid "Clock divisor for :py:`channel`."
+msgstr ""
+
+#: ../../src/applets/interface/uart_analyzer.rst
+msgid "Raises"
+msgstr ""
+
+#: glasgow.applet.interface.uart_analyzer.UARTAnalyzerInterface.baud:3 of
+msgid "If no such channel exists."
+msgstr ""
+
+#: glasgow.applet.interface.uart_analyzer.UARTAnalyzerInterface.capture:1 of
+msgid "Capture a sequence of messages."
+msgstr ""
+
+#: glasgow.applet.interface.uart_analyzer.UARTAnalyzerInterface.capture:3 of
+msgid "Returns a list of :py:`(channel, data)` or :py:`(channel, error)` tuples. The :py:`data` indicates a byte sequence transmitted on the :py:`channel`, while :py:`error` indicates that an error has occurred. (The :py:enum:member:`UARTAnalyzerError.Good` error code will never appear in results.)"
+msgstr ""
+
+#: glasgow.applet.interface.uart_analyzer.UARTAnalyzerInterface.capture:8 of
+msgid "This function concatenates consecutive data messages to improve readability; despite this, protocol decoders must be prepared to handle data being split across any number of messages at any boundaries."
+msgstr ""
+

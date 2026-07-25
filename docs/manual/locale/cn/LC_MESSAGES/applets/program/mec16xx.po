@@ -1,0 +1,208 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/program/mec16xx.rst:2
+msgid "``program-mec16xx``"
+msgstr ""
+
+#: ../../src/applets/program/mec16xx.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-mec16xx"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Read and write Microchip MEC16xx/MEC16xxi embedded controller integrated Flash via the JTAG interface."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "This applet has been tested and works correctly on Lenovo Thinkshield-branded MEC1663 (2024 january). This applet was originally developed to support MEC1618/MEC1618i, however the latest changes and fixes have not yet been tested on this device."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Per the MEC16xx datasheets, the minimum JTAG frequency should be 1 MHz."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "There are two types of erase operations that can be performed:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Emergency erase: It erases both the flash and eeprom (if the device has an eeprom), using a special JTAG sequence, which may work even in the case of boot code corruption"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Non-emergency erase: (see commands erase-flash and erase-eeprom). This uses normal flash or eeprom controller commands to perform the erase, but if the target is protected, then it might fail."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Typical flash sizes:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "192KiB: MEC1609(i), MEC1618(i), MEC1632, MEC1633"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "256KiB: MEC1663"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "To avoid data loss when the flash size is not known for certain, we recommend attempting to read 256KiB flash image, and analyzing the content."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'tck' to PIN (default: 'A0', optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'tms' to PIN (default: 'A1', optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'tdi' to PIN (default: 'A2', optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'tdo' to PIN (default: 'A3', optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'trst' to PIN (optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set TCK frequency to FREQ kHz (default: 100)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "give up scanning IRs longer than LENGTH bits (default: 128)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "give up scanning DRs longer than LENGTH bits (default: 1024)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set IR lengths of each TAP to corresponding IR-LENGTH (default: autodetect)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "select TAP #INDEX for communication (default: select only TAP)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-mec16xx emergency-erase"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-mec16xx erase-eeprom"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-mec16xx erase-flash"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "force erasing the flash even if parts of it can't be erased due to security settings"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "size of the embedded flash memory in bytes (typically 192K or 256K; a K suffix means multiply by 1024)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-mec16xx read-eeprom"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write eeprom binary image to FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-mec16xx read-flash"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write flash binary image to FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "force reading the flash even if it would result in an incomplete image due to security settings"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "use burst read for speed. this may be unreliable on some MEC16xx variants"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-mec16xx reset-quick-halt"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-mec16xx security-status"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-mec16xx test-lock-boot-block"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-mec16xx test-lock-data-block"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-mec16xx unlock-eeprom"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "password to try to unlock with"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-mec16xx write-eeprom"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "read eeprom binary image from FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-mec16xx write-flash"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "read flash binary image from FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "force erasing and writing the flash even if parts of it can't be written due to security settings"
+msgstr ""
+

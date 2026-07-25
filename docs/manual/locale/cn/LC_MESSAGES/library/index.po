@@ -1,0 +1,36 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/library/index.rst:2
+msgid "Reusable library"
+msgstr ""
+
+#: ../../src/library/index.rst:4
+msgid "The Glasgow reusable library provides implementations of protocols, algorithms, and other useful tools that are necessary for an applet and are common enough in embedded development to document and share."
+msgstr ""
+
+#: ../../src/library/index.rst:8
+msgid "**No API stability guarantees whatsoever are provided.** This reusable library is designed to be easy to copy and paste piecemeal into other projects; you should do so if you need stability. We *can* and *will* make cross-cutting changes to interfaces here, synchronized with the in-tree applets."
+msgstr ""
+
+#: ../../src/library/index.rst:12
+msgid "Note that not every library module is documented here yet."
+msgstr ""
+

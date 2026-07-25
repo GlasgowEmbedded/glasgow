@@ -1,0 +1,116 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/measure/calibrate_clock.rst:2
+msgid "``calibrate-clock``"
+msgstr ""
+
+#: ../../src/applets/measure/calibrate_clock.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run calibrate-clock"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Measure clock accuracy against a stable external reference signal."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "By default measures the internal Glasgow system clock. With ``--ext-pin``, measures a second clock source (e.g. Si5351A output) against the reference instead."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Measure system clock vs GPS PPS reference (1 Hz) on pin B1:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The reference input expects a signal that crosses the logic threshold cleanly. A 2 V pk-pk sine centred at 1 V works well with the I/O bank set to 2 V."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Measure system clock vs Rubidium reference (2^23 Hz) on pin B1:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Measure Si5351A 10 MHz output on A0 vs same Rb reference on B1:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Apply a known rough correction to the baseline before measuring:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "stable reference clock input pin (e.g. B1 for Rb standard) (required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "optional external clock to measure (e.g. A0 for Si5351A output); if omitted the system clock is measured (optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "exact frequency of the reference clock in Hz (e.g. 8388608 for 2^23 Hz)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "nominal frequency of the external clock in Hz (required with --ext-pin)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "nominal system clock frequency in Hz (default: 48000000)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "gate window duration in seconds; longer gives more resolution (default: 10)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "initial PPM correction applied to the nominal frequency before measuring (default: 0.0)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "number of measurements to take then exit (default: 0 = run forever)"
+msgstr ""
+
+#: ../../src/applets/measure/calibrate_clock.rst:14
+msgid "API reference"
+msgstr ""
+
+#: glasgow.applet.measure.calibrate_clock.CalibrateClockInterface:1 of
+msgid "Software interface for the clock calibration applet."
+msgstr ""
+
+#: glasgow.applet.measure.calibrate_clock.CalibrateClockInterface.measure:1 of
+msgid "Wait for one gate window and return a result dict."
+msgstr ""
+
+#: glasgow.applet.measure.calibrate_clock.CalibrateClockInterface.measure:3 of
+msgid "The gateware sends cumulative counter snapshots; we subtract consecutive snapshots to get the counts for each window.  The first snapshot is used only as a baseline and is discarded."
+msgstr ""
+

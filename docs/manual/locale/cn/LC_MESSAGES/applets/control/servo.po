@@ -1,0 +1,96 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/control/servo.rst:2
+msgid "``control-servo``"
+msgstr ""
+
+#: ../../src/applets/control/servo.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run control-servo"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Control RC/hobby servomotors using the common pulse width modulation protocol where a pulse of 1000 µs corresponds to a minimum position and a pulse of 2000 µs corresponds to a maximum position. The frequency of the updates is not strictly constrained by the protocol, and is fixed at 50 Hz in this applet."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "This protocol is also used in common brushless motor ESC (electronic speed control) modules. For unidirectional ESCs, a pulse of 1000 µs corresponds to 0 rpm and a pulse of 2000 µs to maximum rpm. For bidirectional ESCs, a pulse of 1000 us corresponds to maximum rpm backwards, and 2000 µs to maximum rpm forwards."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'out' to PIN (default: 'A0', required)"
+msgstr ""
+
+#: ../../src/applets/control/servo.rst:14
+msgid "API reference"
+msgstr ""
+
+#: glasgow.applet.control.servo.ServoInterface.enable:1 of
+msgid "Enable or disable the servo."
+msgstr ""
+
+#: glasgow.applet.control.servo.ServoInterface.enable:3 of
+msgid "When disabled, no pulses are sent over the control line."
+msgstr ""
+
+#: glasgow.applet.control.servo.ServoInterface.disable:1 of
+msgid "Disable the servo."
+msgstr ""
+
+#: glasgow.applet.control.servo.ServoInterface.disable:3 of
+msgid "Calls :py:`self.enable(False)`."
+msgstr ""
+
+#: glasgow.applet.control.servo.ServoInterface.set_value:1 of
+msgid "Set servo control value."
+msgstr ""
+
+#: glasgow.applet.control.servo.ServoInterface.set_value:3 of
+msgid ":py:`value` is an integer number of microseconds in the range of 1000 to 2000 inclusive. Note that the interpretation of this value varies depending on the connected device:"
+msgstr ""
+
+#: glasgow.applet.control.servo.ServoInterface.set_value:6 of
+msgid "For a servo proper, 1500 corresponds to the neutral position."
+msgstr ""
+
+#: glasgow.applet.control.servo.ServoInterface.set_value:7 of
+msgid "For an unidirectional ESC, 1000 is 0 rpm and 2000 is maximum rpm."
+msgstr ""
+
+#: glasgow.applet.control.servo.ServoInterface.set_value:8 of
+msgid "For a bidirectional ESC, 1000 is maximum rpm backwards and 2000 is maximum rpm forwards."
+msgstr ""
+
+#: glasgow.applet.control.servo.ServoInterface.set_value:10 of
+msgid "The servo is enabled after the value is configured."
+msgstr ""
+

@@ -1,0 +1,84 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/develop/docs.rst:4
+msgid "Documentation"
+msgstr ""
+
+#: ../../src/develop/docs.rst:6
+msgid "The source files for this documentation manual is contained in the `GlasgowEmbedded/glasgow`_ repository under ``docs/manual/``. It is written in `reStructuredText`_ and published with `Sphinx`_, using `PDM`_ for package management."
+msgstr ""
+
+#: ../../src/develop/docs.rst:8
+msgid "To build the documentation locally, first `install PDM`_. Then, navigate to the working directory you have :ref:`installed <initial-setup>` the Glasgow software in, and run:"
+msgstr ""
+
+#: ../../src/develop/docs.rst:15
+msgid "Once this step completes (which should always happen without errors), you are ready to edit the documentation. In a terminal, run:"
+msgstr ""
+
+#: ../../src/develop/docs.rst:37
+msgid "This command starts a web server running on your local PC that allows you to quickly see any changes to the documentation you are making. Navigate to `the URL it prints <http://127.0.0.1:8000>`_, and open the page you would like to change. Whenever you edit the ``.rst`` file corresponding to the page, you should see the page automatically reload in the web browser, reflecting the new contents."
+msgstr ""
+
+#: ../../src/develop/docs.rst:39
+msgid "In some cases (primarily when you are updating the documentation index in the sidebar) the changes aren't picked up by the web server. In that case, remove the output directory to trigger a full rebuild."
+msgstr ""
+
+#: ../../src/develop/docs.rst:41
+msgid "The markup language we are using, reStructuredText, has an awkward syntax, and it is easy for new editors to introduce syntax changes. If this happens, the web server prints a warning message whenever the ``.rst`` file is saved. Watch out for these warnings---they can save a lot of time trying to understand why the markup does not render correctly."
+msgstr ""
+
+#: ../../src/develop/docs.rst:43
+msgid "To check that all of the external links in the documentation are valid, run the following command:"
+msgstr ""
+
+#: ../../src/develop/docs.rst:58
+msgid "Our continuous integration system checks external links on every build, ensuring they stay valid."
+msgstr ""
+
+#: ../../src/develop/docs.rst:68
+msgid "Style guide"
+msgstr ""
+
+#: ../../src/develop/docs.rst:70
+msgid "When writing documentation, please follow our style:"
+msgstr ""
+
+#: ../../src/develop/docs.rst:72
+msgid "Only capitalise the first word of headings."
+msgstr ""
+
+#: ../../src/develop/docs.rst:73
+msgid "Insert two blank lines before headings."
+msgstr ""
+
+#: ../../src/develop/docs.rst:74
+msgid "Use ``.. note::`` and ``.. warning::`` sparingly, where important details may otherwise be missed."
+msgstr ""
+
+#: ../../src/develop/docs.rst:75
+msgid "Use an em-dash (---), which can be written as ``---`` in reStructuredText."
+msgstr ""
+
+#: ../../src/develop/docs.rst:76
+msgid "Link to our `official repositories <https://github.com/GlasgowEmbedded>`_ where appropriate."
+msgstr ""
+

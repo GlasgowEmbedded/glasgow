@@ -49,6 +49,9 @@ copybutton_prompt_is_regexp = True
 copybutton_prompt_text = r">>> |\.\.\. |\$ |> "
 copybutton_copy_empty_lines = False
 
+locale_dirs = ["../locale/"]
+gettext_compact = False
+
 html_use_modindex = False
 html_use_index = False
 

@@ -1,0 +1,36 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/program/index.rst:4
+msgid "MCU/FPGA programming"
+msgstr ""
+
+#: glasgow.applet.program:1 of
+msgid "The ``program`` taxon groups applets implementing interfaces to memory technology devices (volatile and non-volatile) that are directly connected to programmable logic, such as a microcontroller or a gate array."
+msgstr ""
+
+#: glasgow.applet.program:5 of
+msgid "Such memories may be included on the same die, in the same package, on the same  board, or in the same assembly as the programmable logic; what is important is that the applet has both memory functionality (i.e. read/write functions) and logic functionality (e.g. as simple as holding the logic in reset while updating the memory, or as complex as encapsulating memory operations in JTAG transactions)."
+msgstr ""
+
+#: glasgow.applet.program:11 of
+msgid "Examples: flash macroblock embedded in an AVR microcontroller, SPI flash on an FPGA board that requires coordinated reset. Counterexamples: JTAG interface for an ARM microcontroller that may be used with an external tool to update its flash (use taxon ``debug``)."
+msgstr ""
+

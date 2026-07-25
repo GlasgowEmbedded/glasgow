@@ -1,0 +1,36 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/control/index.rst:4
+msgid "Device control"
+msgstr ""
+
+#: glasgow.applet.control:1 of
+msgid "The ``control`` taxon groups applets implementing control interfaces, that is, interfaces for changing the volatile or non-volatile state of a device."
+msgstr ""
+
+#: glasgow.applet.control:4 of
+msgid "This taxon is an exclusion taxon, i.e. if a more specific taxon exists, it should be used. For example, ``memory`` and ``program`` applets also change volatile or non-volatile state of a device."
+msgstr ""
+
+#: glasgow.applet.control:7 of
+msgid "Examples: PLL frequency, DAC total level, USB PD I²C interface. Counterexamples: DAC total level plus bitstream (use taxon ``stream``), AVR SPI flashing (use taxon ``program``)."
+msgstr ""
+

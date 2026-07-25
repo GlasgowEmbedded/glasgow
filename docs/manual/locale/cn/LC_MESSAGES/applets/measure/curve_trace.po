@@ -1,0 +1,152 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/measure/curve_trace.rst:2
+msgid "``curve-trace``"
+msgstr ""
+
+#: ../../src/applets/measure/curve_trace.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run curve-trace"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Sweep the I/O supply voltage on a port and record voltage and current at each step, producing a V-I curve suitable for characterising LEDs, diodes, and other two-terminal devices."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The device under test is connected between the port power rail and ground. A series resistor is recommended to keep the current within the INA233's measurement range (~546 mA max with the 0.15 ohm on-board shunt)."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Trace a red LED on port A from 1.8 V to 3.3 V in 50 mV steps (CSV):"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Same measurement, JSON output:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Stop the sweep early if current exceeds 20 mA (useful for LEDs):"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "To subtract the no-load buffer current, first run a sweep with no DUT attached and save it as a calibration file, then pass it with ``--cal``:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "In ``--diode`` mode, port A is swept while port B is held at a fixed reference voltage (default 2.5 V).  The DUT is connected between port A Vio and port B Vio.  Output voltages are relative to the reference (V_A - V_ref), so the sweep covers reverse bias (negative voltages) through forward conduction (positive voltages).  The maximum voltage across the DUT is limited by the 1.8–5.0 V Vio range: with the default 2.5 V reference, the sweep covers -0.7 V (reverse) to +2.5 V (forward)."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Trace a silicon diode with 10 mV steps, stopping at 50 mA:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Characterise a 2.7 V zener diode (raise the reference to 5.0 V so the full -3.2 V to 0 V reverse range is available):"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Use a 3.5 V reference to see both forward conduction and moderate reverse bias (-1.7 V to +1.5 V), useful for general-purpose diode characterisation:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "I/O port to sweep (A or B)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "sweep start voltage (default: 1.8)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "sweep stop voltage (default: 5.0)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "voltage step size (default: 0.050)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "settling time after each voltage change (default: 0.050)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "open-circuit calibration CSV to subtract no-load current (run a sweep with no DUT attached to generate one)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "read voltage from the Vsense pin (must be wired) instead of the commanded DAC voltage"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "stop sweep when current exceeds this value in mA"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "diode mode: sweep port A with port B as fixed reference; DUT between port A Vio and port B Vio"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "reference voltage on port B in diode mode (default: 2.5)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "output format (default: csv)"
+msgstr ""
+
+#: ../../src/applets/measure/curve_trace.rst:14
+msgid "API reference"
+msgstr ""
+
+#: glasgow.applet.measure.curve_trace.CurveTraceInterface:1 of
+msgid "Software interface for the curve tracing applet."
+msgstr ""
+
+#: glasgow.applet.measure.curve_trace.CurveTraceInterface:3 of
+msgid "Sweeps the I/O supply voltage on a single port from ``v_start`` to ``v_stop`` in steps of ``step_v``, measuring voltage and current at each point via the on-board INA233 shunt monitor."
+msgstr ""
+
+#: glasgow.applet.measure.curve_trace.CurveTraceInterface.sweep:1 of
+msgid "Generator-style sweep: yields (voltage_V, current_A) tuples."
+msgstr ""
+
+#: glasgow.applet.measure.curve_trace.DiodeTraceInterface:1 of
+msgid "Software interface for diode curve tracing using two ports."
+msgstr ""
+
+#: glasgow.applet.measure.curve_trace.DiodeTraceInterface:3 of
+msgid "Port A is swept from ``v_start`` to ``v_stop`` while port B is held at a fixed reference voltage.  The DUT is connected between port A Vio and port B Vio.  Output voltages are relative to the reference (V_A - V_ref), so forward-biased readings are positive and reverse-biased readings are negative."
+msgstr ""
+
+#: glasgow.applet.measure.curve_trace.DiodeTraceInterface.sweep:1 of
+msgid "Sweep port A relative to port B reference.  Returns (voltage_V, current_A) tuples where voltage_V is the voltage across the DUT (V_A - V_ref)."
+msgstr ""
+

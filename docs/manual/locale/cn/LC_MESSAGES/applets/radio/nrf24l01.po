@@ -1,0 +1,255 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/radio/nrf24l01.rst:2
+msgid "``radio-nrf24l01``"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run radio-nrf24l01"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Transmit and receive packets using the nRF24L01/nRF24L01+ RF PHY."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "This applet allows configuring all channel and packet parameters, and provides basic transmit and receive workflow, as well as monitor mode. It supports Enhanced ShockBurst (new packet framing with automatic transaction handling) with one pipe, as well as ShockBurst (old packet framing). It does not support multiple pipes or acknowledgement payloads."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Note that in the CLI, the addresses are most significant byte first (the same as on-air order, and reversed with regards to register access order.)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The `monitor` subcommand is functionally identical to the `receive` subcommand, except that it will never attempt to acknowledge packets; this way, it is possible to watch a transaction started by a node with a known address without disturbing either party. It is not natively supported by nRF24L01(+), and is emulated in an imperfect way."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The pinout of a common 8-pin nRF24L01+ module is as follows (live bug view):"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'ce' to PIN (default: 'A0', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'cs' to PIN (default: 'A1', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'sck' to PIN (default: 'A2', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'copi' to PIN (default: 'A3', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'cipo' to PIN (default: 'A4', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'irq' to PIN (default: 'A5', optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set SCK frequency to FREQ kHz (default: 8000)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set channel number to RF-CHANNEL (range: 0..125, corresponds to 2400..2525 MHz)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set air data rate to RF-BANDWIDTH kbps (one of: 250 1000 2000)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set output power to RF-POWER dBm (one of: 0 -6 -12 -18, default: 0)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set address width to WIDTH bytes (one of: 2 3 4 5)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set CRC width to WIDTH bytes (one of: 0 1 2)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "disable automatic transaction handling, for pre-L01 compatibility"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "enable dynamic payload length (L01+ only)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run radio-nrf24l01 monitor"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "receive packet with hex address ADDRESS"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "receive packet with length LENGTH (mutually exclusive with --dynamic-length)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "keep receiving packets until interrupted"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run radio-nrf24l01 receive"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run radio-nrf24l01 transmit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "transmit packet with hex address ADDRESS"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "transmit DATA as packet payload"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "if not acknowledged within DELAY µs, consider packet lost (default: 1500 us)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "if unacknowledged, retransmit up to COUNT times (default: 3)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "do not request acknowledgement (L01+ only)"
+msgstr ""
+
+#: ../../src/applets/radio/nrf24l01.rst:11
+msgid "API reference"
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.clock:1 of
+msgid "SCK clock divisor."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.read_register:1 of
+msgid "Read a single register at :py:`address`."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.write_register:1 of
+msgid "Write :py:`value` to a single register at :py:`address`."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.read_register_wide:1 of
+msgid "Read :py:`length` consecutive registers starting at :py:`address`."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.write_register_wide:1
+#: of
+msgid "Write :py:`value` to consecutive registers starting at :py:`address`."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.enable:1 of
+msgid "Transition to TX mode, RX mode, or Standby-II state by asserting CE."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.disable:1 of
+msgid "Transition to Standby-I state by deasserting CE."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.poll_rx_status:1 of
+msgid "Poll for, and clear, the ``RX_DR`` IRQ."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.poll_rx_status:3
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.poll_tx_status:3 of
+msgid "The :py:`delay` parameter sets the busy loop delay, in seconds."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.poll_rx_status:5 of
+msgid "Returns the status register before any bits have been cleared."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.read_rx_payload_length:1
+#: of
+msgid "Retrieve payload length of the first packet in the RX FIFO."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.read_rx_payload:1 of
+msgid "Remove packet from the RX FIFO and return its payload."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.read_rx_payload:3 of
+msgid "The :py:`length` parameter sets the payload length, and must be retrieved using :meth:`read_rx_payload_length`. If the packet length is greater than 32, it was corrupted and must be discarded using :meth:`flush_rx` instead."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.flush_rx:1 of
+msgid "Remove packet from the RX FIFO."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.flush_rx_all:1 of
+msgid "Remove all packets from the RX FIFO."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.poll_tx_status:1 of
+msgid "Poll for the ``TX_DS`` or ``MAX_RT`` IRQs, and clear the ``TX_DS`` IRQ."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.poll_tx_status:5 of
+msgid "Returns the status register before any bits have been cleared. To find out whether the last transmitted packet has been removed from the TX FIFO, check the :py:`MAX_RT` field of the returned value. If :py:`MAX_RT` is set, payload has not been removed."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.write_tx_payload:1 of
+msgid "Insert packet with given :py:`payload` into the TX FIFO, and request acknowledgement if :py:`ack` is true."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.reuse_tx_payload:1 of
+msgid "Reuse last transmitted payload."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.reuse_tx_payload:3 of
+msgid "Payload may be reused after a packet was transmitted and until a subsequent :meth:`write_tx_payload` or :meth:`flush_tx` call."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.flush_tx:1 of
+msgid "Remove packet from the TX FIFO."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.flush_tx:3 of
+msgid "Use this method to clear a packet that has exceeded the maximum retransmission count."
+msgstr ""
+
+#: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface.flush_tx_all:1 of
+msgid "Remove all packets from the TX FIFO."
+msgstr ""
+

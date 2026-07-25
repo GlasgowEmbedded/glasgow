@@ -1,0 +1,140 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/debug/mips.rst:2
+msgid "``debug-mips``"
+msgstr ""
+
+#: ../../src/applets/debug/mips.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run debug-mips"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Debug MIPS processors via the EJTAG interface."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "This applet supports dumping CPU state, which is also useful to check if the CPU is recognized correctly, and running a GDB remote protocol server for a debugger. The supported debugger features are:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Starting, stopping and single-stepping."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Hardware and software breakpoints."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Register and memory reads and writes."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Notable omissions include:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Floating point."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Tracepoints and watchpoints."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The applet has been written with 32- and 64-bit CPUs with EJTAG 1.x-5.x in mind, but has only been tested with the following configurations:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "MIPS32 R1 big endian with EJTAG 1.x/2.0 (Broadcom BCM6358);"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "MIPS32 R1 big endian with EJTAG 2.6 (Infineon ADM5120)."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Other configurations might or might not work. In particular, it certainly does not currently work on little-endian CPUs. Sorry about that."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'tck' to PIN (default: 'A0', optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'tms' to PIN (default: 'A1', optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'tdi' to PIN (default: 'A2', optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'tdo' to PIN (default: 'A3', optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'trst' to PIN (optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set TCK frequency to FREQ kHz (default: 100)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "give up scanning IRs longer than LENGTH bits (default: 128)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "give up scanning DRs longer than LENGTH bits (default: 1024)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set IR lengths of each TAP to corresponding IR-LENGTH (default: autodetect)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "select TAP #INDEX for communication (default: select only TAP)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run debug-mips dump-state"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run debug-mips gdb"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "listen at GDB-ENDPOINT, either unix:PATH or tcp:HOST:PORT (default: tcp::1234)"
+msgstr ""
+

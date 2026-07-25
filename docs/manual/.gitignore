@@ -4,5 +4,7 @@
 /.venv
 
 # Sphinx
-/build
+/build*
 /check
+/locale/pot/
+/locale/**/*.mo

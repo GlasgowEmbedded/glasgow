@@ -1,0 +1,104 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/build.rst:4
+msgid "Building hardware"
+msgstr ""
+
+#: ../../src/build.rst:6
+msgid "Pre-assembled Glasgow devices and cases are :ref:`available for purchase <purchasing>`. Since Glasgow is open hardware, you also have the option of building a device yourself."
+msgstr ""
+
+#: ../../src/build.rst:10
+msgid "If you manufacture your own devices from the design files in this repository, you must clearly distinguish the PCBs by modifying the silkscreen artwork such that the placeholder manufacturer name and/or logo are replaced with your own contact information."
+msgstr ""
+
+#: ../../src/build.rst:12
+msgid "If you use the PCBA design files and the BOM that are included in this repository without modifications (other than the modifications required above), the Glasgow project will provide the same degree of support for your device as it does for the CrowdSupply orders (except for repairs under warranty)."
+msgstr ""
+
+#: ../../src/build.rst:14
+msgid "If you modify the design files (which the license allows you to do without restrictions), the Glasgow project will not in general provide support for such devices, and you must not call your modified devices \"Glasgow\". You must remove the name \"Glasgow\" from the PCB silkscreen artwork to ensure that the device is clearly identifiable as being modified from the original source files. You must run ``glasgow factory`` with the ``--using-modified-design-files=yes`` argument when preparing the device, which will appropriately mark the device and change the product name USB descriptor to not include \"Glasgow\"."
+msgstr ""
+
+#: ../../src/build.rst:16
+msgid "If you are modifying the BOM to replace passive components with equivalent parts from a different vendor (such as in response to shortages), you may call your modified device \"Glasgow\". In addition, exceptions to the rule above can be made after discussing your case with Catherine \"whitequark\" or Piotr Esden-Tempski."
+msgstr ""
+
+#: ../../src/build.rst:22
+msgid "Assembling a device"
+msgstr ""
+
+#: ../../src/build.rst:24 ../../src/build.rst:64
+msgid "Todo"
+msgstr ""
+
+#: ../../src/build.rst:26
+msgid "This section is not written yet."
+msgstr ""
+
+#: ../../src/build.rst:32
+msgid "Factory flashing"
+msgstr ""
+
+#: ../../src/build.rst:34
+msgid "\"Factory flashing\" refers to the process of assigning a brand new Glasgow board (that you probably just assembled) a serial number, as well as writing a few critical configuration options that will let the ``glasgow`` command use this device. Barring severe and unusual EEPROM corruption, this process is performed only once in the lifetime of a device."
+msgstr ""
+
+#: ../../src/build.rst:36
+msgid "To prepare for factory flashing, follow the :ref:`installation steps <initial-setup>`."
+msgstr ""
+
+#: ../../src/build.rst:38
+msgid "Any board that is being factory flashed must have a blank ``FX2_MEM`` EEPROM. If the ``FX2_MEM`` EEPROM is not completely erased (all bytes set to ``FF``), the factory flashing process may fail."
+msgstr ""
+
+#: ../../src/build.rst:42
+msgid "Configure your system to allow unprivileged access for anyone logged in to the physical terminal to any hardware that enumerates as the Cypress FX2 ROM bootloader:"
+msgstr ""
+
+#: ../../src/build.rst:50
+msgid "Note that this rule will allow unprivileged access to any device based on the Cypress FX2 that has a blank EEPROM, and not just the Glasgow hardware specifically."
+msgstr ""
+
+#: ../../src/build.rst:52
+msgid "Plug in the newly assembled device. At this point, ``lsusb -d 04b4:8613`` should list one entry. Note the revision of the board you are factory flashing. If the board has revision ``C3``, run:"
+msgstr ""
+
+#: ../../src/build.rst:58
+msgid "That's it! After running this command, the device will disconnect from USB and reconnect, and ``lsusb -d 20b7:9db1`` will list one entry."
+msgstr ""
+
+#: ../../src/build.rst:62
+msgid "The steps are similar to the steps for Linux, but you will need to use Zadig to bind the WinUSB driver to the device, since this will not happen automatically with a device that hasn't been flashed yet."
+msgstr ""
+
+#: ../../src/build.rst:66
+msgid "Write a full explanation here."
+msgstr ""
+
+#: ../../src/build.rst:70
+msgid "Plug in the newly assembled device. At this point, ``System Information.app`` should list the FX2 device with Vid ``04b4`` and Pid ``8613``. Note the revision of the board you are factory flashing. If the board has revision ``C3``, run:"
+msgstr ""
+
+#: ../../src/build.rst:76
+msgid "That's it! After running this command, the device will disconnect from USB and reconnect, and after refreshing (⌘R) the information in ``System Information.app`` you should see a new entry with Vid ``20b7`` and Pid ``9db1``."
+msgstr ""
+

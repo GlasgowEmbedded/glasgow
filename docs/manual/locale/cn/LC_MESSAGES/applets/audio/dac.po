@@ -1,0 +1,136 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/audio/dac.rst:2
+msgid "``audio-dac``"
+msgstr ""
+
+#: ../../src/applets/audio/dac.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run audio-dac"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Play sound using a 1-bit sigma-delta DAC, i.e. pulse density modulation."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Currently, the supported sample formats are:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "1..16 channel signed/unsigned 8-bit,"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "1..16 channel signed/unsigned 16-bit little endian."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Other formats may be converted to it using:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "For example, to play an ogg file:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "To use the DAC as a PulseAudio sink, add the following line to default.pa:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Then run:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O lines 'o' to PINS (default: 'A0', optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set sample width to WIDTH bytes (default: 1)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "interpret samples as signed"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "interpret samples as unsigned"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set modulation frequency to FREQ MHz (default: maximum)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set sample rate to RATE Hz (default: 8000)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run audio-dac connect"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "listen at PCM-ENDPOINT, either unix:PATH or tcp:HOST:PORT"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run audio-dac play"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "read PCM data from FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "loop the input samples"
+msgstr ""
+
+#: ../../src/applets/audio/dac.rst:14
+msgid "API reference"
+msgstr ""
+
+#: glasgow.applet.audio.dac.AudioDACInterface.sample_clock:1 of
+msgid "Sampling clock divisor."
+msgstr ""
+
+#: glasgow.applet.audio.dac.AudioDACInterface.modulation_clock:1 of
+msgid "Modulation clock divisor."
+msgstr ""
+
+#: glasgow.applet.audio.dac.AudioDACInterface.write:1 of
+msgid "Send samples to the DAC to be played in round robin order."
+msgstr ""
+
+#: glasgow.applet.audio.dac.AudioDACInterface.flush:1 of
+msgid "Ensure any past writes have reached the device FIFO."
+msgstr ""
+

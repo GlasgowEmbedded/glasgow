@@ -1,0 +1,168 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/sensor/sen5x.rst:2
+msgid "``sensor-sen5x``"
+msgstr ""
+
+#: ../../src/applets/sensor/sen5x.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-sen5x"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Measure PM, NOx, VOC, humidity, and temperature using Sensirion SEN5x sensors connected over the I²C interface."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "NOTE: The SEL pin must be connected to ground before startup for the SEN5x to enable the I2C interface."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'scl' to PIN (default: 'A0', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'sda' to PIN (default: 'A1', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-sen5x log"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-sen5x log csv"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Log data to a comma-separated value (CSV) file."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write data to CSV-FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "format CSV file according to DIALECT"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-sen5x log influxdb"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Log data to an InfluxDB 1.x endpoint over HTTP(S)."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to endpoint URL //ENDPOINT/write"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to database DATABASE"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to measurement SERIES"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to retention policy POLICY"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "attach TAG=VALUE to all data points"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set timestamp precision to PRECISION"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "submit data in groups of BATCH-SIZE points"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-sen5x log influxdb2"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Log data to an InfluxDB 2.x endpoint over HTTP(S)."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to endpoint URL //ENDPOINT/api/v2/write"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to Organization ORGANIZATION (can be either the name or the id)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write to bucket BUCKET"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set the Token to use for Authentication"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-sen5x log stdout"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Log data to standard output in a human-readable format."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-sen5x measure"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-sen5x start"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run sensor-sen5x stop"
+msgstr ""
+
+#: ../../src/applets/sensor/sen5x.rst:14
+msgid "API reference"
+msgstr ""
+
+#: ../../src/applets/sensor/sen5x.rst:16
+msgid "Todo"
+msgstr ""
+
+#: ../../src/applets/sensor/sen5x.rst:18
+msgid "Add API documentation for ``sensor-sen5x``."
+msgstr ""
+

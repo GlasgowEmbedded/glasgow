@@ -1,0 +1,188 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: cn\n"
+"Language-Team: cn <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../src/applets/program/ice40_flash.rst:2
+msgid "``program-ice40-flash``"
+msgstr ""
+
+#: ../../src/applets/program/ice40_flash.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-ice40-flash"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Program the 25-series SPI NOR Flash memories found on many boards with iCE40 FPGAs. This applet is based on the `memory-25q` applet; in addition, it asserts the FPGA reset while programming the memory, and checks the CDONE pin to determine whether the FPGA has successfully read the configuration after the applet finishes."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "See the description of the `memory-25q` applet for details."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'cs' to PIN (default: 'A0', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'sck' to PIN (default: 'A1', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O lines 'copi', 'cipo', 'wp', 'hold' to PINS (default: 'A2,A3,A4,A5', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'reset' to PIN (default: 'A6', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'done' to PIN (default: 'A7', optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set SCK frequency to FREQ kHz (default: 12000)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "use dual-SPI modes if present in SFDP"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "use quad-SPI modes if present in SFDP"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "use WIDTH address bytes for data region (choices: 3, 4, default: 3)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "do not cross multiple-of-SIZE boundaries when programming"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "opcode for erasing a 4 KiB region"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "opcode for erasing a 32 KiB region"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "opcode for erasing a 64 KiB region"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-ice40-flash erase"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Erase memory range. Start and end of specified range must be aligned on erase size boundaries."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "start with byte at ADDRESS"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "continue for LENGTH bytes"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-ice40-flash erase-all"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Erase memory range covering the entire chip."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-ice40-flash identify"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Identify memory by its JEDEC ID and (if available) Serial Flash Discoverable Parameters."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "annotate known raw SFDP DWORDs with fields"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-ice40-flash protect"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Read or write Block Protection (BP) bits. The exact size and location of the protected area for a specific bit combination can only be determined from the device datasheet."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Setting all BP bits to zero may be necessary to execute the `erase-all` command or to resolve erase/program failures."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write BITMASK to BP bits (e.g. 0000 to allow all, 1111 to protect all)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-ice40-flash read"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Read memory range using the fastest available read command."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write memory contents to FILENAME"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-ice40-flash verify"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Read memory range using the fastest available read command, and compare with given data."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "use hex bytes DATA as memory contents"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "use data from FILENAME as memory contents"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-ice40-flash write"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Write memory range using a read-modify-write sequence. Start and end of specified range do not need to be aligned on erase size boundaries."
+msgstr ""
+
