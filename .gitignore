@@ -2,6 +2,7 @@
 
 *.vcd
 *.gtkw
+*.surf.ron
 *.log
 /*.v
 /*.bin
