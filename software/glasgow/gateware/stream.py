@@ -48,6 +48,10 @@ class StreamBuffer(wiring.Component):
             "o": Out(stream.Signature(shape)),
         })
 
+    @classmethod
+    def shaped_like(cls, stream):
+        return cls(stream.payload.shape())
+
     def elaborate(self, platform):
         m = Module()
 
