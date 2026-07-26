@@ -146,7 +146,7 @@ class Decoder(wiring.Component):
         count  = Signal(8)
         offset = Signal(8)
 
-        m.submodules.buffer = buffer = StreamBuffer(self.o.p.shape())
+        m.submodules.buffer = buffer = StreamBuffer.shaped_like(self.o)
         wiring.connect(m, wiring.flipped(self.o), buffer.o)
 
         with m.FSM():

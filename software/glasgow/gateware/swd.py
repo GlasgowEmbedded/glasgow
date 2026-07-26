@@ -270,7 +270,7 @@ class Controller(wiring.Component):
         m.submodules.driver = driver = Driver(self._ports, offset=self._offset)
         m.d.comb += driver.divisor.eq(self.divisor)
 
-        m.submodules.o_buffer = o_buffer = StreamBuffer(driver.o_words.p.shape())
+        m.submodules.o_buffer = o_buffer = StreamBuffer.shaped_like(driver.o_words)
         wiring.connect(m, o_buffer.i, driver.o_words)
 
         m.d.comb += driver.i_words.p.len.eq(self.i_stream.p.len)
