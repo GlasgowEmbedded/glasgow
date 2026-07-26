@@ -177,7 +177,7 @@ class Streamer(wiring.Component):
             })
         connect(m, io_streamer=io_streamer.i, enframer=enframer.frames)
 
-        m.submodules.o_buf = o_buf = StreamBuffer(io_streamer.o.p.shape())
+        m.submodules.o_buf = o_buf = StreamBuffer.shaped_like(io_streamer.o)
         connect(m, buffer=o_buf.i, io_streamer=io_streamer.o)
 
         m.submodules.deframer = deframer = Deframer(ports=self._ports)

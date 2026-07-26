@@ -113,7 +113,7 @@ class JTAGXVCComponent(wiring.Component):
         m.submodules.xvc_probe = xvc_probe = JTAGXVCProbe(self._ports)
         m.d.comb += xvc_probe.divisor.eq(self.divisor)
 
-        m.submodules.buffer = buffer = StreamBuffer(xvc_probe.i_stream.p.shape())
+        m.submodules.buffer = buffer = StreamBuffer.shaped_like(xvc_probe.i_stream)
         wiring.connect(m, xvc_probe.i_stream, buffer.o)
 
         count = Signal(16)
