@@ -21,7 +21,7 @@ from .support import logging
 from .support.asignal import *
 from .support.progress import TqdmProgressImpl
 from .support.plugin import PluginRequirementsUnmet, PluginLoadError
-from .abstract import ClockingError
+from .abstract import ClockingError, GlasgowPort
 from .hardware.device import GlasgowDeviceError, GlasgowDevice, GlasgowDeviceConfig
 from .hardware.device import FX2BootloaderDevice, VID_QIHW, PID_GLASGOW
 from .hardware.toolchain import ToolchainNotFound, ToolOutOfDate
@@ -299,13 +299,19 @@ def get_argparser():
     subparsers.required = True
 
     def add_ports_arg(parser):
+        def ports(arg):
+            if "*" in arg:
+                return None
+            return "".join(str(GlasgowPort(char)) for char in arg)
+
+        all_ports = " ".join(map(str, GlasgowPort))
         parser.add_argument(
-            "ports", metavar="PORTS", type=str, nargs="?", default=None,
-            help="I/O port set (one or more of: A B C D, default: all)")
+            "ports", metavar="PORTS", nargs="?", type=ports, default="*",
+            help=f"I/O port set (one or more of: {all_ports}, default: %(default)s)")
 
     p_voltage = subparsers.add_parser(
         "voltage", formatter_class=TextHelpFormatter,
-        help="query or set I/O port voltage")
+        help="query or set I/O port configuration and measurements")
     add_ports_arg(p_voltage)
     p_voltage.add_argument(
         "voltage", metavar="VOLTS", type=float, nargs="?", default=None,
