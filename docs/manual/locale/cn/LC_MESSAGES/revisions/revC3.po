@@ -20,76 +20,76 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:2
 msgid "Technical description (revC3)"
-msgstr ""
+msgstr "技术细节 (revC3)"
 
 #: ../../src/revisions/revC3.rst:4
 msgid "This document provides a technical description of the Glasgow revC3 hardware."
-msgstr ""
+msgstr "本文档描述了 Glasgow revC3 的硬件技术细节。"
 
 #: ../../src/revisions/revC3.rst:10
 msgid "Power"
-msgstr ""
+msgstr "电源"
 
 #: ../../src/revisions/revC3.rst:12
 msgid "Glasgow is powered by its USB-C connection. The input voltage is 5.0 V and the typical operating current is 500 mA or less. For reliable and safe operation we recommend that you power Glasgow from a standard USB port capable of providing at least 1.0 A at 5.0 V."
-msgstr ""
+msgstr "Glasgow 从其 USB-C 接口供电。供电电压为 5.0 V，通常工作电流不超过 500 mA。为了稳定性和安全性，我们推荐您使用一个能提供 5.0 V 电压，1.0 A 电流的标准 USB 接口。"
 
 #: ../../src/revisions/revC3.rst:14
 msgid "Some non-standards-compliant USB ports, such as those found on certain powered USB hubs, may provide more than 3.0 A of current at 5.0 V on their ports without active negotiation. While powering Glasgow from these ports is absolutely fine under all but the rarest circumstances, such non-compliant high-current USB power sources may not implement proper overcurrent protection. Such supplies carry a greater risk of damage to the board and its components in the rare event that the USB-C connector on Glasgow becomes damaged and a short develops between VBUS and GND. Shorts anywhere elsewhere on the board should be protected by overcurrent detection and protection features built into Glasgow's design. These protection features are discussed elsewhere in this document."
-msgstr ""
+msgstr "有些不符合标准的 USB 接口（如某些自带供电的 USB 集线器）可能未经协商在 5.0 V 电压提供超过 3.0 A 电流。虽然使用这些接口给 Glasgow 供电在除了极少数情况下都是完全没有问题的，但是这些不符合标准的大电流 USB 电源可能没有实现正确的过流保护。如果 Glasgow 的 USB-C 接口损坏，导致发生 VBUS 和 GND 之间的短路，这种 USB 电源可能会提高电路板和其上其它元件损坏的风险。在电路板上任何其它位置可能发生的短路，都可以由 Glasgow 设计上的过流检测和保护功能得到保护。这些保护措施，本文将在其它部分进一步阐述。"
 
 #: ../../src/revisions/revC3.rst:16
 msgid "Since Glasgow draws less than 1.0 A of current at all times, it does not benefit from non-standards-compliant high-current USB ports."
-msgstr ""
+msgstr "因为 Glasgow 在任何时候都不需要超过 1.0 A 电流，所以使用非标准大电流 USB 接口没有好处。"
 
 #: ../../src/revisions/revC3.rst:18
 msgid "The USB-C connector shield is connected to ground via a 100 nF capacitor and 100 kΩ resistor in parallel. The plated mounting holes in the four corners of the board are grounded."
-msgstr ""
+msgstr "USB-C 接口的外壳经一个 100 nF 电容和一个 100 kΩ 电阻并联接地。电路板四角的镀铜安装孔接地。"
 
 #: ../../src/revisions/revC3.rst:24
 msgid "+5V rail"
-msgstr ""
+msgstr "+5V 电源轨"
 
 #: ../../src/revisions/revC3.rst:26
 msgid "The +5V rail is the input power rail for Glasgow. You can measure this rail using the 5V test points on the front and rear of the board."
-msgstr ""
+msgstr "+5V 电源轨是 Glasgow 的输入电源轨。您可以在电路板正反面的 5V 测试点对此电源轨进行测量。"
 
 #: ../../src/revisions/revC3.rst:28
 msgid "The +5V rail is derived from VUSB without additional regulation - as such, you should expect some variance in the +5V rail voltage depending on the power source and USB cable that you are using."
-msgstr ""
+msgstr "+5V 电源轨由 VUSB 直接产生，不经额外稳压。因此，取决于您所用的电源和 USB 线缆，您应当预期 +5V 轨的电压可能会有些波动。"
 
 #: ../../src/revisions/revC3.rst:30
 msgid "A BLM15PX601SZ1 ferrite bead (FB1) is inserted in series with VUSB with the intention of reducing conducted emissions onto the USB cable. Its maximum DC series resistance is 230 mΩ and its impedance at 100 MHz is 600 Ω. This ferrite bead also acts as a makeshift fuse in the event that either U15 or C8 fail short and the upstream USB supply does not implement proper overcurrent protection."
-msgstr ""
+msgstr "一个 BLM15PX601SZ1 磁珠 (FB1) 串联在 USB 上，以期减少传导发射到 USB 线缆的干扰。它的最大直流电阻为 230 mΩ，在 100 MHz 下的阻抗为 600 Ω。这个磁珠也作为一个简易保险丝，在 U15 或 C8 短路失效且 USB 供电没有正确实现过流保护的情况下断开电源。"
 
 #: ../../src/revisions/revC3.rst:32
 msgid "A TPD3S014 current limit switch IC (U15) is inserted between VUSB and the +5V rail, and enforces a maximum current of 850 mA. There is a 150 uF aluminium electrolytic capacitor on the +5V rail for bulk decoupling and brownout protection. As such, you should expect up to 850 mA of inrush current for a brief period when you plug Glasgow in. Continuous operating current should not exceed 500 mA under normal circumstances."
-msgstr ""
+msgstr "一个 TPD3S014 限流 IC (U15) 插入在 VUSB 和 +5V 轨之间，限制最大电流 850 mA。在 +5V 轨上有一个 150 uF 铝电解电容，作为大解耦电容和欠压保护。因此，在刚刚给 Glasgow 连接电源的时候，您应当预期有一小段时间有 850 mA 涌入电流。连续工作时的电流在正常情况下不应超过 500 mA。"
 
 #: ../../src/revisions/revC3.rst:34
 msgid "The +5V rail is monitored by an APX811-40UG-7 supervisor IC. The supervisor has a nominal undervoltage threshold of 4.0 V. If the +5V rail drops below this threshold, the +3.3V regulator is disabled and ``CY_RESET`` is asserted to hold the Cypress FX2 USB controller IC (U1) in a reset state."
-msgstr ""
+msgstr "+5V 轨由一个 APX811-40UG-7 监控 IC 监测。监控 IC 的欠压阈值标称值为 4.0 V。如果 +5V 轨的电压掉落至低于此值，则 +3.3V 电源稳压器被失能，且 ``CY_RESET`` 信号激活，保持 Cypress FX2 USB 控制器 IC (U1) 在复位状态。"
 
 #: ../../src/revisions/revC3.rst:36
 msgid "The +5V rail is used to power the following devices:"
-msgstr ""
+msgstr "+5V 电源轨为下列设备供电："
 
 #: ../../src/revisions/revC3.rst:39 ../../src/revisions/revC3.rst:65
 #: ../../src/revisions/revC3.rst:150 ../../src/revisions/revC3.rst:161
 #: ../../src/revisions/revC3.rst:411 ../../src/revisions/revC3.rst:457
 msgid "Designator"
-msgstr ""
+msgstr "标号"
 
 #: ../../src/revisions/revC3.rst:39 ../../src/revisions/revC3.rst:65
 #: ../../src/revisions/revC3.rst:150 ../../src/revisions/revC3.rst:161
 #: ../../src/revisions/revC3.rst:411 ../../src/revisions/revC3.rst:457
 msgid "Part"
-msgstr ""
+msgstr "型号"
 
 #: ../../src/revisions/revC3.rst:39 ../../src/revisions/revC3.rst:65
 #: ../../src/revisions/revC3.rst:150 ../../src/revisions/revC3.rst:161
 msgid "Function / Notes"
-msgstr ""
+msgstr "功能和注释"
 
 #: ../../src/revisions/revC3.rst:41
 msgid "U7"
@@ -101,7 +101,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:41
 msgid "+5V rail supervisor and reset (triggered by reset button)"
-msgstr ""
+msgstr "+5V 轨监控和复位（由复位按钮触发）"
 
 #: ../../src/revisions/revC3.rst:43
 msgid "U8"
@@ -113,7 +113,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:43
 msgid "3.3 V, 500 mA linear regulator for generating +3.3V rail"
-msgstr ""
+msgstr "3.3 V，500 mA 线性稳压器，用于给 +3.3V 电源轨供电"
 
 #: ../../src/revisions/revC3.rst:45
 msgid "U36"
@@ -125,7 +125,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:45
 msgid "1.2 V, 300 mA linear regulator for generating +1.2V rail"
-msgstr ""
+msgstr "1.2 V，300 mA 线性稳压器，用于给 +1.2V 电源轨供电"
 
 #: ../../src/revisions/revC3.rst:47
 msgid "U31"
@@ -137,7 +137,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:47
 msgid "Adjustable linear regulator for generating VIO on port A"
-msgstr ""
+msgstr "可调节线性稳压器，用于给端口 A 的 VIO 供电"
 
 #: ../../src/revisions/revC3.rst:49
 msgid "U14"
@@ -145,23 +145,23 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:49
 msgid "Adjustable linear regulator for generating VIO on port B"
-msgstr ""
+msgstr "可调节线性稳压器，用于给端口 B 的 VIO 供电"
 
 #: ../../src/revisions/revC3.rst:56
 msgid "+3.3V rail"
-msgstr ""
+msgstr "+3.3V 电源轨"
 
 #: ../../src/revisions/revC3.rst:58
 msgid "The +3.3V rail is used to power most ICs on the board. You can measure this rail using the 3V3 test points on the front and rear of the board. The green PWR LED on the front of the board is powered by the +3.3V rail."
-msgstr ""
+msgstr "+3.3V 电源轨为板上大部分 IC 供电。您可以在电路板正反面的 3V3 测试点对此电源轨进行测量。电路板正面绿色 PWR LED 由 +3.3V 轨供电。"
 
 #: ../../src/revisions/revC3.rst:60
 msgid "The +3.3V rail is derived from the +5V rail using a TLV75533PDRVR linear voltage regulator (U8). The regulator has a maximum output current of 500 mA. The regulator's EN pin is driven by an APX811-40UG-7 supervisor IC (U7) which monitors the +5V rail for stability; in the event that the +5V rail does not meet the required threshold, U7's reset signal will disable the +3.3V regulator."
-msgstr ""
+msgstr "+3.3V 轨由 +5V 轨经一个 TLV75533PDRVR 线性稳压器 (U8) 产生。该稳压器最大电流为 500 mA。该稳压器 EN 引脚由 APX811-40UG-7 监控 IC (U7) 驱动，而后者监控 +5V 轨的稳定性；如果 +5V 轨出现不符合所需阈值的情况，U7 的复位信号会失能 +3.3V 稳压器。"
 
 #: ../../src/revisions/revC3.rst:62
 msgid "The +3.3V rail is used to power the following devices:"
-msgstr ""
+msgstr "+3.3V 电源轨为下列设备供电："
 
 #: ../../src/revisions/revC3.rst:67 ../../src/revisions/revC3.rst:413
 msgid "D1"
@@ -174,7 +174,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:67
 msgid "Green \"PWR\" LED on front of board"
-msgstr ""
+msgstr "电路板正面 \"PWR\" LED"
 
 #: ../../src/revisions/revC3.rst:69 ../../src/revisions/revC3.rst:423
 msgid "U1"
@@ -186,7 +186,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:69
 msgid "Cypress FX2 HS USB controller. +3.3V rail powers VCC, AVCC"
-msgstr ""
+msgstr "Cypress FX2 HS USB 控制器。+3.3V 轨为 VCC, AVCC 供电"
 
 #: ../../src/revisions/revC3.rst:71 ../../src/revisions/revC3.rst:425
 #: ../../src/revisions/revC3.rst:459
@@ -199,7 +199,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:71
 msgid "I2C 1Mbit serial EEPROM for iCE40"
-msgstr ""
+msgstr "I2C 1Mbit 串行 EEPROM，为 iCE40 使用"
 
 #: ../../src/revisions/revC3.rst:73 ../../src/revisions/revC3.rst:427
 #: ../../src/revisions/revC3.rst:461
@@ -212,7 +212,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:73
 msgid "I2C 256Kbit serial EEPROM for FX2"
-msgstr ""
+msgstr "I2C 256Kbit 串行 EEPROM，为 FX2 使用"
 
 #: ../../src/revisions/revC3.rst:75 ../../src/revisions/revC3.rst:165
 #: ../../src/revisions/revC3.rst:431 ../../src/revisions/revC3.rst:473
@@ -227,7 +227,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:75
 msgid "I2C I/O expander for programmable pullup/pulldown resistors on port B. +3.3V powers I2C supply"
-msgstr ""
+msgstr "I2C I/O 扩展，为端口 B 的可编程上拉、下拉电阻使用。+3.3V 为 I2C 供电"
 
 #: ../../src/revisions/revC3.rst:77 ../../src/revisions/revC3.rst:152
 msgid "U4, U6, U9, U10, U11, U16, U17, U18"
@@ -241,7 +241,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:77
 msgid "Logic level translators for port A. +3.3V powers internal side (VCCA)"
-msgstr ""
+msgstr "端口 A 的逻辑电平转换器。+3.3V 为内侧供电 (VCCA)"
 
 #: ../../src/revisions/revC3.rst:79 ../../src/revisions/revC3.rst:471
 msgid "U12"
@@ -254,7 +254,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:79
 msgid "Voltage/current measurement IC for port B."
-msgstr ""
+msgstr "端口 B 的电压和电流测量 IC"
 
 #: ../../src/revisions/revC3.rst:81 ../../src/revisions/revC3.rst:469
 msgid "U13"
@@ -267,7 +267,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:81
 msgid "I2C DAC for programming VIO voltage on port B."
-msgstr ""
+msgstr "I2C DAC，用于为端口 B 的 VIO 编程"
 
 #: ../../src/revisions/revC3.rst:83 ../../src/revisions/revC3.rst:154
 #: ../../src/revisions/revC3.rst:467
@@ -276,7 +276,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:83
 msgid "I2C I/O expander for programmable pullup/pulldown resistors on port A. +3.3V powers I2C supply"
-msgstr ""
+msgstr "I2C I/O 扩展，为端口 A 的可编程上拉、下拉电阻使用。+3.3V 为 I2C 供电"
 
 #: ../../src/revisions/revC3.rst:85 ../../src/revisions/revC3.rst:463
 msgid "U20"
@@ -284,7 +284,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:85
 msgid "I2C DAC for programming VIO voltage on port A"
-msgstr ""
+msgstr "I2C DAC，用于为端口 A 的 VIO 编程"
 
 #: ../../src/revisions/revC3.rst:87 ../../src/revisions/revC3.rst:465
 msgid "U21"
@@ -292,7 +292,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:87
 msgid "Voltage/current measurement IC for port A."
-msgstr ""
+msgstr "端口 A 的电压和电流测量 IC"
 
 #: ../../src/revisions/revC3.rst:89 ../../src/revisions/revC3.rst:163
 msgid "U22, U23, U24, U25, U26, U27, U28, U29"
@@ -300,7 +300,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:89
 msgid "Logic level translators for port B. +3.3V powers internal side (VCCA)"
-msgstr ""
+msgstr "端口 B 的逻辑电平转换器。+3.3V 为内侧供电 (VCCA)"
 
 #: ../../src/revisions/revC3.rst:91
 msgid "U30"
@@ -312,7 +312,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:91
 msgid "iCE40 FPGA. +3.3V rail powers VCCIO_x, VPP_2V5, VCC_SPI"
-msgstr ""
+msgstr "iCE40 FPGA。+3.3V 轨为 VCCIO_x、VPP_2V5、VCC_SPI 供电"
 
 #: ../../src/revisions/revC3.rst:93
 msgid "U32"
@@ -320,51 +320,51 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:93
 msgid "Logic level translator for SYNC input/output connector. +3.3V powers internal side (VCCA)"
-msgstr ""
+msgstr "SYNC 输入和输出连接器的逻辑电平转换器。+3.3V 为内侧供电 (VCCA)"
 
 #: ../../src/revisions/revC3.rst:100
 msgid "+1.2V rail"
-msgstr ""
+msgstr "+1.2V 电源轨"
 
 #: ../../src/revisions/revC3.rst:102
 msgid "The +1.2V rail is used to power the iCE40 FPGA (VCC and VCCPLL0/1). You can measure this rail using the 1V2 test points on the front and back of the board."
-msgstr ""
+msgstr "+1.2V 轨为 iCE40 FPGA 供电（VCC 和 VCCPLL0/1）。您可以在电路板正反面的 1V2 测试点对此电源轨进行测量。"
 
 #: ../../src/revisions/revC3.rst:104
 msgid "The +1.2V rail is derived from the +5V rail using a TLV73312PQDRVR linear voltage regulator (U36). The regulator has a maximum output current of 300 mA. The regulator's EN pin is tied directly to the +5V rail. The regulator enters dropout mode when the +5V rail reaches approximately 1.3 V, and enters normal operation once the +5V rail reaches approximately 1.65 V."
-msgstr ""
+msgstr "+1.2V 轨由 +5V 轨经一个 TLV75533PDRVR 线性稳压器 (U8) 产生。该稳压器最大电流为 500 mA。该稳压器 EN 引脚直接连接至 +5V 轨。当 +5V 轨电压达到 1.3V 时，稳压器进入压差模式；当 +5V 轨达到约 1.65 V 时，稳压器进入正常工作模式。"
 
 #: ../../src/revisions/revC3.rst:106
 msgid "The VCCPLL0 and VCCPLL1 supplies are low-pass filtered using a 100 Ω resistor and 4.7 uF capacitor, resulting in a -3 dB cutoff frequency of approximately 340 Hz."
-msgstr ""
+msgstr "VCCPLL0 和 VCCPLL1 供电经一个 100 Ω 电阻和 4.7 uF 电容低通滤波，其 -3 dB 截止频率约为 340 Hz。"
 
 #: ../../src/revisions/revC3.rst:112
 msgid "VIO rails"
-msgstr ""
+msgstr "VIO 电源轨"
 
 #: ../../src/revisions/revC3.rst:114
 msgid "There are two main independent VIO rails - one for port A, and one for port B. These rails are adjustable and set the IO voltage levels for the ports. Each VIO rail voltage can be independently configured, which allows you to work with different logic levels on ports A and B simultaneously. The VIOA and VIOB rails are exposed as pins on the port A and port B connectors."
-msgstr ""
+msgstr "独立的 VIO 电源轨共有两个：一个为端口 A 供电，一个为端口 B 供电。这两个电源轨都可以调节，以此设置两个端口的 IO 电平。每个 VIO 轨的电压都可以独立调节，以此允许您在端口 A 和端口 B 上用两个不同的逻辑电平同时工作。VIOA 和 VIOB 轨分别在端口 A 和端口 B 连接器上由引脚暴露出来。"
 
 #: ../../src/revisions/revC3.rst:116
 msgid "Each VIO rail is derived from the +5V rail using a TPS73101DBV linear regulator (U31, U14). These regulators have an ultra-low dropout voltage of just 30 mV, which allows the VIO voltages to be programmed anywhere between 1.8 V and the +5V rail voltage (which is essentially equal to VUSB) minus 30 mV."
-msgstr ""
+msgstr "每个 VIO 轨都是由 +5V 轨经一个 TPS73101DBV 线性稳压器 (U31, U14) 产生。这些稳压器具有超低压差（仅 30 mV），因此允许的 VIO 值可调范围为 1.8 V 到 +5V 轨电压（基本相当于 VUSB）减去 30 mV。"
 
 #: ../../src/revisions/revC3.rst:118
 msgid "The TPS73101DBV regulators feature reverse current blocking which prevents current from being sunk into the regulator instead of sourced from it. They also have a unique foldback current limit characteristic which provides excellent protection against short circuits on the VIO rails - see the \"Internal Current Limit\" section and Figure 12 in the datasheet."
-msgstr ""
+msgstr "TPS73101DBV 稳压器具有电流反流阻隔功能，避免电流流入稳压器中（而非从稳压器流出）。该稳压器还具有一个独特的折返保护限流特性，对 VIO 轨短路故障提供了极佳的保护（参见数据手册 \"Internal Current Limit\" 一节和 Figure 12）。"
 
 #: ../../src/revisions/revC3.rst:120
 msgid "Each VIO regulator has a feedback network which incorporates the output of a DAC081C081CIMK DAC IC. These DACs (U20, U13) are programmed over I2C to adjust the feedback voltage by injecting current into the feedback resistor network, which in turn adjusts the VIO voltage, thus providing runtime VIO voltage adjustment. The DAC output voltages can be measured using the VDAC A and B test points on the rear of the board. The FX2 firmware `calculates the correct DAC voltage <https://github.com/GlasgowEmbedded/glasgow/blob/1f5691a4b516f4ac083e7fa4fc32abcc659e608d/firmware/dac_ldo.c#L76-L83>`__ for the target output voltage. Some examples are:"
-msgstr ""
+msgstr "每个 VIO 稳压器有一个反馈网络，其中包含 DAC081C081CIMK DAC IC 的输出。这些 DAC (U20, U13) 经由 I2C 编程，通过向反馈电阻网络内注入电流来实现反馈电压的调节，以此调节 VIO 电压，提供运行时 VIO 电压调节功能。DAC 输出可以由电路板背面的 VDAC A/B 测试点测量。FX2 固件对目标输出电压\\ `计算正确的 DAC 电压 <https://github.com/GlasgowEmbedded/glasgow/blob/1f5691a4b516f4ac083e7fa4fc32abcc659e608d/firmware/dac_ldo.c#L76-L83>`__。举例如下："
 
 #: ../../src/revisions/revC3.rst:123
 msgid "VIO Voltage"
-msgstr ""
+msgstr "VIO 电压"
 
 #: ../../src/revisions/revC3.rst:123
 msgid "DAC Output"
-msgstr ""
+msgstr "DAC 输出"
 
 #: ../../src/revisions/revC3.rst:125 ../../src/revisions/revC3.rst:190
 #: ../../src/revisions/revC3.rst:206
@@ -412,51 +412,51 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:136
 msgid "On power-on or reset, both VIO regulators are disabled and the voltage adjustment DACs are reset to 0.0 V. The DAC voltages are programmed over I2C, after which the regulators may be enabled by the FX2 asserting the ``ENVA`` and ``ENVB`` signals (pins 45 and 51 on the FX2 respectively). The VIO A and VIO B LEDs on the front of the board light up when the regulators are enabled."
-msgstr ""
+msgstr "在上电和复位时，两个 VIO 稳压器均失能，且调压 DAC 复位至 0.0 V。在 DAC 电压经由 I2C 编程后，FX2 允许激活 ``ENVA`` 和 ``ENVB`` 信号（分别为 FX2 的引脚 45 和 51）使能对应的稳压器。VIO A 和 VIO B LED 在稳压器使能时点亮。"
 
 #: ../../src/revisions/revC3.rst:138
 msgid "The VIO rail currents are measured by INA233 voltage and current monitoring ADC ICs (U21, U12) using 150 mΩ shunt resistors (R49, R48) in series with the regulator outputs. This allows the VIO currents for each port to be measured over I2C. The voltage sense pin on each INA233 is exposed on the port connector (VA_SENS, VB_SENS), allowing for two useful configurations:"
-msgstr ""
+msgstr "VIO 轨电流测量由 INA233 电压和电流监控 ADC IC (U21, U12) 和用串联在稳压器输出上的 150 mΩ 分压电阻 (R49, R48) 实现。以此可以在 I2C 上测量每个端口的 VIO 电流。每个 INA233 的电压采集引脚由端口连接器暴露 (VA_SENS, VB_SENS)，以此允许实现两种有用的配置："
 
 #: ../../src/revisions/revC3.rst:140
 msgid "The sense input may be connected directly to the VIO rail for that port (e.g. VA_SENSE to VIOA), enabling you to monitor the VIO rail voltage precisely and utilise the INA233's inbuilt power calculation feature to measure total power consumption for that VIO rail."
-msgstr ""
+msgstr "采集输入可以直接连接至对应端口的 VIO 轨（如 VA_SENSE 直接连接到 VIOA），允许您精确监控 VIO 轨电压，并用 INA233 的自带的功率计算功能测量该 VIO 轨消耗的功率。"
 
 #: ../../src/revisions/revC3.rst:141
 msgid "The sense input may be connected to any arbitrary voltage in the range 0.0 V to 36.0 V, essentially using the INA233's voltage sensing input as a generic 16-bit ADC input. In this configuration the VIO rail current can still be measured but the inbuilt VIO rail power calculation feature will not be available."
-msgstr ""
+msgstr "采集输入可以连接到任意 0.0 V 到 36.0 V 电压，相当于使用 INA233 的电压采集输入作为一个通用 16 位 ADC 输入。在这个配置下，VIO 轨电源电流仍然可以被测量，但是自带的功率计算功能不可用。"
 
 #: ../../src/revisions/revC3.rst:143
 msgid "Additional 330 mΩ resistors (R56, R7) in series with the regulator outputs ensure recovery in the event that a VIO rail is shorted to ground - see `GitHub issue #135 <https://github.com/GlasgowEmbedded/glasgow/issues/135>`__ for details."
-msgstr ""
+msgstr "稳压器输出上还串联有额外的 330 mΩ 电阻 (R56, R7)，确保在 VIO 轨短路到地后还可以恢复。细节请参见 `GitHub issue #135 <https://github.com/GlasgowEmbedded/glasgow/issues/135>`__。"
 
 #: ../../src/revisions/revC3.rst:145
 msgid "Each VIO rail is protected against overvoltage and ESD by two parallel elements of a SP3012-06UTG diode array. VIOA is protected by D22 and VIOB is protected by D20. These diode arrays also feature a 6.0 V zener diode clamp."
-msgstr ""
+msgstr "每个 VIO 轨都有过压和 ESD 保护，用 SP3012-06UTG 阵列中的两个二极管组并联实现。VIOA 由 D22 保护，VIOB 由 D20 保护。这些二极管组也有 6.0 V 钳位齐纳二极管。"
 
 #: ../../src/revisions/revC3.rst:147
 msgid "The VIOA rail is used to power the following devices:"
-msgstr ""
+msgstr "VIOA 电源轨为下列设备供电："
 
 #: ../../src/revisions/revC3.rst:152
 msgid "Logic level translators for port A. VIOA powers external side (VCCB)"
-msgstr ""
+msgstr "端口 A 的逻辑电平转换器。VIOA 为外侧供电 (VCCB)"
 
 #: ../../src/revisions/revC3.rst:154
 msgid "I2C I/O expander for programmable pullup/pulldown resistors on port A. VIOA powers IO ports."
-msgstr ""
+msgstr "I2C I/O 扩展，为端口 A 的可编程上拉、下拉电阻使用。VIOA 为 IO 端口供电"
 
 #: ../../src/revisions/revC3.rst:158
 msgid "The VIOB rail is used to power the following devices:"
-msgstr ""
+msgstr "VIOB 电源轨为下列设备供电："
 
 #: ../../src/revisions/revC3.rst:163
 msgid "Logic level translators for port B. VIOB powers external side (VCCB)"
-msgstr ""
+msgstr "端口 B 的逻辑电平转换器。VIOB 为外侧供电 (VCCB)"
 
 #: ../../src/revisions/revC3.rst:165
 msgid "I2C I/O expander for programmable pullup/pulldown resistors on port B. VIOB powers IO ports."
-msgstr ""
+msgstr "I2C I/O 扩展，为端口 B 的可编程上拉、下拉电阻使用。VIOB 为 IO 端口供电"
 
 #: ../../src/revisions/revC3.rst:172 ../../src/revisions/revC3.rst:392
 msgid "VIO_AUX"
@@ -464,27 +464,27 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:174
 msgid "Ports A and B are the primary connectors which are expected to be used with Glasgow. The LVDS connector is a secondary connector that can be used for special addons that require additional IOs. While the IOs on ports A and B are well-protected against ESD and utilise separate logic level translation with their own VIO rails, the LVDS connector is directly connected to the iCE40 FPGA without any logic level translation or discrete protection, and without a programmable IO voltage. The supply for the IOs exposed on the LVDS connector must be externally provided via VIO_AUX on pin 44. This voltage is directly fed to ``VCCIO_3`` on the FPGA. Voltages between 1.8 V and 3.3 V are supported. See the iCE40HX8K-BG121 datasheet for more information."
-msgstr ""
+msgstr "端口 A 和 B 是 Glasgow 上预期用户使用的主要连接器。LVDS 连接器是一个次要连接器，用于连接需要更多 IO 的特殊扩展组件。与有良好 ESD 保护、独立电平转换、独立 VIO 轨的端口 A 和端口 B 不同，LVDS 接口直接连接到 iCE40 FPGA，没有任何逻辑电平转换和分立的保护，也没有可编程 IO 电压。在 LVDS 连接器上所暴露的 IO 供电必须由外部电路提供给 VIO_AUX（引脚 44）。该电压直接送给 FPGA 上的 ``VCCIO_3``。支持的电压范围为 1.8 V 到 3.3 V。细节详见 iCE40HX8K-BG121 数据手册。"
 
 #: ../../src/revisions/revC3.rst:180
 msgid "Decoupling capacitors"
-msgstr ""
+msgstr "解耦电容"
 
 #: ../../src/revisions/revC3.rst:182
 msgid "Two values of MLCC decoupling capacitor are used across the Glasgow design."
-msgstr ""
+msgstr "Glasgow 设计中使用两种容值的 MLCC 解耦电容。"
 
 #: ../../src/revisions/revC3.rst:185
 msgid "4.7 uF capacitors are `Taiyo Yuden LMK107BJ475KAHT <https://ds.yuden.co.jp/TYCOMPAS/eu/detail?pn=MBASL168SB5475KTNA01&u=M>`__, with the following DC bias characteristics:"
-msgstr ""
+msgstr "4.7 uF 电容为\\ `太阳诱电 LMK107BJ475KAHT <https://ds.yuden.co.jp/TYCOMPAS/eu/detail?pn=MBASL168SB5475KTNA01&u=M>`__，直流偏压特性如下："
 
 #: ../../src/revisions/revC3.rst:188 ../../src/revisions/revC3.rst:204
 msgid "DC bias voltage"
-msgstr ""
+msgstr "直流偏压"
 
 #: ../../src/revisions/revC3.rst:188 ../../src/revisions/revC3.rst:204
 msgid "Effective Capacitance"
-msgstr ""
+msgstr "实际电容值"
 
 #: ../../src/revisions/revC3.rst:190
 msgid "1.93 uF"
@@ -512,7 +512,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:201
 msgid "100 nF capacitors are `Taiyo Yuden TMK105BJ104KV-F <https://ds.yuden.co.jp/TYCOMPAS/eu/detail?pn=MSAST105SB5104KFNA01&u=M>`__ (now renamed to MSAST105SB5104KFNA01), with the following DC bias characteristics:"
-msgstr ""
+msgstr "100 uF 电容为\\ `太阳诱电 TMK105BJ104KV-F <https://ds.yuden.co.jp/TYCOMPAS/eu/detail?pn=MSAST105SB5104KFNA01&u=M>`__\ （现型号为 MSAST105SB5104KFNA01），直流偏压特性如下："
 
 #: ../../src/revisions/revC3.rst:206
 msgid "93 nF"
@@ -532,55 +532,55 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:221
 msgid "Power-on sequencing"
-msgstr ""
+msgstr "上电序列"
 
 #: ../../src/revisions/revC3.rst:223
 msgid "The power-on sequence is as follows:"
-msgstr ""
+msgstr "上电序列如下："
 
 #: ../../src/revisions/revC3.rst:225
 msgid "5.0 V becomes present on the VUSB pin of the USB-C connector."
-msgstr ""
+msgstr "5.0 V 从 USB-C 连接器上的 VUSB 引脚开始上电"
 
 #: ../../src/revisions/revC3.rst:226
 msgid "After VUSB exceeds the enable threshold (nominally 1.45 V) of the TPD3S014 current limit switch (U15) for approximately 1.0 ms to 2.2 ms (nominally 1.6 ms) the switch turns on and the +5V rail begins to rise."
-msgstr ""
+msgstr "VUSB 超过 TPD3S014 限流开关的使能阈值（标称值 1.45 V）后，再经过约 1.0 ms 到 2.2 ms（标称值 1.6 ms），限流开关闭合，+5V 电源轨电压开始上升"
 
 #: ../../src/revisions/revC3.rst:227
 msgid "TPD3S014 performs soft-start and inrush limiting while charging the 150 uF bulk capacitor (C87) on the +5V rail. Charging takes around 2 ms, during which up to 850 mA is drawn."
-msgstr ""
+msgstr "TPD3S014 进行软启动和涌入电流限制，对 +5V 电源轨上的 150 uF 大电容 (C87) 充电。充电大约需要 2 ms，在此期间输入电流为 850 mA。"
 
 #: ../../src/revisions/revC3.rst:228
 msgid "When the +5V rail reaches approximately 1.3 V, the TLV73312PQDRVR linear regulator (U36) leaves disabled mode and enters dropout mode. During this time the +1.2V rail will have a voltage equal to the +5V rail minus the 450 mV dropout voltage of the regulator. When the +5V rail exceeds 1.65 V, the regulator enters normal mode and the +1.2V rail voltage becomes stable at 1.2 V."
-msgstr ""
+msgstr "当 +5V 电源轨达到约 1.3 V 时，TLV73312PQDRVR 线性稳压器退出失能模式，进入压差模式。在此期间，+1.2V 电源轨的电压是 +5V 轨电压减去 450 mV 的稳压器压差。当 +5V 轨超过 1.65 V 时，稳压器进入正常工作模式，此时 +1.2V 轨电压稳定在 1.2 V。"
 
 #: ../../src/revisions/revC3.rst:229
 msgid "APX811-40UG-7 (U7) monitors the +5V rail and asserts a reset signal (active low) while the +5V rail is below 4.0 V nominal."
-msgstr ""
+msgstr "APX811-40UG-7 (U7) 监控 +5V 轨电压，在 +5V 轨电压小于 4.0 V（标称）时激活复位信号（低有效）。"
 
 #: ../../src/revisions/revC3.rst:230
 msgid "Once the +5V rail exceeds this threshold for at least 240 ms, U7's reset signal is no longer asserted. As a result, the TLV75533PDRVR linear regulator (U8) switches on and powers the +3.3V rail."
-msgstr ""
+msgstr "在 +5V 轨超过此阈值约 240 ms 时，U7 的复位信号不再激活，使得 TLV75533PDRVR 线性稳压器 (U8) 启动，为 +3.3V 电源轨供电。"
 
 #: ../../src/revisions/revC3.rst:231
 msgid "The +3.3V rail and reset signal from U7 are connected to a common-anode dual-Schottky diode package (D24) in such a way that ``CY_RESET`` is asserted (active low) if U7 is outputting a reset state or the +3.3V rail is not present. The ``CY_RESET`` signal is low-pass filtered using R4, R5, and C88 to ensure that ``CY_RESET`` remains asserted for 5 ms after the +3.3V rail turns on."
-msgstr ""
+msgstr "+3.3V 轨和 U7 产生的复位信号连接到一对共阳级肖特基二极管 (D24)，使得在 +3.3V 电源轨未上电或 U7 输出复位状态时 ``CY_RESET`` 均激活（低有效）。该 ``CY_RESET`` 信号经 R4、R5、C88 低通滤波，确保 ``CY_RESET`` 持续生效到 +3.3V 轨上电 5ms 之后。"
 
 #: ../../src/revisions/revC3.rst:232
 msgid "All rails are now at nominal and ``CY_RESET`` is de-asserted, allowing the FX2 USB controller to start operating. The FX2 de-asserts ``FPGA_RESET``, allowing the iCE40 FPGA (U30) to operate."
-msgstr ""
+msgstr "至此，所有电源轨均达标称电压，且 ``CY_RESET`` 被释放，允许 FX2 USB 控制器开始工作。FX2 将 ``FPGA_RESET`` 释放，允许 iCE40 FPGA (U30) 开始工作。"
 
 #: ../../src/revisions/revC3.rst:233
 msgid "During power-on, ``ENVA`` and ``ENVB`` are pulled down, disabling the TPS73101DBV adjustable linear regulators (U31, U14) which provide the VIO voltages for ports A and B. The DAC081C081CIMK DACs (U20, U13) provide an adjustable feedback voltage to the regulators. These are programmed over I2C as required to adjust the voltage of the VIO regulators, after which the FX2 can assert ``ENVA`` and/or ``ENVB`` to enable the regulators which, in turn, power the VIO outputs."
-msgstr ""
+msgstr "在上电时，``ENVA`` 和 ``ENVB`` 下拉，失能提供端口 A 和 B 的 VIO 的 TPS73101DBV 可调线性稳压器 (U31, U14)。两个 DAC081C081CIMK DAC (U20, U13) 为稳压器提供可调反馈电压。这两个 DAC 经由 I2C 编程，按需调节 VIO 稳压器的输出电压。调节后，FX2 允许激活 ``ENVA`` 和/或 ``ENVB``，以启用稳压器，而为 VIO 输出供电。"
 
 #: ../../src/revisions/revC3.rst:239
 msgid "Connectors"
-msgstr ""
+msgstr "连接器"
 
 #: ../../src/revisions/revC3.rst:245
 msgid "Port A Connector Layout"
-msgstr ""
+msgstr "端口 A 连接器布局"
 
 #: ../../src/revisions/revC3.rst:248
 msgid "**VIOA**"
@@ -633,7 +633,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:257
 msgid "Port B Connector Layout"
-msgstr ""
+msgstr "端口 B 连接器布局"
 
 #: ../../src/revisions/revC3.rst:260
 msgid "**PB_IO7**"
@@ -677,24 +677,24 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:269
 msgid "Ports A/B Pinout"
-msgstr ""
+msgstr "端口 A/B 引脚描述"
 
 #: ../../src/revisions/revC3.rst:272 ../../src/revisions/revC3.rst:348
 msgid "Number"
-msgstr ""
+msgstr "编号"
 
 #: ../../src/revisions/revC3.rst:272 ../../src/revisions/revC3.rst:348
 #: ../../src/revisions/revC3.rst:411
 msgid "Name"
-msgstr ""
+msgstr "名称"
 
 #: ../../src/revisions/revC3.rst:272
 msgid "Wire Colour"
-msgstr ""
+msgstr "线色"
 
 #: ../../src/revisions/revC3.rst:272 ../../src/revisions/revC3.rst:411
 msgid "Description"
-msgstr ""
+msgstr "描述"
 
 #: ../../src/revisions/revC3.rst:274 ../../src/revisions/revC3.rst:350
 msgid "1"
@@ -707,11 +707,11 @@ msgstr ""
 #: ../../src/revisions/revC3.rst:274 ../../src/revisions/revC3.rst:417
 #: ../../src/revisions/revC3.rst:423 ../../src/revisions/revC3.rst:431
 msgid "Blue"
-msgstr ""
+msgstr "蓝"
 
 #: ../../src/revisions/revC3.rst:274
 msgid "Voltage sense, connected to VBUS pin of INA233. Tie to pin 2 to enable VIO power measurement feature, or use as an arbitrary 0-36V 16-bit ADC input."
-msgstr ""
+msgstr "电压传感，连接到 INA233 的 VBUS 引脚。连接到引脚 2 以使能 VIO 功率测量功能，或作为任意 0-36V 16 位 ADC 使用。"
 
 #: ../../src/revisions/revC3.rst:276 ../../src/revisions/revC3.rst:350
 msgid "2"
@@ -723,11 +723,11 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:276 ../../src/revisions/revC3.rst:421
 msgid "Red"
-msgstr ""
+msgstr "红"
 
 #: ../../src/revisions/revC3.rst:276
 msgid "Logic level voltage output. Generated by TPS73101DBV linear regulator, voltage level configured at runtime by DAC081C081CIMK DAC."
-msgstr ""
+msgstr "逻辑电平供电输出。由 TPS73101DBV 线性稳压器产生，电压由 DAC081C081CIMK DAC 运行时调节。"
 
 #: ../../src/revisions/revC3.rst:278 ../../src/revisions/revC3.rst:352
 msgid "3"
@@ -739,11 +739,11 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:278 ../../src/revisions/revC3.rst:419
 msgid "Orange"
-msgstr ""
+msgstr "橙"
 
 #: ../../src/revisions/revC3.rst:278
 msgid "IO pin 0."
-msgstr ""
+msgstr "IO 引脚 0。"
 
 #: ../../src/revisions/revC3.rst:280 ../../src/revisions/revC3.rst:352
 msgid "4"
@@ -769,14 +769,14 @@ msgstr ""
 #: ../../src/revisions/revC3.rst:296 ../../src/revisions/revC3.rst:300
 #: ../../src/revisions/revC3.rst:304 ../../src/revisions/revC3.rst:308
 msgid "Black"
-msgstr ""
+msgstr "黑"
 
 #: ../../src/revisions/revC3.rst:280 ../../src/revisions/revC3.rst:284
 #: ../../src/revisions/revC3.rst:288 ../../src/revisions/revC3.rst:292
 #: ../../src/revisions/revC3.rst:296 ../../src/revisions/revC3.rst:300
 #: ../../src/revisions/revC3.rst:304 ../../src/revisions/revC3.rst:308
 msgid "Ground."
-msgstr ""
+msgstr "接地。"
 
 #: ../../src/revisions/revC3.rst:282 ../../src/revisions/revC3.rst:354
 msgid "5"
@@ -789,11 +789,11 @@ msgstr ""
 #: ../../src/revisions/revC3.rst:282 ../../src/revisions/revC3.rst:413
 #: ../../src/revisions/revC3.rst:433 ../../src/revisions/revC3.rst:435
 msgid "Green"
-msgstr ""
+msgstr "绿"
 
 #: ../../src/revisions/revC3.rst:282
 msgid "IO pin 1."
-msgstr ""
+msgstr "IO 引脚 1。"
 
 #: ../../src/revisions/revC3.rst:284 ../../src/revisions/revC3.rst:354
 msgid "6"
@@ -809,11 +809,11 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:286
 msgid "Grey"
-msgstr ""
+msgstr "灰"
 
 #: ../../src/revisions/revC3.rst:286
 msgid "IO pin 2."
-msgstr ""
+msgstr "IO 引脚 2。"
 
 #: ../../src/revisions/revC3.rst:288 ../../src/revisions/revC3.rst:356
 msgid "8"
@@ -829,11 +829,11 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:290
 msgid "Brown"
-msgstr ""
+msgstr "棕"
 
 #: ../../src/revisions/revC3.rst:290
 msgid "IO pin 3."
-msgstr ""
+msgstr "IO 引脚 3。"
 
 #: ../../src/revisions/revC3.rst:292 ../../src/revisions/revC3.rst:358
 msgid "10"
@@ -850,11 +850,11 @@ msgstr ""
 #: ../../src/revisions/revC3.rst:294 ../../src/revisions/revC3.rst:425
 #: ../../src/revisions/revC3.rst:429
 msgid "Pink"
-msgstr ""
+msgstr "粉"
 
 #: ../../src/revisions/revC3.rst:294
 msgid "IO pin 4."
-msgstr ""
+msgstr "IO 引脚 4。"
 
 #: ../../src/revisions/revC3.rst:296 ../../src/revisions/revC3.rst:360
 msgid "12"
@@ -870,11 +870,11 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:298
 msgid "Yellow"
-msgstr ""
+msgstr "黄"
 
 #: ../../src/revisions/revC3.rst:298
 msgid "IO pin 5."
-msgstr ""
+msgstr "IO 引脚 5。"
 
 #: ../../src/revisions/revC3.rst:300 ../../src/revisions/revC3.rst:362
 msgid "14"
@@ -891,11 +891,11 @@ msgstr ""
 #: ../../src/revisions/revC3.rst:302 ../../src/revisions/revC3.rst:415
 #: ../../src/revisions/revC3.rst:427
 msgid "White"
-msgstr ""
+msgstr "白"
 
 #: ../../src/revisions/revC3.rst:302
 msgid "IO pin 6."
-msgstr ""
+msgstr "IO 引脚 6。"
 
 #: ../../src/revisions/revC3.rst:304 ../../src/revisions/revC3.rst:364
 msgid "16"
@@ -911,11 +911,11 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:306
 msgid "Purple"
-msgstr ""
+msgstr "紫"
 
 #: ../../src/revisions/revC3.rst:306
 msgid "IO pin 7."
-msgstr ""
+msgstr "IO 引脚 7。"
 
 #: ../../src/revisions/revC3.rst:308 ../../src/revisions/revC3.rst:366
 msgid "18"
@@ -935,7 +935,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:310 ../../src/revisions/revC3.rst:312
 msgid "Not connected."
-msgstr ""
+msgstr "无连接。"
 
 #: ../../src/revisions/revC3.rst:312 ../../src/revisions/revC3.rst:368
 msgid "20"
@@ -943,51 +943,51 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:315
 msgid "Wire colours described here are correct for the 1BitSquared wiring looms and are not innate to Glasgow itself."
-msgstr ""
+msgstr "此处列出的线色仅对 1BitSquared 排线有效，而非 Glasgow 本身的特性。"
 
 #: ../../src/revisions/revC3.rst:317
 msgid "Note that each of the IOs has a GND pin opposite. This provides a ground reference plane for return currents, which helps improve signal integrity and reduces crosstalk in higher speed signals. Where possible, connect each ground wire to GND on the target device, physically close to the signal connection."
-msgstr ""
+msgstr "注意每个 IO 都与一个 GND 相对。这为回流电流提供了一个参考地，因而可以增强信号完整性，减少较高速信号间的串扰。如果可能，请将每个地线连接到目标设备上的物理靠近信号连接点的 GND。"
 
 #: ../../src/revisions/revC3.rst:319
 msgid "Each IO is driven by an SN74LVC1T45DCKR bus transceiver, which converts between the port's logic voltage (VIO) and the 3.3 V used by the FPGA IO ports. Each IO can be independently configured as an input or output. Each IO pin can source or sink up to 4 mA at 1.8 V, 8 mA at 2.5 V, 24 mA at 3.3 V, or 32 mA at 5.0 V."
-msgstr ""
+msgstr "每个 IO 都由一个 SN74LVC1T45DCKR 总线收发器驱动。总线收发器将端口的逻辑电平 (VIO) 和 FPGA 的 IO 端口所用的 3.3 V 电平之间转换。每个 IO 都可以独立配置为输入或输出。每个 IO 引脚可以提供流入或流出最大电流 4 mA @ 1.8 V，8 mA @ 2.5 V，24 mA @ 3.3 V，32 mA @ 5.0 V。"
 
 #: ../../src/revisions/revC3.rst:321
 msgid "The SN74LVC1T45DCKR itself provides limited isolation between the FPGA and the IO pins, and a modicum of ESD protection. Additional ESD and overvoltage protection is provided by an SP3012-06UTG diode array and a 33Ω series termination resistor."
-msgstr ""
+msgstr "SN74LVC1T45DCKR 本身提供 FPGA 和 IO 引脚之间有限的隔离，和一小部分的 ESD 保护。此外的 ESD 保护和过压保护由 SP3012-06UTG 二极管阵列和串联 33Ω 终端电阻实现。"
 
 #: ../../src/revisions/revC3.rst:323
 msgid "The VSENSE pin is protected by a CDSOD323-T36S unidirectional TVS diode which helps protect the INA233 ICs against overvoltage."
-msgstr ""
+msgstr "VSENSE 引脚由一个 CDSOD323-T36S 单向 TVS 二极管保护，为 INA233 IC 提供过压保护。"
 
 #: ../../src/revisions/revC3.rst:329
 msgid "SYNC Connector"
-msgstr ""
+msgstr "SYNC 连接器"
 
 #: ../../src/revisions/revC3.rst:331
 msgid "The SYNC connector is used to synchronise multiple Glasgows together. As of March 2024 this has not been used for much, but we expect folks will come up with interesting ways to use it."
-msgstr ""
+msgstr "SYNC 连接器用于将多个 Glasgow 同步。截至 2024 年 3 月，本功能还并不常用，但是我们期望广大用户可以发明一些有趣的用法。"
 
 #: ../../src/revisions/revC3.rst:333
 msgid "The SYNC pin is weakly pulled up to the +3.3V rail and is buffered by a SN74LVC1T45DCKR bus transceiver. The input-low threshold is 0.8 V and the input-high threshold is 2.0 V, making it directly compatible with 2.5 V, 3.3 V, and 5.0 V logic."
-msgstr ""
+msgstr "SYNC 引脚有一个到 +3.3V 轨的弱上拉，并用一个 SN74LVC1T45DCKR 总线收发器缓冲。输入低电平阈值为 0.8 V，输入高电平阈值为 2.0 V，因而与 2.5 V、3.3 V、5.0 V 逻辑电平直接兼容。"
 
 #: ../../src/revisions/revC3.rst:335
 msgid "The SYNC pin is protected by a ESD5Z5.0T1G ESD protection diode with a standoff voltage of 5.0 V and a breakdown of 6.2 V, and a 47 Ω series resistor."
-msgstr ""
+msgstr "SYNC 引脚由一个 ESD5Z5.0T1G ESD 保护二极管（截止电压为 5.0 V，击穿电压为 6.2 V）和一个 47 Ω 串联电阻保护。"
 
 #: ../../src/revisions/revC3.rst:341
 msgid "LVDS Connector"
-msgstr ""
+msgstr "LVDS 连接器"
 
 #: ../../src/revisions/revC3.rst:343
 msgid "The LVDS port is a secondary connector used for specially designed addons. It is directly wired to the FPGA rather than using bus transceivers, and has limited ESD protection, so you should be careful when plugging things into it and only do so when the device is fully powered off."
-msgstr ""
+msgstr "LVDS 端口是一个次要连接器，用于连接特制的扩展组件。该连接器直接连接到 FPGA 上，而没有使用总线收发器，因此其 ESD 保护有限。所以，您应当在连接时保持小心，并且仅在设备完全断电时操作。"
 
 #: ../../src/revisions/revC3.rst:345
 msgid "The LVDS port will be replaced with different connectors in future hardware revisions of Glasgow, so its use is not preferred for addon boards."
-msgstr ""
+msgstr "LVDS 端口将在新版本 Glasgow 硬件设计中替换为其它的连接器，所以不推荐在扩展组件上使用 LVDS 连接器。"
 
 #: ../../src/revisions/revC3.rst:350
 msgid "+3.3V"
@@ -1195,19 +1195,19 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:396
 msgid "The +3.3V pin provides 3.3 V power from the onboard +3.3V rail."
-msgstr ""
+msgstr "+3.3V 引脚从板上的 +3.3V 电源轨提供 3.3 V 供电。"
 
 #: ../../src/revisions/revC3.rst:398
 msgid "To use the LVDS connector you must provide ``VIO_AUX``, an IO voltage between 1.8 V and 3.3 V, on pin 44. This pin is tied directly to ``VCCIO_3`` on the FPGA. See the iCE40HX8K-BG121 datasheet for more information about the power requirements."
-msgstr ""
+msgstr "如需使用，您必须为 ``VIO_AUX``\ （引脚 44）提供一个 1.8 V 到 3.3 V 之间的 IO 电压。这个引脚直接连接到 FPGA 上的 ``VCCIO_3``。电源提供功率的要求详见 iCE40HX8K-BG121 数据手册。"
 
 #: ../../src/revisions/revC3.rst:400
 msgid "The pins can be used in differential mode (N/P pairs) or in single-ended mode (independent signals on N and P)."
-msgstr ""
+msgstr "这些引脚可以作为差分模式（N/P 对）或单端模式（N 和 P 上为独立信号）使用。"
 
 #: ../../src/revisions/revC3.rst:402
 msgid "No termination resistors are included. You should include termination resistors on your board if you use the LVDS connector. See the Lattice document `FPGA-TN-02213 \"Using Differential I/O (LVDS, Sub-LVDS) in iCE40 LP/HX Devices\" <https://www.latticesemi.com/view_document?document_id=47960>`__ for details."
-msgstr ""
+msgstr "终端电阻默认没有提供。如果您使用 LVDS 连接器，您应当在您的电路板上包含终端电阻。详见 Lattice 文档 `FPGA-TN-02213 \"Using Differential I/O (LVDS, Sub-LVDS) in iCE40 LP/HX Devices\" <https://www.latticesemi.com/view_document?document_id=47960>`__。"
 
 #: ../../src/revisions/revC3.rst:408
 msgid "LEDs"
@@ -1215,7 +1215,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:411
 msgid "Colour"
-msgstr ""
+msgstr "颜色"
 
 #: ../../src/revisions/revC3.rst:413
 msgid "PWR"
@@ -1223,7 +1223,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:413
 msgid "Powered by +3.3V rail"
-msgstr ""
+msgstr "由 +3.3V 电源轨供电"
 
 #: ../../src/revisions/revC3.rst:415
 msgid "FX2"
@@ -1239,7 +1239,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:415
 msgid "Connected to pin 47 (PD2/FD10) of Cypress FX2 (U1). Pulses during enumeration. Lights when the FX2 has initialised."
-msgstr ""
+msgstr "连接到 Cypress FX2 (U1) 的引脚 47 (PD2/FD10)。在被枚举时闪烁。FX2 初始化完成后点亮。"
 
 #: ../../src/revisions/revC3.rst:417
 msgid "ICE"
@@ -1256,7 +1256,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:417
 msgid "Connected to pin 48 (PD3/FD11) of Cypress FX2 (U1). Lights when the FPGA is ready."
-msgstr ""
+msgstr "连接到 Cypress FX2 (U1) 的引脚 48 (PD3/FD11)。在 FPGA 就绪后点亮。"
 
 #: ../../src/revisions/revC3.rst:419
 msgid "ACT"
@@ -1272,7 +1272,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:419
 msgid "Connected to pin 49 (PD4/FD12) of Cypress FX2 (U1). Lights when activity is occurring."
-msgstr ""
+msgstr "连接到 Cypress FX2 (U1) 的引脚 49 (PD4/FD12)。在设备有活动时点亮。"
 
 #: ../../src/revisions/revC3.rst:421
 msgid "ERR"
@@ -1288,7 +1288,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:421
 msgid "Connected to pin 50 (PD5/FD13) of Cypress FX2 (U1). Lights when an error occurs."
-msgstr ""
+msgstr "连接到 Cypress FX2 (U1) 的引脚 50 (PD5/FD13)。在出现错误时点亮。"
 
 #: ../../src/revisions/revC3.rst:423
 msgid "D6"
@@ -1296,7 +1296,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:423
 msgid "Connected to ball G9 (IOR_128) of iCE40 FPGA (U30)"
-msgstr ""
+msgstr "连接到 iCE 40 FPGA (U30) 焊球 G9 (IOR_128)"
 
 #: ../../src/revisions/revC3.rst:425
 msgid "D7"
@@ -1308,7 +1308,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:425
 msgid "Connected to ball G8 (IOR_118) of iCE40 FPGA (U30)"
-msgstr ""
+msgstr "连接到 iCE 40 FPGA (U30) 焊球 G8 (IOR_118)"
 
 #: ../../src/revisions/revC3.rst:427
 msgid "D8"
@@ -1316,7 +1316,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:427
 msgid "Connected to ball E9 (IOR_144) of iCE40 FPGA (U30)"
-msgstr ""
+msgstr "连接到 iCE 40 FPGA (U30) 焊球 E9 (IOR_144)"
 
 #: ../../src/revisions/revC3.rst:429
 msgid "U4"
@@ -1328,7 +1328,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:429
 msgid "Connected to ball D9 (IOR_147) of iCE40 FPGA (U30)"
-msgstr ""
+msgstr "连接到 iCE 40 FPGA (U30) 焊球 D9 (IOR_147)"
 
 #: ../../src/revisions/revC3.rst:431
 msgid "D10"
@@ -1336,7 +1336,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:431
 msgid "Connected to ball E8 (IOR_146) of iCE40 FPGA (U30)"
-msgstr ""
+msgstr "连接到 iCE 40 FPGA (U30) 焊球 E8 (IOR_146)"
 
 #: ../../src/revisions/revC3.rst:433
 msgid "VIO A"
@@ -1348,7 +1348,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:433
 msgid "Lights when VIO A regulator (U31) is enabled"
-msgstr ""
+msgstr "VIO A 稳压器 (U31) 使能时点亮"
 
 #: ../../src/revisions/revC3.rst:435
 msgid "VIO B"
@@ -1360,35 +1360,35 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:435
 msgid "Lights when VIO B regulator (U14) is enabled"
-msgstr ""
+msgstr "VIO B 稳压器 (U14) 使能时点亮"
 
 #: ../../src/revisions/revC3.rst:438
 msgid "The system LEDs (FX2, ICE, ACT, ERR) are under control of the FX2 firmware, which is responsible for producing the behaviour described above. In the event that the FX2 firmware does not run (e.g. no firmware is present), the LED IO pins default to a high-impedance input state and will all be off."
-msgstr ""
+msgstr "系统 LED (FX2, ICE, ACT, ERR) 由 FX2 固件控制并负责实现上述功能。如果出现 FX2 固件没有运行的情况（如没有提供固件），LED IO 管脚默认为高阻态，所有 LED 均熄灭。"
 
 #: ../../src/revisions/revC3.rst:440
 msgid "The user LEDs (U1-U5) are under control of the gateware. In most cases they go unused and the FPGA defaults the pins to be inputs with weak pullups, which results in the user LEDs lighting dimly."
-msgstr ""
+msgstr "用户 LED (U1-U5) 由 FPGA 门件控制。在大多数情况下，这些 LED 不被使用，此时 FPGA 将其默认配置为弱下拉输入，进而使用户 LED 微弱点亮。"
 
 #: ../../src/revisions/revC3.rst:446
 msgid "I²C bus"
-msgstr ""
+msgstr "I²C 总线"
 
 #: ../../src/revisions/revC3.rst:448
 msgid "Glasgow uses I2C internally for controlling the VIO voltages, measuring VIO current and voltage (or an external voltage input), and for communicating with the FX2 and iCE40 EEPROMs. The SDA and SCL signals can be accessed via test points on the front and rear of the board."
-msgstr ""
+msgstr "Glasgow 内部使用 I2C 控制 VIO 电压、测量 VIO 电流、电压（或一个外部电压输入），以及和 FX2 和 iCE40 的 EEPROM 通信。该总线的 SDA 和 SCL 信号可以在电路板正反面的测试点测量。"
 
 #: ../../src/revisions/revC3.rst:454
 msgid "I²C bus addresses"
-msgstr ""
+msgstr "I²C 总线地址"
 
 #: ../../src/revisions/revC3.rst:457
 msgid "Address"
-msgstr ""
+msgstr "地址"
 
 #: ../../src/revisions/revC3.rst:457
 msgid "Function"
-msgstr ""
+msgstr "功能"
 
 #: ../../src/revisions/revC3.rst:459
 msgid "101001X [1]_"
@@ -1396,7 +1396,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:459
 msgid "1 Mbit [4]_ flash memory for ICE40 FPGA"
-msgstr ""
+msgstr "1 Mbit [4]_ 闪存，给 iCE40 FPGA 使用"
 
 #: ../../src/revisions/revC3.rst:461
 msgid "1010001"
@@ -1404,7 +1404,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:461
 msgid "Flash memory for FX2 USB controller"
-msgstr ""
+msgstr "闪存，给 FX2 USB 控制器使用"
 
 #: ../../src/revisions/revC3.rst:463
 msgid "0001110"
@@ -1412,7 +1412,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:463
 msgid "DAC for setting VIO voltage on port A"
-msgstr ""
+msgstr "DAC，用于设定端口 A 的 VIO 电压"
 
 #: ../../src/revisions/revC3.rst:465
 msgid "1000000"
@@ -1420,7 +1420,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:465
 msgid "Voltage/current measurement ADC for port A"
-msgstr ""
+msgstr "端口 A 的电压和电流测量 ADC"
 
 #: ../../src/revisions/revC3.rst:467
 msgid "0100000 [2]_"
@@ -1428,7 +1428,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:467
 msgid "I/O expander for programmable pullup/pulldowns on port A"
-msgstr ""
+msgstr "I2C I/O 扩展，为端口 B 的可编程上拉、下拉使用。"
 
 #: ../../src/revisions/revC3.rst:469
 msgid "0001101"
@@ -1436,7 +1436,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:469
 msgid "DAC for setting VIO voltage on port B"
-msgstr ""
+msgstr "DAC，用于设定端口 B 的 VIO 电压"
 
 #: ../../src/revisions/revC3.rst:471
 msgid "1000001"
@@ -1444,7 +1444,7 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:471
 msgid "Voltage/current measurement ADC for port B"
-msgstr ""
+msgstr "端口 B 的电压和电流测量 ADC"
 
 #: ../../src/revisions/revC3.rst:473
 msgid "0100001 [3]_"
@@ -1452,27 +1452,27 @@ msgstr ""
 
 #: ../../src/revisions/revC3.rst:473
 msgid "I/O expander for programmable pullup/pulldowns on port B"
-msgstr ""
+msgstr "I2C I/O 扩展，为端口 B 的可编程上拉、下拉使用。"
 
 #: ../../src/revisions/revC3.rst:477
 msgid "The X in this address indicates that the device responds to two addresses (0 or 1 in the last bit position). In this case each address acts as a 512 Kbit flash device, providing 1 Mbit in total. Refer to the product datasheet for more information."
-msgstr ""
+msgstr "地址中的 X 表示该设备会响应两个地址（最后一位是 0 或 1）。此时，每个地址相当于一个 512 Kbit 闪存，总计提供 1 Mbit。更多信息详见该产品的数据手册。"
 
 #: ../../src/revisions/revC3.rst:480 ../../src/revisions/revC3.rst:483
 msgid "PCA6408APW is an SMBus device. The SMBus Alert Response Address (ARA) is 0001100 for both U19 (port A) and U5 (port B)."
-msgstr ""
+msgstr "PCA6408APW 是一个 SMBus 设备。U19（端口 A）和 U5（端口 B）的 SMBus 警报响应地址 (ARA) 都是 0001100。"
 
 #: ../../src/revisions/revC3.rst:486
 msgid "The iCE40HX8K bitstream is actually about 3 KB bigger than 1 Mbit, so the tail end of the bitstream lives in U3 as a workaround."
-msgstr ""
+msgstr "iCE40HX8K 的位流实际上超过 1 Mbit 限制约 3 KB，所以为了绕过此问题，位流的结尾部分其实存放在 U3 上。"
 
 #: ../../src/revisions/revC3.rst:492
 msgid "Recovery"
-msgstr ""
+msgstr "恢复"
 
 #: ../../src/revisions/revC3.rst:494
 msgid "Two pads can be found on the board marked \"RECOVER\", next to the FX2 EEPROM (U2). This footprint is R40 in the schematic. To initiate recovery, short these pads together and press the reset button, then remove the short. This temporarily changes the I2C address of the FX2 EEPROM so that it boots without firmware, placing it into a recovery mode where it enumerates with the default FX2 device descriptor. The ``fx2tool`` utility can then be used to make a backup copy of the FX2 EEPROM, and the ``glasgow factory`` command can be used to re-provision the device configuration block and the firmware"
-msgstr ""
+msgstr "板上有一对标注为 \"RECOVER\" 的焊盘，位于 FX2 EEPROM (U2) 旁边。在原理图中，这对焊盘对应封装 R40。启动恢复流程的步骤如下：将这对焊盘短路，然后按下复位按钮，然后解除短路。这会将 FX2 EEPROM 的 I2C 地址临时改变，使 FX2 启动时无固件，进入恢复模式，并枚举为 FX2 默认的设备描述。``fx2tool`` 工具可以用于备份 FX2 EEPROM。``glasgow factory`` 命令可以重新刷写设备配置块和固件。"
 
 #~ msgid "This document provides a technical description of the Glasgow revC3 XXX hardware."
 #~ msgstr ""
