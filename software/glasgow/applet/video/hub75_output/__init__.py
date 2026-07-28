@@ -2,43 +2,10 @@ from amaranth import *
 from amaranth.lib import io
 
 from glasgow.support import logging
-from glasgow.applet import *
+from glasgow.applet import GlasgowAppletV2, GlasgowAppletError
 
 
-class VideoHub75Output(Elaboratable):
-    def __init__(self, ports):
-        self.ports = ports
-
-        self.rgb1 = Signal(len(self.ports.rgb1))
-        self.rgb2 = Signal(len(self.ports.rgb2))
-        self.addr = Signal(len(self.ports.addr))
-        self.clk  = Signal()
-        self.lat  = Signal()
-        self.oe   = Signal()
-
-    def elaborate(self, platform):
-        m = Module()
-
-        m.submodules.rgb1_buffer = rgb1_buffer = io.Buffer("o", self.ports.rgb1)
-        m.submodules.rgb2_buffer = rgb2_buffer = io.Buffer("o", self.ports.rgb2)
-        m.submodules.addr_buffer = addr_buffer = io.Buffer("o", self.ports.addr)
-        m.submodules.clk_buffer  = clk_buffer  = io.Buffer("o", self.ports.clk)
-        m.submodules.lat_buffer  = lat_buffer  = io.Buffer("o", self.ports.lat)
-        m.submodules.oe_buffer   = oe_buffer   = io.Buffer("o", self.ports.oe)
-
-        m.d.comb += [
-            rgb1_buffer.o.eq(self.rgb1),
-            rgb2_buffer.o.eq(self.rgb2),
-            addr_buffer.o.eq(self.addr),
-            clk_buffer.o.eq(self.clk),
-            lat_buffer.o.eq(self.lat),
-            oe_buffer.o.eq(~self.oe),
-        ]
-
-        return m
-
-
-class VideoHub75OutputSubtarget(Elaboratable):
+class VideoHub75OutputGenerator(Elaboratable):
     def __init__(self, ports, px_width, px_height, expose_delay, pattern_rate):
         self.ports = ports
 
@@ -55,23 +22,29 @@ class VideoHub75OutputSubtarget(Elaboratable):
 
         m = Module()
 
-        m.submodules.output = output = VideoHub75Output(self.ports)
+        m.submodules.rgb1_buffer = rgb1_buffer = io.Buffer("o", self.ports.rgb1)
+        m.submodules.rgb2_buffer = rgb2_buffer = io.Buffer("o", self.ports.rgb2)
+        m.submodules.addr_buffer = addr_buffer = io.Buffer("o", self.ports.addr)
+        m.submodules.clk_buffer  = clk_buffer  = io.Buffer("o", self.ports.clk)
+        m.submodules.lat_buffer  = lat_buffer  = io.Buffer("o", self.ports.lat)
+        # The physical #OE line is active-low.
+        m.submodules.oe_buffer   = oe_buffer   = io.Buffer("o", ~self.ports.oe)
 
-        row      = Signal(output.addr.shape())
-        row_disp = Signal(output.addr.shape())
-        m.d.comb += output.addr.eq(row_disp)
+        row      = Signal(addr_buffer.o.shape())
+        row_disp = Signal(addr_buffer.o.shape())
+        m.d.comb += addr_buffer.o.eq(row_disp)
 
         cnt = Signal(32)
         col = Signal(cnt.shape())
         m.d.comb += col.eq(cnt[1:])
 
-        with m.FSM() as fsm:
+        with m.FSM():
             with m.State("ROW-SHIFT"):
                 with m.If(cnt < self.px_width * 2):
                     m.d.comb += [
-                        output.clk.eq(cnt[0]),
-                        output.rgb1.eq(self.pix_gen(col, row)),
-                        output.rgb2.eq(self.pix_gen(col, row + px_height_half)),
+                        clk_buffer.o.eq(cnt[0]),
+                        rgb1_buffer.o.eq(self.pix_gen(col, row)),
+                        rgb2_buffer.o.eq(self.pix_gen(col, row + px_height_half)),
                     ]
                     m.d.sync += cnt.eq(cnt + 1)
                 with m.Else():
@@ -79,7 +52,7 @@ class VideoHub75OutputSubtarget(Elaboratable):
                     m.next = "EXPOSE"
 
             with m.State("EXPOSE"):
-                m.d.comb += output.oe.eq(1)
+                m.d.comb += oe_buffer.o.eq(1)
 
                 with m.If(cnt < self.expose_delay):
                     m.d.sync += cnt.eq(cnt + 1)
@@ -87,7 +60,7 @@ class VideoHub75OutputSubtarget(Elaboratable):
                     m.next = "LATCH"
 
             with m.State("LATCH"):
-                m.d.comb += output.lat.eq(1)
+                m.d.comb += lat_buffer.o.eq(1)
                 m.d.sync += [
                     row_disp.eq(row),
                     row.eq(Mux(row < (px_height_half - 1), row + 1, 0)),
@@ -98,7 +71,7 @@ class VideoHub75OutputSubtarget(Elaboratable):
         return m
 
 
-class VideoHub75OutputApplet(GlasgowApplet):
+class VideoHub75OutputApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "display a test pattern on HUB75 panel"
     description = """
@@ -113,7 +86,7 @@ class VideoHub75OutputApplet(GlasgowApplet):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        super().add_build_arguments(parser, access)
+        access.add_voltage_argument(parser)
 
         access.add_pins_argument(parser, "rgb1", width=3,          default="A0:2")
         access.add_pins_argument(parser, "rgb2", width=3,          default="A3:5")
@@ -136,7 +109,24 @@ class VideoHub75OutputApplet(GlasgowApplet):
             help="the exposure delay, directly impacts brightness and refresh rate "
                  "(default: %(default)s)")
 
-    def build(self, target, args):
+    def build(self, args):
+        if args.px_width <= 0:
+            raise GlasgowAppletError(
+                f"Panel width must be positive, not {args.px_width}")
+        if args.px_height <= 0:
+            raise GlasgowAppletError(
+                f"Panel height must be positive, not {args.px_height}")
+        if args.px_height % 2 != 0:
+            raise GlasgowAppletError(
+                f"Panel height must be even; the panel is scanned as two "
+                f"halves, not {args.px_height}")
+        if args.expose_delay < 0:
+            raise GlasgowAppletError(
+                f"Exposure delay must not be negative, not {args.expose_delay}")
+        if args.pattern_rate < 0:
+            raise GlasgowAppletError(
+                f"Pattern rate must not be negative, not {args.pattern_rate}")
+
         num_addr_bits = len(args.addr)
         max_px_height = pow(2, num_addr_bits) * 2
         if args.px_height > max_px_height:
@@ -144,26 +134,26 @@ class VideoHub75OutputApplet(GlasgowApplet):
                 f"Cannot have a vertical panel resolution of {args.px_height} "
                 f"with only {num_addr_bits} address bits")
 
-        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        subtarget = iface.add_subtarget(VideoHub75OutputSubtarget(
-            ports=iface.get_port_group(
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            ports = self.assembly.add_port_group(
                 rgb1 = args.rgb1,
                 rgb2 = args.rgb2,
                 addr = args.addr,
                 clk  = args.clk,
                 lat  = args.lat,
                 oe   = args.oe
-            ),
-            px_width=args.px_width,
-            px_height=args.px_height,
-            expose_delay=args.expose_delay,
-            pattern_rate=args.pattern_rate,
-        ))
+            )
+            self.assembly.add_submodule(VideoHub75OutputGenerator(
+                ports=ports,
+                px_width=args.px_width,
+                px_height=args.px_height,
+                expose_delay=args.expose_delay,
+                pattern_rate=args.pattern_rate,
+            ))
 
-        return subtarget
-
-    async def run(self, device, args):
-        return await device.demultiplexer.claim_interface(self, self.mux_interface, args)
+    async def run(self, args):
+        pass # no host interface; the pattern generator runs standalone on the FPGA
 
     @classmethod
     def tests(cls):
