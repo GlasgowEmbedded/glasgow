@@ -309,7 +309,7 @@ def get_argparser():
     add_ports_arg(p_voltage)
     p_voltage.add_argument(
         "voltage", metavar="VOLTS", type=float, nargs="?", default=None,
-        help=f"I/O port voltage (range: revABC 1.8-5.0 V, revD 1.2-5.5 V)")
+        help=f"I/O port voltage (range: revABC 1.65-5.0 V, revD 0.9-5.5 V)")
     p_voltage.add_argument(
         "trip_current", metavar="AMPS", type=float, nargs="?", default=None,
         help=f"I/O port trip current (revC2+; range: 0.000-0.325 A)")
