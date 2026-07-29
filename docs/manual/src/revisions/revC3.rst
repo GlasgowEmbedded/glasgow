@@ -162,7 +162,7 @@ The VIOB rail is used to power the following devices:
 +========================================+=================+==============================================================================================+
 | U22, U23, U24, U25, U26, U27, U28, U29 | SN74LVC1T45DCKR | Logic level translators for port B. VIOB powers external side (VCCB)                         |
 +----------------------------------------+-----------------+----------------------------------------------------------------------------------------------+
-| U5                                     | PCA6408APW      | I2C I/O expander for programmable pullup/pulldown resistors on port A. VIOB powers IO ports. |
+| U5                                     | PCA6408APW      | I2C I/O expander for programmable pullup/pulldown resistors on port B. VIOB powers IO ports. |
 +----------------------------------------+-----------------+----------------------------------------------------------------------------------------------+
 
 
@@ -228,7 +228,7 @@ The power-on sequence is as follows:
 4. When the +5V rail reaches approximately 1.3 V, the TLV73312PQDRVR linear regulator (U36) leaves disabled mode and enters dropout mode. During this time the +1.2V rail will have a voltage equal to the +5V rail minus the 450 mV dropout voltage of the regulator. When the +5V rail exceeds 1.65 V, the regulator enters normal mode and the +1.2V rail voltage becomes stable at 1.2 V.
 5. APX811-40UG-7 (U7) monitors the +5V rail and asserts a reset signal (active low) while the +5V rail is below 4.0 V nominal.
 6. Once the +5V rail exceeds this threshold for at least 240 ms, U7's reset signal is no longer asserted. As a result, the TLV75533PDRVR linear regulator (U8) switches on and powers the +3.3V rail.
-7. The +3.3V rail and reset signal from U7 are connected to a common-anode dual-Schottky diode package (D24) in such a way that ``CY_RESET`` is asserted (active low) if U7 is outputting a reset state or the +3.3V rail is not present. The `CY_RESET` signal is low-pass filtered using R4, R5, and C88 to ensure that ``CY_RESET`` remains asserted for 5 ms after the +3.3V rail turns on.
+7. The +3.3V rail and reset signal from U7 are connected to a common-anode dual-Schottky diode package (D24) in such a way that ``CY_RESET`` is asserted (active low) if U7 is outputting a reset state or the +3.3V rail is not present. The ``CY_RESET`` signal is low-pass filtered using R4, R5, and C88 to ensure that ``CY_RESET`` remains asserted for 5 ms after the +3.3V rail turns on.
 8. All rails are now at nominal and ``CY_RESET`` is de-asserted, allowing the FX2 USB controller to start operating. The FX2 de-asserts ``FPGA_RESET``, allowing the iCE40 FPGA (U30) to operate.
 9. During power-on, ``ENVA`` and ``ENVB`` are pulled down, disabling the TPS73101DBV adjustable linear regulators (U31, U14) which provide the VIO voltages for ports A and B. The DAC081C081CIMK DACs (U20, U13) provide an adjustable feedback voltage to the regulators. These are programmed over I2C as required to adjust the voltage of the VIO regulators, after which the FX2 can assert ``ENVA`` and/or ``ENVB`` to enable the regulators which, in turn, power the VIO outputs.
 
