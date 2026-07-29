@@ -12,7 +12,7 @@ match language:
         html_baseurl = "https://glasgow-embedded.org/en/"
     case "zh":
         project = "Glasgow 可重构数字接口调试器"
-        copyright = "2020—%Y, Glasgow Interface Explorer contributors"
+        copyright = "2020—%Y，Glasgow 可重构数字接口调试器贡献者"
         html_baseurl = "https://glasgow-embedded.cn/zh/"
 
 # We don't do versioned releases.
