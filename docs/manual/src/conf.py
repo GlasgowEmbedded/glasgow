@@ -59,9 +59,9 @@ html_theme = "furo"
 html_baseurl = "https://glasgow-embedded.org/latest/"
 html_static_path = ["_static"]
 html_css_files = [
-      "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/fontawesome.min.css",
-      "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/solid.min.css",
-      "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/brands.min.css",
+      "font-awesome/css/fontawesome.min.css",
+      "font-awesome/css/solid.min.css",
+      "font-awesome/css/brands.min.css",
       "styles/custom.css",
 ]
 html_theme_options = {
