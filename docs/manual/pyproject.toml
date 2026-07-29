@@ -22,12 +22,10 @@ dependencies = [
 [tool.pdm.scripts]
 live.cmd = "sphinx-autobuild src build --watch ../../software/glasgow"
 build.cmd = "sphinx-build src build -b html"
-live-cn.cmd = "sphinx-autobuild src build-cn --watch ../../software/glasgow"
-live-cn.env = {"DOCS_LANGUAGE" = "cn"}
-build-cn.cmd = "sphinx-build src build-cn -b html"
-build-cn.env = {"DOCS_LANGUAGE" = "cn"}
+live-zh = { cmd = "sphinx-autobuild src build-zh --watch ../../software/glasgow", env = {"DOCS_LANGUAGE" = "zh"} }
+build-zh = { cmd = "sphinx-build src build-zh -b html", env = {"DOCS_LANGUAGE" = "zh"} }
 
 check.cmd = "sphinx-build src check -b linkcheck"
 gettext.cmd = "sphinx-build src locale/pot -b gettext"
-intl-update.cmd = "sphinx-intl update -d locale -l cn -w 0"
-i18n = {composite = ["gettext", "intl-update"]}
+update-zh.cmd = "sphinx-intl update -d locale -l zh -w 0"
+i18n = {composite = ["gettext", "update-zh"]}

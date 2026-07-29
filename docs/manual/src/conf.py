@@ -10,7 +10,7 @@ match language:
         project = "Glasgow Interface\u00a0Explorer"
         copyright = "2020—%Y, Glasgow Interface Explorer contributors"
         html_baseurl = "https://glasgow-embedded.org/latest/"
-    case "cn":
+    case "zh":
         project = "Glasgow 可重构数字接口调试器"
         copyright = "2020—%Y, Glasgow Interface Explorer contributors"
         html_baseurl = "https://glasgow-embedded.cn/"
