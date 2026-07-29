@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-07-29 13:26+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -455,7 +455,7 @@ msgid "Logic level translators for port B. VIOB powers external side (VCCB)"
 msgstr ""
 
 #: ../../src/revisions/revC3.rst:165
-msgid "I2C I/O expander for programmable pullup/pulldown resistors on port A. VIOB powers IO ports."
+msgid "I2C I/O expander for programmable pullup/pulldown resistors on port B. VIOB powers IO ports."
 msgstr ""
 
 #: ../../src/revisions/revC3.rst:172 ../../src/revisions/revC3.rst:392
@@ -563,7 +563,7 @@ msgid "Once the +5V rail exceeds this threshold for at least 240 ms, U7's reset 
 msgstr ""
 
 #: ../../src/revisions/revC3.rst:231
-msgid "The +3.3V rail and reset signal from U7 are connected to a common-anode dual-Schottky diode package (D24) in such a way that ``CY_RESET`` is asserted (active low) if U7 is outputting a reset state or the +3.3V rail is not present. The `CY_RESET` signal is low-pass filtered using R4, R5, and C88 to ensure that ``CY_RESET`` remains asserted for 5 ms after the +3.3V rail turns on."
+msgid "The +3.3V rail and reset signal from U7 are connected to a common-anode dual-Schottky diode package (D24) in such a way that ``CY_RESET`` is asserted (active low) if U7 is outputting a reset state or the +3.3V rail is not present. The ``CY_RESET`` signal is low-pass filtered using R4, R5, and C88 to ensure that ``CY_RESET`` remains asserted for 5 ms after the +3.3V rail turns on."
 msgstr ""
 
 #: ../../src/revisions/revC3.rst:232
@@ -1476,4 +1476,3 @@ msgstr ""
 
 #~ msgid "This document provides a technical description of the Glasgow revC3 XXX hardware."
 #~ msgstr ""
-
