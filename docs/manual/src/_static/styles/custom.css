@@ -15,3 +15,31 @@ body[data-theme="light"] img {
         max-height: 60px;
     }
 }
+.language-selector {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0 var(--sidebar-item-spacing-horizontal);
+    border-top: 1px solid var(--color-background-border);
+    background: var(--color-sidebar-background);
+    .language-selector-label {
+        flex: 1;
+        color: var(--color-sidebar-caption-text);
+        font-size: var(--sidebar-caption-font-size);
+        font-weight: 700;
+        padding: calc(var(--sidebar-item-spacing-vertical) * 2) 0;
+        text-transform: uppercase;
+    }
+    ul {
+        display: contents;
+        li {
+            font-size: var(--sidebar-item-font-size);
+            list-style: none;
+            &[aria-current] {
+                color: var(--color-foreground-muted);
+            }
+        }
+    }
+}

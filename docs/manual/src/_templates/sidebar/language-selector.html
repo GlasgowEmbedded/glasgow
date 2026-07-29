@@ -1,0 +1,16 @@
+<div class="language-selector">
+    <span class="language-selector-label" role="heading">{{ _("Language") }}</span>
+    <ul>
+        {% for code, name in languages.items() %}
+            {% if language == code %}
+                <li aria-current="true">{{ name }}</li>
+            {% else %}
+                <li>
+                    <a href="/{{ code }}/{{ pagename }}.html" lang="{{ code }}" hreflang="{{ code }}">
+                        {{ name }}
+                    </a>
+                </li>
+            {% endif %}
+        {% endfor %}
+    </ul>
+</div>

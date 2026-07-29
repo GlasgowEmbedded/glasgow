@@ -62,6 +62,8 @@ copybutton_copy_empty_lines = False
 locale_dirs = ["../locale/"]
 gettext_compact = False
 
+templates_path = ["_templates/"]
+
 html_use_modindex = False
 html_use_index = False
 
@@ -74,6 +76,23 @@ html_css_files = [
       "font-awesome/css/brands.min.css",
       "styles/custom.css",
 ]
+html_sidebars = {
+    "**": [
+        "sidebar/brand.html",
+        "sidebar/search.html",
+        "sidebar/scroll-start.html",
+        "sidebar/navigation.html",
+        "sidebar/scroll-end.html",
+        "sidebar/variant-selector.html",
+        "sidebar/language-selector.html",
+    ],
+}
+html_context = {
+    "languages": {
+        "en": "English",
+        "zh": "汉语",
+    },
+}
 html_theme_options = {
     "top_of_page_button": "edit",
     "source_repository": "https://github.com/GlasgowEmbedded/glasgow/",
