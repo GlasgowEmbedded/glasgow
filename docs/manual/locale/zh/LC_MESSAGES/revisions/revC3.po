@@ -1199,7 +1199,7 @@ msgstr "+3.3V 引脚从板上的 +3.3V 电源轨提供 3.3 V 供电。"
 
 #: ../../src/revisions/revC3.rst:398
 msgid "To use the LVDS connector you must provide ``VIO_AUX``, an IO voltage between 1.8 V and 3.3 V, on pin 44. This pin is tied directly to ``VCCIO_3`` on the FPGA. See the iCE40HX8K-BG121 datasheet for more information about the power requirements."
-msgstr "如需使用，您必须为 ``VIO_AUX``\ （引脚 44）提供一个 1.8 V 到 3.3 V 之间的 IO 电压。这个引脚直接连接到 FPGA 上的 ``VCCIO_3``。电源提供功率的要求详见 iCE40HX8K-BG121 数据手册。"
+msgstr "如需使用 LVDS 连接器，您必须为 ``VIO_AUX``\ （引脚 44）提供一个 1.8 V 到 3.3 V 之间的 IO 电压。这个引脚直接连接到 FPGA 上的 ``VCCIO_3``。对于供电的要求详见 iCE40HX8K-BG121 数据手册。"
 
 #: ../../src/revisions/revC3.rst:400
 msgid "The pins can be used in differential mode (N/P pairs) or in single-ended mode (independent signals on N and P)."
