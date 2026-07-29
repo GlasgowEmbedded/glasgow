@@ -4,9 +4,19 @@ is_production = True if os.getenv("DOCS_IS_PRODUCTION", "").lower() in ('1', 'ye
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "software"))
 import glasgow
 
-html_title = project = "Glasgow Interface\u00a0Explorer"
+language = os.getenv("DOCS_LANGUAGE", "en")
+match language:
+    case "en":
+        project = "Glasgow Interface\u00a0Explorer"
+        copyright = "2020—%Y, Glasgow Interface Explorer contributors"
+        html_baseurl = "https://glasgow-embedded.org/latest/"
+    case "cn":
+        project = "Glasgow 可重构数字接口调试器"
+        copyright = "2020—%Y, Glasgow Interface Explorer contributors"
+        html_baseurl = "https://glasgow-embedded.cn/"
+
+# We don't do versioned releases.
 release = version = ""
-copyright = "2020—%Y, Glasgow Interface Explorer contributors"
 
 extensions = [
     "myst_parser",
@@ -55,8 +65,8 @@ gettext_compact = False
 html_use_modindex = False
 html_use_index = False
 
+html_title = project
 html_theme = "furo"
-html_baseurl = "https://glasgow-embedded.org/latest/"
 html_static_path = ["_static"]
 html_css_files = [
       "font-awesome/css/fontawesome.min.css",
