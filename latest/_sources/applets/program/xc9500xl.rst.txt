@@ -1,0 +1,10 @@
+``program-xc9500xl``
+====================
+
+CLI reference
+-------------
+
+.. _applet.program.xc9500xl:
+
+.. autoprogram:: glasgow.applet.program.xc9500xl:ProgramXC9500XLApplet._get_argparser_for_sphinx("program-xc9500xl")
+    :prog: glasgow run program-xc9500xl

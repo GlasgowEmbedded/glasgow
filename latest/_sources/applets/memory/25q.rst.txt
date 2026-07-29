@@ -1,0 +1,40 @@
+``memory-25q``
+==============
+
+CLI reference
+-------------
+
+.. _applet.memory._25q:
+
+.. autoprogram:: glasgow.applet.memory._25q:Memory25QApplet._get_argparser_for_sphinx("memory-25q")
+    :prog: glasgow run memory-25q
+
+.. _applet.memory._25q.tool:
+
+.. autoprogram:: glasgow.applet.memory._25q.decode:Memory25QAppletTool._get_argparser_for_sphinx("memory-25q")
+    :prog: glasgow tool memory-25q
+
+
+API reference
+-------------
+
+.. autoexception:: glasgow.applet.memory._25q.Memory25QError
+
+.. autoexception:: glasgow.applet.memory._25q.Memory25QVerifyError
+
+.. autoclass:: glasgow.applet.memory._25q.Memory25QInterface
+
+
+NOR command set reference
+-------------------------
+
+.. module:: glasgow.arch.qspi.nor
+
+.. autoenum:: glasgow.arch.qspi.nor.Opcode
+
+.. autoenum:: glasgow.arch.qspi.nor.StatusReg1
+
+.. autoenum:: glasgow.arch.qspi.nor.Command
+
+.. autoclass:: glasgow.arch.qspi.nor.CommandSet
+    :show-inheritance:

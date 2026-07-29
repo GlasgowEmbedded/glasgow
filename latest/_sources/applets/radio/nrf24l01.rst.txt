@@ -1,0 +1,15 @@
+``radio-nrf24l01``
+==================
+
+.. _applet.radio.nrf24l01:
+
+.. autoprogram:: glasgow.applet.radio.nrf24l01:RadioNRF24L01Applet._get_argparser_for_sphinx("radio-nrf24l01")
+    :prog: glasgow run radio-nrf24l01
+
+
+API reference
+-------------
+
+.. autoexception:: glasgow.applet.radio.nrf24l01.RadioNRF24L01Error
+
+.. autoclass:: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface

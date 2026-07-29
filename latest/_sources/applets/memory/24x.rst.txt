@@ -1,0 +1,16 @@
+``memory-24x``
+==============
+
+CLI reference
+-------------
+
+.. _applet.memory._24x:
+
+.. autoprogram:: glasgow.applet.memory._24x:Memory24xApplet._get_argparser_for_sphinx("memory-24x")
+    :prog: glasgow run memory-24x
+
+
+API reference
+-------------
+
+.. autoclass:: glasgow.applet.memory._24x.Memory24xInterface
