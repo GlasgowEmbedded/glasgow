@@ -77,6 +77,18 @@ class Queue(wiring.Component):
             "level": Out(range(depth + 1))
         })
 
+    @property
+    def shape(self):
+        return self._shape
+
+    @property
+    def depth(self):
+        return self._depth
+
+    @property
+    def buffered(self):
+        return self._buffered
+
     def elaborate(self, platform):
         m = Module()
 
