@@ -114,8 +114,8 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
             dut = Packer(width=width, max_credits=128)
 
             async def testbench_credits(ctx):
-                await stream_put(ctx, dut.i_credits, 32)
-                await stream_put(ctx, dut.i_credits, 32)
+                while True:
+                    await stream_put(ctx, dut.i_credits, 32)
 
             async def testbench_triggers(ctx):
                 await ctx.tick()
@@ -136,7 +136,8 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
         dut = Packer(width=32, max_credits=128)
 
         async def testbench_credits(ctx):
-            await stream_put(ctx, dut.i_credits, 4)
+            for _ in range(4):
+                await stream_put(ctx, dut.i_credits, 32)
 
         async def testbench_triggers(ctx):
             for _ in range(5):
@@ -158,6 +159,21 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
             sim.add_testbench(testbench_credits, background=True)
             sim.add_testbench(testbench_triggers, background=True)
             sim.add_testbench(testbench_overflow)
+
+    def test_packer_saturation(self):
+        dut = Packer(width=32, max_credits=32)
+
+        async def testbench_credits(ctx):
+            ctx.set(dut.i_credits.payload, 16)
+            ctx.set(dut.i_credits.valid, 1)
+            assert ctx.get(dut.i_credits.ready)
+            await ctx.tick()
+            assert ctx.get(dut.i_credits.ready)
+            await ctx.tick()
+            assert not ctx.get(dut.i_credits.ready)
+
+        with self.run_test(dut) as sim:
+            sim.add_testbench(testbench_credits)
 
     def test_writer(self):
         m = Module()
