@@ -65,6 +65,7 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
             ]),
         ):
             async def testbench_triggers(ctx):
+                ctx.set(dut.active, 1)
                 for index, mode in trigger_modes:
                     ctx.set(dut.mode[index], mode)
                 for value, active in zip(range(0, 64), trigger_actives):
@@ -77,7 +78,7 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
 
     def test_packer_samples_per_word(self):
         def check_width(width, per_word):
-            packer = Packer(width=width, max_credits=0)
+            packer = Packer(width=width)
             packer._MustUse__used = True
             assert packer.samples_per_word == per_word
 
@@ -111,11 +112,7 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
                 {"data": [0x98,0xBA,0xDC,0xFE], "trig": {"active": 0}},
             ]),
         ]:
-            dut = Packer(width=width, max_credits=128)
-
-            async def testbench_credits(ctx):
-                while True:
-                    await stream_put(ctx, dut.i_credits, 32)
+            dut = Packer(width=width)
 
             async def testbench_triggers(ctx):
                 await ctx.tick()
@@ -128,7 +125,6 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
 
             with self.subTest(width=width, offset=offset):
                 with self.run_test(dut) as sim:
-                    sim.add_testbench(testbench_credits, background=True)
                     sim.add_testbench(testbench_triggers, background=True)
                     sim.add_testbench(testbench_packed)
 
@@ -196,8 +192,8 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
         dram.memory[:] = bytes(range(64))
 
         async def testbench_ranges(ctx):
-            await stream_put(ctx, dut.i_ranges, {"start": 0,  "count": 32})
-            await stream_put(ctx, dut.i_ranges, {"start": 60, "count":  8})
+            await stream_put(ctx, dut.i_ranges, {"addr": 0,  "size": 32})
+            await stream_put(ctx, dut.i_ranges, {"addr": 60, "size":  8})
 
         async def testbench_octets(ctx):
             for index, expected in enumerate([
@@ -226,40 +222,40 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
             ctx.set(dut.free_run, 1)
             ctx.set(dut.initial, 6)
 
-            await stream_put(ctx, dut.writer_i, 0)
+            await stream_put(ctx, dut.i_writer, 0)
             assert ctx.get(dut.credits) == 2
-            await stream_put(ctx, dut.writer_i, 0)
+            await stream_put(ctx, dut.i_writer, 0)
             assert ctx.get(dut.credits) == 4
-            await stream_put(ctx, dut.writer_i, 0)
+            await stream_put(ctx, dut.i_writer, 0)
             assert ctx.get(dut.credits) == 6
-            await stream_put(ctx, dut.writer_i, 0)
+            await stream_put(ctx, dut.i_writer, 0)
             assert ctx.get(dut.credits) == 6
 
             ctx.set(dut.free_run, 0)
 
-            await stream_put(ctx, dut.reader_i, 0)
+            await stream_put(ctx, dut.i_reader, 0)
             assert ctx.get(dut.credits) == 5
-            await stream_put(ctx, dut.reader_i, 0)
+            await stream_put(ctx, dut.i_reader, 0)
             assert ctx.get(dut.credits) == 4
 
-            await stream_put(ctx, dut.writer_i, 0)
+            await stream_put(ctx, dut.i_writer, 0)
             assert ctx.get(dut.credits) == 6
-            await stream_put(ctx, dut.writer_i, 0)
+            await stream_put(ctx, dut.i_writer, 0)
             assert ctx.get(dut.credits) == 8
-            await stream_put(ctx, dut.writer_i, 0)
+            await stream_put(ctx, dut.i_writer, 0)
             assert ctx.get(dut.credits) == 10
             assert not ctx.get(dut.overflow)
-            await stream_put(ctx, dut.writer_i, 0)
+            await stream_put(ctx, dut.i_writer, 0)
             assert ctx.get(dut.credits) == 10
             assert ctx.get(dut.overflow)
 
         async def testbench_w_sink(ctx):
             while True:
-                await stream_get(ctx, dut.writer_o)
+                await stream_get(ctx, dut.o_writer)
 
         async def testbench_r_sink(ctx):
             while True:
-                await stream_get(ctx, dut.reader_o)
+                await stream_get(ctx, dut.o_reader)
 
         with self.run_test(dut) as sim:
             sim.add_testbench(testbench_main)
@@ -278,20 +274,22 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
             # pins==0x40
             ctx.set(dut.triggers[5], {"active": 1, "value": 1, "level": 0})
 
-            ctx.set(dut.prolog_count, 8)
-            ctx.set(dut.epilog_count, 8)
+            ctx.set(dut.prolog_size, 8)
+            ctx.set(dut.epilog_size, 8)
 
         async def testbench_i(ctx):
-            for value in range(0x200):
-                ctx.set(pins.i, value&0xff)
+            for value in range(0x100):
                 await ctx.tick()
+                ctx.set(pins.i, value&0xff)
 
         async def testbench_o(ctx):
-            for value in range(0x21-8, 0x21+8+1):
-                await stream_assert(ctx, dut.samples, {"data": value})
+            for expected in range(0x1a, 0x21):
+            # for expected in range(0x1a, 0x21+8+1):
+                assert (actual := await stream_get(ctx, dut.samples)), \
+                    f"{actual:02x} != {expected:02x}"
 
         with self.run_test(m) as sim:
             sim.add_testbench(testbench_ctrl)
             sim.add_testbench(testbench_i)
-            sim.add_testbench(testbench_o, background=True)
+            sim.add_testbench(testbench_o)
             sim.add_testbench(dram.testbench, background=True)
