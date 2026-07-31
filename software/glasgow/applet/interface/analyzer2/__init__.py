@@ -23,7 +23,7 @@ from glasgow.abstract import AbstractAssembly, GlasgowPin
 from glasgow.applet import GlasgowAppletV2
 
 
-__all__ = []
+__all__ = ["AnalyzerCore", "AnalyzerComponent"]
 
 
 class Sampler(wiring.Component):
@@ -294,8 +294,8 @@ class Reader(wiring.Component):
     dram: Out(octoram.Signature())
 
     i_ranges: In(stream.Signature(data.StructLayout({
-        "start":  32, # 4-byte aligned
-        "count":  32, # 4-byte aligned
+        "addr": 32, # 4-byte aligned
+        "size": 32, # 4-byte aligned
     })))
     o_octets: Out(stream.Signature(8))
 
@@ -328,13 +328,13 @@ class Reader(wiring.Component):
             m.d.sync += r_phase.eq(~r_phase)
 
         # Issue memory read commands.
-        r_length  = Signal.like(self.i_ranges.p.count)
+        r_length  = Signal.like(self.i_ranges.p.size)
         r_pointer = Signal(self._dram_range)
         r_active  = Signal()
         r_advance = Signal(range(self._burst_bytes + 1))
         with m.If(~r_active):
             m.d.sync += r_length.eq(0)
-            m.d.sync += r_pointer.eq(self.i_ranges.p.start)
+            m.d.sync += r_pointer.eq(self.i_ranges.p.addr)
         with m.Elif(self.dram.commands.ready):
             m.d.sync += r_length.eq(r_length + r_advance)
             m.d.sync += r_pointer.eq(r_pointer + r_advance)
@@ -347,17 +347,18 @@ class Reader(wiring.Component):
             self.dram.commands.valid.eq(r_advance != 0),
         ]
 
-        # Maintain a count of entries (not bytes) pushed to the write queue but not yet committed
+        # Maintain a count of entries (not bytes) pushed to the read queue but not yet committed
         # to a burst.
         r_pending = Signal.like(r_queue.level)
-        m.d.sync += r_pending.eq(r_pending
-            + (r_queue.i.valid & r_queue.i.ready)
-            - (r_advance // len(r_queue.i.payload)))
+        with m.If(self.dram.commands.ready):
+            m.d.sync += r_pending.eq(r_pending
+                + (r_advance // len(r_queue.i.payload))
+                - (r_queue.o.valid & r_queue.o.ready))
 
         # Refill the buffer up to the next burst boundary (or until the end of the requested range).
         free_queue_bytes = (r_queue.depth - r_pending) * len(r_queue.i.payload)
         with m.If(r_active & (free_queue_bytes > self._burst_bytes)):
-            remainder_bytes  = self.i_ranges.p.count - r_length
+            remainder_bytes  = self.i_ranges.p.size - r_length
             next_burst_bytes = self._burst_bytes - (r_pointer & (self._burst_bytes - 1))
             with m.If(next_burst_bytes < remainder_bytes):
                 m.d.comb += r_advance.eq(next_burst_bytes)
@@ -373,9 +374,10 @@ class Reader(wiring.Component):
 
             with m.State("Readout"):
                 m.d.comb += r_active.eq(1)
-                with m.If(r_length + r_advance == self.i_ranges.p.count):
-                    m.d.comb += self.i_ranges.ready.eq(self.dram.commands.ready)
-                    m.next = "Idle"
+                with m.If(r_length + r_advance == self.i_ranges.p.size):
+                    with m.If(self.dram.commands.ready):
+                        m.d.comb += self.i_ranges.ready.eq(1)
+                        m.next = "Idle"
 
         return m
 
@@ -398,12 +400,16 @@ class Arbiter(wiring.Component):
         wiring.connect(m, flipped(self.writer.w_data), flipped(self.dram.w_data))
         wiring.connect(m, flipped(self.dram.r_data), flipped(self.reader.r_data))
 
-        # Writer has priority. The condition here has to be in this exact form because of
-        # somewhat sketchy `block_ready` feedback in the writer.
-        with m.If(self.reader.commands.valid & ~self.writer.commands.valid):
-            wiring.connect(m, flipped(self.reader.commands), flipped(self.dram.commands))
-        with m.Else():
-            wiring.connect(m, flipped(self.writer.commands), flipped(self.dram.commands))
+        with m.FSM():
+            with m.State("Writer"):
+                wiring.connect(m, flipped(self.writer.commands), flipped(self.dram.commands))
+                with m.If(~self.writer.commands.valid & self.reader.commands.valid):
+                    m.next = "Reader"
+
+            with m.State("Reader"):
+                wiring.connect(m, flipped(self.reader.commands), flipped(self.dram.commands))
+                with m.If(~self.reader.commands.valid):
+                    m.next = "Writer"
 
         return m
 
@@ -482,8 +488,8 @@ class AnalyzerCore(wiring.Component):
     triggers: In(data.ArrayLayout(Trigger.Mode, 32))
     samples:  Out(stream.Signature(8))
 
-    prolog_count: In(32) # in bytes
-    epilog_count: In(32) # in bytes
+    prolog_size: In(32) # in bytes
+    epilog_size: In(32) # in bytes
 
     triggered: Out(1)
     complete:  Out(1)
@@ -525,22 +531,38 @@ class AnalyzerCore(wiring.Component):
         wiring.connect(m, flow_ctrl.o_writer, writer.i_packed)
         wiring.connect(m, reader.o_octets, flow_ctrl.i_reader)
 
-        m.d.comb += flow_ctrl.initial.eq(self.prolog_count)
+        # FIXME: needs to be a read combiner instead
+        m.submodules.ranges = ranges = Queue(
+            shape=reader.i_ranges.p.shape(), depth=2)
+        wiring.connect(m, ranges.o, reader.i_ranges)
+
+        m.d.comb += flow_ctrl.initial.eq(self.prolog_size)
         with m.FSM() as fsm:
-            with m.State("Free-Run"):
+            with m.State("Pre-Trigger"):
                 m.d.comb += [
                     trigger.active.eq(1),
                     flow_ctrl.free_run.eq(1),
                     writer.o_blocks.ready.eq(1),
                 ]
                 with m.If(writer.o_blocks.valid & writer.o_blocks.p.trig.active):
-                    m.next = "Trigger"
+                    m.d.comb += [
+                        # TODO: needs to handle wraparound
+                        ranges.i.p.addr.eq(writer.o_blocks.p.addr
+                            + writer.o_blocks.p.size
+                            - self.prolog_size),
+                        ranges.i.p.size.eq(self.prolog_size),
+                        ranges.i.valid.eq(1),
+                    ]
+                    m.next = "Post-Trigger"
 
-            with m.State("Trigger"):
+            with m.State("Post-Trigger"):
                 m.d.comb += [
                     writer.o_blocks.ready.eq(1),
-                    # TODO
+                    # TODO: needs to write out blocks as they come
                 ]
+
+        # FIXME: needs to do some end handling
+        wiring.connect(m, reader.o_octets, flipped(self.samples))
 
         m.d.comb += self.triggered.eq(~fsm.ongoing("Free-Run"))
 
