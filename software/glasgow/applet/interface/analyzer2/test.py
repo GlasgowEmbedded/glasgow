@@ -50,15 +50,15 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
             for value in range(0, 64):
                 await stream_put(ctx, dut.i_samples, {"data": value})
 
-        for trigger_modes, trigger_actives in (
+        for name, trigger_modes, trigger_actives in (
             # data[1] -> level(1)
-            ([
+            ("level", [
                 (1, Trigger.Mode.const({"active": 1, "value": 1, "level": 1})),
             ], [
                 0, 0, 1, 1, 0, 0,
             ]),
             # data[1] -> posedge(1)
-            ([
+            ("posedge", [
                 (1, Trigger.Mode.const({"active": 1, "value": 1, "level": 0})),
             ], [
                 0, 0, 1, 0, 0, 0,
@@ -70,11 +70,12 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
                 for value, active in zip(range(0, 64), trigger_actives):
                     await stream_assert(ctx, dut.o_samples, {"data": value, "trig": active})
 
-            with self.run_test(dut) as sim:
-                sim.add_testbench(testbench_samples, background=True)
-                sim.add_testbench(testbench_triggers)
+            with self.subTest(name=name):
+                with self.run_test(dut) as sim:
+                    sim.add_testbench(testbench_samples, background=True)
+                    sim.add_testbench(testbench_triggers)
 
-    def test_packer(self):
+    def test_packer_format(self):
         for width, offset, results in [
             (32, 2, [
                 {"data": [0x00,0x00,0x00,0x00], "trig": {"active": 0}},
@@ -93,7 +94,11 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
                 {"data": [0x98,0xBA,0xDC,0xFE], "trig": {"active": 0}},
             ]),
         ]:
-            dut = Packer(width=width)
+            dut = Packer(width=width, max_credits=128)
+
+            async def testbench_credits(ctx):
+                await stream_put(ctx, dut.i_credits, 32)
+                await stream_put(ctx, dut.i_credits, 32)
 
             async def testbench_triggers(ctx):
                 await ctx.tick()
@@ -104,9 +109,38 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
                 for result in results:
                     await stream_assert(ctx, dut.o_packed, result)
 
-            with self.run_test(dut) as sim:
-                sim.add_testbench(testbench_triggers, background=True)
-                sim.add_testbench(testbench_packed)
+            with self.subTest(width=width, offset=offset):
+                with self.run_test(dut) as sim:
+                    sim.add_testbench(testbench_credits, background=True)
+                    sim.add_testbench(testbench_triggers, background=True)
+                    sim.add_testbench(testbench_packed)
+
+    def test_packer_overflow(self):
+        dut = Packer(width=32, max_credits=128)
+
+        async def testbench_credits(ctx):
+            await stream_put(ctx, dut.i_credits, 4)
+
+        async def testbench_triggers(ctx):
+            for _ in range(5):
+                await stream_put(ctx, dut.i_samples, {})
+
+        async def testbench_overflow(ctx):
+            await ctx.tick()
+            assert not ctx.get(dut.overflow)
+            await ctx.tick()
+            assert not ctx.get(dut.overflow)
+            await ctx.tick()
+            assert not ctx.get(dut.overflow)
+            await ctx.tick()
+            assert not ctx.get(dut.overflow)
+            await ctx.tick()
+            assert ctx.get(dut.overflow)
+
+        with self.run_test(dut) as sim:
+            sim.add_testbench(testbench_credits, background=True)
+            sim.add_testbench(testbench_triggers, background=True)
+            sim.add_testbench(testbench_overflow)
 
     def test_writer(self):
         m = Module()
@@ -165,7 +199,7 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
 
     def test_reader(self):
         m = Module()
-        m.submodules.writer = dut  = Reader(dram_range=range(0, 64))
+        m.submodules.reader = dut  = Reader(dram_range=range(0, 64))
         m.submodules.dram   = dram = octoram.SimulationController(64)
         wiring.connect(m, dut.dram, dram.bus)
 
