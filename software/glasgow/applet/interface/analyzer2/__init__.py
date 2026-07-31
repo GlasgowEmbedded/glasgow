@@ -70,7 +70,8 @@ class Trigger(wiring.Component):
         value:  1
         level:  1
 
-    mode: In(data.ArrayLayout(Mode, 32))
+    mode:   In(data.ArrayLayout(Mode, 32))
+    active: In(1)
 
     i_samples: In(stream.Signature(data.StructLayout({
         "data": 32,
@@ -95,7 +96,7 @@ class Trigger(wiring.Component):
             prev_bit = Signal.like(curr_bit)
             with m.If(self.i_samples.valid):
                 m.d.sync += prev_bit.eq(curr_bit)
-            with m.If(mode.active & (curr_bit == mode.value)):
+            with m.If(self.active & mode.active & (curr_bit == mode.value)):
                 with m.If(mode.level | (prev_bit != curr_bit)):
                     m.d.comb += self.o_samples.p.trig.eq(1)
 
@@ -128,15 +129,11 @@ class Packer(wiring.Component):
         "trig": TRIG_SHAPE,
     }), always_ready=True))
 
-    i_credits: In(stream.Signature(range(32+1)))
-    overflow:  Out(1)
-
-    def __init__(self, *, width: int, max_credits: int):
+    def __init__(self, *, width: int):
         assert width in range(1, 33)
 
         self._width = width
         self._width_pow2 = 1 << ceil_log2(self._width)
-        self._max_credits = max_credits
 
         super().__init__()
 
@@ -168,22 +165,11 @@ class Packer(wiring.Component):
         with m.Else():
             m.d.comb += self.o_packed.p.trig.eq(trig)
 
-        credits = Signal(range(self._max_credits + 1))
-        next_credits1 = credits       + Mux(self.i_credits.valid, self.i_credits.payload, 0)
-        next_credits2 = next_credits1 - Mux(self.o_packed.valid, 32, 0)
-        with m.If(next_credits2 <= self._max_credits):
-            m.d.sync += credits.eq(next_credits2)
-            m.d.comb += self.i_credits.ready.eq(1)
-
-        with m.If(self.i_samples.valid & ~self.overflow):
-            next_count = count + 1
-            m.d.sync += count.eq(next_count)
-            with m.If(next_count == packs):
-                with m.If(next_credits1 >= 32):
-                    m.d.sync += trig.eq(0)
-                    m.d.comb += self.o_packed.valid.eq(1)
-                with m.Else():
-                    m.d.sync += self.overflow.eq(1)
+        with m.If(self.i_samples.valid):
+            m.d.sync += count.eq(count + 1)
+            with m.If(count + 1 == packs):
+                m.d.sync += trig.eq(0)
+                m.d.comb += self.o_packed.valid.eq(1)
 
         return m
 
@@ -311,7 +297,7 @@ class Reader(wiring.Component):
         "start":  32, # 4-byte aligned
         "count":  32, # 4-byte aligned
     })))
-    o_octets: In(stream.Signature(8))
+    o_octets: Out(stream.Signature(8))
 
     def __init__(self, *, dram_range: range):
         self._dram_range  = dram_range
@@ -412,11 +398,79 @@ class Arbiter(wiring.Component):
         wiring.connect(m, flipped(self.writer.w_data), flipped(self.dram.w_data))
         wiring.connect(m, flipped(self.dram.r_data), flipped(self.reader.r_data))
 
-        # Writer has priority.
-        with m.If(self.writer.commands.valid):
-            wiring.connect(m, flipped(self.writer.commands), flipped(self.dram.commands))
-        with m.Else():
+        # Writer has priority. The condition here has to be in this exact form because of
+        # somewhat sketchy `block_ready` feedback in the writer.
+        with m.If(self.reader.commands.valid & ~self.writer.commands.valid):
             wiring.connect(m, flipped(self.reader.commands), flipped(self.dram.commands))
+        with m.Else():
+            wiring.connect(m, flipped(self.writer.commands), flipped(self.dram.commands))
+
+        return m
+
+
+class FlowControl(wiring.Component):
+    """Flow control unit.
+
+    Has two modes: free-run and budgeted. In free-run mode, no credits are taken or given; writes
+    proceed undisturbed, and reads are blocked. In budgeted mode, credits are given to the writer
+    (one ``writer_ratio`` per stream transfer) and taken from the reader (one ``reader_ratio`` per
+    stream transfer). The amount of outstanding credits is tracked, and must be below
+    ``max_credits`` at all times in order for writes to proceed. If a write arrives and
+    the outstanding credits are over budget, the sticky ``overflow`` output is set.
+
+    At the cycle where ``free_run`` goes low, the value of ``initial`` is used as the starting
+    amount of outstanding credits. This represents the amount of already written data behind
+    the starting address of the writer's next burst that must be preserved for readout.
+    """
+
+    def __init__(self, *, writer_shape, reader_shape, writer_ratio: int, reader_ratio: int,
+                 max_credits: int):
+        self._writer_ratio = writer_ratio
+        self._reader_ratio = reader_ratio
+        self._max_credits = max_credits
+
+        super().__init__({
+            "i_writer": In(stream.Signature(writer_shape, always_ready=True)),
+            "o_writer": Out(stream.Signature(writer_shape)),
+            "i_reader": In(stream.Signature(reader_shape)),
+            "o_reader": Out(stream.Signature(reader_shape)),
+
+            "free_run": In(1),
+            "initial":  In(range(max_credits + 1)),
+            "credits":  Out(range(max_credits + 1)),
+            "overflow": Out(1),
+        })
+
+    def elaborate(self, platform):
+        m = Module()
+
+        do_writes = Signal()
+        do_reads  = Signal()
+
+        m.d.comb += [
+            self.o_writer.payload.eq(self.i_writer.payload),
+            self.o_writer.valid.eq(self.i_writer.valid & do_writes),
+            self.o_reader.payload.eq(self.i_reader.payload),
+            self.o_reader.valid.eq(self.i_reader.valid & do_reads),
+            self.i_reader.ready.eq(self.o_reader.ready & do_reads),
+        ]
+
+        credits = self.credits
+        credits1 = credits  + Mux(self.o_writer.valid & self.o_writer.ready, self._writer_ratio, 0)
+        credits2 = credits1 - Mux(self.o_reader.valid & self.o_reader.ready, self._reader_ratio, 0)
+
+        with m.If(self.free_run):
+            m.d.comb += do_writes.eq(1)
+            m.d.sync += credits.eq(Mux(credits1 < self.initial, credits1, self.initial))
+        with m.Else():
+            with m.If(credits <= self._max_credits - self._writer_ratio):
+                m.d.comb += do_writes.eq(self.o_writer.ready)
+            with m.If(credits >= self._reader_ratio):
+                m.d.comb += do_reads.eq(1)
+            m.d.sync += credits.eq(credits2)
+
+        with m.If(self.i_writer.valid & ~self.o_writer.valid):
+            m.d.sync += self.overflow.eq(1)
 
         return m
 
@@ -428,8 +482,11 @@ class AnalyzerCore(wiring.Component):
     triggers: In(data.ArrayLayout(Trigger.Mode, 32))
     samples:  Out(stream.Signature(8))
 
-    precap_count: In(32) # in samples, not packed samples
-    total_count:  In(32) # also
+    prolog_count: In(32) # in bytes
+    epilog_count: In(32) # in bytes
+
+    triggered: Out(1)
+    complete:  Out(1)
 
     def __init__(self, *, pins: io.PortLike, dram_range: range):
         self._pins = pins
@@ -451,84 +508,43 @@ class AnalyzerCore(wiring.Component):
         wiring.connect(m, packer.i_samples, trigger.o_samples)
 
         m.submodules.writer = writer = Writer(dram_range=self._dram_range)
-        wiring.connect(m, packer.o_packed, writer.i_packed)
-
         m.submodules.reader = reader = Reader(dram_range=self._dram_range)
-
         m.submodules.arbiter = arbiter = Arbiter()
         wiring.connect(m, arbiter.dram, flipped(self.dram))
         wiring.connect(m, arbiter.writer, writer.dram)
         wiring.connect(m, arbiter.reader, reader.dram)
 
-        # needs to know:
-        #  - where to start reading from
-        #  - how many samples are before trigger
-        #  - how many samples total in buffer
+        m.submodules.flow_ctrl = flow_ctrl = FlowControl(
+            writer_shape=writer.i_packed.p.shape(),
+            writer_ratio=len(writer.i_packed.p.data),
+            reader_shape=reader.o_octets.p.shape(),
+            reader_ratio=1,
+            max_credits=len(self._dram_range),
+        )
+        wiring.connect(m, packer.o_packed, flow_ctrl.i_writer)
+        wiring.connect(m, flow_ctrl.o_writer, writer.i_packed)
+        wiring.connect(m, reader.o_octets, flow_ctrl.i_reader)
 
-        push_sample = Signal()
-        pop_sample  = Signal()
+        m.d.comb += flow_ctrl.initial.eq(self.prolog_count)
+        with m.FSM() as fsm:
+            with m.State("Free-Run"):
+                m.d.comb += [
+                    trigger.active.eq(1),
+                    flow_ctrl.free_run.eq(1),
+                    writer.o_blocks.ready.eq(1),
+                ]
+                with m.If(writer.o_blocks.valid & writer.o_blocks.p.trig.active):
+                    m.next = "Trigger"
 
-        m.d.comb += [
-            writer.i_packed.p.data.eq(packer.o_packed.p.data),
-            writer.i_packed.valid.eq(packer.o_valid),
-        ]
-        with m.If(writer.i_packed.valid & writer.i_packed.ready):
-            m.d.comb += push_sample.eq(1)
+            with m.State("Trigger"):
+                m.d.comb += [
+                    writer.o_blocks.ready.eq(1),
+                    # TODO
+                ]
 
-        # XXX
-        with m.If(reader.o_octets.valid & reader.o_octets.ready):
-            m.d.comb += pop_sample.eq(1)
+        m.d.comb += self.triggered.eq(~fsm.ongoing("Free-Run"))
 
-        m.submodules.start_ptr = start_ptr = Pointer(self._dram_range, step=4)
-        m.submodules.trig_ptr  = trig_ptr  = Pointer(self._dram_range, step=4)
-        m.submodules.write_ptr = write_ptr = Pointer(self._dram_range, step=4)
-        m.submodules.read_ptr  = read_ptr  = Pointer(self._dram_range, step=1)
-        m.d.comb += trig_ptr.i_value.eq(write_ptr.o_value)
-        m.d.comb += read_ptr.i_value.eq(start_ptr.o_value)
-
-        triggered   = Signal()
-        write_count = Signal(range(len(self._dram_range) + 1))
-        with m.If(push_sample):
-            m.d.comb += write_ptr.incr.eq(1)
-            with m.If(triggered & (write_count + 4 == self.total_count)):
-                pass # FIXME
-            with m.Elif(~triggered & (write_count + 4 == self.precap_count)):
-                m.d.comb += start_ptr.incr.eq(1)
-            with m.Else():
-                m.d.sync += write_count.eq(write_count + 4)
-
-        with m.Elif(packer.o_packed.valid):
-            pass # TODO: overflow
-
-        # TODO: reader.o_octets
-
-
-# class Pointer(wiring.Component):
-#     load:    In(1)
-#     incr:    In(1)
-#     i_value: In(32)
-#     o_value: Out(32)
-#
-#     def __init__(self, interval: range, *, step: int):
-#         self._range = range(interval.start, interval.stop, step)
-#
-#         super().__init__()
-#
-#     def elaborate(self, platform):
-#         m = Module()
-#
-#         value = Signal(self._range, self._range.start)
-#         m.d.comb += self.o_value.eq(value)
-#
-#         with m.If(self.load):
-#             m.d.sync += value.eq(self.i_value)
-#         with m.Elif(self.next):
-#             with m.If(value + self._range.step == self._range.stop):
-#                 m.d.sync += value.eq(self._range.start)
-#             with m.Else():
-#                 m.d.sync += value.eq(value + self._range.step)
-#
-#         return m
+        return m
 
 
 class AnalyzerComponent(wiring.Component):
