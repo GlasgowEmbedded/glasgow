@@ -106,9 +106,12 @@ class Packer(wiring.Component):
     """Packer unit.
 
     Converts 32-bit samples with some amount of unused MSBs into 4-byte packed samples that consist
-    of a concatenation of used LSBs (and possibly padding).
+    of a concatenation of used LSBs (and possibly padding). A credit system is used to detect
+    overrun conditions; the unitary credit is a single bit of a packed sample (i.e. including
+    padding bits).
 
-    Currently, the (real) sample width is configured statically.
+    Currently, the (real) sample width is configured statically. If it is not a power-of-2 amount
+    of bits, padding is added after each sample so that they start at power-of-2 bit indices.
     """
 
     TRIG_SHAPE = data.StructLayout({
@@ -125,7 +128,7 @@ class Packer(wiring.Component):
         "trig": TRIG_SHAPE,
     }), always_ready=True))
 
-    i_credits: In(stream.Signature(range(32+1), always_ready=True))
+    i_credits: In(stream.Signature(range(32+1)))
     overflow:  Out(1)
 
     def __init__(self, *, width: int, max_credits: int):
@@ -167,15 +170,16 @@ class Packer(wiring.Component):
 
         credits = Signal(range(self._max_credits + 1))
         next_credits1 = credits       + Mux(self.i_credits.valid, self.i_credits.payload, 0)
-        next_credits2 = next_credits1 - Mux(self.o_packed.valid, count + 1, 0)
+        next_credits2 = next_credits1 - Mux(self.o_packed.valid, 32, 0)
         with m.If(next_credits2 <= self._max_credits):
             m.d.sync += credits.eq(next_credits2)
+            m.d.comb += self.i_credits.ready.eq(1)
 
         with m.If(self.i_samples.valid & ~self.overflow):
             next_count = count + 1
             m.d.sync += count.eq(next_count)
             with m.If(next_count == packs):
-                with m.If(next_count <= next_credits1):
+                with m.If(next_credits1 >= 32):
                     m.d.sync += trig.eq(0)
                     m.d.comb += self.o_packed.valid.eq(1)
                 with m.Else():
