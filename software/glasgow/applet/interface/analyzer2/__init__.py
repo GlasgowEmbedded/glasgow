@@ -125,10 +125,14 @@ class Packer(wiring.Component):
         "trig": TRIG_SHAPE,
     }), always_ready=True))
 
-    def __init__(self, *, width: int):
+    i_credits: In(stream.Signature(range(32+1), always_ready=True))
+    overflow:  Out(1)
+
+    def __init__(self, *, width: int, max_credits: int):
         assert width in range(1, 33)
 
         self._width = width
+        self._max_credits = max_credits
 
         super().__init__()
 
@@ -156,11 +160,21 @@ class Packer(wiring.Component):
         with m.Else():
             m.d.comb += self.o_packed.p.trig.eq(trig)
 
-        with m.If(self.i_samples.valid):
-            m.d.sync += count.eq(count + 1)
-            with m.If(count + 1 == packs):
-                m.d.sync += trig.eq(0)
-                m.d.comb += self.o_packed.valid.eq(1)
+        credits = Signal(range(self._max_credits + 1))
+        next_credits1 = credits       + Mux(self.i_credits.valid, self.i_credits.payload, 0)
+        next_credits2 = next_credits1 - Mux(self.o_packed.valid, count + 1, 0)
+        with m.If(next_credits2 <= self._max_credits):
+            m.d.sync += credits.eq(next_credits2)
+
+        with m.If(self.i_samples.valid & ~self.overflow):
+            next_count = count + 1
+            m.d.sync += count.eq(next_count)
+            with m.If(next_count == packs):
+                with m.If(next_count <= next_credits1):
+                    m.d.sync += trig.eq(0)
+                    m.d.comb += self.o_packed.valid.eq(1)
+                with m.Else():
+                    m.d.sync += self.overflow.eq(1)
 
         return m
 
@@ -251,7 +265,6 @@ class Writer(wiring.Component):
             block_queue.i.p.size.eq(w_advance),
             block_queue.i.p.trig.eq(self.i_packed.p.trig),
             block_queue.i.valid.eq(w_advance != 0),
-            # TODO: this might not be ready
         ]
 
         # Maintain a count of entries (not bytes) pushed to the write queue but not yet committed
@@ -271,7 +284,7 @@ class Writer(wiring.Component):
         next_level_bytes = (w_pending + 1) * len(w_queue.i.payload)
         with m.If((((w_pointer + next_level_bytes) & (self._burst_bytes - 1)) == 0) |
                   self.i_packed.p.trig.active):
-            with m.If(w_queue.i.valid & w_queue.i.ready):
+            with m.If(w_queue.i.valid & w_queue.i.ready & block_queue.i.ready):
                 m.d.comb += w_advance.eq(next_level_bytes)
 
         return m
