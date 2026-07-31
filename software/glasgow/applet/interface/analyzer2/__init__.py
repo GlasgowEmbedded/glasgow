@@ -132,17 +132,22 @@ class Packer(wiring.Component):
         assert width in range(1, 33)
 
         self._width = width
+        self._width_pow2 = 1 << ceil_log2(self._width)
         self._max_credits = max_credits
 
         super().__init__()
 
+    @property
+    def samples_per_word(self):
+        return len(self.i_samples.p.data) // self._width_pow2
+
     def elaborate(self, platform):
         m = Module()
 
-        pack = Signal(1 << ceil_log2(self._width))
+        pack = Signal(self._width_pow2)
         m.d.comb += pack.eq(self.i_samples.p.data[:self._width])
 
-        packs = len(self.i_samples.p.data) // len(pack)
+        packs = self.samples_per_word
         count = Signal(range(packs))
         trig  = Signal(self.TRIG_SHAPE)
 

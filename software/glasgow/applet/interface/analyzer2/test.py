@@ -75,6 +75,23 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
                     sim.add_testbench(testbench_samples, background=True)
                     sim.add_testbench(testbench_triggers)
 
+    def test_packer_samples_per_word(self):
+        def check_width(width, per_word):
+            packer = Packer(width=width, max_credits=0)
+            packer._MustUse__used = True
+            assert packer.samples_per_word == per_word
+
+        check_width(1,  32)
+        check_width(2,  16)
+        check_width(3,  8)
+        check_width(4,  8)
+        check_width(5,  4)
+        check_width(8,  4)
+        check_width(9,  2)
+        check_width(16, 2)
+        check_width(17, 1)
+        check_width(32, 1)
+
     def test_packer_format(self):
         for width, offset, results in [
             (32, 2, [
