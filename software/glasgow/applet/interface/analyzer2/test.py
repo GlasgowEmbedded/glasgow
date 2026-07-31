@@ -7,7 +7,7 @@ from amaranth.sim import Simulator
 from glasgow.gateware.stream import stream_put, stream_get, stream_assert
 from glasgow.gateware import octoram
 from glasgow.applet import GlasgowAppletV2TestCase
-from . import AnalyzerApplet, Sampler, Trigger, Packer, Writer, Reader
+from . import AnalyzerApplet, Sampler, Trigger, Packer, Writer, Reader, FlowControl, AnalyzerCore
 
 
 class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
@@ -132,49 +132,6 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
                     sim.add_testbench(testbench_triggers, background=True)
                     sim.add_testbench(testbench_packed)
 
-    def test_packer_overflow(self):
-        dut = Packer(width=32, max_credits=128)
-
-        async def testbench_credits(ctx):
-            for _ in range(4):
-                await stream_put(ctx, dut.i_credits, 32)
-
-        async def testbench_triggers(ctx):
-            for _ in range(5):
-                await stream_put(ctx, dut.i_samples, {})
-
-        async def testbench_overflow(ctx):
-            await ctx.tick()
-            assert not ctx.get(dut.overflow)
-            await ctx.tick()
-            assert not ctx.get(dut.overflow)
-            await ctx.tick()
-            assert not ctx.get(dut.overflow)
-            await ctx.tick()
-            assert not ctx.get(dut.overflow)
-            await ctx.tick()
-            assert ctx.get(dut.overflow)
-
-        with self.run_test(dut) as sim:
-            sim.add_testbench(testbench_credits, background=True)
-            sim.add_testbench(testbench_triggers, background=True)
-            sim.add_testbench(testbench_overflow)
-
-    def test_packer_saturation(self):
-        dut = Packer(width=32, max_credits=32)
-
-        async def testbench_credits(ctx):
-            ctx.set(dut.i_credits.payload, 16)
-            ctx.set(dut.i_credits.valid, 1)
-            assert ctx.get(dut.i_credits.ready)
-            await ctx.tick()
-            assert ctx.get(dut.i_credits.ready)
-            await ctx.tick()
-            assert not ctx.get(dut.i_credits.ready)
-
-        with self.run_test(dut) as sim:
-            sim.add_testbench(testbench_credits)
-
     def test_writer(self):
         m = Module()
         m.submodules.writer = dut  = Writer(dram_range=range(0, 64))
@@ -254,4 +211,87 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
         with self.run_test(m) as sim:
             sim.add_testbench(testbench_ranges, background=True)
             sim.add_testbench(testbench_octets)
+            sim.add_testbench(dram.testbench, background=True)
+
+    def test_flow_control(self):
+        dut = FlowControl(
+            writer_shape=1,
+            writer_ratio=2,
+            reader_shape=1,
+            reader_ratio=1,
+            max_credits=10,
+        )
+
+        async def testbench_main(ctx):
+            ctx.set(dut.free_run, 1)
+            ctx.set(dut.initial, 6)
+
+            await stream_put(ctx, dut.writer_i, 0)
+            assert ctx.get(dut.credits) == 2
+            await stream_put(ctx, dut.writer_i, 0)
+            assert ctx.get(dut.credits) == 4
+            await stream_put(ctx, dut.writer_i, 0)
+            assert ctx.get(dut.credits) == 6
+            await stream_put(ctx, dut.writer_i, 0)
+            assert ctx.get(dut.credits) == 6
+
+            ctx.set(dut.free_run, 0)
+
+            await stream_put(ctx, dut.reader_i, 0)
+            assert ctx.get(dut.credits) == 5
+            await stream_put(ctx, dut.reader_i, 0)
+            assert ctx.get(dut.credits) == 4
+
+            await stream_put(ctx, dut.writer_i, 0)
+            assert ctx.get(dut.credits) == 6
+            await stream_put(ctx, dut.writer_i, 0)
+            assert ctx.get(dut.credits) == 8
+            await stream_put(ctx, dut.writer_i, 0)
+            assert ctx.get(dut.credits) == 10
+            assert not ctx.get(dut.overflow)
+            await stream_put(ctx, dut.writer_i, 0)
+            assert ctx.get(dut.credits) == 10
+            assert ctx.get(dut.overflow)
+
+        async def testbench_w_sink(ctx):
+            while True:
+                await stream_get(ctx, dut.writer_o)
+
+        async def testbench_r_sink(ctx):
+            while True:
+                await stream_get(ctx, dut.reader_o)
+
+        with self.run_test(dut) as sim:
+            sim.add_testbench(testbench_main)
+            sim.add_testbench(testbench_w_sink, background=True)
+            sim.add_testbench(testbench_r_sink, background=True)
+
+    def test_integration(self):
+        pins = io.SimulationPort("i", 8)
+
+        m = Module()
+        m.submodules.core = dut  = AnalyzerCore(pins=pins, dram_range=range(0x100))
+        m.submodules.dram = dram = octoram.SimulationController(0x100)
+        wiring.connect(m, dut.dram, dram.bus)
+
+        async def testbench_ctrl(ctx):
+            # pins==0x40
+            ctx.set(dut.triggers[5], {"active": 1, "value": 1, "level": 0})
+
+            ctx.set(dut.prolog_count, 8)
+            ctx.set(dut.epilog_count, 8)
+
+        async def testbench_i(ctx):
+            for value in range(0x200):
+                ctx.set(pins.i, value&0xff)
+                await ctx.tick()
+
+        async def testbench_o(ctx):
+            for value in range(0x21-8, 0x21+8+1):
+                await stream_assert(ctx, dut.samples, {"data": value})
+
+        with self.run_test(m) as sim:
+            sim.add_testbench(testbench_ctrl)
+            sim.add_testbench(testbench_i)
+            sim.add_testbench(testbench_o, background=True)
             sim.add_testbench(dram.testbench, background=True)
