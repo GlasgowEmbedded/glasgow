@@ -194,12 +194,13 @@ class Writer(wiring.Component):
         "trig": Packer.TRIG_SHAPE,
     })))
 
-    def __init__(self, *, dram_range: range):
-        self._dram_range  = dram_range
-        self._burst_bytes = 32
+    def __init__(self, *, dram_range: range, burst_bytes: int):
+        assert dram_range.start % burst_bytes == 0
+        assert dram_range.stop % burst_bytes == 0
+        assert dram_range.step == 1
 
-        assert self._dram_range.start % self._burst_bytes == 0
-        assert self._dram_range.stop % self._burst_bytes == 0
+        self._dram_range  = dram_range
+        self._burst_bytes = burst_bytes
 
         super().__init__()
 
@@ -230,7 +231,7 @@ class Writer(wiring.Component):
         # Buffer 4-byte packed sample bursts. Sized for two bursts worth of samples so that one
         # half can be filled while the other half is being drained.
         m.submodules.w_queue = w_queue = Queue(
-            shape=data.ArrayLayout(8, 4), depth=(self._burst_bytes >> 2) * 2)
+            shape=data.ArrayLayout(8, 4), depth=(self._burst_bytes >> 2) * 4)
         m.d.comb += [
             w_queue.i.payload.eq(Cat(self.i_packed.p.data)),
             w_queue.i.valid.eq(self.i_packed.valid),
@@ -295,16 +296,17 @@ class Reader(wiring.Component):
 
     i_ranges: In(stream.Signature(data.StructLayout({
         "addr": 32, # 4-byte aligned
-        "size": 32, # 4-byte aligned
+        "size": 32, # 4-byte multiple
     })))
     o_octets: Out(stream.Signature(8))
 
-    def __init__(self, *, dram_range: range):
-        self._dram_range  = dram_range
-        self._burst_bytes = 32
+    def __init__(self, *, dram_range: range, burst_bytes: int):
+        assert dram_range.start % burst_bytes == 0
+        assert dram_range.stop % burst_bytes == 0
+        assert dram_range.step == 1
 
-        assert self._dram_range.start % self._burst_bytes == 0
-        assert self._dram_range.stop % self._burst_bytes == 0
+        self._dram_range  = dram_range
+        self._burst_bytes = burst_bytes
 
         super().__init__()
 
@@ -465,7 +467,9 @@ class FlowControl(wiring.Component):
         credits1 = credits  + Mux(self.o_writer.valid & self.o_writer.ready, self._writer_ratio, 0)
         credits2 = credits1 - Mux(self.o_reader.valid & self.o_reader.ready, self._reader_ratio, 0)
 
-        with m.If(self.free_run):
+        with m.If(self.overflow):
+            m.d.comb += do_reads.eq(1)
+        with m.Elif(self.free_run):
             m.d.comb += do_writes.eq(1)
             m.d.sync += credits.eq(Mux(credits1 < self.initial, credits1, self.initial))
         with m.Else():
@@ -481,22 +485,117 @@ class FlowControl(wiring.Component):
         return m
 
 
+class ReadoutControl(wiring.Component):
+    """Readout control unit.
+
+    While the flow control unit caps the (conservative estimate of) size of the packed sample queue
+    to the DRAM region size, it does not function as a barrier: the fact that a credit has been
+    issued to write a byte enables the readout of one byte, but actually reading this byte may well
+    cause the reader to race ahead of the writer. This unit solves this problem.
+
+    Whenever the writer commits to writing a block, it outputs the extent of it (and trigger offset,
+    if any) via ``o_blocks``. At this point, the data in the block can be considered written (it may
+    still be in progress but not in a way where the reader can interrupt it and get ahead). Whenever
+    this happens, this unit expands the readout region by the block size (potentially capped to
+    the prolog size if it's still in a pre-trigger state).
+    """
+
+    CONTROL_SHAPE = data.StructLayout({
+        "prolog_size": 32,
+        "epilog_size": 32,
+        "streaming":   1,
+    })
+
+    control: In(CONTROL_SHAPE)
+
+    w_blocks: In(stream.Signature(data.StructLayout({
+        "addr": 32, # 4-byte aligned
+        "size": 8,  # 4-byte multiple
+        "trig": Packer.TRIG_SHAPE,
+    })))
+    r_ranges: Out(stream.Signature(data.StructLayout({
+        "addr": 32, # 4-byte aligned
+        "size": 32, # 4-byte multiple
+    })))
+
+    free_run: Out(1)
+
+    def __init__(self, *, dram_range: range):
+        assert dram_range.step == 1
+
+        self._dram_range = dram_range
+
+        super().__init__()
+
+    def elaborate(self, platform):
+        m = Module()
+
+        # See the comment in the `Prolog` state.
+        m.submodules.ranges = ranges = Queue(
+            shape=self.r_ranges.p.shape(), depth=1)
+        wiring.connect(m, ranges.o, flipped(self.r_ranges))
+
+        readout_addr = Signal(self._dram_range, init=self._dram_range.start)
+        readout_size = Signal(self._dram_range)
+        trigger_reg  = Signal.like(self.w_blocks.p.trig)
+
+        with m.FSM():
+            with m.State("Free-Run"):
+                m.d.comb += self.free_run.eq(1)
+                m.d.comb += self.w_blocks.ready.eq(1)
+                with m.If(self.w_blocks.valid):
+                    # Expand the readout region by the size of the just-committed block.
+                    next_size = readout_size + self.w_blocks.p.size
+                    with m.If(next_size <= self.control.prolog_size):
+                        m.d.sync += readout_size.eq(next_size)
+                    with m.Else():
+                        m.d.sync += readout_size.eq(self.control.prolog_size)
+                        next_addr = readout_addr + self.w_blocks.p.size
+                        with m.If(next_addr <= self._dram_range.stop):
+                            m.d.sync += readout_addr.eq(next_addr)
+                        with m.Else():
+                            m.d.sync += readout_addr.eq(next_addr - len(self._dram_range))
+
+                    m.d.sync += trigger_reg.eq(self.w_blocks.p.trig)
+                    with m.If(self.w_blocks.p.trig.active):
+                        m.next = "Prolog"
+
+            # This state should be only active for one cycle, since the lack of readiness blocks
+            # the writer's progress. The `ranges` buffer exists to make this happen.
+            with m.State("Prolog"):
+                with m.If(readout_size > 0):
+                    m.d.comb += [
+                        ranges.i.p.addr.eq(readout_addr),
+                        ranges.i.p.size.eq(readout_size),
+                        ranges.i.valid.eq(1)
+                    ]
+                with m.If((readout_size == 0) | ranges.i.ready):
+                    m.next = "Streaming"
+
+            with m.State("Streaming"):
+                m.d.comb += [
+                    ranges.i.p.addr.eq(self.w_blocks.p.addr),
+                    ranges.i.p.size.eq(self.w_blocks.p.size),
+                    ranges.i.valid.eq(self.w_blocks.valid),
+                    self.w_blocks.ready.eq(ranges.i.ready),
+                ]
+
+        return m
+
+
 class AnalyzerCore(wiring.Component):
     dram: Out(octoram.Signature())
 
     divisor:  In(24)
     triggers: In(data.ArrayLayout(Trigger.Mode, 32))
+    readout:  In(ReadoutControl.CONTROL_SHAPE)
     samples:  Out(stream.Signature(8))
 
-    prolog_size: In(32) # in bytes
-    epilog_size: In(32) # in bytes
-
-    triggered: Out(1)
-    complete:  Out(1)
-
-    def __init__(self, *, pins: io.PortLike, dram_range: range):
+    def __init__(self, *, pins: io.PortLike, dram_range: range, burst_bytes: int):
         self._pins = pins
-        self._dram_range = dram_range
+
+        self._dram_range  = dram_range
+        self._burst_bytes = burst_bytes
 
         super().__init__()
 
@@ -513,8 +612,10 @@ class AnalyzerCore(wiring.Component):
         m.submodules.packer = packer = Packer(width=len(self._pins))
         wiring.connect(m, packer.i_samples, trigger.o_samples)
 
-        m.submodules.writer = writer = Writer(dram_range=self._dram_range)
-        m.submodules.reader = reader = Reader(dram_range=self._dram_range)
+        m.submodules.writer = writer = Writer(
+            dram_range=self._dram_range, burst_bytes=self._burst_bytes)
+        m.submodules.reader = reader = Reader(
+            dram_range=self._dram_range, burst_bytes=self._burst_bytes)
         m.submodules.arbiter = arbiter = Arbiter()
         wiring.connect(m, arbiter.dram, flipped(self.dram))
         wiring.connect(m, arbiter.writer, writer.dram)
@@ -531,40 +632,18 @@ class AnalyzerCore(wiring.Component):
         wiring.connect(m, flow_ctrl.o_writer, writer.i_packed)
         wiring.connect(m, reader.o_octets, flow_ctrl.i_reader)
 
-        # FIXME: needs to be a read combiner instead
-        m.submodules.ranges = ranges = Queue(
-            shape=reader.i_ranges.p.shape(), depth=2)
-        wiring.connect(m, ranges.o, reader.i_ranges)
+        m.submodules.readout = readout = ReadoutControl(dram_range=self._dram_range)
+        wiring.connect(m, writer.o_blocks, readout.w_blocks)
+        wiring.connect(m, readout.r_ranges, reader.i_ranges)
 
-        m.d.comb += flow_ctrl.initial.eq(self.prolog_size)
-        with m.FSM() as fsm:
-            with m.State("Pre-Trigger"):
-                m.d.comb += [
-                    trigger.active.eq(1),
-                    flow_ctrl.free_run.eq(1),
-                    writer.o_blocks.ready.eq(1),
-                ]
-                with m.If(writer.o_blocks.valid & writer.o_blocks.p.trig.active):
-                    m.d.comb += [
-                        # TODO: needs to handle wraparound
-                        ranges.i.p.addr.eq(writer.o_blocks.p.addr
-                            + writer.o_blocks.p.size
-                            - self.prolog_size),
-                        ranges.i.p.size.eq(self.prolog_size),
-                        ranges.i.valid.eq(1),
-                    ]
-                    m.next = "Post-Trigger"
-
-            with m.State("Post-Trigger"):
-                m.d.comb += [
-                    writer.o_blocks.ready.eq(1),
-                    # TODO: needs to write out blocks as they come
-                ]
+        m.d.comb += [
+            flow_ctrl.initial.eq(self.readout.prolog_size),
+            flow_ctrl.free_run.eq(readout.free_run),
+            trigger.active.eq(readout.free_run), # FIXME: race condition
+        ]
 
         # FIXME: needs to do some end handling
-        wiring.connect(m, reader.o_octets, flipped(self.samples))
-
-        m.d.comb += self.triggered.eq(~fsm.ongoing("Free-Run"))
+        wiring.connect(m, flow_ctrl.o_reader, flipped(self.samples))
 
         return m
 
