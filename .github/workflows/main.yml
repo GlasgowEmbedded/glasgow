@@ -80,7 +80,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pdm
-          key: PDM-${{ matrix.dep-versions }}-${{ hashFiles(matrix.dep-versions == 'minimal' && './software/pdm.min.lock' || './software/pdm.lock') }}
+          key: PDM-${{ matrix.dep-versions }}-${{ hashFiles(format('./software/{0}', env.PDM_LOCKFILE)) }}
           restore-keys: |
             PDM-${{ matrix.dep-versions }}-
             PDM-
@@ -88,7 +88,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pdm
-          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.dep-versions }}-${{ hashFiles(matrix.dep-versions == 'minimal' && './software/pdm.min.lock' || './software/pdm.lock') }}
+          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.dep-versions }}-${{ hashFiles(format('./software/{0}', env.PDM_LOCKFILE)) }}
           restore-keys: |
             venv-${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.dep-versions }}-
             venv-${{ runner.os }}-${{ matrix.python-version }}-

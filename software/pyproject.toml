@@ -195,6 +195,16 @@ build-backend = "pdm.backend"
 # Development workflow configuration
 
 [tool.pdm.scripts]
-"update-pdm.min.lock".cmd = "pdm lock -L pdm.min.lock -S direct_minimal_versions"
 test.cmd = "python -m unittest"
 repl.cmd = "python -m asyncio"
+
+# Lockfile with minimal versions. Used to ensure that we do not accidentally depend on functionality
+# available in the latest versions of our dependencies, but not the entire version set.
+# Note the use of `direct_minimal_versions`; `minimal_versions` exists but is too broken to use
+# in practice, as our transitive dependencies often do not test their code in the same way.
+"update-pdm.min.lock".cmd = "pdm lock -L pdm.min.lock -S direct_minimal_versions"
+
+# Lockfile with distribution wheel set. Used to build a Windows .msi installer. Wheels in this
+# lockfile are expected to cross-compile to win32/win_amd64 with MinGW (this implies that they must
+# be using setuptools). It also excludes the builtin toolchain, as a native one is cross-compiled.
+"update-pdm.dist.lock".cmd = "pdm lock -L pdm.dist.lock"
