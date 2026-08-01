@@ -485,7 +485,7 @@ class FlowControl(wiring.Component):
         return m
 
 
-class ReadoutControl(wiring.Component):
+class ReadControl(wiring.Component):
     """Readout control unit.
 
     While the flow control unit caps the (conservative estimate of) size of the packed sample queue
@@ -550,7 +550,7 @@ class ReadoutControl(wiring.Component):
                         m.d.sync += readout_size.eq(next_size)
                     with m.Else():
                         m.d.sync += readout_size.eq(self.control.prolog_size)
-                        next_addr = readout_addr + self.w_blocks.p.size
+                        next_addr = readout_addr + (next_size - self.control.prolog_size)
                         with m.If(next_addr <= self._dram_range.stop):
                             m.d.sync += readout_addr.eq(next_addr)
                         with m.Else():
@@ -588,7 +588,7 @@ class AnalyzerCore(wiring.Component):
 
     divisor:  In(24)
     triggers: In(data.ArrayLayout(Trigger.Mode, 32))
-    readout:  In(ReadoutControl.CONTROL_SHAPE)
+    readout:  In(ReadControl.CONTROL_SHAPE)
     samples:  Out(stream.Signature(8))
 
     def __init__(self, *, pins: io.PortLike, dram_range: range, burst_bytes: int):
@@ -632,14 +632,15 @@ class AnalyzerCore(wiring.Component):
         wiring.connect(m, flow_ctrl.o_writer, writer.i_packed)
         wiring.connect(m, reader.o_octets, flow_ctrl.i_reader)
 
-        m.submodules.readout = readout = ReadoutControl(dram_range=self._dram_range)
-        wiring.connect(m, writer.o_blocks, readout.w_blocks)
-        wiring.connect(m, readout.r_ranges, reader.i_ranges)
+        m.submodules.read_ctrl = read_ctrl = ReadControl(dram_range=self._dram_range)
+        m.d.comb += read_ctrl.control.eq(self.readout)
+        wiring.connect(m, writer.o_blocks, read_ctrl.w_blocks)
+        wiring.connect(m, read_ctrl.r_ranges, reader.i_ranges)
 
         m.d.comb += [
             flow_ctrl.initial.eq(self.readout.prolog_size),
-            flow_ctrl.free_run.eq(readout.free_run),
-            trigger.active.eq(readout.free_run), # FIXME: race condition
+            flow_ctrl.free_run.eq(read_ctrl.free_run),
+            trigger.active.eq(read_ctrl.free_run), # FIXME: race condition
         ]
 
         # FIXME: needs to do some end handling
