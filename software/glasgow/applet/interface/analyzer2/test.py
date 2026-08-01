@@ -130,7 +130,7 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
 
     def test_writer(self):
         m = Module()
-        m.submodules.writer = dut  = Writer(dram_range=range(0, 64))
+        m.submodules.writer = dut  = Writer(dram_range=range(0, 64), burst_bytes=32)
         m.submodules.dram   = dram = octoram.SimulationController(64)
         wiring.connect(m, dut.dram, dram.bus)
 
@@ -185,7 +185,7 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
 
     def test_reader(self):
         m = Module()
-        m.submodules.reader = dut  = Reader(dram_range=range(0, 64))
+        m.submodules.reader = dut  = Reader(dram_range=range(0, 64), burst_bytes=32)
         m.submodules.dram   = dram = octoram.SimulationController(64)
         wiring.connect(m, dut.dram, dram.bus)
 
@@ -266,7 +266,8 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
         pins = io.SimulationPort("i", 8)
 
         m = Module()
-        m.submodules.core = dut  = AnalyzerCore(pins=pins, dram_range=range(0x100))
+        m.submodules.core = dut  = AnalyzerCore(
+            pins=pins, dram_range=range(0x100), burst_bytes=32)
         m.submodules.dram = dram = octoram.SimulationController(0x100)
         wiring.connect(m, dut.dram, dram.bus)
 
@@ -274,8 +275,8 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
             # pins==0x40
             ctx.set(dut.triggers[5], {"active": 1, "value": 1, "level": 0})
 
-            ctx.set(dut.prolog_size, 8)
-            ctx.set(dut.epilog_size, 8)
+            ctx.set(dut.readout.prolog_size, 8)
+            ctx.set(dut.readout.epilog_size, 8)
 
         async def testbench_i(ctx):
             for value in range(0x100):
