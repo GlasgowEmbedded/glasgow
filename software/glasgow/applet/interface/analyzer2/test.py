@@ -283,6 +283,7 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
         async def testbench_i(ctx):
             for value in range(0x100):
                 await ctx.tick()
+                await ctx.tick()
                 ctx.set(pins.i, value&0xff)
 
         async def testbench_o(ctx):

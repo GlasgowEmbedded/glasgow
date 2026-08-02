@@ -349,13 +349,12 @@ class Reader(wiring.Component):
             self.dram.commands.valid.eq(r_advance != 0),
         ]
 
-        # Maintain a count of entries (not bytes) pushed to the read queue but not yet committed
-        # to a burst.
+        # Maintain a count of entries (not bytes) committed to a burst that have not yet arrived
+        # into the read queue.
         r_pending = Signal.like(r_queue.level)
-        with m.If(self.dram.commands.ready):
-            m.d.sync += r_pending.eq(r_pending
-                + (r_advance // len(r_queue.i.payload))
-                - (r_queue.o.valid & r_queue.o.ready))
+        m.d.sync += r_pending.eq(r_pending
+            + (Mux(self.dram.commands.ready, r_advance // len(r_queue.i.payload), 0))
+            - (r_queue.o.valid & r_queue.o.ready))
 
         # Refill the buffer up to the next burst boundary (or until the end of the requested range).
         free_queue_bytes = (r_queue.depth - r_pending) * len(r_queue.i.payload)
@@ -501,8 +500,8 @@ class ReadControl(wiring.Component):
     """
 
     CONTROL_SHAPE = data.StructLayout({
-        "prolog_size": 32,
-        "epilog_size": 32,
+        "prolog_size": 32, # 4-byte multiple
+        "epilog_size": 32, # 4-byte multiple
         "streaming":   1,
     })
 
@@ -570,15 +569,30 @@ class ReadControl(wiring.Component):
                         ranges.i.valid.eq(1)
                     ]
                 with m.If((readout_size == 0) | ranges.i.ready):
+                    m.d.sync += readout_addr.eq(readout_addr + readout_size)
                     m.next = "Streaming"
 
             with m.State("Streaming"):
+                # This comprises forbidden ready-to-valid feedback and only works because of
+                # the particular implementation of the `ranges` queue.
                 m.d.comb += [
-                    ranges.i.p.addr.eq(self.w_blocks.p.addr),
+                    ranges.i.p.addr.eq(readout_addr),
                     ranges.i.p.size.eq(self.w_blocks.p.size),
                     ranges.i.valid.eq(self.w_blocks.valid),
-                    self.w_blocks.ready.eq(ranges.i.ready),
+                    self.w_blocks.ready.eq(1),
                 ]
+                with m.If(ranges.i.valid & ranges.i.ready):
+                    next_addr = readout_addr + self.w_blocks.p.size
+                    with m.If(next_addr == self._dram_range.stop):
+                        m.d.sync += readout_addr.eq(self._dram_range.start)
+                    with m.Else():
+                        m.d.sync += readout_addr.eq(next_addr)
+                with m.Elif(ranges.i.valid):
+                    # TODO: combine ranges
+                    m.next = "Fault"
+
+            with m.State("Fault"):
+                pass
 
         return m
 
