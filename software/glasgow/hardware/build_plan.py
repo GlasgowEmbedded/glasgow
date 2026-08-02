@@ -87,6 +87,8 @@ class GlasgowBuildPlan:
                 # - APPDATA: required for YoWASP (used by pip executable stub)
                 for var in ("PROCESSOR_ARCHITECTURE", "SYSTEMROOT", "APPDATA"):
                     environ[var] = os.environ[var]
+                # Required for the Yosys abc9 pass to work.
+                environ["TEMP"] = build_dir
 
             # collect stdout (so that it can be reproduced if a log for a cached bitstream is
             # requested later) and also log it with the appropriate level
