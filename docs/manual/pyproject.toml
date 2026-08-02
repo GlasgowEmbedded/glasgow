@@ -1,9 +1,8 @@
 [project]
 requires-python = "~=3.13"
 dependencies = [
-    "sphinx>=8.1",
+    "sphinx>=8.1,<9",
     "myst-parser",
-    "sphinx-autobuild",
     "sphinx-inline-tabs",
     "sphinx-copybutton",
     "sphinx-intl",
@@ -17,6 +16,11 @@ dependencies = [
     # into `docs/manual/src/_static/styles/furo.css`.
     "furo==2025.12.19",
     "glasgow @ file:///${PROJECT_ROOT}/../../software"
+]
+
+[dependency-groups]
+dev = [
+    "sphinx-autobuild",
 ]
 
 [tool.pdm.scripts]
