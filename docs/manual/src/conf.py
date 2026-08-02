@@ -53,7 +53,9 @@ napoleon_include_special_with_doc = True
 todo_include_todos = True
 todo_emit_warnings = True
 
-intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", os.getenv("INTERSPHINX_PYTHON")),
+}
 
 copybutton_prompt_is_regexp = True
 copybutton_prompt_text = r">>> |\.\.\. |\$ |> "
