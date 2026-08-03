@@ -53,6 +53,9 @@ dependencies = [
   # `pyvcd` is used in the applet analyzer to dump waveform files. It is also a dependency of
   # Amaranth, and the version range here must be compatible with Amaranth's.
   "pyvcd>=0.4.1,<0.5",
+  # `pyreadline3` is used on Windows to provide line editing. It is unclear which versioning scheme
+  # it uses.
+  "pyreadline3>=3.5.6; platform_system == 'Windows'",
   # `enum-tools` is used for documenting enums. It is unclear which versioning scheme it uses.
   "enum-tools==0.13.0",
   # `importlib_resources` is used to shim over Python API incompatibilities. It uses SemVer.

@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:da7835d15fcb040967d50d5e4491853563aaf86d9f6354dd56d28f5f88e4b455"
+content_hash = "sha256:a444afd41dc88e6ba5767760b217579d6e862314a83e480b6e875603e949ea18"
 
 [[metadata.targets]]
 requires_python = "~=3.13"
@@ -219,6 +219,18 @@ groups = ["default"]
 files = [
     {file = "pygments-2.20.0-py3-none-any.whl", hash = "sha256:81a9e26dd42fd28a23a2d169d86d7ac03b46e2f8b59ed4698fb4785f946d0176"},
     {file = "pygments-2.20.0.tar.gz", hash = "sha256:6757cd03768053ff99f3039c1a36d6c0aa0b263438fcab17520b30a303a82b5f"},
+]
+
+[[package]]
+name = "pyreadline3"
+version = "3.5.6"
+requires_python = ">=3.8"
+summary = "A python implementation of GNU readline."
+groups = ["default"]
+marker = "platform_system == \"Windows\""
+files = [
+    {file = "pyreadline3-3.5.6-py3-none-any.whl", hash = "sha256:8449b734232e42a5dcd74048e39b60db2839a4c38cf3ae2bf7707d58b5389c0d"},
+    {file = "pyreadline3-3.5.6.tar.gz", hash = "sha256:61e53218b99656091ddb077df9e71f25850e72e030b6183b39c9b7e6e4f4a9bf"},
 ]
 
 [[package]]
