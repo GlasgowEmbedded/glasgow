@@ -6,7 +6,7 @@
                 <li aria-current="true">{{ name }}</li>
             {% else %}
                 <li>
-                    <a href="/{{ code }}/{{ pagename }}.html" lang="{{ code }}" hreflang="{{ code }}">
+                    <a href="{{ pathto('../' + code + '/' + pagename) }}" lang="{{ code }}" hreflang="{{ code }}">
                         {{ name }}
                     </a>
                 </li>
