@@ -12,6 +12,7 @@ import unittest
 import logging as pylogging
 from datetime import datetime
 
+import colorama
 from amaranth import UnusedElaboratable
 from fx2 import FX2Config, VID_CYPRESS, PID_FX2
 from fx2.format import input_data, diff_data
@@ -509,12 +510,13 @@ def _applet(assembly, args):
 
 class TerminalFormatter(pylogging.Formatter):
     DEFAULT_COLORS = {
-        "TRACE"   : "\033[0m",
-        "DEBUG"   : "\033[36m",
-        "INFO"    : "\033[1m",
-        "WARNING" : "\033[1;33m",
-        "ERROR"   : "\033[1;31m",
-        "CRITICAL": "\033[1;41m",
+        "TRACE"   : colorama.Fore.LIGHTBLACK_EX,
+        "DEBUG"   : colorama.Fore.LIGHTCYAN_EX,
+        "INFO"    : colorama.Fore.LIGHTWHITE_EX,
+        "WARNING" : colorama.Fore.YELLOW,
+        "ERROR"   : colorama.Fore.RED,
+        "CRITICAL": colorama.Back.RED,
+        "RESET":    colorama.Style.RESET_ALL,
     }
 
     def __init__(self, *args, **kwargs):
@@ -531,7 +533,7 @@ class TerminalFormatter(pylogging.Formatter):
         record.name = record.name.replace("glasgow.", "g.")
         # applet.memory._25x → applet.memory.25x
         record.name = record.name.replace("._", ".")
-        return f"{color}{super().format(record)}\033[0m"
+        return f"{color}{super().format(record)}{self.colors['RESET']}"
 
 
 class SubjectFilter:
@@ -553,7 +555,8 @@ def create_logger():
     term_formatter_args = {"style": "{",
         "fmt": "{levelname[0]:s}: {name:s}: {message:s}"}
     term_handler = pylogging.StreamHandler()
-    if sys.stderr.isatty() and sys.platform != "win32":
+    if sys.stderr.isatty():
+        colorama.just_fix_windows_console()
         term_handler.setFormatter(TerminalFormatter(**term_formatter_args))
     else:
         term_handler.setFormatter(pylogging.Formatter(**term_formatter_args))

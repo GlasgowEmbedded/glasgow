@@ -56,6 +56,9 @@ dependencies = [
   # `pyreadline3` is used on Windows to provide line editing. It is unclear which versioning scheme
   # it uses.
   "pyreadline3>=3.5.6; platform_system == 'Windows'",
+  # `colorama` is used to color terminal output on all platforms, but is required especially on
+  # Windows. It seems to use SemVer.
+  "colorama>=0.4.6,<0.5",
   # `enum-tools` is used for documenting enums. It is unclear which versioning scheme it uses.
   "enum-tools==0.13.0",
   # `importlib_resources` is used to shim over Python API incompatibilities. It uses SemVer.
