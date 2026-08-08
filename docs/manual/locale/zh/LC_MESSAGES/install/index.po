@@ -1,0 +1,37 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-08 16:59+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh\n"
+"Language-Team: zh <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../src/install/index.rst:2
+msgid "Installing & updating"
+msgstr ""
+
+#: ../../src/install/index.rst:4
+msgid "There are two possible ways to install the Glasgow Interface Explorer toolchain:"
+msgstr ""
+
+#: ../../src/install/index.rst:12
+msgid "Installing from source is the most flexible option, and is recommended for users who are already familiar with Python and its package manager, or wish to work on the Glasgow software itself. This method is supported on Linux, Windows, macOS, and FreeBSD. It requires a few dependencies to be installed first."
+msgstr ""
+
+#: ../../src/install/index.rst:14
+msgid "Installing a binary package is the easiest and most reliable option for users who do not plan on modifying the Glasgow software itself. This method is supported only on Windows. The installer is completely self-contained and requires no network access."
+msgstr ""
+
