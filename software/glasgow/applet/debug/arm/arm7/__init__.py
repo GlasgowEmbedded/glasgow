@@ -118,7 +118,7 @@ class DebugARM7Sequencer(wiring.Component):
         m.submodules.probe = probe = jtag_probe.Sequencer(self._ports, width=38)
         m.d.comb += probe.divisor.eq(self.divisor)
 
-        m.submodules.probe_o_buffer = probe_o_buffer = StreamBuffer(probe.o_stream.payload.shape())
+        m.submodules.probe_o_buffer = probe_o_buffer = StreamBuffer.shaped_like(probe.o_stream)
         wiring.connect(m, probe.o_stream, probe_o_buffer.i)
         probe_o_buffered = probe_o_buffer.o
 
