@@ -1049,8 +1049,12 @@ async def main() -> int:
             logger.warning("power cycle the device to finish the operation")
 
         if args.action == "list":
-            for serial in sorted(await GlasgowDevice.enumerate()):
-                print(serial)
+            devices = await GlasgowDevice.enumerate()
+            if not devices:
+                logger.warning("no devices available")
+            else:
+                for serial in sorted(devices):
+                    print(serial)
             return 0
 
     # Device-related errors
