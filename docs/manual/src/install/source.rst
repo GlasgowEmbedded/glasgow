@@ -1,5 +1,7 @@
-Installing & updating
-=====================
+.. _install-source:
+
+Installing from source
+======================
 
 .. hint::
 

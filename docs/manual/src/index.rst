@@ -8,7 +8,7 @@ Glasgow Interface Explorer manual
     revisions/index
     purchase
     build
-    install
+    install/index
     Run in browser <https://webusb.glasgow-embedded.org/>
     use/index
     applets/index
