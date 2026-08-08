@@ -1,0 +1,128 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-08 16:59+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh\n"
+"Language-Team: zh <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../src/install/source.rst:4
+msgid "Installing from source"
+msgstr ""
+
+#: ../../src/install/source.rst:8
+msgid "If you are using a Chromium-based browser (including Chrome, Edge, Vivaldi, Opera, Brave), you can `run the Glasgow software within the browser <webusb_>`__. This functionality is experimental and has limitations and bugs that are not present when running natively on a desktop."
+msgstr ""
+
+#: ../../src/install/source.rst:15
+msgid "Initial setup"
+msgstr ""
+
+#: ../../src/install/source.rst:17
+msgid "A lot of care and effort has been put into making the use of the software stack as seamless as possible. In particular, every dependency where it is possible is shipped via the `Python package index <pypi_>`__ (including the USB driver and the FPGA toolchains) to make installation and upgrades as seamless as they can be."
+msgstr ""
+
+#: ../../src/install/source.rst:19
+msgid "If these instructions don't work for you, please `file a bug <file-a-bug_>`__ so that the experience can be improved for everyone."
+msgstr ""
+
+#: ../../src/install/source.rst:25
+msgid "You will need to have `git <git-lin_>`__, `Python <python-lin_>`__, and `pipx`_ installed. To install these, run:"
+msgstr ""
+
+#: ../../src/install/source.rst:34 ../../src/install/source.rst:43
+#: ../../src/install/source.rst:52 ../../src/install/source.rst:162
+#: ../../src/install/source.rst:206
+msgid "The ``pipx ensurepath`` command may prompt you to reopen the terminal window; do so."
+msgstr ""
+
+#: ../../src/install/source.rst:62
+msgid "These instructions assume that `Eudev <https://wiki.alpinelinux.org/wiki/Eudev>`_ is used as the device manager. To install Eudev, run:"
+msgstr ""
+
+#: ../../src/install/source.rst:68 ../../src/install/source.rst:164
+#: ../../src/install/source.rst:208
+msgid "Navigate to a convenient working directory and download the source code:"
+msgstr ""
+
+#: ../../src/install/source.rst:74
+msgid "Configure your system to allow access to the Glasgow hardware for anyone logged in to the physical terminal, and apply the rules to any devices that are already plugged in:"
+msgstr ""
+
+#: ../../src/install/source.rst:82 ../../src/install/source.rst:126
+#: ../../src/install/source.rst:170 ../../src/install/source.rst:214
+msgid "Install the Glasgow software for the current user:"
+msgstr ""
+
+#: ../../src/install/source.rst:88 ../../src/install/source.rst:132
+#: ../../src/install/source.rst:176 ../../src/install/source.rst:220
+msgid "To update the software to its newest revision, navigate to your working directory and run:"
+msgstr ""
+
+#: ../../src/install/source.rst:95 ../../src/install/source.rst:139
+#: ../../src/install/source.rst:183 ../../src/install/source.rst:227
+msgid "After setup, confirm that the Glasgow utility is operational by running:"
+msgstr ""
+
+#: ../../src/install/source.rst:102 ../../src/install/source.rst:146
+#: ../../src/install/source.rst:190 ../../src/install/source.rst:234
+msgid "Plug in your device and confirm that it is discovered by running:"
+msgstr ""
+
+#: ../../src/install/source.rst:111
+msgid "You will need to have `git <git-win_>`__, `Python <python-win_>`__, and `pipx`_ installed.  To install git and Python, follow the instructions from their respective pages. To install pipx, run:"
+msgstr ""
+
+#: ../../src/install/source.rst:118
+msgid "The ``py -3 -m pipx ensurepath`` command may prompt you to reopen the terminal window; do so."
+msgstr ""
+
+#: ../../src/install/source.rst:120
+msgid "Navigate to a convenient working directory (it is highly recommended to use a local directory, e.g. ``%LOCALAPPDATA%``, since running Glasgow software from a network drive or a roaming profile causes significant slowdown) and download the source code:"
+msgstr ""
+
+#: ../../src/install/source.rst:155
+msgid "You will need to have `libusb`_ and `pipx`_ installed. If you haven't already, install `Homebrew <https://brew.sh/>`_. To install those packages, run:"
+msgstr ""
+
+#: ../../src/install/source.rst:199
+msgid "You will need to have `pipx`_, `Yosys`_, `nextpnr`_, `icestorm`_, and `prjtrellis`_ installed. To install these packages, run:"
+msgstr ""
+
+#: ../../src/install/source.rst:255
+msgid "Using a system FPGA toolchain"
+msgstr ""
+
+#: ../../src/install/source.rst:257
+msgid "The steps above install the `YoWASP`_ FPGA toolchain, which is a good low-friction option, especially for people whose primary competence is not in software, since it does not require any additional installation steps. However, the YoWASP toolchain is noticeably slower compared to a native code code toolchain (usually by a factor of less than 2×). The YoWASP toolchain is also not available for all platforms and architectures; notably, 32-bit Raspberry Pi is not covered."
+msgstr ""
+
+#: ../../src/install/source.rst:259
+msgid "If you already have the required tools (``yosys``, ``nextpnr-ice40``, ``nextpnr-ecp5``, ``icepack``, ``ecppack``) installed or are willing to `install <oss-cad-suite_>`__ them, you can update your profile to set the environment variable ``GLASGOW_TOOLCHAIN`` to ``system,builtin``, which prioritizes using the system tools over the YoWASP tools. The default value is ``builtin,system``, which causes the system tools to be used only if the YoWASP tools are not present or not runnable."
+msgstr ""
+
+#: ../../src/install/source.rst:266
+msgid "Developing the Glasgow software"
+msgstr ""
+
+#: ../../src/install/source.rst:268
+msgid "The steps above install the Glasgow software using ``pipx install -e``, which performs an *editable install*: changes to the downloaded source code modify the behavior of the next invocation of the ``glasgow`` tool. Changes to ``pyproject.toml``, most importantly to the dependencies or list of applet entrypoints, are not picked up until ``pipx reinstall`` is manually run."
+msgstr ""
+
+#: ../../src/install/source.rst:270
+msgid "If you want to have your global Glasgow installation be independent from the source code check-out, you can omit the ``-e`` argument in the instructions above. You can use any way of managing virtual environments for your development workflow, but we use and recommend `PDM`_."
+msgstr ""
+

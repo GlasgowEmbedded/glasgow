@@ -1,0 +1,121 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-09 21:58+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh\n"
+"Language-Team: zh <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../src/install/binary.rst:4
+msgid "Installing binary packages"
+msgstr ""
+
+#: ../../src/install/binary.rst:6
+msgid "At the moment, binary installers are built only for Microsoft Windows. Download and run the installer that matches your system by using the table below:"
+msgstr ""
+
+#: ../../src/install/binary.rst:9
+msgid "Platform"
+msgstr ""
+
+#: ../../src/install/binary.rst:9
+msgid "Type"
+msgstr ""
+
+#: ../../src/install/binary.rst:9
+msgid "Size"
+msgstr ""
+
+#: ../../src/install/binary.rst:9
+msgid "Downloads"
+msgstr ""
+
+#: ../../src/install/binary.rst:11
+msgid "Windows 7 SP1 [#f1]_ or newer (32 bit; x86)"
+msgstr ""
+
+#: ../../src/install/binary.rst:11 ../../src/install/binary.rst:12
+msgid "MSI"
+msgstr ""
+
+#: ../../src/install/binary.rst:11 ../../src/install/binary.rst:12
+msgid "~120 MB"
+msgstr ""
+
+#: ../../src/install/binary.rst:11
+msgid "`Worldwide <x86_msi_>`_, `China <x86_msi_cn_>`_"
+msgstr ""
+
+#: ../../src/install/binary.rst:12
+msgid "Windows 7 SP1 [#f1]_ or newer (64 bit; x64)"
+msgstr ""
+
+#: ../../src/install/binary.rst:12
+msgid "`Worldwide <x64_msi_>`_, `China <x64_msi_cn_>`_"
+msgstr ""
+
+#: ../../src/install/binary.rst:15
+msgid "In addition to Service Pack 1, use on Windows 7 requires `KB4457144`_ to be installed first."
+msgstr ""
+
+#: ../../src/install/binary.rst:23
+msgid "The installer is completely self-contained, includes every dependency required to use the Glasgow toolchain, and requires no network access, making it ideal for use with legacy or airgapped equipment. It installs the toolchain for all users on the machine."
+msgstr ""
+
+#: ../../src/install/binary.rst:25
+msgid "Once the installation is complete, invoke the \"Glasgow Interface Explorer\" shortcut on your desktop, or open the start menu folder with the same name and click on the \"Launch terminal\" item. This should open a terminal window, as illustrated below:"
+msgstr ""
+
+#: ../../src/install/binary.rst:27
+msgid "Glasgow Interface Explorer Command Prompt terminal window"
+msgstr ""
+
+#: ../../src/install/binary.rst:30
+msgid "Plug in your device and confirm that it is discovered by running the ``glasgow list`` command:"
+msgstr ""
+
+#: ../../src/install/binary.rst:37
+msgid "If you need to update the installation in the future, download and run a newer version of the installer. It will automatically remove the existing installation and replace it with the new one."
+msgstr ""
+
+#: ../../src/install/binary.rst:41
+msgid "Installing Python packages"
+msgstr ""
+
+#: ../../src/install/binary.rst:43
+msgid "The binary installer includes an up-to-date build of the `Python`_ programming language that the Glasgow software is implemented in. The ``python`` command is available in the Glasgow command prompt and may be used for scripting or experimentation. It is also possible to install additional Python packages from `PyPI`_ using `Pip`_, the Python package manager."
+msgstr ""
+
+#: ../../src/install/binary.rst:45
+msgid "To do this, run Pip using the ``python -m pip install ...`` command, for example:"
+msgstr ""
+
+#: ../../src/install/binary.rst:47
+msgid "Output of a successful execution of the `python -m pip install binwalk` command"
+msgstr ""
+
+#: ../../src/install/binary.rst:54
+msgid "Packages installed in this way are stored in ``%USERPROFILE%\\.local``, and are preserved when the Glasgow toolchain is reinstalled or removed."
+msgstr ""
+
+#: ../../src/install/binary.rst:58
+msgid "In order to provide up-to-date builds of these binary packages and support as wide a range of Windows versions as feasible, we have built Python using the MinGW toolchain. Unfortunately, precompiled binary packages on PyPI are built using the incompatible MSVC toolchain, which means that some popular Python packages like ``numpy`` cannot be installed in the Glasgow command prompt."
+msgstr ""
+
+#: ../../src/install/binary.rst:60
+msgid "If you need to install additional packages with binary extensions on Windows, :ref:`install the toolchain from source <install-source>` instead."
+msgstr ""
+
