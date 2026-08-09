@@ -394,6 +394,43 @@ class SWDProbeInterface:
                 break
             yield ap, ap_idr
 
+    async def _mem_ap_setup_access(self, ap: int, addr: int):
+        await self.ap_write(ap, MEM_AP_CSW_addr,
+            MEM_AP_CSW(Size=2).to_int())
+        await self.ap_write(ap, MEM_AP_TAR_addr, addr)
+
+    async def mem_ap_read_word(self, ap: int, addr: int):
+        """Read a word via a MEM-AP.
+
+        Reads the 32-bit value from :py:`addr` via MEM-AP :py:`ap`.
+
+        Note that transfers via a MEM-AP may silently fail under certain conditions, e.g. if
+        the CPU core has not been halted.
+
+        Raises
+        ------
+        SWDProbeException
+            On communication error.
+        """
+        await self._mem_ap_setup_access(ap, addr)
+        return await self.ap_read(ap, MEM_AP_DRW_addr)
+
+    async def mem_ap_write_word(self, ap: int, addr: int, data: int):
+        """Read a word via a MEM-AP.
+
+        Writes the 32-bit value :py:`data` to :py:`addr` via MEM-AP :py:`ap`.
+
+        Note that transfers via a MEM-AP may silently fail under certain conditions, e.g. if
+        the CPU core has not been halted.
+
+        Raises
+        ------
+        SWDProbeException
+            On communication error.
+        """
+        await self._mem_ap_setup_access(ap, addr)
+        await self.ap_write(ap, MEM_AP_DRW_addr, data)
+
 
 class SWDProbeApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
