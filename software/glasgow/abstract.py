@@ -118,7 +118,7 @@ class GlasgowPin:
     def parse(cls, value: str) -> tuple[GlasgowPin]:
         result = []
         for clause in value.split(","):
-            if clause == "-":
+            if clause.upper() in ("", "-", "NC"):
                 pass
             elif m := re.match(r"^([A-Z])([0-9]+)(#)?$", clause):
                 port, number, invert = GlasgowPort(m.group(1)), int(m.group(2)), bool(m.group(3))
@@ -133,7 +133,8 @@ class GlasgowPin:
                     for number in range(pin_first, pin_last - 1, -1):
                         result.append(cls(port=port, number=number, invert=invert))
             else:
-                raise ValueError(f"{clause!r} is not a valid pin")
+                raise ValueError(f"{clause!r} is not a valid pin "
+                     "(try 'A3', 'A5,B1', 'B4:7', or specify 'NC' to leave unconnected)")
         return tuple(result)
 
     @property
