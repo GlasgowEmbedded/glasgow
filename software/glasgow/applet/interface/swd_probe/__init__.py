@@ -348,7 +348,7 @@ class SWDProbeInterface:
         await self._select_ap_addr(ap, reg)
         return await self._raw_write(ap_ndp=1, addr=reg & 0xf, data=data)
 
-    async def initialize(self) -> DP_DPIDR:
+    async def initialize(self, CSYSPWRUP: bool = False) -> DP_DPIDR:
         """Initialize the SW-DP or SWJ-DP.
 
         The initialization process is:
@@ -359,11 +359,13 @@ class SWDProbeInterface:
         4. Write ``DP_ABORT`` to clear all errors.
         5. Write ``CTRL_STAT`` to request debug power-up.
         6. Read ``CTRL_STAT`` to ensure acknowledge of debug power-up.
+        7. **If :py:`CSYSPWRUP`:** Write ``CTRL_STAT`` to request system power-up.
+        8. **If :py:`CSYSPWRUP`:** Read ``CTRL_STAT`` to ensure acknowledge of system power-up.
 
         Raises
         ------
         SWDProbeException
-            On communication error, or if debug power-up request isn't acknowledged.
+            On communication error, or if a power-up request isn't acknowledged.
         """
         await self.jtag_to_swd_v2()
         await self.jtag_to_swd_v1()
@@ -376,6 +378,13 @@ class SWDProbeInterface:
         ctrl_stat = DP_CTRL_STAT.from_int(await self.dp_read(reg=DP_CTRL_STAT_addr))
         if not ctrl_stat.CDBGPWRUPACK:
             raise SWDProbeException(message="target failed to acknowledge debug power-up request")
+        if CSYSPWRUP:
+            await self.dp_write(reg=DP_CTRL_STAT_addr,
+                data=DP_CTRL_STAT(CDBGPWRUPREQ=1, CSYSPWRUPREQ=1).to_int())
+            ctrl_stat = DP_CTRL_STAT.from_int(await self.dp_read(reg=DP_CTRL_STAT_addr))
+            if not ctrl_stat.CSYSPWRUPACK:
+                raise SWDProbeException(
+                    message="target failed to acknowledge system power-up request")
         return dpidr
 
     async def iter_aps(self) -> AsyncIterator[tuple[int, AP_IDR]]:
