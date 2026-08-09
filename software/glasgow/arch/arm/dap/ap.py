@@ -61,7 +61,7 @@ MEM_AP_CSW = bitstruct("MEM_AP_CSW", 32, [
     ("MTE",         1),
     (None,          7),
     ("SPIDEN",      1),
-    (None,          7),
+    ("Prot",        7),
     ("DbgSwEnable", 1),
 ])
 
