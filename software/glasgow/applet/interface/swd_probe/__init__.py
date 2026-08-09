@@ -405,8 +405,15 @@ class SWDProbeInterface:
             yield ap, ap_idr
 
     async def _mem_ap_setup_access(self, ap: int, addr: int):
-        await self.ap_write(ap, MEM_AP_CSW_addr,
-            MEM_AP_CSW(Size=2).to_int())
+        # The problem here is the value of `Prot`: the exact meaning depends on the specific bus
+        # architecture, and getting it wrong will likely result in faults for certain accesses.
+        # For example, using an Unprivileged access to core debug registers will fault.
+        # ARM guarantees that the reset value of MEM-AP CSR contains the "right" value, so we're
+        # eating the cost of an RMW to reuse that value. A more mature debugger would do something
+        # more involved, likely by examining the bus type. This will require an AP abstraction.
+        ap_csw = MEM_AP_CSW.from_int(await self.ap_read(ap, MEM_AP_CSW_addr))
+        ap_csw.Size = 2
+        await self.ap_write(ap, MEM_AP_CSW_addr, ap_csw.to_int())
         await self.ap_write(ap, MEM_AP_TAR_addr, addr)
 
     async def mem_ap_read_word(self, ap: int, addr: int):
