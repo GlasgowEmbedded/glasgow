@@ -21,17 +21,17 @@ msgstr ""
 
 #: ../../src/install/index.rst:2
 msgid "Installing & updating"
-msgstr ""
+msgstr "安装和更新"
 
 #: ../../src/install/index.rst:4
 msgid "There are two possible ways to install the Glasgow Interface Explorer toolchain:"
-msgstr ""
+msgstr "有两种方式可以安装 Glasgow 可重构数字接口调试器的工具链："
 
 #: ../../src/install/index.rst:12
 msgid "Installing from source is the most flexible option, and is recommended for users who are already familiar with Python and its package manager, or wish to work on the Glasgow software itself. This method is supported on Linux, Windows, macOS, and FreeBSD. It requires a few dependencies to be installed first."
-msgstr ""
+msgstr "源码安装是最灵活的方式，推荐已经熟悉 Python 及其包管理器，或者希望开发 Glasgow 软件本身的用户使用。本方式支持 Linux、Windows、macOS、FreeBSD 系统。本方式需要先安装一些依赖。"
 
 #: ../../src/install/index.rst:14
 msgid "Installing a binary package is the easiest and most reliable option for users who do not plan on modifying the Glasgow software itself. This method is supported only on Windows. The installer is completely self-contained and requires no network access."
-msgstr ""
+msgstr "二进制包安装对于不需要修改 Glasgow 软件本身的用户来说是最简单最可靠的方式。本方式仅支持 Windows。安装器完全独立，不需要网络访问。"
 
