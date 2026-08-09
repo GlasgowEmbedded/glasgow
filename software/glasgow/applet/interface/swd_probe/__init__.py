@@ -258,7 +258,8 @@ class SWDProbeInterface:
             await self._recv_ack()
             self._log(f"wr {'ap' if ap_ndp else 'dp'} addr={addr:#x} data={data:#010x}")
         except SWDProbeException as exn:
-            self._log(f"wr {'ap' if ap_ndp else 'dp'} addr={addr:#x} {exn.kind.value}")
+            self._log(f"wr {'ap' if ap_ndp else 'dp'} addr={addr:#x} data={data:#010x} "
+                      f"{exn.kind.value}")
             raise
 
     async def _update_select(self, **kwargs):
