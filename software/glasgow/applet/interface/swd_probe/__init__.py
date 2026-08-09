@@ -527,6 +527,9 @@ class SWDProbeApplet(GlasgowAppletV2):
 
             case "dump-memory":
                 ap_cfg = MEM_AP_CFG.from_int(await self.swd_iface.ap_read(args.ap, MEM_AP_CFG_addr))
+                ap_csw = MEM_AP_CSW.from_int(await self.swd_iface.ap_read(args.ap, MEM_AP_CSW_addr))
+                if not ap_csw.DeviceEn:
+                    raise SWDProbeException(message="MEM-AP is disabled")
 
                 data = []
                 addr = args.address
