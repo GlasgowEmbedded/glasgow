@@ -51,6 +51,8 @@ To do this, run Pip using the ``python -m pip install ...`` command, for example
 .. _pypi: https://pypi.org/
 .. _pip: https://pip.pypa.io/
 
+Packages installed in this way are stored in ``%USERPROFILE%\.local``, and are preserved when the Glasgow toolchain is reinstalled or removed.
+
 .. warning::
 
     In order to provide up-to-date builds of these binary packages and support as wide a range of Windows versions as feasible, we have built Python using the MinGW toolchain. Unfortunately, precompiled binary packages on PyPI are built using the incompatible MSVC toolchain, which means that some popular Python packages like ``numpy`` cannot be installed in the Glasgow command prompt.
