@@ -21,31 +21,31 @@ msgstr ""
 
 #: ../../src/install/binary.rst:4
 msgid "Installing binary packages"
-msgstr ""
+msgstr "二进制包安装"
 
 #: ../../src/install/binary.rst:6
 msgid "At the moment, binary installers are built only for Microsoft Windows. Download and run the installer that matches your system by using the table below:"
-msgstr ""
+msgstr "目前，二进制包安装器仅对微软 Windows 系统构建。请从下表中选取与您的系统相符的安装器来下载和运行："
 
 #: ../../src/install/binary.rst:9
 msgid "Platform"
-msgstr ""
+msgstr "平台"
 
 #: ../../src/install/binary.rst:9
 msgid "Type"
-msgstr ""
+msgstr "类型"
 
 #: ../../src/install/binary.rst:9
 msgid "Size"
-msgstr ""
+msgstr "大小"
 
 #: ../../src/install/binary.rst:9
 msgid "Downloads"
-msgstr ""
+msgstr "下载链接"
 
 #: ../../src/install/binary.rst:11
 msgid "Windows 7 SP1 [#f1]_ or newer (32 bit; x86)"
-msgstr ""
+msgstr "Windows 7 SP1 [#f1]_ 或更新 (32 bit; x86)"
 
 #: ../../src/install/binary.rst:11 ../../src/install/binary.rst:12
 msgid "MSI"
@@ -57,65 +57,65 @@ msgstr ""
 
 #: ../../src/install/binary.rst:11
 msgid "`Worldwide <x86_msi_>`_, `China <x86_msi_cn_>`_"
-msgstr ""
+msgstr "`全球 <x86_msi_>`_、`中国大陆 <x86_msi_cn_>`_"
 
 #: ../../src/install/binary.rst:12
 msgid "Windows 7 SP1 [#f1]_ or newer (64 bit; x64)"
-msgstr ""
+msgstr "Windows 7 SP1 [#f1]_ 或更新 (64 bit; x64)"
 
 #: ../../src/install/binary.rst:12
 msgid "`Worldwide <x64_msi_>`_, `China <x64_msi_cn_>`_"
-msgstr ""
+msgstr "`全球 <x64_msi_>`_、`中国大陆 <x64_msi_cn_>`_"
 
 #: ../../src/install/binary.rst:15
 msgid "In addition to Service Pack 1, use on Windows 7 requires `KB4457144`_ to be installed first."
-msgstr ""
+msgstr "在 Windows 7 上使用时，除了 SP1 之外，还需要安装 `KB4457144`_。"
 
 #: ../../src/install/binary.rst:23
 msgid "The installer is completely self-contained, includes every dependency required to use the Glasgow toolchain, and requires no network access, making it ideal for use with legacy or airgapped equipment. It installs the toolchain for all users on the machine."
-msgstr ""
+msgstr "安装器完全独立，包含所有使用 Glasgow 工具链所需要的依赖，并且不需要网络访问，因此适合陈旧或物理隔离的设备使用。安装器会为机器上的所有用户安装工具链。"
 
 #: ../../src/install/binary.rst:25
 msgid "Once the installation is complete, invoke the \"Glasgow Interface Explorer\" shortcut on your desktop, or open the start menu folder with the same name and click on the \"Launch terminal\" item. This should open a terminal window, as illustrated below:"
-msgstr ""
+msgstr "安装完成后，启动桌面上的“Glasgow 可重构数字接口调试器”快捷方式，或打开开始菜单中同名的文件夹，并点击“启动终端”项目。这会打开一个终端，如下图所示："
 
 #: ../../src/install/binary.rst:27
 msgid "Glasgow Interface Explorer Command Prompt terminal window"
-msgstr ""
+msgstr "Glasgow 可重构数字接口调试器命令提示符终端窗口"
 
 #: ../../src/install/binary.rst:30
 msgid "Plug in your device and confirm that it is discovered by running the ``glasgow list`` command:"
-msgstr ""
+msgstr "连接您的设备，并确认它被发现，运行 ``glasgow list`` 命令如下："
 
 #: ../../src/install/binary.rst:37
 msgid "If you need to update the installation in the future, download and run a newer version of the installer. It will automatically remove the existing installation and replace it with the new one."
-msgstr ""
+msgstr "如果您未来需要对安装的软件更新，请下载并运行一个更新版本的安装器。它会自动移除现有安装的软件，并将其替换为新版软件"
 
 #: ../../src/install/binary.rst:41
 msgid "Installing Python packages"
-msgstr ""
+msgstr "安装 Python 软件包"
 
 #: ../../src/install/binary.rst:43
 msgid "The binary installer includes an up-to-date build of the `Python`_ programming language that the Glasgow software is implemented in. The ``python`` command is available in the Glasgow command prompt and may be used for scripting or experimentation. It is also possible to install additional Python packages from `PyPI`_ using `Pip`_, the Python package manager."
-msgstr ""
+msgstr "Glasgow 软件栈使用 `Python`_ 语言实现。二进制包安装器包含一个最新的 Python 环境。在 Glasgow 命令提示符中可以使用 ``python`` 命令，用于编写脚本或实验。您也可以用 `Pip`_ Python 包管理器从 `PyPI`_ 安装更多的 Python 软件包。"
 
 #: ../../src/install/binary.rst:45
 msgid "To do this, run Pip using the ``python -m pip install ...`` command, for example:"
-msgstr ""
+msgstr "如需安装 Python 软件包，请用 ``python -m pip install ...`` 命令运行 Pip，如下所示："
 
 #: ../../src/install/binary.rst:47
 msgid "Output of a successful execution of the `python -m pip install binwalk` command"
-msgstr ""
+msgstr "成功执行 `python -m pip install binwalk` 命令的输出。"
 
 #: ../../src/install/binary.rst:54
 msgid "Packages installed in this way are stored in ``%USERPROFILE%\\.local``, and are preserved when the Glasgow toolchain is reinstalled or removed."
-msgstr ""
+msgstr "如此安装的软件包存放在 ``%USERPROFILE%\\.local``，并且在 Glasgow 工具链被重新安装或移除时会被保留。"
 
 #: ../../src/install/binary.rst:58
 msgid "In order to provide up-to-date builds of these binary packages and support as wide a range of Windows versions as feasible, we have built Python using the MinGW toolchain. Unfortunately, precompiled binary packages on PyPI are built using the incompatible MSVC toolchain, which means that some popular Python packages like ``numpy`` cannot be installed in the Glasgow command prompt."
-msgstr ""
+msgstr "为了提供最新的二进制包构建的同时，尽可能支持尽量广的 Windows 版本范围，我们提供的 Python 是使用 MinGW 工具链构建的。不巧的是，在 PyPI 上的预编译二进制包是用不兼容的 MSVC 工具链构建的，这意味着有些常用的 Python 包，如 ``numpy``，无法在 Glasgow 命令提示符中安装。"
 
 #: ../../src/install/binary.rst:60
 msgid "If you need to install additional packages with binary extensions on Windows, :ref:`install the toolchain from source <install-source>` instead."
-msgstr ""
+msgstr "如果您需要在 Windows 上额外安装包含二进制扩展的软件包，请\\ :ref:`从源码安装工具链 <install-source>`。"
 
