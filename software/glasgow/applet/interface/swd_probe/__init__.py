@@ -336,9 +336,12 @@ class SWDProbeInterface:
         results.append(await self.dp_read(DP_RDBUFF_addr))
         return results
 
-    async def ap_write(self, ap: int, reg: int, data: int):
+    async def ap_write(self, ap: int, reg: int, data: int, *, flush: bool = False):
         """Write :py:`data` to AP :py:`ap` register :py:`reg`, switching the AP and AP bank if
         necessary.
+
+        Flushes the AP write buffer by issuing a dummy write to the DP ``SELECT``register if
+        :py:`flush`.
 
         Raises
         ------
@@ -346,7 +349,9 @@ class SWDProbeInterface:
             On communication error.
         """
         await self._select_ap_addr(ap, reg)
-        return await self._raw_write(ap_ndp=1, addr=reg & 0xf, data=data)
+        await self._raw_write(ap_ndp=1, addr=reg & 0xf, data=data)
+        # See ADIv5.2 §B4.2.7 for an explanation of why this write is necessary.
+        await self._raw_write(ap_ndp=0, addr=DP_SELECT_addr, data=self._select.to_int())
 
     async def initialize(self, CSYSPWRUP: bool = False) -> DP_DPIDR:
         """Initialize the SW-DP or SWJ-DP.
@@ -446,7 +451,7 @@ class SWDProbeInterface:
             On communication error.
         """
         await self._mem_ap_setup_access(ap, addr)
-        await self.ap_write(ap, MEM_AP_DRW_addr, data)
+        await self.ap_write(ap, MEM_AP_DRW_addr, data, flush=True)
 
 
 class SWDProbeApplet(GlasgowAppletV2):
