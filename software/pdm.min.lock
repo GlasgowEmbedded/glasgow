@@ -4,7 +4,7 @@
 [metadata]
 groups = ["default", "builtin-toolchain", "http", "numpy"]
 strategy = ["direct_minimal_versions"]
-lock_version = "4.5.0"
+lock_version = "4.5.1"
 content_hash = "sha256:3167e3071b961bc6cc993f8998efb79f6193014684e75dbc67d090bbbc600d50"
 
 [[metadata.targets]]
