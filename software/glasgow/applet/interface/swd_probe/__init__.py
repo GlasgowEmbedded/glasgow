@@ -103,6 +103,7 @@ class SWDProbeComponent(wiring.Component):
         m.d.comb += ctrl.divisor.eq(self.divisor)
         m.d.comb += ctrl.timeout.eq(self.timeout)
 
+        w_pending = Signal()
         with m.FSM(name="i_fsm"):
             with m.State("Command"):
                 i_command = SWDCommand(self.i_stream.payload)
@@ -119,9 +120,14 @@ class SWDProbeComponent(wiring.Component):
                         m.next = "Data"
                     with m.Elif((i_command.cmd == swd.Command.Transfer) &
                             (i_command.arg.transfer.r_nw == 0)):
+                        m.d.sync += w_pending.eq(1)
                         m.next = "Data"
                     with m.Else():
                         m.next = "Execute"
+                with m.Else():
+                    m.d.sync += w_pending.eq(0)
+                    with m.If(w_pending):
+                        m.next = "Flush"
 
             with m.State("Data"):
                 i_count = Signal(range(4))
@@ -131,6 +137,20 @@ class SWDProbeComponent(wiring.Component):
                     m.d.sync += i_count.eq(i_count + 1)
                     with m.If(i_count == 3):
                         m.next = "Execute"
+
+            with m.State("Flush"):
+                # ADIv5.2 §B4.1.1:
+                # To ensure that the transfer can be clocked through the SW-DP, after the data
+                # transfer phase the host must do one of the following: [...]
+                #  * If the host is driving the SWD clock, continue to clock the SWD interface with
+                #    at least eight idle cycles. After completing this sequence, the host can stop
+                #    the clock.
+                m.d.sync += [
+                    ctrl.i_stream.p.cmd.eq(swd.Command.Sequence),
+                    ctrl.i_stream.p.len.eq(8),
+                    ctrl.i_stream.p.data.eq(0),
+                ]
+                m.next = "Execute"
 
             with m.State("Execute"):
                 m.d.comb += ctrl.i_stream.valid.eq(1)
@@ -336,12 +356,9 @@ class SWDProbeInterface:
         results.append(await self.dp_read(DP_RDBUFF_addr))
         return results
 
-    async def ap_write(self, ap: int, reg: int, data: int, *, flush: bool = False):
+    async def ap_write(self, ap: int, reg: int, data: int):
         """Write :py:`data` to AP :py:`ap` register :py:`reg`, switching the AP and AP bank if
         necessary.
-
-        Flushes the AP write buffer by issuing a dummy write to the DP ``SELECT``register if
-        :py:`flush`.
 
         Raises
         ------
@@ -350,8 +367,6 @@ class SWDProbeInterface:
         """
         await self._select_ap_addr(ap, reg)
         await self._raw_write(ap_ndp=1, addr=reg & 0xf, data=data)
-        # See ADIv5.2 §B4.2.7 for an explanation of why this write is necessary.
-        await self._raw_write(ap_ndp=0, addr=DP_SELECT_addr, data=self._select.to_int())
 
     async def initialize(self, CSYSPWRUP: bool = False) -> DP_DPIDR:
         """Initialize the SW-DP or SWJ-DP.
@@ -451,7 +466,7 @@ class SWDProbeInterface:
             On communication error.
         """
         await self._mem_ap_setup_access(ap, addr)
-        await self.ap_write(ap, MEM_AP_DRW_addr, data, flush=True)
+        await self.ap_write(ap, MEM_AP_DRW_addr, data)
 
 
 class SWDProbeApplet(GlasgowAppletV2):
