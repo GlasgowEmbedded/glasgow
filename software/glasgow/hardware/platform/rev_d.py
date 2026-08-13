@@ -58,7 +58,7 @@ class _GlasgowRevDPlatform(GlasgowECP5Platform):
 
         Resource("afe_mcu", 0,
             # When using the AFE from the FPGA, the MCU must be held in reset to avoid contention.
-            Subsignal("reset", PinsN("D5",  dir="o"), Attrs(PULLMODE="UP")),
+            Subsignal("reset", PinsN("D5",  dir="o"), Attrs(PULLMODE="NONE")),
             Attrs(IO_TYPE="LVCMOS33")
         ),
         Resource("afe_adc", 0,

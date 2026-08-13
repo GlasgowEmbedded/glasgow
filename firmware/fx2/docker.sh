@@ -20,7 +20,8 @@ DOCKERFILE=$(cat <<-'EOF'
 	ARG GID
 
 	RUN DEBIAN_FRONTEND="noninteractive" apt-get update -y && \
-	    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends git make sdcc python3 python3-usb1 && \
+	    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+			git make sdcc python3 python3-usb1 gcc-arm-none-eabi binutils-arm-none-eabi && \
 	    rm -rf /var/lib/apt/lists/*
 
 	# Any commands that create new files in the host mount must be invoked with the caller UID/GID, or
@@ -81,20 +82,26 @@ if [ "clean" = "$1" ]; then
 		set -e
 		make -C vendor/libfx2/firmware/library clean
 		make -C firmware/fx2 clean
+		make -C firmware/stm32 clean
 	EOF
 elif [ "build" = "$1" ]; then
 	docker_run /bin/bash -s -x <<-'EOF'
 		set -e
 		make -C vendor/libfx2/firmware/library all MODELS=small
 		make -C firmware/fx2 all
+		make -C firmware/stm32 all
 	EOF
 elif [ "rebuild" = "$1" ]; then
 	docker_run /bin/bash -s -x <<-'EOF'
 		set -e
+
 		make -C vendor/libfx2/firmware/library clean
 		make -C firmware/fx2 clean
+		make -C firmware/stm32 clean
+
 		make -C vendor/libfx2/firmware/library all MODELS=small
 		make -C firmware/fx2 all
+		make -C firmware/stm32 all
 	EOF
 elif [ "deploy" = "$1" ]; then
 	docker_run --buildargs "--no-cache --progress=plain" /bin/bash -s -x <<-'EOF'
@@ -106,16 +113,16 @@ elif [ "deploy" = "$1" ]; then
 		# Clean all build products; they may have been built using a different compiler.
 		make -C vendor/libfx2/firmware/library clean
 		make -C firmware/fx2 clean
+		make -C firmware/stm32 clean
 
 		# Build the artifact.
 		make -C vendor/libfx2/firmware/library all MODELS=small
 		make -C firmware/fx2 all
+		make -C firmware/stm32 all
 
-		# Deploy the artifact. For incomprehensible (literally; I could not figure out why) reasons,
-		# the Debian and NixOS builds of exact same commit of sdcc produce different .ihex files that
-		# nevertheless translate to the same binary contents.
 		PYTHONPATH=vendor/libfx2/software python3 firmware/fx2/normalize.py \
 		    firmware/fx2/firmware.ihex software/glasgow/hardware/firmware-fx2.ihex
+		cp firmware/stm32/firmware.bin software/glasgow/hardware/firmware-stm32.bin
 	EOF
 elif [ "load" = "$1" ]; then
 	docker_run --runargs "--privileged -v /dev/bus/usb:/dev/bus/usb" /bin/bash -s -x <<-'EOF'

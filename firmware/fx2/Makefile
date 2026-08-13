@@ -7,7 +7,7 @@ CONF_SIZE = 0x0040
 MODEL     = small
 
 TARGET    = firmware
-SOURCES   = main fpga mgmt smbus port nvmem
+SOURCES   = main fpga mgmt smbus port nvmem stm32
 LIBRARIES = fx2 fx2isrs fx2usb
 CFLAGS    = --std=c23 -DSYNCDELAYLEN=3 -DCONF_SIZE=$(CONF_SIZE)
 

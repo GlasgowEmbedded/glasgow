@@ -128,10 +128,14 @@ jobs:
         uses: tj-actions/changed-files@v46
         with:
           files: |
-            software/glasgow/hardware/firmware.ihex
-      - name: Verify firmware matches checked-in version
+            software/glasgow/hardware/firmware-fx2.ihex
+            software/glasgow/hardware/firmware-stm32.bin
+      - name: Verify FX2 firmware matches checked-in version
         if: steps.is_modified.outputs.any_changed == 'true'
-        run: git diff --exit-code --text software/glasgow/hardware/firmware.ihex
+        run: git diff --exit-code --text software/glasgow/hardware/firmware-fx2.ihex
+      - name: Verify STM32 firmware matches checked-in version
+        if: steps.is_modified.outputs.any_changed == 'true'
+        run: git diff --exit-code --text software/glasgow/hardware/firmware-stm32.bin
 
   build-manual:
     runs-on: ubuntu-latest
