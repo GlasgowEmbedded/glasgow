@@ -642,6 +642,11 @@ class HardwareAssembly(AbstractAssembly):
             "flag": "-", "fd": "-"
         })
 
+        if self._revision >= "D0":
+            afe_mcu_pins = self._platform.request("afe_mcu", dir={"reset": "-"})
+            m.submodules.afe_mcu_reset = afe_mcu_reset = io.Buffer("o", afe_mcu_pins.reset)
+            m.d.comb += afe_mcu_reset.oe.eq(0)
+
         m.submodules.i2c_target = i2c_target = I2CTarget(i2c_pins)
         m.submodules.i2c_registers = i2c_registers = I2CRegisters(i2c_target)
         m.d.comb += i2c_target.address.eq(0b0001000)

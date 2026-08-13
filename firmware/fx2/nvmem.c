@@ -11,7 +11,8 @@
 // - 0000..0008: FX2 header
 // - 0008..0050: Glasgow header; see [struct glasgow_config]
 // - 0050..5000: firmware code/data (~16K)
-// - 5000..7000: unused (~8K)
+// - 5000..6000: (revD only) STM32 firmware
+// - 6000..7000: unused (~4K)
 // - 7000..8000: (revC only) tail end of FPGA bitstream
 
 #include <fx2i2c.h>

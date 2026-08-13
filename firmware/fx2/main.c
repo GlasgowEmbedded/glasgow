@@ -518,11 +518,9 @@ int main()
   port_init();
   fpga_init();
 
+  // Load the STM32 firmware.
   if (glasgow_config.revision >= GLASGOW_REV_D0) {
-    // TODO: load STM32 with firmware
-    IO_MCU_nRESET_REVD = 0;
-    IO_MCU_BOOT0_REVD = 1;
-    IO_MCU_nRESET_REVD = 1;
+    IO_LED_ERR = !mcu_bootload();
   }
 
   // Load flashed bitstream, if any.
