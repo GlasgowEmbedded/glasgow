@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import assert_never
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, io
+from amaranth.lib import enum, data, io
 
 from glasgow.support import logging
 from glasgow.gateware import pll
