@@ -925,10 +925,19 @@ async def main() -> int:
                             fx2_config.append(addr, chunk)
                 else:
                     logger.info("using built-in firmware")
-                    for (addr, chunk) in GlasgowDevice.firmware_data():
+                    for (addr, chunk) in GlasgowDevice._fx2_firmware_data():
                         fx2_config.append(addr, chunk)
                 fx2_config.disconnect = True
                 new_image = fx2_config.encode()
+
+            if glasgow_config.revision >= "D0":
+                # Inject the STM32 firmware into the image. This is done unconditionally, as FX2
+                # firmware that is loaded on the fly will still try to read the STM32 firmware from
+                # the EEPROM. This is a bit dirty and less reliable than ideal, and fundamentally
+                # relies on the STM32 firmware never changing, as we don't have any way to detect
+                # that there is a mismatch between expected and actual STM32 firmware interface.
+                assert len(new_image) <= 0x5000
+                new_image = new_image.ljust(0x5000, b"\xff") + GlasgowDevice._stm32_firmware_data()
 
             logger.info("programming configuration and firmware")
             old_image = await device.read_eeprom(0, len(new_image))
@@ -1017,7 +1026,7 @@ async def main() -> int:
                 manufacturer=args.factory_manufacturer,
                 modified_design=(args.factory_modified_design != "no"),
                 advertise_webusb=True)
-            firmware_data = GlasgowDevice.firmware_data()
+            firmware_data = GlasgowDevice._fx2_firmware_data()
 
             if args.reinitialize:
                 vid, pid = VID_QIHW, PID_GLASGOW
