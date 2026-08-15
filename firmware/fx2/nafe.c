@@ -92,7 +92,7 @@ static __bit nafe_convert_uvolts(int ch_gain)
 {
   // Implements `uvolts = code * (10 / 2**24) / gain * 1000000` in a way that's compact on a 8051
   // and minimizes rounding error as much as possible.
-  int32_t value = bswap32(*(__xdata int32_t *)&nafe_ch_data[ch_gain * 3]) >> 8;
+  int32_t value = (int32_t)bswap32(*(__xdata int32_t *)&nafe_ch_data[ch_gain * 3]) >> 8;
   __bit out_of_range = value < -0x666666 || value > 0x666666;
   for (int i = 0; i < 3 - ch_gain; i++)
     value >>= 1;
