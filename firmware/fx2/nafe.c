@@ -96,8 +96,8 @@ static __bit nafe_convert_uvolts(int ch_gain)
   __bit out_of_range = value < -0x666666 || value > 0x666666;
   for (int i = 0; i < 3 - ch_gain; i++)
     value >>= 1;
-  for (int i = 0; i < 2; i++)
-    value = (value * 625) >> 8;
+  for (int i = 0; i < 4; i++)
+    value = (value * 25) >> 4;
   mgmt_rsp.nafe_single_data.value = value;
   mgmt_rsp.nafe_single_data.gain = 2 - ch_gain;
   return out_of_range;
