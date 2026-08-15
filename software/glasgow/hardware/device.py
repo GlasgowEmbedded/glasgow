@@ -19,6 +19,7 @@ else:
     from glasgow.support.usb import libusb1 as usb
 from glasgow.hardware import quirks
 from glasgow.hardware.build_plan import GlasgowBuildPlan
+from glasgow.abstract import GlasgowPort, GlasgowAnalog
 
 
 __all__ = ["GlasgowDevice", "FX2BootloaderDevice"]
@@ -81,6 +82,23 @@ class GlasgowPortAlerts(enum.Flag):
     OVERCURRENT     = 1<<2
 
     ALL_POSSIBLE    = 0xff
+
+
+class _NAFEInput(enum.IntEnum):
+    GND   = 0
+    AI1   = 1
+    AI2   = 2
+    AI3   = 3
+    AI4   = 4
+    REFH  = 5
+    REFL  = 6
+    AICOM = 7
+
+
+class _NAFEGain(enum.IntEnum):
+    _0_2X = 0
+    _0_4X = 1
+    _0_8X = 2
 
 
 class GlasgowDeviceError(Exception):
@@ -302,6 +320,13 @@ class GlasgowDevice:
         return is_modified
 
     @property
+    def all_ports(self) -> str:
+        if self.revision >= "D0":
+            return "ABCD"
+        else:
+            return "AB"
+
+    @property
     def has_pulls(self):
         # C0 has fairly broken pulls, but we still try to support them.
         return self.revision >= "C0"
@@ -316,11 +341,8 @@ class GlasgowDevice:
         return 32767
 
     @property
-    def all_ports(self) -> str:
-        if self.revision >= "D0":
-            return "ABCD"
-        else:
-            return "AB"
+    def has_analog(self):
+        return self.revision >= "D0"
 
     async def _command_raw(self, payload: bytes | bytearray | memoryview) -> bytes:
         serial, self._next_serial = self._next_serial, (self._next_serial % 0xff) + 1
@@ -774,6 +796,39 @@ class GlasgowDevice:
             raise GlasgowDeviceError(f"cannot get I/O port {spec} pin state")
         assert result == _Result.ACK, f"unexpected result {result:02x}"
         return [sa, sb, sc, sd][self._iospec_to_index(spec)]
+
+    # Analog measurements
+
+    @staticmethod
+    def _nafe_inputs_from_chan(chan: GlasgowAnalog) -> (_NAFEInput, _NAFEInput, bool):
+        match chan.port:
+            case GlasgowPort.A: port_input = _NAFEInput.AI1
+            case GlasgowPort.B: port_input = _NAFEInput.AI2
+            case GlasgowPort.C: port_input = _NAFEInput.AI3
+            case GlasgowPort.D: port_input = _NAFEInput.AI4
+
+        match chan.nodes, chan.invert:
+            case GlasgowAnalog.Nodes.SingleEnded_Pos, invert:
+                return port_input, _NAFEInput.AICOM, invert
+            case GlasgowAnalog.Nodes.SingleEnded_Neg, invert:
+                return _NAFEInput.AICOM, port_input, invert
+            case GlasgowAnalog.Nodes.Differential, invert:
+                return port_input, port_input, invert
+
+    async def measure_analog(self, chan: GlasgowAnalog) -> float:
+        """Measure voltage on analog channel :py:`chan`.
+
+        Only available on revision D0 and newer. Currently, uses a fixed oversampling ratio
+        corresponding to :math:`ENOB = 20`.
+        """
+        assert self.has_analog
+
+        in_pos, in_neg, invert = self._nafe_inputs_from_chan(chan)
+        rate_filt = (11 << 3) | 4 # DRO=11, SINC4; see NAFE71388 datasheet, Table 7
+        result, value, _gain = await self._command_fmt("<BBBB", "<BlB",
+            _Request.NAFE_SINGLE, in_pos, in_neg, rate_filt)
+        assert result == _Result.ACK, f"unexpected result {result:02x}"
+        return -value / 1e6 if invert else value / 1e6 # from uV
 
     # Internal use only
 
