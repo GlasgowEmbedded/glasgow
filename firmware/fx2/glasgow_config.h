@@ -32,7 +32,7 @@ enum {
   /// The board revision and the API compatibility level are combined in the `bcdDevice` field
   /// of the device descriptor, which the software uses to determine if a device is compatible
   /// without having to actively interrogate the hardware.
-  GLASGOW_API_LEVEL = 0x07,
+  GLASGOW_API_LEVEL = 0x08,
 };
 
 enum {
