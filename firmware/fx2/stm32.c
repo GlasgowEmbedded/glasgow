@@ -112,13 +112,15 @@ bool mcu_bootload()
   mcu_ready = false;
   IO_LED_ACT = 1;
 
-  // Reset the STM32 and enter the bootloader.
-  // Note that the `MCU_BOOT0_REVD` pin is the same as `LED_FX2` pin.
+  // Reset the STM32 and enter the bootloader. Note that the `MCU_BOOT0_REVD` pin is the same
+  // as the `LED_FX2` pin.
+  // The STM32 is sensitive to setup and hold timings of the reset well beyond the levels listed
+  // in the datasheet; the cause of this is not fully understood.
   IO_MCU_nRESET_REVD = 0;
+  delay_us(100);
   IO_MCU_BOOT0_REVD = 1;
-  delay_ms(1);
   IO_MCU_nRESET_REVD = 1;
-  delay_ms(1);
+  delay_us(500);
   IO_MCU_BOOT0_REVD = 0;
 
   // Unfortunately, scratch space cannot be written by the FX2 bootloader.
@@ -131,7 +133,7 @@ bool mcu_bootload()
     0x0a, 0x4b, 0x59, 0x40, 0x01, 0x60, 0x0a, 0x4a, 0x01, 0x3a, 0x00, 0x2a, 0xfc, 0xd1, 0xf7, 0xe7,
     0x34, 0x12, 0x00, 0x20, 0xee, 0xff, 0x00, 0xcc, 0x34, 0x10, 0x02, 0x40, 0x07, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x50, 0xf7, 0xff, 0xff, 0xeb, 0x14, 0x00, 0x00, 0x50, 0x02, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x08, 0x00,
+    0x00, 0x00, 0x40, 0x00,
   };
   xmemcpy(scratch, (__xdata void *)shellcode, sizeof(shellcode));
 #else
