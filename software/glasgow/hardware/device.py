@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 VID_QIHW         = 0x20b7
 PID_GLASGOW      = 0x9db1
 
-CUR_API_LEVEL    = 0x07
+CUR_API_LEVEL    = 0x08
 
 
 class _Request(enum.IntEnum):
