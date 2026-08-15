@@ -1,13 +1,13 @@
 VID      ?= 20b7
 PID      ?= 9db1
 
-CODE_SIZE = 0x3d00
-XRAM_SIZE = 0x02c0
+CODE_SIZE = 0x3c40
+XRAM_SIZE = 0x0380
 CONF_SIZE = 0x0040
 MODEL     = small
 
 TARGET    = firmware
-SOURCES   = main fpga mgmt smbus port nvmem stm32
+SOURCES   = main fpga mgmt smbus port nvmem stm32 nafe
 LIBRARIES = fx2 fx2isrs fx2usb
 CFLAGS    = --std=c23 -DSYNCDELAYLEN=3 -DCONF_SIZE=$(CONF_SIZE)
 

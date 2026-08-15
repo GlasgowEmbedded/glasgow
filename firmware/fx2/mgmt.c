@@ -30,6 +30,7 @@ enum mgmt_result port_mgmt_get_isense();
 enum mgmt_result port_mgmt_set_pulls();
 enum mgmt_result port_mgmt_get_pulls();
 enum mgmt_result port_mgmt_get_state();
+enum mgmt_result nafe_mgmt_single();
 enum mgmt_result mgmt_get_alerts();
 enum mgmt_result mgmt_clr_alerts();
 enum mgmt_result leds_mgmt_test();
@@ -159,6 +160,12 @@ static const mgmt_command commands[] = {
     .req_len = sizeof(mgmt_req.eeprom_read),
     .rsp_len = MGMT_LEN_VARY,
     .handler = nvmem_mgmt_read_eeprom,
+  },
+  {
+    .type    = REQ_NAFE_SINGLE,
+    .req_len = sizeof(mgmt_req.nafe_single),
+    .rsp_len = sizeof(mgmt_req.nafe_single_data),
+    .handler = nafe_mgmt_single,
   },
   {
     .type    = REQ_GET_ALERTS,

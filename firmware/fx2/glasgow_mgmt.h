@@ -64,6 +64,8 @@ enum mgmt_request {
   REQ_SET_PULLS     = 0x3A,
   REQ_GET_PULLS     = 0x3B,
   REQ_GET_STATE     = 0x3C,
+  // Analog measurements
+  REQ_NAFE_SINGLE   = 0x40,
   // Alert handling
   REQ_GET_ALERTS    = 0xA0,
   REQ_CLR_ALERTS    = 0xA1,
@@ -176,6 +178,28 @@ struct mgmt_packet {
       uint8_t mask;
       uint8_t value[4];
     } state;
+    // REQ_NAFE_SINGLE
+    struct {
+      enum nafe_input {
+        NAFE_INPUT_GND = 0,
+        NAFE_INPUT_AI1 = 1,
+        NAFE_INPUT_AI2 = 2,
+        NAFE_INPUT_AI3 = 3,
+        NAFE_INPUT_AI4 = 4,
+        NAFE_INPUT_REFH = 5,
+        NAFE_INPUT_REFL = 6,
+        NAFE_INPUT_AICOM = 7,
+      } in_pos, in_neg;
+      uint8_t rate_filt;
+    } nafe_single;
+    struct {
+      int32_t value;
+      enum nafe_gain {
+        NAFE_GAIN_0_2X = 0,
+        NAFE_GAIN_0_4X = 1,
+        NAFE_GAIN_0_8X = 2,
+      } gain;
+    } nafe_single_data;
     // REQ_GET_ALERTS
     // REQ_CLR_ALERTS
     struct mgmt_alert {
