@@ -57,6 +57,8 @@ class _Request(enum.IntEnum):
     SET_PULLS       = 0x3A
     GET_PULLS       = 0x3B
     GET_STATE       = 0x3C
+    # Analog measurements
+    NAFE_SINGLE     = 0x40
     # Alert handling
     GET_ALERTS      = 0xA0
     CLR_ALERTS      = 0xA1
