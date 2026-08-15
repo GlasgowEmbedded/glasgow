@@ -821,10 +821,13 @@ class HardwareAssembly(AbstractAssembly):
         for port, (low, high) in port_pulls.items():
             if not low and not high:
                 continue
-            voltage = await self.device.get_voltage(str(port))
-            if voltage == 0.0:
-                logger.error("cannot configure pulls for port %s: Vio is off", port)
-                continue
+            if self._revision < "D0":
+                # revC powers the level shifters from Vio; revD uses a special clamping circuit
+                # to avoid having them fall off the bus when Vio is off.
+                voltage = await self.device.get_voltage(str(port))
+                if voltage == 0.0:
+                    logger.error("cannot configure pulls for port %s: Vio is off", port)
+                    continue
             await self.device.set_pulls(str(port), low, high)
 
     @property
