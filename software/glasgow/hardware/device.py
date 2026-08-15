@@ -87,13 +87,22 @@ class GlasgowDeviceError(Exception):
 
 class GlasgowDevice:
     @classmethod
-    def firmware_file(cls):
+    def _fx2_firmware_file(cls):
         return importlib.resources.files(__package__).joinpath("firmware-fx2.ihex")
 
     @classmethod
-    def firmware_data(cls) -> list[tuple[int, bytes]]:
-        with cls.firmware_file().open() as file:
+    def _fx2_firmware_data(cls) -> list[tuple[int, bytes]]:
+        with cls._fx2_firmware_file().open("rt") as file:
             return fx2.format.input_data(file, fmt="ihex")
+
+    @classmethod
+    def _stm32_firmware_file(cls):
+        return importlib.resources.files(__package__).joinpath("firmware-stm32.bin")
+
+    @classmethod
+    def _stm32_firmware_data(cls) -> list[tuple[int, bytes]]:
+        with cls._stm32_firmware_file().open("rb") as file:
+            return file.read()
 
     @classmethod
     async def _enumerate_devices(cls, context: usb.Context) -> dict[str, usb.Device]:
@@ -157,10 +166,10 @@ class GlasgowDevice:
             # If the device has no firmware or the firmware is too old (or, potentially, too new),
             # load the firmware that we know will work.
             logger.debug("loading firmware from %r to rev%s device",
-                str(cls.firmware_file()), revision)
+                str(cls._fx2_firmware_file()), revision)
             await device.control_transfer_out(usb.RequestType.Vendor, usb.Recipient.Device,
                 fx2.REQ_RAM, fx2.REG_CPUCS, 0, bytes([1]))
-            for address, data in cls.firmware_data():
+            for address, data in cls._fx2_firmware_data():
                 for offset in range(0, len(data), 4096):
                     await device.control_transfer_out(
                         usb.RequestType.Vendor, usb.Recipient.Device,
