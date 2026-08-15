@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABCMeta, abstractmethod
-from typing import Self, Any, Literal
+from typing import Self, Any, Literal, overload
 from contextlib import contextmanager
 from collections.abc import Buffer, Generator, Mapping
 from dataclasses import dataclass
@@ -18,7 +18,7 @@ from glasgow.gateware import octoram
 
 __all__ = [
     "ClockingError",
-    "PullState", "GlasgowPort", "GlasgowVio", "GlasgowPin",
+    "PullState", "GlasgowPort", "GlasgowVio", "GlasgowPin", "GlasgowAnalog",
     "AbstractRORegister", "AbstractRWRegister", "ClockDivisor",
     "AbstractInPipe", "AbstractOutPipe", "AbstractInOutPipe",
     "AbstractAssembly"
@@ -151,6 +151,73 @@ class GlasgowPin:
 
     def __str__(self):
         return f"{self.port}{self.number}{'#' if self.invert else ''}"
+
+
+@dataclass(frozen=True)
+class GlasgowAnalog:
+    """Analog measurement channel.
+
+    An analog measurement channel refers to a pair of nets: either two analog pins in the same
+    port, or an analog pin and signal ground.
+    """
+
+    class Nodes(enum.Enum):
+        SingleEnded_Pos = "P"
+        """Measures :math:`V_{AxP} - V_{COM}`."""
+        SingleEnded_Neg = "N"
+        """Measures :math:`V_{COM} - V_{AxN}`."""
+        Differential    = "PN"
+        """Measures :math:`V_{AxP} - V_{AxN}`."""
+
+    port:   GlasgowPort
+    nodes:  Nodes = Nodes.Differential
+    invert: bool = False
+
+    def __init__(self, port: GlasgowPort, nodes: Nodes, *, invert=False):
+        assert GlasgowPort(port) != GlasgowPort.ALL
+        object.__setattr__(self, "port", GlasgowPort(port))
+        object.__setattr__(self, "nodes", self.Nodes(nodes))
+        object.__setattr__(self, "invert", bool(invert))
+
+    @overload
+    @classmethod
+    def parse(cls, value: str, *, optional: Literal[True]) -> GlasgowAnalog | None:
+        pass
+
+    @classmethod
+    def parse(cls, value: str, *, optional: Literal[False] = False) -> GlasgowAnalog:
+        if optional and value.upper() in ("", "-", "NC"):
+            return None
+        elif m := re.match(r"^([A-Z])([PN])(#)?$", value):
+            port, nodes, invert = GlasgowPort(m.group(1)), cls.Nodes(m.group(2)), bool(m.group(3))
+            return cls(port=port, nodes=nodes, invert=invert)
+        elif m := re.match(r"^([A-Z])PN?$", value):
+            port = GlasgowPort(m.group(1))
+            return cls(port=port, nodes=cls.Nodes.Differential, invert=False)
+        elif m := re.match(r"^([A-Z])NP?$", value):
+            port = GlasgowPort(m.group(1))
+            return cls(port=port, nodes=cls.Nodes.Differential, invert=True)
+        else:
+            if optional:
+                raise ValueError(f"{value!r} is not a analog channel "
+                        "(try 'AP', 'AN#', 'BPN', 'BNP', or specify 'NC' to leave unconnected)")
+            else:
+                raise ValueError(f"{value!r} is not a analog channel "
+                        "(try 'AP', 'AN#', 'BPN', 'BNP')")
+
+    def __invert__(self) -> Self:
+        return type(self)(self.port, self.nodes, invert=not self.invert)
+
+    def __str__(self):
+        match self.nodes, self.invert:
+            case (self.Nodes.SingleEnded_Pos | self.Nodes.SingleEnded_Neg), _:
+                return f"{self.port}{self.nodes}{'#' if self.invert else ''}"
+            case self.Nodes.Differential, False:
+                return f"{self.port}PN"
+            case self.Nodes.Differential, True:
+                return f"{self.port}NP"
+            case _:
+                assert False
 
 
 class AbstractRORegister(metaclass=ABCMeta):
