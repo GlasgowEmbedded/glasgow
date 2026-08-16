@@ -1,0 +1,10 @@
+``display-hd44780``
+=============
+
+CLI reference
+-------------
+
+.. _applet.display.hd44780:
+
+.. autoprogram:: glasgow.applet.display.hd44780:DisplayHD44780Applet._get_argparser_for_sphinx("display-hd44780")
+    :prog: glasgow run display-hd44780
