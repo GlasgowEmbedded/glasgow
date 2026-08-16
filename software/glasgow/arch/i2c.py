@@ -149,6 +149,8 @@ class ProbeStep:
                     state = "Idle"
                 case _:
                     raise ValueError(f"step {step!r} is not valid in state {state!r}")
+        if state != "Idle":
+            raise ValueError(f"state is not 'Idle' at end of transaction")
         return steps
 
     def __str__(self) -> str:
