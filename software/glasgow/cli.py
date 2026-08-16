@@ -512,8 +512,8 @@ class TerminalFormatter(pylogging.Formatter):
     DEFAULT_COLORS = {
         "TRACE"   : colorama.Fore.LIGHTBLACK_EX,
         "DEBUG"   : colorama.Fore.LIGHTCYAN_EX,
-        "INFO"    : colorama.Fore.LIGHTWHITE_EX,
-        "WARNING" : colorama.Fore.YELLOW,
+        "INFO"    : colorama.Fore.WHITE,
+        "WARNING" : colorama.Fore.LIGHTYELLOW_EX,
         "ERROR"   : colorama.Fore.RED,
         "CRITICAL": colorama.Back.RED,
         "RESET":    colorama.Style.RESET_ALL,
