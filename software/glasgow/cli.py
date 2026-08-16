@@ -529,8 +529,12 @@ class TerminalFormatter(pylogging.Formatter):
 
     def format(self, record):
         color = self.colors.get(record.levelname, "")
-        # glasgow.applet.foo → g.applet.foo
+        # glasgow.hardware.foo → g.hardware.foo
         record.name = record.name.replace("glasgow.", "g.")
+        # glasgow.applet.foo → g.a.foo
+        record.name = record.name.replace("g.applet.", "g.a.")
+        # glasgow.applet.interface. → g.a.i.foo
+        record.name = record.name.replace("g.a.interface.", "g.a.i.")
         # applet.memory._25x → applet.memory.25x
         record.name = record.name.replace("._", ".")
         return f"{color}{super().format(record)}{self.colors['RESET']}"
