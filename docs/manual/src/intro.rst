@@ -38,9 +38,11 @@ What is Glasgow?
 
 Glasgow Interface Explorer is an `open hardware <oshwa-cert_>`__ tool for exploring digital interfaces, aimed at embedded developers, reverse engineers, digital archivists, electronics hobbyists, and everyone else who wants to communicate with a wide range of digital devices with high reliability and minimum hassle. It can be connected to most digital interfaces without additional active or passive components, and includes extensive protection from unexpected conditions and operator error.
 
-The Glasgow hardware can support many digital interfaces because it uses reconfigurable logic. Instead of only offering a small selection of standard hardware supported interfaces, it uses an FPGA to adapt on the fly to the task at hand without compromising on performance or reliability, even for unusual, custom, or obsolete interfaces.
+The Glasgow hardware can support many digital interfaces because it uses reconfigurable logic. Instead of only offering a small selection of standard hardware supported interfaces, it uses an FPGA to adapt on the fly to the task at hand without compromising on performance or reliability, even for unusual, custom, or obsolete interfaces. Starting with revD, it can also perform accurate analog measurements of slow (500 kHz) signals.
 
 The Glasgow software is a set of building blocks designed to eliminate incidental complexity. Each interface is packaged into a self-contained applet that can be used directly from the command line, or reused as a part of a more complex system. Using Glasgow does not require any programming knowledge, although it becomes much more powerful if you know a bit of Python.
+
+Installing complex software can be daunting. The Glasgow software can be :ref:`installed with a single command <install-source>` using the Python package manager, or from a self-contained :ref:`Windows redistributable <install-binary>` that supports Windows 7 SP1 and newer.
 
 .. _oshwa-cert: https://certification.oshwa.org/uk000081.html
 
@@ -59,9 +61,13 @@ What can I do with Glasgow?
 
 * analyze :ref:`UART <applet.interface.uart_analyzer>` transactions
 
-* initiate :ref:`SPI <applet.interface.spi_controller>`, :ref:`QSPI <applet.interface.qspi_controller>`, or :ref:`I²C <applet.interface.i2c_controller>` transactions
+* initiate :ref:`SPI <applet.interface.spi_controller>` or :ref:`QSPI <applet.interface.qspi_controller>` transactions
 
 * analyze :ref:`SPI <applet.interface.spi_analyzer>` and :ref:`QSPI <applet.interface.qspi_analyzer>` transactions at up to ~100 MHz
+
+* initiate :ref:`I²C <applet.interface.i2c_controller>` transactions
+
+  * scan for I²C devices with known identification using a built-in database
 
 * read and write :ref:`24-series I²C EEPROMs <applet.memory._24x>`
 
@@ -107,6 +113,8 @@ What can I do with Glasgow?
 
 * :ref:`communicate using nRF24L01(+) radios <applet.radio.nrf24l01>`
 
+* :ref:`configure Si5351A/B/C programmable clock generators <applet.control.si535x>`
+
 * :ref:`program nRF24LE1 and nRF24LU1(+) microcontrollers <applet.program.nrf24lx1>`
 
 * sense environmental data
@@ -118,6 +126,10 @@ What can I do with Glasgow?
   * distance by ultrasonic echo via :ref:`HC-SR04 <applet.sensor.hcsr04>` sensors
 
   * weight by Whetstone bridge via :ref:`HX-711 <applet.sensor.hx711>` amplifier
+
+* :ref:`calibrate a clock <applet.measure.calibrate_clock>` against a reference frequency
+
+* :ref:`generate pseudorandom noise <applet.measure.prn_noise>` for radio frequency device characterization
 
 * synthesize sound using a Yamaha OPLx/OPM chip and play it in real time on a webpage
 
@@ -144,7 +156,7 @@ What software does Glasgow use?
 
 Glasgow is written entirely in `Python 3`_. The interface logic that runs on the FPGA is described using `Amaranth`_, which is a Python-based domain specific language. The supporting code that runs on the host PC is written in Python with `asyncio`_. This way, the logic on the FPGA can be assembled on demand for any requested configuration, keeping it as fast and compact as possible, and code can be shared between gateware and software, removing the need to add error-prone "glue" boilerplate.
 
-Glasgow would not be possible without the `open-source iCE40 FPGA toolchain <icestorm_>`__, which is not only very reliable but also extremely fast. It is so fast that it usually only takes a few seconds to build a bitstream from scratch for something like a UART. When developing a new applet it is rarely necessary to wait for the toolchain to finish.
+Glasgow would not be possible without the open-source `iCE40 <icestorm_>`__ and `ECP5 <prjtrellis_>`__ FPGA toolchain, which are not only very reliable but also extremely fast. They are so fast that it usually only takes a few seconds to build a bitstream from scratch for something like a UART. When developing a new applet it is rarely necessary to wait for the toolchain to finish.
 
 Implementing reliable, high-performance USB communication is not trivial—packetization, buffering, and USB quirks add up. Glasgow abstracts away USB: on the FPGA, the applet gateware writes to or reads from a FIFO, and on the host, applet software writes to or reads from a socket-like interface. Idiomatic Python code can communicate at maximum USB 2 bulk bandwidth on a modern PC without additional effort. Moreover, when a future Glasgow revision adds Ethernet next to USB, no changes to applet code will be necessary.
 
@@ -158,3 +170,4 @@ Debugging applets can be hard, especially if bidirectional communication over th
 .. _Amaranth: https://github.com/amaranth-lang/amaranth/
 .. _asyncio: https://docs.python.org/3/library/asyncio.html
 .. _icestorm: https://github.com/YosysHQ/icestorm
+.. _prjtrellis: https://github.com/YosysHQ/prjtrellis
