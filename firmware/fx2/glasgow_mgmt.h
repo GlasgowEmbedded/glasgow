@@ -203,6 +203,7 @@ struct mgmt_packet {
     // REQ_GET_ALERTS
     // REQ_CLR_ALERTS
     struct mgmt_alert {
+      uint8_t realtime; // actually [bool]
       uint8_t ports[4]; // actually [enum port_alerts]
       uint8_t fpga;
     } alert;

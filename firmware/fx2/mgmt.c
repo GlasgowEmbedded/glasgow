@@ -211,6 +211,9 @@ void mgmt_init() {
   EP1OUTBC  = 0;             // arm EP1OUT
   SYNCDELAY;
   EP1INCS   = _BUSY;         // force disarm EP1IN
+
+  // Indicate that the next pending alert may contain outdated status information.
+  alert.realtime = false;
 }
 
 void mgmt_poll()
@@ -228,6 +231,10 @@ void mgmt_poll()
     mgmt_rsp_len = sizeof(mgmt_rsp.alert);
     goto enqueue;
   }
+
+  // Next unsolicited alert packet will be up-to-date, unless the host stops polling EP1IN in
+  // between now and the next alert.
+  alert.realtime = true;
 
   if (EP01STAT & _EP1OUTBSY)
     return; // EP1OUT empty
