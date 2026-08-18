@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 VID_QIHW         = 0x20b7
 PID_GLASGOW      = 0x9db1
 
-CUR_API_LEVEL    = 0x08
+CUR_API_LEVEL    = 0x09
 
 
 class _Request(enum.IntEnum):
@@ -718,7 +718,8 @@ class GlasgowDevice:
 
     async def get_faults(self, spec: str) -> GlasgowPortAlerts:
         """Get fault alerts on port ``spec``."""
-        result, pa, pb, pc, pd, _fpga = await self._command_fmt("<B", "<B4BB", _Request.GET_ALERTS)
+        result, _realtime, pa, pb, pc, pd, _fpga = \
+            await self._command_fmt("<B", "<BB4BB", _Request.GET_ALERTS)
         if result == _Result.ERROR:
             raise GlasgowDeviceError(f"cannot get I/O port {spec} fault alerts")
         assert result == _Result.ACK, f"unexpected result {result:02x}"
@@ -727,8 +728,8 @@ class GlasgowDevice:
     async def clear_faults(self, spec: str, alerts = GlasgowPortAlerts.ALL_POSSIBLE):
         """Clear fault alerts on port(s) ``spec``."""
         mask = self._iospec_to_mask(spec)
-        result, = await self._command_fmt("<B4BB", "<B",
-            _Request.CLR_ALERTS, *(alerts.value if mask & (1<<i) else 0 for i in range(4)), 0)
+        result, = await self._command_fmt("<BB4BB", "<B",
+            _Request.CLR_ALERTS, 0, *(alerts.value if mask & (1<<i) else 0 for i in range(4)), 0)
         if result == _Result.ERROR:
             raise GlasgowDeviceError(f"cannot clear I/O port {spec} fault alerts")
         assert result == _Result.ACK, f"unexpected result {result:02x}"
@@ -737,7 +738,7 @@ class GlasgowDevice:
         # Currently only alert responses are supported, but other types of unsolicited responses
         # could be added in the future.
         assert result[0] == _Result.ALERT, f"unexpected result {result[0]:02x}"
-        pa, pb, pc, pd, _fpga = struct.unpack("<4BB", result[1:])
+        realtime, pa, pb, pc, pd, _fpga = struct.unpack("<B4BB", result[1:])
         for index, port_alerts in enumerate([pa, pb, pc, pd]):
             faults = []
             for flag in GlasgowPortAlerts(port_alerts):
@@ -751,8 +752,11 @@ class GlasgowDevice:
                     case _:
                         assert False, "unknown fault"
             if faults:
-                logger.warning(
-                    f"fault: port {self._index_to_iospec(index)}: {', '.join(faults)}")
+                spec = self._index_to_iospec(index)
+                if realtime:
+                    logger.warning(f"fault: port {spec}: {', '.join(faults)}")
+                else:
+                    logger.warning(f"fault: port {spec}: {', '.join(faults)} (before this command)")
 
     async def set_pulls(self, spec: str, low: set[int] = set(), high: set[int] = set(),
                         keep: set[int] = set()):
