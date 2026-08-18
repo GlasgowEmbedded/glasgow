@@ -8,15 +8,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-08-18 23:49+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language: cn\n"
-"Language-Team: cn <LL@li.org>\n"
+"Language: zh\n"
+"Language-Team: zh <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/intro.rst:-1
 msgid "Glasgow Interface Explorer"
@@ -58,11 +59,11 @@ msgstr ""
 msgid "Introduction"
 msgstr ""
 
-#: ../../src/intro.rst
+#: ../../src/intro.rst:27
 msgid "Glasgow Interface Explorer, in a black anodized aluminum case"
 msgstr ""
 
-#: ../../src/intro.rst
+#: ../../src/intro.rst:30
 msgid "Open Source Hardware Association mark, project UK000081"
 msgstr ""
 
@@ -75,202 +76,226 @@ msgid "Glasgow Interface Explorer is an `open hardware <oshwa-cert_>`__ tool for
 msgstr ""
 
 #: ../../src/intro.rst:41
-msgid "The Glasgow hardware can support many digital interfaces because it uses reconfigurable logic. Instead of only offering a small selection of standard hardware supported interfaces, it uses an FPGA to adapt on the fly to the task at hand without compromising on performance or reliability, even for unusual, custom, or obsolete interfaces."
+msgid "The Glasgow hardware can support many digital interfaces because it uses reconfigurable logic. Instead of only offering a small selection of standard hardware supported interfaces, it uses an FPGA to adapt on the fly to the task at hand without compromising on performance or reliability, even for unusual, custom, or obsolete interfaces. Starting with revD, it can also perform accurate analog measurements of slow (500 kHz) signals."
 msgstr ""
 
 #: ../../src/intro.rst:43
 msgid "The Glasgow software is a set of building blocks designed to eliminate incidental complexity. Each interface is packaged into a self-contained applet that can be used directly from the command line, or reused as a part of a more complex system. Using Glasgow does not require any programming knowledge, although it becomes much more powerful if you know a bit of Python."
 msgstr ""
 
-#: ../../src/intro.rst:-1
+#: ../../src/intro.rst:45
+msgid "Installing complex software can be daunting. The Glasgow software can be :ref:`installed with a single command <install-source>` using the Python package manager, or from a self-contained :ref:`Windows redistributable <install-binary>` that supports Windows 7 SP1 and newer."
+msgstr ""
+
+#: ../../src/intro.rst:49
 msgid "Bare Glasgow Interface Explorer PCB assembly"
 msgstr ""
 
-#: ../../src/intro.rst:52
+#: ../../src/intro.rst:54
 msgid "What can I do with Glasgow?"
 msgstr ""
 
-#: ../../src/intro.rst:54
+#: ../../src/intro.rst:56
 msgid "control pins as :ref:`GPIO <applet.control.gpio>`"
 msgstr ""
 
-#: ../../src/intro.rst:56
+#: ../../src/intro.rst:58
 msgid "communicate via :ref:`UART <applet.interface.uart>`"
 msgstr ""
 
-#: ../../src/intro.rst:58
+#: ../../src/intro.rst:60
 msgid "automatically measure and adjust baud rate"
 msgstr ""
 
-#: ../../src/intro.rst:60
+#: ../../src/intro.rst:62
 msgid "analyze :ref:`UART <applet.interface.uart_analyzer>` transactions"
 msgstr ""
 
-#: ../../src/intro.rst:62
-msgid "initiate :ref:`SPI <applet.interface.spi_controller>`, :ref:`QSPI <applet.interface.qspi_controller>`, or :ref:`I²C <applet.interface.i2c_controller>` transactions"
-msgstr ""
-
 #: ../../src/intro.rst:64
-msgid "analyze :ref:`SPI <applet.interface.spi_analyzer>` and :ref:`QSPI <applet.interface.qspi_analyzer>` transactions at up to ~100 MHz"
+msgid "initiate :ref:`SPI <applet.interface.spi_controller>` or :ref:`QSPI <applet.interface.qspi_controller>` transactions"
 msgstr ""
 
 #: ../../src/intro.rst:66
-msgid "read and write :ref:`24-series I²C EEPROMs <applet.memory._24x>`"
+msgid "analyze :ref:`SPI <applet.interface.spi_analyzer>` and :ref:`QSPI <applet.interface.qspi_analyzer>` transactions at up to ~100 MHz"
 msgstr ""
 
 #: ../../src/intro.rst:68
-msgid "read and write :ref:`25-series SPI Flash memories <applet.memory._25q>`"
+msgid "initiate :ref:`I²C <applet.interface.i2c_controller>` transactions"
 msgstr ""
 
 #: ../../src/intro.rst:70
-msgid "determine memory parameters via SFDP"
+msgid "scan for I²C devices with known identification using a built-in database"
 msgstr ""
 
 #: ../../src/intro.rst:72
-msgid ":ref:`extract data and SFDP information <applet.memory._25q.tool>` from SPI transaction captures"
+msgid "read and write :ref:`24-series I²C EEPROMs <applet.memory._24x>`"
 msgstr ""
 
 #: ../../src/intro.rst:74
-msgid "read and write ONFI-compatible Flash memories"
+msgid "read and write :ref:`25-series SPI Flash memories <applet.memory._25q>`"
 msgstr ""
 
 #: ../../src/intro.rst:76
-msgid "determine memory parameters via ONFI parameter page"
+msgid "determine memory parameters via SFDP"
 msgstr ""
 
 #: ../../src/intro.rst:78
-msgid "read and write parallel 27/28/29-series EPROMs, EEPROMs and Flash memories"
+msgid ":ref:`extract data and SFDP information <applet.memory._25q.tool>` from SPI transaction captures"
 msgstr ""
 
 #: ../../src/intro.rst:80
-msgid "determine the extent of floating gate charge decay and rescue data"
+msgid "read and write ONFI-compatible Flash memories"
 msgstr ""
 
 #: ../../src/intro.rst:82
-msgid ":ref:`program and verify AVR microcontrollers <applet.program.avr.spi>` via SPI"
+msgid "determine memory parameters via ONFI parameter page"
 msgstr ""
 
 #: ../../src/intro.rst:84
-msgid "automatically :ref:`determine JTAG pinout <applet.interface.jtag_pinout>`"
+msgid "read and write parallel 27/28/29-series EPROMs, EEPROMs and Flash memories"
 msgstr ""
 
 #: ../../src/intro.rst:86
-msgid "probe `IEEE 1149.1`_ compatible devices via :ref:`JTAG <applet.interface.jtag_probe>`"
+msgid "determine the extent of floating gate charge decay and rescue data"
 msgstr ""
 
 #: ../../src/intro.rst:88
-msgid "play back JTAG :ref:`SVF files <applet.interface.jtag_svf>`"
+msgid ":ref:`program and verify AVR microcontrollers <applet.program.avr.spi>` via SPI"
 msgstr ""
 
 #: ../../src/intro.rst:90
-msgid ":ref:`debug ARM7TDMI processors <applet.debug.arm.arm7>` via JTAG"
+msgid "automatically :ref:`determine JTAG pinout <applet.interface.jtag_pinout>`"
 msgstr ""
 
 #: ../../src/intro.rst:92
-msgid ":ref:`debug ARC processors <applet.debug.arc>` via JTAG"
+msgid "probe `IEEE 1149.1`_ compatible devices via :ref:`JTAG <applet.interface.jtag_probe>`"
 msgstr ""
 
 #: ../../src/intro.rst:94
-msgid ":ref:`debug MIPS processors <applet.debug.mips>` via EJTAG"
+msgid "play back JTAG :ref:`SVF files <applet.interface.jtag_svf>`"
 msgstr ""
 
 #: ../../src/intro.rst:96
-msgid "program and verify :ref:`XC9500 <applet.program.xc9500>` and :ref:`XC9500XL <applet.program.xc9500xl>` CPLDs via JTAG"
+msgid ":ref:`debug ARM7TDMI processors <applet.debug.arm.arm7>` via JTAG"
 msgstr ""
 
 #: ../../src/intro.rst:98
-msgid ":ref:`expose JTAG to Vivado <applet.bridge.jtag_xvc>`"
+msgid ":ref:`debug ARC processors <applet.debug.arc>` via JTAG"
 msgstr ""
 
 #: ../../src/intro.rst:100
-msgid "probe Arm Cortex processors via :ref:`SWD <applet.interface.swd_probe>`"
+msgid ":ref:`debug MIPS processors <applet.debug.mips>` via EJTAG"
 msgstr ""
 
 #: ../../src/intro.rst:102
-msgid ":ref:`debug Arm Cortex processors <applet.bridge.probe_rs>` via `probe-rs <https://probe.rs>`_"
+msgid "program and verify :ref:`XC9500 <applet.program.xc9500>` and :ref:`XC9500XL <applet.program.xc9500xl>` CPLDs via JTAG"
 msgstr ""
 
 #: ../../src/intro.rst:104
-msgid "program :ref:`internal SRAM <applet.program.ice40_sram>` and :ref:`external Flash <applet.program.ice40_flash>` memories of iCE40 FPGAs"
+msgid ":ref:`expose JTAG to Vivado <applet.bridge.jtag_xvc>`"
 msgstr ""
 
 #: ../../src/intro.rst:106
-msgid ":ref:`configure Ethernet PHYs  <applet.control.mdio>` via MDIO"
+msgid "probe Arm Cortex processors via :ref:`SWD <applet.interface.swd_probe>`"
 msgstr ""
 
 #: ../../src/intro.rst:108
-msgid ":ref:`communicate using nRF24L01(+) radios <applet.radio.nrf24l01>`"
+msgid ":ref:`debug Arm Cortex processors <applet.bridge.probe_rs>` via `probe-rs <https://probe.rs>`_"
 msgstr ""
 
 #: ../../src/intro.rst:110
-msgid ":ref:`program nRF24LE1 and nRF24LU1(+) microcontrollers <applet.program.nrf24lx1>`"
+msgid "program :ref:`internal SRAM <applet.program.ice40_sram>` and :ref:`external Flash <applet.program.ice40_flash>` memories of iCE40 FPGAs"
 msgstr ""
 
 #: ../../src/intro.rst:112
-msgid "sense environmental data"
+msgid ":ref:`configure Ethernet PHYs  <applet.control.mdio>` via MDIO"
 msgstr ""
 
 #: ../../src/intro.rst:114
-msgid "temperature, pressure, and humidity via :ref:`Bosch BMP280/BME280 <applet.sensor.bmx280>` sensors"
+msgid ":ref:`communicate using nRF24L01(+) radios <applet.radio.nrf24l01>`"
 msgstr ""
 
 #: ../../src/intro.rst:116
-msgid "CO₂ concentration via Sensirion :ref:`SCD30 <applet.sensor.scd30>` and NOx concentration via :ref:`SEN5x <applet.sensor.sen5x>` sensors"
+msgid ":ref:`configure Si5351A/B/C programmable clock generators <applet.control.si535x>`"
 msgstr ""
 
 #: ../../src/intro.rst:118
-msgid "distance by ultrasonic echo via :ref:`HC-SR04 <applet.sensor.hcsr04>` sensors"
+msgid ":ref:`program nRF24LE1 and nRF24LU1(+) microcontrollers <applet.program.nrf24lx1>`"
 msgstr ""
 
 #: ../../src/intro.rst:120
-msgid "weight by Whetstone bridge via :ref:`HX-711 <applet.sensor.hx711>` amplifier"
+msgid "sense environmental data"
 msgstr ""
 
 #: ../../src/intro.rst:122
-msgid "synthesize sound using a Yamaha OPLx/OPM chip and play it in real time on a webpage"
+msgid "temperature, pressure, and humidity via :ref:`Bosch BMP280/BME280 <applet.sensor.bmx280>` sensors"
 msgstr ""
 
 #: ../../src/intro.rst:124
-msgid "read raw modulated data from 5.25\"/3.5\" floppy drives"
+msgid "CO₂ concentration via Sensirion :ref:`SCD30 <applet.sensor.scd30>` and NOx concentration via :ref:`SEN5x <applet.sensor.sen5x>` sensors"
 msgstr ""
 
 #: ../../src/intro.rst:126
-msgid "... and more!"
+msgid "distance by ultrasonic echo via :ref:`HC-SR04 <applet.sensor.hcsr04>` sensors"
 msgstr ""
 
 #: ../../src/intro.rst:128
-msgid "Everything above can be done with only a Glasgow revC board, some wires, and depending on the device under test, external power."
+msgid "weight by Whetstone bridge via :ref:`HX-711 <applet.sensor.hx711>` amplifier"
+msgstr ""
+
+#: ../../src/intro.rst:130
+msgid ":ref:`calibrate a clock <applet.measure.calibrate_clock>` against a reference frequency"
+msgstr ""
+
+#: ../../src/intro.rst:132
+msgid ":ref:`generate pseudorandom noise <applet.measure.prn_noise>` for radio frequency device characterization"
 msgstr ""
 
 #: ../../src/intro.rst:134
-msgid "What does using Glasgow look like?"
+msgid "synthesize sound using a Yamaha OPLx/OPM chip and play it in real time on a webpage"
 msgstr ""
 
 #: ../../src/intro.rst:136
+msgid "read raw modulated data from 5.25\"/3.5\" floppy drives"
+msgstr ""
+
+#: ../../src/intro.rst:138
+msgid "... and more!"
+msgstr ""
+
+#: ../../src/intro.rst:140
+msgid "Everything above can be done with only a Glasgow revC board, some wires, and depending on the device under test, external power."
+msgstr ""
+
+#: ../../src/intro.rst:146
+msgid "What does using Glasgow look like?"
+msgstr ""
+
+#: ../../src/intro.rst:148
 msgid "This screencast shows a typical command-line workflow:"
 msgstr ""
 
-#: ../../src/intro.rst:143
+#: ../../src/intro.rst:155
 msgid "What software does Glasgow use?"
 msgstr ""
 
-#: ../../src/intro.rst:145
+#: ../../src/intro.rst:157
 msgid "Glasgow is written entirely in `Python 3`_. The interface logic that runs on the FPGA is described using `Amaranth`_, which is a Python-based domain specific language. The supporting code that runs on the host PC is written in Python with `asyncio`_. This way, the logic on the FPGA can be assembled on demand for any requested configuration, keeping it as fast and compact as possible, and code can be shared between gateware and software, removing the need to add error-prone \"glue\" boilerplate."
 msgstr ""
 
-#: ../../src/intro.rst:147
-msgid "Glasgow would not be possible without the `open-source iCE40 FPGA toolchain <icestorm_>`__, which is not only very reliable but also extremely fast. It is so fast that it usually only takes a few seconds to build a bitstream from scratch for something like a UART. When developing a new applet it is rarely necessary to wait for the toolchain to finish."
+#: ../../src/intro.rst:159
+msgid "Glasgow would not be possible without the open-source `iCE40 <icestorm_>`__ and `ECP5 <prjtrellis_>`__ FPGA toolchain, which are not only very reliable but also extremely fast. They are so fast that it usually only takes a few seconds to build a bitstream from scratch for something like a UART. When developing a new applet it is rarely necessary to wait for the toolchain to finish."
 msgstr ""
 
-#: ../../src/intro.rst:149
+#: ../../src/intro.rst:161
 msgid "Implementing reliable, high-performance USB communication is not trivial—packetization, buffering, and USB quirks add up. Glasgow abstracts away USB: on the FPGA, the applet gateware writes to or reads from a FIFO, and on the host, applet software writes to or reads from a socket-like interface. Idiomatic Python code can communicate at maximum USB 2 bulk bandwidth on a modern PC without additional effort. Moreover, when a future Glasgow revision adds Ethernet next to USB, no changes to applet code will be necessary."
 msgstr ""
 
-#: ../../src/intro.rst:151
+#: ../../src/intro.rst:163
 msgid "Debugging applets can be hard, especially if bidirectional communication over the same wires is involved. Glasgow provides a built-in cycle-accurate logic analyzer that can relate the I/O pin level and direction changes to commands and responses received and sent by the applet. The logic analyzer compresses waveforms and can pause the applet if its buffer is about to overflow."
 msgstr ""
 
-#: ../../src/intro.rst:155
+#: ../../src/intro.rst:167
 msgid "The built-in logic analyzer has been removed from the codebase pending internal architecture improvements. It will be reinstated once a high-quality implementation becomes feasible."
 msgstr ""
 
