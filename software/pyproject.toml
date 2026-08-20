@@ -105,6 +105,7 @@ curve-trace = "glasgow.applet.measure.curve_trace:CurveTraceApplet"
 generate-prn-noise = "glasgow.applet.measure.prn_noise:GeneratePRNNoiseApplet"
 
 analyzer = "glasgow.applet.interface.analyzer:AnalyzerApplet"
+analyzer2 = "glasgow.applet.interface.analyzer2:AnalyzerApplet"
 uart = "glasgow.applet.interface.uart:UARTApplet"
 uart-analyzer = "glasgow.applet.interface.uart_analyzer:UARTAnalyzerApplet"
 spi-analyzer = "glasgow.applet.interface.spi_analyzer:SPIAnalyzerApplet"

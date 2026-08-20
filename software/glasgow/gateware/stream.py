@@ -17,9 +17,11 @@ async def stream_put(ctx, stream, payload):
 
 
 async def stream_get(ctx, stream):
-    ctx.set(stream.ready, 1)
+    if not isinstance(stream.ready, Const):
+        ctx.set(stream.ready, 1)
     payload, = await ctx.tick().sample(stream.payload).until(stream.valid)
-    ctx.set(stream.ready, 0)
+    if not isinstance(stream.ready, Const):
+        ctx.set(stream.ready, 0)
     return payload
 
 
@@ -48,6 +50,10 @@ class StreamBuffer(wiring.Component):
             "o": Out(stream.Signature(shape)),
         })
 
+    @classmethod
+    def shaped_like(cls, stream):
+        return cls(stream.payload.shape())
+
     def elaborate(self, platform):
         m = Module()
 
@@ -70,6 +76,18 @@ class Queue(wiring.Component):
             "o": Out(stream.Signature(shape)),
             "level": Out(range(depth + 1))
         })
+
+    @property
+    def shape(self):
+        return self._shape
+
+    @property
+    def depth(self):
+        return self._depth
+
+    @property
+    def buffered(self):
+        return self._buffered
 
     def elaborate(self, platform):
         m = Module()
