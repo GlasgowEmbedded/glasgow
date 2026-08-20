@@ -10,14 +10,14 @@
 # because the analyzer is designed for interfacing with external software, some of which may be
 # written in a way that makes complex and generic bitwise transformations unreasonably difficult.
 
-
 from amaranth import *
 from amaranth.utils import ceil_log2
-from amaranth.lib import data, wiring, stream, io
+from amaranth.lib import enum, data, wiring, stream, io
 from amaranth.lib.wiring import In, Out, flipped
 
 from glasgow.support import logging
-from glasgow.gateware import octoram
+from glasgow.support.endpoint import endpoint, ServerEndpoint
+from glasgow.gateware import octoram, cobs
 from glasgow.gateware.stream import Queue
 from glasgow.abstract import AbstractAssembly, GlasgowPin
 from glasgow.applet import GlasgowAppletV2
@@ -133,18 +133,26 @@ class Packer(wiring.Component):
         assert width in range(1, 33)
 
         self._width = width
-        self._width_pow2 = 1 << ceil_log2(self._width)
+        self._stride = 1 << ceil_log2(self._width)
 
         super().__init__()
 
     @property
+    def width(self):
+        return self._width
+
+    @property
+    def stride(self):
+        return self._stride
+
+    @property
     def samples_per_word(self):
-        return len(self.i_samples.p.data) // self._width_pow2
+        return len(self.i_samples.p.data) // self._stride
 
     def elaborate(self, platform):
         m = Module()
 
-        pack = Signal(self._width_pow2)
+        pack = Signal(self._stride)
         m.d.comb += pack.eq(self.i_samples.p.data[:self._width])
 
         packs = self.samples_per_word
@@ -562,13 +570,12 @@ class ReadControl(wiring.Component):
             # This state should be only active for one cycle, since the lack of readiness blocks
             # the writer's progress. The `ranges` buffer exists to make this happen.
             with m.State("Prolog"):
-                with m.If(readout_size > 0):
-                    m.d.comb += [
-                        ranges.i.p.addr.eq(readout_addr),
-                        ranges.i.p.size.eq(readout_size),
-                        ranges.i.valid.eq(1)
-                    ]
-                with m.If((readout_size == 0) | ranges.i.ready):
+                m.d.comb += [
+                    ranges.i.p.addr.eq(readout_addr),
+                    ranges.i.p.size.eq(readout_size),
+                    ranges.i.valid.eq(readout_size > 0)
+                ]
+                with m.If(~ranges.i.valid | ranges.i.ready):
                     m.d.sync += readout_addr.eq(readout_addr + readout_size)
                     m.next = "Streaming"
 
@@ -663,6 +670,262 @@ class AnalyzerCore(wiring.Component):
         return m
 
 
+class Command(enum.Enum, shape=8):
+    IDENTIFY            = 0b10_000000
+    GET_CLK_FREQUENCY   = 0b10_000001
+    SET_CLK_DIVISOR     = 0b01_000010
+    GET_BUFFER_SIZE     = 0b10_000011
+    SET_PROLOG_SIZE     = 0b01_000100
+    SET_EPILOG_SIZE     = 0b01_000101
+    GET_DATA_FORMAT     = 0b10_000110
+    SET_TRIGGER         = 0b01_010000
+    GET_TRIGGER         = 0b10_010000
+
+    ARM_TRIGGER         = 0b00_000000
+    FORCE_TRIGGER       = 0b00_000001
+    DISARM_TRIGGER      = 0b00_000010
+    INTERRUPT           = 0b00_000011
+
+
+class TriggerCommand(enum.Enum, shape=8):
+    SET_ACTIVE          = 0b01_100000
+    SET_VALUE           = 0b01_100001
+    SET_LEVEL           = 0b01_100010
+
+
+class CommandHandler(wiring.Component):
+    i: In(stream.Signature(data.StructLayout({
+        "cmd": data.StructLayout({
+            "opcode":  5,
+            "trigger": 1,
+            "has_arg": 1,
+            "has_ret": 1,
+        }),
+        "arg": 32,
+    })))
+    o: Out(stream.Signature(data.StructLayout({
+        "ret": 32,
+    })))
+
+    clk_divisor: Out(16)
+    prolog_size: Out(24)
+    epilog_size: Out(24)
+    streaming:   Out(1)
+    interrupt:   Out(1) # asserted for one cycle
+
+    trigger_mode:   Out(data.ArrayLayout(Trigger.Mode, 32))
+    trigger_active: Out(1)
+    trigger_force:  Out(1) # asserted for one cycle
+
+    def __init__(self, *, clk_frequency, buffer_size, data_width, data_stride):
+        self._clk_frequency = clk_frequency
+        self._buffer_size   = buffer_size
+        self._data_width    = data_width
+        self._data_stride   = data_stride
+
+        super().__init__()
+
+    def elaborate(self, platform):
+        m = Module()
+
+        with m.If(self.i.p.cmd.has_ret):
+            m.d.comb += self.o.valid.eq(1)
+            m.d.comb += self.i.ready.eq(self.o.ready)
+        with m.Else():
+            m.d.comb += self.i.ready.eq(1)
+
+        with m.If(self.i.valid):
+            with m.Switch(self.i.p.cmd):
+                # General commands
+
+                with m.Case(Command.IDENTIFY):
+                    m.d.comb += self.o.p.ret.eq(int.from_bytes(b"GLA0", "little"))
+
+                with m.Case(Command.GET_CLK_FREQUENCY):
+                    m.d.comb += self.o.p.ret.eq(self._clk_frequency)
+
+                with m.Case(Command.GET_BUFFER_SIZE):
+                    m.d.comb += self.o.p.ret.eq(self._buffer_size)
+
+                with m.Case(Command.GET_DATA_FORMAT):
+                    m.d.comb += self.o.p.ret.eq(self._data_width | (self._data_stride << 8))
+
+                with m.Case(Command.SET_CLK_DIVISOR):
+                    m.d.sync += self.clk_divisor.eq(self.i.p.arg)
+
+                with m.Case(Command.SET_PROLOG_SIZE):
+                    m.d.sync += self.prolog_size.eq(self.i.p.arg)
+
+                with m.Case(Command.SET_EPILOG_SIZE):
+                    m.d.sync += self.epilog_size.eq(self.i.p.arg)
+
+                with m.Case(Command.GET_TRIGGER):
+                    m.d.comb += self.o.p.ret.eq(int.from_bytes(b"BASI", "little"))
+
+                with m.Case(Command.SET_TRIGGER):
+                    pass # Do nothing; we only support the basic trigger mode
+
+                with m.Case(Command.ARM_TRIGGER):
+                    m.d.sync += self.trigger_active.eq(1)
+
+                with m.Case(Command.FORCE_TRIGGER):
+                    m.d.comb += self.trigger_force.eq(1)
+                    m.d.sync += self.trigger_active.eq(0)
+
+                with m.Case(Command.DISARM_TRIGGER):
+                    m.d.sync += self.trigger_active.eq(0)
+
+                with m.Case(Command.INTERRUPT):
+                    m.d.comb += self.interrupt.eq(1)
+                    m.d.sync += self.trigger_active.eq(0)
+
+                with m.Case(TriggerCommand.SET_ACTIVE):
+                    m.d.sync += Cat(self.trigger_mode[i].active for i in range(32)).eq(self.i.p.arg)
+
+                with m.Case(TriggerCommand.SET_VALUE):
+                    m.d.sync += Cat(self.trigger_mode[i].value for i in range(32)).eq(self.i.p.arg)
+
+                with m.Case(TriggerCommand.SET_LEVEL):
+                    m.d.sync += Cat(self.trigger_mode[i].level for i in range(32)).eq(self.i.p.arg)
+
+        return m
+
+
+class CommandParser(wiring.Component):
+    command: Out(stream.Signature(data.StructLayout({
+        "cmd": data.StructLayout({
+            "opcode":  5,
+            "trigger": 1,
+            "has_arg": 1,
+            "has_ret": 1,
+        }),
+        "arg": 32,
+    })))
+    response: In(stream.Signature(data.StructLayout({
+        "ret": 32,
+    })))
+
+    i_stream: In(stream.Signature(8))
+    o_stream: Out(stream.Signature(data.StructLayout({
+        "data": 8,
+        "end":  1,
+    })))
+
+    def elaborate(self, platform):
+        m = Module()
+
+        index = Signal(2)
+
+        with m.FSM():
+            with m.State("Command"):
+                m.d.sync += self.command.p.cmd.eq(self.i_stream.payload)
+                m.d.comb += self.i_stream.ready.eq(1)
+                with m.If(self.i_stream.valid & self.i_stream.ready):
+                    m.next = "Argument"
+
+            with m.State("Argument"):
+                with m.If(self.command.p.cmd.has_arg):
+                    m.d.sync += self.command.p.arg.word_select(index, 8).eq(self.i_stream.payload)
+                    m.d.comb += self.i_stream.ready.eq(1)
+                    with m.If(self.i_stream.valid & self.i_stream.ready):
+                        m.d.sync += index.eq(index + 1)
+                        with m.If(index == 3):
+                            m.next = "Return"
+                with m.Else():
+                    m.next = "Return"
+
+            with m.State("Return"):
+                m.d.comb += self.command.valid.eq(1)
+                with m.If(self.command.p.cmd.has_ret):
+                    m.d.comb += self.o_stream.p.data.eq(self.response.p.ret.word_select(index, 8))
+                    m.d.comb += self.o_stream.valid.eq(self.response.valid)
+                    with m.If(self.o_stream.valid & self.o_stream.ready):
+                        m.d.sync += index.eq(index + 1)
+                        with m.If(index == 3):
+                            m.d.comb += self.response.ready.eq(1)
+                            m.next = "End"
+                with m.Else():
+                    m.d.comb += self.response.ready.eq(1)
+                    m.next = "Command"
+
+            with m.State("End"):
+                m.d.comb += self.o_stream.p.end.eq(1)
+                m.d.comb += self.o_stream.valid.eq(1)
+                with m.If(self.o_stream.valid & self.o_stream.ready):
+                    m.next = "Command"
+
+        return m
+
+
+class OutputMultiplexer(wiring.Component):
+    i_stream_cmd: In(stream.Signature(data.StructLayout({
+        "data": 8,
+        "end":  1,
+    })))
+    i_stream_data: In(stream.Signature(data.StructLayout({
+        "data": 8,
+        "end":  1,
+    })))
+
+    o_stream: Out(stream.Signature(data.StructLayout({
+        "data": 8,
+        "end":  1,
+    })))
+
+    def elaborate(self, platform):
+        m = Module()
+
+        with m.FSM():
+            with m.State("Idle"):
+                with m.If(self.i_stream_cmd.valid):
+                    m.d.comb += [
+                        self.o_stream.p.data.eq(0),
+                        self.o_stream.valid.eq(1),
+                    ]
+                    with m.If(self.o_stream.valid & self.o_stream.ready):
+                        m.next = "Command"
+                with m.Elif(self.i_stream_data.valid):
+                    m.d.comb += [
+                        self.o_stream.p.data.eq(1),
+                        self.o_stream.valid.eq(1),
+                    ]
+                    with m.If(self.o_stream.valid & self.o_stream.ready):
+                        m.next = "Data"
+
+            with m.State("Command"):
+                wiring.connect(m, flipped(self.i_stream_cmd), flipped(self.o_stream))
+                with m.If(self.i_stream_cmd.valid & self.i_stream_cmd.ready &
+                          self.i_stream_cmd.p.end):
+                    m.next = "Idle"
+
+            with m.State("Data"):
+                wiring.connect(m, flipped(self.i_stream_data), flipped(self.o_stream))
+                with m.If(self.i_stream_data.valid & self.i_stream_data.ready &
+                          self.i_stream_data.p.end):
+                    m.next = "Idle"
+                with m.Elif(self.i_stream_cmd.valid):
+                    m.next = "Data-Interrupt"
+
+            with m.State("Data-Interrupt"):
+                # Inject a "continuation" trailer.
+                m.d.comb += [
+                    self.o_stream.p.data.eq(0xFF),
+                    self.o_stream.valid.eq(1),
+                ]
+                with m.If(self.o_stream.valid & self.o_stream.ready):
+                    m.next = "End"
+
+            with m.State("End"):
+                m.d.comb += [
+                    self.o_stream.p.end.eq(1),
+                    self.o_stream.valid.eq(1),
+                ]
+                with m.If(self.o_stream.valid & self.o_stream.ready):
+                    m.next = "Idle"
+
+        return m
+
+
 class AnalyzerComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
@@ -675,13 +938,19 @@ class AnalyzerComponent(wiring.Component):
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.clk_buffer  = clk_buffer  = io.Buffer("o",  self._ports.clk)
-        m.submodules.data_buffer = data_buffer = io.Buffer("io", self._ports.data)
+        m.submodules.cmd_handler  = cmd_handler  = CommandHandler(
+            clk_frequency=48_000_000, buffer_size=0x100000, data_width=5, data_stride=8,
+        )
+        m.submodules.cmd_parser   = cmd_parser   = CommandParser()
+        m.submodules.output_mux   = output_mux   = OutputMultiplexer()
+        m.submodules.cobs_encoder = cobs_encoder = cobs.Encoder()
 
-        # ... FPGA-side implementation goes here, for example:
-
-        with m.If(self.loopback_en):
-            wiring.connect(m, flipped(self.i_stream), flipped(self.o_stream))
+        wiring.connect(m, flipped(self.i_stream), cmd_parser.i_stream)
+        wiring.connect(m, cmd_parser.command, cmd_handler.i)
+        wiring.connect(m, cmd_handler.o, cmd_parser.response)
+        wiring.connect(m, cmd_parser.o_stream, output_mux.i_stream_cmd)
+        wiring.connect(m, output_mux.o_stream, cobs_encoder.i)
+        wiring.connect(m, cobs_encoder.o, flipped(self.o_stream))
 
         return m
 
@@ -718,7 +987,7 @@ class AnalyzerApplet(GlasgowAppletV2):
     def build(self, args):
         with self.assembly.add_applet(self):
             self.assembly.use_voltage(args.voltage)
-            self.boilerplate_iface = AnalyzerInterface(self.logger, self.assembly,
+            self.analyzer_iface = AnalyzerInterface(self.logger, self.assembly,
                 pins=args.pins)
 
     @classmethod
@@ -726,15 +995,20 @@ class AnalyzerApplet(GlasgowAppletV2):
         pass
 
     async def setup(self, args):
-        await self.boilerplate_iface.enable_loopback()
+        pass
 
     @classmethod
     def add_run_arguments(cls, parser):
-        pass
+        parser.add_argument(
+            "endpoint", metavar="ENDPOINT", type=endpoint, nargs="?",
+            default=("tcp", "localhost", 5555),
+            help="listen at ENDPOINT, either unix:PATH or tcp:HOST:PORT "
+                 "(default: tcp:localhost:5555)"
+        )
 
     async def run(self, args):
-        result = await self.boilerplate_iface.do_something()
-        print(f"did something: {result.hex()}")
+        endpoint = await ServerEndpoint("socket", self.logger, args.endpoint)
+        await endpoint.attach_to_pipe(self.analyzer_iface._pipe)
 
     @classmethod
     def tests(cls):
