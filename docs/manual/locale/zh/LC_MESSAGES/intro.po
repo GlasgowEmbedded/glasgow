@@ -69,7 +69,7 @@ msgstr "Open Source Hardware Association 标志（项目 UK000081）"
 
 #: ../../src/intro.rst:37
 msgid "What is Glasgow?"
-msgstr "Glasgow 是什么"
+msgstr "Glasgow 是什么？"
 
 #: ../../src/intro.rst:39
 msgid "Glasgow Interface Explorer is an `open hardware <oshwa-cert_>`__ tool for exploring digital interfaces, aimed at embedded developers, reverse engineers, digital archivists, electronics hobbyists, and everyone else who wants to communicate with a wide range of digital devices with high reliability and minimum hassle. It can be connected to most digital interfaces without additional active or passive components, and includes extensive protection from unexpected conditions and operator error."
@@ -85,7 +85,7 @@ msgstr "Glasgow 的软件是一系列组件，其在设计上消除额外复杂�
 
 #: ../../src/intro.rst:45
 msgid "Installing complex software can be daunting. The Glasgow software can be :ref:`installed with a single command <install-source>` using the Python package manager, or from a self-contained :ref:`Windows redistributable <install-binary>` that supports Windows 7 SP1 and newer."
-msgstr "安装复杂软件可能会使大家望而却步。Glasgow 的软件可以使用 Python 包管理器\\ :ref:`用一行命令安装 <install-source>`，或用一个独立的\\ :ref:`Windows 可重分发安装器 <install-binary>`\\ 安装（支持 Windows 7 SP1 或更新）。"
+msgstr "安装复杂软件可能会使大家望而却步。Glasgow 的软件可以使用 Python 包管理器\\ :ref:`用一行命令安装 <install-source>`，或用一个独立的 :ref:`Windows 可重分发安装器 <install-binary>`\\ 安装（支持 Windows 7 SP1 或更新）。"
 
 #: ../../src/intro.rst:49
 msgid "Bare Glasgow Interface Explorer PCB assembly"
