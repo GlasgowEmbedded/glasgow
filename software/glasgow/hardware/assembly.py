@@ -703,7 +703,7 @@ class HardwareAssembly(AbstractAssembly):
 
             # See the comment in `AsyncControllerECP5`.
             m.domains.dram_logic = ClockDomain(local=True)
-            m.submodules.logic_rst = cdc.ResetSynchronizer(ResetSignal("dram_edge"),
+            m.submodules.logic_rst = cdc.ResetSynchronizer(ResetSignal(domain.name),
                 domain="dram_logic")
             m.submodules.logic_div = Instance("CLKDIVF",
                 i_RST=ResetSignal("dram_edge"),
