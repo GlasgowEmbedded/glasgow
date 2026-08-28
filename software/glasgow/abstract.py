@@ -432,6 +432,10 @@ class AbstractAssembly(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def add_indicator(self, signal: Signal, *, name: str):
+        pass
+
+    @abstractmethod
     def set_port_voltage(self, port: GlasgowPort, vio: GlasgowVio):
         pass
 

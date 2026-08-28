@@ -93,6 +93,7 @@ class SimulationAssembly(AbstractAssembly):
     def __init__(self):
         self._logger   = logger
         self._pins     = {} # {name: io.PortLike}
+        self._leds     = {} # {name: Signal}
         self._modules  = [] # (elaboratable, name)
         self._benches  = [] # (constructor, background)
         self._jumpers  = [] # (pin_name...)
@@ -120,6 +121,9 @@ class SimulationAssembly(AbstractAssembly):
 
     def get_pin(self, pin_name: str) -> io.SimulationPort:
         return self._pins[pin_name]
+
+    def get_led(self, led_name: str) -> Signal:
+        return self._leds[led_name]
 
     def connect_pins(self, *pin_names: str):
         self._jumpers.append(pin_names)
@@ -187,6 +191,9 @@ class SimulationAssembly(AbstractAssembly):
         self._benches.append((controller.testbench, True)) # background
         self._memories += 1
         return controller.bus, range(size)
+
+    def add_indicator(self, signal: Signal, *, name: str):
+        self._leds[name] = signal
 
     def add_ro_register(self, signal) -> AbstractRORegister:
         return SimulationRORegister(self, signal)

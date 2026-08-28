@@ -501,6 +501,7 @@ class HardwareAssembly(AbstractAssembly):
         self._out_streams   = [] # (domain, out_stream, fifo_depth)
         self._pipes         = [] # in_pipe|out_pipe|inout_pipe
         self._memories      = [] # (domain, bus)
+        self._indicators    = [] # signal
         self._resets        = [] # (signal, when)
         self._voltages      = [] # (port, vio)
         self._pulls         = {} # (port, number): state
@@ -617,6 +618,10 @@ class HardwareAssembly(AbstractAssembly):
         bus = octoram.Signature().flip().create()
         self._memories.append((self._domain, bus))
         return bus, range(64*0x100000)
+
+    def add_indicator(self, signal: Signal, *, name: str):
+        self._current_logger.info("assigning indicator %r to U%d", name, len(self._indicators) + 1)
+        self._indicators.append(signal)
 
     def set_port_voltage(self, port: GlasgowPort, vio: GlasgowVio):
         self._current_logger.debug("setting port %s voltage to %s V", port, vio)
@@ -752,6 +757,15 @@ class HardwareAssembly(AbstractAssembly):
             if domain is not None:
                 with m.If(out_ep.reset):
                     m.d.comb += domain.rst.eq(1)
+
+        for index, led_value in enumerate(self._indicators):
+            try:
+                led_port = self._platform.request("led", index, dir="-")
+                m.submodules[f"led{index}"] = led_buffer = io.Buffer("o", led_port)
+                m.d.comb += led_buffer.o.eq(led_value)
+            except ResourceError:
+                logger.error("ran out of LEDs to use for indicator display")
+                break
 
         # /!\ IMPORTANT /!\
         # tie off output enables of unused pins to zero, or they will strongly drive high
