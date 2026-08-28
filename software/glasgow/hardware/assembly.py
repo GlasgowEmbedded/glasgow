@@ -698,7 +698,7 @@ class HardwareAssembly(AbstractAssembly):
             # The location constraint should not be needed with new enough nextpnr-ecp5, but is
             # included here as insurance. TODO: remove this once nextpnr-0.11 is used.
             plan = pll.ClockPlan(self.sys_clk_period, location="X70/Y49/EHXPLL_LR")
-            m.domains.dram_edge = plan.add_domain(pll.ecp5.Channel(period=1/240e6, usage="edge"))
+            m.domains.dram_edge = plan.add_domain(pll.ecp5.Channel(period=1/236e6, usage="edge"))
             m.submodules.dram_pll = plan.create(self._platform)
 
             # See the comment in `AsyncControllerECP5`.
