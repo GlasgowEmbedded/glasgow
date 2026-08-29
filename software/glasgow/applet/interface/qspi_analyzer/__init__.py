@@ -65,8 +65,7 @@ class QSPIAnalyzerFrontend(wiring.Component):
         m.domains.fifo = cd_fifo = ClockDomain(reset_less=True, local=True)
         m.d.comb += cd_fifo.clk.eq(sck_buffer.i)
 
-        m.submodules.fifo = fifo = AsyncQueue(
-            shape=self.stream.p.shape(),
+        m.submodules.fifo = fifo = AsyncQueue.shaped_like(self.stream,
             depth=4, # CDC only, no buffering
             i_domain="fifo",
             o_domain="sync"
