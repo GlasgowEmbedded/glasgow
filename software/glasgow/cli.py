@@ -22,6 +22,7 @@ from .support import logging
 from .support.asignal import *
 from .support.progress import TqdmProgressImpl
 from .support.plugin import PluginRequirementsUnmet, PluginLoadError
+from .support.usb import ErrorDisconnected
 from .abstract import ClockingError, GlasgowPort
 from .hardware.device import GlasgowDeviceError, GlasgowDevice, GlasgowDeviceConfig
 from .hardware.device import FX2BootloaderDevice, VID_QIHW, PID_GLASGOW
@@ -1109,7 +1110,10 @@ async def main() -> int:
             root_logger.removeHandler(file_handler)
 
         if device is not None:
-            await device.close()
+            try:
+                await device.close()
+            except ErrorDisconnected:
+                pass
 
     return 0
 
