@@ -8,6 +8,7 @@ I/O interfaces
 .. toctree::
     :maxdepth: 3
 
+    analyzer2
     uart
     uart_analyzer
     i2c_controller

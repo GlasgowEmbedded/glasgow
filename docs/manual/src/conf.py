@@ -32,7 +32,13 @@ extensions = [
     "sphinx_inline_tabs",
     "sphinxcontrib.autoprogram",
     "enum_tools.autoenum",
+    "myst_parser",
 ]
+
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".md":  "markdown",
+}
 
 highlight_language = "text"
 
