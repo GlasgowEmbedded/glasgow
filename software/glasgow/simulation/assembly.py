@@ -201,7 +201,7 @@ class SimulationAssembly(AbstractAssembly):
     def add_rw_register(self, signal) -> AbstractRWRegister:
         return SimulationRWRegister(self, signal)
 
-    def add_submodule(self, elaboratable, *, name: str | None = None) -> Elaboratable:
+    def add_submodule[E: Elaboratable](self, elaboratable: E, *, name: str | None = None) -> E:
         self._modules.append((elaboratable, name))
         return elaboratable
 

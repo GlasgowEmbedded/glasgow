@@ -559,7 +559,7 @@ class HardwareAssembly(AbstractAssembly):
         port = self._platform.glasgow_pins.pop(pin_name)
         return ~port if pin.invert else port
 
-    def add_submodule(self, elaboratable, *, name=None) -> Elaboratable:
+    def add_submodule[E: Elaboratable](self, elaboratable: E, *, name: str | None = None) -> E:
         assert self._artifact is None, "cannot add a submodule to a sealed assembly"
         self._modules.append((self._domain, elaboratable, name))
         elaboratable._MustUse__used = True
