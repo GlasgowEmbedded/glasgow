@@ -448,7 +448,7 @@ class SimulationController(wiring.Component):
                 case Command.WriteMemRow:
                     await ctx.tick().repeat(2 + ctx.get(self.latency))
 
-                    assert command.addr % 2 == 0
+                    assert command.addr % 2 == 0, f"{command.addr:#x} % 2 != 0"
                     for offset in range(0, command.size << 1, 2):
                         pointer = command.addr + offset
                         word = await stream_get(ctx, self.bus.w_data)
@@ -461,7 +461,7 @@ class SimulationController(wiring.Component):
                     # Act as-if fixed latency mode was always used.
                     await ctx.tick().repeat(2 + ctx.get(self.latency) * 2)
 
-                    assert command.addr % 2 == 0
+                    assert command.addr % 2 == 0, f"{command.addr:#x} % 2 != 0"
                     for offset in range(0, command.size << 1, 2):
                         pointer = command.addr + offset
                         await stream_put(ctx, self.bus.r_data, [
