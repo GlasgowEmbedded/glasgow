@@ -2,8 +2,9 @@
 # Accession: G00130
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io, cdc
+from amaranth.lib import enum, data, wiring, stream, io
 from amaranth.lib.wiring import In, Out, connect, flipped
+from amaranth.sim import SimulatorContext
 
 from .ports import PortGroup
 from .stream import Queue, AsyncQueue, StreamBuffer, stream_get, stream_put
@@ -12,7 +13,7 @@ from .iostream import IOStreamer, HalfRateIOStreamer
 
 __all__ = [
     "Operation", "Enframer", "Deframer", "Streamer",
-    "Command", "Signature", "Controller", "SimulationController", "AsyncControllerECP5",
+    "Command", "Signature", "Controller", "SimulationController", "InterfaceQueue",
 ]
 
 
@@ -228,12 +229,53 @@ class Controller(wiring.Component):
     """OPI PSRAM controller.
 
     Supports only AP Memory APSxxx08N-OBR devices.
+
+    ECP5 Platform Support
+    ---------------------
+
+    On this platform, the controller requires a clock domain named ``edge`` connected to a PLL
+    ``CLKOP`` or ``CLKOS`` output, and a clock domain named ``sync`` produced using a ``CLKDIVF``
+    instance as follows:
+
+    .. code::
+
+        m.domains.sync = ClockDomain()
+        m.submodules.sync_rst = cdc.ResetSynchronizer(ResetSignal("edge"), domain="sync")
+        m.submodules.sync_div = Instance("CLKDIVF",
+            i_RST=ResetSignal("edge"),
+            i_CLKI=ClockSignal("edge"),
+            o_CDIVX=ClockSignal("sync"),
+        )
+
+    There are only four ``CLKDIVF`` primitives per device. When using multiple memory controllers,
+    these primitives should be shared if at all possible.
+
+    The memory chip will be clocked at one half of the ``edge`` domain frequency, and transfer
+    one ``w_data`` or ``r_data`` payload per clock.
     """
+
+    # ECP5 has a peculiar clocking arrangement where there are two types of clock interconnect,
+    # "primary clocks" (PCLK) and "edge clocks" (ECLK). Ignoring fabric inputs/outputs (which
+    # generally have high delay and jitter):
+    #  - Only edge clocks can be used to drive IO gearboxes like ODDRX2.
+    #  - Primary clocks may be generated from edge clocks via CLKDIVF, and no other way.
+    #  - Edge clocks can be driven by dedicated clock input pins, injected by PLLs,
+    #    bridged via ECLKBRIDGE, or produced by DLLDEL primitives.
+    #  - PLLs can inject edge clocks (via CLKOP/CLKOS) or primary clocks (via any output), this
+    #    can only generate edge clocks on the same side of the device (east/west).
+    #  - ECLKBRIDGECS can be used to bridge an edge clock from one side's PLL to another's IOs.
+    #
+    # Assuming we don't want to burn an entire PLL on the memory controller, by far the best
+    # implementation strategy is to bring in an edge clock (only), which is generated outside
+    # of the controller. The controller will then generate a logic clock with the appropriate
+    # phase via CLKDIVF. Regardless of its frequency, commands and data are transferred via
+    # async FIFOs; the memory clock frequency can now be changed by adjusting the memory
+    # controller edge clock frequency, which is convenient.
 
     bus: In(Signature())
     latency: In(range(32))
 
-    def __init__(self, ports, *, offset=0, half_rate=True):
+    def __init__(self, ports, *, offset: int = 0, half_rate: bool):
         self._ports     = ports
         self._offset    = offset
         self._half_rate = half_rate
@@ -248,7 +290,7 @@ class Controller(wiring.Component):
         m.submodules.streamer = ram = Streamer(self._ports,
             offset=self._offset, half_rate=self._half_rate)
 
-        # Command/address FSM and data read FSM valid to synchronize for variable latency to work
+        # Command/address FSM and data read FSM have to synchronize for variable latency to work
         # because the former will continue issuing reads until stopped, and the latter will cause
         # the former to stop but cannot do anything about "in-flight" reads.
         # Note: the logic below assumes zero-length reads/writes are impossible (which they are
@@ -428,30 +470,30 @@ class SimulationController(wiring.Component):
     def __init__(self, size):
         assert size % 2 == 0
 
-        self.memory = bytearray(size)
+        self.memory  = bytearray(size)
 
         super().__init__()
 
     def elaborate(self, platform):
         return Module()
 
-    async def testbench(self, ctx):
+    async def testbench(self, ctx: SimulatorContext):
         init_latency = 5
         ctx.set(self.latency, init_latency)
 
         while True:
-            command = await stream_get(ctx, self.bus.commands)
+            command = await stream_get(ctx, self.bus.commands, context=self)
             match command.type:
                 case Command.GlobalReset:
                     ctx.set(self.latency, init_latency)
 
                 case Command.WriteMemRow:
-                    await ctx.tick().repeat(2 + ctx.get(self.latency))
+                    await ctx.tick(context=self).repeat(2 + ctx.get(self.latency))
 
                     assert command.addr % 2 == 0, f"{command.addr:#x} % 2 != 0"
                     for offset in range(0, command.size << 1, 2):
                         pointer = command.addr + offset
-                        word = await stream_get(ctx, self.bus.w_data)
+                        word = await stream_get(ctx, self.bus.w_data, context=self)
                         if not word[0].mask:
                             self.memory[pointer + 0] = word[0].data
                         if not word[1].mask:
@@ -459,7 +501,7 @@ class SimulationController(wiring.Component):
 
                 case Command.ReadMemRow:
                     # Act as-if fixed latency mode was always used.
-                    await ctx.tick().repeat(2 + ctx.get(self.latency) * 2)
+                    await ctx.tick(context=self).repeat(2 + ctx.get(self.latency) * 2)
 
                     assert command.addr % 2 == 0, f"{command.addr:#x} % 2 != 0"
                     for offset in range(0, command.size << 1, 2):
@@ -467,82 +509,41 @@ class SimulationController(wiring.Component):
                         await stream_put(ctx, self.bus.r_data, [
                             {"data": self.memory[pointer + 0]},
                             {"data": self.memory[pointer + 1]},
-                        ])
+                        ], context=self)
 
 
-class AsyncControllerECP5(wiring.Component):
-    """PSRAM controller specialized for the ECP5 platform.
+class InterfaceQueue(wiring.Component):
+    """Clock domain crossing queue for commands and data."""
 
-    Requires a clock domain named ``edge`` connected to a PLL ``CLKOP`` or ``CLKOS`` output,
-    and a clock domain named ``logic`` produced using a ``CLKDIVF`` instance as follows:
+    i: In(Signature())
+    o: Out(Signature())
 
-    .. code::
-
-        m.domains.logic = ClockDomain(local=True)
-        m.submodules.logic_rst = cdc.ResetSynchronizer(ResetSignal("edge"), domain="logic")
-        m.submodules.logic_div = Instance("CLKDIVF",
-            i_RST=ResetSignal("edge"),
-            i_CLKI=ClockSignal("edge"),
-            o_CDIVX=ClockSignal("logic"),
-        )
-
-    There are only four ``CLKDIVF`` primitives per device. When using multiple memory controllers,
-    these primitives should be shared if at all possible.
-
-    The memory chip will be clocked at one half of the ``edge`` domain frequency, and transfer
-    one ``w_data`` or ``r_data`` payload per clock.
-
-    The ``latency`` input should be strapped to a constant value.
-    """
-
-    bus: In(Signature())
-    latency: In(range(32))
-
-    def __init__(self, ports, *, offset=0):
-        self._ports  = ports
-        self._offset = offset
+    def __init__(self, *, i_domain: str, o_domain: str, cmd_fifo_depth: int = 4,
+                 w_fifo_depth: int = 8, r_fifo_depth: int = 8):
+        self.i_domain       = i_domain
+        self.o_domain       = o_domain
+        self.commands_depth = cmd_fifo_depth
+        self.w_data_depth   = w_fifo_depth
+        self.r_data_depth   = r_fifo_depth
 
         super().__init__()
 
     def elaborate(self, platform):
         m = Module()
 
-        # ECP5 has a peculiar clocking arrangement where there are two types of clock interconnect,
-        # "primary clocks" (PCLK) and "edge clocks" (ECLK). Ignoring fabric inputs/outputs (which
-        # generally have high delay and jitter):
-        #  - Only edge clocks can be used to drive IO gearboxes like ODDRX2.
-        #  - Primary clocks may be generated from edge clocks via CLKDIVF, and no other way.
-        #  - Edge clocks can be driven by dedicated clock input pins, injected by PLLs,
-        #    bridged via ECLKBRIDGE, or produced by DLLDEL primitives.
-        #  - PLLs can inject edge clocks (via CLKOP/CLKOS) or primary clocks (via any output), this
-        #    can only generate edge clocks on the same side of the device (east/west).
-        #  - ECLKBRIDGECS can be used to bridge an edge clock from one side's PLL to another's IOs.
-        #
-        # Assuming we don't want to burn an entire PLL on the memory controller, by far the best
-        # implementation strategy is to bring in an edge clock (only), which is generated outside
-        # of the controller. The controller will then generate a logic clock with the appropriate
-        # phase via CLKDIVF. Regardless of its frequency, commands and data are transferred via
-        # async FIFOs; the memory clock frequency can now be changed by adjusting the memory
-        # controller edge clock frequency, which is convenient.
+        m.submodules.cmd_queue = cmd_queue = AsyncQueue.shaped_like(self.i.commands,
+            depth=self.commands_depth, i_domain=self.i_domain, o_domain=self.o_domain)
+        wiring.connect(m, wiring.flipped(self.i.commands), cmd_queue.i)
+        wiring.connect(m, cmd_queue.o, wiring.flipped(self.o.commands))
 
-        m.submodules.inner = inner = DomainRenamer("logic")(Controller(self._ports,
-            offset=self._offset, half_rate=False))
-        m.submodules.lat_sync = cdc.FFSynchronizer(self.latency, inner.latency,
-            o_domain="logic")
+        m.submodules.wr_queue = wr_queue = AsyncQueue.shaped_like(self.i.w_data,
+            depth=self.w_data_depth, i_domain=self.i_domain, o_domain=self.o_domain)
+        wiring.connect(m, wiring.flipped(self.i.w_data), wr_queue.i)
+        wiring.connect(m, wr_queue.o, wiring.flipped(self.o.w_data))
 
-        m.submodules.cmd_fifo = cmd_fifo = AsyncQueue.shaped_like(self.bus.commands, depth=4,
-            i_domain="sync", o_domain="logic")
-        wiring.connect(m, cmd_fifo.i, wiring.flipped(self.bus.commands))
-        wiring.connect(m, inner.bus.commands, cmd_fifo.o)
-
-        m.submodules.wr_fifo = wr_fifo = AsyncQueue.shaped_like(self.bus.w_data, depth=8,
-            i_domain="sync", o_domain="logic")
-        wiring.connect(m, wr_fifo.i, wiring.flipped(self.bus.w_data))
-        wiring.connect(m, inner.bus.w_data, wr_fifo.o)
-
-        m.submodules.rd_fifo = rd_fifo = AsyncQueue.shaped_like(self.bus.r_data, depth=8,
-            i_domain="logic", o_domain="sync")
-        wiring.connect(m, inner.bus.r_data, rd_fifo.i)
-        wiring.connect(m, rd_fifo.o, wiring.flipped(self.bus.r_data))
+        m.submodules.rd_queue = rd_queue = AsyncQueue.shaped_like(self.i.r_data,
+            depth=self.r_data_depth, i_domain=self.o_domain, o_domain=self.i_domain)
+        wiring.connect(m, wiring.flipped(self.o.r_data), rd_queue.i)
+        wiring.connect(m, rd_queue.o, wiring.flipped(self.i.r_data))
 
         return m
