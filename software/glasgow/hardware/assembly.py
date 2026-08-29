@@ -706,26 +706,27 @@ class HardwareAssembly(AbstractAssembly):
             m.domains.dram_edge = plan.add_domain(pll.ecp5.Channel(period=1/236e6, usage="edge"))
             m.submodules.dram_pll = plan.create(self._platform)
 
-            # See the comment in `AsyncControllerECP5`.
-            m.domains.dram_logic = ClockDomain(local=True)
+            # See the comment in `octoram.Controller` about ECP5.
+            m.domains.dram_sync = ClockDomain(local=True)
             m.submodules.logic_rst = cdc.ResetSynchronizer(ResetSignal(domain.name),
-                domain="dram_logic")
+                domain="dram_sync")
             m.submodules.logic_div = Instance("CLKDIVF",
                 i_RST=ResetSignal("dram_edge"),
                 i_CLKI=ClockSignal("dram_edge"),
-                o_CDIVX=ClockSignal("dram_logic"),
+                o_CDIVX=ClockSignal("dram_sync"),
             )
 
             for channel, (domain, mem_bus) in enumerate(self._memories):
                 mem_ports = self._platform.request("octoram", channel,
                     dir={"cs": "-", "clk": "-", "dq": "-", "dqs": "-"})
+                m.submodules[f"mem_queue{channel}"] = mem_queue = octoram.InterfaceQueue(
+                    i_domain=domain.name, o_domain="dram_sync")
                 m.submodules[f"mem_ctrl{channel}"] = mem_ctrl = DomainRenamer({
-                    "edge":  "dram_edge",
-                    "logic": "dram_logic",
-                    "sync":  domain.name,
-                })(octoram.AsyncControllerECP5(mem_ports))
+                    "edge": "dram_edge", "sync": "dram_sync",
+                })(octoram.Controller(mem_ports, half_rate=False))
                 m.d.comb += mem_ctrl.latency.eq(5)
-                wiring.connect(m, wiring.flipped(mem_bus), mem_ctrl.bus)
+                wiring.connect(m, wiring.flipped(mem_bus), mem_queue.i)
+                wiring.connect(m, mem_queue.o, mem_ctrl.bus)
 
         m.submodules.fx2_crossbar = fx2_crossbar = FX2Crossbar(fx2_pins)
 

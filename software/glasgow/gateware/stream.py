@@ -9,17 +9,17 @@ __all__ = [
 ]
 
 
-async def stream_put(ctx, stream, payload):
+async def stream_put(ctx, stream, payload, *, context=None):
     ctx.set(stream.payload, payload)
     ctx.set(stream.valid, 1)
-    await ctx.tick().until(stream.ready)
+    await ctx.tick(context=context).until(stream.ready)
     ctx.set(stream.valid, 0)
 
 
-async def stream_get(ctx, stream):
+async def stream_get(ctx, stream, *, context=None):
     if not isinstance(stream.ready, Const):
         ctx.set(stream.ready, 1)
-    payload, = await ctx.tick().sample(stream.payload).until(stream.valid)
+    payload, = await ctx.tick(context=context).sample(stream.payload).until(stream.valid)
     if not isinstance(stream.ready, Const):
         ctx.set(stream.ready, 0)
     return payload
