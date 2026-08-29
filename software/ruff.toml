@@ -205,3 +205,6 @@ allow-dict-calls-with-keyword-arguments = true
 
 # These ones use cursed import hacks for a nicer API.
 "glasgow/gateware/pll/__init__.py" = ["E402"]
+
+# Very high false positive ratio.
+"glasgow/**/test.py" = ["B023"] # function-uses-loop-variable
