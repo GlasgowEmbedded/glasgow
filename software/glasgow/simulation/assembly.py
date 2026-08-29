@@ -3,7 +3,7 @@ from collections.abc import Buffer, Generator
 from contextlib import contextmanager
 
 from amaranth import *
-from amaranth.lib import io
+from amaranth.lib import io, wiring
 from amaranth.sim import Simulator
 
 from glasgow.support import logging
@@ -186,11 +186,18 @@ class SimulationAssembly(AbstractAssembly):
         return SimulationPipe(self, i_buffer=i_buffer, o_buffer=o_buffer)
 
     def add_dynamic_memory(self, size=64*0x100000) -> tuple[octoram.Signature, range]:
-        controller = octoram.SimulationController(size)
-        self._modules.append((controller, f"mem_ctrl{self._memories}"))
-        self._benches.append((controller.testbench, True)) # background
+        m = Module()
+        m.submodules.ctrl = ctrl = DomainRenamer("dram")(
+            octoram.SimulationController(size))
+        m.submodules.queue = queue = octoram.InterfaceQueue(
+            i_domain="sync", o_domain="dram",
+            commands_depth=4, w_data_depth=8, r_data_depth=8
+        )
+        wiring.connect(m, queue.o, ctrl.bus)
+        self._modules.append((m, f"mem{self._memories}"))
+        self._benches.append((ctrl.testbench, True)) # background
         self._memories += 1
-        return controller.bus, range(size)
+        return queue.i, range(size)
 
     def add_indicator(self, signal: Signal, *, name: str):
         self._leds[name] = signal
@@ -249,7 +256,12 @@ class SimulationAssembly(AbstractAssembly):
             m.submodules[name] = elaboratable
 
         sim = Simulator(m)
-        sim.add_clock(self.sys_clk_period)
+        sim.add_clock(self.sys_clk_period, domain="sync")
+        if self._memories:
+            # Maintain approximately the same frequency ratio between the `sync` and `dram` domains
+            # as on real hardware, without requiring `sync` to run as fast (which causes issues for
+            # applets that involve waiting for a delay).
+            sim.add_clock(self.sys_clk_period / 2.5, domain="dram")
 
         async def wrap_fn(ctx):
             self.__context = ctx
