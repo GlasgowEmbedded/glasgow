@@ -75,6 +75,10 @@ class Queue(wiring.Component):
             "level": Out(range(depth + 1))
         })
 
+    @classmethod
+    def shaped_like(cls, stream, depth: int):
+        return cls(shape=stream.payload.shape(), depth=depth)
+
     @property
     def shape(self) -> int:
         return self._shape
@@ -119,6 +123,10 @@ class AsyncQueue(wiring.Component):
             "i": In(stream.Signature(shape)),
             "o": Out(stream.Signature(shape)),
         })
+
+    @classmethod
+    def shaped_like(cls, stream, depth: int, i_domain="sync", o_domain="sync"):
+        return cls(shape=stream.payload.shape(), depth=depth, i_domain=i_domain, o_domain=o_domain)
 
     def elaborate(self, platform):
         m = Module()

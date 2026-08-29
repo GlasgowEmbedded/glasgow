@@ -530,17 +530,17 @@ class AsyncControllerECP5(wiring.Component):
         m.submodules.lat_sync = cdc.FFSynchronizer(self.latency, inner.latency,
             o_domain="logic")
 
-        m.submodules.cmd_fifo = cmd_fifo = AsyncQueue(shape=self.bus.commands.p.shape(), depth=4,
+        m.submodules.cmd_fifo = cmd_fifo = AsyncQueue.shaped_like(self.bus.commands, depth=4,
             i_domain="sync", o_domain="logic")
         wiring.connect(m, cmd_fifo.i, wiring.flipped(self.bus.commands))
         wiring.connect(m, inner.bus.commands, cmd_fifo.o)
 
-        m.submodules.wr_fifo = wr_fifo = AsyncQueue(shape=self.bus.w_data.p.shape(), depth=8,
+        m.submodules.wr_fifo = wr_fifo = AsyncQueue.shaped_like(self.bus.w_data, depth=8,
             i_domain="sync", o_domain="logic")
         wiring.connect(m, wr_fifo.i, wiring.flipped(self.bus.w_data))
         wiring.connect(m, inner.bus.w_data, wr_fifo.o)
 
-        m.submodules.rd_fifo = rd_fifo = AsyncQueue(shape=self.bus.r_data.p.shape(), depth=8,
+        m.submodules.rd_fifo = rd_fifo = AsyncQueue.shaped_like(self.bus.r_data, depth=8,
             i_domain="logic", o_domain="sync")
         wiring.connect(m, inner.bus.r_data, rd_fifo.i)
         wiring.connect(m, rd_fifo.o, wiring.flipped(self.bus.r_data))
