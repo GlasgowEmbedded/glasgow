@@ -35,11 +35,11 @@ async def stream_get_maybe(ctx, stream):
         return None
 
 
-async def stream_assert(ctx, stream, expected):
+async def stream_assert(ctx, stream, expected, msg=""):
     value = await stream_get(ctx, stream)
     for key, expected_value in expected.items():
         assert value[key] == expected_value, \
-            f"payload.{key}: {value[key]!r} != {expected_value!r}"
+            f"payload.{key}: {value[key]!r} != {expected_value!r} {msg}"
 
 
 class StreamBuffer(wiring.Component):
