@@ -19,7 +19,7 @@ from glasgow.gateware import octoram
 __all__ = [
     "ClockingError",
     "PullState", "GlasgowPort", "GlasgowVio", "GlasgowPin", "GlasgowAnalog",
-    "AbstractRORegister", "AbstractRWRegister", "ClockDivisor",
+    "AbstractRORegister", "AbstractRWRegister", "ClockDivisor", "DRAMOptions",
     "AbstractInPipe", "AbstractOutPipe", "AbstractInOutPipe",
     "AbstractAssembly"
 ]
@@ -288,6 +288,15 @@ class ClockDivisor:
         await self._register.set(divisor)
 
 
+@dataclass(frozen=True, kw_only=True)
+class DRAMOptions:
+    size: int | None = None
+
+    cmd_fifo_size: int = 4
+    r_fifo_size: int = 8
+    w_fifo_size: int = 8
+
+
 class AbstractInPipe(metaclass=ABCMeta):
     @property
     @abstractmethod
@@ -399,8 +408,7 @@ class AbstractAssembly(metaclass=ABCMeta):
         pass
 
     def add_clock_divisor(self, signal, ref_period: float, *, tolerance: float | None = None,
-                          round_mode: Literal["floor", "nearest"] = "floor",
-                          name: str) -> ClockDivisor:
+            round_mode: Literal["floor", "nearest"] = "floor", name: str) -> ClockDivisor:
         if not isinstance(signal.shape(), Shape):
             raise TypeError(f"signal must have a plain shape, not {signal.shape()!r}")
         if tolerance is None:
@@ -412,23 +420,22 @@ class AbstractAssembly(metaclass=ABCMeta):
 
     @abstractmethod
     def add_in_pipe(self, in_stream, *, in_flush=C(0),
-                    fifo_depth=None, buffer_size=None) -> AbstractInPipe:
+            fifo_depth=None, buffer_size=None) -> AbstractInPipe:
         pass
 
     @abstractmethod
     def add_out_pipe(self, out_stream, *,
-                     fifo_depth=None, buffer_size=None) -> AbstractOutPipe:
+            fifo_depth=None, buffer_size=None) -> AbstractOutPipe:
         pass
 
     @abstractmethod
     def add_inout_pipe(self, in_stream, out_stream, *, in_flush=C(0),
-                       in_fifo_depth=None, in_buffer_size=None,
-                       out_fifo_depth=None, out_buffer_size=None) -> AbstractInOutPipe:
+            in_fifo_depth=None, in_buffer_size=None,
+            out_fifo_depth=None, out_buffer_size=None) -> AbstractInOutPipe:
         pass
 
-    # Many of these interfaces are subject to change. This one is *particularly* subject to change.
     @abstractmethod
-    def add_dynamic_memory(self, size: None | int = None) -> tuple[octoram.Signature, range]:
+    def add_dynamic_memory(self, options=DRAMOptions()) -> tuple[octoram.Signature, range]:
         pass
 
     @abstractmethod

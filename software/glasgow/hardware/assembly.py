@@ -1,9 +1,10 @@
-from typing import Any, BinaryIO
+from typing import Any, BinaryIO, override
 from collections.abc import Generator
 from collections import defaultdict
 from contextlib import contextmanager
 import os
 import asyncio
+import dataclasses
 
 from amaranth import *
 from amaranth.hdl import ShapeCastable
@@ -500,7 +501,7 @@ class HardwareAssembly(AbstractAssembly):
         self._in_streams    = [] # (domain, in_stream, in_flush, fifo_depth)
         self._out_streams   = [] # (domain, out_stream, fifo_depth)
         self._pipes         = [] # in_pipe|out_pipe|inout_pipe
-        self._memories      = [] # (domain, bus)
+        self._memories      = [] # (domain, bus, DRAMOptions)
         self._indicators    = [] # signal
         self._resets        = [] # (signal, when)
         self._voltages      = [] # (port, vio)
@@ -608,16 +609,20 @@ class HardwareAssembly(AbstractAssembly):
         self._pipes.append(inout_pipe)
         return inout_pipe
 
-    def add_dynamic_memory(self, size=None) -> tuple[octoram.Signature, range]:
-        # In the future we will likely allow sharing memories; for now this is not available.
+    @override
+    def add_dynamic_memory(self, options=DRAMOptions()) -> tuple[octoram.Signature, range]:
+        if options.size is None:
+            options = dataclasses.replace(options, size=64 * 0x100000)
         assert self._artifact is None, "cannot add a dynamic memory to a sealed assembly"
         assert self._revision >= "D0", "DRAM is not available prior to revision D0"
-        assert size is None or size <= 64*0x100000, "memory must be less than 64 MB in size"
         assert len(self._memories) < 2, "only two memory channels are available"
+        assert options.size <= 64 * 0x100000, "memory size must be no more than 64 MB"
         self._current_logger.debug(f"allocating DRAM channel {len(self._memories)}")
         bus = octoram.Signature().flip().create()
-        self._memories.append((self._domain, bus))
-        return bus, range(64*0x100000)
+        self._memories.append((self._domain, bus, options))
+        # In the future we will likely allow sharing memories; for now this is not available so
+        # the entire chip is allocated to one applet.
+        return bus, range(options.size)
 
     def add_indicator(self, signal: Signal, *, name: str):
         self._current_logger.info("assigning indicator %r to U%d", name, len(self._indicators) + 1)
@@ -717,17 +722,22 @@ class HardwareAssembly(AbstractAssembly):
                 o_CDIVX=ClockSignal("dram_sync"),
             )
 
-            for channel, (domain, mem_bus) in enumerate(self._memories):
+            for channel, (domain, mem_bus, options) in enumerate(self._memories):
                 mem_ports = self._platform.request("octoram", channel,
                     dir={"cs": "-", "clk": "-", "dq": "-", "dqs": "-"})
-                m.submodules[f"mem_queue{channel}"] = mem_queue = octoram.InterfaceQueue(
-                    i_domain=domain.name, o_domain="dram_sync")
                 m.submodules[f"mem_ctrl{channel}"] = mem_ctrl = DomainRenamer({
                     "edge": "dram_edge", "sync": "dram_sync",
                 })(octoram.Controller(mem_ports, half_rate=False))
                 m.d.comb += mem_ctrl.latency.eq(5)
-                wiring.connect(m, wiring.flipped(mem_bus), mem_queue.i)
+                m.submodules[f"mem_queue{channel}"] = mem_queue = octoram.InterfaceQueue(
+                    i_domain=domain.name,
+                    o_domain="dram_sync",
+                    cmd_fifo_depth=options.cmd_fifo_size,
+                    w_fifo_depth=options.w_fifo_size,
+                    r_fifo_depth=options.r_fifo_size,
+                )
                 wiring.connect(m, mem_queue.o, mem_ctrl.bus)
+                wiring.connect(m, wiring.flipped(mem_bus), mem_queue.i)
 
         m.submodules.fx2_crossbar = fx2_crossbar = FX2Crossbar(fx2_pins)
 
