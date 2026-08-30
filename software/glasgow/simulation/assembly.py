@@ -196,9 +196,8 @@ class SimulationAssembly(AbstractAssembly):
         m.submodules.queue = queue = octoram.InterfaceQueue(
             i_domain="sync",
             o_domain="dram",
-            cmd_fifo_depth=options.cmd_fifo_size,
-            w_fifo_depth=options.w_fifo_size,
-            r_fifo_depth=options.r_fifo_size,
+            w_buffer_depth=options.w_buffer_size,
+            r_buffer_depth=options.r_buffer_size,
         )
         wiring.connect(m, queue.o, ctrl.bus)
         self._modules.append((m, f"mem{self._memories}"))
@@ -268,7 +267,7 @@ class SimulationAssembly(AbstractAssembly):
             # Maintain approximately the same frequency ratio between the `sync` and `dram` domains
             # as on real hardware, without requiring `sync` to run as fast (which causes issues for
             # applets that involve waiting for a delay).
-            sim.add_clock(self.sys_clk_period / 2.5, domain="dram")
+            sim.add_clock(self.sys_clk_period / 2.333, domain="dram")
 
         async def wrap_fn(ctx):
             self.__context = ctx

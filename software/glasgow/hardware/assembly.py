@@ -709,7 +709,7 @@ class HardwareAssembly(AbstractAssembly):
             # included here as insurance. TODO: remove this once nextpnr-0.11 is used.
             plan = pll.ClockPlan(self.sys_clk_period, location="X70/Y49/EHXPLL_LR")
             m.domains.dram_edge = plan.add_domain(
-                pll.ecp5.Channel(period=1/(2*118e6), usage="edge"))
+                pll.ecp5.Channel(period=1/(2*112e6), usage="edge"))
             m.submodules.dram_pll = plan.create(self._platform)
 
             # See the comment in `octoram.Controller` about ECP5.
@@ -732,9 +732,8 @@ class HardwareAssembly(AbstractAssembly):
                 m.submodules[f"mem_queue{channel}"] = mem_queue = octoram.InterfaceQueue(
                     i_domain=domain.name,
                     o_domain="dram_sync",
-                    cmd_fifo_depth=options.cmd_fifo_size,
-                    w_fifo_depth=options.w_fifo_size,
-                    r_fifo_depth=options.r_fifo_size,
+                    w_buffer_depth=options.w_buffer_size,
+                    r_buffer_depth=options.r_buffer_size,
                 )
                 wiring.connect(m, mem_queue.o, mem_ctrl.bus)
                 wiring.connect(m, wiring.flipped(mem_bus), mem_queue.i)

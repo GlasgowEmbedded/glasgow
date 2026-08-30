@@ -290,6 +290,9 @@ class Controller(wiring.Component):
         m.submodules.streamer = ram = Streamer(self._ports,
             offset=self._offset, half_rate=self._half_rate)
 
+        m.submodules.ram_i_buffer = ram_i_buffer = StreamBuffer.shaped_like(ram.i_stream)
+        wiring.connect(m, ram_i_buffer.o, ram.i_stream)
+
         # Command/address FSM and data read FSM have to synchronize for variable latency to work
         # because the former will continue issuing reads until stopped, and the latter will cause
         # the former to stop but cannot do anything about "in-flight" reads.
@@ -305,17 +308,17 @@ class Controller(wiring.Component):
                     valid: Value = C(1),
                     ready: Value | None = None):
             m.d.comb += [
-                ram.i_stream.p.oper.eq(oper),
-                ram.i_stream.p.chip.eq(1),
-                ram.i_stream.p.data[0].eq(data[0]),
-                ram.i_stream.p.mask[0].eq(mask[0]),
-                ram.i_stream.p.data[1].eq(data[1]),
-                ram.i_stream.p.mask[1].eq(mask[1]),
-                ram.i_stream.p.epoch.eq(wr_epoch),
-                ram.i_stream.valid.eq(valid),
+                ram_i_buffer.i.p.oper.eq(oper),
+                ram_i_buffer.i.p.chip.eq(1),
+                ram_i_buffer.i.p.data[0].eq(data[0]),
+                ram_i_buffer.i.p.mask[0].eq(mask[0]),
+                ram_i_buffer.i.p.data[1].eq(data[1]),
+                ram_i_buffer.i.p.mask[1].eq(mask[1]),
+                ram_i_buffer.i.p.epoch.eq(wr_epoch),
+                ram_i_buffer.i.valid.eq(valid),
             ]
             if ready is not None:
-                m.d.comb += ready.eq(ram.i_stream.ready)
+                m.d.comb += ready.eq(ram_i_buffer.i.ready)
 
         # on APS*-OBx and APS*-OCx devices, the command encoding differs by flipping high bit;
         # we implement -OBx semantics only
@@ -351,19 +354,19 @@ class Controller(wiring.Component):
                     data=(command, command),
                     valid=self.bus.commands.valid,
                 )
-                with m.If(ram.i_stream.valid & ram.i_stream.ready):
+                with m.If(ram_i_buffer.i.valid & ram_i_buffer.i.ready):
                     m.next = "Address 3/2"
 
             with m.State("Address 3/2"):
                 # these bits are Don't Care for `Command.GlobalReset`
                 perform(Operation.Write, data=(address[24:32], address[16:24]))
-                with m.If(ram.i_stream.valid & ram.i_stream.ready):
+                with m.If(ram_i_buffer.i.valid & ram_i_buffer.i.ready):
                     m.next = "Address 1/0"
 
             with m.State("Address 1/0"):
                 # these bits are Don't Care for `Command.GlobalReset`
                 perform(Operation.Write, data=(address[ 8:16], address[ 0: 8]))
-                with m.If(ram.i_stream.valid & ram.i_stream.ready):
+                with m.If(ram_i_buffer.i.valid & ram_i_buffer.i.ready):
                     # Latency Code table:
                     # - Memory Read:    LC to LC×2
                     # - Memory Write:   LC
@@ -390,12 +393,12 @@ class Controller(wiring.Component):
 
             with m.State("Reset Clock"):
                 perform(Operation.Idle)
-                with m.If(ram.i_stream.valid & ram.i_stream.ready):
+                with m.If(ram_i_buffer.i.valid & ram_i_buffer.i.ready):
                     m.next = "Deselect"
 
             with m.State("Write Latency"):
                 perform(Operation.Idle)
-                with m.If(ram.i_stream.valid & ram.i_stream.ready):
+                with m.If(ram_i_buffer.i.valid & ram_i_buffer.i.ready):
                     m.d.sync += t_lat.eq(t_lat - 1)
                     with m.If(t_lat - 1 == 0):
                         m.next = "Write Data"
@@ -407,7 +410,7 @@ class Controller(wiring.Component):
                     valid=self.bus.w_data.valid,
                     ready=self.bus.w_data.ready
                 )
-                with m.If(ram.i_stream.valid & ram.i_stream.ready):
+                with m.If(ram_i_buffer.i.valid & ram_i_buffer.i.ready):
                     m.d.sync += count.eq(count - 1)
                     with m.If(count - 1 == 0):
                         m.next = "Deselect"
@@ -419,15 +422,15 @@ class Controller(wiring.Component):
 
             with m.State("Read Data"):
                 perform(Operation.Read)
-                with m.If(ram.i_stream.valid & ram.i_stream.ready):
+                with m.If(ram_i_buffer.i.valid & ram_i_buffer.i.ready):
                     with m.If(wr_epoch != rd_epoch): # reader increments rd_epoch when done
                         m.d.sync += wr_epoch.eq(wr_epoch + 1)
                         m.next = "Deselect"
 
             with m.State("Deselect"):
-                m.d.comb += ram.i_stream.p.oper.eq(Operation.Idle)
-                m.d.comb += ram.i_stream.valid.eq(1)
-                with m.If(ram.i_stream.valid & ram.i_stream.ready):
+                m.d.comb += ram_i_buffer.i.p.oper.eq(Operation.Idle)
+                m.d.comb += ram_i_buffer.i.valid.eq(1)
+                with m.If(ram_i_buffer.i.valid & ram_i_buffer.i.ready):
                     m.d.sync += t_rec.eq(t_rec - 1)
                     with m.If(t_rec == 0):
                         m.d.comb += self.bus.commands.ready.eq(1)
@@ -513,37 +516,58 @@ class SimulationController(wiring.Component):
 
 
 class InterfaceQueue(wiring.Component):
-    """Clock domain crossing queue for commands and data."""
+    """Clock domain crossing queue for commands and data.
+
+    The data queue is split into two parts: the CDC FIFO and the buffer FIFO. This is done in order
+    to improve timing; wide Gray counters quickly become the critical path, limiting the design
+    with as little depth as as 2^8.
+
+    The CDC FIFOs (three: commands, write data, and read data) always have depth 4, while
+    the buffer FIFO has configurable depth. The read and write buffer FIFOs are both placed in
+    ``o_domain``; assuming ``o_domain`` has a faster clock, this minimizes the time a DRAM
+    transaction has to hold CE# low.
+    """
 
     i: In(Signature())
     o: Out(Signature())
 
-    def __init__(self, *, i_domain: str, o_domain: str, cmd_fifo_depth: int = 4,
-                 w_fifo_depth: int = 8, r_fifo_depth: int = 8):
+    def __init__(self, *, i_domain: str, o_domain: str,
+            w_buffer_depth: int | None = None, r_buffer_depth: int | None = None):
         self.i_domain       = i_domain
         self.o_domain       = o_domain
-        self.commands_depth = cmd_fifo_depth
-        self.w_data_depth   = w_fifo_depth
-        self.r_data_depth   = r_fifo_depth
+        self.w_buffer_depth = w_buffer_depth
+        self.r_buffer_depth = r_buffer_depth
 
         super().__init__()
 
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.cmd_queue = cmd_queue = AsyncQueue.shaped_like(self.i.commands,
-            depth=self.commands_depth, i_domain=self.i_domain, o_domain=self.o_domain)
-        wiring.connect(m, wiring.flipped(self.i.commands), cmd_queue.i)
-        wiring.connect(m, cmd_queue.o, wiring.flipped(self.o.commands))
+        m.submodules.cmd_cdc = cmd_cdc = AsyncQueue.shaped_like(self.i.commands,
+            depth=4, i_domain=self.i_domain, o_domain=self.o_domain)
+        wiring.connect(m, wiring.flipped(self.i.commands), cmd_cdc.i)
+        wiring.connect(m, cmd_cdc.o, wiring.flipped(self.o.commands))
 
-        m.submodules.wr_queue = wr_queue = AsyncQueue.shaped_like(self.i.w_data,
-            depth=self.w_data_depth, i_domain=self.i_domain, o_domain=self.o_domain)
-        wiring.connect(m, wiring.flipped(self.i.w_data), wr_queue.i)
-        wiring.connect(m, wr_queue.o, wiring.flipped(self.o.w_data))
+        m.submodules.wr_cdc = wr_cdc = AsyncQueue.shaped_like(self.i.w_data,
+            depth=4, i_domain=self.i_domain, o_domain=self.o_domain)
+        wiring.connect(m, wiring.flipped(self.i.w_data), wr_cdc.i)
+        if self.w_buffer_depth is not None:
+            m.submodules.wr_fifo = wr_fifo = DomainRenamer(self.o_domain)(
+                Queue.shaped_like(self.i.w_data, depth=self.w_buffer_depth))
+            wiring.connect(m, wr_cdc.o, wr_fifo.i)
+            wiring.connect(m, wr_fifo.o, wiring.flipped(self.o.w_data))
+        else:
+            wiring.connect(m, wr_cdc.o, wiring.flipped(self.o.w_data))
 
-        m.submodules.rd_queue = rd_queue = AsyncQueue.shaped_like(self.i.r_data,
-            depth=self.r_data_depth, i_domain=self.o_domain, o_domain=self.i_domain)
-        wiring.connect(m, wiring.flipped(self.o.r_data), rd_queue.i)
-        wiring.connect(m, rd_queue.o, wiring.flipped(self.i.r_data))
+        m.submodules.rd_cdc = rd_cdc = AsyncQueue.shaped_like(self.i.r_data,
+            depth=4, i_domain=self.o_domain, o_domain=self.i_domain)
+        if self.r_buffer_depth is not None:
+            m.submodules.rd_fifo = rd_fifo = DomainRenamer(self.o_domain)(
+                Queue.shaped_like(self.i.r_data, depth=self.r_buffer_depth))
+            wiring.connect(m, wiring.flipped(self.o.r_data), rd_fifo.i)
+            wiring.connect(m, rd_fifo.o, rd_cdc.i)
+        else:
+            wiring.connect(m, wiring.flipped(self.o.r_data), rd_cdc.i)
+        wiring.connect(m, rd_cdc.o, wiring.flipped(self.i.r_data))
 
         return m

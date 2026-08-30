@@ -292,9 +292,8 @@ class ClockDivisor:
 class DRAMOptions:
     size: int | None = None
 
-    cmd_fifo_size: int = 4
-    r_fifo_size: int = 8
-    w_fifo_size: int = 8
+    r_buffer_size: int | None = None
+    w_buffer_size: int | None = None
 
 
 class AbstractInPipe(metaclass=ABCMeta):
