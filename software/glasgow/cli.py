@@ -532,6 +532,10 @@ class TerminalFormatter(pylogging.Formatter):
         color = self.colors.get(record.levelname, "")
         # glasgow.hardware.foo → g.hardware.foo
         record.name = record.name.replace("glasgow.", "g.")
+        # glasgow.hardware.foo → g.h.foo
+        record.name = record.name.replace("g.hardware.", "g.h.")
+        # glasgow.hardware.build_plan → g.h.bp
+        record.name = record.name.replace("g.h.build_plan", "g.h.bp")
         # glasgow.applet.foo → g.a.foo
         record.name = record.name.replace("g.applet.", "g.a.")
         # glasgow.applet.interface. → g.a.i.foo
