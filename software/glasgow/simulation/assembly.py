@@ -1,6 +1,7 @@
-from typing import Any
+from typing import Any, override
 from collections.abc import Buffer, Generator
 from contextlib import contextmanager
+import dataclasses
 
 from amaranth import *
 from amaranth.lib import io, wiring
@@ -9,7 +10,7 @@ from amaranth.sim import Simulator
 from glasgow.support import logging
 from glasgow.abstract import (AbstractAssembly, AbstractInOutPipe, AbstractInPipe, AbstractOutPipe,
                               AbstractRORegister, AbstractRWRegister,
-                              GlasgowPin, GlasgowPort, GlasgowVio, PullState)
+                              DRAMOptions, GlasgowPin, GlasgowPort, GlasgowVio, PullState)
 from glasgow.gateware import octoram
 
 
@@ -185,19 +186,25 @@ class SimulationAssembly(AbstractAssembly):
 
         return SimulationPipe(self, i_buffer=i_buffer, o_buffer=o_buffer)
 
-    def add_dynamic_memory(self, size=64*0x100000) -> tuple[octoram.Signature, range]:
+    @override
+    def add_dynamic_memory(self, options=DRAMOptions()) -> tuple[octoram.Signature, range]:
+        if options.size is None:
+            options = dataclasses.replace(options, size=64 * 0x100000)
         m = Module()
         m.submodules.ctrl = ctrl = DomainRenamer("dram")(
-            octoram.SimulationController(size))
+            octoram.SimulationController(options.size or 64 * 0x100000))
         m.submodules.queue = queue = octoram.InterfaceQueue(
-            i_domain="sync", o_domain="dram",
-            commands_depth=4, w_data_depth=8, r_data_depth=8
+            i_domain="sync",
+            o_domain="dram",
+            cmd_fifo_depth=options.cmd_fifo_size,
+            w_fifo_depth=options.w_fifo_size,
+            r_fifo_depth=options.r_fifo_size,
         )
         wiring.connect(m, queue.o, ctrl.bus)
         self._modules.append((m, f"mem{self._memories}"))
         self._benches.append((ctrl.testbench, True)) # background
         self._memories += 1
-        return queue.i, range(size)
+        return queue.i, range(options.size)
 
     def add_indicator(self, signal: Signal, *, name: str):
         self._leds[name] = signal
