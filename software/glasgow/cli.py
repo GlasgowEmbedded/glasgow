@@ -292,7 +292,7 @@ def get_argparser():
                 f"{arg} is not a valid revision (should be one of: {', '.join(revisions)})")
 
     def serial(arg):
-        if re.match(r"^[A-C][0-9]-\d{8}T\d{6}Z$", arg):
+        if re.match(r"^[A-D][0-9]-\d{8}T\d{6}Z$", arg):
             return arg
         else:
             raise argparse.ArgumentTypeError(f"{arg} is not a valid serial number")
