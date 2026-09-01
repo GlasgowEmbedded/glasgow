@@ -4,7 +4,11 @@ is_production = True if os.getenv("DOCS_IS_PRODUCTION", "").lower() in ('1', 'ye
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "software"))
 import glasgow
 
-language = os.getenv("DOCS_LANGUAGE", "en")
+# Otherwise on newer Python, `argparse` will render output using ANSI escape sequences, and they
+# will get inserted into `sphinxcontrib.autoprogram` output.
+os.environ["NO_COLOR"] = "1"
+
+language = os.environ.get("DOCS_LANGUAGE", "en")
 match language:
     case "en":
         project = "Glasgow Interface\u00a0Explorer"
