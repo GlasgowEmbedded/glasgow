@@ -13,7 +13,8 @@ from .iostream import IOStreamer, HalfRateIOStreamer
 
 __all__ = [
     "Operation", "Enframer", "Deframer", "Streamer",
-    "Command", "Signature", "Controller", "SimulationController", "InterfaceQueue",
+    "Command", "Signature", "MemoryType", "Controller", "SimulationController",
+    "InterfaceQueue",
 ]
 
 
@@ -189,8 +190,12 @@ class Streamer(wiring.Component):
         return m
 
 
+class MemoryType(enum.Enum, shape=2):
+    OctalSPI = 0
+    HyperRAM = 1
+
+
 class Command(enum.Enum, shape=3):
-    # All Read/Write command codes are swapped between -OBx and and -OCx series!
     GlobalReset  = 0
     ReadMemWrap  = 1
     WriteMemWrap = 2
@@ -201,7 +206,7 @@ class Command(enum.Enum, shape=3):
 
 
 class Signature(wiring.Signature):
-    """Native OPI memory bus."""
+    """Native Octal DDR PSRAM memory bus signature."""
 
     def __init__(self):
         super().__init__({
@@ -222,13 +227,19 @@ class Signature(wiring.Signature):
     @property
     def max_burst_size(self):
         """Largest burst supported by the interface; equal to DRAM row size."""
-        return 2048
+        # AP Memory APSxxx08N-OBR
+        # return 2048
+        # Winbond W957D8MFYA
+        return 1024
 
 
 class Controller(wiring.Component):
-    """OPI PSRAM controller.
+    """Octal DDR PSRAM controller.
 
-    Supports only AP Memory APSxxx08N-OBR devices.
+    The following devices have been tested with this controller:
+
+    * AP Memory APSxxx08N-OBR devices (OctalSPI)
+    * Winbond W957D8MFYA (HyperRAM)
 
     ECP5 Platform Support
     ---------------------
@@ -273,6 +284,8 @@ class Controller(wiring.Component):
     # controller edge clock frequency, which is convenient.
 
     bus: In(Signature())
+
+    mem_type: In(MemoryType)
     latency: In(range(32))
 
     def __init__(self, ports, *, offset: int = 0, half_rate: bool):
@@ -320,8 +333,6 @@ class Controller(wiring.Component):
             if ready is not None:
                 m.d.comb += ready.eq(ram_i_buffer.i.ready)
 
-        # on APS*-OBx and APS*-OCx devices, the command encoding differs by flipping high bit;
-        # we implement -OBx semantics only
         command = Signal(8)
         with m.Switch(self.bus.commands.p.type):
             with m.Case(Command.GlobalReset):   m.d.comb += command.eq(0xFF)
@@ -332,43 +343,66 @@ class Controller(wiring.Component):
             with m.Case(Command.ReadReg):       m.d.comb += command.eq(0x40)
             with m.Case(Command.WriteReg):      m.d.comb += command.eq(0xC0)
 
-        address = Signal(32)
-        # on APS*-OBx devices, RA and CA have no gaps, and on APS*-OCx devices there is a gap
-        # within the column address; we implement -OBx semantics only
-        m.d.comb += address.eq(self.bus.commands.p.addr)
+        address = self.bus.commands.p.addr
+
+        cmd_addr = Signal(48)
+        with m.Switch(self.mem_type):
+            with m.Case(MemoryType.OctalSPI):
+                # on APS*-OBx devices, the 1st negedge must have the same data as the posedge
+                m.d.comb += cmd_addr[40:48].eq(command)
+                m.d.comb += cmd_addr[32:40].eq(command)
+                # on APS*-OBx devices, RA and CA have no gaps
+                m.d.comb += cmd_addr[ 0:32].eq(address)
+
+            with m.Case(MemoryType.HyperRAM):
+                # on APS*-OBx and HyperRAM devices, the command encoding differs by flipping
+                # the high bit, and the address encroaches on the 1st (command) byte; note that
+                # there is no `GlobalReset` command
+                m.d.comb += cmd_addr[40:48].eq(command ^ 0x80)
+                # on HyperRAM devices, the address encoding contains a gap within the CA part;
+                # the code below works with W957D8MFYA
+                m.d.comb += cmd_addr[16:45].eq(address[ 4:32])
+                m.d.comb += cmd_addr[ 0: 3].eq(address[ 1: 4])
+                # on APS*-OCx, yet another encoding is used :(
 
         count = Signal(range(max_burst_size + 1))
         m.d.comb += fifo.i.payload.eq(count)
 
         with m.FSM(name="wr_fsm"):
-            t_lat = Signal.like(self.latency)   # latency timer
-            t_rec = Signal(range(16))           # CE recovery timer
+            t_lat = Signal(len(self.latency) + 1) # latency timer
+            t_rec = Signal(range(16))             # CE recovery timer
 
-            with m.State("Command"):
+            with m.State("Command/Address[32:48]"):
                 m.d.sync += count.eq(
                     Mux(self.bus.commands.p.size == 0, max_burst_size, self.bus.commands.p.size))
                 m.d.sync += t_rec.eq(3)
-                perform(Operation.Write,
-                    # on APS*-OBx devices, the 1st negedge valids to be INST as well
-                    # on APS*-OCx devices, the 1st negedge is don't care
-                    data=(command, command),
-                    valid=self.bus.commands.valid,
-                )
-                with m.If(ram_i_buffer.i.valid & ram_i_buffer.i.ready):
-                    m.next = "Address 3/2"
+                with m.If(self.bus.commands.valid):
+                    with m.If((self.mem_type == MemoryType.HyperRAM) &
+                              (self.bus.commands.p.type == Command.GlobalReset)):
+                        m.next = "Deselect"
+                    with m.Else():
+                        perform(Operation.Write, data=(cmd_addr[40:48], cmd_addr[32:40]))
+                        with m.If(ram_i_buffer.i.valid & ram_i_buffer.i.ready):
+                            m.next = "Command/Address[16:32]"
 
-            with m.State("Address 3/2"):
+            with m.State("Command/Address[16:32]"):
                 # these bits are Don't Care for `Command.GlobalReset`
-                perform(Operation.Write, data=(address[24:32], address[16:24]))
+                perform(Operation.Write, data=(cmd_addr[24:32], cmd_addr[16:24]))
                 with m.If(ram_i_buffer.i.valid & ram_i_buffer.i.ready):
-                    m.next = "Address 1/0"
+                    m.next = "Command/Address[ 0:16]"
 
-            with m.State("Address 1/0"):
+            with m.State("Command/Address[ 0:16]"):
                 # these bits are Don't Care for `Command.GlobalReset`
-                perform(Operation.Write, data=(address[ 8:16], address[ 0: 8]))
+                perform(Operation.Write, data=(cmd_addr[ 8:16], cmd_addr[ 0: 8]))
                 with m.If(ram_i_buffer.i.valid & ram_i_buffer.i.ready):
-                    # Latency Code table:
-                    # - Memory Read:    LC to LC×2
+                    # Latency Code table (HyperRAM):
+                    # - Memory Read:    LC or LC×2 (exact) (variable latency mode)
+                    #                         LC×2 (exact) (fixed latency mode)
+                    # - Memory Write:   as above
+                    # - Register Read:  as above
+                    # - Register Write: 0
+                    # Latency Code table (APS*-OBx):
+                    # - Memory Read:    LC to LC×2 (range)
                     # - Memory Write:   LC
                     # - Register Read:  LC
                     # - Register Write: 0
@@ -384,7 +418,11 @@ class Controller(wiring.Component):
                         with m.Case(Command.ReadReg):
                             m.next = "Read Sync"
                         with m.Case(Command.WriteMemWrap, Command.WriteMemRow):
-                            m.d.sync += t_lat.eq(self.latency - 1)
+                            with m.Switch(self.mem_type):
+                                with m.Case(MemoryType.OctalSPI):
+                                    m.d.sync += t_lat.eq(self.latency - 1)
+                                with m.Case(MemoryType.HyperRAM):
+                                    m.d.sync += t_lat.eq((self.latency << 1) - 1)
                             m.next = "Write Latency"
                         with m.Case(Command.ReadMemWrap, Command.ReadMemRow):
                             m.next = "Read Sync"
@@ -434,7 +472,7 @@ class Controller(wiring.Component):
                     m.d.sync += t_rec.eq(t_rec - 1)
                     with m.If(t_rec == 0):
                         m.d.comb += self.bus.commands.ready.eq(1)
-                        m.next = "Command"
+                        m.next = "Command/Address[32:48]"
 
             with m.State("Error"):
                 pass

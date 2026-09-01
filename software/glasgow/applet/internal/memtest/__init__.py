@@ -292,8 +292,8 @@ class MemoryTestApplet(GlasgowAppletV2):
             help="end of region, exclusive (default: 64 MB)")
         parser.add_argument(
             "-s", "--block-size", metavar="SIZE", type=int,
-            choices=tuple(1<<n for n in range(1, 12)), default=2048,
-            help="block size (power of two, 2..2048, default: 2048)")
+            choices=tuple(1<<n for n in range(1, 12)), default=1024,
+            help="block size (power of two, 2..2048, default: %(default)s)")
         parser.add_argument(
             "-n", "--cycles", metavar="COUNT", type=int, default=1,
             help="repeat memory test COUNT times")
