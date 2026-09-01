@@ -614,7 +614,7 @@ class HardwareAssembly(AbstractAssembly):
         if options.size is None:
             options = dataclasses.replace(options, size=64 * 0x100000)
         assert self._artifact is None, "cannot add a dynamic memory to a sealed assembly"
-        assert self._revision >= "D0", "DRAM is not available prior to revision D0"
+        assert self._revision >= "C0", "DRAM is not available prior to revision D0"
         assert len(self._memories) < 2, "only two memory channels are available"
         assert options.size <= 64 * 0x100000, "memory size must be no more than 64 MB"
         self._current_logger.debug(f"allocating DRAM channel {len(self._memories)}")
@@ -704,7 +704,7 @@ class HardwareAssembly(AbstractAssembly):
                 register_addr = i2c_registers.add_existing_ro(Value.cast(signal))
             assert register_addr == register._address
 
-        if self._memories:
+        if self._memories and "D0" <= self.revision < "E0":
             # The location constraint should not be needed with new enough nextpnr-ecp5, but is
             # included here as insurance. TODO: remove this once nextpnr-0.11 is used.
             plan = pll.ClockPlan(self.sys_clk_period, location="X70/Y49/EHXPLL_LR")
@@ -726,8 +726,9 @@ class HardwareAssembly(AbstractAssembly):
                 mem_ports = self._platform.request("octoram", channel,
                     dir={"cs": "-", "clk": "-", "dq": "-", "dqs": "-"})
                 m.submodules[f"mem_ctrl{channel}"] = mem_ctrl = DomainRenamer({
-                    "edge": "dram_edge", "sync": "dram_sync",
+                    "sync": "dram_sync", "edge": "dram_edge",
                 })(octoram.Controller(mem_ports, half_rate=False))
+                m.d.comb += mem_ctrl.mem_type.eq(octoram.MemoryType.OctalSPI)
                 m.d.comb += mem_ctrl.latency.eq(5)
                 m.submodules[f"mem_queue{channel}"] = mem_queue = octoram.InterfaceQueue(
                     i_domain=domain.name,
@@ -737,6 +738,39 @@ class HardwareAssembly(AbstractAssembly):
                 )
                 wiring.connect(m, mem_queue.o, mem_ctrl.bus)
                 wiring.connect(m, wiring.flipped(mem_bus), mem_queue.i)
+
+        elif self._memories and "C0" <= self.revision < "D0":
+            if os.getenv("GLASGOW_REVC_DRAM", "no") == "yes":
+                logger.warning("DRAM support on revC is experimental, use at your own risk")
+            else:
+                logger.error("DRAM support on revC is not enabled without GLASGOW_REVC_DRAM=yes")
+                os._exit(1)
+
+            self._platform.add_ram_pak_resources()
+
+            plan = pll.ClockPlan(self.sys_clk_period)
+            m.domains.dram_sync = plan.add_domain(pll.Channel(period=1/(64e6)))
+            m.submodules.dram_pll = plan.create(self._platform)
+
+            for channel, (domain, mem_bus, options) in enumerate(self._memories):
+                mem_ports = self._platform.request("octoram", channel,
+                    dir={"cs": "-", "clk": "-", "dq": "-", "dqs": "-"})
+                m.submodules[f"mem_ctrl{channel}"] = mem_ctrl = DomainRenamer({
+                    "sync": "dram_sync",
+                })(octoram.Controller(mem_ports, half_rate=True))
+                m.d.comb += mem_ctrl.mem_type.eq(octoram.MemoryType.HyperRAM)
+                m.d.comb += mem_ctrl.latency.eq(7)
+                m.submodules[f"mem_queue{channel}"] = mem_queue = octoram.InterfaceQueue(
+                    i_domain=domain.name,
+                    o_domain="dram_sync",
+                    w_buffer_depth=options.w_buffer_size,
+                    r_buffer_depth=options.r_buffer_size,
+                )
+                wiring.connect(m, mem_queue.o, mem_ctrl.bus)
+                wiring.connect(m, wiring.flipped(mem_bus), mem_queue.i)
+
+        elif self._memories:
+            assert False, "DRAM not available on this hardware revision"
 
         m.submodules.fx2_crossbar = fx2_crossbar = FX2Crossbar(fx2_pins)
 
