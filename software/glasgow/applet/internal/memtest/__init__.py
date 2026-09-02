@@ -282,7 +282,8 @@ class MemoryTestApplet(GlasgowAppletV2):
             return int(arg, 16)
 
         parser.add_argument(
-            "-c", "--channel", metavar="INDEX", type=int, choices=(0, 1), required=True,
+            "-c", "--channel", dest="channels", metavar="INDEX",
+            choices=(0, 1), nargs="*", default=(0, 1),
             help="memory channel (one of: 0, 1)")
         parser.add_argument(
             "-a", "--start-addr", metavar="HEX-ADDR", type=address, default=0,
@@ -302,14 +303,15 @@ class MemoryTestApplet(GlasgowAppletV2):
         region = range(args.start_addr, args.stop_addr, args.block_size)
         failed = False
         for cycle in range(args.cycles):
-            bit_errors = await self.memtest_ifaces[args.channel].run(region)
-            if bit_errors == 0:
-                self.logger.info("cycle %3d/%3d PASS",
-                    1 + cycle, args.cycles)
-            else:
-                self.logger.error("cycle %3d/%3d FAIL (%d bit errors)",
-                    1 + cycle, args.cycles, bit_errors)
-                failed = True
+            for channel in set(args.channels):
+                bit_errors = await self.memtest_ifaces[channel].run(region)
+                if bit_errors == 0:
+                    self.logger.info("channel %d: cycle %3d/%3d PASS",
+                        channel, 1 + cycle, args.cycles)
+                else:
+                    self.logger.error("channel %d: cycle %3d/%3d FAIL (%d bit errors)",
+                        channel, 1 + cycle, args.cycles, bit_errors)
+                    failed = True
         if not failed:
             self.logger.info("test PASS")
         else:
