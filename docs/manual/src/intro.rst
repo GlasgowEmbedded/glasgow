@@ -127,6 +127,8 @@ What can I do with Glasgow?
 
   * weight by Whetstone bridge via :ref:`HX-711 <applet.sensor.hx711>` amplifier
 
+  * temperature by thermocouple via :ref:`MAX31855 <applet.sensor.max31855>` sensor
+
 * :ref:`calibrate a clock <applet.measure.calibrate_clock>` against a reference frequency
 
 * :ref:`generate pseudorandom noise <applet.measure.prn_noise>` for radio frequency device characterization
