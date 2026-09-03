@@ -62,7 +62,7 @@ class MockRecorder:
                     @asynccontextmanager
                     async def cmgr_wrapper():
                         value = await result.__aenter__()
-                        self.__dump_method(attr, "asynccontext.enter", (), {}, value)
+                        self.__dump_method(attr, "asynccontext.enter", args, kwargs, value)
                         try:
                             yield value
                         finally:
@@ -129,9 +129,9 @@ class MockReplayer:
         self.__case.assertEqual(attr, stanza["call"])
         if stanza["kind"] == "asynccontext.enter":
             @asynccontextmanager
-            async def mock():
-                assert () == tuple(stanza["args"])
-                assert {} == stanza["kwargs"]
+            async def mock(*args, **kwargs):
+                self.__case.assertEqual(args, tuple(stanza["args"]))
+                self.__case.assertEqual(kwargs, stanza["kwargs"])
                 try:
                     yield stanza["result"]
                 finally:
