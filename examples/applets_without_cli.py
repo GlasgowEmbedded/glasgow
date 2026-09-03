@@ -21,7 +21,7 @@ Some examples of applets that can be used in this way are:
 import asyncio
 import logging
 from glasgow.hardware.assembly import HardwareAssembly
-from glasgow.applet.memory._25x import Memory25xInterface
+from glasgow.applet.memory._25q import Memory25QInterface
 from glasgow.applet.interface.uart import UARTInterface
 from glasgow.applet.control.gpio import GPIOInterface
 
@@ -33,7 +33,7 @@ logger = logging.getLogger()
 async def main():
     assembly = await HardwareAssembly.find_device()
     assembly.use_voltage({"A": 3.3, "B": 3.3})
-    spi_rom_iface = Memory25xInterface(logger, assembly,
+    spi_rom_iface = Memory25QInterface(logger, assembly,
         cs="A0", sck="A1", io="A2:5")
     uart_iface = UARTInterface(logger, assembly,
         rx="B0", tx="B1")
@@ -47,9 +47,9 @@ async def main():
         # Pretend to program the Flash.
         # (Actual production code would likely use `.erase_program(...)` here.)
         await gpio_iface.output(0, True)
-        mfg_id, dev_id = await spi_rom_iface.read_manufacturer_long_device_id()
+        mfg_id, dev_id = await spi_rom_iface.jedec_id()
         print(f"flash ID: {mfg_id:02x},{dev_id:04x}")
-        data = await spi_rom_iface.fast_read(0x1000, 0x10)
+        data = await spi_rom_iface.read_data(0x1000, 0x10)
         print(f"program memory: {data.hex()}")
 
         # Talk to the SoC.

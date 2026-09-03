@@ -238,7 +238,7 @@ class SPIAnalyzerApplet(GlasgowAppletV2):
     * ``<CS>,<COPI>,<CIPO>``, where <CS> is a 0-based CS# pin index and <COPI> and <CIPO> are
       the same as above; this format is used if multiple CS# pins are provided.
 
-    If your DUT is a 25-series SPI Flash memory, use the `tool memory-25x` to extract data
+    If your DUT is a 25-series SPI Flash memory, use the `tool memory-25q` to extract data
     from capture files. If quad-IO commands are in use, use the `qspi-analyzer` applet to
     capture data.
     """
