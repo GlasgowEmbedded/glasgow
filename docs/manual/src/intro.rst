@@ -53,6 +53,8 @@ Installing complex software can be daunting. The Glasgow software can be :ref:`i
 What can I do with Glasgow?
 ---------------------------
 
+* sample digital inputs with the :ref:`logic analyzer <applet.interface.analyzer2>` (revD0+ only at the moment)
+
 * control pins as :ref:`GPIO <applet.control.gpio>`
 
 * communicate via :ref:`UART <applet.interface.uart>`
