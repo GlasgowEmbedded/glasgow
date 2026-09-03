@@ -221,8 +221,8 @@ List of UTF-8 encoded channel names separated by NUL bytes. For example, the fol
 
 ```
 00000000  43 53 23 00 43 4c 4b 00  43 4f 50 49 00 43 49 50  |CS#.CLK.COPI.CIP|
-00000010  4f                                                |O|
-00000011
+00000010  4f 00                                             |O.|
+00000012
 ```
 
 
