@@ -2078,6 +2078,7 @@ class AnalyzerInterface:
 class AnalyzerApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "sample values of digital inputs as they change in time"
+    preview = True
     description = """
     Capture values of digital inputs as a time series sequence.
 
