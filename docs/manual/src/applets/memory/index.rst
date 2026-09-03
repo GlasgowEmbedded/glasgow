@@ -9,5 +9,4 @@ Memory manipulation
     :maxdepth: 3
 
     24x
-    25x
     25q
