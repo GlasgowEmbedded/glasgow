@@ -594,6 +594,9 @@ class Memory25QApplet(GlasgowAppletV2):
             "-P", "--page-size", metavar="SIZE", type=page_size,
             help="do not cross multiple-of-SIZE boundaries when programming")
         parser.add_argument(
+            "--opcode-erase-256", metavar="OPCODE", type=opcode,
+            help="opcode for erasing a 256 B region")
+        parser.add_argument(
             "--opcode-erase-4k", metavar="OPCODE", type=opcode,
             help="opcode for erasing a 4 KiB region")
         parser.add_argument(
@@ -626,6 +629,11 @@ class Memory25QApplet(GlasgowAppletV2):
                     self.m25q_iface.cmds[nor.Command.ProgramData] = \
                         dataclasses.replace(self.m25q_iface.cmds[nor.Command.ProgramData],
                             data_octets=args.page_size)
+            if (args.opcode_erase_256 is not None and
+                    args.opcode_erase_256 != params.erase_sizes.get(256)):
+                self.logger.warning(
+                    f"ignoring argument --opcode-erase-256 {args.opcode_erase_256:02X}h "
+                    f"that does not match SFDP value")
             if (args.opcode_erase_4k is not None and
                     args.opcode_erase_4k != params.erase_sizes.get(4096)):
                 self.logger.warning(
@@ -650,6 +658,7 @@ class Memory25QApplet(GlasgowAppletV2):
             self.m25q_iface.cmds.use_explicit(
                 address_bytes=address_bytes,
                 page_size=args.page_size,
+                opcode_erase_256=args.opcode_erase_256,
                 opcode_erase_4k=args.opcode_erase_4k,
                 opcode_erase_32k=args.opcode_erase_32k,
                 opcode_erase_64k=args.opcode_erase_64k,
