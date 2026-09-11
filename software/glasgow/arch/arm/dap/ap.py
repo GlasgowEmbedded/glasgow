@@ -19,14 +19,13 @@ __all__ = [
 
 AP_IDR_addr = 0xFC
 
-AP_IDR = bitstruct("AP_IDR", 32, [
-    ("TYPE",        4),
-    ("VARIANT",     4),
-    (None,          5),
-    ("CLASS",       4),
-    ("DESIGNER",   11),
-    ("REVISION",    4),
-])
+class AP_IDR(bitstruct, width=32):
+    TYPE: int     = 4
+    VARIANT: int  = 4
+    _0: int       = 5
+    CLASS: int    = 4
+    DESIGNER: int = 11
+    REVISION: int = 4
 
 
 class AP_IDR_CLASS(Enum):
@@ -50,20 +49,19 @@ class AP_IDR_CLASS(Enum):
 
 MEM_AP_CSW_addr = 0x00
 
-MEM_AP_CSW = bitstruct("MEM_AP_CSW", 32, [
-    ("Size",        3),
-    (None,          1),
-    ("AddrInc",     2),
-    ("DeviceEn",    1),
-    ("TrInProg",    1),
-    ("Mode",        4),
-    ("Type",        3),
-    ("MTE",         1),
-    (None,          7),
-    ("SPIDEN",      1),
-    ("Prot",        7),
-    ("DbgSwEnable", 1),
-])
+class MEM_AP_CSW(bitstruct, width=32):
+    Size: int        = 3
+    _0: int          = 1
+    AddrInc: int     = 2
+    DeviceEn: int    = 1
+    TrInProg: int    = 1
+    Mode: int        = 4
+    Type: int        = 3
+    MTE: int         = 1
+    _1: int          = 7
+    SPIDEN: int      = 1
+    Prot: int        = 7
+    DbgSwEnable: int = 1
 
 MEM_AP_TAR_addr = 0x04
 
@@ -75,26 +73,23 @@ def MEM_AP_BD_addr(index: int):
 
 MEM_AP_CFG_addr = 0xF4
 
-MEM_AP_CFG = bitstruct("MEM_AP_CFG", 32, [
-    ("BE",          1),
-    ("LA",          1),
-    ("LD",          1),
-    (None,          29),
-])
+class MEM_AP_CFG(bitstruct, width=32):
+    BE: int = 1
+    LA: int = 1
+    LD: int = 1
+    _0: int = 29
 
 MEM_AP_CFG1_addr = 0xE0
 
-MEM_AP_CFG1 = bitstruct("MEM_AP_CFG1", 32, [
-    ("TAG0SIZE",    4),
-    ("TAG0GRAN",    4),
-    (None,          24),
-])
+class MEM_AP_CFG1(bitstruct, width=32):
+    TAG0SIZE: int = 4
+    TAG0GRAN: int = 4
+    _0: int       = 24
 
 MEM_AP_BASE_addr = 0xF8
 
-MEM_AP_BASE = bitstruct("MEM_AP_BASE", 32, [
-    ("P",           1),
-    ("Format",      1),
-    (None,          14),
-    ("BASEADDR",    16),
-])
+class MEM_AP_BASE(bitstruct, width=32):
+    P: int        = 1
+    Format: int   = 1
+    _0: int       = 14
+    BASEADDR: int = 16

@@ -73,36 +73,33 @@ class CRCO(enum.IntEnum):
     _1_BYTE     = 0b0
     _2_BYTES    = 0b1
 
-REG_CONFIG      = bitstruct("REG_CONFIG", 8, [
-    ("PRIM_RX",     1),
-    ("PWR_UP",      1),
-    ("CRCO",        1),
-    ("EN_CRC",      1),
-    ("MASK_MAX_RT", 1),
-    ("MASK_TX_DS",  1),
-    ("MASK_RX_DR",  1),
-    (None,          1),
-])
+class REG_CONFIG(bitstruct, width=8):
+    PRIM_RX: int     = 1
+    PWR_UP: int      = 1
+    CRCO: int        = 1
+    EN_CRC: int      = 1
+    MASK_MAX_RT: int = 1
+    MASK_TX_DS: int  = 1
+    MASK_RX_DR: int  = 1
+    _0: int          = 1
 
-REG_EN_AA       = bitstruct("REG_EN_AA", 8, [
-    ("ENAA_P0",     1),
-    ("ENAA_P1",     1),
-    ("ENAA_P2",     1),
-    ("ENAA_P3",     1),
-    ("ENAA_P4",     1),
-    ("ENAA_P5",     1),
-    (None,          2),
-])
+class REG_EN_AA(bitstruct, width=8):
+    ENAA_P0: int = 1
+    ENAA_P1: int = 1
+    ENAA_P2: int = 1
+    ENAA_P3: int = 1
+    ENAA_P4: int = 1
+    ENAA_P5: int = 1
+    _0: int      = 2
 
-REG_EN_RXADDR   = bitstruct("REG_EN_RXADDR", 8, [
-    ("ERX_P0",      1),
-    ("ERX_P1",      1),
-    ("ERX_P2",      1),
-    ("ERX_P3",      1),
-    ("ERX_P4",      1),
-    ("ERX_P5",      1),
-    (None,          2),
-])
+class REG_EN_RXADDR(bitstruct, width=8):
+    ERX_P0: int = 1
+    ERX_P1: int = 1
+    ERX_P2: int = 1
+    ERX_P3: int = 1
+    ERX_P4: int = 1
+    ERX_P5: int = 1
+    _0: int     = 2
 
 class AW(enum.IntEnum):
     _2_BYTES    = 0b00 # undocumented
@@ -110,20 +107,17 @@ class AW(enum.IntEnum):
     _4_BYTES    = 0b10
     _5_BYTES    = 0b11
 
-REG_SETUP_AW    = bitstruct("REG_SETUP_AW", 8, [
-    ("AW",          2),
-    (None,          6),
-])
+class REG_SETUP_AW(bitstruct, width=8):
+    AW: int = 2
+    _0: int = 6
 
-REG_SETUP_RETR  = bitstruct("REG_SETUP_RETR", 8, [
-    ("ARC",         4), # 250*ARC+86 us (L); 250*ARC us (L+)
-    ("ARD",         4), # up to ARD retransmits
-])
+class REG_SETUP_RETR(bitstruct, width=8):
+    ARC: int = 4 # 250*ARC+86 us (L); 250*ARC us (L+)
+    ARD: int = 4 # up to ARD retransmits
 
-REG_RF_CH       = bitstruct("REG_RF_CH", 8, [
-    ("RF_CH",       7),
-    (None,          1),
-])
+class REG_RF_CH(bitstruct, width=8):
+    RF_CH: int = 7
+    _0: int    = 1
 
 class RF_DR(enum.IntEnum):
     _1_Mbps     = 0b00
@@ -136,67 +130,59 @@ class RF_PWR(enum.IntEnum):
     m6_dBm      = 0b10
     _0_dBm      = 0b11
 
-REG_RF_SETUP    = bitstruct("REG_RF_SETUP", 8, [
-    ("LNA_HCURR",   1), # (L)
-    ("RF_PWR",      2),
-    ("RF_DR_LOW",   1), # RF_DR (L)
-    ("PLL_LOCK",    1),
-    ("RF_DR_HIGH",  1), # (L+)
-    (None,          1),
-    ("CONT_WAVE",   1), # (L+)
-])
+class REG_RF_SETUP(bitstruct, width=8):
+    LNA_HCURR: int  = 1 # (L)
+    RF_PWR: int     = 2
+    RF_DR_LOW: int  = 1 # RF_DR (L)
+    PLL_LOCK: int   = 1
+    RF_DR_HIGH: int = 1 # (L+)
+    _0: int         = 1
+    CONT_WAVE: int  = 1 # (L+)
 
-REG_STATUS      = bitstruct("REG_STATUS", 8, [
-    ("TX_FULL",     1),
-    ("RX_P_NO",     3),
-    ("MAX_RT",      1),
-    ("TX_DS",       1),
-    ("RX_DR",       1),
-    (None,          1),
-])
+class REG_STATUS(bitstruct, width=8):
+    TX_FULL: int = 1
+    RX_P_NO: int = 3
+    MAX_RT: int  = 1
+    TX_DS: int   = 1
+    RX_DR: int   = 1
+    _0: int      = 1
 
-REG_OBSERVE_TX  = bitstruct("REG_OBSERVE_TX", 8, [
-    ("ARC_CNT",     4),
-    ("PLOS_CNT",    4),
-])
+class REG_OBSERVE_TX(bitstruct, width=8):
+    ARC_CNT: int  = 4
+    PLOS_CNT: int = 4
 
 # (L)
-REG_CD          = bitstruct("REG_CD", 8, [
-    ("CD",          1),
-    (None,          7),
-])
+class REG_CD(bitstruct, width=8):
+    CD: int = 1
+    _0: int = 7
 
 # (L+)
-REG_RPD         = bitstruct("REG_RPD", 8, [
-    ("RPD",         1),
-    (None,          7),
-])
+class REG_RPD(bitstruct, width=8):
+    RPD: int = 1
+    _0: int  = 7
 
-REG_FIFO_STATUS = bitstruct("REG_FIFO_STATUS", 8, [
-    ("RX_EMPTY",    1),
-    ("RX_FULL",     1),
-    (None,          2),
-    ("TX_EMPTY",    1),
-    ("TX_FULL",     1),
-    ("TX_REUSE",    1),
-    (None,          1),
-])
+class REG_FIFO_STATUS(bitstruct, width=8):
+    RX_EMPTY: int = 1
+    RX_FULL: int  = 1
+    _0: int       = 2
+    TX_EMPTY: int = 1
+    TX_FULL: int  = 1
+    TX_REUSE: int = 1
+    _1: int       = 1
 
 # (L+)
-REG_DYNPD       = bitstruct("REG_DYNPD", 8, [
-    ("DPL_P0",      1),
-    ("DPL_P1",      1),
-    ("DPL_P2",      1),
-    ("DPL_P3",      1),
-    ("DPL_P4",      1),
-    ("DPL_P5",      1),
-    (None,          2),
-])
+class REG_DYNPD(bitstruct, width=8):
+    DPL_P0: int = 1
+    DPL_P1: int = 1
+    DPL_P2: int = 1
+    DPL_P3: int = 1
+    DPL_P4: int = 1
+    DPL_P5: int = 1
+    _0: int     = 2
 
 # (L+)
-REG_FEATURE     = bitstruct("REG_FEATURE", 8, [
-    ("EN_DYN_ACK",  1),
-    ("EN_ACK_PAY",  1),
-    ("EN_DPL",      1),
-    (None,          5),
-])
+class REG_FEATURE(bitstruct, width=8):
+    EN_DYN_ACK: int = 1
+    EN_ACK_PAY: int = 1
+    EN_DPL: int     = 1
+    _0: int         = 5

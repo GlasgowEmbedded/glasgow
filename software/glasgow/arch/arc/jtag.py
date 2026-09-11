@@ -30,12 +30,11 @@ IR_BYPASS       = bits("1111") # DR[1]
 
 # DR values
 
-DR_STATUS = bitstruct("DR_STATUS", 4, [
-    ("ST",      1),
-    ("FL",      1),
-    ("RD",      1),
-    ("PC_SEL",  1),
-])
+class DR_STATUS(bitstruct, width=4):
+    ST: int     = 1
+    FL: int     = 1
+    RD: int     = 1
+    PC_SEL: int = 1
 
 DR_TXN_COMMAND_WRITE_MEMORY = bits("0000")
 DR_TXN_COMMAND_WRITE_CORE   = bits("0001")
@@ -44,10 +43,8 @@ DR_TXN_COMMAND_READ_MEMORY  = bits("0100")
 DR_TXN_COMMAND_READ_CORE    = bits("0101")
 DR_TXN_COMMAND_READ_AUX     = bits("0110")
 
-DR_ADDRESS = bitstruct("DR_ADDRESS", 32, [
-    ("Address", 32),
-])
+class DR_ADDRESS(bitstruct, width=32):
+    Address: int = 32
 
-DR_DATA = bitstruct("DR_DATA", 32, [
-    ("Data",    32),
-])
+class DR_DATA(bitstruct, width=32):
+    Data: int = 32

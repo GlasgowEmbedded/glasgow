@@ -41,11 +41,13 @@ IR_BYPASS      = bits("11111") # BYPASS[1]
 
 def DR_MISR(columns, rows):
     row_bits = (rows - 1).bit_length()
-    return bitstruct("DR_MISR", row_bits + 1 + columns, [
-        ("data",  columns),
-        ("plane",       1),
-        ("row",  row_bits),
-    ])
+
+    class DR_MISR(bitstruct, width=row_bits + 1 + columns):
+        data: int  = columns
+        plane: int = 1
+        row: int   = row_bits
+
+    return DR_MISR
 
 
 FB_BITS = [

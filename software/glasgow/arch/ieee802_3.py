@@ -14,54 +14,50 @@ __all__ = [
 
 
 REG_BASIC_CONTROL_addr  = 0x00
-REG_BASIC_CONTROL       = bitstruct("REG_BASIC_CONTROL", 16, [
-    (None,          6),
-    ("SPD_SEL_1",   1),
-    ("COLTST",      1),
-    ("DUPLEXMD",    1),
-    ("REAUTONEG",   1),
-    ("ISOLATE",     1),
-    ("PD",          1),
-    ("AUTONEGEN",   1),
-    ("SPD_SEL_0",   1),
-    ("LOOPBACK",    1),
-    ("SW_RESET",    1),
-])
+class REG_BASIC_CONTROL(bitstruct, width=16):
+    _0: int        = 6
+    SPD_SEL_1: int = 1
+    COLTST: int    = 1
+    DUPLEXMD: int  = 1
+    REAUTONEG: int = 1
+    ISOLATE: int   = 1
+    PD: int        = 1
+    AUTONEGEN: int = 1
+    SPD_SEL_0: int = 1
+    LOOPBACK: int  = 1
+    SW_RESET: int  = 1
 
 
 REG_BASIC_STATUS_addr   = 0x01
-REG_BASIC_STATUS        = bitstruct("REG_BASIC_STATUS", 16, [
-    ("EXTCAPA",     1),
-    ("JABDET",      1),
-    ("LNKSTS",      1),
-    ("AUTONEGA",    1),
-    ("RMTFLTD",     1),
-    ("AUTONEGC",    1),
-    ("MFPRESUPA",   1),
-    (None,          1),
-    ("EXTSTS",      1),
-    ("_100BT2HDA",  1),
-    ("_100BT2FDA",  1),
-    ("_10BTHDA",    1),
-    ("_10BTFDA",    1),
-    ("_100BTXHDA",  1),
-    ("_100BTXFDA",  1),
-    ("_100BT4A",    1),
-])
+class REG_BASIC_STATUS(bitstruct, width=16):
+    EXTCAPA: int       = 1
+    JABDET: int        = 1
+    LNKSTS: int        = 1
+    AUTONEGA: int      = 1
+    RMTFLTD: int       = 1
+    AUTONEGC: int      = 1
+    MFPRESUPA: int     = 1
+    _0: int            = 1
+    EXTSTS: int        = 1
+    cap_100BT2HDA: int = 1
+    cap_100BT2FDA: int = 1
+    cap_10BTHDA: int   = 1
+    cap_10BTFDA: int   = 1
+    cap_100BTXHDA: int = 1
+    cap_100BTXFDA: int = 1
+    cap_100BT4A: int   = 1
 
 
 REG_PHY_ID1_addr = 0x02
-REG_PHY_ID1      = bitstruct("REG_PHY_ID1", 16, [
-    ("OUI_2_17",    16),
-])
+class REG_PHY_ID1(bitstruct, width=16):
+    OUI_2_17: int = 16
 
 
 REG_PHY_ID2_addr = 0x03
-REG_PHY_ID2      = bitstruct("REG_PHY_ID2", 16, [
-    ("REV",         4),
-    ("MODEL",       6),
-    ("OUI_18_23",   6),
-])
+class REG_PHY_ID2(bitstruct, width=16):
+    REV: int       = 4
+    MODEL: int     = 6
+    OUI_18_23: int = 6
 
 
 class MMD_FNCTN(enum.Enum, shape=2):
@@ -81,11 +77,10 @@ class MMD_DEVAD(enum.Enum, shape=5):
 
 
 REG_MMDCTRL_addr = 0x0D
-REG_MMDCTRL      = bitstruct("REG_MMDCTRL", 16, [
-    ("DEVAD",       5),
-    (None,          9),
-    ("FNCTN",       2),
-])
+class REG_MMDCTRL(bitstruct, width=16):
+    DEVAD: int = 5
+    _0: int    = 9
+    FNCTN: int = 2
 
 
 REG_MMDAD_addr   = 0x0E
