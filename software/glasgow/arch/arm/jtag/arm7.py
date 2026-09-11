@@ -74,39 +74,35 @@ class EICE_Reg(enum.IntEnum):
         return [cls.W0_CTRL_MSK, cls.W1_CTRL_MSK][n]
 
 
-EICE_DBGCTL = bitstruct("EICE_DBGCTL", 32, [
-    ("DBGACK",      1),
-    ("DBGRQ",       1),
-    ("INTDIS",      1),
-    (None,          1),
-    ("Monitor_En",  1),
-    ("EICE_Dis",    1),
-    (None,          26),
-])
+class EICE_DBGCTL(bitstruct, width=32):
+    DBGACK: int     = 1
+    DBGRQ: int      = 1
+    INTDIS: int     = 1
+    _0: int         = 1
+    Monitor_En: int = 1
+    EICE_Dis: int   = 1
+    _1: int         = 26
 
 
-EICE_DBGSTA = bitstruct("EICE_DBGSTA", 32, [
-    ("DBGACK",      1),
-    ("DBGRQ",       1),
-    ("IFEN",        1),
-    ("TRANS1",      1),
-    ("TBIT",        1),
-    (None,          27),
-])
+class EICE_DBGSTA(bitstruct, width=32):
+    DBGACK: int = 1
+    DBGRQ: int  = 1
+    IFEN: int   = 1
+    TRANS1: int = 1
+    TBIT: int   = 1
+    _0: int     = 27
 
-EICE_DCCCTL = bitstruct("EICE_DCCCTL", 32, [
-    ("R",           1),
-    ("W",           1),
-    (None,          26),
-    ("Version",     4),
-])
+class EICE_DCCCTL(bitstruct, width=32):
+    R: int       = 1
+    W: int       = 1
+    _0: int      = 26
+    Version: int = 4
 
-EICE_Wx_CTRL = bitstruct("EICE_Wx_CTRL", 9, [
-    ("WRITE",       1),
-    ("SIZE",        2),
-    ("PROT",        2),
-    ("DBGEXT",      1),
-    ("CHAIN",       1),
-    ("RANGE",       1),
-    ("ENABLE",      1),
-])
+class EICE_Wx_CTRL(bitstruct, width=9):
+    WRITE: int  = 1
+    SIZE: int   = 2
+    PROT: int   = 2
+    DBGEXT: int = 1
+    CHAIN: int  = 1
+    RANGE: int  = 1
+    ENABLE: int = 1

@@ -19,16 +19,13 @@ __all__ = [
     "EEPROM_Mode_Program", "EEPROM_Mode_Erase",
 ]
 
-DR_RESET_TEST = bitstruct("DR_RESET_TEST", 32, [
-    # Probably ME. It seems to work for me, but none of SMSC documents ever coherently point
-    # to a single DR with the ME bit *or* specify the location of the ME bit. Cursed.
-    ("ME",      1),
-    ("VCC_POR", 1),
-    ("VTR_POR", 1),
-    ("POR_EN",  1),
-    (None,      27),
-    ("GANG_EN", 1),
-])
+class DR_RESET_TEST(bitstruct, width=32):
+    ME: int      = 1
+    VCC_POR: int = 1
+    VTR_POR: int = 1
+    POR_EN: int  = 1
+    _0: int      = 27
+    GANG_EN: int = 1
 
 Flash_base_addr     = 0xff_3800
 
@@ -42,74 +39,69 @@ Flash_Status_addr   = Flash_base_addr + 0x10c
 Flash_Config_addr   = Flash_base_addr + 0x110
 Flash_Init_addr     = Flash_base_addr + 0x114
 
-Flash_Command = bitstruct("Flash_Command", 32, [
-    ("Flash_Mode",  2),
-    ("Burst",       1),
-    ("EC_Int",      1),
-    (None,          4),
-    ("Reg_Ctl",     1),
-    (None,         23),
-])
+class Flash_Command(bitstruct, width=32):
+    Flash_Mode: int = 2
+    Burst: int      = 1
+    EC_Int: int     = 1
+    _0: int         = 4
+    Reg_Ctl: int    = 1
+    _1: int         = 23
 
 Flash_Mode_Standby  = 0
 Flash_Mode_Read     = 1
 Flash_Mode_Program  = 2
 Flash_Mode_Erase    = 3
 
-Flash_Status = bitstruct("Flash_Status", 32, [
-    ("Busy",            1),
-    ("Data_Full",       1),
-    ("Address_Full",    1),
-    ("Boot_Lock",       1),
-    (None,              1),
-    ("Boot_Block",      1),
-    ("Data_Block",      1),
-    ("EEPROM_Block",    1), # This bit is related to EEPROM emulation, not present on some variants.
-    ("Busy_Err",        1),
-    ("CMD_Err",         1),
-    ("Protect_Err",     1),
-    (None,             21),
-])
+class Flash_Status(bitstruct, width=32):
+    Busy: int         = 1
+    Data_Full: int    = 1
+    Address_Full: int = 1
+    Boot_Lock: int    = 1
+    _0: int           = 1
+    Boot_Block: int   = 1
+    Data_Block: int   = 1
+    EEPROM_Block: int = 1  # This bit is related to EEPROM emulation, not present on some variants.
+    Busy_Err: int     = 1
+    CMD_Err: int      = 1
+    Protect_Err: int  = 1
+    _1: int           = 21
 
-Flash_Config = bitstruct("Flash_Config", 32, [
-    ("Reg_Ctl_En",      1),
-    ("Host_Ctl",        1),
-    ("Boot_Lock",       1),
-    ("Boot_Protect_En", 1),
-    ("Data_Protect",    1),
-    ("Inhibit_JTAG",    1),
-    (None,              2),
-    ("EEPROM_Access",   1),
-    ("EEPROM_Protect",  1),
-    ("EEPROM_Force_Block", 1),
-    (None,             21),
-])
+class Flash_Config(bitstruct, width=32):
+    Reg_Ctl_En: int         = 1
+    Host_Ctl: int           = 1
+    Boot_Lock: int          = 1
+    Boot_Protect_En: int    = 1
+    Data_Protect: int       = 1
+    Inhibit_JTAG: int       = 1
+    _0: int                 = 2
+    EEPROM_Access: int      = 1
+    EEPROM_Protect: int     = 1
+    EEPROM_Force_Block: int = 1
+    _1: int                 = 21
 
-EEPROM_base_addr    = 0xf0_2c00
+EEPROM_base_addr          = 0xf0_2c00
 
-EEPROM_Data_addr = EEPROM_base_addr + 0x00
-EEPROM_Address_addr = EEPROM_base_addr + 0x04
-EEPROM_Command_addr = EEPROM_base_addr + 0x08
-EEPROM_Status_addr = EEPROM_base_addr + 0x0c
+EEPROM_Data_addr          = EEPROM_base_addr + 0x00
+EEPROM_Address_addr       = EEPROM_base_addr + 0x04
+EEPROM_Command_addr       = EEPROM_base_addr + 0x08
+EEPROM_Status_addr        = EEPROM_base_addr + 0x0c
 EEPROM_Configuration_addr = EEPROM_base_addr + 0x10
-EEPROM_Unlock_addr = EEPROM_base_addr + 0x20
+EEPROM_Unlock_addr        = EEPROM_base_addr + 0x20
 
-EEPROM_Command = bitstruct("EEPROM_Command", 32, [
-    ("EEPROM_Mode", 2),
-    ("Burst",       1),
-    (None,         29),
-])
+class EEPROM_Command(bitstruct, width=32):
+    EEPROM_Mode: int = 2
+    Burst: int       = 1
+    _0: int          = 29
 
-EEPROM_Status = bitstruct("EEPROM_Status", 32, [
-    ("Busy",            1),
-    ("Data_Full",       1),
-    ("Address_Full",    1),
-    (None,              4),
-    ("EEPROM_Block",    1),
-    ("Busy_Err",        1),
-    ("CMD_Err",         1),
-    (None,             22),
-])
+class EEPROM_Status(bitstruct, width=32):
+    Busy: int         = 1
+    Data_Full: int    = 1
+    Address_Full: int = 1
+    _0: int           = 4
+    EEPROM_Block: int = 1
+    Busy_Err: int     = 1
+    CMD_Err: int      = 1
+    _1: int           = 22
 
 EEPROM_Mode_Standby  = 0
 EEPROM_Mode_Read     = 1

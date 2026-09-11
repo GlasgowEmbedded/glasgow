@@ -143,25 +143,24 @@ class SetResetMode(enum.Enum):
 
 # Register layouts
 
-REG_STATUS = bitstruct("REG_STATUS", 8, [
-    ("DRDY",    1),  # Data ready
-    ("OVL",     1),  # Overflow
-    (None,      6),
-])
+class REG_STATUS(bitstruct, width=8):
+    DRDY: int = 1  # Data ready
+    OVL: int  = 1  # Overflow
+    _0: int   = 6
 
-REG_CONTROL1 = bitstruct("REG_CONTROL1", 8, [
-    ("MODE",    2),  # Operating mode
-    ("ODR",     2),  # Output data rate
-    ("OSR",     2),  # Oversample ratio
-    ("DSR",     2),  # Downsample ratio
-])
 
-REG_CONTROL2 = bitstruct("REG_CONTROL2", 8, [
-    ("SR",      2),  # Set/reset mode
-    ("RNG",     2),  # Field range
-    (None,      3),
-    ("SRST",    1),  # Soft reset
-])
+class REG_CONTROL1(bitstruct, width=8):
+    MODE: int = 2  # Operating mode
+    ODR: int  = 2  # Output data rate
+    OSR: int  = 2  # Oversample ratio
+    DSR: int  = 2  # Downsample ratio
+
+
+class REG_CONTROL2(bitstruct, width=8):
+    SR: int   = 2  # Set/reset mode
+    RNG: int  = 2  # Field range
+    _0: int   = 3
+    SRST: int = 1  # Soft reset
 
 
 # LSB per Gauss for each range

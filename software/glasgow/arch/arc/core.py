@@ -28,34 +28,32 @@ AUX_STATUS32_P0_addr         = 0x0b
 AUX_AUX_USER_SP_addr         = 0x0d
 AUX_INT_VECTOR_BASE_addr     = 0x25
 
-AUX_DEBUG = bitstruct("AUX_DEBUG", 32, [
-    ("SS",  1),
-    ("FH",  1),
-    (None,  9),
-    ("IS",  1),
-    (None, 10),
-    ("RA",  1),
-    ("ZZ",  1),
-    (None,  4),
-    ("UB",  1),
-    ("BH",  1),
-    ("SH",  1),
-    ("LD",  1),
-])
+class AUX_DEBUG(bitstruct, width=32):
+    SS: int = 1
+    FH: int = 1
+    _0: int = 9
+    IS: int = 1
+    _1: int = 10
+    RA: int = 1
+    ZZ: int = 1
+    _2: int = 4
+    UB: int = 1
+    BH: int = 1
+    SH: int = 1
+    LD: int = 1
 
-AUX_STATUS32 = bitstruct("AUX_STATUS32", 32, [
-    ("H",   1),
-    ("E1",  1),
-    ("E2",  1),
-    ("A1",  1),
-    ("A2",  1),
-    ("AE",  1),
-    ("DE",  1),
-    ("U",   1),
-    (None,  4),
-    ("L",   1),
-    (None,  19),
-])
+class AUX_STATUS32(bitstruct, width=32):
+    H: int  = 1
+    E1: int = 1
+    E2: int = 1
+    A1: int = 1
+    A2: int = 1
+    AE: int = 1
+    DE: int = 1
+    U: int  = 1
+    _0: int = 4
+    L: int  = 1
+    _1: int = 19
 
 # Build Configuration Registers
 AUX_DCCMBASE_BCR_addr        = 0x61
