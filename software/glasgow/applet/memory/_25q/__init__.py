@@ -214,6 +214,15 @@ class Memory25QInterface:
         value, = await self.qspi.execute_read(self.cmds[nor.Command.ReadStatusReg1])
         return nor.StatusReg1(value)
 
+    async def read_status_reg_2(self) -> int:
+        """Read Status Register 2.
+
+        Implemented using
+        :data:`Opcode.ReadStatusReg2 <glasgow.arch.qspi.nor.Opcode.ReadStatusReg2>`.
+        """
+        value, = await self.qspi.execute_read(self.cmds[nor.Command.ReadStatusReg2])
+        return value
+
     async def write_status_reg_1(self, value: nor.StatusReg1):
         """Write Status Register 1.
 
@@ -222,6 +231,18 @@ class Memory25QInterface:
         """
         await self.qspi.execute_cmd(self.cmds[nor.Command.WriteEnable])
         await self.qspi.execute_write(self.cmds[nor.Command.WriteStatusRegs], data=bytes([value]))
+        await self.poll_busy()
+
+    async def write_status_reg_1_2(self, value1: nor.StatusReg1, value2: int):
+        """Write Status Registers 1, 2.
+
+        Implemented using
+        :data:`Opcode.WriteStatusReg1 <glasgow.arch.qspi.nor.Opcode.WriteStatusReg1>` (with
+        two data bytes).
+        """
+        await self.qspi.execute_cmd(self.cmds[nor.Command.WriteEnable])
+        await self.qspi.execute_write(self.cmds[nor.Command.WriteStatusRegs],
+            data=bytes([value1, value2]))
         await self.poll_busy()
 
     async def write_enable(self):
@@ -309,6 +330,12 @@ class Memory25QInterface:
                 sr1 = await self.read_status_reg_1()
                 sr1 = update(sr1, 6)
                 await self.write_status_reg_1(sr1)
+            case (SFDPJEDECQuadEnableRequirements.Reg2Bit1_WrReg1ClobberReg2 |
+                  SFDPJEDECQuadEnableRequirements.Reg2Bit1_WrReg1PreserveReg2):
+                sr1 = await self.read_status_reg_1()
+                sr2 = await self.read_status_reg_2()
+                sr2 = update(sr2, 1)
+                await self.write_status_reg_1_2(sr1, sr2)
             case unsupported:
                 raise NotImplementedError(f"quad enablement {unsupported} not implemented yet")
 
