@@ -26,53 +26,50 @@ __all__ = [
 
 DP_DPIDR_addr = 0x00 # R/O
 
-DP_DPIDR = bitstruct("DP_DPIDR", 32, [
-    (None,              1), # always 1
-    ("DESIGNER",       11),
-    ("VERSION",         4),
-    ("MIN",             1),
-    (None,              3),
-    ("PARTNO",          8),
-    ("REVISION",        4),
-])
+class DP_DPIDR(bitstruct, width=32):
+    _0: int       = 1   # always 1
+    DESIGNER: int = 11
+    VERSION: int  = 4
+    MIN: int      = 1
+    _1: int       = 3
+    PARTNO: int   = 8
+    REVISION: int = 4
 
 
 # ABORT DP register layout
 
 DP_ABORT_addr = 0x00 # W/O
 
-DP_ABORT = bitstruct("DP_ABORT", 32, [
-    ("DAPABORT",        1),
-    ("STKCMPCLR",       1), # only in DPv1+
-    ("STKERRCLR",       1), # only in DPv1+
-    ("WDERRCLR",        1), # only in DPv1+
-    ("ORUNERRCLR",      1), # only in DPv1+
-    (None,             27),
-])
+class DP_ABORT(bitstruct, width=32):
+    DAPABORT: int   = 1
+    STKCMPCLR: int  = 1   # only in DPv1+
+    STKERRCLR: int  = 1   # only in DPv1+
+    WDERRCLR: int   = 1   # only in DPv1+
+    ORUNERRCLR: int = 1   # only in DPv1+
+    _0: int         = 27
 
 
 # CTRL/STAT DP register layout
 
 DP_CTRL_STAT_addr = 0x04 # R/W
 
-DP_CTRL_STAT = bitstruct("DP_CTRL_STAT", 32, [
-    ("ORUNDETECT",      1),
-    ("STICKYORUN",      1),
-    ("TRNMODE",         2), # unimplemented in MINDP
-    ("STICKYCMP",       1), # unimplemented in MINDP
-    ("STICKYERR",       1),
-    ("READOK",          1), # only in DPv1+
-    ("WDATAERR",        1), # only in DPv1+, SW-DP
-    ("MASKLANE",        4), # unimplemented in MINDP
-    ("TRNCNT",         12), # unimplemented in MINDP
-    (None,              2),
-    ("CDBGRSTREQ",      1),
-    ("CDBGRSTACK",      1),
-    ("CDBGPWRUPREQ",    1),
-    ("CDBGPWRUPACK",    1),
-    ("CSYSPWRUPREQ",    1),
-    ("CSYSPWRUPACK",    1),
-])
+class DP_CTRL_STAT(bitstruct, width=32):
+    ORUNDETECT: int   = 1
+    STICKYORUN: int   = 1
+    TRNMODE: int      = 2   # unimplemented in MINDP
+    STICKYCMP: int    = 1   # unimplemented in MINDP
+    STICKYERR: int    = 1
+    READOK: int       = 1   # only in DPv1+
+    WDATAERR: int     = 1   # only in DPv1+, SW-DP
+    MASKLANE: int     = 4   # unimplemented in MINDP
+    TRNCNT: int       = 12  # unimplemented in MINDP
+    _0: int           = 2
+    CDBGRSTREQ: int   = 1
+    CDBGRSTACK: int   = 1
+    CDBGPWRUPREQ: int = 1
+    CDBGPWRUPACK: int = 1
+    CSYSPWRUPREQ: int = 1
+    CSYSPWRUPACK: int = 1
 
 class DP_TRNMODE(enum.IntEnum):
     NORMAL          = 0b00
@@ -84,12 +81,11 @@ class DP_TRNMODE(enum.IntEnum):
 
 DP_SELECT_addr = 0x08 # R/W (only in DPv0), W/O (only in DPv1+)
 
-DP_SELECT = bitstruct("DP_SELECT", 32, [
-    ("DPBANKSEL",       4),
-    ("APBANKSEL",       4),
-    (None,             16),
-    ("APSEL",           8),
-])
+class DP_SELECT(bitstruct, width=32):
+    DPBANKSEL: int = 4
+    APBANKSEL: int = 4
+    _0: int        = 16
+    APSEL: int     = 8
 
 
 # RESEND DP register layout (only in DPv1+)
@@ -106,53 +102,48 @@ DP_RDBUFF_addr = 0x0C # R/O
 
 DP_TARGETSEL_addr = 0x0C # W/O
 
-DP_TARGETSEL = bitstruct("DP_TARGETSEL", 32, [
-    ("present",         1),
-    ("TDESIGNER",      11),
-    ("TPARTNO",        16),
-    ("TINSTANCE",       4),
-])
+class DP_TARGETSEL(bitstruct, width=32):
+    present: int   = 1
+    TDESIGNER: int = 11
+    TPARTNO: int   = 16
+    TINSTANCE: int = 4
 
 
 # DLCR DP register layout (only in DPv1+, SW-DP)
 
 DP_DLCR_addr = 0x14 # R/W
 
-DP_DLCR = bitstruct("DP_DLCR", 32, [
-    (None,              8),
-    ("TURNROUND",       2),
-    (None,             22),
-])
+class DP_DLCR(bitstruct, width=32):
+    _0: int        = 8
+    TURNROUND: int = 2
+    _1: int        = 22
 
 
 # TARGETID DP register layout (only in DPv2+)
 
 DP_TARGETID_addr = 0x24 # R/O
 
-DP_TARGETID = bitstruct("DP_TARGETID", 32, [
-    ("present",         1),
-    ("TDESIGNER",      11),
-    ("TPARTNO",        16),
-    ("TREVISION",       4),
-])
+class DP_TARGETID(bitstruct, width=32):
+    present: int   = 1
+    TDESIGNER: int = 11
+    TPARTNO: int   = 16
+    TREVISION: int = 4
 
 
 # DLPIDR DP register layout (only in DPv2+, SW-DP)
 
 DP_DLPIDR_addr = 0x34 # R/O
 
-DP_DLPIDR = bitstruct("DP_DLPIDR", 32, [
-    ("PROTVSN",         4),
-    (None,             24),
-    ("TINSTANCE",       4),
-])
+class DP_DLPIDR(bitstruct, width=32):
+    PROTVSN: int   = 4
+    _0: int        = 24
+    TINSTANCE: int = 4
 
 
 # EVENTSTAT DP register layout (only in DPv2+)
 
 DP_EVENTSTAT_addr = 0x44 # R/O
 
-DP_EVENTSTAT = bitstruct("DP_EVENTSTAT", 32, [
-    ("EA",              1),
-    (None,             31),
-])
+class DP_EVENTSTAT(bitstruct, width=32):
+    EA: int = 1
+    _0: int = 31

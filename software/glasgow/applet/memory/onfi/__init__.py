@@ -602,7 +602,7 @@ class MemoryONFIApplet(GlasgowApplet):
 
             blocks["Features"] = {
                 "data bus width":
-                    "16-bit" if onfi_param.features._16_bit_data_bus else "8-bit",
+                    "16-bit" if onfi_param.features.data_bus_16_bit else "8-bit",
                 "multi-LUN operations":
                     "yes" if onfi_param.features.multiple_lun_ops else "no",
                 "block programming order":

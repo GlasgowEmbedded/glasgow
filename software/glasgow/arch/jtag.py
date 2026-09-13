@@ -10,9 +10,8 @@ __all__ = [
 ]
 
 
-DR_IDCODE = bitstruct("DR_IDCODE", 32, [
-    ("present",  1),
-    ("mfg_id",  11),
-    ("part_id", 16),
-    ("version",  4),
-])
+class DR_IDCODE(bitstruct, width=32):
+    present: int = 1
+    mfg_id: int  = 11
+    part_id: int = 16
+    version: int = 4

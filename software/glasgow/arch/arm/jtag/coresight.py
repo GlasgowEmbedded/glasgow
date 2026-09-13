@@ -27,16 +27,14 @@ IR_BYPASS   = bits("1111") # DR[1]
 
 # DPACC/APACC DR layout
 
-DR_xPACC_capture = bitstruct("DR_xPACC", 35, [
-    ("ACK",         3),
-    ("ReadResult", 32),
-])
+class DR_xPACC_capture(bitstruct, width=35):
+    ACK: int        = 3
+    ReadResult: int = 32
 
-DR_xPACC_update = bitstruct("DR_xPACC", 35, [
-    ("RnW",         1),
-    ("A",           2),
-    ("DATAIN",     32),
-])
+class DR_xPACC_update(bitstruct, width=35):
+    RnW: int    = 1
+    A: int      = 2
+    DATAIN: int = 32
 
 
 class DR_xPACC_ACK(IntEnum):
@@ -46,8 +44,7 @@ class DR_xPACC_ACK(IntEnum):
 
 # ABORT DR layout
 
-DR_ABORT = bitstruct("DR_ABORT", 35, [
-    ("RnW",         1),
-    ("A",           2),
-    ("ABORT",      32),
-])
+class DR_ABORT(bitstruct, width=35):
+    RnW: int   = 1
+    A: int     = 2
+    ABORT: int = 32

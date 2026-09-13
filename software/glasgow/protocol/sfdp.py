@@ -37,124 +37,123 @@ class _JEDECRevisionMixin:
                 return "unknown JESD216 revision"
 
 
-_JEDECFlashParam0 = bitstruct("JEDECFlashParam0", 32, [
-    ("block_sector_erase_size",         2),
-    ("write_granularity",               1),
-    ("volatile_wren_required",          1),
-    ("volatile_wren_opcode_sel",        1),
-    (None,                              3),
-    ("_4_kbyte_erase_opcode",           8),
-    ("has_1_1_2_fast_read",             1),
-    ("address_byte_count",              2),
-    ("has_double_transfer_rate",        1),
-    ("has_1_2_2_fast_read",             1),
-    ("has_1_4_4_fast_read",             1),
-    ("has_1_1_4_fast_read",             1),
-    (None,                              9),
-])
+class _JEDECFlashParam0(bitstruct, width=32):
+    block_sector_erase_size: int  = 2
+    write_granularity: int        = 1
+    volatile_wren_required: int   = 1
+    volatile_wren_opcode_sel: int = 1
+    _0: int                       = 3
+    erase_opcode_4_kbyte: int     = 8
+    has_1_1_2_fast_read: int      = 1
+    address_byte_count: int       = 2
+    has_double_transfer_rate: int = 1
+    has_1_2_2_fast_read: int      = 1
+    has_1_4_4_fast_read: int      = 1
+    has_1_1_4_fast_read: int      = 1
+    _1: int                       = 9
 
-_JEDECFlashParam1 = bitstruct("JEDECFlashParam1", 32, [
-    ("density_value",                   31),
-    ("density_over_2gbit",              1),
-])
 
-_JEDECFlashParam2 = bitstruct("JEDECFlashParam2", 32, [
-    ("fast_read_1_4_4_wait_states",     5),
-    ("fast_read_1_4_4_mode_clocks",     3),
-    ("fast_read_1_4_4_opcode",          8),
-    ("fast_read_1_1_4_wait_states",     5),
-    ("fast_read_1_1_4_mode_clocks",     3),
-    ("fast_read_1_1_4_opcode",          8),
-])
+class _JEDECFlashParam1(bitstruct, width=32):
+    density_value: int      = 31
+    density_over_2gbit: int = 1
 
-_JEDECFlashParam3 = bitstruct("JEDECFlashParam3", 32, [
-    ("fast_read_1_1_2_wait_states",     5),
-    ("fast_read_1_1_2_mode_clocks",     3),
-    ("fast_read_1_1_2_opcode",          8),
-    ("fast_read_1_2_2_wait_states",     5),
-    ("fast_read_1_2_2_mode_clocks",     3),
-    ("fast_read_1_2_2_opcode",          8),
-])
 
-_JEDECFlashParam4 = bitstruct("JEDECFlashParam4", 32, [
-    ("has_2_2_2_fast_read",             1),
-    (None,                              3),
-    ("has_4_4_4_fast_read",             1),
-    (None,                             27),
-])
+class _JEDECFlashParam2(bitstruct, width=32):
+    fast_read_1_4_4_wait_states: int = 5
+    fast_read_1_4_4_mode_clocks: int = 3
+    fast_read_1_4_4_opcode: int      = 8
+    fast_read_1_1_4_wait_states: int = 5
+    fast_read_1_1_4_mode_clocks: int = 3
+    fast_read_1_1_4_opcode: int      = 8
 
-_JEDECFlashParam5 = bitstruct("JEDECFlashParam5", 32, [
-    (None,                             16),
-    ("fast_read_2_2_2_wait_states",     5),
-    ("fast_read_2_2_2_mode_clocks",     3),
-    ("fast_read_2_2_2_opcode",          8),
-])
 
-_JEDECFlashParam6 = bitstruct("JEDECFlashParam6", 32, [
-    (None,                             16),
-    ("fast_read_4_4_4_wait_states",     5),
-    ("fast_read_4_4_4_mode_clocks",     3),
-    ("fast_read_4_4_4_opcode",          8),
-])
+class _JEDECFlashParam3(bitstruct, width=32):
+    fast_read_1_1_2_wait_states: int = 5
+    fast_read_1_1_2_mode_clocks: int = 3
+    fast_read_1_1_2_opcode: int      = 8
+    fast_read_1_2_2_wait_states: int = 5
+    fast_read_1_2_2_mode_clocks: int = 3
+    fast_read_1_2_2_opcode: int      = 8
 
-_JEDECFlashParam7 = bitstruct("JEDECFlashParam7", 32, [
-    ("sector_type_1_size",              8),
-    ("sector_type_1_opcode",            8),
-    ("sector_type_2_size",              8),
-    ("sector_type_2_opcode",            8),
-])
 
-_JEDECFlashParam8 = bitstruct("JEDECFlashParam8", 32, [
-    ("sector_type_3_size",              8),
-    ("sector_type_3_opcode",            8),
-    ("sector_type_4_size",              8),
-    ("sector_type_4_opcode",            8),
-])
+class _JEDECFlashParam4(bitstruct, width=32):
+    has_2_2_2_fast_read: int = 1
+    _0: int                  = 3
+    has_4_4_4_fast_read: int = 1
+    _1: int                  = 27
 
-_JEDECFlashParam9 = bitstruct("JEDECFlashParam9", 32, [
-    ("max_erase_time_mult",             4),
-    ("sector_type_1_avg_erase_time",    7),
-    ("sector_type_2_avg_erase_time",    7),
-    ("sector_type_3_avg_erase_time",    7),
-    ("sector_type_4_avg_erase_time",    7),
-])
 
-_JEDECFlashParam10 = bitstruct("JEDECFlashParam10", 32, [
-    ("max_program_time_mult",           4),
-    ("page_size",                       4),
-    ("page_program_typ_time",           6),
-    ("byte_program_typ_time_first",     5),
-    ("byte_program_typ_time_rest",      5),
-    ("chip_erase_typ_time",             7),
-    (None,                              1),
-])
+class _JEDECFlashParam5(bitstruct, width=32):
+    _0: int = 16
+    fast_read_2_2_2_wait_states: int = 5
+    fast_read_2_2_2_mode_clocks: int = 3
+    fast_read_2_2_2_opcode: int      = 8
 
-_JEDECFlashParam11 = bitstruct("JEDECFlashParam11", 32, [
-    ("prohibited_ops_program_suspend",  4),
-    ("prohibited_ops_erase_suspend",    4),
-    (None,                              1),
-    ("program_resume_suspend_interval", 4),
-    ("suspend_program_max_latency",     7),
-    ("erase_resume_suspend_interval",   4),
-    ("suspend_erase_max_latency",       7),
-    ("suspend_resume_supported",        1),
-])
 
-_JEDECFlashParam12 = bitstruct("JEDECFlashParam12", 32, [
-    ("program_resume_instruction",      8),
-    ("program_suspend_instruction",     8),
-    ("resume_instruction",              8),
-    ("suspend_instruction",             8),
-])
+class _JEDECFlashParam6(bitstruct, width=32):
+    _0: int = 16
+    fast_read_4_4_4_wait_states: int = 5
+    fast_read_4_4_4_mode_clocks: int = 3
+    fast_read_4_4_4_opcode: int      = 8
 
-_JEDECFlashParam13 = bitstruct("JEDECFlashParam13", 32, [
-    (None,                              2),
-    ("status_register_poll_device_busy",6),
-    ("exit_deep_pd_to_next_op_delay",   7),
-    ("exit_deep_pd_instruction",        8),
-    ("enter_deep_pd_instruction",       8),
-    ("deep_pd_supported",               1),
-])
+
+class _JEDECFlashParam7(bitstruct, width=32):
+    sector_type_1_size: int   = 8
+    sector_type_1_opcode: int = 8
+    sector_type_2_size: int   = 8
+    sector_type_2_opcode: int = 8
+
+
+class _JEDECFlashParam8(bitstruct, width=32):
+    sector_type_3_size: int   = 8
+    sector_type_3_opcode: int = 8
+    sector_type_4_size: int   = 8
+    sector_type_4_opcode: int = 8
+
+
+class _JEDECFlashParam9(bitstruct, width=32):
+    max_erase_time_mult: int          = 4
+    sector_type_1_avg_erase_time: int = 7
+    sector_type_2_avg_erase_time: int = 7
+    sector_type_3_avg_erase_time: int = 7
+    sector_type_4_avg_erase_time: int = 7
+
+
+class _JEDECFlashParam10(bitstruct, width=32):
+    max_program_time_mult: int       = 4
+    page_size: int                   = 4
+    page_program_typ_time: int       = 6
+    byte_program_typ_time_first: int = 5
+    byte_program_typ_time_rest: int  = 5
+    chip_erase_typ_time: int         = 7
+    _0: int                          = 1
+
+
+class _JEDECFlashParam11(bitstruct, width=32):
+    prohibited_ops_program_suspend: int  = 4
+    prohibited_ops_erase_suspend: int    = 4
+    _0: int                              = 1
+    program_resume_suspend_interval: int = 4
+    suspend_program_max_latency: int     = 7
+    erase_resume_suspend_interval: int   = 4
+    suspend_erase_max_latency: int       = 7
+    suspend_resume_supported: int        = 1
+
+
+class _JEDECFlashParam12(bitstruct, width=32):
+    program_resume_instruction: int  = 8
+    program_suspend_instruction: int = 8
+    resume_instruction: int          = 8
+    suspend_instruction: int         = 8
+
+
+class _JEDECFlashParam13(bitstruct, width=32):
+    _0: int                               = 2
+    status_register_poll_device_busy: int = 6
+    exit_deep_pd_to_next_op_delay: int    = 7
+    exit_deep_pd_instruction: int         = 8
+    enter_deep_pd_instruction: int        = 8
+    deep_pd_supported: int                = 1
 
 
 class SFDPJEDECQuadEnableRequirements(enum.Enum):
@@ -201,16 +200,15 @@ class SFDPJEDECQuadEnableRequirements(enum.Enum):
     Reserved                    = 0b111
 
 
-_JEDECFlashParam14 = bitstruct("JEDECFlashParam14", 32, [
-    ("_4_4_4_mode_disable_sequences",   4),
-    ("_4_4_4_mode_enable_sequences",    5),
-    ("_0_4_4_mode_supported",           1),
-    ("_0_4_4_mode_exit_method",         6),
-    ("_0_4_4_mode_entry_method",        4),
-    ("quad_enable_requirements",        3),
-    ("hold_wp_disable",                 1),
-    (None,                              8),
-])
+class _JEDECFlashParam14(bitstruct, width=32):
+    mode_4_4_4_disable_sequences: int = 4
+    mode_4_4_4_enable_sequences: int  = 5
+    mode_0_4_4_supported: int         = 1
+    mode_0_4_4_exit_method: int       = 6
+    mode_0_4_4_entry_method: int      = 4
+    quad_enable_requirements: int     = 3
+    hold_wp_disable: int              = 1
+    _0: int                           = 8
 
 
 class SFDPJEDECEnter4ByteAddressingMethods(enum.Flag):
@@ -239,13 +237,12 @@ class SFDPJEDECExit4ByteAddressingMethods(enum.Flag):
     Reserved9               = 0b10_0000_0000
 
 
-_JEDECFlashParam15 = bitstruct("JEDECFlashParam15", 32, [
-    ("v_nv_register_write_enable_sr1",  7),
-    (None,                              1),
-    ("soft_reset_rescue_sequence",      6),
-    ("exit_4_byte_addressing",         10),
-    ("enter_4_byte_addressing",         8),
-])
+class _JEDECFlashParam15(bitstruct, width=32):
+    v_nv_register_write_enable_sr1: int = 7
+    _0: int                             = 1
+    soft_reset_rescue_sequence: int     = 6
+    exit_4_byte_addressing: int         = 10
+    enter_4_byte_addressing: int        = 8
 
 
 _JEDECFlashParam = [

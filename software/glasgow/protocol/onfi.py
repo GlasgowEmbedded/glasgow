@@ -19,73 +19,64 @@ _crc_onfi = staticmethod(amaranth.lib.crc.Algorithm(crc_width=16, polynomial=0x8
     xor_output=0)(data_width=8).compute)
 
 
-_ONFI_Revision = bitstruct("ONFI_Revision", 16, [
-    (None,                      1),
-    ("rev_1_0",                 1),
-    ("unknown",                 14)
-])
+class _ONFI_Revision(bitstruct, width=16):
+    _0: int      = 1
+    rev_1_0: int = 1
+    unknown: int = 14
 
 
-_ONFI_Features = bitstruct("ONFI_Features", 16, [
-    ("_16_bit_data_bus",        1),
-    ("multiple_lun_ops",        1),
-    ("non_seq_page_program",    1),
-    ("interleaved_ops",         1),
-    ("odd_to_even_copyback",    1),
-    (None,                      11)
-])
+class _ONFI_Features(bitstruct, width=16):
+    data_bus_16_bit: int      = 1
+    multiple_lun_ops: int     = 1
+    non_seq_page_program: int = 1
+    interleaved_ops: int      = 1
+    odd_to_even_copyback: int = 1
+    _0: int                   = 11
 
 
-_ONFI_Optional_Commands = bitstruct("ONFI_Optional_Commands", 16, [
-    ("page_cache_program",      1),
-    ("read_cache",              1),
-    ("get_set_features",        1),
-    ("read_status_enhanced",    1),
-    ("copyback",                1),
-    ("read_unique_id",          1),
-    (None,                      10)
-])
+class _ONFI_Optional_Commands(bitstruct, width=16):
+    page_cache_program: int   = 1
+    read_cache: int           = 1
+    get_set_features: int     = 1
+    read_status_enhanced: int = 1
+    copyback: int             = 1
+    read_unique_id: int       = 1
+    _0: int                   = 10
 
 
-_ONFI_Date_Code = bitstruct("ONFI_Date_Code", 16, [
-    ("year",                    8),
-    ("week",                    8),
-])
+class _ONFI_Date_Code(bitstruct, width=16):
+    year: int = 8
+    week: int = 8
 
 
-_ONFI_Address_Cycles = bitstruct("ONFI_Address_Cycles", 8, [
-    ("row",                     4),
-    ("column",                  4),
-])
+class _ONFI_Address_Cycles(bitstruct, width=8):
+    row: int    = 4
+    column: int = 4
 
 
-_ONFI_Block_Endurance = bitstruct("ONFI_Block_Endurance", 16, [
-    ("value",                   8),
-    ("multiplier",              8),
-])
+class _ONFI_Block_Endurance(bitstruct, width=16):
+    value: int      = 8
+    multiplier: int = 8
 
 
-_ONFI_Partial_Programming_Attributes = bitstruct("ONFI_Partial_Programming_Attributes", 8, [
-    ("has_constraints",         1),
-    (None,                      3),
-    ("layout_is_data_spare",    1),
-    (None,                      3)
-])
+class _ONFI_Partial_Programming_Attributes(bitstruct, width=8):
+    has_constraints: int      = 1
+    _0: int                   = 3
+    layout_is_data_spare: int = 1
+    _1: int                   = 3
 
 
-_ONFI_Interleaved_Address_Bits = bitstruct("ONFI_Interleaved_Address_Bits", 8, [
-    ("count",                   4),
-    (None,                      4)
-])
+class _ONFI_Interleaved_Address_Bits(bitstruct, width=8):
+    count: int = 4
+    _0: int    = 4
 
 
-_ONFI_Interleaved_Operation_Attributes = bitstruct("ONFI_Interleaved_Operation_Attributes", 8, [
-    ("overlapped_supported",    1),
-    ("no_address_restrictions", 1),
-    ("program_cache_supported", 1),
-    ("program_cache_address_restrictions", 1),
-    (None,                      4)
-])
+class _ONFI_Interleaved_Operation_Attributes(bitstruct, width=8):
+    overlapped_supported: int               = 1
+    no_address_restrictions: int            = 1
+    program_cache_supported: int            = 1
+    program_cache_address_restrictions: int = 1
+    _0: int                                 = 4
 
 
 class ONFIParameters:

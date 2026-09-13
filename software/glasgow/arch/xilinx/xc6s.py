@@ -63,10 +63,9 @@ IR_BYPASS       = bits("111111") # BYPASS[1]
 
 # Captured IR value
 
-IR_CAPTURE = bitstruct("IR_CAPTURE", 6, [
-    (None,          2),
-    ("ISC_DONE",    1),
-    ("ISC_ENABLED", 1),
-    ("INIT_B",      1), # documented as INIT(1)
-    ("DONE",        1),
-])
+class IR_CAPTURE(bitstruct, width=6):
+    _0: int          = 2
+    ISC_DONE: int    = 1
+    ISC_ENABLED: int = 1
+    INIT_B: int      = 1  # documented as INIT(1)
+    DONE: int        = 1
