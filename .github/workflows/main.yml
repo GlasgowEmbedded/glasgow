@@ -3,6 +3,9 @@ on:
   pull_request:
   merge_group:
 
+env:
+  PDM_VERISON: '2.29.0'
+
 name: CI
 jobs:
 
@@ -68,6 +71,7 @@ jobs:
       - name: Set up PDM
         uses: pdm-project/setup-pdm@v4
         with:
+          version: ${{ env.PDM_VERISON }}
           python-version: ${{ matrix.python-version }}
       - name: Generate lockfile
         working-directory: ./software
@@ -149,6 +153,8 @@ jobs:
           fetch-depth: 0
       - name: Set up PDM
         uses: pdm-project/setup-pdm@v4
+        with:
+          version: ${{ env.PDM_VERISON }}
       - name: Install dependencies
         run: pdm install
       - name: Build documentation
