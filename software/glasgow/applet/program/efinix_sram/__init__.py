@@ -15,13 +15,15 @@ from amaranth.lib import io, enum, wiring, stream, data
 from amaranth.lib.wiring import In, Out
 from amaranth.utils import exact_log2
 
+from glasgow.support import logging
+from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
+
 from glasgow.gateware.iostream import IOStreamer
 from glasgow.gateware.cobs import encode, Decoder
 from glasgow.gateware.ports import PortGroup
-from glasgow.support import logging
-from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
-from glasgow.applet.control.gpio import GPIOInterface
+
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
+from glasgow.applet.control.gpio import GPIOInterface
 
 
 T_RESET_MIN = 320e-9
@@ -40,25 +42,45 @@ class Operation(enum.Enum, shape=3):
     FINALIZE = 4
 
 
+class Status(enum.Enum, shape=2):
+    SHIFTED   = 0
+    WAITING   = 1
+    FINALIZED = 2
+
+
 class Deframer(wiring.Component):
     def __init__(self, ports):
         super().__init__({
             "frames": In(IOStreamer.o_signature(
-                ports, ratio=2, meta_layout=data.StructLayout({"finalize": 1})
+                ports, ratio=2, meta_layout=data.StructLayout({"finalize": 1, "shifted": 1})
             )),
-            "complete": Out(1),
+            "o": Out(stream.Signature(Status)),
         })
 
     def elaborate(self, platform):
         m = Module()
         m.d.comb += self.frames.ready.eq(1)
 
-        if len(self.frames.p.port.cdone.i[0]) != 0:
-            with m.If(self.frames.p.port.cdone.i[1] & self.frames.p.meta.finalize):
-                m.d.comb += self.complete.eq(1)
-        else:
-            with m.If(self.frames.p.meta.finalize):
-                m.d.comb += self.complete.eq(1)
+        with m.If(self.frames.valid):
+            m.d.comb += Assert(~(self.frames.p.meta.finalize & self.frames.p.meta.shifted))
+            with m.If(self.frames.p.meta.shifted):
+                m.d.comb +=[
+                    self.o.valid.eq(self.frames.valid),
+                    self.frames.ready.eq(self.o.ready),
+                    self.o.payload.eq(Status.SHIFTED),
+                ]
+            with m.Elif(self.frames.p.meta.finalize):
+                m.d.comb += [
+                    self.o.valid.eq(self.frames.valid),
+                    self.frames.ready.eq(self.o.ready),
+                ]
+                if len(self.frames.p.port.cdone.i[1]) != 0:
+                    with m.If(self.frames.p.port.cdone.i[1]):
+                        m.d.comb += self.o.payload.eq(Status.FINALIZED)
+                    with m.Else():
+                        m.d.comb += self.o.payload.eq(Status.WAITING)
+                else:
+                    m.d.comb += self.o.payload.eq(Status.FINALIZED)
 
         return m
 
@@ -72,7 +94,7 @@ class Enframer(wiring.Component):
             }))),
             "frames": Out(IOStreamer.i_signature(
                 ports, ratio=2,
-                meta_layout=data.StructLayout({"finalize": 1})
+                meta_layout=data.StructLayout({"finalize": 1, "shifted": 1})
             )),
             "divisor": In(16),
         })
@@ -89,6 +111,9 @@ class Enframer(wiring.Component):
         m.d.comb += [
             self.frames.p.port.cs   .o   .eq(0b11),
             self.frames.p.port.cdone.o   .eq(0b00),
+            self.frames.p.port.cck  .o   .eq(0b11),
+            self.frames.p.port.cdi  .o[0].eq(0xff),
+            self.frames.p.port.cdi  .o[1].eq(0xff),
             self.frames.p.port.cbus .o[0].eq(~Const(exact_log2(width), 3)),
             self.frames.p.port.cbus .o[1].eq(~Const(exact_log2(width), 3)),
         ]
@@ -112,10 +137,6 @@ class Enframer(wiring.Component):
                     self.frames.p.port.cdi  .oe.eq(1),
 
                     self.frames.p.port.reset.o   .eq(data),
-                    self.frames.p.port.cck  .o[0].eq(0b1),
-                    self.frames.p.port.cck  .o[1].eq(0b1),
-                    self.frames.p.port.cdi  .o[0].eq(0xff),
-                    self.frames.p.port.cdi  .o[1].eq(0xff),
                 ]
             with m.Case(Operation.PUT):
                 m.d.comb += [
@@ -140,14 +161,16 @@ class Enframer(wiring.Component):
                     self.frames.p.port.cck  .o[0].eq(timer * 2 >  self.divisor),
                     self.frames.p.port.cck  .o[1].eq(timer * 2 >= self.divisor),
                 ]
-            with m.Case(Operation.FINALIZE):
-                m.d.comb += self.frames.p.meta.finalize.eq(1),
+                m.d.comb += self.frames.p.meta.shifted .eq(data[0] & (cycle == 0))
+            with m.Case(Operation.FINALIZE): # The FPGA is now breathing manually
+                m.d.comb += self.frames.p.meta.finalize.eq(1)
 
         m.d.comb += self.frames.valid.eq(self.octets.valid)
         with m.If(self.frames.valid & self.frames.ready):
             with m.If(
                 (self.octets.p.oper == Operation.RESET) |
-                (self.octets.p.oper == Operation.SETUP)):
+                (self.octets.p.oper == Operation.SETUP) |
+                (self.octets.p.oper == Operation.FINALIZE)):
                 m.d.comb += self.octets.ready.eq(self.frames.ready)
             with m.Else():
                 m.d.sync += [
@@ -173,21 +196,22 @@ class Controller(wiring.Component):
                 ports.cs.direction in (io.Direction.Output, io.Direction.Bidir))
         assert (ports.cdone is None) or (len(ports.cdone) == 1 and
                 ports.cdone.direction == io.Direction.Bidir)
-        assert (len(ports.cbus) in [0, 2, 3] and
-                ports.cbus.direction in (io.Direction.Output, io.Direction.Bidir))
+        assert (ports.cbus is None or (len(ports.cbus) in [0, 2, 3] and
+                ports.cbus.direction in (io.Direction.Output, io.Direction.Bidir)))
         assert (len(ports.cck) == 1 and
                 ports.cck.direction in (io.Direction.Output, io.Direction.Bidir))
         assert (len(ports.cdi) in [1, 2, 4, 8] and
                 ports.cdi.direction in (io.Direction.Output, io.Direction.Bidir))
 
         cdone = None if ports.cdone is None else ports.cdone.with_direction("io")
+        cbus  = None if ports.cbus  is None else ports.cbus .with_direction("o")
         self._clock_period = clock_period
         self._width = len(ports.cdi)
         self._ports = PortGroup(
             reset=~ports.reset.with_direction("o"),
             cs   =~ports.cs   .with_direction("o"),
             cdone= cdone,
-            cbus = ports.cbus .with_direction("o"),
+            cbus = cbus,
             cck  = ports.cck  .with_direction("o"),
             cdi  = ports.cdi  .with_direction("o"),
         )
@@ -197,7 +221,7 @@ class Controller(wiring.Component):
                 "data": 8,
                 "end":  1,
             }))),
-            "complete": Out(1),
+            "o": Out(stream.Signature(Status)),
             "divisor":  In(16)
         })
 
@@ -208,12 +232,19 @@ class Controller(wiring.Component):
         m.submodules.deframer = deframer = Deframer(ports=self._ports)
 
         m.submodules.io_streamer = io_streamer = \
-            IOStreamer(self._ports, ratio=2, meta_layout=data.StructLayout({"finalize": 1}))
+            IOStreamer(self._ports, ratio=2,
+                       meta_layout=data.StructLayout({"finalize": 1, "shifted": 1}))
 
         wiring.connect(m, io_streamer=io_streamer.i, enframer=enframer.frames)
         wiring.connect(m, deframer=deframer.frames, io_streamer=io_streamer.o)
         m.d.comb += enframer.divisor.eq(self.divisor)
-        m.d.comb += self.complete.eq(deframer.complete)
+
+        wiring.connect(m, deframer.o, wiring.flipped(self.o))
+        with m.If(deframer.o.valid & (deframer.o.payload == Status.WAITING)):
+            m.d.comb += [
+                self.o.valid.eq(0),
+                deframer.o.ready.eq(1),
+            ]
 
         treset_cycles = int(T_RESET_MIN // self._clock_period) + 1
         tdata_cycles  = int(T_DATA_MIN / self._clock_period) + 1
@@ -262,7 +293,14 @@ class Controller(wiring.Component):
                     ]
                 with m.If(self.i.p.end & self.i.valid):
                     m.d.comb += self.i.ready.eq(1)
-                    m.next = "DUMMY"
+                    m.next = "SHIFTED"
+            with m.State("SHIFTED"):
+                m.d.comb += [
+                    enframer.octets.valid .eq(1),
+                    enframer.octets.p.oper.eq(Operation.DUMMY),
+                    enframer.octets.p.data.eq(0xff)
+                ]
+                repeat(1, "DUMMY")
             with m.State("DUMMY"):
                 m.d.comb += [
                     enframer.octets.valid .eq(1),
@@ -274,9 +312,14 @@ class Controller(wiring.Component):
                     enframer.octets.valid .eq(1),
                     enframer.octets.p.oper.eq(Operation.FINALIZE)
                 ]
-                with m.If(deframer.complete):
-                    m.d.comb += self.i.ready.eq(1)
-                    m.next = "IDLE"
+                with m.If(enframer.octets.valid & enframer.octets.ready):
+                    m.next = "FINALIZE_WAIT"
+            with m.State("FINALIZE_WAIT"):
+                with m.If(deframer.o.valid & deframer.o.ready):
+                    with m.If(deframer.o.payload == Status.FINALIZED):
+                        m.next = "IDLE"
+                    with m.If(deframer.o.payload == Status.WAITING):
+                        m.next = "FINALIZE"
 
         return m
 
@@ -288,9 +331,8 @@ class EfinixConfigComponent(wiring.Component):
 
         super().__init__({
             "bitstream": In(stream.Signature(8)),
-            "divisor":  In(16),
-            "shifted":  Out(1),
-            "complete": Out(1)
+            "status":    Out(stream.Signature(8)),
+            "divisor":   In(16),
         })
 
     def elaborate(self, platform):
@@ -302,17 +344,11 @@ class EfinixConfigComponent(wiring.Component):
         m.submodules.dec = dec = Decoder()
         wiring.connect(m, wiring.flipped(self.bitstream), dec.i)
         wiring.connect(m, dec.o, ctl.i)
-
-        with m.If(ctl.complete):
-            m.d.sync += self.complete.eq(1)
-
-        with m.If(dec.o.valid & dec.o.ready & dec.o.p.end):
-            m.d.sync += self.shifted.eq(1)
-        with m.Elif(dec.o.valid):
-            m.d.sync += [
-                self.shifted .eq(0),
-                self.complete.eq(0),
-            ]
+        m.d.comb += [
+            self.status.p.eq(ctl.o.p),
+            self.status.valid.eq(ctl.o.valid),
+            ctl.o.ready.eq(self.status.ready),
+        ]
 
         return m
 
@@ -328,7 +364,8 @@ class EfinixSRAMInterface:
                  freset: GlasgowPin | None = None):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
-        self._delay  = asyncio.sleep
+        self._width  = len(cdi)
+        self._sim    = False
 
         if cdone is None:
             cdone = assembly.add_port(None, "cdone")
@@ -336,18 +373,16 @@ class EfinixSRAMInterface:
             cbus  = assembly.add_port(None, "cbus")
         ports = assembly.add_port_group(reset=creset, cs=cs, cck=cck,
                                         cdi=cdi, cbus=cbus, cdone=cdone)
-        component = assembly.add_submodule(
+        self._component = component = assembly.add_submodule(
             EfinixConfigComponent(ports, clock_period=assembly.sys_clk_period)
         )
 
-        self._bitstream_pipe = assembly.add_out_pipe(component.bitstream)
+        self._pipe = assembly.add_inout_pipe(component.status, component.bitstream)
         self._clock = assembly.add_clock_divisor(
             component.divisor,
             ref_period=assembly.sys_clk_period,
             name="clock"
         )
-        self._complete_reg = assembly.add_ro_register(component.complete)
-        self._shifted_reg  = assembly.add_ro_register(component.shifted)
 
         self._freset_iface = None
         if freset is not None:
@@ -364,7 +399,6 @@ class EfinixSRAMInterface:
     def width(self) -> int:
         return self._width
 
-
     async def load(self, bitstream: Buffer):
         """Load :py:`bitstream` into configuration SRAM.
 
@@ -376,21 +410,24 @@ class EfinixSRAMInterface:
         """
         if self._freset_iface:
             await self._freset_iface.output(0, True)
-        await self._bitstream_pipe.send(encode(bitstream))
-        await self._bitstream_pipe.send(b"\x00")
-        await self._bitstream_pipe.flush()
-        while True:
-            if await self._shifted_reg.get() == 1:
-                break
-            await self._delay(0.001)
-        for _ in range(10):
-            if await self._complete_reg.get() == 1:
-                if self._freset_iface:
-                    await self._freset_iface.output(0, False)
-                    await self._freset_iface.input(0)
-                return
-            await self._delay(0.001)
-        raise EfinixSRAMError("FPGA id not raise CDONE")
+        await self._pipe.send(encode(bitstream))
+        await self._pipe.send(b"\x00")
+        await self._pipe.flush()
+
+        status = (await self._pipe.recv(1))[0]
+        assert status == Status.SHIFTED.value
+
+        async def finish():
+            status = (await self._pipe.recv(1))[0]
+            assert status == Status.FINALIZED.value
+            if self._freset_iface:
+                await self._freset_iface.output(0, False)
+                await self._freset_iface.input(0)
+        if self._sim:
+            await finish()
+        else:
+            async with asyncio.timeout(0.010):
+                await finish()
 
 
 class ProgramEfinixSRAMApplet(GlasgowAppletV2):
@@ -455,13 +492,10 @@ class ProgramEfinixSRAMApplet(GlasgowAppletV2):
         else:
             # The fact that this is the bitstream interchange format is frankly
             # baffling to me
-            parsed = b"".join([
-                int(l.strip(), base=16).to_bytes(1)
-                for l in args.hex.readlines()
-            ])
+            parsed = bytes.fromhex(args.hex.read())
             await self.efinix_iface.load(parsed)
 
     @classmethod
     def tests(cls):
         from . import test
-        return test.ProgramEfinixSRAMAppletAppletTestCase
+        return test.ProgramEfinixSRAMAppletTestCase
