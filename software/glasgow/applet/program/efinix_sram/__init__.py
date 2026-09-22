@@ -64,7 +64,7 @@ class Deframer(wiring.Component):
         with m.If(self.frames.valid):
             m.d.comb += Assert(~(self.frames.p.meta.finalize & self.frames.p.meta.shifted))
             with m.If(self.frames.p.meta.shifted):
-                m.d.comb +=[
+                m.d.comb += [
                     self.o.valid.eq(self.frames.valid),
                     self.frames.ready.eq(self.o.ready),
                     self.o.payload.eq(Status.SHIFTED),
