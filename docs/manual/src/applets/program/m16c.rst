@@ -1,0 +1,20 @@
+``program-m16c``
+================
+
+CLI reference
+-------------
+
+.. _applet.program.m16c:
+
+.. autoprogram:: glasgow.applet.program.m16c:ProgramM16CApplet._get_argparser_for_sphinx("program-m16c")
+    :prog: glasgow run program-m16c
+
+
+API reference
+-------------
+
+.. module:: glasgow.applet.program.m16c
+
+.. autoexception:: M16CBootloaderError
+
+.. autoclass:: ProgramM16CInterface
