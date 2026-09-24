@@ -1,45 +1,43 @@
 from glasgow.support import logging
-from glasgow.applet.interface.i2c_initiator_deprecated import I2CInitiatorApplet
-from glasgow.applet import *
+from glasgow.applet.interface.i2c_controller import I2CNotAcknowledged, I2CControllerInterface
+from glasgow.applet import GlasgowAppletV2
 
 
-class TPS6598xError(GlasgowAppletError):
-    pass
+__all__ = ["TPS6598xInterface", "I2CNotAcknowledged"]
 
 
 class TPS6598xInterface:
-    def __init__(self, interface, logger, i2c_address):
-        self.lower     = interface
-        self._i2c_addr = i2c_address
-        self._logger   = logger
-        self._level    = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+    def __init__(self, logger: logging.Logger, i2c_iface: I2CControllerInterface,
+                 i2c_address: int = 0x38):
+        self._logger = logger
+        self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
-    @staticmethod
-    def _check(result):
-        if result is None:
-            raise TPS6598xError("TPS6598x did not acknowledge command")
-        return result
+        self._i2c_iface   = i2c_iface
+        self._i2c_address = i2c_address
 
-    async def read_reg(self, address):
-        self._check(await self.lower.write(self._i2c_addr, [address]))
-        size, = self._check(await self.lower.read(self._i2c_addr, 1, stop=True))
-        self._logger.log(self._level, "TPS6598x: reg=%#04x size=%#04x",
-                         address, size)
+    def _log(self, message, *args):
+        self._logger.log(self._level, "TPS6598x: " + message, *args)
 
-        self._check(await self.lower.write(self._i2c_addr, [address]))
-        data = self._check(await self.lower.read(self._i2c_addr, 1 + size, stop=True))[1:]
-        self._logger.log(self._level, "TPS6598x: read=<%s>", data.hex())
+    async def read_reg(self, address: int) -> bytes:
+        async with self._i2c_iface.transaction():
+            await self._i2c_iface.write(self._i2c_address, [address])
+            size, = await self._i2c_iface.read(self._i2c_address, 1)
+        self._log("reg=%#04x size=%#04x", address, size)
+
+        async with self._i2c_iface.transaction():
+            await self._i2c_iface.write(self._i2c_address, [address])
+            data = (await self._i2c_iface.read(self._i2c_address, 1 + size))[1:]
+        self._log("read=<%s>", data.hex())
 
         return data
 
-    async def write_reg(self, address, data):
+    async def write_reg(self, address: int, data: bytes):
         data = bytes(data)
-        self._logger.log(self._level, "TPS6598x: reg=%#04x write=<%s>",
-                         address, data.hex())
-        self._check(await self.lower.write(self._i2c_addr, [address, len(data), *data], stop=True))
+        self._log("reg=%#04x write=<%s>", address, data.hex())
+        await self._i2c_iface.write(self._i2c_address, [address, len(data), *data])
 
 
-class ControlTPS6598xApplet(I2CInitiatorApplet):
+class ControlTPS6598xApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "configure TPS6598x USB PD controllers"
     description = """
@@ -47,21 +45,29 @@ class ControlTPS6598xApplet(I2CInitiatorApplet):
     """
 
     @classmethod
-    def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
+    def add_build_arguments(cls, parser, access):
+        access.add_voltage_argument(parser)
+        access.add_pins_argument(parser, "scl", default=True, required=True)
+        access.add_pins_argument(parser, "sda", default=True, required=True)
 
         def i2c_address(arg):
             return int(arg, 0)
         parser.add_argument(
-            "--i2c-address", type=i2c_address, metavar="ADDR", default=0b111000,
+            "--i2c-address", type=i2c_address, metavar="ADDR", default=0x38,
             help="I2C address of the controller (default: %(default)#02x)")
 
-    async def run(self, device, args):
-        i2c_iface = await super().run(device, args)
-        return TPS6598xInterface(i2c_iface, self.logger, args.i2c_address)
+    def build(self, args):
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            self.i2c_iface = I2CControllerInterface(self.logger, self.assembly,
+                scl=args.scl, sda=args.sda)
+            self.tps6598x_iface = TPS6598xInterface(self.logger, self.i2c_iface, args.i2c_address)
+
+    async def setup(self, args):
+        await self.i2c_iface.clock.set_frequency(100e3)
 
     @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         def register(arg):
             return int(arg, 0)
         def hex_bytes(arg):
@@ -87,14 +93,18 @@ class ControlTPS6598xApplet(I2CInitiatorApplet):
             "data", metavar="DATA", type=hex_bytes,
             help="data to write, as hex bytes")
 
-    async def interact(self, device, args, tps6598x_iface):
+    async def run(self, args):
         if args.operation == "read-reg":
-            print((await tps6598x_iface.read_reg(args.address)).hex())
+            print((await self.tps6598x_iface.read_reg(args.address)).hex())
 
         if args.operation == "read-all":
             for address in range(0x80):
-                print(f"{address:02x}: {(await tps6598x_iface.read_reg(address)).hex()}"
-                      )
+                print(f"{address:02x}: {(await self.tps6598x_iface.read_reg(address)).hex()}")
 
         if args.operation == "write-reg":
-            await tps6598x_iface.write_reg(args.address, args.data)
+            await self.tps6598x_iface.write_reg(args.address, args.data)
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.ControlTPS6598xAppletTestCase

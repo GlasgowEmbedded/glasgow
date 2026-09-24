@@ -19,13 +19,16 @@
 import argparse
 import asyncio
 import enum
-from amaranth import *
-from amaranth.lib import io
 
 from glasgow.support import logging
 from glasgow.support.logging import dump_hex
-from glasgow.gateware.uart import *
-from glasgow.applet import *
+from glasgow.abstract import AbstractAssembly, GlasgowPin
+from glasgow.applet.interface.uart import UARTInterface
+from glasgow.applet.control.gpio import GPIOInterface
+from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
+
+
+__all__ = ["M16CBootloaderError", "ProgramM16CInterface"]
 
 
 BAUD_RATES = {
@@ -69,93 +72,72 @@ class M16CBootloaderError(GlasgowAppletError):
     pass
 
 
-class ProgramM16CSubtarget(Elaboratable):
-    def __init__(self, ports, out_fifo, in_fifo, bit_cyc, reset, mode, max_bit_cyc):
-        self.ports    = ports
-        self.out_fifo = out_fifo
-        self.in_fifo  = in_fifo
+class ProgramM16CInterface:
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
+                 rx: GlasgowPin, tx: GlasgowPin,
+                 reset: GlasgowPin | None = None, cnvss: GlasgowPin | None = None,
+                 timeout: float = 1.0):
+        self._logger = logger
+        self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
-        self.bit_cyc  = bit_cyc
-        self.reset    = reset
-        self.mode     = mode
-
-        self.uart     = UART(ports, bit_cyc=max_bit_cyc)
-
-    def elaborate(self, platform):
-        m = Module()
-
-        m.submodules.uart = self.uart
-        m.d.comb += [
-            self.uart.bit_cyc.eq(self.bit_cyc),
-            # RX
-            self.in_fifo.w_data.eq(self.uart.rx_data),
-            self.in_fifo.w_en.eq(self.uart.rx_rdy),
-            self.uart.rx_ack.eq(self.in_fifo.w_rdy),
-            # TX
-            self.uart.tx_data.eq(self.out_fifo.r_data),
-            self.out_fifo.r_en.eq(self.uart.tx_rdy),
-            self.uart.tx_ack.eq(self.out_fifo.r_rdy),
-        ]
-
-        if self.ports.reset is not None:
-            m.submodules.reset_buffer = reset_buffer = io.Buffer("o", self.ports.reset)
-            m.d.comb += [
-                # Active low reset.
-                reset_buffer.o.eq(0),
-                reset_buffer.oe.eq(self.reset),
-            ]
-
-        if self.ports.cnvss is not None:
-            m.submodules.cnvss_buffer = cnvss_buffer = io.Buffer("o", self.ports.cnvss)
-            m.d.comb += [
-                # Active high bootloader enable (CNVSS).
-                cnvss_buffer.o.eq(1),
-                cnvss_buffer.oe.eq(self.mode),
-            ]
-
+        self._uart_iface = UARTInterface(logger, assembly, rx=rx, tx=tx)
+        if reset is not None:
+            self._reset_iface = GPIOInterface(logger, assembly, pins=(reset,), name="reset")
+        else:
+            self._reset_iface = None
+        if cnvss is not None:
+            self._cnvss_iface = GPIOInterface(logger, assembly, pins=(cnvss,), name="cnvss")
+        else:
+            self._cnvss_iface = None
         # There's also active low bootloader enable (MODE), but I'm not sure which chips use that,
         # so it's not implemented for now.
 
-        return m
-
-
-class ProgramM16CInterface:
-    def __init__(self, interface, logger, addr_reset, addr_mode, timeout=1.0):
-        self.lower   = interface
-        self._logger = logger
-        self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
-        self._addr_reset = addr_reset
-        self._addr_mode  = addr_mode
         self.timeout = timeout
 
     def _log(self, message, *args):
         self._logger.log(self._level, "M16C: " + message, *args)
 
+    async def _set_reset(self, active: bool):
+        # Active low reset; open drain.
+        if self._reset_iface is not None:
+            if active:
+                await self._reset_iface.output(0, False)
+            else:
+                await self._reset_iface.input(0)
+
+    async def _set_bootloader(self, active: bool):
+        # Active high bootloader enable (CNVSS); open source.
+        if self._cnvss_iface is not None:
+            if active:
+                await self._cnvss_iface.output(0, True)
+            else:
+                await self._cnvss_iface.input(0)
+
     async def reset_application(self):
+        """Reset the target into the application."""
         self._log("reset mode=application")
-        await self.lower.device.write_register(self._addr_reset, 1)
-        await self.lower.device.write_register(self._addr_mode, 0)
-        await self.lower.device.write_register(self._addr_reset, 0)
-        await self.lower.reset()
+        await self._set_reset(True)
+        await self._set_bootloader(False)
+        await self._set_reset(False)
 
     async def reset_bootloader(self):
+        """Reset the target into the ROM bootloader."""
         self._log("reset mode=bootloader")
-        await self.lower.device.write_register(self._addr_reset, 1)
-        await self.lower.device.write_register(self._addr_mode, 1)
-        await self.lower.device.write_register(self._addr_reset, 0)
-        await self.lower.reset()
+        await self._set_reset(True)
+        await self._set_bootloader(True)
+        await self._set_reset(False)
         await asyncio.sleep(0.150) # make sure it's out of reset
 
     async def _sync_autobaud(self):
         self._log("sync autobaud")
         for _ in range(16):
-            await self.lower.write(b"\x00")
-            await self.lower.flush()
+            await self._uart_iface.write(b"\x00")
+            await self._uart_iface.flush()
             await asyncio.sleep(0.040) # >20 ms delay
-        await self.lower.write([BAUD_RATES[9600]])
+        await self._uart_iface.write([BAUD_RATES[9600]])
         async def response():
             while True:
-                new_baud, = await self.lower.read(1)
+                new_baud, = await self._uart_iface.read(1)
                 if new_baud == BAUD_RATES[9600]:
                     return
         try:
@@ -164,25 +146,29 @@ class ProgramM16CInterface:
             raise M16CBootloaderError("cannot synchronize with ROM bootloader")
 
     async def sync_bootloader(self):
+        """Reset the target into the ROM bootloader and synchronize with it at 9600 baud."""
+        await self._uart_iface.set_baud(9600)
         await self.reset_bootloader()
         await self._sync_autobaud()
 
-    async def bootloader_set_baud(self, baud_rate):
+    async def bootloader_set_baud(self, baud_rate: int):
+        """Switch the bootloader, and then the UART, to :py:`baud_rate`."""
         self._log("command set-baud rate=%d", baud_rate)
-        await self.lower.write([BAUD_RATES[baud_rate]])
+        await self._uart_iface.write([BAUD_RATES[baud_rate]])
         async def response():
-            new_baud, = await self.lower.read(1)
+            new_baud, = await self._uart_iface.read(1)
             assert new_baud == BAUD_RATES[baud_rate]
         try:
-            return await asyncio.wait_for(response(), timeout=self.timeout)
+            await asyncio.wait_for(response(), timeout=self.timeout)
         except TimeoutError:
             raise M16CBootloaderError(f"bootloader does not support baud rate {baud_rate}")
+        await self._uart_iface.set_baud(baud_rate)
 
     async def bootloader_version(self):
         self._log("command version")
-        await self.lower.write([Command.VERSION])
+        await self._uart_iface.write([Command.VERSION])
         async def response():
-            version = await self.lower.read(8)
+            version = await self._uart_iface.read(8)
             self._log("response version=<%s>", version.hex())
             return str(version, encoding="ASCII")
         try:
@@ -192,9 +178,9 @@ class ProgramM16CInterface:
 
     async def _bootloader_read_status(self):
         self._log("command read-status")
-        await self.lower.write([Command.READ_STATUS])
+        await self._uart_iface.write([Command.READ_STATUS])
         async def response():
-            srd1, srd2 = await self.lower.read(2)
+            srd1, srd2 = await self._uart_iface.read(2)
             self._log("response srd1=%s srd2=%s", f"{srd1:08b}", f"{srd2:08b}")
             return srd1, srd2
         try:
@@ -205,9 +191,9 @@ class ProgramM16CInterface:
     async def _bootloader_poll_status(self, timeout):
         while timeout >= 0:
             self._log("command read-status")
-            await self.lower.write([Command.READ_STATUS])
+            await self._uart_iface.write([Command.READ_STATUS])
             async def response():
-                srd1, srd2 = await self.lower.read(2)
+                srd1, srd2 = await self._uart_iface.read(2)
                 self._log("response srd1=%s srd2=%s", f"{srd1:08b}", f"{srd2:08b}")
                 return srd1, srd2
             try:
@@ -228,14 +214,14 @@ class ProgramM16CInterface:
     async def unlock_bootloader(self, key, address):
         assert isinstance(key, (bytes, bytearray)) and len(key) <= 7
         self._log("command unlock key=<%s>", key.hex())
-        await self.lower.write([Command.UNLOCK])
-        await self.lower.write([
+        await self._uart_iface.write([Command.UNLOCK])
+        await self._uart_iface.write([
             (address >> 0)  & 0xFF,
             (address >> 8)  & 0xFF,
             (address >> 16) & 0xFF,
         ])
-        await self.lower.write([len(key)])
-        await self.lower.write(key)
+        await self._uart_iface.write([len(key)])
+        await self._uart_iface.write(key)
 
         _srd1, srd2 = await self._bootloader_read_status()
         if (srd2 & ID_MASK) == ID_CORRECT:
@@ -247,13 +233,13 @@ class ProgramM16CInterface:
     async def read_page(self, address):
         assert address % PAGE_SIZE == 0
         self._log("command read-page page=%04x", (address >> 8) & 0xFFFF)
-        await self.lower.write([Command.READ_PAGE])
-        await self.lower.write([
+        await self._uart_iface.write([Command.READ_PAGE])
+        await self._uart_iface.write([
             (address >> 8)  & 0xFF,
             (address >> 16) & 0xFF,
         ])
         async def response():
-            data = await self.lower.read(0x100)
+            data = bytes(await self._uart_iface.read(0x100))
             self._log("response data=<%s>", dump_hex(data))
             return data
         try:
@@ -265,12 +251,12 @@ class ProgramM16CInterface:
         assert address % PAGE_SIZE == 0 and len(data) == PAGE_SIZE
         self._log("command program-page page=%04x data=<%s>",
                   (address >> 8) & 0xFFFF, dump_hex(data))
-        await self.lower.write([Command.CLEAR_STATUS, Command.PROGRAM_PAGE])
-        await self.lower.write([
+        await self._uart_iface.write([Command.CLEAR_STATUS, Command.PROGRAM_PAGE])
+        await self._uart_iface.write([
             (address >> 8)  & 0xFF,
             (address >> 16) & 0xFF,
         ])
-        await self.lower.write(data)
+        await self._uart_iface.write(data)
         try:
             srd1, _srd2 = await self._bootloader_poll_status(1.0)
             assert (srd1 & ST_READY) != 0
@@ -282,12 +268,12 @@ class ProgramM16CInterface:
     async def erase_block(self, address):
         assert address % PAGE_SIZE == 0
         self._log("command erase-block block=%04x", (address >> 8) & 0xFFFF)
-        await self.lower.write([Command.CLEAR_STATUS, Command.ERASE_BLOCK])
-        await self.lower.write([
+        await self._uart_iface.write([Command.CLEAR_STATUS, Command.ERASE_BLOCK])
+        await self._uart_iface.write([
             (address >> 8)  & 0xFF,
             (address >> 16) & 0xFF,
         ])
-        await self.lower.write([Command.ERASE_KEY])
+        await self._uart_iface.write([Command.ERASE_KEY])
         try:
             srd1, _srd2 = await self._bootloader_poll_status(1.0)
             assert (srd1 & ST_READY) != 0
@@ -298,7 +284,7 @@ class ProgramM16CInterface:
 
     async def erase_all(self):
         self._log("command erase-all")
-        await self.lower.write([Command.CLEAR_STATUS, Command.ERASE_ALL, Command.ERASE_KEY])
+        await self._uart_iface.write([Command.CLEAR_STATUS, Command.ERASE_ALL, Command.ERASE_KEY])
         try:
             srd1, _srd2 = await self._bootloader_poll_status(10.0)
             assert (srd1 & ST_READY) != 0
@@ -308,7 +294,7 @@ class ProgramM16CInterface:
             raise M16CBootloaderError("entire array erase timeout")
 
 
-class ProgramM16CApplet(GlasgowApplet):
+class ProgramM16CApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "program Renesas M16C microcomputers via UART"
     description = """
@@ -322,57 +308,25 @@ class ProgramM16CApplet(GlasgowApplet):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        super().add_build_arguments(parser, access)
-
+        access.add_voltage_argument(parser)
         access.add_pins_argument(parser, "rx", required=True, default=True)
         access.add_pins_argument(parser, "tx", required=True, default=True)
         access.add_pins_argument(parser, "reset", default=True)
         access.add_pins_argument(parser, "cnvss")
         # access.add_pins_argument(parser, "mode")
 
-    def build(self, target, args):
-        self.__bit_cyc_for_baud = {
-            baud: self.derive_clock(input_hz=target.sys_clk_freq, output_hz=baud)
-            for baud in BAUD_RATES
-        }
-        max_bit_cyc = max(self.__bit_cyc_for_baud.values())
-
-        bit_cyc, self.__addr_bit_cyc = target.registers.add_rw(24, init=max_bit_cyc) # slowest
-        reset,   self.__addr_reset   = target.registers.add_rw(1)
-        mode,    self.__addr_mode    = target.registers.add_rw(1)
-
-        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        subtarget = iface.add_subtarget(ProgramM16CSubtarget(
-            ports=iface.get_port_group(
-                rx    = args.rx,
-                tx    = args.tx,
-                reset = args.reset,
-                cnvss = args.cnvss
-            ),
-            out_fifo=iface.get_out_fifo(),
-            in_fifo=iface.get_in_fifo(),
-            bit_cyc=bit_cyc,
-            reset=reset,
-            mode=mode,
-            max_bit_cyc=max_bit_cyc,
-        ))
+    def build(self, args):
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            self.m16c_iface = ProgramM16CInterface(self.logger, self.assembly,
+                rx=args.rx, tx=args.tx, reset=args.reset, cnvss=args.cnvss)
 
     @classmethod
-    def add_run_arguments(cls, parser, access):
-        access.add_run_arguments(parser)
-
+    def add_run_arguments(cls, parser):
         parser.add_argument(
             "-b", "--baud", metavar="RATE", type=int, default=9600, choices=BAUD_RATES.keys(),
             help="set baud rate to RATE bits per second (default: %(default)s)")
 
-    async def run(self, device, args):
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        return ProgramM16CInterface(iface, self.logger,
-            addr_reset=self.__addr_reset,
-            addr_mode=self.__addr_mode)
-
-    @classmethod
-    def add_interact_arguments(cls, parser):
         def unlock_key(arg):
             try:
                 key = bytes.fromhex(arg)
@@ -430,10 +384,9 @@ class ProgramM16CApplet(GlasgowApplet):
             "address", metavar="ADDRESS", type=page_address,
             help="erase block at address ADDRESS, which must be page-aligned")
 
-    async def interact(self, device, args, iface):
+    async def run(self, args):
+        iface = self.m16c_iface
         try:
-            await device.write_register(
-                self.__addr_bit_cyc, self.__bit_cyc_for_baud[9600], width=3)
             await iface.sync_bootloader()
             self.logger.info("bootloader identification %s", await iface.bootloader_version())
 
@@ -453,8 +406,6 @@ class ProgramM16CApplet(GlasgowApplet):
 
             if args.baud != 9600:
                 await iface.bootloader_set_baud(args.baud)
-                await device.write_register(
-                    self.__addr_bit_cyc, self.__bit_cyc_for_baud[args.baud], width=3)
 
             if args.operation == "read":
                 for address in range(args.address, args.address + args.length, PAGE_SIZE):
