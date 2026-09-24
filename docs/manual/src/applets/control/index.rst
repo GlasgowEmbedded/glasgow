@@ -13,3 +13,4 @@ Device control
     mdio
     servo
     si535x
+    tps6598x
