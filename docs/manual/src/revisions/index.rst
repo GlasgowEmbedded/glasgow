@@ -28,6 +28,25 @@ revD
 
 Revision D is the latest revision, currently in `pre-launch stage on CrowdSupply <https://www.crowdsupply.com/fully-automated/glasgow-interface-explorer-revd>`_. It provides 32 I/O pins with a data rate up to approx. 100 Mbps/pin (50 MHz) [#]_, independent direction control and independently programmable pull-up/pull-down resistors. The I/O pins are grouped into four I/O ports, each of which can use any I/O standard from 1.2 V to 5 V, sense and monitor I/O voltage of the device under test, provide up to 300 mA of power, and measure analog voltages on two dedicated pins (single-ended or differential; 24 bit @ 500 kSPS across all enabled channels). The board uses USB 2 for power, configuration, and communication, achieving up to 336 Mbps (42 MB/s) of sustained combined throughput. Except for USB connectivity, every aspect of the device has been significantly improved compared to revC.
 
+.. tab:: Front
+
+    .. image:: ./_images/revD1-3drender-front.png
+        :alt: Overview of the Glasgow PCB (front)
+
+.. tab:: Back
+
+    .. image:: ./_images/revD1-3drender-back.png
+        :alt: Overview of the Glasgow PCB (back)
+
+Design and fabrication files are located in the Git repository:
+
+- `revD0 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD0>`_,
+  `revD0 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revD0/output/schematics.pdf>`_,
+  `revD0 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD0/output>`_.
+- `revD1 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow>`_,
+  `revD1 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revD1/output/schematics.pdf>`_,
+  `revD1 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD1/output>`_.
+
 .. [#] Data rate achievable in practice depends on many factors and will vary greatly with specific interface and applet design. 12 Mbps/pin (6 MHz) can be achieved with minimal development effort; reaching higher data rates requires careful HDL coding and a good understanding of timing analysis.
 
 
