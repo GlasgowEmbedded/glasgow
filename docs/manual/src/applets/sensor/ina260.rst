@@ -1,0 +1,20 @@
+``sensor-ina260``
+=================
+
+CLI reference
+-------------
+
+.. _applet.sensor.ina260:
+
+.. autoprogram:: glasgow.applet.sensor.ina260:SensorINA260Applet._get_argparser_for_sphinx("sensor-ina260")
+    :prog: glasgow run sensor-ina260
+
+
+API reference
+-------------
+
+.. module:: glasgow.applet.sensor.ina260
+
+.. autoexception:: INA260Error
+
+.. autoclass:: INA260Interface

@@ -1,0 +1,18 @@
+``control-tps6598x``
+====================
+
+CLI reference
+-------------
+
+.. _applet.control.tps6598x:
+
+.. autoprogram:: glasgow.applet.control.tps6598x:ControlTPS6598xApplet._get_argparser_for_sphinx("control-tps6598x")
+    :prog: glasgow run control-tps6598x
+
+
+API reference
+-------------
+
+.. module:: glasgow.applet.control.tps6598x
+
+.. autoclass:: TPS6598xInterface

@@ -5,16 +5,21 @@ import argparse
 import asyncio
 
 from glasgow.support import logging
-from glasgow.applet.interface.i2c_initiator_deprecated import I2CInitiatorApplet
-from glasgow.applet import *
+from glasgow.applet.interface.i2c_controller import I2CNotAcknowledged, I2CControllerInterface
+from glasgow.applet import GlasgowAppletV2
+
+
+__all__ = ["StUsb4500NvmInterface", "I2CNotAcknowledged"]
 
 
 class StUsb4500NvmInterface:
-    def __init__(self, interface, logger, i2c_address):
-        self.lower     = interface
-        self._logger   = logger
-        self._level    = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
-        self._i2c_addr = i2c_address
+    def __init__(self, logger: logging.Logger, i2c_iface: I2CControllerInterface,
+                 i2c_address: int = 0x28):
+        self._logger = logger
+        self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+
+        self._i2c_iface   = i2c_iface
+        self._i2c_address = i2c_address
 
     def _log(self, message, *args):
         self._logger.log(self._level, "stusb4500_nvm: " + message, *args)
@@ -26,77 +31,52 @@ class StUsb4500NvmInterface:
 
     FTP_KEY_VALUE = 0x47
 
-    async def _read_regs(self, addr, length):
-        self._log("i2c-addr=%#02x reg-addr=%#02x", self._i2c_addr, addr)
-        result = await self.lower.write(self._i2c_addr, addr.to_bytes(1, "little"))
-        if result is False:
-            self._log("unacked")
-            return None
-
-        self._log("read=")
-        chunk = await self.lower.read(self._i2c_addr, length, stop=True)
-        if chunk is None:
-            self._log("unacked")
-        else:
-            self._log("<%s>", chunk.hex())
-
+    async def _read_regs(self, addr: int, length: int) -> list[int]:
+        async with self._i2c_iface.transaction():
+            await self._i2c_iface.write(self._i2c_address, [addr])
+            chunk = await self._i2c_iface.read(self._i2c_address, length)
+        self._log("reg-addr=%#04x read=<%s>", addr, chunk.hex())
         return list(chunk)
 
-    async def _write_regs(self, addr, data):
-        self._log("i2c-addr=%#02x reg-addr=%#02x", self._i2c_addr, addr)
-
+    async def _write_regs(self, addr: int, data: int | list[int]):
         if not isinstance(data, list):
             data = [data]
-        chunk = addr.to_bytes(1, "little") + bytes(data)
-        self._log("write=<%s>", chunk[1:].hex())
+        self._log("reg-addr=%#04x write=<%s>", addr, bytes(data).hex())
+        await self._i2c_iface.write(self._i2c_address, [addr, *data])
 
-        result = await self.lower.write(self._i2c_addr, chunk, stop=True)
-        if result is False:
-            self._log("unacked")
-            return None
-
-        return True
-
-    async def _exec_cmd(self, cmd, c0_lsb=0):
-        result =            await self._write_regs(self.FTP_CTRL_1, cmd)
-        result = result and await self._write_regs(self.FTP_CTRL_0, 0x50 | c0_lsb)
+    async def _exec_cmd(self, cmd: int, c0_lsb: int = 0):
+        await self._write_regs(self.FTP_CTRL_1, cmd)
+        await self._write_regs(self.FTP_CTRL_0, 0x50 | c0_lsb)
         await asyncio.sleep(0.005)
-        return result
 
     async def enable(self):
-        result =            await self._write_regs(self.FTP_KEY, self.FTP_KEY_VALUE)
-        result = result and await self._write_regs(self.FTP_DATA_BASE, 0x00)
-        result = result and await self._write_regs(self.FTP_CTRL_0, 0x40)
-        result = result and await self._write_regs(self.FTP_CTRL_0, 0x00)
+        await self._write_regs(self.FTP_KEY, self.FTP_KEY_VALUE)
+        await self._write_regs(self.FTP_DATA_BASE, 0x00)
+        await self._write_regs(self.FTP_CTRL_0, 0x40)
+        await self._write_regs(self.FTP_CTRL_0, 0x00)
         await asyncio.sleep(0.001)
-        result = result and await self._write_regs(self.FTP_CTRL_0, 0x40)
-        return result
+        await self._write_regs(self.FTP_CTRL_0, 0x40)
 
     async def disable(self):
-        result =            await self._write_regs(self.FTP_CTRL_0, [0x40, 0x00])
-        result = result and await self._write_regs(self.FTP_KEY, 0x00)
-        return result
+        await self._write_regs(self.FTP_CTRL_0, [0x40, 0x00])
+        await self._write_regs(self.FTP_KEY, 0x00)
 
     async def erase(self):
-        result =            await self._exec_cmd(0xFA)
-        result = result and await self._exec_cmd(0x07)
-        result = result and await self._exec_cmd(0x05)
-        return result
+        await self._exec_cmd(0xFA)
+        await self._exec_cmd(0x07)
+        await self._exec_cmd(0x05)
 
-    async def read_sector(self, sector):
-        result = await self._exec_cmd(0x00, c0_lsb=sector)
-        if not result:
-            return None
+    async def read_sector(self, sector: int) -> list[int]:
+        await self._exec_cmd(0x00, c0_lsb=sector)
         return await self._read_regs(self.FTP_DATA_BASE, 8)
 
-    async def write_sector(self, sector, data):
-        result =            await self._write_regs(self.FTP_DATA_BASE, data)
-        result = result and await self._exec_cmd(0x01)
-        result = result and await self._exec_cmd(0x06, c0_lsb=sector)
-        return result
+    async def write_sector(self, sector: int, data: list[int]):
+        await self._write_regs(self.FTP_DATA_BASE, data)
+        await self._exec_cmd(0x01)
+        await self._exec_cmd(0x06, c0_lsb=sector)
 
 
-class StUsb4500NvmApplet(I2CInitiatorApplet):
+class StUsb4500NvmApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "read and write STUSB4500 NVM"
     description = """
@@ -106,24 +86,31 @@ class StUsb4500NvmApplet(I2CInitiatorApplet):
     """
 
     @classmethod
-    def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
+    def add_build_arguments(cls, parser, access):
+        access.add_voltage_argument(parser)
+        access.add_pins_argument(parser, "scl", default=True, required=True)
+        access.add_pins_argument(parser, "sda", default=True, required=True)
 
         def address(arg):
             return int(arg, 0)
-
         parser.add_argument(
-            "-A", "--i2c-address", type=address, metavar="I2C-ADDR", default=0b0101000,
+            "-A", "--i2c-address", type=address, metavar="I2C-ADDR", default=0x28,
             help="I²C address of the STUSB4500; typically 0b0101000 "
-                 "(default: 0b0101000)")
+                 "(default: 0x28)")
 
-    async def run(self, device, args):
-        i2c_iface = await super().run(device, args)
-        return StUsb4500NvmInterface(
-            i2c_iface, self.logger, args.i2c_address)
+    def build(self, args):
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            self.i2c_iface = I2CControllerInterface(self.logger, self.assembly,
+                scl=args.scl, sda=args.sda)
+            self.stusb4500_iface = StUsb4500NvmInterface(self.logger, self.i2c_iface,
+                args.i2c_address)
+
+    async def setup(self, args):
+        await self.i2c_iface.clock.set_frequency(100e3)
 
     @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_read = p_operation.add_parser(
@@ -154,46 +141,34 @@ class StUsb4500NvmApplet(I2CInitiatorApplet):
         fh.write("# NVM memory map : STUSBxx \r\n")
         fh.write("\r\n")
 
-    async def interact(self, device, args, iface):
+    async def run(self, args):
         if args.operation == "read":
-            success = await iface.enable()
-            if not success:
-                raise GlasgowAppletError("Could not enable NVM access")
+            await self.stusb4500_iface.enable()
 
             data = {}
             for sector in range(5):
-                d = await iface.read_sector(sector)
-                if d is None:
-                    raise GlasgowAppletError(f"Could not read NVM sector {sector:d}")
+                data[0xC0 + 8 * sector] = await self.stusb4500_iface.read_sector(sector)
 
-                data[0xC0 + 8 * sector] = d
-
-            success = await iface.disable()
-            if not success:
-                raise GlasgowAppletError("Could not disable NVM access")
+            await self.stusb4500_iface.disable()
 
             self._write_data_file(args.file, data)
 
         if args.operation == "write":
             data = self._read_data_file(args.file)
 
-            success = await iface.enable()
-            if not success:
-                raise GlasgowAppletError("Could not enable NVM access")
-
-            success = await iface.erase()
-            if not success:
-                raise GlasgowAppletError("Could not erase NVM")
+            await self.stusb4500_iface.enable()
+            await self.stusb4500_iface.erase()
 
             for sector in range(5):
                 k = 0xC0 + 8 * sector
                 if k not in data:
                     continue
 
-                success = await iface.write_sector(sector, data[k])
-                if not success:
-                    raise GlasgowAppletError(f"Could not write NVM sector {sector:d}")
+                await self.stusb4500_iface.write_sector(sector, data[k])
 
-            success = await iface.disable()
-            if not success:
-                raise GlasgowAppletError("Could not disable NVM access")
+            await self.stusb4500_iface.disable()
+
+    @classmethod
+    def tests(cls):
+        from . import test
+        return test.StUsb4500NvmAppletTestCase
