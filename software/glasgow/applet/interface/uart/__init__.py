@@ -292,15 +292,16 @@ class _YModemTransportUART(YModemTransport):
         self.lower = lower
 
     async def recv(self, length: int) -> bytes:
-        return bytes(await self.lower.read(length))
+        return bytes(await self.lower.read(length, flush=False))
 
     async def send(self, data: bytes):
         await self.lower.write(data, flush=True)
 
     async def purge(self):
+        await self.lower.flush()
         try:
             # Use a large timeout to give old systems enough time to (re)initialize.
-            while await asyncio.wait_for(self.lower.read_all(), timeout=1.0):
+            while await asyncio.wait_for(self.lower.read_all(flush=False), timeout=1.0):
                 pass
         except TimeoutError:
             pass
