@@ -39,6 +39,9 @@ logger = logging.getLogger(__name__)
 class YModemError(Exception):
     """XMODEM/YMODEM communication error."""
 
+    def __init__(self, message):
+        super().__init__(f"YMODEM: {message}")
+
 
 class YModemTransport(metaclass=ABCMeta):
     """Abstract XMODEM/YMODEM transport."""
@@ -199,7 +202,7 @@ class YModemPacket:
         """
         header = await transport.recv(1)
         if header not in YModemHeader:
-            return None
+            raise YModemError(f"malformed header 0x{header.hex()}")
 
         control = YModemHeader(header)
         match control:
@@ -394,8 +397,6 @@ class YModemProtocol:
 
     async def _recv(self, *, variant: YModemVariant) -> YModemPacket:
         in_packet = await YModemPacket.recv(self._transport, variant=variant)
-        if in_packet is None:
-            raise YModemError("malformed header")
         if self._progress is not None and in_packet.data is not None:
             self._progress.advance(len(in_packet.data))
         self._logger.log(logging.DEBUG, "YMODEM: <- %s", in_packet)
