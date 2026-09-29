@@ -528,7 +528,7 @@ class SWDProbeApplet(GlasgowAppletV2):
             "-f", "--file", metavar="FILENAME", type=argparse.FileType("wb"),
             help="dump contents to FILENAME")
         p_dump_memory.add_argument(
-            "--ap", metavar="INDEX", default=0,
+            "--ap", metavar="INDEX", default=0, type=int,
             help="access memory via MEM-AP #INDEX")
 
     @staticmethod
