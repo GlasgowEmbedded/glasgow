@@ -191,7 +191,7 @@ class Command(enum.Enum):
     @classmethod
     def all_erase_sizes(cls) -> set[int]:
         """Every known erase size."""
-        return {4096, 32768, 65536}
+        return {256, 4096, 32768, 65536}
 
     @classmethod
     def erase_for_size(cls, erase_size: int) -> Command:

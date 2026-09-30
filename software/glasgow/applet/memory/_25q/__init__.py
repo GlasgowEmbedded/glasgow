@@ -365,6 +365,7 @@ class Memory25QInterface:
 
         Implemented using one of:
 
+        * :data:`Command.EraseData256 <glasgow.arch.qspi.nor.Command.EraseData256>`
         * :data:`Command.EraseData4K <glasgow.arch.qspi.nor.Command.EraseData4K>`
         * :data:`Command.EraseData32K <glasgow.arch.qspi.nor.Command.EraseData32K>`
         * :data:`Command.EraseData64K <glasgow.arch.qspi.nor.Command.EraseData64K>`
