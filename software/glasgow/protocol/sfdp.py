@@ -589,6 +589,19 @@ class SFDPCollection(_JEDECRevisionMixin):
 
         return cls(revision, tables)
 
+    @classmethod
+    def parse_bytes(cls, sfdp: bytes) -> SFDPCollection:
+        async def read_sfdp(offset, length):
+            if offset + length > len(sfdp):
+                raise ValueError(f"slice [{offset}:{offset + length}] out of bounds")
+            return sfdp[offset:offset + length]
+
+        try:
+            cls.parse(read_sfdp).send(None)
+            assert False
+        except StopIteration as e:
+            return e.args[0]
+
     def __init__(self, revision: tuple[int, int], tables: list[SFDPTable]):
         self.revision = revision
         self.tables   = tables
