@@ -628,6 +628,9 @@ class Memory25QApplet(GlasgowAppletV2):
             "--opcode-erase-4k", metavar="OPCODE", type=opcode,
             help="opcode for erasing a 4 KiB region")
         parser.add_argument(
+            "--opcode-erase-8k", metavar="OPCODE", type=opcode,
+            help="opcode for erasing a 8 KiB region")
+        parser.add_argument(
             "--opcode-erase-32k", metavar="OPCODE", type=opcode,
             help="opcode for erasing a 32 KiB region")
         parser.add_argument(
@@ -667,6 +670,11 @@ class Memory25QApplet(GlasgowAppletV2):
                 self.logger.warning(
                     f"ignoring argument --opcode-erase-4k {args.opcode_erase_4k:02X}h "
                     f"that does not match SFDP value")
+            if (args.opcode_erase_8k is not None and
+                    args.opcode_erase_8k != params.erase_sizes.get(8192)):
+                self.logger.warning(
+                    f"ignoring argument --opcode-erase-8k {args.opcode_erase_8k:02X}h "
+                    f"that does not match SFDP value")
             if (args.opcode_erase_32k is not None and
                     args.opcode_erase_32k != params.erase_sizes.get(32768)):
                 self.logger.warning(
@@ -688,6 +696,7 @@ class Memory25QApplet(GlasgowAppletV2):
                 page_size=args.page_size,
                 opcode_erase_256=args.opcode_erase_256,
                 opcode_erase_4k=args.opcode_erase_4k,
+                opcode_erase_8k=args.opcode_erase_8k,
                 opcode_erase_32k=args.opcode_erase_32k,
                 opcode_erase_64k=args.opcode_erase_64k,
             )
