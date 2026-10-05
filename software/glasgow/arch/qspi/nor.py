@@ -167,6 +167,7 @@ class Command(enum.Enum):
                                   # → Opcode.QuadInputPageProgram
     EraseData256    = enum.auto() # → Opcode.<vendor>_Erase256
     EraseData4K     = enum.auto() # → Opcode.<vendor>_Erase4K
+    EraseData8K     = enum.auto() # → Opcode.<vendor>_Erase8K
     EraseData32K    = enum.auto() # → Opcode.<vendor>_Erase32K
     EraseData64K    = enum.auto() # → Opcode.<vendor>_Erase64K
     EraseDataAll    = enum.auto() # → Opcode.EraseChip
@@ -191,7 +192,7 @@ class Command(enum.Enum):
     @classmethod
     def all_erase_sizes(cls) -> set[int]:
         """Every known erase size."""
-        return {256, 4096, 32768, 65536}
+        return {256, 4096, 8192, 32768, 65536}
 
     @classmethod
     def erase_for_size(cls, erase_size: int) -> Command:
@@ -207,6 +208,8 @@ class Command(enum.Enum):
                 return cls.EraseData256
             case 4096:
                 return cls.EraseData4K
+            case 8192:
+                return cls.EraseData8K
             case 32768:
                 return cls.EraseData32K
             case 65536:
@@ -285,6 +288,7 @@ class CommandSet(BaseCommandSet[Command]):
     def use_explicit(self, *, address_bytes: int, page_size: int | None = None,
             opcode_erase_256:  Opcode | int | None = None,
             opcode_erase_4k:  Opcode | int | None = None,
+            opcode_erase_8k:  Opcode | int | None = None,
             opcode_erase_32k: Opcode | int | None = None,
             opcode_erase_64k: Opcode | int | None = None,
             data_operation_prologue: Callable[[int], InstructionSequence] = lambda address: []):
@@ -295,6 +299,7 @@ class CommandSet(BaseCommandSet[Command]):
         * :data:`Command.ReadData`: :data:`Opcode.Read`, (1-1-1) mode
         * :data:`Command.EraseData256`: :py:`opcode_erase_256`, (1-1-0) mode (if specified)
         * :data:`Command.EraseData4K`: :py:`opcode_erase_4k`, (1-1-0) mode (if specified)
+        * :data:`Command.EraseData8K`: :py:`opcode_erase_8k`, (1-1-0) mode (if specified)
         * :data:`Command.EraseData32K`: :py:`opcode_erase_32k`, (1-1-0) mode (if specified)
         * :data:`Command.EraseData64K`: :py:`opcode_erase_64k`, (1-1-0) mode (if specified)
         * :data:`Command.ProgramData`: :data:`Opcode.PageProgram`, (1-1-1) mode
@@ -315,6 +320,9 @@ class CommandSet(BaseCommandSet[Command]):
                 address_octets=address_bytes)
         if opcode_erase_4k is not None:
             self[Command.EraseData4K] = Instruction.spi_1_1_0(opcode_erase_4k,
+                address_octets=address_bytes)
+        if opcode_erase_8k is not None:
+            self[Command.EraseData8K] = Instruction.spi_1_1_0(opcode_erase_8k,
                 address_octets=address_bytes)
         if opcode_erase_32k is not None:
             self[Command.EraseData32K] = Instruction.spi_1_1_0(opcode_erase_32k,
@@ -340,6 +348,7 @@ class CommandSet(BaseCommandSet[Command]):
           :py:`enable_quad`)
         * :data:`Command.EraseData256` (if available)
         * :data:`Command.EraseData4K` (if available)
+        * :data:`Command.EraseData8K` (if available)
         * :data:`Command.EraseData32K` (if available)
         * :data:`Command.EraseData64K` (if available)
         * :data:`Command.ProgramData`: :data:`Opcode.PageProgram`, (1-1-1) mode
