@@ -822,7 +822,9 @@ class Memory25QApplet(GlasgowAppletV2):
                 # this algebraic relation, but it seems useful enough to display for devices
                 # without more accurately known capacity.
                 memory_size_guess = 1 << (device_id & 0xff)
-                if memory_size_guess > 1048576:
+                if memory_size_guess > (1<<24):
+                    pass # NOR flash without SFDP isn't going to be over 16 MB.
+                elif memory_size_guess > (1<<20):
                     self.logger.info(f"inexact memory size guess:  {memory_size_guess/1048576} MiB")
                 else:
                     self.logger.info(f"inexact memory size guess:  {memory_size_guess/1024} KiB")
