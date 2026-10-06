@@ -146,11 +146,15 @@ class GlasgowPin:
             case GlasgowPort.D: return 24 + self.number
             case _: assert False
 
+    @property
+    def location(self) -> str:
+        return f"{self.port}{self.number}"
+
     def __invert__(self) -> Self:
         return type(self)(self.port, self.number, invert=not self.invert)
 
     def __str__(self):
-        return f"{self.port}{self.number}{'#' if self.invert else ''}"
+        return f"{self.location}{'#' if self.invert else ''}"
 
 
 @dataclass(frozen=True)
