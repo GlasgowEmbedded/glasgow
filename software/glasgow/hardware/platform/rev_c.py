@@ -107,6 +107,25 @@ class _GlasgowRevCPlatform(GlasgowICE40Platform):
                  Subsignal("oe", Pins("K11", dir="o")),
                  Attrs(IO_STANDARD="SB_LVCMOS")),
 
+        # Duplicate of the above; `port_led*` are exposed to applets, `led*` is used internally.
+        # Note that it is technically possible to instantiate the LED as an input, it just doesn't
+        # do anything useful (stuck at 0).
+        Resource("port_led", 0,
+                 Subsignal("io", Pins("G9")),
+                 Attrs(IO_STANDARD="SB_LVCMOS")),
+        Resource("port_led", 1,
+                 Subsignal("io", Pins("G8")),
+                 Attrs(IO_STANDARD="SB_LVCMOS")),
+        Resource("port_led", 2,
+                 Subsignal("io", Pins("E9")),
+                 Attrs(IO_STANDARD="SB_LVCMOS")),
+        Resource("port_led", 3,
+                 Subsignal("io", Pins("D9")),
+                 Attrs(IO_STANDARD="SB_LVCMOS")),
+        Resource("port_led", 4,
+                 Subsignal("io", Pins("E8")),
+                 Attrs(IO_STANDARD="SB_LVCMOS")),
+
         Resource("aux", 0, Pins("A10"), Attrs(IO_STANDARD="SB_LVCMOS")),
         Resource("aux", 1, Pins("C9"),  Attrs(IO_STANDARD="SB_LVCMOS")),
 
@@ -145,15 +164,16 @@ class _GlasgowRevCPlatform(GlasgowICE40Platform):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._init_glasgow_pins(
-            ("A", "port_a", range(8)),
-            ("B", "port_b", range(8)),
-            ("S", "port_s", range(1)),
+            ("A",   "port_a", range(8)),
+            ("B",   "port_b", range(8)),
+            ("SYN", "port_syn", range(1)),
+            ("LED", "port_led", range(5)),
         )
 
 
 class GlasgowRevC0Platform(_GlasgowRevCPlatform):
     resources = _GlasgowRevCPlatform.resources + [
-        Resource("port_s", 0,
+        Resource("port_syn", 0,
                  Subsignal("io", Pins("A11")),
                  Attrs(IO_STANDARD="SB_LVCMOS")),
     ]
@@ -161,7 +181,7 @@ class GlasgowRevC0Platform(_GlasgowRevCPlatform):
 
 class GlasgowRevC123Platform(_GlasgowRevCPlatform):
     resources = _GlasgowRevCPlatform.resources + [
-        Resource("port_s", 0,
+        Resource("port_syn", 0,
                  Subsignal("io", Pins("A11"), Attrs(PULLUP=1)),
                  Subsignal("oe", Pins("B4", dir="o")),
                  Attrs(IO_STANDARD="SB_LVCMOS")),

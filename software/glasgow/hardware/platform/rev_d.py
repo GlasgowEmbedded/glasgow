@@ -205,9 +205,28 @@ class _GlasgowRevDPlatform(GlasgowECP5Platform):
                  Subsignal("oe", Pins("K15", dir="o")),
                  Attrs(IO_TYPE="LVCMOS33")),
 
-        Resource("port_s", 0,
+        Resource("port_syn", 0,
                  Subsignal("io", Pins("B13"), Attrs(PULLMODE="UP")),
                  Subsignal("oe", Pins("C13", dir="o")),
+                 Attrs(IO_TYPE="LVCMOS33")),
+
+        # Duplicate of the above; `port_led*` are exposed to applets, `led*` is used internally.
+        # Note that it is technically possible to instantiate the LED as an input, it just doesn't
+        # do anything useful (stuck at 0).
+        Resource("port_led", 0,
+                 Subsignal("io", Pins("D13"), Attrs(PULLMODE="DOWN")),
+                 Attrs(IO_TYPE="LVCMOS33")),
+        Resource("port_led", 1,
+                 Subsignal("io", Pins("E13"), Attrs(PULLMODE="DOWN")),
+                 Attrs(IO_TYPE="LVCMOS33")),
+        Resource("port_led", 2,
+                 Subsignal("io", Pins("A13"), Attrs(PULLMODE="DOWN")),
+                 Attrs(IO_TYPE="LVCMOS33")),
+        Resource("port_led", 3,
+                 Subsignal("io", Pins("A14"), Attrs(PULLMODE="DOWN")),
+                 Attrs(IO_TYPE="LVCMOS33")),
+        Resource("port_led", 4,
+                 Subsignal("io", Pins("B14"), Attrs(PULLMODE="DOWN")),
                  Attrs(IO_TYPE="LVCMOS33")),
     ]
     connectors  = [
@@ -222,11 +241,12 @@ class _GlasgowRevDPlatform(GlasgowECP5Platform):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._init_glasgow_pins(
-            ("A", "port_a", range(8)),
-            ("B", "port_b", range(8)),
-            ("C", "port_c", range(8)),
-            ("D", "port_d", range(8)),
-            ("S", "port_s", range(1)),
+            ("A",   "port_a", range(8)),
+            ("B",   "port_b", range(8)),
+            ("C",   "port_c", range(8)),
+            ("D",   "port_d", range(8)),
+            ("SYN", "port_syn", range(1)),
+            ("LED", "port_led", range(5)),
         )
 
 

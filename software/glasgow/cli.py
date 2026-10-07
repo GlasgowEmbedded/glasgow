@@ -308,9 +308,10 @@ def get_argparser():
         def ports(arg):
             if "*" in arg:
                 return None
+            # This also happens to reject `SYN` and `LED` by accident.
             return "".join(str(GlasgowPort(char)) for char in arg)
 
-        all_ports = " ".join(map(str, GlasgowPort))
+        all_ports = " ".join(str(port) for port in GlasgowPort if port.has_supply)
         parser.add_argument(
             "ports", metavar="PORTS", nargs="?", type=ports, default="*",
             help=f"I/O port set (one or more of: {all_ports}, default: %(default)s)")

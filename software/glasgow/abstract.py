@@ -55,7 +55,18 @@ class GlasgowPort(enum.Enum):
     B = "B"
     C = "C"
     D = "D"
+    SYN = "SYN"
+    LED = "LED"
     ALL = "*"
+
+    @property
+    def has_supply(self) -> bool:
+        """Returns :py:`True` if the port has power supply and sensing, :py:`False` otherwise."""
+        match self:
+            case self.A | self.B | self.C | self.D | self.ALL:
+                return True
+            case _:
+                return False
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}.{self.name}"
@@ -72,6 +83,8 @@ class GlasgowVio:
     def __init__(self, value: float | None = None, *, sense: GlasgowPort | str | None = None):
         if (value is None and sense is None) or (value is not None and sense is not None):
             raise ValueError("exactly one of voltage value or a port to be sensed may be present")
+        if sense is not None and not GlasgowPort(sense).has_supply:
+            raise ValueError(f"port {sense} is not capable of sensing voltage")
         object.__setattr__(self, "value", float(value) if value is not None else None)
         object.__setattr__(self, "sense", GlasgowPort(sense) if sense is not None else None)
 
@@ -120,10 +133,10 @@ class GlasgowPin:
         for clause in value.split(","):
             if clause.upper() in ("", "-", "NC"):
                 pass
-            elif m := re.match(r"^([A-Z])([0-9]+)(#)?$", clause):
+            elif m := re.match(r"^([A-Z]+)([0-9]+)(#)?$", clause):
                 port, number, invert = GlasgowPort(m.group(1)), int(m.group(2)), bool(m.group(3))
                 result.append(cls(port=port, number=number, invert=invert))
-            elif m := re.match(r"^([A-Z])([0-9]+):([0-9]+)(#)?$", clause):
+            elif m := re.match(r"^([A-Z]+)([0-9]+):([0-9]+)(#)?$", clause):
                 port, pin_first, pin_last, invert = \
                     GlasgowPort(m.group(1)), int(m.group(2)), int(m.group(3)), bool(m.group(4))
                 if pin_last >= pin_first:
