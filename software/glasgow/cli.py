@@ -284,7 +284,7 @@ def get_argparser():
     parser = create_argparser()
 
     def revision(arg):
-        revisions = ["A0", "B0", "C0", "C1", "C2", "C3", "D0"]
+        revisions = ["A0", "B0", "C0", "C1", "C2", "C3", "D0", "D1"]
         if arg in revisions:
             return arg
         else:
