@@ -43,6 +43,12 @@ class PullState(enum.Enum):
             case self.High:  return self.Low
             case self.Low:   return self.High
 
+    def __xor__(self, invert: bool) -> PullState:
+        return ~self if invert else self
+
+    def __rxor__(self, invert: bool) -> PullState:
+        return ~self if invert else self
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}.{self.name}"
 
