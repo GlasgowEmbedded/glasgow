@@ -21,6 +21,7 @@ enum glasgow_rev {
   GLASGOW_REV_C2 = 0x32,
   GLASGOW_REV_C3 = 0x33,
   GLASGOW_REV_D0 = 0x40,
+  GLASGOW_REV_D1 = 0x41,
 
   GLASGOW_REV_NA = 0xF9,
 };
