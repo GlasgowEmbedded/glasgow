@@ -21,3 +21,4 @@ I/O interfaces
     jtag_svf
     sbw_probe
     swd_probe
+    i2c_target
