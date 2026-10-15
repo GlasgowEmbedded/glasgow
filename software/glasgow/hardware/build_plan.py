@@ -5,7 +5,8 @@ import hashlib
 import pathlib
 import tempfile
 import shutil
-from asyncio import subprocess
+import asyncio
+import subprocess
 
 import platformdirs
 from amaranth.build.run import BuildPlan
@@ -50,6 +51,9 @@ class GlasgowBuildPlan:
     def bitstream_id(self) -> bytes:
         return self._bitstream_id
 
+    def _report_build_output(self, raw_line: bytes):
+        logger.trace(f"build: %s", raw_line.decode().rstrip())
+
     def _report_build_failure(self, stdout_lines: list[str], exit_code: int) -> Never:
         if not logger.isEnabledFor(logging.TRACE): # don't print the log twice
             for stdout_line in stdout_lines:
@@ -62,6 +66,40 @@ class GlasgowBuildPlan:
             raise GatewareBuildError(
                 f"gateware build failed with exit code {exit_code}; "
                 f"re-run `glasgow` without `-q` to view build log")
+
+    async def _asyncio_subprocess_exec(self, args: list[str], *,
+            cwd: os.PathLike, env: dict[str, str]):
+        process = await asyncio.subprocess.create_subprocess_exec(
+            *args, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+        output_lines = []
+        async for output_line in process.stdout:
+            self._report_build_output(output_line)
+            output_lines.append(output_line)
+
+        if await process.wait():
+            self._report_build_failure(output_lines, process.returncode)
+
+        return b"".join(output_lines)
+
+    async def _fallback_subprocess_exec(self, args: list[str], *,
+            cwd: os.PathLike, env: dict[str, str]):
+        def do_subprocess_exec():
+            process = subprocess.Popen(
+                args, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+            output_lines = []
+            while output_line := process.stdout.readline():
+                self._report_build_output(output_line)
+                output_lines.append(output_line)
+
+            return b"".join(output_lines), process.wait()
+
+        loop = asyncio.get_running_loop()
+        output_lines, returncode = await loop.run_in_executor(None, do_subprocess_exec)
+        if returncode:
+            self._report_build_failure(output_lines, returncode)
+        return output_lines
 
     # this function is only public for paranoid people who don't trust our excellent cache system.
     # it's very unlikely to fail, but people are rightfully distrustful of cache systems, so
@@ -92,18 +130,12 @@ class GlasgowBuildPlan:
 
             # collect stdout (so that it can be reproduced if a log for a cached bitstream is
             # requested later) and also log it with the appropriate level
-            stdout_lines = []
-            process = await subprocess.create_subprocess_exec(
-                *args, cwd=build_dir, env=environ,
-                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            async for stdout_line in process.stdout:
-                stdout_lines.append(stdout_line)
-                logger.trace(f"build: %s", stdout_line.decode().rstrip())
-            if await process.wait():
-                self._report_build_failure(stdout_lines, process.returncode)
-
+            try:
+                stdout_data = await self._asyncio_subprocess_exec(args, cwd=build_dir, env=environ)
+            except NotImplementedError:
+                # QtAsyncio does not implement `asyncio.subprocess.create_subprocess_exec`.
+                stdout_data = await self._fallback_subprocess_exec(args, cwd=build_dir, env=environ)
             bitstream_data = (pathlib.Path(build_dir) / self._product_name).read_bytes()
-            stdout_data = b"".join(stdout_lines)
         except:
             if debug:
                 logger.info("keeping build tree as %s", build_dir)
