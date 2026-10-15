@@ -10,6 +10,7 @@ import textwrap
 import platform
 import unittest
 import logging as pylogging
+import subprocess
 from datetime import datetime
 
 from amaranth import UnusedElaboratable
@@ -483,6 +484,13 @@ def get_argparser():
         "list", formatter_class=TextHelpFormatter,
         help="list devices connected to the system")
 
+    p_python = subparsers.add_parser(
+        "python", formatter_class=TextHelpFormatter,
+        help="run Python with Glasgow packages in the environment")
+    p_python.add_argument(
+        "rest", metavar="ARGS", nargs=argparse.REMAINDER,
+        help="arguments for the Python executable")
+
     return parser
 
 
@@ -588,6 +596,11 @@ async def main() -> int:
         term_handler = setup_logging()
         args = get_argparser().parse_args()
         file_handler = configure_logger(args, term_handler)
+
+        if args.action == "python":
+            if len(args.rest) > 0 and args.rest[0] == "--":
+                del args.rest[0]
+            return subprocess.call([sys.executable, *args.rest])
 
         logger.debug(version_info()) # print version info if verbose
 

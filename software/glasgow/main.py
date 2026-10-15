@@ -129,7 +129,10 @@ def run_async(main: Callable[[], int | None]):
         # might capture those file objects.
         TqdmProgressImpl().register()
 
-        exit(asyncio.run(main()))
+        try:
+            exit(asyncio.run(main()))
+        except KeyboardInterrupt:
+            exit(130) # 128 + SIGNIT
 
     if sys._getframe(1).f_globals["__name__"] == "__main__":
         wrapper()
