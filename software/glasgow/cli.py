@@ -12,7 +12,6 @@ import unittest
 import logging as pylogging
 from datetime import datetime
 
-import colorama
 from amaranth import UnusedElaboratable
 from fx2 import FX2Config, VID_CYPRESS, PID_FX2
 from fx2.format import input_data, diff_data
@@ -20,7 +19,6 @@ from fx2.format import input_data, diff_data
 from . import __version__
 from .support import logging
 from .support.asignal import *
-from .support.progress import TqdmProgressImpl
 from .support.plugin import PluginRequirementsUnmet, PluginLoadError
 from .support.usb import ErrorDisconnected
 from .abstract import ClockingError, GlasgowPort
@@ -32,6 +30,7 @@ from .hardware.assembly import HardwareAssembly
 from .legacy import DeprecatedTarget
 from .legacy import DeprecatedDevice, DeprecatedDemultiplexer
 from .applet import *
+from .main import run_async, setup_logging
 
 
 # When running as `-m glasgow.cli`, `__name__` is `__main__`, and the real name
@@ -510,42 +509,6 @@ def _applet(assembly, args):
         raise SystemExit()
 
 
-class TerminalFormatter(pylogging.Formatter):
-    DEFAULT_COLORS = {
-        "TRACE"   : colorama.Fore.LIGHTBLACK_EX,
-        "DEBUG"   : colorama.Fore.LIGHTCYAN_EX,
-        "INFO"    : colorama.Fore.WHITE,
-        "WARNING" : colorama.Fore.LIGHTYELLOW_EX,
-        "ERROR"   : colorama.Fore.RED,
-        "CRITICAL": colorama.Back.RED,
-        "RESET":    colorama.Style.RESET_ALL,
-    }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.colors = dict(self.DEFAULT_COLORS)
-        for color_override in os.getenv("GLASGOW_COLORS", "").split(":"):
-            if color_override:
-                level, color = color_override.split("=", 2)
-                self.colors[level] = f"\033[{color}m"
-
-    def format(self, record):
-        color = self.colors.get(record.levelname, "")
-        # glasgow.hardware.foo → g.hardware.foo
-        record.name = record.name.replace("glasgow.", "g.")
-        # glasgow.hardware.foo → g.h.foo
-        record.name = record.name.replace("g.hardware.", "g.h.")
-        # glasgow.hardware.build_plan → g.h.bp
-        record.name = record.name.replace("g.h.build_plan", "g.h.bp")
-        # glasgow.applet.foo → g.a.foo
-        record.name = record.name.replace("g.applet.", "g.a.")
-        # glasgow.applet.interface. → g.a.i.foo
-        record.name = record.name.replace("g.a.interface.", "g.a.i.")
-        # applet.memory._25q → applet.memory.25q
-        record.name = record.name.replace("._", ".")
-        return f"{color}{super().format(record)}{self.colors['RESET']}"
-
-
 class SubjectFilter:
     def __init__(self, level, subjects):
         self.level    = level
@@ -557,21 +520,6 @@ class SubjectFilter:
             if isinstance(record.msg, str) and record.msg.startswith(subject + ": "):
                 levelno = logging.INFO
         return levelno >= self.level
-
-
-def create_logger():
-    root_logger = pylogging.getLogger()
-
-    term_formatter_args = {"style": "{",
-        "fmt": "{levelname[0]:s}: {name:s}: {message:s}"}
-    term_handler = pylogging.StreamHandler()
-    if sys.stderr.isatty():
-        colorama.just_fix_windows_console()
-        term_handler.setFormatter(TerminalFormatter(**term_formatter_args))
-    else:
-        term_handler.setFormatter(pylogging.Formatter(**term_formatter_args))
-    root_logger.addHandler(term_handler)
-    return term_handler
 
 
 def configure_logger(args, term_handler):
@@ -631,16 +579,13 @@ async def wait_for_sigint():
     raise SIGINTCaught
 
 
+@run_async
 async def main() -> int:
     term_handler = file_handler = device = None
     try:
-        # This intercepts stdin/stdout, so do it before creating a logger or anything else that
-        # might capture those file objects.
-        TqdmProgressImpl().register()
-
         # Handle log messages emitted during construction of the argument parser (e.g. by
         # the plugin subsystem).
-        term_handler = create_logger()
+        term_handler = setup_logging()
         args = get_argparser().parse_args()
         file_handler = configure_logger(args, term_handler)
 
@@ -1121,13 +1066,3 @@ async def main() -> int:
                 pass
 
     return 0
-
-
-# This entry point is invoked via `project.scripts.glasgow` when installing the package with `pipx`.
-def run_main():
-    exit(asyncio.new_event_loop().run_until_complete(main()))
-
-
-# This entry point is invoked when running `python -m glasgow.cli`.
-if __name__ == "__main__":
-    run_main()
