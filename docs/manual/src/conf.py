@@ -65,6 +65,7 @@ todo_emit_warnings = True
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", os.getenv("INTERSPHINX_PYTHON")),
+    "pyside6": ("https://doc.qt.io/qtforpython-6/", os.getenv("INTERSPHINX_PYSIDE6")),
 }
 
 copybutton_prompt_is_regexp = True
