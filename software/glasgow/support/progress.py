@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import TYPE_CHECKING
 from abc import ABCMeta, abstractmethod
 from typing import Literal
 from collections.abc import Generator, Sequence
@@ -6,9 +7,11 @@ import sys
 
 from tqdm import tqdm
 from tqdm.contrib import DummyTqdmFile
+if TYPE_CHECKING:
+    from PySide6.QtWidgets import QProgressBar, QLabel
 
 
-__all__ = ["Progress"]
+__all__ = ["Progress", "TqdmProgressImpl", "QtWidgetsProgressImpl"]
 
 
 class Progress:
@@ -234,6 +237,12 @@ class AbstractProgressImpl(metaclass=ABCMeta):
 
 
 class TqdmProgressImpl(AbstractProgressImpl):
+    """Progress implementation for terminals based on `تقدّم <https://tqdm.github.io/>`_.
+
+    This implementation is automatically registered by :meth:`glasgow.main.run_async`, but may
+    be used explicitly if needed.
+    """
+
     def __init__(self):
         self._bars = dict[Progress, tqdm]()
 
@@ -269,3 +278,70 @@ class TqdmProgressImpl(AbstractProgressImpl):
 
     def update(self, progress: Progress, delta: int):
         self._bars[progress].update(delta)
+
+
+class QtWidgetsProgressImpl(AbstractProgressImpl):
+    """Progress implementation for Qt applications based on :mod:`~PySide6.QtWidgets`.
+
+    This implementation must be registered manually. It requires
+    a :class:`~PySide6.QtWidgets.QProgressBar` and/or
+    a :class:`~PySide6.QtWidgets.QLabel` to be provided;
+    these widgets will be updated to display progress. For example:
+
+    .. code:: py
+
+        class MainWindow(QMainWindow, Ui_MainWindow):
+            def __init__(self):
+                super().__init__()
+
+                self.setupUi(self)
+                QtWidgetsProgressImpl(self.progressBar, self.statusLabel).register()
+
+            ...
+
+    .. note::
+
+        The limitation of this implementation is that it cannot display multiple progress bars.
+        The last opened progress indicator is always used when updating progress information.
+    """
+
+    def __init__(self, progressBar: QProgressBar | None, statusLabel: QLabel | None):
+        self.progressBar = progressBar
+        self.statusLabel = statusLabel
+
+        self._bars = list[Progress]()
+
+    def register(self):
+        self._orig_impl, Progress._impl = Progress._impl, self
+
+    def unregister(self):
+        Progress._impl = self._orig_impl
+
+    def open(self, progress: Progress):
+        self._bars.append(progress)
+        self._refresh()
+
+    def close(self, progress: Progress):
+        self._bars.remove(progress)
+        self._refresh()
+
+    def update(self, progress: Progress, delta: int):
+        self._refresh()
+
+    def _refresh(self):
+        if self._bars:
+            progress = self._bars[-1]
+            if self.progressBar is not None:
+                # From QProgressBar documentation:
+                # > If minimum and maximum both are set to 0, the bar shows a busy indicator instead
+                # > of a percentage of steps.
+                self.progressBar.setRange(0, progress.total or 0)
+                self.progressBar.setValue(progress.done)
+            if self.statusLabel is not None:
+                statusText = f"{progress.action} [{progress.done}"
+                if progress.total is not None:
+                    statusText += f"/{progress.total}"
+                if progress.item is not None:
+                    statusText += f" {progress.item}"
+                statusText += "]"
+                self.statusLabel.setText(statusText)
