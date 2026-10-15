@@ -94,7 +94,7 @@ numpy = [
 ]
 
 [project.scripts]
-glasgow = "glasgow.cli:run_main"
+glasgow = "glasgow.cli:main"
 
 [project.entry-points."glasgow.applet"]
 selftest = "glasgow.applet.internal.selftest:SelfTestApplet"
