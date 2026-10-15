@@ -17,6 +17,8 @@ example:
         print(device.serial_number)
 """
 
+from __future__ import annotations
+from typing import TYPE_CHECKING
 from collections.abc import Callable
 import os
 import sys
@@ -25,11 +27,13 @@ import logging as pylogging
 import functools
 
 import colorama
+if TYPE_CHECKING:
+    from PySide6.QtCore import QCoreApplication
 
 from .support.progress import TqdmProgressImpl
 
 
-__all__ = ["setup_logging", "run_async"]
+__all__ = ["setup_logging", "run_async", "run_async_qtwidgets", "run_async_qtqml"]
 
 
 class _TerminalFormatter(pylogging.Formatter):
@@ -131,3 +135,40 @@ def run_async(main: Callable[[], int | None]):
         wrapper()
 
     return wrapper
+
+
+def _run_async_qt[T: QCoreApplication](main: Callable[[], int | None], *, qapp_cls: type[T]):
+    from PySide6 import QtAsyncio
+
+    @functools.wraps(main)
+    def wrapper():
+        # There are three options for setting up the main loop: QApplication (QtWidgets),
+        # QGuiApplication (QtQml), and QCoreApplication (CLI). We have to pick one before
+        # running `main()`.
+        _qapp = qapp_cls(sys.argv)
+        QtAsyncio.run(main(), handle_sigint=True)
+
+    if sys._getframe(2).f_globals["__name__"] == "__main__":
+        wrapper()
+
+    return wrapper
+
+
+def run_async_qtwidgets(main: Callable[[], int | None]):
+    """Configure the Qt runtime and call :py:`main`.
+
+    This decorator serves the same purpose as :func:`run_async` and works the same way, except that
+    it initializes a graphical application using the QtWidgets library.
+    """
+    from PySide6.QtWidgets import QApplication
+    return _run_async_qt(main, qapp_cls=QApplication)
+
+
+def run_async_qtqml(main: Callable[[], int | None]):
+    """Configure the Qt runtime and call :py:`main`.
+
+    This decorator serves the same purpose as :func:`run_async` and works the same way, except that
+    it initializes a graphical application using the QtQml library.
+    """
+    from PySide6.QtGui import QGuiApplication
+    return _run_async_qt(main, qapp_cls=QGuiApplication)

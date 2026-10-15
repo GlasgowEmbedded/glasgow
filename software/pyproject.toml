@@ -18,7 +18,7 @@ classifiers = [
   "Topic :: System :: Hardware",
 ]
 
-requires-python = ">=3.13, <4"
+requires-python = ">=3.13, <3.16"
 
 # Glasgow has only a few carefully chosen dependencies. The rationale for having them, as well as
 # the rationale for the particular version constraint, is explained below, and should be kept
@@ -90,7 +90,12 @@ http = [
 ]
 numpy = [
   "numpy~=2.2",
-  "matplotlib~=3.10"
+  "matplotlib~=3.10",
+]
+qt = [
+  # The Windows redistributable ships Qt 6.8.3. Unfortunately we cannot pin that specific version
+  # as the PyPI binaries do not run on Python >=3.14.
+  "PySide6>=6.8.3,<7",
 ]
 
 [project.scripts]
@@ -209,9 +214,9 @@ repl.cmd = "python -m asyncio"
 # available in the latest versions of our dependencies, but not the entire version set.
 # Note the use of `direct_minimal_versions`; `minimal_versions` exists but is too broken to use
 # in practice, as our transitive dependencies often do not test their code in the same way.
-"update-pdm.min.lock".cmd = "pdm lock -L pdm.min.lock -S direct_minimal_versions"
+"update-pdm.min.lock".cmd = "pdm lock -q -L pdm.min.lock -G :all -S direct_minimal_versions"
 
 # Lockfile with distribution wheel set. Used to build a Windows .msi installer. Wheels in this
 # lockfile are expected to cross-compile to win32/win_amd64 with MinGW (this implies that they must
 # be using setuptools). It also excludes the builtin toolchain, as a native one is cross-compiled.
-"update-pdm.dist.lock".cmd = "pdm lock -L pdm.dist.lock"
+"update-pdm.dist.lock".cmd = "pdm lock -q -L pdm.dist.lock"
