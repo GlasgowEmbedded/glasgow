@@ -27,8 +27,9 @@ _glasgow_logger.manager = logging.Manager(logging.root)
 _glasgow_logger.manager.setLoggerClass(Logger)
 
 
-def getLogger(name: str) -> Logger:
-    return typing.cast(Logger, _glasgow_logger.manager.getLogger(name))
+def getLogger(name: str | None = None) -> Logger:
+    logger = logging.root if name is None else _glasgow_logger.manager.getLogger(name)
+    return typing.cast(Logger, logger)
 
 
 def dump_hex(data):
