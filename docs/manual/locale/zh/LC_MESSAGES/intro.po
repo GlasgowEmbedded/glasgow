@@ -97,7 +97,7 @@ msgstr "我可以用 Glasgow 做什么？"
 
 #: ../../src/intro.rst:56
 msgid "sample digital inputs with the :ref:`logic analyzer <applet.interface.analyzer2>` (revD0+ only at the moment)"
-msgstr ""
+msgstr "用\\ :ref:`逻辑分析仪 <applet.interface.analyzer2>`\\ 对数字输入采样（目前仅适用于 revD0+）"
 
 #: ../../src/intro.rst:58
 msgid "control pins as :ref:`GPIO <applet.control.gpio>`"
@@ -248,9 +248,8 @@ msgid "weight by Whetstone bridge via :ref:`HX-711 <applet.sensor.hx711>` amplif
 msgstr "重量（用惠斯通电桥电路和 :ref:`HX-711 <applet.sensor.hx711>` 放大器）"
 
 #: ../../src/intro.rst:132
-#, fuzzy
 msgid "temperature by thermocouple via :ref:`MAX31855 <applet.sensor.max31855>` sensor"
-msgstr "气温、气压、湿度（使用\\ :ref:`博世 BMP280/BME280 <applet.sensor.bmx280>` 传感器）"
+msgstr "温度（使用热电偶和 :ref:`MAX31855 <applet.sensor.max31855>` 传感器）"
 
 #: ../../src/intro.rst:134
 msgid ":ref:`calibrate a clock <applet.measure.calibrate_clock>` against a reference frequency"
