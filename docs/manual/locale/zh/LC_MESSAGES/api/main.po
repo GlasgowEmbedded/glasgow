@@ -25,53 +25,53 @@ msgstr ""
 
 #: glasgow.main:1 of
 msgid "Application entry point."
-msgstr ""
+msgstr "应用程序的入口点。"
 
 #: glasgow.main:3 of
 msgid "This module contains utility functions that handle start-up of the Glasgow CLI as well as custom applications based on the Glasgow API. To begin building your application, copy the following example:"
-msgstr ""
+msgstr "该模块包含一些处理 Glasgow CLI 启动和自定义应用启动的工具函数。构建自己的应用程序，请从复制如下示例代码开始："
 
 #: glasgow.main.setup_logging:1 of
 msgid "Configure logging."
-msgstr ""
+msgstr "配置日志输出。"
 
 #: glasgow.main.setup_logging:3 of
 msgid "The ANSI escape sequences used to colorize the output can be customized via the :envvar:`GLASGOW_COLORS` environment variable. Its value must contain a ``:``-delimited list of ``<key>=<value>`` pairs, where ``<key>`` is one of ``TRACE``, ``DEBUG``, ``INFO``, ``WARNING``, ``ERROR``, ``CRITICAL``, ``RESET``, and ``<value>`` is used as the core of an escape sequence :py:`\"\\033[<value>m\"`."
-msgstr ""
+msgstr "用于控制输出文本颜色的 ANSI 转义序列可以用 :envvar:`GLASGOW_COLORS` 环境变量自定义。它的值须为一个 ``:`` 分隔的 ``<key>=<value>`` 键值对，其中 ``<key>`` 是 ``TRACE``、``DEBUG``、``INFO``、``WARNING``、``ERROR``、``CRITICAL``、``RESET`` 其中之一，而 ``<value>`` 将被用为转义序列中的核心部分，如 :py:`\"\\033[<value>m\"`。"
 
 #: glasgow.main.setup_logging:9 of
 msgid "For example, to make messages with the ``TRACE`` level gray and messages with the ``INFO`` level white, set ``GLASGOW_COLORS`` to ``TRACE=37:INFO=1;37``."
-msgstr ""
+msgstr "例如，如需将 ``TRACE`` 级别的消息设置为灰色，并将 ``INFO`` 级别的消息设置为白色，则应将 ``GLASGOW_COLORS`` 设置为 ``TRACE=37:INFO=1;37``。"
 
 #: glasgow.main.setup_logging:12 of
 msgid "A :class:`logging.StreamHandler` writing to :data:`sys.stderr` is created, attached to the root logger, and returned."
-msgstr ""
+msgstr "该函数创建一个向 :data:`sys.stderr` 写入，链接到根 logger 的 :class:`logging.StreamHandler`，并将其返回。"
 
 #: glasgow.main.run_async:1 of
 msgid "Configure the runtime and call :py:`main`."
-msgstr ""
+msgstr "配置运行时并调用 :py:`main`。"
 
 #: glasgow.main.run_async:3 of
 msgid "This decorator is used as a convenient way to use the Glasgow library in your own scripts. The :py:`main` function called from a new :mod:`asyncio` event loop after applying any necessary workarounds for platform and library quirks."
-msgstr ""
+msgstr "该装饰器是一个便捷的在您自己的脚本中使用 Glasgow 库的方式。在应用所需的平台和库特性的规避方案后，:py:`main` 函数会将在一个新的 :mod:`asyncio` 事件循环中被调用。"
 
 #: glasgow.main.run_async:7 of
 msgid "Moreover, if the file with the :meth:`run_async` decorator is directly invoked from the command line (as opposed to being imported), it also calls the wrapped :py:`main` function, as if that file includes the following code immediately after the definition of :py:`main`:"
-msgstr ""
+msgstr "此外，如果使用 :meth:`run_async` 装饰器的文件直接在命令行被调用（而不是被导入），它也会调用这个被包装后的 :py:`main` 函数，如同该文件在 :py:`main` 的定义后立即包含如下代码："
 
 #: glasgow.main.run_async_qtqml:1 glasgow.main.run_async_qtwidgets:1 of
 msgid "Configure the Qt runtime and call :py:`main`."
-msgstr ""
+msgstr "配置 Qt 运行时并调用 :py:`main`。"
 
 #: glasgow.main.run_async_qtwidgets:3 of
 msgid "This decorator serves the same purpose as :func:`run_async` and works the same way, except that it initializes a graphical application built using the :mod:`~PySide6.QtWidgets` library."
-msgstr ""
+msgstr "该装饰器的作用和功能与 :func:`run_async` 几乎相同，区别仅在于它会初始化一个使用 :mod:`~PySide6.QtWidgets` 库的图形应用程序。"
 
 #: glasgow.main.run_async_qtqml:3 of
 msgid "This decorator serves the same purpose as :func:`run_async` and works the same way, except that it initializes a graphical application built using the :mod:`~PySide6.QtQml` library."
-msgstr ""
+msgstr "该装饰器的作用和功能与 :func:`run_async` 几乎相同，区别仅在于它会初始化一个使用 :mod:`~PySide6.QtQml` 库的图形应用程序。"
 
 #: glasgow.main.run_async_qtqml:6 of
 msgid "Return the :class:`~PySide6.QtQml.QQmlEngine` instance from :py:`main()` to prevent it from being garbage collected prematurely."
-msgstr ""
+msgstr "请从 :py:`main()` 返回 :class:`~PySide6.QtQml.QQmlEngine` 实例，以免它过早地被垃圾回收。"
 
