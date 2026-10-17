@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-10-17 21:46+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/revisions/index.rst:2
 msgid "Hardware revisions"
@@ -50,63 +50,80 @@ msgstr ""
 msgid "Revision D is the latest revision, currently in `pre-launch stage on CrowdSupply <https://www.crowdsupply.com/fully-automated/glasgow-interface-explorer-revd>`_. It provides 32 I/O pins with a data rate up to approx. 100 Mbps/pin (50 MHz) [#]_, independent direction control and independently programmable pull-up/pull-down resistors. The I/O pins are grouped into four I/O ports, each of which can use any I/O standard from 1.2 V to 5 V, sense and monitor I/O voltage of the device under test, provide up to 300 mA of power, and measure analog voltages on two dedicated pins (single-ended or differential; 24 bit @ 500 kSPS across all enabled channels). The board uses USB 2 for power, configuration, and communication, achieving up to 336 Mbps (42 MB/s) of sustained combined throughput. Except for USB connectivity, every aspect of the device has been significantly improved compared to revC."
 msgstr "修订版 D 是最新的修订版，目前在 `CrowdSupply 上处于预发售阶段 <https://www.crowdsupply.com/fully-automated/glasgow-interface-explorer-revd>`_。它提供了 32 个 I/O 引脚，最高数据速率约 100 Mbps/pin (50 MHz) [#]_，每个引脚有独立的方向控制和独立的可编程上拉/下拉电阻。I/O 引脚分为四个 I/O 端口，每个端口都可以使用任何从 1.2 V 到 5 V 的 I/O 标准，采集和监控被测设备的 I/O 电压，提供 300 mA 供电，在两个单独的引脚上进行模拟电压测量（单端或差分；24 bit @ 500 kSPS，所有使能的通道共用）。板上使用 USB 2 供电、配置、通信，实现最高 336 Mbps (42 MB/s) 持续通信吞吐量。除了 USB 通信能力以外，设备的每个方面相比 revC 来说都有显著改善。"
 
-#: ../../src/revisions/index.rst:31 ../../src/revisions/index.rst:77
-msgid "Data rate achievable in practice depends on many factors and will vary greatly with specific interface and applet design. 12 Mbps/pin (6 MHz) can be achieved with minimal development effort; reaching higher data rates requires careful HDL coding and a good understanding of timing analysis."
-msgstr "实际可以达到的数据速率取决于很多因素，并且会在很大程度上受具体接口和小程序设计影响。开发时不太费力即可以达到 12 Mbps/pin (6 MHz) 的速率；如果希望达到更高的速率，需要谨慎地编写 HDL 代码，并充分理解时序分析。"
-
-#: ../../src/revisions/index.rst:41
-msgid "revC"
-msgstr ""
-
-#: ../../src/revisions/index.rst:43
-msgid "Revision C was first mass produced by `1bitSquared`_ at stepping ``revC3``. It provides 16 I/O pins with a data rate up to approx. 100 Mbps/pin (50 MHz) [#]_, independent direction control and independently programmable pull-up/pull-down resistors. The I/O pins are grouped into two I/O ports, each of which can use any I/O standard from 1.8 V to 5 V, sense and monitor I/O voltage of the device under test, as well as provide up to 150 mA of power. The board uses USB 2 for power, configuration, and communication, achieving up to 336 Mbps (42 MB/s) of sustained combined throughput."
-msgstr "修订版 C 由 `1bitSquared`_ 首次量产，所生产的步进为 ``revC3``。它提供了 16 个 I/O 引脚，最高数据速率约为 100 Mbps/pin (50 MHz) [#]_，每个引脚有独立的方向控制和独立的可编程上拉/下拉电阻。I/O 引脚分为两个 I/O 端口，每个端口都可以使用任何从 1.8 V 到 5 V 的 I/O 标准，采集和监控被测设备的 I/O 电压，提供 150 mA 供电。板上使用 USB 2 供电、配置、通信，实现最高 336 Mbps (42 MB/s) 持续通信吞吐量。"
-
-#: ../../src/revisions/index.rst
+#: ../../src/revisions/index.rst:33 ../../src/revisions/index.rst:66
 msgid "Overview of the Glasgow PCB (front)"
 msgstr "Glasgow 电路板概览（正面）"
 
-#: ../../src/revisions/index.rst
+#: ../../src/revisions/index.rst:38 ../../src/revisions/index.rst:71
 msgid "Overview of the Glasgow PCB (back)"
 msgstr "Glasgow 电路板概览（背面）"
 
-#: ../../src/revisions/index.rst
-msgid "Description of functional blocks on the Glasgow PCB"
-msgstr "Glasgow 电路板上的功能模块的描述"
-
-#: ../../src/revisions/index.rst:62 ../../src/revisions/index.rst:88
+#: ../../src/revisions/index.rst:41 ../../src/revisions/index.rst:81
+#: ../../src/revisions/index.rst:107
 msgid "Design and fabrication files are located in the Git repository:"
 msgstr "设计和生产文件在 Git 仓库中："
 
-#: ../../src/revisions/index.rst:64
-msgid "`revC0 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/revC0/hardware/boards/glasgow>`_, `revC0 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC0/schematics.pdf>`_, `revC0 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC0>`_."
+#: ../../src/revisions/index.rst:43
+#, fuzzy
+msgid "`revD0 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD0>`_, `revD0 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revD0/output/schematics.pdf>`_, `revD0 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD0/output>`_."
 msgstr "`revC0（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/revC0/hardware/boards/glasgow>`_、`revC0（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC0/schematics.pdf>`_、`revC0（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC0>`_。"
 
-#: ../../src/revisions/index.rst:67
-msgid "`revC1 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/revC1/hardware/boards/glasgow>`_, `revC1 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC1/schematics.pdf>`_, `revC1 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC1>`_."
+#: ../../src/revisions/index.rst:46
+#, fuzzy
+msgid "`revD1 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD1>`_, `revD1 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revD1/output/schematics.pdf>`_, `revD1 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD1/output>`_."
 msgstr "`revC1（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/revC1/hardware/boards/glasgow>`_、`revC1（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC1/schematics.pdf>`_、`revC1（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC1>`_。"
 
-#: ../../src/revisions/index.rst:70
-msgid "`revC2 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/revC2/hardware/boards/glasgow>`_, `revC2 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC2/schematics.pdf>`_, `revC2 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC2>`_."
+#: ../../src/revisions/index.rst:50 ../../src/revisions/index.rst:96
+msgid "Data rate achievable in practice depends on many factors and will vary greatly with specific interface and applet design. 12 Mbps/pin (6 MHz) can be achieved with minimal development effort; reaching higher data rates requires careful HDL coding and a good understanding of timing analysis."
+msgstr "实际可以达到的数据速率取决于很多因素，并且会在很大程度上受具体接口和小程序设计影响。开发时不太费力即可以达到 12 Mbps/pin (6 MHz) 的速率；如果希望达到更高的速率，需要谨慎地编写 HDL 代码，并充分理解时序分析。"
+
+#: ../../src/revisions/index.rst:60
+msgid "revC"
+msgstr ""
+
+#: ../../src/revisions/index.rst:62
+msgid "Revision C was first mass produced by `1bitSquared`_ at stepping ``revC3``. It provides 16 I/O pins with a data rate up to approx. 100 Mbps/pin (50 MHz) [#]_, independent direction control and independently programmable pull-up/pull-down resistors. The I/O pins are grouped into two I/O ports, each of which can use any I/O standard from 1.8 V to 5 V, sense and monitor I/O voltage of the device under test, as well as provide up to 150 mA of power. The board uses USB 2 for power, configuration, and communication, achieving up to 336 Mbps (42 MB/s) of sustained combined throughput."
+msgstr "修订版 C 由 `1bitSquared`_ 首次量产，所生产的步进为 ``revC3``。它提供了 16 个 I/O 引脚，最高数据速率约为 100 Mbps/pin (50 MHz) [#]_，每个引脚有独立的方向控制和独立的可编程上拉/下拉电阻。I/O 引脚分为两个 I/O 端口，每个端口都可以使用任何从 1.8 V 到 5 V 的 I/O 标准，采集和监控被测设备的 I/O 电压，提供 150 mA 供电。板上使用 USB 2 供电、配置、通信，实现最高 336 Mbps (42 MB/s) 持续通信吞吐量。"
+
+#: ../../src/revisions/index.rst:76
+msgid "Description of functional blocks on the Glasgow PCB"
+msgstr "Glasgow 电路板上的功能模块的描述"
+
+#: ../../src/revisions/index.rst:83
+#, fuzzy
+msgid "`revC0 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC0>`_, `revC0 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC0/output/schematics.pdf>`_, `revC0 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC0/output>`_."
+msgstr "`revC0（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/revC0/hardware/boards/glasgow>`_、`revC0（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC0/schematics.pdf>`_、`revC0（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC0>`_。"
+
+#: ../../src/revisions/index.rst:86
+#, fuzzy
+msgid "`revC1 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC1>`_, `revC1 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC1/output/schematics.pdf>`_, `revC1 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC1/output>`_."
+msgstr "`revC1（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/revC1/hardware/boards/glasgow>`_、`revC1（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC1/schematics.pdf>`_、`revC1（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC1>`_。"
+
+#: ../../src/revisions/index.rst:89
+#, fuzzy
+msgid "`revC2 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC2>`_, `revC2 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC2/output/schematics.pdf>`_, `revC2 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC2/output>`_."
 msgstr "`revC2（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/revC2/hardware/boards/glasgow>`_、`revC2（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC2/schematics.pdf>`_、`revC2（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC2>`_。"
 
-#: ../../src/revisions/index.rst:73
-msgid "`revC3 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/revC3/hardware/boards/glasgow>`_, `revC3 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC3/schematics.pdf>`_, `revC3 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC3>`_."
+#: ../../src/revisions/index.rst:92
+#, fuzzy
+msgid "`revC3 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC3>`_, `revC3 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC3/output/schematics.pdf>`_, `revC3 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC3/output>`_."
 msgstr "`revC3（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/revC3/hardware/boards/glasgow>`_、`revC3（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC3/schematics.pdf>`_、`revC3（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC3>`_。"
 
-#: ../../src/revisions/index.rst:84
+#: ../../src/revisions/index.rst:103
 msgid "revA, revB"
 msgstr "revA、revB"
 
-#: ../../src/revisions/index.rst:86
+#: ../../src/revisions/index.rst:105
 msgid "Revisions A and B have not been produced in significant numbers, have major design issues, and are therefore mostly of historical interest. Nevertheless, anyone who has one of the revA/revB boards can keep using them—forever."
 msgstr "修订版 A 和 B 并未实际生产多少件，并且有重大设计缺陷，因此基本上仅对感兴趣历史者有意义。尽管如此，持有 revA/revB 板子的用户可以继续使用它们，并且是永久可以。"
 
-#: ../../src/revisions/index.rst:90
-msgid "`revA (design) <https://github.com/GlasgowEmbedded/glasgow/tree/revA/hardware/boards/glasgow>`_, `revA (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revA/schematics.pdf>`_, `revA (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revA>`_."
+#: ../../src/revisions/index.rst:109
+#, fuzzy
+msgid "`revA (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revA>`_, `revA (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revA/output/schematics.pdf>`_, `revA (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revA/output>`_."
 msgstr "`revA（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/revA/hardware/boards/glasgow>`_、`revA（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revA/schematics.pdf>`_、`revA（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revA>`_。"
 
-#: ../../src/revisions/index.rst:93
-msgid "`revB (design) <https://github.com/GlasgowEmbedded/glasgow/tree/revB/hardware/boards/glasgow>`_, `revB (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revB/schematics.pdf>`_, `revB (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revB>`_."
+#: ../../src/revisions/index.rst:112
+#, fuzzy
+msgid "`revB (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revB>`_, `revB (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revB/output/schematics.pdf>`_, `revB (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revB/output>`_."
 msgstr "`revB（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/revB/hardware/boards/glasgow>`_、`revB（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revB/schematics.pdf>`_、`revB（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revB>`_。"
 

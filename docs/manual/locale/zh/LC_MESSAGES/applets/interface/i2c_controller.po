@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-08-18 23:49+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/applets/interface/i2c_controller.rst:2
 msgid "``i2c-controller``"
@@ -72,6 +72,14 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "read device ID from devices responding to scan"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "(DANGEROUS) attempt to detect device identity by probing known registers"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "accept risks inherent in blindly probing I²C devices"
 msgstr ""
 
 #: ../../src/applets/interface/i2c_controller.rst:14
@@ -176,5 +184,162 @@ msgstr ""
 #: glasgow.applet.interface.i2c_controller.I2CControllerInterface.device_id:9
 #: of
 msgid "If the command is not implemented."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.probe:1 of
+msgid "Run a probe sequence."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.probe:3 of
+msgid "Executes the :py:`sequence` against an I²C target at :py:`address`."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.probe:7 of
+msgid "This is an **inherently dangerous** action. If the device at :py:`address` does not conform to the assumptions used when designing :py:`sequence`, the outcome is unpredictable and may cause damage to the device and/or the assembly it is a part of."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.probe:11 of
+msgid "Returns :py:`True` if the sequence matches, :py:`False` otherwise."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep:1 of
+msgid "One step of a device probe sequence."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep:3 of
+msgid "Describes an action taken by an I²C controller taken to check whether a specific I²C target address matches the identity of a particular chip."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep:6 of
+msgid "While probe sequences can be created by constructing the underlying Python objects, it is recomended to use :meth:`parse` with a compact string representation. Not all probe sequences are well-formed; use :meth:`verify` to ensure that a sequence describes a legal I²C transaction."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep:10 of
+msgid "The string representation is a whitespace-separated sequence of the following tokens (chosen to resemble the diagrams in the I²C specification):"
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep:13 of
+msgid "``S``: START condition."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep:14 of
+msgid "``Sr``: repeated START condition."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep:15 of
+msgid "``P``: STOP condition."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep:16 of
+msgid "``AW``: WRITE target address."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep:17 of
+msgid "``AR``: READ target address."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep:18 of
+msgid "``0dDDD`` where ``DDD`` is a 1 to 3 digit decimal number: data to read or write, in decimal."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep:19 of
+msgid "``0xHH`` where ``H`` is a hex digit or ``?``: data to read or write, in hexadecimal."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep:20 of
+msgid "``0bBBBBBBBB`` where ``B`` is a binary digit or ``?``: data to read or write, in binary."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep:22 of
+msgid "The ``AW`` and ``AR`` tokens refer to the actual device address, which is not known until the moment when the probing is done; probe sequences are address-independent."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep:25 of
+msgid "Consider the following example probe sequences:"
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep:27 of
+msgid "``S AW 0xD0 Sr AR 0x60 P``: detects Bosch BME280 sensors by writing :py:`0xD0` to select the register, then reading the register value and comparing it with :py:`0x60`."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep:29 of
+msgid "``S AW 117 Sr AR 0b?110100? P``: detects InvenSense MPU-60X0 by writing :py:`117` to select the register, then reading the register value and comparing it with :py:`0b01101000` while masking off (ignoring) the first and last bit."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep.Type:1 of
+msgid "Valid values are as follows:"
+msgstr ""
+
+#: ../../docstring glasgow.arch.i2c.ProbeStep.type:1 of
+msgid "Step type."
+msgstr ""
+
+#: ../../docstring glasgow.arch.i2c.ProbeStep.data:1 of
+msgid "Data bytes. Only present if :py:`type in (Type.DataWrite, Type.DataRead)`."
+msgstr ""
+
+#: ../../docstring glasgow.arch.i2c.ProbeStep.mask:1 of
+msgid "Mask bytes. Only present if :py:`type in (Type.MaskWrite, Type.MaskRead)`."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep.parse:1 of
+msgid "Parse a string into a probe sequence."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep.parse:3 of
+msgid "Returns a sequence of steps corresponding to :py:`source`. Does not perform any semantic correctness checks; use the :meth:`check` method for that."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep.parse:6 of
+msgid "If the syntax of :py:`source` is invalid."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep.check:1 of
+msgid "Verify well-formedness of a probe sequence."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep.check:3 of
+msgid "If the sequence is not allowed by the I²C specification."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep.__str__:1 of
+msgid "Unparse the step."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeStep.__str__:3 of
+msgid "Converts the step to a representation recognized by :meth:`parse`."
+msgstr ""
+
+#: ../../docstring glasgow.arch.i2c.ProbeDevice.vendor:1 of
+msgid "Vendor name."
+msgstr ""
+
+#: ../../docstring glasgow.arch.i2c.ProbeDevice.vendor:3 of
+msgid "If the company has been acquired, list the old and the new names separated by ``/``, e.g.: ``InvenSense/TDK``."
+msgstr ""
+
+#: ../../docstring glasgow.arch.i2c.ProbeDevice.product:1 of
+msgid "Product name."
+msgstr ""
+
+#: ../../docstring glasgow.arch.i2c.ProbeDevice.product:3 of
+msgid "If the probe sequence identifies a set of products, separate every product name by ``/``. e.g.: ``FUSB302BMPX/FUSB302BVMPX/FUSB302BUCX``."
+msgstr ""
+
+#: ../../docstring glasgow.arch.i2c.ProbeDevice.addresses:1 of
+msgid "Set of every I2C address the device can be configured to use."
+msgstr ""
+
+#: ../../docstring glasgow.arch.i2c.ProbeDevice.sequence:1 of
+msgid "Probe sequence positively identifying this specific device."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeDevice.name:1 of
+msgid "Device name."
+msgstr ""
+
+#: glasgow.arch.i2c.ProbeDevice.name:3 of
+#, python-brace-format
+msgid "Returns :py:`f\"{self.vendor} {self.product}\"`."
 msgstr ""
 

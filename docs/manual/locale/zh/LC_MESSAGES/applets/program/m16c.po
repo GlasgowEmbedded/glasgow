@@ -1,0 +1,133 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-17 21:29+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh\n"
+"Language-Team: zh <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../src/applets/program/m16c.rst:2
+msgid "``program-m16c``"
+msgstr ""
+
+#: ../../src/applets/program/m16c.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-m16c"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Read and write Renesas M16C series microcomputer integrated Flash memory via asynchronous serial interface (\"Mode 2\" in Renesas terminology)."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "If provided, this applet will drive the reset and bootloader mode pins. However, it will not drive the bootloader serial interface mode pin, which must be strapped externally to select Mode 2. Consult the datasheet for details."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'rx' to PIN (default: 'A0', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'tx' to PIN (default: 'A1', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'reset' to PIN (default: 'A2', optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'cnvss' to PIN (optional)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "set baud rate to RATE bits per second (default: 9600)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "unlock bootloader with key(s) HEX-ID (default: 00000000000000, FFFFFFFFFFFFFF)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-m16c erase"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-m16c erase-block"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "erase block at address ADDRESS, which must be page-aligned"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-m16c program"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "program memory from address ADDRESS, which must be page-aligned"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "program memory contents from binary file FILENAME, which must be a multiple of page size long"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run program-m16c read"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "read memory from address ADDRESS, which must be page-aligned"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "read LENGTH bytes from memory, which must be a multiple of page size"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "read memory contents to binary file FILENAME"
+msgstr ""
+
+#: ../../src/applets/program/m16c.rst:14
+msgid "API reference"
+msgstr ""
+
+#: glasgow.applet.program.m16c.ProgramM16CInterface.reset_application:1 of
+msgid "Reset the target into the application."
+msgstr ""
+
+#: glasgow.applet.program.m16c.ProgramM16CInterface.reset_bootloader:1 of
+msgid "Reset the target into the ROM bootloader."
+msgstr ""
+
+#: glasgow.applet.program.m16c.ProgramM16CInterface.sync_bootloader:1 of
+msgid "Reset the target into the ROM bootloader and synchronize with it at 9600 baud."
+msgstr ""
+
+#: glasgow.applet.program.m16c.ProgramM16CInterface.bootloader_set_baud:1 of
+msgid "Switch the bootloader, and then the UART, to :py:`baud_rate`."
+msgstr ""
+
