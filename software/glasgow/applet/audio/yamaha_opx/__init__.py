@@ -145,14 +145,16 @@ import gzip
 from io import BytesIO
 from amaranth import *
 from amaranth.lib import data
-from amaranth.lib import io
+from amaranth.lib import io, wiring, stream
+from amaranth.lib.wiring import In, Out
 from amaranth.lib.cdc import FFSynchronizer
 from urllib.parse import urlparse
 
 from glasgow.support import logging
 from glasgow.gateware.clockgen import *
 from glasgow.protocol.vgm import *
-from glasgow.applet import *
+from glasgow.abstract import AbstractAssembly, GlasgowPin
+from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
 class YamahaCPUBus(Elaboratable):
@@ -254,12 +256,15 @@ OP_WAIT   = 0x30
 OP_MASK   = 0xf0
 
 
-class YamahaOPxSubtarget(Elaboratable):
-    def __init__(self, ports, in_fifo, out_fifo, sample_decoder_cls, channel_count,
+class YamahaOPxComponent(wiring.Component):
+    i_stream: In(stream.Signature(8))
+    o_stream: Out(stream.Signature(8))
+    o_flush: Out(1)
+
+    def __init__(self, ports, sample_decoder_cls, channel_count,
                  master_cyc, read_pulse_cyc, write_pulse_cyc,
                  address_clocks, data_clocks):
-        self.in_fifo = in_fifo
-        self.out_fifo = out_fifo
+        super().__init__()
         self.channel_count = channel_count
         self.read_pulse_cyc = read_pulse_cyc
         self.write_pulse_cyc = write_pulse_cyc
@@ -286,26 +291,26 @@ class YamahaOPxSubtarget(Elaboratable):
 
         # The code below assumes that the FSM clock is under ~50 MHz, which frees us from the need
         # to explicitly satisfy setup/hold timings.
-        m.d.comb += self.cpu_bus.clkgen_ce.eq(self.out_fifo.r_rdy)
+        m.d.comb += self.cpu_bus.clkgen_ce.eq(self.i_stream.valid)
         with m.FSM() as fsm:
             with m.State("IDLE"):
                 m.d.sync += self.cpu_bus.oe.eq(1)
-                with m.If(self.out_fifo.r_rdy):
-                    m.d.comb += self.out_fifo.r_en.eq(1)
-                    with m.Switch(self.out_fifo.r_data & OP_MASK):
+                with m.If(self.i_stream.valid):
+                    m.d.comb += self.i_stream.ready.eq(1)
+                    with m.Switch(self.i_stream.payload & OP_MASK):
                         with m.Case(OP_ENABLE):
-                            m.d.sync += enabled.eq(self.out_fifo.r_data & ~OP_MASK)
+                            m.d.sync += enabled.eq(self.i_stream.payload & ~OP_MASK)
                         with m.Case(OP_WRITE):
-                            m.d.sync += self.cpu_bus.a.eq(self.out_fifo.r_data & ~OP_MASK)
+                            m.d.sync += self.cpu_bus.a.eq(self.i_stream.payload & ~OP_MASK)
                             m.next = "WRITE-DATA"
                         # OP_READ: m.next = "READ",
                         with m.Case(OP_WAIT):
                             m.next = "WAIT-H-BYTE"
             with m.State("WRITE-DATA"):
-                with m.If(self.out_fifo.r_rdy):
-                    m.d.comb += self.out_fifo.r_en.eq(1)
+                with m.If(self.i_stream.valid):
+                    m.d.comb += self.i_stream.ready.eq(1)
                     m.d.sync += [
-                        self.cpu_bus.do.eq(self.out_fifo.r_data),
+                        self.cpu_bus.do.eq(self.i_stream.payload),
                         self.cpu_bus.cs.eq(1),
                         self.cpu_bus.wr.eq(1),
                         pulse_timer.eq(self.write_pulse_cyc - 1),
@@ -325,14 +330,14 @@ class YamahaOPxSubtarget(Elaboratable):
                 with m.Else():
                     m.d.sync += pulse_timer.eq(pulse_timer - 1)
             with m.State("WAIT-H-BYTE"):
-                with m.If(self.out_fifo.r_rdy):
-                    m.d.comb += self.out_fifo.r_en.eq(1)
-                    m.d.sync += wait_timer[8:16].eq(self.out_fifo.r_data)
+                with m.If(self.i_stream.valid):
+                    m.d.comb += self.i_stream.ready.eq(1)
+                    m.d.sync += wait_timer[8:16].eq(self.i_stream.payload)
                     m.next = "WAIT-L-BYTE"
             with m.State("WAIT-L-BYTE"):
-                with m.If(self.out_fifo.r_rdy):
-                    m.d.comb += self.out_fifo.r_en.eq(1)
-                    m.d.sync += wait_timer[0:8].eq(self.out_fifo.r_data)
+                with m.If(self.i_stream.valid):
+                    m.d.comb += self.i_stream.ready.eq(1)
+                    m.d.sync += wait_timer[0:8].eq(self.i_stream.payload)
                     m.next = "WAIT-LOOP"
             with m.State("WAIT-LOOP"):
                 with m.If(wait_timer == 0):
@@ -354,7 +359,7 @@ class YamahaOPxSubtarget(Elaboratable):
         channel = Signal(1)
         with m.FSM() as fsm:
             with m.State("WAIT-SH"):
-                m.d.sync += self.in_fifo.flush.eq(~enabled)
+                m.d.sync += self.o_flush.eq(~enabled)
                 with m.If(self.dac_bus.stb_sh & enabled):
                     m.next = "SAMPLE"
             with m.State("SAMPLE"):
@@ -371,9 +376,11 @@ class YamahaOPxSubtarget(Elaboratable):
                 m.next = "SEND-BYTE"
             byteno = Signal(1)
             with m.State("SEND-BYTE"):
-                m.d.comb += self.in_fifo.w_data.eq(self.decoder.o.word_select(byteno, 8))
-                with m.If(self.in_fifo.w_rdy):
-                    m.d.comb += self.in_fifo.w_en.eq(1)
+                m.d.comb += [
+                    self.o_stream.payload.eq(self.decoder.o.word_select(byteno, 8)),
+                    self.o_stream.valid.eq(1),
+                ]
+                with m.If(self.o_stream.ready):
                     m.d.sync += byteno.eq(byteno + 1)
                     with m.If(byteno == 1):
                         m.d.sync += channel.eq(channel + 1)
@@ -390,10 +397,36 @@ class YamahaOPxSubtarget(Elaboratable):
 
 
 class YamahaOPxInterface(metaclass=ABCMeta):
+    """Drive a Yamaha synthesizer and record its digital audio output.
+
+    Use the concrete interface for the chip family: :class:`YamahaOPLInterface`,
+    :class:`YamahaOPL2Interface`, :class:`YamahaOPL3Interface`, or :class:`YamahaOPMInterface`.
+
+    With ``instant_writes=True``, register write latency is deducted from subsequent waits
+    to match the timeline used by VGM files. Set it to ``False`` to retain every requested wait.
+    """
+
     chips = []
 
-    def __init__(self, interface, logger, *, instant_writes=True, filter=None):
-        self.lower   = interface
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
+                 d: tuple[GlasgowPin, ...], a: tuple[GlasgowPin, ...],
+                 wr: GlasgowPin, rd: GlasgowPin, clk_m: GlasgowPin,
+                 sh: GlasgowPin, mo: GlasgowPin, clk_sy: GlasgowPin,
+                 cs: GlasgowPin | None = None, ic: GlasgowPin | None = None,
+                 overclock: float = 1.0, instant_writes=True, filter=None):
+        ports = assembly.add_port_group(d=d, a=a, wr=wr, rd=rd, clk_m=clk_m,
+            sh=sh, mo=mo, clk_sy=clk_sy, cs=cs, ic=ic)
+        master_cyc = ClockGen.derive(
+            input_hz=1 / assembly.sys_clk_period, output_hz=self.max_master_hz * overclock,
+            logger=logger)
+        component = assembly.add_submodule(YamahaOPxComponent(
+            ports=ports, sample_decoder_cls=self.sample_decoder, channel_count=self.channel_count,
+            master_cyc=master_cyc,
+            read_pulse_cyc=int(200e-9 / assembly.sys_clk_period),
+            write_pulse_cyc=int(100e-9 / assembly.sys_clk_period),
+            address_clocks=self.address_clocks, data_clocks=self.data_clocks))
+        self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream,
+            in_flush=component.o_flush, out_buffer_size=128)
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
@@ -409,6 +442,10 @@ class YamahaOPxInterface(metaclass=ABCMeta):
 
     @abstractmethod
     def get_vgm_clock_rate(self, vgm_reader):
+        """Return the VGM chip clock frequency and its multiplier for the selected family.
+
+        A zero frequency indicates that the file contains no supported chip.
+        """
         pass
 
     max_master_hz  = abstractproperty()
@@ -421,6 +458,7 @@ class YamahaOPxInterface(metaclass=ABCMeta):
 
     @property
     def write_clocks(self):
+        """Number of master clock cycles required for one register write."""
         return self.address_clocks + self.data_clocks
 
     def _log(self, message, *args, level=None):
@@ -429,8 +467,12 @@ class YamahaOPxInterface(metaclass=ABCMeta):
     _registers = []
 
     async def reset(self):
+        """Clear buffered transfers and reset synthesizer registers and command filter state.
+
+        Reset register writes bypass the command filter.
+        """
         self._log("reset")
-        await self.lower.reset()
+        await self._pipe.reset()
         # Don't run reset commands through the filter.
         old_filter, self.filter = self.filter, None
         # Reset the synthesizer in software; some of them appear to have broken reset via ~IC pin,
@@ -459,14 +501,16 @@ class YamahaOPxInterface(metaclass=ABCMeta):
             await self.write_register(addr, 0x00, check_feature=False)
 
     async def enable(self):
+        """Queue the command to enable sampling without flushing pending commands."""
         self._log("enable")
-        await self.lower.write([OP_ENABLE|1])
+        await self._pipe.send(bytes([OP_ENABLE|1]))
         # Wait until the commands start arriving before flushing the enable command.
 
     async def disable(self):
+        """Queue the command to disable sampling and flush pending commands."""
         self._log("disable")
-        await self.lower.write([OP_ENABLE|0])
-        await self.lower.flush()
+        await self._pipe.send(bytes([OP_ENABLE|0]))
+        await self._pipe.flush()
 
     def _enable_level(self, feature_level):
         if self._feature_level < feature_level:
@@ -493,6 +537,11 @@ class YamahaOPxInterface(metaclass=ABCMeta):
                       level=logging.WARNING)
 
     async def write_register(self, address, data, check_feature=True):
+        """Queue a register write, applying the command filter if configured.
+
+        The filter may replace the address and data or remove the write. With
+        ``check_feature=True``, check whether the write uses supported chip features.
+        """
         if self.filter is not None:
             filtered = await self.filter.write_register(address, data)
             if filtered is None:
@@ -514,9 +563,14 @@ class YamahaOPxInterface(metaclass=ABCMeta):
                       address, data)
         addr_high = (address >> 8) << 1
         addr_low  = address & 0xff
-        await self.lower.write([OP_WRITE|addr_high|0, addr_low, OP_WRITE|1, data])
+        await self._pipe.send(bytes([OP_WRITE|addr_high|0, addr_low, OP_WRITE|1, data]))
 
     async def wait_clocks(self, count):
+        """Queue a delay of *count* master clock cycles, applying the filter if configured.
+
+        With instant writes enabled, subtract accumulated register write latency from
+        the delay. Longer delays are split into multiple commands.
+        """
         if self.filter is not None:
             filtered = await self.filter.wait_clocks(count)
             if filtered is None:
@@ -541,31 +595,50 @@ class YamahaOPxInterface(metaclass=ABCMeta):
             self._log("wait %d clocks",
                       count)
         while count > 65535:
-            await self.lower.write([OP_WAIT, *struct.pack(">H", 65535)])
+            await self._pipe.send(bytes([OP_WAIT, *struct.pack(">H", 65535)]))
             count -= 65535
-        await self.lower.write([OP_WAIT, *struct.pack(">H", count)])
+        await self._pipe.send(bytes([OP_WAIT, *struct.pack(">H", count)]))
 
     async def read_samples(self, count):
+        """Receive *count* sample frames as a memoryview of signed 16-bit PCM.
+
+        Samples are little endian, with ``channel_count`` interleaved channels. Run
+        recording concurrently with command generation to prevent input buffer overflow.
+        """
         self._log("read %d samples", count)
-        return await self.lower.read(count * self.channel_count * 2, flush=False)
+        return await self._pipe.recv(count * self.channel_count * 2)
 
 
 class YamahaOPxCommandFilter:
+    """Base class for filtering synthesizer writes and delays.
+
+    A filter script defines a ``CommandFilter`` subclass. Override :meth:`write_register`
+    or :meth:`wait_clocks` to transform commands or return ``None`` to discard them.
+    ``sample_rate`` is the master clock frequency used to convert ``offset_clocks`` to seconds.
+    """
+
     def __init__(self):
         self.offset_clocks = 0
         self.sample_rate   = 0
 
     @property
     def offset_seconds(self):
+        """Current command timeline offset in seconds; requires a nonzero ``sample_rate``."""
         return self.offset_clocks / self.sample_rate
 
     def reset(self):
+        """Reset the command timeline offset to zero."""
         self.offset_clocks = 0
 
     async def write_register(self, address, data):
+        """Return an ``(address, data)`` pair to transmit, or ``None`` to discard the write."""
         return address, data
 
     async def wait_clocks(self, count):
+        """Advance the timeline and return the delay in master clock cycles.
+
+        Overrides may return a different delay or ``None`` to discard it.
+        """
         self.offset_clocks += count
         return count
 
@@ -593,6 +666,8 @@ class YM301xSampleDecoder(Elaboratable):
 
 
 class YamahaOPLInterface(YamahaOPxInterface):
+    """Interface for the YM3526 (OPL) synthesizer."""
+
     chips = ["YM3526/OPL"]
 
     def get_vgm_clock_rate(self, vgm_reader):
@@ -619,6 +694,8 @@ class YamahaOPLInterface(YamahaOPxInterface):
 
 
 class YamahaOPL2Interface(YamahaOPLInterface):
+    """Interface for the YM3812 (OPL2) synthesizer."""
+
     chips = YamahaOPLInterface.chips + ["YM3812/OPL2"]
 
     def get_vgm_clock_rate(self, vgm_reader):
@@ -670,6 +747,8 @@ class YAC512SampleDecoder(Elaboratable):
 
 
 class YamahaOPL3Interface(YamahaOPL2Interface):
+    """Interface for the YMF262 (OPL3) synthesizer."""
+
     chips = [chip + " (no CSM)" for chip in YamahaOPL2Interface.chips] + ["YMF262/OPL3"]
 
     def get_vgm_clock_rate(self, vgm_reader):
@@ -728,6 +807,8 @@ class YamahaOPL3Interface(YamahaOPL2Interface):
 
 
 class YamahaOPMInterface(YamahaOPxInterface):
+    """Interface for the YM2151 (OPM) synthesizer."""
+
     chips = ["YM2151/OPM"]
 
     def get_vgm_clock_rate(self, vgm_reader):
@@ -1058,12 +1139,13 @@ class YamahaOPxWebInterface:
         await asyncio.Future()
 
 
-class AudioYamahaOPxApplet(GlasgowApplet):
+class AudioYamahaOPxApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "drive and record Yamaha OP* FM synthesizers"
     description = """
     Send commands and record digital output from Yamaha OP* series FM synthesizers.
     The supported chips are:
+
         * YM3526 (OPL)
         * YM3812 (OPL2)
         * YMF262 (OPL3)
@@ -1076,17 +1158,38 @@ class AudioYamahaOPxApplet(GlasgowApplet):
     only have 16 bit of dynamic range, and there is a direct mapping between the on-wire format
     and ordinary 16-bit PCM.)
 
-    The written samples can be played with the knowledge of the sample rate, which is derived from
-    the master clock frequency specified in the input file. E.g. using SoX:
-
-        $ play -r 49715 output.s16
-
-    # Scripting
-
-    Commands for the synthesizer can be generated procedurally with a Python script, using
-    the `run` subcommand and a file such as the following:
+    To play a VGM or VGZ file through an OPL2 chip and record its output:
 
     ::
+
+        $ glasgow run audio-yamaha-opx -V 3.3 --device OPL2 convert input.vgm output.s16
+
+    The file must contain commands for exactly one supported chip. Output is raw signed 16-bit
+    little endian PCM with interleaved channels. The applet reports the sample rate and channel
+    count. Pin assignments can be overridden with options such as --d and --clk-m.
+
+    The written samples can be played with the knowledge of the sample rate, which is derived from
+    the master clock frequency specified in the input file. E.g. for a mono recording using SoX:
+
+    ::
+
+        $ play -t raw -e signed-integer -b 16 -L -c 1 -r 49715 output.s16
+
+    Scripting
+    ---------
+
+    Commands for the synthesizer can be generated procedurally with a Python script, using
+    the `run` subcommand:
+
+    ::
+
+        $ glasgow run audio-yamaha-opx -V 3.3 --device OPL2 run synth.py output.s16
+
+    The script must define an integer `samples` and an asynchronous `main(iface)` function,
+    such as the following:
+
+    ::
+
         samples = 49715
         async def main(iface):
             await iface.enable()
@@ -1095,27 +1198,40 @@ class AudioYamahaOPxApplet(GlasgowApplet):
             await iface.disable()
 
     Commands submitted to the synthesizer can be preprocessed with a Python script, e.g.
-    for glitching, using the --filter option and a file such as the following:
+    for glitching, using the --filter-script option and a file such as the following:
 
     ::
+
         class CommandFilter(YamahaOPxCommandFilter):
             async def write_register(self, address, data):
                 ...
                 return (address, data)
+
+    Web playback
+    ------------
+
+    To serve the bundled web player on a local endpoint:
+
+    ::
+
+        $ glasgow run audio-yamaha-opx -V 3.3 --device OPL2 web localhost:8080
+
+    The web player accepts uploaded VGM/VGZ files. Fetching files from submitted URLs requires
+    explicitly enabling --allow-urls.
     """
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        super().add_build_arguments(parser, access)
+        access.add_voltage_argument(parser)
 
-        access.add_pins_argument(parser, "d", width=8, default=True)
-        access.add_pins_argument(parser, "a", width=range(1, 3), default=2)
-        access.add_pins_argument(parser, "wr", default=True)
-        access.add_pins_argument(parser, "rd", default=True)
-        access.add_pins_argument(parser, "clk_m", default=True)
-        access.add_pins_argument(parser, "sh", default=True)
-        access.add_pins_argument(parser, "mo", default=True)
-        access.add_pins_argument(parser, "clk_sy", default=True)
+        access.add_pins_argument(parser, "d", width=8, default=True, required=True)
+        access.add_pins_argument(parser, "a", width=range(1, 3), default=2, required=True)
+        access.add_pins_argument(parser, "wr", default=True, required=True)
+        access.add_pins_argument(parser, "rd", default=True, required=True)
+        access.add_pins_argument(parser, "clk_m", default=True, required=True)
+        access.add_pins_argument(parser, "sh", default=True, required=True)
+        access.add_pins_argument(parser, "mo", default=True, required=True)
+        access.add_pins_argument(parser, "clk_sy", default=True, required=True)
         access.add_pins_argument(parser, "cs", required=False)
         access.add_pins_argument(parser, "ic", required=False)
 
@@ -1139,49 +1255,22 @@ class AudioYamahaOPxApplet(GlasgowApplet):
             return YamahaOPMInterface
         assert False
 
-    def build(self, target, args):
-        device_iface_cls = self._device_iface_cls(args)
-
-        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        subtarget = iface.add_subtarget(YamahaOPxSubtarget(
-            ports=iface.get_port_group(
-                d      = args.d,
-                a      = args.a,
-                wr     = args.wr,
-                rd     = args.rd,
-                clk_m  = args.clk_m,
-                sh     = args.sh,
-                mo     = args.mo,
-                clk_sy = args.clk_sy,
-                cs     = args.cs,
-                ic     = args.ic
-            ),
-            out_fifo=iface.get_out_fifo(),
-            in_fifo=iface.get_in_fifo(auto_flush=False),
-            sample_decoder_cls=device_iface_cls.sample_decoder,
-            channel_count=device_iface_cls.channel_count,
-            master_cyc=self.derive_clock(
-                input_hz=target.sys_clk_freq,
-                output_hz=device_iface_cls.max_master_hz * args.overclock),
-            read_pulse_cyc=int(target.sys_clk_freq * 200e-9),
-            write_pulse_cyc=int(target.sys_clk_freq * 100e-9),
-            address_clocks=device_iface_cls.address_clocks,
-            data_clocks=device_iface_cls.data_clocks,
-        ))
-        return subtarget
-
     @classmethod
-    def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
-
+    def add_setup_arguments(cls, parser):
         parser.add_argument(
             "--filter-script", dest="filter_script_file", metavar="FILTER-SCRIPT-FILE",
             type=argparse.FileType("rb"),
             help="filter commands via Python script FILTER-SCRIPT-FILE")
 
-    async def run(self, device, args):
-        device_iface_cls = self._device_iface_cls(args)
+    def build(self, args):
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            self.opx_iface = self._device_iface_cls(args)(self.logger, self.assembly,
+                d=args.d, a=args.a, wr=args.wr, rd=args.rd, clk_m=args.clk_m,
+                sh=args.sh, mo=args.mo, clk_sy=args.clk_sy, cs=args.cs, ic=args.ic,
+                overclock=args.overclock)
 
+    async def setup(self, args):
         if args.filter_script_file is None:
             filter = None
         else:
@@ -1193,14 +1282,11 @@ class AudioYamahaOPxApplet(GlasgowApplet):
                 raise GlasgowAppletError("Script should define a class 'CommandFilter'")
             filter = filter_cls()
 
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
-            write_buffer_size=128)
-        opx_iface = device_iface_cls(iface, self.logger, filter=filter)
-        await opx_iface.reset()
-        return opx_iface
+        self.opx_iface.filter = filter
+        await self.opx_iface.reset()
 
     @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_convert = p_operation.add_parser(
@@ -1230,7 +1316,8 @@ class AudioYamahaOPxApplet(GlasgowApplet):
             "pcm_file", metavar="PCM-FILE", type=argparse.FileType("wb"),
             help="write samples to PCM-FILE")
 
-    async def interact(self, device, args, opx_iface):
+    async def run(self, args):
+        opx_iface = self.opx_iface
         if args.operation == "convert":
             vgm_reader = VGMStreamReader.from_file(args.vgm_file)
             self.logger.info("VGM file contains commands for %s", ", ".join(vgm_reader.chips()))
@@ -1270,7 +1357,7 @@ class AudioYamahaOPxApplet(GlasgowApplet):
 
         if args.operation == "web":
             async def set_voltage(voltage):
-                await device.set_voltage("AB", voltage)
+                await self.device.set_voltage("AB", voltage)
             web_iface = YamahaOPxWebInterface(self.logger, opx_iface, set_voltage, args.allow_urls)
             await web_iface.serve(args.endpoint)
 
