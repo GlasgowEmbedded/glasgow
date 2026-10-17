@@ -43,7 +43,7 @@ Design and fabrication files are located in the Git repository:
 - `revD0 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD0>`_,
   `revD0 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revD0/output/schematics.pdf>`_,
   `revD0 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD0/output>`_.
-- `revD1 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow>`_,
+- `revD1 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD1>`_,
   `revD1 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revD1/output/schematics.pdf>`_,
   `revD1 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD1/output>`_.
 
@@ -83,13 +83,13 @@ Design and fabrication files are located in the Git repository:
 - `revC0 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC0>`_,
   `revC0 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC0/output/schematics.pdf>`_,
   `revC0 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC0/output>`_.
-- `revC1 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow>`_,
+- `revC1 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC1>`_,
   `revC1 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC1/output/schematics.pdf>`_,
   `revC1 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC1/output>`_.
-- `revC2 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow>`_,
+- `revC2 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC2>`_,
   `revC2 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC2/output/schematics.pdf>`_,
   `revC2 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC2/output>`_.
-- `revC3 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow>`_,
+- `revC3 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC3>`_,
   `revC3 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC3/output/schematics.pdf>`_,
   `revC3 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC3/output>`_.
 
@@ -106,9 +106,9 @@ Revisions A and B have not been produced in significant numbers, have major desi
 
 Design and fabrication files are located in the Git repository:
 
-- `revA (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow>`_,
+- `revA (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revA>`_,
   `revA (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revA/output/schematics.pdf>`_,
   `revA (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revA/output>`_.
-- `revB (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow>`_,
+- `revB (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revB>`_,
   `revB (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revB/output/schematics.pdf>`_,
   `revB (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revB/output>`_.
