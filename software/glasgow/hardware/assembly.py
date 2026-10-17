@@ -24,7 +24,7 @@ from ..gateware import octoram, pll
 from ..abstract import *
 from .platform.rev_ab import GlasgowRevABPlatform
 from .platform.rev_c import GlasgowRevC0Platform, GlasgowRevC123Platform
-from .platform.rev_d import GlasgowRevD0Platform
+from .platform.rev_d import GlasgowRevD0Platform, GlasgowRevD1Platform
 from .toolchain import find_toolchain
 from .build_plan import GlasgowBuildPlan
 from .device import GlasgowDevice
@@ -474,6 +474,8 @@ class HardwareAssembly(AbstractAssembly):
                 return GlasgowRevC123Platform()
             case "D0":
                 return GlasgowRevD0Platform()
+            case "D1":
+                return GlasgowRevD1Platform()
             case _:
                 assert False, f"invalid revision {revision}"
 
@@ -523,7 +525,7 @@ class HardwareAssembly(AbstractAssembly):
         match self._revision:
             case "A0" | "B0":
                 return 1/36e6
-            case "C0" | "C1" | "C2" | "C3" | "D0":
+            case "C0" | "C1" | "C2" | "C3" | "D0" | "D1":
                 return 1/48e6
             case _:
                 assert False, f"invalid revision {self._revision}"
