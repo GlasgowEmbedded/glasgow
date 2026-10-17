@@ -1,0 +1,337 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-17 21:29+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh\n"
+"Language-Team: zh <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../src/library/protocol/ymodem.rst:2
+msgid "``protocol.ymodem``"
+msgstr ""
+
+#: glasgow.protocol.ymodem:1 of
+msgid "XMODEM/YMODEM protocol implementation."
+msgstr ""
+
+#: glasgow.protocol.ymodem:3 of
+msgid "The XMODEM and YMODEM families of protocols are closely related. This module implements both; the exact protocol used is determined by entry point and capability negotiation."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemError:1 of
+msgid "XMODEM/YMODEM communication error."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemTransport:1 of
+msgid "Abstract XMODEM/YMODEM transport."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemTransport.recv:1 of
+msgid "Receive :py:`length` bytes."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemTransport.recv:3 of
+msgid "Can be safely cancelled."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemTransport.send:1 of
+msgid "Send :py:`data` and flush."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemTransport.purge:1 of
+msgid "Clear any data in the receive buffer."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemHeader:1 of
+msgid "XMODEM/YMODEM packet header."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemHeader of
+msgid "Member Type"
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemHeader:1 of
+msgid ":py:class:`bytes`"
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemHeader:1
+#: glasgow.protocol.ymodem.YModemVariant:1 of
+msgid "Valid values are as follows:"
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemHeader.SOH:1 of
+msgid "128 bytes of data."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemHeader.STX:1 of
+msgid "1024 bytes of data."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemHeader.EOT:1 of
+msgid "End of transfer."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemHeader.ACK:1 of
+msgid "Acknowledgement."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemHeader.NAK:1 of
+msgid "Non-acknowledgement."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemHeader.CAN:1 of
+msgid "Cancel."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemHeader.C:1 of
+msgid "Use XMODEM-CRC."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemHeader.K:1 of
+msgid "Use XMODEM-1K (implies XMODEM-CRC)."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemHeader:1
+#: glasgow.protocol.ymodem.YModemVariant:1 of
+msgid "The :class:`~enum.Enum` and its members also have the following methods:"
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemHeader.packet:1 of
+msgid "Create an XMODEM/YMODEM control packet."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemVariant:1 of
+msgid "XMODEM/YMODEM protocol variant."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemVariant.has_crc16:1 of
+msgid "Whether to use CRC-16 for data packets."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemVariant.has_crc16:3 of
+msgid "True for :py:enum:mem:`XMODEM_CRC` and :py:enum:mem:`XMODEM_1K`."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemVariant.has_1k:1 of
+msgid "Whether to use 1024-byte data packets."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemVariant.has_1k:3 of
+msgid "True for :py:enum:mem:`XMODEM_1K`."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemPacket:1 of
+msgid "Abstract XMODEM/YMODEM packet."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemPacket:3 of
+msgid "Represents the contents of a control or data packet."
+msgstr ""
+
+#: ../../docstring glasgow.protocol.ymodem.YModemPacket.control:1 of
+msgid "Header byte."
+msgstr ""
+
+#: ../../docstring glasgow.protocol.ymodem.YModemPacket.number:1 of
+msgid "Packet number, for data packets."
+msgstr ""
+
+#: ../../docstring glasgow.protocol.ymodem.YModemPacket.data:1 of
+msgid "Packet payload, for data packets."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemPacket.for_data:1 of
+msgid "Create an XMODEM/YMODEM data packet."
+msgstr ""
+
+#: ../../src/library/protocol/ymodem.rst
+msgid "Raises"
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemPacket.for_data:3 of
+msgid "If :py:`len(data)` is neither 128 nor 1024."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemPacket.recv:1 of
+msgid "Receive a packet from :py:`transport`."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemPacket.recv:3 of
+msgid "Reads and returns a single XMODEM/YMODEM packet from :py:`transport`. If the first byte read from :py:`transport` is not a valid :class:`YModemControl` header, returns :py:`None`."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemPacket.recv:6 of
+msgid "If a checksum or CRC-16 was incorrect."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemPacket.recv:7 of
+msgid "Any error raised by :py:`transport.recv()`."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemPacket.send:1 of
+msgid "Send a packet to :py:`transport`."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemPacket.send:3 of
+msgid "Formats and writes a single XMODEM/YMODEM packet to :py:`transport`."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemPacket.send:5 of
+msgid "Any error raised by :py:`transport.send()`."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemFileInfo:1 of
+msgid "YMODEM file metadata, transmitted in block zero."
+msgstr ""
+
+#: ../../docstring glasgow.protocol.ymodem.YModemFileInfo.pathname:1 of
+msgid "File pathname."
+msgstr ""
+
+#: ../../docstring glasgow.protocol.ymodem.YModemFileInfo.pathname:3 of
+msgid "The exact format of the pathname is not specified, but it \"must be acceptable to both the sender and receiving operating systems\". Drive letters and backslashes may not appear in the pathname in any case. It is recommended but not required to translate the pathname to lower case."
+msgstr ""
+
+#: ../../docstring glasgow.protocol.ymodem.YModemFileInfo.length:1 of
+msgid "File length."
+msgstr ""
+
+#: ../../docstring glasgow.protocol.ymodem.YModemFileInfo.length:3 of
+msgid "If present, this field should be used to discard any padding in the final block of the transfer."
+msgstr ""
+
+#: ../../docstring glasgow.protocol.ymodem.YModemFileInfo.modified:1 of
+msgid "Modification date."
+msgstr ""
+
+#: ../../docstring glasgow.protocol.ymodem.YModemFileInfo.modified:3 of
+msgid "If present, this field indicates modification date as number of seconds from 1970-01-01 GMT."
+msgstr ""
+
+#: ../../docstring glasgow.protocol.ymodem.YModemFileInfo.mode:1 of
+msgid "File mode."
+msgstr ""
+
+#: ../../docstring glasgow.protocol.ymodem.YModemFileInfo.mode:3 of
+msgid "If present, this field indicates that the file has been sent from a Unix system and has the specified mode."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemFileInfo.parse:1 of
+msgid "Parse YMODEM metadata."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemFileInfo.parse:3 of
+msgid "The metadata parser tolerates significant deviations from the specified format in order to try and maximize compatibility."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemFileInfo.parse:6 of
+msgid "If the metadata has invalid format."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemFileInfo.emit:1 of
+msgid "Serialize YMODEM metadata."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemFileInfo.emit:5 of
+msgid "For each of :py:`self.modified` and :py:`self.mode`, the preceding field must be defined as well for this field to be serialized."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemFile:1 of
+msgid "YMODEM file representation."
+msgstr ""
+
+#: ../../docstring glasgow.protocol.ymodem.YModemFile.info:1 of
+msgid "YMODEM file metadata."
+msgstr ""
+
+#: ../../docstring glasgow.protocol.ymodem.YModemFile.data:1 of
+msgid "File data."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemFile.from_path:1 of
+msgid "Read file from filesystem :py:`path`."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemFile.from_path:5 of
+msgid "The :py:`meta.pathname` field receives the file name only (without a path and without case conversion). Callers should update this field if different behavior is desired."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemProtocol:1 of
+msgid "XMODEM/YMODEM protocol handler."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemProtocol:3 of
+msgid "Handles packet sequencing, retransmission, and data storage."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemProtocol.recv_single:1 of
+msgid "Receive a single file using the XMODEM protocol."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemProtocol.recv_single:3 of
+msgid "Returns the concatenation of every data block; this will include padding at the end."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemProtocol.recv_batch:7
+#: glasgow.protocol.ymodem.YModemProtocol.recv_single:5 of
+msgid "If retransmit count is exceeded."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemProtocol.recv_batch:8
+#: glasgow.protocol.ymodem.YModemProtocol.recv_single:6 of
+msgid "If another protocol violation occurs."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemProtocol.recv_batch:9
+#: glasgow.protocol.ymodem.YModemProtocol.recv_single:7
+#: glasgow.protocol.ymodem.YModemProtocol.send_batch:6
+#: glasgow.protocol.ymodem.YModemProtocol.send_single:7 of
+msgid "Any error raised by :py:`transport.send()` or :py:`transport.recv()`."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemProtocol.recv_batch:1 of
+msgid "Receive a batch of files using the YMODEM protocol."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemProtocol.recv_batch:3 of
+msgid "Returns a list of files received in the batch, with the file data trimmed to remove any padding."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemProtocol.recv_batch:6 of
+msgid "If YMODEM metadata is malformed."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemProtocol.send_single:1 of
+msgid "Send a single file using the XMODEM protocol."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemProtocol.send_single:3 of
+msgid "Last block will be padded with ASCII :py:`0x1A` (SUB) characters up to a 128-byte block boundary."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemProtocol.send_batch:5
+#: glasgow.protocol.ymodem.YModemProtocol.send_single:6 of
+msgid "If a protocol violation occurs."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemProtocol.send_batch:1 of
+msgid "Send a batch of files using the YMODEM protocol."
+msgstr ""
+
+#: glasgow.protocol.ymodem.YModemProtocol.send_batch:3 of
+msgid "See remark in :meth:`send_single`."
+msgstr ""
+

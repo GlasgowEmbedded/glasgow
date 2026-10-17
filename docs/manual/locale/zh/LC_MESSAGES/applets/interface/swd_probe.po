@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-08-09 21:58+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/applets/interface/swd_probe.rst:2
 msgid "``swd-probe``"
@@ -119,7 +119,9 @@ msgstr ""
 #: glasgow.applet.interface.swd_probe.SWDProbeInterface.ap_write:4
 #: glasgow.applet.interface.swd_probe.SWDProbeInterface.dp_read:3
 #: glasgow.applet.interface.swd_probe.SWDProbeInterface.dp_write:3
-#: glasgow.applet.interface.swd_probe.SWDProbeInterface.iter_aps:6 of
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.iter_aps:6
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.mem_ap_read_word:8
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.mem_ap_write_word:8 of
 msgid "On communication error."
 msgstr ""
 
@@ -175,8 +177,16 @@ msgstr ""
 msgid "Read ``CTRL_STAT`` to ensure acknowledge of debug power-up."
 msgstr ""
 
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.initialize:11 of
+msgid "**If :py:`CSYSPWRUP`:** Write ``CTRL_STAT`` to request system power-up."
+msgstr ""
+
 #: glasgow.applet.interface.swd_probe.SWDProbeInterface.initialize:12 of
-msgid "On communication error, or if debug power-up request isn't acknowledged."
+msgid "**If :py:`CSYSPWRUP`:** Read ``CTRL_STAT`` to ensure acknowledge of system power-up."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.initialize:14 of
+msgid "On communication error, or if a power-up request isn't acknowledged."
 msgstr ""
 
 #: glasgow.applet.interface.swd_probe.SWDProbeInterface.iter_aps:1 of
@@ -186,4 +196,25 @@ msgstr ""
 #: glasgow.applet.interface.swd_probe.SWDProbeInterface.iter_aps:3 of
 msgid "Yields 2-tuples :py:`(ap, ap_idr)` where :py:`ap` is the AP index and :py:`ap_idr` is the value of the ``IDR`` register."
 msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.mem_ap_read_word:1
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.mem_ap_write_word:1 of
+msgid "Read a word via a MEM-AP."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.mem_ap_read_word:3 of
+msgid "Reads the 32-bit value from :py:`addr` via MEM-AP :py:`ap`."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.mem_ap_read_word:5
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.mem_ap_write_word:5 of
+msgid "Note that transfers via a MEM-AP may silently fail under certain conditions, e.g. if the CPU core has not been halted."
+msgstr ""
+
+#: glasgow.applet.interface.swd_probe.SWDProbeInterface.mem_ap_write_word:3 of
+msgid "Writes the 32-bit value :py:`data` to :py:`addr` via MEM-AP :py:`ap`."
+msgstr ""
+
+#~ msgid "On communication error, or if debug power-up request isn't acknowledged."
+#~ msgstr ""
 

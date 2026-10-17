@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-10-17 21:29+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/applets/interface/uart.rst:4
 msgid "``uart``"
@@ -94,6 +94,46 @@ msgstr ""
 msgid "continue reading from I/O port even after an end-of-file condition on stdin"
 msgstr ""
 
+#: ../../<autoprogram>:1
+msgid "glasgow run uart xmodem-recv"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write data to FILENAME"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "send `TEXT<LF>` before transferring data"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run uart xmodem-send"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "read data from FILENAME"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run uart ymodem-recv"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write file(s) to BASENAME (or BASENAME-0, BASENAME-1, ...)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "accept sender-provided filenames (SECURITY RISK)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run uart ymodem-send"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "read file(s) FILENAME..."
+msgstr ""
+
 #: ../../src/applets/interface/uart.rst:14
 msgid "API reference"
 msgstr ""
@@ -128,6 +168,10 @@ msgstr ""
 
 #: glasgow.applet.interface.uart.UARTInterface.flush:1 of
 msgid "Transmits all buffered bytes from the UART."
+msgstr ""
+
+#: glasgow.applet.interface.uart.UARTInterface.ymodem_transport:1 of
+msgid "Creates an XMODEM/YMODEM transport for the UART."
 msgstr ""
 
 #: glasgow.applet.interface.uart.UARTInterface.monitor:1 of

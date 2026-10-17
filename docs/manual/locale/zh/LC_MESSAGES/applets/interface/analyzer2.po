@@ -1,0 +1,356 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-17 21:29+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh\n"
+"Language-Team: zh <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../src/applets/interface/analyzer2.rst:2
+msgid "``analyzer2``"
+msgstr ""
+
+#: ../../src/applets/interface/analyzer2.rst:6
+msgid "To use this applet with Sigrok, you must use our fork of `libsigrok <https://codeberg.org/GlasgowEmbedded/libsigrok>`__ that includes the necessary drivers and bug fixes. (The :ref:`binary packages <install-binary>` include the correct build of libsigrok.)"
+msgstr ""
+
+#: ../../src/applets/interface/analyzer2.rst:10
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run analyzer2"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Capture values of digital inputs as a time series sequence."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "At the moment, this applet is designed primarily for use with external tools or in script/REPL mode. When ran normally, it listens on a TCP port and exposes an open protocol that frontend applications like Sigrok can use."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "First, configure the probes and voltage level:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Then, run Sigrok:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Or, run PulseView (you can also configure the connection in the GUI):"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "probe I/O lines PROBES, optionally naming them (e.g.: A0, A0:1, DATA=B0)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "use SIZE bytes for capture buffer (e.g. 0x100000 for 1 MB)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "listen at ENDPOINT, either unix:PATH or tcp:HOST:PORT (default: tcp:localhost:5555)"
+msgstr ""
+
+#: ../../src/applets/interface/analyzer2.rst:19
+msgid "API reference"
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.DataFormat:1 of
+msgid "Base class for data format descriptions."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.DataFormat.fourcc:1 of
+msgid "FourCC identifier of this format."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.DigitalFormat:1 of
+msgid "Data words with digital samples only."
+msgstr ""
+
+#: ../../docstring glasgow.applet.interface.analyzer2.DigitalFormat.width:1 of
+msgid "Size of each sample, in bits."
+msgstr ""
+
+#: ../../docstring glasgow.applet.interface.analyzer2.DigitalFormat.stride:1 of
+msgid "Distance between sample LSBs, in bits."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.DigitalTrigger:1 of
+msgid "Trigger condition for a single digital input."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.DigitalTrigger:1
+#: glasgow.applet.interface.analyzer2.Marker:1 of
+msgid "Valid values are as follows:"
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.Marker:1 of
+msgid "Block metadata classifier."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.SampleBlock:1 of
+msgid "A block of captured sample data."
+msgstr ""
+
+#: ../../docstring glasgow.applet.interface.analyzer2.SampleBlock.samples:1 of
+msgid "32-bit words containing sample data."
+msgstr ""
+
+#: ../../docstring glasgow.applet.interface.analyzer2.SampleBlock.samples:3 of
+msgid "Use :meth:`AnalyzerInterface.get_data_format` to determine the meaning of bits within each word."
+msgstr ""
+
+#: ../../docstring glasgow.applet.interface.analyzer2.SampleBlock.marker:1 of
+msgid "Indicator of the special nature of the last word of sample data."
+msgstr ""
+
+#: ../../docstring glasgow.applet.interface.analyzer2.SampleBlock.offset:1 of
+msgid "Sub-word location of the marker, as a bit offset from LSB."
+msgstr ""
+
+#: ../../docstring glasgow.applet.interface.analyzer2.SampleBlock.offset:3 of
+msgid "Only meaningful if :py:`marker == Marker.Trigger`."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.identify:1 of
+msgid "Identify the protocol version."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.identify:3 of
+msgid "See the documentation for the :cmd:`IDENTIFY` protocol command."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.identify:5 of
+msgid "Returns :py:`GLA0`."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.get_probe_names:1 of
+msgid "Retrieve the probe names, if any."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.get_probe_names:3 of
+msgid "See the documentation for the :cmd:`GET_METADATA` protocol command."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.get_probe_names:5 of
+msgid "Returns a list of probe names, or :py:`None` if none were provided. This list is fixed for a particular analyzer instance."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.get_ref_frequency:1 of
+msgid "Retrieve the reference frequency."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.get_ref_frequency:3 of
+msgid "See the documentation for the :cmd:`GET_CLK_FREQUENCY` protocol command."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.get_ref_frequency:5 of
+msgid "Returns the reference frequency in Hz. This value is fixed for a particular analyzer instance."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.get_sampling_rate:1 of
+msgid "Retrieve the configured sample rate."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.get_sampling_rate:3 of
+msgid "See the documentation for the :cmd:`GET_CLK_DIVISOR` protocol command."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.get_sampling_rate:5 of
+msgid "Returns the sampling frequency in Hz. This value can be changed with :meth:`set_sampling_rate`."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.set_sampling_rate:1 of
+msgid "Configure the sampling rate."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.set_sampling_rate:3 of
+msgid "See the documentation for the :cmd:`SET_CLK_DIVISOR` protocol command."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.set_sampling_rate:5 of
+msgid "Sets the sampling frequency to :py:`rate` Hz."
+msgstr ""
+
+#: ../../src/applets/interface/analyzer2.rst
+msgid "Raises"
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.set_sampling_rate:7 of
+msgid "If the sample rate achieved via an integer divisor has an error of more than     :py:`tolerance` (5% by default)."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.set_sampling_rate:8 of
+msgid "If the sample rate cannot be achieved because the required data transfer rate exceeds     available memory bandwidth."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.set_sampling_rate:9 of
+msgid "If the sample rate cannot be achieved because the divisor register is not sufficiently     wide in this analyzer instance."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.get_buffer_size:1 of
+msgid "Retrieve the size of the sampling buffer."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.get_buffer_size:3 of
+msgid "See the documentation for the :cmd:`GET_BUFFER_SIZE` protocol command."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.get_buffer_size:5 of
+msgid "Returns the size of the sampling buffer in 32-bit words. This value is fixed for a particular analyzer instance."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.set_prolog_size:1 of
+msgid "Configure the size of the prolog."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.set_prolog_size:3 of
+msgid "See the documentation for the :cmd:`SET_PROLOG_SIZE` protocol command."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.set_prolog_size:5 of
+msgid "Sets the size of the pre-trigger sampling interval, also known as the prolog, to :py:`size` 32-bit words. The minimum size of the prolog is 1 word, and the hardware will clamp a size of zero words to that minimum value."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.set_prolog_size:9 of
+msgid "If :py:`size` is negative."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.set_prolog_size:10 of
+msgid "If :py:`size` is greater than or equal to the sampling buffer size."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.set_epilog_size:1 of
+msgid "Configure the size of the epilog."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.set_epilog_size:3
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.use_streaming:3 of
+msgid "See the documentation for the :cmd:`SET_EPILOG_SIZE` protocol command."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.set_epilog_size:5 of
+msgid "Sets the size of the post-trigger sampling interval, also known as the epilog, to :py:`size` 32-bit words. The minimum size of the epilog is 1 word, and the hardware will clamp a size of zero words to that minimum value."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.set_epilog_size:9 of
+msgid "If :py:`size` is negative or too large."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.use_streaming:1 of
+msgid "Configure the epilog to continue indefinitely."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.use_streaming:5 of
+msgid "Causes the post-trigger sampling interval to extend indefinitely. The sample read-out, in this case, is only interrupted by a pipeline overflow or an explicit :meth:`interrupt` call."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.get_data_format:1 of
+msgid "Retrieve the format of sample data words."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.get_data_format:3 of
+msgid "See the documentation for the :cmd:`GET_DATA_FORMAT` protocol command."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.get_data_format:5 of
+msgid "Returns a value describing how to interpret the bits in each 32-bit sample word. The following data formats exist:"
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.get_data_format:8 of
+msgid ":class:`DigitalFormat`"
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.use_basic_trigger:1 of
+msgid "Configure the basic trigger module."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.use_basic_trigger:3 of
+msgid "See the documentation for the :cmd:`SET_TRIGGER`, :cmd:`TRIG_BASIC_SET_ACTIVE`, :cmd:`TRIG_BASIC_SET_LEVEL`, :cmd:`TRIG_BASIC_SET_VALUE`, and :cmd:`TRIG_BASIC_SET_ANYEDGE` protocol commands."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.use_basic_trigger:7 of
+msgid "Configures the analyzer to trigger when any (logic OR) of the per-probe trigger :py:`condition`\\ s match the sampled values."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.arm_trigger:1 of
+msgid "Enable the trigger module."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.arm_trigger:3
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.disarm_trigger:3 of
+msgid "See the documentation for the :cmd:`ARM_TRIGGER` protocol command."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.arm_trigger:5 of
+msgid "The trigger module is disabled after it encounters samples matching the configured condition and starting the sample read-out process."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.force_trigger:1 of
+msgid "Force a trigger condition to occur."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.force_trigger:3 of
+msgid "See the documentation for the :cmd:`FORCE_TRIGGER` protocol command."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.force_trigger:5 of
+msgid "The trigger module is disabled after starting the sample read-out process."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.disarm_trigger:1 of
+msgid "Disable the trigger module."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.interrupt:1 of
+msgid "Interrupt the sample read-out process and flush pipeline."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.interrupt:3 of
+msgid "See the documentation for the :cmd:`INTERRUPT` protocol command."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.read_sample_block:1 of
+msgid "Read captured samples."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.read_sample_block:3 of
+msgid "See the protocol documentation for the sample data sequences."
+msgstr ""
+
+#: glasgow.applet.interface.analyzer2.AnalyzerInterface.read_sample_block:5 of
+msgid "Currently, this function *must* be used to read out all sample data before another command will execute correctly. This is a limitation of the Python API."
+msgstr ""
+
+#: ../../src/applets/interface/analyzer2.rst:41
+msgid "Protocol reference"
+msgstr ""
+
+#: ../../src/applets/interface/analyzer2.rst:48
+msgid "The protocol used by this applet is :ref:`described in a separate document <analyzer2-protocol>`. If you've integrated this applet with a new application, please let us know!"
+msgstr ""
+

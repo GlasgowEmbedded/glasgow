@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-10-17 21:29+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/applets/memory/25q.rst:2
 msgid "``memory-25q``"
@@ -87,7 +87,15 @@ msgid "do not cross multiple-of-SIZE boundaries when programming"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "opcode for erasing a 256 B region"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "opcode for erasing a 4 KiB region"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "opcode for erasing a 8 KiB region"
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -450,12 +458,28 @@ msgstr ""
 msgid "Implemented using :data:`Opcode.ReadStatusReg1 <glasgow.arch.qspi.nor.Opcode.ReadStatusReg1>`."
 msgstr ""
 
+#: glasgow.applet.memory._25q.Memory25QInterface.read_status_reg_2:1 of
+msgid "Read Status Register 2."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.read_status_reg_2:3 of
+msgid "Implemented using :data:`Opcode.ReadStatusReg2 <glasgow.arch.qspi.nor.Opcode.ReadStatusReg2>`."
+msgstr ""
+
 #: glasgow.applet.memory._25q.Memory25QInterface.write_status_reg_1:1 of
 msgid "Write Status Register 1."
 msgstr ""
 
 #: glasgow.applet.memory._25q.Memory25QInterface.write_status_reg_1:3 of
 msgid "Implemented using :data:`Opcode.WriteStatusReg1 <glasgow.arch.qspi.nor.Opcode.WriteStatusReg1>`."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.write_status_reg_1_2:1 of
+msgid "Write Status Registers 1, 2."
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.write_status_reg_1_2:3 of
+msgid "Implemented using :data:`Opcode.WriteStatusReg1 <glasgow.arch.qspi.nor.Opcode.WriteStatusReg1>` (with two data bytes)."
 msgstr ""
 
 #: glasgow.applet.memory._25q.Memory25QInterface.write_enable:1 of
@@ -531,30 +555,34 @@ msgid "Implemented using one of:"
 msgstr ""
 
 #: glasgow.applet.memory._25q.Memory25QInterface.erase_data:5 of
-msgid ":data:`Command.EraseData4K <glasgow.arch.qspi.nor.Command.EraseData4K>`"
+msgid ":data:`Command.EraseData256 <glasgow.arch.qspi.nor.Command.EraseData256>`"
 msgstr ""
 
 #: glasgow.applet.memory._25q.Memory25QInterface.erase_data:6 of
-msgid ":data:`Command.EraseData32K <glasgow.arch.qspi.nor.Command.EraseData32K>`"
+msgid ":data:`Command.EraseData4K <glasgow.arch.qspi.nor.Command.EraseData4K>`"
 msgstr ""
 
 #: glasgow.applet.memory._25q.Memory25QInterface.erase_data:7 of
+msgid ":data:`Command.EraseData32K <glasgow.arch.qspi.nor.Command.EraseData32K>`"
+msgstr ""
+
+#: glasgow.applet.memory._25q.Memory25QInterface.erase_data:8 of
 msgid ":data:`Command.EraseData64K <glasgow.arch.qspi.nor.Command.EraseData64K>`"
 msgstr ""
 
-#: glasgow.applet.memory._25q.Memory25QInterface.erase_data:9 of
+#: glasgow.applet.memory._25q.Memory25QInterface.erase_data:10 of
 msgid "Erases memory range specified by :py:`address` and :py:`length`."
 msgstr ""
 
-#: glasgow.applet.memory._25q.Memory25QInterface.erase_data:11 of
+#: glasgow.applet.memory._25q.Memory25QInterface.erase_data:12 of
 msgid "If either :py:`address` or :py:`length` is not divisible by the erase size of one of     the available erase commands."
 msgstr ""
 
-#: glasgow.applet.memory._25q.Memory25QInterface.erase_data:12 of
+#: glasgow.applet.memory._25q.Memory25QInterface.erase_data:13 of
 msgid "If no erase commands are configured."
 msgstr ""
 
-#: glasgow.applet.memory._25q.Memory25QInterface.erase_data:13 of
+#: glasgow.applet.memory._25q.Memory25QInterface.erase_data:14 of
 msgid "If readback of erased data fails verification."
 msgstr ""
 
@@ -752,26 +780,34 @@ msgid ":data:`Command.ReadData`: :data:`Opcode.Read`, (1-1-1) mode"
 msgstr ""
 
 #: glasgow.arch.qspi.nor.CommandSet.use_explicit:6 of
-msgid ":data:`Command.EraseData4K`: :py:`opcode_erase_4k`, (1-1-0) mode (if specified)"
+msgid ":data:`Command.EraseData256`: :py:`opcode_erase_256`, (1-1-0) mode (if specified)"
 msgstr ""
 
 #: glasgow.arch.qspi.nor.CommandSet.use_explicit:7 of
-msgid ":data:`Command.EraseData32K`: :py:`opcode_erase_32k`, (1-1-0) mode (if specified)"
+msgid ":data:`Command.EraseData4K`: :py:`opcode_erase_4k`, (1-1-0) mode (if specified)"
 msgstr ""
 
 #: glasgow.arch.qspi.nor.CommandSet.use_explicit:8 of
-msgid ":data:`Command.EraseData64K`: :py:`opcode_erase_64k`, (1-1-0) mode (if specified)"
+msgid ":data:`Command.EraseData8K`: :py:`opcode_erase_8k`, (1-1-0) mode (if specified)"
 msgstr ""
 
 #: glasgow.arch.qspi.nor.CommandSet.use_explicit:9 of
+msgid ":data:`Command.EraseData32K`: :py:`opcode_erase_32k`, (1-1-0) mode (if specified)"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_explicit:10 of
+msgid ":data:`Command.EraseData64K`: :py:`opcode_erase_64k`, (1-1-0) mode (if specified)"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_explicit:11 of
 msgid ":data:`Command.ProgramData`: :data:`Opcode.PageProgram`, (1-1-1) mode (if :py:`page_size` is specified)"
 msgstr ""
 
-#: glasgow.arch.qspi.nor.CommandSet.use_explicit:12 of
+#: glasgow.arch.qspi.nor.CommandSet.use_explicit:14 of
 msgid "Configures the :meth:`data_operation_prologue` method to execute :py:`data_operation_prologue`."
 msgstr ""
 
-#: glasgow.arch.qspi.nor.CommandSet.use_explicit:15 of
+#: glasgow.arch.qspi.nor.CommandSet.use_explicit:17 of
 msgid "This function is intended for \"lowest common denominator\" configuration in absence of SFDP data. If you need to configure a different or more complex command set, you should add the necessary mappings directly."
 msgstr ""
 
@@ -792,38 +828,46 @@ msgid ":data:`Command.ReadData` (fastest available, considering :py:`enable_dual
 msgstr ""
 
 #: glasgow.arch.qspi.nor.CommandSet.use_jesd216:10 of
-msgid ":data:`Command.EraseData4K` (if available)"
+msgid ":data:`Command.EraseData256` (if available)"
 msgstr ""
 
 #: glasgow.arch.qspi.nor.CommandSet.use_jesd216:11 of
-msgid ":data:`Command.EraseData32K` (if available)"
+msgid ":data:`Command.EraseData4K` (if available)"
 msgstr ""
 
 #: glasgow.arch.qspi.nor.CommandSet.use_jesd216:12 of
-msgid ":data:`Command.EraseData64K` (if available)"
+msgid ":data:`Command.EraseData8K` (if available)"
 msgstr ""
 
 #: glasgow.arch.qspi.nor.CommandSet.use_jesd216:13 of
-msgid ":data:`Command.ProgramData`: :data:`Opcode.PageProgram`, (1-1-1) mode"
+msgid ":data:`Command.EraseData32K` (if available)"
 msgstr ""
 
 #: glasgow.arch.qspi.nor.CommandSet.use_jesd216:14 of
-msgid ":data:`Command.Enter4ByteMode`: :data:`Opcode.Enter4ByteMode` (if relevant)"
+msgid ":data:`Command.EraseData64K` (if available)"
 msgstr ""
 
 #: glasgow.arch.qspi.nor.CommandSet.use_jesd216:15 of
-msgid ":data:`Command.Leave4ByteMode`: :data:`Opcode.Leave4ByteMode` (if relevant)"
+msgid ":data:`Command.ProgramData`: :data:`Opcode.PageProgram`, (1-1-1) mode"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_jesd216:16 of
+msgid ":data:`Command.Enter4ByteMode`: :data:`Opcode.Enter4ByteMode` (if relevant)"
 msgstr ""
 
 #: glasgow.arch.qspi.nor.CommandSet.use_jesd216:17 of
+msgid ":data:`Command.Leave4ByteMode`: :data:`Opcode.Leave4ByteMode` (if relevant)"
+msgstr ""
+
+#: glasgow.arch.qspi.nor.CommandSet.use_jesd216:19 of
 msgid "Configures the :meth:`data_operation_prologue` method to execute any appropriate mode switch or register access sequence for 4-byte addressing."
 msgstr ""
 
-#: glasgow.arch.qspi.nor.CommandSet.use_jesd216:20 of
+#: glasgow.arch.qspi.nor.CommandSet.use_jesd216:22 of
 msgid "If JEDEC flash parameters table is not present."
 msgstr ""
 
-#: glasgow.arch.qspi.nor.CommandSet.use_jesd216:21 of
+#: glasgow.arch.qspi.nor.CommandSet.use_jesd216:23 of
 msgid "If JEDEC flash parameters table contains unsupported parameters for required features."
 msgstr ""
 

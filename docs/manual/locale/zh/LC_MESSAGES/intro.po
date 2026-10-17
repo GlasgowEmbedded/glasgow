@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-18 23:49+0800\n"
+"POT-Creation-Date: 2026-10-17 21:29+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh\n"
@@ -96,206 +96,215 @@ msgid "What can I do with Glasgow?"
 msgstr "我可以用 Glasgow 做什么？"
 
 #: ../../src/intro.rst:56
+msgid "sample digital inputs with the :ref:`logic analyzer <applet.interface.analyzer2>` (revD0+ only at the moment)"
+msgstr ""
+
+#: ../../src/intro.rst:58
 msgid "control pins as :ref:`GPIO <applet.control.gpio>`"
 msgstr "控制引脚，作为 :ref:`GPIO <applet.control.gpio>` 使用"
 
-#: ../../src/intro.rst:58
+#: ../../src/intro.rst:60
 msgid "communicate via :ref:`UART <applet.interface.uart>`"
 msgstr "使用 :ref:`UART <applet.interface.uart>` 通信"
 
-#: ../../src/intro.rst:60
+#: ../../src/intro.rst:62
 msgid "automatically measure and adjust baud rate"
 msgstr "自动测量并调整波特率"
 
-#: ../../src/intro.rst:62
+#: ../../src/intro.rst:64
 msgid "analyze :ref:`UART <applet.interface.uart_analyzer>` transactions"
 msgstr "分析 :ref:`UART <applet.interface.uart_analyzer>` 事务"
 
-#: ../../src/intro.rst:64
+#: ../../src/intro.rst:66
 msgid "initiate :ref:`SPI <applet.interface.spi_controller>` or :ref:`QSPI <applet.interface.qspi_controller>` transactions"
 msgstr "发起 :ref:`SPI <applet.interface.spi_controller>` 或 :ref:`QSPI <applet.interface.qspi_controller>` 事务"
 
-#: ../../src/intro.rst:66
+#: ../../src/intro.rst:68
 msgid "analyze :ref:`SPI <applet.interface.spi_analyzer>` and :ref:`QSPI <applet.interface.qspi_analyzer>` transactions at up to ~100 MHz"
 msgstr "分析 :ref:`SPI <applet.interface.spi_controller>` 或 :ref:`QSPI <applet.interface.qspi_controller>` 事务，最高支持频率 ~100 MHz"
 
-#: ../../src/intro.rst:68
+#: ../../src/intro.rst:70
 msgid "initiate :ref:`I²C <applet.interface.i2c_controller>` transactions"
 msgstr "发起 :ref:`I²C <applet.interface.i2c_controller>` 事务"
 
-#: ../../src/intro.rst:70
+#: ../../src/intro.rst:72
 msgid "scan for I²C devices with known identification using a built-in database"
 msgstr "使用一个内置数据库扫描已知可识别的 I²C 设备"
 
-#: ../../src/intro.rst:72
+#: ../../src/intro.rst:74
 msgid "read and write :ref:`24-series I²C EEPROMs <applet.memory._24x>`"
 msgstr "读写 :ref:`24 系列 I²C EEPROMs <applet.memory._24x>`"
 
-#: ../../src/intro.rst:74
+#: ../../src/intro.rst:76
 msgid "read and write :ref:`25-series SPI Flash memories <applet.memory._25q>`"
 msgstr "读写 :ref:`25 系列 SPI 闪存 <applet.memory._25q>`"
 
-#: ../../src/intro.rst:76
+#: ../../src/intro.rst:78
 msgid "determine memory parameters via SFDP"
 msgstr "从 SFDP 确定存储设备参数"
 
-#: ../../src/intro.rst:78
+#: ../../src/intro.rst:80
 msgid ":ref:`extract data and SFDP information <applet.memory._25q.tool>` from SPI transaction captures"
 msgstr "从捕获的 SPI 事务\\ :ref:`读取数据和 SFDP 信息 <applet.memory._25q.tool>` "
 
-#: ../../src/intro.rst:80
+#: ../../src/intro.rst:82
 msgid "read and write ONFI-compatible Flash memories"
 msgstr "读写 ONFI 兼容的闪存"
 
-#: ../../src/intro.rst:82
+#: ../../src/intro.rst:84
 msgid "determine memory parameters via ONFI parameter page"
 msgstr "从 ONFI 参数页确定存储设备参数"
 
-#: ../../src/intro.rst:84
+#: ../../src/intro.rst:86
 msgid "read and write parallel 27/28/29-series EPROMs, EEPROMs and Flash memories"
 msgstr "读写并行 27/28/29 系列 EPROM、EEPROM、闪存"
 
-#: ../../src/intro.rst:86
+#: ../../src/intro.rst:88
 msgid "determine the extent of floating gate charge decay and rescue data"
 msgstr "测定浮栅电荷衰减程度，并恢复数据"
 
-#: ../../src/intro.rst:88
+#: ../../src/intro.rst:90
 msgid ":ref:`program and verify AVR microcontrollers <applet.program.avr.spi>` via SPI"
 msgstr "用 SPI :ref:`为 AVR MCU 编程并校验 <applet.program.avr.spi>`"
 
-#: ../../src/intro.rst:90
+#: ../../src/intro.rst:92
 msgid "automatically :ref:`determine JTAG pinout <applet.interface.jtag_pinout>`"
 msgstr "自动\\ :ref:`判定 JTAG 引脚排列 <applet.interface.jtag_pinout>`"
 
-#: ../../src/intro.rst:92
+#: ../../src/intro.rst:94
 msgid "probe `IEEE 1149.1`_ compatible devices via :ref:`JTAG <applet.interface.jtag_probe>`"
 msgstr "用 :ref:`JTAG <applet.interface.jtag_probe>` 探测 `IEEE 1149.1`_ 兼容的设备"
 
-#: ../../src/intro.rst:94
+#: ../../src/intro.rst:96
 msgid "play back JTAG :ref:`SVF files <applet.interface.jtag_svf>`"
 msgstr "重放 JTAG :ref:`SVF 文件 <applet.interface.jtag_svf>`"
 
-#: ../../src/intro.rst:96
+#: ../../src/intro.rst:98
 msgid ":ref:`debug ARM7TDMI processors <applet.debug.arm.arm7>` via JTAG"
 msgstr "用 JTAG :ref:`调试 ARM7TDMI 处理器 <applet.debug.arm.arm7>` "
 
-#: ../../src/intro.rst:98
+#: ../../src/intro.rst:100
 msgid ":ref:`debug ARC processors <applet.debug.arc>` via JTAG"
 msgstr "用 JTAG :ref:`调试 ARC 处理器 <applet.debug.arc>`"
 
-#: ../../src/intro.rst:100
+#: ../../src/intro.rst:102
 msgid ":ref:`debug MIPS processors <applet.debug.mips>` via EJTAG"
 msgstr "用 EJTAG :ref:`调试 MIPS 处理器 <applet.debug.mips>`"
 
-#: ../../src/intro.rst:102
+#: ../../src/intro.rst:104
 msgid "program and verify :ref:`XC9500 <applet.program.xc9500>` and :ref:`XC9500XL <applet.program.xc9500xl>` CPLDs via JTAG"
 msgstr "用 JTAG 为 :ref:`XC9500 <applet.program.xc9500>` 和 :ref:`XC9500XL <applet.program.xc9500xl>` CPLD 编程并校验"
 
-#: ../../src/intro.rst:104
+#: ../../src/intro.rst:106
 msgid ":ref:`expose JTAG to Vivado <applet.bridge.jtag_xvc>`"
 msgstr ":ref:`将 JTAG 暴露给 Vivado <applet.bridge.jtag_xvc>`"
 
-#: ../../src/intro.rst:106
+#: ../../src/intro.rst:108
 msgid "probe Arm Cortex processors via :ref:`SWD <applet.interface.swd_probe>`"
 msgstr "用 :ref:`SWD <applet.interface.swd_probe>` 探测 Arm Cortex 处理器"
 
-#: ../../src/intro.rst:108
+#: ../../src/intro.rst:110
 msgid ":ref:`debug Arm Cortex processors <applet.bridge.probe_rs>` via `probe-rs <https://probe.rs>`_"
 msgstr "用 `probe-rs <https://probe.rs>`_ 来\\ :ref:`调试 Arm Cortex 处理器 <applet.bridge.probe_rs>`"
 
-#: ../../src/intro.rst:110
+#: ../../src/intro.rst:112
 msgid "program :ref:`internal SRAM <applet.program.ice40_sram>` and :ref:`external Flash <applet.program.ice40_flash>` memories of iCE40 FPGAs"
 msgstr "为 iCE40 FPGA 的\\ :ref:`内部 SRAM <applet.program.ice40_sram>` 和\\ :ref:`外部闪存 <applet.program.ice40_flash>`\\ 编程"
 
-#: ../../src/intro.rst:112
+#: ../../src/intro.rst:114
 msgid ":ref:`configure Ethernet PHYs  <applet.control.mdio>` via MDIO"
 msgstr "用 MDIO :ref:`配置以太网 PHY <applet.control.mdio>`"
 
-#: ../../src/intro.rst:114
+#: ../../src/intro.rst:116
 msgid ":ref:`communicate using nRF24L01(+) radios <applet.radio.nrf24l01>`"
 msgstr ":ref:`使用 nRF24L01(+) 射频模块进行通信 <applet.radio.nrf24l01>`"
 
-#: ../../src/intro.rst:116
+#: ../../src/intro.rst:118
 msgid ":ref:`configure Si5351A/B/C programmable clock generators <applet.control.si535x>`"
 msgstr ":ref:`配置 Si5351A/B/C 可编程时钟发生器 <applet.control.si535x>`"
 
-#: ../../src/intro.rst:118
+#: ../../src/intro.rst:120
 msgid ":ref:`program nRF24LE1 and nRF24LU1(+) microcontrollers <applet.program.nrf24lx1>`"
 msgstr ":ref:`为 nRF24LE1 和 nRF24LU1(+) MCU 编程 <applet.program.nrf24lx1>`"
 
-#: ../../src/intro.rst:120
+#: ../../src/intro.rst:122
 msgid "sense environmental data"
 msgstr "测量环境数据"
 
-#: ../../src/intro.rst:122
+#: ../../src/intro.rst:124
 msgid "temperature, pressure, and humidity via :ref:`Bosch BMP280/BME280 <applet.sensor.bmx280>` sensors"
 msgstr "气温、气压、湿度（使用\\ :ref:`博世 BMP280/BME280 <applet.sensor.bmx280>` 传感器）"
 
-#: ../../src/intro.rst:124
+#: ../../src/intro.rst:126
 msgid "CO₂ concentration via Sensirion :ref:`SCD30 <applet.sensor.scd30>` and NOx concentration via :ref:`SEN5x <applet.sensor.sen5x>` sensors"
 msgstr "CO₂ 浓度（使用盛思锐 :ref:`SCD30 <applet.sensor.scd30>` 传感器）和 NOx 浓度（使用  :ref:`SEN5x <applet.sensor.sen5x>` 传感器）"
 
-#: ../../src/intro.rst:126
+#: ../../src/intro.rst:128
 msgid "distance by ultrasonic echo via :ref:`HC-SR04 <applet.sensor.hcsr04>` sensors"
 msgstr "距离（使用 :ref:`HC-SR04 <applet.sensor.hcsr04>` 传感器超声测距）"
 
-#: ../../src/intro.rst:128
+#: ../../src/intro.rst:130
 msgid "weight by Whetstone bridge via :ref:`HX-711 <applet.sensor.hx711>` amplifier"
 msgstr "重量（用惠斯通电桥电路和 :ref:`HX-711 <applet.sensor.hx711>` 放大器）"
 
-#: ../../src/intro.rst:130
+#: ../../src/intro.rst:132
+#, fuzzy
+msgid "temperature by thermocouple via :ref:`MAX31855 <applet.sensor.max31855>` sensor"
+msgstr "气温、气压、湿度（使用\\ :ref:`博世 BMP280/BME280 <applet.sensor.bmx280>` 传感器）"
+
+#: ../../src/intro.rst:134
 msgid ":ref:`calibrate a clock <applet.measure.calibrate_clock>` against a reference frequency"
 msgstr "参照一个基准频率\\ :ref:`校准时钟 <applet.measure.calibrate_clock>`"
 
-#: ../../src/intro.rst:132
+#: ../../src/intro.rst:136
 msgid ":ref:`generate pseudorandom noise <applet.measure.prn_noise>` for radio frequency device characterization"
 msgstr ":ref:`生成伪随机噪音 <applet.measure.prn_noise>`，用于射频设备特性测量"
 
-#: ../../src/intro.rst:134
+#: ../../src/intro.rst:138
 msgid "synthesize sound using a Yamaha OPLx/OPM chip and play it in real time on a webpage"
 msgstr "用雅马哈 OPLx/OPM 芯片进行音频合成，并实时在网页上播放"
 
-#: ../../src/intro.rst:136
+#: ../../src/intro.rst:140
 msgid "read raw modulated data from 5.25\"/3.5\" floppy drives"
 msgstr "从 5.25/3.5 英寸软盘的读取原始调制数据"
 
-#: ../../src/intro.rst:138
+#: ../../src/intro.rst:142
 msgid "... and more!"
 msgstr "……还有更多！"
 
-#: ../../src/intro.rst:140
+#: ../../src/intro.rst:144
 msgid "Everything above can be done with only a Glasgow revC board, some wires, and depending on the device under test, external power."
 msgstr "以上的每项都可以只用一个 Glasgow revC 板，一些导线，和电源（如果被测设备需要）即可完成。"
 
-#: ../../src/intro.rst:146
+#: ../../src/intro.rst:150
 msgid "What does using Glasgow look like?"
 msgstr "Glasgow 的使用流程看起来是什么样的？"
 
-#: ../../src/intro.rst:148
+#: ../../src/intro.rst:152
 msgid "This screencast shows a typical command-line workflow:"
 msgstr "以下的屏幕录制展示了一个典型的命令行工作流："
 
-#: ../../src/intro.rst:155
+#: ../../src/intro.rst:159
 msgid "What software does Glasgow use?"
 msgstr "Glasgow 使用什么软件？"
 
-#: ../../src/intro.rst:157
+#: ../../src/intro.rst:161
 msgid "Glasgow is written entirely in `Python 3`_. The interface logic that runs on the FPGA is described using `Amaranth`_, which is a Python-based domain specific language. The supporting code that runs on the host PC is written in Python with `asyncio`_. This way, the logic on the FPGA can be assembled on demand for any requested configuration, keeping it as fast and compact as possible, and code can be shared between gateware and software, removing the need to add error-prone \"glue\" boilerplate."
 msgstr "Glasgow 完全使用 `Python 3`_ 编写。在 FPGA 上运行的接口逻辑使用基于 Python 的领域特定语言 `Amaranth`_ 编写。在 PC 上位机上运行的辅助代码使用 Python 和 `asyncio`_ 编写。以此，FPGA 上的逻辑可以依照任何当前所请求配置按需组装，保持其尽可能又小又快。并且门件和软件之间可以共享代码，消除了易错的格式化的“胶水”代码。"
 
-#: ../../src/intro.rst:159
+#: ../../src/intro.rst:163
 msgid "Glasgow would not be possible without the open-source `iCE40 <icestorm_>`__ and `ECP5 <prjtrellis_>`__ FPGA toolchain, which are not only very reliable but also extremely fast. They are so fast that it usually only takes a few seconds to build a bitstream from scratch for something like a UART. When developing a new applet it is rarely necessary to wait for the toolchain to finish."
 msgstr "Glasgow 使用了不可或缺的开源 `iCE40 <icestorm_>`__ 和 `ECP5 <prjtrellis_>`__ FPGA 工具链。这些工具链十分可靠，并且速度非常快。一般来说，从头构建一个如 UART 所用的位流，可以快到只需要几秒即可完成。在开发新的小程序的时候，很少会遇到需要等待工具链完成的情况。"
 
-#: ../../src/intro.rst:161
+#: ../../src/intro.rst:165
 msgid "Implementing reliable, high-performance USB communication is not trivial—packetization, buffering, and USB quirks add up. Glasgow abstracts away USB: on the FPGA, the applet gateware writes to or reads from a FIFO, and on the host, applet software writes to or reads from a socket-like interface. Idiomatic Python code can communicate at maximum USB 2 bulk bandwidth on a modern PC without additional effort. Moreover, when a future Glasgow revision adds Ethernet next to USB, no changes to applet code will be necessary."
 msgstr "实现可靠的、高性能的 USB 通信并非易事：处理分包、缓冲、USB 的怪事都会一点点积累起来。Glasgow 将 USB 完全抽象起来：在 FPGA 上，小程序门件直接读或写一个 FIFO，而在上位机上，小程序软件对应写或读一个类似套接字的接口。符合一般习惯的 Python 代码在现代 PC 上可以不经额外工作即实现 USB 2 批量传输满速通信。此外，在未来的 Glasgow 修订版如果在 USB 之外增加以太网支持，小程序代码无需修改即可复用。"
 
-#: ../../src/intro.rst:163
+#: ../../src/intro.rst:167
 msgid "Debugging applets can be hard, especially if bidirectional communication over the same wires is involved. Glasgow provides a built-in cycle-accurate logic analyzer that can relate the I/O pin level and direction changes to commands and responses received and sent by the applet. The logic analyzer compresses waveforms and can pause the applet if its buffer is about to overflow."
 msgstr "调试小程序可能会遇到困难，特别是在同一根导线上进行双向通信的时候。Glasgow 提供了一个内置的时钟周期精确的逻辑分析仪，可以将 I/O 引脚电平和方向变化与小程序所发出和接收的命令和相应所关联。逻辑分析仪可以压缩波形，并且可以在缓冲区将要溢出时暂停小程序。"
 
-#: ../../src/intro.rst:167
+#: ../../src/intro.rst:171
 msgid "The built-in logic analyzer has been removed from the codebase pending internal architecture improvements. It will be reinstated once a high-quality implementation becomes feasible."
 msgstr "内置的逻辑分析仪目前由于有待内部架构优化，暂时已经从代码库中移除。在将来高质量实现变得可行之后，会将其恢复。"
 

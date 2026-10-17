@@ -1,0 +1,109 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-17 21:29+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh\n"
+"Language-Team: zh <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../src/applets/interface/i2c_target.rst:2
+msgid "``i2c-target``"
+msgstr ""
+
+#: ../../src/applets/interface/i2c_target.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run i2c-target"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Process transactions on the I²C bus as a software-defined target."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "This applet allows emulating any I²C device in Python, provided that the I²C initiator supports clock stretching and tolerates delays caused by host roundtrips. (Unfortunately, this excludes many I²C initiators.)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "The default emulated device is a dummy device that logs all transactions, acknowledges all writes, and returns 0xFF in response to all reads. Use the global -v option to display the transaction log. For example, emulate address 0x50 on A0 (SCL) and A1 (SDA), with integrated pull-ups enabled:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'scl' to PIN (default: 'A0', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'sda' to PIN (default: 'A1', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "I²C address of the target"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "enable integrated pull-ups"
+msgstr ""
+
+#: ../../src/applets/interface/i2c_target.rst:14
+msgid "API reference"
+msgstr ""
+
+#: glasgow.applet.interface.i2c_target.I2CTargetInterface:1 of
+msgid "Software-defined I²C target at a 7-bit *address*."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_target.I2CTargetInterface:3 of
+msgid "Subclass this interface and implement all five event callbacks. Construct it with a logger, an assembly, and the ``scl``, ``sda``, and ``address`` keyword arguments inside the assembly's ``add_applet()`` context. Call :meth:`read_event` repeatedly to process transactions."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_target.I2CTargetInterface:7 of
+msgid "An applet subclass can set ``I2CTargetApplet.interface_cls`` to its custom interface class to reuse the applet's argument parsing and event loop."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_target.I2CTargetInterface.read_event:1 of
+msgid "Process one bus event, await its callback, and transmit any response."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_target.I2CTargetInterface.on_start:1 of
+msgid "Called when the initiator starts a transaction with this target."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_target.I2CTargetInterface.on_stop:1 of
+msgid "Called when the initiator ends a transaction."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_target.I2CTargetInterface.on_restart:1 of
+msgid "Called when the initiator issues a repeated START."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_target.I2CTargetInterface.on_write:1 of
+msgid "Receive one byte. Return ``True`` to acknowledge it or ``False`` to reject it."
+msgstr ""
+
+#: glasgow.applet.interface.i2c_target.I2CTargetInterface.on_read:1 of
+msgid "Return the next byte to transmit as an integer from ``0`` through ``255``."
+msgstr ""
+

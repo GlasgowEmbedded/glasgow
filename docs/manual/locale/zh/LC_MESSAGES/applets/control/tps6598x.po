@@ -1,0 +1,81 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-17 21:29+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh\n"
+"Language-Team: zh <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../src/applets/control/tps6598x.rst:2
+msgid "``control-tps6598x``"
+msgstr ""
+
+#: ../../src/applets/control/tps6598x.rst:5
+msgid "CLI reference"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run control-tps6598x"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "Read and write TI TPS6598x USB PD controller registers."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "show this help message and exit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "configure I/O port voltage to SPEC (e.g.: '3.3', 'A=5.0,B=3.3', 'A=SA')"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'scl' to PIN (default: 'A0', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "bind the applet I/O line 'sda' to PIN (default: 'A1', required)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "I2C address of the controller (default: 0x38)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run control-tps6598x read-all"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run control-tps6598x read-reg"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "register address"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run control-tps6598x write-reg"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "data to write, as hex bytes"
+msgstr ""
+
+#: ../../src/applets/control/tps6598x.rst:14
+msgid "API reference"
+msgstr ""
+

@@ -1,0 +1,73 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2020—2026, Glasgow Interface Explorer contributors
+# This file is distributed under the same license as the Glasgow Interface Explorer package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Glasgow Interface Explorer \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-17 21:29+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh\n"
+"Language-Team: zh <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../src/api/main.rst:2
+msgid "``main``"
+msgstr ""
+
+#: glasgow.main:1 of
+msgid "Application entry point."
+msgstr ""
+
+#: glasgow.main:3 of
+msgid "This module contains utility functions that handle start-up of the Glasgow CLI as well as custom applications based on the Glasgow API. To begin building your application, copy the following example:"
+msgstr ""
+
+#: glasgow.main.setup_logging:1 of
+msgid "Configure logging."
+msgstr ""
+
+#: glasgow.main.setup_logging:3 of
+msgid "The ANSI escape sequences used to colorize the output can be customized via the :envvar:`GLASGOW_COLORS` environment variable. Its value must contain a ``:``-delimited list of ``<key>=<value>`` pairs, where ``<key>`` is one of ``TRACE``, ``DEBUG``, ``INFO``, ``WARNING``, ``ERROR``, ``CRITICAL``, ``RESET``, and ``<value>`` is used as the core of an escape sequence :py:`\"\\033[<value>m\"`."
+msgstr ""
+
+#: glasgow.main.setup_logging:9 of
+msgid "For example, to make messages with the ``TRACE`` level gray and messages with the ``INFO`` level white, set ``GLASGOW_COLORS`` to ``TRACE=37:INFO=1;37``."
+msgstr ""
+
+#: glasgow.main.setup_logging:12 of
+msgid "A :class:`logging.StreamHandler` writing to :data:`sys.stderr` is created, attached to the root logger, and returned."
+msgstr ""
+
+#: glasgow.main.run_async:1 of
+msgid "Configure the runtime and call :py:`main`."
+msgstr ""
+
+#: glasgow.main.run_async:3 of
+msgid "This decorator is used as a convenient way to use the Glasgow library in your own scripts. The :py:`main` function called from a new :mod:`asyncio` event loop after applying any necessary workarounds for platform and library quirks."
+msgstr ""
+
+#: glasgow.main.run_async:7 of
+msgid "Moreover, if the file with the :meth:`run_async` decorator is directly invoked from the command line (as opposed to being imported), it also calls the wrapped :py:`main` function, as if that file includes the following code immediately after the definition of :py:`main`:"
+msgstr ""
+
+#: glasgow.main.run_async_qtqml:1 glasgow.main.run_async_qtwidgets:1 of
+msgid "Configure the Qt runtime and call :py:`main`."
+msgstr ""
+
+#: glasgow.main.run_async_qtwidgets:3 of
+msgid "This decorator serves the same purpose as :func:`run_async` and works the same way, except that it initializes a graphical application using the QtWidgets library."
+msgstr ""
+
+#: glasgow.main.run_async_qtqml:3 of
+msgid "This decorator serves the same purpose as :func:`run_async` and works the same way, except that it initializes a graphical application using the QtQml library."
+msgstr ""
+
