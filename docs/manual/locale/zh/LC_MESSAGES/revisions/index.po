@@ -64,14 +64,12 @@ msgid "Design and fabrication files are located in the Git repository:"
 msgstr "设计和生产文件在 Git 仓库中："
 
 #: ../../src/revisions/index.rst:43
-#, fuzzy
 msgid "`revD0 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD0>`_, `revD0 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revD0/output/schematics.pdf>`_, `revD0 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD0/output>`_."
-msgstr "`revC0（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/revC0/hardware/boards/glasgow>`_、`revC0（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC0/schematics.pdf>`_、`revC0（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC0>`_。"
+msgstr "`revD0（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD0>`_, `revD0（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revD0/output/schematics.pdf>`_, `revD0（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD0/output>`_。"
 
 #: ../../src/revisions/index.rst:46
-#, fuzzy
 msgid "`revD1 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD1>`_, `revD1 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revD1/output/schematics.pdf>`_, `revD1 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD1/output>`_."
-msgstr "`revC1（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/revC1/hardware/boards/glasgow>`_、`revC1（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC1/schematics.pdf>`_、`revC1（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC1>`_。"
+msgstr "`revD1（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD1>`_, `revD1（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revD1/output/schematics.pdf>`_, `revD1（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD1/output>`_。"
 
 #: ../../src/revisions/index.rst:50 ../../src/revisions/index.rst:96
 msgid "Data rate achievable in practice depends on many factors and will vary greatly with specific interface and applet design. 12 Mbps/pin (6 MHz) can be achieved with minimal development effort; reaching higher data rates requires careful HDL coding and a good understanding of timing analysis."
@@ -90,24 +88,20 @@ msgid "Description of functional blocks on the Glasgow PCB"
 msgstr "Glasgow 电路板上的功能模块的描述"
 
 #: ../../src/revisions/index.rst:83
-#, fuzzy
 msgid "`revC0 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC0>`_, `revC0 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC0/output/schematics.pdf>`_, `revC0 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC0/output>`_."
-msgstr "`revC0（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/revC0/hardware/boards/glasgow>`_、`revC0（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC0/schematics.pdf>`_、`revC0（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC0>`_。"
+msgstr "`revC0（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC0>`_, `revC0（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC0/output/schematics.pdf>`_, `revC0（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC0/output>`_。"
 
 #: ../../src/revisions/index.rst:86
-#, fuzzy
 msgid "`revC1 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC1>`_, `revC1 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC1/output/schematics.pdf>`_, `revC1 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC1/output>`_."
-msgstr "`revC1（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/revC1/hardware/boards/glasgow>`_、`revC1（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC1/schematics.pdf>`_、`revC1（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC1>`_。"
+msgstr "`revC1（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC1>`_, `revC1（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC1/output/schematics.pdf>`_, `revC1（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC1/output>`_。"
 
 #: ../../src/revisions/index.rst:89
-#, fuzzy
 msgid "`revC2 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC2>`_, `revC2 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC2/output/schematics.pdf>`_, `revC2 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC2/output>`_."
-msgstr "`revC2（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/revC2/hardware/boards/glasgow>`_、`revC2（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC2/schematics.pdf>`_、`revC2（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC2>`_。"
+msgstr "`revC2（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC2>`_, `revC2（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC2/output/schematics.pdf>`_, `revC2（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC2/output>`_。"
 
 #: ../../src/revisions/index.rst:92
-#, fuzzy
 msgid "`revC3 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC3>`_, `revC3 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC3/output/schematics.pdf>`_, `revC3 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC3/output>`_."
-msgstr "`revC3（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/revC3/hardware/boards/glasgow>`_、`revC3（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC3/schematics.pdf>`_、`revC3（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC3>`_。"
+msgstr "`revC3（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC3>`_, `revC3（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC3/output/schematics.pdf>`_, `revC3（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC3/output>`_。"
 
 #: ../../src/revisions/index.rst:103
 msgid "revA, revB"
@@ -118,12 +112,10 @@ msgid "Revisions A and B have not been produced in significant numbers, have maj
 msgstr "修订版 A 和 B 并未实际生产多少件，并且有重大设计缺陷，因此基本上仅对感兴趣历史者有意义。尽管如此，持有 revA/revB 板子的用户可以继续使用它们，并且是永久可以。"
 
 #: ../../src/revisions/index.rst:109
-#, fuzzy
 msgid "`revA (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revA>`_, `revA (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revA/output/schematics.pdf>`_, `revA (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revA/output>`_."
-msgstr "`revA（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/revA/hardware/boards/glasgow>`_、`revA（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revA/schematics.pdf>`_、`revA（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revA>`_。"
+msgstr "`revA（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revA>`_, `revA（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revA/output/schematics.pdf>`_, `revA（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revA/output>`_。"
 
 #: ../../src/revisions/index.rst:112
-#, fuzzy
 msgid "`revB (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revB>`_, `revB (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revB/output/schematics.pdf>`_, `revB (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revB/output>`_."
-msgstr "`revB（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/revB/hardware/boards/glasgow>`_、`revB（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revB/schematics.pdf>`_、`revB（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revB>`_。"
+msgstr "`revB（设计） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revB>`_, `revB（原理图） <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revB/output/schematics.pdf>`_, `revB（生产） <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revB/output>`_。"
 
