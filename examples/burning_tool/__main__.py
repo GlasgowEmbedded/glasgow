@@ -121,4 +121,5 @@ class Memory25QDialog(QDialog, Ui_Memory25QDialog):
 async def main():
     setup_logging(level="DEBUG")
 
-    Memory25QDialog().show()
+    dialog = Memory25QDialog()
+    dialog.show()
