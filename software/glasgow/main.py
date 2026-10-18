@@ -18,10 +18,11 @@ example:
 """
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
-from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
+from collections.abc import Callable, Awaitable
 import os
 import sys
+import signal
 import asyncio
 import logging as pylogging
 import functools
@@ -106,7 +107,7 @@ def setup_logging(*, level: int | str | None = None) -> pylogging.StreamHandler:
     return term_handler
 
 
-def run_async(main: Callable[[], int | None]):
+def run_async(main: Callable[[], Awaitable[int | None]]):
     """Configure the runtime and call :py:`main`.
 
     This decorator is used as a convenient way to use the Glasgow library in your own scripts.
@@ -140,16 +141,23 @@ def run_async(main: Callable[[], int | None]):
     return wrapper
 
 
-def _run_async_qt[T: QCoreApplication](main: Callable[[], int | None], *, qapp_cls: type[T]):
+def _run_async_qt[T: QCoreApplication](main: Callable[[], Awaitable[Any]], *, qapp_cls: type[T]):
     from PySide6 import QtAsyncio
 
+    # This function approximates the expansion of `QtAsyncio.run`.
     @functools.wraps(main)
     def wrapper():
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
+
         # There are three options for setting up the main loop: QApplication (QtWidgets),
         # QGuiApplication (QtQml), and QCoreApplication (CLI). We have to pick one before
         # running `main()`.
-        _qapp = qapp_cls(sys.argv)
-        QtAsyncio.run(main(), handle_sigint=True)
+        qapp = qapp_cls(sys.argv)
+        asyncio.set_event_loop(QtAsyncio.QAsyncioEventLoop(qapp, quit_qapp=True))
+
+        # Make sure the return value of `main` is not prematurely garbage collected.
+        tasks = [asyncio.ensure_future(main())]
+        asyncio.get_event_loop().run_forever()
 
     if sys._getframe(2).f_globals["__name__"] == "__main__":
         wrapper()
@@ -157,21 +165,24 @@ def _run_async_qt[T: QCoreApplication](main: Callable[[], int | None], *, qapp_c
     return wrapper
 
 
-def run_async_qtwidgets(main: Callable[[], int | None]):
+def run_async_qtwidgets(main: Callable[[], Awaitable[Any]]):
     """Configure the Qt runtime and call :py:`main`.
 
     This decorator serves the same purpose as :func:`run_async` and works the same way, except that
-    it initializes a graphical application using the QtWidgets library.
+    it initializes a graphical application built using the :mod:`~PySide6.QtWidgets` library.
     """
     from PySide6.QtWidgets import QApplication
     return _run_async_qt(main, qapp_cls=QApplication)
 
 
-def run_async_qtqml(main: Callable[[], int | None]):
+def run_async_qtqml(main: Callable[[], Awaitable[Any]]):
     """Configure the Qt runtime and call :py:`main`.
 
     This decorator serves the same purpose as :func:`run_async` and works the same way, except that
-    it initializes a graphical application using the QtQml library.
+    it initializes a graphical application built using the :mod:`~PySide6.QtQml` library.
+
+    Return the :class:`~PySide6.QtQml.QQmlEngine` instance from :py:`main()` to prevent it
+    from being garbage collected prematurely.
     """
     from PySide6.QtGui import QGuiApplication
     return _run_async_qt(main, qapp_cls=QGuiApplication)
