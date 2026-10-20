@@ -1769,7 +1769,7 @@ class AnalyzerInterface:
 
     async def _recv_substream(self, index: int) -> tuple[int, bytearray]:
         frame = await self._pipe.recv_until(b"\x00")
-        payload = memoryview(cobs.decode(frame[:-1]))
+        payload = memoryview(cobs.decode(frame))
         assert payload[0] == index, f"expected substream {index}"
         data = payload[1:]
         if index != 0:

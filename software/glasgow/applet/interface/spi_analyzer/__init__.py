@@ -207,7 +207,7 @@ class SPIAnalyzerInterface:
         if await self._overflow:
             raise SPIAnalyzerOverflow("overflow")
 
-        packet = cobs.decode((await self._pipe.recv_until(b"\0"))[:-1])
+        packet = cobs.decode(await self._pipe.recv_until(b"\0"))
         chip, copi_data, cipo_data = packet[0], packet[1::2], packet[2::2]
         self._log("capture chip=%d copi=<%s> cipo=<%s>",
             chip, dump_hex(copi_data), dump_hex(cipo_data))
