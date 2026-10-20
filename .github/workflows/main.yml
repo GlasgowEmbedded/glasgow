@@ -48,7 +48,7 @@ jobs:
     runs-on: ${{ matrix.os-version }}
     name: 'test-software (${{ matrix.python-version }}, deps: ${{ matrix.dep-versions }})'
     env:
-      PDM_LOCKFILE: ${{ matrix.dep-versions == 'minimal' && 'pdm.min.lock' || 'pdm.lock' }}
+      PDM_LOCKFILE: ${{ matrix.dep-versions == 'minimal' && 'pylock.min.toml' || 'pylock.toml' }}
     steps:
       - name: Install native dependencies for Pillow
         if: ${{ contains(matrix.python-version, '-dev') }}
@@ -79,7 +79,7 @@ jobs:
       - name: Verify lockfile matches checked-in version
         if: matrix.dep-versions == 'minimal'
         working-directory: ./software
-        run: git diff --exit-code pdm.min.lock
+        run: git diff --exit-code pylock.min.toml
       - name: Cache PDM package data
         uses: actions/cache@v4
         with:
