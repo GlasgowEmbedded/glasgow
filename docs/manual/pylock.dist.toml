@@ -12,7 +12,7 @@ created-by = "pdm"
 
 [[packages]]
 name = "glasgow"
-version = "0.1.dev3108+g640848a.d20261020"
+version = "0.1.dev3109+g35dc864.d20261020"
 requires-python = "<3.16,>=3.13"
 marker = "\"default\" in dependency_groups"
 
@@ -365,6 +365,23 @@ marker = "\"default\" in dependency_groups"
 dependencies = []
 
 [[packages]]
+name = "pyccobs"
+version = "0.1.0"
+requires-python = ">=3.11"
+sdist = {name = "pyccobs-0.1.0.tar.gz", url = "https://files.pythonhosted.org/packages/a3/9b/d951921ea07a8dc4419f0990a87ad7357873ca444d602c1c8585c10c6433/pyccobs-0.1.0.tar.gz", hashes = {sha256 = "5f428434331c75e34b86ddb5e74d280fba30e5fe078d52b24c2978adc1d0f457"}}
+wheels = [
+    {name = "pyccobs-0.1.0-py3-none-macosx_10_9_x86_64.whl",url = "https://files.pythonhosted.org/packages/d9/27/a0f626ceecd0a54f2e57a2165e3ce92b0be2d120f679f81e650c5100b80f/pyccobs-0.1.0-py3-none-macosx_10_9_x86_64.whl",hashes = {sha256 = "dde6e380f0903412c82da30f8e4c902fb36139b48389f3b7252463ac138126df"}},
+    {name = "pyccobs-0.1.0-py3-none-macosx_11_0_arm64.whl",url = "https://files.pythonhosted.org/packages/8f/26/1ea5d1d0fdc35d6dde2144b3998f0f206282382bb0faa97163cc3ae344ef/pyccobs-0.1.0-py3-none-macosx_11_0_arm64.whl",hashes = {sha256 = "edcd6488028b5c2523c4cae9ea6a2589b4061e2e268c03e178b6a20214b8a787"}},
+    {name = "pyccobs-0.1.0-py3-none-manylinux1_x86_64.manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_5_x86_64.whl",url = "https://files.pythonhosted.org/packages/17/71/50ca947d74f534bce5c8ca1fb8164ccf962270c8e7546c0349068444fa8f/pyccobs-0.1.0-py3-none-manylinux1_x86_64.manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_5_x86_64.whl",hashes = {sha256 = "7977ae8a69651af2c33577500c75c9e139dc9b3a9e731bcfde69dc56be036269"}},
+    {name = "pyccobs-0.1.0-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl",url = "https://files.pythonhosted.org/packages/32/34/c6be16f935ac563bd88d4cce1f9f371ed972c07fef7d237882f90569972f/pyccobs-0.1.0-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl",hashes = {sha256 = "4d8720ef20906789fd2137eaf9bba88f5eb3e53b269c3efb1cc3a15eddf2608e"}},
+    {name = "pyccobs-0.1.0-py3-none-win_amd64.whl",url = "https://files.pythonhosted.org/packages/66/8d/0d7a0aa4a8cc4e109ab21a65bdff1fe645a088f6785437311b991ec3e22e/pyccobs-0.1.0-py3-none-win_amd64.whl",hashes = {sha256 = "9a5805e5d2b335685698cb898282aa65a61ab866f2ed7abbe68d622a2d2f8399"}},
+]
+marker = "\"default\" in dependency_groups"
+
+[packages.tool.pdm]
+dependencies = []
+
+[[packages]]
 name = "accessible-pygments"
 version = "0.0.5"
 requires-python = ">=3.9"
@@ -399,22 +416,6 @@ requires-python = ">=3.10"
 sdist = {name = "click-8.5.0.tar.gz", url = "https://files.pythonhosted.org/packages/c7/0e/7fa0ef50764b67090eca4114772a2abf8b6148198475e54c660b97caeee6/click-8.5.0.tar.gz", hashes = {sha256 = "ba0d2089de75ea0310e2dde03160e6ca10009947fb95a182f9b54021bb272e34"}}
 wheels = [
     {name = "click-8.5.0-py3-none-any.whl",url = "https://files.pythonhosted.org/packages/58/50/6c0d534c5f134586a8e1ba4e330569e32f057e33372ae556463212fb4cd3/click-8.5.0-py3-none-any.whl",hashes = {sha256 = "255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360"}},
-]
-marker = "\"default\" in dependency_groups"
-
-[packages.tool.pdm]
-dependencies = []
-
-[[packages]]
-name = "cobs"
-version = "1.2.2"
-requires-python = ">=3.6"
-sdist = {name = "cobs-1.2.2.tar.gz", url = "https://files.pythonhosted.org/packages/34/ef/ea149311227a4fc3160cc885fce06da7c7d76782a308ef070b8065c69953/cobs-1.2.2.tar.gz", hashes = {sha256 = "dbdd5e32111d72786f83d0c269215dcd6ac629b1ac1962c6878221f3b2ca98da"}}
-wheels = [
-    {name = "cobs-1.2.2-cp314-cp314-win32.whl",url = "https://files.pythonhosted.org/packages/78/35/de1e889c26fcfc9ae6852b8f99e744e6690a3baae99f63e2b9fffdd21710/cobs-1.2.2-cp314-cp314-win32.whl",hashes = {sha256 = "bcf08cb0b68c1824a87cfa89e0684d5a3eaee9b9e08b02ce4a54d5589536f01c"}},
-    {name = "cobs-1.2.2-cp314-cp314-win_amd64.whl",url = "https://files.pythonhosted.org/packages/b6/64/390e226843cc83066acc60257e0e71ebdbce6dd915ec4f3d34101b9ac31b/cobs-1.2.2-cp314-cp314-win_amd64.whl",hashes = {sha256 = "1f27b7a553d809487287e4ed88540b2c30ed9c9bb596173bfcf549e705af7bf0"}},
-    {name = "cobs-1.2.2-cp313-cp313-win32.whl",url = "https://files.pythonhosted.org/packages/b4/df/7f07559954d53d09680aa4f5c72db999e7643253e2ca4e431023fe5c1c40/cobs-1.2.2-cp313-cp313-win32.whl",hashes = {sha256 = "a8fdf6ca70247e7271caea6f2f6f9c0343f5e872e2fd47e21f71831fa9ababa8"}},
-    {name = "cobs-1.2.2-cp313-cp313-win_amd64.whl",url = "https://files.pythonhosted.org/packages/0c/00/5b063105ff567bb7fb72c3cd3e96116a3889381fa2c0e7747497391dbecc/cobs-1.2.2-cp313-cp313-win_amd64.whl",hashes = {sha256 = "fe3f7194d5fbbc02e8fb03d26ad626a33fa0d420b50d66ed60ac4bf516322d8e"}},
 ]
 marker = "\"default\" in dependency_groups"
 

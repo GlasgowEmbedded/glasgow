@@ -195,7 +195,7 @@ class QSPIAnalyzerInterface:
         if await self._overflow:
             raise QSPIAnalyzerOverflow("overflow")
 
-        data = cobs.decode((await self._pipe.recv_until(b"\0"))[:-1])
+        data = cobs.decode(await self._pipe.recv_until(b"\0"))
         self._log("capture data=<%s>", dump_hex(data))
         return data
 
