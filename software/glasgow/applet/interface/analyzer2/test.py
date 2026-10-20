@@ -9,7 +9,7 @@ from glasgow.gateware import octoram
 from glasgow.applet import GlasgowAppletV2TestCase, applet_v2_simulation_test
 from glasgow.simulation.assembly import SimulationAssembly
 from . import (AnalyzerApplet, PinSampler, BasicTrigger, Writer, Reader, WriteControl, AnalyzerCore,
-               Arbiter, Marker, Event, DigitalFormat, DigitalTrigger)
+               Arbiter, Marker, Event, DigitalFormat, DigitalTrigger, Command)
 
 
 class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
@@ -426,7 +426,8 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
             for index, expected in enumerate([
                 *range(0,  32),
             ]):
-                assert (payload := await stream_get(ctx, dut.o_octets)) == {"data": expected}, \
+                assert (payload := await stream_get(ctx, dut.o_octets)) == \
+                        {"data": expected, "sample": 1}, \
                     f"[{index}]: {payload['data']:02x} != {expected:02x}"
 
             await stream_assert(ctx, dut.o_octets, {"data": 0x81})
@@ -436,7 +437,8 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
                 *range(60, 64),
                 *range(0,   4),
             ]):
-                assert (payload := await stream_get(ctx, dut.o_octets)) == {"data": expected}, \
+                assert (payload := await stream_get(ctx, dut.o_octets)) == \
+                        {"data": expected, "sample": 1}, \
                     f"[{index}]: {payload['data']:02x} != {expected:02x}"
 
             await stream_assert(ctx, dut.o_octets, {"data": 0xC8})
@@ -456,9 +458,6 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
         )
 
         async def testbench_main(ctx):
-            ctx.set(dut.free_running, 1)
-            ctx.set(dut.prolog_size, 6)
-
             await stream_put(ctx, dut.i_writer, 0)
             assert ctx.get(dut.credits) == 2
             await stream_put(ctx, dut.i_writer, 0)
@@ -466,17 +465,13 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
             await stream_put(ctx, dut.i_writer, 0)
             assert ctx.get(dut.credits) == 6
             await stream_put(ctx, dut.i_writer, 0)
+            assert ctx.get(dut.credits) == 8
+
+            await stream_put(ctx, dut.i_reader, {"data": 0, "end": 0, "sample": 1})
+            assert ctx.get(dut.credits) == 7
+            await stream_put(ctx, dut.i_reader, {"data": 0, "end": 0, "sample": 1})
             assert ctx.get(dut.credits) == 6
 
-            ctx.set(dut.free_running, 0)
-
-            await stream_put(ctx, dut.i_reader, 0)
-            assert ctx.get(dut.credits) == 5
-            await stream_put(ctx, dut.i_reader, 0)
-            assert ctx.get(dut.credits) == 4
-
-            await stream_put(ctx, dut.i_writer, 0)
-            assert ctx.get(dut.credits) == 6
             await stream_put(ctx, dut.i_writer, 0)
             assert ctx.get(dut.credits) == 8
             await stream_put(ctx, dut.i_writer, 0)
@@ -597,3 +592,44 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
         await iface.force_trigger()
         data = await iface.read_sample_block()
         self.assertEqual(data.marker, Marker.Trigger)
+
+    @applet_v2_simulation_test(
+        args=["BDAT=B0:7", "--buffer-size=512"])
+    async def test_applet_sigrok(self, applet: AnalyzerApplet, ctx):
+        iface = applet.analyzer_iface
+
+        await ctx.tick().repeat(1000)
+
+        self.assertEqual(await iface.identify(), b"GLA0")
+        await iface.interrupt()
+        self.assertEqual(await iface._do_command(Command.SYNCHRONIZE, 0x67), 0x67)
+        self.assertEqual(await iface.get_buffer_size(), 512//4)
+        self.assertEqual(await iface.get_data_format(), DigitalFormat(width=8, stride=8))
+        self.assertEqual(
+            await iface._do_command(Command.GET_METADATA),
+            int.from_bytes(b"NAME", "little")
+        )
+        self.assertEqual(
+            await iface._recv_substream(2),
+            b"BDAT0\x00BDAT1\x00BDAT2\x00BDAT3\x00BDAT4\x00BDAT5\x00BDAT6\x00BDAT7\x00"
+        )
+
+        for _ in range(4):
+            await iface.set_sampling_rate(1e6)
+            await ctx.tick().repeat(100)
+        await ctx.tick().repeat(1000)
+
+        self.assertEqual(await iface._do_command(Command.SYNCHRONIZE, 0x42), 0x42)
+
+        fourcc = int.from_bytes(b"BASI", "little")
+        await iface._do_command(Command.SET_TRIGGER, fourcc)
+        self.assertEqual(await iface._do_command(Command.GET_TRIGGER), fourcc)
+        await iface.set_prolog_size(0)
+        await iface.set_epilog_size(200)
+        await iface.set_sampling_rate(1e6/4)
+        await iface.force_trigger()
+
+        data = await iface.read_sample_block()
+        self.assertEqual(data.marker, Marker.Trigger)
+        data = await iface.read_sample_block()
+        self.assertEqual(data.marker, Marker.Complete)
