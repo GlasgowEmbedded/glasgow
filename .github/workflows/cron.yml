@@ -10,7 +10,7 @@ jobs:
     if: ${{ github.repository == 'GlasgowEmbedded/glasgow' }}
     runs-on: ubuntu-latest
     env:
-      PDM_LOCKFILE: 'pdm.min.lock'
+      PDM_LOCKFILE: 'pylock.min.lock'
     steps:
       - name: Check out source code
         uses: actions/checkout@v4
@@ -25,9 +25,9 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GH_TOKEN }}
-          commit-message: 'software: update `pdm.min.lock`.'
+          commit-message: 'software: update `${{ env.PDM_LOCKFILE }}`.'
           branch: update-lockfile
-          title: 'Update `pdm.min.lock`'
+          title: 'Update `${{ env.PDM_LOCKFILE }}`'
           body: '*This pull request was automatically created by the `cron` GitHub Actions workflow.*'
         id: create-pull-request
       - if: ${{ steps.create-pull-request.outputs.pull-request-number }}
