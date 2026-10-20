@@ -229,6 +229,23 @@ dependencies = [
 ]
 
 [[packages]]
+name = "pyccobs"
+version = "0.1.0"
+requires-python = ">=3.11"
+sdist = {name = "pyccobs-0.1.0.tar.gz", url = "https://files.pythonhosted.org/packages/a3/9b/d951921ea07a8dc4419f0990a87ad7357873ca444d602c1c8585c10c6433/pyccobs-0.1.0.tar.gz", hashes = {sha256 = "5f428434331c75e34b86ddb5e74d280fba30e5fe078d52b24c2978adc1d0f457"}}
+wheels = [
+    {name = "pyccobs-0.1.0-py3-none-macosx_10_9_x86_64.whl",url = "https://files.pythonhosted.org/packages/d9/27/a0f626ceecd0a54f2e57a2165e3ce92b0be2d120f679f81e650c5100b80f/pyccobs-0.1.0-py3-none-macosx_10_9_x86_64.whl",hashes = {sha256 = "dde6e380f0903412c82da30f8e4c902fb36139b48389f3b7252463ac138126df"}},
+    {name = "pyccobs-0.1.0-py3-none-macosx_11_0_arm64.whl",url = "https://files.pythonhosted.org/packages/8f/26/1ea5d1d0fdc35d6dde2144b3998f0f206282382bb0faa97163cc3ae344ef/pyccobs-0.1.0-py3-none-macosx_11_0_arm64.whl",hashes = {sha256 = "edcd6488028b5c2523c4cae9ea6a2589b4061e2e268c03e178b6a20214b8a787"}},
+    {name = "pyccobs-0.1.0-py3-none-manylinux1_x86_64.manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_5_x86_64.whl",url = "https://files.pythonhosted.org/packages/17/71/50ca947d74f534bce5c8ca1fb8164ccf962270c8e7546c0349068444fa8f/pyccobs-0.1.0-py3-none-manylinux1_x86_64.manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_5_x86_64.whl",hashes = {sha256 = "7977ae8a69651af2c33577500c75c9e139dc9b3a9e731bcfde69dc56be036269"}},
+    {name = "pyccobs-0.1.0-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl",url = "https://files.pythonhosted.org/packages/32/34/c6be16f935ac563bd88d4cce1f9f371ed972c07fef7d237882f90569972f/pyccobs-0.1.0-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl",hashes = {sha256 = "4d8720ef20906789fd2137eaf9bba88f5eb3e53b269c3efb1cc3a15eddf2608e"}},
+    {name = "pyccobs-0.1.0-py3-none-win_amd64.whl",url = "https://files.pythonhosted.org/packages/66/8d/0d7a0aa4a8cc4e109ab21a65bdff1fe645a088f6785437311b991ec3e22e/pyccobs-0.1.0-py3-none-win_amd64.whl",hashes = {sha256 = "9a5805e5d2b335685698cb898282aa65a61ab866f2ed7abbe68d622a2d2f8399"}},
+]
+marker = "\"default\" in dependency_groups"
+
+[packages.tool.pdm]
+dependencies = []
+
+[[packages]]
 name = "pyside6"
 version = "6.12.0"
 requires-python = "<3.16,>=3.10"
@@ -249,20 +266,6 @@ dependencies = [
     "PySide6-Pdf==6.12.0.140",
     "tomli>=2.0.1; python_version < \"3.11\"",
 ]
-
-[[packages]]
-name = "cobs"
-version = "1.2.1"
-requires-python = ">=3.6"
-sdist = {name = "cobs-1.2.1.tar.gz", url = "https://files.pythonhosted.org/packages/87/dd/cb6aa7465da843cc1633e2ee05ef86a8df63fd95e741dfcb98ed8f477cb8/cobs-1.2.1.tar.gz", hashes = {sha256 = "2af7f8791cde1ae7c6b936f5d0c35fe29feb10de25f79c15b0af0d6729783cc0"}}
-wheels = [
-    {name = "cobs-1.2.1-cp313-cp313-win32.whl",url = "https://files.pythonhosted.org/packages/88/a9/1dfcca55fb46105cdd6b234cb82bef778fe47614343fdf21c3f26cccd926/cobs-1.2.1-cp313-cp313-win32.whl",hashes = {sha256 = "5857c85de70f244648d2a5ee1f28e2aa9313752ebd44c8089343c086dd184a77"}},
-    {name = "cobs-1.2.1-cp313-cp313-win_amd64.whl",url = "https://files.pythonhosted.org/packages/a6/b5/c8103c7bd95e911c8b94609a065e47a1e64bd0cf13d3908409acd199489b/cobs-1.2.1-cp313-cp313-win_amd64.whl",hashes = {sha256 = "3431da8248d91c241ad98ceb08df00824574421132e42359cd31080a1e13bf24"}},
-]
-marker = "\"default\" in dependency_groups"
-
-[packages.tool.pdm]
-dependencies = []
 
 [[packages]]
 name = "importlib-resources"
@@ -1524,7 +1527,7 @@ marker = "\"default\" in dependency_groups"
 dependencies = []
 
 [tool.pdm]
-hashes = {sha256 = "ad29402dcbaaf5353943180154a693b78a53c56eefbee1cfd5938fd81758b4ef"}
+hashes = {sha256 = "c34b8156f29585091ae6240a950a778c66c6bc070e485c56d566cdae5a16da26"}
 strategy = ["direct_minimal_versions", "inherit_metadata", "static_urls"]
 
 [[tool.pdm.targets]]
