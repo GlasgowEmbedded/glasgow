@@ -10,7 +10,7 @@ jobs:
     if: ${{ github.repository == 'GlasgowEmbedded/glasgow' }}
     runs-on: ubuntu-latest
     env:
-      PDM_LOCKFILE: 'pylock.min.lock'
+      PDM_LOCKFILE: 'pylock.min.toml'
     steps:
       - name: Check out source code
         uses: actions/checkout@v4
