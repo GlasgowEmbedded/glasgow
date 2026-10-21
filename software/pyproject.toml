@@ -46,7 +46,7 @@ dependencies = [
   # Python versions.
   "libusb1>=3.3.0; sys_platform!='emscripten'",
   # `pyccobs` is used to multiplex communication streams in applets. It uses SemVer.
-  "pyccobs>=0.1.0,<0.2",
+  "pyccobs>=0.1.1,<0.2",
   # `tqdm` is used to compute and render progress indicatrs. It uses SemVer.
   "tqdm>=4.67.3",
   # `pyvcd` is used in the applet analyzer to dump waveform files. It is also a dependency of

@@ -230,15 +230,16 @@ dependencies = [
 
 [[packages]]
 name = "pyccobs"
-version = "0.1.0"
+version = "0.1.1"
 requires-python = ">=3.11"
-sdist = {name = "pyccobs-0.1.0.tar.gz", url = "https://files.pythonhosted.org/packages/a3/9b/d951921ea07a8dc4419f0990a87ad7357873ca444d602c1c8585c10c6433/pyccobs-0.1.0.tar.gz", hashes = {sha256 = "5f428434331c75e34b86ddb5e74d280fba30e5fe078d52b24c2978adc1d0f457"}}
+sdist = {name = "pyccobs-0.1.1.tar.gz", url = "https://files.pythonhosted.org/packages/47/a3/898589f2eb1026cc4fef7844dbec626fe09f1a162ab0264db2aed9c75a95/pyccobs-0.1.1.tar.gz", hashes = {sha256 = "b8b5ee6b948d634c920909e3c8366f26d94fc393b7d2d7b3267d5f9b0759a26c"}}
 wheels = [
-    {name = "pyccobs-0.1.0-py3-none-macosx_10_9_x86_64.whl",url = "https://files.pythonhosted.org/packages/d9/27/a0f626ceecd0a54f2e57a2165e3ce92b0be2d120f679f81e650c5100b80f/pyccobs-0.1.0-py3-none-macosx_10_9_x86_64.whl",hashes = {sha256 = "dde6e380f0903412c82da30f8e4c902fb36139b48389f3b7252463ac138126df"}},
-    {name = "pyccobs-0.1.0-py3-none-macosx_11_0_arm64.whl",url = "https://files.pythonhosted.org/packages/8f/26/1ea5d1d0fdc35d6dde2144b3998f0f206282382bb0faa97163cc3ae344ef/pyccobs-0.1.0-py3-none-macosx_11_0_arm64.whl",hashes = {sha256 = "edcd6488028b5c2523c4cae9ea6a2589b4061e2e268c03e178b6a20214b8a787"}},
-    {name = "pyccobs-0.1.0-py3-none-manylinux1_x86_64.manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_5_x86_64.whl",url = "https://files.pythonhosted.org/packages/17/71/50ca947d74f534bce5c8ca1fb8164ccf962270c8e7546c0349068444fa8f/pyccobs-0.1.0-py3-none-manylinux1_x86_64.manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_5_x86_64.whl",hashes = {sha256 = "7977ae8a69651af2c33577500c75c9e139dc9b3a9e731bcfde69dc56be036269"}},
-    {name = "pyccobs-0.1.0-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl",url = "https://files.pythonhosted.org/packages/32/34/c6be16f935ac563bd88d4cce1f9f371ed972c07fef7d237882f90569972f/pyccobs-0.1.0-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl",hashes = {sha256 = "4d8720ef20906789fd2137eaf9bba88f5eb3e53b269c3efb1cc3a15eddf2608e"}},
-    {name = "pyccobs-0.1.0-py3-none-win_amd64.whl",url = "https://files.pythonhosted.org/packages/66/8d/0d7a0aa4a8cc4e109ab21a65bdff1fe645a088f6785437311b991ec3e22e/pyccobs-0.1.0-py3-none-win_amd64.whl",hashes = {sha256 = "9a5805e5d2b335685698cb898282aa65a61ab866f2ed7abbe68d622a2d2f8399"}},
+    {name = "pyccobs-0.1.1-py3-none-macosx_10_9_x86_64.whl",url = "https://files.pythonhosted.org/packages/74/cf/24a570af8c6842d74032f4de1a21fa2ec41bcc880462c698083815abecaa/pyccobs-0.1.1-py3-none-macosx_10_9_x86_64.whl",hashes = {sha256 = "f244677a776419b8b3cd8dfe0f978aecf63662261cf78254f07ad886221b9b42"}},
+    {name = "pyccobs-0.1.1-py3-none-macosx_11_0_arm64.whl",url = "https://files.pythonhosted.org/packages/b2/67/63a9e8351ed6fea6dad47fd5904476d7302fc643ee07068196df475fec82/pyccobs-0.1.1-py3-none-macosx_11_0_arm64.whl",hashes = {sha256 = "d349a0ad2c582796ce96981af04efab96b0d58557b7803e1e8d230d0f8f5cf6e"}},
+    {name = "pyccobs-0.1.1-py3-none-manylinux1_x86_64.manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_5_x86_64.whl",url = "https://files.pythonhosted.org/packages/91/4a/41a7bcd51d9815008ceb2618bfaf7d84f94643ac4a0c066c73dadc1b04ff/pyccobs-0.1.1-py3-none-manylinux1_x86_64.manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_5_x86_64.whl",hashes = {sha256 = "b09dc6c87f3657819ac9537440d0c92452f6ebb99ec028e92638b25aee8b87bc"}},
+    {name = "pyccobs-0.1.1-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl",url = "https://files.pythonhosted.org/packages/38/01/b7f831ef24edee18edb03cedc20a8ea2fb58906885d5ad1b5ce758592085/pyccobs-0.1.1-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl",hashes = {sha256 = "8f2bd4d8b4c252b3edcb9c1f38d4ee9b1bdd3dc89ea89d8db82e5ed5ba2c9e9a"}},
+    {name = "pyccobs-0.1.1-py3-none-win_amd64.whl",url = "https://files.pythonhosted.org/packages/58/ab/ce35834c697e0dee238a856e6c58112b9fd9123fb58a77576e3d654e4c57/pyccobs-0.1.1-py3-none-win_amd64.whl",hashes = {sha256 = "4907f8df31dd5fdf4c73c3a934c07e7eeda7ce3ff00923a7dbe8027a9ea687c4"}},
+    {name = "pyccobs-0.1.1-py3-none-win_arm64.whl",url = "https://files.pythonhosted.org/packages/37/aa/70dd296734642e8d8d7a7d23aeddf8b59a7b40c7a51b919709dbb563f684/pyccobs-0.1.1-py3-none-win_arm64.whl",hashes = {sha256 = "7fb0633d6503016790e4c2dafcc77fce518f94bee51e6b4abf42a574362450a6"}},
 ]
 marker = "\"default\" in dependency_groups"
 
@@ -1527,7 +1528,7 @@ marker = "\"default\" in dependency_groups"
 dependencies = []
 
 [tool.pdm]
-hashes = {sha256 = "c34b8156f29585091ae6240a950a778c66c6bc070e485c56d566cdae5a16da26"}
+hashes = {sha256 = "12f541d219d7199f1971aff1631235c2f77e97e91ab8fe81c7a6fc6cf037cc1a"}
 strategy = ["direct_minimal_versions", "inherit_metadata", "static_urls"]
 
 [[tool.pdm.targets]]
