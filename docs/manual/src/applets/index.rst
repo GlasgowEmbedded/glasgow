@@ -18,4 +18,5 @@ Applet index
     bridge/index
     audio/index
     measure/index
+    display/index
     internal/index
