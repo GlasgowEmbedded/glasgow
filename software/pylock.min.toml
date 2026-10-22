@@ -1475,17 +1475,18 @@ dependencies = []
 
 [[packages]]
 name = "python-dateutil"
-version = "2.9.0.post0"
+version = "3.0.0"
 requires-python = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
-sdist = {name = "python-dateutil-2.9.0.post0.tar.gz", url = "https://files.pythonhosted.org/packages/66/c0/0c8b6ad9f17a802ee498c46e004a0eb49bc148f2fd230864601a86dcf6db/python-dateutil-2.9.0.post0.tar.gz", hashes = {sha256 = "37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3"}}
+sdist = {name = "python_dateutil-3.0.0.tar.gz", url = "https://files.pythonhosted.org/packages/0e/df/f15f80383f152452d8985b36d95cb8751f901a3e0ff4cd27f7e118f168e2/python_dateutil-3.0.0.tar.gz", hashes = {sha256 = "7ebcb3c29a92f3ceafe79a7a48a5c45677e9e004bbeec5742ac0bbb00560b7a2"}}
 wheels = [
-    {name = "python_dateutil-2.9.0.post0-py2.py3-none-any.whl",url = "https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl",hashes = {sha256 = "a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427"}},
+    {name = "python_dateutil-3.0.0-py2.py3-none-any.whl",url = "https://files.pythonhosted.org/packages/5a/17/cebee01d1c0c1441174cf0456ddc91b280d79acb65340c05e41d77866ee8/python_dateutil-3.0.0-py2.py3-none-any.whl",hashes = {sha256 = "3c79630202e4152c6add678446984236efe4f57e84d8e892aab0637bab82e9fd"}},
 ]
 marker = "\"numpy\" in extras"
 
 [packages.tool.pdm]
 dependencies = [
-    "six>=1.5",
+    "six>=1.6",
+    "tzdata",
 ]
 
 [[packages]]
@@ -1523,6 +1524,19 @@ wheels = [
     {name = "rfc3986-2.0.0-py2.py3-none-any.whl",url = "https://files.pythonhosted.org/packages/ff/9a/9afaade874b2fa6c752c36f1548f718b5b83af81ed9b76628329dab81c1b/rfc3986-2.0.0-py2.py3-none-any.whl",hashes = {sha256 = "50b1502b60e289cb37883f3dfd34532b8873c7de9f49bb546641ce9cbd256ebd"}},
 ]
 marker = "\"default\" in dependency_groups"
+
+[packages.tool.pdm]
+dependencies = []
+
+[[packages]]
+name = "tzdata"
+version = "2026.5"
+requires-python = ">=2"
+sdist = {name = "tzdata-2026.5.tar.gz", url = "https://files.pythonhosted.org/packages/d9/68/f1b440335057bfce71b6e50a9d09445aa2ecbd08359a337976627b8409e7/tzdata-2026.5.tar.gz", hashes = {sha256 = "8cc73c0a0bfca7dbfa59235d60b2eff82231dee33f53d206db1acd9173cfc0a7"}}
+wheels = [
+    {name = "tzdata-2026.5-py2.py3-none-any.whl",url = "https://files.pythonhosted.org/packages/94/21/1e5995a1c920cce14e4bffae20c665ec10e7ed03ab25e006cd741092b718/tzdata-2026.5-py2.py3-none-any.whl",hashes = {sha256 = "b683bd1b6659ddcd810ff02ad09ba821d4bf1065072805063eb35c49617905ac"}},
+]
+marker = "\"numpy\" in extras"
 
 [packages.tool.pdm]
 dependencies = []
