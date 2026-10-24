@@ -299,14 +299,59 @@
 import argparse
 import struct
 import math
+from dataclasses import dataclass
 
 from amaranth import *
-from amaranth.lib import cdc, io
+from amaranth.lib import cdc, enum, io, wiring, stream
+from amaranth.lib.wiring import In, Out
 from amaranth.lib.crc.catalog import CRC16_CCITT_FALSE
 
 from glasgow.support import logging
+from glasgow.abstract import AbstractAssembly, GlasgowPin, PullState
 from glasgow.applet import *
 from .mfm import *
+
+
+@dataclass(frozen=True, kw_only=True)
+class ShugartFloppyPins:
+    index:  GlasgowPin
+    motea:  GlasgowPin
+    drvsb:  GlasgowPin
+    drvsa:  GlasgowPin
+    moteb:  GlasgowPin
+    dir:    GlasgowPin
+    step:   GlasgowPin
+    wdata:  GlasgowPin
+    wgate:  GlasgowPin
+    trk00:  GlasgowPin
+    wpt:    GlasgowPin
+    rdata:  GlasgowPin
+    side1:  GlasgowPin
+    dskchg: GlasgowPin
+    redwc:  GlasgowPin
+
+    def as_ports(self) -> dict[str, GlasgowPin]:
+        return {
+            "index":  self.index,
+            "motea":  self.motea,
+            "drvsb":  self.drvsb,
+            "drvsa":  self.drvsa,
+            "moteb":  self.moteb,
+            "dir":    self.dir,
+            "step":   self.step,
+            "wdata":  self.wdata,
+            "wgate":  self.wgate,
+            "trk00":  self.trk00,
+            "wpt":    self.wpt,
+            "rdata":  self.rdata,
+            "side1":  self.side1,
+            "dskchg": self.dskchg,
+            "redwc":  self.redwc,
+        }
+
+    @property
+    def inputs(self) -> tuple[GlasgowPin, ...]:
+        return self.index, self.trk00, self.wpt, self.rdata, self.dskchg
 
 
 class ShugartFloppyBus(Elaboratable):
@@ -375,21 +420,25 @@ class ShugartFloppyBus(Elaboratable):
         return m
 
 
-CMD_SYNC  = 0x00
-CMD_START = 0x01
-CMD_STOP  = 0x02
-CMD_TRK0  = 0x03
-CMD_TRK   = 0x04
-CMD_MEAS  = 0x05
-CMD_READ_RAW = 0x06
+class ShugartFloppyCommand(enum.Enum, shape=8):
+    Sync    = 0x00
+    Start   = 0x01
+    Stop    = 0x02
+    Track0  = 0x03
+    Track   = 0x04
+    Measure = 0x05
+    ReadRaw = 0x06
 
 
-class ShugartFloppySubtarget(Elaboratable):
-    def __init__(self, ports, out_fifo, in_fifo, sys_freq):
+class ShugartFloppyComponent(wiring.Component):
+    i_stream: In(stream.Signature(8))
+    o_stream: Out(stream.Signature(8))
+    o_flush: Out(1)
+
+    def __init__(self, ports, sys_freq):
         self.bus = ShugartFloppyBus(ports)
-        self.out_fifo = out_fifo
-        self.in_fifo = in_fifo
         self.sys_freq = sys_freq
+        super().__init__()
 
     def elaborate(self, platform):
         m = Module()
@@ -403,7 +452,7 @@ class ShugartFloppySubtarget(Elaboratable):
                                       settle_cyc)))
         m.submodules.bus = self.bus
 
-        cmd     = Signal(8)
+        cmd     = Signal(ShugartFloppyCommand)
 
         cur_trk = Signal(range(80))
         tgt_trk = Signal.like(cur_trk)
@@ -414,73 +463,75 @@ class ShugartFloppySubtarget(Elaboratable):
 
         with m.FSM() as fsm:
             with m.State("RECV-COMMAND"):
-                m.d.comb += self.in_fifo.flush.eq(1)
+                # Make every completed response visible to the host immediately,
+                # even if it doesn't fill the pipe's transfer buffer.
+                m.d.comb += self.o_flush.eq(1)
                 with m.If(timer == 0):
-                    with m.If(self.out_fifo.r_rdy):
-                        m.d.comb += self.out_fifo.r_en.eq(1)
-                        m.d.sync += cmd.eq(self.out_fifo.r_data)
+                    with m.If(self.i_stream.valid):
+                        m.d.comb += self.i_stream.ready.eq(1)
+                        m.d.sync += cmd.eq(self.i_stream.payload)
                         m.next = "PARSE-COMMAND"
                 with m.Else():
                     m.d.sync += timer.eq(timer - 1)
 
             with m.State("PARSE-COMMAND"):
                 with m.Switch(cmd):
-                    with m.Case(CMD_SYNC):
-                        with m.If(self.in_fifo.w_rdy):
-                            m.d.comb += self.in_fifo.w_en.eq(1)
+                    with m.Case(ShugartFloppyCommand.Sync):
+                        m.d.comb += self.o_stream.valid.eq(1)
+                        with m.If(self.o_stream.ready):
                             m.next = "RECV-COMMAND"
-                    with m.Case(CMD_START):
+                    with m.Case(ShugartFloppyCommand.Start):
                         m.d.sync += [
                             self.bus.drvs.eq(0b11),
                             self.bus.mote.eq(0b11),
                             timer.eq(spin_up_cyc - 1),
                         ]
                         m.next = "RECV-COMMAND"
-                    with m.Case(CMD_STOP):
+                    with m.Case(ShugartFloppyCommand.Stop):
                         m.d.sync += [
                             self.bus.drvs.eq(0),
                             self.bus.mote.eq(0),
                         ]
                         m.next = "RECV-COMMAND"
-                    with m.Case(CMD_TRK0):
+                    with m.Case(ShugartFloppyCommand.Track0):
                         m.d.sync += [
                             self.bus.dir.eq(0), # DIR->STEP S/H=1/24us
                             timer.eq(setup_cyc - 1),
                         ]
                         m.next = "TRACK-STEP"
-                    with m.Case(CMD_TRK):
-                        with m.If(self.out_fifo.r_rdy):
-                            m.d.comb += self.out_fifo.r_en.eq(1)
+                    with m.Case(ShugartFloppyCommand.Track):
+                        with m.If(self.i_stream.valid):
+                            m.d.comb += self.i_stream.ready.eq(1)
                             m.d.sync += [
-                                tgt_trk.eq(self.out_fifo.r_data[1:]),
-                                self.bus.dir.eq(self.out_fifo.r_data[1:] > cur_trk),
-                                self.bus.side1.eq(self.out_fifo.r_data[0]),
+                                tgt_trk.eq(self.i_stream.payload[1:]),
+                                self.bus.dir.eq(self.i_stream.payload[1:] > cur_trk),
+                                self.bus.side1.eq(self.i_stream.payload[0]),
                                 timer.eq(setup_cyc - 1),
                             ]
                             m.next = "TRACK-STEP"
-                    with m.Case(CMD_MEAS):
+                    with m.Case(ShugartFloppyCommand.Measure):
                         with m.If(self.bus.index_e):
                             m.d.sync += trk_len.eq(1)
                             m.next = "MEASURE"
-                    with m.Case(CMD_READ_RAW):
-                        with m.If(self.out_fifo.r_rdy):
-                            m.d.comb += self.out_fifo.r_en.eq(1)
+                    with m.Case(ShugartFloppyCommand.ReadRaw):
+                        with m.If(self.i_stream.valid):
+                            m.d.comb += self.i_stream.ready.eq(1)
                             m.d.sync += [
                                 cur_rot.eq(0),
-                                tgt_rot.eq(self.out_fifo.r_data),
+                                tgt_rot.eq(self.i_stream.payload),
                             ]
                             m.next = "READ-RAW-SYNC"
 
             # === Track positioning
             with m.State("TRACK-STEP"):
                 with m.If(timer == 0):
-                    with m.If((cmd == CMD_TRK0) & self.bus.trk00):
+                    with m.If((cmd == ShugartFloppyCommand.Track0) & self.bus.trk00):
                         m.d.sync += [
                             cur_trk.eq(0),
                             timer.eq(settle_cyc - 1),
                         ]
                         m.next = "RECV-COMMAND"
-                    with m.Elif((cmd == CMD_TRK) & (cur_trk == tgt_trk)):
+                    with m.Elif((cmd == ShugartFloppyCommand.Track) & (cur_trk == tgt_trk)):
                         m.d.sync += timer.eq(settle_cyc - 1)
                         m.next = "RECV-COMMAND"
                     with m.Else():
@@ -510,11 +561,11 @@ class ShugartFloppySubtarget(Elaboratable):
                     m.d.sync += trk_len.eq(trk_len + 1)
             for n in range(3):
                 with m.State(f"MEASURE-SEND-{n}"):
-                    with m.If(self.in_fifo.w_rdy):
-                        m.d.comb += [
-                            self.in_fifo.w_en.eq(1),
-                            self.in_fifo.w_data.eq(trk_len[8 * n:]),
-                        ]
+                    m.d.comb += [
+                        self.o_stream.valid.eq(1),
+                        self.o_stream.payload.eq(trk_len[8 * n:]),
+                    ]
+                    with m.If(self.o_stream.ready):
                         if n < 2:
                             m.next = f"MEASURE-SEND-{n + 1}"
                         else:
@@ -536,55 +587,68 @@ class ShugartFloppySubtarget(Elaboratable):
                 m.d.sync += rdata_cyc.eq(Mux(self.bus.rdata_e, 0, rdata_cyc + 1))
                 with m.If(self.bus.rdata_e | (rdata_cyc == 0xfd)):
                     m.d.comb += [
-                        self.in_fifo.w_data.eq(rdata_cyc),
-                        self.in_fifo.w_en.eq(1),
+                        self.o_stream.payload.eq(rdata_cyc),
+                        self.o_stream.valid.eq(1),
                     ]
-                    with m.If(~self.in_fifo.w_rdy):
+                    with m.If(~self.o_stream.ready):
                         m.d.sync += rdata_ovf.eq(1)
                         m.next = "READ-RAW-SEND-TRAILER"
             with m.State("READ-RAW-SEND-TRAILER"):
-                with m.If(self.in_fifo.w_rdy):
-                    m.d.comb += [
-                        self.in_fifo.w_data.eq(0xfe | rdata_ovf),
-                        self.in_fifo.w_en.eq(1),
-                    ]
+                m.d.comb += [
+                    self.o_stream.payload.eq(0xfe | rdata_ovf),
+                    self.o_stream.valid.eq(1),
+                ]
+                with m.If(self.o_stream.ready):
                     m.next = "RECV-COMMAND"
 
         return m
 
 
 class ShugartFloppyInterface:
-    def __init__(self, interface, logger, sys_clk_freq):
-        self.lower   = interface
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
+                 pins: ShugartFloppyPins):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
-        self._sys_clk_freq = sys_clk_freq
+        self._sys_clk_freq = 1 / assembly.sys_clk_period
+
+        ports = assembly.add_port_group(**pins.as_ports())
+        component = assembly.add_submodule(
+            ShugartFloppyComponent(ports, self._sys_clk_freq))
+        self._pipe = assembly.add_inout_pipe(
+            component.o_stream, component.i_stream, in_flush=component.o_flush)
 
     def _log(self, message, *args):
         self._logger.log(self._level, "Shugart Floppy: " + message, *args)
 
     async def _sync(self):
-        await self.lower.write([CMD_SYNC])
-        await self.lower.read(1)
+        await self._pipe.send([ShugartFloppyCommand.Sync.value])
+        await self._pipe.flush()
+        await self._pipe.recv(1)
 
     async def start(self):
         self._log("start")
-        await self.lower.write([CMD_START, CMD_TRK0])
+        await self._pipe.send([
+            ShugartFloppyCommand.Start.value,
+            ShugartFloppyCommand.Track0.value,
+        ])
         await self._sync()
 
     async def stop(self):
         self._log("stop")
-        await self.lower.write([CMD_STOP])
+        await self._pipe.send([ShugartFloppyCommand.Stop.value])
         await self._sync()
 
     async def seek_track(self, track):
         self._log("seek track=%d", track)
-        await self.lower.write([CMD_TRK, track])
+        if not 0 <= track <= 159:
+            raise ValueError("track must be between 0 and 159")
+        await self._pipe.send([ShugartFloppyCommand.Track.value, track])
         await self._sync()
 
     async def measure_track(self):
-        await self.lower.write([CMD_MEAS])
-        result = await self.lower.read(3)
+        await self._pipe.send([ShugartFloppyCommand.Measure.value])
+        await self._pipe.flush()
+        result = await self._pipe.recv(3)
         cycles = result[0] | (result[1] << 8) | (result[2] << 16)
         self._log("measure track cycles=%d ms=%.3f rpm=%.3f",
                   cycles,
@@ -595,19 +659,21 @@ class ShugartFloppyInterface:
     async def read_track_raw(self, redundancy=1):
         self._log("read track raw")
         data  = []
-        await self.lower.write([CMD_READ_RAW, redundancy])
+        if not 0 <= redundancy <= 15:
+            raise ValueError("redundancy must be between 0 and 15")
+        await self._pipe.send([ShugartFloppyCommand.ReadRaw.value, redundancy])
+        await self._pipe.flush()
         while True:
-            packet = await self.lower.read()
-            if packet[-1] == 0xff:
+            octet = (await self._pipe.recv(1))[0]
+            if octet == 0xff:
                 raise GlasgowAppletError("FIFO overflow while reading track")
-            elif packet[-1] == 0xfe:
-                data.append(packet[:-1])
-                return b"".join(data)
+            elif octet == 0xfe:
+                return bytes(data)
             else:
-                data.append(packet)
+                data.append(octet)
 
 
-class MemoryFloppyApplet(GlasgowApplet):
+class MemoryFloppyApplet(GlasgowAppletV2):
     preview = True
     logger = logging.getLogger(__name__)
     help = "read and write disks using IBM/Shugart floppy drives"
@@ -635,68 +701,41 @@ class MemoryFloppyApplet(GlasgowApplet):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        super().add_build_arguments(parser, access)
-
-        access.add_pins_argument(parser, "index", default=True)
-        access.add_pins_argument(parser, "motea", default=True)
-        access.add_pins_argument(parser, "drvsb", default=True)
-        access.add_pins_argument(parser, "drvsa", default=True)
-        access.add_pins_argument(parser, "moteb", default=True)
-        access.add_pins_argument(parser, "dir", default=True)
-        access.add_pins_argument(parser, "step", default=True)
-        access.add_pins_argument(parser, "wdata", default=True)
-        access.add_pins_argument(parser, "wgate", default=True)
-        access.add_pins_argument(parser, "trk00", default=True)
-        access.add_pins_argument(parser, "wpt", default=True)
-        access.add_pins_argument(parser, "rdata", default=True)
-        access.add_pins_argument(parser, "side1", default=True)
-        access.add_pins_argument(parser, "dskchg", default=True)
-        access.add_pins_argument(parser, "redwc", default=True)
-
-    def build(self, target, args):
-        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        self._sys_clk_freq = target.sys_clk_freq
-        iface.add_subtarget(ShugartFloppySubtarget(
-            ports=iface.get_port_group(
-                index=args.index,
-                motea=args.motea,
-                drvsb=args.drvsb,
-                drvsa=args.drvsa,
-                moteb=args.moteb,
-                dir=args.dir,
-                step=args.step,
-                wdata=args.wdata,
-                wgate=args.wgate,
-                trk00=args.trk00,
-                wpt=args.wpt,
-                rdata=args.rdata,
-                side1=args.side1,
-                dskchg=args.dskchg,
-                redwc=args.redwc,
-            ),
-            out_fifo=iface.get_out_fifo(),
-            in_fifo=iface.get_in_fifo(auto_flush=False),
-            sys_freq=target.sys_clk_freq,
-        ))
-
-    @classmethod
-    def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
-
+        access.add_voltage_argument(parser)
+        access.add_pins_argument(parser, "index",  default=True, required=True)
+        access.add_pins_argument(parser, "motea",  default=True, required=True)
+        access.add_pins_argument(parser, "drvsb",  default=True, required=True)
+        access.add_pins_argument(parser, "drvsa",  default=True, required=True)
+        access.add_pins_argument(parser, "moteb",  default=True, required=True)
+        access.add_pins_argument(parser, "dir",    default=True, required=True)
+        access.add_pins_argument(parser, "step",   default=True, required=True)
+        access.add_pins_argument(parser, "wdata",  default=True, required=True)
+        access.add_pins_argument(parser, "wgate",  default=True, required=True)
+        access.add_pins_argument(parser, "trk00",  default=True, required=True)
+        access.add_pins_argument(parser, "wpt",    default=True, required=True)
+        access.add_pins_argument(parser, "rdata" , default=True, required=True)
+        access.add_pins_argument(parser, "side1",  default=True, required=True)
+        access.add_pins_argument(parser, "dskchg", default=True, required=True)
+        access.add_pins_argument(parser, "redwc",  default=True, required=True)
         parser.add_argument(
             "--pulls", default=False, action="store_true",
             help="enable internal bus termination")
 
-    async def run(self, device, args):
-        pulls = set()
-        if args.pulls:
-            pulls = {args.index, args.trk00, args.wpt, args.rdata, args.dskchg}
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
-                                                           pull_high=pulls)
-        return ShugartFloppyInterface(iface, self.logger, self._sys_clk_freq)
+    def build(self, args):
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            pins = ShugartFloppyPins(
+                index=args.index, motea=args.motea, drvsb=args.drvsb, drvsa=args.drvsa,
+                moteb=args.moteb, dir=args.dir, step=args.step, wdata=args.wdata,
+                wgate=args.wgate, trk00=args.trk00, wpt=args.wpt, rdata=args.rdata,
+                side1=args.side1, dskchg=args.dskchg, redwc=args.redwc)
+            if args.pulls:
+                self.assembly.use_pulls({pins.inputs: PullState.High})
+            self.floppy_iface = ShugartFloppyInterface(
+                self.logger, self.assembly, pins=pins)
 
     @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         p_operation = parser.add_subparsers(dest="operation", metavar="OPERATION", required=True)
 
         p_read_raw = p_operation.add_parser(
@@ -714,10 +753,10 @@ class MemoryFloppyApplet(GlasgowApplet):
             "last", metavar="LAST", type=int,
             help='read until track LAST (inclusive; 159 for most 3.5" disks)')
 
-    async def interact(self, device, args, floppy_iface):
+    async def run(self, args):
         self.logger.info("starting up the drive")
-        await floppy_iface.start()
-        await floppy_iface.measure_track()
+        await self.floppy_iface.start()
+        await self.floppy_iface.measure_track()
 
         try:
             if args.operation == "read-raw":
@@ -725,14 +764,14 @@ class MemoryFloppyApplet(GlasgowApplet):
                     cylinder, head = track >> 1, track & 1
                     self.logger.info("reading C/H %d/%d", cylinder, head)
 
-                    await floppy_iface.seek_track(track)
-                    data = await floppy_iface.read_track_raw(redundancy=args.redundancy)
+                    await self.floppy_iface.seek_track(track)
+                    data = await self.floppy_iface.read_track_raw(redundancy=args.redundancy)
                     args.file.write(struct.pack(">LBB", len(data), cylinder, head))
                     args.file.write(data)
                     args.file.flush()
 
         finally:
-            await floppy_iface.stop()
+            await self.floppy_iface.stop()
 
     @classmethod
     def tests(cls):
@@ -782,7 +821,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             self._run_raw2img(args)
 
     @classmethod
-    def _add_histogram_arguments(self, p_operation):
+    def _add_histogram_arguments(cls, p_operation):
         p_histogram = p_operation.add_parser(
             "histogram", help="plot distribution of transition periods")
         p_histogram.add_argument(
@@ -833,7 +872,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
         plt.show()
 
     @classmethod
-    def _add_train_arguments(self, p_operation):
+    def _add_train_arguments(cls, p_operation):
         p_train = p_operation.add_parser(
             "train", help="train PLL and collect statistics")
         p_train.add_argument(
@@ -868,7 +907,6 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
 
             bits    = list(mfm.bits(bytestream))
             edges   = list(mfm.edges(bytestream))
-            domains = list(mfm.domains(bits))
             plldata = list(mfm.lock(bits, debug=True))
 
             ui_cycles = args.ui / self._timebase
@@ -915,7 +953,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             plt.show()
 
     @classmethod
-    def _add_index_arguments(self, p_operation):
+    def _add_index_arguments(cls, p_operation):
         p_index = p_operation.add_parser(
             "index", help="discover and verify raw disk image contents and MFM sectors")
         p_index.add_argument(
@@ -942,7 +980,7 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
                 pass
 
     @classmethod
-    def _add_raw2img_arguments(self, p_operation):
+    def _add_raw2img_arguments(cls, p_operation):
         p_raw2img = p_operation.add_parser(
             "raw2img", help="extract raw disk images into linear disk images")
         p_raw2img.add_argument(
@@ -962,8 +1000,6 @@ class MemoryFloppyAppletTool(GlasgowAppletTool, applet=MemoryFloppyApplet):
             help="write linear disk image to LINEAR-FILE")
 
     def _run_raw2img(self, args):
-        image    = bytearray()
-        next_lba = 0
         missing  = 0
 
         try:
