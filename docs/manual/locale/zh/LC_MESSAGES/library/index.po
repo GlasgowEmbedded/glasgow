@@ -20,17 +20,17 @@ msgstr ""
 
 #: ../../src/library/index.rst:2
 msgid "Reusable library"
-msgstr ""
+msgstr "可复用库"
 
 #: ../../src/library/index.rst:4
 msgid "The Glasgow reusable library provides implementations of protocols, algorithms, and other useful tools that are necessary for an applet and are common enough in embedded development to document and share."
-msgstr ""
+msgstr "Glasgow 可复用库包含了实现小程序所需的，并且在嵌入式开发中足够常见，以值得记载并共享的一些协议、算法等有用工具的实现。"
 
 #: ../../src/library/index.rst:8
 msgid "**No API stability guarantees whatsoever are provided.** This reusable library is designed to be easy to copy and paste piecemeal into other projects; you should do so if you need stability. We *can* and *will* make cross-cutting changes to interfaces here, synchronized with the in-tree applets."
-msgstr ""
+msgstr "**完全不提供任何 API 稳定性保证。**\\ 可复用库被设计为可以轻松按需选择一部分来复制并粘贴到其它项目中的形式。如果您需要稳定性，请您如此操作。我们\\ **可以**，并且\\ **实际上也确实会**\\ 在与树内的小程序同步的情况下对这里的接口进行跨模块更改。"
 
 #: ../../src/library/index.rst:12
 msgid "Note that not every library module is documented here yet."
-msgstr ""
+msgstr "注意不是所有的库模块都在这里有文档。"
 
