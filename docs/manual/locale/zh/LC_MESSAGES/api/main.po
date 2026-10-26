@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-17 21:29+0800\n"
+"POT-Creation-Date: 2026-10-26 17:44+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh\n"
@@ -64,10 +64,14 @@ msgid "Configure the Qt runtime and call :py:`main`."
 msgstr ""
 
 #: glasgow.main.run_async_qtwidgets:3 of
-msgid "This decorator serves the same purpose as :func:`run_async` and works the same way, except that it initializes a graphical application using the QtWidgets library."
+msgid "This decorator serves the same purpose as :func:`run_async` and works the same way, except that it initializes a graphical application built using the :mod:`~PySide6.QtWidgets` library."
 msgstr ""
 
 #: glasgow.main.run_async_qtqml:3 of
-msgid "This decorator serves the same purpose as :func:`run_async` and works the same way, except that it initializes a graphical application using the QtQml library."
+msgid "This decorator serves the same purpose as :func:`run_async` and works the same way, except that it initializes a graphical application built using the :mod:`~PySide6.QtQml` library."
+msgstr ""
+
+#: glasgow.main.run_async_qtqml:6 of
+msgid "Return the :class:`~PySide6.QtQml.QQmlEngine` instance from :py:`main()` to prevent it from being garbage collected prematurely."
 msgstr ""
 
