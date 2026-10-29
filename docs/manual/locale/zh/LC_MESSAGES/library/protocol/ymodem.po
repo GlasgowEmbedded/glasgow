@@ -25,43 +25,43 @@ msgstr ""
 
 #: glasgow.protocol.ymodem:1 of
 msgid "XMODEM/YMODEM protocol implementation."
-msgstr ""
+msgstr "XMODEM/YMODEM 协议实现。"
 
 #: glasgow.protocol.ymodem:3 of
 msgid "The XMODEM and YMODEM families of protocols are closely related. This module implements both; the exact protocol used is determined by entry point and capability negotiation."
-msgstr ""
+msgstr "XMODEM 和 YMODEM 协议族紧密相关。该模块同时实现两者，而具体所用的协议由入口点和功能协商所决定。"
 
 #: glasgow.protocol.ymodem.YModemError:1 of
 msgid "XMODEM/YMODEM communication error."
-msgstr ""
+msgstr "XMODEM/YMODEM 通信错误。"
 
 #: glasgow.protocol.ymodem.YModemTransport:1 of
 msgid "Abstract XMODEM/YMODEM transport."
-msgstr ""
+msgstr "抽象 XMODEM/YMODEM 传输层。"
 
 #: glasgow.protocol.ymodem.YModemTransport.recv:1 of
 msgid "Receive :py:`length` bytes."
-msgstr ""
+msgstr "接收 :py:`length` 个字节。"
 
 #: glasgow.protocol.ymodem.YModemTransport.recv:3 of
 msgid "Can be safely cancelled."
-msgstr ""
+msgstr "可以被安全地取消。"
 
 #: glasgow.protocol.ymodem.YModemTransport.send:1 of
 msgid "Send :py:`data` and flush."
-msgstr ""
+msgstr "发送 :py:`data` 并排空缓冲区。"
 
 #: glasgow.protocol.ymodem.YModemTransport.purge:1 of
 msgid "Clear any data in the receive buffer."
-msgstr ""
+msgstr "清除接收缓冲区中的所有数据。"
 
 #: glasgow.protocol.ymodem.YModemHeader:1 of
 msgid "XMODEM/YMODEM packet header."
-msgstr ""
+msgstr "XMODEM/YMODEM 包头。"
 
 #: glasgow.protocol.ymodem.YModemHeader of
 msgid "Member Type"
-msgstr ""
+msgstr "成员类型"
 
 #: glasgow.protocol.ymodem.YModemHeader:1 of
 msgid ":py:class:`bytes`"
@@ -70,268 +70,268 @@ msgstr ""
 #: glasgow.protocol.ymodem.YModemHeader:1
 #: glasgow.protocol.ymodem.YModemVariant:1 of
 msgid "Valid values are as follows:"
-msgstr ""
+msgstr "合法的值如下："
 
 #: glasgow.protocol.ymodem.YModemHeader.SOH:1 of
 msgid "128 bytes of data."
-msgstr ""
+msgstr "128 个字节的数据。"
 
 #: glasgow.protocol.ymodem.YModemHeader.STX:1 of
 msgid "1024 bytes of data."
-msgstr ""
+msgstr "1024 个字节的数据。"
 
 #: glasgow.protocol.ymodem.YModemHeader.EOT:1 of
 msgid "End of transfer."
-msgstr ""
+msgstr "传输结束。"
 
 #: glasgow.protocol.ymodem.YModemHeader.ACK:1 of
 msgid "Acknowledgement."
-msgstr ""
+msgstr "确认。"
 
 #: glasgow.protocol.ymodem.YModemHeader.NAK:1 of
 msgid "Non-acknowledgement."
-msgstr ""
+msgstr "负面确认。"
 
 #: glasgow.protocol.ymodem.YModemHeader.CAN:1 of
 msgid "Cancel."
-msgstr ""
+msgstr "取消。"
 
 #: glasgow.protocol.ymodem.YModemHeader.C:1 of
 msgid "Use XMODEM-CRC."
-msgstr ""
+msgstr "使用 XMODEM-CRC。"
 
 #: glasgow.protocol.ymodem.YModemHeader.K:1 of
 msgid "Use XMODEM-1K (implies XMODEM-CRC)."
-msgstr ""
+msgstr "使用 XMODEM-1K（包含 XMODEM-CRC）"
 
 #: glasgow.protocol.ymodem.YModemHeader:1
 #: glasgow.protocol.ymodem.YModemVariant:1 of
 msgid "The :class:`~enum.Enum` and its members also have the following methods:"
-msgstr ""
+msgstr "该 :class:`~enum.Enum` 及其成员还有如下的方法："
 
 #: glasgow.protocol.ymodem.YModemHeader.packet:1 of
 msgid "Create an XMODEM/YMODEM control packet."
-msgstr ""
+msgstr "创建一个 XMODEM/YMODEM 控制包。"
 
 #: glasgow.protocol.ymodem.YModemVariant:1 of
 msgid "XMODEM/YMODEM protocol variant."
-msgstr ""
+msgstr "XMODEM/YMODEM 协议变种。"
 
 #: glasgow.protocol.ymodem.YModemVariant.has_crc16:1 of
 msgid "Whether to use CRC-16 for data packets."
-msgstr ""
+msgstr "是否为数据包使用 CRC-16。"
 
 #: glasgow.protocol.ymodem.YModemVariant.has_crc16:3 of
 msgid "True for :py:enum:mem:`XMODEM_CRC` and :py:enum:mem:`XMODEM_1K`."
-msgstr ""
+msgstr "对 :py:enum:mem:`XMODEM_CRC` 和 :py:enum:mem:`XMODEM_1K` 为 True。"
 
 #: glasgow.protocol.ymodem.YModemVariant.has_1k:1 of
 msgid "Whether to use 1024-byte data packets."
-msgstr ""
+msgstr "是否使用 1024 字节长的数据包。"
 
 #: glasgow.protocol.ymodem.YModemVariant.has_1k:3 of
 msgid "True for :py:enum:mem:`XMODEM_1K`."
-msgstr ""
+msgstr "对 :py:enum:mem:`XMODEM_1K` 为 True。"
 
 #: glasgow.protocol.ymodem.YModemPacket:1 of
 msgid "Abstract XMODEM/YMODEM packet."
-msgstr ""
+msgstr "抽象的 XMODEM/YMODEM 包"
 
 #: glasgow.protocol.ymodem.YModemPacket:3 of
 msgid "Represents the contents of a control or data packet."
-msgstr ""
+msgstr "表示一个控制或数据包的内容。"
 
 #: ../../docstring glasgow.protocol.ymodem.YModemPacket.control:1 of
 msgid "Header byte."
-msgstr ""
+msgstr "头字节。"
 
 #: ../../docstring glasgow.protocol.ymodem.YModemPacket.number:1 of
 msgid "Packet number, for data packets."
-msgstr ""
+msgstr "数据包的包编号。"
 
 #: ../../docstring glasgow.protocol.ymodem.YModemPacket.data:1 of
 msgid "Packet payload, for data packets."
-msgstr ""
+msgstr "数据包的包载荷。"
 
 #: glasgow.protocol.ymodem.YModemPacket.for_data:1 of
 msgid "Create an XMODEM/YMODEM data packet."
-msgstr ""
+msgstr "创建一个 XMODEM/YMODEM 数据包。"
 
 #: ../../src/library/protocol/ymodem.rst
 msgid "Raises"
-msgstr ""
+msgstr "可能引发异常："
 
 #: glasgow.protocol.ymodem.YModemPacket.for_data:3 of
 msgid "If :py:`len(data)` is neither 128 nor 1024."
-msgstr ""
+msgstr "如果 :py:`len(data)` 不是 128 或 1024。"
 
 #: glasgow.protocol.ymodem.YModemPacket.recv:1 of
 msgid "Receive a packet from :py:`transport`."
-msgstr ""
+msgstr "从 :py:`transport` 接收一个数据包。"
 
 #: glasgow.protocol.ymodem.YModemPacket.recv:3 of
 msgid "Reads and returns a single XMODEM/YMODEM packet from :py:`transport`. If the first byte read from :py:`transport` is not a valid :class:`YModemControl` header, returns :py:`None`."
-msgstr ""
+msgstr "从 :py:`transport` 读取单个 XMODEM/YMODEM 包，并将其返回。如果读到的第一个字节不是一个有效的 :class:`YModemControl` 头，则返回 :py:`None`。"
 
 #: glasgow.protocol.ymodem.YModemPacket.recv:6 of
 msgid "If a checksum or CRC-16 was incorrect."
-msgstr ""
+msgstr "如果校验和或 CRC-16 错误。"
 
 #: glasgow.protocol.ymodem.YModemPacket.recv:7 of
 msgid "Any error raised by :py:`transport.recv()`."
-msgstr ""
+msgstr ":py:`transport.recv()` 引发的任何异常。"
 
 #: glasgow.protocol.ymodem.YModemPacket.send:1 of
 msgid "Send a packet to :py:`transport`."
-msgstr ""
+msgstr "向 :py:`transport` 发送一个包。"
 
 #: glasgow.protocol.ymodem.YModemPacket.send:3 of
 msgid "Formats and writes a single XMODEM/YMODEM packet to :py:`transport`."
-msgstr ""
+msgstr "格式化单个 XMODEM/YMODEM 包，并将其写入 :py:`transport`。"
 
 #: glasgow.protocol.ymodem.YModemPacket.send:5 of
 msgid "Any error raised by :py:`transport.send()`."
-msgstr ""
+msgstr ":py:`transport.send()` 引发的任何异常。"
 
 #: glasgow.protocol.ymodem.YModemFileInfo:1 of
 msgid "YMODEM file metadata, transmitted in block zero."
-msgstr ""
+msgstr "YMODEM 在 0 号块中传输的文件元数据。"
 
 #: ../../docstring glasgow.protocol.ymodem.YModemFileInfo.pathname:1 of
 msgid "File pathname."
-msgstr ""
+msgstr "文件路径名。"
 
 #: ../../docstring glasgow.protocol.ymodem.YModemFileInfo.pathname:3 of
 msgid "The exact format of the pathname is not specified, but it \"must be acceptable to both the sender and receiving operating systems\". Drive letters and backslashes may not appear in the pathname in any case. It is recommended but not required to translate the pathname to lower case."
-msgstr ""
+msgstr "路径名的格式没有专门规范，但是它“应当在发送方和接受方的操作系统上都被接受”。路径名在任何情况下都不应包含盘符和反斜杠。推荐但是不强制将路径名转换为小写。"
 
 #: ../../docstring glasgow.protocol.ymodem.YModemFileInfo.length:1 of
 msgid "File length."
-msgstr ""
+msgstr "文件长度。"
 
 #: ../../docstring glasgow.protocol.ymodem.YModemFileInfo.length:3 of
 msgid "If present, this field should be used to discard any padding in the final block of the transfer."
-msgstr ""
+msgstr "如果存在，则应用此字段数据来丢弃最后一个数据块结尾的填充。"
 
 #: ../../docstring glasgow.protocol.ymodem.YModemFileInfo.modified:1 of
 msgid "Modification date."
-msgstr ""
+msgstr "修改日期。"
 
 #: ../../docstring glasgow.protocol.ymodem.YModemFileInfo.modified:3 of
 msgid "If present, this field indicates modification date as number of seconds from 1970-01-01 GMT."
-msgstr ""
+msgstr "如果存在，则此字段表示修改日期，为自 1970-01-01 GMT 以来的秒数。"
 
 #: ../../docstring glasgow.protocol.ymodem.YModemFileInfo.mode:1 of
 msgid "File mode."
-msgstr ""
+msgstr "文件模式。"
 
 #: ../../docstring glasgow.protocol.ymodem.YModemFileInfo.mode:3 of
 msgid "If present, this field indicates that the file has been sent from a Unix system and has the specified mode."
-msgstr ""
+msgstr "如果存在，表示此文件发送自一个 Unix 系统，并有该字段所示的模式。"
 
 #: glasgow.protocol.ymodem.YModemFileInfo.parse:1 of
 msgid "Parse YMODEM metadata."
-msgstr ""
+msgstr "解析 YMODEM 元数据。"
 
 #: glasgow.protocol.ymodem.YModemFileInfo.parse:3 of
 msgid "The metadata parser tolerates significant deviations from the specified format in order to try and maximize compatibility."
-msgstr ""
+msgstr "该元数据解析器会容许相较格式规范有明显的偏差的数据，以此尽量提高兼容性。"
 
 #: glasgow.protocol.ymodem.YModemFileInfo.parse:6 of
 msgid "If the metadata has invalid format."
-msgstr ""
+msgstr "如果元数据格式无效。"
 
 #: glasgow.protocol.ymodem.YModemFileInfo.emit:1 of
 msgid "Serialize YMODEM metadata."
-msgstr ""
+msgstr "序列化 YMODEM 元数据。"
 
 #: glasgow.protocol.ymodem.YModemFileInfo.emit:5 of
 msgid "For each of :py:`self.modified` and :py:`self.mode`, the preceding field must be defined as well for this field to be serialized."
-msgstr ""
+msgstr "对于 :py:`self.modified` 和 :py:`self.mode` 中的每个字段，必须在其前序字段有定义的情况下，该字段才会被序列化。"
 
 #: glasgow.protocol.ymodem.YModemFile:1 of
 msgid "YMODEM file representation."
-msgstr ""
+msgstr "YMODEM 文件表示。"
 
 #: ../../docstring glasgow.protocol.ymodem.YModemFile.info:1 of
 msgid "YMODEM file metadata."
-msgstr ""
+msgstr "YMODEM 文件元数据。"
 
 #: ../../docstring glasgow.protocol.ymodem.YModemFile.data:1 of
 msgid "File data."
-msgstr ""
+msgstr "文件数据。"
 
 #: glasgow.protocol.ymodem.YModemFile.from_path:1 of
 msgid "Read file from filesystem :py:`path`."
-msgstr ""
+msgstr "从文件系统读取路径 :py:`path` 的文件。"
 
 #: glasgow.protocol.ymodem.YModemFile.from_path:5 of
 msgid "The :py:`meta.pathname` field receives the file name only (without a path and without case conversion). Callers should update this field if different behavior is desired."
-msgstr ""
+msgstr ":py:`meta.pathname` 字段仅会被设置为文件名（不含路径，不进行大小写转换）。如果需要不同行为，调用者应修改此字段。"
 
 #: glasgow.protocol.ymodem.YModemProtocol:1 of
 msgid "XMODEM/YMODEM protocol handler."
-msgstr ""
+msgstr "XMODEM/YMODEM 协议处理。"
 
 #: glasgow.protocol.ymodem.YModemProtocol:3 of
 msgid "Handles packet sequencing, retransmission, and data storage."
-msgstr ""
+msgstr "处理包序列化、重传、数据存储。"
 
 #: glasgow.protocol.ymodem.YModemProtocol.recv_single:1 of
 msgid "Receive a single file using the XMODEM protocol."
-msgstr ""
+msgstr "用 XMODEM 协议接受单个文件。"
 
 #: glasgow.protocol.ymodem.YModemProtocol.recv_single:3 of
 msgid "Returns the concatenation of every data block; this will include padding at the end."
-msgstr ""
+msgstr "返回连接起来的每个数据块；返回值会包含最后的填充。"
 
 #: glasgow.protocol.ymodem.YModemProtocol.recv_batch:7
 #: glasgow.protocol.ymodem.YModemProtocol.recv_single:5 of
 msgid "If retransmit count is exceeded."
-msgstr ""
+msgstr "如果重传次数超过限制。"
 
 #: glasgow.protocol.ymodem.YModemProtocol.recv_batch:8
 #: glasgow.protocol.ymodem.YModemProtocol.recv_single:6 of
 msgid "If another protocol violation occurs."
-msgstr ""
+msgstr "如果出现其它协议违例。"
 
 #: glasgow.protocol.ymodem.YModemProtocol.recv_batch:9
 #: glasgow.protocol.ymodem.YModemProtocol.recv_single:7
 #: glasgow.protocol.ymodem.YModemProtocol.send_batch:6
 #: glasgow.protocol.ymodem.YModemProtocol.send_single:7 of
 msgid "Any error raised by :py:`transport.send()` or :py:`transport.recv()`."
-msgstr ""
+msgstr ":py:`transport.send()` 或 :py:`transport.recv()` 引发的任何异常。"
 
 #: glasgow.protocol.ymodem.YModemProtocol.recv_batch:1 of
 msgid "Receive a batch of files using the YMODEM protocol."
-msgstr ""
+msgstr "用 YMODEM 协议接受一系列文件。"
 
 #: glasgow.protocol.ymodem.YModemProtocol.recv_batch:3 of
 msgid "Returns a list of files received in the batch, with the file data trimmed to remove any padding."
-msgstr ""
+msgstr "返回接受到的文件组成的列表，每个文件的数据裁切去掉填充。"
 
 #: glasgow.protocol.ymodem.YModemProtocol.recv_batch:6 of
 msgid "If YMODEM metadata is malformed."
-msgstr ""
+msgstr "如果 YMODEM 元数据的格式错误。"
 
 #: glasgow.protocol.ymodem.YModemProtocol.send_single:1 of
 msgid "Send a single file using the XMODEM protocol."
-msgstr ""
+msgstr "用 XMODEM 协议发送单个文件。"
 
 #: glasgow.protocol.ymodem.YModemProtocol.send_single:3 of
 msgid "Last block will be padded with ASCII :py:`0x1A` (SUB) characters up to a 128-byte block boundary."
-msgstr ""
+msgstr "最后一个块会被以 ASCII :py:`0x1A` (SUB) 填充至 128 字节的块边界。"
 
 #: glasgow.protocol.ymodem.YModemProtocol.send_batch:5
 #: glasgow.protocol.ymodem.YModemProtocol.send_single:6 of
 msgid "If a protocol violation occurs."
-msgstr ""
+msgstr "如果出现协议违例。"
 
 #: glasgow.protocol.ymodem.YModemProtocol.send_batch:1 of
 msgid "Send a batch of files using the YMODEM protocol."
-msgstr ""
+msgstr "用 YMODEM 协议发送一系列文件。"
 
 #: glasgow.protocol.ymodem.YModemProtocol.send_batch:3 of
 msgid "See remark in :meth:`send_single`."
-msgstr ""
+msgstr "见 :meth:`send_single` 的备注。"
 
