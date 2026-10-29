@@ -24,15 +24,15 @@ msgstr ""
 
 #: glasgow.support.progress.Progress:1 of
 msgid "Progress tracker."
-msgstr ""
+msgstr "进度跟踪组件。"
 
 #: glasgow.support.progress.Progress:3 of
 msgid "This context manager is used to indicate progress of a slow process within applet code in a generic way, decoupling it from a specific type of user interface. For example, if an applet is used with a CLI frontend, terminal escape sequences could be used to repeatedly display a text description on the last used line, whereas with a GUI frontend, a progress bar widget would be used."
-msgstr ""
+msgstr "该上下文管理器用于通用地、与具体界面类型解耦地显示一个小程序代码中进展较慢的流程的进度。例如，如果一个小程序和 CLI 前端配合使用，则它可以使用终端转义序列，在输出所在的最后一行反复更新显示文字描述，而如果是和 GUI 前端配合，则它可以使用一个进度条组件。"
 
 #: glasgow.support.progress.Progress:9 of
 msgid "To use it, modify applet code that processes multiple items by wrapping it in :py:`with Progress(...):`. For example, let's consider a method that uploads a bitstream via :class:`SPIControllerInterface<glasgow.applet.interface.spi_controller.SPIControllerInterface>`:"
-msgstr ""
+msgstr "如需使用，请修改小程序代码中处理多项元素的部分，将其包在 :py:`with Progress(...):` 中。例如，假设有一个用 :class:`SPIControllerInterface<glasgow.applet.interface.spi_controller.SPIControllerInterface>` 来上传位流的方法："
 
 #: glasgow.support.progress.Progress:13 of
 msgid ""
@@ -43,7 +43,7 @@ msgstr ""
 
 #: glasgow.support.progress.Progress:19 of
 msgid "To add progress indication here, the bitstream will need to be explicitly chunked (while avoiding copies using :class:`memoryview`) and individual chunks iterated through:"
-msgstr ""
+msgstr "如需在这里加入进度显示，则位流需要被显式地分段（用 :class:`memoryview` 以避免复制），然后迭代每段分别处理："
 
 #: glasgow.support.progress.Progress:22 of
 msgid ""
@@ -61,11 +61,11 @@ msgstr ""
 
 #: glasgow.support.progress.Progress:37 of
 msgid "The :py:`synchronize()` call is added because the :py:`write()` method does not wait for the operation to complete; without it, the :py:`load()` method would quickly finish, with the command buffer draining slowly after. In most cases (e.g. Flash programming) there is a requirement to wait for feedback, making explicit synchronization unnecessary."
-msgstr ""
+msgstr "这里加入了一行调用 :py:`synchronize()` 的原因是 :py:`write()` 方法并不等待操作完成。如果没有这一行，则 :py:`load()` 会快速完成，而之后命令缓冲区会逐渐慢慢被消耗。在大部分情况下（如闪存编程时）等待完成反馈是必须的，此时显式同步不是必要的。"
 
 #: glasgow.support.progress.Progress:42 of
 msgid "The particluar case of chunking a sequence (of bytes, or otherwise) is common enough that this class provides a helper method for it, :meth:`chunks`. Using this helper the :py:`load()` function becomes:"
-msgstr ""
+msgstr "这个将一个序列（元素是字节或其它内容）分段的情况很常见，所以这个类提供一个辅助方法 :meth:`chunks`。使用此辅助方法，:py:`load()` 函数可写为："
 
 #: glasgow.support.progress.Progress:46 of
 msgid ""
@@ -79,7 +79,7 @@ msgstr ""
 
 #: glasgow.support.progress.Progress:55 of
 msgid "With this change to the applet code, a CLI frontend can now indicate the progress of the operation, for example, by printing:"
-msgstr ""
+msgstr "经过这样修改小程序代码后，CLI 前端可以显示操作的进度，例如输出如下："
 
 #: glasgow.support.progress.Progress:58 of
 msgid ""
@@ -87,22 +87,25 @@ msgid ""
 "programming... 26% (131072/500000 bytes)\n"
 "(and so on until completion)"
 msgstr ""
+"programming... 13% (65536/500000 bytes)\n"
+"programming... 26% (131072/500000 bytes)\n"
+"（以此类推，直到完成）"
 
 #: glasgow.support.progress.Progress.chunks:1 of
 msgid "Chunked progress tracker."
-msgstr ""
+msgstr "分段进度跟踪组件。"
 
 #: glasgow.support.progress.Progress.chunks:3 of
 msgid "This helper method exists to handle the case where a sequence must be brought into chunks for processing, but progress must be tracked per-item, not per-chunk. For example, when manipulating large byte sequences, it would be too inefficient to process bytes one by one just to report progress, but processing 64 KiB chunks is usually fine."
-msgstr ""
+msgstr "该辅助方法用于处理一个序列需要分段处理，但是需要按元素数而不是按段数跟踪进度的情况。例如，在处理较大的字节序列的时候，为了汇报进度而一个字节一个字节处理太过低效，而按每段 64 KiB 分段处理一般没有问题。"
 
 #: glasgow.support.progress.Progress.chunks:8 of
 msgid "All keyword arguments not explicitly declared are passed to the class constructor. Returns a :term:`python:generator` yielding the result of indexing slices of :py:`items` up to :py:`chunk_size` in length, and advancing progress whenever control is returned. If :py:`len(items) <= chunk_size`, progress indication is omitted entirely."
-msgstr ""
+msgstr "所有没有显式指定的关键字参数都传给类构造器。返回一个\\ :term:`生成器<python:generator>`，产生 :py:`items` 中抽取的长度不超过 :py:`chunk_size` 的切片，并在每次控制流返回时记录进度前进。如果 :py:`len(items) <= chunk_size`，则完全不显示进度。"
 
 #: glasgow.support.progress.Progress.chunks:13 of
 msgid "To split a byte array into chunks of up to :py:`chunk_size`, such as for a write operation, use:"
-msgstr ""
+msgstr "如需将一个字节数组切分为长度不超过 :py:`chunk_size` 的段（例如为写入操作所用），用法如下："
 
 #: glasgow.support.progress.Progress.chunks:16 of
 msgid ""
@@ -113,7 +116,7 @@ msgstr ""
 
 #: glasgow.support.progress.Progress.chunks:22 of
 msgid "To split an address range into chunks of up to :py:`chunk_size`, such as for a read operation, use:"
-msgstr ""
+msgstr "如需将一个地址范围切分为长度不超过 :py:`chunk_size` 的段（例如为读取操作所用），用法如下："
 
 #: glasgow.support.progress.Progress.chunks:25 of
 msgid ""
@@ -124,88 +127,88 @@ msgstr ""
 
 #: glasgow.support.progress.Progress.chunks:33 of
 msgid "Avoid passing :class:`bytes` or :class:`bytearray` values as :py:`items`; wrap them in :class:`memoryview` so that chunks reference the original bytes instead of copying."
-msgstr ""
+msgstr "避免将 :class:`bytes` 或 :class:`bytearray` 值作为 :py:`items` 传入，而应将其包装在 :class:`memoryview` 中，这样每个段可以直接引用原来的字节，而不需要复制一份。"
 
 #: glasgow.support.progress.Progress.action:1 of
 msgid "Action taking progress."
-msgstr ""
+msgstr "正在进行的操作。"
 
 #: glasgow.support.progress.Progress.action:3 of
 msgid "Should have a `present participle` with no punctuation at the end, e.g. :py:`\"writing\"` or :py:`\"programming flash\"`."
-msgstr ""
+msgstr "应包含动词的\\ `现在分词`\\ 形式（如为英文），且后面不带标点符号，如 :py:`\"writing\"` 或 :py:`\"programming flash\"`。"
 
 #: glasgow.support.progress.Progress.item:1 of
 msgid "Item being operated on."
-msgstr ""
+msgstr "所操作的元素。"
 
 #: glasgow.support.progress.Progress.item:3 of
 msgid "Should be a singular noun, e.g. :py:`\"byte\"` or :py:`\"B\"`. If :py:`None`, then the unit of processing is unspecified: either clear from context, or not feasible to specify exactly."
-msgstr ""
+msgstr "应为一个单数名词（如为英文），如 :py:`\"byte\"` 或 :py:`\"B\"`。如为 :py:`None`，则处理的单位未指定：要么从上下文中可以明确，要么无法准确给出。"
 
 #: glasgow.support.progress.Progress.scale:1 of
 msgid "Scale of item count."
-msgstr ""
+msgstr "元素数量的基数。"
 
 #: glasgow.support.progress.Progress.scale:3 of
 msgid "May be one of 1, 1000, or 1024. If not 1, an appropriate SI prefix (K, M, G... or Ki, Mi, Gi...) will be used when counting items."
-msgstr ""
+msgstr "可以为 1、1000、1024 之一。如果不是 1，则在对元素计数时会使用相应的 SI 前缀（K、M、G……或 Ki、Mi、Gi……）。"
 
 #: glasgow.support.progress.Progress.total:1 of
 msgid "Total number of items."
-msgstr ""
+msgstr "元素总数。"
 
 #: glasgow.support.progress.Progress.total:3 of
 msgid "If :py:`None`, impossible to know until the operation finishes."
-msgstr ""
+msgstr "如果为 :py:`None`，则表示在操作完成前无法预知。"
 
 #: glasgow.support.progress.Progress.done:1 of
 msgid "Number of completed items."
-msgstr ""
+msgstr "完成的元素数量。"
 
 #: glasgow.support.progress.Progress.advance:1 of
 msgid "Indicate completion of :py:`count` items."
-msgstr ""
+msgstr "表示新有 :py:`count` 个元素完成。"
 
 #: glasgow.support.progress.Progress.advance:3 of
 msgid "Advancing progress beyond :py:`self.total` completed items may result in confusing UI behavior, but will not raise errors. However, :py:`count` must not be negative."
-msgstr ""
+msgstr "将进度前进到超过 :py:`self.total` 个完成的元素可能会导致 UI 显示令用户困惑，但是不会引发异常。此外，:py:`count` 不得为负。"
 
 #: glasgow.support.progress.Progress.__enter__:1 of
 msgid "Register the progress indicator."
-msgstr ""
+msgstr "注册进度指示组件。"
 
 #: glasgow.support.progress.Progress.__enter__:3 of
 msgid "Adds :py:`self` to the stack of displayed progress indicators."
-msgstr ""
+msgstr "将 :py:`self` 加入当前显示的进度指示组件的栈中。"
 
 #: glasgow.support.progress.Progress.__enter__:5
 #: glasgow.support.progress.Progress.__exit__:5 of
 msgid "This :term:`python:dunder` method is called implicitly by the :py:`with Progress(...):` block."
-msgstr ""
+msgstr "该 :term:`python:dunder` 方法由 :py:`with Progress(...):` 块隐式调用。"
 
 #: glasgow.support.progress.Progress.__exit__:1 of
 msgid "Unregister the progress indicator."
-msgstr ""
+msgstr "注销进度指示组件。"
 
 #: glasgow.support.progress.Progress.__exit__:3 of
 msgid "Removes :py:`self` from the stack of displayed progress indicators."
-msgstr ""
+msgstr "将 :py:`self` 从当前显示的进度指示组件的栈中移除。"
 
 #: glasgow.support.progress.TqdmProgressImpl:1 of
 msgid "Progress implementation for terminals based on `تقدّم <https://tqdm.github.io/>`_."
-msgstr ""
+msgstr "基于 `تقدّم <https://tqdm.github.io/>`_ 的终端进度显示实现。"
 
 #: glasgow.support.progress.TqdmProgressImpl:3 of
 msgid "This implementation is automatically registered by :meth:`glasgow.main.run_async`, but may be used explicitly if needed."
-msgstr ""
+msgstr "该实现自动由 :meth:`glasgow.main.run_async` 注册，但是如有需要可以显式使用。"
 
 #: glasgow.support.progress.QtWidgetsProgressImpl:1 of
 msgid "Progress implementation for Qt applications based on :mod:`~PySide6.QtWidgets`."
-msgstr ""
+msgstr "为 Qt 应用所用的基于 :mod:`~PySide6.QtWidgets` 的进度显示实现。"
 
 #: glasgow.support.progress.QtWidgetsProgressImpl:3 of
 msgid "This implementation must be registered manually. It requires a :class:`~PySide6.QtWidgets.QProgressBar` and/or a :class:`~PySide6.QtWidgets.QLabel` to be provided; these widgets will be updated to display progress. For example:"
-msgstr ""
+msgstr "该实现需要手动注册。它需要在构造时提供一个 :class:`~PySide6.QtWidgets.QProgressBar` 和/或一个 :class:`~PySide6.QtWidgets.QLabel`；这些部件会被用于显示进度。用法如下："
 
 #: glasgow.support.progress.QtWidgetsProgressImpl:8 of
 msgid ""
@@ -221,5 +224,5 @@ msgstr ""
 
 #: glasgow.support.progress.QtWidgetsProgressImpl:21 of
 msgid "The limitation of this implementation is that it cannot display multiple progress bars. The last opened progress indicator is always used when updating progress information."
-msgstr ""
+msgstr "该实现有一个限制，它无法显示多个进度条。进度信息在更新时总是使用的是最后一个打开的进度指示。"
 
