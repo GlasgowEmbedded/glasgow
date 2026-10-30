@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/use/repl-script.rst:4
 msgid "REPL & script operation"
@@ -38,12 +38,29 @@ msgstr ""
 msgid "As always, please make sure you select the correct I/O and supply voltage for whatever you have connected to your Glasgow."
 msgstr ""
 
+#: ../../src/use/repl-script.rst:16 ../../src/use/repl-script.rst:56
+msgid ""
+"$ glasgow repl i2c-controller -V 3.3\n"
+"I: glasgow.hardware.device: device already has bitstream ID 0484178a31cff82770362171c7bccf0a\n"
+"I: glasgow.hardware.assembly: port A voltage set to 3.3 V\n"
+"I: glasgow.hardware.assembly: port B voltage set to 3.3 V\n"
+"I: glasgow.cli: running handler for applet 'i2c-controller'\n"
+"I: glasgow.applet.interface.i2c_controller: dropping to REPL; use 'help(i2c_iface)' to see available APIs\n"
+">>>"
+msgstr ""
+
 #: ../../src/use/repl-script.rst:26
 msgid "What happens now is entirely up to you --- ``glasgow script ...`` is given an identical environment, except that it will run the nominated script rather than present control to you."
 msgstr ""
 
 #: ../../src/use/repl-script.rst:28
 msgid "The Glasgow framework provides us with access to the ``device`` and ``args`` variables, plus another variable that is named differently depending on the applet being used. For example, the I²C applet calls it ``i2c_iface``."
+msgstr ""
+
+#: ../../src/use/repl-script.rst:30
+msgid ""
+">>> locals().keys()\n"
+"dict_keys(['__name__', 'device', 'i2c_iface', 'args', '__builtins__'])"
 msgstr ""
 
 #: ../../src/use/repl-script.rst:36
@@ -82,6 +99,14 @@ msgstr ""
 msgid "Let's start with a bus scan:"
 msgstr ""
 
+#: ../../src/use/repl-script.rst:68
+#, python-brace-format
+msgid ""
+">>> await i2c_iface.scan()\n"
+"{119}\n"
+">>>"
+msgstr ""
+
 #: ../../src/use/repl-script.rst:74
 msgid "Address ``119`` has responded, which is ``0x77`` --- and this matches the datasheet!"
 msgstr ""
@@ -94,6 +119,14 @@ msgstr ""
 msgid "If you're familiar with I²C, you'll know that a common convention is for the target register address to be conveyed as the first portion of a write's payload, with a subsequent read accessing the data from that location, with addresses incrementing automatically. Here we read the ``AC1`` value, which is a 16-bit integer stored at addresses ``0xAA`` and ``0xAB`` --- first by writing the ``0xAA`` base address, and then performing a 2-byte read."
 msgstr ""
 
+#: ../../src/use/repl-script.rst:80
+msgid ""
+">>> await i2c_iface.write(119, [ 0xAA ])\n"
+"True\n"
+">>> await i2c_iface.read(119, 2)\n"
+"b'\\x1c\\x04'"
+msgstr ""
+
 #: ../../src/use/repl-script.rst:88
 msgid "UART"
 msgstr ""
@@ -102,8 +135,26 @@ msgstr ""
 msgid "To demonstrate a simple UART loopback, I've connected pin 0 and 1 of Port A together... i.e: anything that we transmit, will be immediately received again by us."
 msgstr ""
 
+#: ../../src/use/repl-script.rst:92
+msgid ""
+"$ glasgow repl uart -V 3.3\n"
+"I: glasgow.hardware.device: device already has bitstream ID f3838ff227839f106448c2ecf6913ee9\n"
+"I: glasgow.hardware.assembly: port A voltage set to 3.3 V\n"
+"I: glasgow.hardware.assembly: port B voltage set to 3.3 V\n"
+"I: glasgow.cli: running handler for applet 'uart'\n"
+"I: glasgow.applet.interface.uart: dropping to REPL; use 'help(uart_iface)' to see available APIs\n"
+">>>"
+msgstr ""
+
 #: ../../src/use/repl-script.rst:102
 msgid "Again, we simply call the ``uart_iface.write()`` and ``uart_iface.read()`` functions to handle transmit and receive..."
+msgstr ""
+
+#: ../../src/use/repl-script.rst:104
+msgid ""
+">>> await uart_iface.write(b'hello!')\n"
+">>> await uart_iface.read()\n"
+"b'hello!'"
 msgstr ""
 
 #: ../../src/use/repl-script.rst:112
@@ -118,6 +169,17 @@ msgstr ""
 msgid "Due to some buffering artifacts, make sure you write a whole frame at once!"
 msgstr ""
 
+#: ../../src/use/repl-script.rst:120
+msgid ""
+"$ glasgow repl video-ws2812-output -V 5 -c 15 -b 1 -f RGB-xBRG --out A0\n"
+"I: glasgow.hardware.device: generating bitstream ID 0dfe27478be3932374f61610193f34f0\n"
+"I: glasgow.cli: running handler for applet 'video-ws2812-output'\n"
+"I: glasgow.applet.video.ws2812_output: port A voltage set to 5.0 V\n"
+"I: glasgow.applet.video.ws2812_output: port B voltage set to 5.0 V\n"
+"I: glasgow.applet.video.ws2812_output: dropping to REPL; use 'help(iface)' to see available APIs\n"
+">>>"
+msgstr ""
+
 #: ../../src/use/repl-script.rst:130
 msgid "Next, we just write pixel data! Glasgow handles the pixel format mapping for us, and because we requested ``RGB-xBRG``, the conversion from RGB24 (three bytes per pixel) will be handled in hardware. The ``xBRG`` indicates that we're giving a constand ``0`` for the White channel, followed by the required order of Red, Green, and Blue."
 msgstr ""
@@ -126,12 +188,36 @@ msgstr ""
 msgid "They're bright, so be careful of your eyes (I used ``1`` for a reason)... here's a strip of green pixels:"
 msgstr ""
 
+#: ../../src/use/repl-script.rst:135
+msgid ""
+">>> await iface.write([ 0,1,0 ] * args.count)\n"
+">>>"
+msgstr ""
+
 #: ../../src/use/repl-script.rst:140
 msgid "A 3-bit rainbow: (black, red, green, yellow, blue, magenta, cyan, white)"
 msgstr ""
 
+#: ../../src/use/repl-script.rst:142
+msgid ""
+">>> from itertools import chain\n"
+">>> pix = ( (n&1, n&2, n&4) for n in range(args.count) )    # counter to 3-bit colors\n"
+">>> pix = chain.from_iterable(pix)                          # flatten to 1 dimension\n"
+">>> pix = map(lambda v: 1 if v else 0, pix)                 # flatten to 0 or 1\n"
+">>> pix = [ *pix ]                                          # make into a list for re-use\n"
+">>> await iface.write(pix)                                  # display it\n"
+">>>"
+msgstr ""
+
 #: ../../src/use/repl-script.rst:152
 msgid "And all off again, followed by a full power-down of the I/O:"
+msgstr ""
+
+#: ../../src/use/repl-script.rst:154
+msgid ""
+">>> await iface.write([ 0,0,0 ] * args.count)\n"
+">>> await device.set_voltage('AB', 0)\n"
+">>>"
 msgstr ""
 
 #: ../../src/use/repl-script.rst:160
@@ -160,5 +246,20 @@ msgstr ""
 
 #: ../../src/use/repl-script.rst:179
 msgid "Of course you're also able to setup ``argparse`` or do whatever argument parsing you need to do --- see the `script args <https://github.com/GlasgowEmbedded/glasgow/blob/main/examples/script_args.py>`_ example."
+msgstr ""
+
+#: ../../src/use/repl-script.rst:181
+msgid ""
+"$ glasgow repl i2c-controller -V 3.3 -- test me\n"
+"I: glasgow.hardware.device: generating bitstream ID 0484178a31cff82770362171c7bccf0a\n"
+"I: glasgow.hardware.assembly: port A voltage set to 3.3 V\n"
+"I: glasgow.hardware.assembly: port B voltage set to 3.3 V\n"
+"I: glasgow.cli: running handler for applet 'i2c-controller'\n"
+"I: glasgow.applet.interface.i2c_controller: dropping to REPL; use 'help(i2c_iface)' to see available APIs\n"
+">>> args\n"
+"Namespace(verbose=0, quiet=0, log_file=None, filter_log=None, no_shorten=False, show_statistics=False, serial=None, action='repl', override_required_revision=False, reload=False, prebuilt=False, prebuilt_at=None, applet='i2c-initiator', scl=PinArgument(number=0, invert=False), sda=PinArgument(number=1, invert=False), bit_rate=100, voltage=[VoltArgument(ports='AB', value=3.3, sense=None)], pulls=True, script_args=['test', 'me'])\n"
+">>> args.script_args\n"
+"['test', 'me']\n"
+">>>"
 msgstr ""
 

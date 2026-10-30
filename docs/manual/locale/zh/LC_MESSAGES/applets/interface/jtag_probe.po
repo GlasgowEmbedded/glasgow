@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/applets/interface/jtag_probe.rst:2
 msgid "``jtag-probe``"
@@ -32,6 +32,13 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "Identify, test and debug integrated circuits and board assemblies via IEEE 1149.1 JTAG."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid ""
+"usage: glasgow run jtag-probe [-h] [-V SPEC] [--tck PIN] [--tms PIN] [--tdi PIN] [--tdo PIN] [--trst PIN] [-f FREQ]\n"
+"                              [--scan-ir-max-length LENGTH] [--scan-dr-max-length LENGTH] [--ir-lengths IR-LENGTH,...]\n"
+"                              OPERATION ..."
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -115,6 +122,10 @@ msgid "DR[?]: (commonly) no connection to TDO or (less commonly) complex logic c
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run jtag-probe enumerate-ir [-h] INDEX [INDEX ...]"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "enumerate IR values for TAP(s) #INDEX"
 msgstr ""
 
@@ -124,6 +135,10 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "Reset the JTAG TAPs and shift IDCODE or BYPASS register values out to determine the count and (if available) identity of the devices in the scan chain."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run jtag-probe scan [-h]"
 msgstr ""
 
 #: ../../src/applets/interface/jtag_probe.rst:14

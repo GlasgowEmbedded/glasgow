@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-17 21:29+0800\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -56,6 +56,10 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "If your DUT is a 25-series SPI Flash memory, use the `tool memory-25q` to extract data from capture files. If quad-IO commands are in use, use the `qspi-analyzer` applet to capture data."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run spi-analyzer [-h] [-V SPEC] [--cs PINS] [--sck PIN] [--copi PIN] [--cipo PIN] [--buffer-size BYTES] [FILE]"
 msgstr ""
 
 #: ../../<autoprogram>:1

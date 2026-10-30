@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-17 21:29+0800\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh\n"
@@ -48,11 +48,27 @@ msgid "First, configure the probes and voltage level:"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "glasgow run analyzer2 -V A=3.3 CMD=A0 CLK=A1 DAT=A2:5"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "Then, run Sigrok:"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "sigrok-cli -d glasgow:conn=tcp-raw/127.0.0.1/5555 -c samplerate=12m --samples 10000"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "Or, run PulseView (you can also configure the connection in the GUI):"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "pulseview -d glasgow:conn=tcp-raw/127.0.0.1/5555"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run analyzer2 [-h] [-V SPEC] [--buffer-size SIZE] [--listen [ENDPOINT]] PROBES [PROBES ...]"
 msgstr ""
 
 #: ../../<autoprogram>:1

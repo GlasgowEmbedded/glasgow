@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/applets/program/xc9500xl.rst:2
 msgid "``program-xc9500xl``"
@@ -83,6 +83,14 @@ msgid "XC95288XV"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid ""
+"usage: glasgow run program-xc9500xl [-h] [-V SPEC] [--tck PIN] [--tms PIN] [--tdi PIN] [--tdo PIN] [--trst PIN] [-f FREQ]\n"
+"                                    [--scan-ir-max-length LENGTH] [--scan-dr-max-length LENGTH] [--ir-lengths IR-LENGTH,...] [--tap-index INDEX]\n"
+"                                    [--slow]\n"
+"                                    OPERATION ..."
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "show this help message and exit"
 msgstr ""
 
@@ -139,11 +147,19 @@ msgid "glasgow run program-xc9500xl erase"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run program-xc9500xl erase [-h] [--override]"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "override write-protection"
 msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "glasgow run program-xc9500xl program"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run program-xc9500xl program [-h] [--override] [--erase] [--verify] [--write-protect] [--read-protect] JED-FILE"
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -171,10 +187,18 @@ msgid "glasgow run program-xc9500xl read"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run program-xc9500xl read [-h] JED-FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "JED file to write"
 msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "glasgow run program-xc9500xl verify"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run program-xc9500xl verify [-h] JED-FILE"
 msgstr ""
 

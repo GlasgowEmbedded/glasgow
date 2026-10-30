@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-17 21:29+0800\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh\n"
@@ -45,6 +45,10 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "Read memory block and compare with pattern sequence"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run memtest [-h] [-c [INDEX ...]] [-a HEX-ADDR] [-b HEX-ADDR] [-s SIZE] [-n COUNT]"
 msgstr ""
 
 #: ../../<autoprogram>:1

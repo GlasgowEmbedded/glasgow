@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/applets/program/avr_spi.rst:2
 msgid "``program-avr-spi``"
@@ -43,7 +43,25 @@ msgid "The standard AVR ICSP connector layout is as follows:"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid ""
+"CIPO @ * VCC\n"
+" SCK * * COPI\n"
+"RST# * * GND"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "Commands that read or write memory contents derive the file format from the filename as follows:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid ""
+"`*.bin`                         binary; as-is\n"
+"`*.hex`, `*.ihx`, `*.ihex`      Intel HEX\n"
+"`-` (stdout)                    hex dump when writing to a terminal, binary otherwise"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run program-avr-spi [-h] [-V SPEC] [--reset PIN] [--sck PIN] [--cipo PIN] [--copi PIN] [-f FREQ] OPERATION ..."
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -79,11 +97,23 @@ msgid "glasgow run program-avr-spi erase"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run program-avr-spi erase [-h]"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "glasgow run program-avr-spi identify"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run program-avr-spi identify [-h]"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "glasgow run program-avr-spi read"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run program-avr-spi read [-h] [-f] [-l] [-c] [-p FILE] [-e FILE]"
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -111,11 +141,19 @@ msgid "glasgow run program-avr-spi write-eeprom"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run program-avr-spi write-eeprom [-h] FILE"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "read EEPROM contents from FILE (must be '-' or end with: .bin, .hex, .ihx, .ihex)"
 msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "glasgow run program-avr-spi write-fuses"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run program-avr-spi write-fuses [-h] [-L BITS] [-H BITS] [-E BITS]"
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -135,11 +173,19 @@ msgid "glasgow run program-avr-spi write-lock"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run program-avr-spi write-lock [-h] BITS"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "write lock bits BITS"
 msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "glasgow run program-avr-spi write-program"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run program-avr-spi write-program [-h] FILE"
 msgstr ""
 
 #: ../../<autoprogram>:1

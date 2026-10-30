@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-17 21:29+0800\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -36,6 +36,14 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "See the description of the `memory-25q` applet for details."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid ""
+"usage: glasgow run program-ice40-flash [-h] [-V SPEC] [--cs PIN] [--sck PIN] [--io PINS] [--reset PIN] [--done PIN] [-f FREQ] [--dual-spi]\n"
+"                                       [--quad-spi] [-A WIDTH] [-P SIZE] [--opcode-erase-256 OPCODE] [--opcode-erase-4k OPCODE]\n"
+"                                       [--opcode-erase-8k OPCODE] [--opcode-erase-32k OPCODE] [--opcode-erase-64k OPCODE]\n"
+"                                       OPERATION ..."
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -115,6 +123,10 @@ msgid "Erase memory range. Start and end of specified range must be aligned on e
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run program-ice40-flash erase [-h] ADDRESS LENGTH"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "start with byte at ADDRESS"
 msgstr ""
 
@@ -131,11 +143,19 @@ msgid "Erase memory range covering the entire chip."
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run program-ice40-flash erase-all [-h]"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "glasgow run program-ice40-flash identify"
 msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "Identify memory by its JEDEC ID and (if available) Serial Flash Discoverable Parameters."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run program-ice40-flash identify [-h] [--annotate-raw-sfdp]"
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -155,6 +175,10 @@ msgid "Setting all BP bits to zero may be necessary to execute the `erase-all` c
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run program-ice40-flash protect [-h] [BITMASK]"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "write BITMASK to BP bits (e.g. 0000 to allow all, 1111 to protect all)"
 msgstr ""
 
@@ -167,6 +191,10 @@ msgid "Read memory range using the fastest available read command."
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run program-ice40-flash read [-h] [-f FILENAME] ADDRESS LENGTH"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "write memory contents to FILENAME"
 msgstr ""
 
@@ -176,6 +204,10 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "Read memory range using the fastest available read command, and compare with given data."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run program-ice40-flash verify [-h] (-d DATA | -f FILENAME) ADDRESS"
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -192,5 +224,9 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "Write memory range using a read-modify-write sequence. Start and end of specified range do not need to be aligned on erase size boundaries."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run program-ice40-flash write [-h] (-d DATA | -f FILENAME) ADDRESS"
 msgstr ""
 

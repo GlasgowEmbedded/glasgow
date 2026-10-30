@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/applets/radio/nrf24l01.rst:2
 msgid "``radio-nrf24l01``"
@@ -44,6 +44,21 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "The pinout of a common 8-pin nRF24L01+ module is as follows (live bug view):"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid ""
+" GND @ * VCC\n"
+"  CE * * CS\n"
+" SCK * * COPI\n"
+"CIPO * * IRQ"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid ""
+"usage: glasgow run radio-nrf24l01 [-h] [-V SPEC] [--ce PIN] [--cs PIN] [--sck PIN] [--copi PIN] [--cipo PIN] [--irq PIN] [-f FREQ] -c RF-CHANNEL\n"
+"                                  -b RF-BANDWIDTH [-p RF-POWER] -A WIDTH -C WIDTH [-L] [-d]\n"
+"                                  OPERATION ..."
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -115,6 +130,10 @@ msgid "glasgow run radio-nrf24l01 monitor"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run radio-nrf24l01 monitor [-h] [-l LENGTH] [-R] ADDRESS"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "receive packet with hex address ADDRESS"
 msgstr ""
 
@@ -131,7 +150,15 @@ msgid "glasgow run radio-nrf24l01 receive"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run radio-nrf24l01 receive [-h] [-l LENGTH] [-R] ADDRESS"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "glasgow run radio-nrf24l01 transmit"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run radio-nrf24l01 transmit [-h] [--transmit-timeout DELAY] [--retransmit-count COUNT] [-N] ADDRESS DATA"
 msgstr ""
 
 #: ../../<autoprogram>:1

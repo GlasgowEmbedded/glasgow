@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-17 21:29+0800\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh\n"
@@ -40,6 +40,10 @@ msgid "This applet has been tested with PMS5003 and PMS7003."
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run sensor-pmsx003 [-h] [-V SPEC] [--rx PIN] [--tx PIN] OPERATION ..."
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "show this help message and exit"
 msgstr ""
 
@@ -60,11 +64,19 @@ msgid "glasgow run sensor-pmsx003 log"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run sensor-pmsx003 log [-h] DATA-LOGGER ..."
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "glasgow run sensor-pmsx003 log csv"
 msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "Log data to a comma-separated value (CSV) file."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run sensor-pmsx003 log csv [-h] [--dialect DIALECT] CSV-FILE"
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -81,6 +93,10 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "Log data to an InfluxDB 1.x endpoint over HTTP(S)."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run sensor-pmsx003 log influxdb [-h] [-r POLICY] [-t TAG=VALUE] -p PRECISION [--batch-size BATCH-SIZE] ENDPOINT DATABASE SERIES"
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -120,6 +136,12 @@ msgid "Log data to an InfluxDB 2.x endpoint over HTTP(S)."
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid ""
+"usage: glasgow run sensor-pmsx003 log influxdb2 [-h] [-t TAG=VALUE] -p PRECISION [--batch-size BATCH-SIZE] --token TOKEN\n"
+"                                                ENDPOINT ORGANIZATION BUCKET SERIES"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "write to endpoint URL //ENDPOINT/api/v2/write"
 msgstr ""
 
@@ -144,7 +166,15 @@ msgid "Log data to standard output in a human-readable format."
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run sensor-pmsx003 log stdout [-h]"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "glasgow run sensor-pmsx003 measure"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run sensor-pmsx003 measure [-h]"
 msgstr ""
 
 #: ../../src/applets/sensor/pmsx003.rst:14

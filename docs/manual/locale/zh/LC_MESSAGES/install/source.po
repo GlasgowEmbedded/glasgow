@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-08 16:59+0800\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh\n"
@@ -43,48 +43,120 @@ msgstr "如果以下的安装步骤对您不工作，请\\ `向我们报告缺�
 msgid "You will need to have `git <git-lin_>`__, `Python <python-lin_>`__, and `pipx`_ installed. To install these, run:"
 msgstr "您需要安装好 `git <git-lin_>`__、`Python <python-lin_>`__、`pipx`_。安装这些工具请运行："
 
+#: ../../src/install/source.rst:29
+msgid ""
+"$ sudo apt install -y --no-install-recommends git pipx\n"
+"$ pipx ensurepath"
+msgstr ""
+
 #: ../../src/install/source.rst:34 ../../src/install/source.rst:43
 #: ../../src/install/source.rst:52 ../../src/install/source.rst:162
 #: ../../src/install/source.rst:206
 msgid "The ``pipx ensurepath`` command may prompt you to reopen the terminal window; do so."
 msgstr "``pipx ensurepath`` 命令可能会提示您重新打开终端窗口，请照做。"
 
+#: ../../src/install/source.rst:38
+msgid ""
+"$ sudo pacman -Syu git python-pipx\n"
+"$ pipx ensurepath"
+msgstr ""
+
+#: ../../src/install/source.rst:47
+msgid ""
+"$ sudo dnf install -y git pipx\n"
+"$ pipx ensurepath"
+msgstr ""
+
+#: ../../src/install/source.rst:56
+msgid ""
+"$ doas apk add alpine-conf git pipx py3-libusb1\n"
+"$ export PATH=$PATH:$HOME/.local/bin\n"
+"$ echo 'export PATH=$PATH:$HOME/.local/bin' >>$HOME/.profile"
+msgstr ""
+
 #: ../../src/install/source.rst:62
 msgid "These instructions assume that `Eudev <https://wiki.alpinelinux.org/wiki/Eudev>`_ is used as the device manager. To install Eudev, run:"
 msgstr "以下步骤假设您使用 `Eudev <https://wiki.alpinelinux.org/wiki/Eudev>`_ 作为设备管理器。安装 Eudev 请运行："
+
+#: ../../src/install/source.rst:64
+msgid "$ doas setup-devd udev"
+msgstr ""
 
 #: ../../src/install/source.rst:68 ../../src/install/source.rst:164
 #: ../../src/install/source.rst:208
 msgid "Navigate to a convenient working directory and download the source code:"
 msgstr "切换到一个方便的工作目录，然后下载源码："
 
+#: ../../src/install/source.rst:70 ../../src/install/source.rst:166
+#: ../../src/install/source.rst:210
+msgid "$ git clone https://github.com/GlasgowEmbedded/glasgow"
+msgstr ""
+
 #: ../../src/install/source.rst:74
 msgid "Configure your system to allow access to the Glasgow hardware for anyone logged in to the physical terminal, and apply the rules to any devices that are already plugged in:"
 msgstr "配置您的系统以使任何登录到物理访问的终端的用户可以使用 Glasgow 硬件，并对已经连接的设备应用这些规则："
+
+#: ../../src/install/source.rst:76
+msgid ""
+"$ sudo cp glasgow/config/70-glasgow.rules /etc/udev/rules.d\n"
+"$ sudo udevadm control --reload\n"
+"$ sudo udevadm trigger -v -c add -s usb -a idVendor=20b7 -a idProduct=9db1"
+msgstr ""
 
 #: ../../src/install/source.rst:82 ../../src/install/source.rst:126
 #: ../../src/install/source.rst:170 ../../src/install/source.rst:214
 msgid "Install the Glasgow software for the current user:"
 msgstr "为当前用户安装 Glasgow 软件："
 
+#: ../../src/install/source.rst:84 ../../src/install/source.rst:172
+msgid "$ pipx install -e 'glasgow/software[builtin-toolchain]'"
+msgstr ""
+
 #: ../../src/install/source.rst:88 ../../src/install/source.rst:132
 #: ../../src/install/source.rst:176 ../../src/install/source.rst:220
 msgid "To update the software to its newest revision, navigate to your working directory and run:"
 msgstr "要将软件更新到最新版本，请切换到工作目录并运行："
+
+#: ../../src/install/source.rst:90 ../../src/install/source.rst:178
+#: ../../src/install/source.rst:222
+msgid ""
+"$ git -C glasgow pull\n"
+"$ pipx reinstall glasgow"
+msgstr ""
 
 #: ../../src/install/source.rst:95 ../../src/install/source.rst:139
 #: ../../src/install/source.rst:183 ../../src/install/source.rst:227
 msgid "After setup, confirm that the Glasgow utility is operational by running:"
 msgstr "安装后，确认 Glasgow 工具正常工作，请运行："
 
+#: ../../src/install/source.rst:97 ../../src/install/source.rst:185
+#: ../../src/install/source.rst:229
+msgid ""
+"$ glasgow --version\n"
+"$ glasgow build --rev C3 uart"
+msgstr ""
+
 #: ../../src/install/source.rst:102 ../../src/install/source.rst:146
 #: ../../src/install/source.rst:190 ../../src/install/source.rst:234
 msgid "Plug in your device and confirm that it is discovered by running:"
 msgstr "连接您的设备，并确认它被发现，请运行："
 
+#: ../../src/install/source.rst:104 ../../src/install/source.rst:192
+#: ../../src/install/source.rst:236
+msgid ""
+"$ glasgow list\n"
+"C3-20230729T201611Z"
+msgstr ""
+
 #: ../../src/install/source.rst:111
 msgid "You will need to have `git <git-win_>`__, `Python <python-win_>`__, and `pipx`_ installed.  To install git and Python, follow the instructions from their respective pages. To install pipx, run:"
 msgstr "您需要安装好 `git <git-win_>`__、`Python <python-win_>`__、`pipx`_。安装 git 和 Python 请参考对应网页上的步骤。安装 pipx 请运行："
+
+#: ../../src/install/source.rst:113
+msgid ""
+"> py -3 -m pip install --user pipx\n"
+"> py -3 -m pipx ensurepath"
+msgstr ""
 
 #: ../../src/install/source.rst:118
 msgid "The ``py -3 -m pipx ensurepath`` command may prompt you to reopen the terminal window; do so."
@@ -94,13 +166,56 @@ msgstr "``py -3 -m pipx ensurepath`` 命令可能提示您重新打开终端窗�
 msgid "Navigate to a convenient working directory (it is highly recommended to use a local directory, e.g. ``%LOCALAPPDATA%``, since running Glasgow software from a network drive or a roaming profile causes significant slowdown) and download the source code:"
 msgstr "切换到一个方便的工作目录（强烈推荐使用一个本地目录，如 ``%LOCALAPPDATA``，因为从网络驱动器或漫游配置文件中运行 Glasgow 软件会导致明显速度下降），然后下载源码："
 
+#: ../../src/install/source.rst:122
+msgid "> git clone https://github.com/GlasgowEmbedded/glasgow"
+msgstr ""
+
+#: ../../src/install/source.rst:128
+msgid "> pipx install -e \"glasgow/software[builtin-toolchain]\""
+msgstr ""
+
+#: ../../src/install/source.rst:134
+msgid ""
+"> git -C glasgow pull\n"
+"> pipx reinstall glasgow"
+msgstr ""
+
+#: ../../src/install/source.rst:141
+msgid ""
+"> glasgow --version\n"
+"> glasgow build --rev C3 uart"
+msgstr ""
+
+#: ../../src/install/source.rst:148
+msgid ""
+"> glasgow list\n"
+"C3-20230729T201611Z"
+msgstr ""
+
 #: ../../src/install/source.rst:155
 msgid "You will need to have `libusb`_ and `pipx`_ installed. If you haven't already, install `Homebrew <https://brew.sh/>`_. To install those packages, run:"
 msgstr "您需要安装好 `libusb`_、`pipx`_。如果您还没有安装 `Homebrew <https://brew.sh/>`_，请安装。之后安装前述两个软件包，请运行："
 
+#: ../../src/install/source.rst:157
+msgid ""
+"$ brew install libusb pipx\n"
+"$ pipx ensurepath"
+msgstr ""
+
 #: ../../src/install/source.rst:199
 msgid "You will need to have `pipx`_, `Yosys`_, `nextpnr`_, `icestorm`_, and `prjtrellis`_ installed. To install these packages, run:"
 msgstr "您需要安装好 `pipx`_、`Yosys`_、`nextpnr`_、`icestorm`_、`prjtrellis`_。安装这些软件包，请运行："
+
+#: ../../src/install/source.rst:201
+msgid ""
+"$ sudo pkg install pip pipx yosys abc nextpnr icestorm trellis\n"
+"$ pipx ensurepath"
+msgstr ""
+
+#: ../../src/install/source.rst:216
+#, fuzzy
+msgid "$ pipx install -e 'glasgow/software'"
+msgstr "开发 Glasgow 软件"
 
 #: ../../src/install/source.rst:255
 msgid "Using a system FPGA toolchain"

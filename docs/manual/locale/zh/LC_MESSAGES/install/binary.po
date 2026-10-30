@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-09 21:58+0800\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh\n"
@@ -86,6 +86,12 @@ msgstr "Glasgow 可重构数字接口调试器命令提示符终端窗口"
 #: ../../src/install/binary.rst:30
 msgid "Plug in your device and confirm that it is discovered by running the ``glasgow list`` command:"
 msgstr "连接您的设备，并确认它被发现，运行 ``glasgow list`` 命令如下："
+
+#: ../../src/install/binary.rst:32
+msgid ""
+"> glasgow list\n"
+"C3-20230729T201611Z"
+msgstr ""
 
 #: ../../src/install/binary.rst:37
 msgid "If you need to update the installation in the future, download and run a newer version of the installer. It will automatically remove the existing installation and replace it with the new one."

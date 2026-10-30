@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/applets/control/servo.rst:2
 msgid "``control-servo``"
@@ -36,6 +36,10 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "This protocol is also used in common brushless motor ESC (electronic speed control) modules. For unidirectional ESCs, a pulse of 1000 µs corresponds to 0 rpm and a pulse of 2000 µs to maximum rpm. For bidirectional ESCs, a pulse of 1000 us corresponds to maximum rpm backwards, and 2000 µs to maximum rpm forwards."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run control-servo [-h] [-V SPEC] [--out PIN]"
 msgstr ""
 
 #: ../../<autoprogram>:1

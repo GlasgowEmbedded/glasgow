@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-17 21:29+0800\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh\n"
@@ -36,6 +36,10 @@ msgid "Read and write TI TPS6598x USB PD controller registers."
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run control-tps6598x [-h] [-V SPEC] [--scl PIN] [--sda PIN] [--i2c-address ADDR] OPERATION ..."
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "show this help message and exit"
 msgstr ""
 
@@ -60,7 +64,15 @@ msgid "glasgow run control-tps6598x read-all"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run control-tps6598x read-all [-h]"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "glasgow run control-tps6598x read-reg"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run control-tps6598x read-reg [-h] ADDRESS"
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -69,6 +81,10 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "glasgow run control-tps6598x write-reg"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run control-tps6598x write-reg [-h] ADDRESS DATA"
 msgstr ""
 
 #: ../../<autoprogram>:1

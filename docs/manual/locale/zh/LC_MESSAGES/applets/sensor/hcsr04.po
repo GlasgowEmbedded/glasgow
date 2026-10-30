@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/applets/sensor/hcsr04.rst:2
 msgid "``sensor-hcsr04``"
@@ -32,6 +32,12 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "Measure distance using HC-SR04 compatible ultrasound sensors."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid ""
+"usage: glasgow run sensor-hcsr04 [-h] [-V SPEC] [--trig PIN] [--echo PIN] [-S SUPERSAMPLE] [-t TIMEOUT] [--speed-of-sound SPEED_OF_SOUND]\n"
+"                                 OPERATION ..."
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -67,6 +73,10 @@ msgid "glasgow run sensor-hcsr04 log"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run sensor-hcsr04 log [-h] [-i INTERVAL] DATA-LOGGER ..."
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "interval between measurements, in seconds"
 msgstr ""
 
@@ -76,6 +86,10 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "Log data to a comma-separated value (CSV) file."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run sensor-hcsr04 log csv [-h] [--dialect DIALECT] CSV-FILE"
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -92,6 +106,10 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "Log data to an InfluxDB 1.x endpoint over HTTP(S)."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run sensor-hcsr04 log influxdb [-h] [-r POLICY] [-t TAG=VALUE] -p PRECISION [--batch-size BATCH-SIZE] ENDPOINT DATABASE SERIES"
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -131,6 +149,12 @@ msgid "Log data to an InfluxDB 2.x endpoint over HTTP(S)."
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid ""
+"usage: glasgow run sensor-hcsr04 log influxdb2 [-h] [-t TAG=VALUE] -p PRECISION [--batch-size BATCH-SIZE] --token TOKEN\n"
+"                                               ENDPOINT ORGANIZATION BUCKET SERIES"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "write to endpoint URL //ENDPOINT/api/v2/write"
 msgstr ""
 
@@ -155,7 +179,15 @@ msgid "Log data to standard output in a human-readable format."
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run sensor-hcsr04 log stdout [-h]"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "glasgow run sensor-hcsr04 measure"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run sensor-hcsr04 measure [-h]"
 msgstr ""
 
 #: ../../src/applets/sensor/hcsr04.rst:14

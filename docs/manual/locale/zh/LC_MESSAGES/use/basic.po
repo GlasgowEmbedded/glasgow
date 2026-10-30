@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/use/basic.rst:2
 msgid "Basic usage"
@@ -30,6 +30,10 @@ msgstr ""
 msgid "After :ref:`installing <initial-setup>` the Glasgow software, the ``glasgow`` utility should be operational.  The ``glasgow`` utility is the most common (but not the only) way to interact with Glasgow hardware.  Test to see if ``glasgow`` is installed correctly with:"
 msgstr ""
 
+#: ../../src/use/basic.rst:10
+msgid "$ glasgow --version"
+msgstr ""
+
 #: ../../src/use/basic.rst:14
 msgid "``glasgow`` has a number of subcommands. At all times, the ``--help`` argument may be appended for more details."
 msgstr ""
@@ -38,8 +42,25 @@ msgstr ""
 msgid "As you build up the ``glasgow`` tool's command line, the `context` changes --- for example, the output of each of the following ``--help`` s are all different:"
 msgstr ""
 
+#: ../../src/use/basic.rst:20
+msgid ""
+"$ glasgow --help\n"
+"$ glasgow run --help\n"
+"$ glasgow run uart --help"
+msgstr ""
+
 #: ../../src/use/basic.rst:26
 msgid "The upshot of this is that different arguments need to be placed at different positions in the command line. The help section at each level should clarify where each argument should be placed. For example, the ``--serial`` parameter is recognized by the top-level ``glasgow`` command, and not by the third-level ``glasgow run uart`` command."
+msgstr ""
+
+#: ../../src/use/basic.rst:28
+#, python-brace-format
+msgid ""
+"## this is valid:\n"
+"$ glasgow --serial ${my_serial} run uart -V 3.3 tty\n"
+"\n"
+"## this is invalid!\n"
+"$ glasgow run uart --serial ${my_serial} -V 3.3 tty"
 msgstr ""
 
 #: ../../src/use/basic.rst:38
@@ -50,12 +71,22 @@ msgstr ""
 msgid "To begin with, use the ``glasgow safe`` command to make sure that the ``glasgow`` utility can communicate with your Glasgow hardware.   The ``glasgow safe`` command sets all I/O to a `safe` state --- it disables voltage outputs, and sets all I/O pins to a high impedance state.  Try it with:"
 msgstr ""
 
+#: ../../src/use/basic.rst:42
+msgid "$ glasgow safe"
+msgstr ""
+
 #: ../../src/use/basic.rst:46
 msgid "This command has the same effect as pressing the physical `E-STOP / RESET` button that is present on ``revC3`` and later hardware revisions.  You may prefer to get in the habit of using the physical button if you're sitting next to your Glasgow; the button gives tactile feedback that the device has entered a safe state, in a way that ``glasgow safe`` cannot!"
 msgstr ""
 
 #: ../../src/use/basic.rst:48
 msgid "You can use this command at any time to put your Glasgow hardware into a `safe` state; if it is successful, it will provide the output:"
+msgstr ""
+
+#: ../../src/use/basic.rst:50
+msgid ""
+"$ glasgow safe\n"
+"I: g.cli: all ports safe"
 msgstr ""
 
 #: ../../src/use/basic.rst:57
@@ -102,6 +133,24 @@ msgstr ""
 msgid "Applets that have ``run`` nable programs often have `subcommands` to specify what task you would like to accomplish.  For instance, the ``uart`` applet has three subcommands -- ``tty``, which attaches the UART to stdin; ``pty``, which creates a UNIX pseudoterminal; and ``socket``, which attaches the UART to either a UNIX or TCP socket.  You can get a list of an applet's subcommands by using the ``--help`` argument; each subcommand may also have arguments of its own:"
 msgstr ""
 
+#: ../../src/use/basic.rst:83
+msgid ""
+"$ glasgow run uart --help\n"
+"[...]\n"
+"positional arguments:\n"
+"  OPERATION\n"
+"    tty                     connect UART to stdin/stdout\n"
+"    pty                     connect UART to a pseudo-terminal device file\n"
+"    socket                  connect UART to a socket\n"
+"[...]\n"
+"$ glasgow run socket --help\n"
+"usage: glasgow run uart socket [-h] ENDPOINT\n"
+"\n"
+"positional arguments:\n"
+"  ENDPOINT    listen at ENDPOINT, either unix:PATH or tcp:HOST:PORT\n"
+"[...]"
+msgstr ""
+
 #: ../../src/use/basic.rst:100
 msgid "Applets also can have `build arguments` that specify how the gateware is constructed, and `run arguments` that modify the behavior of the applet as a whole; these are also listed in the ``--help`` output."
 msgstr ""
@@ -128,6 +177,16 @@ msgstr ""
 
 #: ../../src/use/basic.rst:109
 msgid "Putting it together, the following command will run the ``uart`` applet, with an I/O voltage of 3.3 V, and will configure pin ``A0`` to be `Tx` (Glasgow transmitting), and pin ``A1`` to be `Rx` (Glasgow receiving).  It uses the ``socket`` subcommand to bridge the UART to a socket:"
+msgstr ""
+
+#: ../../src/use/basic.rst:111
+msgid ""
+"$ glasgow run uart -V 3.3 --tx A0 --rx A1 socket tcp:127.0.0.1:4321\n"
+"I: g.device.hardware: generating bitstream ID [...]\n"
+"I: g.cli: running handler for applet 'uart'\n"
+"I: g.applet.interface.uart: port(s) A, B voltage set to 3.3 V\n"
+"I: g.applet.interface.uart: port(s) A, B pull resistors configured\n"
+"I: g.applet.interface.uart: socket: listening at tcp:127.0.0.1:4321"
 msgstr ""
 
 #: ../../src/use/basic.rst:120
@@ -182,6 +241,10 @@ msgstr ""
 msgid "Aside from the ``tty`` mode, others are available (``pty``, ``socket``), which are explained further by the help text."
 msgstr ""
 
+#: ../../src/use/basic.rst:150
+msgid "$ glasgow run uart -V 3.3 --tx A0 --rx A1 -b 57600 tty"
+msgstr ""
+
 #: ../../src/use/basic.rst:156
 msgid "SPI controller"
 msgstr ""
@@ -190,12 +253,22 @@ msgstr ""
 msgid "The ``spi-controller`` applet implements an SPI controller, allowing full-duplex transfer to an SPI device. The following command will assert `CS#`, send the five bytes ``03 01 23 5f f5``, and then de-assert `CS#`, before printing the received data to the console."
 msgstr ""
 
+#: ../../src/use/basic.rst:160
+msgid ""
+"$ glasgow run spi-controller -V 3.3 --sck A0 --cs A1 --copi A2 --cipo A3 \\\n"
+"    '0301235ff5'"
+msgstr ""
+
 #: ../../src/use/basic.rst:167
 msgid "I²C controller"
 msgstr ""
 
 #: ../../src/use/basic.rst:169
 msgid "The ``i2c-controller`` applet implements an I²C controller, which features a simple bus scan operation from the command line, using the on-board pull-up resistors."
+msgstr ""
+
+#: ../../src/use/basic.rst:171
+msgid "$ glasgow run i2c-controller -V 3.3 scan"
 msgstr ""
 
 #: ../../src/use/basic.rst:175

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/develop/docs.rst:4
 msgid "Documentation"
@@ -30,8 +30,35 @@ msgstr ""
 msgid "To build the documentation locally, first `install PDM`_. Then, navigate to the working directory you have :ref:`installed <initial-setup>` the Glasgow software in, and run:"
 msgstr ""
 
+#: ../../src/develop/docs.rst:10
+msgid ""
+"$ cd docs/manual\n"
+"$ pdm install"
+msgstr ""
+
 #: ../../src/develop/docs.rst:15
 msgid "Once this step completes (which should always happen without errors), you are ready to edit the documentation. In a terminal, run:"
+msgstr ""
+
+#: ../../src/develop/docs.rst:17
+msgid ""
+"$ pdm run live\n"
+"[sphinx-autobuild] > sphinx-build .../glasgow/docs/manual/src .../glasgow/docs/manual/out\n"
+"Running Sphinx v7.1.2\n"
+"loading pickled environment... done\n"
+"building [mo]: targets for 0 po files that are out of date\n"
+"writing output...\n"
+"building [html]: targets for 0 source files that are out of date\n"
+"updating environment: 0 added, 0 changed, 0 removed\n"
+"reading sources...\n"
+"looking for now-outdated files... none found\n"
+"no targets are out of date.\n"
+"build succeeded.\n"
+"\n"
+"The HTML pages are in out.\n"
+"[I 231002 04:16:58 server:335] Serving on http://127.0.0.1:8000\n"
+"[I 231002 04:16:58 handlers:62] Start watching changes\n"
+"[I 231002 04:16:58 handlers:64] Start detecting changes"
 msgstr ""
 
 #: ../../src/develop/docs.rst:37
@@ -48,6 +75,20 @@ msgstr ""
 
 #: ../../src/develop/docs.rst:43
 msgid "To check that all of the external links in the documentation are valid, run the following command:"
+msgstr ""
+
+#: ../../src/develop/docs.rst:45
+msgid ""
+"$ pdm check\n"
+"Running Sphinx v7.1.2\n"
+"[part of the output elided]\n"
+"\n"
+"(    develop/docs: line   37) ok        http://127.0.0.1:8000\n"
+"(        purchase: line   10) ok        https://1bitsquared.de/products/glasgow\n"
+"(        purchase: line    9) ok        https://1bitsquared.com/products/glasgow\n"
+"(       community: line   10) ok        https://1bitsquared.com/pages/chat\n"
+"(           intro: line   69) ok        https://asciinema.org/a/245309\n"
+"[... continued]"
 msgstr ""
 
 #: ../../src/develop/docs.rst:58

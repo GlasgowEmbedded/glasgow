@@ -74,6 +74,7 @@ copybutton_copy_empty_lines = False
 
 locale_dirs = ["../locale/"]
 gettext_compact = False
+gettext_additional_targets = ["literal-block"]
 
 templates_path = ["_templates/"]
 

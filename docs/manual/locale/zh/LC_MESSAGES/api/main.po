@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-26 17:44+0800\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh\n"
@@ -30,6 +30,19 @@ msgstr "应用程序的入口点。"
 #: glasgow.main:3 of
 msgid "This module contains utility functions that handle start-up of the Glasgow CLI as well as custom applications based on the Glasgow API. To begin building your application, copy the following example:"
 msgstr "该模块包含一些处理 Glasgow CLI 启动和自定义应用启动的工具函数。构建自己的应用程序，请从复制如下示例代码开始："
+
+#: glasgow.main:7 of
+msgid ""
+"from glasgow.hardware.device import GlasgowDevice\n"
+"from glasgow.main import run_async, setup_logging\n"
+"\n"
+"@run_async\n"
+"async def main():\n"
+"    setup_logging(level=\"TRACE\")\n"
+"\n"
+"    device = await GlasgowDevice.find()\n"
+"    print(device.serial_number)"
+msgstr ""
 
 #: glasgow.main.setup_logging:1 of
 msgid "Configure logging."
@@ -58,6 +71,12 @@ msgstr "该装饰器是一个便捷的在您自己的脚本中使用 Glasgow 库
 #: glasgow.main.run_async:7 of
 msgid "Moreover, if the file with the :meth:`run_async` decorator is directly invoked from the command line (as opposed to being imported), it also calls the wrapped :py:`main` function, as if that file includes the following code immediately after the definition of :py:`main`:"
 msgstr "此外，如果使用 :meth:`run_async` 装饰器的文件直接在命令行被调用（而不是被导入），它也会调用这个被包装后的 :py:`main` 函数，如同该文件在 :py:`main` 的定义后立即包含如下代码："
+
+#: glasgow.main.run_async:11 of
+msgid ""
+"if __name__ == \"__main__\":\n"
+"    main()"
+msgstr ""
 
 #: glasgow.main.run_async_qtqml:1 glasgow.main.run_async_qtwidgets:1 of
 msgid "Configure the Qt runtime and call :py:`main`."
