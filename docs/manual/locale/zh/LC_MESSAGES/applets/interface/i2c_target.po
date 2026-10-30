@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-17 21:29+0800\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh\n"
@@ -41,6 +41,14 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "The default emulated device is a dummy device that logs all transactions, acknowledges all writes, and returns 0xFF in response to all reads. Use the global -v option to display the transaction log. For example, emulate address 0x50 on A0 (SCL) and A1 (SDA), with integrated pull-ups enabled:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "$ glasgow run i2c-target -V 3.3 --scl A0 --sda A1 --address 0x50 --pulls"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run i2c-target [-h] [-V SPEC] [--scl PIN] [--sda PIN] -A I2C-ADDR [--pulls]"
 msgstr ""
 
 #: ../../<autoprogram>:1

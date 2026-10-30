@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/develop/firmware.rst:4
 msgid "Firmware"
@@ -98,20 +98,50 @@ msgstr ""
 msgid "The firmware can only be built on a Unix-like system; to develop the firmware on Windows, use `WSL`_. You will need `GNU Make`_ and `sdcc`_ (version 4.0 or newer). To install these, run:"
 msgstr ""
 
+#: ../../src/develop/firmware.rst:62
+msgid "$ sudo apt install -y --no-install-recommends make sdcc git python3-usb1"
+msgstr ""
+
+#: ../../src/develop/firmware.rst:68
+msgid "$ sudo pacman -Syu make sdcc git python-libusb1"
+msgstr ""
+
+#: ../../src/develop/firmware.rst:74
+msgid "$ sudo dnf install -y make sdcc git python3-libusb1 libusb1"
+msgstr ""
+
 #: ../../src/develop/firmware.rst:80
 msgid "On Fedora, the `sdcc` package installs the tools into a different location, which must be added to the search path:"
+msgstr ""
+
+#: ../../src/develop/firmware.rst:82
+msgid "export PATH=\"/usr/libexec/sdcc:$PATH\""
 msgstr ""
 
 #: ../../src/develop/firmware.rst:86
 msgid "The source code of the chip support library `libfx2`_ used by the firmware is included in the Glasgow repository as a `git submodule`_. Make sure it is checked out at the appropriate revision and compiled:"
 msgstr ""
 
+#: ../../src/develop/firmware.rst:88
+msgid ""
+"$ git submodule update --init\n"
+"$ make -C vendor/libfx2/firmware"
+msgstr ""
+
 #: ../../src/develop/firmware.rst:93
 msgid "Now, build the firmware itself:"
 msgstr ""
 
+#: ../../src/develop/firmware.rst:95
+msgid "$ make -C firmware"
+msgstr ""
+
 #: ../../src/develop/firmware.rst:99
 msgid "The freshly built firmware can be unconditionally loaded to a connected device as follows:"
+msgstr ""
+
+#: ../../src/develop/firmware.rst:101
+msgid "$ make -C firmware load"
 msgstr ""
 
 #: ../../src/develop/firmware.rst:105
@@ -132,6 +162,10 @@ msgstr ""
 
 #: ../../src/develop/firmware.rst:121
 msgid "Deploying the firmware requires `Docker`_ and an internet connection. To deploy the firmware, run:"
+msgstr ""
+
+#: ../../src/develop/firmware.rst:123
+msgid "$ ./software/deploy-firmware.sh"
 msgstr ""
 
 #: ../../src/develop/firmware.rst:127

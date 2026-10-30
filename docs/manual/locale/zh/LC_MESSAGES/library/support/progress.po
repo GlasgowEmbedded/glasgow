@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-17 21:29+0800\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -34,8 +34,29 @@ msgstr ""
 msgid "To use it, modify applet code that processes multiple items by wrapping it in :py:`with Progress(...):`. For example, let's consider a method that uploads a bitstream via :class:`SPIControllerInterface<glasgow.applet.interface.spi_controller.SPIControllerInterface>`:"
 msgstr ""
 
+#: glasgow.support.progress.Progress:13 of
+msgid ""
+"async def load(bitstream: bytes):\n"
+"    async with self._spi.select():\n"
+"        await self._spi.write(bitstream)"
+msgstr ""
+
 #: glasgow.support.progress.Progress:19 of
 msgid "To add progress indication here, the bitstream will need to be explicitly chunked (while avoiding copies using :class:`memoryview`) and individual chunks iterated through:"
+msgstr ""
+
+#: glasgow.support.progress.Progress:22 of
+msgid ""
+"async def load(bitstream: bytes):\n"
+"    bitstream  = memoryview(bitstream)\n"
+"    chunk_size = 0x10000\n"
+"    async with self._spi.select():\n"
+"        with Progress(total=len(bitstream),\n"
+"                action=\"programming\", item=\"B\", scale=1024) as progress:\n"
+"            for start in range(0, len(bitstream), chunk_size):\n"
+"                await self._spi.write(bitstream[start:start + chunk_size])\n"
+"                await self._spi.synchronize()\n"
+"                progress.advance(chunk_size)"
 msgstr ""
 
 #: glasgow.support.progress.Progress:37 of
@@ -46,8 +67,25 @@ msgstr ""
 msgid "The particluar case of chunking a sequence (of bytes, or otherwise) is common enough that this class provides a helper method for it, :meth:`chunks`. Using this helper the :py:`load()` function becomes:"
 msgstr ""
 
+#: glasgow.support.progress.Progress:46 of
+msgid ""
+"async def load(bitstream: bytes):\n"
+"    async with self._spi.select():\n"
+"        for chunk in Progress.chunks(memoryview(bitstream), 0x10000,\n"
+"                action=\"programming\", item=\"B\", scale=1024):\n"
+"            await self._spi.write(chunk)\n"
+"            await self._spi.synchronize()"
+msgstr ""
+
 #: glasgow.support.progress.Progress:55 of
 msgid "With this change to the applet code, a CLI frontend can now indicate the progress of the operation, for example, by printing:"
+msgstr ""
+
+#: glasgow.support.progress.Progress:58 of
+msgid ""
+"programming... 13% (65536/500000 bytes)\n"
+"programming... 26% (131072/500000 bytes)\n"
+"(and so on until completion)"
 msgstr ""
 
 #: glasgow.support.progress.Progress.chunks:1 of
@@ -66,8 +104,22 @@ msgstr ""
 msgid "To split a byte array into chunks of up to :py:`chunk_size`, such as for a write operation, use:"
 msgstr ""
 
+#: glasgow.support.progress.Progress.chunks:16 of
+msgid ""
+"for chunk in Progress.chunks(memoryview(data), chunk_size,\n"
+"        action=\"programming\", item=\"B\", scale=1024):\n"
+"    write_data(chunk) # here `chunk` is a `memoryview`"
+msgstr ""
+
 #: glasgow.support.progress.Progress.chunks:22 of
 msgid "To split an address range into chunks of up to :py:`chunk_size`, such as for a read operation, use:"
+msgstr ""
+
+#: glasgow.support.progress.Progress.chunks:25 of
+msgid ""
+"for chunk in Progress.chunks(range(start, start + length), chunk_size,\n"
+"        action=\"reading\", item=\"B\", scale=1024):\n"
+"    data += read_data(chunk.start, len(chunk)) # here `chunk` is a `range`"
 msgstr ""
 
 #: glasgow.support.progress.Progress.chunks:33 of
@@ -153,6 +205,18 @@ msgstr ""
 
 #: glasgow.support.progress.QtWidgetsProgressImpl:3 of
 msgid "This implementation must be registered manually. It requires a :class:`~PySide6.QtWidgets.QProgressBar` and/or a :class:`~PySide6.QtWidgets.QLabel` to be provided; these widgets will be updated to display progress. For example:"
+msgstr ""
+
+#: glasgow.support.progress.QtWidgetsProgressImpl:8 of
+msgid ""
+"class MainWindow(QMainWindow, Ui_MainWindow):\n"
+"    def __init__(self):\n"
+"        super().__init__()\n"
+"\n"
+"        self.setupUi(self)\n"
+"        QtWidgetsProgressImpl(self.progressBar, self.statusLabel).register()\n"
+"\n"
+"    ..."
 msgstr ""
 
 #: glasgow.support.progress.QtWidgetsProgressImpl:21 of

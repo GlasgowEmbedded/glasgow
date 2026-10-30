@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-17 21:29+0800\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh\n"
@@ -83,6 +83,10 @@ msgstr ""
 msgid "The overall format of the device-to-host COBS frames is:"
 msgstr ""
 
+#: ../../../../software/glasgow/applet/interface/analyzer2/protocol.md:34
+msgid "D>H: <COBS> index:u8 [data:u8*] </COBS>\n"
+msgstr ""
+
 #: ../../../../software/glasgow/applet/interface/analyzer2/protocol.md:38
 msgid "The `index` denotes a *substream index*. Substream 0 contains command responses, substream 1 contains sample data."
 msgstr ""
@@ -93,6 +97,12 @@ msgstr ""
 
 #: ../../../../software/glasgow/applet/interface/analyzer2/protocol.md:43
 msgid "Command sequences"
+msgstr ""
+
+#: ../../../../software/glasgow/applet/interface/analyzer2/protocol.md:45
+msgid ""
+"H>D: type:u8 [arg:u32le]\n"
+"D>H: <COBS> 0:u8 [ret:u32le] </COBS>\n"
 msgstr ""
 
 #: ../../../../software/glasgow/applet/interface/analyzer2/protocol.md:50
@@ -113,6 +123,10 @@ msgstr ""
 
 #: ../../../../software/glasgow/applet/interface/analyzer2/protocol.md:56
 msgid "Sample data sequences"
+msgstr ""
+
+#: ../../../../software/glasgow/applet/interface/analyzer2/protocol.md:58
+msgid "D>H: <COBS> 1:u8 [data:u32le]* trailer:u8 </COBS>\n"
 msgstr ""
 
 #: ../../../../software/glasgow/applet/interface/analyzer2/protocol.md:62
@@ -145,6 +159,13 @@ msgstr ""
 
 #: ../../../../software/glasgow/applet/interface/analyzer2/protocol.md:72
 msgid "Metadata request sequences"
+msgstr ""
+
+#: ../../../../software/glasgow/applet/interface/analyzer2/protocol.md:74
+msgid ""
+"H>D: type:u8 [arg:u32le]\n"
+"D>H: <COBS> 1:u8 [data:u32le]* trailer:u8 </COBS>\n"
+"D>H: <COBS> 2:u8 [metadata:u8]* </COBS>\n"
 msgstr ""
 
 #: ../../../../software/glasgow/applet/interface/analyzer2/protocol.md:81
@@ -392,6 +413,13 @@ msgstr ""
 
 #: ../../../../software/glasgow/applet/interface/analyzer2/protocol.md:221
 msgid "List of UTF-8 encoded channel names separated by NUL bytes. For example, the following hex dump corresponds to metadata for a 4-channel logic analyzer with channels named `CS#`, `CLK`, `COPI`, `CIPO`:"
+msgstr ""
+
+#: ../../../../software/glasgow/applet/interface/analyzer2/protocol.md:223
+msgid ""
+"00000000  43 53 23 00 43 4c 4b 00  43 4f 50 49 00 43 49 50  |CS#.CLK.COPI.CIP|\n"
+"00000010  4f 00                                             |O.|\n"
+"00000012\n"
 msgstr ""
 
 #: ../../../../software/glasgow/applet/interface/analyzer2/protocol.md:230

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-17 21:29+0800\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh\n"
@@ -37,6 +37,10 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "If provided, this applet will drive the reset and bootloader mode pins. However, it will not drive the bootloader serial interface mode pin, which must be strapped externally to select Mode 2. Consult the datasheet for details."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run program-m16c [-h] [-V SPEC] [--rx PIN] [--tx PIN] [--reset PIN] [--cnvss PIN] [-b RATE] [-k HEX-ID] OPERATION ..."
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -76,7 +80,15 @@ msgid "glasgow run program-m16c erase"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run program-m16c erase [-h]"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "glasgow run program-m16c erase-block"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run program-m16c erase-block [-h] ADDRESS"
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -85,6 +97,10 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "glasgow run program-m16c program"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run program-m16c program [-h] ADDRESS FILENAME"
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -97,6 +113,10 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "glasgow run program-m16c read"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run program-m16c read [-h] ADDRESS LENGTH FILENAME"
 msgstr ""
 
 #: ../../<autoprogram>:1

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-17 21:29+0800\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -39,7 +39,17 @@ msgid "Usage:"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid ""
+"glasgow run spi-flashrom -V 3.3 --freq 4000 tcp::2222\n"
+"/sbin/flashrom -p serprog:ip=localhost:2222"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "It is also possible to flash 25-series flash chips using the `memory-25q` applet, which does not require a third-party tool. The advantage of using the `spi-flashrom` applet is that flashrom offers compatibility with a wider variety of devices, some of which may not be supported by the `memory-25q` applet."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run spi-flashrom [-h] [-V SPEC] [--cs PIN] [--sck PIN] [--copi PIN] [--cipo PIN] [--wp PIN] [--hold PIN] [-f FREQ] ENDPOINT"
 msgstr ""
 
 #: ../../<autoprogram>:1

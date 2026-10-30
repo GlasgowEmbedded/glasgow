@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-18 23:49+0800\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -47,6 +47,10 @@ msgid "Device ID"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run i2c-controller [-h] [-V SPEC] [--scl PIN] [--sda PIN] [-f FREQ] OPERATION ..."
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "show this help message and exit"
 msgstr ""
 
@@ -68,6 +72,10 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "glasgow run i2c-controller scan"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run i2c-controller scan [-h] [--device-id] [--probe] [--accept-risk]"
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -103,6 +111,14 @@ msgstr ""
 #: glasgow.applet.interface.i2c_controller.I2CControllerInterface.transaction:8
 #: of
 msgid "For example, to perform ``S 0x50 nW 0x01 A Sr 0x50 R 0x?? nA 0x?? P`` (read of two bytes from a 24-series single address byte EEPROM, starting at address 0x01), use the following code:"
+msgstr ""
+
+#: glasgow.applet.interface.i2c_controller.I2CControllerInterface.transaction:12
+#: of
+msgid ""
+"async with iface.transaction():\n"
+"    await iface.write(0x50, [0x01])\n"
+"    data = await iface.read(0x50, 2)"
 msgstr ""
 
 #: glasgow.applet.interface.i2c_controller.I2CControllerInterface.transaction:18

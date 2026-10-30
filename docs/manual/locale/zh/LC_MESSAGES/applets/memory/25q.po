@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-17 21:29+0800\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -39,11 +39,32 @@ msgid "The pinout of a typical 25-series IC is as follows:"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid ""
+"        16-pin                     8-pin\n"
+"IO3/HOLD# @ * SCK               CS# @ * VCC\n"
+"      VCC * * IO0/COPI     IO1/CIPO * * IO3/HOLD#\n"
+"      N/C * * N/C           IO2/WP# * * SCK\n"
+"      N/C * * N/C               GND * * IO0/COPI\n"
+"      N/C * * N/C\n"
+"      N/C * * N/C\n"
+"      CS# * * GND\n"
+" IO1/CIPO * * IO2/WP#"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "This applet supports ordinary SPI mode, as well as dual-SPI and quad-SPI. When quad-SPI mode is not in use, the ``WP#`` and ``HOLD#`` pins are pulled high; these must not be left floating as the memories do not typically include internal pull-ups. These faster modes are not enabled by default because of the potential for bus contention and higher severity of crosstalk; use the options ``--dual-spi`` and ``--quad-spi`` to enable their use (when described in SFDP)."
 msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "It is also possible to flash 25-series flash chips using the `spi-flashrom` applet, which requires a third-party tool `flashrom`. The advantage of using the `flashrom` applet is that flashrom offers compatibility with a wider variety of devices, some of which may not be supported by the `memory-25q` applet."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid ""
+"usage: glasgow run memory-25q [-h] [-V SPEC] [--cs PIN] [--sck PIN] [--io PINS] [-f FREQ] [--dual-spi] [--quad-spi] [-A WIDTH] [-P SIZE]\n"
+"                              [--opcode-erase-256 OPCODE] [--opcode-erase-4k OPCODE] [--opcode-erase-8k OPCODE] [--opcode-erase-32k OPCODE]\n"
+"                              [--opcode-erase-64k OPCODE]\n"
+"                              OPERATION ..."
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -115,6 +136,10 @@ msgid "Erase memory range. Start and end of specified range must be aligned on e
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run memory-25q erase [-h] ADDRESS LENGTH"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "start with byte at ADDRESS"
 msgstr ""
 
@@ -131,11 +156,19 @@ msgid "Erase memory range covering the entire chip."
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run memory-25q erase-all [-h]"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "glasgow run memory-25q identify"
 msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "Identify memory by its JEDEC ID and (if available) Serial Flash Discoverable Parameters."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run memory-25q identify [-h] [--annotate-raw-sfdp]"
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -155,6 +188,10 @@ msgid "Setting all BP bits to zero may be necessary to execute the `erase-all` c
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run memory-25q protect [-h] [BITMASK]"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "write BITMASK to BP bits (e.g. 0000 to allow all, 1111 to protect all)"
 msgstr ""
 
@@ -167,6 +204,10 @@ msgid "Read memory range using the fastest available read command."
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run memory-25q read [-h] [-f FILENAME] ADDRESS LENGTH"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "write memory contents to FILENAME"
 msgstr ""
 
@@ -176,6 +217,10 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "Read memory range using the fastest available read command, and compare with given data."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run memory-25q verify [-h] (-d DATA | -f FILENAME) ADDRESS"
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -192,6 +237,10 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "Write memory range using a read-modify-write sequence. Start and end of specified range do not need to be aligned on erase size boundaries."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run memory-25q write [-h] (-d DATA | -f FILENAME) ADDRESS"
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -276,6 +325,13 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "EBh (Quad I/O Fast Read)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid ""
+"usage: glasgow tool memory-25q [-h] [--data DATA-FILE] [--data-mask MASK-FILE] [--sfdp DATA-FILE] [--sfdp-mask MASK-FILE] [--uid DATA-FILE]\n"
+"                               [--uid-mask MASK-FILE]\n"
+"                               CAPTURE-FILE"
 msgstr ""
 
 #: ../../<autoprogram>:1
