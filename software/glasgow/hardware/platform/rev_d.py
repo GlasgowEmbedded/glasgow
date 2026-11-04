@@ -3,7 +3,7 @@ from amaranth.build import *
 from .ecp5 import *
 
 
-__all__ = ["GlasgowRevD0Platform"]
+__all__ = ["GlasgowRevD0Platform", "GlasgowRevD1Platform"]
 
 
 class _GlasgowRevDPlatform(GlasgowECP5Platform):
@@ -41,13 +41,6 @@ class _GlasgowRevDPlatform(GlasgowECP5Platform):
         Resource("led", 3, Pins("A14", dir="o"), Attrs(IO_TYPE="LVCMOS33")),
         Resource("led", 4, Pins("B14", dir="o"), Attrs(IO_TYPE="LVCMOS33")),
 
-        Resource("octoram", 0,
-            Subsignal("cs",  PinsN("R16", dir="o"), Attrs(PULLMODE="UP")),
-            Subsignal("clk", Pins( "P16", dir="o")),
-            Subsignal("dqs", Pins( "N16", dir="io")),
-            Subsignal("dq",  Pins( "L15 K13 M15 L16 M16 L13 L12 K12", dir="io")),
-            Attrs(IO_TYPE="LVCMOS18", SLEWRATE="FAST")
-        ),
         Resource("octoram", 1,
             Subsignal("cs",  PinsN("P11", dir="o"), Attrs(PULLMODE="UP")),
             Subsignal("clk", Pins( "M11", dir="o")),
@@ -56,11 +49,6 @@ class _GlasgowRevDPlatform(GlasgowECP5Platform):
             Attrs(IO_TYPE="LVCMOS18", SLEWRATE="FAST")
         ),
 
-        Resource("afe_mcu", 0,
-            # When using the AFE from the FPGA, the MCU must be held in reset to avoid contention.
-            Subsignal("reset", PinsN("D5",  dir="o"), Attrs(PULLMODE="NONE")),
-            Attrs(IO_TYPE="LVCMOS33")
-        ),
         Resource("afe_adc", 0,
             Subsignal("reset", PinsN("A15", dir="o"), Attrs(PULLMODE="UP")),
             Subsignal("cs",    PinsN("C9",  dir="o"), Attrs(PULLMODE="UP")),
@@ -238,6 +226,24 @@ class _GlasgowRevDPlatform(GlasgowECP5Platform):
         ),
     ]
 
+
+class GlasgowRevD0Platform(_GlasgowRevDPlatform):
+    resources = _GlasgowRevDPlatform.resources + [
+        Resource("octoram", 0,
+            Subsignal("cs",  PinsN("R16", dir="o"), Attrs(PULLMODE="UP")),
+            Subsignal("clk", Pins( "P16", dir="o")),
+            Subsignal("dqs", Pins( "N16", dir="io")),
+            Subsignal("dq",  Pins( "L15 K13 M15 L16 M16 L13 L12 K12", dir="io")), # diff: DQ2 DQ3
+            Attrs(IO_TYPE="LVCMOS18", SLEWRATE="FAST")
+        ),
+
+        Resource("afe_mcu", 0,
+            # When using the AFE from the FPGA, the MCU must be held in reset to avoid contention.
+            Subsignal("reset", PinsN("D5", dir="oe"), Attrs(PULLMODE="NONE")),
+            Attrs(IO_TYPE="LVCMOS33")
+        ),
+    ]
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._init_glasgow_pins(
@@ -250,5 +256,49 @@ class _GlasgowRevDPlatform(GlasgowECP5Platform):
         )
 
 
-class GlasgowRevD0Platform(_GlasgowRevDPlatform):
-    pass
+class GlasgowRevD1Platform(_GlasgowRevDPlatform):
+    resources = _GlasgowRevDPlatform.resources + [
+        Resource("octoram", 0,
+            Subsignal("cs",  PinsN("R16", dir="o"), Attrs(PULLMODE="UP")),
+            Subsignal("clk", Pins( "P16", dir="o")),
+            Subsignal("dqs", Pins( "N16", dir="io")),
+            Subsignal("dq",  Pins( "L15 K13 M14 M13 M16 L13 L12 K12", dir="io")), # diff: DQ2 DQ3
+            Attrs(IO_TYPE="LVCMOS18", SLEWRATE="FAST")
+        ),
+
+        Resource("afe_clk", 0, Pins("A8", dir="i"), Attrs(IO_TYPE="LVCMOS33")), # GPIO9
+        Resource("afe_mcu", 0,
+            # When using the AFE from the FPGA, the MCU must be held in reset to avoid contention.
+            Subsignal("reset", PinsN("D5", dir="oe"), Attrs(PULLMODE="NONE")),
+            Subsignal("boot0", Pins("E5", dir="oe"), Attrs(PULLMODE="NONE")), # diff: added
+            Attrs(IO_TYPE="LVCMOS33")
+        ),
+
+        Resource("port_syn", 1,
+                 Subsignal("io", Pins("M8"), Attrs(PULLMODE="UP")),
+                 Subsignal("oe", Pins("M9", dir="o")),
+                 Attrs(IO_TYPE="LVCMOS33")),
+
+        Resource("si5351", 0, Pins("L16", dir="i"), Attrs(IO_TYPE="LVCMOS18")),
+        Resource("si5351", 1, Pins("M15", dir="i"), Attrs(IO_TYPE="LVCMOS18")),
+        # there is no si5351#2 resource, CLK2 is connected to J11
+        Resource("si5351", 3,
+            Subsignal("clk", Pins("E7", dir="i")),
+            Subsignal("oe", PinsN("B6", dir="o")),
+            Attrs(IO_TYPE="LVCMOS33")
+        ),
+
+        # for observing signals with an oscilloscope
+        Resource("test", 0, Pins("N11 T13 P12 N12", dir="io"), Attrs(IO_TYPE="LVCMOS18")),
+    ]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._init_glasgow_pins(
+            ("A",   "port_a", range(8)),
+            ("B",   "port_b", range(8)),
+            ("C",   "port_c", range(8)),
+            ("D",   "port_d", range(8)),
+            ("SYN", "port_syn", range(2)),
+            ("LED", "port_led", range(5)),
+        )
