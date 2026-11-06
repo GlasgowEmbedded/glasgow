@@ -9,3 +9,4 @@ Audio
     :maxdepth: 3
 
     dac
+    yamaha_opx
