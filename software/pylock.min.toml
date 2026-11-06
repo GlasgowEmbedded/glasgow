@@ -1495,11 +1495,11 @@ dependencies = [
 
 [[packages]]
 name = "click"
-version = "8.5.0"
+version = "8.5.1"
 requires-python = ">=3.10"
-sdist = {name = "click-8.5.0.tar.gz", url = "https://files.pythonhosted.org/packages/c7/0e/7fa0ef50764b67090eca4114772a2abf8b6148198475e54c660b97caeee6/click-8.5.0.tar.gz", hashes = {sha256 = "ba0d2089de75ea0310e2dde03160e6ca10009947fb95a182f9b54021bb272e34"}}
+sdist = {name = "click-8.5.1.tar.gz", url = "https://files.pythonhosted.org/packages/45/37/edbf1b0707709013c0cf2e8317e03d97ed29bf4cac709fe328904ae92a38/click-8.5.1.tar.gz", hashes = {sha256 = "9bbfada76703fd1d784b83eea012e3e8c6a001a876543ef104fa56aaaeb072b4"}}
 wheels = [
-    {name = "click-8.5.0-py3-none-any.whl",url = "https://files.pythonhosted.org/packages/58/50/6c0d534c5f134586a8e1ba4e330569e32f057e33372ae556463212fb4cd3/click-8.5.0-py3-none-any.whl",hashes = {sha256 = "255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360"}},
+    {name = "click-8.5.1-py3-none-any.whl",url = "https://files.pythonhosted.org/packages/31/7d/164b7ffc8624fe9efb4221bf9af485d5c1e41b9ae118045d2b6dc5457d8b/click-8.5.1-py3-none-any.whl",hashes = {sha256 = "8bb5376d2006950386f8c6427613334a2acadc5f559cb80e638d00b4df957e37"}},
 ]
 marker = "\"builtin-toolchain\" in extras"
 
