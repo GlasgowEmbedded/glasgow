@@ -798,7 +798,7 @@ void port_init()
 {
   IO_EN_VA = 0;
   IO_EN_VB = 0;
-  if (glasgow_config.revision == GLASGOW_REV_D0) {
+  if (glasgow_config.revision >= GLASGOW_REV_D0) {
     IO_EN_VC_REVD = 0;
     IO_EN_VD_REVD = 0;
     port_params = &port_params_revd;
