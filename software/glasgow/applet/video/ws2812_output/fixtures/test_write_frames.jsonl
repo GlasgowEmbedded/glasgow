@@ -1,0 +1,2 @@
+{"self": "leds_iface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "000102030405060708090a0b"}], "kwargs": {}, "result": null}
+{"self": "leds_iface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
