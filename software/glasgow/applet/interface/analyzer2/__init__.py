@@ -719,16 +719,11 @@ class Reader(wiring.Component):
 class WriteControl(wiring.Component):
     """Write flow control unit.
 
-    Has two modes: free-run and budgeted. In free-run mode, no credits are taken or given; writes
-    proceed undisturbed. In budgeted mode, credits are given to the writer (one ``writer_ratio``
-    per stream transfer) and taken from the reader (one ``reader_ratio`` per stream transfer).
-    The amount of outstanding credits is tracked, and must be below ``max_credits`` at all times
-    in order for writes to proceed. No writes are allowed if the outstanding credits exceed
-    the budget; this will cause the sampling head to detect an overflow condition.
-
-    At the cycle where ``free_run`` goes low, the value of ``prolog_size`` is used as the starting
-    amount of outstanding credits. This represents the amount of already written data behind
-    the starting address of the writer's next burst that must be preserved for readout.
+    Credits are given to the writer (one ``writer_ratio`` per stream transfer) and taken from the
+    reader (one ``reader_ratio`` per stream transfer). The amount of outstanding credits is tracked,
+    and must be below ``max_credits`` at all times  in order for writes to proceed. No writes are
+    allowed if the outstanding credits exceed the budget; this will cause the sampling head to
+    detect an overflow condition.
     """
 
     def __init__(self, *, writer_shape, reader_shape, writer_ratio: int, reader_ratio: int,
@@ -743,9 +738,7 @@ class WriteControl(wiring.Component):
             "i_reader": In(stream.Signature(reader_shape)),
             "o_reader": Out(stream.Signature(reader_shape)),
 
-            "free_running": In(1),
-            "prolog_size":  In(range(max_credits + 1)),
-            "credits":      Out(range(max_credits + 1)),
+            "credits":  Out(range(max_credits + 1)),
         })
 
     def elaborate(self, platform):
@@ -770,13 +763,9 @@ class WriteControl(wiring.Component):
         credits1 = credits  + Mux(self.o_writer.valid & self.o_writer.ready, self._writer_ratio, 0)
         credits2 = credits1 - Mux(self.o_reader.valid & self.o_reader.ready, self._reader_ratio, 0)
 
-        with m.If(self.free_running):
+        with m.If(credits <= self._max_credits - self._writer_ratio):
             m.d.comb += enabled.eq(1)
-            m.d.sync += credits.eq(Mux(credits1 < self.prolog_size, credits1, self.prolog_size))
-        with m.Else():
-            with m.If(credits <= self._max_credits - self._writer_ratio):
-                m.d.comb += enabled.eq(1)
-            m.d.sync += credits.eq(credits2)
+        m.d.sync += credits.eq(credits2)
 
         return m
 
@@ -1093,8 +1082,6 @@ class AnalyzerCore(wiring.Component):
         wiring.connect(m, read_ctrl.r_blocks, reader.i_blocks)
 
         m.d.comb += [
-            write_ctrl.prolog_size.eq(self.control.readout.prolog_size),
-            write_ctrl.free_running.eq(read_ctrl.status.free_running),
             read_ctrl.control.eq(self.control.readout),
             self.status.readout.eq(read_ctrl.status),
         ]
