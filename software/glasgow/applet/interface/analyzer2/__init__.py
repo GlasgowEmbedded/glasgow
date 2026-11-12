@@ -719,16 +719,11 @@ class Reader(wiring.Component):
 class WriteControl(wiring.Component):
     """Write flow control unit.
 
-    Has two modes: free-run and budgeted. In free-run mode, no credits are taken or given; writes
-    proceed undisturbed. In budgeted mode, credits are given to the writer (one ``writer_ratio``
-    per stream transfer) and taken from the reader (one ``reader_ratio`` per stream transfer).
-    The amount of outstanding credits is tracked, and must be below ``max_credits`` at all times
-    in order for writes to proceed. No writes are allowed if the outstanding credits exceed
-    the budget; this will cause the sampling head to detect an overflow condition.
-
-    At the cycle where ``free_run`` goes low, the value of ``prolog_size`` is used as the starting
-    amount of outstanding credits. This represents the amount of already written data behind
-    the starting address of the writer's next burst that must be preserved for readout.
+    Credits are given to the writer (one ``writer_ratio`` per stream transfer) and taken from the
+    reader (one ``reader_ratio`` per stream transfer). The amount of outstanding credits is tracked,
+    and must be below ``max_credits`` at all times  in order for writes to proceed. No writes are
+    allowed if the outstanding credits exceed the budget; this will cause the sampling head to
+    detect an overflow condition.
     """
 
     def __init__(self, *, writer_shape, reader_shape, writer_ratio: int, reader_ratio: int,
@@ -743,9 +738,7 @@ class WriteControl(wiring.Component):
             "i_reader": In(stream.Signature(reader_shape)),
             "o_reader": Out(stream.Signature(reader_shape)),
 
-            "free_running": In(1),
-            "prolog_size":  In(range(max_credits + 1)),
-            "credits":      Out(range(max_credits + 1)),
+            "credits":  Out(range(max_credits + 1)),
         })
 
     def elaborate(self, platform):
@@ -770,17 +763,9 @@ class WriteControl(wiring.Component):
         credits1 = credits  + Mux(self.o_writer.valid & self.o_writer.ready, self._writer_ratio, 0)
         credits2 = credits1 - Mux(self.o_reader.valid & self.o_reader.ready, self._reader_ratio, 0)
 
-        with m.If(self.free_running):
+        with m.If(credits <= self._max_credits - self._writer_ratio):
             m.d.comb += enabled.eq(1)
-            m.d.sync += credits.eq(Mux(credits1 < self.prolog_size, credits1, self.prolog_size))
-        with m.Else():
-            with m.If(credits <= self._max_credits - self._writer_ratio):
-                m.d.comb += enabled.eq(1)
-            # In principle this should be impossible if the read barriers are respected, but
-            # the free-running mode has some funky edge cases which can cause the credits to go
-            # negative. Since *under*counting credits is harmless we just clamp it at zero.
-            with m.If(credits2 > 0):
-                m.d.sync += credits.eq(credits2)
+        m.d.sync += credits.eq(credits2)
 
         return m
 
@@ -834,221 +819,177 @@ class ReadControl(wiring.Component):
     def elaborate(self, platform):
         m = Module()
 
-        queue_size = Signal(self._dram_range)
-        m.d.comb += self.status.queue_size.eq(queue_size)
-        m.d.sync += queue_size.eq(queue_size
-            + Mux(self.w_blocks.valid & self.w_blocks.ready, self.w_blocks.p.size, 0)
-            - Mux(self.r_blocks.valid & self.r_blocks.ready, self.r_blocks.p.size, 0))
+        acc       = Signal.like(self.r_blocks.p)
+        size      = Signal.like(acc.size)
+        epi_acc   = Signal.like(acc)
+        epi_count = Signal.like(acc.size)
 
-        # For the most part, the writer unit is expected to write to the DRAM continuously.
-        # However, sometimes it must be paused: barriers are required when an accurate measurement
-        # of the queue size must happen, e.g. before a trigger or overflow event, to find out how
-        # much data can be read out before encountering the event in question.
-        #
-        # When an abnormal trailer marker is encountered, the block is still consumed so that
-        # the next block can be written; the writer is only prevented from progressing afterwards
-        # (and so is `queue_size`). This avoids hiccups where it takes a while for the trigger FSM
-        # to get to processing the trailer for one reason or another.
-        m.submodules.barrier = barrier = StreamBuffer(Trailer)
-        m.d.comb += barrier.i.payload.eq(self.w_blocks.p.meta)
+        cont = Signal()
+        m.d.comb += cont.eq(~self.r_blocks.valid)
+        with m.If(self.r_blocks.valid & self.r_blocks.ready):
+            m.d.comb += cont.eq(1)
+            m.d.sync += self.r_blocks.valid.eq(0)
 
-        with m.FSM(name="write_fsm"):
-            with m.State("Idle"):
-                m.d.comb += self.w_blocks.ready.eq(1)
-                with m.If(self.w_blocks.valid):
-                    with m.If(self.w_blocks.p.meta.abnormal):
-                        # This also delays the reaction to the marker by (at least) one cycle,
-                        # ensuring `queue_size` is updated.
-                        m.d.comb += barrier.i.valid.eq(1)
-                        m.next = "Busy"
+        with m.FSM(name="readctl_fsm") as readctl_fsm:
+            def else_accumulate(accumulator):
+                with m.Elif(self.w_blocks.valid & (accumulator.meta.marker == Marker.Normal)):
+                    m.d.comb += self.w_blocks.ready.eq(1)
+                    mark = self.w_blocks.p.meta.marker
+                    m.d.sync += [
+                        accumulator.skip.eq(mark == Marker.Discard),
+                        accumulator.size.eq(accumulator.size + self.w_blocks.p.size),
+                    ]
+                    with m.If((mark == Marker.Overflow) | (mark == Marker.Discard)):
+                        m.d.sync += accumulator.meta.eq(self.w_blocks.p.meta)
 
-            with m.State("Busy"):
-                with m.If(barrier.i.ready):
-                    m.next = "Idle"
+            def clear_accumulator(accumulator):
+                m.d.sync += [
+                    accumulator.size.eq(0),
+                    accumulator.skip.eq(0),
+                    accumulator.meta.marker.eq(Marker.Normal),
+                    accumulator.meta.offset.eq(0),
+                ]
 
-        # The reader unit itself has no flow control that would prevent it from overrunning
-        # the writer unit. (It will, however, split read requests into smaller bursts to avoid
-        # starving the latter.) We have to slice large readout commands (prolog and epilog sizes
-        # can be as high as 4 GB, though only the epilog can actually get that large) into smaller
-        # chunks that are issued once the queue has enough data in it.
-        #
-        # Note that even if the burst sizes are the same for the reader unit and the readout
-        # control unit, these are not redundant controls, as the readout control unit also
-        # ensures that the requests do not cross 2 Kbyte DRAM row boundaries.
-        m.submodules.request = request = StreamBuffer(
-            data.StructLayout({"skip": 1, "size": 32, "meta": Trailer}))
+            def stream_from(accumulator):
+                finished = Signal()
+                with m.If(cont):
+                    m.d.comb += \
+                        size.eq(Mux(acc.size < self._burst_bytes, acc.size, self._burst_bytes))
+                    m.d.sync += [
+                        acc.size.eq(acc.size - size),
+                        self.r_blocks.valid .eq(1),
+                        self.r_blocks.p.skip.eq(0),
+                        self.r_blocks.p.size.eq(size),
+                        self.r_blocks.p.meta.marker.eq(Marker.Normal),
+                        self.r_blocks.p.meta.offset.eq(0),
+                    ]
+                    with m.If(acc.size == size):
+                        m.d.comb += finished.eq(1)
+                        m.d.sync += self.r_blocks.p.meta.eq(acc.meta)
+                return finished
 
-        # Overflow and discard events require abandoning the current read, which might never be
-        # fulfilled. This is difficult to do without introducing a race condition. Note that
-        # the `Skip` state is uninterruptible: it quickly completes when there is enough data in
-        # the queue, and is only entered when the data is already enqueued in first place.
-        interrupt_now = Signal()
-        interrupt_reg = Signal()
-        m.d.sync += interrupt_reg.eq(interrupt_now)
-        interrupt = (interrupt_now & ~interrupt_reg)
-
-        # The read FSM splits a large read request into smaller chunks and schedules these chunks
-        # as soon as they are written. In other words, it handles the write barrier.
-        residual = Signal.like(request.o.p.size)
-        with m.FSM(name="read_fsm"):
-            with m.State("Idle"):
-                m.d.sync += residual.eq(request.o.p.size)
-                with m.If(request.o.valid):
-                    m.next = "Loop"
-
-            with m.State("Loop"):
-                # Delay completion by one cycle to ensure `queue_size` is updated.
-                with m.If(residual == 0):
-                    m.d.comb += request.o.ready.eq(1)
-                    m.next = "Idle"
-                with m.Else():
-                    with m.If(self.r_blocks.p.skip):
-                        # Skipping is done in large chunks to maximize throughput. Only data that
-                        # is already written is skipped; skipping in small chunks (as for reads)
-                        # results in lockups when reducing the prolog size by a large amount.
-                        m.next = "Skip"
-                    with m.Elif(interrupt):
-                        m.d.comb += request.o.ready.eq(1)
-                        m.next = "Idle"
-                    with m.Else():
-                        # Reading is done in smaller chunks to minimize write-to-read latency.
-                        m.next = "Read"
-
-            with m.State("Skip"):
-                m.d.comb += self.r_blocks.p.skip.eq(1)
-                m.d.comb += self.r_blocks.valid.eq(queue_size >= self.r_blocks.p.size)
-                with m.If(residual > 0x10000 - 2):
-                    m.d.comb += self.r_blocks.p.size.eq(0x10000 - 2)
-                with m.Else():
-                    m.d.comb += self.r_blocks.p.size.eq(residual)
-                with m.If(self.r_blocks.valid & self.r_blocks.ready):
-                    m.d.sync += residual.eq(residual - self.r_blocks.p.size)
-                    m.next = "Loop"
-
-            with m.State("Read"):
-                m.d.comb += self.r_blocks.valid.eq(queue_size >= self.r_blocks.p.size)
-                m.d.comb += self.r_blocks.p.skip.eq(request.o.p.skip)
-                with m.If(residual > self._burst_bytes):
-                    m.d.comb += self.r_blocks.p.size.eq(self._burst_bytes)
-                with m.Else():
-                    m.d.comb += self.r_blocks.p.size.eq(residual)
-                    m.d.comb += self.r_blocks.p.meta.eq(request.o.p.meta)
-                with m.If(self.r_blocks.valid & self.r_blocks.ready):
-                    m.d.sync += residual.eq(residual - self.r_blocks.p.size)
-                    m.next = "Loop"
-                with m.If(interrupt):
-                    m.d.comb += request.o.ready.eq(1)
-                    m.next = "Idle"
-
-        # The trigger FSM monitors the markers of just-written blocks and schedules ranges to be
-        # processed by the read FSM.
-        trigger_meta = Signal(Trailer)
-        with m.FSM(name="trigger_fsm") as trigger_fsm:
             with m.State("Free-Run"):
-                m.d.comb += [
-                    request.i.p.skip.eq(1),
-                    request.i.p.size.eq(queue_size - self.control.prolog_size),
-                    request.i.valid.eq(queue_size > self.control.prolog_size),
-                ]
-                with m.If(barrier.o.valid):
-                    with m.If(barrier.o.p.marker == Marker.Trigger):
-                        with m.If(~request.i.valid | request.i.ready):
-                            m.d.comb += barrier.o.ready.eq(1)
-                            m.d.sync += trigger_meta.eq(barrier.o.payload)
-                            m.next = "Prolog"
-                    with m.Elif(barrier.o.p.marker == Marker.Overflow):
-                        m.d.sync += self.status.stall_count.eq(self.status.stall_count + 1)
-                        m.next = "Overflow"
-                    with m.Elif(barrier.o.p.marker == Marker.Discard):
-                        m.next = "Discard"
+                with m.If(cont & (acc.size > self.control.prolog_size)):
+                    m.d.sync += [
+                        acc.size.eq(self.control.prolog_size),
+                        self.r_blocks.valid .eq(1),
+                        self.r_blocks.p.skip.eq(1),
+                        self.r_blocks.p.size.eq(acc.size - self.control.prolog_size),
+                        self.r_blocks.p.meta.marker.eq(Marker.Normal),
+                        self.r_blocks.p.meta.offset.eq(0),
+                    ]
+                with m.Elif(self.w_blocks.valid):
+                    m.d.comb += self.w_blocks.ready.eq(1)
 
-            with m.State("Overflow"):
-                m.d.comb += [
-                    interrupt_now.eq(1),
-                    # Flush the entire remaining queue; these are all of the good samples we've
-                    # acquired. This might be more than the prolog plus epilog sizes! The frontend
-                    # should be prepared to deal with this. The rationale for this behavior is:
-                    # typically, when you hit an overflow condition, you want "as many samples as
-                    # is physically feasible", as you're chasing an event at the margin of what
-                    # the device is capable of.
-                    request.i.p.meta.marker.eq(Marker.Overflow),
-                    request.i.p.size.eq(queue_size),
-                    request.i.valid.eq(queue_size > 0),
-                ]
-                with m.If(~request.i.valid | request.i.ready):
-                    m.d.comb += barrier.o.ready.eq(1)
+                    mark = self.w_blocks.p.meta.marker
+                    m.d.sync += [
+                        acc.skip.eq(mark == Marker.Discard),
+                        acc.size.eq(acc.size + self.w_blocks.p.size),
+                        acc.meta.eq(self.w_blocks.p.meta),
+                    ]
+                    with m.Switch(mark):
+                        with m.Case(Marker.Overflow, Marker.Discard):
+                            m.next = "Complete"
+                        with m.Case(Marker.Trigger):
+                            m.next = "Trim"
+
+            with m.State("Complete"):
+                with m.If(cont & acc.skip):
+                    m.d.sync += [
+                        self.r_blocks.valid.eq(1),
+                        self.r_blocks.p    .eq(acc),
+                        acc.eq(epi_acc),
+                    ]
+                    clear_accumulator(epi_acc)
                     m.next = "Free-Run"
+                with m.Elif(cont):
+                    finished = stream_from(acc)
+                    with m.If(finished):
+                        clear_accumulator(epi_acc)
+                        m.d.sync += acc.eq(epi_acc)
+                        with m.Switch(epi_acc.meta.marker):
+                            with m.Case(Marker.Normal):
+                                m.next = "Free-Run"
+                            with m.Case(Marker.Trigger):
+                                m.next = "Trim"
+                else_accumulate(epi_acc)
 
-            with m.State("Discard"):
-                m.d.comb += [
-                    interrupt_now.eq(1),
-                    request.i.p.skip.eq(1),
-                    request.i.p.size.eq(queue_size),
-                    request.i.valid.eq(queue_size > 0),
-                ]
-                with m.If(~request.i.valid | request.i.ready):
-                    m.d.comb += barrier.o.ready.eq(1)
-                    m.next = "Free-Run"
+            with m.State("Trim"):
+                clear_accumulator(epi_acc)
+                with m.If(acc.size <= self.control.prolog_size):
+                    m.next = "Stream-Prolog"
+                with m.Elif(cont):
+                    m.d.sync += [
+                        acc.size.eq(self.control.prolog_size),
+                        self.r_blocks.valid .eq(1),
+                        self.r_blocks.p.skip.eq(1),
+                        self.r_blocks.p.size.eq(acc.size - self.control.prolog_size),
+                        self.r_blocks.p.meta.marker.eq(Marker.Normal),
+                        self.r_blocks.p.meta.offset.eq(0),
+                    ]
+                    m.next = "Stream-Prolog"
 
-            def post_trigger_barrier():
-                with m.If(barrier.o.valid):
-                    with m.If(barrier.o.p.marker == Marker.Trigger):
-                        m.d.comb += barrier.o.ready.eq(1)
-                    with m.Elif(barrier.o.p.marker == Marker.Overflow):
-                        m.d.sync += self.status.stall_count.eq(self.status.stall_count + 1)
-                        m.next = "Overflow"
-                    with m.Elif(barrier.o.p.marker == Marker.Discard):
-                        m.next = "Discard"
+            with m.State("Stream-Prolog"):
+                with m.If(cont):
+                    finished = stream_from(acc)
+                    with m.If(finished):
+                        clear_accumulator(epi_acc)
+                        m.d.sync += [
+                            acc.eq(epi_acc),
+                            epi_count.eq(0)
+                        ]
+                        m.next = "Stream-Epilog"
+                    with m.If(epi_acc.meta.marker == Marker.Discard):
+                        clear_accumulator(epi_acc)
+                        m.d.sync += [
+                            acc.eq(epi_acc),
+                            self.r_blocks.p.skip.eq(1),
+                            self.r_blocks.p.size.eq(acc.size),
+                            self.r_blocks.p.meta.marker.eq(Marker.Discard),
+                        ]
+                        m.next = "Complete"
+                else_accumulate(epi_acc)
 
-            with m.State("Prolog"):
-                m.d.comb += [
-                    request.i.p.meta.eq(trigger_meta),
-                    request.i.p.size.eq(queue_size), # (always at least 1 word)
-                    request.i.valid.eq(1),
-                ]
-                with m.If(request.i.valid & request.i.ready):
-                    with m.If(self.control.streaming):
-                        m.next = "Streaming"
-                    with m.Else():
-                        m.next = "Epilog"
-                post_trigger_barrier()
-
-            with m.State("Streaming"):
-                m.d.comb += [
-                    request.i.p.size.eq(queue_size),
-                    request.i.valid.eq(queue_size > 0),
-                ]
-                post_trigger_barrier()
-
-            with m.State("Epilog"):
-                m.d.comb += [
-                    request.i.p.meta.marker.eq(Marker.Complete),
-                    request.i.p.size.eq(self.control.epilog_size), # (always at least 1 word)
-                    request.i.valid.eq(1),
-                ]
-                with m.If(request.i.valid & request.i.ready):
-                    m.next = "Flush"
-                post_trigger_barrier()
-
-            with m.State("Flush"):
-                with m.If(request.i.ready):
-                    m.next = "Free-Run"
-                post_trigger_barrier()
+            with m.State("Stream-Epilog"):
+                with m.If((acc.meta.marker == Marker.Discard) |
+                          (acc.meta.marker == Marker.Overflow)):
+                    m.next = "Complete"
+                with m.Elif(cont & (acc.size > 0)):
+                    presumptive_size = \
+                        Mux(acc.size < self._burst_bytes, acc.size, self._burst_bytes)
+                    m.d.sync += [
+                        acc.size .eq(acc.size  - presumptive_size),
+                        epi_count.eq(epi_count + presumptive_size),
+                        self.r_blocks.valid .eq(1),
+                        self.r_blocks.p.skip.eq(0),
+                        self.r_blocks.p.size.eq(presumptive_size),
+                        self.r_blocks.p.meta.marker.eq(Marker.Normal),
+                        self.r_blocks.p.meta.offset.eq(0),
+                    ]
+                    with m.If(~self.control.streaming &
+                              (epi_count + presumptive_size >= self.control.epilog_size)):
+                        actual_size = self.control.epilog_size - epi_count
+                        m.d.sync += [
+                            acc.size .eq(acc.size  - actual_size),
+                            epi_count.eq(epi_count + actual_size),
+                            self.r_blocks.p.size.eq(actual_size),
+                            self.r_blocks.p.meta.marker.eq(Marker.Complete),
+                        ]
+                        m.next = "Free-Run"
+                else_accumulate(acc)
 
         m.d.comb += [
             self.status.free_running.eq(
-                trigger_fsm.ongoing("Free-Run") |
-                trigger_fsm.ongoing("Discard")
+                readctl_fsm.ongoing("Free-Run")
             ),
             self.status.overflow.eq(
-                trigger_fsm.ongoing("Overflow")
+                readctl_fsm.ongoing("Complete") & (acc.meta.marker == Marker.Overflow)
             ),
             self.status.triggered.eq(
-                trigger_fsm.ongoing("Prolog") |
-                trigger_fsm.ongoing("Streaming") |
-                trigger_fsm.ongoing("Epilog") |
-                trigger_fsm.ongoing("Flush")
-            ),
+                readctl_fsm.ongoing("Trim") |
+                readctl_fsm.ongoing("Stream-Prolog") |
+                readctl_fsm.ongoing("Stream-Epilog")
+            )
         ]
 
         return m
@@ -1141,8 +1082,6 @@ class AnalyzerCore(wiring.Component):
         wiring.connect(m, read_ctrl.r_blocks, reader.i_blocks)
 
         m.d.comb += [
-            write_ctrl.prolog_size.eq(self.control.readout.prolog_size),
-            write_ctrl.free_running.eq(read_ctrl.status.free_running),
             read_ctrl.control.eq(self.control.readout),
             self.status.readout.eq(read_ctrl.status),
         ]

@@ -456,9 +456,6 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
         )
 
         async def testbench_main(ctx):
-            ctx.set(dut.free_running, 1)
-            ctx.set(dut.prolog_size, 6)
-
             await stream_put(ctx, dut.i_writer, 0)
             assert ctx.get(dut.credits) == 2
             await stream_put(ctx, dut.i_writer, 0)
@@ -466,17 +463,13 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
             await stream_put(ctx, dut.i_writer, 0)
             assert ctx.get(dut.credits) == 6
             await stream_put(ctx, dut.i_writer, 0)
-            assert ctx.get(dut.credits) == 6
-
-            ctx.set(dut.free_running, 0)
+            assert ctx.get(dut.credits) == 8
 
             await stream_put(ctx, dut.i_reader, 0)
-            assert ctx.get(dut.credits) == 5
+            assert ctx.get(dut.credits) == 7
             await stream_put(ctx, dut.i_reader, 0)
-            assert ctx.get(dut.credits) == 4
-
-            await stream_put(ctx, dut.i_writer, 0)
             assert ctx.get(dut.credits) == 6
+
             await stream_put(ctx, dut.i_writer, 0)
             assert ctx.get(dut.credits) == 8
             await stream_put(ctx, dut.i_writer, 0)
@@ -597,3 +590,24 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
         await iface.force_trigger()
         data = await iface.read_sample_block()
         self.assertEqual(data.marker, Marker.Trigger)
+
+    @applet_v2_simulation_test(prepare=prepare_test_applet, args=["X=A0:7"])
+    async def test_applet_interupt(self, applet: AnalyzerApplet, ctx):
+        iface = applet.analyzer_iface
+
+        await iface.set_prolog_size(200)
+        await iface.set_epilog_size(800)
+        await iface.force_trigger()
+
+        data = await iface.read_sample_block()
+        self.assertEqual(data.marker, Marker.Trigger)
+        self.assertEqual(data.offset, 0)
+        self.assertLessEqual(len(data.samples), 200)
+
+        await ctx.tick().repeat(300)
+        await iface.interrupt()
+
+        await ctx.tick().repeat(1000)
+        await iface.force_trigger()
+        data = await iface.read_sample_block()
+        self.assertLessEqual(len(data.samples), 200)
