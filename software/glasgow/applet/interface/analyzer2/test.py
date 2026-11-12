@@ -456,9 +456,6 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
         )
 
         async def testbench_main(ctx):
-            ctx.set(dut.free_running, 1)
-            ctx.set(dut.prolog_size, 6)
-
             await stream_put(ctx, dut.i_writer, 0)
             assert ctx.get(dut.credits) == 2
             await stream_put(ctx, dut.i_writer, 0)
@@ -466,17 +463,13 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
             await stream_put(ctx, dut.i_writer, 0)
             assert ctx.get(dut.credits) == 6
             await stream_put(ctx, dut.i_writer, 0)
-            assert ctx.get(dut.credits) == 6
-
-            ctx.set(dut.free_running, 0)
+            assert ctx.get(dut.credits) == 8
 
             await stream_put(ctx, dut.i_reader, 0)
-            assert ctx.get(dut.credits) == 5
+            assert ctx.get(dut.credits) == 7
             await stream_put(ctx, dut.i_reader, 0)
-            assert ctx.get(dut.credits) == 4
-
-            await stream_put(ctx, dut.i_writer, 0)
             assert ctx.get(dut.credits) == 6
+
             await stream_put(ctx, dut.i_writer, 0)
             assert ctx.get(dut.credits) == 8
             await stream_put(ctx, dut.i_writer, 0)
