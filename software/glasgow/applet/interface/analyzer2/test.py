@@ -590,3 +590,24 @@ class AnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=AnalyzerApplet):
         await iface.force_trigger()
         data = await iface.read_sample_block()
         self.assertEqual(data.marker, Marker.Trigger)
+
+    @applet_v2_simulation_test(prepare=prepare_test_applet, args=["X=A0:7"])
+    async def test_applet_interupt(self, applet: AnalyzerApplet, ctx):
+        iface = applet.analyzer_iface
+
+        await iface.set_prolog_size(200)
+        await iface.set_epilog_size(800)
+        await iface.force_trigger()
+
+        data = await iface.read_sample_block()
+        self.assertEqual(data.marker, Marker.Trigger)
+        self.assertEqual(data.offset, 0)
+        self.assertLessEqual(len(data.samples), 200)
+
+        await ctx.tick().repeat(300)
+        await iface.interrupt()
+
+        await ctx.tick().repeat(1000)
+        await iface.force_trigger()
+        data = await iface.read_sample_block()
+        self.assertLessEqual(len(data.samples), 200)
