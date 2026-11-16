@@ -43,8 +43,9 @@ dependencies = [
   "fx2>=0.16,<1",
   # `libusb1` is used to communicate with the device, and its API mirrors the stable API/ABI of
   # of the native `libusb1` library. It increases major version when dropping support for older
-  # Python versions.
-  "libusb1>=3.3.0; sys_platform!='emscripten'",
+  # Python versions. Pinned to 3.4.0 to avoid upgrading the underlying libusb1 beyond 1.0.29, to
+  # avoid slopfiied versions.
+  "libusb1==3.4.0; sys_platform!='emscripten'",
   # `pyccobs` is used to multiplex communication streams in applets. It uses SemVer.
   "pyccobs>=0.1.1,<0.2",
   # `tqdm` is used to compute and render progress indicatrs. It uses SemVer.
