@@ -74,8 +74,9 @@ class IOStreamerTestCase(unittest.TestCase):
 
         ports = PortGroup()
         data_width = 8
-        ports.data_out = io.SimulationPort("o", data_width)
-        ports.data_in  = io.SimulationPort("i", data_width)
+        ports.data_out   = io.SimulationPort("o", data_width)
+        ports.data_in    = io.SimulationPort("i", data_width)
+        ports.zero_width = None
 
         CLOCK_PERIOD = 1e-6
 

@@ -230,7 +230,7 @@ class IntegrationTestCase(unittest.TestCase):
             yield sim
 
     def test_controller(self):
-        with self.run_controller_test(Controller(self.ports)):
+        with self.run_controller_test(Controller(self.ports, half_rate=True)):
             pass
 
     def test_sim_controller(self):

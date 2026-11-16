@@ -6,6 +6,7 @@ import re
 import os
 import sys
 import hashlib
+import pathlib
 import shutil
 import subprocess
 import importlib.metadata
@@ -221,15 +222,25 @@ class SystemTool(Tool):
                     yield os.path.join(root, file)
 
         if self.name == "yosys":
+            # In the odd case of `GLASGOW_TOOLCHAIN=system YOSYS=yowasp-yosys` (which does still
+            # happen), we can't access importlib metadata. However, the version should never be
+            # the same for two different builds, so we don't have to hash data files.
             if self.command.endswith("yowasp-yosys"):
-                # In the odd case of `GLASGOW_TOOLCHAIN=system YOSYS=yowasp-yosys` (which does
-                # still happen), we can't access importlib metadata. However, the version should
-                # never be the same for two different builds, so we don't have to hash data files.
                 return iter([])
-            elif yosys_datdir := self.get_output([f"{self.command}-config", "--datdir"]):
+            # Check if we're dealing with an installed Yosys binary, where the share files
+            # are co-located in the same prefix. Sometimes the share directory path will be
+            # baked into Yosys and sometimes it will be referenced to /proc/self/exe, but
+            # the result is the same.
+            yosys_prefix = pathlib.Path(self.command).parent.parent
+            yosys_datdir = yosys_prefix.joinpath("share", "yosys")
+            if yosys_datdir.exists:
+                return iter_files(yosys_datdir)
+            # If we have `yosys-config`, this is probably a development version of Yosys. If not,
+            # we don't have any way to hash the data directory, and continuing is unsafe.
+            if yosys_datdir := self.get_output([f"{self.command}-config", "--datdir"]):
                 return iter_files(yosys_datdir)
             else:
-                return None
+                raise FileNotFoundError("could not find Yosys data directory")
         else:
             # It is unclear if it is feasible to get at the data files and other dependencies
             # for nextpnr. However, while it is possible to ship chipdb separately (and Wasm

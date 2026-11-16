@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/applets/measure/calibrate_clock.rst:2
 msgid "``calibrate-clock``"
@@ -43,6 +43,10 @@ msgid "Measure system clock vs GPS PPS reference (1 Hz) on pin B1:"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "glasgow run calibrate-clock -V 3.3 --ref-pin B1 --ref-freq 1"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "The reference input expects a signal that crosses the logic threshold cleanly. A 2 V pk-pk sine centred at 1 V works well with the I/O bank set to 2 V."
 msgstr ""
 
@@ -51,11 +55,33 @@ msgid "Measure system clock vs Rubidium reference (2^23 Hz) on pin B1:"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "glasgow run calibrate-clock -V 2.0 --ref-pin B1 --ref-freq 8388608"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "Measure Si5351A 10 MHz output on A0 vs same Rb reference on B1:"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid ""
+"glasgow run calibrate-clock -V 2.0 \\\n"
+"    --ref-pin B1 --ref-freq 8388608 --ext-pin A0 --ext-freq 10000000"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "Apply a known rough correction to the baseline before measuring:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid ""
+"glasgow run calibrate-clock -V 2.0 \\\n"
+"    --ref-pin B1 --ref-freq 8388608 --ppm -12.5"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid ""
+"usage: glasgow run calibrate-clock [-h] [-V SPEC] --ref-pin PIN [--ext-pin PIN] --ref-freq HZ [--ext-freq HZ] [--nominal-sys-clk HZ]\n"
+"                                   [--gate-time SEC] [--ppm PPM] [--count N]"
 msgstr ""
 
 #: ../../<autoprogram>:1

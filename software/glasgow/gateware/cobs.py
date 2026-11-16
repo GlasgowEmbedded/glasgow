@@ -1,7 +1,7 @@
 from amaranth import *
 from amaranth.lib import data, wiring, memory, stream
 from amaranth.lib.stream import In, Out
-from cobs import cobs
+import ccobs
 
 from .stream import StreamBuffer
 
@@ -9,10 +9,10 @@ from .stream import StreamBuffer
 __all__ = ["Encoder", "Decoder", "encode", "decode"]
 
 
-# Re-export from the `cobs` PyPI package.
-encode = cobs.encode
-decode = cobs.decode
-DecodeError = cobs.DecodeError
+# Re-export the complete, NUL-delimited frame API from the `pyccobs` PyPI package.
+encode = ccobs.encode
+decode = ccobs.decode
+DecodeError = ccobs.MalformedInputError
 
 
 class Encoder(wiring.Component):
@@ -146,7 +146,7 @@ class Decoder(wiring.Component):
         count  = Signal(8)
         offset = Signal(8)
 
-        m.submodules.buffer = buffer = StreamBuffer(self.o.p.shape())
+        m.submodules.buffer = buffer = StreamBuffer.shaped_like(self.o)
         wiring.connect(m, wiring.flipped(self.o), buffer.o)
 
         with m.FSM():

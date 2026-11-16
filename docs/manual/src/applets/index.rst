@@ -17,5 +17,6 @@ Applet index
     sensor/index
     bridge/index
     audio/index
+    video/index
     measure/index
     internal/index

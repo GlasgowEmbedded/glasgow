@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/applets/measure/curve_trace.rst:2
 msgid "``curve-trace``"
@@ -43,7 +43,15 @@ msgid "Trace a red LED on port A from 1.8 V to 3.3 V in 50 mV steps (CSV):"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "glasgow run curve-trace --port A --start 1.8 --stop 3.3 --step 0.05"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "Same measurement, JSON output:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run curve-trace --port A --start 1.8 --stop 3.3 --format json"
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -51,7 +59,17 @@ msgid "Stop the sweep early if current exceeds 20 mA (useful for LEDs):"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "glasgow run curve-trace --port A --start 1.8 --stop 3.3 --stop-current 20"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "To subtract the no-load buffer current, first run a sweep with no DUT attached and save it as a calibration file, then pass it with ``--cal``:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid ""
+"glasgow run curve-trace --port A --start 1.8 --stop 3.3 > cal.csv\n"
+"glasgow run curve-trace --port A --start 1.8 --stop 3.3 --cal cal.csv"
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -63,11 +81,30 @@ msgid "Trace a silicon diode with 10 mV steps, stopping at 50 mA:"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "glasgow run curve-trace --port A --diode --step 0.010 --stop-current 50"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "Characterise a 2.7 V zener diode (raise the reference to 5.0 V so the full -3.2 V to 0 V reverse range is available):"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "glasgow run curve-trace --port A --diode --ref-voltage 5.0 --step 0.010"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "Use a 3.5 V reference to see both forward conduction and moderate reverse bias (-1.7 V to +1.5 V), useful for general-purpose diode characterisation:"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run curve-trace --port A --diode --ref-voltage 3.5 --stop-current 50"
+msgstr ""
+
+#: ../../<autoprogram>:1
+#, python-brace-format
+msgid ""
+"usage: glasgow run curve-trace [-h] [-V SPEC] --port {A,B} [--start VOLTS] [--stop VOLTS] [--step VOLTS] [--settle SEC] [--cal FILE]\n"
+"                               [--sense-voltage] [--stop-current MILLIAMPS] [--diode] [--ref-voltage VOLTS] [--format {csv,json}]"
 msgstr ""
 
 #: ../../<autoprogram>:1

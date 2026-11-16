@@ -8,6 +8,7 @@ I/O interfaces
 .. toctree::
     :maxdepth: 3
 
+    analyzer2
     uart
     uart_analyzer
     i2c_controller
@@ -20,3 +21,4 @@ I/O interfaces
     jtag_svf
     sbw_probe
     swd_probe
+    i2c_target

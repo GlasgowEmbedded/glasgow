@@ -14,11 +14,11 @@ def _i_signature(ports, *, ratio=1, meta_layout=0, always_valid=False, always_re
     return stream.Signature(data.StructLayout({
         "port": data.StructLayout({
             name: data.StructLayout({
-                "o":  data.ArrayLayout(len(port), ratio),
+                "o":  data.ArrayLayout(unsigned(0) if port is None else len(port), ratio),
                 "oe": 1
             })
             for name, port in ports
-            if port.direction in (io.Direction.Output, io.Direction.Bidir)
+            if port is None or port.direction in (io.Direction.Output, io.Direction.Bidir)
         }),
         "meta": meta_layout
     }), always_valid=always_valid, always_ready=always_ready)
@@ -28,10 +28,10 @@ def _o_signature(ports, *, ratio=1, meta_layout=0, always_valid=False, always_re
     return stream.Signature(data.StructLayout({
         "port": data.StructLayout({
             name: data.StructLayout({
-                "i": data.ArrayLayout(len(port), ratio)
+                "i": data.ArrayLayout(unsigned(0) if port is None else len(port), ratio)
             })
             for name, port in ports
-            if port.direction in (io.Direction.Input, io.Direction.Bidir)
+            if port is None or port.direction in (io.Direction.Input, io.Direction.Bidir)
         }),
         "meta": meta_layout
     }), always_valid=always_valid, always_ready=always_ready)
@@ -124,6 +124,8 @@ class StreamIOBuffer(wiring.Component):
                 raise NotImplementedError("buffer not implemented for this ratio and platform")
 
         for name, port in self._ports:
+            if port is None:
+                continue
             m.submodules[name] = buffer = buffer_cls(port.direction, port)
             if port.direction in (io.Direction.Output, io.Direction.Bidir):
                 m.d.comb += buffer.o.eq(self.i.p.port[name].o)
@@ -197,14 +199,15 @@ class IOStreamer(wiring.Component):
                 "oe": 1
             })
             for name, port in self._ports
-            if port.direction in (io.Direction.Output, io.Direction.Bidir)
+            if port is not None and port.direction in (io.Direction.Output, io.Direction.Bidir)
         }), init=self._init)
 
         with m.If(skid_buffer.i.ready & self.i.valid):
             m.d.comb += self.i.ready.eq(1)
             m.d.comb += io_buffer.i.p.meta.valid.eq(1)
             for name, port in self._ports:
-                if port.direction in (io.Direction.Bidir, io.Direction.Output):
+                if (port is not None and
+                        port.direction in (io.Direction.Bidir, io.Direction.Output)):
                     m.d.sync += latch[name].o.eq(self.i.p.port[name].o[-1])
                     m.d.sync += latch[name].oe.eq(self.i.p.port[name].oe)
 
@@ -213,7 +216,8 @@ class IOStreamer(wiring.Component):
             m.d.comb += io_buffer.i.p.meta.data.eq(self.i.p.meta)
         with m.Else():
             for name, port in self._ports:
-                if port.direction in (io.Direction.Bidir, io.Direction.Output):
+                if (port is not None and
+                        port.direction in (io.Direction.Bidir, io.Direction.Output)):
                     for n in range(self._ratio):
                         m.d.comb += io_buffer.i.p.port[name].o[n].eq(latch[name].o)
                     m.d.comb += io_buffer.i.p.port[name].oe.eq(latch[name].oe)
@@ -259,6 +263,8 @@ class HalfRateIOStreamer(wiring.Component):
 
         i_phase = Signal()
         for name, port in self._ports:
+            if port is None:
+                continue
             if port.direction in (io.Direction.Bidir, io.Direction.Output):
                 m.d.comb += inner.i.p.port[name].o.eq(
                     Mux(i_phase, self.i.p.port[name].o[snd_half], self.i.p.port[name].o[fst_half]))
@@ -272,6 +278,8 @@ class HalfRateIOStreamer(wiring.Component):
 
         o_phase = Signal()
         for name, port in self._ports:
+            if port is None:
+                continue
             if port.direction in (io.Direction.Bidir, io.Direction.Input):
                 with m.If(inner.o.valid & ~o_phase):
                     m.d.sync += self.o.p.port[name].i[fst_half].eq(inner.o.p.port[name].i)

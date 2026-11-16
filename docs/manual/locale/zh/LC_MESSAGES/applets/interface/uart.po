@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/applets/interface/uart.rst:4
 msgid "``uart``"
@@ -40,6 +40,10 @@ msgstr ""
 
 #: ../../<autoprogram>:1
 msgid "The automatic baud rate determination algorithm works by locking onto the shortest bit time in the receive stream. It will determine the baud rate incorrectly in presence of glitches as well as insufficiently diverse data (e.g. when receiving data consisting only of the letter \"a\", the baud rate that is determined will be one half of the actual baud rate). To reduce spurious baud rate changes, the algorithm is only consulted when frame or (if enabled) parity errors are present in received data."
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run uart [-h] [-V SPEC] [--rx PIN] [--tx PIN] [--parity PARITY] [--stop-bits STOP_BITS] [-b RATE] [-a] OPERATION ..."
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -79,7 +83,15 @@ msgid "glasgow run uart pty"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run uart pty [-h]"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "glasgow run uart socket"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run uart socket [-h] ENDPOINT"
 msgstr ""
 
 #: ../../<autoprogram>:1
@@ -91,7 +103,67 @@ msgid "glasgow run uart tty"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run uart tty [-h] [-s]"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "continue reading from I/O port even after an end-of-file condition on stdin"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run uart xmodem-recv"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run uart xmodem-recv [-h] [-c TEXT] FILENAME"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write data to FILENAME"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "send `TEXT<LF>` before transferring data"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run uart xmodem-send"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run uart xmodem-send [-h] [-c TEXT] FILENAME"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "read data from FILENAME"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run uart ymodem-recv"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run uart ymodem-recv [-h] [-c TEXT] [--accept-filenames] [BASENAME]"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "write file(s) to BASENAME (or BASENAME-0, BASENAME-1, ...)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "accept sender-provided filenames (SECURITY RISK)"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "glasgow run uart ymodem-send"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run uart ymodem-send [-h] [-c TEXT] FILENAME [FILENAME ...]"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "read file(s) FILENAME..."
 msgstr ""
 
 #: ../../src/applets/interface/uart.rst:14
@@ -128,6 +200,10 @@ msgstr ""
 
 #: glasgow.applet.interface.uart.UARTInterface.flush:1 of
 msgid "Transmits all buffered bytes from the UART."
+msgstr ""
+
+#: glasgow.applet.interface.uart.UARTInterface.ymodem_transport:1 of
+msgid "Creates an XMODEM/YMODEM transport for the UART."
 msgstr ""
 
 #: glasgow.applet.interface.uart.UARTInterface.monitor:1 of

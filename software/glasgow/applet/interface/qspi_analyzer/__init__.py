@@ -65,8 +65,7 @@ class QSPIAnalyzerFrontend(wiring.Component):
         m.domains.fifo = cd_fifo = ClockDomain(reset_less=True, local=True)
         m.d.comb += cd_fifo.clk.eq(sck_buffer.i)
 
-        m.submodules.fifo = fifo = AsyncQueue(
-            shape=self.stream.p.shape(),
+        m.submodules.fifo = fifo = AsyncQueue.shaped_like(self.stream,
             depth=4, # CDC only, no buffering
             i_domain="fifo",
             o_domain="sync"
@@ -196,7 +195,7 @@ class QSPIAnalyzerInterface:
         if await self._overflow:
             raise QSPIAnalyzerOverflow("overflow")
 
-        data = cobs.decode((await self._pipe.recv_until(b"\0"))[:-1])
+        data = cobs.decode(await self._pipe.recv_until(b"\0"))
         self._log("capture data=<%s>", dump_hex(data))
         return data
 
@@ -225,7 +224,7 @@ class QSPIAnalyzerApplet(GlasgowAppletV2):
     * ``<DATA>``, where <DATA> is a hexadecimal nibble sequence with each four bits corresponding
       to samples of HOLD#, WP#, CIPO, COPI (from MSB to LSB).
 
-    If your DUT is a 25-series SPI Flash memory, use the `tool memory-25x` to extract data
+    If your DUT is a 25-series SPI Flash memory, use the `tool memory-25q` to extract data
     from capture files. If quad-IO commands are not in use, the `spi-analyzer` applet can
     reduce the likelihood of an overflow.
     """

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/contribute.rst:2
 msgid "Contributing"
@@ -86,16 +86,32 @@ msgstr ""
 msgid "When modifying Python code, the first line of a commit message should, if possible, start with the name of the module (not including the leading ``glasgow.``) that is being modified, such that ``git log --grep`` can be used to filter changes by scope:"
 msgstr ""
 
+#: ../../src/contribute.rst:53
+msgid "protocol.jtag_svf: accept and ignore whitespace in scan data."
+msgstr ""
+
 #: ../../src/contribute.rst:57
 msgid "The format is the same for Python code implementing applets:"
+msgstr ""
+
+#: ../../src/contribute.rst:59
+msgid "applet.interface.uart: make autobaud more reliable."
 msgstr ""
 
 #: ../../src/contribute.rst:63
 msgid "When modifying documentation, the first line of a commit message should start with ``manual:``, followed by the base name of the ``.rst`` file that is being modified:"
 msgstr ""
 
+#: ../../src/contribute.rst:65
+msgid "manual: intro: update the list of applets."
+msgstr ""
+
 #: ../../src/contribute.rst:69
 msgid "When modifying firmware, the first line of a commit message should start with ``firmware:``:"
+msgstr ""
+
+#: ../../src/contribute.rst:71
+msgid "firmware: fix an operator precedence issue."
 msgstr ""
 
 #: ../../src/contribute.rst:75
@@ -136,6 +152,13 @@ msgstr ""
 
 #: ../../src/contribute.rst:101
 msgid "reference the documentation at the top of the file in the following format:"
+msgstr ""
+
+#: ../../src/contribute.rst:103
+msgid ""
+"Ref: <insert vendor documentation title or, if impossible, any permanent-looking URL>\n"
+"Document Number: <insert vendor document number; omit the field if one does not exist>\n"
+"Accession: <insert Glasgow archive repository accession number>"
 msgstr ""
 
 #: ../../src/contribute.rst:109

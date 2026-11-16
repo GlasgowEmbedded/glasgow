@@ -116,5 +116,8 @@ enum ep_mode {
 /// FPGA module
 #include "glasgow_fpga.h"
 
+/// Secondary MCU module
+#include "glasgow_mcu.h"
+
 /// Surprisingly more efficient than `1<<x`.
 extern const __idata uint8_t nibble_mask[4];

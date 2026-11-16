@@ -1,9 +1,10 @@
-from typing import Any, BinaryIO
+from typing import Any, BinaryIO, override
 from collections.abc import Generator
 from collections import defaultdict
 from contextlib import contextmanager
 import os
 import asyncio
+import dataclasses
 
 from amaranth import *
 from amaranth.hdl import ShapeCastable
@@ -500,7 +501,8 @@ class HardwareAssembly(AbstractAssembly):
         self._in_streams    = [] # (domain, in_stream, in_flush, fifo_depth)
         self._out_streams   = [] # (domain, out_stream, fifo_depth)
         self._pipes         = [] # in_pipe|out_pipe|inout_pipe
-        self._memories      = [] # (domain, bus)
+        self._memories      = [] # (domain, bus, DRAMOptions)
+        self._indicators    = [] # signal
         self._resets        = [] # (signal, when)
         self._voltages      = [] # (port, vio)
         self._pulls         = {} # (port, number): state
@@ -558,7 +560,7 @@ class HardwareAssembly(AbstractAssembly):
         port = self._platform.glasgow_pins.pop(pin_name)
         return ~port if pin.invert else port
 
-    def add_submodule(self, elaboratable, *, name=None) -> Elaboratable:
+    def add_submodule[E: Elaboratable](self, elaboratable: E, *, name: str | None = None) -> E:
         assert self._artifact is None, "cannot add a submodule to a sealed assembly"
         self._modules.append((self._domain, elaboratable, name))
         elaboratable._MustUse__used = True
@@ -607,16 +609,24 @@ class HardwareAssembly(AbstractAssembly):
         self._pipes.append(inout_pipe)
         return inout_pipe
 
-    def add_dynamic_memory(self, size=None) -> tuple[octoram.Signature, range]:
-        # In the future we will likely allow sharing memories; for now this is not available.
+    @override
+    def add_dynamic_memory(self, options=DRAMOptions()) -> tuple[octoram.Signature, range]:
+        if options.size is None:
+            options = dataclasses.replace(options, size=64 * 0x100000)
         assert self._artifact is None, "cannot add a dynamic memory to a sealed assembly"
-        assert self._revision >= "D0", "DRAM is not available prior to revision D0"
-        assert size is None or size <= 64*0x100000, "memory must be less than 64 MB in size"
+        assert self._revision >= "C0", "DRAM is not available prior to revision D0"
         assert len(self._memories) < 2, "only two memory channels are available"
+        assert options.size <= 64 * 0x100000, "memory size must be no more than 64 MB"
         self._current_logger.debug(f"allocating DRAM channel {len(self._memories)}")
         bus = octoram.Signature().flip().create()
-        self._memories.append((self._domain, bus))
-        return bus, range(64*0x100000)
+        self._memories.append((self._domain, bus, options))
+        # In the future we will likely allow sharing memories; for now this is not available so
+        # the entire chip is allocated to one applet.
+        return bus, range(options.size)
+
+    def add_indicator(self, signal: Signal, *, name: str):
+        self._current_logger.info("assigning indicator %r to U%d", name, len(self._indicators) + 1)
+        self._indicators.append(signal)
 
     def set_port_voltage(self, port: GlasgowPort, vio: GlasgowVio):
         self._current_logger.debug("setting port %s voltage to %s V", port, vio)
@@ -641,6 +651,11 @@ class HardwareAssembly(AbstractAssembly):
             "sloe": "-", "slrd": "-", "slwr": "-", "pktend": "-", "fifoadr": "-",
             "flag": "-", "fd": "-"
         })
+
+        if self._revision >= "D0":
+            afe_mcu_pins = self._platform.request("afe_mcu", dir={"reset": "-"})
+            m.submodules.afe_mcu_reset = afe_mcu_reset = io.Buffer("o", afe_mcu_pins.reset)
+            m.d.comb += afe_mcu_reset.oe.eq(0)
 
         m.submodules.i2c_target = i2c_target = I2CTarget(i2c_pins)
         m.submodules.i2c_registers = i2c_registers = I2CRegisters(i2c_target)
@@ -689,33 +704,73 @@ class HardwareAssembly(AbstractAssembly):
                 register_addr = i2c_registers.add_existing_ro(Value.cast(signal))
             assert register_addr == register._address
 
-        if self._memories:
+        if self._memories and "D0" <= self.revision < "E0":
             # The location constraint should not be needed with new enough nextpnr-ecp5, but is
             # included here as insurance. TODO: remove this once nextpnr-0.11 is used.
             plan = pll.ClockPlan(self.sys_clk_period, location="X70/Y49/EHXPLL_LR")
-            m.domains.dram_edge = plan.add_domain(pll.ecp5.Channel(period=1/240e6, usage="edge"))
+            m.domains.dram_edge = plan.add_domain(
+                pll.ecp5.Channel(period=1/(2*112e6), usage="edge"))
             m.submodules.dram_pll = plan.create(self._platform)
 
-            # See the comment in `AsyncControllerECP5`.
-            m.domains.dram_logic = ClockDomain(local=True)
-            m.submodules.logic_rst = cdc.ResetSynchronizer(ResetSignal("dram_edge"),
-                domain="dram_logic")
+            # See the comment in `octoram.Controller` about ECP5.
+            m.domains.dram_sync = ClockDomain(local=True)
+            m.submodules.logic_rst = cdc.ResetSynchronizer(ResetSignal(domain.name),
+                domain="dram_sync")
             m.submodules.logic_div = Instance("CLKDIVF",
                 i_RST=ResetSignal("dram_edge"),
                 i_CLKI=ClockSignal("dram_edge"),
-                o_CDIVX=ClockSignal("dram_logic"),
+                o_CDIVX=ClockSignal("dram_sync"),
             )
 
-            for channel, (domain, mem_bus) in enumerate(self._memories):
+            for channel, (domain, mem_bus, options) in enumerate(self._memories):
                 mem_ports = self._platform.request("octoram", channel,
                     dir={"cs": "-", "clk": "-", "dq": "-", "dqs": "-"})
                 m.submodules[f"mem_ctrl{channel}"] = mem_ctrl = DomainRenamer({
-                    "edge":  "dram_edge",
-                    "logic": "dram_logic",
-                    "sync":  domain.name,
-                })(octoram.AsyncControllerECP5(mem_ports))
+                    "sync": "dram_sync", "edge": "dram_edge",
+                })(octoram.Controller(mem_ports, half_rate=False))
+                m.d.comb += mem_ctrl.mem_type.eq(octoram.MemoryType.OctalSPI)
                 m.d.comb += mem_ctrl.latency.eq(5)
-                wiring.connect(m, wiring.flipped(mem_bus), mem_ctrl.bus)
+                m.submodules[f"mem_queue{channel}"] = mem_queue = octoram.InterfaceQueue(
+                    i_domain=domain.name,
+                    o_domain="dram_sync",
+                    w_buffer_depth=options.w_buffer_size,
+                    r_buffer_depth=options.r_buffer_size,
+                )
+                wiring.connect(m, mem_queue.o, mem_ctrl.bus)
+                wiring.connect(m, wiring.flipped(mem_bus), mem_queue.i)
+
+        elif self._memories and "C0" <= self.revision < "D0":
+            if os.getenv("GLASGOW_REVC_DRAM", "no") == "yes":
+                logger.warning("DRAM support on revC is experimental, use at your own risk")
+            else:
+                logger.error("DRAM support on revC is not enabled without GLASGOW_REVC_DRAM=yes")
+                os._exit(1)
+
+            self._platform.add_ram_pak_resources()
+
+            plan = pll.ClockPlan(self.sys_clk_period)
+            m.domains.dram_sync = plan.add_domain(pll.Channel(period=1/(64e6)))
+            m.submodules.dram_pll = plan.create(self._platform)
+
+            for channel, (domain, mem_bus, options) in enumerate(self._memories):
+                mem_ports = self._platform.request("octoram", channel,
+                    dir={"cs": "-", "clk": "-", "dq": "-", "dqs": "-"})
+                m.submodules[f"mem_ctrl{channel}"] = mem_ctrl = DomainRenamer({
+                    "sync": "dram_sync",
+                })(octoram.Controller(mem_ports, half_rate=True))
+                m.d.comb += mem_ctrl.mem_type.eq(octoram.MemoryType.HyperRAM)
+                m.d.comb += mem_ctrl.latency.eq(7)
+                m.submodules[f"mem_queue{channel}"] = mem_queue = octoram.InterfaceQueue(
+                    i_domain=domain.name,
+                    o_domain="dram_sync",
+                    w_buffer_depth=options.w_buffer_size,
+                    r_buffer_depth=options.r_buffer_size,
+                )
+                wiring.connect(m, mem_queue.o, mem_ctrl.bus)
+                wiring.connect(m, wiring.flipped(mem_bus), mem_queue.i)
+
+        elif self._memories:
+            assert False, "DRAM not available on this hardware revision"
 
         m.submodules.fx2_crossbar = fx2_crossbar = FX2Crossbar(fx2_pins)
 
@@ -747,6 +802,15 @@ class HardwareAssembly(AbstractAssembly):
             if domain is not None:
                 with m.If(out_ep.reset):
                     m.d.comb += domain.rst.eq(1)
+
+        for index, led_value in enumerate(self._indicators):
+            try:
+                led_port = self._platform.request("led", index, dir="-")
+                m.submodules[f"led{index}"] = led_buffer = io.Buffer("o", led_port)
+                m.d.comb += led_buffer.o.eq(led_value)
+            except ResourceError:
+                logger.error("ran out of LEDs to use for indicator display")
+                break
 
         # /!\ IMPORTANT /!\
         # tie off output enables of unused pins to zero, or they will strongly drive high
@@ -816,10 +880,13 @@ class HardwareAssembly(AbstractAssembly):
         for port, (low, high) in port_pulls.items():
             if not low and not high:
                 continue
-            voltage = await self.device.get_voltage(str(port))
-            if voltage == 0.0:
-                logger.error("cannot configure pulls for port %s: Vio is off", port)
-                continue
+            if self._revision < "D0":
+                # revC powers the level shifters from Vio; revD uses a special clamping circuit
+                # to avoid having them fall off the bus when Vio is off.
+                voltage = await self.device.get_voltage(str(port))
+                if voltage == 0.0:
+                    logger.error("cannot configure pulls for port %s: Vio is off", port)
+                    continue
             await self.device.set_pulls(str(port), low, high)
 
     @property

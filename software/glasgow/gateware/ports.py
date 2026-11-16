@@ -49,3 +49,4 @@ def AmaranthPort_with_direction(self, direction):
 
 io.SimulationPort.with_direction = AmaranthPort_with_direction
 io.SingleEndedPort.with_direction = AmaranthPort_with_direction
+io.DifferentialPort.with_direction = AmaranthPort_with_direction

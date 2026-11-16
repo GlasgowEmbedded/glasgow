@@ -18,3 +18,11 @@ API reference
 .. autoexception:: I2CNotAcknowledged
 
 .. autoclass:: I2CControllerInterface
+
+.. module:: glasgow.arch.i2c
+
+.. autoclass:: ProbeStep
+
+    .. autoenum:: glasgow.arch.i2c::ProbeStep.Type
+
+.. autoclass:: ProbeDevice

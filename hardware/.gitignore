@@ -5,3 +5,4 @@ boards/**/*_bom.txt
 boards/**/*.kicad_prl
 boards/**/*-backups
 fp-info-cache
+_autosave-*

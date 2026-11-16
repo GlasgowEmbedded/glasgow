@@ -15,3 +15,4 @@ The Glasgow reusable library provides implementations of protocols, algorithms, 
     :maxdepth: 2
 
     support/progress
+    protocol/ymodem

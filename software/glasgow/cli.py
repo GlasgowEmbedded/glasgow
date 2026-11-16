@@ -10,6 +10,7 @@ import textwrap
 import platform
 import unittest
 import logging as pylogging
+import subprocess
 from datetime import datetime
 
 from amaranth import UnusedElaboratable
@@ -19,8 +20,8 @@ from fx2.format import input_data, diff_data
 from . import __version__
 from .support import logging
 from .support.asignal import *
-from .support.progress import TqdmProgressImpl
 from .support.plugin import PluginRequirementsUnmet, PluginLoadError
+from .support.usb import ErrorDisconnected
 from .abstract import ClockingError, GlasgowPort
 from .hardware.device import GlasgowDeviceError, GlasgowDevice, GlasgowDeviceConfig
 from .hardware.device import FX2BootloaderDevice, VID_QIHW, PID_GLASGOW
@@ -30,6 +31,7 @@ from .hardware.assembly import HardwareAssembly
 from .legacy import DeprecatedTarget
 from .legacy import DeprecatedDevice, DeprecatedDemultiplexer
 from .applet import *
+from .main import run_async, setup_logging
 
 
 # When running as `-m glasgow.cli`, `__name__` is `__main__`, and the real name
@@ -97,7 +99,11 @@ def version_info():
 
 
 def create_argparser():
-    parser = argparse.ArgumentParser(formatter_class=TextHelpFormatter, fromfile_prefix_chars="@")
+    parser = argparse.ArgumentParser(
+        prog="glasgow",
+        formatter_class=TextHelpFormatter,
+        fromfile_prefix_chars="@"
+    )
 
     parser.add_argument(
         "-V", "--version", action="version", version=version_info(),
@@ -286,7 +292,7 @@ def get_argparser():
                 f"{arg} is not a valid revision (should be one of: {', '.join(revisions)})")
 
     def serial(arg):
-        if re.match(r"^[A-C][0-9]-\d{8}T\d{6}Z$", arg):
+        if re.match(r"^[A-D][0-9]-\d{8}T\d{6}Z$", arg):
             return arg
         else:
             raise argparse.ArgumentTypeError(f"{arg} is not a valid serial number")
@@ -302,9 +308,10 @@ def get_argparser():
         def ports(arg):
             if "*" in arg:
                 return None
+            # This also happens to reject `SYN` and `LED` by accident.
             return "".join(str(GlasgowPort(char)) for char in arg)
 
-        all_ports = " ".join(map(str, GlasgowPort))
+        all_ports = " ".join(str(port) for port in GlasgowPort if port.has_supply)
         parser.add_argument(
             "ports", metavar="PORTS", nargs="?", type=ports, default="*",
             help=f"I/O port set (one or more of: {all_ports}, default: %(default)s)")
@@ -477,6 +484,13 @@ def get_argparser():
         "list", formatter_class=TextHelpFormatter,
         help="list devices connected to the system")
 
+    p_python = subparsers.add_parser(
+        "python", formatter_class=TextHelpFormatter,
+        help="run Python with Glasgow packages in the environment")
+    p_python.add_argument(
+        "rest", metavar="ARGS", nargs=argparse.REMAINDER,
+        help="arguments for the Python executable")
+
     return parser
 
 
@@ -503,33 +517,6 @@ def _applet(assembly, args):
         raise SystemExit()
 
 
-class TerminalFormatter(pylogging.Formatter):
-    DEFAULT_COLORS = {
-        "TRACE"   : "\033[0m",
-        "DEBUG"   : "\033[36m",
-        "INFO"    : "\033[1m",
-        "WARNING" : "\033[1;33m",
-        "ERROR"   : "\033[1;31m",
-        "CRITICAL": "\033[1;41m",
-    }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.colors = dict(self.DEFAULT_COLORS)
-        for color_override in os.getenv("GLASGOW_COLORS", "").split(":"):
-            if color_override:
-                level, color = color_override.split("=", 2)
-                self.colors[level] = f"\033[{color}m"
-
-    def format(self, record):
-        color = self.colors.get(record.levelname, "")
-        # glasgow.applet.foo → g.applet.foo
-        record.name = record.name.replace("glasgow.", "g.")
-        # applet.memory._25x → applet.memory.25x
-        record.name = record.name.replace("._", ".")
-        return f"{color}{super().format(record)}\033[0m"
-
-
 class SubjectFilter:
     def __init__(self, level, subjects):
         self.level    = level
@@ -541,20 +528,6 @@ class SubjectFilter:
             if isinstance(record.msg, str) and record.msg.startswith(subject + ": "):
                 levelno = logging.INFO
         return levelno >= self.level
-
-
-def create_logger():
-    root_logger = pylogging.getLogger()
-
-    term_formatter_args = {"style": "{",
-        "fmt": "{levelname[0]:s}: {name:s}: {message:s}"}
-    term_handler = pylogging.StreamHandler()
-    if sys.stderr.isatty() and sys.platform != "win32":
-        term_handler.setFormatter(TerminalFormatter(**term_formatter_args))
-    else:
-        term_handler.setFormatter(pylogging.Formatter(**term_formatter_args))
-    root_logger.addHandler(term_handler)
-    return term_handler
 
 
 def configure_logger(args, term_handler):
@@ -614,18 +587,20 @@ async def wait_for_sigint():
     raise SIGINTCaught
 
 
+@run_async
 async def main() -> int:
     term_handler = file_handler = device = None
     try:
-        # This intercepts stdin/stdout, so do it before creating a logger or anything else that
-        # might capture those file objects.
-        TqdmProgressImpl().register()
-
         # Handle log messages emitted during construction of the argument parser (e.g. by
         # the plugin subsystem).
-        term_handler = create_logger()
+        term_handler = setup_logging()
         args = get_argparser().parse_args()
         file_handler = configure_logger(args, term_handler)
+
+        if args.action == "python":
+            if len(args.rest) > 0 and args.rest[0] == "--":
+                del args.rest[0]
+            return subprocess.call([sys.executable, *args.rest])
 
         logger.debug(version_info()) # print version info if verbose
 
@@ -918,10 +893,19 @@ async def main() -> int:
                             fx2_config.append(addr, chunk)
                 else:
                     logger.info("using built-in firmware")
-                    for (addr, chunk) in GlasgowDevice.firmware_data():
+                    for (addr, chunk) in GlasgowDevice._fx2_firmware_data():
                         fx2_config.append(addr, chunk)
                 fx2_config.disconnect = True
                 new_image = fx2_config.encode()
+
+            if glasgow_config.revision >= "D0":
+                # Inject the STM32 firmware into the image. This is done unconditionally, as FX2
+                # firmware that is loaded on the fly will still try to read the STM32 firmware from
+                # the EEPROM. This is a bit dirty and less reliable than ideal, and fundamentally
+                # relies on the STM32 firmware never changing, as we don't have any way to detect
+                # that there is a mismatch between expected and actual STM32 firmware interface.
+                assert len(new_image) <= 0x5000
+                new_image = new_image.ljust(0x5000, b"\xff") + GlasgowDevice._stm32_firmware_data()
 
             logger.info("programming configuration and firmware")
             old_image = await device.read_eeprom(0, len(new_image))
@@ -1010,7 +994,7 @@ async def main() -> int:
                 manufacturer=args.factory_manufacturer,
                 modified_design=(args.factory_modified_design != "no"),
                 advertise_webusb=True)
-            firmware_data = GlasgowDevice.firmware_data()
+            firmware_data = GlasgowDevice._fx2_firmware_data()
 
             if args.reinitialize:
                 vid, pid = VID_QIHW, PID_GLASGOW
@@ -1042,8 +1026,12 @@ async def main() -> int:
             logger.warning("power cycle the device to finish the operation")
 
         if args.action == "list":
-            for serial in sorted(await GlasgowDevice.enumerate()):
-                print(serial)
+            devices = await GlasgowDevice.enumerate()
+            if not devices:
+                logger.warning("no devices available")
+            else:
+                for serial in sorted(devices):
+                    print(serial)
             return 0
 
     # Device-related errors
@@ -1085,16 +1073,9 @@ async def main() -> int:
             root_logger.removeHandler(file_handler)
 
         if device is not None:
-            await device.close()
+            try:
+                await device.close()
+            except ErrorDisconnected:
+                pass
 
     return 0
-
-
-# This entry point is invoked via `project.scripts.glasgow` when installing the package with `pipx`.
-def run_main():
-    exit(asyncio.new_event_loop().run_until_complete(main()))
-
-
-# This entry point is invoked when running `python -m glasgow.cli`.
-if __name__ == "__main__":
-    run_main()

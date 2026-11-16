@@ -103,6 +103,7 @@ class SWDProbeComponent(wiring.Component):
         m.d.comb += ctrl.divisor.eq(self.divisor)
         m.d.comb += ctrl.timeout.eq(self.timeout)
 
+        w_pending = Signal()
         with m.FSM(name="i_fsm"):
             with m.State("Command"):
                 i_command = SWDCommand(self.i_stream.payload)
@@ -119,9 +120,14 @@ class SWDProbeComponent(wiring.Component):
                         m.next = "Data"
                     with m.Elif((i_command.cmd == swd.Command.Transfer) &
                             (i_command.arg.transfer.r_nw == 0)):
+                        m.d.sync += w_pending.eq(1)
                         m.next = "Data"
                     with m.Else():
                         m.next = "Execute"
+                with m.Else():
+                    m.d.sync += w_pending.eq(0)
+                    with m.If(w_pending):
+                        m.next = "Flush"
 
             with m.State("Data"):
                 i_count = Signal(range(4))
@@ -131,6 +137,20 @@ class SWDProbeComponent(wiring.Component):
                     m.d.sync += i_count.eq(i_count + 1)
                     with m.If(i_count == 3):
                         m.next = "Execute"
+
+            with m.State("Flush"):
+                # ADIv5.2 §B4.1.1:
+                # To ensure that the transfer can be clocked through the SW-DP, after the data
+                # transfer phase the host must do one of the following: [...]
+                #  * If the host is driving the SWD clock, continue to clock the SWD interface with
+                #    at least eight idle cycles. After completing this sequence, the host can stop
+                #    the clock.
+                m.d.sync += [
+                    ctrl.i_stream.p.cmd.eq(swd.Command.Sequence),
+                    ctrl.i_stream.p.len.eq(8),
+                    ctrl.i_stream.p.data.eq(0),
+                ]
+                m.next = "Execute"
 
             with m.State("Execute"):
                 m.d.comb += ctrl.i_stream.valid.eq(1)
@@ -258,7 +278,8 @@ class SWDProbeInterface:
             await self._recv_ack()
             self._log(f"wr {'ap' if ap_ndp else 'dp'} addr={addr:#x} data={data:#010x}")
         except SWDProbeException as exn:
-            self._log(f"wr {'ap' if ap_ndp else 'dp'} addr={addr:#x} {exn.kind.value}")
+            self._log(f"wr {'ap' if ap_ndp else 'dp'} addr={addr:#x} data={data:#010x} "
+                      f"{exn.kind.value}")
             raise
 
     async def _update_select(self, **kwargs):
@@ -345,9 +366,9 @@ class SWDProbeInterface:
             On communication error.
         """
         await self._select_ap_addr(ap, reg)
-        return await self._raw_write(ap_ndp=1, addr=reg & 0xf, data=data)
+        await self._raw_write(ap_ndp=1, addr=reg & 0xf, data=data)
 
-    async def initialize(self) -> DP_DPIDR:
+    async def initialize(self, CSYSPWRUP: bool = False) -> DP_DPIDR:
         """Initialize the SW-DP or SWJ-DP.
 
         The initialization process is:
@@ -358,11 +379,13 @@ class SWDProbeInterface:
         4. Write ``DP_ABORT`` to clear all errors.
         5. Write ``CTRL_STAT`` to request debug power-up.
         6. Read ``CTRL_STAT`` to ensure acknowledge of debug power-up.
+        7. **If :py:`CSYSPWRUP`:** Write ``CTRL_STAT`` to request system power-up.
+        8. **If :py:`CSYSPWRUP`:** Read ``CTRL_STAT`` to ensure acknowledge of system power-up.
 
         Raises
         ------
         SWDProbeException
-            On communication error, or if debug power-up request isn't acknowledged.
+            On communication error, or if a power-up request isn't acknowledged.
         """
         await self.jtag_to_swd_v2()
         await self.jtag_to_swd_v1()
@@ -375,6 +398,13 @@ class SWDProbeInterface:
         ctrl_stat = DP_CTRL_STAT.from_int(await self.dp_read(reg=DP_CTRL_STAT_addr))
         if not ctrl_stat.CDBGPWRUPACK:
             raise SWDProbeException(message="target failed to acknowledge debug power-up request")
+        if CSYSPWRUP:
+            await self.dp_write(reg=DP_CTRL_STAT_addr,
+                data=DP_CTRL_STAT(CDBGPWRUPREQ=1, CSYSPWRUPREQ=1).to_int())
+            ctrl_stat = DP_CTRL_STAT.from_int(await self.dp_read(reg=DP_CTRL_STAT_addr))
+            if not ctrl_stat.CSYSPWRUPACK:
+                raise SWDProbeException(
+                    message="target failed to acknowledge system power-up request")
         return dpidr
 
     async def iter_aps(self) -> AsyncIterator[tuple[int, AP_IDR]]:
@@ -393,6 +423,50 @@ class SWDProbeInterface:
             if ap_idr.to_int() == 0:
                 break
             yield ap, ap_idr
+
+    async def _mem_ap_setup_access(self, ap: int, addr: int):
+        # The problem here is the value of `Prot`: the exact meaning depends on the specific bus
+        # architecture, and getting it wrong will likely result in faults for certain accesses.
+        # For example, using an Unprivileged access to core debug registers will fault.
+        # ARM guarantees that the reset value of MEM-AP CSR contains the "right" value, so we're
+        # eating the cost of an RMW to reuse that value. A more mature debugger would do something
+        # more involved, likely by examining the bus type. This will require an AP abstraction.
+        ap_csw = MEM_AP_CSW.from_int(await self.ap_read(ap, MEM_AP_CSW_addr))
+        ap_csw.Size = 2
+        await self.ap_write(ap, MEM_AP_CSW_addr, ap_csw.to_int())
+        await self.ap_write(ap, MEM_AP_TAR_addr, addr)
+
+    async def mem_ap_read_word(self, ap: int, addr: int):
+        """Read a word via a MEM-AP.
+
+        Reads the 32-bit value from :py:`addr` via MEM-AP :py:`ap`.
+
+        Note that transfers via a MEM-AP may silently fail under certain conditions, e.g. if
+        the CPU core has not been halted.
+
+        Raises
+        ------
+        SWDProbeException
+            On communication error.
+        """
+        await self._mem_ap_setup_access(ap, addr)
+        return await self.ap_read(ap, MEM_AP_DRW_addr)
+
+    async def mem_ap_write_word(self, ap: int, addr: int, data: int):
+        """Read a word via a MEM-AP.
+
+        Writes the 32-bit value :py:`data` to :py:`addr` via MEM-AP :py:`ap`.
+
+        Note that transfers via a MEM-AP may silently fail under certain conditions, e.g. if
+        the CPU core has not been halted.
+
+        Raises
+        ------
+        SWDProbeException
+            On communication error.
+        """
+        await self._mem_ap_setup_access(ap, addr)
+        await self.ap_write(ap, MEM_AP_DRW_addr, data)
 
 
 class SWDProbeApplet(GlasgowAppletV2):
@@ -454,7 +528,7 @@ class SWDProbeApplet(GlasgowAppletV2):
             "-f", "--file", metavar="FILENAME", type=argparse.FileType("wb"),
             help="dump contents to FILENAME")
         p_dump_memory.add_argument(
-            "--ap", metavar="INDEX", default=0,
+            "--ap", metavar="INDEX", default=0, type=int,
             help="access memory via MEM-AP #INDEX")
 
     @staticmethod
@@ -490,6 +564,9 @@ class SWDProbeApplet(GlasgowAppletV2):
 
             case "dump-memory":
                 ap_cfg = MEM_AP_CFG.from_int(await self.swd_iface.ap_read(args.ap, MEM_AP_CFG_addr))
+                ap_csw = MEM_AP_CSW.from_int(await self.swd_iface.ap_read(args.ap, MEM_AP_CSW_addr))
+                if not ap_csw.DeviceEn:
+                    raise SWDProbeException(message="MEM-AP is disabled")
 
                 data = []
                 addr = args.address

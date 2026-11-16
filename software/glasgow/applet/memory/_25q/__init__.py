@@ -214,6 +214,15 @@ class Memory25QInterface:
         value, = await self.qspi.execute_read(self.cmds[nor.Command.ReadStatusReg1])
         return nor.StatusReg1(value)
 
+    async def read_status_reg_2(self) -> int:
+        """Read Status Register 2.
+
+        Implemented using
+        :data:`Opcode.ReadStatusReg2 <glasgow.arch.qspi.nor.Opcode.ReadStatusReg2>`.
+        """
+        value, = await self.qspi.execute_read(self.cmds[nor.Command.ReadStatusReg2])
+        return value
+
     async def write_status_reg_1(self, value: nor.StatusReg1):
         """Write Status Register 1.
 
@@ -222,6 +231,18 @@ class Memory25QInterface:
         """
         await self.qspi.execute_cmd(self.cmds[nor.Command.WriteEnable])
         await self.qspi.execute_write(self.cmds[nor.Command.WriteStatusRegs], data=bytes([value]))
+        await self.poll_busy()
+
+    async def write_status_reg_1_2(self, value1: nor.StatusReg1, value2: int):
+        """Write Status Registers 1, 2.
+
+        Implemented using
+        :data:`Opcode.WriteStatusReg1 <glasgow.arch.qspi.nor.Opcode.WriteStatusReg1>` (with
+        two data bytes).
+        """
+        await self.qspi.execute_cmd(self.cmds[nor.Command.WriteEnable])
+        await self.qspi.execute_write(self.cmds[nor.Command.WriteStatusRegs],
+            data=bytes([value1, value2]))
         await self.poll_busy()
 
     async def write_enable(self):
@@ -309,6 +330,12 @@ class Memory25QInterface:
                 sr1 = await self.read_status_reg_1()
                 sr1 = update(sr1, 6)
                 await self.write_status_reg_1(sr1)
+            case (SFDPJEDECQuadEnableRequirements.Reg2Bit1_WrReg1ClobberReg2 |
+                  SFDPJEDECQuadEnableRequirements.Reg2Bit1_WrReg1PreserveReg2):
+                sr1 = await self.read_status_reg_1()
+                sr2 = await self.read_status_reg_2()
+                sr2 = update(sr2, 1)
+                await self.write_status_reg_1_2(sr1, sr2)
             case unsupported:
                 raise NotImplementedError(f"quad enablement {unsupported} not implemented yet")
 
@@ -338,6 +365,7 @@ class Memory25QInterface:
 
         Implemented using one of:
 
+        * :data:`Command.EraseData256 <glasgow.arch.qspi.nor.Command.EraseData256>`
         * :data:`Command.EraseData4K <glasgow.arch.qspi.nor.Command.EraseData4K>`
         * :data:`Command.EraseData32K <glasgow.arch.qspi.nor.Command.EraseData32K>`
         * :data:`Command.EraseData64K <glasgow.arch.qspi.nor.Command.EraseData64K>`
@@ -594,8 +622,14 @@ class Memory25QApplet(GlasgowAppletV2):
             "-P", "--page-size", metavar="SIZE", type=page_size,
             help="do not cross multiple-of-SIZE boundaries when programming")
         parser.add_argument(
+            "--opcode-erase-256", metavar="OPCODE", type=opcode,
+            help="opcode for erasing a 256 B region")
+        parser.add_argument(
             "--opcode-erase-4k", metavar="OPCODE", type=opcode,
             help="opcode for erasing a 4 KiB region")
+        parser.add_argument(
+            "--opcode-erase-8k", metavar="OPCODE", type=opcode,
+            help="opcode for erasing a 8 KiB region")
         parser.add_argument(
             "--opcode-erase-32k", metavar="OPCODE", type=opcode,
             help="opcode for erasing a 32 KiB region")
@@ -626,10 +660,20 @@ class Memory25QApplet(GlasgowAppletV2):
                     self.m25q_iface.cmds[nor.Command.ProgramData] = \
                         dataclasses.replace(self.m25q_iface.cmds[nor.Command.ProgramData],
                             data_octets=args.page_size)
+            if (args.opcode_erase_256 is not None and
+                    args.opcode_erase_256 != params.erase_sizes.get(256)):
+                self.logger.warning(
+                    f"ignoring argument --opcode-erase-256 {args.opcode_erase_256:02X}h "
+                    f"that does not match SFDP value")
             if (args.opcode_erase_4k is not None and
                     args.opcode_erase_4k != params.erase_sizes.get(4096)):
                 self.logger.warning(
                     f"ignoring argument --opcode-erase-4k {args.opcode_erase_4k:02X}h "
+                    f"that does not match SFDP value")
+            if (args.opcode_erase_8k is not None and
+                    args.opcode_erase_8k != params.erase_sizes.get(8192)):
+                self.logger.warning(
+                    f"ignoring argument --opcode-erase-8k {args.opcode_erase_8k:02X}h "
                     f"that does not match SFDP value")
             if (args.opcode_erase_32k is not None and
                     args.opcode_erase_32k != params.erase_sizes.get(32768)):
@@ -650,7 +694,9 @@ class Memory25QApplet(GlasgowAppletV2):
             self.m25q_iface.cmds.use_explicit(
                 address_bytes=address_bytes,
                 page_size=args.page_size,
+                opcode_erase_256=args.opcode_erase_256,
                 opcode_erase_4k=args.opcode_erase_4k,
+                opcode_erase_8k=args.opcode_erase_8k,
                 opcode_erase_32k=args.opcode_erase_32k,
                 opcode_erase_64k=args.opcode_erase_64k,
             )
@@ -785,7 +831,9 @@ class Memory25QApplet(GlasgowAppletV2):
                 # this algebraic relation, but it seems useful enough to display for devices
                 # without more accurately known capacity.
                 memory_size_guess = 1 << (device_id & 0xff)
-                if memory_size_guess > 1048576:
+                if memory_size_guess > (1<<24):
+                    pass # NOR flash without SFDP isn't going to be over 16 MB.
+                elif memory_size_guess > (1<<20):
                     self.logger.info(f"inexact memory size guess:  {memory_size_guess/1048576} MiB")
                 else:
                     self.logger.info(f"inexact memory size guess:  {memory_size_guess/1024} KiB")

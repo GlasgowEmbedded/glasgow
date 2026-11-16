@@ -1,0 +1,8 @@
+{"self": "onfi_iface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "0203"}], "kwargs": {}, "result": null}
+{"self": "onfi_iface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "03010090"}], "kwargs": {}, "result": null}
+{"self": "onfi_iface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "0205"}], "kwargs": {}, "result": null}
+{"self": "onfi_iface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "03010020"}], "kwargs": {}, "result": null}
+{"self": "onfi_iface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "0201"}], "kwargs": {}, "result": null}
+{"self": "onfi_iface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "040400"}], "kwargs": {}, "result": null}
+{"self": "onfi_iface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "onfi_iface._pipe", "call": "recv", "kind": "asyncmethod", "args": [4], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "4f4e4649"}}

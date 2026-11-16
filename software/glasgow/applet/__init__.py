@@ -111,6 +111,7 @@ class GlasgowAppletV2(metaclass=ABCMeta):
 
     def _code_locals(self, args):
         return {
+            "__name__": "<eval>",
             "asyncio": asyncio,
             "self": self,
             "args": args,

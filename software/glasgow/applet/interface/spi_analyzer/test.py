@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class SPIAnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=SPIAnalyzerApplet):
     @synthesis_test
     def test_build(self):
-        self.assertBuilds()
+        self.assertBuilds(["--buffer-size", "512"])
 
     def spi_testbench(self, ports):
         async def testbench(ctx):

@@ -44,21 +44,20 @@ IR_FDC        = bits("10111")
 
 # IMPCODE DR layout
 
-DR_IMPCODE = bitstruct("DR_IMPCODE", 32, [
-    ("MIPS32_64",  1),
-    ("TypeInfo",  10),
-    ("Type",       3),
-    ("NoDMA",      1),
-    (None,         1),
-    ("MIPS16",     1),
-    (None,         4),
-    ("ASID_Size",  2),
-    (None,         1),
-    ("DINT_sup",   1),
-    (None,         3),
-    ("R4k_R3k",    1),
-    ("EJTAGver",   3),
-])
+class DR_IMPCODE(bitstruct, width=32):
+    MIPS32_64: int = 1
+    TypeInfo: int  = 10
+    Type: int      = 3
+    NoDMA: int     = 1
+    _0: int        = 1
+    MIPS16: int    = 1
+    _1: int        = 4
+    ASID_Size: int = 2
+    _2: int        = 1
+    DINT_sup: int  = 1
+    _3: int        = 3
+    R4k_R3k: int   = 1
+    EJTAGver: int  = 3
 
 DR_IMPCODE_EJTAGver_values = defaultdict(lambda: "unknown", {
     0: "1.x/2.0",
@@ -71,32 +70,31 @@ DR_IMPCODE_EJTAGver_values = defaultdict(lambda: "unknown", {
 
 # CONTROL DR layout
 
-DR_CONTROL = bitstruct("DR_CONTROL", 32, [
-    (None,         3),
-    ("DM",         1),
-    (None,         1),
-    ("DLock",      1), # Undocumented, EJTAG 1.x/2.0 specific
-    (None,         1),
-    ("Dsz",        2), # Undocumented, EJTAG 1.x/2.0 specific
-    ("DRWn",       1), # Undocumented, EJTAG 1.x/2.0 specific
-    ("DErr",       1), # Undocumented, EJTAG 1.x/2.0 specific
-    ("DStrt",      1), # Undocumented, EJTAG 1.x/2.0 specific
-    ("EjtagBrk",   1),
-    ("ISAOnDebug", 1),
-    ("ProbTrap",   1),
-    ("ProbEn",     1),
-    ("PrRst",      1),
-    ("DMAAcc",     1), # Undocumented, EJTAG 1.x/2.0 specific
-    ("PrAcc",      1),
-    ("PRnW",       1),
-    ("PerRst",     1),
-    ("Halt",       1),
-    ("Doze",       1),
-    ("VPED",       1),
-    (None,         5),
-    ("Psz",        2),
-    ("Rocc",       1),
-])
+class DR_CONTROL(bitstruct, width=32):
+    _0: int         = 3
+    DM: int         = 1
+    _1: int         = 1
+    DLock: int      = 1  # Undocumented, EJTAG 1.x/2.0 specific
+    _2: int         = 1
+    Dsz: int        = 2  # Undocumented, EJTAG 1.x/2.0 specific
+    DRWn: int       = 1  # Undocumented, EJTAG 1.x/2.0 specific
+    DErr: int       = 1  # Undocumented, EJTAG 1.x/2.0 specific
+    DStrt: int      = 1  # Undocumented, EJTAG 1.x/2.0 specific
+    EjtagBrk: int   = 1
+    ISAOnDebug: int = 1
+    ProbTrap: int   = 1
+    ProbEn: int     = 1
+    PrRst: int      = 1
+    DMAAcc: int     = 1  # Undocumented, EJTAG 1.x/2.0 specific
+    PrAcc: int      = 1
+    PRnW: int       = 1
+    PerRst: int     = 1
+    Halt: int       = 1
+    Doze: int       = 1
+    VPED: int       = 1
+    _3: int         = 5
+    Psz: int        = 2
+    Rocc: int       = 1
 
 # DMSEG/DRSEG addresses
 
@@ -142,89 +140,84 @@ def DRSEG_DBVn_addr_v1(n):  return DRSEG_addr + 0x020c +  0x10 * n
 
 # DRSEG DCR layout
 
-DRSEG_DCR = bitstruct("DRSEG_DCR", 32, [
-    ("ProbEn",     1),
-    ("SRstE",      1),
-    ("NMIpend",    1),
-    ("NMIE",       1),
-    ("IntE",       1),
-    ("PCSe",       1),
-    ("PCR",        3),
-    ("PCS",        1),
-    ("CBT",        1),
-    ("RDVec",      1),
-    (None,         2),
-    ("IVM",        1),
-    ("DVM",        1),
-    ("InstBrk",    1),
-    ("DataBrk",    1),
-    ("FDCImpl",    1),
-    (None,         3),
-    ("DAS",        1),
-    ("DASe",       1),
-    ("DASQ",       1),
-    ("PCnoASID",   1),
-    ("PCIM",       1),
-    ("PCnoTCID",   1),
-    ("PCnoGID",    1),
-    ("ENM",        1),
-    (None,         1),
-    ("EJTAG_Brk_Override", 1),
-])
+class DRSEG_DCR(bitstruct, width=32):
+    ProbEn: int             = 1
+    SRstE: int              = 1
+    NMIpend: int            = 1
+    NMIE: int               = 1
+    IntE: int               = 1
+    PCSe: int               = 1
+    PCR: int                = 3
+    PCS: int                = 1
+    CBT: int                = 1
+    RDVec: int              = 1
+    _0: int                 = 2
+    IVM: int                = 1
+    DVM: int                = 1
+    InstBrk: int            = 1
+    DataBrk: int            = 1
+    FDCImpl: int            = 1
+    _1: int                 = 3
+    DAS: int                = 1
+    DASe: int               = 1
+    DASQ: int               = 1
+    PCnoASID: int           = 1
+    PCIM: int               = 1
+    PCnoTCID: int           = 1
+    PCnoGID: int            = 1
+    ENM: int                = 1
+    _2: int                 = 1
+    EJTAG_Brk_Override: int = 1
 
 # DRSEG IBS layout
 
-DRSEG_IBS = bitstruct("DRSEG_IBS", 32, [
-    ("BS",        15),
-    ("IBPshare",   1),
-    (None,         8),
-    ("BCN",        4),
-    (None,         2),
-    ("ASIDsup",    1),
-    (None,         1),
-])
+class DRSEG_IBS(bitstruct, width=32):
+    BS: int       = 15
+    IBPshare: int = 1
+    _0: int       = 8
+    BCN: int      = 4
+    _1: int       = 2
+    ASIDsup: int  = 1
+    _2: int       = 1
 
 # DRSEG IBC layout
 
-DRSEG_IBC = bitstruct("DRSEG_IBC", 32, [
-    ("BE",         1),
-    (None,         1),
-    ("TE",         1),
-    ("VPEuse",     1),
-    ("HWART",      1),
-    ("EXCL",       1),
-    ("HWARTS",     1),
-    (None,        15),
-    ("TCuse",      1),
-    ("ASIDuse",    1),
-    ("TC",         8),
-])
+class DRSEG_IBC(bitstruct, width=32):
+    BE: int      = 1
+    _0: int      = 1
+    TE: int      = 1
+    VPEuse: int  = 1
+    HWART: int   = 1
+    EXCL: int    = 1
+    HWARTS: int  = 1
+    _1: int      = 15
+    TCuse: int   = 1
+    ASIDuse: int = 1
+    TC: int      = 8
 
 # DRSEG DBS layout
 
-DRSEG_DBS = bitstruct("DRSEG_DBS", 32, [
-    ("BS",        15),
-    ("DBPshare",   1),
-    (None,         8),
-    ("BCN",        4),
-    ("NoLVMatch",  1),
-    ("NoSVMatch",  1),
-    ("ASIDsup",    1),
-    (None,         1),
-])
+class DRSEG_DBS(bitstruct, width=32):
+    BS: int        = 15
+    DBPshare: int  = 1
+    _0: int        = 8
+    BCN: int       = 4
+    NoLVMatch: int = 1
+    NoSVMatch: int = 1
+    ASIDsup: int   = 1
+    _1: int        = 1
 
 # DRSEG DBC layout
 
-DRSEG_DBC = bitstruct("DRSEG_DBC", 32, [
-    ("BE",         1),
-    ("IVM",        1),
-    ("TE",         1),
-    ("VPEuse",     1),
-    ("BLM",        8),
-    ("NoLB",       1),
-    ("NoSB",       1),
-    ("BAI",        8),
-    ("TCuse",      1),
-    ("ASIDuse",    1),
-    ("TC",         8),
-])
+class DRSEG_DBC(bitstruct, width=32):
+    BE: int      = 1
+    IVM: int     = 1
+    TE: int      = 1
+    VPEuse: int  = 1
+    BLM: int     = 8
+    NoLB: int    = 1
+    NoSB: int    = 1
+    BAI: int     = 8
+    TCuse: int   = 1
+    ASIDuse: int = 1
+    TC: int      = 8

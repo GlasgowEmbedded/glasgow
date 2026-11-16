@@ -43,34 +43,34 @@ IR_USERCODE = bits("11111101") # USERCODE[32]
 IR_IDCODE   = bits("11111110") # IDCODE[32]
 IR_BYPASS   = bits("11111111") # BYPASS[1]
 
-IR_STATUS = bitstruct("IR_STATUS", 8, [
-    ("_fixed1",       1),
-    ("_fixed0",       1),
-    ("write_protect", 1),
-    ("read_protect",  1),
-    ("isp_enabled",   1),
-    ("done",          1),
-    ("_unused",       2),
-])
+class IR_STATUS(bitstruct, width=8):
+    _0: int            = 1
+    _1: int            = 1
+    write_protect: int = 1
+    read_protect: int  = 1
+    isp_enabled: int   = 1
+    done: int          = 1
+    _2: int            = 2
 
 
 def DR_ISDATA(fbs):
-    return bitstruct("DR_ISDATA", 2 + fbs * 8, [
-        ("control",    2),
-        ("data", fbs * 8),
-    ])
+    class DR_ISDATA(bitstruct, width=2 + fbs * 8):
+        control: int = 2
+        data: int    = fbs * 8
 
-DR_ISADDRESS = bitstruct("DR_ISADDRESS", 18, [
-    ("control",  2),
-    ("address", 16),
-])
+    return DR_ISDATA
+
+class DR_ISADDRESS(bitstruct, width=18):
+    control: int = 2
+    address: int = 16
 
 def DR_ISCONFIGURATION(fbs):
-    return bitstruct("DR_ISCONFIGURATION", 18 + fbs * 8, [
-        ("control",    2),
-        ("data", fbs * 8),
-        ("address",   16),
-    ])
+    class DR_ISCONFIGURATION(bitstruct, width=18 + fbs * 8):
+        control: int = 2
+        data: int    = fbs * 8
+        address: int = 16
+
+    return DR_ISCONFIGURATION
 
 
 CTRL_WPROT   = 0

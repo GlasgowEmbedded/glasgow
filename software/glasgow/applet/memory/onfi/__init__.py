@@ -79,13 +79,15 @@ import argparse
 import struct
 
 from amaranth import *
-from amaranth.lib import io
+from amaranth.lib import io, wiring, stream
+from amaranth.lib.wiring import In, Out
 from amaranth.lib.cdc import FFSynchronizer
 
 from glasgow.support import logging
 from glasgow.support.logging import dump_hex
 from glasgow.database.jedec import *
 from glasgow.protocol.onfi import *
+from glasgow.abstract import AbstractAssembly, GlasgowPin
 from glasgow.applet import *
 
 
@@ -141,11 +143,14 @@ class MemoryONFIBus(Elaboratable):
         return m
 
 
-class MemoryONFISubtarget(Elaboratable):
-    def __init__(self, ports, in_fifo, out_fifo):
+class MemoryONFIComponent(wiring.Component):
+    i_stream: In(stream.Signature(8))
+    o_stream: Out(stream.Signature(8))
+    flush: Out(1)
+
+    def __init__(self, ports):
         self.bus = MemoryONFIBus(ports)
-        self.in_fifo = in_fifo
-        self.out_fifo = out_fifo
+        super().__init__()
 
     def elaborate(self, platform):
         m = Module()
@@ -162,11 +167,11 @@ class MemoryONFISubtarget(Elaboratable):
 
         with m.FSM() as fsm:
             with m.State("RECV-COMMAND"):
-                m.d.comb += self.in_fifo.flush.eq(1)
-                with m.If(self.out_fifo.r_rdy):
-                    m.d.comb += self.out_fifo.r_en.eq(1)
-                    m.d.sync += command.eq(self.out_fifo.r_data)
-                    with m.Switch(self.out_fifo.r_data):
+                m.d.comb += self.flush.eq(1)
+                with m.If(self.i_stream.valid):
+                    m.d.comb += self.i_stream.ready.eq(1)
+                    m.d.sync += command.eq(self.i_stream.payload)
+                    with m.Switch(self.i_stream.payload):
                         with m.Case(CMD_SELECT):
                             m.next = "RECV-SELECT"
                         with m.Case(CMD_CONTROL):
@@ -177,24 +182,24 @@ class MemoryONFISubtarget(Elaboratable):
                             m.next = "ONFI-SETUP"
                 m.d.sync += self.bus.doe.eq(0)
             with m.State("RECV-SELECT"):
-                with m.If(self.out_fifo.r_rdy):
-                    m.d.comb += self.out_fifo.r_en.eq(1)
-                    m.d.sync += select.eq(self.out_fifo.r_data)
+                with m.If(self.i_stream.valid):
+                    m.d.comb += self.i_stream.ready.eq(1)
+                    m.d.sync += select.eq(self.i_stream.payload)
                     m.next = "RECV-COMMAND"
             with m.State("RECV-CONTROL"):
-                with m.If(self.out_fifo.r_rdy):
-                    m.d.comb += self.out_fifo.r_en.eq(1)
-                    m.d.sync += control.eq(self.out_fifo.r_data)
+                with m.If(self.i_stream.valid):
+                    m.d.comb += self.i_stream.ready.eq(1)
+                    m.d.sync += control.eq(self.i_stream.payload)
                     m.next = "ONFI-SETUP"
             with m.State("RECV-LENGTH-1"):
-                with m.If(self.out_fifo.r_rdy):
-                    m.d.comb += self.out_fifo.r_en.eq(1)
-                    m.d.sync += length[0:8].eq(self.out_fifo.r_data)
+                with m.If(self.i_stream.valid):
+                    m.d.comb += self.i_stream.ready.eq(1)
+                    m.d.sync += length[0:8].eq(self.i_stream.payload)
                     m.next = "RECV-LENGTH-2"
             with m.State("RECV-LENGTH-2"):
-                with m.If(self.out_fifo.r_rdy):
-                    m.d.comb += self.out_fifo.r_en.eq(1)
-                    m.d.sync += length[8:16].eq(self.out_fifo.r_data)
+                with m.If(self.i_stream.valid):
+                    m.d.comb += self.i_stream.ready.eq(1)
+                    m.d.sync += length[8:16].eq(self.i_stream.payload)
                     m.next = "ONFI-SETUP"
             with m.State("ONFI-SETUP"):
                 with m.If(timer != 0):
@@ -224,10 +229,10 @@ class MemoryONFISubtarget(Elaboratable):
                             with m.If(self.bus.rdy):
                                 m.next = "RECV-COMMAND"
             with m.State("RECV-DATA"):
-                with m.If(self.out_fifo.r_rdy):
-                    m.d.comb += self.out_fifo.r_en.eq(1)
+                with m.If(self.i_stream.valid):
+                    m.d.comb += self.i_stream.ready.eq(1)
                     m.d.sync += [
-                        self.bus.do.eq(self.out_fifo.r_data),
+                        self.bus.do.eq(self.i_stream.payload),
                         self.bus.we.eq(1),
                     ]
                     m.next = "ONFI-WRITE-HOLD"
@@ -249,13 +254,13 @@ class MemoryONFISubtarget(Elaboratable):
                 with m.Else():
                     m.d.sync += [
                         self.bus.re.eq(0),
-                        self.in_fifo.w_data.eq(self.bus.di),
+                        self.o_stream.payload.eq(self.bus.di),
                         timer.eq(wait_cyc),
                     ]
                     m.next = "SEND-DATA"
             with m.State("SEND-DATA"):
-                with m.If(self.in_fifo.w_rdy):
-                    m.d.comb += self.in_fifo.w_en.eq(1)
+                m.d.comb += self.o_stream.valid.eq(1)
+                with m.If(self.o_stream.ready):
                     m.d.sync += length.eq(length - 1)
                     m.next = "ONFI-SETUP"
 
@@ -270,8 +275,14 @@ BIT_STATUS_WRITE_PROT  = 1 << 7
 
 
 class ONFIInterface:
-    def __init__(self, interface, logger):
-        self.lower   = interface
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
+                 io: GlasgowPin, cle: GlasgowPin, ale: GlasgowPin, re: GlasgowPin,
+                 we: GlasgowPin, r_b: GlasgowPin, ce: GlasgowPin):
+        ports = assembly.add_port_group(io=io, cle=cle, ale=ale, re=re, we=we, r_b=r_b, ce=ce)
+        assembly.use_pulls({r_b: "high"})
+        component = assembly.add_submodule(MemoryONFIComponent(ports))
+        self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream,
+                                            in_flush=component.flush)
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
@@ -279,22 +290,23 @@ class ONFIInterface:
         self._logger.log(self._level, "ONFI: " + message, *args)
 
     async def select(self, chip):
+        """Select the zero-based chip index (0 through 3)."""
         assert chip in range(0, 4)
         self._log("select chip=%d", chip)
-        await self.lower.write(struct.pack("<BB", CMD_SELECT, chip))
+        await self._pipe.send(struct.pack("<BB", CMD_SELECT, chip))
 
     async def _control(self, bits):
-        await self.lower.write(struct.pack("<BB", CMD_CONTROL, bits))
+        await self._pipe.send(struct.pack("<BB", CMD_CONTROL, bits))
 
     async def _write(self, data):
         data = bytes(data)
-        await self.lower.write(struct.pack("<BH", CMD_WRITE, len(data)) + data)
+        await self._pipe.send(struct.pack("<BH", CMD_WRITE, len(data)) + data)
 
     async def _read(self, length):
-        await self.lower.write(struct.pack("<BH", CMD_READ, length))
+        await self._pipe.send(struct.pack("<BH", CMD_READ, length))
 
     async def _wait(self):
-        await self.lower.write(struct.pack("<B", CMD_WAIT))
+        await self._pipe.send(struct.pack("<B", CMD_WAIT))
 
     async def _do(self, command, address=[], wait=False):
         address = bytes(address)
@@ -321,11 +333,13 @@ class ONFIInterface:
     async def _do_read(self, command, address=[], wait=False, length=0):
         await self._do(command, address, wait)
         await self._read(length)
-        data = await self.lower.read(length)
+        await self._pipe.flush()
+        data = await self._pipe.recv(length)
         self._log("read data=<%s>", dump_hex(data))
         return data
 
     async def reset(self):
+        """Reset the selected target and wait until it is ready."""
         self._log("reset")
         await self._do(command=0xff, wait=True)
 
@@ -334,32 +348,40 @@ class ONFIInterface:
         return await self._do_read(command=0x90, address=[address], length=length)
 
     async def read_jedec_id(self):
+        """Return the manufacturer and device identification bytes."""
         manufacturer_id, device_id = await self._read_id(address=0x00, length=2)
         return manufacturer_id, device_id
 
     async def read_signature(self):
+        """Return the first four Read ID bytes."""
         return await self._read_id(address=0x00, length=4)
 
     async def read_onfi_signature(self):
+        """Return the four-byte ONFI signature."""
         return await self._read_id(address=0x20, length=4)
 
     async def read_status(self):
+        """Return the NAND status byte."""
         self._log("read status")
         status, = await self._do_read(command=0x70, length=1)
         return status
 
     async def is_write_protected(self):
+        """Return whether the selected target is write-protected."""
         return (await self.read_status() & BIT_STATUS_WRITE_PROT) == 0
 
     async def read_parameter_page(self, copies=3):
+        """Read ``copies`` consecutive 256-byte ONFI parameter pages."""
         self._log("read parameter page copies=%d", copies)
         return await self._do_read(command=0xEC, address=[0x00], wait=True, length=copies * 256)
 
     async def read_unique_id(self):
+        """Read the 32-byte unique ID response."""
         self._log("read unique ID")
         return await self._do_read(command=0xED, address=[0x00], wait=True, length=32)
 
     async def read(self, row, column, length):
+        """Read ``length`` raw bytes at page ``row`` and byte offset ``column``."""
         self._log("read row=%#08x column=%#06x", row, column)
         await self._do(command=0x00, address=[
             (column >>  0) & 0xff,
@@ -371,6 +393,10 @@ class ONFIInterface:
         return await self._do_read(command=0x30, wait=True, length=length)
 
     async def program(self, row, chunks):
+        """Program page ``row`` from an iterable of ``(column, data)`` chunks.
+
+        Wait for completion and return whether programming succeeded. No ECC is generated.
+        """
         self._log("program row=%#08x", row)
         await self._do_write(command=0x80, address=[
             0,
@@ -392,6 +418,7 @@ class ONFIInterface:
         return (await self.read_status() & BIT_STATUS_FAIL) == 0
 
     async def erase(self, row):
+        """Erase the block containing page ``row`` and return whether erasure succeeded."""
         self._log("erase row=%#08x", row)
         await self._do(command=0x60, address=[
             (row >>  0) & 0xff,
@@ -402,8 +429,7 @@ class ONFIInterface:
         return (await self.read_status() & BIT_STATUS_FAIL) == 0
 
 
-class MemoryONFIApplet(GlasgowApplet):
-    preview = True
+class MemoryONFIApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "read and write ONFI-like NAND Flash memories"
     description = """
@@ -436,7 +462,7 @@ class MemoryONFIApplet(GlasgowApplet):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_build_arguments(parser)
+        access.add_voltage_argument(parser)
         access.add_pins_argument(parser, "io", 8, default=True)
         access.add_pins_argument(parser, "cle", default=True)
         access.add_pins_argument(parser, "ale", default=True)
@@ -445,34 +471,21 @@ class MemoryONFIApplet(GlasgowApplet):
         access.add_pins_argument(parser, "r_b", default=True)
         access.add_pins_argument(parser, "ce", range(1, 5), default=2)
 
-    def build(self, target, args):
-        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        iface.add_subtarget(MemoryONFISubtarget(
-            ports=iface.get_port_group(
-                io  = args.io,
-                cle = args.cle,
-                ale = args.ale,
-                re  = args.re,
-                we  = args.we,
-                r_b = args.r_b,
-                ce  = args.ce
-            ),
-            in_fifo=iface.get_in_fifo(auto_flush=False),
-            out_fifo=iface.get_out_fifo(),
-        ))
+    def build(self, args):
+        with self.assembly.add_applet(self):
+            self.assembly.use_voltage(args.voltage)
+            self.onfi_iface = ONFIInterface(self.logger, self.assembly,
+                io=args.io, cle=args.cle, ale=args.ale, re=args.re, we=args.we,
+                r_b=args.r_b, ce=args.ce)
 
     @classmethod
-    def add_run_arguments(cls, parser, access):
-        super().add_run_arguments(parser, access)
-
+    def add_setup_arguments(cls, parser):
         parser.add_argument(
             "-c", "--chip", metavar="CHIP", type=int, default=1,
             help="select chip connected to CE# signal CHIP (one of: 1..4, default: 1)")
 
-    async def run(self, device, args):
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args,
-            pull_high={args.r_b})
-        onfi_iface = ONFIInterface(iface, self.logger)
+    async def setup(self, args):
+        onfi_iface = self.onfi_iface
 
         # Reset every target, to make sure all of them are in a defined state and aren't driving
         # the shared data bus.
@@ -486,11 +499,10 @@ class MemoryONFIApplet(GlasgowApplet):
                 f"cannot select chip {args.chip}; available select signals are "
                 f"{', '.join(f'CE{n}#' for n in available_ce)}")
         await onfi_iface.select(args.chip - 1)
-
-        return onfi_iface
+        await onfi_iface._pipe.flush()
 
     @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         def size(arg):
             return int(arg, 0)
         def address(arg):
@@ -552,7 +564,8 @@ class MemoryONFIApplet(GlasgowApplet):
             "count", metavar="COUNT", type=count, nargs="?", default=1,
             help="erase blocks containing the next COUNT pages")
 
-    async def interact(self, device, args, onfi_iface):
+    async def run(self, args):
+        onfi_iface = self.onfi_iface
         manufacturer_id, device_id = await onfi_iface.read_jedec_id()
         if manufacturer_id in (0x00, 0xff):
             self.logger.error("JEDEC identification not present")
@@ -602,7 +615,7 @@ class MemoryONFIApplet(GlasgowApplet):
 
             blocks["Features"] = {
                 "data bus width":
-                    "16-bit" if onfi_param.features._16_bit_data_bus else "8-bit",
+                    "16-bit" if onfi_param.features.data_bus_16_bit else "8-bit",
                 "multi-LUN operations":
                     "yes" if onfi_param.features.multiple_lun_ops else "no",
                 "block programming order":

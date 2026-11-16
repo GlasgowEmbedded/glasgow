@@ -48,18 +48,17 @@ CP0_DESAVE_addr   = (31, 0)
 
 # CP0 Config layout
 
-CP0_Config = bitstruct("CP0_Config", 32, [
-    ("K0",         3),
-    (None,         4),
-    ("MT",         3),
-    ("AR",         3),
-    ("AT",         2),
-    ("BE",         1),
-    (None,         9),
-    ("KU",         3),
-    ("K23",        3),
-    ("M",          1),
-])
+class CP0_Config(bitstruct, width=32):
+    K0: int  = 3
+    _0: int  = 4
+    MT: int  = 3
+    AR: int  = 3
+    AT: int  = 2
+    BE: int  = 1
+    _1: int  = 9
+    KU: int  = 3
+    K23: int = 3
+    M: int   = 1
 
 CP0_Config_Kx_values = defaultdict(lambda: "unknown", {
     # Values 0/1 not defined in MIPS reference, but seem consistent among vendors
@@ -94,61 +93,58 @@ CP0_Config_BE_values = {
 
 # CP0 Config1 layout
 
-CP0_Config1 = bitstruct("CP0_Config1", 32, [
-    ("FP",         1),
-    ("EP",         1),
-    ("CA",         1),
-    ("WR",         1),
-    ("PC",         1),
-    ("MD",         1),
-    ("C2",         1),
-    ("DA",         3),
-    ("DL",         3),
-    ("DS",         3),
-    ("IA",         3),
-    ("IL",         3),
-    ("IS",         3),
-    ("MMUSize_m1", 6),
-    ("M",          1),
-])
+class CP0_Config1(bitstruct, width=32):
+    FP: int         = 1
+    EP: int         = 1
+    CA: int         = 1
+    WR: int         = 1
+    PC: int         = 1
+    MD: int         = 1
+    C2: int         = 1
+    DA: int         = 3
+    DL: int         = 3
+    DS: int         = 3
+    IA: int         = 3
+    IL: int         = 3
+    IS: int         = 3
+    MMUSize_m1: int = 6
+    M: int          = 1
 
 # CP0 Debug layout
 
-CP0_Debug = bitstruct("CP0_Debug", 32, [
-    ("DSS",        1),
-    ("DBp",        1),
-    ("DDBL",       1),
-    ("DDBS",       1),
-    ("DIB",        1),
-    ("DINT",       1),
-    ("DIBImpr",    1),
-    ("OffLine",    1),
-    ("SSt",        1),
-    ("NoSSt",      1),
-    ("DExcCode",   5),
-    ("EJTAGver",   3),
-    ("DDBLImpr",   1),
-    ("DDBSImpr",   1),
-    ("IEXI",       1),
-    ("DBusEP",     1),
-    ("CacheEP",    1),
-    ("MCheckP",    1),
-    ("IBusEP",     1),
-    ("CountDM",    1),
-    ("Halt",       1),
-    ("Doze",       1),
-    ("LSNM",       1),
-    ("NoDCR",      1),
-    ("DM",         1),
-    ("DBD",        1),
-])
+class CP0_Debug(bitstruct, width=32):
+    DSS: int      = 1
+    DBp: int      = 1
+    DDBL: int     = 1
+    DDBS: int     = 1
+    DIB: int      = 1
+    DINT: int     = 1
+    DIBImpr: int  = 1
+    OffLine: int  = 1
+    SSt: int      = 1
+    NoSSt: int    = 1
+    DExcCode: int = 5
+    EJTAGver: int = 3
+    DDBLImpr: int = 1
+    DDBSImpr: int = 1
+    IEXI: int     = 1
+    DBusEP: int   = 1
+    CacheEP: int  = 1
+    MCheckP: int  = 1
+    IBusEP: int   = 1
+    CountDM: int  = 1
+    Halt: int     = 1
+    Doze: int     = 1
+    LSNM: int     = 1
+    NoDCR: int    = 1
+    DM: int       = 1
+    DBD: int      = 1
 
 # CP0 Debug2 layout
 
-CP0_Debug2 = bitstruct("CP0_Debug2", 32, [
-    ("PaCo",       1),
-    ("Tup",        1),
-    ("DQ",         1),
-    ("Prm",        1),
-    (None,        28),
-])
+class CP0_Debug2(bitstruct, width=32):
+    PaCo: int = 1
+    Tup: int  = 1
+    DQ: int   = 1
+    Prm: int  = 1
+    _0: int   = 28

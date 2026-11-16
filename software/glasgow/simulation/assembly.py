@@ -1,15 +1,16 @@
-from typing import Any
+from typing import Any, override
 from collections.abc import Buffer, Generator
 from contextlib import contextmanager
+import dataclasses
 
 from amaranth import *
-from amaranth.lib import io
+from amaranth.lib import io, wiring
 from amaranth.sim import Simulator
 
 from glasgow.support import logging
 from glasgow.abstract import (AbstractAssembly, AbstractInOutPipe, AbstractInPipe, AbstractOutPipe,
                               AbstractRORegister, AbstractRWRegister,
-                              GlasgowPin, GlasgowPort, GlasgowVio, PullState)
+                              DRAMOptions, GlasgowPin, GlasgowPort, GlasgowVio, PullState)
 from glasgow.gateware import octoram
 
 
@@ -93,6 +94,7 @@ class SimulationAssembly(AbstractAssembly):
     def __init__(self):
         self._logger   = logger
         self._pins     = {} # {name: io.PortLike}
+        self._leds     = {} # {name: Signal}
         self._modules  = [] # (elaboratable, name)
         self._benches  = [] # (constructor, background)
         self._jumpers  = [] # (pin_name...)
@@ -120,6 +122,9 @@ class SimulationAssembly(AbstractAssembly):
 
     def get_pin(self, pin_name: str) -> io.SimulationPort:
         return self._pins[pin_name]
+
+    def get_led(self, led_name: str) -> Signal:
+        return self._leds[led_name]
 
     def connect_pins(self, *pin_names: str):
         self._jumpers.append(pin_names)
@@ -181,12 +186,27 @@ class SimulationAssembly(AbstractAssembly):
 
         return SimulationPipe(self, i_buffer=i_buffer, o_buffer=o_buffer)
 
-    def add_dynamic_memory(self, size=64*0x100000) -> tuple[octoram.Signature, range]:
-        controller = octoram.SimulationController(size)
-        self._modules.append((controller, f"mem_ctrl{self._memories}"))
-        self._benches.append((controller.testbench, True)) # background
+    @override
+    def add_dynamic_memory(self, options=DRAMOptions()) -> tuple[octoram.Signature, range]:
+        if options.size is None:
+            options = dataclasses.replace(options, size=64 * 0x100000)
+        m = Module()
+        m.submodules.ctrl = ctrl = DomainRenamer("dram")(
+            octoram.SimulationController(options.size or 64 * 0x100000))
+        m.submodules.queue = queue = octoram.InterfaceQueue(
+            i_domain="sync",
+            o_domain="dram",
+            w_buffer_depth=options.w_buffer_size,
+            r_buffer_depth=options.r_buffer_size,
+        )
+        wiring.connect(m, queue.o, ctrl.bus)
+        self._modules.append((m, f"mem{self._memories}"))
+        self._benches.append((ctrl.testbench, True)) # background
         self._memories += 1
-        return controller.bus, range(size)
+        return queue.i, range(options.size)
+
+    def add_indicator(self, signal: Signal, *, name: str):
+        self._leds[name] = signal
 
     def add_ro_register(self, signal) -> AbstractRORegister:
         return SimulationRORegister(self, signal)
@@ -194,7 +214,7 @@ class SimulationAssembly(AbstractAssembly):
     def add_rw_register(self, signal) -> AbstractRWRegister:
         return SimulationRWRegister(self, signal)
 
-    def add_submodule(self, elaboratable, *, name: str | None = None) -> Elaboratable:
+    def add_submodule[E: Elaboratable](self, elaboratable: E, *, name: str | None = None) -> E:
         self._modules.append((elaboratable, name))
         return elaboratable
 
@@ -242,7 +262,12 @@ class SimulationAssembly(AbstractAssembly):
             m.submodules[name] = elaboratable
 
         sim = Simulator(m)
-        sim.add_clock(self.sys_clk_period)
+        sim.add_clock(self.sys_clk_period, domain="sync")
+        if self._memories:
+            # Maintain approximately the same frequency ratio between the `sync` and `dram` domains
+            # as on real hardware, without requiring `sync` to run as fast (which causes issues for
+            # applets that involve waiting for a delay).
+            sim.add_clock(self.sys_clk_period / 2.333, domain="dram")
 
         async def wrap_fn(ctx):
             self.__context = ctx

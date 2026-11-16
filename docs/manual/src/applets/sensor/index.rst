@@ -11,6 +11,9 @@ Environment sensing
     bmx280
     hcsr04
     hx711
-    qmc5883p
+    ina260
+    max31855
+    pmsx003
     scd30
     sen5x
+    qmc5883p

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Glasgow Interface Explorer \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 07:37+0000\n"
+"POT-Creation-Date: 2026-10-30 16:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cn\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.17.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../src/applets/measure/prn_noise.rst:2
 msgid "``generate-prn-noise``"
@@ -55,6 +55,14 @@ msgid "Example:"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "glasgow run generate-prn-noise --voltage B=3.3 --out B0 start"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run generate-prn-noise [-h] [-V SPEC] [--out PIN] OPERATION ..."
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "show this help message and exit"
 msgstr ""
 
@@ -71,7 +79,15 @@ msgid "glasgow run generate-prn-noise start"
 msgstr ""
 
 #: ../../<autoprogram>:1
+msgid "usage: glasgow run generate-prn-noise start [-h]"
+msgstr ""
+
+#: ../../<autoprogram>:1
 msgid "glasgow run generate-prn-noise stop"
+msgstr ""
+
+#: ../../<autoprogram>:1
+msgid "usage: glasgow run generate-prn-noise stop [-h]"
 msgstr ""
 
 #: ../../src/applets/measure/prn_noise.rst:14

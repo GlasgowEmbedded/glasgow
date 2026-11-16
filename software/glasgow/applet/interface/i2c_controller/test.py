@@ -3,6 +3,7 @@ from amaranth.lib import io
 
 from glasgow.gateware.ports import PortGroup
 from glasgow.gateware.i2c import I2CTarget
+from glasgow.arch.i2c import ProbeStep
 from glasgow.simulation.assembly import SimulationAssembly
 from glasgow.applet import GlasgowAppletV2TestCase, synthesis_test, applet_v2_simulation_test
 from . import I2CNotAcknowledged, I2CControllerApplet
@@ -161,3 +162,19 @@ class I2CControllerAppletTestCase(GlasgowAppletV2TestCase, applet=I2CControllerA
             "S", "W", 0xaa, "P",
             "S", "W", 0xcc, "P"
         ])
+
+    @applet_v2_simulation_test(prepare=prepare_target, args=simulation_args)
+    async def test_probe(self, applet: I2CControllerApplet, ctx):
+        sequence = ProbeStep.parse("S AW 0xD0 Sr AR 0x60 P")
+
+        ctx.set(self.tgt.address, 0b1110110)
+        self.i2c_reads = [0x60]
+        self.i2c_acks = [1]
+        self.assertTrue(await applet.i2c_iface.probe(0b1110110, sequence))
+        self.assertEqual(self.i2c_events, ["S", "W", 0xD0, "Sr", "S", "R", "P"])
+
+        self.i2c_events.clear()
+        self.i2c_reads = [0x61]
+        self.i2c_acks = [1]
+        self.assertFalse(await applet.i2c_iface.probe(0b1110110, sequence))
+        self.assertEqual(self.i2c_events, ["S", "W", 0xD0, "Sr", "S", "R", "P"])

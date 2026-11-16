@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABCMeta, abstractmethod
-from typing import Self, Any, Literal
+from typing import Self, Any, Literal, overload
 from contextlib import contextmanager
 from collections.abc import Buffer, Generator, Mapping
 from dataclasses import dataclass
@@ -18,8 +18,8 @@ from glasgow.gateware import octoram
 
 __all__ = [
     "ClockingError",
-    "PullState", "GlasgowPort", "GlasgowVio", "GlasgowPin",
-    "AbstractRORegister", "AbstractRWRegister", "ClockDivisor",
+    "PullState", "GlasgowPort", "GlasgowVio", "GlasgowPin", "GlasgowAnalog",
+    "AbstractRORegister", "AbstractRWRegister", "ClockDivisor", "DRAMOptions",
     "AbstractInPipe", "AbstractOutPipe", "AbstractInOutPipe",
     "AbstractAssembly"
 ]
@@ -43,6 +43,12 @@ class PullState(enum.Enum):
             case self.High:  return self.Low
             case self.Low:   return self.High
 
+    def __xor__(self, invert: bool) -> PullState:
+        return ~self if invert else self
+
+    def __rxor__(self, invert: bool) -> PullState:
+        return ~self if invert else self
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}.{self.name}"
 
@@ -55,7 +61,18 @@ class GlasgowPort(enum.Enum):
     B = "B"
     C = "C"
     D = "D"
+    SYN = "SYN"
+    LED = "LED"
     ALL = "*"
+
+    @property
+    def has_supply(self) -> bool:
+        """Returns :py:`True` if the port has power supply and sensing, :py:`False` otherwise."""
+        match self:
+            case self.A | self.B | self.C | self.D | self.ALL:
+                return True
+            case _:
+                return False
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}.{self.name}"
@@ -72,6 +89,8 @@ class GlasgowVio:
     def __init__(self, value: float | None = None, *, sense: GlasgowPort | str | None = None):
         if (value is None and sense is None) or (value is not None and sense is not None):
             raise ValueError("exactly one of voltage value or a port to be sensed may be present")
+        if sense is not None and not GlasgowPort(sense).has_supply:
+            raise ValueError(f"port {sense} is not capable of sensing voltage")
         object.__setattr__(self, "value", float(value) if value is not None else None)
         object.__setattr__(self, "sense", GlasgowPort(sense) if sense is not None else None)
 
@@ -118,12 +137,12 @@ class GlasgowPin:
     def parse(cls, value: str) -> tuple[GlasgowPin]:
         result = []
         for clause in value.split(","):
-            if clause == "-":
+            if clause.upper() in ("", "-", "NC"):
                 pass
-            elif m := re.match(r"^([A-Z])([0-9]+)(#)?$", clause):
+            elif m := re.match(r"^([A-Z]+)([0-9]+)(#)?$", clause):
                 port, number, invert = GlasgowPort(m.group(1)), int(m.group(2)), bool(m.group(3))
                 result.append(cls(port=port, number=number, invert=invert))
-            elif m := re.match(r"^([A-Z])([0-9]+):([0-9]+)(#)?$", clause):
+            elif m := re.match(r"^([A-Z]+)([0-9]+):([0-9]+)(#)?$", clause):
                 port, pin_first, pin_last, invert = \
                     GlasgowPort(m.group(1)), int(m.group(2)), int(m.group(3)), bool(m.group(4))
                 if pin_last >= pin_first:
@@ -133,7 +152,8 @@ class GlasgowPin:
                     for number in range(pin_first, pin_last - 1, -1):
                         result.append(cls(port=port, number=number, invert=invert))
             else:
-                raise ValueError(f"{clause!r} is not a valid pin")
+                raise ValueError(f"{clause!r} is not a valid pin "
+                     "(try 'A3', 'A5,B1', 'B4:7', or specify 'NC' to leave unconnected)")
         return tuple(result)
 
     @property
@@ -150,6 +170,73 @@ class GlasgowPin:
 
     def __str__(self):
         return f"{self.port}{self.number}{'#' if self.invert else ''}"
+
+
+@dataclass(frozen=True)
+class GlasgowAnalog:
+    """Analog measurement channel.
+
+    An analog measurement channel refers to a pair of nets: either two analog pins in the same
+    port, or an analog pin and signal ground.
+    """
+
+    class Nodes(enum.Enum):
+        SingleEnded_Pos = "P"
+        """Measures :math:`V_{AxP} - V_{COM}`."""
+        SingleEnded_Neg = "N"
+        """Measures :math:`V_{COM} - V_{AxN}`."""
+        Differential    = "PN"
+        """Measures :math:`V_{AxP} - V_{AxN}`."""
+
+    port:   GlasgowPort
+    nodes:  Nodes = Nodes.Differential
+    invert: bool = False
+
+    def __init__(self, port: GlasgowPort, nodes: Nodes, *, invert=False):
+        assert GlasgowPort(port) != GlasgowPort.ALL
+        object.__setattr__(self, "port", GlasgowPort(port))
+        object.__setattr__(self, "nodes", self.Nodes(nodes))
+        object.__setattr__(self, "invert", bool(invert))
+
+    @overload
+    @classmethod
+    def parse(cls, value: str, *, optional: Literal[True]) -> GlasgowAnalog | None:
+        pass
+
+    @classmethod
+    def parse(cls, value: str, *, optional: Literal[False] = False) -> GlasgowAnalog:
+        if optional and value.upper() in ("", "-", "NC"):
+            return None
+        elif m := re.match(r"^([A-Z])([PN])(#)?$", value):
+            port, nodes, invert = GlasgowPort(m.group(1)), cls.Nodes(m.group(2)), bool(m.group(3))
+            return cls(port=port, nodes=nodes, invert=invert)
+        elif m := re.match(r"^([A-Z])PN?$", value):
+            port = GlasgowPort(m.group(1))
+            return cls(port=port, nodes=cls.Nodes.Differential, invert=False)
+        elif m := re.match(r"^([A-Z])NP?$", value):
+            port = GlasgowPort(m.group(1))
+            return cls(port=port, nodes=cls.Nodes.Differential, invert=True)
+        else:
+            if optional:
+                raise ValueError(f"{value!r} is not a analog channel "
+                        "(try 'AP', 'AN#', 'BPN', 'BNP', or specify 'NC' to leave unconnected)")
+            else:
+                raise ValueError(f"{value!r} is not a analog channel "
+                        "(try 'AP', 'AN#', 'BPN', 'BNP')")
+
+    def __invert__(self) -> Self:
+        return type(self)(self.port, self.nodes, invert=not self.invert)
+
+    def __str__(self):
+        match self.nodes, self.invert:
+            case (self.Nodes.SingleEnded_Pos | self.Nodes.SingleEnded_Neg), _:
+                return f"{self.port}{self.nodes}{'#' if self.invert else ''}"
+            case self.Nodes.Differential, False:
+                return f"{self.port}PN"
+            case self.Nodes.Differential, True:
+                return f"{self.port}NP"
+            case _:
+                assert False
 
 
 class AbstractRORegister(metaclass=ABCMeta):
@@ -218,6 +305,14 @@ class ClockDivisor:
         self._logger.log(level, "setting clock %r frequency to %.3f kHz (requested %.3f kHz)",
             self._name, actual / 1e3, requested / 1e3)
         await self._register.set(divisor)
+
+
+@dataclass(frozen=True, kw_only=True)
+class DRAMOptions:
+    size: int | None = None
+
+    r_buffer_size: int | None = None
+    w_buffer_size: int | None = None
 
 
 class AbstractInPipe(metaclass=ABCMeta):
@@ -289,7 +384,7 @@ class AbstractAssembly(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def add_submodule(self, elaboratable, *, name: str | None = None) -> Elaboratable:
+    def add_submodule[E: Elaboratable](self, elaboratable: E, *, name: str | None = None) -> E:
         pass
 
     @abstractmethod
@@ -331,8 +426,7 @@ class AbstractAssembly(metaclass=ABCMeta):
         pass
 
     def add_clock_divisor(self, signal, ref_period: float, *, tolerance: float | None = None,
-                          round_mode: Literal["floor", "nearest"] = "floor",
-                          name: str) -> ClockDivisor:
+            round_mode: Literal["floor", "nearest"] = "floor", name: str) -> ClockDivisor:
         if not isinstance(signal.shape(), Shape):
             raise TypeError(f"signal must have a plain shape, not {signal.shape()!r}")
         if tolerance is None:
@@ -344,23 +438,26 @@ class AbstractAssembly(metaclass=ABCMeta):
 
     @abstractmethod
     def add_in_pipe(self, in_stream, *, in_flush=C(0),
-                    fifo_depth=None, buffer_size=None) -> AbstractInPipe:
+            fifo_depth=None, buffer_size=None) -> AbstractInPipe:
         pass
 
     @abstractmethod
     def add_out_pipe(self, out_stream, *,
-                     fifo_depth=None, buffer_size=None) -> AbstractOutPipe:
+            fifo_depth=None, buffer_size=None) -> AbstractOutPipe:
         pass
 
     @abstractmethod
     def add_inout_pipe(self, in_stream, out_stream, *, in_flush=C(0),
-                       in_fifo_depth=None, in_buffer_size=None,
-                       out_fifo_depth=None, out_buffer_size=None) -> AbstractInOutPipe:
+            in_fifo_depth=None, in_buffer_size=None,
+            out_fifo_depth=None, out_buffer_size=None) -> AbstractInOutPipe:
         pass
 
-    # Many of these interfaces are subject to change. This one is *particularly* subject to change.
     @abstractmethod
-    def add_dynamic_memory(self, size: None | int = None) -> tuple[octoram.Signature, range]:
+    def add_dynamic_memory(self, options=DRAMOptions()) -> tuple[octoram.Signature, range]:
+        pass
+
+    @abstractmethod
+    def add_indicator(self, signal: Signal, *, name: str):
         pass
 
     @abstractmethod

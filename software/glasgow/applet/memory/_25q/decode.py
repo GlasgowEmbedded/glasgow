@@ -213,7 +213,7 @@ class Memory25QDecoder:
 
     def _log(self, message, *args, level=logging.DEBUG):
         if self._logger:
-            self._logger.log(level, f"25x decode: [{self._index}] " + message, *args)
+            self._logger.log(level, f"25q decode: [{self._index}] " + message, *args)
 
     @property
     def jedec_id(self) -> tuple[int, int] | None:

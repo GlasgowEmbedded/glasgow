@@ -30,6 +30,7 @@ enum mgmt_result port_mgmt_get_isense();
 enum mgmt_result port_mgmt_set_pulls();
 enum mgmt_result port_mgmt_get_pulls();
 enum mgmt_result port_mgmt_get_state();
+enum mgmt_result nafe_mgmt_single();
 enum mgmt_result mgmt_get_alerts();
 enum mgmt_result mgmt_clr_alerts();
 enum mgmt_result leds_mgmt_test();
@@ -161,6 +162,12 @@ static const mgmt_command commands[] = {
     .handler = nvmem_mgmt_read_eeprom,
   },
   {
+    .type    = REQ_NAFE_SINGLE,
+    .req_len = sizeof(mgmt_req.nafe_single),
+    .rsp_len = sizeof(mgmt_req.nafe_single_data),
+    .handler = nafe_mgmt_single,
+  },
+  {
     .type    = REQ_GET_ALERTS,
     .rsp_len = sizeof(mgmt_rsp.alert),
     .handler = mgmt_get_alerts,
@@ -204,6 +211,9 @@ void mgmt_init() {
   EP1OUTBC  = 0;             // arm EP1OUT
   SYNCDELAY;
   EP1INCS   = _BUSY;         // force disarm EP1IN
+
+  // Indicate that the next pending alert may contain outdated status information.
+  alert.realtime = false;
 }
 
 void mgmt_poll()
@@ -221,6 +231,10 @@ void mgmt_poll()
     mgmt_rsp_len = sizeof(mgmt_rsp.alert);
     goto enqueue;
   }
+
+  // Next unsolicited alert packet will be up-to-date, unless the host stops polling EP1IN in
+  // between now and the next alert.
+  alert.realtime = true;
 
   if (EP01STAT & _EP1OUTBSY)
     return; // EP1OUT empty

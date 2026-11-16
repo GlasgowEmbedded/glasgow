@@ -28,6 +28,25 @@ revD
 
 Revision D is the latest revision, currently in `pre-launch stage on CrowdSupply <https://www.crowdsupply.com/fully-automated/glasgow-interface-explorer-revd>`_. It provides 32 I/O pins with a data rate up to approx. 100 Mbps/pin (50 MHz) [#]_, independent direction control and independently programmable pull-up/pull-down resistors. The I/O pins are grouped into four I/O ports, each of which can use any I/O standard from 1.2 V to 5 V, sense and monitor I/O voltage of the device under test, provide up to 300 mA of power, and measure analog voltages on two dedicated pins (single-ended or differential; 24 bit @ 500 kSPS across all enabled channels). The board uses USB 2 for power, configuration, and communication, achieving up to 336 Mbps (42 MB/s) of sustained combined throughput. Except for USB connectivity, every aspect of the device has been significantly improved compared to revC.
 
+.. tab:: Front
+
+    .. image:: ./_images/revD1-3drender-front.png
+        :alt: Overview of the Glasgow PCB (front)
+
+.. tab:: Back
+
+    .. image:: ./_images/revD1-3drender-back.png
+        :alt: Overview of the Glasgow PCB (back)
+
+Design and fabrication files are located in the Git repository:
+
+- `revD0 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD0>`_,
+  `revD0 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revD0/output/schematics.pdf>`_,
+  `revD0 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD0/output>`_.
+- `revD1 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD1>`_,
+  `revD1 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revD1/output/schematics.pdf>`_,
+  `revD1 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revD1/output>`_.
+
 .. [#] Data rate achievable in practice depends on many factors and will vary greatly with specific interface and applet design. 12 Mbps/pin (6 MHz) can be achieved with minimal development effort; reaching higher data rates requires careful HDL coding and a good understanding of timing analysis.
 
 
@@ -44,12 +63,12 @@ Revision C was first mass produced by `1bitSquared`_ at stepping ``revC3``. It p
 
 .. tab:: Front
 
-    .. image:: ./_images/revC-3drender-front.png
+    .. image:: ./_images/revC3-3drender-front.png
         :alt: Overview of the Glasgow PCB (front)
 
 .. tab:: Back
 
-    .. image:: ./_images/revC-3drender-back.png
+    .. image:: ./_images/revC3-3drender-back.png
         :alt: Overview of the Glasgow PCB (back)
 
 .. tab:: Legend
@@ -61,18 +80,18 @@ Revision C was first mass produced by `1bitSquared`_ at stepping ``revC3``. It p
 
 Design and fabrication files are located in the Git repository:
 
-- `revC0 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/revC0/hardware/boards/glasgow>`_,
-  `revC0 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC0/schematics.pdf>`_,
-  `revC0 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC0>`_.
-- `revC1 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/revC1/hardware/boards/glasgow>`_,
-  `revC1 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC1/schematics.pdf>`_,
-  `revC1 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC1>`_.
-- `revC2 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/revC2/hardware/boards/glasgow>`_,
-  `revC2 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC2/schematics.pdf>`_,
-  `revC2 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC2>`_.
-- `revC3 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/revC3/hardware/boards/glasgow>`_,
-  `revC3 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC3/schematics.pdf>`_,
-  `revC3 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC3>`_.
+- `revC0 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC0>`_,
+  `revC0 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC0/output/schematics.pdf>`_,
+  `revC0 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC0/output>`_.
+- `revC1 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC1>`_,
+  `revC1 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC1/output/schematics.pdf>`_,
+  `revC1 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC1/output>`_.
+- `revC2 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC2>`_,
+  `revC2 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC2/output/schematics.pdf>`_,
+  `revC2 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC2/output>`_.
+- `revC3 (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC3>`_,
+  `revC3 (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revC3/output/schematics.pdf>`_,
+  `revC3 (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revC3/output>`_.
 
 .. [#] Data rate achievable in practice depends on many factors and will vary greatly with specific interface and applet design. 12 Mbps/pin (6 MHz) can be achieved with minimal development effort; reaching higher data rates requires careful HDL coding and a good understanding of timing analysis.
 
@@ -87,9 +106,9 @@ Revisions A and B have not been produced in significant numbers, have major desi
 
 Design and fabrication files are located in the Git repository:
 
-- `revA (design) <https://github.com/GlasgowEmbedded/glasgow/tree/revA/hardware/boards/glasgow>`_,
-  `revA (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revA/schematics.pdf>`_,
-  `revA (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revA>`_.
-- `revB (design) <https://github.com/GlasgowEmbedded/glasgow/tree/revB/hardware/boards/glasgow>`_,
-  `revB (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revB/schematics.pdf>`_,
-  `revB (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revB>`_.
+- `revA (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revA>`_,
+  `revA (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revA/output/schematics.pdf>`_,
+  `revA (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revA/output>`_.
+- `revB (design) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revB>`_,
+  `revB (schematics) <https://github.com/GlasgowEmbedded/glasgow/blob/main/hardware/boards/glasgow/revB/output/schematics.pdf>`_,
+  `revB (fabrication) <https://github.com/GlasgowEmbedded/glasgow/tree/main/hardware/boards/glasgow/revB/output>`_.

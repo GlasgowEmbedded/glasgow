@@ -2,8 +2,9 @@
 # Accession: G00130
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream, io, cdc
+from amaranth.lib import enum, data, wiring, stream, io
 from amaranth.lib.wiring import In, Out, connect, flipped
+from amaranth.sim import SimulatorContext
 
 from .ports import PortGroup
 from .stream import Queue, AsyncQueue, StreamBuffer, stream_get, stream_put
@@ -12,7 +13,8 @@ from .iostream import IOStreamer, HalfRateIOStreamer
 
 __all__ = [
     "Operation", "Enframer", "Deframer", "Streamer",
-    "Command", "Signature", "Controller", "SimulationController", "AsyncControllerECP5",
+    "Command", "Signature", "MemoryType", "Controller", "SimulationController",
+    "InterfaceQueue",
 ]
 
 
@@ -177,7 +179,7 @@ class Streamer(wiring.Component):
             })
         connect(m, io_streamer=io_streamer.i, enframer=enframer.frames)
 
-        m.submodules.o_buf = o_buf = StreamBuffer(io_streamer.o.p.shape())
+        m.submodules.o_buf = o_buf = StreamBuffer.shaped_like(io_streamer.o)
         connect(m, buffer=o_buf.i, io_streamer=io_streamer.o)
 
         m.submodules.deframer = deframer = Deframer(ports=self._ports)
@@ -188,8 +190,12 @@ class Streamer(wiring.Component):
         return m
 
 
+class MemoryType(enum.Enum, shape=2):
+    OctalSPI = 0
+    HyperRAM = 1
+
+
 class Command(enum.Enum, shape=3):
-    # All Read/Write command codes are swapped between -OBx and and -OCx series!
     GlobalReset  = 0
     ReadMemWrap  = 1
     WriteMemWrap = 2
@@ -200,7 +206,7 @@ class Command(enum.Enum, shape=3):
 
 
 class Signature(wiring.Signature):
-    """Native OPI memory bus."""
+    """Native Octal DDR PSRAM memory bus signature."""
 
     def __init__(self):
         super().__init__({
@@ -221,19 +227,68 @@ class Signature(wiring.Signature):
     @property
     def max_burst_size(self):
         """Largest burst supported by the interface; equal to DRAM row size."""
-        return 2048
+        # AP Memory APSxxx08N-OBR
+        # return 2048
+        # Winbond W957D8MFYA
+        return 1024
 
 
 class Controller(wiring.Component):
-    """OPI PSRAM controller.
+    """Octal DDR PSRAM controller.
 
-    Supports only AP Memory APSxxx08N-OBR devices.
+    The following devices have been tested with this controller:
+
+    * AP Memory APSxxx08N-OBR devices (OctalSPI)
+    * Winbond W957D8MFYA (HyperRAM)
+
+    ECP5 Platform Support
+    ---------------------
+
+    On this platform, the controller requires a clock domain named ``edge`` connected to a PLL
+    ``CLKOP`` or ``CLKOS`` output, and a clock domain named ``sync`` produced using a ``CLKDIVF``
+    instance as follows:
+
+    .. code::
+
+        m.domains.sync = ClockDomain()
+        m.submodules.sync_rst = cdc.ResetSynchronizer(ResetSignal("edge"), domain="sync")
+        m.submodules.sync_div = Instance("CLKDIVF",
+            i_RST=ResetSignal("edge"),
+            i_CLKI=ClockSignal("edge"),
+            o_CDIVX=ClockSignal("sync"),
+        )
+
+    There are only four ``CLKDIVF`` primitives per device. When using multiple memory controllers,
+    these primitives should be shared if at all possible.
+
+    The memory chip will be clocked at one half of the ``edge`` domain frequency, and transfer
+    one ``w_data`` or ``r_data`` payload per clock.
     """
 
+    # ECP5 has a peculiar clocking arrangement where there are two types of clock interconnect,
+    # "primary clocks" (PCLK) and "edge clocks" (ECLK). Ignoring fabric inputs/outputs (which
+    # generally have high delay and jitter):
+    #  - Only edge clocks can be used to drive IO gearboxes like ODDRX2.
+    #  - Primary clocks may be generated from edge clocks via CLKDIVF, and no other way.
+    #  - Edge clocks can be driven by dedicated clock input pins, injected by PLLs,
+    #    bridged via ECLKBRIDGE, or produced by DLLDEL primitives.
+    #  - PLLs can inject edge clocks (via CLKOP/CLKOS) or primary clocks (via any output), this
+    #    can only generate edge clocks on the same side of the device (east/west).
+    #  - ECLKBRIDGECS can be used to bridge an edge clock from one side's PLL to another's IOs.
+    #
+    # Assuming we don't want to burn an entire PLL on the memory controller, by far the best
+    # implementation strategy is to bring in an edge clock (only), which is generated outside
+    # of the controller. The controller will then generate a logic clock with the appropriate
+    # phase via CLKDIVF. Regardless of its frequency, commands and data are transferred via
+    # async FIFOs; the memory clock frequency can now be changed by adjusting the memory
+    # controller edge clock frequency, which is convenient.
+
     bus: In(Signature())
+
+    mem_type: In(MemoryType)
     latency: In(range(32))
 
-    def __init__(self, ports, *, offset=0, half_rate=True):
+    def __init__(self, ports, *, offset: int = 0, half_rate: bool):
         self._ports     = ports
         self._offset    = offset
         self._half_rate = half_rate
@@ -248,7 +303,10 @@ class Controller(wiring.Component):
         m.submodules.streamer = ram = Streamer(self._ports,
             offset=self._offset, half_rate=self._half_rate)
 
-        # Command/address FSM and data read FSM valid to synchronize for variable latency to work
+        m.submodules.ram_i_buffer = ram_i_buffer = StreamBuffer.shaped_like(ram.i_stream)
+        wiring.connect(m, ram_i_buffer.o, ram.i_stream)
+
+        # Command/address FSM and data read FSM have to synchronize for variable latency to work
         # because the former will continue issuing reads until stopped, and the latter will cause
         # the former to stop but cannot do anything about "in-flight" reads.
         # Note: the logic below assumes zero-length reads/writes are impossible (which they are
@@ -263,20 +321,18 @@ class Controller(wiring.Component):
                     valid: Value = C(1),
                     ready: Value | None = None):
             m.d.comb += [
-                ram.i_stream.p.oper.eq(oper),
-                ram.i_stream.p.chip.eq(1),
-                ram.i_stream.p.data[0].eq(data[0]),
-                ram.i_stream.p.mask[0].eq(mask[0]),
-                ram.i_stream.p.data[1].eq(data[1]),
-                ram.i_stream.p.mask[1].eq(mask[1]),
-                ram.i_stream.p.epoch.eq(wr_epoch),
-                ram.i_stream.valid.eq(valid),
+                ram_i_buffer.i.p.oper.eq(oper),
+                ram_i_buffer.i.p.chip.eq(1),
+                ram_i_buffer.i.p.data[0].eq(data[0]),
+                ram_i_buffer.i.p.mask[0].eq(mask[0]),
+                ram_i_buffer.i.p.data[1].eq(data[1]),
+                ram_i_buffer.i.p.mask[1].eq(mask[1]),
+                ram_i_buffer.i.p.epoch.eq(wr_epoch),
+                ram_i_buffer.i.valid.eq(valid),
             ]
             if ready is not None:
-                m.d.comb += ready.eq(ram.i_stream.ready)
+                m.d.comb += ready.eq(ram_i_buffer.i.ready)
 
-        # on APS*-OBx and APS*-OCx devices, the command encoding differs by flipping high bit;
-        # we implement -OBx semantics only
         command = Signal(8)
         with m.Switch(self.bus.commands.p.type):
             with m.Case(Command.GlobalReset):   m.d.comb += command.eq(0xFF)
@@ -287,43 +343,66 @@ class Controller(wiring.Component):
             with m.Case(Command.ReadReg):       m.d.comb += command.eq(0x40)
             with m.Case(Command.WriteReg):      m.d.comb += command.eq(0xC0)
 
-        address = Signal(32)
-        # on APS*-OBx devices, RA and CA have no gaps, and on APS*-OCx devices there is a gap
-        # within the column address; we implement -OBx semantics only
-        m.d.comb += address.eq(self.bus.commands.p.addr)
+        address = self.bus.commands.p.addr
+
+        cmd_addr = Signal(48)
+        with m.Switch(self.mem_type):
+            with m.Case(MemoryType.OctalSPI):
+                # on APS*-OBx devices, the 1st negedge must have the same data as the posedge
+                m.d.comb += cmd_addr[40:48].eq(command)
+                m.d.comb += cmd_addr[32:40].eq(command)
+                # on APS*-OBx devices, RA and CA have no gaps
+                m.d.comb += cmd_addr[ 0:32].eq(address)
+
+            with m.Case(MemoryType.HyperRAM):
+                # on APS*-OBx and HyperRAM devices, the command encoding differs by flipping
+                # the high bit, and the address encroaches on the 1st (command) byte; note that
+                # there is no `GlobalReset` command
+                m.d.comb += cmd_addr[40:48].eq(command ^ 0x80)
+                # on HyperRAM devices, the address encoding contains a gap within the CA part;
+                # the code below works with W957D8MFYA
+                m.d.comb += cmd_addr[16:45].eq(address[ 4:32])
+                m.d.comb += cmd_addr[ 0: 3].eq(address[ 1: 4])
+                # on APS*-OCx, yet another encoding is used :(
 
         count = Signal(range(max_burst_size + 1))
         m.d.comb += fifo.i.payload.eq(count)
 
         with m.FSM(name="wr_fsm"):
-            t_lat = Signal.like(self.latency)   # latency timer
-            t_rec = Signal(range(16))           # CE recovery timer
+            t_lat = Signal(len(self.latency) + 1) # latency timer
+            t_rec = Signal(range(16))             # CE recovery timer
 
-            with m.State("Command"):
+            with m.State("Command/Address[32:48]"):
                 m.d.sync += count.eq(
                     Mux(self.bus.commands.p.size == 0, max_burst_size, self.bus.commands.p.size))
                 m.d.sync += t_rec.eq(3)
-                perform(Operation.Write,
-                    # on APS*-OBx devices, the 1st negedge valids to be INST as well
-                    # on APS*-OCx devices, the 1st negedge is don't care
-                    data=(command, command),
-                    valid=self.bus.commands.valid,
-                )
-                with m.If(ram.i_stream.valid & ram.i_stream.ready):
-                    m.next = "Address 3/2"
+                with m.If(self.bus.commands.valid):
+                    with m.If((self.mem_type == MemoryType.HyperRAM) &
+                              (self.bus.commands.p.type == Command.GlobalReset)):
+                        m.next = "Deselect"
+                    with m.Else():
+                        perform(Operation.Write, data=(cmd_addr[40:48], cmd_addr[32:40]))
+                        with m.If(ram_i_buffer.i.valid & ram_i_buffer.i.ready):
+                            m.next = "Command/Address[16:32]"
 
-            with m.State("Address 3/2"):
+            with m.State("Command/Address[16:32]"):
                 # these bits are Don't Care for `Command.GlobalReset`
-                perform(Operation.Write, data=(address[24:32], address[16:24]))
-                with m.If(ram.i_stream.valid & ram.i_stream.ready):
-                    m.next = "Address 1/0"
+                perform(Operation.Write, data=(cmd_addr[24:32], cmd_addr[16:24]))
+                with m.If(ram_i_buffer.i.valid & ram_i_buffer.i.ready):
+                    m.next = "Command/Address[ 0:16]"
 
-            with m.State("Address 1/0"):
+            with m.State("Command/Address[ 0:16]"):
                 # these bits are Don't Care for `Command.GlobalReset`
-                perform(Operation.Write, data=(address[ 8:16], address[ 0: 8]))
-                with m.If(ram.i_stream.valid & ram.i_stream.ready):
-                    # Latency Code table:
-                    # - Memory Read:    LC to LC×2
+                perform(Operation.Write, data=(cmd_addr[ 8:16], cmd_addr[ 0: 8]))
+                with m.If(ram_i_buffer.i.valid & ram_i_buffer.i.ready):
+                    # Latency Code table (HyperRAM):
+                    # - Memory Read:    LC or LC×2 (exact) (variable latency mode)
+                    #                         LC×2 (exact) (fixed latency mode)
+                    # - Memory Write:   as above
+                    # - Register Read:  as above
+                    # - Register Write: 0
+                    # Latency Code table (APS*-OBx):
+                    # - Memory Read:    LC to LC×2 (range)
                     # - Memory Write:   LC
                     # - Register Read:  LC
                     # - Register Write: 0
@@ -339,7 +418,11 @@ class Controller(wiring.Component):
                         with m.Case(Command.ReadReg):
                             m.next = "Read Sync"
                         with m.Case(Command.WriteMemWrap, Command.WriteMemRow):
-                            m.d.sync += t_lat.eq(self.latency - 1)
+                            with m.Switch(self.mem_type):
+                                with m.Case(MemoryType.OctalSPI):
+                                    m.d.sync += t_lat.eq(self.latency - 1)
+                                with m.Case(MemoryType.HyperRAM):
+                                    m.d.sync += t_lat.eq((self.latency << 1) - 1)
                             m.next = "Write Latency"
                         with m.Case(Command.ReadMemWrap, Command.ReadMemRow):
                             m.next = "Read Sync"
@@ -348,12 +431,12 @@ class Controller(wiring.Component):
 
             with m.State("Reset Clock"):
                 perform(Operation.Idle)
-                with m.If(ram.i_stream.valid & ram.i_stream.ready):
+                with m.If(ram_i_buffer.i.valid & ram_i_buffer.i.ready):
                     m.next = "Deselect"
 
             with m.State("Write Latency"):
                 perform(Operation.Idle)
-                with m.If(ram.i_stream.valid & ram.i_stream.ready):
+                with m.If(ram_i_buffer.i.valid & ram_i_buffer.i.ready):
                     m.d.sync += t_lat.eq(t_lat - 1)
                     with m.If(t_lat - 1 == 0):
                         m.next = "Write Data"
@@ -365,7 +448,7 @@ class Controller(wiring.Component):
                     valid=self.bus.w_data.valid,
                     ready=self.bus.w_data.ready
                 )
-                with m.If(ram.i_stream.valid & ram.i_stream.ready):
+                with m.If(ram_i_buffer.i.valid & ram_i_buffer.i.ready):
                     m.d.sync += count.eq(count - 1)
                     with m.If(count - 1 == 0):
                         m.next = "Deselect"
@@ -377,19 +460,19 @@ class Controller(wiring.Component):
 
             with m.State("Read Data"):
                 perform(Operation.Read)
-                with m.If(ram.i_stream.valid & ram.i_stream.ready):
+                with m.If(ram_i_buffer.i.valid & ram_i_buffer.i.ready):
                     with m.If(wr_epoch != rd_epoch): # reader increments rd_epoch when done
                         m.d.sync += wr_epoch.eq(wr_epoch + 1)
                         m.next = "Deselect"
 
             with m.State("Deselect"):
-                m.d.comb += ram.i_stream.p.oper.eq(Operation.Idle)
-                m.d.comb += ram.i_stream.valid.eq(1)
-                with m.If(ram.i_stream.valid & ram.i_stream.ready):
+                m.d.comb += ram_i_buffer.i.p.oper.eq(Operation.Idle)
+                m.d.comb += ram_i_buffer.i.valid.eq(1)
+                with m.If(ram_i_buffer.i.valid & ram_i_buffer.i.ready):
                     m.d.sync += t_rec.eq(t_rec - 1)
                     with m.If(t_rec == 0):
                         m.d.comb += self.bus.commands.ready.eq(1)
-                        m.next = "Command"
+                        m.next = "Command/Address[32:48]"
 
             with m.State("Error"):
                 pass
@@ -428,30 +511,30 @@ class SimulationController(wiring.Component):
     def __init__(self, size):
         assert size % 2 == 0
 
-        self.memory = bytearray(size)
+        self.memory  = bytearray(size)
 
         super().__init__()
 
     def elaborate(self, platform):
         return Module()
 
-    async def testbench(self, ctx):
+    async def testbench(self, ctx: SimulatorContext):
         init_latency = 5
         ctx.set(self.latency, init_latency)
 
         while True:
-            command = await stream_get(ctx, self.bus.commands)
+            command = await stream_get(ctx, self.bus.commands, context=self)
             match command.type:
                 case Command.GlobalReset:
                     ctx.set(self.latency, init_latency)
 
                 case Command.WriteMemRow:
-                    await ctx.tick().repeat(2 + ctx.get(self.latency))
+                    await ctx.tick(context=self).repeat(2 + ctx.get(self.latency))
 
-                    assert command.addr % 2 == 0
+                    assert command.addr % 2 == 0, f"{command.addr:#x} % 2 != 0"
                     for offset in range(0, command.size << 1, 2):
                         pointer = command.addr + offset
-                        word = await stream_get(ctx, self.bus.w_data)
+                        word = await stream_get(ctx, self.bus.w_data, context=self)
                         if not word[0].mask:
                             self.memory[pointer + 0] = word[0].data
                         if not word[1].mask:
@@ -459,90 +542,70 @@ class SimulationController(wiring.Component):
 
                 case Command.ReadMemRow:
                     # Act as-if fixed latency mode was always used.
-                    await ctx.tick().repeat(2 + ctx.get(self.latency) * 2)
+                    await ctx.tick(context=self).repeat(2 + ctx.get(self.latency) * 2)
 
-                    assert command.addr % 2 == 0
+                    assert command.addr % 2 == 0, f"{command.addr:#x} % 2 != 0"
                     for offset in range(0, command.size << 1, 2):
                         pointer = command.addr + offset
                         await stream_put(ctx, self.bus.r_data, [
                             {"data": self.memory[pointer + 0]},
                             {"data": self.memory[pointer + 1]},
-                        ])
+                        ], context=self)
 
 
-class AsyncControllerECP5(wiring.Component):
-    """PSRAM controller specialized for the ECP5 platform.
+class InterfaceQueue(wiring.Component):
+    """Clock domain crossing queue for commands and data.
 
-    Requires a clock domain named ``edge`` connected to a PLL ``CLKOP`` or ``CLKOS`` output,
-    and a clock domain named ``logic`` produced using a ``CLKDIVF`` instance as follows:
+    The data queue is split into two parts: the CDC FIFO and the buffer FIFO. This is done in order
+    to improve timing; wide Gray counters quickly become the critical path, limiting the design
+    with as little depth as as 2^8.
 
-    .. code::
-
-        m.domains.logic = ClockDomain(local=True)
-        m.submodules.logic_rst = cdc.ResetSynchronizer(ResetSignal("edge"), domain="logic")
-        m.submodules.logic_div = Instance("CLKDIVF",
-            i_RST=ResetSignal("edge"),
-            i_CLKI=ClockSignal("edge"),
-            o_CDIVX=ClockSignal("logic"),
-        )
-
-    There are only four ``CLKDIVF`` primitives per device. When using multiple memory controllers,
-    these primitives should be shared if at all possible.
-
-    The memory chip will be clocked at one half of the ``edge`` domain frequency, and transfer
-    one ``w_data`` or ``r_data`` payload per clock.
-
-    The ``latency`` input should be strapped to a constant value.
+    The CDC FIFOs (three: commands, write data, and read data) always have depth 4, while
+    the buffer FIFO has configurable depth. The read and write buffer FIFOs are both placed in
+    ``o_domain``; assuming ``o_domain`` has a faster clock, this minimizes the time a DRAM
+    transaction has to hold CE# low.
     """
 
-    bus: In(Signature())
-    latency: In(range(32))
+    i: In(Signature())
+    o: Out(Signature())
 
-    def __init__(self, ports, *, offset=0):
-        self._ports  = ports
-        self._offset = offset
+    def __init__(self, *, i_domain: str, o_domain: str,
+            w_buffer_depth: int | None = None, r_buffer_depth: int | None = None):
+        self.i_domain       = i_domain
+        self.o_domain       = o_domain
+        self.w_buffer_depth = w_buffer_depth
+        self.r_buffer_depth = r_buffer_depth
 
         super().__init__()
 
     def elaborate(self, platform):
         m = Module()
 
-        # ECP5 has a peculiar clocking arrangement where there are two types of clock interconnect,
-        # "primary clocks" (PCLK) and "edge clocks" (ECLK). Ignoring fabric inputs/outputs (which
-        # generally have high delay and jitter):
-        #  - Only edge clocks can be used to drive IO gearboxes like ODDRX2.
-        #  - Primary clocks may be generated from edge clocks via CLKDIVF, and no other way.
-        #  - Edge clocks can be driven by dedicated clock input pins, injected by PLLs,
-        #    bridged via ECLKBRIDGE, or produced by DLLDEL primitives.
-        #  - PLLs can inject edge clocks (via CLKOP/CLKOS) or primary clocks (via any output), this
-        #    can only generate edge clocks on the same side of the device (east/west).
-        #  - ECLKBRIDGECS can be used to bridge an edge clock from one side's PLL to another's IOs.
-        #
-        # Assuming we don't want to burn an entire PLL on the memory controller, by far the best
-        # implementation strategy is to bring in an edge clock (only), which is generated outside
-        # of the controller. The controller will then generate a logic clock with the appropriate
-        # phase via CLKDIVF. Regardless of its frequency, commands and data are transferred via
-        # async FIFOs; the memory clock frequency can now be changed by adjusting the memory
-        # controller edge clock frequency, which is convenient.
+        m.submodules.cmd_cdc = cmd_cdc = AsyncQueue.shaped_like(self.i.commands,
+            depth=4, i_domain=self.i_domain, o_domain=self.o_domain)
+        wiring.connect(m, wiring.flipped(self.i.commands), cmd_cdc.i)
+        wiring.connect(m, cmd_cdc.o, wiring.flipped(self.o.commands))
 
-        m.submodules.inner = inner = DomainRenamer("logic")(Controller(self._ports,
-            offset=self._offset, half_rate=False))
-        m.submodules.lat_sync = cdc.FFSynchronizer(self.latency, inner.latency,
-            o_domain="logic")
+        m.submodules.wr_cdc = wr_cdc = AsyncQueue.shaped_like(self.i.w_data,
+            depth=4, i_domain=self.i_domain, o_domain=self.o_domain)
+        wiring.connect(m, wiring.flipped(self.i.w_data), wr_cdc.i)
+        if self.w_buffer_depth is not None:
+            m.submodules.wr_fifo = wr_fifo = DomainRenamer(self.o_domain)(
+                Queue.shaped_like(self.i.w_data, depth=self.w_buffer_depth))
+            wiring.connect(m, wr_cdc.o, wr_fifo.i)
+            wiring.connect(m, wr_fifo.o, wiring.flipped(self.o.w_data))
+        else:
+            wiring.connect(m, wr_cdc.o, wiring.flipped(self.o.w_data))
 
-        m.submodules.cmd_fifo = cmd_fifo = AsyncQueue(shape=self.bus.commands.p.shape(), depth=4,
-            i_domain="sync", o_domain="logic")
-        wiring.connect(m, cmd_fifo.i, wiring.flipped(self.bus.commands))
-        wiring.connect(m, inner.bus.commands, cmd_fifo.o)
-
-        m.submodules.wr_fifo = wr_fifo = AsyncQueue(shape=self.bus.w_data.p.shape(), depth=8,
-            i_domain="sync", o_domain="logic")
-        wiring.connect(m, wr_fifo.i, wiring.flipped(self.bus.w_data))
-        wiring.connect(m, inner.bus.w_data, wr_fifo.o)
-
-        m.submodules.rd_fifo = rd_fifo = AsyncQueue(shape=self.bus.r_data.p.shape(), depth=8,
-            i_domain="logic", o_domain="sync")
-        wiring.connect(m, inner.bus.r_data, rd_fifo.i)
-        wiring.connect(m, rd_fifo.o, wiring.flipped(self.bus.r_data))
+        m.submodules.rd_cdc = rd_cdc = AsyncQueue.shaped_like(self.i.r_data,
+            depth=4, i_domain=self.o_domain, o_domain=self.i_domain)
+        if self.r_buffer_depth is not None:
+            m.submodules.rd_fifo = rd_fifo = DomainRenamer(self.o_domain)(
+                Queue.shaped_like(self.i.r_data, depth=self.r_buffer_depth))
+            wiring.connect(m, wiring.flipped(self.o.r_data), rd_fifo.i)
+            wiring.connect(m, rd_fifo.o, rd_cdc.i)
+        else:
+            wiring.connect(m, wiring.flipped(self.o.r_data), rd_cdc.i)
+        wiring.connect(m, rd_cdc.o, wiring.flipped(self.i.r_data))
 
         return m

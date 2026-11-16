@@ -1,0 +1,3 @@
+{"self": "max31855_iface._spi_iface", "call": "select", "kind": "asynccontext.enter", "args": [0], "kwargs": {}, "result": null}
+{"self": "max31855_iface._spi_iface", "call": "read", "kind": "asyncmethod", "args": [4], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "01ac1ce0"}}
+{"self": "max31855_iface._spi_iface", "call": "select", "kind": "asynccontext.exit", "args": [null], "kwargs": {}, "result": null}

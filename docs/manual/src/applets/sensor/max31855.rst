@@ -1,0 +1,22 @@
+``sensor-max31855``
+===================
+
+CLI reference
+-------------
+
+.. _applet.sensor.max31855:
+
+.. autoprogram:: glasgow.applet.sensor.max31855:SensorMAX31855Applet._get_argparser_for_sphinx("sensor-max31855")
+    :prog: glasgow run sensor-max31855
+
+
+API reference
+-------------
+
+.. module:: glasgow.applet.sensor.max31855
+
+.. autoenum:: MAX31855Fault
+
+.. autoclass:: MAX31855Sample
+
+.. autoclass:: SensorMAX31855Interface

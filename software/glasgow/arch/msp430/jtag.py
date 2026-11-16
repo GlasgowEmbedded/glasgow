@@ -41,34 +41,32 @@ IR_JMB_EXCHANGE         = bits(0x61, 8)
 
 # CNTRL_SIG DR layout
 
-DR_CNTRL_SIG_124 = bitstruct("DR_CNTRL_SIG_124", 16, [
-    ("R_W",             1),
-    (None,              2),
-    ("HALT_JTAG",       1),
-    ("BYTE",            1),
-    (None,              2),
-    ("INSTR_LOAD",      1),
-    (None,              1),
-    ("TCE",             1),
-    ("TCE1",            1),
-    ("POR",             1),
-    ("RELEASE_LBYTE",   1),
-    ("TAGFUNCSAT",      1),
-    ("SWITCH",          1),
-    (None,              1),
-])
+class DR_CNTRL_SIG_124(bitstruct, width=16):
+    R_W: int           = 1
+    _0: int            = 2
+    HALT_JTAG: int     = 1
+    BYTE: int          = 1
+    _1: int            = 2
+    INSTR_LOAD: int    = 1
+    _2: int            = 1
+    TCE: int           = 1
+    TCE1: int          = 1
+    POR: int           = 1
+    RELEASE_LBYTE: int = 1
+    TAGFUNCSAT: int    = 1
+    SWITCH: int        = 1
+    _3: int            = 1
 
-DR_CNTRL_SIG_56 = bitstruct("DR_CNTRL_SIG_56", 16, [
-    ("R_W",             1),
-    (None,              2),
-    ("WAIT",            1),
-    ("BYTE",            1),
-    (None,              2),
-    ("INSTR_LOAD",      1),
-    ("CPUSUSP",         1),
-    ("TCE",             1),
-    ("TCE1",            1),
-    ("POR",             1),
-    ("RELEASE_LBYTE",   2),
-    ("INSTR_SEQ_NO",    2),
-])
+class DR_CNTRL_SIG_56(bitstruct, width=16):
+    R_W: int           = 1
+    _0: int            = 2
+    WAIT: int          = 1
+    BYTE: int          = 1
+    _1: int            = 2
+    INSTR_LOAD: int    = 1
+    CPUSUSP: int       = 1
+    TCE: int           = 1
+    TCE1: int          = 1
+    POR: int           = 1
+    RELEASE_LBYTE: int = 2
+    INSTR_SEQ_NO: int  = 2

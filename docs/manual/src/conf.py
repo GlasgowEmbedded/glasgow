@@ -4,7 +4,11 @@ is_production = True if os.getenv("DOCS_IS_PRODUCTION", "").lower() in ('1', 'ye
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "software"))
 import glasgow
 
-language = os.getenv("DOCS_LANGUAGE", "en")
+# Otherwise on newer Python, `argparse` will render output using ANSI escape sequences, and they
+# will get inserted into `sphinxcontrib.autoprogram` output.
+os.environ["NO_COLOR"] = "1"
+
+language = os.environ.get("DOCS_LANGUAGE", "en")
 match language:
     case "en":
         project = "Glasgow Interface\u00a0Explorer"
@@ -28,7 +32,13 @@ extensions = [
     "sphinx_inline_tabs",
     "sphinxcontrib.autoprogram",
     "enum_tools.autoenum",
+    "myst_parser",
 ]
+
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".md":  "markdown",
+}
 
 highlight_language = "text"
 
@@ -53,7 +63,10 @@ napoleon_include_special_with_doc = True
 todo_include_todos = True
 todo_emit_warnings = True
 
-intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", os.getenv("INTERSPHINX_PYTHON")),
+    "pyside6": ("https://doc.qt.io/qtforpython-6/", os.getenv("INTERSPHINX_PYSIDE6")),
+}
 
 copybutton_prompt_is_regexp = True
 copybutton_prompt_text = r">>> |\.\.\. |\$ |> "
@@ -61,6 +74,7 @@ copybutton_copy_empty_lines = False
 
 locale_dirs = ["../locale/"]
 gettext_compact = False
+gettext_additional_targets = ["literal-block"]
 
 templates_path = ["_templates/"]
 

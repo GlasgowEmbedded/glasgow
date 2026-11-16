@@ -1,6 +1,6 @@
 import asyncio
 from amaranth import *
-from amaranth.lib import io
+from amaranth.lib import io, stream, wiring
 from amaranth.build.res import ResourceError
 
 from glasgow.support import logging
@@ -8,45 +8,42 @@ from glasgow.applet import *
 
 
 class SelfTestSubtarget(Elaboratable):
-    def __init__(self, applet, target):
-        self.reg_oe_a, applet.addr_oe_a = target.registers.add_rw(8)
-        self.reg_o_a,  applet.addr_o_a  = target.registers.add_rw(8)
-        self.reg_i_a,  applet.addr_i_a  = target.registers.add_ro(8)
-
-        self.reg_oe_b, applet.addr_oe_b = target.registers.add_rw(8)
-        self.reg_o_b,  applet.addr_o_b  = target.registers.add_rw(8)
-        self.reg_i_b,  applet.addr_i_b  = target.registers.add_ro(8)
-
-        self.reg_leds, applet.addr_leds = target.registers.add_rw(5)
-
-        self.pins_a = [target.platform.glasgow_pins.pop(f"A{n}") for n in range(8)]
-        self.pins_b = [target.platform.glasgow_pins.pop(f"B{n}") for n in range(8)]
-        try:
-            self.leds = [target.platform.request("led", n) for n in range(5)]
-        except ResourceError:
-            self.leds = []
+    def __init__(self, ports):
+        self.ports = ports
+        self.reg_oe_a = Signal(8)
+        self.reg_o_a  = Signal(8)
+        self.reg_i_a  = Signal(8)
+        self.reg_oe_b = Signal(8)
+        self.reg_o_b  = Signal(8)
+        self.reg_i_b  = Signal(8)
+        self.reg_leds = Signal(5)
 
     def elaborate(self, platform):
         m = Module()
 
-        for idx, pin in enumerate(self.pins_a):
+        for idx, pin in enumerate(self.ports.a):
             m.submodules[f"buffer_a{idx}"] = buffer = io.Buffer("io", pin)
             m.d.comb += buffer.oe.eq(self.reg_oe_a[idx])
             m.d.comb += buffer.o.eq(self.reg_o_a[idx])
             m.d.comb += self.reg_i_a[idx].eq(buffer.i)
 
-        for idx, pin in enumerate(self.pins_b):
+        for idx, pin in enumerate(self.ports.b):
             m.submodules[f"buffer_b{idx}"] = buffer = io.Buffer("io", pin)
             m.d.comb += buffer.oe.eq(self.reg_oe_b[idx])
             m.d.comb += buffer.o.eq(self.reg_o_b[idx])
             m.d.comb += self.reg_i_b[idx].eq(buffer.i)
 
-        m.d.comb += Cat(pin.o for pin in self.leds).eq(self.reg_leds)
+        if platform is not None:
+            try:
+                leds = [platform.request("led", n) for n in range(5)]
+            except ResourceError:
+                leds = []
+            m.d.comb += Cat(pin.o for pin in leds).eq(self.reg_leds)
 
         return m
 
 
-class SelfTestApplet(GlasgowApplet):
+class SelfTestApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "diagnose hardware faults"
     description = """
@@ -80,42 +77,45 @@ class SelfTestApplet(GlasgowApplet):
     ]
     __default_modes = ["loopback"]
 
-    def build(self, target, args):
-        target.add_submodule(SelfTestSubtarget(applet=self, target=target))
+    @classmethod
+    def add_build_arguments(cls, parser, access):
+        # Each diagnostic controls the port voltages directly.
+        pass
 
-        self.mux_interface_1 = iface_1 = target.multiplexer.claim_interface(self, None)
-        self.mux_interface_2 = iface_2 = target.multiplexer.claim_interface(self, None)
+    def build(self, args):
+        with self.assembly.add_applet(self):
+            component = self.assembly.add_submodule(SelfTestSubtarget(
+                self.assembly.add_port_group(a="A0:7", b="B0:7")))
+            self._oe_a = self.assembly.add_rw_register(component.reg_oe_a)
+            self._o_a  = self.assembly.add_rw_register(component.reg_o_a)
+            self._i_a  = self.assembly.add_ro_register(component.reg_i_a)
+            self._oe_b = self.assembly.add_rw_register(component.reg_oe_b)
+            self._o_b  = self.assembly.add_rw_register(component.reg_o_b)
+            self._i_b  = self.assembly.add_ro_register(component.reg_i_b)
+            self._leds = self.assembly.add_rw_register(component.reg_leds)
 
-        in_fifo_1, out_fifo_1 = iface_1.get_in_fifo(), iface_1.get_out_fifo()
-        in_fifo_2, out_fifo_2 = iface_2.get_in_fifo(), iface_2.get_out_fifo()
-        m = Module()
-        m.d.comb += [
-            in_fifo_1.w_data.eq(out_fifo_1.r_data),
-            in_fifo_1.w_en.eq(out_fifo_1.r_rdy),
-            out_fifo_1.r_en.eq(in_fifo_1.w_rdy),
-            in_fifo_2.w_data.eq(out_fifo_2.r_data),
-            in_fifo_2.w_en.eq(out_fifo_2.r_rdy),
-            out_fifo_2.r_en.eq(in_fifo_2.w_rdy),
-        ]
-        target.add_submodule(m)
+            self._loopback_pipes = []
+            for _ in range(2):
+                loopback = stream.Signature(8).create()
+                self._loopback_pipes.append(
+                    self.assembly.add_inout_pipe(loopback, wiring.flipped(loopback), in_flush=C(1)))
 
     @classmethod
-    def add_run_arguments(cls, parser, access):
+    def add_run_arguments(cls, parser):
         parser.add_argument(
             dest="modes", metavar="MODE", type=str, nargs="*", choices=[[]] + cls.__all_modes,
             help=f"run self-test mode MODE (default: {' '.join(cls.__default_modes)})")
 
-    async def run(self, device, args):
-        return None
+    async def run(self, args):
+        device = self.device
 
-    async def interact(self, device, args, iface):
         async def set_oe(bits):
-            await device.write_register(self.addr_oe_a, (bits >> 0) & 0xff)
-            await device.write_register(self.addr_oe_b, (bits >> 8) & 0xff)
+            await self._oe_a.set((bits >> 0) & 0xff)
+            await self._oe_b.set((bits >> 8) & 0xff)
 
         async def set_o(bits):
-            await device.write_register(self.addr_o_a,  (bits >> 0) & 0xff)
-            await device.write_register(self.addr_o_b,  (bits >> 8) & 0xff)
+            await self._o_a.set((bits >> 0) & 0xff)
+            await self._o_b.set((bits >> 8) & 0xff)
 
         async def set_pull(bits_o, bits_oe):
             pull_low  = {x for x in range(16) if bits_oe & (1 << x) and not bits_o & (1 << x)}
@@ -127,8 +127,8 @@ class SelfTestApplet(GlasgowApplet):
                     (await device.get_state("B") << 8))
 
         async def get_i():
-            return ((await device.read_register(self.addr_i_a) << 0) |
-                    (await device.read_register(self.addr_i_b) << 8))
+            return ((await self._i_a.get() << 0) |
+                    (await self._i_b.get() << 8))
 
         async def reset_pins(bits):
             await set_o(bits)
@@ -173,7 +173,7 @@ class SelfTestApplet(GlasgowApplet):
                 while True:
                     await device._test_leds(True,
                         (led_state & 0b1111) >> 0)
-                    await device.write_register(self.addr_leds,
+                    await self._leds.set(
                         (led_state & 0b11111_0000) >> 4)
                     await device.set_voltage("A",
                         3.3 if (led_state & 0b1_000000000) >> 9 else 0.0)
@@ -283,10 +283,7 @@ class SelfTestApplet(GlasgowApplet):
                     await device.set_voltage(port, 0)
 
             if mode == "loopback":
-                iface_1 = await device.demultiplexer.claim_interface(
-                    self, self.mux_interface_1, None)
-                iface_2 = await device.demultiplexer.claim_interface(
-                    self, self.mux_interface_2, None)
+                iface_1, iface_2 = self._loopback_pipes
 
                 data_1 = b"The quick brown fox jumps over the lazy dog.\x55\xaa"
                 data_2 = bytes(reversed(data_1))
@@ -296,7 +293,7 @@ class SelfTestApplet(GlasgowApplet):
                     (iface_2, "EP4OUT", iface_2, "EP8IN", data_2),
                 ):
                     try:
-                        await iface_out.write(data)
+                        await iface_out.send(data)
                         await asyncio.wait_for(iface_out.flush(), timeout=0.1)
                     except TimeoutError:
                         passed = False
@@ -304,7 +301,7 @@ class SelfTestApplet(GlasgowApplet):
                         continue
 
                     try:
-                        received = await asyncio.wait_for(iface_in.read(len(data)), timeout=0.1)
+                        received = await asyncio.wait_for(iface_in.recv(len(data)), timeout=0.1)
                     except TimeoutError:
                         passed = False
                         report.append((mode, f"USB {ep_in} timeout"))

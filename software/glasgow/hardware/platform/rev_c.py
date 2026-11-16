@@ -107,6 +107,25 @@ class _GlasgowRevCPlatform(GlasgowICE40Platform):
                  Subsignal("oe", Pins("K11", dir="o")),
                  Attrs(IO_STANDARD="SB_LVCMOS")),
 
+        # Duplicate of the above; `port_led*` are exposed to applets, `led*` is used internally.
+        # Note that it is technically possible to instantiate the LED as an input, it just doesn't
+        # do anything useful (stuck at 0).
+        Resource("port_led", 0,
+                 Subsignal("io", Pins("G9")),
+                 Attrs(IO_STANDARD="SB_LVCMOS")),
+        Resource("port_led", 1,
+                 Subsignal("io", Pins("G8")),
+                 Attrs(IO_STANDARD="SB_LVCMOS")),
+        Resource("port_led", 2,
+                 Subsignal("io", Pins("E9")),
+                 Attrs(IO_STANDARD="SB_LVCMOS")),
+        Resource("port_led", 3,
+                 Subsignal("io", Pins("D9")),
+                 Attrs(IO_STANDARD="SB_LVCMOS")),
+        Resource("port_led", 4,
+                 Subsignal("io", Pins("E8")),
+                 Attrs(IO_STANDARD="SB_LVCMOS")),
+
         Resource("aux", 0, Pins("A10"), Attrs(IO_STANDARD="SB_LVCMOS")),
         Resource("aux", 1, Pins("C9"),  Attrs(IO_STANDARD="SB_LVCMOS")),
 
@@ -121,18 +140,40 @@ class _GlasgowRevCPlatform(GlasgowICE40Platform):
                              "F2 -  -  E3 E1 E2 D1 -  -  D2 C1 D3 C2 -  -  C3 B1 C4 B2 -  -  -  "),
     ]
 
+    def add_ram_pak_resources(self):
+        """The RAM addon is sold separately and uses the LVDS connector."""
+        self.add_resources([
+            Resource("octoram", 0,
+                Subsignal("rst", PinsN("21", dir="o", conn=("lvds", 0))),
+                Subsignal("cs",  PinsN("8", dir="o", conn=("lvds", 0))),
+                Subsignal("clk", DiffPairs("5", "3", dir="o", conn=("lvds", 0))),
+                Subsignal("dqs", Pins("10", dir="io", conn=("lvds", 0))),
+                Subsignal("dq",  Pins("16 15 9 11 14 17 20 22", dir="io", conn=("lvds", 0))),
+                Attrs(IO_STANDARD="SB_LVCMOS18")
+            ),
+            Resource("octoram", 1,
+                Subsignal("rst", PinsN("23", dir="o", conn=("lvds", 0))),
+                Subsignal("cs",  PinsN("27", dir="o", conn=("lvds", 0))),
+                Subsignal("clk", DiffPairs("28", "26", dir="o", conn=("lvds", 0))),
+                Subsignal("dqs", Pins("29", dir="io", conn=("lvds", 0))),
+                Subsignal("dq",  Pins("35 38 32 34 33 40 39 41", dir="io", conn=("lvds", 0))),
+                Attrs(IO_STANDARD="SB_LVCMOS18")
+            ),
+        ])
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._init_glasgow_pins(
-            ("A", "port_a", range(8)),
-            ("B", "port_b", range(8)),
-            ("S", "port_s", range(1)),
+            ("A",   "port_a", range(8)),
+            ("B",   "port_b", range(8)),
+            ("SYN", "port_syn", range(1)),
+            ("LED", "port_led", range(5)),
         )
 
 
 class GlasgowRevC0Platform(_GlasgowRevCPlatform):
     resources = _GlasgowRevCPlatform.resources + [
-        Resource("port_s", 0,
+        Resource("port_syn", 0,
                  Subsignal("io", Pins("A11")),
                  Attrs(IO_STANDARD="SB_LVCMOS")),
     ]
@@ -140,7 +181,7 @@ class GlasgowRevC0Platform(_GlasgowRevCPlatform):
 
 class GlasgowRevC123Platform(_GlasgowRevCPlatform):
     resources = _GlasgowRevCPlatform.resources + [
-        Resource("port_s", 0,
+        Resource("port_syn", 0,
                  Subsignal("io", Pins("A11"), Attrs(PULLUP=1)),
                  Subsignal("oe", Pins("B4", dir="o")),
                  Attrs(IO_STANDARD="SB_LVCMOS")),

@@ -9,17 +9,19 @@ __all__ = [
 ]
 
 
-async def stream_put(ctx, stream, payload):
+async def stream_put(ctx, stream, payload, *, context=None):
     ctx.set(stream.payload, payload)
     ctx.set(stream.valid, 1)
-    await ctx.tick().until(stream.ready)
+    await ctx.tick(context=context).until(stream.ready)
     ctx.set(stream.valid, 0)
 
 
-async def stream_get(ctx, stream):
-    ctx.set(stream.ready, 1)
-    payload, = await ctx.tick().sample(stream.payload).until(stream.valid)
-    ctx.set(stream.ready, 0)
+async def stream_get(ctx, stream, *, context=None):
+    if not isinstance(stream.ready, Const):
+        ctx.set(stream.ready, 1)
+    payload, = await ctx.tick(context=context).sample(stream.payload).until(stream.valid)
+    if not isinstance(stream.ready, Const):
+        ctx.set(stream.ready, 0)
     return payload
 
 
@@ -33,11 +35,11 @@ async def stream_get_maybe(ctx, stream):
         return None
 
 
-async def stream_assert(ctx, stream, expected):
+async def stream_assert(ctx, stream, expected, msg=""):
     value = await stream_get(ctx, stream)
     for key, expected_value in expected.items():
         assert value[key] == expected_value, \
-            f"payload.{key}: {value[key]!r} != {expected_value!r}"
+            f"payload.{key}: {value[key]!r} != {expected_value!r} {msg}"
 
 
 class StreamBuffer(wiring.Component):
@@ -47,6 +49,10 @@ class StreamBuffer(wiring.Component):
             "i": In(stream.Signature(shape)),
             "o": Out(stream.Signature(shape)),
         })
+
+    @classmethod
+    def shaped_like(cls, stream):
+        return cls(stream.payload.shape())
 
     def elaborate(self, platform):
         m = Module()
@@ -70,6 +76,22 @@ class Queue(wiring.Component):
             "o": Out(stream.Signature(shape)),
             "level": Out(range(depth + 1))
         })
+
+    @classmethod
+    def shaped_like(cls, stream, depth: int):
+        return cls(shape=stream.payload.shape(), depth=depth)
+
+    @property
+    def shape(self) -> int:
+        return self._shape
+
+    @property
+    def depth(self) -> int:
+        return self._depth
+
+    @property
+    def buffered(self) -> bool:
+        return self._buffered
 
     def elaborate(self, platform):
         m = Module()
@@ -103,6 +125,10 @@ class AsyncQueue(wiring.Component):
             "i": In(stream.Signature(shape)),
             "o": Out(stream.Signature(shape)),
         })
+
+    @classmethod
+    def shaped_like(cls, stream, depth: int, i_domain="sync", o_domain="sync"):
+        return cls(shape=stream.payload.shape(), depth=depth, i_domain=i_domain, o_domain=o_domain)
 
     def elaborate(self, platform):
         m = Module()

@@ -2,13 +2,13 @@ import unittest
 
 from amaranth import *
 from amaranth.sim import Simulator
-from cobs import cobs
+import ccobs
 
 from glasgow.gateware.cobs import *
 
 
 def ref_encode(data_i: bytes) -> bytes:
-    return b"\0".join(cobs.encode(chunk) if chunk else b"" for chunk in data_i.split(b"$"))
+    return b"".join(ccobs.encode(chunk) for chunk in data_i.split(b"$")[:-1])
 
 
 def rtl_encode(data_i: bytes, fifo_depth: int = 256, o_delay: int = 0, dollar = True) -> bytes:
@@ -101,13 +101,33 @@ def cases() -> list[bytes]:
     ]
 
 
+class COBSHostTest(unittest.TestCase):
+    def test_framing(self):
+        for payload, frame in [
+            (b"", b"\x01\x00"),
+            (b"\x00", b"\x01\x01\x00"),
+            (b"AB\x00C", b"\x03AB\x02C\x00"),
+        ]:
+            with self.subTest(payload=payload):
+                self.assertEqual(encode(payload), frame)
+                self.assertEqual(decode(frame), payload)
+
+    def test_incomplete_frame(self):
+        with self.assertRaises(ValueError):
+            decode(b"\x02A")
+
+    def test_multiple_frames(self):
+        with self.assertRaises(ValueError):
+            decode(b"\x02A\x00\x02B\x00")
+
+
 class COBSEncoderTest(unittest.TestCase):
     def test_simple(self):
         for case in cases():
             assert rtl_encode(case) == ref_encode(case)
 
     def test_vmlinuz(self):
-        assert rtl_encode(vmlinuz, dollar=False) == cobs.encode(vmlinuz) + b"\0"
+        assert rtl_encode(vmlinuz, dollar=False) == ccobs.encode(vmlinuz)
 
     def test_full(self):
         data = b"\0" * 256 + b"$"
@@ -120,7 +140,7 @@ class COBSDecoderTest(unittest.TestCase):
             assert rtl_decode(ref_encode(case)) == case.split(b"$")[:-1]
 
     def test_vmlinuz(self):
-        assert rtl_decode(cobs.encode(vmlinuz) + b"\0") == [vmlinuz]
+        assert rtl_decode(ccobs.encode(vmlinuz)) == [vmlinuz]
 
 
 vmlinuz = bytes.fromhex("""
