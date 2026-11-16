@@ -1,6 +1,85 @@
 ``display-hd44780``
 ===================
 
+This applet controls character LCD modules with an HD44780-compatible parallel interface. It requires Glasgow revC0 or later and uses a bidirectional 4-bit bus, including the RW signal to poll the controller's busy flag.
+
+Wiring
+------
+
+For a module with the common 14-pin or 16-pin connector, the default connections are:
+
+.. list-table::
+    :header-rows: 1
+
+    * - Signal
+      - Module pin
+      - Glasgow pin
+    * - RS
+      - 4
+      - A0
+    * - RW
+      - 5
+      - A1
+    * - E
+      - 6
+      - A2
+    * - D4, D5, D6, D7
+      - 11, 12, 13, 14
+      - A3, A4, A5, A6
+
+Check the module datasheet before connecting it. Connect a common ground and provide display power, contrast bias, and backlight power as required by the module. D0–D3 are unused. Select an I/O voltage compatible with the controller using ``-V``; for example, for a module with 5 V I/O:
+
+.. code-block:: console
+
+    $ glasgow run display-hd44780 -V 5
+
+The run command shows the character set, custom characters, and a short animation, then displays a clock. Initialization selects the 4-bit bus mode automatically; no port power cycle is required.
+
+Scripting
+---------
+
+Use ``glasgow script lcd.py display-hd44780 -V 5`` to run a script such as:
+
+.. code-block:: python
+
+    lcd = self.hd44780_interface
+    # Applet setup has already initialized the display.
+    await lcd.use_two_display_lines()
+    await lcd.display_on()
+    await lcd.set_cursor_position(position=0, line_no=0)
+    await lcd.write_text("Hello")
+    await lcd.set_cursor_position(position=0, line_no=1)
+    await lcd.write_text("Glasgow")
+
+Public operations flush automatically. Initialization clears the display, turns it off, and selects one line, the 5x7 font, and incrementing cursor movement without display shift. Call ``initialize()`` again to restore these settings.
+
+Cursor positions and line numbers are zero-based. The controller has 80 character positions in one-line mode or two lines of 40 positions in two-line mode; the visible area is usually smaller. Modules with four physical rows map those rows into the controller's two RAM lines. Use the module datasheet to determine their starting offsets. Writing text does not wrap at the visible edge or interpret newline characters as line changes.
+
+``write_text()`` accepts ASCII. For other glyphs, use ``write_bytes()`` with codes from the module's character ROM table.
+
+Custom characters
+-----------------
+
+The 5x7 font mode supports eight custom characters, selected by codes 0–7. Upload eight row bytes for each character; the five least significant bits of each byte control its pixels. For example, after the script above:
+
+.. code-block:: python
+
+    await lcd.define_cg_ram_char(0, bytes([
+        0b00000,
+        0b01010,
+        0b01010,
+        0b00000,
+        0b10001,
+        0b01110,
+        0b00000,
+        0b00000,
+    ]))
+    # Uploading a glyph leaves the controller addressing character RAM.
+    await lcd.set_cursor_position(position=8, line_no=0)
+    await lcd.write_bytes(b"\x00")
+
+Uploading fewer rows leaves the remaining rows unchanged. Uploading more than eight bytes truncates the excess. The 5x10 font mode, available in one-line mode, provides four character slots with 16 bytes per slot, of which ten rows are shown.
+
 CLI reference
 -------------
 

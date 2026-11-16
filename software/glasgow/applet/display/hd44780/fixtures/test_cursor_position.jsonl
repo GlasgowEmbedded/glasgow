@@ -1,0 +1,42 @@
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "0403080808"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "0403080808"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "0403080808"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "040202"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytearray", "hex": "002002"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytearray", "hex": "000802"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytearray", "hex": "000102"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytearray", "hex": "000602"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytearray", "hex": "008002"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytearray", "hex": "00cf02"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytearray", "hex": "002802"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytearray", "hex": "00c302"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytearray", "hex": "008302"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytearray", "hex": "00c002"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytearray", "hex": "008002"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytearray", "hex": "001002"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytearray", "hex": "001402"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytearray", "hex": "001802"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytearray", "hex": "001c02"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytearray", "hex": "000202"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytearray", "hex": "000102"}], "kwargs": {}, "result": null}
+{"self": "hd44780_interface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}

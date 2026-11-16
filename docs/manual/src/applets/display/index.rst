@@ -1,7 +1,7 @@
 .. _applet.display:
 
 Display
-=====
+========
 
 .. automodule:: glasgow.applet.display
 
