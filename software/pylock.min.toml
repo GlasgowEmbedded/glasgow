@@ -27,6 +27,20 @@ dependencies = [
 ]
 
 [[packages]]
+name = "libusb1"
+version = "3.4.0"
+sdist = {name = "libusb1-3.4.0.tar.gz", url = "https://files.pythonhosted.org/packages/89/35/f9d2a990d092d647b47540cd229e1d68432c0f51183484ca189612a4824c/libusb1-3.4.0.tar.gz", hashes = {sha256 = "9cf5638506d54f21bf36550d97ea63189111a23c4d8078f630103a2052135f45"}}
+wheels = [
+    {name = "libusb1-3.4.0-py3-none-any.whl",url = "https://files.pythonhosted.org/packages/d4/64/d4b59444e4d3b6979aa5eb58840634465a24b41a9ab03dcf8434c9b89551/libusb1-3.4.0-py3-none-any.whl",hashes = {sha256 = "e83d034e44c3efe1c4599c6281d34bca50a38c12cab3b7b6217d583161a01ffd"}},
+    {name = "libusb1-3.4.0-py3-none-win32.whl",url = "https://files.pythonhosted.org/packages/7e/55/a838a4278fac4ee49bf670ddc59d621999a1cb2a3188fb13a23609ea4f06/libusb1-3.4.0-py3-none-win32.whl",hashes = {sha256 = "0a1aa1416034690eb9dc9a895eda0fef44d853bca1053eb1de50a5906684846d"}},
+    {name = "libusb1-3.4.0-py3-none-win_amd64.whl",url = "https://files.pythonhosted.org/packages/5f/08/02aecf6dad627534a5835244ece14d7f187ef430354d9b8551199934d059/libusb1-3.4.0-py3-none-win_amd64.whl",hashes = {sha256 = "b7dcc1f324a895af6aac708bc5513a17373f97349cc2ab8a277519c788bd18ca"}},
+]
+marker = "\"default\" in dependency_groups"
+
+[packages.tool.pdm]
+dependencies = []
+
+[[packages]]
 name = "yowasp-yosys"
 version = "0.31.0.13.post553"
 wheels = [
@@ -198,20 +212,6 @@ marker = "\"default\" in dependency_groups"
 dependencies = [
     "libusb1>=1.0",
 ]
-
-[[packages]]
-name = "libusb1"
-version = "3.3.0"
-sdist = {name = "libusb1-3.3.0.tar.gz", url = "https://files.pythonhosted.org/packages/69/c7/3c441fb0628b5afdfe68768f90f8d6ce74dc08e72691fb78d0875db06c48/libusb1-3.3.0.tar.gz", hashes = {sha256 = "b642aa518689f8e053f61955cba274e72bc8d0794c65d7990745aaae90dfc8a1"}}
-wheels = [
-    {name = "libusb1-3.3.0-py3-none-any.whl",url = "https://files.pythonhosted.org/packages/c7/48/b24b810b14595bd4680030f73a31119120069a8857f41554f00e00b57229/libusb1-3.3.0-py3-none-any.whl",hashes = {sha256 = "7923ff2bbe43878e1c7cf733fde49cca844ecada29dbc436033bca6171cda41f"}},
-    {name = "libusb1-3.3.0-py3-none-win32.whl",url = "https://files.pythonhosted.org/packages/3f/45/52980eedf3fb78711960a558465b3d998beed327fcd2b8483119527adc44/libusb1-3.3.0-py3-none-win32.whl",hashes = {sha256 = "270f35b3a8faddd63d78de9b2341e49f6aed6083dceb4b04f47b95fd944e8d00"}},
-    {name = "libusb1-3.3.0-py3-none-win_amd64.whl",url = "https://files.pythonhosted.org/packages/af/d3/992bfd5bcd9d7a978563d3dabb11d0fce5cf7ceea73d9633fbadba93df4e/libusb1-3.3.0-py3-none-win_amd64.whl",hashes = {sha256 = "61e2b4efdbacdd689bf4eab6b9afa2d6ee8a4bae20ffbf7c5785024d25fa3258"}},
-]
-marker = "\"default\" in dependency_groups"
-
-[packages.tool.pdm]
-dependencies = []
 
 [[packages]]
 name = "platformdirs"
@@ -1533,7 +1533,7 @@ marker = "\"numpy\" in extras"
 dependencies = []
 
 [tool.pdm]
-hashes = {sha256 = "12f541d219d7199f1971aff1631235c2f77e97e91ab8fe81c7a6fc6cf037cc1a"}
+hashes = {sha256 = "d7367e80f545b5d49f5e5a8eb098abc55b22f84bb1c4abe635721014937bf752"}
 strategy = ["direct_minimal_versions", "inherit_metadata", "static_urls"]
 
 [[tool.pdm.targets]]
