@@ -1,0 +1,15 @@
+{"self": "prom_iface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "02230104030403"}], "kwargs": {}, "result": null}
+{"self": "prom_iface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "prom_iface._pipe", "call": "recv", "kind": "asyncmethod", "args": [4], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "3412cdab"}}
+{"self": "prom_iface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "0224010402230104"}], "kwargs": {}, "result": null}
+{"self": "prom_iface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "prom_iface._pipe", "call": "recv", "kind": "asyncmethod", "args": [4], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "3412cdab"}}
+{"self": "prom_iface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "0223010005000001030503020001"}], "kwargs": {}, "result": null}
+{"self": "prom_iface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "prom_iface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "06"}], "kwargs": {}, "result": null}
+{"self": "prom_iface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "prom_iface._pipe", "call": "recv", "kind": "asyncmethod", "args": [1], "kwargs": {}, "result": {"__class__": "memoryview", "hex": "00"}}
+{"self": "prom_iface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "020000"}], "kwargs": {}, "result": null}
+{"self": "prom_iface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "prom_iface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": ""}], "kwargs": {}, "result": null}
+{"self": "prom_iface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}

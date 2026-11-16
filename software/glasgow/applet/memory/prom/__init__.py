@@ -10,20 +10,23 @@ import argparse
 import statistics
 
 from amaranth import *
-from amaranth.lib import cdc, io
+from amaranth.lib import cdc, io, stream, wiring
+from amaranth.lib.wiring import In, Out
 from amaranth.lib.fifo import SyncFIFOBuffered
 
 from glasgow.support import logging
 from glasgow.support.logging import dump_mapseq
+from glasgow.abstract import AbstractAssembly, GlasgowPin
 from glasgow.applet import *
 
 
 class MemoryPROMBus(Elaboratable):
-    def __init__(self, ports, a_bits, sh_freq):
-        self._ports   = ports
-        self.a_bits   = a_bits
-        self.dq_bits  = len(ports.dq)
-        self._sh_freq = sh_freq
+    def __init__(self, ports, a_bits, sh_freq, sys_clk_freq):
+        self._ports        = ports
+        self.a_bits        = a_bits
+        self.dq_bits       = len(ports.dq)
+        self._sh_freq      = sh_freq
+        self._sys_clk_freq = sys_clk_freq
 
         self.ce  = Signal()
         self.oe  = Signal()
@@ -78,10 +81,10 @@ class MemoryPROMBus(Elaboratable):
             # not to be confused with the latch pin.
             sa_latch = Signal(self.a_bits - len(ports.a))
 
-            sh_cyc = math.ceil(platform.default_clk_frequency / self._sh_freq)
-            timer = Signal(range(sh_cyc), init=sh_cyc - 1)
-            count = Signal(range(len(sa_latch) + 1))
-            first = Signal(init=1)
+            sh_cyc = math.ceil(self._sys_clk_freq / self._sh_freq)
+            timer  = Signal(range(sh_cyc), init=sh_cyc - 1)
+            count  = Signal(range(len(sa_latch) + 1))
+            first  = Signal(init=1)
 
             with m.FSM():
                 with m.State("READY"):
@@ -146,12 +149,16 @@ class _Command(enum.IntEnum):
 _COMMAND_BUFFER_SIZE = 1024
 
 
-class MemoryPROMSubtarget(Elaboratable):
-    def __init__(self, bus, in_fifo, out_fifo,
+class MemoryPROMComponent(wiring.Component):
+    i_stream: In(stream.Signature(8))
+    o_stream: Out(stream.Signature(8))
+    o_flush: Out(1)
+
+    def __init__(self, bus, sys_clk_freq,
                  read_cycle_delay, write_cycle_delay, write_hold_delay):
-        self.bus      = bus
-        self.in_fifo  = in_fifo
-        self.out_fifo = out_fifo
+        super().__init__()
+        self.bus = bus
+        self._sys_clk_freq = sys_clk_freq
 
         self._read_cycle_delay  = read_cycle_delay
         self._write_cycle_delay = write_cycle_delay
@@ -161,8 +168,6 @@ class MemoryPROMSubtarget(Elaboratable):
         m = Module()
         m.submodules.bus = bus = self.bus
 
-        in_fifo  = self.in_fifo
-        out_fifo = self.out_fifo
         buf_fifo = m.submodules.buf_fifo = SyncFIFOBuffered(width=8, depth=_COMMAND_BUFFER_SIZE)
 
         m.d.comb += bus.ce.eq(1)
@@ -173,7 +178,13 @@ class MemoryPROMSubtarget(Elaboratable):
             # subsequent commands except for RUN are placed into the buffer. The RUN command
             # restarts command processing. Until the buffer is empty, only buffered commands are
             # processed.
-            cmd_fifo = Array([out_fifo, buf_fifo])[buf_fifo.r_rdy]
+            cmd_valid = Mux(buf_fifo.r_rdy, buf_fifo.r_rdy, self.i_stream.valid)
+            cmd_data = Mux(buf_fifo.r_rdy, buf_fifo.r_data, self.i_stream.payload)
+            cmd_ready = Signal()
+            m.d.comb += [
+                buf_fifo.r_en.eq(cmd_ready & buf_fifo.r_rdy),
+                self.i_stream.ready.eq(cmd_ready & ~buf_fifo.r_rdy),
+            ]
 
             a_bytes  = (bus.a_bits  + 7) // 8
             dq_bytes = (bus.dq_bits + 7) // 8
@@ -182,16 +193,16 @@ class MemoryPROMSubtarget(Elaboratable):
             a_latch  = Signal(bus.a_bits)
             dq_latch = Signal(bus.dq_bits)
 
-            read_cycle_cyc  = (math.ceil(self._read_cycle_delay * platform.default_clk_frequency)
+            read_cycle_cyc  = (math.ceil(self._read_cycle_delay * self._sys_clk_freq)
                                + 2) # FFSynchronizer latency
-            write_cycle_cyc = math.ceil(self._write_cycle_delay * platform.default_clk_frequency)
-            write_hold_cyc  = math.ceil(self._write_hold_delay  * platform.default_clk_frequency)
+            write_cycle_cyc = math.ceil(self._write_cycle_delay * self._sys_clk_freq)
+            write_hold_cyc  = math.ceil(self._write_hold_delay  * self._sys_clk_freq)
             timer = Signal(range(max(read_cycle_cyc, write_cycle_cyc, write_hold_cyc) + 1))
 
             with m.State("COMMAND"):
-                with m.If(cmd_fifo.r_rdy):
-                    m.d.comb += cmd_fifo.r_en.eq(1)
-                    with m.Switch(cmd_fifo.r_data):
+                with m.If(cmd_valid):
+                    m.d.comb += cmd_ready.eq(1)
+                    with m.Switch(cmd_data):
                         with m.Case(_Command.QUEUE):
                             m.next = "QUEUE-RECV"
                         with m.Case(_Command.SEEK):
@@ -209,30 +220,30 @@ class MemoryPROMSubtarget(Elaboratable):
                         with m.Case(_Command.POLL):
                             m.next = "POLL-PULSE"
                 with m.Else():
-                    m.d.comb += in_fifo.flush.eq(1)
+                    m.d.comb += self.o_flush.eq(1)
 
             with m.State("QUEUE-RECV"):
-                with m.If(out_fifo.r_rdy):
+                with m.If(self.i_stream.valid):
                     escaped = Signal()
-                    with m.If(~escaped & (out_fifo.r_data == _Command.QUEUE)):
-                        m.d.comb += out_fifo.r_en.eq(1)
+                    with m.If(~escaped & (self.i_stream.payload == _Command.QUEUE)):
+                        m.d.comb += self.i_stream.ready.eq(1)
                         m.d.sync += escaped.eq(1)
-                    with m.Elif(escaped & (out_fifo.r_data == _Command.RUN)):
-                        m.d.comb += out_fifo.r_en.eq(1)
+                    with m.Elif(escaped & (self.i_stream.payload == _Command.RUN)):
+                        m.d.comb += self.i_stream.ready.eq(1)
                         m.next = "COMMAND"
                     with m.Else():
                         m.d.sync += escaped.eq(0)
-                        m.d.comb += out_fifo.r_en.eq(buf_fifo.w_rdy)
-                        m.d.comb += buf_fifo.w_data.eq(out_fifo.r_data)
+                        m.d.comb += self.i_stream.ready.eq(buf_fifo.w_rdy)
+                        m.d.comb += buf_fifo.w_data.eq(self.i_stream.payload)
                         m.d.comb += buf_fifo.w_en.eq(1)
 
             with m.State("SEEK-RECV"):
                 with m.If(a_index == a_bytes):
                     m.d.sync += bus.a.eq(a_latch)
                     m.next = "SEEK-WAIT"
-                with m.Elif(cmd_fifo.r_rdy):
-                    m.d.comb += cmd_fifo.r_en.eq(1)
-                    m.d.sync += a_latch.word_select(a_index, 8).eq(cmd_fifo.r_data)
+                with m.Elif(cmd_valid):
+                    m.d.comb += cmd_ready.eq(1)
+                    m.d.sync += a_latch.word_select(a_index, 8).eq(cmd_data)
                     m.d.sync += a_index.eq(a_index + 1)
 
             with m.State("SEEK-WAIT"):
@@ -260,10 +271,11 @@ class MemoryPROMSubtarget(Elaboratable):
             with m.State("READ-SEND"):
                 with m.If(dq_index == dq_bytes):
                     m.next = "COMMAND"
-                with m.Elif(in_fifo.w_rdy):
-                    m.d.comb += in_fifo.w_en.eq(1)
-                    m.d.comb += in_fifo.w_data.eq(dq_latch.word_select(dq_index, 8))
-                    m.d.sync += dq_index.eq(dq_index + 1)
+                with m.Else():
+                    m.d.comb += self.o_stream.valid.eq(1)
+                    m.d.comb += self.o_stream.payload.eq(dq_latch.word_select(dq_index, 8))
+                    with m.If(self.o_stream.ready):
+                        m.d.sync += dq_index.eq(dq_index + 1)
 
             with m.State("WRITE-RECV"):
                 with m.If(dq_index == dq_bytes):
@@ -272,9 +284,9 @@ class MemoryPROMSubtarget(Elaboratable):
                     m.d.sync += bus.we.eq(1)
                     m.d.sync += timer.eq(write_cycle_cyc)
                     m.next = "WRITE-CYCLE"
-                with m.Elif(cmd_fifo.r_rdy):
-                    m.d.comb += cmd_fifo.r_en.eq(1)
-                    m.d.sync += dq_latch.word_select(dq_index, 8).eq(cmd_fifo.r_data)
+                with m.Elif(cmd_valid):
+                    m.d.comb += cmd_ready.eq(1)
+                    m.d.sync += dq_latch.word_select(dq_index, 8).eq(cmd_data)
                     m.d.sync += dq_index.eq(dq_index + 1)
 
             with m.State("WRITE-CYCLE"):
@@ -302,18 +314,29 @@ class MemoryPROMSubtarget(Elaboratable):
                     # on data lines, they are common in that they all present something else other
                     # than the last written byte on DQ lines.
                     with m.If(bus.q == dq_latch):
-                        with m.If(in_fifo.w_rdy):
-                            m.d.comb += in_fifo.w_en.eq(1)
-                            m.d.sync += bus.oe.eq(0)
-                            m.next = "COMMAND"
+                        m.d.sync += bus.oe.eq(0)
+                        m.next = "POLL-SEND"
                 with m.Else():
                     m.d.sync += timer.eq(timer - 1)
+
+            with m.State("POLL-SEND"):
+                m.d.comb += self.o_stream.valid.eq(1)
+                with m.If(self.o_stream.ready):
+                    m.next = "COMMAND"
 
         return m
 
 
 class MemoryPROMInterface:
+    """Access a parallel memory using word addresses and little-endian wire data.
+
+    Wider-than-eight-bit words occupy consecutive bytes, least significant byte first.
+    Use :class:`Data` to convert file byte order independently of the wire format.
+    """
+
     class Data:
+        """Byte-backed sequence of integer words with a selectable file byte order."""
+
         def __init__(self, raw_data, dq_bytes, endian="little"):
             assert isinstance(raw_data, (bytes, bytearray, memoryview))
             assert isinstance(dq_bytes, int)
@@ -369,33 +392,50 @@ class MemoryPROMInterface:
                 diff[index] = (self[index], other[index])
             return diff
 
-    def __init__(self, interface, logger, a_bits, dq_bits):
-        self.lower    = interface
-        self._logger  = logger
-        self._level   = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
+                 dq: list[GlasgowPin], a: list[GlasgowPin], a_bits: int,
+                 a_clk: GlasgowPin | None = None, a_si: GlasgowPin | None = None,
+                 a_lat: GlasgowPin | None = None, oe: GlasgowPin | None = None,
+                 we: GlasgowPin | None = None, ce: GlasgowPin | None = None,
+                 shift_frequency: float = 12e6, read_cycle: float = 500e-9,
+                 write_cycle: float = 500e-9, write_hold: float = 500e-9):
+        self._logger = logger
+        self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
         self.a_bytes  = (a_bits  + 7) // 8
-        self.dq_bytes = (dq_bits + 7) // 8
+        self.dq_bytes = (len(dq) + 7) // 8
+
+        ports = assembly.add_port_group(
+            dq=dq, a=a, a_clk=a_clk, a_si=a_si, a_lat=a_lat, oe=oe, we=we, ce=ce)
+        bus = MemoryPROMBus(ports, a_bits, shift_frequency, (1 / assembly.sys_clk_period))
+        component = assembly.add_submodule(MemoryPROMComponent(
+            bus, (1 / assembly.sys_clk_period), read_cycle, write_cycle, write_hold))
+        self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream,
+            in_flush=component.o_flush)
 
     def _log(self, message, *args):
         self._logger.log(self._level, "PROM: " + message, *args)
 
     async def read(self, address, count):
+        """Read ``count`` words starting at ``address``, wrapping at the memory depth."""
         self._log("read a=%#x n=%d", address, count)
-        await self.lower.write([
+        await self._pipe.send(bytes([
             _Command.SEEK,
             *address.to_bytes(self.a_bytes, byteorder="little"),
             *[
                 _Command.READ,
                 _Command.INCR,
             ] * count,
-        ])
+        ]))
 
-        data = self.Data(await self.lower.read(count * self.dq_bytes), self.dq_bytes)
+        await self._pipe.flush()
+        raw_data = await self._pipe.recv(count * self.dq_bytes) if count else b""
+        data = self.Data(raw_data, self.dq_bytes)
         self._log("read q=<%s>",
                   dump_mapseq(" ", lambda q: f"{q:0{self.dq_bytes * 2}x}", data))
         return data
 
     async def read_shuffled(self, address, count):
+        """Read words in random address order, returning them in linear order."""
         self._log("read shuffled a=%#x n=%d", address, count)
         order = list(range(count))
         random.shuffle(order)
@@ -406,10 +446,11 @@ class MemoryPROMInterface:
                 *(address + offset).to_bytes(self.a_bytes, byteorder="little"),
                 _Command.READ,
             ]
-        await self.lower.write(commands)
+        await self._pipe.send(bytes(commands))
 
         linear_raw_chunks = [None for _ in range(count)]
-        shuffled_raw_data = await self.lower.read(count * self.dq_bytes)
+        await self._pipe.flush()
+        shuffled_raw_data = await self._pipe.recv(count * self.dq_bytes) if count else b""
         for shuffled_offset, linear_offset in enumerate(order):
             linear_raw_chunks[linear_offset] = \
                 shuffled_raw_data[shuffled_offset * self.dq_bytes:
@@ -420,6 +461,11 @@ class MemoryPROMInterface:
         return data
 
     async def write(self, address, data):
+        """Queue and execute a contiguous write of integer words at ``address``.
+
+        The escaped command sequence must fit in the 1024-byte command buffer.
+        This does not wait for the memory to finish internal programming.
+        """
         self._log("write a=%#x d=<%s>",
                   address, dump_mapseq(" ", lambda q: f"{q:0{self.dq_bytes * 2}x}", data))
         commands = []
@@ -439,24 +485,27 @@ class MemoryPROMInterface:
         # within a fixed time interval from the previous byte. To ensure this, we queue all of
         # the writes first, and then perform them in a deterministic sequence with minimal delay.
         assert len(commands) <= _COMMAND_BUFFER_SIZE
-        await self.lower.write([
+        await self._pipe.send(bytes([
             _Command.SEEK,
             *address.to_bytes(self.a_bytes, byteorder="little"),
             _Command.QUEUE,
             *commands,
             _Command.QUEUE,
             _Command.RUN,
-        ])
+        ]))
+        await self._pipe.flush()
 
     async def poll(self):
+        """Wait until the data bus matches the last written word."""
         self._log("poll")
-        await self.lower.write([
+        await self._pipe.send(bytes([
             _Command.POLL,
-        ])
-        await self.lower.read(1)
+        ]))
+        await self._pipe.flush()
+        await self._pipe.recv(1)
 
 
-class MemoryPROMApplet(GlasgowApplet):
+class MemoryPROMApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "read and rescue parallel EPROMs, EEPROMs, and Flash memories"
     description = """
@@ -481,7 +530,9 @@ class MemoryPROMApplet(GlasgowApplet):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        super().add_build_arguments(parser, access)
+        parser.add_argument(
+            "-V", "--voltage", metavar="VOLTS", type=float,
+            help="set I/O port voltage to VOLTS")
 
         access.add_pins_argument(parser, "dq", width=range(1, 16), default=8)
         access.add_pins_argument(parser, "a",  width=range(0, 24), default=0)
@@ -509,42 +560,26 @@ class MemoryPROMApplet(GlasgowApplet):
             "--write-hold", metavar="DELAY", type=float, default=500,
             help="set write hold time to DELAY ns (default: %(default)s)")
 
-    def build(self, target, args):
+    def build(self, args):
         if args.a_bits is None:
             args.a_bits = len(args.a)
         if args.write_cycle is None:
             args.write_cycle = args.read_cycle
 
-        self.mux_interface = iface = target.multiplexer.claim_interface(self, args)
-        bus = MemoryPROMBus(
-            ports=iface.get_port_group(
-                dq=args.dq,
-                a=args.a,
-                a_clk=args.a_clk,
-                a_si=args.a_si,
-                a_lat=args.a_lat,
-                oe=args.oe,
-                we=args.we,
-                ce=args.ce,
-            ),
-            a_bits=args.a_bits,
-            sh_freq=args.shift_freq * 1e6,
-        )
-        iface.add_subtarget(MemoryPROMSubtarget(
-            bus=bus,
-            in_fifo=iface.get_in_fifo(auto_flush=False),
-            out_fifo=iface.get_out_fifo(),
-            read_cycle_delay=1e-9 * args.read_cycle,
-            write_cycle_delay=1e-9 * args.write_cycle,
-            write_hold_delay=1e-9 * args.write_hold,
-        ))
-
-    async def run(self, device, args):
-        iface = await device.demultiplexer.claim_interface(self, self.mux_interface, args)
-        return MemoryPROMInterface(iface, self.logger, args.a_bits, len(args.dq))
+        with self.assembly.add_applet(self):
+            if args.voltage is not None:
+                self.assembly.use_voltage({"*": args.voltage})
+            self.prom_iface = MemoryPROMInterface(self.logger, self.assembly,
+                dq=args.dq, a=args.a, a_bits=args.a_bits,
+                a_clk=args.a_clk, a_si=args.a_si, a_lat=args.a_lat,
+                oe=args.oe, we=args.we, ce=args.ce,
+                shift_frequency=args.shift_freq * 1e6,
+                read_cycle=args.read_cycle * 1e-9,
+                write_cycle=args.write_cycle * 1e-9,
+                write_hold=args.write_hold * 1e-9)
 
     @classmethod
-    def add_interact_arguments(cls, parser):
+    def add_run_arguments(cls, parser):
         def address(arg):
             return int(arg, 0)
         def length(arg):
@@ -569,7 +604,7 @@ class MemoryPROMApplet(GlasgowApplet):
             help="read memory starting at address ADDRESS, with wraparound")
         p_read.add_argument(
             "length", metavar="LENGTH", type=length, nargs="?",
-            help="read LENGTH bytes from memory")
+            help="read LENGTH words from memory")
         p_read.add_argument(
             "-f", "--file", metavar="FILENAME", type=argparse.FileType("wb"),
             help="write memory contents to FILENAME")
@@ -656,7 +691,9 @@ class MemoryPROMApplet(GlasgowApplet):
             "file", metavar="FILENAME", type=argparse.FileType("wt"),
             help="write aggregated data to FILENAME")
 
-    async def interact(self, device, args, prom_iface):
+    async def run(self, args):
+        device = self.device
+        prom_iface = self.prom_iface
         a_bits  = args.a_bits
         dq_bits = len(args.dq)
         depth   = 1 << a_bits
@@ -751,12 +788,11 @@ class MemoryPROMApplet(GlasgowApplet):
         if args.operation == "health" and args.mode == "sweep":
             if args.voltage is None:
                 raise GlasgowAppletError("health sweep requires --voltage to be specified")
-
-            voltage  = args.voltage
+            voltage = args.voltage
             step_num = 0
             while True:
                 self.logger.info("step %d (%.2f V)", step_num, voltage)
-                await device.set_voltage("AB", voltage)
+                await device.set_voltage(device.all_ports, voltage)
 
                 initial_data = await prom_iface.read(0, depth)
                 for sample_num in range(args.samples):
@@ -788,7 +824,7 @@ class MemoryPROMApplet(GlasgowApplet):
             step_num = 0
             while True:
                 self.logger.info("step %d (%.2f V)", step_num, voltage)
-                await device.set_voltage("AB", voltage)
+                await device.set_voltage(device.all_ports, voltage)
 
                 popcounts = []
                 for sample_num in range(args.samples):

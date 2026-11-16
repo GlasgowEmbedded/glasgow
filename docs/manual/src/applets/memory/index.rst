@@ -10,4 +10,5 @@ Memory manipulation
 
     24x
     25q
+    prom
     onfi
