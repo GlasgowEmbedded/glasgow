@@ -11,3 +11,5 @@ The Glasgow API allows end users to customize the software for their particular 
     :maxdepth: 2
 
     main
+    applet
+    abstract

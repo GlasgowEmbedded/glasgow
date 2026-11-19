@@ -420,7 +420,7 @@ class GlasgowAppletV2TestCase(unittest.TestCase):
             case str():
                 return parser.parse_args(shlex.split(args))
             case _:
-                assert False
+                raise TypeError(f"args must be a list, a string, or None, not {args!r}")
 
     def assertBuilds(self, args=None, *, revision=None):
         parsed_args = self._parse_args(args, mode="build")
