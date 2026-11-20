@@ -8,8 +8,8 @@ At the moment, binary installers are built only for Microsoft Windows. Download 
 =========================================== ====== ========= ===============================================
 Platform                                    Type   Size      Downloads
 =========================================== ====== ========= ===============================================
-Windows 7 SP1 [#f1]_ or newer (32 bit; x86) MSI    ~120 MB   `Worldwide <x86_msi_>`_, `China <x86_msi_cn_>`_
-Windows 7 SP1 [#f1]_ or newer (64 bit; x64) MSI    ~120 MB   `Worldwide <x64_msi_>`_, `China <x64_msi_cn_>`_
+Windows 7 SP1 [#f1]_ or newer (32 bit; x86) MSI    ~200 MB   `Worldwide <x86_msi_>`_, `China <x86_msi_cn_>`_
+Windows 7 SP1 [#f1]_ or newer (64 bit; x64) MSI    ~200 MB   `Worldwide <x64_msi_>`_, `China <x64_msi_cn_>`_
 =========================================== ====== ========= ===============================================
 
 .. [#f1] In addition to Service Pack 1, use on Windows 7 requires `KB4457144`_ to be installed first.
