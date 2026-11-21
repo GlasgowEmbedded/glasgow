@@ -76,7 +76,12 @@ static void load_reset_revd() __reentrant
 
   // Take the FPGA out of reset.
   fpga_reset(false);
-  // tINITL = 55ns(max)
+
+  // The datasheet specifies tINITL = 55ns(max), but this is incorrect. When the FPGA has
+  // been configured before, the measured tINITL = 1.108ms, and if not respected the FPGA
+  // will not configure the second time. Wait for 2ms to be on the safe side. (We do not
+  // have enough pins for INITL to be input to the FX2.)
+  delay_us(2000);
 
   // For reasons that aren't entirely clear, unless the ECP5's SPCM interface is clocked
   // at least once after reset here, it will never configure until it is power-cycled, even
