@@ -739,12 +739,12 @@ class Memory25QApplet(GlasgowAppletV2):
 
         def add_addr_argument(parser):
             parser.add_argument(
-                "address", metavar="ADDRESS", type=address,
+                "address", metavar="ADDRESS", type=address, nargs="?", default=0,
                 help="start with byte at ADDRESS")
 
         def add_len_argument(parser):
             parser.add_argument(
-                "length", metavar="LENGTH", type=length,
+                "length", metavar="LENGTH", type=length, nargs="?",
                 help="continue for LENGTH bytes")
 
         def add_dst_argument(parser):
@@ -848,6 +848,14 @@ class Memory25QApplet(GlasgowAppletV2):
                 self.logger.info(
                     f"current block protect bits: {bp_bits >> 2:04b} "
                     f"(all blocks writable)")
+
+        if args.operation in ("read", "erase"):
+            if args.length is None:
+                if self.m25q_iface.jedec_params is not None:
+                    args.length = self.m25q_iface.jedec_params.density_bytes
+                else:
+                    self.logger.error("length required but not specified; SFDP unavailable")
+                    return 1
 
         if args.operation is None:
             pass # done above
