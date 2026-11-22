@@ -877,9 +877,10 @@ class Memory25QApplet(GlasgowAppletV2):
             data_actual = await self.m25q_iface.read_data(args.address, len(data_golden))
             if data_golden == data_actual:
                 self.logger.info("verify PASS")
+                return 0
             else:
                 self.logger.error("verify FAIL")
-                exit(1)
+                return 1
 
         elif args.operation == "erase":
             try:
@@ -928,6 +929,8 @@ class Memory25QApplet(GlasgowAppletV2):
 
         else:
             assert False
+
+        return 0
 
     @classmethod
     def add_repl_arguments(cls, parser):
