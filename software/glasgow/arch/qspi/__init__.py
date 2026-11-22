@@ -247,6 +247,9 @@ class Instruction[OpcodeT: int]:
         return CommandMode(self.x_opcode, self.x_address, self.x_data)
 
     def check_usage(self, address: int | None, data: Buffer | None, length: int | None):
+        if address is not None and address >= 1 << (8 * self.address_octets):
+            raise ValueError(
+                "address is not representable when using this instruction")
         if self.x_address == 0 and address is not None:
             raise ValueError(
                 "instruction does not have an address phase, but an address was provided")
