@@ -1,11 +1,15 @@
+from __future__ import annotations
+
 from typing import Any, override
+from collections.abc import AsyncGenerator
 from collections.abc import Buffer, Generator
 from contextlib import contextmanager
+from functools import reduce
 import dataclasses
 
 from amaranth import *
 from amaranth.lib import io, wiring
-from amaranth.sim import Simulator
+from amaranth.sim import Simulator, SimulatorContext
 
 from glasgow.support import logging
 from glasgow.abstract import (AbstractAssembly, AbstractInOutPipe, AbstractInPipe, AbstractOutPipe,
@@ -90,23 +94,96 @@ class SimulationRWRegister(SimulationRORegister, AbstractRWRegister):
         self._parent._context.set(self._signal, value)
 
 
+class SimulationPad:
+    def __init__(self, pin: GlasgowPin):
+        self.name   = pin.location
+        self.strong = io.SimulationPort("io", 1, invert=pin.invert, name=pin.location)
+        self.weak0  = Signal()
+        self.weak1  = Signal()
+
+    def set_pull(self, ctx: SimulatorContext, state: PullState):
+        ctx.set(self.weak0, state == PullState.Low)
+        ctx.set(self.weak1, state == PullState.High)
+
+    def __repr__(self):
+        return f"<SimulationPad {self.name}>"
+
+
+class SimulationNet:
+    def __init__(self, pads: list[SimulationPad]):
+        self._pads = pads
+
+    @classmethod
+    def from_pad(cls, pad: SimulationPad):
+        return cls([pad])
+
+    @classmethod
+    def from_nets(cls, nets: list[SimulationNet]):
+        return cls(reduce(lambda a, b: a + b, [net._pads for net in nets]))
+
+    def lower(self, m: Module):
+        has_strong0 = Cat(Mux(pad.strong.oe, pad.strong.o == 0, 0) for pad in self._pads).any()
+        has_strong1 = Cat(Mux(pad.strong.oe, pad.strong.o == 1, 0) for pad in self._pads).any()
+        has_weak0   = Cat(pad.weak0 for pad in self._pads).any()
+        has_weak1   = Cat(pad.weak1 for pad in self._pads).any()
+
+        value = Signal(name="_".join(pad.name for pad in self._pads))
+        with m.If(has_strong0 | has_strong1):
+            m.d.comb += value.eq(has_strong1)
+        with m.Elif(has_weak0 | has_weak1):
+            m.d.comb += value.eq(has_weak1)
+        for pad in self._pads:
+            m.d.comb += pad.strong.i.eq(value)
+
+        m.d.comb += Assert(
+            ~(has_strong0 & has_strong1),
+            Format(
+                f"electrical contention on simulation net: "
+                f"{' '.join(f'{pad.name}.oe={{{n}[0]}} {pad.name}.o={{{n}[1]}}'
+                   for n, pad in enumerate(self._pads))}",
+                *((pad.strong.oe, pad.strong.o) for pad in self._pads)
+            )
+        )
+        m.d.comb += Assert(
+            (has_strong0 | has_strong1) | ~(has_weak0 & has_weak1),
+            Format(
+                f"indeterminate value on simulation net: "
+                f"{' '.join(f'{pad.name}.weak0={{{n}[0]}} {pad.name}.weak1={{{n}[1]}}'
+                   for n, pad in enumerate(self._pads))}",
+                *((pad.weak0, pad.weak1) for pad in self._pads)
+            )
+        )
+
+    def __hash__(self):
+        return id(self)
+
+    def __eq__(self, other):
+        return self is other
+
+    def __repr__(self):
+        return f"<SimulationNet {' '.join(pad.name for pad in self._pads)}>"
+
+
 class SimulationAssembly(AbstractAssembly):
     def __init__(self):
         self._logger   = logger
-        self._pins     = {} # {name: io.PortLike}
-        self._leds     = {} # {name: Signal}
-        self._modules  = [] # (elaboratable, name)
-        self._benches  = [] # (constructor, background)
-        self._jumpers  = [] # (pin_name...)
+        self._leds     = dict[str, Signal]()                 # name to signal
+        self._pads     = dict[str, SimulationPad]()          # location to pad
+        self._nets     = dict[str, SimulationNet]()          # location to net, nets may be shared
+        self._pulls    = dict[str, PullState]()              # location to state
+        self._modules  = list[tuple[Elaboratable, str]]()    # (elaboratable, name)
+        self._benches  = list[tuple[AsyncGenerator, bool]]() # (constructor, background)
         self._memories = 0
         self.__context = None
 
     @property
+    @override
     def sys_clk_period(self) -> float: # TODO: migrate to `amaranth.hdl.Period`
         # Reduced from 36 or 48 MHz to 1 MHz to improve test performance.
         return 1/1000000
 
     @contextmanager
+    @override
     def add_applet(self, applet: Any) -> Generator[None]:
         self._logger = applet.logger
         try:
@@ -114,33 +191,35 @@ class SimulationAssembly(AbstractAssembly):
         finally:
             self._logger = logger
 
+    @override
     def add_platform_pin(self, pin: GlasgowPin, port_name: str) -> io.PortLike:
-        pin_name = f"{pin.port}{pin.number}"
-        port = io.SimulationPort("io", 1, name=pin_name)
-        self._pins[pin_name] = port
-        return port
+        self._pads[pin.location] = pad = SimulationPad(pin)
+        self._nets[pin.location] = SimulationNet.from_pad(pad)
+        return pad.strong
 
-    def get_pin(self, pin_name: str) -> io.SimulationPort:
-        return self._pins[pin_name]
+    def get_pin(self, location: str) -> io.SimulationPort:
+        return self._pads[location].strong
 
-    def get_led(self, led_name: str) -> Signal:
-        return self._leds[led_name]
+    def connect_pins(self, *locations: str):
+        jumper_net = SimulationNet.from_nets([self._nets[loc] for loc in locations])
+        for loc in locations:
+            self._nets[loc] = jumper_net
 
-    def connect_pins(self, *pin_names: str):
-        self._jumpers.append(pin_names)
-
+    @override
     def add_in_pipe(self, in_stream, *, in_flush=C(0),
                     fifo_depth=None, buffer_size=None) -> AbstractInPipe:
         return self.add_inout_pipe(
             in_stream=in_stream, out_stream=None, in_flush=in_flush,
             in_fifo_depth=fifo_depth, in_buffer_size=buffer_size)
 
+    @override
     def add_out_pipe(self, out_stream, *,
                      fifo_depth=None, buffer_size=None) -> AbstractOutPipe:
         return self.add_inout_pipe(
             in_stream=None, out_stream=out_stream,
             out_fifo_depth=fifo_depth, out_buffer_size=buffer_size)
 
+    @override
     def add_inout_pipe(self, in_stream, out_stream, *, in_flush=C(0),
                        in_fifo_depth=None, in_buffer_size=None,
                        out_fifo_depth=None, out_buffer_size=None) -> AbstractInOutPipe:
@@ -205,30 +284,42 @@ class SimulationAssembly(AbstractAssembly):
         self._memories += 1
         return queue.i, range(options.size)
 
+    @override
     def add_indicator(self, signal: Signal, *, name: str):
         self._leds[name] = signal
 
+    def get_led(self, led_name: str) -> Signal:
+        return self._leds[led_name]
+
+    @override
     def add_ro_register(self, signal) -> AbstractRORegister:
         return SimulationRORegister(self, signal)
 
+    @override
     def add_rw_register(self, signal) -> AbstractRWRegister:
         return SimulationRWRegister(self, signal)
 
+    @override
     def add_submodule[E: Elaboratable](self, elaboratable: E, *, name: str | None = None) -> E:
         self._modules.append((elaboratable, name))
         return elaboratable
 
+    @override
     def add_testbench(self, constructor, *, background=False):
         self._benches.append((constructor, background))
 
+    @override
     def set_port_voltage(self, port: GlasgowPort, vio: GlasgowVio):
         pass
 
+    @override
     def set_pin_pull(self, pin: GlasgowPin, state: PullState):
-        pass # TODO: record pull state?
+        self._pulls[pin.location] = state
 
+    @override
     async def configure_ports(self):
-        pass # TODO: log and use pull state for default pin state?
+        for location, state in self._pulls.items():
+            self._pads[location].set_pull(self._context, state)
 
     @property
     def _context(self):
@@ -242,21 +333,8 @@ class SimulationAssembly(AbstractAssembly):
         dummy = Signal()
         m.d.sync += dummy.eq(0) # make sure the domain exists
 
-        for jumper in self._jumpers:
-            net = Signal(name=f"jumper_{'_'.join(jumper)}")
-            pins = [self._pins[name] for name in jumper]
-            for pin in pins:
-                m.d.comb += pin.i.eq(net)
-                with m.If(pin.oe):
-                    m.d.comb += net.eq(pin.o)
-            m.d.comb += Assert(
-                sum(Cat(pin.oe for pin in pins)) <= 1,
-                Format(
-                    f"electrical contention on a jumper: "
-                    f"{' '.join(f'{name}.oe={{}}' for name in jumper)}",
-                    *(self._pins[name].oe for name in jumper)
-                )
-            )
+        for net in set(self._nets.values()):
+            net.lower(m)
 
         for elaboratable, name in self._modules:
             m.submodules[name] = elaboratable
