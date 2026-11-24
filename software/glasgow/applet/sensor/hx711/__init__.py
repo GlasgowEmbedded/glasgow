@@ -8,9 +8,10 @@ from amaranth.lib import enum, wiring, io, cdc, stream
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support import logging
-from glasgow.abstract import AbstractAssembly, ClockDivisor, GlasgowPin
+from glasgow.abstract import (AbstractAssembly, ClockDivisor, GlasgowSupply, GlasgowPin,
+    glasgow_ports)
 from glasgow.applet import GlasgowAppletV2, GlasgowAppletError
-from glasgow.applet.control.clock import ClockDriveInterface
+from glasgow.applet.control.clock import ClockDriveInterface, ClockDrivePorts
 from glasgow.support.data_logger import DataLogger
 
 
@@ -138,13 +139,25 @@ class SensorHX711Controller(wiring.Component):
         return m
 
 
+@glasgow_ports
+class SensorHX711Ports:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """sensor power"""
+    sck: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """serial clock"""
+    din: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """serial data"""
+    osc: io.PortLike | None = GlasgowPin.field(power=supply)
+    """reference oscillator clock output"""
+
+
 class SensorHX711Component(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
 
     sck_divisor: In(16)
 
-    def __init__(self, ports):
+    def __init__(self, ports: SensorHX711Ports):
         self._ports = ports
         super().__init__()
 
@@ -189,13 +202,13 @@ class SensorHX711Component(wiring.Component):
 
 
 class SensorHX711Interface:
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 sck: GlasgowPin, din: GlasgowPin):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
+                 ports: SensorHX711Ports):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
         component = assembly.add_submodule(
-            SensorHX711Component(assembly.add_port_group(sck=sck, din=din)))
+            SensorHX711Component(ports))
 
         self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
 
@@ -241,20 +254,15 @@ class SensorHX711Applet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-
-        access.add_pins_argument(parser, "sck", default=True, required=True)
-        access.add_pins_argument(parser, "din", default=True, required=True)
-        access.add_pins_argument(parser, "osc", required=False)
+        access.add_ports_arguments(parser, SensorHX711Ports)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.hx711_iface = SensorHX711Interface(self.logger, self.assembly,
-                                                    sck=args.sck, din=args.din)
-            if args.osc is not None:
+            ports = self.assembly.add_ports(SensorHX711Ports, args)
+            self.hx711_iface = SensorHX711Interface(self.logger, self.assembly, ports)
+            if ports.osc is not None:
                 self.osc_iface = ClockDriveInterface(self.logger, self.assembly,
-                                                     clk=args.osc, name="osc")
+                    ClockDrivePorts(supply=ports.supply, clk=ports.osc), name="osc")
 
     @classmethod
     def add_setup_arguments(cls, parser):
@@ -268,11 +276,11 @@ class SensorHX711Applet(GlasgowAppletV2):
         # gets full.
         await self.hx711_iface.sck_clock.set_frequency(1e6)
 
-        if args.frequency is not None and args.osc is not None:
+        if args.frequency is not None and args.osc:
             await self.osc_iface.enable(args.frequency * 1e6)
         elif args.frequency is not None:
             raise HX711Error("osc pin not assigned, but --frequency argument is present.")
-        elif args.osc is not None:
+        elif args.osc:
             raise HX711Error("osc pin assigned, but --frequency argument is missing.")
 
     @classmethod

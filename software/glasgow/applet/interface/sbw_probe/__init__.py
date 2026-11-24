@@ -7,6 +7,7 @@ from amaranth.lib.wiring import In, Out, flipped, connect
 from amaranth.lib.cdc import FFSynchronizer
 
 from glasgow.support import logging
+from glasgow.abstract import GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.gateware.jtag.probe import Controller, Mode
 from glasgow.applet import GlasgowAppletV2
 from ..jtag_probe import JTAGProbeDriver, BaseJTAGProbeInterface
@@ -279,12 +280,22 @@ class SpyBiWireProbeController(wiring.Component):
         return m
 
 
+@glasgow_ports
+class SpyBiWireProbePorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """target power (voltage reference of the interface)"""
+    sbwtck: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """SpyBiWire test clock"""
+    sbwtdio: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """SpyBiWire test data"""
+
+
 class SpyBiWireProbeComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
     o_flush:  Out(1)
 
-    def __init__(self, ports, *, period_cyc, us_cycles):
+    def __init__(self, ports: SpyBiWireProbePorts, *, period_cyc, us_cycles):
         self._ports      = ports
         self._period_cyc = period_cyc
         self._us_cycles  = us_cycles
@@ -315,8 +326,7 @@ class SpyBiWireProbeComponent(wiring.Component):
 
 
 class SpyBiWireProbeInterface(BaseJTAGProbeInterface):
-    def __init__(self, logger, assembly, *, sbwtck, sbwtdio, period_cyc):
-        ports = assembly.add_port_group(sbwtck=sbwtck, sbwtdio=sbwtdio)
+    def __init__(self, logger, assembly, ports: SpyBiWireProbePorts, *, period_cyc):
         component = assembly.add_submodule(SpyBiWireProbeComponent(ports, period_cyc=period_cyc,
             us_cycles=int(1 / (assembly.sys_clk_period * 1_000_000))))
         pipe = assembly.add_inout_pipe(
@@ -352,10 +362,7 @@ class SpyBiWireProbeApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-
-        access.add_pins_argument(parser, "sbwtck", default=True)
-        access.add_pins_argument(parser, "sbwtdio", default=True)
+        access.add_ports_arguments(parser, SpyBiWireProbePorts)
 
         # set up for f_TCLK=350 kHz
         parser.add_argument(
@@ -364,9 +371,8 @@ class SpyBiWireProbeApplet(GlasgowAppletV2):
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.sbw_iface = SpyBiWireProbeInterface(self.logger, self.assembly,
-                sbwtck=args.sbwtck, sbwtdio=args.sbwtdio,
+            ports = self.assembly.add_ports(SpyBiWireProbePorts, args)
+            self.sbw_iface = SpyBiWireProbeInterface(self.logger, self.assembly, ports,
                 period_cyc=round(1 / (self.assembly.sys_clk_period * args.frequency * 1000)),
             )
 

@@ -10,6 +10,7 @@ from amaranth.lib import io, wiring, stream, cdc, enum
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support import logging
+from glasgow.abstract import GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.applet import GlasgowAppletV2
 
 
@@ -22,11 +23,19 @@ class JTAGPinoutCommand(enum.Enum, shape=8):
     GetI  = 0x05
 
 
+@glasgow_ports
+class JTAGPinoutPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """target power (voltage reference of the interface)"""
+    pins: io.PortLike = GlasgowPin.field(power=supply, width=range(4, 33))
+    """pins to search for a JTAG interface"""
+
+
 class JTAGPinoutComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
 
-    def __init__(self, ports, period_cyc):
+    def __init__(self, ports: JTAGPinoutPorts, period_cyc):
         self._ports      = ports
         self._period_cyc = period_cyc
 
@@ -51,7 +60,8 @@ class JTAGPinoutComponent(wiring.Component):
 
         timer = Signal(range(self._period_cyc))
         cmd   = Signal(JTAGPinoutCommand)
-        data  = Signal(16)
+        data  = Signal(32)
+        index = Signal(range(4)) # byte of `data` being received or sent
 
         with m.FSM():
             with m.State("RECV-COMMAND"):
@@ -64,19 +74,17 @@ class JTAGPinoutComponent(wiring.Component):
                     with m.Elif(self.i_stream.payload == JTAGPinoutCommand.GetI):
                         m.next = "SAMPLE"
                     with m.Else():
-                        m.next = "RECV-DATA-1"
+                        m.next = "RECV-DATA"
 
-            with m.State("RECV-DATA-1"):
+            with m.State("RECV-DATA"):
                 with m.If(self.i_stream.valid):
                     m.d.comb += self.i_stream.ready.eq(1)
-                    m.d.sync += data[0:8].eq(self.i_stream.payload)
-                    m.next = "RECV-DATA-2"
-
-            with m.State("RECV-DATA-2"):
-                with m.If(self.i_stream.valid):
-                    m.d.comb += self.i_stream.ready.eq(1)
-                    m.d.sync += data[8:16].eq(self.i_stream.payload)
-                    m.next = "DRIVE"
+                    m.d.sync += data.word_select(index, 8).eq(self.i_stream.payload)
+                    with m.If(index == 3):
+                        m.d.sync += index.eq(0)
+                        m.next = "DRIVE"
+                    with m.Else():
+                        m.d.sync += index.eq(index + 1)
 
             with m.State("DRIVE"):
                 with m.If(cmd == JTAGPinoutCommand.SetOE):
@@ -97,29 +105,26 @@ class JTAGPinoutComponent(wiring.Component):
 
             with m.State("SAMPLE"):
                 m.d.sync += data.eq(jtag_i)
-                m.next = "SEND-DATA-1"
+                m.next = "SEND-DATA"
 
-            with m.State("SEND-DATA-1"):
+            with m.State("SEND-DATA"):
                 m.d.comb += self.o_stream.valid.eq(1)
-                m.d.comb += self.o_stream.payload.eq(data[0:8])
+                m.d.comb += self.o_stream.payload.eq(data.word_select(index, 8))
                 with m.If(self.o_stream.ready):
-                    m.next = "SEND-DATA-2"
-
-            with m.State("SEND-DATA-2"):
-                m.d.comb += self.o_stream.valid.eq(1)
-                m.d.comb += self.o_stream.payload.eq(data[8:16])
-                with m.If(self.o_stream.ready):
-                    m.next = "RECV-COMMAND"
+                    with m.If(index == 3):
+                        m.d.sync += index.eq(0)
+                        m.next = "RECV-COMMAND"
+                    with m.Else():
+                        m.d.sync += index.eq(index + 1)
 
         return m
 
 
 class JTAGPinoutInterface:
-    def __init__(self, logger, assembly, *, pins, frequency):
+    def __init__(self, logger, assembly, ports: JTAGPinoutPorts, *, frequency):
         self._logger = logger
         self._level  = logging.TRACE
 
-        ports = assembly.add_port_group(pins=pins)
         component = assembly.add_submodule(JTAGPinoutComponent(ports,
             period_cyc=round(1 / (assembly.sys_clk_period * frequency)),
         ))
@@ -132,32 +137,32 @@ class JTAGPinoutInterface:
         await self._pipe.send([cmd.value])
 
     async def _arg(self, arg):
-        await self._pipe.send(struct.pack("<H", arg))
+        await self._pipe.send(struct.pack("<I", arg))
 
     async def _ret(self):
-        return struct.unpack("<H", await self._pipe.recv(2))[0]
+        return struct.unpack("<I", await self._pipe.recv(4))[0]
 
     async def wait(self):
         self._log("wait")
         await self._cmd(JTAGPinoutCommand.Wait)
 
     async def set_oe(self, word):
-        self._log("set oe=%s", f"{word:016b}")
+        self._log("set oe=%s", f"{word:032b}")
         await self._cmd(JTAGPinoutCommand.SetOE)
         await self._arg(word)
 
     async def set_o(self, word):
-        self._log("set o= %s", f"{word:016b}")
+        self._log("set o= %s", f"{word:032b}")
         await self._cmd(JTAGPinoutCommand.SetO)
         await self._arg(word)
 
     async def set_o_1(self, word):
-        self._log("set h= %s", f"{word:016b}")
+        self._log("set h= %s", f"{word:032b}")
         await self._cmd(JTAGPinoutCommand.SetO1)
         await self._arg(word)
 
     async def set_o_0(self, word):
-        self._log("set l= %s", f"{word:016b}")
+        self._log("set l= %s", f"{word:032b}")
         await self._cmd(JTAGPinoutCommand.SetO0)
         await self._arg(word)
 
@@ -165,7 +170,7 @@ class JTAGPinoutInterface:
         await self._cmd(JTAGPinoutCommand.GetI)
         await self._pipe.flush()
         word = await self._ret()
-        self._log("get i= %s", f"{word:016b}")
+        self._log("get i= %s", f"{word:032b}")
         return word
 
 
@@ -178,9 +183,7 @@ class JTAGPinoutApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-
-        access.add_pins_argument(parser, "pins", width=range(4, 17), required=True)
+        access.add_ports_arguments(parser, JTAGPinoutPorts)
 
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=10,
@@ -188,9 +191,9 @@ class JTAGPinoutApplet(GlasgowAppletV2):
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.jtag_iface = JTAGPinoutInterface(self.logger, self.assembly,
-                pins=args.pins, frequency=args.frequency * 1000)
+            ports = self.assembly.add_ports(JTAGPinoutPorts, args)
+            self.jtag_iface = JTAGPinoutInterface(self.logger, self.assembly, ports,
+                frequency=args.frequency * 1000)
 
         self.bits  = set(range(len(args.pins)))
         self.pins  = dict(enumerate(args.pins))
@@ -432,9 +435,8 @@ class JTAGPinoutApplet(GlasgowAppletV2):
                 self.logger.info("JTAG interface without reset detected")
 
             probe_args = ["jtag-probe"]
-            if args.voltage:
-                probe_args += [
-                    "-V", ",".join(f"{port}={vio}" for port, vio in args.voltage.items())]
+            if args.supply is not None:
+                probe_args += ["-V", str(args.supply)]
             probe_args += ["--tck", str(self.pins[bit_tck])]
             probe_args += ["--tms", str(self.pins[bit_tms])]
             probe_args += ["--tdi", str(self.pins[bit_tdi])]

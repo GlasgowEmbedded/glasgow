@@ -5,12 +5,17 @@ import unittest
 import argparse
 import functools
 import asyncio
+import ast
+import inspect
+import textwrap
+import dataclasses
 
 from ..support.plugin import PluginMetadata
 from ..support.asyncio import asyncio_run_in_thread
 from ..support.arepl import AsyncInteractiveConsole
 from ..support.mock import MockRecorder, MockReplayer
-from ..abstract import GlasgowVio, GlasgowPin, AbstractAssembly
+from ..abstract import (GlasgowVio, GlasgowSupply, GlasgowPin, AbstractAssembly,
+    VoltageConflictError, _inspect_ports, _check_supply_range)
 from ..hardware.toolchain import find_toolchain
 from ..hardware.device import GlasgowDevice
 from ..hardware.assembly import HardwareAssembly
@@ -145,6 +150,29 @@ class GlasgowAppletV2(metaclass=ABCMeta):
         return parser
 
 
+def _attribute_docstrings(cls: type) -> dict[str, str]:
+    """Return the docstrings that immediately follow annotated attributes in the class body.
+
+    Attributes inherited from base classes are included; a subclass overrides its bases.
+    """
+    docs = {}
+    for klass in reversed(cls.__mro__):
+        if klass is object:
+            continue
+        try:
+            tree = ast.parse(textwrap.dedent(inspect.getsource(klass)))
+        except (OSError, TypeError, SyntaxError):
+            continue
+        body = tree.body[0].body
+        for stmt, following in zip(body, body[1:]):
+            if not (isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name)):
+                continue
+            if (isinstance(following, ast.Expr) and isinstance(following.value, ast.Constant) and
+                    isinstance(following.value.value, str)):
+                docs[stmt.target.id] = inspect.cleandoc(following.value.value)
+    return docs
+
+
 class GlasgowAppletArguments:
     def __init__(self, applet_name):
         self._applet_name  = applet_name
@@ -247,6 +275,90 @@ class GlasgowAppletArguments:
         parser.add_argument(
             f"--{name.lower().replace('_', '-')}", dest=name, metavar=metavar,
             type=pin_arg, default=default, required=required, help=help)
+
+    def add_ports_arguments(self, parser, cls):
+        """Add command line arguments for every field of the ports dataclass :py:`cls`.
+
+        Each pin field declared with :py:`GlasgowPin.field` becomes an option :py:`--<name>`.
+        Each supply declared with :py:`GlasgowSupply.field` becomes :py:`-V/--voltage` if it is
+        the only one, or :py:`--<name>-voltage` otherwise. Help text is taken from the docstring
+        following the field, unless :py:`help=` is given. The parsed values are stored in the
+        namespace under the field names, ready to be passed to :meth:`AbstractAssembly.add_ports`.
+        """
+        layout = _inspect_ports(cls)
+        docs = _attribute_docstrings(cls)
+
+        configurable = {name: info for name, info in layout.supplies.items() if info.spec}
+        for name, info in configurable.items():
+            if info.spec.option is not None:
+                flags = [f"--{info.spec.option}"]
+            elif len(configurable) == 1:
+                flags = ["-V", "--voltage"]
+            else:
+                stem = name.removesuffix("_supply").replace("_", "-")
+                flags = [f"--{stem}-voltage"]
+
+            def supply_arg(arg, name=name, spec=info.spec):
+                try:
+                    supply = GlasgowSupply.parse(arg)
+                    supply = dataclasses.replace(supply, current_max=spec.current_max)
+                    _check_supply_range(name, spec, supply)
+                except (ValueError, VoltageConflictError) as e:
+                    self._arg_error(str(e))
+                return supply
+
+            help = docs.get(name, f"power supply {name!r}")
+            parser.add_argument(*flags, dest=name, metavar="VOLTS", type=supply_arg, default=None,
+                help=f"{help} (range: {info.spec.voltage_min:g}..{info.spec.voltage_max:g} V, "
+                     f"or 'S<port>' to follow the voltage sensed on a port; default: unchanged)")
+
+        for name, info in layout.pins.items():
+            spec = info.spec
+            single = len(spec.width) == 1 and spec.width[0] == 1
+            match spec.default:
+                case None | False:
+                    default = None
+                case True:
+                    default = tuple(self._take_free_pins(spec.width[0]))
+                case int() as count:
+                    default = tuple(self._take_free_pins(count))
+                case str() as value:
+                    default = GlasgowPin.parse(value)
+            if len(spec.width) == 1:
+                width_desc = f"{spec.width[0]}"
+            elif spec.width == tuple(range(spec.width[0], spec.width[-1] + 1)):
+                width_desc = f"{spec.width[0]}..{spec.width[-1]}"
+            else:
+                width_desc = " or ".join(map(str, spec.width))
+
+            def pin_arg(arg, name=name, spec=spec, optional=info.optional, width_desc=width_desc):
+                try:
+                    result = GlasgowPin.parse(arg)
+                except ValueError as e:
+                    self._arg_error(str(e))
+                if len(result) == 0 and optional:
+                    return result
+                if len(result) not in spec.width:
+                    self._arg_error(f"expected {width_desc} pins, got {len(result)} pins")
+                return result
+
+            required = default is None and not info.optional
+            metavar = "PIN" if single else "PINS"
+            what = spec.help or docs.get(name) or f"applet I/O line {name!r}"
+            suffix = []
+            if default:
+                suffix.append(f"default: '{','.join(str(pin) for pin in default)}'")
+            suffix.append("optional" if info.optional else "required")
+            parser.add_argument(
+                f"--{name.lower().replace('_', '-')}", dest=name, metavar=metavar,
+                type=pin_arg, default=default, required=required,
+                help=f"bind {what} to {metavar} ({', '.join(suffix)})")
+
+    def _take_free_pins(self, count):
+        pins = []
+        while len(pins) < count and self._free_pins:
+            pins.append(GlasgowPin.parse(self._free_pins.pop(0))[0])
+        return pins
 
     def add_voltage_argument(self, parser):
         def voltage_arg(arg):

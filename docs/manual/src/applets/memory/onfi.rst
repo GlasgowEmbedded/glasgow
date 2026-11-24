@@ -44,4 +44,6 @@ CLI reference
 API reference
 -------------
 
+.. autoclass:: glasgow.applet.memory.onfi.MemoryONFIPorts
+
 .. autoclass:: glasgow.applet.memory.onfi.ONFIInterface

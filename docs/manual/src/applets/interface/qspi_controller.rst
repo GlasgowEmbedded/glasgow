@@ -17,6 +17,8 @@ API reference
 
 .. autoexception:: QSPIControllerError
 
+.. autoclass:: QSPIControllerPorts
+
 .. autoclass:: QSPIControllerInterface
 
 

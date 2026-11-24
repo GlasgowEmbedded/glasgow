@@ -7,6 +7,7 @@ from amaranth.sim import Simulator
 
 from glasgow.applet import (GlasgowAppletV2TestCase, GlasgowAppletError, synthesis_test, async_test,
                             applet_v2_simulation_test, applet_v2_hardware_test)
+from glasgow.abstract import GlasgowSupply
 from glasgow.gateware.ports import PortGroup
 
 from . import MemoryPROMApplet, MemoryPROMBus, MemoryPROMComponent, MemoryPROMInterface, _Command
@@ -54,10 +55,10 @@ class MemoryPROMAppletTestCase(GlasgowAppletV2TestCase, applet=MemoryPROMApplet)
         for ports in ("AB", "ABCD"):
             with self.subTest(ports=ports):
                 assembly.device.all_ports = ports
-                args.voltage = 5.0
+                args.supply = GlasgowSupply(voltage=5.0)
                 await applet.run(args)
                 assembly.device.set_voltage.assert_awaited_with(ports, 5.0)
-        args.voltage = None
+        args.supply = None
         with self.assertRaises(GlasgowAppletError):
             await applet.run(args)
 

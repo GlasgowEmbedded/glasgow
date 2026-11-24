@@ -51,4 +51,6 @@ API reference
 
 In REPL and script mode, ``prom_iface`` provides access to the configured memory. Timing parameters in the Python constructor use seconds and hertz.
 
+.. autoclass:: glasgow.applet.memory.prom.MemoryPROMPorts
+
 .. autoclass:: glasgow.applet.memory.prom.MemoryPROMInterface

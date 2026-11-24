@@ -72,7 +72,7 @@ from glasgow.support import logging
 from glasgow.support.endpoint import endpoint, ServerEndpoint
 from glasgow.gateware import octoram, cobs
 from glasgow.gateware.stream import Queue, StreamBuffer
-from glasgow.abstract import AbstractAssembly, DRAMOptions, GlasgowPin
+from glasgow.abstract import AbstractAssembly, DRAMOptions, GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.applet import GlasgowAppletV2, GlasgowAppletError
 
 
@@ -1689,6 +1689,14 @@ class SampleBlock:
     """
 
 
+@glasgow_ports
+class AnalyzerPorts:
+    # The probed pins are given as positional arguments (and can be named), so they are not fields.
+    # The supply is applied to whichever ports they turn out to be on.
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """probe power (voltage reference of the inputs)"""
+
+
 class AnalyzerInterface:
     _QUEUE_BYTES = 512
 
@@ -1705,14 +1713,14 @@ class AnalyzerInterface:
                 probe_pins  = tuple(probes.values())
                 probe_names = list(probes.keys())
 
-        ports = assembly.add_port_group(pins=probe_pins)
+        probe_port = assembly.add_port(probe_pins, name="pins")
         dram_bus, dram_range = assembly.add_dynamic_memory(DRAMOptions(
             size=buffer_size,
             r_buffer_size=self._QUEUE_BYTES,
             w_buffer_size=self._QUEUE_BYTES,
         ))
         component = assembly.add_submodule(AnalyzerComponent(
-            pins=ports.pins,
+            pins=probe_port,
             dram_bus=dram_bus,
             dram_range=dram_range,
             burst_bytes=self._QUEUE_BYTES // 4,
@@ -2092,7 +2100,7 @@ class AnalyzerApplet(GlasgowAppletV2):
         def length(arg):
             return int(arg, 0)
 
-        access.add_voltage_argument(parser)
+        access.add_ports_arguments(parser, AnalyzerPorts)
         parser.add_argument(
             "--buffer-size", metavar="SIZE", type=length,
             help="use SIZE bytes for capture buffer (e.g. 0x100000 for 1 MB)")
@@ -2108,7 +2116,9 @@ class AnalyzerApplet(GlasgowAppletV2):
             probes = [arg[1] for arg in probe_args] # unnamed only
 
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
+            ports = self.assembly.add_ports(AnalyzerPorts, args)
+            self.assembly.use_supply(ports.supply,
+                probes.values() if isinstance(probes, dict) else probes)
             self.analyzer_iface = AnalyzerInterface(self.logger, self.assembly,
                 probes=probes, buffer_size=args.buffer_size)
 

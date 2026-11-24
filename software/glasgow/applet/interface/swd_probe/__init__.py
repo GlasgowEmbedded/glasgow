@@ -13,7 +13,7 @@ import argparse
 import struct
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream
+from amaranth.lib import enum, data, wiring, stream, io
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support import logging
@@ -23,7 +23,8 @@ from glasgow.arch.arm.swj import *
 from glasgow.arch.arm.dap import *
 from glasgow.database.jedec import jedec_mfg_name_from_bank_num
 from glasgow.gateware import swd
-from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
+from glasgow.abstract import (AbstractAssembly, GlasgowSupply, GlasgowPin, ClockDivisor,
+    glasgow_ports)
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
@@ -80,6 +81,16 @@ class SWDResponse(data.Struct):
     _2:  2
 
 
+@glasgow_ports
+class SWDProbePorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """target power (voltage reference of the interface)"""
+    swclk: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """serial wire clock"""
+    swdio: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """serial wire data"""
+
+
 class SWDProbeComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
@@ -87,7 +98,7 @@ class SWDProbeComponent(wiring.Component):
     divisor: In(16)
     timeout: In(16, init=~0)
 
-    def __init__(self, ports, *, offset=None):
+    def __init__(self, ports: SWDProbePorts, *, offset=None):
         self._ports  = ports
         self._offset = offset
 
@@ -188,12 +199,11 @@ class SWDProbeComponent(wiring.Component):
 
 
 class SWDProbeInterface:
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 swclk: GlasgowPin, swdio: GlasgowPin):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
+                 ports: SWDProbePorts):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
-        ports = assembly.add_port_group(swclk=swclk, swdio=swdio)
         component = assembly.add_submodule(SWDProbeComponent(ports))
         self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
         self._clock = assembly.add_clock_divisor(component.divisor,
@@ -482,15 +492,12 @@ class SWDProbeApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "swclk", required=True, default=True)
-        access.add_pins_argument(parser, "swdio", required=True, default=True)
+        access.add_ports_arguments(parser, SWDProbePorts)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.swd_iface = SWDProbeInterface(self.logger, self.assembly,
-                swclk=args.swclk, swdio=args.swdio)
+            ports = self.assembly.add_ports(SWDProbePorts, args)
+            self.swd_iface = SWDProbeInterface(self.logger, self.assembly, ports)
 
     @classmethod
     def add_setup_arguments(cls, parser):

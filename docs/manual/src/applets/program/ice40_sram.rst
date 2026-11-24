@@ -17,4 +17,6 @@ API reference
 
 .. autoexception:: ICE40SRAMError
 
+.. autoclass:: ICE40SRAMPorts
+
 .. autoclass:: ICE40SRAMInterface

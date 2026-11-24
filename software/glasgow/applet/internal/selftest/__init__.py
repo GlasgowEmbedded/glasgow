@@ -4,6 +4,7 @@ from amaranth.lib import io, stream, wiring
 from amaranth.build.res import ResourceError
 
 from glasgow.support import logging
+from glasgow.gateware.ports import PortGroup
 from glasgow.applet import *
 
 
@@ -84,8 +85,8 @@ class SelfTestApplet(GlasgowAppletV2):
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            component = self.assembly.add_submodule(SelfTestSubtarget(
-                self.assembly.add_port_group(a="A0:7", b="B0:7")))
+            component = self.assembly.add_submodule(SelfTestSubtarget(PortGroup(
+                a=self.assembly.add_port("A0:7", "a"), b=self.assembly.add_port("B0:7", "b"))))
             self._oe_a = self.assembly.add_rw_register(component.reg_oe_a)
             self._o_a  = self.assembly.add_rw_register(component.reg_o_a)
             self._i_a  = self.assembly.add_ro_register(component.reg_i_a)

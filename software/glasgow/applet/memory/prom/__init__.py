@@ -16,7 +16,7 @@ from amaranth.lib.fifo import SyncFIFOBuffered
 
 from glasgow.support import logging
 from glasgow.support.logging import dump_mapseq
-from glasgow.abstract import AbstractAssembly, GlasgowPin
+from glasgow.abstract import AbstractAssembly, GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.applet import *
 
 
@@ -327,6 +327,28 @@ class MemoryPROMComponent(wiring.Component):
         return m
 
 
+@glasgow_ports
+class MemoryPROMPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """memory power"""
+    dq: io.PortLike = GlasgowPin.field(power=supply, width=range(1, 16), default=8)
+    """data lines"""
+    a: io.PortLike | None = GlasgowPin.field(power=supply, width=range(1, 24), default=0)
+    """directly connected address lines"""
+    a_clk: io.PortLike | None = GlasgowPin.field(power=supply)
+    """address shift register clock"""
+    a_si: io.PortLike | None = GlasgowPin.field(power=supply)
+    """address shift register serial input"""
+    a_lat: io.PortLike | None = GlasgowPin.field(power=supply)
+    """address shift register latch"""
+    oe: io.PortLike | None = GlasgowPin.field(power=supply)
+    """output enable (active low)"""
+    we: io.PortLike | None = GlasgowPin.field(power=supply)
+    """write enable (active low)"""
+    ce: io.PortLike | None = GlasgowPin.field(power=supply)
+    """chip enable (active low)"""
+
+
 class MemoryPROMInterface:
     """Access a parallel memory using word addresses and little-endian wire data.
 
@@ -392,20 +414,15 @@ class MemoryPROMInterface:
                 diff[index] = (self[index], other[index])
             return diff
 
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 dq: list[GlasgowPin], a: list[GlasgowPin], a_bits: int,
-                 a_clk: GlasgowPin | None = None, a_si: GlasgowPin | None = None,
-                 a_lat: GlasgowPin | None = None, oe: GlasgowPin | None = None,
-                 we: GlasgowPin | None = None, ce: GlasgowPin | None = None,
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
+                 ports: MemoryPROMPorts, *, a_bits: int,
                  shift_frequency: float = 12e6, read_cycle: float = 500e-9,
                  write_cycle: float = 500e-9, write_hold: float = 500e-9):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
         self.a_bytes  = (a_bits  + 7) // 8
-        self.dq_bytes = (len(dq) + 7) // 8
+        self.dq_bytes = (len(ports.dq) + 7) // 8
 
-        ports = assembly.add_port_group(
-            dq=dq, a=a, a_clk=a_clk, a_si=a_si, a_lat=a_lat, oe=oe, we=we, ce=ce)
         bus = MemoryPROMBus(ports, a_bits, shift_frequency, (1 / assembly.sys_clk_period))
         component = assembly.add_submodule(MemoryPROMComponent(
             bus, (1 / assembly.sys_clk_period), read_cycle, write_cycle, write_hold))
@@ -530,18 +547,7 @@ class MemoryPROMApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        parser.add_argument(
-            "-V", "--voltage", metavar="VOLTS", type=float,
-            help="set I/O port voltage to VOLTS")
-
-        access.add_pins_argument(parser, "dq", width=range(1, 16), default=8)
-        access.add_pins_argument(parser, "a",  width=range(0, 24), default=0)
-        access.add_pins_argument(parser, "a_clk")
-        access.add_pins_argument(parser, "a_si")
-        access.add_pins_argument(parser, "a_lat")
-        access.add_pins_argument(parser, "oe")
-        access.add_pins_argument(parser, "we")
-        access.add_pins_argument(parser, "ce")
+        access.add_ports_arguments(parser, MemoryPROMPorts)
 
         parser.add_argument(
             "--a-bits", metavar="COUNT", type=int,
@@ -562,17 +568,14 @@ class MemoryPROMApplet(GlasgowAppletV2):
 
     def build(self, args):
         if args.a_bits is None:
-            args.a_bits = len(args.a)
+            args.a_bits = len(args.a or ())
         if args.write_cycle is None:
             args.write_cycle = args.read_cycle
 
         with self.assembly.add_applet(self):
-            if args.voltage is not None:
-                self.assembly.use_voltage({"*": args.voltage})
-            self.prom_iface = MemoryPROMInterface(self.logger, self.assembly,
-                dq=args.dq, a=args.a, a_bits=args.a_bits,
-                a_clk=args.a_clk, a_si=args.a_si, a_lat=args.a_lat,
-                oe=args.oe, we=args.we, ce=args.ce,
+            ports = self.assembly.add_ports(MemoryPROMPorts, args)
+            self.prom_iface = MemoryPROMInterface(self.logger, self.assembly, ports,
+                a_bits=args.a_bits,
                 shift_frequency=args.shift_freq * 1e6,
                 read_cycle=args.read_cycle * 1e-9,
                 write_cycle=args.write_cycle * 1e-9,
@@ -786,9 +789,10 @@ class MemoryPROMApplet(GlasgowAppletV2):
                                          )
 
         if args.operation == "health" and args.mode == "sweep":
-            if args.voltage is None:
-                raise GlasgowAppletError("health sweep requires --voltage to be specified")
-            voltage = args.voltage
+            if args.supply is None or args.supply.voltage is None:
+                raise GlasgowAppletError("health sweep requires --voltage to be specified "
+                                         "as a number of volts")
+            voltage = args.supply.voltage
             step_num = 0
             while True:
                 self.logger.info("step %d (%.2f V)", step_num, voltage)

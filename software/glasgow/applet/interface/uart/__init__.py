@@ -5,7 +5,7 @@ import sys
 import asyncio
 import argparse
 from amaranth import *
-from amaranth.lib import wiring, stream
+from amaranth.lib import wiring, stream, io
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support import logging
@@ -15,7 +15,7 @@ from glasgow.support.endpoint import ServerEndpoint
 from glasgow.support.progress import Progress
 from glasgow.protocol.ymodem import YModemTransport, YModemProtocol, YModemFile, YModemError
 from glasgow.gateware.uart import UART
-from glasgow.abstract import AbstractAssembly, GlasgowPin
+from glasgow.abstract import AbstractAssembly, GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.applet import GlasgowAppletV2, GlasgowAppletError
 
 
@@ -96,6 +96,16 @@ class UARTAutoBaud(wiring.Component):
         return m
 
 
+@glasgow_ports
+class UARTPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """device power"""
+    rx: io.PortLike | None = GlasgowPin.field(power=supply, default=True, pull="high")
+    """receive (data from the device)"""
+    tx: io.PortLike | None = GlasgowPin.field(power=supply, default=True)
+    """transmit (data to the device)"""
+
+
 class UARTComponent(wiring.Component):
     i_stream:   In(stream.Signature(8))
     o_stream:   Out(stream.Signature(8))
@@ -109,7 +119,7 @@ class UARTComponent(wiring.Component):
     rx_errors:   Out(16)
     rx_overflow: Out(16)
 
-    def __init__(self, ports, *, parity: str, stop_bits: int):
+    def __init__(self, ports: UARTPorts, *, parity: str, stop_bits: int):
         self.ports  = ports
         self.parity = parity
         self.stop_bits = stop_bits
@@ -159,17 +169,20 @@ class UARTComponent(wiring.Component):
 
 
 class UARTInterface:
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 rx: GlasgowPin | None, tx: GlasgowPin | None,
+    """UART.
+
+    :py:`ports` is a :py:`UARTPorts`; :py:`rx` and :py:`tx` may be :py:`None`. The idle state of
+    UART is high, so the :py:`rx` pin should have a pull-up.
+    """
+
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, ports: UARTPorts, *,
                  parity: Literal["none", "zero", "one", "odd", "even"] = "none",
                  stop_bits: int = 1):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
-        ports = assembly.add_port_group(rx=rx, tx=tx)
-        if rx is not None:
-            assembly.use_pulls({rx: "high"})
-        component = assembly.add_submodule(UARTComponent(ports, parity=parity, stop_bits=stop_bits))
+        component = assembly.add_submodule(UARTComponent(ports,
+            parity=parity, stop_bits=stop_bits))
         self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream,
             in_flush=component.o_flush)
         self._use_auto   = assembly.add_rw_register(component.use_auto)
@@ -326,9 +339,7 @@ class UARTApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "rx", default=True)
-        access.add_pins_argument(parser, "tx", default=True)
+        access.add_ports_arguments(parser, UARTPorts)
         parser.add_argument(
             "--parity", metavar="PARITY",
             choices=("none", "zero", "one", "odd", "even"), default="none",
@@ -339,9 +350,9 @@ class UARTApplet(GlasgowAppletV2):
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.uart_iface = UARTInterface(self.logger, self.assembly,
-                rx=args.rx, tx=args.tx, parity=args.parity, stop_bits=args.stop_bits)
+            ports = self.assembly.add_ports(UARTPorts, args)
+            self.uart_iface = UARTInterface(self.logger, self.assembly, ports,
+                parity=args.parity, stop_bits=args.stop_bits)
 
     @classmethod
     def add_setup_arguments(cls, parser):

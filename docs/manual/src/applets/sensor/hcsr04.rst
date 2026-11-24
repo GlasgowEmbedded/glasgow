@@ -15,4 +15,6 @@ API reference
 
 .. module:: glasgow.applet.sensor.hcsr04
 
+.. autoclass:: SensorHCSR04Ports
+
 .. autoclass:: SensorHCSR04Interface

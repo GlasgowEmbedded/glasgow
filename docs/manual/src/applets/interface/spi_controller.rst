@@ -17,4 +17,6 @@ API reference
 
 .. autoexception:: SPIControllerError
 
+.. autoclass:: SPIControllerPorts
+
 .. autoclass:: SPIControllerInterface

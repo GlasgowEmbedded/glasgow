@@ -6,34 +6,50 @@ from collections.abc import Buffer
 import argparse
 import asyncio
 
+from amaranth.lib import io
+
 from glasgow.support import logging
-from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
-from glasgow.applet.interface.spi_controller import SPIControllerInterface
+from glasgow.abstract import (AbstractAssembly, GlasgowSupply, GlasgowPin, ClockDivisor,
+    glasgow_ports)
+from glasgow.applet.interface.spi_controller import SPIControllerInterface, SPIControllerPorts
 from glasgow.applet.control.gpio import GPIOInterface
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
-__all__ = ["ICE40SRAMInterface"]
+__all__ = ["ICE40SRAMPorts", "ICE40SRAMInterface"]
 
 
 class ICE40SRAMError(GlasgowAppletError):
     pass
 
 
+@glasgow_ports
+class ICE40SRAMPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """FPGA power"""
+    cs: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """chip select (SS_B)"""
+    sck: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """serial clock"""
+    copi: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """controller out, peripheral in"""
+    reset: io.PortLike = GlasgowPin.field(power=supply, default=True, invert=True)
+    """FPGA reset (CRESET_B, active low)"""
+    done: io.PortLike | None = GlasgowPin.field(power=supply, default=True)
+    """FPGA configuration done (CDONE)"""
+
+
 class ICE40SRAMInterface:
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 cs: GlasgowPin, sck: GlasgowPin, copi: GlasgowPin,
-                 reset: GlasgowPin, done: GlasgowPin | None = None):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, ports: ICE40SRAMPorts):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
         self._spi_iface = SPIControllerInterface(logger, assembly,
-            cs=cs, sck=sck, copi=copi)
-        self._reset_iface = GPIOInterface(logger, assembly,
-            pins=(~reset,), name="reset")
-        if done is not None:
-            self._done_iface = GPIOInterface(logger, assembly,
-                pins=(done,), name="done")
+            SPIControllerPorts(supply=ports.supply, cs=ports.cs, sck=ports.sck,
+                               copi=ports.copi, cipo=None))
+        self._reset_iface = GPIOInterface(logger, assembly, ports.reset)
+        if ports.done is not None:
+            self._done_iface = GPIOInterface(logger, assembly, ports.done)
         else:
             self._done_iface = None
 
@@ -101,19 +117,12 @@ class ProgramICE40SRAMApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "cs",    default=True, required=True)
-        access.add_pins_argument(parser, "sck",   default=True, required=True)
-        access.add_pins_argument(parser, "copi",  default=True, required=True)
-        access.add_pins_argument(parser, "reset", default=True, required=True)
-        access.add_pins_argument(parser, "done",  default=True)
+        access.add_ports_arguments(parser, ICE40SRAMPorts)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.ice40_iface = ICE40SRAMInterface(self.logger, self.assembly,
-                cs=args.cs, sck=args.sck, copi=args.copi,
-                reset=args.reset, done=args.done)
+            ports = self.assembly.add_ports(ICE40SRAMPorts, args)
+            self.ice40_iface = ICE40SRAMInterface(self.logger, self.assembly, ports)
 
     @classmethod
     def add_setup_arguments(cls, parser):

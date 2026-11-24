@@ -1,12 +1,16 @@
 from __future__ import annotations
 from abc import ABCMeta, abstractmethod
-from typing import Self, Any, Literal, overload
+from typing import (Self, Any, Literal, Union, dataclass_transform, overload,
+    get_args, get_origin, get_type_hints)
 from contextlib import contextmanager
-from collections.abc import Buffer, Generator, Mapping
+from collections.abc import Buffer, Callable, Generator, Iterable, Mapping
 from dataclasses import dataclass
+import argparse
+import dataclasses
 import re
 import enum
 import math
+import types
 
 from amaranth import *
 from amaranth.lib import io
@@ -17,8 +21,9 @@ from glasgow.gateware import octoram
 
 
 __all__ = [
-    "ClockingError",
-    "PullState", "GlasgowPort", "GlasgowVio", "GlasgowPin", "GlasgowAnalog",
+    "ClockingError", "VoltageConflictError",
+    "PullState", "GlasgowPort", "GlasgowVio", "GlasgowSupply", "GlasgowPin", "GlasgowAnalog",
+    "glasgow_ports",
     "AbstractRORegister", "AbstractRWRegister", "ClockDivisor", "DRAMOptions",
     "AbstractInPipe", "AbstractOutPipe", "AbstractInOutPipe",
     "AbstractAssembly"
@@ -121,6 +126,140 @@ class GlasgowVio:
         assert False
 
 
+class VoltageConflictError(Exception):
+    """Raised when two requests for the voltage of the same port disagree, or when a requested
+    voltage is outside of the range a supply declares to be safe.
+    """
+
+
+@dataclass(frozen=True)
+class _SupplyField:
+    # Metadata attached to a field created by `GlasgowSupply.field()`.
+    voltage_min: float
+    voltage_max: float
+    current_max: float | None
+    option:      str | None
+
+
+@dataclass(frozen=True)
+class _PinField:
+    # Metadata attached to a field created by `GlasgowPin.field()`.
+    width:   tuple[int, ...]
+    default: str | bool | int | None
+    invert:  bool
+    power:   Any
+    pull:    PullState | None
+    help:    str | None
+
+
+_FIELD_METADATA_KEY = "glasgow"
+
+
+def _width_choices(width: int | range | Iterable[int]) -> tuple[int, ...]:
+    match width:
+        case int():
+            choices = (width,)
+        case _:
+            choices = tuple(sorted(set(width)))
+    if not choices or choices[0] < 1:
+        raise ValueError(f"pin width must be at least 1 (use an optional field to allow no pins), "
+                         f"not {width!r}")
+    return choices
+
+
+@dataclass(frozen=True)
+class GlasgowSupply:
+    """Power supply of a group of pins.
+
+    A supply is either set to a fixed :py:`voltage`, or set to follow the voltage measured on the
+    sense input of a port, :py:`sense`. A port may follow its own sense input, which is how the
+    voltage of the target is mirrored. If neither is specified, the voltage of the ports it
+    powers is left unchanged.
+
+    A :py:`GlasgowSupply` instance can be used as the default value of a field in a ports
+    dataclass to declare a supply that is not configurable by the user; use
+    :py:`GlasgowSupply.field` for a configurable one. Pins refer to their supply using the
+    :py:`power=` argument of :py:`GlasgowPin.field`.
+
+    Attributes
+    ----------
+    voltage : float | None
+        Voltage, in volts, that every port powered by this supply is set to.
+    sense : GlasgowPort | None
+        Port whose sense input every port powered by this supply follows.
+    current_max : float | None
+        Maximum current, in amperes, that the device powered by this supply is expected to draw.
+    """
+
+    voltage:     float | None       = None
+    sense:       GlasgowPort | None = None
+    current_max: float | None       = None
+
+    def __post_init__(self):
+        if self.voltage is not None and self.sense is not None:
+            raise ValueError("at most one of voltage value or a port to be sensed may be present")
+        if self.voltage is not None:
+            object.__setattr__(self, "voltage", float(self.voltage))
+        if self.sense is not None:
+            sense = GlasgowPort(self.sense)
+            if not sense.has_supply:
+                raise ValueError(f"port {sense} is not capable of sensing voltage")
+            object.__setattr__(self, "sense", sense)
+        if self.current_max is not None:
+            object.__setattr__(self, "current_max", float(self.current_max))
+
+    @classmethod
+    def field(cls, *, voltage_min: float = 1.8, voltage_max: float = 5.0,
+              current_max: float | None = None,
+              option: str | None = None) -> Any:
+        """Declare a user-configurable supply.
+
+        Returns a :py:`dataclasses.field` that, when used in a ports dataclass, causes a command
+        line option to be generated for the supply. If the dataclass has exactly one such supply,
+        the option is :py:`-V/--voltage`; otherwise it is :py:`--<name>-voltage`, where
+        ``<name>`` is the field name without a ``_supply`` suffix.
+
+        Parameters
+        ----------
+        voltage_min, voltage_max : float
+            Inclusive range of voltages, in volts, that the powered device operates correctly at.
+            Values outside this range are rejected. The defaults are the range Glasgow itself can
+            supply; narrow them to what the device is rated for.
+        current_max : float | None
+            Maximum current, in amperes, that the powered device is expected to draw.
+        option : str | None
+            Name of the command line option, without leading dashes, overriding the default.
+        """
+        if voltage_min > voltage_max:
+            raise ValueError(f"voltage_min {voltage_min} is greater than voltage_max {voltage_max}")
+        return dataclasses.field(metadata={_FIELD_METADATA_KEY:
+            _SupplyField(float(voltage_min), float(voltage_max),
+                         None if current_max is None else float(current_max), option)})
+
+    @classmethod
+    def parse(cls, value: str) -> GlasgowSupply:
+        """Parse a voltage specification: a number of volts (:py:`"3.3"`) or the sense input of
+        a port to follow (:py:`"SA"`).
+        """
+        if m := re.match(r"^([0-9]+(\.[0-9]+)?)$", value):
+            return cls(voltage=float(m.group(1)))
+        elif m := re.match(r"^S([A-Z])$", value):
+            try:
+                return cls(sense=GlasgowPort(m.group(1)))
+            except ValueError as e:
+                raise ValueError(f"{value!r} is not a valid voltage: {e}") from None
+        else:
+            raise ValueError(f"{value!r} is not a valid voltage (try '3.3', or 'SA' to follow "
+                             f"the voltage sensed on port A)")
+
+    def __str__(self):
+        if self.sense is not None:
+            return f"S{self.sense}"
+        if self.voltage is not None:
+            return f"{self.voltage:.2f}"
+        return "unchanged"
+
+
 @dataclass(frozen=True)
 class GlasgowPin:
     port:   GlasgowPort
@@ -155,6 +294,67 @@ class GlasgowPin:
                 raise ValueError(f"{clause!r} is not a valid pin "
                      "(try 'A3', 'A5,B1', 'B4:7', or specify 'NC' to leave unconnected)")
         return tuple(result)
+
+    @classmethod
+    def field(cls, *, width: int | range | Iterable[int] = 1,
+              default: str | bool | int | None = None, invert: bool = False, power: Any = None,
+              pull: PullState | str | None = None, help: str | None = None) -> Any:
+        """Declare an applet pin, or a group of pins, in a ports dataclass.
+
+        Returns a :py:`dataclasses.field` that causes a command line option to be generated
+        for the pins. The field should be annotated as :py:`io.PortLike`, or
+        :py:`io.PortLike | None` if the pins may be left unconnected. The dataclass must be
+        created with :py:`kw_only=True`, which :py:`glasgow_ports` does.
+
+        Each pin names the supply that powers it, which must be a field declared earlier in the
+        same class. For example, this declares an I²C bus whose voltage is chosen with
+        :py:`-V/--voltage`, with an optional, active-low interrupt pin::
+
+            @glasgow_ports
+            class I2CPorts:
+                supply: GlasgowSupply = GlasgowSupply.field(voltage_max=3.6)
+                scl: io.PortLike = GlasgowPin.field(power=supply, default="A0")
+                sda: io.PortLike = GlasgowPin.field(power=supply, default="A1")
+                int: io.PortLike | None = GlasgowPin.field(power=supply, invert=True)
+
+        The pins are powered at the voltage of :py:`supply`, which Glasgow applies to whichever
+        ports the pins end up on. (If the user gives no voltage, the port's voltage is left
+        unchanged.) A device that always runs at one voltage declares
+        :py:`supply: GlasgowSupply = GlasgowSupply(voltage=3.3)` instead; it has no command line
+        option, and the pins refer to it in the same way.
+
+        Parameters
+        ----------
+        width : int | range | Iterable[int]
+            Number of pins: a single value, a range, or a collection of allowed values.
+        default : str | bool | int | None
+            Pins used if the option is not given: a pin specification such as :py:`"A0"` or
+            :py:`"B0:3"`, :py:`True` to allocate the first free pins, or an :py:`int` to allocate
+            that number of free pins. If there is no default and the field is not optional, the
+            option is required.
+        invert : bool
+            Set this for active-low pins, such as a chip select or reset. The inversion is done
+            by the port, at the I/O buffer, so the gateware always sees the logical level: it
+            drives and reads :py:`1` for asserted, and must not invert the port itself (for
+            example with :py:`~`), or the inversion would be undone. This composes with an
+            inversion requested by the user in the pin specification (:py:`"A0#"`).
+        power : GlasgowSupply | dataclasses.Field | None
+            The supply that powers the pins, given as the name of an earlier supply field in the
+            same class, as in :py:`power=supply` above. The voltage of the supply is applied to
+            the ports of the pins.
+        pull : PullState | str | None
+            Pull resistor enabled on the pins while the applet is assembled. The state is that of
+            the logical level that the gateware sees, so for an inverted pin :py:`"high"`
+            enables a pull-down on the physical pin. Not applied if the pins are left unconnected.
+        help : str | None
+            Help text; if omitted, the docstring following the field is used.
+        """
+        if default is not None and not isinstance(default, (str, bool, int)):
+            raise TypeError(f"default must be a pin specification, True, or a count, "
+                            f"not {default!r}")
+        return dataclasses.field(metadata={_FIELD_METADATA_KEY:
+            _PinField(_width_choices(width), default, bool(invert), power,
+                      None if pull is None else PullState(pull), help)})
 
     @property
     def _legacy_number(self):
@@ -237,6 +437,115 @@ class GlasgowAnalog:
                 return f"{self.port}NP"
             case _:
                 assert False
+
+
+@overload
+def glasgow_ports[T](cls: type[T], /) -> type[T]:
+    pass
+
+
+@overload
+def glasgow_ports[T](*, kw_only: Literal[True] = True,
+                     **kwargs: Any) -> Callable[[type[T]], type[T]]:
+    pass
+
+
+@dataclass_transform(kw_only_default=True)
+def glasgow_ports(cls=None, /, **kwargs):
+    """Declare a dataclass of applet pins and supplies.
+
+    Equivalent to :py:`@dataclass(kw_only=True)`, which ports dataclasses require: optional pins
+    have a default, and the constructor is meant to be called with keywords. Any other argument
+    is forwarded to :py:`dataclass`, so :py:`@glasgow_ports(frozen=True)` works; the only
+    argument that is rejected is :py:`kw_only=False`.
+
+    Its fields are declared with :py:`GlasgowPin.field` and :py:`GlasgowSupply`, and it is
+    consumed by :py:`GlasgowAppletArguments.add_ports_arguments` and
+    :meth:`AbstractAssembly.add_ports`.
+
+    Raises
+    ------
+    TypeError
+        If :py:`kw_only=False` is passed.
+    """
+    if not kwargs.pop("kw_only", True):
+        raise TypeError("glasgow_ports requires keyword-only fields; kw_only=False is not allowed")
+    def decorate(cls):
+        return dataclass(kw_only=True, **kwargs)(cls)
+    return decorate if cls is None else decorate(cls)
+
+
+@dataclass(frozen=True)
+class _SupplyInfo:
+    field:  dataclasses.Field
+    spec:   _SupplyField | None # `None` for a fixed supply, which has no command line option
+    fixed:  GlasgowSupply | None
+
+
+@dataclass(frozen=True)
+class _PinInfo:
+    field:    dataclasses.Field
+    spec:     _PinField
+    optional: bool
+    supply:   str | None # name of the field of the supply that powers the pins
+
+
+@dataclass(frozen=True)
+class _PortsLayout:
+    supplies: dict[str, _SupplyInfo]
+    pins:     dict[str, _PinInfo]
+
+
+def _inspect_ports(cls: type) -> _PortsLayout:
+    """Extract and validate the supply and pin declarations of a ports dataclass."""
+    if not (isinstance(cls, type) and dataclasses.is_dataclass(cls)):
+        raise TypeError(f"{cls!r} is not a dataclass")
+
+    for f in dataclasses.fields(cls):
+        if not f.kw_only:
+            raise TypeError(f"field {f.name!r} of {cls.__name__} is not keyword-only; declare "
+                            f"the class with @glasgow_ports (or @dataclass(kw_only=True))")
+
+    hints = get_type_hints(cls)
+    supplies = {}
+    pins = {}
+    pin_fields = []
+    for f in dataclasses.fields(cls):
+        match f.metadata.get(_FIELD_METADATA_KEY):
+            case _SupplyField() as spec:
+                supplies[f.name] = _SupplyInfo(f, spec, None)
+            case _PinField() as spec:
+                hint = hints[f.name]
+                optional = (get_origin(hint) in (Union, types.UnionType) and
+                            type(None) in get_args(hint))
+                pin_fields.append((f, spec, optional))
+            case None if isinstance(f.default, GlasgowSupply):
+                supplies[f.name] = _SupplyInfo(f, None, f.default)
+            case _:
+                raise TypeError(f"field {f.name!r} of {cls.__name__} is not declared with "
+                                f"GlasgowSupply or GlasgowPin")
+
+    for f, spec, optional in pin_fields:
+        supply = None
+        if spec.power is not None:
+            for name, info in supplies.items():
+                if spec.power is info.field or spec.power is info.fixed:
+                    supply = name
+            if supply is None:
+                raise TypeError(f"pin {f.name!r} of {cls.__name__} is powered by a supply that is "
+                                f"not a (previous) field of the same class")
+        pins[f.name] = _PinInfo(f, spec, optional, supply)
+    return _PortsLayout(supplies, pins)
+
+
+def _check_supply_range(name: str, spec: _SupplyField | None, supply: GlasgowSupply):
+    if spec is None or supply.voltage is None:
+        return
+    if not spec.voltage_min <= supply.voltage <= spec.voltage_max:
+        label = "" if name == "supply" else f" {name!r}"
+        raise VoltageConflictError(
+            f"supply{label} cannot be set to {supply.voltage:.2f} V: the powered device "
+            f"supports {spec.voltage_min:.2f}..{spec.voltage_max:.2f} V")
 
 
 class AbstractRORegister(metaclass=ABCMeta):
@@ -417,6 +726,104 @@ class AbstractAssembly(metaclass=ABCMeta):
     def add_port_group(self, **ports) -> PortGroup:
         return PortGroup(**{name: self.add_port(pins, name) for name, pins in ports.items()})
 
+    def use_supply(self, supply: GlasgowSupply, pins: Iterable[GlasgowPin], *,
+                   limits: tuple[float, float] | None = None):
+        """Request the voltage of :py:`supply` for the ports that :py:`pins` belong to.
+
+        This is done automatically by :py:`add_ports` for the pins of a ports dataclass. Call it
+        directly for pins that are not known until after the command line is parsed. A supply with
+        neither a voltage nor a sense input to follow requests nothing. A port may follow its own
+        sense input, which is how the voltage of the target is mirrored; pins that are not on a
+        port with a supply (such as LEDs) are ignored.
+
+        If :py:`limits` is given, it is the inclusive range of voltages in volts that the pins may
+        safely be driven at; see :py:`set_port_voltage`.
+
+        Raises
+        ------
+        VoltageConflictError
+            If the voltage conflicts with one already requested for the same port.
+        """
+        ports = sorted({pin.port for pin in pins if pin.port.has_supply},
+                       key=lambda port: port.value)
+        for port in ports:
+            if supply.voltage is not None:
+                self.set_port_voltage(port, GlasgowVio(supply.voltage))
+            elif supply.sense is not None:
+                self.set_port_voltage(port, GlasgowVio(sense=supply.sense), limits=limits)
+
+    def add_ports[T](self, cls: type[T], args: argparse.Namespace | Mapping[str, Any]) -> T:
+        """Create the ports and apply the supply voltages declared by a ports dataclass.
+
+        :py:`cls` is a dataclass whose fields are declared with :py:`GlasgowPin.field` and
+        :py:`GlasgowSupply` (see :py:`GlasgowAppletArguments.add_ports_arguments`). :py:`args`
+        provides a value for each field, either as parsed command line arguments or as a mapping:
+        pins as :py:`GlasgowPin` objects, a string, a tuple of pins, or :py:`None` for an optional
+        field; supplies as :py:`GlasgowSupply` objects or a string.
+
+        Each pin is added with :py:`add_port`, and the voltage of the supply that powers it is
+        requested for the port the pin belongs to.
+
+        Returns an instance of :py:`cls` where every pin field is an :py:`io.PortLike` (or
+        :py:`None`) and every supply field is the resolved :py:`GlasgowSupply`.
+
+        Raises
+        ------
+        ValueError
+            If a pin specification has a width that the field does not allow.
+        VoltageConflictError
+            If a supply voltage is outside of the range allowed by its declaration, or if it
+            conflicts with a voltage already requested for the same port.
+        """
+        layout = _inspect_ports(cls)
+        values = vars(args) if isinstance(args, argparse.Namespace) else args
+
+        supplies = {}
+        for name, info in layout.supplies.items():
+            if info.fixed is not None:
+                supply = info.fixed
+            else:
+                supply = values.get(name)
+                if supply is None:
+                    supply = GlasgowSupply(current_max=info.spec.current_max)
+                elif isinstance(supply, str):
+                    supply = GlasgowSupply.parse(supply)
+                _check_supply_range(name, info.spec, supply)
+            supplies[name] = supply
+
+        ports = {}
+        supply_pins = {name: [] for name in supplies}
+        for name, info in layout.pins.items():
+            pins = values.get(name)
+            if isinstance(pins, str):
+                pins = GlasgowPin.parse(pins)
+            elif isinstance(pins, GlasgowPin):
+                pins = (pins,)
+            if isinstance(pins, tuple):
+                if len(pins) == 0:
+                    pins = None
+                else:
+                    if len(pins) not in info.spec.width:
+                        raise ValueError(f"pin {name!r} expects "
+                            f"{' or '.join(map(str, info.spec.width))} pins, got {len(pins)}")
+                    if info.spec.invert:
+                        pins = tuple(~pin for pin in pins)
+                    if info.supply is not None:
+                        supply_pins[info.supply].extend(pins)
+                    if info.spec.pull is not None:
+                        for pin in pins:
+                            self.set_pin_pull(pin, info.spec.pull)
+            if pins is None and not info.optional:
+                raise ValueError(f"pin {name!r} is required")
+            ports[name] = self.add_port(pins, name)
+
+        for name, supply in supplies.items():
+            spec = layout.supplies[name].spec
+            limits = (spec.voltage_min, spec.voltage_max) if spec else None
+            self.use_supply(supply, supply_pins[name], limits=limits)
+
+        return cls(**ports, **supplies)
+
     @abstractmethod
     def add_ro_register(self, signal) -> AbstractRORegister:
         pass
@@ -461,8 +868,14 @@ class AbstractAssembly(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def set_port_voltage(self, port: GlasgowPort, vio: GlasgowVio):
-        pass
+    def set_port_voltage(self, port: GlasgowPort, vio: GlasgowVio, *,
+                         limits: tuple[float, float] | None = None):
+        """Request the voltage of :py:`port`.
+
+        If :py:`limits` is given, it is the inclusive range of voltages in volts that the pins on
+        the port may safely be driven at. A voltage that is only known once the device is
+        running, such as one that follows the sense input of a port, is checked against it then.
+        """
 
     @abstractmethod
     def set_pin_pull(self, pin: GlasgowPin, state: PullState):

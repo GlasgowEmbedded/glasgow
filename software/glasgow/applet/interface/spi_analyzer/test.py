@@ -7,7 +7,7 @@ from glasgow.simulation.assembly import SimulationAssembly
 from glasgow.gateware.ports import PortGroup
 from glasgow.gateware.stream import stream_get
 from glasgow.applet import GlasgowAppletV2TestCase, synthesis_test
-from . import SPIAnalyzerFrontend, SPIAnalyzerInterface, SPIAnalyzerApplet
+from . import SPIAnalyzerFrontend, SPIAnalyzerPorts, SPIAnalyzerInterface, SPIAnalyzerApplet
 
 
 logger = logging.getLogger(__name__)
@@ -68,7 +68,8 @@ class SPIAnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=SPIAnalyzerApple
     def test_sim_interface(self):
         assembly = SimulationAssembly()
 
-        iface = SPIAnalyzerInterface(logger, assembly, cs="A0", sck="A1", copi="A2", cipo="A3")
+        iface = SPIAnalyzerInterface(logger, assembly, assembly.add_ports(SPIAnalyzerPorts,
+            {"cs": "A0", "sck": "A1", "copi": "A2", "cipo": "A3"}))
 
         ports = PortGroup()
         ports.cs   = assembly.get_pin("A0")

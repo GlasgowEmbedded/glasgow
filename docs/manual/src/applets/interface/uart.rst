@@ -15,4 +15,6 @@ API reference
 
 .. module:: glasgow.applet.interface.uart
 
+.. autoclass:: UARTPorts
+
 .. autoclass:: UARTInterface

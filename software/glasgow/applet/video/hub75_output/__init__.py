@@ -2,7 +2,26 @@ from amaranth import *
 from amaranth.lib import io
 
 from glasgow.support import logging
+from glasgow.abstract import GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.applet import GlasgowAppletV2, GlasgowAppletError
+
+
+@glasgow_ports
+class VideoHub75OutputPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """panel logic power (voltage reference of the outputs)"""
+    rgb1: io.PortLike = GlasgowPin.field(power=supply, width=3, default="A0:2")
+    """color of the upper half of the panel"""
+    rgb2: io.PortLike = GlasgowPin.field(power=supply, width=3, default="A3:5")
+    """color of the lower half of the panel"""
+    addr: io.PortLike = GlasgowPin.field(power=supply, width=range(1, 6), default="B0:4")
+    """row address"""
+    clk: io.PortLike = GlasgowPin.field(power=supply, default="B5")
+    """shift register clock"""
+    lat: io.PortLike = GlasgowPin.field(power=supply, default="B6")
+    """latch"""
+    oe: io.PortLike = GlasgowPin.field(power=supply, default="B7")
+    """output enable (active low)"""
 
 
 class VideoHub75OutputGenerator(Elaboratable):
@@ -86,14 +105,7 @@ class VideoHub75OutputApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-
-        access.add_pins_argument(parser, "rgb1", width=3,          default="A0:2")
-        access.add_pins_argument(parser, "rgb2", width=3,          default="A3:5")
-        access.add_pins_argument(parser, "addr", width=range(1,6), default="B0:4")
-        access.add_pins_argument(parser, "clk",                    default="B5")
-        access.add_pins_argument(parser, "lat",                    default="B6")
-        access.add_pins_argument(parser, "oe",                     default="B7")
+        access.add_ports_arguments(parser, VideoHub75OutputPorts)
 
         parser.add_argument(
             "--px-width", metavar="PX-WIDTH", type=int, default=64,
@@ -135,15 +147,7 @@ class VideoHub75OutputApplet(GlasgowAppletV2):
                 f"with only {num_addr_bits} address bits")
 
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            ports = self.assembly.add_port_group(
-                rgb1 = args.rgb1,
-                rgb2 = args.rgb2,
-                addr = args.addr,
-                clk  = args.clk,
-                lat  = args.lat,
-                oe   = args.oe
-            )
+            ports = self.assembly.add_ports(VideoHub75OutputPorts, args)
             self.assembly.add_submodule(VideoHub75OutputGenerator(
                 ports=ports,
                 px_width=args.px_width,

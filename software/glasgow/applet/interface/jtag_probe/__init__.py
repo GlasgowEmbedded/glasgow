@@ -26,6 +26,7 @@ from amaranth.lib import io, wiring, stream, enum
 from amaranth.lib.wiring import In, Out, flipped, connect
 
 from glasgow.support import logging
+from glasgow.abstract import GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.support.bits import bits
 from glasgow.support.logging import dump_bin
 from glasgow.database.jedec import jedec_mfg_name_from_bank_num
@@ -271,13 +272,29 @@ class JTAGProbeDriver(wiring.Component):
         return m
 
 
+@glasgow_ports
+class JTAGProbePorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """target power (voltage reference of the interface)"""
+    tck: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """test clock"""
+    tms: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """test mode select"""
+    tdi: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """test data in"""
+    tdo: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """test data out"""
+    trst: io.PortLike | None = GlasgowPin.field(power=supply)
+    """test reset (active low)"""
+
+
 class JTAGProbeComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
     o_flush:  Out(1)
     divisor:  In(16)
 
-    def __init__(self, ports, *, us_cycles):
+    def __init__(self, ports: JTAGProbePorts, *, us_cycles):
         self._ports     = ports
         self._us_cycles = us_cycles
 
@@ -956,8 +973,12 @@ class BaseJTAGProbeInterface:
 
 
 class JTAGProbeInterface(BaseJTAGProbeInterface):
-    def __init__(self, logger, assembly, *, tck, tms, tdi, tdo, trst):
-        ports = assembly.add_port_group(tck=tck, tms=tms, tdi=tdi, tdo=tdo, trst=trst)
+    """JTAG probe.
+
+    :py:`ports` is a :py:`JTAGProbePorts`; :py:`trst` may be :py:`None`.
+    """
+
+    def __init__(self, logger, assembly, ports: JTAGProbePorts):
         component = assembly.add_submodule(JTAGProbeComponent(ports,
             us_cycles=int(1 / (assembly.sys_clk_period * 1_000_000))))
         pipe = assembly.add_inout_pipe(
@@ -965,7 +986,7 @@ class JTAGProbeInterface(BaseJTAGProbeInterface):
         self._clock = assembly.add_clock_divisor(component.divisor,
             ref_period=assembly.sys_clk_period * 2, name="tck")
 
-        super().__init__(logger, pipe, has_trst=trst is not None)
+        super().__init__(logger, pipe, has_trst=ports.trst is not None)
 
     @property
     def clock(self):
@@ -1083,19 +1104,12 @@ class JTAGProbeApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-
-        access.add_pins_argument(parser, "tck", default=True)
-        access.add_pins_argument(parser, "tms", default=True)
-        access.add_pins_argument(parser, "tdi", default=True)
-        access.add_pins_argument(parser, "tdo", default=True)
-        access.add_pins_argument(parser, "trst")
+        access.add_ports_arguments(parser, JTAGProbePorts)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.jtag_iface = JTAGProbeInterface(self.logger, self.assembly,
-                tck=args.tck, tms=args.tms, tdi=args.tdi, tdo=args.tdo, trst=args.trst)
+            ports = self.assembly.add_ports(JTAGProbePorts, args)
+            self.jtag_iface = JTAGProbeInterface(self.logger, self.assembly, ports)
 
     @classmethod
     def add_setup_arguments(cls, parser):

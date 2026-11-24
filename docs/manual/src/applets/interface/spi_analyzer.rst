@@ -17,4 +17,6 @@ API reference
 
 .. autoexception:: SPIAnalyzerOverflow
 
+.. autoclass:: SPIAnalyzerPorts
+
 .. autoclass:: SPIAnalyzerInterface

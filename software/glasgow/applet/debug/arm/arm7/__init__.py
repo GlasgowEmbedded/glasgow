@@ -74,6 +74,7 @@ from .....gateware.stream import StreamBuffer
 from .....gateware.jtag import probe as jtag_probe
 from .....protocol.gdb_remote import *
 from .... import GlasgowAppletError, GlasgowAppletV2
+from ....interface.jtag_probe import JTAGProbePorts
 
 
 __all__ = []
@@ -103,7 +104,7 @@ class DebugARM7Sequencer(wiring.Component):
 
     divisor:  In(16)
 
-    def __init__(self, ports):
+    def __init__(self, ports: JTAGProbePorts):
         self._ports = ports
 
         super().__init__()
@@ -751,12 +752,10 @@ class DebugARM7Interface(GDBRemote):
         def is_thumb(self):
             return self in (self.SOFT_THUMB, self.HARD_THUMB)
 
-    def __init__(self, logger, assembly: AbstractAssembly, *,
-                 tck, tms, tdo, tdi, trst=None, endian):
+    def __init__(self, logger, assembly: AbstractAssembly, ports: JTAGProbePorts, *, endian):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
-        ports = assembly.add_port_group(tck=tck, tms=tms, tdo=tdo, tdi=tdi, trst=trst)
         component = assembly.add_submodule(DebugARM7Sequencer(ports))
         self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
         self._clock = assembly.add_clock_divisor(component.divisor,
@@ -1318,25 +1317,15 @@ class DebugARM7Applet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "tck", default=True)
-        access.add_pins_argument(parser, "tms", default=True)
-        access.add_pins_argument(parser, "tdo", default=True)
-        access.add_pins_argument(parser, "tdi", default=True)
-        access.add_pins_argument(parser, "trst")
+        access.add_ports_arguments(parser, JTAGProbePorts)
         parser.add_argument(
             "-e", "--endian", metavar="ENDIAN", choices=("big", "little"), default="little",
             help="target endianness (default: %(default)s)")
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.arm_iface = DebugARM7Interface(self.logger, self.assembly,
-                tck =args.tck,
-                tms =args.tms,
-                tdo =args.tdo,
-                tdi =args.tdi,
-                trst=args.trst,
+            ports = self.assembly.add_ports(JTAGProbePorts, args)
+            self.arm_iface = DebugARM7Interface(self.logger, self.assembly, ports,
                 endian=args.endian)
 
     @classmethod

@@ -1,11 +1,26 @@
 import asyncio
 
+from amaranth.lib.io import PortLike
+
 from glasgow.support import logging
-from glasgow.applet.memory._25q import Memory25QApplet
+from glasgow.abstract import GlasgowPin, glasgow_ports
+from glasgow.applet.memory._25q import Memory25QPorts, Memory25QApplet
 from glasgow.applet.control.gpio import GPIOInterface
 
 
 __all__ = ["ProgramICE40FlashApplet"]
+
+
+@glasgow_ports
+class ProgramICE40FlashPorts(Memory25QPorts):
+    # A field without a default is not left as an attribute of the class, so the supply of
+    # the base class has to be looked up in its fields.
+    reset: PortLike = GlasgowPin.field(default="A6", invert=True,
+        power=Memory25QPorts.__dataclass_fields__["supply"])
+    """FPGA reset (active low)"""
+    done: PortLike | None = GlasgowPin.field(default="A7",
+        power=Memory25QPorts.__dataclass_fields__["supply"])
+    """FPGA configuration done"""
 
 
 class ProgramICE40FlashApplet(Memory25QApplet):
@@ -20,23 +35,17 @@ class ProgramICE40FlashApplet(Memory25QApplet):
     See the description of the `memory-25q` applet for details.
     """
 
-    @classmethod
-    def add_build_arguments(cls, parser, access):
-        super().add_build_arguments(parser, access)
-
-        access.add_pins_argument(parser, "reset", default="A6", required=True)
-        access.add_pins_argument(parser, "done",  default="A7")
+    ports_cls = ProgramICE40FlashPorts
 
     def build(self, args):
         super().build(args)
 
-        self._reset_iface = GPIOInterface(self.logger, self.assembly,
-            pins=(~args.reset,), name="reset")
-        if args.done is not None:
-            self._done_iface = GPIOInterface(self.logger, self.assembly,
-                pins=(args.done,), name="done")
-        else:
-            self._done_iface = None
+        with self.assembly.add_applet(self):
+            self._reset_iface = GPIOInterface(self.logger, self.assembly, self.ports.reset)
+            if self.ports.done is not None:
+                self._done_iface = GPIOInterface(self.logger, self.assembly, self.ports.done)
+            else:
+                self._done_iface = None
 
     async def run(self, args):
         await self._reset_iface.output(0, True)

@@ -3,26 +3,43 @@
 # Accession: G00058
 
 from amaranth import *
+from amaranth.lib import io
 
 from glasgow.support import logging
-from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
+from glasgow.abstract import (AbstractAssembly, GlasgowSupply, GlasgowPin, ClockDivisor,
+    glasgow_ports)
 from glasgow.applet.program.avr import ProgramAVRError, ProgramAVRApplet, ProgramAVRInterface
-from glasgow.applet.interface.spi_controller import SPIControllerInterface
+from glasgow.applet.interface.spi_controller import SPIControllerInterface, SPIControllerPorts
 from glasgow.applet.control.gpio import GPIOInterface
 
 
-__all__ = ["ProgramAVRSPIInterface"]
+__all__ = ["ProgramAVRSPIPorts", "ProgramAVRSPIInterface"]
+
+
+@glasgow_ports
+class ProgramAVRSPIPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """microcontroller power"""
+    reset: io.PortLike = GlasgowPin.field(power=supply, default=True, invert=True)
+    """microcontroller reset (active low)"""
+    sck: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """serial clock"""
+    cipo: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """controller in, peripheral out"""
+    copi: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """controller out, peripheral in"""
 
 
 class ProgramAVRSPIInterface(ProgramAVRInterface):
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 sck: GlasgowPin, copi: GlasgowPin, cipo: GlasgowPin, reset: GlasgowPin):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
+                 ports: ProgramAVRSPIPorts):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
         self._spi_iface = SPIControllerInterface(logger, assembly,
-            sck=sck, copi=copi, cipo=cipo, mode=0)
-        self._reset_iface = GPIOInterface(logger, assembly, pins=(~reset,), name="reset")
+            SPIControllerPorts(supply=ports.supply, cs=None, sck=ports.sck,
+                               copi=ports.copi, cipo=ports.cipo), mode=0)
+        self._reset_iface = GPIOInterface(logger, assembly, ports.reset)
 
         self._extended_addr  = None
 
@@ -233,17 +250,12 @@ class ProgramAVRSPIApplet(ProgramAVRApplet):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "reset", required=True, default=True)
-        access.add_pins_argument(parser, "sck",   required=True, default=True)
-        access.add_pins_argument(parser, "cipo",  required=True, default=True)
-        access.add_pins_argument(parser, "copi",  required=True, default=True)
+        access.add_ports_arguments(parser, ProgramAVRSPIPorts)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.avr_iface = ProgramAVRSPIInterface(self.logger, self.assembly,
-                reset=args.reset, sck=args.sck, cipo=args.cipo, copi=args.copi)
+            ports = self.assembly.add_ports(ProgramAVRSPIPorts, args)
+            self.avr_iface = ProgramAVRSPIInterface(self.logger, self.assembly, ports)
 
     @classmethod
     def add_setup_arguments(cls, parser):

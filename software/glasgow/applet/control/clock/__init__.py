@@ -3,18 +3,26 @@ from amaranth.lib import wiring, io
 from amaranth.lib.wiring import In
 
 from glasgow.support import logging
-from glasgow.abstract import AbstractAssembly, GlasgowPin
+from glasgow.abstract import AbstractAssembly, GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.applet import GlasgowAppletV2
 
 
-__all__ = ["ClockDriveInterface"]
+__all__ = ["ClockDrivePorts", "ClockDriveInterface"]
+
+
+@glasgow_ports
+class ClockDrivePorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """clock receiver power"""
+    clk: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """clock output"""
 
 
 class ClockDriveComponent(wiring.Component):
     enabled: In(1)
     divisor: In(16)
 
-    def __init__(self, ports):
+    def __init__(self, ports: ClockDrivePorts):
         self._ports = ports
 
         super().__init__()
@@ -37,12 +45,11 @@ class ClockDriveComponent(wiring.Component):
 
 
 class ClockDriveInterface:
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 clk: GlasgowPin, name: str = "clk"):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
+                 ports: ClockDrivePorts, *, name: str = "clk"):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
-        ports = assembly.add_port_group(clk=clk)
         component = assembly.add_submodule(ClockDriveComponent(ports))
         self._enabled = assembly.add_rw_register(component.enabled)
         self._clock = assembly.add_clock_divisor(component.divisor,
@@ -80,13 +87,12 @@ class ControlClockApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "clk", required=True, default=True)
+        access.add_ports_arguments(parser, ClockDrivePorts)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.clk_iface = ClockDriveInterface(self.logger, self.assembly, clk=args.clk)
+            ports = self.assembly.add_ports(ClockDrivePorts, args)
+            self.clk_iface = ClockDriveInterface(self.logger, self.assembly, ports)
 
     @classmethod
     def add_setup_arguments(cls, parser):

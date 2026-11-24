@@ -15,4 +15,6 @@ API reference
 
 .. module:: glasgow.applet.control.mdio
 
+.. autoclass:: ControlMDIOPorts
+
 .. autoclass:: ControlMDIOInterface

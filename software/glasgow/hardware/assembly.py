@@ -463,6 +463,10 @@ class HardwareAssembly(AbstractAssembly):
     _ALERTS_ADDR   = 0x02
     _1ST_USER_ADDR = _ALERTS_ADDR + 1
 
+    # Tolerance (in volts) for the measured voltage of a sensed port against a supply's limits,
+    # to allow for ADC error.
+    _SENSE_MARGIN  = 0.1
+
     @staticmethod
     def _create_platform(revision: str):
         match revision:
@@ -506,7 +510,8 @@ class HardwareAssembly(AbstractAssembly):
         self._memories      = [] # (domain, bus, DRAMOptions)
         self._indicators    = [] # signal
         self._resets        = [] # (signal, when)
-        self._voltages      = [] # (port, vio)
+        self._voltages      = [] # (port, vio, limits)
+        self._voltage_owner = {} # port -> (vio, applet logger name)
         self._pulls         = {} # (port, number): state
 
         self._logger        = logger
@@ -630,9 +635,18 @@ class HardwareAssembly(AbstractAssembly):
         self._current_logger.info("assigning indicator %r to U%d", name, len(self._indicators) + 1)
         self._indicators.append(signal)
 
-    def set_port_voltage(self, port: GlasgowPort, vio: GlasgowVio):
+    def set_port_voltage(self, port: GlasgowPort, vio: GlasgowVio, *,
+                         limits: tuple[float, float] | None = None):
+        if port != GlasgowPort.ALL:
+            if port in self._voltage_owner:
+                prev_vio, prev_owner = self._voltage_owner[port]
+                if prev_vio != vio:
+                    raise VoltageConflictError(
+                        f"applet {self._current_logger.name!r} requests port {port} voltage "
+                        f"{vio}, but applet {prev_owner!r} already requested {prev_vio}")
+            self._voltage_owner[port] = (vio, self._current_logger.name)
         self._current_logger.debug("setting port %s voltage to %s V", port, vio)
-        self._voltages.append((port, vio))
+        self._voltages.append((port, vio, limits))
 
     def set_pin_pull(self, pin: GlasgowPin, state: PullState):
         if pin.invert:
@@ -862,9 +876,19 @@ class HardwareAssembly(AbstractAssembly):
         return self._device
 
     async def configure_ports(self):
-        for port, vio in self._voltages:
+        for port, vio, limits in self._voltages:
             if vio.sense is not None:
                 assert port != GlasgowPort.ALL
+                if limits is not None:
+                    # Check before mirroring. Once mirrored, the pins are already driven at
+                    # whatever voltage is present on the sense input.
+                    measured = await self.device.measure_voltage(str(vio.sense))
+                    low, high = limits
+                    if not low - self._SENSE_MARGIN <= measured <= high + self._SENSE_MARGIN:
+                        raise VoltageConflictError(
+                            f"port {port} cannot follow the sense input of port {vio.sense}, "
+                            f"which measures {measured:.2f} V: the powered device supports "
+                            f"{low:.2f}..{high:.2f} V")
                 sensed = await self.device.mirror_voltage(str(port), str(vio.sense))
                 logger.info(
                     "port %s voltage set to %.1f V (sensed on port %s)", port, sensed, vio.sense)

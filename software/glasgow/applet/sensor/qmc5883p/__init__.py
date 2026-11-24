@@ -8,7 +8,7 @@ import enum
 from glasgow.support import logging
 from glasgow.support.bitstruct import bitstruct
 from glasgow.support.data_logger import DataLogger
-from glasgow.applet.interface.i2c_controller import I2CControllerInterface
+from glasgow.applet.interface.i2c_controller import I2CControllerPorts, I2CControllerInterface
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
@@ -476,9 +476,7 @@ class SensorQMC5883PApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "scl", default=True, required=True)
-        access.add_pins_argument(parser, "sda", default=True, required=True)
+        access.add_ports_arguments(parser, I2CControllerPorts)
 
         def i2c_address(arg):
             return int(arg, 0)
@@ -488,9 +486,8 @@ class SensorQMC5883PApplet(GlasgowAppletV2):
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self._i2c_iface = I2CControllerInterface(self.logger, self.assembly,
-                scl=args.scl, sda=args.sda)
+            ports = self.assembly.add_ports(I2CControllerPorts, args)
+            self._i2c_iface = I2CControllerInterface(self.logger, self.assembly, ports)
             self.qmc5883p_iface = QMC5883PInterface(self.logger, self._i2c_iface,
                 args.i2c_address)
 

@@ -1,3 +1,4 @@
+from glasgow.abstract import PullState
 from glasgow.applet import GlasgowAppletV2TestCase, synthesis_test, applet_v2_simulation_test
 
 from . import GPIOException, ControlGPIOApplet
@@ -50,3 +51,10 @@ class GPIOAppletTestCase(GlasgowAppletV2TestCase, applet=ControlGPIOApplet):
 
         with self.assertRaisesRegex(GPIOException, r"^pin 0 is not configured as an output$"):
             await applet.gpio_iface.set(0, 1)
+
+    @applet_v2_simulation_test(args="--pins A0:3")
+    async def test_pull(self, applet, ctx):
+        await applet.gpio_iface.pull(1, "high")
+        await applet.gpio_iface.pull(2, PullState.Low)
+        with self.assertRaises(IndexError):
+            await applet.gpio_iface.pull(4, "high")

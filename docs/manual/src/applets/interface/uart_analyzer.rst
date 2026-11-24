@@ -17,4 +17,6 @@ API reference
 
 .. autoenum:: UARTAnalyzerError()
 
+.. autoclass:: UARTAnalyzerPorts
+
 .. autoclass:: UARTAnalyzerInterface

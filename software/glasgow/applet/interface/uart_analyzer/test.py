@@ -1,5 +1,5 @@
 from glasgow.support import logging
-from glasgow.applet.interface.uart import UARTInterface
+from glasgow.applet.interface.uart import UARTPorts, UARTInterface
 from glasgow.applet import GlasgowAppletV2TestCase, synthesis_test, applet_v2_simulation_test
 
 from . import UARTAnalyzerError, UARTAnalyzerApplet
@@ -13,8 +13,10 @@ class UARTAnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=UARTAnalyzerApp
         self.assertBuilds()
 
     def loopback_prepare(self, assembly):
-        self.rx_uart = UARTInterface(self.logger, assembly, rx="A2", tx="A3")
-        self.tx_uart = UARTInterface(self.logger, assembly, rx="A4", tx="A5")
+        self.rx_uart = UARTInterface(self.logger, assembly,
+            assembly.add_ports(UARTPorts, {"rx": "A2", "tx": "A3"}))
+        self.tx_uart = UARTInterface(self.logger, assembly,
+            assembly.add_ports(UARTPorts, {"rx": "A4", "tx": "A5"}))
         assembly.connect_pins("A0", "A3")
         assembly.connect_pins("A1", "A5")
 

@@ -17,4 +17,6 @@ API reference
 
 .. autoexception:: PMSx003Error
 
+.. autoclass:: SensorPMSx003Ports
+
 .. autoclass:: PMSx003Interface

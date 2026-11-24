@@ -13,6 +13,10 @@ CLI reference
 API reference
 -------------
 
+.. module:: glasgow.applet.interface.sbw_probe
+
+.. autoclass:: SpyBiWireProbePorts
+
 .. todo::
 
     Add API documentation for ``sbw-probe``.

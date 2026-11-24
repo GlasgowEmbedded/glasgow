@@ -34,7 +34,7 @@ class VideoRGBInputAppletTestCase(GlasgowAppletV2TestCase, applet=VideoRGBInputA
         ):
             with self.subTest(rows=rows, columns=columns, vblank=vblank):
                 with self.assertRaises(GlasgowAppletError):
-                    VideoRGBInputInterface(Mock(), Mock(), r=(), g=(), b=(), dck=None,
+                    VideoRGBInputInterface(Mock(), Mock(), Mock(),
                                            rows=rows, columns=columns, vblank=vblank)
 
     def test_capture(self):

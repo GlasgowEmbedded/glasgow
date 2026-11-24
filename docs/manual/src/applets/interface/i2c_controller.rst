@@ -17,6 +17,8 @@ API reference
 
 .. autoexception:: I2CNotAcknowledged
 
+.. autoclass:: I2CControllerPorts
+
 .. autoclass:: I2CControllerInterface
 
 .. module:: glasgow.arch.i2c

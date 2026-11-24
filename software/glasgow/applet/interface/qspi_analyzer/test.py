@@ -9,7 +9,7 @@ from glasgow.simulation.assembly import SimulationAssembly
 from glasgow.gateware.ports import PortGroup
 from glasgow.gateware.stream import stream_get
 from glasgow.applet import GlasgowAppletV2TestCase, synthesis_test
-from . import QSPIAnalyzerFrontend, QSPIAnalyzerInterface, QSPIAnalyzerApplet
+from . import QSPIAnalyzerFrontend, QSPIAnalyzerPorts, QSPIAnalyzerInterface, QSPIAnalyzerApplet
 
 
 logger = logging.getLogger(__name__)
@@ -94,7 +94,8 @@ class QSPIAnalyzerAppletTestCase(GlasgowAppletV2TestCase, applet=QSPIAnalyzerApp
     def test_sim_interface(self):
         assembly = SimulationAssembly()
 
-        iface = QSPIAnalyzerInterface(logger, assembly, cs="A0", sck="A1", io="A2:5")
+        iface = QSPIAnalyzerInterface(logger, assembly, assembly.add_ports(QSPIAnalyzerPorts,
+            {"cs": "A0", "sck": "A1", "io": "A2:5"}))
 
         ports = PortGroup()
         ports.cs  = assembly.get_pin("A0")

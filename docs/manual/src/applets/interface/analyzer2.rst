@@ -34,6 +34,8 @@ API reference
 
 .. autoexception:: AnalyzerError
 
+.. autoclass:: AnalyzerPorts
+
 .. autoclass:: AnalyzerInterface
 
 

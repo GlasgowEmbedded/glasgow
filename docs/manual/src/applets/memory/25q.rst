@@ -22,6 +22,8 @@ API reference
 
 .. autoexception:: glasgow.applet.memory._25q.Memory25QVerifyError
 
+.. autoclass:: glasgow.applet.memory._25q.Memory25QPorts
+
 .. autoclass:: glasgow.applet.memory._25q.Memory25QInterface
 
 

@@ -6,11 +6,11 @@ from amaranth.lib.wiring import Out
 from amaranth.lib.cdc import FFSynchronizer
 
 from glasgow.support import logging
-from glasgow.abstract import AbstractAssembly, GlasgowPin
+from glasgow.abstract import AbstractAssembly, GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
-__all__ = ["CalibrateClockInterface"]
+__all__ = ["CalibrateClockPorts", "CalibrateClockInterface"]
 
 
 # Maximum gate time in seconds. Longer = more resolution but slower updates.
@@ -117,22 +117,32 @@ class CalibrateClockComponent(wiring.Component):
         return m
 
 
+@glasgow_ports
+class CalibrateClockPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """clock input power (voltage reference of the inputs)"""
+    ref_pin: io.PortLike = GlasgowPin.field(power=supply,
+        help="stable reference clock input pin (e.g. B1 for Rb standard)")
+    ext_pin: io.PortLike | None = GlasgowPin.field(power=supply,
+        help="optional external clock to measure (e.g. A0 for Si5351A output); "
+             "if omitted the system clock is measured")
+
+
 class CalibrateClockInterface:
     """Software interface for the clock calibration applet."""
 
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 ref_pin: GlasgowPin,
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
+                 ports: CalibrateClockPorts, *,
                  ref_freq: float,
                  gate_time_sec: float = MAX_GATE_TIME_SEC,
                  nominal_sys_clk: float = 48e6,
                  initial_ppm: float = 0.0,
-                 ext_pin: GlasgowPin | None = None,
                  ext_freq: float | None = None):
         self._logger       = logger
         self._level        = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
         self._ref_freq     = ref_freq
         self._ext_freq     = ext_freq
-        self._has_ext      = ext_pin is not None
+        self._has_ext      = ports.ext_pin is not None
 
         # Apply initial PPM correction to the nominal system clock so reported
         # errors are relative to the corrected baseline.
@@ -140,8 +150,8 @@ class CalibrateClockInterface:
 
         self._ref_edges_per_gate = max(1, int(ref_freq * gate_time_sec))
 
-        ref_port = assembly.add_port(ref_pin, name="ref")
-        ext_port = assembly.add_port(ext_pin, name="ext") if ext_pin is not None else None
+        ref_port = ports.ref_pin
+        ext_port = ports.ext_pin
 
         component = assembly.add_submodule(
             CalibrateClockComponent(ref_port=ref_port, ref_edges_per_gate=self._ref_edges_per_gate,
@@ -243,12 +253,7 @@ class CalibrateClockApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "ref_pin", required=True,
-            help="stable reference clock input pin (e.g. B1 for Rb standard)")
-        access.add_pins_argument(parser, "ext_pin", required=False,
-            help="optional external clock to measure (e.g. A0 for Si5351A output); "
-                 "if omitted the system clock is measured")
+        access.add_ports_arguments(parser, CalibrateClockPorts)
 
         parser.add_argument(
             "--ref-freq", type=float, required=True, metavar="HZ",
@@ -269,19 +274,19 @@ class CalibrateClockApplet(GlasgowAppletV2):
                  "(default: %(default)s)")
 
     def build(self, args):
-        if args.ext_pin is not None and args.ext_freq is None:
+        if args.ext_pin and args.ext_freq is None:
             raise GlasgowAppletError("--ext-freq is required when --ext-pin is given")
+        self._ref_pin = args.ref_pin[0]
+        self._ext_pin = args.ext_pin[0] if args.ext_pin else None
 
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
+            ports = self.assembly.add_ports(CalibrateClockPorts, args)
             self.cal_iface = CalibrateClockInterface(
-                self.logger, self.assembly,
-                ref_pin=args.ref_pin,
+                self.logger, self.assembly, ports,
                 ref_freq=args.ref_freq,
                 gate_time_sec=args.gate_time,
                 nominal_sys_clk=args.nominal_sys_clk,
                 initial_ppm=args.ppm,
-                ext_pin=args.ext_pin,
                 ext_freq=args.ext_freq,
             )
 
@@ -293,10 +298,10 @@ class CalibrateClockApplet(GlasgowAppletV2):
 
     async def run(self, args):
         gate_sec = self.cal_iface._ref_edges_per_gate / args.ref_freq
-        measuring = f"ext pin {args.ext_pin} ({args.ext_freq:.0f} Hz)" \
-            if args.ext_pin is not None else "system clock"
+        measuring = f"ext pin {self._ext_pin} ({args.ext_freq:.0f} Hz)" \
+            if self._ext_pin is not None else "system clock"
 
-        self.logger.info("reference:   pin %s @ %.6f Hz", args.ref_pin, args.ref_freq)
+        self.logger.info("reference:   pin %s @ %.6f Hz", self._ref_pin, args.ref_freq)
         self.logger.info("measuring:   %s", measuring)
         self.logger.info("gate time:   %.2f s per measurement", gate_sec)
         if args.ppm != 0.0:
@@ -308,7 +313,7 @@ class CalibrateClockApplet(GlasgowAppletV2):
         while args.count == 0 or n < args.count:
             result = await self.cal_iface.measure()
 
-            if args.ext_pin is not None:
+            if self._ext_pin is not None:
                 ppm = result["ext_ppm"]
                 self.logger.info(
                     "ext = %.3f Hz  |  error = %+.3f ppm  |  gate = %.3f s",

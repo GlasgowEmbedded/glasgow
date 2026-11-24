@@ -3,7 +3,7 @@ from amaranth.lib import enum, io, wiring, stream
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support import logging
-from glasgow.abstract import AbstractAssembly, GlasgowPin
+from glasgow.abstract import AbstractAssembly, GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.applet import GlasgowAppletV2
 
 
@@ -69,6 +69,14 @@ class ServoChannel(wiring.Component):
         return m
 
 
+@glasgow_ports
+class ControlServoPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """servo signal power"""
+    out: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """control pulse output"""
+
+
 class ControlServoComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
 
@@ -77,7 +85,7 @@ class ControlServoComponent(wiring.Component):
         Enable   = 0x01
         SetValue = 0x02
 
-    def __init__(self, ports):
+    def __init__(self, ports: ControlServoPorts):
         self.ports = ports
 
         super().__init__()
@@ -121,11 +129,11 @@ class ControlServoComponent(wiring.Component):
 
 
 class ServoInterface:
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *, out: GlasgowPin):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
+                 ports: ControlServoPorts):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
-        ports = assembly.add_port_group(out=out)
         component = assembly.add_submodule(ControlServoComponent(ports))
         self._pipe = assembly.add_out_pipe(component.i_stream)
 
@@ -195,13 +203,12 @@ class ControlServoApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "out", required=True, default=True)
+        access.add_ports_arguments(parser, ControlServoPorts)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.servo_iface = ServoInterface(self.logger, self.assembly, out=args.out)
+            ports = self.assembly.add_ports(ControlServoPorts, args)
+            self.servo_iface = ServoInterface(self.logger, self.assembly, ports)
 
     @classmethod
     def tests(cls):

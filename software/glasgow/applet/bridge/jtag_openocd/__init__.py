@@ -3,6 +3,7 @@ from amaranth.lib import wiring, stream, io, cdc
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support import logging
+from glasgow.abstract import GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.support.endpoint import ServerEndpoint
 from glasgow.applet import GlasgowAppletV2
 
@@ -10,11 +11,29 @@ from glasgow.applet import GlasgowAppletV2
 __all__ = []
 
 
+@glasgow_ports
+class JTAGOpenOCDPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """target power (voltage reference of the interface)"""
+    tck: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """test clock"""
+    tms: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """test mode select"""
+    tdi: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """test data in"""
+    tdo: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """test data out"""
+    trst: io.PortLike | None = GlasgowPin.field(power=supply)
+    """test reset (active low)"""
+    srst: io.PortLike | None = GlasgowPin.field(power=supply)
+    """system reset (active low)"""
+
+
 class JTAGOpenOCDComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
 
-    def __init__(self, ports, *, period_cyc, us_cyc):
+    def __init__(self, ports: JTAGOpenOCDPorts, *, period_cyc, us_cyc):
         self._ports      = ports
         self._period_cyc = period_cyc
         self._us_cyc     = us_cyc
@@ -119,13 +138,7 @@ class JTAGOpenOCDApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "tck", required=True, default=True)
-        access.add_pins_argument(parser, "tms", required=True, default=True)
-        access.add_pins_argument(parser, "tdi", required=True, default=True)
-        access.add_pins_argument(parser, "tdo", required=True, default=True)
-        access.add_pins_argument(parser, "trst")
-        access.add_pins_argument(parser, "srst")
+        access.add_ports_arguments(parser, JTAGOpenOCDPorts)
 
         parser.add_argument(
             "-f", "--frequency", metavar="FREQ", type=int, default=100,
@@ -133,11 +146,7 @@ class JTAGOpenOCDApplet(GlasgowAppletV2):
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            ports = self.assembly.add_port_group(
-                tck=args.tck, tms=args.tms, tdi=args.tdi, tdo=args.tdo,
-                trst=args.trst, srst=args.srst
-            )
+            ports = self.assembly.add_ports(JTAGOpenOCDPorts, args)
             component = self.assembly.add_submodule(JTAGOpenOCDComponent(ports,
                 period_cyc=round(1 / (self.assembly.sys_clk_period * args.frequency * 1000)),
                 us_cyc=round(1 / (self.assembly.sys_clk_period * 1_000_000)),

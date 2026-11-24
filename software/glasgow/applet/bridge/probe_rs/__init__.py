@@ -10,11 +10,12 @@ from amaranth.lib import enum, wiring, stream, io
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support import logging
+from glasgow.abstract import GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.gateware import cobs
 from glasgow.gateware.stream import StreamBuffer
 from glasgow.hardware.device import VID_QIHW, PID_GLASGOW
 from glasgow.support.endpoint import endpoint, ServerEndpoint
-from glasgow.applet.interface.swd_probe import SWDProbeComponent
+from glasgow.applet.interface.swd_probe import SWDProbeComponent, SWDProbePorts
 from glasgow.applet import GlasgowAppletV2
 
 
@@ -121,12 +122,24 @@ class ProbeRsRootTarget(wiring.Component):
         return m
 
 
+@glasgow_ports
+class ProbeRsPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """target power (voltage reference of the interface)"""
+    swclk: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """serial wire clock"""
+    swdio: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """serial wire data"""
+    srst: io.PortLike | None = GlasgowPin.field(power=supply, pull="high")
+    """system reset (active low)"""
+
+
 class ProbeRsComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
     o_flush:  Out(1)
 
-    def __init__(self, ports, *, ref_clock):
+    def __init__(self, ports: ProbeRsPorts, *, ref_clock):
         self._ports     = ports
         self._ref_clock = ref_clock
 
@@ -142,7 +155,9 @@ class ProbeRsComponent(wiring.Component):
         wiring.connect(m, wiring.flipped(self.o_stream), cobs_encoder.o)
 
         m.submodules.root_target = root_target = ProbeRsRootTarget(ref_clock=self._ref_clock)
-        m.submodules.swd_target  = swd_target  = SWDProbeComponent(self._ports)
+        m.submodules.swd_target  = swd_target  = SWDProbeComponent(
+            SWDProbePorts(supply=self._ports.supply, swclk=self._ports.swclk,
+                          swdio=self._ports.swdio))
         m.d.comb += swd_target.divisor.eq(root_target.divisor)
 
         if self._ports.srst:
@@ -227,17 +242,11 @@ class ProbeRsApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "swclk", required=True, default=True)
-        access.add_pins_argument(parser, "swdio", required=True, default=True)
-        access.add_pins_argument(parser, "srst")
+        access.add_ports_arguments(parser, ProbeRsPorts)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            if args.srst:
-                self.assembly.use_pulls({args.srst: "high"})
-            ports = self.assembly.add_port_group(swclk=args.swclk, swdio=args.swdio, srst=args.srst)
+            ports = self.assembly.add_ports(ProbeRsPorts, args)
             component = self.assembly.add_submodule(ProbeRsComponent(ports,
                 ref_clock=int(1 / self.assembly.sys_clk_period)))
             self.__pipe = self.assembly.add_inout_pipe(

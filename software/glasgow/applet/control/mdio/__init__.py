@@ -11,14 +11,15 @@
 import struct
 
 from amaranth import *
-from amaranth.lib import data, wiring, stream
+from amaranth.lib import data, wiring, stream, io
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support import logging
 from glasgow.database.ieee import company_names
 from glasgow.arch.ieee802_3 import *
 from glasgow.gateware import mdio
-from glasgow.abstract import ClockDivisor, GlasgowPin, AbstractAssembly
+from glasgow.abstract import (ClockDivisor, GlasgowSupply, GlasgowPin, AbstractAssembly,
+    glasgow_ports)
 from glasgow.applet import GlasgowAppletV2
 
 
@@ -32,13 +33,23 @@ class ControlMDIOHeader(data.Struct):
     _:    5
 
 
+@glasgow_ports
+class ControlMDIOPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """bus power"""
+    mdc: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """management data clock"""
+    mdio: io.PortLike = GlasgowPin.field(power=supply, default=True, pull="low")
+    """management data input/output"""
+
+
 class ControlMDIOComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
 
     divisor: In(16)
 
-    def __init__(self, ports):
+    def __init__(self, ports: ControlMDIOPorts):
         self._ports = ports
 
         super().__init__()
@@ -94,13 +105,16 @@ class ControlMDIOComponent(wiring.Component):
 
 
 class ControlMDIOInterface:
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 mdc: GlasgowPin, mdio: GlasgowPin):
+    """MDIO controller.
+
+    :py:`ports` is a :py:`ControlMDIOPorts`. The :py:`mdio` pin should have a pull-down.
+    """
+
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
+                 ports: ControlMDIOPorts):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
-        assembly.use_pulls({mdio: "low"})
-        ports = assembly.add_port_group(mdc=mdc, mdio=mdio)
         component = assembly.add_submodule(ControlMDIOComponent(ports))
         self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
         self._clock = assembly.add_clock_divisor(component.divisor,
@@ -194,15 +208,12 @@ class ControlMDIOApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "mdc",  required=True, default=True)
-        access.add_pins_argument(parser, "mdio", required=True, default=True)
+        access.add_ports_arguments(parser, ControlMDIOPorts)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.mdio_iface = ControlMDIOInterface(self.logger, self.assembly,
-                mdc=args.mdc, mdio=args.mdio)
+            ports = self.assembly.add_ports(ControlMDIOPorts, args)
+            self.mdio_iface = ControlMDIOInterface(self.logger, self.assembly, ports)
 
     @classmethod
     def add_setup_arguments(cls, parser):

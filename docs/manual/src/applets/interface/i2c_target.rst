@@ -15,4 +15,6 @@ API reference
 
 .. module:: glasgow.applet.interface.i2c_target
 
+.. autoclass:: I2CTargetPorts
+
 .. autoclass:: I2CTargetInterface

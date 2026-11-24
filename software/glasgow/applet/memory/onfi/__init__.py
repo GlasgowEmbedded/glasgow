@@ -80,6 +80,7 @@ import struct
 
 from amaranth import *
 from amaranth.lib import io, wiring, stream
+from amaranth.lib.io import PortLike
 from amaranth.lib.wiring import In, Out
 from amaranth.lib.cdc import FFSynchronizer
 
@@ -87,7 +88,7 @@ from glasgow.support import logging
 from glasgow.support.logging import dump_hex
 from glasgow.database.jedec import *
 from glasgow.protocol.onfi import *
-from glasgow.abstract import AbstractAssembly, GlasgowPin
+from glasgow.abstract import AbstractAssembly, GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.applet import *
 
 
@@ -143,12 +144,32 @@ class MemoryONFIBus(Elaboratable):
         return m
 
 
+@glasgow_ports
+class MemoryONFIPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """memory power"""
+    io: PortLike = GlasgowPin.field(power=supply, width=8, default=True)
+    """data bus"""
+    cle: PortLike = GlasgowPin.field(power=supply, default=True)
+    """command latch enable"""
+    ale: PortLike = GlasgowPin.field(power=supply, default=True)
+    """address latch enable"""
+    re: PortLike = GlasgowPin.field(power=supply, default=True)
+    """read enable"""
+    we: PortLike = GlasgowPin.field(power=supply, default=True)
+    """write enable"""
+    r_b: PortLike = GlasgowPin.field(power=supply, default=True, pull="high")
+    """ready/busy"""
+    ce: PortLike = GlasgowPin.field(power=supply, width=range(1, 5), default=2)
+    """chip enables"""
+
+
 class MemoryONFIComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
     flush: Out(1)
 
-    def __init__(self, ports):
+    def __init__(self, ports: MemoryONFIPorts):
         self.bus = MemoryONFIBus(ports)
         super().__init__()
 
@@ -275,11 +296,13 @@ BIT_STATUS_WRITE_PROT  = 1 << 7
 
 
 class ONFIInterface:
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 io: GlasgowPin, cle: GlasgowPin, ale: GlasgowPin, re: GlasgowPin,
-                 we: GlasgowPin, r_b: GlasgowPin, ce: GlasgowPin):
-        ports = assembly.add_port_group(io=io, cle=cle, ale=ale, re=re, we=we, r_b=r_b, ce=ce)
-        assembly.use_pulls({r_b: "high"})
+    """ONFI NAND flash controller.
+
+    :py:`ports` is a :py:`MemoryONFIPorts`. The :py:`r_b` pin should have a pull-up.
+    """
+
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
+                 ports: MemoryONFIPorts):
         component = assembly.add_submodule(MemoryONFIComponent(ports))
         self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream,
                                             in_flush=component.flush)
@@ -462,21 +485,12 @@ class MemoryONFIApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "io", 8, default=True)
-        access.add_pins_argument(parser, "cle", default=True)
-        access.add_pins_argument(parser, "ale", default=True)
-        access.add_pins_argument(parser, "re", default=True)
-        access.add_pins_argument(parser, "we", default=True)
-        access.add_pins_argument(parser, "r_b", default=True)
-        access.add_pins_argument(parser, "ce", range(1, 5), default=2)
+        access.add_ports_arguments(parser, MemoryONFIPorts)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.onfi_iface = ONFIInterface(self.logger, self.assembly,
-                io=args.io, cle=args.cle, ale=args.ale, re=args.re, we=args.we,
-                r_b=args.r_b, ce=args.ce)
+            ports = self.assembly.add_ports(MemoryONFIPorts, args)
+            self.onfi_iface = ONFIInterface(self.logger, self.assembly, ports)
 
     @classmethod
     def add_setup_arguments(cls, parser):
